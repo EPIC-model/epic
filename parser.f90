@@ -32,6 +32,11 @@ module parser
                 write(*,*) 'No configuration file provided. Run code with "./epic --config [config file]"'
                 return
             endif
+
+            ! This is the main application of EPIC
+            if (verbose) then
+                print *, 'Running EPIC with "', filename, '"'
+            endif
         end subroutine get_config_file
 
 end module parser

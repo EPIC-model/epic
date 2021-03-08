@@ -1,8 +1,8 @@
 f90=gfortran
 flags=-O3
 
-sources = parser.f90 constants.f90
-objects = parser.o constants.o
+sources = parser.f90 constants.f90 model.f90
+objects = parser.o constants.o model.o
 
 
 all: epic

@@ -1,11 +1,12 @@
 program epic
-    use parser, only : get_config_file
+    use model, only : setup, run
     implicit none
 
-    ! Obtain the file provided via the command line
-    character(:), allocatable :: filename
-    call get_config_file(filename)
+    ! Create the model
+    call setup
 
-    ! This is the main application of EPIC
-    print *, 'Running EPIC with "', filename, '"'
+    ! Run the model
+    call run
+
 end program epic
+
