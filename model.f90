@@ -1,12 +1,11 @@
 module model
-    use parser, only : get_config_file
+    use parser, only : read_config_file
     implicit none
 
     contains
         subroutine setup
-            ! Obtain the file provided via the command line
-            character(:), allocatable :: filename
-            call get_config_file(filename)
+            ! parse the config file
+            call read_config_file()
 
 
         end subroutine
