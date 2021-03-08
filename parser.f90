@@ -1,6 +1,8 @@
 module parser
     implicit none
 
+    logical :: verbose = .false.
+
     contains
         ! Get the file name provided via the command line
         subroutine get_config_file(filename)
@@ -20,6 +22,8 @@ module parser
                     i = i + 1
                     call get_command_argument(i, arg)
                     filename = trim(arg)
+                else if (arg == '--verbose') then
+                    verbose = .true.
                 endif
                 i = i+1
             end do
