@@ -1,5 +1,8 @@
 module model
+    use constants, only : max_parcel_count
+    use init, only : init_parcels
     use parser, only : read_config_file
+    use parcels
     use types,  only : time_info_type, parcel_info_type
     use rk4,    only : rk4_step
     implicit none
@@ -9,11 +12,14 @@ module model
     type(parcel_info_type) parcel_info
 
     contains
-        subroutine setup
+        subroutine pre_run
             ! parse the config file
             call read_config_file(time_info, &
                                   parcel_info)
 
+            call alloc_parcel_mem(max_parcel_count)
+
+            call init_parcels(parcel_info)
         end subroutine
 
 
@@ -32,5 +38,8 @@ module model
 
         end subroutine run
 
+        subroutine post_run
+            call dealloc_parcel_mem
+        end subroutine
 
 end module model

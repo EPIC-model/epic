@@ -1,7 +1,7 @@
 export FFLAGS=-O3
 
-sources = constants.f90 model.f90
-objects = constants.o model.o
+sources = parameters.f90 init.f90 constants.f90 model.f90
+objects = parameters.o init.o constants.o model.o
 
 all: epic
 
@@ -20,7 +20,7 @@ epic: $(SUBDIRS) $(objects) epic.f90
 	$(FC) $(FFLAGS) parser/parser.o parcels/parcels.o stepper/rk4.o $(objects) epic.f90 -o epic
 
 $(objects): $(sources)
-	$(FC) $(FFLAGS) -I./parser -I./stepper $(sources) -c
+	$(FC) $(FFLAGS) -I./parcels -I./parser -I./stepper $(sources) -c
 
 .PHONY: clean
 clean:

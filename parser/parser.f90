@@ -1,11 +1,7 @@
 module parser
     use types, only : mesh_type, time_info_type, parcel_info_type
+    use parameters, only : verbose, filename, h5freq
     implicit none
-
-    logical :: verbose = .false.
-    character(:), allocatable :: filename
-
-    integer :: h5freq
 
     type(mesh_type) :: mesh
 
@@ -22,7 +18,6 @@ module parser
             integer :: i
             character(len=32) :: arg
 
-            filename = ''
             i = 0
             do
                 call get_command_argument(i, arg)
