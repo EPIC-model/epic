@@ -1,22 +1,22 @@
-&output
+&OUTPUT_INFO
  h5freq = 10
 /
 
-&domain
+&DOMAIN_INFO
  origin = -1.5707963267948966, -1.5707963267948966
  extent = 3.141592653589793, 3.141592653589793
  grid = 21, 21
  bc = 'free slip', 'free slip'
 /
 
-&parcel
- n_per_cell = 4
- random = .true.
- seed = 42
- elliptic = .false.
+&PARCEL_INFO
+parcel%n_per_cell = 4
+parcel%random = .true.
+parcel%seed = 42
+parcel%elliptic = .false.
 /
 
-&flow
+&FLOW
 type = TaylorGreen2D
 A = 0.5
 a = 2.0
@@ -26,13 +26,13 @@ s_x = 1.5707963267948966
 s_y = 0.0
 /
 
-&interpolator
+&INTERPOLATOR
 velocity = TrilinearVolWeighted
 fields = TrilinearVolWeighted
 /
 
-&time
- limit = 2.0
- max_step = 0.025
- adaptive = .true.
+&STEPPER_INFO
+ time%limit = 2.0
+ time%dt = 0.025
+ time%adaptive = .true.
 /
