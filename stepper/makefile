@@ -3,7 +3,7 @@ objects = *.o
 
 
 $(objects): $(sources)
-	$(FC) $(FFLAGS) $(sources) -c
+	$(FC) $(FFLAGS) -I../parcels/ $(sources) -c
 
 .PHONY: clean
 clean:

@@ -1,6 +1,7 @@
 module model
     use parser, only : read_config_file
-    use types, only : time_info_type, parcel_info_type
+    use types,  only : time_info_type, parcel_info_type
+    use rk4,    only : rk4_step
     implicit none
 
     type(time_info_type) time_info
@@ -23,7 +24,9 @@ module model
             dt = time_info%dt
 
             do while (t <= time_info%limit)
-                print *, t
+
+                call rk4_step(dt)
+
                 t = t + dt
             end do
 

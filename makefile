@@ -17,10 +17,10 @@ recursive-clean:
 	for s in $(SUBDIRS); do cd "$$s" && make clean && cd ..; done
 
 epic: $(SUBDIRS) $(objects) epic.f90
-	$(FC) $(FFLAGS) parser/parser.o $(objects) epic.f90 -o epic
+	$(FC) $(FFLAGS) parser/parser.o parcels/parcels.o stepper/rk4.o $(objects) epic.f90 -o epic
 
 $(objects): $(sources)
-	$(FC) $(FFLAGS) -I./parser $(sources) -c
+	$(FC) $(FFLAGS) -I./parser -I./stepper $(sources) -c
 
 .PHONY: clean
 clean:
