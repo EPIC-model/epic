@@ -1,4 +1,5 @@
 module parser
+    use types, only : mesh_type
     implicit none
 
     logical :: verbose = .false.
@@ -6,30 +7,7 @@ module parser
 
     integer :: h5freq
 
-    type :: coord_type
-        double precision :: x
-        double precision :: y
-    end type coord_type
-
-    type :: aint_type
-        integer :: x
-        integer :: y
-    end type aint_type
-
-    type :: astring_type
-        character(len=32) :: x
-        character(len=32) :: y
-    end type astring_type
-
-    type(coord_type) :: origin
-
-    type(coord_type) :: extent
-
-    type(aint_type) :: grid
-
-    type(astring_type) :: bc
-
-
+    type(mesh_type) :: mesh
 
     contains
         ! Get the file name provided via the command line
@@ -81,10 +59,49 @@ module parser
         subroutine get_domain(ios, fn)
             integer,            intent(inout)   :: ios
             integer,            intent(in)      :: fn
+            double precision                    :: origin(2)
+            double precision                    :: extent(2)
+            integer                             :: grid(2)
+            character(len=16)                   :: bc(2)
 
             namelist /domain/ origin, extent, grid, bc
 
             read(nml=domain, iostat=ios, unit=fn)
+
+            mesh%origin = origin
+            mesh%extent = extent
+            mesh%grid = grid
+            mesh%bc = bc
+        end subroutine
+
+        ! Parse parcel namelist
+        subroutine get_parcel(ios, fn)
+            integer,            intent(inout)   :: ios
+            integer,            intent(in)      :: fn
+            integer                             :: n_per_cell = 4
+            logical                             :: random     = .false.
+            integer                             :: seed       = 42
+            logical                             :: elliptic   = .true.
+
+            namelist /parcel/ n_per_cell, random, seed, elliptic
+
+            read(nml=parcel, iostat=ios, unit=fn)
+
+            write(*,*) elliptic
+
+        end subroutine
+
+        ! Parse time namelist
+        subroutine get_time(ios, fn)
+            integer,            intent(inout)   :: ios
+            integer,            intent(in)      :: fn
+            double precision                    :: limit    = 0.0
+            double precision                    :: max_step = 0.0
+            logical                             :: adaptive = .true.
+
+            namelist /time/ limit, max_step, adaptive
+
+            read(nml=time, iostat=ios, unit=fn)
         end subroutine
 
 
@@ -109,8 +126,10 @@ module parser
             ! Open and read Namelist file.
             open (action='read', file=filename, iostat=ios, newunit=fn)
 
-!             call get_output(ios, fn)
+            call get_output(ios, fn)
             call get_domain(ios, fn)
+            call get_parcel(ios, fn)
+            call get_time(ios, fn)
 
             if (ios /= 0) then
                 write (*, *) 'Error: invalid Namelist format.'
