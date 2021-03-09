@@ -10,12 +10,22 @@ module model
     contains
         subroutine setup
             ! parse the config file
-            call read_config_file(time_info, parcel_info)
+            call read_config_file(time_info, &
+                                  parcel_info)
 
         end subroutine
 
 
         subroutine run
+            double precision :: t  ! current time
+            double precision :: dt ! time step
+
+            dt = time_info%dt
+
+            do while (t <= time_info%limit)
+                print *, t
+                t = t + dt
+            end do
 
         end subroutine run
 

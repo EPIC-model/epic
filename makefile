@@ -6,7 +6,7 @@ objects = types.o parser.o constants.o model.o
 
 all: epic
 
-SUBDIRS = parcels
+SUBDIRS = parcels stepper
 
 .PHONY: subdirs $(SUBDIRS)
 
