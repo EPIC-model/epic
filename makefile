@@ -1,27 +1,28 @@
 export FFLAGS=-O3
 
-sources = types.f90 parser.f90 constants.f90 model.f90
-objects = types.o parser.o constants.o model.o
-
+sources = constants.f90 model.f90
+objects = constants.o model.o
 
 all: epic
 
-SUBDIRS = parcels stepper
-
+SUBDIRS = parser parcels stepper
 .PHONY: subdirs $(SUBDIRS)
-
 subdirs: $(SUBDIRS)
-
 $(SUBDIRS):
 	$(MAKE) -C $@
 
+# 9 March 2021
+# https://stackoverflow.com/questions/15347543/recursive-clean-in-a-makefile
+recursive-clean:
+	for s in $(SUBDIRS); do cd "$$s" && make clean && cd ..; done
+
 epic: $(SUBDIRS) $(objects) epic.f90
-	$(FC) $(FFLAGS) $(objects) epic.f90 -o epic
+	$(FC) $(FFLAGS) parser/parser.o $(objects) epic.f90 -o epic
 
 $(objects): $(sources)
-	$(FC) $(FFLAGS) $(sources) -c
+	$(FC) $(FFLAGS) -I./parser $(sources) -c
 
 .PHONY: clean
 clean:
-	$(MAKE) -C $(SUBDIRS) clean
 	rm -f *.o *.mod
+	make recursive-clean
