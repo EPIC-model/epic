@@ -9,6 +9,13 @@ module parser
 
     type(mesh_type) :: mesh
 
+    ! declare some subroutine private
+    private :: parse_command_line, &
+               parse_domain_info,  &
+               parse_output_info,  &
+               parse_parcel_info,  &
+               parse_stepper_info
+
     contains
         ! Get the file name provided via the command line
         subroutine parse_command_line
