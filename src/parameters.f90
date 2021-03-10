@@ -1,7 +1,8 @@
-module options
+module parameters
+    use types, only : mesh_type
     implicit none
     !
-    ! global options
+    ! global parameters
     !
 
     ! print more info if true
@@ -11,16 +12,19 @@ module options
     character(len=32) :: filename = ''
 
     !
-    ! output options
+    ! output parameters
     !
     integer :: h5freq = 1
 
     !
-    ! parcel options
+    ! domain info
     !
 
-    ! maximum number of allowed parcels
-    integer :: max_num_parcels = 1e4
+    type(mesh_type) :: mesh
+
+    !
+    ! parcel parameters
+    !
 
     ! number of parcels per cell
     integer :: n_per_cell = 4
@@ -35,7 +39,7 @@ module options
     logical :: is_elliptic = .true.
 
     !
-    ! stepper options
+    ! stepper parameters
     !
 
     ! time limit
@@ -47,4 +51,4 @@ module options
     ! adaptive time step
     logical :: is_adaptive = .false.
 
-end module options
+end module parameters

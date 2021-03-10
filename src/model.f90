@@ -1,5 +1,5 @@
 module model
-    use options, only : max_num_parcels
+    use constants, only : max_num_parcels
     use init, only : init_parcels
     use parser, only : read_config_file
     use parcels
@@ -18,7 +18,7 @@ module model
 
 
         subroutine run
-            use options, only : tmax, dt
+            use parameters, only : tmax, dt
             double precision :: t  ! current time
 
             do while (t <= tmax)

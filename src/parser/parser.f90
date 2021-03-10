@@ -1,18 +1,9 @@
 module parser
-    use options
+    use parameters
     implicit none
 
     private
     public :: read_config_file
-
-    type :: mesh_info_type
-        double precision  :: origin(2)
-        double precision  :: extent(2)
-        integer           :: grid(2)
-        character(len=16) :: bc(2)
-    end type mesh_info_type
-
-    type(mesh_info_type) :: mesh
 
     type parcel_info_type
         integer :: n_per_cell
@@ -62,23 +53,23 @@ module parser
 
             close(fn)
 
-            call update_options
+            call update_parameters
 
         end subroutine read_config_file
 
-        ! after parsing we need to update the global options
-        subroutine update_options
-            ! update parcel options
+        ! after parsing we need to update the global parameters
+        subroutine update_parameters
+            ! update parcel parameters
             n_per_cell  = parcel%n_per_cell
             is_random   = parcel%is_random
             seed        = parcel%seed
             is_elliptic = parcel%is_elliptic
 
-            ! update stepper options
+            ! update stepper parameters
             tmax        = time%tmax
             dt          = time%dt
             is_adaptive = time%is_adaptive
-        end subroutine update_options
+        end subroutine update_parameters
 
 
 end module parser

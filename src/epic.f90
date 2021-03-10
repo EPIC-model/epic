@@ -19,7 +19,7 @@ end program epic
 
 ! Get the file name provided via the command line
 subroutine parse_command_line
-    use options, only : filename, verbose
+    use parameters, only : filename, verbose
     integer                          :: i
     character(len=32)                :: arg
 

@@ -1,4 +1,5 @@
 module init
+    use parameters, only : mesh
     use parcels
     implicit none
 
@@ -8,7 +9,14 @@ module init
     contains
 
         subroutine init_parcels
-            use options, only : is_random
+            use parameters, only : is_random, n_per_cell
+            integer :: n_cells
+
+            n_cells = product(mesh%grid)
+
+            print *, n_cells
+
+            n_parcels = n_cells * n_per_cell
 
             if (is_random) then
                 call init_random_positions
@@ -19,7 +27,18 @@ module init
 
 
         subroutine init_random_positions
+            use parameters, only : seed
+            double precision :: val
+            integer :: i
 
+            call random_seed !put=seed)
+
+            do i=1, n_parcels
+                call random_number(val)
+                x(i)= mesh%origin(1) + val
+                call random_number(val)
+                y(i) = mesh%origin(2) + val
+            enddo
         end subroutine init_random_positions
 
 

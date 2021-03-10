@@ -1,6 +1,8 @@
 module parcels
     implicit none
 
+    integer :: n_parcels
+
     double precision, allocatable, dimension(:) :: &
         x, y,        & ! positions
         dxdt, dydt,  & ! velocitues
