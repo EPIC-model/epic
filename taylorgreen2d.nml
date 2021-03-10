@@ -7,8 +7,7 @@
  mesh%grid = 21, 21
  mesh%bc = 'free slip', 'free slip'
  ! parcel info
- parcel%n_per_cell = 4
- parcel%is_random = .true.
+ parcel%is_random = .false.
  parcel%seed = 42
  parcel%is_elliptic = .false.
  ! stepper info

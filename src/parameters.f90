@@ -26,9 +26,6 @@ module parameters
     ! parcel parameters
     !
 
-    ! number of parcels per cell
-    integer :: n_per_cell = 4
-
     ! random parcel initialization
     logical :: is_random = .false.
 

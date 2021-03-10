@@ -6,7 +6,6 @@ module parser
     public :: read_config_file
 
     type parcel_info_type
-        integer :: n_per_cell
         logical :: is_random
         integer :: seed
         logical :: is_elliptic
@@ -60,7 +59,6 @@ module parser
         ! after parsing we need to update the global parameters
         subroutine update_parameters
             ! update parcel parameters
-            n_per_cell  = parcel%n_per_cell
             is_random   = parcel%is_random
             seed        = parcel%seed
             is_elliptic = parcel%is_elliptic
