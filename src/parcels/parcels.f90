@@ -4,10 +4,13 @@ module parcels
     integer :: n_parcels
 
     double precision, allocatable, dimension(:) :: &
-        x, y,        & ! positions
-        dxdt, dydt,  & ! velocitues
-        stretch,     &
+        stretch,    &
         B11, B12       ! B matrix entries
+
+    double precision, allocatable, dimension(:, :) :: &
+        pos,        & ! positions
+        vel           ! velocitues
+
 
     contains
 
@@ -20,20 +23,16 @@ module parcels
         subroutine alloc_parcel_mem(num)
             integer, intent(in) :: num
 
-            allocate(x(num))
-            allocate(y(num))
-            allocate(dxdt(num))
-            allocate(dydt(num))
+            allocate(pos(num, 2))
+            allocate(vel(num, 2))
             allocate(stretch(num))
             allocate(B11(num))
             allocate(B12(num))
         end subroutine alloc_parcel_mem
 
         subroutine dealloc_parcel_mem
-            deallocate(x)
-            deallocate(y)
-            deallocate(dxdt)
-            deallocate(dydt)
+            deallocate(pos)
+            deallocate(vel)
             deallocate(stretch)
             deallocate(B11)
             deallocate(B12)

@@ -1,7 +1,7 @@
 module init
     use parameters, only : mesh
-    use fields, only : velocity_x, velocity_y
-    use parcels
+    use fields, only : velocity
+    use parcels, only : pos, vel, B11, B12, stretch, n_parcels
     implicit none
 
     private :: init_random_positions,  &
@@ -32,6 +32,7 @@ module init
                 call init_regular_positions
             endif
 
+
             call init_stretch
 
             call init_velocity
@@ -48,9 +49,9 @@ module init
 
             do i = 1, n_parcels
                 call random_number(val)
-                x(i)= mesh%origin(1) + val
+                pos(i, 1)= mesh%origin(1) + val
                 call random_number(val)
-                y(i) = mesh%origin(2) + val
+                pos(i, 2) = mesh%origin(2) + val
             enddo
         end subroutine init_random_positions
 
@@ -64,8 +65,8 @@ module init
             do j = 1, mesh%grid(2)
                 do i = 1, mesh%grid(1)
                     l = mod(k, 2)
-                    x(k) = mesh%origin(1) + (0.25 + i + 0.5 * l) * dx(1)
-                    y(k) = mesh%origin(2) + (0.25 + j + 0.5 * l) * dx(2)
+                    pos(k, 1) = mesh%origin(1) + (0.25 + i + 0.5 * l) * dx(1)
+                    pos(k, 2) = mesh%origin(2) + (0.25 + j + 0.5 * l) * dx(2)
                     k = k + 1
                 enddo
             enddo
@@ -96,7 +97,7 @@ module init
             use taylorgreen, only : get_flow_velocity
             integer :: i, j, k
             double precision :: x, y
-            double precision :: dx(2), vel(2)
+            double precision :: dx(2), v(2)
 
             dx = mesh%extent / (mesh%grid - 1)
 
@@ -105,12 +106,14 @@ module init
                 do i = 1, mesh%grid(1)
                     x = mesh%origin(1) + i * dx(1)
                     y = mesh%origin(2) + j * dx(2)
-                    vel = get_flow_velocity(x, y)
-                    dxdt(k) = vel(1)
-                    dydt(k) = vel(2)
+                    v = get_flow_velocity(x, y)
+                    vel(k, 1) = v(1)
+                    vel(k, 2) = v(2)
                     k = k + 1
+                    print *, k, 'vel = ', vel(k, 1), vel(k, 2)
                 enddo
             enddo
+            stop
 
         end subroutine init_velocity
 
@@ -122,10 +125,9 @@ module init
             use taylorgreen, only : get_flow_velocity
             integer :: i, j
             double precision :: x, y
-            double precision :: dx(2), vel(2)
+            double precision :: dx(2)
 
-            allocate(velocity_x(mesh%grid(1), mesh%grid(2)))
-            allocate(velocity_y(mesh%grid(1), mesh%grid(2)))
+            allocate(velocity(mesh%grid(1), mesh%grid(2), 2))
 
             dx = mesh%extent / (mesh%grid - 1)
 
@@ -133,9 +135,7 @@ module init
                 do i = 1, mesh%grid(1)
                     x = mesh%origin(1) + i * dx(1)
                     y = mesh%origin(2) + j * dx(2)
-                    vel = get_flow_velocity(x, y)
-                    velocity_x(i, j) = vel(1)
-                    velocity_y(i, j) = vel(2)
+                    velocity(i, j, :) = get_flow_velocity(x, y)
                 enddo
             enddo
         end subroutine init_velocity_field

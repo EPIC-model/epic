@@ -48,4 +48,16 @@ module parameters
     ! adaptive time step
     logical :: is_adaptive = .false.
 
+    !
+    ! TaylorGreen flow parameters
+    !
+    ! amplitudes
+    double precision :: amp(2) = 1.0
+
+    ! frequencies
+    double precision :: freq(2) = 1.0
+
+    ! phase shift
+    double precision :: phase(2) = 1.0
+
 end module parameters

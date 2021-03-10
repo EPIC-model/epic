@@ -1,19 +1,6 @@
 module taylorgreen
+    use parameters, only : amp, freq, phase
     implicit none
-
-    private
-
-    ! amplitudes
-    double precision :: amp(2)
-
-    ! frequencies
-    double precision :: freq(2)
-
-    ! phase shift
-    double precision :: phase(2)
-
-    public :: get_flow_velocity, &
-              get_flow_gradient
 
     contains
         function get_flow_velocity(x, y) result(vel)
@@ -23,6 +10,7 @@ module taylorgreen
 
             xx = amp(1) * x + phase(1)
             yy = amp(2) * y + phase(2)
+
             vel(1) = amp(1) * cos(xx) * sin(yy)
             vel(2) = amp(2) * sin(xx) * cos(yy)
         end function get_flow_velocity
