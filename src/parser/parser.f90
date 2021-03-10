@@ -1,51 +1,17 @@
 module parser
     use types, only : mesh_type, time_info_type, parcel_info_type
-    use parameters, only : verbose, filename, h5freq
+    use parameters, only : filename, h5freq
     implicit none
 
     type(mesh_type) :: mesh
 
     ! declare some subroutine private
-    private :: parse_command_line, &
-               parse_domain_info,  &
+    private :: parse_domain_info,  &
                parse_output_info,  &
                parse_parcel_info,  &
                parse_stepper_info
 
     contains
-        ! Get the file name provided via the command line
-        subroutine parse_command_line
-            integer :: i
-            character(len=32) :: arg
-
-            i = 0
-            do
-                call get_command_argument(i, arg)
-                if (len_trim(arg) == 0) then
-                    exit
-                endif
-
-                if (arg == '--config') then
-                    i = i + 1
-                    call get_command_argument(i, arg)
-                    filename = trim(arg)
-                else if (arg == '--verbose') then
-                    verbose = .true.
-                endif
-                i = i+1
-            end do
-
-            if (filename == '') then
-                write(*,*) 'No configuration file provided. Run code with "./epic --config [config file]"'
-                return
-            endif
-
-            ! This is the main application of EPIC
-            if (verbose) then
-                print *, 'Running EPIC with "', filename, '"'
-            endif
-        end subroutine parse_command_line
-
         ! Parse OUTPUT_INFO namelist
         subroutine parse_output_info(ios, fn)
             integer, intent(inout)   :: ios
@@ -106,10 +72,6 @@ module parser
             integer                                :: fn = 1
             type(time_info_type),   intent(inout)  :: time
             type(parcel_info_type), intent(inout)  :: parcel
-
-            ! set all parser attributes (verbose, filename, etc.)
-            call parse_command_line()
-
 
             ! Check whether file exists.
             inquire(file=filename, iostat=ios)

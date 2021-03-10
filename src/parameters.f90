@@ -1,6 +1,6 @@
-! global parameter settings
 module parameters
     implicit none
+    ! global parameter settings
 
     logical :: verbose = .false.
 
