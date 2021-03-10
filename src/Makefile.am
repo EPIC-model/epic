@@ -1,8 +1,7 @@
 bin_PROGRAMS = epic
 epic_SOURCES = 			\
 	constants.f90 		\
-	parameters.f90 		\
-	types.f90 		\
+	options.f90 		\
 	parcels/parcels.f90 	\
 	parser/parser.f90 	\
 	stepper/rk4.f90 	\

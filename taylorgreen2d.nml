@@ -1,38 +1,18 @@
-&OUTPUT_INFO
+&MODEL
+ ! global info
  h5freq = 10
-/
-
-&DOMAIN_INFO
- origin = -1.5707963267948966, -1.5707963267948966
- extent = 3.141592653589793, 3.141592653589793
- grid = 21, 21
- bc = 'free slip', 'free slip'
-/
-
-&PARCEL_INFO
-parcel%n_per_cell = 4
-parcel%random = .true.
-parcel%seed = 42
-parcel%elliptic = .false.
-/
-
-&FLOW
-type = TaylorGreen2D
-A = 0.5
-a = 2.0
-B = -1.0
-b = 1.0
-s_x = 1.5707963267948966
-s_y = 0.0
-/
-
-&INTERPOLATOR
-velocity = TrilinearVolWeighted
-fields = TrilinearVolWeighted
-/
-
-&STEPPER_INFO
- time%limit = 2.0
+ ! mesh info
+ mesh%origin = -1.5707963267948966, -1.5707963267948966
+ mesh%extent = 3.141592653589793, 3.141592653589793
+ mesh%grid = 21, 21
+ mesh%bc = 'free slip', 'free slip'
+ ! parcel info
+ parcel%n_per_cell = 4
+ parcel%is_random = .true.
+ parcel%seed = 42
+ parcel%is_elliptic = .false.
+ ! stepper info
+ time%tmax = 2.0
  time%dt = 0.025
- time%adaptive = .true.
+ time%is_adaptive = .true.
 /

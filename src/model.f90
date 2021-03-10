@@ -1,35 +1,27 @@
 module model
-    use constants, only : max_parcel_count
+    use options, only : max_num_parcels
     use init, only : init_parcels
     use parser, only : read_config_file
     use parcels
-    use types,  only : time_info_type, parcel_info_type
     use rk4,    only : rk4_step
     implicit none
-
-    type(time_info_type) time_info
-
-    type(parcel_info_type) parcel_info
 
     contains
         subroutine pre_run
             ! parse the config file
-            call read_config_file(time_info, &
-                                  parcel_info)
+            call read_config_file
 
-            call alloc_parcel_mem(max_parcel_count)
+            call alloc_parcel_mem(max_num_parcels)
 
-            call init_parcels(parcel_info)
+            call init_parcels
         end subroutine
 
 
         subroutine run
+            use options, only : tmax, dt
             double precision :: t  ! current time
-            double precision :: dt ! time step
 
-            dt = time_info%dt
-
-            do while (t <= time_info%limit)
+            do while (t <= tmax)
 
                 call rk4_step(dt)
 

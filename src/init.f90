@@ -1,6 +1,5 @@
 module init
     use parcels
-    use types,  only : parcel_info_type
     implicit none
 
     private :: init_random_positions, &
@@ -8,25 +7,23 @@ module init
 
     contains
 
-        subroutine init_parcels(parcel_info)
-            type(parcel_info_type), intent(in) :: parcel_info
+        subroutine init_parcels
+            use options, only : is_random
 
-            if (parcel_info%is_random) then
-                call init_random_positions(parcel_info)
+            if (is_random) then
+                call init_random_positions
             else
-                call init_regular_positions(parcel_info)
+                call init_regular_positions
             endif
         end subroutine init_parcels
 
 
-        subroutine init_random_positions(parcel_info)
-            type(parcel_info_type), intent(in) :: parcel_info
+        subroutine init_random_positions
 
         end subroutine init_random_positions
 
 
-        subroutine init_regular_positions(parcel_info)
-            type(parcel_info_type), intent(in) :: parcel_info
+        subroutine init_regular_positions
 
         end subroutine init_regular_positions
 

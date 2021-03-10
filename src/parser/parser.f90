@@ -1,93 +1,60 @@
 module parser
-    use types, only : mesh_type, time_info_type, parcel_info_type
-    use parameters, only : filename, h5freq
+    use options
     implicit none
 
-    type(mesh_type) :: mesh
+    private
+    public :: read_config_file
 
-    ! declare some subroutine private
-    private :: parse_domain_info,  &
-               parse_output_info,  &
-               parse_parcel_info,  &
-               parse_stepper_info
+    type :: mesh_info_type
+        double precision  :: origin(2)
+        double precision  :: extent(2)
+        integer           :: grid(2)
+        character(len=16) :: bc(2)
+    end type mesh_info_type
+
+    type(mesh_info_type) :: mesh
+
+    type parcel_info_type
+        integer :: n_per_cell
+        logical :: is_random
+        integer :: seed
+        logical :: is_elliptic
+    end type parcel_info_type
+
+    type(parcel_info_type) :: parcel
+
+    type time_info_type
+        double precision :: tmax        ! time limit
+        double precision :: dt          ! time step
+        logical          :: is_adaptive
+    end type time_info_type
+
+
+    type(time_info_type) :: time
 
     contains
-        ! Parse OUTPUT_INFO namelist
-        subroutine parse_output_info(ios, fn)
-            integer, intent(inout)   :: ios
-            integer, intent(in)      :: fn
 
-            ! Namelist definition
-            namelist /OUTPUT_INFO/ h5freq
-
-            read(nml=OUTPUT_INFO, iostat=ios, unit=fn)
-        end subroutine parse_output_info
-
-        ! Parse DOMAIN_INFO namelist
-        subroutine parse_domain_info(ios, fn)
-            integer,            intent(inout)   :: ios
-            integer,            intent(in)      :: fn
-            double precision                    :: origin(2)
-            double precision                    :: extent(2)
-            integer                             :: grid(2)
-            character(len=16)                   :: bc(2)
-
-            namelist /DOMAIN_INFO/ origin, extent, grid, bc
-
-            read(nml=DOMAIN_INFO, iostat=ios, unit=fn)
-
-            mesh%origin = origin
-            mesh%extent = extent
-            mesh%grid = grid
-            mesh%bc = bc
-        end subroutine
-
-        ! Parse PARCEL_INFO namelist
-        subroutine parse_parcel_info(ios, fn, parcel)
-            integer,                intent(inout)   :: ios
-            integer,                intent(in)      :: fn
-            type(parcel_info_type), intent(inout)   :: parcel
-
-            namelist /PARCEL_INFO/ parcel
-
-            read(nml=PARCEL_INFO, iostat=ios, unit=fn)
-        end subroutine
-
-        ! Parse STEPPER_INFO namelist
-        subroutine parse_stepper_info(ios, fn, time)
-            integer,              intent(inout) :: ios
-            integer,              intent(in)    :: fn
-            type(time_info_type), intent(inout) :: time
-
-            namelist /STEPPER_INFO/ time
-
-            read(nml=STEPPER_INFO, iostat=ios, unit=fn)
-        end subroutine
-
-
-        ! Parsing namelists
+        ! parse configuration file
         ! (see https://cyber.dabamos.de/programming/modernfortran/namelists.html [8 March 2021])
-        subroutine read_config_file(time, parcel)
+        subroutine read_config_file
             integer                                :: ios
             integer                                :: fn = 1
-            type(time_info_type),   intent(inout)  :: time
-            type(parcel_info_type), intent(inout)  :: parcel
 
-            ! Check whether file exists.
+            ! namelist definitions
+            namelist /MODEL/ h5freq, mesh, parcel, time
+
+            ! check whether file exists.
             inquire(file=filename, iostat=ios)
 
             if (ios /= 0) then
-                write (*, *) 'Error: input file "', trim(filename), '" does not exist.'
+                write (*, *) 'Error: input file "', filename, '" does not exist.'
                 return
             endif
 
-            ! Open and read Namelist file.
+            ! open and read Namelist file.
             open (action='read', file=filename, iostat=ios, newunit=fn)
 
-            call parse_output_info(ios, fn)
-            call parse_domain_info(ios, fn)
-            call parse_parcel_info(ios, fn, parcel)
-            call parse_stepper_info(ios, fn, time)
+            read(nml=MODEL, iostat=ios, unit=fn)
 
             if (ios /= 0) then
                 write (*, *) 'Error: invalid Namelist format.'
@@ -95,7 +62,23 @@ module parser
 
             close(fn)
 
+            call update_options
+
         end subroutine read_config_file
+
+        ! after parsing we need to update the global options
+        subroutine update_options
+            ! update parcel options
+            n_per_cell  = parcel%n_per_cell
+            is_random   = parcel%is_random
+            seed        = parcel%seed
+            is_elliptic = parcel%is_elliptic
+
+            ! update stepper options
+            tmax        = time%tmax
+            dt          = time%dt
+            is_adaptive = time%is_adaptive
+        end subroutine update_options
 
 
 end module parser
