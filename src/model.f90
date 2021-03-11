@@ -4,6 +4,7 @@ module model
     use parser, only : read_config_file
     use parcel_container
     use rk4,    only : rk4_step
+    use writer, only : h5_create_file, h5_write_parcels
     implicit none
 
     contains
@@ -14,6 +15,10 @@ module model
             call alloc_parcel_mem(max_num_parcels)
 
             call init_parcels
+
+            call h5_create_file
+
+            call h5_write_parcels(0)
         end subroutine
 
 
