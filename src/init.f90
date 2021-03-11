@@ -1,6 +1,6 @@
 module init
     use parameters, only : mesh
-    use fields, only : velocity
+    use fields, only : velocity, get_mesh_spacing
     use parcel_container, only : parcels, n_parcels
     implicit none
 
@@ -59,7 +59,7 @@ module init
             integer :: i, j, k, l
             double precision :: dx(2)
 
-            dx = mesh%extent / (mesh%grid - 1)
+            dx = get_mesh_spacing()
 
             k = 1
             do j = 1, mesh%grid(2)
@@ -99,22 +99,17 @@ module init
             double precision :: x, y
             double precision :: dx(2), v(2)
 
-            dx = mesh%extent / (mesh%grid - 1)
+            dx = get_mesh_spacing()
 
             k = 1
             do j = 1, mesh%grid(2)
                 do i = 1, mesh%grid(1)
                     x = mesh%origin(1) + i * dx(1)
                     y = mesh%origin(2) + j * dx(2)
-                    v = get_flow_velocity(x, y)
-                    parcels%vel(k, 1) = v(1)
-                    parcels%vel(k, 2) = v(2)
+                    parcels%vel(k, :) = get_flow_velocity(x, y)
                     k = k + 1
-                    print *, k, 'vel = ', parcels%vel(k, 1), parcels%vel(k, 2)
                 enddo
             enddo
-            stop
-
         end subroutine init_velocity
 
         !
@@ -129,7 +124,7 @@ module init
 
             allocate(velocity(mesh%grid(1), mesh%grid(2), 2))
 
-            dx = mesh%extent / (mesh%grid - 1)
+            dx = get_mesh_spacing()
 
             do j = 1, mesh%grid(2)
                 do i = 1, mesh%grid(1)
