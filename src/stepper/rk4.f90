@@ -1,5 +1,5 @@
 module rk4
-    use parcels
+    use parcel_container
     implicit none
 
     contains
