@@ -11,7 +11,7 @@
  parcel%seed = 42
  parcel%is_elliptic = .false.
  ! stepper info
- time%tmax = 2.0
+ time%limit = 2.0
  time%dt = 0.025
  time%is_adaptive = .true.
 /

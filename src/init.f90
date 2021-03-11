@@ -1,5 +1,5 @@
 module init
-    use parameters, only : mesh
+    use parameters, only : mesh, parcel_info
     use fields, only : velocity, get_mesh_spacing
     use parcel_container, only : parcels, n_parcels
     implicit none
@@ -17,7 +17,6 @@ module init
         !
 
         subroutine init_parcels
-            use parameters, only : is_random
             integer :: n_cells
 
             n_cells = product(mesh%grid)
@@ -26,7 +25,7 @@ module init
             ! we use 4 parcels per grid cell
             n_parcels = 4 * n_cells
 
-            if (is_random) then
+            if (parcel_info%is_random) then
                 call init_random_positions
             else
                 call init_regular_positions
@@ -41,11 +40,10 @@ module init
 
 
         subroutine init_random_positions
-            use parameters, only : seed
             double precision :: val
             integer :: i
 
-            call random_seed !put=seed)
+            call random_seed !put=parcel_info%seed)
 
             do i = 1, n_parcels
                 call random_number(val)
@@ -73,8 +71,7 @@ module init
         end subroutine init_regular_positions
 
         subroutine init_stretch
-            use parameters, only : is_elliptic
-            if (is_elliptic) then
+            if (parcel_info%is_elliptic) then
                 deallocate(parcels%stretch)
             else
                 parcels%stretch = 0.0
@@ -82,9 +79,7 @@ module init
         end subroutine init_stretch
 
         subroutine init_B_matrix
-            use parameters, only : is_elliptic
-
-            if (is_elliptic) then
+            if (parcel_info%is_elliptic) then
                 parcels%B11 = 1.0
                 parcels%B12 = 0.0
             else

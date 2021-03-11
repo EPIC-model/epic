@@ -18,10 +18,13 @@ module model
 
 
         subroutine run
-            use parameters, only : tmax, dt
+            use parameters, only : time
             double precision :: t  ! current time
+            double precision :: dt ! time step
 
-            do while (t <= tmax)
+            dt = time%dt
+
+            do while (t <= time%limit)
 
                 call rk4_step(dt)
 

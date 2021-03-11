@@ -5,22 +5,7 @@ module parser
     private
     public :: read_config_file
 
-    type parcel_info_type
-        logical :: is_random
-        integer :: seed
-        logical :: is_elliptic
-    end type parcel_info_type
-
     type(parcel_info_type) :: parcel
-
-    type time_info_type
-        double precision :: tmax        ! time limit
-        double precision :: dt          ! time step
-        logical          :: is_adaptive
-    end type time_info_type
-
-
-    type(time_info_type) :: time
 
     contains
 
@@ -52,22 +37,9 @@ module parser
 
             close(fn)
 
-            call update_parameters
+            ! update parcel parameters
+            parcel_info = parcel
 
         end subroutine read_config_file
-
-        ! after parsing we need to update the global parameters
-        subroutine update_parameters
-            ! update parcel parameters
-            is_random   = parcel%is_random
-            seed        = parcel%seed
-            is_elliptic = parcel%is_elliptic
-
-            ! update stepper parameters
-            tmax        = time%tmax
-            dt          = time%dt
-            is_adaptive = time%is_adaptive
-        end subroutine update_parameters
-
 
 end module parser

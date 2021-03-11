@@ -25,28 +25,26 @@ module parameters
     !
     ! parcel parameters
     !
+    type parcel_info_type
+        logical :: is_random    = .false.   ! random parcel initialization
+        integer :: seed         = 42        ! seed of random initialization
+        logical :: is_elliptic  = .true.    ! use elliptic model
+    end type parcel_info_type
 
-    ! random parcel initialization
-    logical :: is_random = .false.
-
-    ! seed of random initialization
-    integer :: seed = 42
-
-    ! use elliptic model
-    logical :: is_elliptic = .true.
+    type(parcel_info_type) :: parcel_info
 
     !
     ! stepper parameters
     !
 
     ! time limit
-    double precision :: tmax = 0.0
+    type time_info_type
+        double precision :: limit       = 0.0       ! time limit
+        double precision :: dt          = 0.0       ! time step
+        logical          :: is_adaptive = .false.
+    end type time_info_type
 
-    ! time step
-    double precision :: dt = 0.0
-
-    ! adaptive time step
-    logical :: is_adaptive = .false.
+    type(time_info_type) :: time
 
     !
     ! TaylorGreen flow parameters
