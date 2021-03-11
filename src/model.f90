@@ -2,7 +2,7 @@ module model
     use constants, only : max_num_parcels
     use init, only : init_parcels
     use parser, only : read_config_file
-    use parcels
+    use parcel_container
     use rk4,    only : rk4_step
     implicit none
 

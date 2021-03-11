@@ -1,7 +1,7 @@
 module init
     use parameters, only : mesh
     use fields, only : velocity
-    use parcels, only : pos, vel, B11, B12, stretch, n_parcels
+    use parcel_container, only : parcels, n_parcels
     implicit none
 
     private :: init_random_positions,  &
@@ -49,9 +49,9 @@ module init
 
             do i = 1, n_parcels
                 call random_number(val)
-                pos(i, 1)= mesh%origin(1) + val
+                parcels%pos(i, 1)= mesh%origin(1) + val
                 call random_number(val)
-                pos(i, 2) = mesh%origin(2) + val
+                parcels%pos(i, 2) = mesh%origin(2) + val
             enddo
         end subroutine init_random_positions
 
@@ -65,8 +65,8 @@ module init
             do j = 1, mesh%grid(2)
                 do i = 1, mesh%grid(1)
                     l = mod(k, 2)
-                    pos(k, 1) = mesh%origin(1) + (0.25 + i + 0.5 * l) * dx(1)
-                    pos(k, 2) = mesh%origin(2) + (0.25 + j + 0.5 * l) * dx(2)
+                    parcels%pos(k, 1) = mesh%origin(1) + (0.25 + i + 0.5 * l) * dx(1)
+                    parcels%pos(k, 2) = mesh%origin(2) + (0.25 + j + 0.5 * l) * dx(2)
                     k = k + 1
                 enddo
             enddo
@@ -75,9 +75,9 @@ module init
         subroutine init_stretch
             use parameters, only : is_elliptic
             if (is_elliptic) then
-                deallocate(stretch)
+                deallocate(parcels%stretch)
             else
-                stretch = 0.0
+                parcels%stretch = 0.0
             endif
         end subroutine init_stretch
 
@@ -85,11 +85,11 @@ module init
             use parameters, only : is_elliptic
 
             if (is_elliptic) then
-                B11 = 1.0
-                B12 = 0.0
+                parcels%B11 = 1.0
+                parcels%B12 = 0.0
             else
-                deallocate(B11)
-                deallocate(B12)
+                deallocate(parcels%B11)
+                deallocate(parcels%B12)
             endif
         end subroutine init_B_matrix
 
@@ -107,10 +107,10 @@ module init
                     x = mesh%origin(1) + i * dx(1)
                     y = mesh%origin(2) + j * dx(2)
                     v = get_flow_velocity(x, y)
-                    vel(k, 1) = v(1)
-                    vel(k, 2) = v(2)
+                    parcels%vel(k, 1) = v(1)
+                    parcels%vel(k, 2) = v(2)
                     k = k + 1
-                    print *, k, 'vel = ', vel(k, 1), vel(k, 2)
+                    print *, k, 'vel = ', parcels%vel(k, 1), parcels%vel(k, 2)
                 enddo
             enddo
             stop
