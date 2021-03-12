@@ -4,7 +4,10 @@ module model
     use parser, only : read_config_file
     use parcel_container
     use rk4,    only : rk4_step
-    use writer, only : h5_create_file
+    use writer, only : create_h5_file,           &
+                       open_h5_file,             &
+                       close_h5_file,            &
+                       write_h5_scalar_attrib
     implicit none
 
     contains
@@ -16,24 +19,34 @@ module model
 
             call init_parcels
 
-            call h5_create_file
-
-            call h5_write_parcels(0)
+            call create_h5_file
         end subroutine
 
 
         subroutine run
             use parameters, only : time
-            double precision :: t  ! current time
-            double precision :: dt ! time step
+            double precision :: t    = 0.0 ! current time
+            double precision :: dt   = 0.0 ! time step
+            integer          :: iter = 0
 
             dt = time%dt
 
             do while (t <= time%limit)
 
+                call open_h5_file
+
+                call write_h5_scalar_attrib(iter, "t", t)
+
+                call write_h5_scalar_attrib(iter, "dt", dt)
+
+                call write_h5_parcels(iter)
+
+                call close_h5_file
+
                 call rk4_step(dt)
 
                 t = t + dt
+                iter = iter + 1
             end do
 
         end subroutine run

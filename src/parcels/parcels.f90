@@ -5,7 +5,7 @@ module parcel_container
                        write_h5_dataset_1d, &
                        write_h5_dataset_2d, &
                        open_h5_group,       &
-                       close_h5_group,      &
+!                        close_h5_group,      &
                        get_step_group_name
     implicit none
 
@@ -26,21 +26,19 @@ module parcel_container
 
     contains
 
-        subroutine h5_write_parcels(iter)
-            integer, intent(in) :: iter ! iteration
-            integer(hid_t)      :: group
-            integer(hid_t)      :: step_group
-            character(len=32)   :: step
+        subroutine write_h5_parcels(iter)
+            integer, intent(in)         :: iter ! iteration
+            integer(hid_t)              :: group
+            integer(hid_t)              :: step_group
+            character(:), allocatable   :: step
             character(:), allocatable   :: name
+            logical                    :: link_exists = .false.
 
-            call h5open_f(h5err)
+            step = trim(get_step_group_name(iter))
 
-            step = get_step_group_name(iter)
-
-            ! create groups
+            ! create or open groups
+            name = step // "/parcels"
             step_group = open_h5_group(step)
-
-            name = trim(trim(step) // "/parcels")
             group = open_h5_group(name)
 
             !
@@ -59,11 +57,10 @@ module parcel_container
                 call write_h5_dataset_1d(name, "B12", parcels%B12(1:n_parcels))
             endif
 
-            call close_h5_group(group)
-            call close_h5_group(step_group)
+            call h5gclose_f(group, h5err)
+            call h5gclose_f(step_group, h5err)
 
-            call h5close_f(h5err)
-        end subroutine h5_write_parcels
+        end subroutine write_h5_parcels
 
         subroutine split(threshold)
             double precision, intent(in) :: threshold
