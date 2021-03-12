@@ -19,7 +19,7 @@ module init
         subroutine init_parcels
             integer :: n_cells
 
-            n_cells = product(mesh%grid)
+            n_cells = product(mesh%grid - 1)
 
             ! set the number of parcels (see parcels.f90)
             ! we use 4 parcels per grid cell
@@ -54,17 +54,22 @@ module init
         end subroutine init_random_positions
 
         subroutine init_regular_positions
-            integer :: i, j, k, l
-            double precision :: dx(2)
+            integer :: i, ii, j, jj k
+            double precision :: dx(2), del(2)
 
             dx = get_mesh_spacing()
 
+            del = dx / 3.0
+
             k = 1
-            do j = 1, mesh%grid(2)
-                do i = 1, mesh%grid(1)
-                    l = mod(k, 2)
-                    parcels%pos(k, 1) = mesh%origin(1) + (0.25 + i + 0.5 * l) * dx(1)
-                    parcels%pos(k, 2) = mesh%origin(2) + (0.25 + j + 0.5 * l) * dx(2)
+            do j = 1, 2 * (mesh%grid(2) - 1)
+                do i = 1, 2 * (mesh%grid(1) - 1)
+                    ! cell shifts
+                    ii = dx(1) * floor((i - 1) / 2)
+                    jj = dx(2) * floor((j - 1) / 2)
+
+                    parcels%pos(k, 1) = mesh%origin(1) + i * del(1) + ii
+                    parcels%pos(k, 2) = mesh%origin(2) + j * del(2) + jj
                     k = k + 1
                 enddo
             enddo
@@ -90,20 +95,14 @@ module init
 
         subroutine init_velocity
             use taylorgreen, only : get_flow_velocity
-            integer :: i, j, k
+            integer :: i
             double precision :: x, y
             double precision :: dx(2), v(2)
 
             dx = get_mesh_spacing()
 
-            k = 1
-            do j = 1, mesh%grid(2)
-                do i = 1, mesh%grid(1)
-                    x = mesh%origin(1) + i * dx(1)
-                    y = mesh%origin(2) + j * dx(2)
-                    parcels%vel(k, :) = get_flow_velocity(x, y)
-                    k = k + 1
-                enddo
+            do i = 1, n_parcels
+                parcels%vel(i, :) = get_flow_velocity(parcels%pos(i, 1), parcels%pos(i, 1))
             enddo
         end subroutine init_velocity
 
