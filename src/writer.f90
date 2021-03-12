@@ -7,26 +7,20 @@ module writer
     use hdf5
     implicit none
 
-    !character(:), allocatable :: filename
-
     ! h5 file handle
-    integer(HID_T) :: h5file
+    integer(HID_T) :: h5file = 0
 
     ! if non-zero an error occurred
     integer :: h5err = 0
 
     contains
-        subroutine create_h5_file
-            call h5fcreate_f('test.h5', H5F_ACC_TRUNC_F, h5file, h5err)
+        subroutine open_h5_file(filename)
+            character(*), intent(in) :: filename
 
-            if (h5err .ne. 0) then
-                print *, "Could not create the H5 file."
-                stop
+            if (h5file .eq. 0) then
+                call h5fcreate_f(filename, H5F_ACC_TRUNC_F, h5file, h5err)
             endif
-        end subroutine create_h5_file
 
-
-        subroutine open_h5_file
             call h5open_f(h5err)
 
             if (h5err .ne. 0) then

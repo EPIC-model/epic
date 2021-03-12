@@ -4,8 +4,7 @@ module model
     use parser, only : read_config_file
     use parcel_container
     use rk4,    only : rk4_step
-    use writer, only : create_h5_file,           &
-                       open_h5_file,             &
+    use writer, only : open_h5_file,             &
                        close_h5_file,            &
                        write_h5_scalar_attrib
     implicit none
@@ -19,7 +18,6 @@ module model
 
             call init_parcels
 
-            call create_h5_file
         end subroutine
 
 
@@ -33,7 +31,7 @@ module model
 
             do while (t <= time%limit)
 
-                call open_h5_file
+                call open_h5_file("test.h5")
 
                 call write_h5_scalar_attrib(iter, "t", t)
 
