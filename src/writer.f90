@@ -57,8 +57,8 @@ module writer
             call h5screate_simple_f(1, dims, dataspace, h5err)
 
             ! create the dataset
-            call h5dcreate_f(h5file, group // "/" // name,               &
-                             H5T_IEEE_F64LE, dataspace, dset, h5err)
+            call h5dcreate_f(h5file, group // "/" // name,              &
+                             H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
 
             ! write dataset
             call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
@@ -83,8 +83,8 @@ module writer
             call h5screate_simple_f(2, dims, dataspace, h5err)
 
             ! create the dataset
-            call h5dcreate_f(h5file, group // "/" // name,               &
-                             H5T_IEEE_F64LE, dataspace, dset, h5err)
+            call h5dcreate_f(h5file, group // "/" // name,              &
+                             H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
 
             ! write dataset
             call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
@@ -113,8 +113,8 @@ module writer
             call h5screate_simple_f(1, dims, space, h5err)
 
             ! create the dataset
-            call h5acreate_f(group, name,         &
-                             H5T_IEEE_F64LE, space, attr, h5err)
+            call h5acreate_f(group, name,                           &
+                             H5T_NATIVE_DOUBLE, space, attr, h5err)
 
             call h5awrite_f(attr, H5T_NATIVE_DOUBLE, val, dims, h5err)
 
