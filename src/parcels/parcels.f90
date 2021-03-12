@@ -2,8 +2,8 @@ module parcel_container
     use hdf5
     use writer, only : h5file,              &
                        h5err,               &
-                       write_h5_1d_dataset, &
-                       write_h5_2d_dataset
+                       write_h5_dataset_1d, &
+                       write_h5_dataset_2d
     implicit none
 
     integer :: n_parcels
@@ -32,16 +32,16 @@ module parcel_container
             ! write parcel data
             !
 
-            call write_h5_2d_dataset("position", parcels%pos(1:n_parcels, :))
-            call write_h5_2d_dataset("velocity", parcels%vel(1:n_parcels, :))
+            call write_h5_dataset_2d("position", parcels%pos(1:n_parcels, :))
+            call write_h5_dataset_2d("velocity", parcels%vel(1:n_parcels, :))
 
             if (allocated(parcels%stretch)) then
-                call write_h5_1d_dataset("stretch", parcels%stretch(1:n_parcels))
+                call write_h5_dataset_1d("stretch", parcels%stretch(1:n_parcels))
             endif
 
             if (allocated(parcels%B11) .and. allocated(parcels%B12)) then
-                call write_h5_1d_dataset("B11", parcels%B11(1:n_parcels))
-                call write_h5_1d_dataset("B12", parcels%B12(1:n_parcels))
+                call write_h5_dataset_1d("B11", parcels%B11(1:n_parcels))
+                call write_h5_dataset_1d("B12", parcels%B12(1:n_parcels))
             endif
 
             call h5close_f(h5err)

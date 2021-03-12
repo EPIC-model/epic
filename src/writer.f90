@@ -44,7 +44,7 @@ module writer
             endif
         end subroutine h5_close_file
 
-        subroutine write_h5_1d_dataset(name, data)
+        subroutine write_h5_dataset_1d(name, data)
             character(*), intent(in) :: name
             double precision, intent(in) :: data(:)
             integer(hid_t)  :: dset, dataspace
@@ -66,7 +66,7 @@ module writer
             call h5sclose_f(dataspace, h5err)
         end subroutine
 
-        subroutine write_h5_2d_dataset(name, data)
+        subroutine write_h5_dataset_2d(name, data)
             ! 12 March 2021
             ! https://stackoverflow.com/questions/48816383/passing-character-strings-of-different-lengths-to-functions-in-fortran
             character(*), intent(in) :: name
