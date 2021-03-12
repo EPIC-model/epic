@@ -98,7 +98,6 @@ module writer
             character(*),   intent(in) :: name
             integer(hid_t)             :: group
 
-            !name = "/" // name
             call h5gcreate_f(h5file, name, group, h5err)
         end function open_h5_group
 
@@ -108,5 +107,16 @@ module writer
             call h5gclose_f(group, h5err)
         end subroutine close_h5_group
 
+
+        ! convert iteration number to string
+        function get_step_group_name(iter) result(name)
+            integer, intent(in) :: iter
+            ! 12 March 2021
+            ! https://stackoverflow.com/questions/1262695/convert-integers-to-strings-to-create-output-filenames-at-run-time
+            character(len=32) :: name
+
+            write(name, fmt='(I10.10)') iter
+            name = 'step#' // trim(name)
+        end function get_step_group_name
 
 end module writer

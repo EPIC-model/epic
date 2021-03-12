@@ -48,7 +48,7 @@ subroutine parse_command_line
 
     ! This is the main application of EPIC
     if (verbose) then
-        print *, 'Running EPIC with "', filename, '"'
+        print *, 'Running EPIC with "', trim(filename), '"'
     endif
 end subroutine parse_command_line
 
