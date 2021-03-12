@@ -1,4 +1,9 @@
 module parcel_container
+    use hdf5
+    use writer, only : h5file,              &
+                       h5err,               &
+                       write_h5_1d_dataset, &
+                       write_h5_2d_dataset
     implicit none
 
     integer :: n_parcels
@@ -17,6 +22,30 @@ module parcel_container
 
 
     contains
+
+        subroutine h5_write_parcels(iter)
+            integer, intent(in) :: iter ! iteration
+
+            call h5open_f(h5err)
+
+            !
+            ! write parcel data
+            !
+
+            call write_h5_2d_dataset("position", parcels%pos(1:n_parcels, :))
+            call write_h5_2d_dataset("velocity", parcels%vel(1:n_parcels, :))
+
+            if (allocated(parcels%stretch)) then
+                call write_h5_1d_dataset("stretch", parcels%stretch(1:n_parcels))
+            endif
+
+            if (allocated(parcels%B11) .and. allocated(parcels%B12)) then
+                call write_h5_1d_dataset("B11", parcels%B11(1:n_parcels))
+                call write_h5_1d_dataset("B12", parcels%B12(1:n_parcels))
+            endif
+
+            call h5close_f(h5err)
+        end subroutine h5_write_parcels
 
         subroutine split(threshold)
             double precision, intent(in) :: threshold

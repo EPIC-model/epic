@@ -5,10 +5,7 @@
 ! https://support.hdfgroup.org/HDF5/doc1.8/RM/RM_H5S.html
 module writer
     use hdf5
-    use parcel_container, only : n_parcels, parcels
     implicit none
-
-    private
 
     !character(:), allocatable :: filename
 
@@ -17,8 +14,6 @@ module writer
 
     ! if non-zero an error occurred
     integer :: h5err = 0
-
-    public :: h5_write_parcels, h5_create_file
 
     contains
         subroutine h5_create_file
@@ -29,44 +24,6 @@ module writer
                 stop
             endif
         end subroutine h5_create_file
-
-        subroutine h5_write_parcels(iter)
-            integer, intent(in) :: iter ! iteration
-            integer(hid_t)  :: dset ! Handles
-            integer(hsize_t) :: dims(2)
-            integer(hsize_t) :: space
-
-            dims(1) = 2
-            dims(2) = n_parcels
-            space = n_parcels
-
-            print *, shape(parcels%pos)
-
-            call h5_open_file
-
-            !
-            ! Create dataspace.  Setting size to be the current size.
-            !
-            call h5screate_simple_f(2, dims, space, h5err)
-            !
-            ! Create the dataset.  We will use all default properties for this
-            ! example.
-            !
-            call h5dcreate_f(h5file, 'step#0', H5T_NATIVE_REAL, space, dset, h5err)
-
-            !
-            ! Write the data to the dataset.
-            !
-            call h5dwrite_f(dset, H5T_NATIVE_REAL, parcels%pos(1:n_parcels, :), dims, h5err)
-
-            !
-            ! Close and release resources.
-            !
-            call h5dclose_f(dset , h5err)
-            call h5sclose_f(space, h5err)
-
-            call h5_close_file
-        end subroutine h5_write_parcels
 
 
         subroutine h5_open_file
@@ -86,6 +43,52 @@ module writer
                 stop
             endif
         end subroutine h5_close_file
+
+        subroutine write_h5_1d_dataset(name, data)
+            character(*), intent(in) :: name
+            double precision, intent(in) :: data(:)
+            integer(hid_t)  :: dset, dataspace
+            integer(hsize_t), dimension(1:1) :: dims
+
+            dims = shape(data)
+
+            ! create space for data
+            call h5screate_simple_f(1, dims, dataspace, h5err)
+
+            ! create the dataset
+            call h5dcreate_f(h5file, name, H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
+
+            ! write dataset
+            call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
+
+            ! close all
+            call h5dclose_f(dset , h5err)
+            call h5sclose_f(dataspace, h5err)
+        end subroutine
+
+        subroutine write_h5_2d_dataset(name, data)
+            ! 12 March 2021
+            ! https://stackoverflow.com/questions/48816383/passing-character-strings-of-different-lengths-to-functions-in-fortran
+            character(*), intent(in) :: name
+            double precision, intent(in) :: data(:, :)
+            integer(hid_t)  :: dset, dataspace
+            integer(hsize_t), dimension(1:2) :: dims
+
+            dims = shape(data)
+
+            ! create space for data
+            call h5screate_simple_f(2, dims, dataspace, h5err)
+
+            ! create the dataset
+            call h5dcreate_f(h5file, name, H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
+
+            ! write dataset
+            call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
+
+            ! close all
+            call h5dclose_f(dset , h5err)
+            call h5sclose_f(dataspace, h5err)
+        end subroutine
 
 
 end module writer

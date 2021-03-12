@@ -4,7 +4,7 @@ module model
     use parser, only : read_config_file
     use parcel_container
     use rk4,    only : rk4_step
-    use writer, only : h5_create_file, h5_write_parcels
+    use writer, only : h5_create_file
     implicit none
 
     contains
