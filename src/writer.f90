@@ -44,10 +44,11 @@ module writer
             endif
         end subroutine h5_close_file
 
-        subroutine write_h5_dataset_1d(name, data)
-            character(*), intent(in) :: name
-            double precision, intent(in) :: data(:)
-            integer(hid_t)  :: dset, dataspace
+        subroutine write_h5_dataset_1d(group, name, data)
+            character(*),     intent(in)     :: group
+            character(*),     intent(in)     :: name
+            double precision, intent(in)     :: data(:)
+            integer(hid_t)                   :: dset, dataspace
             integer(hsize_t), dimension(1:1) :: dims
 
             dims = shape(data)
@@ -56,7 +57,8 @@ module writer
             call h5screate_simple_f(1, dims, dataspace, h5err)
 
             ! create the dataset
-            call h5dcreate_f(h5file, name, H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
+            call h5dcreate_f(h5file, group // "/" // name,               &
+                             H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
 
             ! write dataset
             call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
@@ -64,14 +66,15 @@ module writer
             ! close all
             call h5dclose_f(dset , h5err)
             call h5sclose_f(dataspace, h5err)
-        end subroutine
+        end subroutine write_h5_dataset_1d
 
-        subroutine write_h5_dataset_2d(name, data)
+        subroutine write_h5_dataset_2d(group, name, data)
             ! 12 March 2021
             ! https://stackoverflow.com/questions/48816383/passing-character-strings-of-different-lengths-to-functions-in-fortran
-            character(*), intent(in) :: name
-            double precision, intent(in) :: data(:, :)
-            integer(hid_t)  :: dset, dataspace
+            character(*),     intent(in)     :: group
+            character(*),     intent(in)     :: name
+            double precision, intent(in)     :: data(:, :)
+            integer(hid_t)                   :: dset, dataspace
             integer(hsize_t), dimension(1:2) :: dims
 
             dims = shape(data)
@@ -80,7 +83,8 @@ module writer
             call h5screate_simple_f(2, dims, dataspace, h5err)
 
             ! create the dataset
-            call h5dcreate_f(h5file, name, H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
+            call h5dcreate_f(h5file, group // "/" // name,               &
+                             H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
 
             ! write dataset
             call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
@@ -88,7 +92,21 @@ module writer
             ! close all
             call h5dclose_f(dset , h5err)
             call h5sclose_f(dataspace, h5err)
-        end subroutine
+        end subroutine write_h5_dataset_2d
+
+        function open_h5_group(name) result(group)
+            character(*),   intent(in) :: name
+            integer(hid_t)             :: group
+
+            !name = "/" // name
+            call h5gcreate_f(h5file, name, group, h5err)
+        end function open_h5_group
+
+
+        subroutine close_h5_group(group)
+            integer(hid_t), intent(in) :: group
+            call h5gclose_f(group, h5err)
+        end subroutine close_h5_group
 
 
 end module writer

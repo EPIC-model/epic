@@ -3,7 +3,9 @@ module parcel_container
     use writer, only : h5file,              &
                        h5err,               &
                        write_h5_dataset_1d, &
-                       write_h5_dataset_2d
+                       write_h5_dataset_2d, &
+                       open_h5_group,       &
+                       close_h5_group
     implicit none
 
     integer :: n_parcels
@@ -25,24 +27,30 @@ module parcel_container
 
         subroutine h5_write_parcels(iter)
             integer, intent(in) :: iter ! iteration
+            integer(hid_t) :: group
 
             call h5open_f(h5err)
+
+            ! create group
+            group = open_h5_group("parcels")
 
             !
             ! write parcel data
             !
 
-            call write_h5_dataset_2d("position", parcels%pos(1:n_parcels, :))
-            call write_h5_dataset_2d("velocity", parcels%vel(1:n_parcels, :))
+            call write_h5_dataset_2d("parcels", "position", parcels%pos(1:n_parcels, :))
+            call write_h5_dataset_2d("parcels", "velocity", parcels%vel(1:n_parcels, :))
 
             if (allocated(parcels%stretch)) then
-                call write_h5_dataset_1d("stretch", parcels%stretch(1:n_parcels))
+                call write_h5_dataset_1d("parcels", "stretch", parcels%stretch(1:n_parcels))
             endif
 
             if (allocated(parcels%B11) .and. allocated(parcels%B12)) then
-                call write_h5_dataset_1d("B11", parcels%B11(1:n_parcels))
-                call write_h5_dataset_1d("B12", parcels%B12(1:n_parcels))
+                call write_h5_dataset_1d("parcels", "B11", parcels%B11(1:n_parcels))
+                call write_h5_dataset_1d("parcels", "B12", parcels%B12(1:n_parcels))
             endif
+
+            call close_h5_group(group)
 
             call h5close_f(h5err)
         end subroutine h5_write_parcels
