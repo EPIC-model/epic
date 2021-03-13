@@ -31,7 +31,6 @@ module init
                 call init_regular_positions
             endif
 
-
             call init_stretch
 
             call init_velocity
@@ -47,9 +46,9 @@ module init
 
             do i = 1, n_parcels
                 call random_number(val)
-                parcels%pos(i, 1)= mesh%origin(1) + val
+                parcels%position(i, 1)= mesh%origin(1) + val
                 call random_number(val)
-                parcels%pos(i, 2) = mesh%origin(2) + val
+                parcels%position(i, 2) = mesh%origin(2) + val
             enddo
         end subroutine init_random_positions
 
@@ -68,8 +67,8 @@ module init
                     ii = dx(1) * (i - 1) / 2
                     jj = dx(2) * (j - 1) / 2
 
-                    parcels%pos(k, 1) = mesh%origin(1) + i * del(1) + ii
-                    parcels%pos(k, 2) = mesh%origin(2) + j * del(2) + jj
+                    parcels%position(k, 1) = mesh%origin(1) + i * del(1) + ii
+                    parcels%position(k, 2) = mesh%origin(2) + j * del(2) + jj
                     k = k + 1
                 enddo
             enddo
@@ -102,7 +101,8 @@ module init
             dx = get_mesh_spacing()
 
             do i = 1, n_parcels
-                parcels%vel(i, :) = get_flow_velocity(parcels%pos(i, 1), parcels%pos(i, 1))
+                parcels%velocity(i, :) = get_flow_velocity(parcels%position(i, 1), &
+                                                           parcels%position(i, 2))
             enddo
         end subroutine init_velocity
 
