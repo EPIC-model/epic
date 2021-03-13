@@ -14,7 +14,12 @@ module parameters
     !
     ! output parameters
     !
-    integer :: h5freq = 1
+    type output_info_type
+        integer                     :: h5freq   = 1
+        character(len=32)           :: h5fname  = ''
+    end type output_info_type
+
+    type(output_info_type) :: output
 
     !
     ! domain info

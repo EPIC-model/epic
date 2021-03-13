@@ -1,17 +1,41 @@
 &MODEL
- ! global info
- h5freq = 10
+ !
+ ! output info
+ !
+
+ output%h5freq      = 10
+
+ output%h5fname     = 'taylorgreen2d.hdf5'
+
+ !
  ! mesh info
- mesh%origin = -1.5707963267948966, -1.5707963267948966
- mesh%extent = 3.141592653589793, 3.141592653589793
- mesh%grid = 21, 21
- mesh%bc = 'free slip', 'free slip'
+ !
+
+ mesh%origin        = -1.5707963267948966, -1.5707963267948966
+
+ mesh%extent        = 3.141592653589793, 3.141592653589793
+
+ mesh%grid          = 21, 21
+
+ mesh%bc            = 'free slip', 'free slip'
+
+ !
  ! parcel info
- parcel%is_random = .false.
- parcel%seed = 42
+ !
+
+ parcel%is_random   = .false.
+
+ parcel%seed        = 42
+
  parcel%is_elliptic = .false.
+
+ !
  ! stepper info
- time%limit = 2.0
- time%dt = 0.025
- time%is_adaptive = .true.
+ !
+
+ time%limit         = 2.0
+
+ time%dt            = 0.025
+
+ time%is_adaptive   = .true.
 /

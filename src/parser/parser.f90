@@ -16,7 +16,7 @@ module parser
             integer                                :: fn = 1
 
             ! namelist definitions
-            namelist /MODEL/ h5freq, mesh, parcel, time
+            namelist /MODEL/ output, mesh, parcel, time
 
             ! check whether file exists.
             inquire(file=filename, iostat=ios)

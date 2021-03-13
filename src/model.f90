@@ -27,7 +27,7 @@ module model
 
 
         subroutine run
-            use parameters, only : time
+            use parameters, only : time, output
             double precision :: t    = 0.0 ! current time
             double precision :: dt   = 0.0 ! time step
             integer          :: iter = 0
@@ -36,7 +36,9 @@ module model
 
             do while (t <= time%limit)
 
-                call write_step_to_h5(iter, t, dt)
+                if (mod(iter, output%h5freq) == 0) then
+                    call write_step_to_h5(iter, t, dt)
+                endif
 
                 call rk4_step(dt)
 
@@ -52,11 +54,12 @@ module model
 
 
         subroutine write_step_to_h5(iter, t, dt)
+            use parameters, only : output
             integer,          intent(in) :: iter
             double precision, intent(in) :: t
             double precision, intent(in) :: dt
 
-            call open_h5_file("test.h5")
+            call open_h5_file(trim(output%h5fname))
 
             call write_h5_scalar_attrib(iter, "t", t)
 
