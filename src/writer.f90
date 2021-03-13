@@ -45,6 +45,12 @@ module writer
             integer(hid_t)                   :: dset, dataspace
             integer(hsize_t), dimension(1:1) :: dims
 
+            if (size(data) == 1) then
+                print *, "Error in 'write_h5_dataset_1d': ", &
+                         "No memory for '", name, "' allocated!"
+                stop
+            endif
+
             dims = shape(data)
 
             ! create space for data
@@ -71,6 +77,12 @@ module writer
             integer(hid_t)                   :: dset, dataspace
             integer(hsize_t), dimension(1:2) :: dims
 
+            if (size(data) == 1) then
+                print *, "Error in 'write_h5_dataset_2d': ", &
+                         "No memory for '", name, "' allocated!"
+                stop
+            endif
+
             dims = shape(data)
 
             ! create space for data
@@ -87,6 +99,36 @@ module writer
             call h5dclose_f(dset , h5err)
             call h5sclose_f(dataspace, h5err)
         end subroutine write_h5_dataset_2d
+
+        subroutine write_h5_dataset_3d(group, name, data)
+            character(*),     intent(in)     :: group
+            character(*),     intent(in)     :: name
+            double precision, intent(in)     :: data(:, :, :)
+            integer(hid_t)                   :: dset, dataspace
+            integer(hsize_t), dimension(1:3) :: dims
+
+            if (size(data) == 1) then
+                print *, "Error in 'write_h5_dataset_3d': ", &
+                         "No memory for '", name, "' allocated!"
+                stop
+            endif
+
+            dims = shape(data)
+
+            ! create space for data
+            call h5screate_simple_f(3, dims, dataspace, h5err)
+
+            ! create the dataset
+            call h5dcreate_f(h5file, group // "/" // name,              &
+                             H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
+
+            ! write dataset
+            call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
+
+            ! close all
+            call h5dclose_f(dset , h5err)
+            call h5sclose_f(dataspace, h5err)
+        end subroutine write_h5_dataset_3d
 
 
         subroutine write_h5_scalar_attrib(iter, name, val)
