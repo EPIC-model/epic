@@ -1,13 +1,16 @@
 module model
     use constants, only : max_num_parcels
-    use init, only : init_parcels
+    use init, only : init_parcels, init_velocity_field
     use parser, only : read_config_file
     use parcel_container
+    use fields
     use rk4,    only : rk4_step
     use writer, only : open_h5_file,             &
                        close_h5_file,            &
                        write_h5_scalar_attrib
     implicit none
+
+    private :: write_step_to_h5
 
     contains
         subroutine pre_run
@@ -17,6 +20,8 @@ module model
             call alloc_parcel_mem(max_num_parcels)
 
             call init_parcels
+
+            call init_velocity_field
 
         end subroutine
 
@@ -31,15 +36,7 @@ module model
 
             do while (t <= time%limit)
 
-                call open_h5_file("test.h5")
-
-                call write_h5_scalar_attrib(iter, "t", t)
-
-                call write_h5_scalar_attrib(iter, "dt", dt)
-
-                call write_h5_parcels(iter)
-
-                call close_h5_file
+                call write_step_to_h5(iter, t, dt)
 
                 call rk4_step(dt)
 
@@ -52,5 +49,25 @@ module model
         subroutine post_run
             call dealloc_parcel_mem
         end subroutine
+
+
+        subroutine write_step_to_h5(iter, t, dt)
+            integer,          intent(in) :: iter
+            double precision, intent(in) :: t
+            double precision, intent(in) :: dt
+
+            call open_h5_file("test.h5")
+
+            call write_h5_scalar_attrib(iter, "t", t)
+
+            call write_h5_scalar_attrib(iter, "dt", dt)
+
+            call write_h5_parcels(iter)
+
+            call write_h5_fields(iter)
+
+            call close_h5_file
+
+        end subroutine write_step_to_h5
 
 end module model
