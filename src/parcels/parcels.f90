@@ -5,7 +5,6 @@ module parcel_container
                        write_h5_dataset_1d, &
                        write_h5_dataset_2d, &
                        open_h5_group,       &
-!                        close_h5_group,      &
                        get_step_group_name
     implicit none
 
@@ -27,11 +26,11 @@ module parcel_container
     contains
 
         subroutine write_h5_parcels(iter)
-            integer, intent(in)         :: iter ! iteration
-            integer(hid_t)              :: group
-            integer(hid_t)              :: step_group
-            character(:), allocatable   :: step
-            character(:), allocatable   :: name
+            integer, intent(in)        :: iter ! iteration
+            integer(hid_t)             :: group
+            integer(hid_t)             :: step_group
+            character(:), allocatable  :: step
+            character(:), allocatable  :: name
             logical                    :: link_exists = .false.
 
             step = trim(get_step_group_name(iter))
