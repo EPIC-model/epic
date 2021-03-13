@@ -95,14 +95,12 @@ module init
         subroutine init_velocity
             use taylorgreen, only : get_flow_velocity
             integer :: i
-            double precision :: x, y
             double precision :: dx(2), v(2)
 
             dx = get_mesh_spacing()
 
             do i = 1, n_parcels
-                parcels%velocity(i, :) = get_flow_velocity(parcels%position(i, 1), &
-                                                           parcels%position(i, 2))
+                parcels%velocity(i, :) = get_flow_velocity(parcels%position(i, :))
             enddo
         end subroutine init_velocity
 
@@ -113,7 +111,7 @@ module init
         subroutine init_velocity_field
             use taylorgreen, only : get_flow_velocity
             integer :: i, j
-            double precision :: x, y
+            double precision :: pos(2)
             double precision :: dx(2)
 
             allocate(velocity(mesh%grid(1), mesh%grid(2), 2))
@@ -122,9 +120,9 @@ module init
 
             do j = 1, mesh%grid(2)
                 do i = 1, mesh%grid(1)
-                    x = mesh%origin(1) + i * dx(1)
-                    y = mesh%origin(2) + j * dx(2)
-                    velocity(i, j, :) = get_flow_velocity(x, y)
+                    pos(1) = mesh%origin(1) + i * dx(1)
+                    pos(2) = mesh%origin(2) + j * dx(2)
+                    velocity(i, j, :) = get_flow_velocity(pos)
                 enddo
             enddo
         end subroutine init_velocity_field

@@ -3,26 +3,26 @@ module taylorgreen
     implicit none
 
     contains
-        function get_flow_velocity(x, y) result(vel)
-            double precision, intent(in) :: x, y
+        function get_flow_velocity(pos) result(vel)
+            double precision, intent(in) :: pos(2)
             double precision :: xx, yy
             double precision :: vel(2)
 
-            xx = amp(1) * x + phase(1)
-            yy = amp(2) * y + phase(2)
+            xx = amp(1) * pos(1) + phase(1)
+            yy = amp(2) * pos(2) + phase(2)
 
             vel(1) = amp(1) * cos(xx) * sin(yy)
             vel(2) = amp(2) * sin(xx) * cos(yy)
         end function get_flow_velocity
 
         ! grad ordering : dudx, dudy, dvdx, dvdy
-        function get_flow_gradient(x, y) result(grad)
-            double precision, intent(in) :: x, y
+        function get_flow_gradient(pos) result(grad)
+            double precision, intent(in) :: pos(2)
             double precision :: xx, yy
             double precision :: grad(4)
 
-            xx = amp(1) * x + phase(1)
-            yy = amp(2) * y + phase(2)
+            xx = amp(1) * pos(1) + phase(1)
+            yy = amp(2) * pos(2) + phase(2)
 
             ! du/dx = - a * A * sin(xx) * sin(yy)
             grad(1) = - freq(1) * amp(1) * sin(xx) * sin(yy)
