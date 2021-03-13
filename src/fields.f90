@@ -9,7 +9,8 @@ module fields
     implicit none
 
     double precision, allocatable, dimension(:, :, :) :: &
-        velocity
+        velocity,       &   ! velocity vector field
+        volume              ! volume scalar field
 
     contains
         function get_mesh_spacing() result(dx)
