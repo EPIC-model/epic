@@ -10,17 +10,18 @@ module parcel_container
 
     integer :: n_parcels
 
-    type attribute_container_type
+    type parcel_container_type
         double precision, allocatable, dimension(:) :: &
             stretch,    &
-            B11, B12       ! B matrix entries
+            B11, B12,   & ! B matrix entries
+            volume
 
         double precision, allocatable, dimension(:, :) :: &
-            pos,        & ! positions
-            vel           ! velocitues
-    end type attribute_container_type
+            position,   &
+            velocity
+    end type parcel_container_type
 
-    type(attribute_container_type) parcels
+    type(parcel_container_type) parcels
 
 
     contains
@@ -44,8 +45,8 @@ module parcel_container
             ! write parcel data
             !
 
-            call write_h5_dataset_2d(name, "position", parcels%pos(1:n_parcels, :))
-            call write_h5_dataset_2d(name, "velocity", parcels%vel(1:n_parcels, :))
+            call write_h5_dataset_2d(name, "position", parcels%position(1:n_parcels, :))
+            call write_h5_dataset_2d(name, "velocity", parcels%velocity(1:n_parcels, :))
 
             if (allocated(parcels%stretch)) then
                 call write_h5_dataset_1d(name, "stretch", parcels%stretch(1:n_parcels))
@@ -70,19 +71,21 @@ module parcel_container
         subroutine alloc_parcel_mem(num)
             integer, intent(in) :: num
 
-            allocate(parcels%pos(num, 2))
-            allocate(parcels%vel(num, 2))
+            allocate(parcels%position(num, 2))
+            allocate(parcels%velocity(num, 2))
             allocate(parcels%stretch(num))
             allocate(parcels%B11(num))
             allocate(parcels%B12(num))
+            allocate(parcels%volume(num))
         end subroutine alloc_parcel_mem
 
         subroutine dealloc_parcel_mem
-            deallocate(parcels%pos)
-            deallocate(parcels%vel)
+            deallocate(parcels%position)
+            deallocate(parcels%velocity)
             deallocate(parcels%stretch)
             deallocate(parcels%B11)
             deallocate(parcels%B12)
+            deallocate(parcels%volume)
         end subroutine dealloc_parcel_mem
 
         subroutine create(num)
