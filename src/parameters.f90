@@ -52,6 +52,11 @@ module parameters
     type(time_info_type) :: time
 
     !
+    ! interpolation
+    !
+    character(len=32) :: interpl = 'nearest-grid-point'
+
+    !
     ! TaylorGreen flow parameters
     !
     ! amplitudes

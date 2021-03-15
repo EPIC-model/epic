@@ -66,7 +66,7 @@ module ellipse
 
 
         function get_ellipse_points(position, volume, B11, B12) result(points)
-            double precision, intent(in) :: position
+            double precision, intent(in) :: position(2)
             double precision, intent(in) :: volume
             double precision, intent(in) :: B11
             double precision, intent(in) :: B12

@@ -82,9 +82,16 @@ module parcel_container
         subroutine dealloc_parcel_mem
             deallocate(parcels%position)
             deallocate(parcels%velocity)
-            deallocate(parcels%stretch)
-            deallocate(parcels%B11)
-            deallocate(parcels%B12)
+
+            if (allocated(parcels%stretch)) then
+                deallocate(parcels%stretch)
+            endif
+
+            if (allocated(parcels%B11)) then
+                deallocate(parcels%B11)
+                deallocate(parcels%B12)
+            endif
+
             deallocate(parcels%volume)
         end subroutine dealloc_parcel_mem
 

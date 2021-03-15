@@ -27,7 +27,7 @@
 
  parcel%seed        = 42
 
- parcel%is_elliptic = .false.
+ parcel%is_elliptic = .true.
 
  !
  ! stepper info

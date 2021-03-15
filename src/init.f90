@@ -33,7 +33,10 @@ module init
 
             call init_stretch
 
+            call init_B_matrix
+
             call init_velocity
+
 
         end subroutine init_parcels
 
