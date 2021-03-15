@@ -1,7 +1,7 @@
 module model
     use constants, only : max_num_parcels
     use init, only : init_parcels, init_velocity_field
-    use parser, only : read_config_file
+    use parser, only : read_config_file, write_h5_params
     use parcel_container
     use fields
     use rk4,    only : rk4_step
@@ -10,12 +10,14 @@ module model
                        write_h5_scalar_attrib
     implicit none
 
-    private :: write_step_to_h5
+    private :: write_h5_step
 
     contains
         subroutine pre_run
             ! parse the config file
             call read_config_file
+
+            call write_h5_params
 
             call alloc_parcel_mem(max_num_parcels)
 
@@ -37,7 +39,7 @@ module model
             do while (t <= time%limit)
 
                 if (mod(iter, output%h5freq) == 0) then
-                    call write_step_to_h5(iter, t, dt)
+                    call write_h5_step(iter, t, dt)
                 endif
 
                 call rk4_step(dt)
@@ -53,7 +55,7 @@ module model
         end subroutine
 
 
-        subroutine write_step_to_h5(iter, t, dt)
+        subroutine write_h5_step(iter, t, dt)
             use parameters, only : output
             integer,          intent(in) :: iter
             double precision, intent(in) :: t
@@ -71,6 +73,6 @@ module model
 
             call close_h5_file
 
-        end subroutine write_step_to_h5
+        end subroutine write_h5_step
 
 end module model

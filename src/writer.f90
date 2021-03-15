@@ -176,12 +176,6 @@ module writer
             endif
         end function open_h5_group
 
-        subroutine close_h5_group(group)
-            integer(hid_t), intent(in) :: group
-            call h5gclose_f(group, h5err)
-        end subroutine close_h5_group
-
-
         ! convert iteration number to string
         function get_step_group_name(iter) result(name)
             integer, intent(in) :: iter
@@ -192,5 +186,190 @@ module writer
             write(name, fmt='(I10.10)') iter
             name = 'step#' // trim(name)
         end function get_step_group_name
+
+
+        subroutine write_h5_double_vector_attrib(group, name, val)
+            integer(hid_t),   intent(in)     :: group
+            character(*),     intent(in)     :: name
+            double precision, intent(in)     :: val(:)
+            integer(hid_t)                   :: attr, space
+            integer(hsize_t), dimension(1:1) :: dims
+
+            dims = size(val)
+
+            ! create space for data
+            call h5screate_simple_f(1, dims, space, h5err)
+
+            ! create the dataset
+            call h5acreate_f(group, name,                           &
+                             H5T_NATIVE_DOUBLE, space, attr, h5err)
+
+            call h5awrite_f(attr, H5T_NATIVE_DOUBLE, val, dims, h5err)
+
+            ! close all
+            call h5aclose_f(attr, h5err)
+            call h5sclose_f(space, h5err)
+        end subroutine write_h5_double_vector_attrib
+
+        subroutine write_h5_double_scalar_attrib(group, name, val)
+            integer(hid_t),   intent(in)     :: group
+            character(*),     intent(in)     :: name
+            double precision, intent(in)     :: val
+            integer(hid_t)                   :: attr, space
+            integer(hsize_t), dimension(1:1) :: dims = 1
+
+            ! create space for data
+            call h5screate_simple_f(1, dims, space, h5err)
+
+            ! create the dataset
+            call h5acreate_f(group, name,                           &
+                             H5T_NATIVE_DOUBLE, space, attr, h5err)
+
+            call h5awrite_f(attr, H5T_NATIVE_DOUBLE, val, dims, h5err)
+
+            ! close all
+            call h5aclose_f(attr, h5err)
+            call h5sclose_f(space, h5err)
+        end subroutine write_h5_double_scalar_attrib
+
+        subroutine write_h5_integer_scalar_attrib(group, name, val)
+            integer(hid_t),   intent(in)     :: group
+            character(*),     intent(in)     :: name
+            integer, intent(in)              :: val
+            integer(hid_t)                   :: attr, space
+            integer(hsize_t), dimension(1:1) :: dims = 1
+
+            ! create space for data
+            call h5screate_simple_f(1, dims, space, h5err)
+
+            ! create the dataset
+            call h5acreate_f(group, name,                           &
+                             H5T_NATIVE_INTEGER, space, attr, h5err)
+
+            call h5awrite_f(attr, H5T_NATIVE_INTEGER, val, dims, h5err)
+
+            ! close all
+            call h5aclose_f(attr, h5err)
+            call h5sclose_f(space, h5err)
+        end subroutine write_h5_integer_scalar_attrib
+
+
+        subroutine write_h5_integer_vector_attrib(group, name, val)
+            integer(hid_t),   intent(in)     :: group
+            character(*),     intent(in)     :: name
+            integer, intent(in)              :: val(:)
+            integer(hid_t)                   :: attr, space
+            integer(hsize_t), dimension(1:1) :: dims
+
+            dims = size(val)
+
+            ! create space for data
+            call h5screate_simple_f(1, dims, space, h5err)
+
+            ! create the dataset
+            call h5acreate_f(group, name,                           &
+                             H5T_NATIVE_INTEGER, space, attr, h5err)
+
+            call h5awrite_f(attr, H5T_NATIVE_INTEGER, val, dims, h5err)
+
+            ! close all
+            call h5aclose_f(attr, h5err)
+            call h5sclose_f(space, h5err)
+        end subroutine write_h5_integer_vector_attrib
+
+
+        subroutine write_h5_character_scalar_attrib(group, name, val)
+            integer(hid_t),    intent(in)     :: group
+            character(*),      intent(in)     :: name
+            character(len=16), intent(in)     :: val
+            integer(hid_t)                    :: attr, space, filetype, memtype
+            integer(hsize_t),  dimension(1:1) :: dims = 1
+            integer(size_t),   parameter      :: sdim = 16
+
+            ! create space for data
+            call h5screate_simple_f(1, dims, space, h5err)
+
+            ! type in file
+            call h5tcopy_f(H5T_C_S1, filetype, h5err)
+            call h5tset_size_f(filetype, sdim+1, h5err)
+
+            ! type in run
+            call h5tcopy_f(H5T_FORTRAN_S1, memtype, h5err)
+            call h5Tset_size_f(memtype, sdim, h5err)
+
+            ! create the dataset
+            call h5acreate_f(group, name, filetype, space, attr, h5err)
+
+            ! write attribte
+            call h5awrite_f(attr, memtype, val, dims, h5err)
+
+            ! close all
+            call h5aclose_f(attr, h5err)
+            call h5sclose_f(space, h5err)
+            call h5tclose_f(filetype, h5err)
+            call h5tclose_f(memtype, h5err)
+        end subroutine write_h5_character_scalar_attrib
+
+
+        subroutine write_h5_character_vector_attrib(group, name, val)
+            integer(hid_t),    intent(in)     :: group
+            character(*),      intent(in)     :: name
+            character(len=16), intent(in)     :: val(:)
+            integer(hid_t)                    :: attr, space, filetype, memtype
+            integer(hsize_t),  dimension(1:1) :: dims
+            integer(size_t),   parameter      :: sdim = 16
+
+            dims = size(val)
+
+            ! create space for data
+            call h5screate_simple_f(1, dims, space, h5err)
+
+            ! type in file
+            call h5tcopy_f(H5T_C_S1, filetype, h5err)
+            call h5tset_size_f(filetype, sdim+1, h5err)
+
+            ! type in run
+            call h5tcopy_f(H5T_FORTRAN_S1, memtype, h5err)
+            call h5Tset_size_f(memtype, sdim, h5err)
+
+            ! create the dataset
+            call h5acreate_f(group, name, filetype, space, attr, h5err)
+
+            ! write attribte
+            call h5awrite_f(attr, memtype, val, dims, h5err)
+
+            ! close all
+            call h5aclose_f(attr, h5err)
+            call h5sclose_f(space, h5err)
+            call h5tclose_f(filetype, h5err)
+            call h5tclose_f(memtype, h5err)
+        end subroutine write_h5_character_vector_attrib
+
+
+        subroutine write_h5_logical_attrib(group, name, val)
+            integer(hid_t),   intent(in)     :: group
+            character(*),     intent(in)     :: name
+            logical,          intent(in)     :: val
+            integer(hid_t)                   :: attr, space
+            integer(hsize_t), dimension(1:1) :: dims = 1
+            integer                          :: dummy
+
+            ! create space for data
+            call h5screate_simple_f(1, dims, space, h5err)
+
+            ! create the dataset
+            call h5acreate_f(group, name,                           &
+                             H5T_NATIVE_INTEGER, space, attr, h5err)
+
+            if (val) then
+                dummy = 1
+            endif
+
+            call h5awrite_f(attr, H5T_NATIVE_INTEGER, dummy, dims, h5err)
+
+            ! close all
+            call h5aclose_f(attr, h5err)
+            call h5sclose_f(space, h5err)
+        end subroutine write_h5_logical_attrib
 
 end module writer
