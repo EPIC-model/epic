@@ -8,7 +8,7 @@ module writer
     implicit none
 
     ! h5 file handle
-    integer(HID_T) :: h5file = 0
+    integer(hid_t) :: h5file = 0
 
     ! if non-zero an error occurred
     integer :: h5err = 0
@@ -235,7 +235,7 @@ module writer
         subroutine write_h5_integer_scalar_attrib(group, name, val)
             integer(hid_t),   intent(in)     :: group
             character(*),     intent(in)     :: name
-            integer, intent(in)              :: val
+            integer,          intent(in)     :: val
             integer(hid_t)                   :: attr, space
             integer(hsize_t), dimension(1:1) :: dims = 1
 
@@ -257,7 +257,7 @@ module writer
         subroutine write_h5_integer_vector_attrib(group, name, val)
             integer(hid_t),   intent(in)     :: group
             character(*),     intent(in)     :: name
-            integer, intent(in)              :: val(:)
+            integer,          intent(in)     :: val(:)
             integer(hid_t)                   :: attr, space
             integer(hsize_t), dimension(1:1) :: dims
 
@@ -295,7 +295,7 @@ module writer
 
             ! type in run
             call h5tcopy_f(H5T_FORTRAN_S1, memtype, h5err)
-            call h5Tset_size_f(memtype, sdim, h5err)
+            call h5tset_size_f(memtype, sdim, h5err)
 
             ! create the dataset
             call h5acreate_f(group, name, filetype, space, attr, h5err)
@@ -330,7 +330,7 @@ module writer
 
             ! type in run
             call h5tcopy_f(H5T_FORTRAN_S1, memtype, h5err)
-            call h5Tset_size_f(memtype, sdim, h5err)
+            call h5tset_size_f(memtype, sdim, h5err)
 
             ! create the dataset
             call h5acreate_f(group, name, filetype, space, attr, h5err)
