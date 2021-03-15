@@ -18,6 +18,16 @@ module fields
             dx = mesh%extent / (mesh%grid - 1)
         end function get_mesh_spacing
 
+        function get_lower_index(pos) result(idx)
+            double precision, intent(in)  :: pos(2)
+            integer                       :: idx(2)
+            double precision              :: dx(2)
+
+            dx = get_mesh_spacing()
+
+            idx = (pos - mesh%origin) / dx
+
+        end function get_lower_index
 
         subroutine write_h5_fields(iter)
             integer, intent(in)        :: iter ! iteration
