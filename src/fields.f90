@@ -25,7 +25,8 @@ module fields
 
             dx = get_mesh_spacing()
 
-            idx = (pos - mesh%origin) / dx
+            ! + 1 since Fortran starts with 1
+            idx = (pos - mesh%origin) / dx + 1
 
         end function get_lower_index
 

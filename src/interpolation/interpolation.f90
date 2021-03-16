@@ -11,10 +11,10 @@ module interpolation
 
 
     ! interpolation indices
-    integer ij(8, 2)
+    integer ij(4, 2)
 
     ! interpolation weights
-    double precision weight(8)
+    double precision weight(4)
 
     private :: ij, weight
 
@@ -62,15 +62,15 @@ module interpolation
                 do p = 1, 2
 
                     ! get interpolation weights and mesh indices
-                    call get_indices_and_weights(points(p, :), ngp)
+                    call get_indices_and_weights(points(:, p), ngp)
 
                     ! loop over field components
                     do c = 1, ncomp
                         ! loop over grid points which are part of the interpolation
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
-                            field(ij(i, 1), ij(i, 2), c) = field(ij(i, 1), ij(i, 2), c) &
-                                                         + 0.5 * weight(i) * attrib(i, c)
+                            field(ij(i, 1), ij(i, 2), c) = field(ij(i, 1), ij(i, 2), c)     &
+                                                         + 0.5 * weight(i) * attrib(n, c)
                         enddo
                     enddo
                 enddo
