@@ -56,7 +56,7 @@ module init
         end subroutine init_random_positions
 
         subroutine init_regular_positions
-            integer :: i, ii, j, jj, k
+            integer          :: i, ii, j, jj, k
             double precision :: dx(2), del(2)
 
             dx = get_mesh_spacing()
@@ -64,15 +64,15 @@ module init
             del = dx / 3.0
 
             k = 1
-            do j = 1, 2 * (mesh%grid(2) - 1)
-                do i = 1, 2 * (mesh%grid(1) - 1)
-                    ! cell shifts
-                    ii = dx(1) * (i - 1) / 2
-                    jj = dx(2) * (j - 1) / 2
-
-                    parcels%position(k, 1) = mesh%origin(1) + i * del(1) + ii
-                    parcels%position(k, 2) = mesh%origin(2) + j * del(2) + jj
-                    k = k + 1
+            do j = 0, mesh%grid(2) - 2
+                do i = 0, mesh%grid(1) - 2
+                    do jj = 1, 2
+                        do ii = 1, 2
+                            parcels%position(k, 1) = mesh%origin(1) + i * dx(1) + del(1) * ii
+                            parcels%position(k, 2) = mesh%origin(2) + j * dx(2) + del(2) * jj
+                            k = k + 1
+                        enddo
+                    enddo
                 enddo
             enddo
         end subroutine init_regular_positions
