@@ -17,7 +17,8 @@ module init
         !
 
         subroutine init_parcels
-            integer :: n_cells
+            integer          :: n_cells
+            double precision :: cell_volume
 
             n_cells = product(mesh%grid - 1)
 
@@ -37,6 +38,9 @@ module init
 
             call init_velocity
 
+            ! initialize the volume of each parcel
+            cell_volume = product(get_mesh_spacing())
+            parcels%volume = cell_volume / parcel_info%n_per_cell
 
         end subroutine init_parcels
 
