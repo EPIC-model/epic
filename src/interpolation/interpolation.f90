@@ -11,7 +11,8 @@ module interpolation
 
 
     ! interpolation indices
-    integer ij(4, 2)
+    ! (first dimension x, y; second dimension k-th index)
+    integer ij(2, 4)
 
     ! interpolation weights
     double precision weight(4)
@@ -45,11 +46,11 @@ module interpolation
             integer                                    :: ncomp, ngp
             double precision                           :: points(2, 2)
             integer                                    :: n, p, c, i
-            integer                                    :: shap(3)
+            integer                                    :: the_shape(3)
 
             ! number of field components
-            shap = shape(field)
-            ncomp = shap(3)
+            the_shape = shape(field)
+            ncomp = the_shape(3)
 
             do n = 1, n_parcels
 
@@ -69,7 +70,7 @@ module interpolation
                         ! loop over grid points which are part of the interpolation
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
-                            field(ij(i, 1), ij(i, 2), c) = field(ij(i, 1), ij(i, 2), c)     &
+                            field(ij(1, i), ij(2, i), c) = field(ij(1, i), ij(2, i), c)     &
                                                          + 0.5 * weight(i) * attrib(n, c)
                         enddo
                     enddo
