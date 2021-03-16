@@ -6,8 +6,8 @@ epic_SOURCES = 					\
 	taylorgreen.f90				\
 	writer.f90				\
 	fields.f90				\
-	parcels/parcel_bc.f90			\
 	parcels/parcels.f90 			\
+	parcels/parcel_bc.f90			\
 	parcels/ellipse.f90			\
 	parser/parser.f90 			\
 	interpolation/interpl_methods.f90	\
