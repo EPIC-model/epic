@@ -10,8 +10,8 @@ module interpl_methods
         !
         subroutine nearest_grid_point(pos, ij, weight, ngp)
             double precision, intent(in)  :: pos(2)
-            integer,          intent(out) :: ij(8, 2)
-            double precision, intent(out) :: weight(8)
+            integer,          intent(out) :: ij(4, 2)
+            double precision, intent(out) :: weight(4)
             integer,          intent(out) :: ngp
             double precision              :: xy(2), dx(2)
             integer                       :: i
