@@ -94,10 +94,8 @@ module interpolation
 
             if (interpl == 'nearest-grid-point') then
                 call nearest_grid_point(pos, ij, weight, ngp)
-            else if (interpl == 'exact') then
-
             else if (interpl == 'trilinear') then
-
+                call trilinear(pos, ij, weight, ngp)
             else
                 print *, "Unknown interpolation method '", interpl, "'."
                 stop

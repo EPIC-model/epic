@@ -56,4 +56,9 @@
  ! phase shifts: d, e
  flow%phase         = 1.5707963267948966,  0.0
 
+
+ !
+ ! interpolation method
+ !
+ interpl            = 'trilinear'
 /

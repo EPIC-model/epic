@@ -18,6 +18,7 @@ module fields
             dx = mesh%extent / (mesh%grid - 1)
         end function get_mesh_spacing
 
+        ! get the lower field index given the parcel position
         function get_lower_index(pos) result(idx)
             double precision, intent(in)  :: pos(2)
             integer                       :: idx(2)
@@ -29,6 +30,21 @@ module fields
             idx = (pos - mesh%origin) / dx + 1
 
         end function get_lower_index
+
+        ! get a position given a field index
+        function get_position(idx) result(pos)
+            integer,         intent(in) :: idx(2)
+            double precision            :: pos(2)
+            double precision            :: dx(2)
+
+            dx = get_mesh_spacing()
+
+            ! we need to subtract 1 from the index
+            ! since Fortran starts with 1 not with 0
+            pos = mesh%origin + (idx - 1) * dx
+
+        end function get_position
+
 
         subroutine write_h5_fields(iter)
             integer, intent(in)        :: iter ! iteration
