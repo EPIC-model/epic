@@ -60,13 +60,12 @@ module parameters
     !
     ! TaylorGreen flow parameters
     !
-    ! amplitudes
-    double precision :: amp(2) = 1.0
+    type flow_type
+        double precision :: amp(2) = 1.0    ! amplitudes
+        double precision :: freq(2) = 1.0   ! frequencies
+        double precision :: phase(2) = 1.0  ! phase shift
+    end type flow_type
 
-    ! frequencies
-    double precision :: freq(2) = 1.0
-
-    ! phase shift
-    double precision :: phase(2) = 1.0
+    type(flow_type) :: flow
 
 end module parameters

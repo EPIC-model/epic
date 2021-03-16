@@ -47,16 +47,22 @@ module init
 
         subroutine init_random_positions
             double precision :: val
-            integer :: i
+            integer          :: n, k
+            integer, allocatable :: seed(:)
 
-            call random_seed !put=parcel_info%seed)
+            call random_seed(size=k)
+            allocate(seed(1:k))
+            seed(:) = parcel_info%seed
+            call random_seed(put=seed)
 
-            do i = 1, n_parcels
+            do n = 1, n_parcels
                 call random_number(val)
-                parcels%position(i, 1)= mesh%origin(1) + val
+                parcels%position(n, 1)= mesh%origin(1) + val * mesh%extent(1)
                 call random_number(val)
-                parcels%position(i, 2) = mesh%origin(2) + val
+                parcels%position(n, 2) = mesh%origin(2) + val * mesh%extent(2)
             enddo
+
+            deallocate(seed)
         end subroutine init_random_positions
 
         subroutine init_regular_positions
