@@ -55,6 +55,7 @@ module parser
             !
             group = open_h5_group("parcel")
 
+            call write_h5_integer_scalar_attrib(group, "n_per_cell", parcel_info%n_per_cell)
             call write_h5_logical_attrib(group, "is_random", parcel_info%is_random)
             call write_h5_integer_scalar_attrib(group, "seed", parcel_info%seed)
             call write_h5_logical_attrib(group, "is_elliptic", parcel_info%is_elliptic)

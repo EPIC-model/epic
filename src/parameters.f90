@@ -31,6 +31,7 @@ module parameters
     ! parcel parameters
     !
     type parcel_info_type
+        integer :: n_per_cell   = 4         ! number of parcels per cell (need to be a square)
         logical :: is_random    = .false.   ! random parcel initialization
         integer :: seed         = 42        ! seed of random initialization
         logical :: is_elliptic  = .true.    ! use elliptic model

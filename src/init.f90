@@ -22,8 +22,8 @@ module init
             n_cells = product(mesh%grid - 1)
 
             ! set the number of parcels (see parcels.f90)
-            ! we use 4 parcels per grid cell
-            n_parcels = 4 * n_cells
+            ! we use "n_per_cell" parcels per grid cell
+            n_parcels = parcel_info%n_per_cell * n_cells
 
             if (parcel_info%is_random) then
                 call init_random_positions
@@ -56,18 +56,26 @@ module init
         end subroutine init_random_positions
 
         subroutine init_regular_positions
-            integer          :: i, ii, j, jj, k
+            integer          :: i, ii, j, jj, k, n_per_dim
             double precision :: dx(2), del(2)
 
             dx = get_mesh_spacing()
 
-            del = dx / 3.0
+            ! number of parcels per dimension
+            n_per_dim = sqrt(parcel_info%n_per_cell + 0.0)
+            if (n_per_dim ** 2 .ne. parcel_info%n_per_cell) then
+                print *, "Number of parcels per cell (", &
+                         parcel_info%n_per_cell, ") not a square."
+                stop
+            endif
+
+            del = dx / (n_per_dim + 1)
 
             k = 1
             do j = 0, mesh%grid(2) - 2
                 do i = 0, mesh%grid(1) - 2
-                    do jj = 1, 2
-                        do ii = 1, 2
+                    do jj = 1, n_per_dim
+                        do ii = 1, n_per_dim
                             parcels%position(k, 1) = mesh%origin(1) + i * dx(1) + del(1) * ii
                             parcels%position(k, 2) = mesh%origin(2) + j * dx(2) + del(2) * jj
                             k = k + 1

@@ -23,6 +23,8 @@
  ! parcel info
  !
 
+ parcel%n_per_cell  = 4
+
  parcel%is_random   = .false.
 
  parcel%seed        = 42
