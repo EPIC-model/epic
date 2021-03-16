@@ -1,0 +1,117 @@
+#======================================================================
+# Plots parcels, highlighting ones to be merged, from data generated
+# by nearest.f90
+#======================================================================
+
+#=====perform various generic imports=====
+import warnings,os,sys
+import numpy as np
+
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib import rcParams
+from matplotlib import rc
+rcParams.update({'figure.autolayout': True})
+warnings.simplefilter("ignore",DeprecationWarning)
+
+## global settings
+
+# set tick label size:
+label_size = 25
+mpl.rcParams['xtick.labelsize'] = label_size
+mpl.rcParams['ytick.labelsize'] = label_size
+# set x tick width and size:
+mpl.rcParams['xtick.major.size'] = 10
+mpl.rcParams['xtick.major.width'] = 2
+mpl.rcParams['xtick.minor.size'] = 5
+mpl.rcParams['xtick.minor.width'] = 1
+# set y tick width and size:
+mpl.rcParams['ytick.major.size'] = 10
+mpl.rcParams['ytick.major.width'] = 2
+mpl.rcParams['ytick.minor.size'] = 5
+mpl.rcParams['ytick.minor.width'] = 1
+
+# Ensure latex fonts throughout:
+rc('font', **{'family': 'Times New Roman'})
+rc('text', usetex=True)
+#=========================================
+
+# Get the domain dimensions:
+in_file=open('domain.asc','r')
+line=in_file.readline()
+string=line.split()
+nx=int(string[0])
+nz=int(string[1])
+line=in_file.readline()
+string=line.split()
+lx=float(string[0])
+lz=float(string[1])
+in_file.close()
+
+# Get the parcel positions and area fractions:
+in_file=open('ini_parcels.asc','r')
+line=in_file.readline()
+n=int(line)
+x=np.empty(n)
+z=np.empty(n)
+v=np.empty(n)
+for i in range(n):
+   line=in_file.readline()
+   string=line.split()
+   x[i]=float(string[0])
+   z[i]=float(string[1])
+   v[i]=float(string[2])
+in_file.close()
+
+# Get list of parcel pairs involved in merger:
+nmerge=sum(1 for line in open('merge.asc'))
+isma=np.empty(nmerge)
+ibig=np.empty(nmerge)
+in_file=open('merge.asc','r')
+for m in range(nmerge):
+   line=in_file.readline()
+   string=line.split()
+   isma[m]=int(string[0])
+   ibig[m]=int(string[1])
+in_file.close()
+
+#------------------------------------------------------------------------
+# Set up figure:
+aspect=lx/lz
+fig1 = plt.figure(1,figsize=[6*aspect,6])
+ax1 = fig1.add_subplot(111)
+ax1.set_xlabel('$x$', fontsize=30)
+ax1.set_ylabel('$z$', fontsize=30)
+hlx=lx/2.0
+hlz=lz/2.0
+ax1.set_xlim(-hlx,hlx)
+ax1.set_ylim(-hlz,hlz)
+
+# Plot all parcels first in light green:
+acell=lx*lz/float(nx*nz)
+for i in range(n):
+   r=np.sqrt(acell*v[i]/np.pi)
+   circle=plt.Circle((x[i],z[i]),r,color='g',alpha=0.2,fill=False,clip_on=False)
+   ax1.add_patch(circle)
+
+# Plot all parcels to be merged in black and blue:
+for m in range(nmerge):
+   i=int(ibig[m])-1 #subtract 1 due to Fortran indexing
+   if i >= 0:
+      r=np.sqrt(acell*v[i]/np.pi)
+      circle=plt.Circle((x[i],z[i]),r,color='b',fill=False,clip_on=False)
+      ax1.add_patch(circle)
+      i=int(isma[m])-1 #subtract 1 due to Fortran indexing
+      r=np.sqrt(acell*v[i]/np.pi)
+      circle=plt.Circle((x[i],z[i]),r,color='k',clip_on=False)
+      ax1.add_patch(circle)
+   else:
+      # No parcel could be found to merge with this parcel; plot in red:
+      i=int(isma[m])-1 #subtract 1 due to Fortran indexing
+      r=np.sqrt(acell*v[i]/np.pi)
+      circle=plt.Circle((x[i],z[i]),r,color='r',clip_on=False)
+      ax1.add_patch(circle)
+      print(' parcel at (',x[i],',',z[i],') is isolated!')
+
+fig1.savefig('parcels.png')
+plt.show()
