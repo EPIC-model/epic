@@ -40,4 +40,20 @@
  time%dt            = 0.025
 
  time%is_adaptive   = .true.
+
+ !
+ ! Taylor-Green flow parameters:
+ !      u(x, y) = A * cos(ax + d) * sin(bx + e)
+ !      v(x, y) = B * sin(ax + d) * cos(bx + e)
+ !
+
+ ! amplitudes: A, B
+ flow%amp           = 0.5,                -1.0
+
+ ! frequencies: a, b
+ flow%freq          = 2.0,                 1.0
+
+ ! phase shifts: d, e
+ flow%phase         = 1.5707963267948966,  0.0
+
 /
