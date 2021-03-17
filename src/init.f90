@@ -105,11 +105,10 @@ module init
 
         subroutine init_B_matrix
             if (parcel_info%is_elliptic) then
-                parcels%B11 = 1.0
-                parcels%B12 = 0.0
+                parcels%B(:, 1) = 1.0   ! B11
+                parcels%B(:, 2) = 0.0   ! B12
             else
-                deallocate(parcels%B11)
-                deallocate(parcels%B12)
+                deallocate(parcels%B)
             endif
         end subroutine init_B_matrix
 

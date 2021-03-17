@@ -65,11 +65,10 @@ module ellipse
         end function get_B22
 
 
-        function get_ellipse_points(position, volume, B11, B12) result(points)
+        function get_ellipse_points(position, volume, B) result(points)
             double precision, intent(in) :: position(2)
             double precision, intent(in) :: volume
-            double precision, intent(in) :: B11
-            double precision, intent(in) :: B12
+            double precision, intent(in) :: B(2)        ! B11, B12
             double precision             :: B22
             double precision             :: c
             double precision             :: eval
@@ -77,14 +76,14 @@ module ellipse
             double precision             :: dx(2)
             double precision             :: points(2, 2)
 
-            B22 = get_B22(B11, B12)
+            B22 = get_B22(B(1), B(2))
 
-            eval = get_eigenvalue(B11, B12, B22)
+            eval = get_eigenvalue(B(1), B(2), B22)
 
             ! a * b = volume / pi with a and b semi-major and semi-minor axes
-            c = sqrt(volume / pi * abs(2.0 * eval - B11 - B22))
+            c = sqrt(volume / pi * abs(2.0 * eval - B(1) - B22))
 
-            evec = get_eigenvector(eval, B12, B22)
+            evec = get_eigenvector(eval, B(2), B22)
 
             dx = 0.5 * c * evec
 
@@ -108,8 +107,8 @@ module ellipse
             last_index = n_parcels
 
             do i = 1, last_index
-                B11 = parcels%B11(i)
-                B12 = parcels%B12(i)
+                B11 = parcels%B(i, 1)
+                B12 = parcels%B(i, 2)
                 B22 = get_B22(B11, B12)
 
                 eval = get_eigenvalue(B11, B12, B22)
@@ -124,8 +123,8 @@ module ellipse
 
                 evec = get_eigenvector(eval, B12, B22)
 
-                parcels%B11(i) = 2.0 * B11 - 1.5 * eval * evec(1) ** 2
-                parcels%B12(i) = 2.0 * B12 - 1.5 * eval * (evec(1) * evec(2))
+                parcels%B(i, 1) = 2.0 * B11 - 1.5 * eval * evec(1) ** 2
+                parcels%B(i, 2) = 2.0 * B12 - 1.5 * eval * (evec(1) * evec(2))
 
                 h = 0.25 * sqrt(3.0 * eval * parcels%volume(i) / pi)
                 parcels%volume(i) = 0.5 * parcels%volume(i)
