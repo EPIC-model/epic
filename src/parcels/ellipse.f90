@@ -126,14 +126,14 @@ module ellipse
                 parcels%B(i, 1) = 2.0 * B11 - 1.5 * eval * evec(1) ** 2
                 parcels%B(i, 2) = 2.0 * B12 - 1.5 * eval * (evec(1) * evec(2))
 
-                h = 0.25 * sqrt(3.0 * eval * parcels%volume(i) / pi)
-                parcels%volume(i) = 0.5 * parcels%volume(i)
+                h = 0.25 * sqrt(3.0 * eval * parcels%volume(i, 1) / pi)
+                parcels%volume(i, 1) = 0.5 * parcels%volume(i, 1)
 
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
 
                 parcels%velocity(n_parcels, :) = parcels%velocity(i, :)
-                parcels%volume(n_parcels) = parcels%volume(i)
+                parcels%volume(n_parcels, 1) = parcels%volume(i, 1)
 
                 parcels%position(n_parcels, :) = parcels%position(i, :) - h * evec
                 parcels%position(i, :) = parcels%position(i, :)  + h * evec

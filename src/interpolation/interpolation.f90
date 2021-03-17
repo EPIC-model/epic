@@ -7,10 +7,10 @@ module interpolation
     use field_bc
     implicit none
 
-    private :: do_elliptic_to_grid,       &
-               do_non_elliptic_to_grid,   &
-               do_elliptic_from_grid,     &
-               do_non_elliptic_from_grid, &
+    private :: par2grid_elliptic,       &
+               par2grid_non_elliptic,   &
+               grid2par_elliptic,       &
+               grid2par_non_elliptic,   &
                get_indices_and_weights
 
 
@@ -25,7 +25,7 @@ module interpolation
 
     contains
 
-        subroutine to_grid(parcels, attrib, field)
+        subroutine par2grid(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(:, :, :)
@@ -33,30 +33,17 @@ module interpolation
             field = 0.0
 
             if (parcel_info%is_elliptic) then
-                call do_elliptic_to_grid(parcels, attrib, field)
+                call par2grid_elliptic(parcels, attrib, field)
             else
-                call do_non_elliptic_to_grid(parcels, attrib, field)
+                call par2grid_non_elliptic(parcels, attrib, field)
             endif
 
             ! apply boundary condition
             call apply_field_bc(field)
 
-        end subroutine to_grid
+        end subroutine par2grid
 
-
-!         subroutine to_grid_scalar_field(parcels, attrib, field)
-!             type(parcel_container_type), intent(inout) :: parcels
-!             double precision,            intent(inout) :: attrib(:)
-!             double precision,            intent(inout) :: field(:, :, :)
-!
-!             call to_grid(parcels,                                  &
-!                                       reshape(attrib, (/max_num_parcels, 1/)),  &
-!                                       field)
-!
-!         end subroutine to_grid_scalar_field
-
-
-        subroutine do_elliptic_to_grid(parcels, attrib, field)
+        subroutine par2grid_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(:, :, :)
@@ -72,9 +59,8 @@ module interpolation
             do n = 1, n_parcels
 
                 points = get_ellipse_points(parcels%position(n, :), &
-                                            parcels%volume(n),      &
-                                            parcels%B11(n),         &
-                                            parcels%B12(n))
+                                            parcels%volume(n, 1),   &
+                                            parcels%B(n, :))
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -93,10 +79,10 @@ module interpolation
                     enddo
                 enddo
             enddo
-        end subroutine do_elliptic_to_grid
+        end subroutine par2grid_elliptic
 
 
-        subroutine do_non_elliptic_to_grid(parcels, attrib, field)
+        subroutine par2grid_non_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(:, :, :)
@@ -124,24 +110,24 @@ module interpolation
                 enddo
             enddo
 
-        end subroutine do_non_elliptic_to_grid
+        end subroutine par2grid_non_elliptic
 
 
-        subroutine from_grid(parcels, attrib, field)
+        subroutine grid2par(parcels, attrib, field)
             type(parcel_container_type), intent(out) :: parcels
             double precision,            intent(out) :: attrib(:, :)
             double precision,            intent(in)  :: field(:, :, :)
 
             if (parcel_info%is_elliptic) then
-                call do_elliptic_from_grid(parcels, attrib, field)
+                call grid2par_elliptic(parcels, attrib, field)
             else
-                call do_non_elliptic_from_grid(parcels, attrib, field)
+                call grid2par_non_elliptic(parcels, attrib, field)
             endif
 
-        end subroutine from_grid
+        end subroutine grid2par
 
 
-        subroutine do_elliptic_from_grid(parcels, attrib, field)
+        subroutine grid2par_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(out) :: parcels
             double precision,            intent(out) :: attrib(:, :)
             double precision,            intent(in)  :: field(:, :, :)
@@ -160,9 +146,8 @@ module interpolation
                 attrib(n, :) = 0.0
 
                 points = get_ellipse_points(parcels%position(n, :), &
-                                            parcels%volume(n),      &
-                                            parcels%B11(n),         &
-                                            parcels%B12(n))
+                                            parcels%volume(n, 1),   &
+                                            parcels%B(n, :))
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -182,9 +167,9 @@ module interpolation
                 enddo
             enddo
 
-        end subroutine
+        end subroutine grid2par_elliptic
 
-        subroutine do_non_elliptic_from_grid(parcels, attrib, field)
+        subroutine grid2par_non_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(out) :: parcels
             double precision,            intent(out) :: attrib(:, :)
             double precision,            intent(in)  :: field(:, :, :)
@@ -214,7 +199,7 @@ module interpolation
                 enddo
             enddo
 
-        end subroutine
+        end subroutine grid2par_non_elliptic
 
 
         subroutine get_indices_and_weights(pos, ngp)

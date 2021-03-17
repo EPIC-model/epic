@@ -11,13 +11,11 @@ module parcel_container
     integer :: n_parcels
 
     type parcel_container_type
-        double precision, allocatable, dimension(:) :: &
-            stretch,    &
-            volume
-
         double precision, allocatable, dimension(:, :) :: &
             position,   &
             velocity,   &
+            stretch,    &
+            volume,     &
             B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12
     end type parcel_container_type
 
@@ -49,8 +47,10 @@ module parcel_container
             call write_h5_dataset_2d(name, "velocity", parcels%velocity(1:n_parcels, :))
 
             if (allocated(parcels%stretch)) then
-                call write_h5_dataset_1d(name, "stretch", parcels%stretch(1:n_parcels))
+                call write_h5_dataset_1d(name, "stretch", parcels%stretch(1:n_parcels, 1))
             endif
+
+            call write_h5_dataset_1d(name, "volume", parcels%volume(1:n_parcels, 1))
 
             if (allocated(parcels%B)) then
                 call write_h5_dataset_2d(name, "B", parcels%B(1:n_parcels, :))
@@ -72,9 +72,9 @@ module parcel_container
 
             allocate(parcels%position(num, 2))
             allocate(parcels%velocity(num, 2))
-            allocate(parcels%stretch(num))
+            allocate(parcels%stretch(num, 1))
             allocate(parcels%B(num, 2))
-            allocate(parcels%volume(num))
+            allocate(parcels%volume(num, 1))
         end subroutine alloc_parcel_mem
 
         subroutine dealloc_parcel_mem
