@@ -1,6 +1,7 @@
 module init
     use parameters, only : mesh, parcel_info
-    use fields, only : velocity_f, strain_f, volume_f, get_mesh_spacing
+    use fields, only : velocity_f, strain_f, volume_f, &
+                       get_mesh_spacing, get_position
     use parcel_container, only : parcels, n_parcels
     implicit none
 
@@ -147,12 +148,11 @@ module init
 
             allocate(strain_f(mesh%grid(1), mesh%grid(2), 4))
 
-            dx = get_mesh_spacing()
+!             dx = get_mesh_spacing()
 
             do j = 1, mesh%grid(2)
                 do i = 1, mesh%grid(1)
-                    pos(1) = mesh%origin(1) + i * dx(1)
-                    pos(2) = mesh%origin(2) + j * dx(2)
+                    pos = get_position((/i, j/))
 
                     velocity_f(i, j, :) = get_flow_velocity(pos)
 
