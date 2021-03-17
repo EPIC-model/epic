@@ -1,3 +1,13 @@
 *.o
 *.mod
+scorep*
 epic
+Makefile.in
+aclocal.m4
+autom4te.cache/
+build/
+config.h.in
+configure
+install-sh
+missing
+src/Makefile.in

@@ -1,13 +1,37 @@
 # epic
 Elliptic and non-elliptic model for PIC in fluid dynamics
 
+## Building HDF5 from scratch
+Tested with
+zlib-1.2.11 (https://zlib.net/)  
+hdf5-1.10.5 (https://support.hdfgroup.org/ftp/HDF5/prev-releases/hdf5-1.10/hdf5-1.10.5/src/)  
+
+
+Example compilation command showing some possible dependencies (use sudo if needed):
+For zlib
+```
+$ ./configure --prefix=$HOME/dependencies/zlib CC=mpicc  
+$ sudo make install
+```
+
+For HDF5 with fortran enabled
+```
+$ ./configure --with-zlib=$HOME/dependencies/zlib --enable-parallel --enable-fortran --prefix=$HOME/dependencies/hdf5 CC='/usr/lib64/openmpi/bin/mpicc' CXX='/usr/lib64/openmpi/bin/mpicxx' FC='/usr/lib64/openmpi/bin/mpif90'
+$ sudo make install
+```
+
+In this case, also replace ../configure below by
+```
+$ ../configure --with-hdf5="$HOME/dependencies/hdf5"
+```
+
 ## Compile
 Type
 ```
 $ autoreconf --install
 $ mkdir build
 $ cd build
-$ ../configure
+$ ../configure 
 $ make
 ```
 in the terminal.
