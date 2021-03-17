@@ -4,6 +4,7 @@ module model
     use parser, only : read_config_file, write_h5_params
     use parcel_container
     use parcel_bc
+    use ellipse, only : split_ellipse
     use fields
     use interpolation
     use rk4
@@ -47,6 +48,8 @@ module model
                 endif
 
                 call rk4_step(dt)
+
+                call split_ellipse(parcels, parcel_info%lambda)
 
                 t = t + dt
                 iter = iter + 1

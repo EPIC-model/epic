@@ -31,6 +31,8 @@
 
  parcel%is_elliptic = .true.
 
+ parcel%lambda      = 5.0
+
  !
  ! stepper info
  !
