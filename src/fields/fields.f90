@@ -9,8 +9,9 @@ module fields
     implicit none
 
     double precision, allocatable, dimension(:, :, :) :: &
-        velocity,       &   ! velocity vector field
-        volume              ! volume scalar field
+        velocity_f,       &   ! velocity vector field
+        strain_f,         &   ! velocity gradient tensor
+        volume_f              ! volume scalar field
 
     contains
         function get_mesh_spacing() result(dx)
@@ -65,7 +66,7 @@ module fields
             ! write fields
             !
 
-            call write_h5_dataset_3d(name, "velocity", velocity)
+            call write_h5_dataset_3d(name, "velocity", velocity_f)
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)

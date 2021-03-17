@@ -114,9 +114,9 @@ module interpolation
 
 
         subroutine grid2par(parcels, attrib, field)
-            type(parcel_container_type), intent(out) :: parcels
-            double precision,            intent(out) :: attrib(:, :)
-            double precision,            intent(in)  :: field(:, :, :)
+            type(parcel_container_type), intent(inout) :: parcels
+            double precision,            intent(out)   :: attrib(:, :)
+            double precision,            intent(in)    :: field(:, :, :)
 
             if (parcel_info%is_elliptic) then
                 call grid2par_elliptic(parcels, attrib, field)
@@ -128,13 +128,13 @@ module interpolation
 
 
         subroutine grid2par_elliptic(parcels, attrib, field)
-            type(parcel_container_type), intent(out) :: parcels
-            double precision,            intent(out) :: attrib(:, :)
-            double precision,            intent(in)  :: field(:, :, :)
-            integer                                  :: ncomp, ngp
-            double precision                         :: points(2, 2)
-            integer                                  :: n, p, c, i
-            integer                                  :: the_shape(3)
+            type(parcel_container_type), intent(inout) :: parcels
+            double precision,            intent(out)   :: attrib(:, :)
+            double precision,            intent(in)    :: field(:, :, :)
+            integer                                    :: ncomp, ngp
+            double precision                           :: points(2, 2)
+            integer                                    :: n, p, c, i
+            integer                                    :: the_shape(3)
 
             ! number of field components
             the_shape = shape(field)
@@ -170,12 +170,12 @@ module interpolation
         end subroutine grid2par_elliptic
 
         subroutine grid2par_non_elliptic(parcels, attrib, field)
-            type(parcel_container_type), intent(out) :: parcels
-            double precision,            intent(out) :: attrib(:, :)
-            double precision,            intent(in)  :: field(:, :, :)
-            integer                                  :: ncomp, ngp
-            integer                                  :: n, c, i
-            integer                                  :: the_shape(3)
+            type(parcel_container_type), intent(inout) :: parcels
+            double precision,            intent(out)   :: attrib(:, :)
+            double precision,            intent(in)    :: field(:, :, :)
+            integer                                    :: ncomp, ngp
+            integer                                    :: n, c, i
+            integer                                    :: the_shape(3)
 
             ! number of field components
             the_shape = shape(field)

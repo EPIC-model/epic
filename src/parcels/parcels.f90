@@ -67,7 +67,7 @@ module parcel_container
 
         end subroutine split
 
-        subroutine alloc_parcel_mem(num)
+        subroutine parcel_alloc(num)
             integer, intent(in) :: num
 
             allocate(parcels%position(num, 2))
@@ -75,9 +75,9 @@ module parcel_container
             allocate(parcels%stretch(num, 1))
             allocate(parcels%B(num, 2))
             allocate(parcels%volume(num, 1))
-        end subroutine alloc_parcel_mem
+        end subroutine parcel_alloc
 
-        subroutine dealloc_parcel_mem
+        subroutine parcel_dealloc
             deallocate(parcels%position)
             deallocate(parcels%velocity)
 
@@ -90,11 +90,6 @@ module parcel_container
             endif
 
             deallocate(parcels%volume)
-        end subroutine dealloc_parcel_mem
-
-        subroutine create(num)
-            integer, intent(in) :: num
-
-        end subroutine create
+        end subroutine parcel_dealloc
 
 end module parcel_container

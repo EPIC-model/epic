@@ -3,8 +3,10 @@ module model
     use init, only : init_parcels, init_velocity_field
     use parser, only : read_config_file, write_h5_params
     use parcel_container
+    use parcel_bc
     use fields
-    use rk4,    only : rk4_step
+    use interpolation
+    use rk4
     use writer, only : open_h5_file,             &
                        close_h5_file,            &
                        write_h5_scalar_attrib
@@ -19,7 +21,9 @@ module model
 
             call write_h5_params
 
-            call alloc_parcel_mem(max_num_parcels)
+            call parcel_alloc(max_num_parcels)
+
+            call rk4_alloc(max_num_parcels)
 
             call init_parcels
 
@@ -51,7 +55,8 @@ module model
         end subroutine run
 
         subroutine post_run
-            call dealloc_parcel_mem
+            call parcel_dealloc
+            call rk4_dealloc
         end subroutine
 
 

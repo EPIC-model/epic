@@ -8,22 +8,23 @@ module parcel_bc
 
     contains
 
-        subroutine apply_parcel_bc(parcels)
-            type(parcel_container_type), intent(inout) :: parcels
-            double precision                           :: lower(2)
-            double precision                           :: upper(2)
-            integer                                    :: i
+        subroutine apply_parcel_bc(position, velocity)
+            double precision, intent(inout) :: position(:, :)
+            double precision, intent(inout) :: velocity(:, :)
+            double precision                :: lower(2)
+            double precision                :: upper(2)
+            integer                         :: i
 
             lower = mesh%origin
             upper = mesh%origin + mesh%extent
 
             do i = 1, 2
                 if (mesh%bc(i) == "free slip") then
-                    call apply_free_slip(parcels%position(:, i), &
-                                         parcels%velocity(:, i), &
+                    call apply_free_slip(position(:, i), &
+                                         velocity(:, i), &
                                          lower(i), upper(i))
                 else if (mesh%bc(i) == "periodic") then
-                    call apply_periodic(parcels%position(:, i), lower(i), upper(i))
+                    call apply_periodic(position(:, i), lower(i), upper(i))
                 else
                     print *, "No boundary condition named '", mesh%bc(i), "'."
                     stop

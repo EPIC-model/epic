@@ -4,8 +4,7 @@ module ellipse
     implicit none
 
     private :: get_eigenvalue,  &
-               get_eigenvector, &
-               get_B22
+               get_eigenvector
 
     contains
 
@@ -55,7 +54,7 @@ module ellipse
         end function get_angle
 
 
-        function get_B22(B11, B12) result(B22)
+        elemental function get_B22(B11, B12) result(B22)
             double precision, intent(in) :: B11
             double precision, intent(in) :: B12
             double precision             :: B22

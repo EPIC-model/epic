@@ -1,6 +1,6 @@
 module init
     use parameters, only : mesh, parcel_info
-    use fields, only : velocity, get_mesh_spacing
+    use fields, only : velocity_f, strain_f, get_mesh_spacing
     use parcel_container, only : parcels, n_parcels
     implicit none
 
@@ -129,12 +129,14 @@ module init
         !
 
         subroutine init_velocity_field
-            use taylorgreen, only : get_flow_velocity
+            use taylorgreen, only : get_flow_velocity, get_flow_gradient
             integer :: i, j
             double precision :: pos(2)
             double precision :: dx(2)
 
-            allocate(velocity(mesh%grid(1), mesh%grid(2), 2))
+            allocate(velocity_f(mesh%grid(1), mesh%grid(2), 2))
+
+            allocate(strain_f(mesh%grid(1), mesh%grid(2), 4))
 
             dx = get_mesh_spacing()
 
@@ -142,7 +144,10 @@ module init
                 do i = 1, mesh%grid(1)
                     pos(1) = mesh%origin(1) + i * dx(1)
                     pos(2) = mesh%origin(2) + j * dx(2)
-                    velocity(i, j, :) = get_flow_velocity(pos)
+
+                    velocity_f(i, j, :) = get_flow_velocity(pos)
+
+                    strain_f(i, j, :) = get_flow_gradient(pos)
                 enddo
             enddo
         end subroutine init_velocity_field
