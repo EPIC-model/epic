@@ -66,7 +66,13 @@ module fields
             ! write fields
             !
 
-            call write_h5_dataset_3d(name, "velocity", velocity_f)
+            if (iter == 0) then
+                call write_h5_dataset_3d(name, "velocity", velocity_f)
+
+                call write_h5_dataset_3d(name, "velocity strain", strain_f)
+            endif
+
+            call write_h5_dataset_3d(name, "volume", volume_f)
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)

@@ -1,6 +1,6 @@
 module model
     use constants, only : max_num_parcels
-    use init, only : init_parcels, init_velocity_field
+    use init, only : init_parcels, init_fields
     use parser, only : read_config_file, write_h5_params
     use parcel_container
     use parcel_bc
@@ -28,7 +28,7 @@ module model
 
             call init_parcels
 
-            call init_velocity_field
+            call init_fields
 
         end subroutine
 

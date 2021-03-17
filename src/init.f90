@@ -1,6 +1,6 @@
 module init
     use parameters, only : mesh, parcel_info
-    use fields, only : velocity_f, strain_f, get_mesh_spacing
+    use fields, only : velocity_f, strain_f, volume_f, get_mesh_spacing
     use parcel_container, only : parcels, n_parcels
     implicit none
 
@@ -8,7 +8,8 @@ module init
                init_regular_positions, &
                init_stretch,           &
                init_B_matrix,          &
-               init_velocity
+               init_velocity,          &
+               init_velocity_field
 
     contains
 
@@ -127,6 +128,14 @@ module init
         !
         ! field initialize subroutines
         !
+
+        subroutine init_fields
+            call init_velocity_field
+
+            allocate(volume_f(mesh%grid(1), mesh%grid(2), 1))
+            volume_f = 0.0
+
+        end subroutine init_fields
 
         subroutine init_velocity_field
             use taylorgreen, only : get_flow_velocity, get_flow_gradient
