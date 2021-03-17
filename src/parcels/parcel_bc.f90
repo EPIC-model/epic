@@ -1,6 +1,6 @@
 module parcel_bc
     use parameters, only : mesh
-    use parcel_container, only : parcel_container_type, parcels, n_parcels
+    use parcel_container, only : n_parcels
     implicit none
 
     private :: apply_free_slip,    &
