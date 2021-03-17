@@ -14,6 +14,34 @@ AC_CONFIG_FILES([
 ])
 
 
+FCFLAGS=""
+
+#######################################################################################
+##
+## "--enable" flags
+##
+
+ENABLE_DEBUG='no'
+AC_ARG_ENABLE([debug],
+              [AS_HELP_STRING([--enable-debug], [compile in debug mode (default=no)])],
+              [ENABLE_DEBUG=$enableval])
+
+AM_CONDITIONAL([ENABLE_DEBUG], [test "$ENABLE_DEBUG" = "yes"])
+
+AC_MSG_CHECKING([whether debug mode is enabled])
+if test "x$ENABLE_DEBUG" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -g -O0 -fbounds-check -fbacktrace"
+else
+    AC_MSG_RESULT([no])
+    FCFLAGS="$FCFLAGS -O3"
+fi
+
+
+#######################################################################################
+##
+## "--with" flags
+##
 
 # 11 March 2021
 # https://www.gnu.org/software/autoconf/manual/autoconf-2.60/html_node/External-Software.html
