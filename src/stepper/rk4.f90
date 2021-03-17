@@ -116,10 +116,7 @@ module rk4
             ! apply position BC
             call apply_parcel_bc(state%position, k2o)
 
-            print *, "hi 2"
             call grid2par(state, k3o, velocity_f)
-
-            print *, "hi, 2a"
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k3o)
@@ -127,8 +124,6 @@ module rk4
             call grid2par(parcels, s3o, strain_f)
             b3o = get_B(parcels%B + 0.5 * dt * b2o, s3o)
             state%B = b3o
-
-            print *, "hi 3"
 
             state%position = parcels%position + dt * k3o
 
