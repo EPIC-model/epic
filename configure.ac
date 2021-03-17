@@ -28,7 +28,7 @@ AC_ARG_ENABLE([debug],
 
 AM_CONDITIONAL([ENABLE_DEBUG], [test "$ENABLE_DEBUG" = "yes"])
 
-AC_MSG_CHECKING([whether debug mode is enabled])
+AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
     FCFLAGS="$FCFLAGS -g -O0 -fbounds-check -fbacktrace"
