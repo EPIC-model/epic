@@ -6,6 +6,7 @@ module parcel_container
                        write_h5_dataset_2d, &
                        open_h5_group,       &
                        get_step_group_name
+    use ellipse, only : get_angles
     implicit none
 
     integer :: n_parcels
@@ -25,12 +26,13 @@ module parcel_container
     contains
 
         subroutine write_h5_parcels(iter)
-            integer, intent(in)        :: iter ! iteration
-            integer(hid_t)             :: group
-            integer(hid_t)             :: step_group
-            character(:), allocatable  :: step
-            character(:), allocatable  :: name
-            logical                    :: link_exists = .false.
+            integer, intent(in)           :: iter ! iteration
+            integer(hid_t)                :: group
+            integer(hid_t)                :: step_group
+            character(:), allocatable     :: step
+            character(:), allocatable     :: name
+            logical                       :: link_exists = .false.
+            double precision, allocatable :: angle(:)
 
             step = trim(get_step_group_name(iter))
 
@@ -54,6 +56,9 @@ module parcel_container
 
             if (allocated(parcels%B)) then
                 call write_h5_dataset_2d(name, "B", parcels%B(1:n_parcels, :))
+
+                angle = get_angles(parcels%B)
+                call write_h5_dataset_1d(name, "orientation", angle)
             endif
 
             call h5gclose_f(group, h5err)

@@ -4,7 +4,7 @@ module model
     use parser, only : read_config_file, write_h5_params
     use parcel_container
     use parcel_bc
-    use ellipse, only : split_ellipse
+    use parcel_split, only : split_ellipse
     use fields
     use interpolation
     use rk4
@@ -30,6 +30,9 @@ module model
 
             call init_fields
 
+            ! update volume on the grid
+            call par2grid(parcels, parcels%volume, volume_f)
+
         end subroutine
 
 
@@ -47,9 +50,13 @@ module model
                     call write_h5_step(iter, t, dt)
                 endif
 
+
                 call rk4_step(dt)
 
-                call split_ellipse(parcels, parcel_info%lambda)
+!                 call split_ellipse(parcels, parcel_info%lambda)
+
+                ! update volume on the grid
+                call par2grid(parcels, parcels%volume, volume_f)
 
                 t = t + dt
                 iter = iter + 1
