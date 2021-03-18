@@ -74,7 +74,7 @@ module rk4
             if (parcel_info%is_elliptic) then
                 call rk4_elliptic(dt)
             else
-!                 call rk4_non_elliptic(dt)
+                call rk4_non_elliptic(dt)
             endif
 
         end subroutine rk4_step
@@ -158,6 +158,57 @@ module rk4
 
         subroutine rk4_non_elliptic(dt)
             double precision, intent(in) :: dt
+
+            state%position = parcels%position
+            state%volume = parcels%volume
+
+            call grid2par(state, k1o, velocity_f)
+
+            ! apply velocity BC --> only important for free slip
+            call apply_parcel_bc(state%position, k1o)
+
+
+            state%position = parcels%position + 0.5 * dt * k1o
+
+            ! apply position BC
+            call apply_parcel_bc(state%position, k1o)
+
+            call grid2par(state, k2o, velocity_f)
+
+            ! apply velocity BC --> only important for free slip
+            call apply_parcel_bc(state%position, k2o)
+
+            state%position = parcels%position + 0.5 * dt * k2o
+
+            ! apply position BC
+            call apply_parcel_bc(state%position, k2o)
+
+            call grid2par(state, k3o, velocity_f)
+
+            ! apply velocity BC --> only important for free slip
+            call apply_parcel_bc(state%position, k3o)
+
+            state%position = parcels%position + dt * k3o
+
+            ! apply position BC
+            call apply_parcel_bc(state%position, k3o)
+
+            call grid2par(state, k4o, velocity_f)
+
+            ! apply velocity BC --> only important for free slip
+            call apply_parcel_bc(state%position, k4o)
+
+            parcels%position = parcels%position &
+                             + dt / 6.0 * (k1o + 2.0 * k2o + 2.0 * k3o + k4o)
+
+            ! apply position BC
+            call apply_parcel_bc(parcels%position, k4o)
+
+            ! update parcel velocity
+            call grid2par(parcels, parcels%velocity, velocity_f)
+
+            ! apply velocity BC --> only important for free slip
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
         end subroutine rk4_non_elliptic
 
