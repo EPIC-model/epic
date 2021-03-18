@@ -81,13 +81,13 @@ module init
                 stop
             endif
 
-            del = dx / (n_per_dim + 1)
+            del = dx / (2.0 * n_per_dim)
 
             k = 1
             do j = 0, mesh%grid(2) - 2
                 do i = 0, mesh%grid(1) - 2
-                    do jj = 1, n_per_dim
-                        do ii = 1, n_per_dim
+                    do jj = 1, 2 * n_per_dim, 2
+                        do ii = 1, 2 * n_per_dim, 2
                             parcels%position(k, 1) = mesh%origin(1) + i * dx(1) + del(1) * ii
                             parcels%position(k, 2) = mesh%origin(2) + j * dx(2) + del(2) * jj
                             k = k + 1
