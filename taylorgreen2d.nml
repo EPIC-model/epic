@@ -3,7 +3,7 @@
  ! output info
  !
 
- output%h5freq      = 10
+ output%h5freq      = 1
 
  output%h5fname     = 'taylorgreen2d.hdf5'
 
@@ -15,7 +15,7 @@
 
  mesh%extent        = 3.141592653589793, 3.141592653589793
 
- mesh%grid          = 21, 21
+ mesh%grid          = 11, 11
 
  mesh%bc            = 'free slip', 'free slip'
 
@@ -37,7 +37,7 @@
  ! stepper info
  !
 
- time%limit         = 2.0
+ time%limit         = 5.0
 
  time%dt            = 0.025
 
@@ -45,8 +45,8 @@
 
  !
  ! Taylor-Green flow parameters:
- !      u(x, y) = A * cos(ax + d) * sin(bx + e)
- !      v(x, y) = B * sin(ax + d) * cos(bx + e)
+ !      u(x, y) = A * cos(ax + d) * sin(by + e)
+ !      v(x, y) = B * sin(ax + d) * cos(by + e)
  !
 
  ! amplitudes: A, B

@@ -203,8 +203,9 @@ module interpolation
 
 
         subroutine get_indices_and_weights(pos, ngp)
-            double precision, intent(in)    :: pos(2)
-            integer,          intent(inout) :: ngp
+            double precision, intent(in)  :: pos(2)
+            integer,          intent(out) :: ngp
+
 
             if (interpl == 'nearest-grid-point') then
                 call nearest_grid_point(pos, ij, weight, ngp)

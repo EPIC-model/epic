@@ -23,7 +23,6 @@ module rk4
             integer, intent(in) :: num
 
             allocate(state%position(num, 2))
-            allocate(state%B(num, 2))
             allocate(state%volume(num, 1))
 
             allocate(k1o(num, 2))
@@ -31,15 +30,18 @@ module rk4
             allocate(k3o(num, 2))
             allocate(k4o(num, 2))
 
-            allocate(s1o(num, 4))
-            allocate(s2o(num, 4))
-            allocate(s3o(num, 4))
-            allocate(s4o(num, 4))
+            if (parcel_info%is_elliptic) then
+                allocate(state%B(num, 2))
+                allocate(s1o(num, 4))
+                allocate(s2o(num, 4))
+                allocate(s3o(num, 4))
+                allocate(s4o(num, 4))
 
-            allocate(b1o(num, 2))
-            allocate(b2o(num, 2))
-            allocate(b3o(num, 2))
-            allocate(b4o(num, 2))
+                allocate(b1o(num, 2))
+                allocate(b2o(num, 2))
+                allocate(b3o(num, 2))
+                allocate(b4o(num, 2))
+            endif
 
         end subroutine rk4_alloc
 
@@ -47,7 +49,6 @@ module rk4
         subroutine rk4_dealloc
 
             deallocate(state%position)
-            deallocate(state%B)
             deallocate(state%volume)
 
             deallocate(k1o)
@@ -55,15 +56,18 @@ module rk4
             deallocate(k3o)
             deallocate(k4o)
 
-            deallocate(s1o)
-            deallocate(s2o)
-            deallocate(s3o)
-            deallocate(s4o)
+            if (parcel_info%is_elliptic) then
+                deallocate(state%B)
+                deallocate(s1o)
+                deallocate(s2o)
+                deallocate(s3o)
+                deallocate(s4o)
 
-            deallocate(b1o)
-            deallocate(b2o)
-            deallocate(b3o)
-            deallocate(b4o)
+                deallocate(b1o)
+                deallocate(b2o)
+                deallocate(b3o)
+                deallocate(b4o)
+            endif
 
         end subroutine rk4_dealloc
 
@@ -88,64 +92,63 @@ module rk4
             state%volume = parcels%volume
 
             call grid2par(state, k1o, velocity_f)
+            call grid2par(state, s1o, strain_f)
+            b1o = get_B(state%B, s1o)
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k1o)
 
-            call grid2par(state, s1o, strain_f)
-            b1o = get_B(parcels%B, s1o)
-
 
             state%position = parcels%position + 0.5 * dt * k1o
+            state%B = parcels%B + 0.5 * dt * b1o
 
             ! apply position BC
             call apply_parcel_bc(state%position, k1o)
 
             call grid2par(state, k2o, velocity_f)
+            call grid2par(state, s2o, strain_f)
+            b2o = get_B(state%B, s2o)
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k2o)
 
-            call grid2par(state, s2o, strain_f)
-            b2o = get_B(parcels%B + 0.5 * dt * b1o, s2o)
-            state%B = b2o
-
 
             state%position = parcels%position + 0.5 * dt * k2o
+            state%B = parcels%B + 0.5 * dt * b2o
 
             ! apply position BC
             call apply_parcel_bc(state%position, k2o)
 
             call grid2par(state, k3o, velocity_f)
+            call grid2par(state, s3o, strain_f)
+            b3o = get_B(state%B, s3o)
+
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k3o)
 
-            call grid2par(state, s3o, strain_f)
-            b3o = get_B(parcels%B + 0.5 * dt * b2o, s3o)
-            state%B = b3o
-
             state%position = parcels%position + dt * k3o
+            state%B = parcels%B + dt * b3o
 
             ! apply position BC
             call apply_parcel_bc(state%position, k3o)
 
             call grid2par(state, k4o, velocity_f)
+            call grid2par(state, s4o, strain_f)
+            b4o = get_B(state%B, s4o)
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k4o)
 
-            call grid2par(state, s4o, strain_f)
-            b4o = get_B(parcels%B + dt * b3o, s4o)
 
             parcels%position = parcels%position &
                              + dt / 6.0 * (k1o + 2.0 * k2o + 2.0 * k3o + k4o)
 
-            ! apply position BC
-            call apply_parcel_bc(parcels%position, k4o)
-
             parcels%B = parcels%B &
                       + dt / 6.0 * (b1o + 2.0 * b2o + 2.0 * b3o + b4o)
+
+            ! apply position BC
+            call apply_parcel_bc(parcels%position, k4o)
 
             ! update parcel velocity
             call grid2par(parcels, parcels%velocity, velocity_f)
@@ -221,11 +224,11 @@ module rk4
 
             B22 = get_B22(Bin(:, 1), Bin(:, 2))
 
+            ! B11 = 2 * (dudx * B11 + dudy * B12)
             Bout(:, 1) = 2.0 * (S(:, 1) * Bin(:, 1) + S(:, 2) * Bin(:, 2))
 
+            ! B12 = dvdx * B11 + dudy * B22
             Bout(:, 2) = S(:, 3) * Bin(:, 1) + S(:, 2) * B22
 
         end function get_B
-
-
 end module rk4
