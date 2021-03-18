@@ -15,30 +15,40 @@ module parser
         ! parse configuration file
         ! (see https://cyber.dabamos.de/programming/modernfortran/namelists.html [8 March 2021])
         subroutine read_config_file
-            integer                                :: ios
-            integer                                :: fn = 1
+            integer :: ios
+            integer :: fn = 1
+            logical :: exists = .false.
 
             ! namelist definitions
             namelist /MODEL/ output, mesh, parcel, time, flow, interpl
 
-            ! check whether file exists.
-            inquire(file=filename, iostat=ios)
+            ! check whether file exists
+            inquire(file=filename, exist=exists)
 
-            if (ios /= 0) then
-                write (*, *) 'Error: input file "', filename, '" does not exist.'
-                return
+            if (exists .eqv. .false.) then
+                print *, 'Error: input file "', trim(filename), '" does not exist.'
+                stop
             endif
 
             ! open and read Namelist file.
-            open (action='read', file=filename, iostat=ios, newunit=fn)
+            open(action='read', file=filename, iostat=ios, newunit=fn)
 
             read(nml=MODEL, iostat=ios, unit=fn)
 
             if (ios /= 0) then
-                write (*, *) 'Error: invalid Namelist format.'
+                print *, 'Error: invalid Namelist format.'
+                stop
             end if
 
             close(fn)
+
+            ! check whether h5 file already exists
+            inquire(file=output%h5fname, exist=exists)
+
+            if (exists) then
+                print *, 'Error: output file "', trim(output%h5fname), '" already exists.'
+                stop
+            endif
 
             ! update parcel parameters
             parcel_info = parcel
