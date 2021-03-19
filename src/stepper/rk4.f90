@@ -13,7 +13,7 @@ module rk4
     ! rk4 temporaries
     double precision, allocatable, dimension(:, :) :: &
         k1o, k2o, k3o, k4o, &   ! position integration
-        strain, &               ! strain at parcel location
+        strain,             &   ! strain at parcel location
         b1o, b2o, b3o, b4o      ! B matrix integration
 
     contains
