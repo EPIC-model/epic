@@ -56,7 +56,7 @@ module parameters
     !
     ! interpolation
     !
-    character(len=32) :: interpl = 'nearest-grid-point'
+    character(len=32) :: interpl = 'trilinear'
 
     !
     ! TaylorGreen flow parameters
