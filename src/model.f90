@@ -37,7 +37,7 @@ module model
 
 
         subroutine run
-            use parameters, only : time, output
+            use parameters, only : time, output, verbose
             double precision :: t    = 0.0 ! current time
             double precision :: dt   = 0.0 ! time step
             integer          :: iter = 0
@@ -46,6 +46,11 @@ module model
 
             do while (t <= time%limit)
 
+                if (verbose) then
+                    print "(a15, f0.4)", "time:          ", t
+                    print "(a15, i0)", "iteration:     ", iter
+                endif
+
                 if (mod(iter, output%h5freq) == 0) then
                     call write_h5_step(iter, t, dt)
                 endif
@@ -53,7 +58,7 @@ module model
 
                 call rk4_step(dt)
 
-!                 call split_ellipse(parcels, parcel_info%lambda)
+                call split_ellipse(parcels, parcel_info%lambda)
 
                 ! update volume on the grid
                 call par2grid(parcels, parcels%volume, volume_f)
