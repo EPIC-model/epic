@@ -66,7 +66,7 @@ module interpolation
                 do p = 1, 2
 
                     ! get interpolation weights and mesh indices
-                    call get_indices_and_weights(points(:, p), ngp)
+                    call get_indices_and_weights(points(p, :), ngp)
 
                     ! loop over field components
                     do c = 1, ncomp
@@ -153,7 +153,7 @@ module interpolation
                 do p = 1, 2
 
                     ! get interpolation weights and mesh indices
-                    call get_indices_and_weights(points(:, p), ngp)
+                    call get_indices_and_weights(points(p, :), ngp)
 
                     ! loop over field components
                     do c = 1, ncomp

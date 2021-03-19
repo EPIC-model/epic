@@ -93,8 +93,8 @@ module ellipse
 
             dx = 0.5 * c * evec
 
-            points(:, 1) = position - dx
-            points(:, 2) = position + dx
+            points(1, :) = position - dx
+            points(2, :) = position + dx
 
         end function get_ellipse_points
 end module ellipse
