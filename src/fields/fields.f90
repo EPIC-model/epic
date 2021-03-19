@@ -11,7 +11,8 @@ module fields
     double precision, allocatable, dimension(:, :, :) :: &
         velocity_f,       &   ! velocity vector field
         strain_f,         &   ! velocity gradient tensor
-        volume_f              ! volume scalar field
+        volume_f,         &   ! volume scalar field
+        vorticity_f           ! vorticity scalar field
 
     contains
         function get_mesh_spacing() result(dx)

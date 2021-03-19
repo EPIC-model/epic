@@ -42,9 +42,9 @@ module model
             double precision :: dt   = 0.0 ! time step
             integer          :: iter = 0
 
-            dt = time%dt
-
             do while (t <= time%limit)
+
+                dt = get_time_step()
 
                 if (verbose) then
                     print "(a15, f0.4)", "time:          ", t
@@ -94,5 +94,26 @@ module model
             call close_h5_file
 
         end subroutine write_h5_step
+
+
+        function get_time_step() result(dt)
+            use parameters, only : time
+            double precision :: dt
+            double precision :: max_vorticity
+
+            if (time%is_adaptive) then
+                ! adaptive time stepping according to
+                ! https://doi.org/10.1002/qj.3319
+                max_vorticity = maxval(abs(vorticity_f))
+                dt = min(0.5 / max_vorticity, time%dt)
+            else
+                dt = time%dt
+            endif
+
+            if (dt <= 0.0) then
+                print "(a10, f0.2, a6)", "Time step ", dt, " <= 0!"
+                stop
+            endif
+        end function get_time_step
 
 end module model
