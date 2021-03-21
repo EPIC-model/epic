@@ -1,5 +1,5 @@
-from .h5_reader import H5Reader
-from .plot_beautify import *
+from h5_reader import H5Reader
+from plot_beautify import *
 import matplotlib.colors as cls
 import matplotlib.pyplot as plt
 import matplotlib as mpl
