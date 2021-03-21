@@ -1,5 +1,6 @@
 import h5py
 import os
+import numpy as np
 from matplotlib.patches import Ellipse
 
 class H5Reader:
@@ -17,31 +18,40 @@ class H5Reader:
     def close(self):
         self.h5file.close()
 
+    def get_num_steps(self):
+        return self.h5file['/'].attrs['nsteps']
 
-    def get_mesh_extent()
+    def get_mesh_extent(self):
         return np.array(self.h5file['mesh'].attrs['extent'])
 
 
-    def get_mesh_grid()
+    def get_mesh_grid(self):
         return np.array(self.h5file['mesh'].attrs['grid'])
 
 
-    def get_mesh_origin()
+    def get_mesh_origin(self):
         return np.array(self.h5file['mesh'].attrs['origin'])
 
 
-    def get_parcel_dataset(step, name):
+    def get_parcel_dataset(self, step, name):
         s = 'step#' + str(step).zfill(10)
         if not name in self.h5file[s]['parcels'].keys():
-            raise IOError("Parcel dataset '" + name "' unknown.")
+            raise IOError("Parcel dataset '" + name + "' unknown.")
         return np.array(self.h5file[s]['parcels'][name])
 
 
-    def get_ellipses(self, step)
-        position = self.get_parcel_dataset('position')
-        B = self.get_parcel_dataset('B')
-        V = self.get_parcel_dataset('volume')
-        angle = get_parcel_dataset('orientation')
+    def get_step_attribute(self, step, name):
+        s = 'step#' + str(step).zfill(10)
+        if not name in self.h5file[s].attrs.keys():
+            raise IOError("Step attribute '" + name + "' unknown.")
+        return self.h5file[s].attrs[name]
+
+
+    def get_ellipses(self, step):
+        position = self.get_parcel_dataset(step, 'position')
+        B = self.get_parcel_dataset(step, 'B')
+        V = self.get_parcel_dataset(step, 'volume')
+        angle = self.get_parcel_dataset(step, 'orientation')
 
         B22 = self._get_B22(B[0, :], B[1, :])
         lam = self._get_eigenvalue(B[0, :], B[1, :], B22)
@@ -57,8 +67,8 @@ class H5Reader:
 
 
     def get_aspect_ratio(self, step):
-        B = self.get_parcel_dataset('B')
-        V = self.get_parcel_dataset('volume')
+        B = self.get_parcel_dataset(step, 'B')
+        V = self.get_parcel_dataset(step, 'volume')
 
         B22 = self._get_B22(B[0, :], B[1, :])
         return self._get_eigenvalue(B[0, :], B[1, :], B22)
