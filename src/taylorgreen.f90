@@ -5,8 +5,8 @@ module taylorgreen
     contains
         function get_flow_velocity(pos) result(vel)
             double precision, intent(in) :: pos(2)
-            double precision :: xx, yy
-            double precision :: vel(2)
+            double precision             :: xx, yy
+            double precision             :: vel(2)
 
             xx = flow%freq(1) * pos(1) + flow%phase(1)
             yy = flow%freq(2) * pos(2) + flow%phase(2)
@@ -18,8 +18,8 @@ module taylorgreen
         ! grad ordering : dudx, dudy, dvdx, dvdy
         function get_flow_gradient(pos) result(grad)
             double precision, intent(in) :: pos(2)
-            double precision :: xx, yy
-            double precision :: grad(4)
+            double precision             :: xx, yy
+            double precision             :: grad(4)
 
             xx = flow%freq(1) * pos(1) + flow%phase(1)
             yy = flow%freq(2) * pos(2) + flow%phase(2)
@@ -37,5 +37,18 @@ module taylorgreen
             grad(4) = - flow%freq(2) * flow%amp(2) * sin(xx) * sin(yy)
 
         end function get_flow_gradient
+
+        function get_flow_vorticity(pos) result(omega)
+            double precision, intent(in) :: pos(2)
+            double precision             :: xx, yy
+            double precision             :: omega
+
+            xx = flow%freq(1) * pos(1) + flow%phase(1)
+            yy = flow%freq(2) * pos(2) + flow%phase(2)
+
+            omega = (flow%amp(2) * flow%freq(1)     &
+                   - flow%amp(1) * flow%freq(2))    &
+                   * cos(xx) * cos(yy)
+        end function get_flow_vorticity
 
 end module taylorgreen

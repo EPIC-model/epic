@@ -1,7 +1,11 @@
 module init
-    use parameters, only : mesh, parcel_info
-    use fields, only : velocity_f, strain_f, volume_f, &
-                       get_mesh_spacing, get_position
+    use parameters, only : mesh, parcel_info, time
+    use fields, only : velocity_f,       &
+                       strain_f,         &
+                       volume_f,         &
+                       vorticity_f,      &
+                       get_mesh_spacing, &
+                       get_position
     use parcel_container, only : parcels, n_parcels
     implicit none
 
@@ -136,10 +140,15 @@ module init
             allocate(volume_f(mesh%grid(1), mesh%grid(2), 1))
             volume_f = 0.0
 
+            if (time%is_adaptive) then
+                call init_vorticity_field
+            endif
+
         end subroutine init_fields
 
         subroutine init_velocity_field
-            use taylorgreen, only : get_flow_velocity, get_flow_gradient
+            use taylorgreen, only : get_flow_velocity, &
+                                    get_flow_gradient
             integer :: i, j
             double precision :: pos(2)
             double precision :: dx(2)
@@ -147,8 +156,6 @@ module init
             allocate(velocity_f(mesh%grid(1), mesh%grid(2), 2))
 
             allocate(strain_f(mesh%grid(1), mesh%grid(2), 4))
-
-!             dx = get_mesh_spacing()
 
             do j = 1, mesh%grid(2)
                 do i = 1, mesh%grid(1)
@@ -160,5 +167,23 @@ module init
                 enddo
             enddo
         end subroutine init_velocity_field
+
+        subroutine init_vorticity_field
+            use taylorgreen, only : get_flow_vorticity
+            integer :: i, j
+            double precision :: pos(2)
+            double precision :: dx(2)
+
+            allocate(vorticity_f(mesh%grid(1), mesh%grid(2), 1))
+
+            do j = 1, mesh%grid(2)
+                do i = 1, mesh%grid(1)
+                    pos = get_position((/i, j/))
+
+                    vorticity_f(i, j, :) = get_flow_vorticity(pos)
+                enddo
+            enddo
+
+        end subroutine init_vorticity_field
 
 end module init

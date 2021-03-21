@@ -131,7 +131,7 @@ module writer
         end subroutine write_h5_dataset_3d
 
 
-        subroutine write_h5_scalar_attrib(iter, name, val)
+        subroutine write_h5_scalar_step_attrib(iter, name, val)
             integer,          intent(in)     :: iter ! iteration
             character(*),     intent(in)     :: name
             double precision, intent(in)     :: val
@@ -158,7 +158,7 @@ module writer
             call h5aclose_f(attr, h5err)
             call h5sclose_f(space, h5err)
             call h5gclose_f(group, h5err)
-        end subroutine write_h5_scalar_attrib
+        end subroutine write_h5_scalar_step_attrib
 
 
         ! open existing group or create one
