@@ -1,0 +1,16 @@
+# python_PYTHON = h5_header.py
+
+# 21 March 2021
+# https://stackoverflow.com/questions/10934260/how-can-i-disable-generation-of-pyc-and-pyo-files?rq=1
+dist_python_DATA = h5_reader.py 	\
+		plots.py		\
+		plot_beautify.py 	\
+		__init__.py
+
+# # 21 March 2021
+# # https://stackoverflow.com/questions/4994079/print-something-after-successfull-make-in-makefile-am
+# install-exec-hook:
+# 	echo
+# 	"export PYTHONPATH=${pythondir}"
+# 	echo
+
