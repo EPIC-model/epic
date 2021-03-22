@@ -14,6 +14,7 @@ epic_SOURCES = 					\
 	parser/parser.f90 			\
 	interpolation/interpl_methods.f90	\
 	interpolation/interpolation.f90 	\
+	diagnostics.f90				\
 	stepper/rk4.f90 			\
 	init.f90 				\
 	model.f90 				\

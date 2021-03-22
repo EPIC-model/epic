@@ -31,7 +31,6 @@ module parcel_container
             integer(hid_t)                :: step_group
             character(:), allocatable     :: step
             character(:), allocatable     :: name
-            logical                       :: link_exists = .false.
             double precision, allocatable :: angle(:)
 
             step = trim(get_step_group_name(iter))

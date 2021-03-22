@@ -19,7 +19,7 @@ class H5Reader:
         self.h5file.close()
 
     def get_num_steps(self):
-        return self.h5file['/'].attrs['nsteps']
+        return self.h5file['/'].attrs['nsteps'][0]
 
     def get_mesh_extent(self):
         return np.array(self.h5file['mesh'].attrs['extent'])
@@ -31,6 +31,20 @@ class H5Reader:
 
     def get_mesh_origin(self):
         return np.array(self.h5file['mesh'].attrs['origin'])
+
+    def get_diagnostic(self, name):
+        s = 'step#' + str(0).zfill(10)
+        if not name in self.h5file[s]['diagnostics'].attrs.keys():
+            raise IOError("Diagnostic '" + name + "' unknown.")
+
+        nsteps = self.get_num_steps()
+        shape = np.array(self.h5file[s]['diagnostics'].attrs[name].shape)
+        shape[0] = nsteps
+        data = np.zeros(shape)
+        for step in range(nsteps):
+            s = 'step#' + str(step).zfill(10)
+            data[step] = np.array(self.h5file[s]['diagnostics'].attrs[name])
+        return data
 
 
     def get_parcel_dataset(self, step, name):

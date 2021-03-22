@@ -54,7 +54,6 @@ module fields
             integer(hid_t)             :: step_group
             character(:), allocatable  :: step
             character(:), allocatable  :: name
-            logical                    :: link_exists = .false.
 
             step = trim(get_step_group_name(iter))
 
