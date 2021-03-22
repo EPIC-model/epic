@@ -3,6 +3,8 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
 
+AM_PATH_PYTHON([3.0])
+
 # change file extension from *.f to *.f90
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
@@ -11,7 +13,9 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    tools/Makefile
 ])
+
 
 
 FCFLAGS=""
