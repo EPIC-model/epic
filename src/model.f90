@@ -1,6 +1,7 @@
 module model
     use hdf5
     use constants, only : max_num_parcels
+    use diagnostics
     use init, only : init_parcels, init_fields
     use parser, only : read_config_file, write_h5_params
     use parcel_container
@@ -40,7 +41,7 @@ module model
 
 
         subroutine run
-            use parameters, only : time, output, verbose
+            use parameters, only : time, output, verbose, parcel_info
             double precision :: t    = 0.0 ! current time
             double precision :: dt   = 0.0 ! time step
             integer          :: iter = 0
@@ -61,7 +62,9 @@ module model
 
                 call rk4_step(dt)
 
-                call split_ellipse(parcels, parcel_info%lambda)
+                if (parcel_info%is_elliptic) then
+                    call split_ellipse(parcels, parcel_info%lambda)
+                endif
 
                 ! update volume on the grid
                 call par2grid(parcels, parcels%volume, volume_f)
@@ -94,6 +97,8 @@ module model
             call write_h5_scalar_step_attrib(iter, "dt", dt)
 
             call write_h5_parcels(iter)
+
+            call write_h5_diagnostics(iter)
 
             call write_h5_fields(iter)
 
