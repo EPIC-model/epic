@@ -32,6 +32,11 @@ class H5Reader:
     def is_elliptic(self):
         return bool(self.h5file['parcel'].attrs['is_elliptic'])
 
+    def get_parcel_info(self, name):
+        if not name in self.h5file['parcel'].attrs.keys():
+            raise IOError("Parcel info '" + name + "' unknown.")
+        return self.h5file['parcel'].attrs[name]
+
 
     def get_mesh_origin(self):
         return np.array(self.h5file['mesh'].attrs['origin'])
