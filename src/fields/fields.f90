@@ -9,10 +9,10 @@ module fields
     implicit none
 
     double precision, allocatable, dimension(:, :, :) :: &
-        velocity_f,       &   ! velocity vector field
-        strain_f,         &   ! velocity gradient tensor
-        volume_f,         &   ! volume scalar field
-        vorticity_f           ! vorticity scalar field
+        velocity_f,       &   ! velocity vector field (has 1 halo cell layer)
+        strain_f,         &   ! velocity gradient tensor (has 1 halo cell layer)
+        volume_f,         &   ! volume scalar field (has 1 halo cell layer)
+        vorticity_f           ! vorticity scalar field (has no halo cell layers)
 
     contains
         function get_mesh_spacing() result(dx)
@@ -67,12 +67,18 @@ module fields
             !
 
             if (iter == 0) then
-                call write_h5_dataset_3d(name, "velocity", velocity_f)
+                ! do not write halo cells
+                call write_h5_dataset_3d(name, "velocity",          &
+                    velocity_f(1:mesh%grid(1), 1:mesh%grid(2), :))
 
-                call write_h5_dataset_3d(name, "velocity strain", strain_f)
+                ! do not write halo cells
+                call write_h5_dataset_3d(name, "velocity strain",   &
+                    strain_f(1:mesh%grid(1), 1:mesh%grid(2), :))
             endif
 
-            call write_h5_dataset_3d(name, "volume", volume_f)
+            ! do not write halo cells
+            call write_h5_dataset_3d(name, "volume",            &
+                volume_f(1:mesh%grid(1), 1:mesh%grid(2), :))
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)
