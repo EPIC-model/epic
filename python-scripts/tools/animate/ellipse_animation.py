@@ -36,7 +36,8 @@ class EllipseAnimation:
         fig = plt.figure(figsize=(5, 4), dpi=200)
         self.ax = plt.gca()
 
-        self.norm = cls.Normalize(vmin=1.0, vmax=5.0)
+        lam = self.h5reader.get_parcel_info('lambda')
+        self.norm = cls.Normalize(vmin=1.0, vmax=lam)
         self.cmap = plt.cm.viridis_r
 
         sm = plt.cm.ScalarMappable(cmap=self.cmap, norm=self.norm)

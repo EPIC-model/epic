@@ -69,6 +69,7 @@ module parser
             call write_h5_logical_attrib(group, "is_random", parcel_info%is_random)
             call write_h5_integer_scalar_attrib(group, "seed", parcel_info%seed)
             call write_h5_logical_attrib(group, "is_elliptic", parcel_info%is_elliptic)
+            call write_h5_double_scalar_attrib(group, "lambda", parcel_info%lambda)
 
             call h5gclose_f(group, h5err)
 

@@ -16,9 +16,11 @@ def plot_ellipses(fname, step=-1, show=False):
         start = step
         stop = step + 1
 
+    lam = h5reader.get_parcel_info('lambda')
+
     # 19 Feb 2021
     # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
-    norm = cls.Normalize(vmin=1.0, vmax=5.0)
+    norm = cls.Normalize(vmin=1.0, vmax=lam)
     cmap = plt.cm.viridis_r
 
     origin = h5reader.get_mesh_origin()
