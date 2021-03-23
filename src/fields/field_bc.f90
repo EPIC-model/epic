@@ -11,6 +11,15 @@ module field_bc
             double precision, intent(inout) :: field(0:, 0:, :)
             integer                         :: i
 
+            ! sum halo cell values to internal cells at the boundary
+            field(1, :, :)            = field(1, :, :) + field(0, :, :)
+            field(mesh%grid(1), :, :) = field(mesh%grid(1), :, :)      &
+                                      + field(mesh%grid(1) + 1, :, :)
+
+            field(:, 1, :)            = field(:, 1, :) + field(:, 0, :)
+            field(:, mesh%grid(2), :) = field(:, mesh%grid(1), :)      &
+                                      + field(:, mesh%grid(1) + 1, :)
+
             do i = 1, 2
                 if (mesh%bc(i) == "free slip") then
                     call apply_free_slip(field, i)
@@ -29,31 +38,13 @@ module field_bc
             integer,          intent(in)    :: i
 
             if (i == 1) then
-                ! add halo cell values to internal cell values
-                field(1, :, :) = field(1, :, :) + field(0, :, :)
-
-                field(mesh%grid(1), :, :) = field(mesh%grid(1), :, :)      &
-                                          + field(mesh%grid(1) + 1, :, :)
-
-                ! exchange BC values
                 field(1, :, :)            = field(1, :, :)              &
                                           + field(mesh%grid(1), :, :)
-
                 field(mesh%grid(1), :, :) = field(1, :, :)
-
             else if (i == 2) then
-                ! add halo cell values to internal cell values
-                field(:, 1, :) = field(:, 1, :) + field(:, 0, :)
-
-                field(:, mesh%grid(2), :) = field(:, mesh%grid(2), :)      &
-                                          + field(:, mesh%grid(2) + 1, :)
-
-                ! exchange BC values
                 field(:, 1, :)            = field(:, 1, :)              &
                                           + field(:, mesh%grid(2), :)
-
                 field(:, mesh%grid(2), :) = field(:, 1, :)
-
             else
                 print *, "Only up to 2 dimensions!"
             endif
@@ -66,23 +57,9 @@ module field_bc
             integer,          intent(in)    :: i
 
             if (i == 1) then
-                ! add halo cell values to internal cell values
-                field(1, :, :)            = field(1, :, :)                  &
-                                          + field(0, :, :)
-                field(mesh%grid(1), :, :) = field(mesh%grid(1), :, :)       &
-                                          + field(mesh%grid(1) + 1, :, :)
-
-                ! do free slip bc
                 field(1, :, :)            = 2.0 * field(1, :, :)
                 field(mesh%grid(1), :, :) = 2.0 * field(mesh%grid(1), :, :)
             else if (i == 2) then
-                ! add halo cell values to internal cell values
-                field(:, 1, :)            = field(:, 1, :)                  &
-                                          + field(:, 0, :)
-                field(:, mesh%grid(2), :) = field(:, mesh%grid(2), :)       &
-                                          + field(:, mesh%grid(2) + 1, :)
-
-                ! do free slip bc
                 field(:, 1, :)            = 2.0 * field(:, 1, :)
                 field(:, mesh%grid(2), :) = 2.0 * field(:, mesh%grid(2), :)
             else
