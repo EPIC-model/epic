@@ -17,8 +17,8 @@ module field_bc
                                       + field(mesh%grid(1) + 1, :, :)
 
             field(:, 1, :)            = field(:, 1, :) + field(:, 0, :)
-            field(:, mesh%grid(2), :) = field(:, mesh%grid(1), :)      &
-                                      + field(:, mesh%grid(1) + 1, :)
+            field(:, mesh%grid(2), :) = field(:, mesh%grid(2), :)      &
+                                      + field(:, mesh%grid(2) + 1, :)
 
             do i = 1, 2
                 if (mesh%bc(i) == "free slip") then
