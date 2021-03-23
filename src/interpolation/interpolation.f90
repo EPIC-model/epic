@@ -113,28 +113,36 @@ module interpolation
         end subroutine par2grid_non_elliptic
 
 
-        subroutine grid2par(parcels, attrib, field)
-            type(parcel_container_type), intent(inout) :: parcels
-            double precision,            intent(out)   :: attrib(:, :)
-            double precision,            intent(in)    :: field(:, :, :)
+        subroutine grid2par(position, volume, attrib, field, B)
+            double precision,           intent(in)  :: position(:, :)
+            double precision,           intent(in)  :: volume(:, :)
+            double precision,           intent(out) :: attrib(:, :)
+            double precision,           intent(in)  :: field(:, :, :)
+            double precision, optional, intent(in)  :: B(:, :)
 
             if (parcel_info%is_elliptic) then
-                call grid2par_elliptic(parcels, attrib, field)
+                if (.not. present(B)) then
+                    print *, "B matrix not passed to grid2par!"
+                    stop
+                endif
+                call grid2par_elliptic(position, volume, B, attrib, field)
             else
-                call grid2par_non_elliptic(parcels, attrib, field)
+                call grid2par_non_elliptic(position, attrib, field)
             endif
 
         end subroutine grid2par
 
 
-        subroutine grid2par_elliptic(parcels, attrib, field)
-            type(parcel_container_type), intent(inout) :: parcels
-            double precision,            intent(out)   :: attrib(:, :)
-            double precision,            intent(in)    :: field(:, :, :)
-            integer                                    :: ncomp, ngp
-            double precision                           :: points(2, 2)
-            integer                                    :: n, p, c, i
-            integer                                    :: the_shape(3)
+        subroutine grid2par_elliptic(position, volume, B, attrib, field)
+            double precision, intent(in)  :: position(:, :)
+            double precision, intent(in)  :: volume(:, :)
+            double precision, intent(in)  :: B(:, :)
+            double precision, intent(out) :: attrib(:, :)
+            double precision, intent(in)  :: field(:, :, :)
+            integer                       :: ncomp, ngp
+            double precision              :: points(2, 2)
+            integer                       :: n, p, c, i
+            integer                       :: the_shape(3)
 
             ! number of field components
             the_shape = shape(field)
@@ -145,9 +153,7 @@ module interpolation
                 ! clear old data
                 attrib(n, :) = 0.0
 
-                points = get_ellipse_points(parcels%position(n, :), &
-                                            parcels%volume(n, 1),   &
-                                            parcels%B(n, :))
+                points = get_ellipse_points(position(n, :), volume(n, 1), B(n, :))
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -169,13 +175,13 @@ module interpolation
 
         end subroutine grid2par_elliptic
 
-        subroutine grid2par_non_elliptic(parcels, attrib, field)
-            type(parcel_container_type), intent(inout) :: parcels
-            double precision,            intent(out)   :: attrib(:, :)
-            double precision,            intent(in)    :: field(:, :, :)
-            integer                                    :: ncomp, ngp
-            integer                                    :: n, c, i
-            integer                                    :: the_shape(3)
+        subroutine grid2par_non_elliptic(position, attrib, field)
+            double precision, intent(in)  :: position(:, :)
+            double precision, intent(out) :: attrib(:, :)
+            double precision, intent(in)  :: field(:, :, :)
+            integer                       :: ncomp, ngp
+            integer                       :: n, c, i
+            integer                       :: the_shape(3)
 
             ! number of field components
             the_shape = shape(field)
@@ -187,7 +193,7 @@ module interpolation
                 attrib(n, :) = 0.0
 
                 ! get interpolation weights and mesh indices
-                call get_indices_and_weights(parcels%position(n, :), ngp)
+                call get_indices_and_weights(position(n, :), ngp)
 
                 ! loop over field components
                 do c = 1, ncomp
