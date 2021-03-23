@@ -3,22 +3,86 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
 
-AM_PATH_PYTHON([3.0])
 
 # change file extension from *.f to *.f90
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
 
+FCFLAGS=""
+
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
-    tools/Makefile
+    python-scripts/Makefile
+    python-scripts/tools/Makefile
+    python-scripts/tools/animate/Makefile
 ])
 
 
+#######################################################################################
+##
+## check Python installation
+##
+## # 23 March 2021
+## https://askubuntu.com/questions/29370/how-to-check-if-a-command-succeeded
+## https://gitlab.psi.ch/H5hut/src/-/blob/master/configure.ac
+##
 
-FCFLAGS=""
+AM_PATH_PYTHON([3.0])
+
+#
+# numpy
+#
+AC_MSG_CHECKING([for python numpy library])
+`${PYTHON} -c 'import numpy' 2> config.log`
+if test "X$?" = "X0" ; then
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+    AC_MSG_NOTICE([Install numpy with "pip install numpy".])
+    exit 1
+fi
+
+#
+# matplotlib
+#
+AC_MSG_CHECKING([for python matplotlib library])
+`${PYTHON} -c 'import matplotlib.pyplot as plt' 2> config.log`
+if test "x$?" = "x0" ; then
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+    AC_MSG_NOTICE([Install matplotlib with "pip install matplotlib".])
+    exit 1
+fi
+
+#
+# h5py
+#
+AC_MSG_CHECKING([for python h5py library])
+`${PYTHON} -c 'import h5py' 2> config.log`
+if test "x$?" = "x0" ; then
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+    AC_MSG_NOTICE([Install h5py with "pip install h5py".])
+    exit 1
+fi
+
+#
+# progressbar
+#
+AC_MSG_CHECKING([for python progressbar library])
+`${PYTHON} -c 'import progressbar' 2> config.log`
+if test "x$?" = "x0" ; then
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+    AC_MSG_NOTICE([Install progressbar with "pip install progressbar".])
+    exit 1
+fi
+
 
 #######################################################################################
 ##
