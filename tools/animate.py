@@ -14,6 +14,8 @@ class EllipseAnimation:
         https://stackoverflow.com/questions/9401658/how-to-animate-a-scatter-plot
         https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html#matplotlib.pyplot.plot
         https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html#matplotlib.animation.FuncAnimation
+        https://stackoverflow.com/questions/23791922/saving-animation-with-matplotlib
+        https://github.com/niltonvolpato/python-progressbar
     """
 
     def __init__(self, verbose=False):
