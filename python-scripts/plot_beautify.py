@@ -1,3 +1,7 @@
+import matplotlib as mpl
+
+mpl.rcParams['text.usetex'] = True
+
 def add_timestamp(plt, time):
     # 29. Dec 2020
     # https://matplotlib.org/3.1.1/gallery/pyplots/annotate_transform.html#sphx-glr-gallery-pyplots-annotate-transform-py

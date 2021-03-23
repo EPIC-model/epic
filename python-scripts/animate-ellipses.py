@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 import argparse
-from animate import EllipseAnimation
+from tools.animate import EllipseAnimation
 import os
 
 try:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose",
-                        action="store_true",
-                        help="print some more information")
     parser.add_argument("-f", "--filename",
                         type=str,
                         default='',
@@ -29,9 +26,11 @@ try:
 
 
     if args.saveas == '':
-        args.saveas = os.path.split(args.filename)[0] + '.mp4'
+        args.saveas = os.path.splitext(args.filename)[0] + '.mp4'
+    else:
+        args.saveas = os.path.splitext(args.saveas)[0] + '.mp4'
 
-    anim = EllipseAnimation(verbose=args.verbose)
+    anim = EllipseAnimation()
 
     anim.create(args.filename)
 

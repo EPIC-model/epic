@@ -1,9 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import animation
-from h5_reader import H5Reader
+from tools.h5_reader import H5Reader
 import matplotlib.colors as cls
-from plot_beautify import *
+from tools.plot_beautify import *
 import progressbar
 
 class EllipseAnimation:
@@ -18,17 +18,15 @@ class EllipseAnimation:
         https://github.com/niltonvolpato/python-progressbar
     """
 
-    def __init__(self, verbose=False):
+    def __init__(self):
         self.ani = None
-        self.verbose = verbose
-
 
     def create(self, fname):
         self.h5reader = H5Reader()
 
         self.h5reader.open(fname)
 
-        self.nsteps = 10 #self.h5reader.get_num_steps()
+        self.nsteps = self.h5reader.get_num_steps()
 
         fig = plt.figure(figsize=(5, 4), dpi=200)
         self.ax = plt.gca()
@@ -54,19 +52,17 @@ class EllipseAnimation:
 
     def save(self, fname, fps=3, dpi=200, extra_args=['-vcodec', 'libx264']):
         self.ani.save(fname, fps=fps, dpi=dpi, extra_args=extra_args)
+        print("Save animation in", fname)
         self.h5reader.close()
 
 
     def _update(self, step):
 
-        if self.verbose:
-            if (step == 0):
-                print("Start processing ...")
-                self.bar = progressbar.ProgressBar(maxval=self.nsteps).start()
+        if (step == 0):
+            print("Start processing ...")
+            self.bar = progressbar.ProgressBar(maxval=self.nsteps).start()
 
-            self.bar.update(step+1)
-
-            #print("Processing step", step, "... ", end='')
+        self.bar.update(step+1)
 
         ells = self.h5reader.get_ellipses(step)
         patches = []
@@ -96,10 +92,9 @@ class EllipseAnimation:
         add_number_of_parcels(self.ax, len(ratio))
         plt.tight_layout()
 
-        if self.verbose:
-            if step == self.nsteps - 1:
-                self.bar.finish()
-                print("done.")
+        if step == self.nsteps - 1:
+            self.bar.finish()
+            print("done.")
 
         return patches
 
