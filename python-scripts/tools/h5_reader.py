@@ -29,6 +29,10 @@ class H5Reader:
         return np.array(self.h5file['mesh'].attrs['grid'])
 
 
+    def is_elliptic(self):
+        return bool(self.h5file['parcel'].attrs['is_elliptic'])
+
+
     def get_mesh_origin(self):
         return np.array(self.h5file['mesh'].attrs['origin'])
 

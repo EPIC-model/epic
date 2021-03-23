@@ -26,10 +26,16 @@ class EllipseAnimation:
 
         self.h5reader.open(fname)
 
+        if not self.h5reader.is_elliptic():
+            raise RuntimeError("The model saved in '" + fname + "' is non-elliptic.")
+
         self.nsteps = self.h5reader.get_num_steps()
+        self.extent = self.h5reader.get_mesh_extent()
+        self.origin = self.h5reader.get_mesh_origin()
 
         fig = plt.figure(figsize=(5, 4), dpi=200)
         self.ax = plt.gca()
+
         self.norm = cls.Normalize(vmin=1.0, vmax=5.0)
         self.cmap = plt.cm.viridis_r
 
@@ -47,13 +53,23 @@ class EllipseAnimation:
                                            init_func = self._init,
                                            frames    = self.nsteps,
                                            interval  = 200,                # Delay between frames in milliseconds
-                                           blit      = True)
+                                           blit      = True,
+                                           repeat    = True)
 
 
     def save(self, fname, fps=3, dpi=200, extra_args=['-vcodec', 'libx264']):
         self.ani.save(fname, fps=fps, dpi=dpi, extra_args=extra_args)
         print("Save animation in", fname)
         self.h5reader.close()
+
+
+    def _resize(self):
+        # make plot domain 5 percent larger
+        self.ax.set_xlim([self.origin[0] - 0.05 * self.extent[0],
+                          self.origin[0] + 1.05 * self.extent[0]])
+
+        self.ax.set_ylim([self.origin[1] - 0.05 * self.extent[0],
+                          self.origin[0] + 1.05 * self.extent[1]])
 
 
     def _update(self, step):
@@ -67,8 +83,9 @@ class EllipseAnimation:
         ells = self.h5reader.get_ellipses(step)
         patches = []
         self.ax.clear()
-        self.ax.set_xlim([-0.5 * np.pi, 0.5 * np.pi])
-        self.ax.set_ylim([-0.5 * np.pi, 0.5 * np.pi])
+
+        self._resize()
+
         self.ax.set_xlabel(r'$x$')
         self.ax.set_ylabel(r'$y$')
 
@@ -78,19 +95,16 @@ class EllipseAnimation:
             e.set_facecolor(self.cmap(self.norm(ratio[j])))
             patches.append(self.ax.add_patch(e))
 
-        extent = self.h5reader.get_mesh_extent()
-        origin = self.h5reader.get_mesh_origin()
+        self.ax.axvline(self.origin[0], color='black', linewidth=0.25)
+        self.ax.axvline(self.origin[0] + self.extent[0], color='black', linewidth=0.25)
 
-        self.ax.axvline(origin[0], color='black', linewidth=0.25)
-        self.ax.axvline(origin[0] + extent[0], color='black', linewidth=0.25)
+        self.ax.axhline(self.origin[1], color='black', linewidth=0.25)
+        self.ax.axhline(self.origin[1] + self.extent[1], color='black', linewidth=0.25)
 
-        self.ax.axhline(origin[1], color='black', linewidth=0.25)
-        self.ax.axhline(origin[1] + extent[1], color='black', linewidth=0.25)
-
+        # add some additional information
         add_timestamp(self.ax, self.h5reader.get_step_attribute(step, name='t'))
 
         add_number_of_parcels(self.ax, len(ratio))
-        plt.tight_layout()
 
         if step == self.nsteps - 1:
             self.bar.finish()
@@ -99,4 +113,5 @@ class EllipseAnimation:
         return patches
 
     def _init(self):
+        self._resize()
         return []

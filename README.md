@@ -37,11 +37,6 @@ $ ../configure --prefix=$PREFIX
 $ make
 $ make install
 ```
-in the terminal. In order to use the provided Python scripts, add the path to the `PYTHONPATH` environment
-variable:
-```
-export PYTHONPATH=$PYTHONPATH:$PREFIX/lib/python3.8/site-packages
-```
 
 ## Running
 In order to run the model, execute
@@ -49,3 +44,10 @@ In order to run the model, execute
 $ ./epic --config filename
 ```
 where `filename` is the configuration file.
+
+## Post-processing
+The directory `$PREFIX/bin` contains an animation script. Please type
+```
+$ $PREFIX/bin/animate-ellipses.py
+```
+for further information.

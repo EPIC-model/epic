@@ -4,16 +4,18 @@ from tools.animate import EllipseAnimation
 import os
 
 try:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Save a mp4 animation of the evolving ellipses.")
+
     parser.add_argument("-f", "--filename",
                         type=str,
                         default='',
-                        help="hdf5 file")
+                        help="hdf5 output file of EPIC")
 
     parser.add_argument("-s", "--saveas",
                         type=str,
                         default='',
-                        help="file name of saved animation")
+                        help="file name of saved animation (default: FILENAME.mp4)")
 
     args = parser.parse_args()
 
