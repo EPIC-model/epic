@@ -54,5 +54,6 @@ where `filename` is the configuration file.
 The directory `$PREFIX/bin` contains following scripts:
 * animate-ellipses.py
 * plot-ellipses.py
+* merge-ellipses.py (has no `--help`)
 
 Please append the argument `--help` when calling the scripts to get further information.
