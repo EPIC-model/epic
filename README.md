@@ -38,6 +38,11 @@ $ make
 $ make install
 ```
 
+**Note:** You can add the bin directory `$PREFIX/bin` to your `$PATH` environment variable with
+```
+export PATH=$PREFIX/bin:$PATH
+```
+
 ## Running
 In order to run the model, execute
 ```
