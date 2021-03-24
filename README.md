@@ -46,8 +46,7 @@ $ ./epic --config filename
 where `filename` is the configuration file.
 
 ## Post-processing
-The directory `$PREFIX/bin` contains an animation script. Please type
-```
-$ $PREFIX/bin/animate-ellipses.py
-```
-for further information.
+The directory `$PREFIX/bin` contains following scripts:
+* animate-ellipses.py
+* plot-ellipses.py
+Please append the argument `--help` when calling the scripts to get further information.
