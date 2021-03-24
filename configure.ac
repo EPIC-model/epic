@@ -32,6 +32,18 @@ AC_CONFIG_FILES([
 AM_PATH_PYTHON([3.0])
 
 #
+# argparse
+#
+AC_MSG_CHECKING([for python argparse library])
+`${PYTHON} -c 'import argparse' 2> config.log`
+if test "X$?" = "X0" ; then
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+    exit 1
+fi
+
+#
 # numpy
 #
 AC_MSG_CHECKING([for python numpy library])
