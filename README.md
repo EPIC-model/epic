@@ -38,6 +38,11 @@ $ make
 $ make install
 ```
 
+**Note:** You can add the bin directory `$PREFIX/bin` to your `$PATH` environment variable with
+```
+export PATH=$PREFIX/bin:$PATH
+```
+
 ## Running
 In order to run the model, execute
 ```
@@ -46,8 +51,9 @@ $ ./epic --config filename
 where `filename` is the configuration file.
 
 ## Post-processing
-The directory `$PREFIX/bin` contains an animation script. Please type
-```
-$ $PREFIX/bin/animate-ellipses.py
-```
-for further information.
+The directory `$PREFIX/bin` contains following scripts:
+* animate-ellipses.py
+* plot-ellipses.py
+* merge-ellipses.py
+
+Please append the argument `--help` when calling the scripts to get further information.

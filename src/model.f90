@@ -44,7 +44,8 @@ module model
             use parameters, only : time, output, verbose, parcel_info
             double precision :: t    = 0.0 ! current time
             double precision :: dt   = 0.0 ! time step
-            integer          :: iter = 0
+            integer          :: iter = 0   ! simulation iteration
+            integer          :: nw   = 0   ! number of writes to h5
 
             do while (t <= time%limit)
 
@@ -56,9 +57,12 @@ module model
                 endif
 
                 if (mod(iter, output%h5freq) == 0) then
-                    call write_h5_step(iter, t, dt)
+                    if(verbose) then
+                        print "(a30)", "write fields and parcels to h5"
+                    endif
+                    call write_h5_step(nw, t, dt)
+                    nw = nw + 1
                 endif
-
 
                 call rk4_step(dt)
 
@@ -73,8 +77,13 @@ module model
                 iter = iter + 1
             end do
 
+            if (mod(iter, output%h5freq) == 0) then
+                call write_h5_step(nw, t, dt)
+                nw = nw + 1
+            endif
+
             ! write number of iterations to h5 file
-            call write_h5_num_steps(iter)
+            call write_h5_num_steps(nw)
 
         end subroutine run
 

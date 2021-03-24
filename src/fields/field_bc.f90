@@ -8,8 +8,17 @@ module field_bc
     contains
 
         subroutine apply_field_bc(field)
-            double precision, intent(inout) :: field(:, :, :)
+            double precision, intent(inout) :: field(0:, 0:, :)
             integer                         :: i
+
+            ! sum halo cell values to internal cells at the boundary
+            field(1, :, :)            = field(1, :, :) + field(0, :, :)
+            field(mesh%grid(1), :, :) = field(mesh%grid(1), :, :)      &
+                                      + field(mesh%grid(1) + 1, :, :)
+
+            field(:, 1, :)            = field(:, 1, :) + field(:, 0, :)
+            field(:, mesh%grid(2), :) = field(:, mesh%grid(2), :)      &
+                                      + field(:, mesh%grid(2) + 1, :)
 
             do i = 1, 2
                 if (mesh%bc(i) == "free slip") then
@@ -25,7 +34,7 @@ module field_bc
 
 
         subroutine apply_periodic(field, i)
-            double precision, intent(inout) :: field(:, :, :)
+            double precision, intent(inout) :: field(0:, 0:, :)
             integer,          intent(in)    :: i
 
             if (i == 1) then
@@ -44,7 +53,7 @@ module field_bc
 
 
         subroutine apply_free_slip(field, i)
-            double precision, intent(inout) :: field(:, :, :)
+            double precision, intent(inout) :: field(0:, 0:, :)
             integer,          intent(in)    :: i
 
             if (i == 1) then

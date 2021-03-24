@@ -13,13 +13,17 @@ module diagnostics
     contains
 
         function get_rms_volume_error() result(rms)
-            double precision :: V0  ! cell volume
-            double precision :: n
-            double precision :: rms ! rms volume error
+            double precision              :: V0  ! cell volume
+            double precision              :: n
+            double precision              :: rms ! rms volume error
+            double precision, allocatable :: V(:, :, :)
 
-            n = size(volume_f)
+            ! remove halo cells
+            V = volume_f(1:mesh%grid(1), 1:mesh%grid(2), :)
+
+            n = size(V)
             V0 = product(get_mesh_spacing())
-            rms = sqrt(sum((volume_f - V0) ** 2) / n) / V0
+            rms = sqrt(sum((V - V0) ** 2) / n) / V0
         end function get_rms_volume_error
 
 
