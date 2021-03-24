@@ -36,6 +36,10 @@ rc('font', **{'family': 'Times New Roman'})
 rc('text', usetex=True)
 #=========================================
 
+if '-h' in sys.argv or '--help' in sys.argv:
+    print("Merges two ellipses in two different ways")
+    exit(0)
+
 #---------------------------------------------------------------
 # Input all parameters:
 print()
