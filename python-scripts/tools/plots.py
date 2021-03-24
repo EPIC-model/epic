@@ -4,13 +4,15 @@ import matplotlib.colors as cls
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-def plot_ellipses(fname, step=-1, show=False):
+def plot_ellipses(fname, step=-1, show=False, fmt="png"):
     h5reader = H5Reader()
 
     h5reader.open(fname)
 
+    nsteps = h5reader.get_num_steps()
+
     start = 0
-    stop = h5reader.get_num_steps()
+    stop = nsteps
 
     if step > -1:
         start = step
@@ -29,7 +31,7 @@ def plot_ellipses(fname, step=-1, show=False):
     for i in range(start, stop):
         ells = h5reader.get_ellipses(step=i)
 
-        fig, ax = plt.subplots(figsize=(5, 4), dpi=300)
+        fig, ax = plt.subplots(figsize=(5, 4), dpi=300, num=i)
 
         ratio = h5reader.get_aspect_ratio(step=i)
         for j, e in enumerate(ells):
@@ -65,7 +67,8 @@ def plot_ellipses(fname, step=-1, show=False):
         if show:
             plt.show()
         else:
-            plt.savefig('ellipses_step_' + str(i).zfill(10) + '.png', bbox_inches='tight')
+            plt.savefig('ellipses_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
+                        bbox_inches='tight')
         plt.close()
 
     h5reader.close()

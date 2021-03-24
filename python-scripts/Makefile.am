@@ -1,5 +1,7 @@
 SUBDIRS = tools
 
-ellipseanim_PYTHON = animate-ellipses.py
+animate_ellipses_PYTHON = animate-ellipses.py
+animate_ellipsesdir = $(bindir)
 
-ellipseanimdir = $(bindir)
+plot_ellipses_PYTHON = plot-ellipses.py
+plot_ellipsesdir = $(bindir)
