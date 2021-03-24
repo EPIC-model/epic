@@ -2,26 +2,32 @@
 import argparse
 from tools.animate import EllipseAnimation
 import os
+import sys
 
 try:
     parser = argparse.ArgumentParser(
         description="Save a mp4 animation of the evolving ellipses.")
 
-    parser.add_argument("-f", "--filename",
-                        type=str,
-                        default='',
-                        help="hdf5 output file of EPIC")
+    # 24 March 2021
+    # https://stackoverflow.com/questions/24180527/argparse-required-arguments-listed-under-optional-arguments
+    required = parser.add_argument_group('required arguments')
+
+    required.add_argument("--filename",
+                          type=str,
+                          required=True,
+                          help="hdf5 output file of EPIC")
 
     parser.add_argument("-s", "--saveas",
                         type=str,
+                        required=False,
                         default='',
                         help="file name of saved animation (default: FILENAME.mp4)")
 
-    args = parser.parse_args()
-
-    if args.filename == '':
+    if not '--filename' in sys.argv:
         parser.print_help()
         exit(0)
+
+    args = parser.parse_args()
 
     if not os.path.exists(args.filename):
         raise IOError("File '" + args.filename + "' does not exist.")
