@@ -1,5 +1,5 @@
 module parcel_merge
-!     use nearest
+    use nearest
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcel_container_type, n_parcels, parcel_replace
     use ellipse, only : get_B22
@@ -16,7 +16,7 @@ module parcel_merge
             integer                                    :: n_merge ! number of merges
 
             ! find parcels to merge
-!             find_nearest(isma, ibig, n_merge)
+            call find_nearest(isma, ibig, n_merge)
 
             if (n_merge > 0) then
                 ! merge small parcels into large parcels
