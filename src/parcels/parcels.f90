@@ -65,11 +65,18 @@ module parcel_container
 
         end subroutine write_h5_parcels
 
-        subroutine split(threshold)
-            double precision, intent(in) :: threshold
 
+        ! overwrite parcel n with parcel m
+        subroutine parcel_replace(n, m)
+            integer, intent(in) :: n, m
 
-        end subroutine split
+            parcels%position(n, :) = parcels%position(m, :)
+            parcels%velocity(n, :) = parcels%velocity(m, :)
+            parcels%stretch(n, :)  = parcels%stretch(m, :)
+            parcels%volume(n, :)   = parcels%volume(m, :)
+            parcels%B(n, :)        = parcels%B(m, :)
+        end subroutine parcel_replace
+
 
         subroutine parcel_alloc(num)
             integer, intent(in) :: num
@@ -80,6 +87,7 @@ module parcel_container
             allocate(parcels%B(num, 2))
             allocate(parcels%volume(num, 1))
         end subroutine parcel_alloc
+
 
         subroutine parcel_dealloc
             deallocate(parcels%position)
