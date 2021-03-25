@@ -36,6 +36,7 @@
  !
  ! stepper info
  !
+ stepper            = 'classic-rk4'
 
  time%limit         = 5.0
 

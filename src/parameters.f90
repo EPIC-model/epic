@@ -44,6 +44,8 @@ module parameters
     ! stepper parameters
     !
 
+    character(len=16) :: stepper = 'classic-rk4'
+
     ! time limit
     type time_info_type
         double precision :: limit       = 0.0       ! time limit
