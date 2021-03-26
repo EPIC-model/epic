@@ -9,7 +9,8 @@ module parcel_merge
     private :: geometric_merge, &
                do_merge,        &
                optimal_merge,   &
-               replace_parcels
+               replace_parcels, &
+               remove_isolated
 
     contains
         subroutine merge_ellipses(parcels)
@@ -21,21 +22,41 @@ module parcel_merge
             ! find parcels to merge
             call find_nearest(isma, ibig, n_merge)
 
+            ! remove isolated parcels and update n_merge accordingly
+            call remove_isolated(isma, ibig, n_merge)
+
             if (n_merge > 0) then
                 ! merge small parcels into large parcels
                 if (parcel_info%merge_type == 'geometric') then
-                    call geometric_merge(parcels, isma(1:n_merge), ibig(1:n_merge))
+                    call geometric_merge(parcels, isma, ibig, n_merge)
                 else if (parcel_info%merge_type == 'optimal') then
-                    call optimal_merge(parcels, isma(1:n_merge), ibig(1:n_merge))
+                    call optimal_merge(parcels, isma, ibig, n_merge)
                 else
                     print *, "Unknown merge type '", trim(parcel_info%merge_type), "'."
                 endif
 
                 ! overwrite invalid parcels
-                call replace_parcels(isma)
+                call replace_parcels(isma, n_merge)
             endif
 
         end subroutine merge_ellipses
+
+        ! remove isolated parcels;
+        ! an isolated parcel is a parcel for which no big parcel is found (ibig = 0);
+        subroutine remove_isolated(isma, ibig, n_merge)
+            integer, intent(inout) :: isma(:), ibig(:)
+            logical, allocatable   :: mask(:)
+            integer, intent(out)   :: n_merge
+
+            mask = ibig /= 0
+
+            ! count number of .true. values
+            n_merge = count(mask)
+
+            ibig = pack(ibig, mask)
+            isma = pack(isma, mask)
+
+        end subroutine remove_isolated
 
         ! merge ith parcel into jth parcel (without B matrix scaling)
         subroutine do_merge(parcels, i, j, B11, B12, B22)
@@ -80,14 +101,15 @@ module parcel_merge
         end subroutine do_merge
 
 
-        subroutine geometric_merge(parcels, isma, ibig)
+        subroutine geometric_merge(parcels, isma, ibig, n_merge)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(:)
             integer,                     intent(in)    :: ibig(:)
+            integer,                     intent(in)    :: n_merge
             integer                                    :: n, i, j
             double precision                           :: B11, B12, B22, detB
 
-            do n = 1, size(isma)
+            do n = 1, n_merge
                 i = isma(n)
                 j = ibig(n)
 
@@ -103,16 +125,17 @@ module parcel_merge
         end subroutine geometric_merge
 
 
-        subroutine optimal_merge(parcels, isma, ibig)
+        subroutine optimal_merge(parcels, isma, ibig, n_merge)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(:)
             integer,                     intent(in)    :: ibig(:)
+            integer,                     intent(in)    :: n_merge
             integer                                    :: n, i, j
             double precision                           :: B11, B12, B22
             double precision                           :: mu, detB, merr, mup
             double precision                           :: a, b ,c
 
-            do n = 1, size(isma)
+            do n = 1, n_merge
                 i = isma(n)
                 j = ibig(n)
 
@@ -151,12 +174,10 @@ module parcel_merge
 
 
         ! move invalid parcels to the end and update n_parcels
-        subroutine replace_parcels(isma)
-            integer, intent(in) :: isma(:)
-            integer             :: l, n, m, k
-
-            ! last entry we have to check
-            k = size(isma)
+        subroutine replace_parcels(isma, k)
+            integer, intent(in)    :: isma(:)
+            integer, intent(inout) :: k        ! last entry we have to check
+            integer                :: l, n, m
 
             ! l points always to the last valid parcel
             l = n_parcels

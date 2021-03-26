@@ -28,6 +28,7 @@ module nearest
 
     contains
 
+        ! if ibig(n) is zero, no parcel found for isma(n)
         subroutine find_nearest(isma, ibig, nmerge)
             integer, intent(out) :: isma(max_num_parcels)
             integer, intent(out) :: ibig(max_num_parcels)
