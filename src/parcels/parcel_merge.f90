@@ -7,6 +7,8 @@ module parcel_merge
     implicit none
 
     private :: geometric_merge, &
+               do_merge,        &
+               optimal_merge,   &
                replace_parcels
 
     contains
