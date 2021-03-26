@@ -1,7 +1,7 @@
 module parcel_merge
     use nearest
     use constants, only : pi, max_num_parcels
-    use parcel_container, only : parcel_container_type, n_parcels, parcel_replace
+    use parcel_container, only : parcel_container_type, n_parcels, parcel_pack
     use ellipse, only : get_B22
     use parameters, only : parcel_info, verbose
     implicit none
@@ -9,7 +9,7 @@ module parcel_merge
     private :: geometric_merge, &
                do_merge,        &
                optimal_merge,   &
-               replace_parcels, &
+               pack_parcels,    &
                remove_isolated
 
     contains
@@ -42,7 +42,7 @@ module parcel_merge
                 endif
 
                 ! overwrite invalid parcels
-                call replace_parcels(isma, n_merge)
+                call pack_parcels(isma, n_merge)
             endif
 
         end subroutine merge_ellipses
@@ -181,58 +181,24 @@ module parcel_merge
         end subroutine optimal_merge
 
 
-        ! move invalid parcels to the end and update n_parcels
-        subroutine replace_parcels(isma, k)
+        ! remove invalid parcels
+        subroutine pack_parcels(isma, n_merge)
             integer, intent(in)    :: isma(:)
-            integer, intent(inout) :: k        ! last entry we have to check
-            integer                :: l, n, m
+            integer, intent(inout) :: n_merge
+            logical                :: mask(max_num_parcels)
+            integer                :: n
 
-            ! l points always to the last valid parcel
-            l = n_parcels
+            mask = .true.
 
-            ! already update the number of parcels
-            n_parcels = n_parcels - k
-
-            ! find last parcel which is not invalid
-            do while (l == isma(k) .and. k > 1)
-                l = l - 1
-                k = k - 1
+            do n = 1, n_merge
+                print *, n, isma(n), size(mask)
+                mask(isma(n)) = .false.
             enddo
 
-            if (l == 0) then
-                print *, "Error: All parcels are invalid."
-                stop
-            endif
+            print *, "count =", count(.not. mask)
 
-            ! move invalid parcels to the end of the container
-            ! and update the n_parcels count
-            m = 1
-            n = 1
+            call parcel_pack(mask)
 
-            do while (m <= k)
-                if (n .ne. isma(m)) then
-                    ! continue to next iteration if
-                    ! this parcel is valid
-                    n = n + 1
-                    cycle
-                endif
-
-                ! invalid parcel; swap *this* with last valid parcel
-                call parcel_replace(n, l)
-
-                l = l - 1
-
-                ! find next valid last parcel
-                do while (l == isma(k) .and. k > 1)
-                    l = l - 1
-                    k = k - 1
-                enddo
-
-                ! next invalid
-                m = m + 1
-
-                n = n + 1
-            enddo
-        end subroutine replace_parcels
+        end subroutine pack_parcels
 
 end module parcel_merge

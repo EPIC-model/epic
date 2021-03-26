@@ -67,19 +67,28 @@ module parcel_container
 
 
         ! overwrite parcel n with parcel m
-        subroutine parcel_replace(n, m)
-            integer, intent(in) :: n, m
+        subroutine parcel_pack(mask)
+            logical, intent(in) :: mask(:)
 
-            parcels%position(n, :) = parcels%position(m, :)
-            parcels%velocity(n, :) = parcels%velocity(m, :)
+            parcels%position(:, 1) = pack(parcels%position(:, 1), mask)
+            parcels%position(:, 2) = pack(parcels%position(:, 2), mask)
+
+            parcels%velocity(:, 1) = pack(parcels%velocity(:, 1), mask)
+            parcels%velocity(:, 2) = pack(parcels%velocity(:, 2), mask)
 
             if (allocated(parcels%stretch)) then
-                parcels%stretch(n, :)  = parcels%stretch(m, :)
+                parcels%stretch(:, 1)  = pack(parcels%stretch(:, 1), mask)
             endif
 
-            parcels%volume(n, :)   = parcels%volume(m, :)
-            parcels%B(n, :)        = parcels%B(m, :)
-        end subroutine parcel_replace
+            parcels%volume(:, 1)  = pack(parcels%volume(:, 1), mask)
+
+            parcels%B(:, 1) = pack(parcels%B(:, 1), mask)
+            parcels%B(:, 2) = pack(parcels%B(:, 2), mask)
+
+            ! update parcel number
+            n_parcels = n_parcels - count(.not. mask)
+
+        end subroutine parcel_pack
 
 
         subroutine parcel_alloc(num)
