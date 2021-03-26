@@ -43,9 +43,11 @@ module nearest
             nz = mesh%grid(2)
             ncell = nx * nz
 
-            allocate(nppc(ncell))
-            allocate(kc1(ncell))
-            allocate(kc2(ncell))
+            if (.not. allocated(nppc)) then
+                allocate(nppc(ncell))
+                allocate(kc1(ncell))
+                allocate(kc2(ncell))
+            endif
 
             dx = get_mesh_spacing()
             dxi = 1.0 / dx
