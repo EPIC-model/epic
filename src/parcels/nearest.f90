@@ -53,9 +53,8 @@ module nearest
             dx = get_mesh_spacing()
             dxi = 1.0 / dx
 
-            ! Use in deciding mergers below; scaling by pi comes from area = pi*a*b
-            ! while scaling by dx*dz comes from using area fraction in v(i):
-            dscmax= parcel_info%dscmax * product(dx) / pi
+            ! maximum squared distance
+            dscmax = 0.5 * parcel_info%lambda
 
             ! These parcels are marked for merger:
             merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < parcel_info%vmin)

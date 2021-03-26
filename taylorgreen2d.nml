@@ -33,7 +33,9 @@
 
  parcel%lambda      = 5.0
 
- parcel%merge_type = 'geometric'
+ parcel%merge_type  = 'geometric'
+
+ parcel%vmin        = 1.0
 
  !
  ! stepper info
