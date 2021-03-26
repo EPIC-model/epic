@@ -72,7 +72,11 @@ module parcel_container
 
             parcels%position(n, :) = parcels%position(m, :)
             parcels%velocity(n, :) = parcels%velocity(m, :)
-            parcels%stretch(n, :)  = parcels%stretch(m, :)
+
+            if (allocated(parcels%stretch)) then
+                parcels%stretch(n, :)  = parcels%stretch(m, :)
+            endif
+
             parcels%volume(n, :)   = parcels%volume(m, :)
             parcels%B(n, :)        = parcels%B(m, :)
         end subroutine parcel_replace
