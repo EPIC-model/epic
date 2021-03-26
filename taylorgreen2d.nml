@@ -33,6 +33,8 @@
 
  parcel%lambda      = 5.0
 
+ parcel%merge_type = 'geometric'
+
  !
  ! stepper info
  !

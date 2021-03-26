@@ -3,6 +3,7 @@ module parcel_merge
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcel_container_type, n_parcels, parcel_replace
     use ellipse, only : get_B22
+    use parameters, only : parcel_info
     implicit none
 
     private :: geometric_merge, &
@@ -20,7 +21,13 @@ module parcel_merge
 
             if (n_merge > 0) then
                 ! merge small parcels into large parcels
-                call geometric_merge(parcels, isma(1:n_merge), ibig(1:n_merge))
+                if (parcel_info%merge_type == 'geometric') then
+                    call geometric_merge(parcels, isma(1:n_merge), ibig(1:n_merge))
+                else if (parcel_info%merge_type == 'optimal') then
+                    call optimal_merge(parcels, isma(1:n_merge), ibig(1:n_merge))
+                else
+                    print *, "Unknown merge type '", trim(parcel_info%merge_type), "'."
+                endif
 
                 ! overwrite invalid parcels
                 call replace_parcels(isma)
@@ -81,6 +88,15 @@ module parcel_merge
                 parcels%B(j, 2) = parcels%B(j, 2) / detB
             enddo
         end subroutine geometric_merge
+
+
+        subroutine optimal_merge(parcels, isma, ibig)
+            type(parcel_container_type), intent(inout) :: parcels
+            integer,                     intent(in)    :: isma(:)
+            integer,                     intent(in)    :: ibig(:)
+
+
+        end subroutine optimal_merge
 
 
         ! move invalid parcels to the end and update n_parcels
