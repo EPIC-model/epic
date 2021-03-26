@@ -6,7 +6,8 @@ module model
     use parser, only : read_config_file, write_h5_params
     use parcel_container
     use parcel_bc
-    use parcel_split, only : split_ellipse
+    use parcel_split, only : split_ellipses
+    use parcel_merge, only : merge_ellipses
     use fields
     use interpolation
     use rk4
@@ -67,8 +68,12 @@ module model
                 call rk4_step(dt)
 
                 if (parcel_info%is_elliptic) then
-                    call split_ellipse(parcels, parcel_info%lambda)
+                    call split_ellipses(parcels, parcel_info%lambda)
+
+                    call merge_ellipses(parcels)
+
                 endif
+
 
                 ! update volume on the grid
                 call par2grid(parcels, parcels%volume, volume_f)

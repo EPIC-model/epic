@@ -22,7 +22,7 @@ module nearest
     logical :: merge(max_num_parcels)
 
     !Other variables:
-    double precision:: vmin,vmax,delx,delz,dsq,dscmax,dscmin,vmerge
+    double precision:: delx,delz,dsq,dscmax,dscmin,vmerge
     integer:: i,ic,i0,imin,k,m
     integer:: ix,iz,ix0,iz0
 
@@ -54,10 +54,10 @@ module nearest
 
             ! Use in deciding mergers below; scaling by pi comes from area = pi*a*b
             ! while scaling by dx*dz comes from using area fraction in v(i):
-            dscmax=dscmax*product(dx) / pi
+            dscmax= parcel_info%dscmax * product(dx) / pi
 
             ! These parcels are marked for merger:
-            merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
+            merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < parcel_info%vmin)
             nmerge=0
             ! Form list of small parcels:
             do i=1,n_parcels

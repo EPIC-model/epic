@@ -37,6 +37,8 @@ module parameters
         logical          :: is_elliptic  = .true.      ! use elliptic model
         double precision :: lambda       = 5.0         ! max. ellipse aspect ratio a/b
         character(10)    :: merge_type   = 'geometric' ! merge method in use (other option: 'optimal')
+        double precision :: dscmax       = 1.0         ! max. squared parcel distance for merging
+        double precision :: vmin         = 1.0         ! min. parcel volume (threshold for merging)
     end type parcel_info_type
 
     type(parcel_info_type) :: parcel_info
