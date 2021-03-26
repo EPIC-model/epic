@@ -67,11 +67,14 @@ module model
 
                 call rk4_step(dt)
 
-                if (parcel_info%is_elliptic) then
+                if (parcel_info%is_elliptic .and.           &
+                    mod(iter, parcel_info%split_freq) == 0) then
                     call split_ellipses(parcels, parcel_info%lambda)
+                endif
 
+                if (parcel_info%is_elliptic .and.           &
+                    mod(iter, parcel_info%merge_freq) == 0) then
                     call merge_ellipses(parcels)
-
                 endif
 
 
@@ -83,6 +86,9 @@ module model
             end do
 
             if (mod(iter, output%h5freq) == 0) then
+                if(verbose) then
+                    print "(a30)", "write fields and parcels to h5"
+                endif
                 call write_h5_step(nw, t, dt)
                 nw = nw + 1
             endif

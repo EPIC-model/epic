@@ -36,8 +36,10 @@ module parameters
         integer          :: seed         = 42          ! seed of random initialization
         logical          :: is_elliptic  = .true.      ! use elliptic model
         double precision :: lambda       = 5.0         ! max. ellipse aspect ratio a/b
+        integer          :: split_freq   = 1           ! split frequency, 1 = call split subroutine every step
         character(10)    :: merge_type   = 'geometric' ! merge method in use (other option: 'optimal')
-        double precision :: vmin         = 1.0         ! min. parcel volume (threshold for merging)
+        integer          :: merge_freq   = 1           ! merge frequency, 1 = call merge subroutine every step
+        double precision :: vmin         = 0.001       ! min. parcel volume (threshold for merging)
     end type parcel_info_type
 
     type(parcel_info_type) :: parcel_info
