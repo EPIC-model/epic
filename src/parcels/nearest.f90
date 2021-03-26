@@ -22,7 +22,7 @@ module nearest
     logical :: merge(max_num_parcels)
 
     !Other variables:
-    double precision:: delx,delz,dsq,dscmax,dscmin,vmerge
+    double precision:: vmin, delx,delz,dsq,dscmax,dscmin,vmerge
     integer:: i,ic,i0,imin,k,m
     integer:: ix,iz,ix0,iz0
 
@@ -56,8 +56,10 @@ module nearest
             ! maximum squared distance
             dscmax = 0.5 * parcel_info%lambda
 
+            vmin = product(dx) / (parcel_info%n_per_cell * parcel_info%max_splits)
+
             ! These parcels are marked for merger:
-            merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < parcel_info%vmin)
+            merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
             nmerge=0
             ! Form list of small parcels:
             do i=1,n_parcels
