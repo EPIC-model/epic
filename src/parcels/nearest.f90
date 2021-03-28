@@ -7,6 +7,7 @@
 module nearest
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcels, n_parcels
+    use constants, only : pi
     use parameters
     use fields, only : get_mesh_spacing
 
@@ -22,7 +23,7 @@ module nearest
     logical :: merge(max_num_parcels)
 
     !Other variables:
-    double precision:: vmin, delx,delz,dsq,dscmax,dscmin,vmerge
+    double precision:: vmin, delx,delz,dsq,dscmax,dscmin,vmerge,vmergemin,x_store,z_store
     integer:: i,ic,i0,imin,k,m
     integer:: ix,iz,ix0,iz0
 
@@ -61,33 +62,30 @@ module nearest
             ! These parcels are marked for merger:
             merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
             nmerge=0
-            ! Form list of small parcels:
-            do i=1,n_parcels
-                if (merge(i)) then
-                    nmerge=nmerge+1
-                    isma(nmerge)=i
-                endif
-            enddo
 
             !---------------------------------------------------------------------
             ! Initialise search:
             nppc=0 !nppc(ic) will contain the number of parcels in grid cell ic
 
-            ! Bin parcels in cells:
+            ! Form list of small parcels:
             do i=1,n_parcels
-                ix=int(dxi(1)*(parcels%position(i,1)-mesh%origin(1)))
-                iz=int(dxi(2)*(parcels%position(i,2)-mesh%origin(2)))
+                if (merge(i)) then
+                    nmerge=nmerge+1
+                    isma(nmerge)=i
+                else
+                    ix=int(dxi(1)*(parcels%position(i,1)-mesh%origin(1)))
+                    iz=int(dxi(2)*(parcels%position(i,2)-mesh%origin(2)))
 
-                ! Cell index of parcel:
-                ic=1+ix+nx*iz !This runs from 1 to ncell
+                    ! Cell index of parcel:
+                    ic=1+ix+nx*iz !This runs from 1 to ncell
 
-                ! Accumulate number of parcels in this grid cell:
-                nppc(ic)=nppc(ic)+1
+                    ! Accumulate number of parcels in this grid cell:
+                    nppc(ic)=nppc(ic)+1
 
-                ! Store grid cell that this parcel is in:
-                loc(i)=ic
+                    ! Store grid cell that this parcel is in:
+                    loc(i)=ic
+                endif
             enddo
-
 
             ! Find arrays kc1(ic) & kc2(ic) which indicate the parcels in grid cell ic
             ! through i = node(k), for k = kc1(ic),kc2(ic):
@@ -98,10 +96,12 @@ module nearest
 
             kc2=kc1-1
             do i=1,n_parcels
-                ic=loc(i)
-                k=kc2(ic)+1
-                node(k)=i
-                kc2(ic)=k
+                if (.not. merge(i)) then
+                    ic=loc(i)
+                    k=kc2(ic)+1
+                    node(k)=i
+                    kc2(ic)=k
+                end if
             enddo
 
             !---------------------------------------------------------------------
@@ -109,13 +109,16 @@ module nearest
             ! and search over the surrounding 8 grid cells for the closest parcel:
             do m=1,nmerge
                 i0=isma(m)
+                x_store=parcels%position(i0,1)
+                z_store=parcels%position(i0,2)
                 ! Parcel i0 is small and should be merged; find closest other:
-                ix0=mod(nint(dxi(1)*(parcels%position(i0,1)-mesh%origin(1))),nx) ! ranges from 0 to nx-1
-                iz0=nint(dxi(2)*(parcels%position(i0,2)-mesh%origin(2)))         ! ranges from 0 to nz
+                ix0=mod(nint(dxi(1)*(x_store-mesh%origin(1))),nx) ! ranges from 0 to nx-1
+                iz0=nint(dxi(2)*(z_store-mesh%origin(2)))         ! ranges from 0 to nz
                 ! Grid point (ix0,iz0) is closest to parcel i0
 
                 ! Initialise scaled squared distance between parcels and parcel index:
                 dscmin=dscmax
+                vmergemin=1.0e-8 ! small number
                 imin=0
 
                 ! Loop over 8 cells surrounding (ix0,iz0):
@@ -126,23 +129,27 @@ module nearest
                         ! Search parcels for closest:
                         do k=kc1(ic),kc2(ic)
                             i=node(k)
-                            if (.not. merge(i)) then
+                            delz=parcels%position(i,2)-z_store
                             ! Avoid merger with another small parcel
-                            delx=parcels%position(i,1)-parcels%position(i0,1)
-                            delx=delx-mesh%extent(1)*dble(int(delx*hlxi)) ! works across periodic edge
-                            delz=parcels%position(i,2)-parcels%position(i0,2)
-                            dsq=delx**2+delz**2
                             vmerge=parcels%volume(i, 1)+parcels%volume(i0, 1) ! Summed area fraction:
-                            if (dsq < dscmin*vmerge) then
-                                dscmin=dsq/vmerge
-                                imin=i
-                            endif
+                            ! Prevent division in all comparisons here
+                            if (delz*delz*vmergemin < dscmin*vmerge) then
+                                delx=parcels%position(i,1)-x_store
+                                delx=delx-mesh%extent(1)*dble(int(delx*hlxi)) ! works across periodic edge
+                                dsq=delz*delz+delx*delx
+                                if (dsq*vmergemin < dscmin*vmerge) then
+                                    if(dsq*pi < 0.5*parcel_info%lambda*vmerge) then
+                                        dscmin=dsq
+                                        vmergemin=vmerge
+                                        imin=i
+                                    endif
+                                endif
                             endif
                         enddo
-                        ! Store the index of the parcel to be merged with:
-                        ibig(m)=imin
                     enddo
                 enddo
+                ! Store the index of the parcel to be merged with:
+                ibig(m)=imin
             enddo
         end subroutine find_nearest
 
