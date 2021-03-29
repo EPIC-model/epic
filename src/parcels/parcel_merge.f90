@@ -65,16 +65,16 @@ module parcel_merge
         end subroutine remove_isolated
 
         ! merge ith parcel into jth parcel (without B matrix scaling)
-        subroutine do_merge(parcels, i, j, B11, B12, B22, ab)
-            type(parcel_container_type), intent(in)  :: parcels
-            integer,                     intent(in)  :: i, j
-            double precision,            intent(out) :: B11, B12, B22, ab
-            double precision                         :: B11_1, B11_2
-            double precision                         :: B12_1, B12_2
-            double precision                         :: B22_1, B22_2
-            double precision                         :: a1b1, a2b2, isqrab
-            double precision                         :: mu1, mu2, zet, eta
-            double precision                         :: mu11, mu22, mu12
+        subroutine do_merge(parcels, i, j, B11, B12, B22)
+            type(parcel_container_type), intent(inout)  :: parcels
+            integer,                     intent(in)     :: i, j
+            double precision,            intent(out)    :: B11, B12, B22
+            double precision                            :: B11_1, B11_2
+            double precision                            :: B12_1, B12_2
+            double precision                            :: B22_1, B22_2
+            double precision                            :: a1b1, a2b2, isqrab, ab
+            double precision                            :: mu1, mu2, zet, eta
+            double precision                            :: mu11, mu22, mu12
 
             B11_1 = parcels%B(i, 1)
             B11_2 = parcels%B(j, 1)
@@ -94,8 +94,8 @@ module parcel_merge
             mu1 = a1b1 / ab
             mu2 = a2b2 / ab
 
-            zet = 2.0 * isqrab * abs(parcels%position(j, 1) - parcels%position(i, 1))
-            eta = 2.0 * isqrab * abs(parcels%position(j, 2) - parcels%position(i, 2))
+            zet = 2.0 * isqrab * (parcels%position(j, 1) - parcels%position(i, 1))
+            eta = 2.0 * isqrab * (parcels%position(j, 2) - parcels%position(i, 2))
 
             mu12 = mu1 * mu2
             mu11 = mu1 * mu1
@@ -104,6 +104,17 @@ module parcel_merge
             B11 = mu12 * zet ** 2  + mu11 * B11_1 + mu22 * B11_2
             B12 = mu12 * zet * eta + mu11 * B12_1 + mu22 * B12_2
             B22 = mu12 * eta ** 2  + mu11 * B22_2 + mu22 * B22_2
+
+
+            ! update center of mass
+            parcels%position(j, 1) = mu1 * parcels%position(i, 1) &
+                                   + mu2 * parcels%position(j, 1)
+
+            parcels%position(j, 2) = mu1 * parcels%position(i, 2) &
+                                   + mu2 * parcels%position(j, 2)
+
+            ! update volume
+            parcels%volume(j, 1) = ab * pi
         end subroutine do_merge
 
 
@@ -113,21 +124,20 @@ module parcel_merge
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: n, i, j
-            double precision                           :: B11, B12, B22, detB, ab
+            double precision                           :: B11, B12, B22, detB
 
             do n = 1, n_merge
                 i = isma(n)
                 j = ibig(n)
 
                 ! merge small into big parcel --> return B11, B12, B22
-                call do_merge(parcels, i, j, B11, B12, B22, ab)
+                call do_merge(parcels, i, j, B11, B12, B22)
 
                 ! normalize such that determinant of the merger is 1
                 detB = B11 * B22 - B12 ** 2
 
                 parcels%B(j, 1) = B11 / detB
                 parcels%B(j, 2) = B12 / detB
-                parcels%volume(j, 1) = ab * pi
             enddo
         end subroutine geometric_merge
 
@@ -138,7 +148,7 @@ module parcel_merge
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: n, i, j
-            double precision                           :: B11, B12, B22, ab
+            double precision                           :: B11, B12, B22
             double precision                           :: mu, detB, merr, mup
             double precision                           :: a, b ,c
 
@@ -147,7 +157,7 @@ module parcel_merge
                 j = ibig(n)
 
                 ! merge small into big parcel --> return B11, B12, B22
-                call do_merge(parcels, i, j, B11, B12, B22, ab)
+                call do_merge(parcels, i, j, B11, B12, B22)
 
                 ! Solve the quartic to find best fit ellipse:
                 !
@@ -176,7 +186,6 @@ module parcel_merge
                 ! optimal B
                 parcels%B(j, 1) = (B11 - mu * B22) / (1.0 - mu ** 2)
                 parcels%B(j, 2) = B12 / (1.0 - mu)
-                parcels%volume(j, 1) = ab * pi
             enddo
         end subroutine optimal_merge
 

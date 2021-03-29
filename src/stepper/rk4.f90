@@ -82,6 +82,7 @@ module rk4
             state%position = parcels%position
             state%B = parcels%B
 
+
             call grid2par(state%position, parcels%volume, k1o, velocity_f, state%B)
             call grid2par(state%position, parcels%volume, strain, strain_f, state%B)
             b1o = get_B(state%B, strain)
@@ -213,13 +214,15 @@ module rk4
             double precision             :: Bout(max_num_parcels, 2)
             double precision             :: B22(max_num_parcels)
 
-            B22 = get_B22(Bin(:, 1), Bin(:, 2))
+            B22(1:n_parcels) = get_B22(Bin(1:n_parcels, 1), Bin(1:n_parcels, 2))
 
             ! B11 = 2 * (dudx * B11 + dudy * B12)
-            Bout(:, 1) = 2.0 * (S(:, 1) * Bin(:, 1) + S(:, 2) * Bin(:, 2))
+            Bout(1:n_parcels, 1) = 2.0 * (S(1:n_parcels, 1) * Bin(1:n_parcels, 1) + &
+                                          S(1:n_parcels, 2) * Bin(1:n_parcels, 2))
 
             ! B12 = dvdx * B11 + dudy * B22
-            Bout(:, 2) = S(:, 3) * Bin(:, 1) + S(:, 2) * B22
+            Bout(1:n_parcels, 2) = S(1:n_parcels, 3) * Bin(1:n_parcels, 1) &
+                                 + S(1:n_parcels, 2) * B22(1:n_parcels)
 
         end function get_B
 end module rk4

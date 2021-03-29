@@ -116,6 +116,15 @@ detbs=bs11*bs22-bs12*bs12
 coeffs=np.array([1.0,0.0,-2.0-detbs,bs11**2+bs22**2+2.0*bs12**2,1.0-detbs])
 q=np.roots(coeffs)
 
+mu=-coeffs[4]/coeffs[3]
+merr=1.0
+while merr > 1.e-12:
+   mup=-(coeffs[4]+mu*(coeffs[3]+mu*(coeffs[2]+mu*mu)))/(coeffs[3]+mu*(2.0*coeffs[2]+4.0*mu*mu))
+   mu=mu+mup
+   merr=abs(mup)
+
+print(" Newton-Raphsen iteration gives mu = %12.9f" %mu)
+
 print()
 print(' The real roots of the quartic and the F norms are as follows:')
 print()
