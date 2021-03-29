@@ -29,72 +29,79 @@ AC_CONFIG_FILES([
 ## https://gitlab.psi.ch/H5hut/src/-/blob/master/configure.ac
 ##
 
-AM_PATH_PYTHON([3.0])
+DISABLE_PYTHON_CHECK='no'
+AC_ARG_ENABLE([python-check],
+              [AS_HELP_STRING([--disable-python-check], [disable Python checke (default=no)])],
+              [DISABLE_PYTHON_CHECK=$disableval])
 
-#
-# argparse
-#
-AC_MSG_CHECKING([for python argparse library])
-`${PYTHON} -c 'import argparse' 2> config.log`
-if test "X$?" = "X0" ; then
-    AC_MSG_RESULT([yes])
-else
-    AC_MSG_RESULT([no])
-    exit 1
+AM_CONDITIONAL([DISABLE_PYTHON_CHECK], [test "$DISABLE_PYTHON_CHECK" = "yes"])
+
+if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
+    AM_PATH_PYTHON([3.0])
+    #
+    # argparse
+    #
+    AC_MSG_CHECKING([for python argparse library])
+    `${PYTHON} -c 'import argparse' 2> config.log`
+    if test "X$?" = "X0" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no])
+        exit 1
+    fi
+
+    #
+    # numpy
+    #
+    AC_MSG_CHECKING([for python numpy library])
+    `${PYTHON} -c 'import numpy' 2> config.log`
+    if test "X$?" = "X0" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no])
+        AC_MSG_NOTICE([Install numpy with "pip install numpy".])
+        exit 1
+    fi
+
+    #
+    # matplotlib
+    #
+    AC_MSG_CHECKING([for python matplotlib library])
+    `${PYTHON} -c 'import matplotlib.pyplot as plt' 2> config.log`
+    if test "x$?" = "x0" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no])
+        AC_MSG_NOTICE([Install matplotlib with "pip install matplotlib".])
+        exit 1
+    fi
+
+    #
+    # h5py
+    #
+    AC_MSG_CHECKING([for python h5py library])
+    `${PYTHON} -c 'import h5py' 2> config.log`
+    if test "x$?" = "x0" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no])
+        AC_MSG_NOTICE([Install h5py with "pip install h5py".])
+        exit 1
+    fi
+
+    #
+    # progressbar
+    #
+    AC_MSG_CHECKING([for python progressbar library])
+    `${PYTHON} -c 'import progressbar' 2> config.log`
+    if test "x$?" = "x0" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no])
+        AC_MSG_NOTICE([Install progressbar with "pip install progressbar".])
+        exit 1
+    fi
 fi
-
-#
-# numpy
-#
-AC_MSG_CHECKING([for python numpy library])
-`${PYTHON} -c 'import numpy' 2> config.log`
-if test "X$?" = "X0" ; then
-    AC_MSG_RESULT([yes])
-else
-    AC_MSG_RESULT([no])
-    AC_MSG_NOTICE([Install numpy with "pip install numpy".])
-    exit 1
-fi
-
-#
-# matplotlib
-#
-AC_MSG_CHECKING([for python matplotlib library])
-`${PYTHON} -c 'import matplotlib.pyplot as plt' 2> config.log`
-if test "x$?" = "x0" ; then
-    AC_MSG_RESULT([yes])
-else
-    AC_MSG_RESULT([no])
-    AC_MSG_NOTICE([Install matplotlib with "pip install matplotlib".])
-    exit 1
-fi
-
-#
-# h5py
-#
-AC_MSG_CHECKING([for python h5py library])
-`${PYTHON} -c 'import h5py' 2> config.log`
-if test "x$?" = "x0" ; then
-    AC_MSG_RESULT([yes])
-else
-    AC_MSG_RESULT([no])
-    AC_MSG_NOTICE([Install h5py with "pip install h5py".])
-    exit 1
-fi
-
-#
-# progressbar
-#
-AC_MSG_CHECKING([for python progressbar library])
-`${PYTHON} -c 'import progressbar' 2> config.log`
-if test "x$?" = "x0" ; then
-    AC_MSG_RESULT([yes])
-else
-    AC_MSG_RESULT([no])
-    AC_MSG_NOTICE([Install progressbar with "pip install progressbar".])
-    exit 1
-fi
-
 
 #######################################################################################
 ##
