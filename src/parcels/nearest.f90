@@ -23,7 +23,7 @@ module nearest
     logical :: merge(max_num_parcels)
 
     !Other variables:
-    double precision:: vmin, delx,delz,dsq,dscmax,dscmin,vmerge,vmergemin,x_store,z_store
+    double precision:: vmin, delx,delz,dsq,dscmin,vmerge,vmergemin,x_store,z_store
     integer:: i,ic,i0,imin,k,m
     integer:: ix,iz,ix0,iz0
 
@@ -53,9 +53,6 @@ module nearest
 
             dx = get_mesh_spacing()
             dxi = 1.0 / dx
-
-            ! maximum squared distance
-            dscmax = 0.5 * parcel_info%lambda
 
             vmin = product(dx) / (parcel_info%n_per_cell * parcel_info%max_splits)
 
