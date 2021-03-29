@@ -107,9 +107,9 @@ module parcel_merge
 
 
             ! update center of mass
-            parcels%position(j, 1) =  mu1 * parcels%position(i, 1) &
+            parcels%position(j, 1) = mu1 * parcels%position(i, 1) &
                                    + mu2 * parcels%position(j, 1)
-            parcels%position(j, 2) =  mu1 * parcels%position(i, 2) &
+            parcels%position(j, 2) = mu1 * parcels%position(i, 2) &
                                    + mu2 * parcels%position(j, 2)
 
             ! update volume
