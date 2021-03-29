@@ -117,8 +117,11 @@ module nearest
                 ! Grid point (ix0,iz0) is closest to parcel i0
 
                 ! Initialise scaled squared distance between parcels and parcel index:
-                dscmin=dscmax
-                vmergemin=1.0e-8 ! small number
+                ! ensure dsq*pi < 0.5*parcel_info%lambda*vmerge
+                ! Might seem a bit radical to take a large vmergemin and small dscmin
+                ! but computationally easy
+                dscmin=0.5*parcel_info%lambda
+                vmergemin=pi
                 imin=0
 
                 ! Loop over 8 cells surrounding (ix0,iz0):
@@ -138,11 +141,9 @@ module nearest
                                 delx=delx-mesh%extent(1)*dble(int(delx*hlxi)) ! works across periodic edge
                                 dsq=delz*delz+delx*delx
                                 if (dsq*vmergemin < dscmin*vmerge) then
-                                    if(dsq*pi < 0.5*parcel_info%lambda*vmerge) then
-                                        dscmin=dsq
-                                        vmergemin=vmerge
-                                        imin=i
-                                    endif
+                                    dscmin=dsq
+                                    vmergemin=vmerge
+                                    imin=i
                                 endif
                             endif
                         enddo
