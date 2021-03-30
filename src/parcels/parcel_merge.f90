@@ -190,7 +190,8 @@ module parcel_merge
         end subroutine optimal_merge
 
 
-        ! remove invalid parcels
+        ! this algorithm replaces invalid parcels with valid parcels
+        ! from the end of the container
         subroutine pack_parcels(isma, n_merge)
             integer, intent(in) :: isma(:)
             integer, intent(in) :: n_merge
