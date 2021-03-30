@@ -68,13 +68,13 @@ module model
                 call rk4_step(dt)
 
                 if (parcel_info%is_elliptic .and.           &
-                    mod(iter, parcel_info%split_freq) == 0) then
-                    call split_ellipses(parcels, parcel_info%lambda)
+                    mod(iter, parcel_info%merge_freq) == 0) then
+                    call merge_ellipses(parcels)
                 endif
 
                 if (parcel_info%is_elliptic .and.           &
-                    mod(iter, parcel_info%merge_freq) == 0) then
-                    call merge_ellipses(parcels)
+                    mod(iter, parcel_info%split_freq) == 0) then
+                    call split_ellipses(parcels, parcel_info%lambda)
                 endif
 
 
