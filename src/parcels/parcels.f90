@@ -6,6 +6,7 @@ module parcel_container
                        write_h5_dataset_2d, &
                        open_h5_group,       &
                        get_step_group_name
+    use parameters, only : verbose
     use ellipse, only : get_angles
     implicit none
 
@@ -69,6 +70,10 @@ module parcel_container
         ! overwrite parcel n with parcel m
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
+
+            if (verbose) then
+                print '(a19, i0, a6, i0)', '    replace parcel ', n, ' with ', m
+            endif
 
             parcels%position(n, 1) = parcels%position(m, 1)
             parcels%position(n, 2) = parcels%position(m, 2)
