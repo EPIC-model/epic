@@ -37,15 +37,13 @@
 
  parcel%merge_type  = 'geometric'
 
- parcel%vmin        = 1.2337005501361697E-002
-
  parcel%merge_freq  = 1
 
  !
  ! stepper info
  !
 
- time%limit         = 1.250
+ time%limit         = 10.0
 
  time%dt            = 0.025
 
