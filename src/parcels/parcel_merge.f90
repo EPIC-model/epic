@@ -45,6 +45,10 @@ module parcel_merge
                 call pack_parcels(isma, n_merge)
             endif
 
+            ! reset
+            isma = 0
+            ibig = 0
+
         end subroutine merge_ellipses
 
         ! remove isolated parcels;
@@ -203,9 +207,6 @@ module parcel_merge
             ! k points always to last invalid parcel in isma
             k = n_merge
 
-            ! already update number of valid parcels
-            n_parcels = n_parcels - k
-
             ! find last parcel which is not invalid
             do while (k > 0 .and. l == isma(k))
                 l = l - 1
@@ -248,6 +249,10 @@ module parcel_merge
 
                 n = n + 1
             enddo
+
+            ! update number of valid parcels
+            n_parcels = n_parcels - n_merge
+
         end subroutine pack_parcels
 
 
