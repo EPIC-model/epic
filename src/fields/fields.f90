@@ -31,6 +31,9 @@ module fields
             ! + 1 since Fortran starts with 1
             idx = (pos - mesh%origin) / dx + 1
 
+            ! update grid index accounting x periodicity
+            idx(1) = min(1 + idx(1), mesh%grid(1))
+
         end function get_lower_index
 
         ! get a position given a field index

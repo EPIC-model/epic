@@ -38,8 +38,9 @@ module interpolation
                 call par2grid_non_elliptic(parcels, attrib, field)
             endif
 
-            ! apply boundary condition
-            call apply_field_bc(field)
+            ! apply free slip boundary condition
+            field(:, 1, :)            = 2.0 * field(:, 1, :)
+            field(:, mesh%grid(2), :) = 2.0 * field(:, mesh%grid(2), :)
 
         end subroutine par2grid
 
