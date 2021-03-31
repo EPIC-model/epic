@@ -9,8 +9,7 @@ module parcel_merge
     private :: geometric_merge, &
                do_merge,        &
                optimal_merge,   &
-               pack_parcels,    &
-               remove_isolated
+               pack_parcels
 
     contains
         subroutine merge_ellipses(parcels)
@@ -21,9 +20,6 @@ module parcel_merge
 
             ! find parcels to merge
             call find_nearest(isma, ibig, n_merge)
-
-            ! remove isolated parcels and update n_merge accordingly
-            call remove_isolated(isma, ibig, n_merge)
 
             if (verbose) then
                 print "(a36, i0, a3, i0)",                               &
@@ -45,28 +41,7 @@ module parcel_merge
                 call pack_parcels(isma, n_merge)
             endif
 
-            ! reset
-            isma = 0
-            ibig = 0
-
         end subroutine merge_ellipses
-
-        ! remove isolated parcels;
-        ! an isolated parcel is a parcel for which no big parcel is found (ibig = 0);
-        subroutine remove_isolated(isma, ibig, n_merge)
-            integer, intent(inout) :: isma(:), ibig(:)
-            logical, allocatable   :: mask(:)
-            integer, intent(out)   :: n_merge
-
-            mask = ibig /= 0
-
-            ! count number of .true. values
-            n_merge = count(mask)
-
-            ibig = pack(ibig, mask)
-            isma = pack(isma, mask)
-
-        end subroutine remove_isolated
 
         ! merge ith parcel into jth parcel (without B matrix scaling)
         subroutine do_merge(parcels, i, j, B11, B12, B22)
