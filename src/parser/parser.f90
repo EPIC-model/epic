@@ -100,7 +100,6 @@ module parser
             call write_h5_double_vector_attrib(group, "extent", mesh%extent)
             call write_h5_double_vector_attrib(group, "origin", mesh%origin)
             call write_h5_integer_vector_attrib(group, "grid", mesh%grid)
-            call write_h5_character_vector_attrib(group, "bc", mesh%bc)
 
             call h5gclose_f(group, h5err)
 

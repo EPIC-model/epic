@@ -17,8 +17,6 @@
 
  mesh%grid          = 11, 11
 
- mesh%bc            = 'free slip', 'free slip'
-
  !
  ! parcel info
  !
