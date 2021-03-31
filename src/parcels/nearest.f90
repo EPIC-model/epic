@@ -22,8 +22,8 @@ module nearest
     logical :: merge(max_num_parcels)
 
     !Other variables:
-    double precision:: delx,delz,dsq,dscmax,dscmin,vmerge
-    integer:: i,ic,i0,imin,k,m
+    double precision:: vmin, delx,delz,dsq,dscmax,dscmin,vmerge
+    integer:: i,ic,i0,imin,k,m,j
     integer:: ix,iz,ix0,iz0
 
     contains
@@ -55,9 +55,10 @@ module nearest
 
             ! maximum squared distance
             dscmax = 0.5 * parcel_info%lambda
+            vmin = product(dx) / 36.0
 
             ! These parcels are marked for merger:
-            merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < parcel_info%vmin)
+            merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
             nmerge=0
             ! Form list of small parcels:
             do i=1,n_parcels
@@ -105,6 +106,8 @@ module nearest
             !---------------------------------------------------------------------
             ! Now find the nearest grid point to each small parcel (to be merged)
             ! and search over the surrounding 8 grid cells for the closest parcel:
+            j = 0
+            ! j counts the actual number of mergers found
             do m=1,nmerge
                 i0=isma(m)
                 ! Parcel i0 is small and should be merged; find closest other:
@@ -137,11 +140,17 @@ module nearest
                             endif
                             endif
                         enddo
-                        ! Store the index of the parcel to be merged with:
-                        ibig(m)=imin
                     enddo
                 enddo
+                if (imin .gt. 0) then
+                    ! Store the index of the parcel to be merged with:
+                    j = j + 1
+                    isma(j) = isma(m)
+                    ibig(j) = imin
+                endif
             enddo
+            ! Actual total number of mergers:
+            nmerge = j
         end subroutine find_nearest
 
 end module nearest
