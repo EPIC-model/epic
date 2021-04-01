@@ -8,14 +8,10 @@
  output%h5fname     = 'taylorgreen2d.hdf5'
 
  !
- ! mesh info
+ ! grid info
  !
 
- mesh%origin        = -1.5707963267948966, -1.5707963267948966
-
- mesh%extent        = 3.141592653589793, 3.141592653589793
-
- mesh%grid          = 11, 11
+ grid          = 11, 11
 
  !
  ! parcel info
@@ -35,7 +31,7 @@
  ! stepper info
  !
 
- time%limit         = 5.0
+ time%limit         = 2.5
 
  time%dt            = 0.025
 

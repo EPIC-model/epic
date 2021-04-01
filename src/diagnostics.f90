@@ -1,5 +1,7 @@
 module diagnostics
     use parcel_container
+    use parameters, only : dx
+    use options, only : grid
     use fields
     use hdf5
     use writer, only : h5file,                        &
@@ -19,10 +21,10 @@ module diagnostics
             double precision, allocatable :: V(:, :, :)
 
             ! remove halo cells
-            V = volume_f(1:mesh%grid(1), 1:mesh%grid(2), :)
+            V = volume_f(1:grid(1), 1:grid(2), :)
 
             n = size(V)
-            V0 = product(get_mesh_spacing())
+            V0 = product(dx)
             rms = sqrt(sum((V - V0) ** 2) / n) / V0
         end function get_rms_volume_error
 

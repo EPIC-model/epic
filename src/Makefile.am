@@ -1,7 +1,7 @@
 bin_PROGRAMS = epic
 epic_SOURCES = 					\
 	constants.f90 				\
-	types.f90				\
+	options.f90				\
 	parameters.f90 				\
 	taylorgreen.f90				\
 	writer.f90				\

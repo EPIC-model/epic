@@ -1,10 +1,11 @@
 module init
-    use parameters, only : mesh, parcel_info, time
+    use options, only : parcel_info, time, grid
+    use constants
+    use parameters, only : dx
     use fields, only : velocity_f,       &
                        strain_f,         &
                        volume_f,         &
                        vorticity_f,      &
-                       get_mesh_spacing, &
                        get_position
     use parcel_container, only : parcels, n_parcels
     implicit none
@@ -26,7 +27,7 @@ module init
             integer          :: n_cells
             double precision :: cell_volume
 
-            n_cells = product(mesh%grid - 1)
+            n_cells = product(grid - 1)
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
@@ -45,7 +46,7 @@ module init
             call init_velocity
 
             ! initialize the volume of each parcel
-            cell_volume = product(get_mesh_spacing())
+            cell_volume = product(dx)
             parcels%volume = cell_volume / parcel_info%n_per_cell
 
         end subroutine init_parcels
@@ -63,9 +64,9 @@ module init
 
             do n = 1, n_parcels
                 call random_number(val)
-                parcels%position(n, 1)= mesh%origin(1) + val * mesh%extent(1)
+                parcels%position(n, 1)= lower(1) + val * extent(1)
                 call random_number(val)
-                parcels%position(n, 2) = mesh%origin(2) + val * mesh%extent(2)
+                parcels%position(n, 2) = lower(2) + val * extent(2)
             enddo
 
             deallocate(seed)
@@ -73,9 +74,7 @@ module init
 
         subroutine init_regular_positions
             integer          :: i, ii, j, jj, k, n_per_dim
-            double precision :: dx(2), del(2)
-
-            dx = get_mesh_spacing()
+            double precision :: del(2)
 
             ! number of parcels per dimension
             n_per_dim = sqrt(parcel_info%n_per_cell + 0.0)
@@ -88,12 +87,12 @@ module init
             del = dx / (2.0 * n_per_dim)
 
             k = 1
-            do j = 0, mesh%grid(2) - 2
-                do i = 0, mesh%grid(1) - 2
+            do j = 0, grid(2) - 2
+                do i = 0, grid(1) - 2
                     do jj = 1, 2 * n_per_dim, 2
                         do ii = 1, 2 * n_per_dim, 2
-                            parcels%position(k, 1) = mesh%origin(1) + i * dx(1) + del(1) * ii
-                            parcels%position(k, 2) = mesh%origin(2) + j * dx(2) + del(2) * jj
+                            parcels%position(k, 1) = lower(1) + i * dx(1) + del(1) * ii
+                            parcels%position(k, 2) = lower(2) + j * dx(2) + del(2) * jj
                             k = k + 1
                         enddo
                     enddo
@@ -120,13 +119,10 @@ module init
 
         subroutine init_velocity
             use taylorgreen, only : get_flow_velocity
-            integer :: i
-            double precision :: dx(2), v(2)
+            integer :: n
 
-            dx = get_mesh_spacing()
-
-            do i = 1, n_parcels
-                parcels%velocity(i, :) = get_flow_velocity(parcels%position(i, :))
+            do n = 1, n_parcels
+                parcels%velocity(n, :) = get_flow_velocity(parcels%position(n, :))
             enddo
         end subroutine init_velocity
 
@@ -137,7 +133,7 @@ module init
         subroutine init_fields
             call init_velocity_field
 
-            allocate(volume_f(-1:mesh%grid(1), -1:mesh%grid(2), 1))
+            allocate(volume_f(-1:grid(1), -1:grid(2), 1))
             volume_f = 0.0
 
             if (time%is_adaptive) then
@@ -151,14 +147,13 @@ module init
                                     get_flow_gradient
             integer :: i, j
             double precision :: pos(2)
-            double precision :: dx(2)
 
-            allocate(velocity_f(-1:mesh%grid(1), -1:mesh%grid(2), 2))
+            allocate(velocity_f(-1:grid(1), -1:grid(2), 2))
 
-            allocate(strain_f(-1:mesh%grid(1), -1:mesh%grid(2), 4))
+            allocate(strain_f(-1:grid(1), -1:grid(2), 4))
 
-            do j = -1, mesh%grid(2)
-                do i = -1, mesh%grid(1)
+            do j = -1, grid(2)
+                do i = -1, grid(1)
                     pos = get_position((/i, j/))
 
                     velocity_f(i, j, :) = get_flow_velocity(pos)
@@ -172,13 +167,12 @@ module init
             use taylorgreen, only : get_flow_vorticity
             integer :: i, j
             double precision :: pos(2)
-            double precision :: dx(2)
 
             ! vorticity has no halo grid points
-            allocate(vorticity_f(0:mesh%grid(1)-1, 0:mesh%grid(2)-1, 1))
+            allocate(vorticity_f(0:grid(1)-1, 0:grid(2)-1, 1))
 
-            do j = 0, mesh%grid(2)-1
-                do i = 0, mesh%grid(1)-1
+            do j = 0, grid(2)-1
+                do i = 0, grid(1)-1
                     pos = get_position((/i, j/))
 
                     vorticity_f(i, j, :) = get_flow_vorticity(pos)

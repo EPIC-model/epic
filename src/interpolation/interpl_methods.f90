@@ -1,7 +1,8 @@
 module interpl_methods
-    use parameters, only : mesh
-    use fields, only : get_mesh_spacing, &
-                       get_lower_index,  &
+    use constants, only : lower, upper
+    use parameters, only : dx, dxi
+    use parcel_bc, only : do_periodic
+    use fields, only : get_lower_index,  &
                        get_position
     implicit none
 
@@ -17,15 +18,18 @@ module interpl_methods
             integer,          intent(out) :: ngp
             double precision              :: xy(2), dx(2)
             integer                       :: i
+            double precision              :: tmp(2)
 
-            ij(:, 1) = get_lower_index(pos)
+            tmp = pos
 
-            dx = get_mesh_spacing()
+            call do_periodic(tmp(1))
+
+            ij(:, 1) = get_lower_index(tmp)
 
             xy = get_position(ij(:, 1))
 
             do i = 1, 2
-                if (pos(i) - xy(i) > 0.5 * dx(i)) then
+                if (tmp(i) - xy(i) > 0.5 * dx(i)) then
                     ij(i, 1) = ij(i, 1) + 1
                 endif
             enddo
@@ -43,32 +47,35 @@ module interpl_methods
             integer,          intent(out) :: ij(2, 4)
             double precision, intent(out) :: weight(4)
             integer,          intent(out) :: ngp
-            double precision              :: xy(2), dx(2)
+            double precision              :: xy(2)
+            double precision              :: tmp(2)
 
-            dx = get_mesh_spacing()
+            tmp = pos
+
+            call do_periodic(tmp(1))
 
             ! (i, j)
-            ij(:, 1) = get_lower_index(pos)
+            ij(:, 1) = get_lower_index(tmp)
             xy = get_position(ij(:, 1))
-            weight(1) = product(1.0 - abs(pos - xy) / dx)
+            weight(1) = product(1.0 - abs(tmp - xy) * dxi)
 
             ! (i+1, j)
             ij(:, 2) = ij(:, 1)
             ij(1, 2) = ij(1, 2) + 1
             xy = get_position(ij(:, 2))
-            weight(2) = product(1.0 - abs(pos - xy) / dx)
+            weight(2) = product(1.0 - abs(tmp - xy) * dxi)
 
             ! (i, j+1)
             ij(:, 3) = ij(:, 1)
             ij(2, 3) = ij(2, 3) + 1
             xy = get_position(ij(:, 3))
-            weight(3) = product(1.0 - abs(pos - xy) / dx)
+            weight(3) = product(1.0 - abs(tmp - xy) * dxi)
 
             ! (i+1, j+1)
             ij(:, 4) = ij(:, 2)
             ij(2, 4) = ij(2, 4) + 1
             xy = get_position(ij(:, 4))
-            weight(4) = product(1.0 - abs(pos - xy) / dx)
+            weight(4) = product(1.0 - abs(tmp - xy) * dxi)
 
             ngp = 4
 

@@ -41,7 +41,7 @@ module model
 
 
         subroutine run
-            use parameters, only : time, output, verbose, parcel_info
+            use options, only : time, output, verbose, parcel_info
             double precision :: t    = 0.0 ! current time
             double precision :: dt   = 0.0 ! time step
             integer          :: iter = 0   ! simulation iteration
@@ -94,7 +94,7 @@ module model
 
 
         subroutine write_h5_step(iter, t, dt)
-            use parameters, only : output
+            use options, only : output
             integer,          intent(in) :: iter
             double precision, intent(in) :: t
             double precision, intent(in) :: dt
@@ -116,7 +116,7 @@ module model
         end subroutine write_h5_step
 
         subroutine write_h5_num_steps(iter)
-            use parameters, only : output
+            use options, only : output
             integer, intent(in) :: iter
             integer(hid_t)      :: group
 
@@ -134,7 +134,7 @@ module model
 
 
         function get_time_step() result(dt)
-            use parameters, only : time
+            use options, only : time
             double precision :: dt
             double precision :: max_vorticity
 
