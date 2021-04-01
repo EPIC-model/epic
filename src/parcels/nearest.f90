@@ -54,7 +54,7 @@ module nearest
             dxi = 1.0 / dx
 
             ! maximum squared distance
-            dscmax = 0.5 * parcel_info%lambda
+            dscmax = 0.5 * parcel_info%lambda / pi
             vmin = product(dx) / 36.0
 
             ! These parcels are marked for merger:
