@@ -2,6 +2,7 @@ module interpolation
     use constants, only : max_num_parcels
     use options, only : parcel_info, interpl, grid
     use parcel_container, only : parcel_container_type, n_parcels
+    use parcel_bc, only : do_periodic
     use ellipse
     use interpl_methods
     implicit none
@@ -25,7 +26,7 @@ module interpolation
     contains
 
         subroutine par2grid(parcels, attrib, field)
-            type(parcel_container_type), intent(in)    :: parcels
+            type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(-1:, -1:, :)
 
@@ -65,6 +66,9 @@ module interpolation
                 ! we have 2 points per ellipse
                 do p = 1, 2
 
+                    ! ensure parcel are within the domain
+                    call do_periodic(points(p, :))
+
                     ! get interpolation weights and mesh indices
                     call get_indices_and_weights(points(p, :), ngp)
 
@@ -83,7 +87,7 @@ module interpolation
 
 
         subroutine par2grid_non_elliptic(parcels, attrib, field)
-            type(parcel_container_type), intent(in)    :: parcels
+            type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(-1:, -1:, :)
             integer                                    :: ncomp, ngp
@@ -95,6 +99,9 @@ module interpolation
             ncomp = the_shape(3)
 
             do n = 1, n_parcels
+
+                ! ensure parcel are within the domain
+                call do_periodic(parcels%position(n, :))
 
                 ! get interpolation weights and mesh indices
                 call get_indices_and_weights(parcels%position(n, :), ngp)
@@ -114,11 +121,11 @@ module interpolation
 
 
         subroutine grid2par(position, volume, attrib, field, B)
-            double precision,           intent(in)  :: position(:, :)
-            double precision,           intent(in)  :: volume(:, :)
-            double precision,           intent(out) :: attrib(:, :)
-            double precision,           intent(in)  :: field(-1:, -1:, :)
-            double precision, optional, intent(in)  :: B(:, :)
+            double precision,           intent(inout) :: position(:, :)
+            double precision,           intent(in)    :: volume(:, :)
+            double precision,           intent(out)   :: attrib(:, :)
+            double precision,           intent(in)    :: field(-1:, -1:, :)
+            double precision, optional, intent(in)    :: B(:, :)
 
             if (parcel_info%is_elliptic) then
                 if (.not. present(B)) then
@@ -158,6 +165,9 @@ module interpolation
                 ! we have 2 points per ellipse
                 do p = 1, 2
 
+                    ! ensure parcel are within the domain
+                    call do_periodic(points(p, :))
+
                     ! get interpolation weights and mesh indices
                     call get_indices_and_weights(points(p, :), ngp)
 
@@ -177,12 +187,12 @@ module interpolation
 
 
         subroutine grid2par_non_elliptic(position, attrib, field)
-            double precision, intent(in)  :: position(:, :)
-            double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(-1:, -1:, :)
-            integer                       :: ncomp, ngp
-            integer                       :: n, c, i
-            integer                       :: the_shape(3)
+            double precision, intent(inout)  :: position(:, :)
+            double precision, intent(out)    :: attrib(:, :)
+            double precision, intent(in)     :: field(-1:, -1:, :)
+            integer                          :: ncomp, ngp
+            integer                          :: n, c, i
+            integer                          :: the_shape(3)
 
             ! number of field components
             the_shape = shape(field)
@@ -192,6 +202,9 @@ module interpolation
 
                 ! clear old data
                 attrib(n, :) = 0.0
+
+                ! ensure parcel are within the domain
+                call do_periodic(position(n, :))
 
                 ! get interpolation weights and mesh indices
                 call get_indices_and_weights(position(n, :), ngp)
