@@ -55,7 +55,8 @@ module nearest
 
             ! maximum squared distance
             dscmax = 0.5 * parcel_info%lambda / pi
-            vmin = product(dx) / 36.0
+
+            vmin = product(dx) / parcel_info%vfraction
 
             ! These parcels are marked for merger:
             l_merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)

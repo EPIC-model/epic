@@ -176,7 +176,7 @@ module parcel_merge
             integer, intent(in) :: n_merge
             integer             :: k, l, n, m
 
-            ! l points always to the last valid parcel in x
+            ! l points always to the last valid parcel
             l = n_parcels
 
             ! k points always to last invalid parcel in isma
@@ -196,7 +196,7 @@ module parcel_merge
             ! move invalid parcels to the end of the container
             m = 1
 
-            ! n iterates over x array
+            ! n iterates over parcel array
             n = 1
 
             do while (m <= k)

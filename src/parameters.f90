@@ -39,7 +39,7 @@ module parameters
         integer          :: split_freq   = 1           ! split frequency, 1 = call split subroutine every step
         character(10)    :: merge_type   = 'geometric' ! merge method in use (other option: 'optimal')
         integer          :: merge_freq   = 1           ! merge frequency, 1 = call merge subroutine every step
-        double precision :: vmin         = 0.001       ! min. allowed parcel volume
+        double precision :: vfraction    = 36.0        ! volume fraction in merge
     end type parcel_info_type
 
     type(parcel_info_type) :: parcel_info
