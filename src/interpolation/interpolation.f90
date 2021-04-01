@@ -66,7 +66,7 @@ module interpolation
                 ! we have 2 points per ellipse
                 do p = 1, 2
 
-                    ! ensure parcel are within the domain
+                    ! ensure point is within the domain
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
@@ -100,7 +100,7 @@ module interpolation
 
             do n = 1, n_parcels
 
-                ! ensure parcel are within the domain
+                ! ensure parcel is within the domain
                 call apply_periodic_bc(parcels%position(n, :))
 
                 ! get interpolation weights and mesh indices
@@ -165,7 +165,7 @@ module interpolation
                 ! we have 2 points per ellipse
                 do p = 1, 2
 
-                    ! ensure parcel are within the domain
+                    ! ensure point is within the domain
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
@@ -203,7 +203,7 @@ module interpolation
                 ! clear old data
                 attrib(n, :) = 0.0
 
-                ! ensure parcel are within the domain
+                ! ensure parcel is within the domain
                 call apply_periodic_bc(position(n, :))
 
                 ! get interpolation weights and mesh indices
