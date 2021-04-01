@@ -108,11 +108,11 @@ module nearest
             ! j counts the actual number of mergers found
             do m=1,nmerge
                 i0=isma(m)
-                x_store=parcels%position(i0,1)
-                z_store=parcels%position(i0,2)
+                x_small=parcels%position(i0,1)
+                z_small=parcels%position(i0,2)
                 ! Parcel i0 is small and should be merged; find closest other:
-                ix0=mod(nint(dxi(1)*(x_store-mesh%origin(1))),nx) ! ranges from 0 to nx-1
-                iz0=nint(dxi(2)*(z_store-mesh%origin(2)))         ! ranges from 0 to nz
+                ix0=mod(nint(dxi(1)*(x_small-mesh%origin(1))),nx) ! ranges from 0 to nx-1
+                iz0=nint(dxi(2)*(z_small-mesh%origin(2)))         ! ranges from 0 to nz
                 ! Grid point (ix0,iz0) is closest to parcel i0
 
                 ! Initialise scaled squared distance between parcels and parcel index:
