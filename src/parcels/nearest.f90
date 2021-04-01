@@ -19,7 +19,7 @@ module nearest
 !     integer :: isma(max_num_parcels/8)
 !     integer :: ibig(max_num_parcels/8)
 !     integer :: nmerge
-    logical :: merge(max_num_parcels)
+    logical :: i_merge(max_num_parcels)
 
     !Other variables:
     double precision:: vmin, delx,delz,dsq,dscmax,dscmin,vmerge
@@ -58,11 +58,11 @@ module nearest
             vmin = product(dx) / 36.0
 
             ! These parcels are marked for merger:
-            merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
+            i_merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
             nmerge=0
             ! Form list of small parcels:
             do i=1,n_parcels
-                if (merge(i)) then
+                if (i_merge(i)) then
                     nmerge=nmerge+1
                     isma(nmerge)=i
                 endif
@@ -127,7 +127,7 @@ module nearest
                         ! Search parcels for closest:
                         do k=kc1(ic),kc2(ic)
                             i=node(k)
-                            if (.not. merge(i)) then
+                            if (.not. i_merge(i)) then
                             ! Avoid merger with another small parcel
                             delx=parcels%position(i,1)-parcels%position(i0,1)
                             delx=delx-mesh%extent(1)*dble(int(delx*hlxi)) ! works across periodic edge
