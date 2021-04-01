@@ -46,8 +46,7 @@ module init
 
             ! initialize the volume of each parcel
             cell_volume = product(get_mesh_spacing())
-            parcels%volume = cell_volume / parcel_info%n_per_cell
-
+            parcels%volume(1:n_parcels, 1) = cell_volume / parcel_info%n_per_cell
         end subroutine init_parcels
 
 
@@ -111,8 +110,8 @@ module init
 
         subroutine init_B_matrix
             if (parcel_info%is_elliptic) then
-                parcels%B(:, 1) = 1.0   ! B11
-                parcels%B(:, 2) = 0.0   ! B12
+                parcels%B(1:n_parcels, 1) = 1.0   ! B11
+                parcels%B(1:n_parcels, 2) = 0.0   ! B12
             else
                 deallocate(parcels%B)
             endif

@@ -17,7 +17,7 @@
 
  mesh%grid          = 11, 11
 
- mesh%bc            = 'free slip', 'free slip'
+ mesh%bc            = 'periodic', 'free slip'
 
  !
  ! parcel info
@@ -33,11 +33,19 @@
 
  parcel%lambda      = 5.0
 
+ parcel%split_freq = 1
+
+ parcel%merge_type  = 'geometric'
+
+ parcel%merge_freq  = 1
+
+ parcel%vfraction   = 36.0
+
  !
  ! stepper info
  !
 
- time%limit         = 5.0
+ time%limit         = 10.0
 
  time%dt            = 0.025
 
