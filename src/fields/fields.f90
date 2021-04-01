@@ -8,6 +8,8 @@ module fields
                        get_step_group_name
     implicit none
 
+    ! Halo grid points are -1 and mesh%grid(1) and mesh%grid(2),
+    ! hence the valid regrion is from 0 to mesh%grid(1) or mesh%grid(2), respectively.
     double precision, allocatable, dimension(:, :, :) :: &
         velocity_f,       &   ! velocity vector field (has 1 halo cell layer)
         strain_f,         &   ! velocity gradient tensor (has 1 halo cell layer)
@@ -28,11 +30,15 @@ module fields
 
             dx = get_mesh_spacing()
 
-            ! + 1 since Fortran starts with 1
-            idx = (pos - mesh%origin) / dx + 1
+            idx = (pos - mesh%origin) / dx
 
-            ! update grid index accounting x periodicity
-            idx(1) = min(1 + idx(1), mesh%grid(1))
+            ! account for x periodicity:
+            ! [nx = mesh%grid(1)]
+            ! -1   --> nx-2
+            !  0   --> 0
+            ! nx   --> 1
+            ! nx-1 --> 0
+            idx(1) = mod(idx(1) + mesh%grid(1) - 1, mesh%grid(1) - 1)
 
         end function get_lower_index
 
@@ -44,9 +50,7 @@ module fields
 
             dx = get_mesh_spacing()
 
-            ! we need to subtract 1 from the index
-            ! since Fortran starts with 1 not with 0
-            pos = mesh%origin + (idx - 1) * dx
+            pos = mesh%origin + idx * dx
 
         end function get_position
 
@@ -72,16 +76,16 @@ module fields
             if (iter == 0) then
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity",          &
-                    velocity_f(1:mesh%grid(1), 1:mesh%grid(2), :))
+                    velocity_f(0:mesh%grid(1)-1, 0:mesh%grid(2)-1, :))
 
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity strain",   &
-                    strain_f(1:mesh%grid(1), 1:mesh%grid(2), :))
+                    strain_f(0:mesh%grid(1)-1, 0:mesh%grid(2)-1, :))
             endif
 
             ! do not write halo cells
             call write_h5_dataset_3d(name, "volume",            &
-                volume_f(1:mesh%grid(1), 1:mesh%grid(2), :))
+                volume_f(0:mesh%grid(1)-1, 0:mesh%grid(2)-1, :))
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)

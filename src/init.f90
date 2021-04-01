@@ -137,7 +137,7 @@ module init
         subroutine init_fields
             call init_velocity_field
 
-            allocate(volume_f(0:mesh%grid(1)+1, 0:mesh%grid(2)+1, 1))
+            allocate(volume_f(-1:mesh%grid(1), -1:mesh%grid(2), 1))
             volume_f = 0.0
 
             if (time%is_adaptive) then
@@ -153,12 +153,12 @@ module init
             double precision :: pos(2)
             double precision :: dx(2)
 
-            allocate(velocity_f(0:mesh%grid(1)+1, 0:mesh%grid(2)+1, 2))
+            allocate(velocity_f(-1:mesh%grid(1), -1:mesh%grid(2), 2))
 
-            allocate(strain_f(0:mesh%grid(1)+1, 0:mesh%grid(2)+1, 4))
+            allocate(strain_f(-1:mesh%grid(1), -1:mesh%grid(2), 4))
 
-            do j = 0, mesh%grid(2)+1
-                do i = 0, mesh%grid(1)+1
+            do j = -1, mesh%grid(2)
+                do i = -1, mesh%grid(1)
                     pos = get_position((/i, j/))
 
                     velocity_f(i, j, :) = get_flow_velocity(pos)
@@ -174,10 +174,11 @@ module init
             double precision :: pos(2)
             double precision :: dx(2)
 
-            allocate(vorticity_f(mesh%grid(1), mesh%grid(2), 1))
+            ! vorticity has no halo grid points
+            allocate(vorticity_f(0:mesh%grid(1)-1, 0:mesh%grid(2)-1, 1))
 
-            do j = 1, mesh%grid(2)
-                do i = 1, mesh%grid(1)
+            do j = 0, mesh%grid(2)-1
+                do i = 0, mesh%grid(1)-1
                     pos = get_position((/i, j/))
 
                     vorticity_f(i, j, :) = get_flow_vorticity(pos)
