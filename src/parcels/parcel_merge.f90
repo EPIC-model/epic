@@ -14,8 +14,8 @@ module parcel_merge
     contains
         subroutine merge_ellipses(parcels)
             type(parcel_container_type), intent(inout) :: parcels
-            integer                                    :: isma(max_num_parcels)
-            integer                                    :: ibig(max_num_parcels)
+            integer                                    :: isma(max_num_parcels / 8)
+            integer                                    :: ibig(max_num_parcels / 8)
             integer                                    :: n_merge ! number of merges
 
             ! find parcels to merge

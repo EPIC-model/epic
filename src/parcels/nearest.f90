@@ -30,8 +30,8 @@ module nearest
 
         ! if ibig(n) is zero, no parcel found for isma(n)
         subroutine find_nearest(isma, ibig, nmerge)
-            integer, intent(out) :: isma(max_num_parcels)
-            integer, intent(out) :: ibig(max_num_parcels)
+            integer, intent(out) :: isma(max_num_parcels / 8)
+            integer, intent(out) :: ibig(max_num_parcels / 8)
             integer, intent(out) :: nmerge
             integer          :: nx, nz, ncell
             double precision :: dx(2), dxi(2)
