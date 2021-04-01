@@ -174,7 +174,7 @@ module parcel_merge
         subroutine pack_parcels(isma, n_merge)
             integer, intent(in) :: isma(:)
             integer, intent(in) :: n_merge
-            integer             :: k, l, n, m
+            integer             :: k, l, m
 
             ! l points always to the last valid parcel
             l = n_parcels
@@ -193,22 +193,12 @@ module parcel_merge
                 stop
             endif
 
-            ! move invalid parcels to the end of the container
+            ! replace invalid parcels with the last valid parcel
             m = 1
 
-            ! n iterates over parcel array
-            n = 1
-
             do while (m <= k)
-                if (n .ne. isma(m)) then
-                    ! continue to next iteration if
-                    ! this parcel is valid
-                    n = n + 1
-                    cycle
-                endif
-
-                ! invalid parcel; overwrite *n* with last valid parcel *l*
-                call parcel_replace(n, l)
+                ! invalid parcel; overwrite *isma(m)* with last valid parcel *l*
+                call parcel_replace(isma(m), l)
 
                 l = l - 1
 
@@ -218,11 +208,8 @@ module parcel_merge
                     k = k - 1
                 enddo
 
-
                 ! next invalid
                 m = m + 1
-
-                n = n + 1
             enddo
 
             ! update number of valid parcels
