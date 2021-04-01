@@ -1,6 +1,6 @@
 module diagnostics
     use parcel_container
-    use parameters, only : dx
+    use parameters, only : vcell
     use options, only : grid
     use fields
     use hdf5
@@ -15,7 +15,6 @@ module diagnostics
     contains
 
         function get_rms_volume_error() result(rms)
-            double precision              :: V0  ! cell volume
             double precision              :: n
             double precision              :: rms ! rms volume error
             double precision, allocatable :: V(:, :, :)
@@ -24,8 +23,7 @@ module diagnostics
             V = volume_f(1:grid(1), 1:grid(2), :)
 
             n = size(V)
-            V0 = product(dx)
-            rms = sqrt(sum((V - V0) ** 2) / n) / V0
+            rms = sqrt(sum((V - vcell) ** 2) / n) / vcell
         end function get_rms_volume_error
 
 

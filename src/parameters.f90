@@ -13,6 +13,13 @@ module parameters
     ! inverse mesh spacing
     double precision :: dxi(2)
 
+
+     ! grid cell volume, really area in 2D:
+    double precision :: vcell
+
+     ! number of grid cells
+    integer :: ncell
+
     contains
 
     ! Update all parameters according to the
@@ -20,6 +27,11 @@ module parameters
     subroutine update_parameters
         dx = extent / (grid - 1)
         dxi = one / dx;
+
+        vcell = product(dx)
+
+        ncell = product(grid - 1)
+
     end subroutine update_parameters
 
 end module parameters

@@ -1,7 +1,7 @@
 module init
     use options, only : parcel_info, time, grid
     use constants
-    use parameters, only : dx
+    use parameters, only : dx, vcell, ncell
     use fields, only : velocity_f,       &
                        strain_f,         &
                        volume_f,         &
@@ -24,14 +24,9 @@ module init
         !
 
         subroutine init_parcels
-            integer          :: n_cells
-            double precision :: cell_volume
-
-            n_cells = product(grid - 1)
-
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
-            n_parcels = parcel_info%n_per_cell * n_cells
+            n_parcels = parcel_info%n_per_cell * ncell
 
             if (parcel_info%is_random) then
                 call init_random_positions
@@ -46,8 +41,7 @@ module init
             call init_velocity
 
             ! initialize the volume of each parcel
-            cell_volume = product(dx)
-            parcels%volume = cell_volume / parcel_info%n_per_cell
+            parcels%volume = vcell / parcel_info%n_per_cell
 
         end subroutine init_parcels
 
