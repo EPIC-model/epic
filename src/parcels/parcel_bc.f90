@@ -1,5 +1,5 @@
 module parcel_bc
-    use constants, only : lower, upper, extent
+    use constants, only : lower, upper, extent, hli
     use parcel_container, only : n_parcels
     implicit none
 
@@ -47,14 +47,7 @@ module parcel_bc
         ! apply periodic bc on n-th parcel
         subroutine do_periodic(position)
             double precision, intent(inout) :: position(2)
-
-            if (position(1) > upper(1)) then
-                position(1) = position(1) - extent(1)
-            endif
-
-            if (position(1) < lower(1)) then
-                position(1) = position(1) + extent(1)
-            endif
+            position(1) = position(1) - extent(1) * dble(int(position(1) * hli(1)))
         end subroutine do_periodic
 
 

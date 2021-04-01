@@ -15,9 +15,15 @@ module constants
     ! domain size
     double precision, parameter :: extent(2) = (/ pi, pi /)
 
+    ! domain half widths and edge values:
+    double precision, parameter :: hl(2) = extent / two
+
+    double precision, parameter :: hli(2) = one / hl
+
     ! domain origin
-    double precision, parameter :: lower(2) = - extent / two
+    double precision, parameter :: lower(2) = - hl
 
     ! domain upper boundary
-    double precision, parameter :: upper(2) = extent / two
+    double precision, parameter :: upper(2) = hl
+
 end module

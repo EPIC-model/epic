@@ -13,7 +13,6 @@ module parameters
     ! inverse mesh spacing
     double precision :: dxi(2)
 
-
      ! grid cell volume, really area in 2D:
     double precision :: vcell
 
