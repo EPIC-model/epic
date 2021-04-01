@@ -20,19 +20,19 @@ module nearest
 !     integer :: isma(max_num_parcels/8)
 !     integer :: ibig(max_num_parcels/8)
 !     integer :: nmerge
-    logical :: merge(max_num_parcels)
+    logical :: l_merge(max_num_parcels)
 
     !Other variables:
-    double precision:: vmin, delx,delz,dsq,dscmin,vmerge,vmergemin,x_store,z_store
-    integer:: i,ic,i0,imin,k,m
+    double precision:: vmin, delx,delz,dsq,dscmin,vmerge,vmergemin,x_small,z_small
+    integer:: i,ic,i0,imin,k,m,j
     integer:: ix,iz,ix0,iz0
 
     contains
 
         ! if ibig(n) is zero, no parcel found for isma(n)
         subroutine find_nearest(isma, ibig, nmerge)
-            integer, intent(out) :: isma(max_num_parcels)
-            integer, intent(out) :: ibig(max_num_parcels)
+            integer, intent(out) :: isma(max_num_parcels / 8)
+            integer, intent(out) :: ibig(max_num_parcels / 8)
             integer, intent(out) :: nmerge
             integer          :: nx, nz, ncell
             double precision :: dx(2), dxi(2)
@@ -54,10 +54,10 @@ module nearest
             dx = get_mesh_spacing()
             dxi = 1.0 / dx
 
-            vmin = product(dx) / (parcel_info%n_per_cell * parcel_info%max_splits)
+            vmin = product(dx) / parcel_info%vfraction
 
             ! These parcels are marked for merger:
-            merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
+            l_merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
             nmerge=0
 
             !---------------------------------------------------------------------
@@ -66,7 +66,7 @@ module nearest
 
             ! Form list of small parcels:
             do i=1,n_parcels
-                if (merge(i)) then
+                if (l_merge(i)) then
                     nmerge=nmerge+1
                     isma(nmerge)=i
                 else
@@ -93,7 +93,7 @@ module nearest
 
             kc2=kc1-1
             do i=1,n_parcels
-                if (.not. merge(i)) then
+                if (.not. l_merge(i)) then
                     ic=loc(i)
                     k=kc2(ic)+1
                     node(k)=i
@@ -104,6 +104,8 @@ module nearest
             !---------------------------------------------------------------------
             ! Now find the nearest grid point to each small parcel (to be merged)
             ! and search over the surrounding 8 grid cells for the closest parcel:
+            j = 0
+            ! j counts the actual number of mergers found
             do m=1,nmerge
                 i0=isma(m)
                 x_store=parcels%position(i0,1)
@@ -129,12 +131,12 @@ module nearest
                         ! Search parcels for closest:
                         do k=kc1(ic),kc2(ic)
                             i=node(k)
-                            delz=parcels%position(i,2)-z_store
+                            delz=parcels%position(i,2)-z_small
                             ! Avoid merger with another small parcel
                             vmerge=parcels%volume(i, 1)+parcels%volume(i0, 1) ! Summed area fraction:
                             ! Prevent division in all comparisons here
                             if (delz*delz*vmergemin < dscmin*vmerge) then
-                                delx=parcels%position(i,1)-x_store
+                                delx=parcels%position(i,1)-x_small
                                 delx=delx-mesh%extent(1)*dble(int(delx*hlxi)) ! works across periodic edge
                                 dsq=delz*delz+delx*delx
                                 if (dsq*vmergemin < dscmin*vmerge) then
@@ -146,9 +148,15 @@ module nearest
                         enddo
                     enddo
                 enddo
-                ! Store the index of the parcel to be merged with:
-                ibig(m)=imin
+                if (imin .gt. 0) then
+                    ! Store the index of the parcel to be merged with:
+                    j = j + 1
+                    isma(j) = isma(m)
+                    ibig(j) = imin
+                endif
             enddo
+            ! Actual total number of mergers:
+            nmerge = j
         end subroutine find_nearest
 
 end module nearest

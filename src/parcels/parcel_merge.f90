@@ -1,7 +1,7 @@
 module parcel_merge
     use nearest
     use constants, only : pi, max_num_parcels
-    use parcel_container, only : parcel_container_type, n_parcels, parcel_pack
+    use parcel_container, only : parcel_container_type, n_parcels, parcel_replace
     use ellipse, only : get_B22
     use parameters, only : parcel_info, verbose
     implicit none
@@ -9,21 +9,17 @@ module parcel_merge
     private :: geometric_merge, &
                do_merge,        &
                optimal_merge,   &
-               pack_parcels,    &
-               remove_isolated
+               pack_parcels
 
     contains
         subroutine merge_ellipses(parcels)
             type(parcel_container_type), intent(inout) :: parcels
-            integer                                    :: isma(max_num_parcels)
-            integer                                    :: ibig(max_num_parcels)
+            integer                                    :: isma(max_num_parcels / 8)
+            integer                                    :: ibig(max_num_parcels / 8)
             integer                                    :: n_merge ! number of merges
 
             ! find parcels to merge
             call find_nearest(isma, ibig, n_merge)
-
-            ! remove isolated parcels and update n_merge accordingly
-            call remove_isolated(isma, ibig, n_merge)
 
             if (verbose) then
                 print "(a36, i0, a3, i0)",                               &
@@ -46,23 +42,6 @@ module parcel_merge
             endif
 
         end subroutine merge_ellipses
-
-        ! remove isolated parcels;
-        ! an isolated parcel is a parcel for which no big parcel is found (ibig = 0);
-        subroutine remove_isolated(isma, ibig, n_merge)
-            integer, intent(inout) :: isma(:), ibig(:)
-            logical, allocatable   :: mask(:)
-            integer, intent(out)   :: n_merge
-
-            mask = ibig /= 0
-
-            ! count number of .true. values
-            n_merge = count(mask)
-
-            ibig = pack(ibig, mask)
-            isma = pack(isma, mask)
-
-        end subroutine remove_isolated
 
         ! merge ith parcel into jth parcel (without B matrix scaling)
         subroutine do_merge(parcels, i, j, B11, B12, B22)
@@ -190,24 +169,53 @@ module parcel_merge
         end subroutine optimal_merge
 
 
-        ! remove invalid parcels
+        ! this algorithm replaces invalid parcels with valid parcels
+        ! from the end of the container
         subroutine pack_parcels(isma, n_merge)
-            integer, intent(in)    :: isma(:)
-            integer, intent(inout) :: n_merge
-            logical                :: mask(max_num_parcels)
-            integer                :: n
+            integer, intent(in) :: isma(:)
+            integer, intent(in) :: n_merge
+            integer             :: k, l, m
 
-            mask = .true.
+            ! l points always to the last valid parcel
+            l = n_parcels
 
-            do n = 1, n_merge
-                print *, n, isma(n), size(mask)
-                mask(isma(n)) = .false.
+            ! k points always to last invalid parcel in isma
+            k = n_merge
+
+            ! find last parcel which is not invalid
+            do while (k > 0 .and. l == isma(k))
+                l = l - 1
+                k = k - 1
             enddo
 
-            print *, "count =", count(.not. mask)
+            if (l == 0) then
+                print *, "Error: All parcels are invalid."
+                stop
+            endif
 
-            call parcel_pack(mask)
+            ! replace invalid parcels with the last valid parcel
+            m = 1
+
+            do while (m <= k)
+                ! invalid parcel; overwrite *isma(m)* with last valid parcel *l*
+                call parcel_replace(isma(m), l)
+
+                l = l - 1
+
+                ! find next valid last parcel
+                do while (k > 0 .and. l == isma(k))
+                    l = l - 1
+                    k = k - 1
+                enddo
+
+                ! next invalid
+                m = m + 1
+            enddo
+
+            ! update number of valid parcels
+            n_parcels = n_parcels - n_merge
 
         end subroutine pack_parcels
+
 
 end module parcel_merge
