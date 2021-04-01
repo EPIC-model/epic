@@ -14,45 +14,23 @@ module parcel_bc
 
             do n = 1, n_parcels
                 ! horizontal bc
-                call do_periodic(position(n, :))
+                call apply_periodic_bc(position(n, :))
 
                 ! vertical bc
-                call do_free_slip(position(n, :), velocity(n, :))
+                call apply_free_slip_bc(position(n, :), velocity(n, :))
             enddo
         end subroutine apply_parcel_bc
 
 
-        ! apply periodic boundary condition in x (horizontal) direction
+        ! apply periodic bc on n-th parcel
         subroutine apply_periodic_bc(position)
-            double precision, intent(inout) :: position(:, :)
-            integer                         :: n
-
-            do n = 1, n_parcels
-                call do_periodic(position(n, :))
-            enddo
+            double precision, intent(inout) :: position(2)
+            position(1) = position(1) - extent(1) * dble(int(position(1) * hli(1)))
         end subroutine apply_periodic_bc
 
 
-        ! apply periodic boundary condition in y (vertical) direction
-        subroutine apply_free_slip_bc(position, velocity)
-            double precision, intent(inout) :: position(:, :), velocity(:, :)
-            integer                         :: n
-
-            do n = 1, n_parcels
-                call do_free_slip(position(n, :), velocity(n, :))
-            enddo
-
-        end subroutine apply_free_slip_bc
-
-        ! apply periodic bc on n-th parcel
-        subroutine do_periodic(position)
-            double precision, intent(inout) :: position(2)
-            position(1) = position(1) - extent(1) * dble(int(position(1) * hli(1)))
-        end subroutine do_periodic
-
-
         ! apply free slip bc on n-th parcel
-        subroutine do_free_slip(position, velocity)
+        subroutine apply_free_slip_bc(position, velocity)
             double precision, intent(inout) :: position(2), velocity(2)
 
             if (position(2) >= upper(2)) then
@@ -64,6 +42,6 @@ module parcel_bc
                 velocity(2) = 0.0
                 position(2) = 2.0 * lower(2) - position(2)
             endif
-        end subroutine do_free_slip
+        end subroutine apply_free_slip_bc
 
 end module parcel_bc

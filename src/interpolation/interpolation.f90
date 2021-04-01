@@ -2,7 +2,7 @@ module interpolation
     use constants, only : max_num_parcels
     use options, only : parcel_info, interpl, grid
     use parcel_container, only : parcel_container_type, n_parcels
-    use parcel_bc, only : do_periodic
+    use parcel_bc, only : apply_periodic_bc
     use ellipse
     use interpl_methods
     implicit none
@@ -67,7 +67,7 @@ module interpolation
                 do p = 1, 2
 
                     ! ensure parcel are within the domain
-                    call do_periodic(points(p, :))
+                    call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
                     call get_indices_and_weights(points(p, :), ngp)
@@ -101,7 +101,7 @@ module interpolation
             do n = 1, n_parcels
 
                 ! ensure parcel are within the domain
-                call do_periodic(parcels%position(n, :))
+                call apply_periodic_bc(parcels%position(n, :))
 
                 ! get interpolation weights and mesh indices
                 call get_indices_and_weights(parcels%position(n, :), ngp)
@@ -166,7 +166,7 @@ module interpolation
                 do p = 1, 2
 
                     ! ensure parcel are within the domain
-                    call do_periodic(points(p, :))
+                    call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
                     call get_indices_and_weights(points(p, :), ngp)
@@ -204,7 +204,7 @@ module interpolation
                 attrib(n, :) = 0.0
 
                 ! ensure parcel are within the domain
-                call do_periodic(position(n, :))
+                call apply_periodic_bc(position(n, :))
 
                 ! get interpolation weights and mesh indices
                 call get_indices_and_weights(position(n, :), ngp)
