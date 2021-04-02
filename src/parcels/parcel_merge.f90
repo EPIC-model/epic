@@ -3,7 +3,9 @@ module parcel_merge
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcel_container_type, n_parcels, parcel_replace
     use ellipse, only : get_B22
-    use parameters, only : parcel_info, verbose
+    use parameters
+    use parcel_bc
+
     implicit none
 
     private :: geometric_merge, &
@@ -73,7 +75,11 @@ module parcel_merge
             mu1 = a1b1 / ab
             mu2 = a2b2 / ab
 
-            zet = 2.0 * isqrab * (parcels%position(j, 1) - parcels%position(i, 1))
+            delx=(parcels%position(j, 1) - parcels%position(i, 1))
+            delx=delx-mesh%extent(1)*dble(int(delx*0.5*mesh%extent(1))) ! works across periodic edge
+
+            zet = 2.0 * isqrab * delx
+
             eta = 2.0 * isqrab * (parcels%position(j, 2) - parcels%position(i, 2))
 
             mu12 = mu1 * mu2
@@ -86,8 +92,8 @@ module parcel_merge
 
 
             ! update center of mass
-            parcels%position(j, 1) = mu1 * parcels%position(i, 1) &
-                                   + mu2 * parcels%position(j, 1)
+            parcels%position(j, 1) = - mu1 * delx &
+                                   + (mu2+mu1) * parcels%position(j, 1)
 
             parcels%position(j, 2) = mu1 * parcels%position(i, 2) &
                                    + mu2 * parcels%position(j, 2)
@@ -118,6 +124,9 @@ module parcel_merge
                 parcels%B(j, 1) = B11 / detB
                 parcels%B(j, 2) = B12 / detB
             enddo
+
+            call apply_parcel_bc(parcels%position, parcels%velocity)
+
         end subroutine geometric_merge
 
 
@@ -166,6 +175,9 @@ module parcel_merge
                 parcels%B(j, 1) = (B11 - mu * B22) / (1.0 - mu ** 2)
                 parcels%B(j, 2) = B12 / (1.0 - mu)
             enddo
+
+            call apply_parcel_bc(parcels%position, parcels%velocity)
+
         end subroutine optimal_merge
 
 
