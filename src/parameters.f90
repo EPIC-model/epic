@@ -31,11 +31,15 @@ module parameters
     ! parcel parameters
     !
     type parcel_info_type
-        integer          :: n_per_cell   = 4         ! number of parcels per cell (need to be a square)
-        logical          :: is_random    = .false.   ! random parcel initialization
-        integer          :: seed         = 42        ! seed of random initialization
-        logical          :: is_elliptic  = .true.    ! use elliptic model
-        double precision :: lambda       = 5.0       ! max. ellipse aspect ratio a/b
+        integer          :: n_per_cell   = 4           ! number of parcels per cell (need to be a square)
+        logical          :: is_random    = .false.     ! random parcel initialization
+        integer          :: seed         = 42          ! seed of random initialization
+        logical          :: is_elliptic  = .true.      ! use elliptic model
+        double precision :: lambda       = 5.0         ! max. ellipse aspect ratio a/b
+        integer          :: split_freq   = 1           ! split frequency, 1 = call split subroutine every step
+        character(10)    :: merge_type   = 'geometric' ! merge method in use (other option: 'optimal')
+        integer          :: merge_freq   = 1           ! merge frequency, 1 = call merge subroutine every step
+        double precision :: vfraction    = 36.0        ! volume fraction in merge
     end type parcel_info_type
 
     type(parcel_info_type) :: parcel_info
