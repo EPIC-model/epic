@@ -64,6 +64,7 @@ module nearest
             ! Initialise search:
             nppc=0 !nppc(ic) will contain the number of parcels in grid cell ic
 
+            ! Bin parcels in cells:
             ! Form list of small parcels:
             do i=1,n_parcels
                 if (l_merge(i)) then
