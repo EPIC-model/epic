@@ -7,7 +7,7 @@ epic_SOURCES = 					\
 	writer.f90				\
 	fields/fields.f90			\
 	parcels/ellipse.f90			\
-	parcels/parcels.f90 			\
+	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
 	parcels/parcel_split.f90		\
 	parser/parser.f90 			\

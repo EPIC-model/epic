@@ -14,6 +14,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    test/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
