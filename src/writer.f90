@@ -45,7 +45,7 @@ module writer
             integer(hid_t)                   :: dset, dataspace
             integer(hsize_t), dimension(1:1) :: dims
 
-            if (size(data) == 1) then
+            if (size(data) == 0) then
                 print *, "Error in 'write_h5_dataset_1d': ", &
                          "No memory for '", name, "' allocated!"
                 stop
@@ -77,7 +77,7 @@ module writer
             integer(hid_t)                   :: dset, dataspace
             integer(hsize_t), dimension(1:2) :: dims
 
-            if (size(data) == 1) then
+            if (size(data) == 0) then
                 print *, "Error in 'write_h5_dataset_2d': ", &
                          "No memory for '", name, "' allocated!"
                 stop
@@ -107,7 +107,7 @@ module writer
             integer(hid_t)                   :: dset, dataspace
             integer(hsize_t), dimension(1:3) :: dims
 
-            if (size(data) == 1) then
+            if (size(data) == 0) then
                 print *, "Error in 'write_h5_dataset_3d': ", &
                          "No memory for '", name, "' allocated!"
                 stop
