@@ -22,7 +22,7 @@ module parser
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODEL/ output, grid, parcel, time, flow, interpl
+            namelist /MODEL/ output, grid, parcel, stepper, time, flow, interpl
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -87,9 +87,16 @@ module parser
 
             call h5gclose_f(group, h5err)
 
+
             !
             ! write stepper info
             !
+            group = open_h5_group("stepper")
+
+            call write_h5_character_scalar_attrib(group, "method", stepper)
+
+            call h5gclose_f(group, h5err)
+
             group = open_h5_group("time")
 
             call write_h5_double_scalar_attrib(group, "limit", time%limit)

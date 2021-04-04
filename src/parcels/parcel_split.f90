@@ -7,7 +7,7 @@ module parcel_split
 
     contains
 
-        subroutine split_ellipse(parcels, threshold)
+        subroutine split_ellipses(parcels, threshold)
             type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: threshold
             double precision                           :: B11
@@ -61,6 +61,6 @@ module parcel_split
                       "no. parcels before and after split: ", last_index, "...", n_parcels
             endif
 
-        end subroutine split_ellipse
+        end subroutine split_ellipses
 
 end module parcel_split

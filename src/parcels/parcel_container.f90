@@ -6,6 +6,7 @@ module parcel_container
                        write_h5_dataset_2d, &
                        open_h5_group,       &
                        get_step_group_name
+    use parameters, only : verbose
     use ellipse, only : get_angles
     implicit none
 
@@ -65,11 +66,32 @@ module parcel_container
 
         end subroutine write_h5_parcels
 
-        subroutine split(threshold)
-            double precision, intent(in) :: threshold
 
+        ! overwrite parcel n with parcel m
+        subroutine parcel_replace(n, m)
+            integer, intent(in) :: n, m
 
-        end subroutine split
+            if (verbose) then
+                print '(a19, i0, a6, i0)', '    replace parcel ', n, ' with ', m
+            endif
+
+            parcels%position(n, 1) = parcels%position(m, 1)
+            parcels%position(n, 2) = parcels%position(m, 2)
+
+            parcels%velocity(n, 1) = parcels%velocity(m, 1)
+            parcels%velocity(n, 2) = parcels%velocity(m, 2)
+
+            if (allocated(parcels%stretch)) then
+                parcels%stretch(n, 1)  = parcels%stretch(m, 1)
+            endif
+
+            parcels%volume(n, 1)  = parcels%volume(m, 1)
+
+            parcels%B(n, 1) = parcels%B(m, 1)
+            parcels%B(n, 2) = parcels%B(m, 2)
+
+        end subroutine parcel_replace
+
 
         subroutine parcel_alloc(num)
             integer, intent(in) :: num
@@ -80,6 +102,7 @@ module parcel_container
             allocate(parcels%B(num, 2))
             allocate(parcels%volume(num, 1))
         end subroutine parcel_alloc
+
 
         subroutine parcel_dealloc
             deallocate(parcels%position)
