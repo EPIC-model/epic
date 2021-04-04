@@ -37,6 +37,10 @@ module options
         integer          :: seed         = 42        ! seed of random initialization
         logical          :: is_elliptic  = .true.    ! use elliptic model
         double precision :: lambda       = 5.0       ! max. ellipse aspect ratio a/b
+        integer          :: split_freq   = 1           ! split frequency, 1 = call split subroutine every step
+        character(10)    :: merge_type   = 'geometric' ! merge method in use (other option: 'optimal')
+        integer          :: merge_freq   = 1           ! merge frequency, 1 = call merge subroutine every step
+        double precision :: vfraction    = 36.0        ! volume fraction in merge
     end type parcel_info_type
 
     type(parcel_info_type) :: parcel_info
@@ -44,6 +48,7 @@ module options
     !
     ! stepper options
     !
+    character(len=16) :: stepper = 'classic-rk4'
 
     ! time limit
     type time_info_type

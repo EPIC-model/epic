@@ -1,6 +1,6 @@
 module classic_rk4
     use constants, only : max_num_parcels
-    use parameters, only : parcel_info
+    use options, only : parcel_info
     use parcel_container
     use parcel_bc
     use ellipse, only : get_B22

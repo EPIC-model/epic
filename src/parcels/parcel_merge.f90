@@ -3,7 +3,7 @@ module parcel_merge
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcel_container_type, n_parcels, parcel_replace
     use ellipse, only : get_B22
-    use parameters, only : parcel_info, verbose
+    use options, only : parcel_info, verbose
     implicit none
 
     private :: geometric_merge, &

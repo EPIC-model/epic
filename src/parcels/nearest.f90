@@ -5,10 +5,10 @@
 !===================================================================
 
 module nearest
-    use constants, only : pi, max_num_parcels
+    use constants, only : pi, max_num_parcels, hli, lower, extent
     use parcel_container, only : parcels, n_parcels
-    use parameters
-    use fields, only : get_mesh_spacing
+    use parameters, only : dx, dxi, vcell, grid
+    use options, only : parcel_info
 
     implicit none
 
@@ -34,14 +34,9 @@ module nearest
             integer, intent(out) :: ibig(max_num_parcels / 8)
             integer, intent(out) :: nmerge
             integer          :: nx, nz, ncell
-            double precision :: dx(2), dxi(2)
-            !Inverse of domain half width:
-            double precision :: hlxi
 
-            hlxi = 0.5 * mesh%extent(1)
-
-            nx = mesh%grid(1)
-            nz = mesh%grid(2)
+            nx = grid(1)
+            nz = grid(2)
             ncell = nx * nz
 
             if (.not. allocated(nppc)) then
@@ -50,13 +45,10 @@ module nearest
                 allocate(kc2(ncell))
             endif
 
-            dx = get_mesh_spacing()
-            dxi = 1.0 / dx
-
             ! maximum squared distance
             dscmax = 0.5 * parcel_info%lambda / pi
 
-            vmin = product(dx) / parcel_info%vfraction
+            vmin = vcell / parcel_info%vfraction
 
             ! These parcels are marked for merger:
             l_merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
@@ -75,8 +67,8 @@ module nearest
 
             ! Bin parcels in cells:
             do i=1,n_parcels
-                ix=int(dxi(1)*(parcels%position(i,1)-mesh%origin(1)))
-                iz=int(dxi(2)*(parcels%position(i,2)-mesh%origin(2)))
+                ix=int(dxi(1)*(parcels%position(i,1)-lower(1)))
+                iz=int(dxi(2)*(parcels%position(i,2)-lower(2)))
 
                 ! Cell index of parcel:
                 ic=1+ix+nx*iz !This runs from 1 to ncell
@@ -112,8 +104,8 @@ module nearest
             do m=1,nmerge
                 i0=isma(m)
                 ! Parcel i0 is small and should be merged; find closest other:
-                ix0=mod(nint(dxi(1)*(parcels%position(i0,1)-mesh%origin(1))),nx) ! ranges from 0 to nx-1
-                iz0=nint(dxi(2)*(parcels%position(i0,2)-mesh%origin(2)))         ! ranges from 0 to nz
+                ix0=mod(nint(dxi(1)*(parcels%position(i0,1)-lower(1))),nx) ! ranges from 0 to nx-1
+                iz0=nint(dxi(2)*(parcels%position(i0,2)-lower(2)))         ! ranges from 0 to nz
                 ! Grid point (ix0,iz0) is closest to parcel i0
 
                 ! Initialise scaled squared distance between parcels and parcel index:
@@ -131,7 +123,7 @@ module nearest
                             if (.not. l_merge(i)) then
                             ! Avoid merger with another small parcel
                             delx=parcels%position(i,1)-parcels%position(i0,1)
-                            delx=delx-mesh%extent(1)*dble(int(delx*hlxi)) ! works across periodic edge
+                            delx=delx-extent(1)*dble(int(delx*hli(1))) ! works across periodic edge
                             delz=parcels%position(i,2)-parcels%position(i0,2)
                             dsq=delx**2+delz**2
                             vmerge=parcels%volume(i, 1)+parcels%volume(i0, 1) ! Summed area fraction:

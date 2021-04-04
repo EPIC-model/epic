@@ -1,5 +1,5 @@
 module ls_rk4
-    use parameters, only : parcel_info
+    use options, only : parcel_info
     implicit none
 
     contains

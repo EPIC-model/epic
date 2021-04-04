@@ -6,7 +6,7 @@ module parcel_container
                        write_h5_dataset_2d, &
                        open_h5_group,       &
                        get_step_group_name
-    use parameters, only : verbose
+    use options, only : verbose
     use ellipse, only : get_angles
     implicit none
 
