@@ -21,7 +21,7 @@ program ellipse_orientation
     parcels%position = 0.0
     parcels%volume = 0.25 * product(extent / (grid - 1))
 
-    do iter = 0, 359
+    do iter = 0, 360
 
         angle = dble(iter) * pi / 180.0d0
 
@@ -55,7 +55,7 @@ program ellipse_orientation
     call open_h5_file('ellipse_orientation.hdf5')
 
     group = open_h5_group("/")
-    call write_h5_integer_scalar_attrib(group, "nsteps", 360)
+    call write_h5_integer_scalar_attrib(group, "nsteps", 361)
     call h5gclose_f(group, h5err)
 
     group = open_h5_group("mesh")
