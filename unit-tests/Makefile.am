@@ -5,8 +5,9 @@ AM_LDFLAGS = $(top_builddir)/src/parcels/*.o 		\
 		$(top_builddir)/src/writer.o 		\
 		$(top_builddir)/src/parameters.o
 
-bin_PROGRAMS = ellipse_orientation
-# 	free_slip
+bin_PROGRAMS = 			\
+	ellipse_orientation 	\
+	free_slip
 
-# free_slip_SOURCES = free_slip.f90
 ellipse_orientation_SOURCES = ellipse_orientation.f90
+free_slip_SOURCES = free_slip.f90
