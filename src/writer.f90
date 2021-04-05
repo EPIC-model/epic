@@ -45,7 +45,7 @@ module writer
             integer(hid_t)                   :: dset, dataspace
             integer(hsize_t), dimension(1:1) :: dims
 
-            if (size(data) == 1) then
+            if (size(data) == 0) then
                 print *, "Error in 'write_h5_dataset_1d': ", &
                          "No memory for '", name, "' allocated!"
                 stop
@@ -77,7 +77,7 @@ module writer
             integer(hid_t)                   :: dset, dataspace
             integer(hsize_t), dimension(1:2) :: dims
 
-            if (size(data) == 1) then
+            if (size(data) == 0) then
                 print *, "Error in 'write_h5_dataset_2d': ", &
                          "No memory for '", name, "' allocated!"
                 stop
@@ -107,7 +107,7 @@ module writer
             integer(hid_t)                   :: dset, dataspace
             integer(hsize_t), dimension(1:3) :: dims
 
-            if (size(data) == 1) then
+            if (size(data) == 0) then
                 print *, "Error in 'write_h5_dataset_3d': ", &
                          "No memory for '", name, "' allocated!"
                 stop
@@ -131,7 +131,7 @@ module writer
         end subroutine write_h5_dataset_3d
 
 
-        subroutine write_h5_scalar_step_attrib(iter, name, val)
+        subroutine write_h5_double_scalar_step_attrib(iter, name, val)
             integer,          intent(in)     :: iter ! iteration
             character(*),     intent(in)     :: name
             double precision, intent(in)     :: val
@@ -145,20 +145,30 @@ module writer
             ! create or open group
             group = open_h5_group(grn)
 
-            ! create space for data
-            call h5screate_simple_f(1, dims, space, h5err)
+            call write_h5_double_scalar_attrib(group, name, val)
 
-            ! create the dataset
-            call h5acreate_f(group, name,                           &
-                             H5T_NATIVE_DOUBLE, space, attr, h5err)
-
-            call h5awrite_f(attr, H5T_NATIVE_DOUBLE, val, dims, h5err)
-
-            ! close all
-            call h5aclose_f(attr, h5err)
-            call h5sclose_f(space, h5err)
             call h5gclose_f(group, h5err)
-        end subroutine write_h5_scalar_step_attrib
+        end subroutine write_h5_double_scalar_step_attrib
+
+
+        subroutine write_h5_integer_scalar_step_attrib(iter, name, val)
+            integer,          intent(in)     :: iter ! iteration
+            character(*),     intent(in)     :: name
+            integer,          intent(in)     :: val
+            integer(hid_t)                   :: group
+            character(:), allocatable        :: grn
+            integer(hid_t)                   :: attr, space
+            integer(hsize_t), dimension(1:1) :: dims = 1
+
+            grn = trim(get_step_group_name(iter))
+
+            ! create or open group
+            group = open_h5_group(grn)
+
+            call write_h5_integer_scalar_attrib(group, name, val)
+
+            call h5gclose_f(group, h5err)
+        end subroutine write_h5_integer_scalar_step_attrib
 
 
         ! open existing group or create one
