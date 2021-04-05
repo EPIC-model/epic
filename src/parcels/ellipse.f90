@@ -22,9 +22,8 @@ module ellipse
             evec(1) = eval - B22
             evec(2) = B12
 
-            ! add epsilon if eval == B22 --> circle
-            if (abs(evec(1)) <= epsilon(eval)) then
-                evec(1) = evec(1) + epsilon(evec(1))
+            if (abs(evec(1)) <= epsilon(eval) .and. abs(evec(1)) /= 0.0d0) then
+                evec = evec + epsilon(evec)
             endif
 
             evec = evec / norm2(evec)
