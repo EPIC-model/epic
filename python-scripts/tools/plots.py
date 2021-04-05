@@ -75,7 +75,7 @@ def plot_ellipses(fname, step=-1, show=False, fmt="png"):
     h5reader.close()
 
 
-def plot_single_ellipse(fname, step=0, parcel=0, show=False, fmt="png"):
+def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
     mpl.rcParams['text.usetex'] = True
 
     h5reader = H5Reader()
@@ -155,7 +155,8 @@ def plot_single_ellipse(fname, step=0, parcel=0, show=False, fmt="png"):
     if show:
         plt.show()
     else:
-        plt.savefig('ellipses_step_' + str(step).zfill(len(str(nsteps))) + '.' + fmt,
+        plt.savefig('ellipse_' + str(parcel) + '_orientation_step_' + \
+                    str(step).zfill(len(str(nsteps))) + '.' + fmt,
                     bbox_inches='tight')
     plt.close()
 
