@@ -43,6 +43,12 @@ module ls_rk4
         subroutine ls_rk4_dealloc
 
             ! TODO
+            deallocate(velocity_p)
+
+            if (parcel_info%is_elliptic) then
+               deallocate(strain)
+               deallocate(dbdt)
+            endif
 
         end subroutine ls_rk4_dealloc
 
@@ -59,31 +65,28 @@ module ls_rk4
         end subroutine ls_rk4_step
 
 
-        subroutine ls_rk4_elliptic_substep(ca,cb,dt,l_first,l_last)
+        subroutine ls_rk4_elliptic_substep(ca,cb,dt,step)
             double precision, intent(in) :: ca
             double precision, intent(in) :: cb
             double precision, intent(in) :: dt
-            logical, optional, intent(in) :: l_first
-            logical, optional, intent(in) :: l_last
+            integer, intent(in) :: step
 
-            if(present(l_first)) then
-                if(l_first) then
-                    call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
-                else
-                    call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
-                endif
+            if(step==1) then
+               call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
             else
-                call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
+               call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
             endif
             call grid2par(parcels%position, parcels%volume, strain, strain_f, parcels%B)
-            dbdt = get_B(parcels%B, strain)
+            if(step==1) then
+               dbdt = get_B(parcels%B, strain)
+            else
+               dbdt = dbdt + get_B(parcels%B, strain)
+            endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
             parcels%B(1:n_parcels,:) = parcels%B(1:n_parcels,:) + cb*dt*dbdt(1:n_parcels,:)
             call apply_parcel_bc(parcels%position, velocity_p)
-            if(present(l_last)) then
-               if(l_last) then
-                  return
-               endif
+            if(step==5) then
+               return
             endif
             velocity_p(1:n_parcels,:) = ca*velocity_p(1:n_parcels,:)
             dbdt(1:n_parcels,:) = ca*dbdt(1:n_parcels,:)
@@ -95,37 +98,31 @@ module ls_rk4
         subroutine ls_rk4_elliptic(dt)
             double precision, intent(in) :: dt
 
-            call ls_rk4_elliptic_substep(ca1,cb1,dt,l_first=.true.)
-            call ls_rk4_elliptic_substep(ca2,cb2,dt)
-            call ls_rk4_elliptic_substep(ca3,cb3,dt)
-            call ls_rk4_elliptic_substep(ca4,cb4,dt)
-            call ls_rk4_elliptic_substep(ca5,cb5,dt,l_last=.true.)
+            call ls_rk4_elliptic_substep(ca1,cb1,dt,1)
+            call ls_rk4_elliptic_substep(ca2,cb2,dt,2)
+            call ls_rk4_elliptic_substep(ca3,cb3,dt,3)
+            call ls_rk4_elliptic_substep(ca4,cb4,dt,4)
+            call ls_rk4_elliptic_substep(ca5,cb5,dt,5)
 
         end subroutine ls_rk4_elliptic
 
 
-        subroutine ls_rk4_non_elliptic_substep(ca,cb,dt,l_first,l_last)
+        subroutine ls_rk4_non_elliptic_substep(ca,cb,dt,step)
             double precision, intent(in) :: ca
             double precision, intent(in) :: cb
             double precision, intent(in) :: dt
-            logical, optional, intent(in) :: l_first
-            logical, optional, intent(in) :: l_last
+            integer, intent(in) :: step
 
-            if(present(l_first)) then
-                if(l_first) then
-                    call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
-                else
-                    call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
-                endif
+
+            if(step==1) then
+               call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
             else
-                call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
+               call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
             endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
             call apply_parcel_bc(parcels%position, velocity_p)
-            if(present(l_last)) then
-               if(l_last) then
-                  return
-               endif
+            if(step==5) then
+               return
             endif
             velocity_p(1:n_parcels,:) = ca*velocity_p(1:n_parcels,:)
             return
@@ -135,11 +132,11 @@ module ls_rk4
         subroutine ls_rk4_non_elliptic(dt)
             double precision, intent(in) :: dt
 
-            call ls_rk4_non_elliptic_substep(ca1,cb1,dt,l_first=.true.)
-            call ls_rk4_non_elliptic_substep(ca2,cb2,dt)
-            call ls_rk4_non_elliptic_substep(ca3,cb3,dt)
-            call ls_rk4_non_elliptic_substep(ca4,cb4,dt)
-            call ls_rk4_non_elliptic_substep(ca5,cb5,dt,l_last=.true.)
+            call ls_rk4_non_elliptic_substep(ca1,cb1,dt,1)
+            call ls_rk4_non_elliptic_substep(ca2,cb2,dt,2)
+            call ls_rk4_non_elliptic_substep(ca3,cb3,dt,4)
+            call ls_rk4_non_elliptic_substep(ca4,cb4,dt,4)
+            call ls_rk4_non_elliptic_substep(ca5,cb5,dt,5)
 
         end subroutine ls_rk4_non_elliptic
 
