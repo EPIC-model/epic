@@ -11,10 +11,11 @@ module model
     use fields
     use interpolation
     use rk4
-    use writer, only : open_h5_file,                   &
-                       close_h5_file,                  &
-                       write_h5_scalar_step_attrib,    &
-                       write_h5_integer_scalar_attrib, &
+    use writer, only : open_h5_file,                        &
+                       close_h5_file,                       &
+                       write_h5_double_scalar_step_attrib,  &
+                       write_h5_integer_scalar_step_attrib, &
+                       write_h5_integer_scalar_attrib,      &
                        h5err
     implicit none
 
@@ -112,9 +113,11 @@ module model
 
             call open_h5_file(trim(output%h5fname))
 
-            call write_h5_scalar_step_attrib(iter, "t", t)
+            call write_h5_double_scalar_step_attrib(iter, "t", t)
 
-            call write_h5_scalar_step_attrib(iter, "dt", dt)
+            call write_h5_double_scalar_step_attrib(iter, "dt", dt)
+
+            call write_h5_integer_scalar_step_attrib(iter, "num parcel", n_parcels)
 
             call write_h5_parcels(iter)
 
