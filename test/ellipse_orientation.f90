@@ -15,8 +15,8 @@ program ellipse_orientation
     double precision, parameter :: lam = 3.0
     logical :: failed = .false.
 
-    n_parcels = 2
-    call parcel_alloc(2)
+    n_parcels = 1
+    call parcel_alloc(1)
 
     parcels%position = 0.0
     parcels%volume = 0.25 * product(extent / (grid - 1))
