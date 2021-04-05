@@ -40,8 +40,9 @@ program ellipse_orientation
         failed = (failed .or. abs(angle - get_angle(B11, B12)) > 1.0e-13)
 
         call open_h5_file('ellipse_orientation.hdf5')
-        call write_h5_scalar_step_attrib(iter, "t", dble(iter))
-        call write_h5_scalar_step_attrib(iter, "dt", dble(iter))
+        call write_h5_double_scalar_step_attrib(iter, "t", dble(iter))
+        call write_h5_double_scalar_step_attrib(iter, "dt", dble(iter))
+        call write_h5_integer_scalar_step_attrib(iter, "num parcel", n_parcels)
 
 
         parcels%B(1, 1) = B11

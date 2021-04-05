@@ -55,13 +55,11 @@ class H5Reader:
             data[step] = np.array(self.h5file[s]['diagnostics'].attrs[name])
         return data
 
-
     def get_parcel_dataset(self, step, name):
         s = 'step#' + str(step).zfill(10)
         if not name in self.h5file[s]['parcels'].keys():
             raise IOError("Parcel dataset '" + name + "' unknown.")
         return np.array(self.h5file[s]['parcels'][name])
-
 
     def get_step_attribute(self, step, name):
         s = 'step#' + str(step).zfill(10)
@@ -69,6 +67,8 @@ class H5Reader:
             raise IOError("Step attribute '" + name + "' unknown.")
         return self.h5file[s].attrs[name]
 
+    def get_num_parcels(self, step):
+        return self.get_step_attribute(step, 'num parcel')[0]
 
     def get_ellipses(self, step):
         position = self.get_parcel_dataset(step, 'position')

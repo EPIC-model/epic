@@ -84,8 +84,13 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
 
     nsteps = h5reader.get_num_steps()
 
-    if step >= nsteps:
-        raise ValueError('Step ' + str(step) + ' >= ' + str(nsteps))
+    if step > nsteps - 1:
+        raise ValueError('Step ' + str(step) + ' > ' + str(nsteps - 1))
+
+
+    num_parcels = h5reader.get_num_parcels(step)
+    if parcel > num_parcels - 1:
+        raise ValueError('Parcel index ' + str(parcel) + ' > ' + str(num_parcels - 1))
 
     lam = h5reader.get_parcel_info('lambda')
 
@@ -155,8 +160,8 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
     if show:
         plt.show()
     else:
-        plt.savefig('ellipse_' + str(parcel) + '_orientation_step_' + \
-                    str(step).zfill(len(str(nsteps))) + '.' + fmt,
+        plt.savefig('ellipse_' + str(parcel).zfill(len(str(num_parcels))) + \
+                    '_orientation_step_' + str(step).zfill(len(str(nsteps))) + '.' + fmt,
                     bbox_inches='tight')
     plt.close()
 

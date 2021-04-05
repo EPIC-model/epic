@@ -58,9 +58,10 @@ program free_slip
 
     call open_h5_file('free_slip.hdf5')
 
-    call write_h5_scalar_step_attrib(0, "t", 0.0d0)
+    call write_h5_double_scalar_step_attrib(0, "t", 0.0d0)
 
-    call write_h5_scalar_step_attrib(0, "dt", 0.0d0)
+    call write_h5_double_scalar_step_attrib(0, "dt", 0.0d0)
+    call write_h5_integer_scalar_step_attrib(iter, "num parcel", n_parcels)
 
     call write_h5_parcels(0)
 
