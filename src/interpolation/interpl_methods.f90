@@ -1,7 +1,8 @@
 module interpl_methods
-    use parameters, only : dx, dxi, lower, upper
-    use fields, only : get_lower_index,  &
-                       get_position
+    use parameters, only : dx, dxi
+    use fields, only : get_index                &
+                     , get_position             &
+                     , periodic_index_shift
     implicit none
 
     contains
@@ -17,7 +18,7 @@ module interpl_methods
             double precision              :: xy(2), dx(2)
             integer                       :: i
 
-            ij(:, 1) = get_lower_index(pos)
+            ij(:, 1) = get_index(pos)
 
             xy = get_position(ij(:, 1))
 
@@ -29,6 +30,9 @@ module interpl_methods
 
             weight(1) = 1.0
             ngp = 1
+
+            ! account for x periodicity
+            call periodic_index_shift(ij, ngp)
 
         end subroutine nearest_grid_point
 
@@ -43,13 +47,13 @@ module interpl_methods
             double precision              :: xy(2)
 
             ! (i, j)
-            ij(:, 1) = get_lower_index(pos)
+            ij(:, 1) = get_index(pos)
             xy = get_position(ij(:, 1))
             weight(1) = product(1.0 - abs(pos - xy) * dxi)
 
             ! (i+1, j)
             ij(:, 2) = ij(:, 1)
-            ij(1, 2) = ij(1, 2) + 1
+            ij(1, 2) = ij(1, 1) + 1
             xy = get_position(ij(:, 2))
             weight(2) = product(1.0 - abs(pos - xy) * dxi)
 
@@ -66,6 +70,9 @@ module interpl_methods
             weight(4) = product(1.0 - abs(pos - xy) * dxi)
 
             ngp = 4
+
+            ! account for x periodicity
+            call periodic_index_shift(ij, ngp)
 
         end subroutine trilinear
 

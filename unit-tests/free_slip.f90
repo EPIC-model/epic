@@ -4,15 +4,15 @@ program free_slip
     use parcel_container
     use interpolation, only : par2grid
     use options, only : parcel_info, grid
-    use parameters, only : extent, lower, update_parameters, vcell
+    use parameters, only : extent, lower, update_parameters, vcell, dx
     use writer
     implicit none
 
-    double precision :: volume_f(0:5, -1:6, 1)
-    integer :: i, j
+    double precision :: volume_f(0:3, -1:5, 1)
+    integer :: i, j, k, jj, ii
     integer(hid_t) :: group, step_group
     double precision, parameter :: angle = 0.5 * pi
-    double precision, parameter :: lam = 2.0
+    double precision, parameter :: lam = 1.0
     character(:), allocatable :: step
     character(:), allocatable :: name
 
@@ -22,28 +22,41 @@ program free_slip
 
     call update_parameters()
 
-    call parcel_alloc(25)
+    call parcel_alloc(64)
 
-    do j = 1, 5
-        do i = 1, 5
-            parcels%position(i + 5 * (j-1), 1) = -0.3 + 0.1 * i
-            parcels%position(i + 5 * (j-1), 2) = -0.2 + 0.1 * (j - 1)
+
+    k = 1
+    do j = 0, grid(2) - 2
+        do i = 0, grid(1) - 2
+            do jj = 1, 4, 2
+                do ii = 1, 4, 2
+                    parcels%position(k, 1) = lower(1) + i * dx(1) + 0.25 * dx(1) * ii
+                    parcels%position(k, 2) = lower(2) + j * dx(2) + 0.25 * dx(2) * jj
+                    k = k + 1
+                enddo
+            enddo
         enddo
     enddo
-    n_parcels = 25
+
+!     do j = 1, 5
+!         do i = 1, 5
+!             parcels%position(i + 5 * (j-1), 1) = -0.3 + 0.1 * i
+!             parcels%position(i + 5 * (j-1), 2) = -0.2 + 0.1 * (j - 1)
+!         enddo
+!     enddo
+    n_parcels = 64
 
     volume_f = 0.0
 
     parcel_info%is_elliptic = .true.
 
-    parcels%volume = 0.05 * vcell
+    parcels%volume = 0.25 * vcell
 
     ! b11
     parcels%B(:, 1) = lam * cos(angle) ** 2 + 1.0 / lam * sin(angle) ** 2
 
     ! b12
     parcels%B(:, 2) = 0.5 * (lam - 1.0 / lam) * sin(2.0 * angle)
-
 
 
     call par2grid(parcels, parcels%volume, volume_f)
@@ -64,7 +77,7 @@ program free_slip
     group = open_h5_group(name)
 
     call write_h5_dataset_3d(name, "volume", &
-                             volume_f(:, 0:, :))
+                             volume_f(0:3, 0:4, :))
 
     call h5gclose_f(group, h5err)
     call h5gclose_f(step_group, h5err)

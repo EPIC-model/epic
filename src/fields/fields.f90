@@ -19,12 +19,21 @@ module fields
 
     contains
 
-        ! get the lower field index given the parcel position
-        function get_lower_index(pos) result(idx)
+        ! get the lower index of the cell the parcel is in
+        ! this function does not take x periodicity into account
+        function get_index(pos) result(idx)
             double precision, intent(in)  :: pos(2)
             integer                       :: idx(2)
 
             idx = (pos - lower) * dxi
+
+        end function get_index
+
+
+        ! do periodic shift of the index
+        subroutine periodic_index_shift(idx, n)
+            integer, intent(inout) :: idx(2, n)
+            integer, intent(in)    :: n
 
             ! account for x periodicity:
             ! [nx = grid(1)]
@@ -32,9 +41,10 @@ module fields
             !  0   --> 0
             ! nx   --> 1
             ! nx-1 --> 0
-            idx(1) = mod(idx(1) + grid(1) - 1, grid(1) - 1)
+            idx(1, :) = mod(idx(1, :) + grid(1) - 1, grid(1) - 1)
 
-        end function get_lower_index
+        end subroutine periodic_index_shift
+
 
         ! get a position given a field index
         function get_position(idx) result(pos)
