@@ -132,13 +132,32 @@ module interpolation
 
         end subroutine grid2par
 
+        subroutine grid2par_add(position, volume, attrib, field, B)
+            double precision,           intent(in)  :: position(:, :)
+            double precision,           intent(in)  :: volume(:, :)
+            double precision,           intent(out) :: attrib(:, :)
+            double precision,           intent(in)  :: field(0:, 0:, :)
+            double precision, optional, intent(in)  :: B(:, :)
 
-        subroutine grid2par_elliptic(position, volume, B, attrib, field)
+            if (parcel_info%is_elliptic) then
+                if (.not. present(B)) then
+                    print *, "B matrix not passed to grid2par!"
+                    stop
+                endif
+                call grid2par_elliptic(position, volume, B, attrib, field, add=.true.)
+            else
+                call grid2par_non_elliptic(position, attrib, field, add=.true.)
+            endif
+
+        end subroutine grid2par_add
+
+        subroutine grid2par_elliptic(position, volume, B, attrib, field, add)
             double precision, intent(in)  :: position(:, :)
             double precision, intent(in)  :: volume(:, :)
             double precision, intent(in)  :: B(:, :)
             double precision, intent(out) :: attrib(:, :)
             double precision, intent(in)  :: field(0:, 0:, :)
+            logical, optional, intent(in)  :: add
             integer                       :: ncomp, ngp
             double precision              :: points(2, 2)
             integer                       :: n, p, c, i
@@ -151,7 +170,13 @@ module interpolation
             do n = 1, n_parcels
 
                 ! clear old data
-                attrib(n, :) = 0.0
+                if(present(add)) then
+                   if(add .eqv. .false.) then
+                      attrib(n, :) = 0.0
+                   endif
+                else
+                   attrib(n, :) = 0.0
+                endif
 
                 points = get_ellipse_points(position(n, :), volume(n, 1), B(n, :))
 
@@ -176,10 +201,11 @@ module interpolation
         end subroutine grid2par_elliptic
 
 
-        subroutine grid2par_non_elliptic(position, attrib, field)
+        subroutine grid2par_non_elliptic(position, attrib, field, add)
             double precision, intent(in)  :: position(:, :)
             double precision, intent(out) :: attrib(:, :)
             double precision, intent(in)  :: field(0:, 0:, :)
+            logical, optional, intent(in)  :: add
             integer                       :: ncomp, ngp
             integer                       :: n, c, i
             integer                       :: the_shape(3)
@@ -191,7 +217,13 @@ module interpolation
             do n = 1, n_parcels
 
                 ! clear old data
-                attrib(n, :) = 0.0
+                if(present(add)) then
+                   if(add .eqv. .false.) then
+                      attrib(n, :) = 0.0
+                   endif
+                else
+                   attrib(n, :) = 0.0
+                endif
 
                 ! get interpolation weights and mesh indices
                 call get_indices_and_weights(position(n, :), ngp)
