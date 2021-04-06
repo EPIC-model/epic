@@ -13,10 +13,13 @@ module parameters
     ! inverse mesh spacing
     double precision :: dxi(2)
 
-     ! grid cell volume, really area in 2D:
+    ! grid cell volume, really area in 2D:
     double precision :: vcell
 
-     ! number of grid cells
+    ! number of grid cells in each dimension
+    integer :: nx, nz
+
+    ! total number of grid cells
     integer :: ncell
 
     ! domain size
@@ -43,7 +46,10 @@ module parameters
 
         vcell = product(dx)
 
-        ncell = product(grid - 1)
+        nx = grid(1) - 1
+        nz = grid(2) - 1
+
+        ncell = nx * nz
 
         ! domain
         hl = extent / two

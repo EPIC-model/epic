@@ -1,7 +1,6 @@
 module diagnostics
     use parcel_container
-    use parameters, only : vcell
-    use options, only : grid
+    use parameters, only : vcell, ncell, nx, nz
     use fields
     use hdf5
     use writer, only : h5file,                        &
@@ -15,17 +14,15 @@ module diagnostics
     contains
 
         function get_rms_volume_error() result(rms)
-            double precision              :: n
-            double precision              :: rms ! rms volume error
-            double precision, allocatable :: V(:, :, :)
+            double precision :: rms ! rms volume error
+            double precision :: sqerrsum
 
-            ! remove halo cells
-            V = volume_f(1:grid(1), 1:grid(2), :)
+            ! do not take halo cells into account
+            ! nx == 0 due to periodicity in x
+            sqerrsum = sum((volume_f(0:nx-1, 0:nz, :) - vcell) ** 2)
 
-            n = size(V)
-            rms = sqrt(sum((V - vcell) ** 2) / n) / vcell
+            rms = sqrt(sqerrsum / dble(ncell)) / vcell
         end function get_rms_volume_error
-
 
         subroutine write_h5_diagnostics(iter)
             integer, intent(in)           :: iter ! iteration

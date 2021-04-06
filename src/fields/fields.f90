@@ -1,6 +1,5 @@
 module fields
-    use options, only : grid
-    use parameters, only : dx, dxi, extent, lower
+    use parameters, only : dx, dxi, extent, lower, nx, nz
     use hdf5
     use writer, only : h5file,              &
                        h5err,               &
@@ -9,12 +8,13 @@ module fields
                        get_step_group_name
     implicit none
 
-    ! Halo grid points are -1 and grid(1) and grid(2),
-    ! hence the valid regrion is from 0 to grid(1) or grid(2), respectively.
+    ! Halo grid points in vertical direction z are -1 and grid(2),
+    ! hence the valid regrion is from 0 to grid(2)-1 = nz
+    ! Due to periodicity in x, the grid points in x go from 0 to nx-1 = grid(1)-2
     double precision, allocatable, dimension(:, :, :) :: &
-        velocity_f,       &   ! velocity vector field (has 1 halo cell layer)
-        strain_f,         &   ! velocity gradient tensor (has 1 halo cell layer)
-        volume_f,         &   ! volume scalar field (has 1 halo cell layer)
+        velocity_f,       &   ! velocity vector field (has 1 halo cell layer in z)
+        strain_f,         &   ! velocity gradient tensor (has 1 halo cell layer in z)
+        volume_f,         &   ! volume scalar field (has 1 halo cell layer in z)
         vorticity_f           ! vorticity scalar field (has no halo cell layers)
 
     contains
@@ -36,12 +36,13 @@ module fields
             integer, intent(in)    :: n
 
             ! account for x periodicity:
-            ! [nx = grid(1)]
-            ! -1   --> nx-2
+            ! [nx = grid(1) -1]
+            ! -1   --> nx-1
             !  0   --> 0
-            ! nx   --> 1
-            ! nx-1 --> 0
-            idx(1, :) = mod(idx(1, :) + grid(1) - 1, grid(1) - 1)
+            ! nx+1 --> 1
+            ! nx   --> 0
+            ! nx-1 --> nx-1
+            idx(1, :) = mod(idx(1, :) + nx, nx)
 
         end subroutine periodic_index_shift
 
@@ -77,16 +78,16 @@ module fields
             if (iter == 0) then
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity",          &
-                    velocity_f(0:grid(1)-1, 0:grid(2)-1, :))
+                    velocity_f(0:nx-1, 0:nz, :))
 
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity strain",   &
-                    strain_f(0:grid(1)-1, 0:grid(2)-1, :))
+                    strain_f(0:nx-1, 0:nz, :))
             endif
 
             ! do not write halo cells
             call write_h5_dataset_3d(name, "volume",            &
-                volume_f(0:grid(1)-1, 0:grid(2)-1, :))
+                volume_f(0:nx-1, 0:nz, :))
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)

@@ -7,7 +7,7 @@ module parcel_bc
 
         ! apply boundary condition in all directions
         ! x -- periodic bc
-        ! y -- free slip bc
+        ! z -- free slip bc
         subroutine apply_parcel_bc(position, velocity)
             double precision, intent(inout) :: position(:, :), velocity(:, :)
             integer                         :: n

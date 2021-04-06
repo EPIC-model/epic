@@ -1,6 +1,7 @@
 module interpolation
     use constants, only : max_num_parcels
-    use options, only : parcel_info, interpl, grid
+    use parameters, only : nx, nz
+    use options, only : parcel_info, interpl
     use parcel_container, only : parcel_container_type, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use ellipse
@@ -39,8 +40,10 @@ module interpolation
             endif
 
             ! apply free slip boundary condition
-!             field(:, 0, :)            = 2.0 * field(:, 0, :)
-!             field(:, grid(2)-1, :) = 2.0 * field(:, grid(2)-1, :)
+            field(:, 0, :)            = 2.0 * field(:, 0, :)
+            field(:, nz, :)    = 2.0 * field(:, nz, :)
+!             field(:, 0, :)            = 2.0 * (field(:, 0, :) + field(:, -1, :))
+!             field(:, nz, :)    = 2.0 * (field(:, nz, :) + field(:, grid(2), :))
 
         end subroutine par2grid
 

@@ -7,13 +7,13 @@
 module nearest
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcels, n_parcels
-    use parameters, only : dx, dxi, vcell, grid, hli, lower, extent
+    use parameters, only : dx, dxi, vcell, grid, hli, lower, extent, ncell, nx, nz
     use options, only : parcel_info
 
     implicit none
 
     !Used for searching for possible parcel merger:
-    integer, allocatable :: nppc(:), kc1(:),kc2(:) !ncell = nx*nz
+    integer, allocatable :: nppc(:), kc1(:),kc2(:)
     integer :: loc(max_num_parcels)
     integer :: node(max_num_parcels)
 !     integer :: isma(max_num_parcels/8)
@@ -33,11 +33,6 @@ module nearest
             integer, intent(out) :: isma(max_num_parcels / 8)
             integer, intent(out) :: ibig(max_num_parcels / 8)
             integer, intent(out) :: nmerge
-            integer          :: nx, nz, ncell
-
-            nx = grid(1)
-            nz = grid(2)
-            ncell = nx * nz
 
             if (.not. allocated(nppc)) then
                 allocate(nppc(ncell))

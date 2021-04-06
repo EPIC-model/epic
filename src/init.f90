@@ -1,6 +1,6 @@
 module init
-    use options, only : parcel_info, time, grid
-    use parameters, only : dx, vcell, ncell, extent, lower
+    use options, only : parcel_info, time
+    use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
     use fields, only : velocity_f,       &
                        strain_f,         &
                        volume_f,         &
@@ -80,8 +80,8 @@ module init
             del = dx / (2.0 * n_per_dim)
 
             k = 1
-            do j = 0, grid(2) - 2
-                do i = 0, grid(1) - 2
+            do j = 0, nz-1
+                do i = 0, nx-1
                     do jj = 1, 2 * n_per_dim, 2
                         do ii = 1, 2 * n_per_dim, 2
                             parcels%position(k, 1) = lower(1) + i * dx(1) + del(1) * ii
@@ -126,7 +126,7 @@ module init
         subroutine init_fields
             call init_velocity_field
 
-            allocate(volume_f(-1:grid(1), -1:grid(2), 1))
+            allocate(volume_f(0:nx-1, -1:nz+1, 1))
             volume_f = 0.0
 
             if (time%is_adaptive) then
@@ -141,12 +141,12 @@ module init
             integer :: i, j
             double precision :: pos(2)
 
-            allocate(velocity_f(-1:grid(1), -1:grid(2), 2))
+            allocate(velocity_f(0:nx-1, -1:nz+1, 2))
 
-            allocate(strain_f(-1:grid(1), -1:grid(2), 4))
+            allocate(strain_f(0:nx-1, -1:nz+1, 4))
 
-            do j = -1, grid(2)
-                do i = -1, grid(1)
+            do j = -1, nz+1
+                do i = 0, nx-1
                     pos = get_position((/i, j/))
 
                     velocity_f(i, j, :) = get_flow_velocity(pos)
@@ -161,11 +161,11 @@ module init
             integer :: i, j
             double precision :: pos(2)
 
-            ! vorticity has no halo grid points
-            allocate(vorticity_f(0:grid(1)-1, 0:grid(2)-1, 1))
+            ! vorticity has no halo grid points in y
+            allocate(vorticity_f(0:nx-1, 0:nz, 1))
 
-            do j = 0, grid(2)-1
-                do i = 0, grid(1)-1
+            do j = 0, nz
+                do i = 0, nx-1
                     pos = get_position((/i, j/))
 
                     vorticity_f(i, j, :) = get_flow_vorticity(pos)
