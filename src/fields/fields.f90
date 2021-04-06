@@ -1,7 +1,6 @@
 module fields
-    use constants, only : extent, lower
     use options, only : grid
-    use parameters, only : dx, dxi
+    use parameters, only : dx, dxi, extent, lower
     use hdf5
     use writer, only : h5file,              &
                        h5err,               &

@@ -1,6 +1,6 @@
 module parser
     use constants
-    use parameters, only : update_parameters
+    use parameters
     use options
     use hdf5
     use writer

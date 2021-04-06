@@ -1,6 +1,5 @@
 module interpl_methods
-    use constants, only : lower, upper
-    use parameters, only : dx, dxi
+    use parameters, only : dx, dxi, lower, upper
     use fields, only : get_lower_index,  &
                        get_position
     implicit none

@@ -1,5 +1,5 @@
 module parcel_bc
-    use constants, only : lower, upper, extent, hli
+    use parameters, only : lower, upper, extent, hli
     use parcel_container, only : n_parcels
     implicit none
 

@@ -28,7 +28,7 @@ module interpolation
         subroutine par2grid(parcels, attrib, field)
             type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(-1:, -1:, :)
+            double precision,            intent(inout) :: field(0:, -1:, :)
 
             field = 0.0
 
@@ -39,15 +39,15 @@ module interpolation
             endif
 
             ! apply free slip boundary condition
-            field(:, 0, :)            = 2.0 * field(:, 0, :)
-            field(:, grid(2)-1, :) = 2.0 * field(:, grid(2)-1, :)
+!             field(:, 0, :)            = 2.0 * field(:, 0, :)
+!             field(:, grid(2)-1, :) = 2.0 * field(:, grid(2)-1, :)
 
         end subroutine par2grid
 
         subroutine par2grid_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(-1:, -1:, :)
+            double precision,            intent(inout) :: field(0:, -1:, :)
             integer                                    :: ncomp, ngp
             double precision                           :: points(2, 2)
             integer                                    :: n, p, c, i
@@ -89,7 +89,7 @@ module interpolation
         subroutine par2grid_non_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(-1:, -1:, :)
+            double precision,            intent(inout) :: field(0:, -1:, :)
             integer                                    :: ncomp, ngp
             integer                                    :: n, c, i
             integer                                    :: the_shape(3)
@@ -124,7 +124,7 @@ module interpolation
             double precision,           intent(inout) :: position(:, :)
             double precision,           intent(in)    :: volume(:, :)
             double precision,           intent(out)   :: attrib(:, :)
-            double precision,           intent(in)    :: field(-1:, -1:, :)
+            double precision,           intent(in)    :: field(0:, -1:, :)
             double precision, optional, intent(in)    :: B(:, :)
 
             if (parcel_info%is_elliptic) then
@@ -145,7 +145,7 @@ module interpolation
             double precision, intent(in)  :: volume(:, :)
             double precision, intent(in)  :: B(:, :)
             double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(-1:, -1:, :)
+            double precision, intent(in)  :: field(0:, -1:, :)
             integer                       :: ncomp, ngp
             double precision              :: points(2, 2)
             integer                       :: n, p, c, i
@@ -189,7 +189,7 @@ module interpolation
         subroutine grid2par_non_elliptic(position, attrib, field)
             double precision, intent(inout)  :: position(:, :)
             double precision, intent(out)    :: attrib(:, :)
-            double precision, intent(in)     :: field(-1:, -1:, :)
+            double precision, intent(in)     :: field(0:, -1:, :)
             integer                          :: ncomp, ngp
             integer                          :: n, c, i
             integer                          :: the_shape(3)

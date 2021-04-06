@@ -2,32 +2,41 @@ program free_slip
     use hdf5
     use constants, only : pi
     use parcel_container
+    use interpolation, only : par2grid
+    use options, only : parcel_info, grid
+    use parameters, only : extent, lower, update_parameters, vcell
     use writer
     implicit none
 
-    double precision :: volume_f(5, 3)
+    double precision :: volume_f(0:5, -1:6, 1)
     integer :: i, j
-    integer(hid_t) :: group
-    double precision :: origin(2) = (/-0.3, -0.25/)
-    double precision :: extent(2) =  (/0.6, 0.5/)
-    integer :: grid(2) = (/5, 2/)
+    integer(hid_t) :: group, step_group
     double precision, parameter :: angle = 0.5 * pi
-    double precision, parameter :: lam = 3.0
-    double precision :: B22, evec(2)
+    double precision, parameter :: lam = 2.0
+    character(:), allocatable :: step
+    character(:), allocatable :: name
 
-    call parcel_alloc(10)
+    grid = (/5, 5/)
+    extent =  (/0.5, 0.5/)
+    lower = (/-0.25, -0.25/)
 
-    do j = 1, 2
+    call update_parameters()
+
+    call parcel_alloc(25)
+
+    do j = 1, 5
         do i = 1, 5
-            parcels%position(i + 5 * (j-1), 1) = -0.25 + 0.1 * i
-            parcels%position(i + 5 * (j-1), 2) = 0.2 * (j - 1)
+            parcels%position(i + 5 * (j-1), 1) = -0.3 + 0.1 * i
+            parcels%position(i + 5 * (j-1), 2) = -0.2 + 0.1 * (j - 1)
         enddo
     enddo
-    n_parcels = 10
+    n_parcels = 25
 
+    volume_f = 0.0
 
+    parcel_info%is_elliptic = .true.
 
-    parcels%volume = 0.25 * product(extent / (grid - 1))
+    parcels%volume = 0.05 * vcell
 
     ! b11
     parcels%B(:, 1) = lam * cos(angle) ** 2 + 1.0 / lam * sin(angle) ** 2
@@ -35,35 +44,31 @@ program free_slip
     ! b12
     parcels%B(:, 2) = 0.5 * (lam - 1.0 / lam) * sin(2.0 * angle)
 
-    print *, angle
-    B22 = lam * sin(angle) ** 2 + 1.0 / lam * cos(angle) ** 2
-
-    evec(1) = lam - B22
-    evec(2) = parcels%B(1, 2)
-
-    print *, "before:", evec
-
-    if (abs(evec(1)) <= epsilon(lam) .and. evec(1) /= 0.0d0) then
-        evec(1) = evec(1) + epsilon(evec(1))
-    else
-        print *, "else"
-        evec(2) = evec(2) + epsilon(evec(2))
-    endif
 
 
-    evec = evec / norm2(evec)
-    print *, "here:", evec, norm2(evec)
-
-
+    call par2grid(parcels, parcels%volume, volume_f)
 
     call open_h5_file('free_slip.hdf5')
 
     call write_h5_double_scalar_step_attrib(0, "t", 0.0d0)
 
     call write_h5_double_scalar_step_attrib(0, "dt", 0.0d0)
-    call write_h5_integer_scalar_step_attrib(iter, "num parcel", n_parcels)
+    call write_h5_integer_scalar_step_attrib(0, "num parcel", n_parcels)
 
     call write_h5_parcels(0)
+
+    !!!
+    step = trim(get_step_group_name(0))
+    name = step // "/fields"
+    step_group = open_h5_group(step)
+    group = open_h5_group(name)
+
+    call write_h5_dataset_3d(name, "volume", &
+                             volume_f(:, 0:, :))
+
+    call h5gclose_f(group, h5err)
+    call h5gclose_f(step_group, h5err)
+    !!!
 
 
     group = open_h5_group("/")
@@ -80,15 +85,12 @@ program free_slip
 
     group = open_h5_group("mesh")
     call write_h5_double_vector_attrib(group, "extent", extent)
-    call write_h5_double_vector_attrib(group, "origin", origin)
+    call write_h5_double_vector_attrib(group, "origin", lower)
     call write_h5_integer_vector_attrib(group, "grid", grid)
     call h5gclose_f(group, h5err)
 
 
     call close_h5_file
-
-
-
 
 
     call parcel_dealloc()

@@ -5,9 +5,9 @@
 !===================================================================
 
 module nearest
-    use constants, only : pi, max_num_parcels, hli, lower, extent
+    use constants, only : pi, max_num_parcels
     use parcel_container, only : parcels, n_parcels
-    use parameters, only : dx, dxi, vcell, grid
+    use parameters, only : dx, dxi, vcell, grid, hli, lower, extent
     use options, only : parcel_info
 
     implicit none

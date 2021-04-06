@@ -1,7 +1,6 @@
 module init
     use options, only : parcel_info, time, grid
-    use constants
-    use parameters, only : dx, vcell, ncell
+    use parameters, only : dx, vcell, ncell, extent, lower
     use fields, only : velocity_f,       &
                        strain_f,         &
                        volume_f,         &

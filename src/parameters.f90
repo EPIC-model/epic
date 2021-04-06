@@ -19,6 +19,20 @@ module parameters
      ! number of grid cells
     integer :: ncell
 
+    ! domain size
+    double precision :: extent(2) = (/ pi, pi /)
+
+    ! domain half widths and edge values:
+    double precision :: hl(2)
+
+    double precision :: hli(2)
+
+    ! domain origin
+    double precision :: lower(2)
+
+    ! domain upper boundary
+    double precision :: upper(2)
+
     contains
 
     ! Update all parameters according to the
@@ -30,6 +44,12 @@ module parameters
         vcell = product(dx)
 
         ncell = product(grid - 1)
+
+        ! domain
+        hl = extent / two
+        hli = one / hl
+        lower = -hl
+        upper = hl
 
     end subroutine update_parameters
 
