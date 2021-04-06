@@ -4,7 +4,7 @@ program free_slip
     use parcel_container
     use interpolation, only : par2grid
     use options, only : parcel_info, grid
-    use parameters, only : extent, lower, update_parameters, vcell, dx
+    use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz
     use writer
     implicit none
 
@@ -17,34 +17,27 @@ program free_slip
     character(:), allocatable :: name
 
     grid = (/5, 5/)
-    extent =  (/0.5, 0.5/)
-    lower = (/-0.25, -0.25/)
+
+    extent =  (/0.4, 0.4/)
+    lower = (/-0.2, -0.2/)
 
     call update_parameters()
 
-    call parcel_alloc(64)
+    call parcel_alloc(72)
 
 
     k = 1
-    do j = 0, grid(2) - 2
-        do i = 0, grid(1) - 2
-            do jj = 1, 4, 2
-                do ii = 1, 4, 2
-                    parcels%position(k, 1) = lower(1) + i * dx(1) + 0.25 * dx(1) * ii
-                    parcels%position(k, 2) = lower(2) + j * dx(2) + 0.25 * dx(2) * jj
-                    k = k + 1
-                enddo
+    do j = 0, 2 * nz
+        do i = 0, nx-1
+            do ii = 1, 4, 2
+                parcels%position(k, 1) = lower(1) + i * dx(1) + 0.25 * dx(1) * ii
+                parcels%position(k, 2) = lower(2) + j * 0.05
+                k = k + 1
             enddo
         enddo
     enddo
 
-    ! move parcels on top such that one parcel point is outside
-    do i = 0, 12, 4
-        parcels%position(51+i, 2) = 1.12 * parcels%position(51+i, 2)
-        parcels%position(52+i, 2) = 1.12 * parcels%position(52+i, 2)
-    enddo
-
-    n_parcels = 64
+    n_parcels = 72
 
     volume_f = 0.0
 
@@ -60,6 +53,8 @@ program free_slip
 
 
     call par2grid(parcels, parcels%volume, volume_f)
+
+    print *, "sum = ", sum(volume_f(0:nx-1,0:nz, :)), sum(parcels%volume(1:n_parcels, :))
 
     call open_h5_file('free_slip.hdf5')
 
@@ -77,7 +72,7 @@ program free_slip
     group = open_h5_group(name)
 
     call write_h5_dataset_3d(name, "volume", &
-                             volume_f(0:3, 0:4, :))
+                             volume_f(0:nx-1, 0:nz, :))
 
     call h5gclose_f(group, h5err)
     call h5gclose_f(step_group, h5err)
