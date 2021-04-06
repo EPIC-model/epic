@@ -25,7 +25,7 @@ module fields
             double precision, intent(in)  :: pos(2)
             integer                       :: idx(2)
 
-            idx = (pos - lower) * dxi
+            idx = floor((pos - lower) * dxi)
 
         end function get_index
 
