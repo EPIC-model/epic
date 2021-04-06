@@ -64,6 +64,9 @@ module model
                     endif
                     call write_h5_step(nw, t, dt)
                     nw = nw + 1
+
+                    ! update number of iterations to h5 file
+                    call write_h5_num_steps(nw)
                 endif
 
                 call rk4_step(dt)
@@ -133,10 +136,18 @@ module model
             use parameters, only : output
             integer, intent(in) :: iter
             integer(hid_t)      :: group
+            logical             :: attr_exists
 
             call open_h5_file(trim(output%h5fname))
 
             group = open_h5_group("/")
+
+            ! in principle not necessary but we still check
+            call h5aexists_f(group, "nsteps", attr_exists, h5err)
+
+            if (attr_exists) then
+                call h5adelete_f(group, "nsteps", h5err)
+            endif
 
             call write_h5_integer_scalar_attrib(group, "nsteps", iter)
 
