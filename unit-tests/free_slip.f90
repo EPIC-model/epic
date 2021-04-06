@@ -12,7 +12,7 @@ program free_slip
     integer :: i, j, k, jj, ii
     integer(hid_t) :: group, step_group
     double precision, parameter :: angle = 0.5 * pi
-    double precision, parameter :: lam = 1.0
+    double precision, parameter :: lam = 3.0
     character(:), allocatable :: step
     character(:), allocatable :: name
 
@@ -38,12 +38,12 @@ program free_slip
         enddo
     enddo
 
-!     do j = 1, 5
-!         do i = 1, 5
-!             parcels%position(i + 5 * (j-1), 1) = -0.3 + 0.1 * i
-!             parcels%position(i + 5 * (j-1), 2) = -0.2 + 0.1 * (j - 1)
-!         enddo
-!     enddo
+    ! move parcels on top such that one parcel point is outside
+    do i = 0, 12, 4
+        parcels%position(51+i, 2) = 1.12 * parcels%position(51+i, 2)
+        parcels%position(52+i, 2) = 1.12 * parcels%position(52+i, 2)
+    enddo
+
     n_parcels = 64
 
     volume_f = 0.0
