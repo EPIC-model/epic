@@ -1,12 +1,16 @@
+! =============================================================================
+!                       Test ellipse orientation
+!
+!       This unit test checks the ellipse orientation computed using the
+!       B matrix values, i.e., B11 and B12. The angle computed via the
+!       B matrix is within [-pi/2, pi/2].
+! =============================================================================
 program ellipse_orientation
-    use hdf5
     use constants, only : pi
     use parcel_container
     use ellipse
-    use writer
     implicit none
 
-    integer(hid_t) :: group
     double precision :: origin(2) = (/0.0, 0.0/)
     double precision :: extent(2) =  (/0.2, 0.2/)
     integer :: iter
@@ -29,6 +33,10 @@ program ellipse_orientation
 
         B12 = 0.5 * (lam - 1.0 / lam) * sin(2.0 * angle)
 
+        parcels%B(1, 1) = B11
+
+        parcels%B(1, 2) = B12
+
         ! get_angle computes the angle in the first and fourth quadrant, i.e.,
         ! -pi/2 <= get_angle <= pi/2
         if (angle > pi / 2 .and. angle <= 3.0 * pi / 2) then
@@ -39,40 +47,7 @@ program ellipse_orientation
 
         failed = (failed .or. abs(angle - get_angle(B11, B12)) > 1.0e-13)
 
-        call open_h5_file('ellipse_orientation.hdf5')
-        call write_h5_double_scalar_step_attrib(iter, "t", dble(iter))
-        call write_h5_double_scalar_step_attrib(iter, "dt", dble(iter))
-        call write_h5_integer_scalar_step_attrib(iter, "num parcel", n_parcels)
-
-
-        parcels%B(1, 1) = B11
-        parcels%B(1, 2) = B12
-
-        call write_h5_parcels(iter)
-        call close_h5_file
     enddo
-
-
-    call open_h5_file('ellipse_orientation.hdf5')
-
-    group = open_h5_group("/")
-    call write_h5_integer_scalar_attrib(group, "nsteps", 361)
-    call h5gclose_f(group, h5err)
-
-    group = open_h5_group("mesh")
-    call write_h5_double_vector_attrib(group, "extent", extent)
-    call write_h5_double_vector_attrib(group, "origin", origin)
-    call write_h5_integer_vector_attrib(group, "grid", grid)
-    call h5gclose_f(group, h5err)
-
-    group = open_h5_group("parcel")
-    call write_h5_integer_scalar_attrib(group, "n_per_cell", 1)
-    call write_h5_logical_attrib(group, "is_random", .false.)
-    call write_h5_integer_scalar_attrib(group, "seed", 42)
-    call write_h5_logical_attrib(group, "is_elliptic", .true.)
-    call write_h5_double_scalar_attrib(group, "lambda", 3.0d0)
-    call h5gclose_f(group, h5err)
-    call close_h5_file
 
     call parcel_dealloc()
 

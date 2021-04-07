@@ -1,20 +1,27 @@
+! =============================================================================
+!                       Test free slip boundary condition
+!
+!       This unit test checks the free slip boundary condition which is
+!       implied in vertical direction. Ellipses with aspect ratio 3.5
+!       are place such that the parcels at the bottom and ad the top have
+!       one ellipse point reaching out the physical domain. We use 4
+!       parcels per cell. After interpolating the parcel volume
+!       (volume = 0.25 * vcell per parcel), the gridded volume is
+!       ngrid * vcell where ngrid is the number of grid points.
+! =============================================================================
 program free_slip
-    use hdf5
     use constants, only : pi
     use parcel_container
     use interpolation, only : par2grid
     use options, only : parcel_info, grid
-    use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz
-    use writer
+    use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz, ngrid
     implicit none
 
     double precision :: volume_f(0:3, -1:5, 1)
     integer :: i, j, k, jj, ii
-    integer(hid_t) :: group, step_group
     double precision, parameter :: angle = 0.5 * pi
-    double precision, parameter :: lam = 3.0
-    character(:), allocatable :: step
-    character(:), allocatable :: name
+    double precision, parameter :: lam = 3.5 ! >= 3.5 --> 1 ellipse point outside domain
+    double precision :: error
 
     grid = (/5, 5/)
 
@@ -23,21 +30,23 @@ program free_slip
 
     call update_parameters()
 
-    call parcel_alloc(72)
+    call parcel_alloc(64)
 
 
     k = 1
-    do j = 0, 2 * nz
+    do j = 0, nz-1
         do i = 0, nx-1
-            do ii = 1, 4, 2
-                parcels%position(k, 1) = lower(1) + i * dx(1) + 0.25 * dx(1) * ii
-                parcels%position(k, 2) = lower(2) + j * 0.05
-                k = k + 1
+            do jj = 1, 4, 2
+                do ii = 1, 4, 2
+                    parcels%position(k, 1) = lower(1) + i * dx(1) + 0.25 * dx(1) * ii
+                    parcels%position(k, 2) = lower(2) + j * dx(2) + 0.25 * dx(2) * jj
+                    k = k + 1
+                enddo
             enddo
         enddo
     enddo
 
-    n_parcels = 72
+    n_parcels = 64
 
     volume_f = 0.0
 
@@ -54,54 +63,13 @@ program free_slip
 
     call par2grid(parcels, parcels%volume, volume_f)
 
-    print *, "sum = ", sum(volume_f(0:nx-1,0:nz, :)), sum(parcels%volume(1:n_parcels, :))
 
-    call open_h5_file('free_slip.hdf5')
+    error = abs(sum(volume_f(0:nx-1,0:nz, :)) - ngrid * vcell)
 
-    call write_h5_double_scalar_step_attrib(0, "t", 0.0d0)
-
-    call write_h5_double_scalar_step_attrib(0, "dt", 0.0d0)
-    call write_h5_integer_scalar_step_attrib(0, "num parcel", n_parcels)
-
-    call write_h5_parcels(0)
-
-    !!!
-    step = trim(get_step_group_name(0))
-    name = step // "/fields"
-    step_group = open_h5_group(step)
-    group = open_h5_group(name)
-
-    call write_h5_dataset_3d(name, "volume", &
-                             volume_f(0:nx-1, 0:nz, :))
-
-    call h5gclose_f(group, h5err)
-    call h5gclose_f(step_group, h5err)
-    !!!
-
-
-    group = open_h5_group("/")
-    call write_h5_integer_scalar_attrib(group, "nsteps", 1)
-    call h5gclose_f(group, h5err)
-
-    group = open_h5_group("parcel")
-    call write_h5_integer_scalar_attrib(group, "n_per_cell", 1)
-    call write_h5_logical_attrib(group, "is_random", .false.)
-    call write_h5_integer_scalar_attrib(group, "seed", 42)
-    call write_h5_logical_attrib(group, "is_elliptic", .true.)
-    call write_h5_double_scalar_attrib(group, "lambda", 3.0d0)
-    call h5gclose_f(group, h5err)
-
-    group = open_h5_group("mesh")
-    call write_h5_double_vector_attrib(group, "extent", extent)
-    call write_h5_double_vector_attrib(group, "origin", lower)
-    call write_h5_integer_vector_attrib(group, "grid", grid)
-    call h5gclose_f(group, h5err)
-
-
-    call close_h5_file
-
-
-    call parcel_dealloc()
-
+    if (error > 1.0e-15) then
+        print *, 'Test free slip: FAILED'
+    else
+        print *, 'Test free slip: PASSED'
+    endif
 
 end program free_slip

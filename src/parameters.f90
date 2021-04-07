@@ -22,6 +22,9 @@ module parameters
     ! total number of grid cells
     integer :: ncell
 
+    ! total number of grid points
+    integer :: ngrid
+
     ! domain size
     double precision :: extent(2) = (/ pi, pi /)
 
@@ -50,6 +53,9 @@ module parameters
         nz = grid(2) - 1
 
         ncell = nx * nz
+
+        ! due to x periodicity is is only nx
+        ngrid = nx * (nz + 1)
 
         ! domain
         hl = extent / two

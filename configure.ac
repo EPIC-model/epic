@@ -126,6 +126,20 @@ else
 fi
 
 
+ENABLE_UNIT_TESTS='no'
+AC_ARG_ENABLE([unit-tests],
+              [AS_HELP_STRING([--enable-unit-tests], [build with unit tests (default=no)])],
+              [ENABLE_UNIT_TESTS=$enableval])
+
+AM_CONDITIONAL([ENABLE_UNIT_TESTS], [test "$ENABLE_UNIT_TESTS" = "yes"])
+
+AC_MSG_CHECKING([whether we build unit tests])
+if test "x$ENABLE_UNIT_TESTS" = "xyes"; then
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+fi
+
 #######################################################################################
 ##
 ## "--with" flags
