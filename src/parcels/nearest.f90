@@ -94,7 +94,7 @@ module nearest
                 ! Parcel i0 is small and should be merged; find closest other:
                 ix0=mod(nint(dxi(1)*(x_small-lower(1))),nx) ! ranges from 0 to nx-1
                 iz0=nint(dxi(2)*(z_small-lower(2)))         ! ranges from 0 to nz
-                
+
                 ! Grid point (ix0,iz0) is closest to parcel i0
 
                 ! Initialise scaled squared distance between parcels and parcel index:
@@ -119,7 +119,7 @@ module nearest
                             ! Prevent division in all comparisons here
                             if (delz*delz*vmergemin < dscmin*vmerge) then
                                 delx=parcels%position(i,1)-x_small
-                                delx=delx-mesh%extent(1)*dble(int(delx*hlxi)) ! works across periodic edge
+                                delx=delx-extent(1)*dble(int(delx*hli(1))) ! works across periodic edge
                                 dsq=delz*delz+delx*delx
                                 if (dsq*vmergemin < dscmin*vmerge) then
                                     dscmin=dsq

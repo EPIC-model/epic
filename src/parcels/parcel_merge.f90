@@ -10,7 +10,7 @@ module parcel_merge
     use ellipse, only : get_B22
     use options, only : parcel_info, verbose
     use parcel_bc
-    
+
     implicit none
 
     private :: geometric_merge, &
@@ -81,7 +81,7 @@ module parcel_merge
             mu2 = a2b2 / ab
 
             delx=(parcels%position(j, 1) - parcels%position(i, 1))
-            delx=delx-mesh%extent(1)*dble(int(delx*0.5*mesh%extent(1))) ! works across periodic edge
+            delx=delx-extent(1)*dble(int(delx*0.5*extent(1))) ! works across periodic edge
 
             zet = 2.0 * isqrab * delx
 

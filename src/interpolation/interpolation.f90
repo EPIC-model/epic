@@ -151,11 +151,11 @@ module interpolation
         end subroutine grid2par
 
         subroutine grid2par_add(position, volume, attrib, field, B)
-            double precision,           intent(in)  :: position(:, :)
-            double precision,           intent(in)  :: volume(:, :)
-            double precision,           intent(out) :: attrib(:, :)
-            double precision,           intent(in)  :: field(0:, 0:, :)
-            double precision, optional, intent(in)  :: B(:, :)
+            double precision,           intent(inout) :: position(:, :)
+            double precision,           intent(in)    :: volume(:, :)
+            double precision,           intent(out)   :: attrib(:, :)
+            double precision,           intent(in)    :: field(0:, 0:, :)
+            double precision, optional, intent(in)    :: B(:, :)
 
             if (parcel_info%is_elliptic) then
                 if (.not. present(B)) then
@@ -223,13 +223,13 @@ module interpolation
 
 
         subroutine grid2par_non_elliptic(position, attrib, field, add)
-            double precision, intent(in)  :: position(:, :)
-            double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(0:, -1:, :)
-            logical, optional, intent(in) :: add
-            integer                       :: ncomp, ngp
-            integer                       :: n, c, i
-            integer                       :: the_shape(3)
+            double precision, intent(inout) :: position(:, :)
+            double precision, intent(out)   :: attrib(:, :)
+            double precision, intent(in)    :: field(0:, -1:, :)
+            logical, optional, intent(in)   :: add
+            integer                         :: ncomp, ngp
+            integer                         :: n, c, i
+            integer                         :: the_shape(3)
 
             ! number of field components
             the_shape = shape(field)
