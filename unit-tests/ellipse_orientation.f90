@@ -52,9 +52,9 @@ program ellipse_orientation
     call parcel_dealloc()
 
     if (failed) then
-        print *, 'Test ellipse_orientation: FAILED'
+        print '(a26, a10)', 'Test ellipse orientation:', 'FAILED'
     else
-        print *, 'Test ellipse_orientation: PASSED'
+        print '(a26, a10)', 'Test ellipse orientation:', 'PASSED'
     endif
 
 end program ellipse_orientation

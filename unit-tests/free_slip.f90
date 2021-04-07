@@ -67,9 +67,9 @@ program free_slip
     error = abs(sum(volume_f(0:nx-1,0:nz, :)) - ngrid * vcell)
 
     if (error > 1.0e-15) then
-        print *, 'Test free slip: FAILED'
+        print '(a16, a20)', 'Test free slip:', 'FAILED'
     else
-        print *, 'Test free slip: PASSED'
+        print '(a16, a20)', 'Test free slip:', 'PASSED'
     endif
 
 end program free_slip
