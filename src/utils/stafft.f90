@@ -2,28 +2,28 @@ module stafft
 
 implicit none
 
-! Fourier transform module. 
-! This is not a general purpose transform package but is designed to be 
+! Fourier transform module.
+! This is not a general purpose transform package but is designed to be
 ! quick for arrays of length 2^n. It will work if the array length is of
 ! the form 2^i * 3^j * 4^k * 5^l * 6^m (integer powers obviously).
-! 
-! Minimal error-checking is performed by the code below. The only check is that 
-! the initial factorisation can be performed. 
-! Therefore if the transforms are called with an array of length <2, or a trig array 
-! not matching the length of the array to be transformed the code will fail in a 
-! spectacular way (eg. Seg. fault or nonsense returned). 
-! It is up to the calling code to ensure everything is called sensibly. 
+!
+! Minimal error-checking is performed by the code below. The only check is that
+! the initial factorisation can be performed.
+! Therefore if the transforms are called with an array of length <2, or a trig array
+! not matching the length of the array to be transformed the code will fail in a
+! spectacular way (eg. Seg. fault or nonsense returned).
+! It is up to the calling code to ensure everything is called sensibly.
 ! The reason for stripping error checking is to speed up the backend by performing
-! less if() evaluations - as errors in practice seem to occur very rarely. 
+! less if() evaluations - as errors in practice seem to occur very rarely.
 ! So the good news is this should be a fast library - the bad is that you may have to pick
 ! around in it if there are failures.
 !
 ! To initialise the routines call init(n,factors,trig,ierr).
 ! This fills a factorisation array (factors), and a sin/cos array (trig).
 ! These must be kept in memory by the calling program.
-! The init routine can be called multiple times with different arrays if more than 
-! one length of array is to be transformed. 
-! If a factorisation of the array length n cannot be found (as specified above) 
+! The init routine can be called multiple times with different arrays if more than
+! one length of array is to be transformed.
+! If a factorisation of the array length n cannot be found (as specified above)
 ! then the init routine will exit immediately and the integer ierr will be set to 1.
 ! If the init returns with ierr=0 then the call was successful.
 !
@@ -31,8 +31,8 @@ implicit none
 ! 1) initfft(n,factors,trig)        :
 !      Performs intialisation of the module, by working out the factors of n (the FFT length).
 !      This will fail if n is not factorised completely by 2,3,4,5,6.
-!      The trig array contains the necessary cosine and sine values. 
-!      Both arrays passed to init **must** be kept between calls to routines in this module. 
+!      The trig array contains the necessary cosine and sine values.
+!      Both arrays passed to init **must** be kept between calls to routines in this module.
 ! 2) forfft(m,n,x,trig,factors)  :
 !      This performs a FFT of an array x containing m vectors of length n.
 !      The transform length is n.
@@ -52,7 +52,7 @@ implicit none
 !      This routine calls forfft and performs pre- and post- processing to obtain the transform.
 !      This transform is it's own inverse.
 !
-! The storage of the transformed array is in 'Hermitian form'. This means that, for the jth vector 
+! The storage of the transformed array is in 'Hermitian form'. This means that, for the jth vector
 ! the values x(j,1:nw) contain the cosine modes of the transform, while the values x(j,nw+1:n) contain
 ! the sine modes (in reverse order ie. wave number increasing from n back to nw+1).
 ! [Here, for even n, nw=n/2, and for odd n, nw=(n-1)/2].
@@ -64,7 +64,7 @@ subroutine initfft(n,factors,trig)
 
 ! Subroutine performs initialisation work for all the transforms.
 ! It calls routines to factorise the array length n and then sets up
-! a trig array full of sin/cos values used in the transform backend. 
+! a trig array full of sin/cos values used in the transform backend.
 
 implicit none
 
@@ -82,7 +82,7 @@ integer:: i,j,k,l,m,fac(5),rem,ierr
 call factorisen(n,factors,ierr)
 
  !Return if factorisation unsuccessful:
-if (ierr .eq. 1) then 
+if (ierr .eq. 1) then
    !Catastrophic end to run if factorisation fails:
   write(*,*) '****************************'
   write(*,*) ' Factorisation not possible.'
@@ -99,7 +99,7 @@ fac(3)=2
 fac(4)=3
 fac(5)=5
 
- !Define constants needed in trig array definition: 
+ !Define constants needed in trig array definition:
 ftwopin=twopi/dble(n)
 rem=n
 m=1
@@ -116,20 +116,20 @@ do i=1,5
   enddo
 enddo
 
-do i=1,n-1 
+do i=1,n-1
   trig(n+i)=-sin(trig(i))
   trig(i)  = cos(trig(i))
 enddo
 
-return 
+return
 end subroutine
 !============================================
 
 subroutine factorisen(n,factors,ierr)
-      
+
 implicit none
 
- !Argument declarations: 
+ !Argument declarations:
 integer:: n,factors(5),ierr
  !Local declarations:
 integer:: i,rem
@@ -142,42 +142,42 @@ do i=1,5
 enddo
 
 rem=n
- !Find factors of 6: 
-do while (mod(rem,6) .eq. 0) 
+ !Find factors of 6:
+do while (mod(rem,6) .eq. 0)
   factors(1)=factors(1)+1
   rem=rem/6
   if (rem .eq. 1) return
 enddo
 
  !Find factors of 4:
-do while (mod(rem,4) .eq. 0) 
+do while (mod(rem,4) .eq. 0)
   factors(2)=factors(2)+1
   rem=rem/4
   if (rem .eq. 1) return
 enddo
 
  !Find factors of 2:
-do while (mod(rem,2) .eq. 0) 
+do while (mod(rem,2) .eq. 0)
   factors(3)=factors(3)+1
   rem=rem/2
   if (rem .eq. 1) return
 enddo
 
  !Find factors of 3:
-do while (mod(rem,3) .eq. 0) 
+do while (mod(rem,3) .eq. 0)
   factors(4)=factors(4)+1
   rem=rem/3
   if (rem .eq. 1) return
 enddo
 
  !Find factors of 5:
-do while (mod(rem,5) .eq. 0) 
+do while (mod(rem,5) .eq. 0)
   factors(5)=factors(5)+1
   rem=rem/5
   if (rem .eq. 1) return
 enddo
- !If code reaches this point factorisation has 
- !failed - return error code in ierr:  
+ !If code reaches this point factorisation has
+ !failed - return error code in ierr:
 ierr=1
 
 return
@@ -186,9 +186,9 @@ end subroutine
 
 subroutine forfft(m,n,x,trig,factors)
 
-! Main physical to spectral (forward) FFT routine. 
+! Main physical to spectral (forward) FFT routine.
 ! Performs m transforms of length n in the array x which is dimensioned x(m,n).
-! The arrays trig and factors are filled by the init routine and 
+! The arrays trig and factors are filled by the init routine and
 ! should be kept from call to call.
 ! Backend consists of mixed-radix routines, with 'decimation in time'.
 ! Transform is stored in Hermitian form.
@@ -196,7 +196,7 @@ subroutine forfft(m,n,x,trig,factors)
 implicit none
 
  !Arguments declarations:
-double precision:: x(0:m*n-1),trig(0:2*n-1) 
+double precision:: x(0:m*n-1),trig(0:2*n-1)
 integer:: m,n,factors(5)
 
  !Local declarations:
@@ -215,7 +215,7 @@ do i=1,factors(5)
   iloc=(rem-1)*5*cum
   if (orig) then
     call forrdx5(x,wk,m*rem,cum,trig(iloc),trig(n+iloc))
-  else 
+  else
     call forrdx5(wk,x,m*rem,cum,trig(iloc),trig(n+iloc))
   endif
   orig=.not. orig
@@ -227,7 +227,7 @@ do i=1,factors(4)
   iloc=(rem-1)*3*cum
   if (orig) then
     call forrdx3(x,wk,m*rem,cum,trig(iloc),trig(n+iloc))
-  else 
+  else
     call forrdx3(wk,x,m*rem,cum,trig(iloc),trig(n+iloc))
   endif
   orig=.not. orig
@@ -239,7 +239,7 @@ do i=1,factors(3)
   iloc=(rem-1)*2*cum
   if (orig) then
     call forrdx2(x,wk,m*rem,cum,trig(iloc),trig(n+iloc))
-  else 
+  else
     call forrdx2(wk,x,m*rem,cum,trig(iloc),trig(n+iloc))
   endif
   orig=.not. orig
@@ -251,7 +251,7 @@ do i=1,factors(2)
   iloc=(rem-1)*4*cum
   if (orig) then
     call forrdx4(x,wk,m*rem,cum,trig(iloc),trig(n+iloc))
-  else 
+  else
     call forrdx4(wk,x,m*rem,cum,trig(iloc),trig(n+iloc))
   endif
   orig=.not. orig
@@ -263,7 +263,7 @@ do i=1,factors(1)
   iloc=(rem-1)*6*cum
   if (orig) then
     call forrdx6(x,wk,m*rem,cum,trig(iloc),trig(n+iloc))
-  else 
+  else
     call forrdx6(wk,x,m*rem,cum,trig(iloc),trig(n+iloc))
   endif
   orig=.not. orig
@@ -289,9 +289,9 @@ end subroutine
 
 subroutine revfft(m,n,x,trig,factors)
 
-! Main spectral to physical (reverse) FFT routine. 
+! Main spectral to physical (reverse) FFT routine.
 ! Performs m reverse transforms of length n in the array x which is dimensioned x(m,n).
-! The arrays trig and factors are filled by the init routine and 
+! The arrays trig and factors are filled by the init routine and
 ! should be kept from call to call.
 ! Backend consists of mixed-radix routines, with 'decimation in frequency'.
 ! Reverse transform starts in Hermitian form.
@@ -299,7 +299,7 @@ subroutine revfft(m,n,x,trig,factors)
 implicit none
 
  !Arguments declarations:
-double precision:: x(0:m*n-1),trig(0:2*n-1) 
+double precision:: x(0:m*n-1),trig(0:2*n-1)
 integer:: m,n,factors(5)
 
  !Local declarations:
@@ -316,7 +316,7 @@ enddo
  !Scale 0 and Nyquist frequencies:
 do i=0,m-1
   x(i)=0.5d0*x(i)
-enddo  
+enddo
 if (mod(n,2) .eq. 0) then
   k=m*n/2
   do i=0,m-1
@@ -334,7 +334,7 @@ do i=1,factors(1)
   iloc=(cum-1)*6*rem
   if (orig) then
     call revrdx6(x,wk,m*cum,rem,trig(iloc),trig(n+iloc))
-  else 
+  else
     call revrdx6(wk,x,m*cum,rem,trig(iloc),trig(n+iloc))
   endif
   orig=.not. orig
@@ -346,7 +346,7 @@ do i=1,factors(2)
   iloc=(cum-1)*4*rem
   if (orig) then
     call revrdx4(x,wk,m*cum,rem,trig(iloc),trig(n+iloc))
-  else 
+  else
     call revrdx4(wk,x,m*cum,rem,trig(iloc),trig(n+iloc))
   endif
   orig=.not. orig
@@ -358,7 +358,7 @@ do i=1,factors(3)
   iloc=(cum-1)*2*rem
   if (orig) then
     call revrdx2(x,wk,m*cum,rem,trig(iloc),trig(n+iloc))
-  else 
+  else
     call revrdx2(wk,x,m*cum,rem,trig(iloc),trig(n+iloc))
   endif
   orig=.not. orig
@@ -370,7 +370,7 @@ do i=1,factors(4)
   iloc=(cum-1)*3*rem
   if (orig) then
     call revrdx3(x,wk,m*cum,rem,trig(iloc),trig(n+iloc))
-  else 
+  else
     call revrdx3(wk,x,m*cum,rem,trig(iloc),trig(n+iloc))
   endif
   orig=.not. orig
@@ -382,7 +382,7 @@ do i=1,factors(5)
   iloc=(cum-1)*5*rem
   if (orig) then
     call revrdx5(x,wk,m*cum,rem,trig(iloc),trig(n+iloc))
-  else 
+  else
     call revrdx5(wk,x,m*cum,rem,trig(iloc),trig(n+iloc))
   endif
   orig=.not. orig
@@ -439,9 +439,9 @@ do j=1,n-1
   enddo
 enddo
 
- !Get the first element of the transform x(i,1) and store 
+ !Get the first element of the transform x(i,1) and store
  !in x(i,n), as this is not overwritten when x is used
- !as a work array in the forfft routine called next: 
+ !as a work array in the forfft routine called next:
 do i=1,m
   rowsum=0.0d0
   rowsum=rowsum+0.5d0*x(i,0)
@@ -557,7 +557,7 @@ do i=1,m
 enddo
 
 return
-end subroutine 
+end subroutine
 !==================================================
 
 !====================================================
@@ -565,13 +565,13 @@ end subroutine
 !  Abandon hope all ye who enter in!
 !====================================================
 ! Physical to spectral (forward) routines:
-!====================================================	
+!====================================================
 subroutine forrdx6(a,b,nv,lv,cosine,sine)
 
 ! Radix six physical to Hermitian FFT with 'decimation in time'.
 
 implicit none
-      
+
  !Arguments declarations:
 integer:: nv,lv
 double precision:: a(0:nv-1,0:5,0:lv-1),b(0:nv-1,0:lv-1,0:5),cosine(0:lv-1,5),sine(0:lv-1,5)
@@ -741,7 +741,7 @@ if (mod(lv,2) .eq. 0) then
     b(i,lvd2,5)=q5-q3
   enddo
 endif
-  
+
 return
 end subroutine
 !================================================
@@ -994,7 +994,7 @@ if (mod(lv,2) .eq. 0) then
 endif
 
 return
-end subroutine 
+end subroutine
 !================================================
 
 subroutine forrdx3(a,b,nv,lv,cosine,sine)
@@ -1087,7 +1087,7 @@ implicit none
 integer:: nv,lv
 double precision:: a(0:nv-1,0:1,0:lv-1),b(0:nv-1,0:lv-1,0:1),cosine(0:lv-1),sine(0:lv-1)
 
- !Local declarations: 
+ !Local declarations:
 double precision:: x1,y1,c1k,s1k
 integer:: i,k,kc
 
@@ -1130,12 +1130,12 @@ return
 end subroutine
 !======================================
 
-!====================================================	
+!====================================================
 ! Spectral to physical (reverse) routines:
-!====================================================	
+!====================================================
 subroutine revrdx6(a,b,nv,lv,cosine,sine)
 
-!Radix six Hermitian to physical FFT with 'decimation in frequency'.      
+!Radix six Hermitian to physical FFT with 'decimation in frequency'.
 
 implicit none
 
@@ -1324,7 +1324,7 @@ implicit none
  !Arguments declarations:
 integer:: nv,lv
 double precision:: a(0:nv-1,0:lv-1,0:4),b(0:nv-1,0:4,0:lv-1),cosine(0:lv-1,1:4),sine(0:lv-1,1:4)
- !Local declarations: 
+ !Local declarations:
 double precision,parameter:: rtf516=0.5590169943749474241022934171828190588601545899028814310677243113526302d0
 double precision,parameter:: sinf2pi5=0.9510565162951535721164393333793821434056986341257502224473056444301532d0
 double precision,parameter:: sinfpi5=0.5877852522924731291687059546390727685976524376431459910722724807572785d0
@@ -1457,12 +1457,12 @@ else
 endif
 
 return
-end subroutine 
+end subroutine
 !=================================================
 
 subroutine revrdx4(a,b,nv,lv,cosine,sine)
 
-!Radix four Hermitian to physical FFT with 'decimation in frequency'.      
+!Radix four Hermitian to physical FFT with 'decimation in frequency'.
 
 implicit none
 
@@ -1573,14 +1573,14 @@ end subroutine
 
 subroutine revrdx3(a,b,nv,lv,cosine,sine)
 
-!Radix three Hermitian to physical FFT with 'decimation in frequency'.      
+!Radix three Hermitian to physical FFT with 'decimation in frequency'.
 
 implicit none
 
  !Arguments declarations:
 integer:: nv,lv
 double precision:: a(0:nv-1,0:lv-1,0:2),b(0:nv-1,0:2,0:lv-1),cosine(0:lv-1,1:2),sine(0:lv-1,1:2)
- 
+
  !Local declarations:
 double precision,parameter:: sinfpi3=0.8660254037844386467637231707529361834714026269051903140279034897259665d0
 double precision:: x1p,x2p,y1p,y2p
@@ -1655,7 +1655,7 @@ end subroutine
 
 subroutine revrdx2(a,b,nv,lv,cosine,sine)
 
-!Radix two Hermitian to physical FFT with 'decimation in frequency'.      
+!Radix two Hermitian to physical FFT with 'decimation in frequency'.
 
 implicit none
 
