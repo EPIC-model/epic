@@ -1,0 +1,75 @@
+&MODEL
+ !
+ ! output info
+ !
+
+ output%h5freq      = 1
+
+ output%h5fname     = 'taylorgreen2d_ls_rk4.hdf5'
+
+ !
+ ! mesh info
+ !
+
+ mesh%origin        = -1.5707963267948966, -1.5707963267948966
+
+ mesh%extent        = 3.141592653589793, 3.141592653589793
+
+ mesh%grid          = 11, 11
+
+ mesh%bc            = 'periodic', 'free slip'
+
+ !
+ ! parcel info
+ !
+
+ parcel%n_per_cell  = 4
+
+ parcel%is_random   = .false.
+
+ parcel%seed        = 42
+
+ parcel%is_elliptic = .true.
+
+ parcel%lambda      = 5.0
+
+ parcel%split_freq = 1
+
+ parcel%merge_type  = 'geometric'
+
+ parcel%merge_freq  = 1
+
+ parcel%vfraction   = 36.0
+
+ !
+ ! stepper info
+ !
+ stepper            = 'ls-rk4'
+
+ time%limit         = 10.0
+
+ time%dt            = 0.025
+
+ time%is_adaptive   = .true.
+
+ !
+ ! Taylor-Green flow parameters:
+ !      u(x, y) = A * cos(ax + d) * sin(by + e)
+ !      v(x, y) = B * sin(ax + d) * cos(by + e)
+ !
+
+ ! amplitudes: A, B
+ flow%amp           = 0.5,                -1.0
+
+ ! frequencies: a, b
+ flow%freq          = 2.0,                 1.0
+
+ ! phase shifts: d, e
+ flow%phase         = 1.5707963267948966,  0.0
+
+
+ !
+ ! interpolation method
+ !
+ interpl            = 'trilinear'
+/

@@ -16,6 +16,7 @@ epic_SOURCES = 					\
 	interpolation/interpl_methods.f90	\
 	interpolation/interpolation.f90 	\
 	diagnostics.f90				\
+	stepper/rk4_utils.f90			\
 	stepper/classic_rk4.f90			\
 	stepper/ls_rk4.f90			\
 	stepper/rk4.f90 			\

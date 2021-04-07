@@ -16,7 +16,7 @@ module nearest
     logical :: l_merge(max_num_parcels)
 
     !Other variables:
-    double precision:: vmin, delx,delz,dsq,dscmax,dscmin,vmerge
+    double precision:: vmin, delx,delz,dsq,dscmin,vmerge,vmergemin,x_small,z_small
     integer:: i,ic,i0,imin,k,m,j
     integer:: ix,iz,ix0,iz0
 
@@ -34,41 +34,36 @@ module nearest
                 allocate(kc2(ncell))
             endif
 
-            ! maximum squared distance
-            dscmax = 0.5 * parcel_info%lambda / pi
-
             vmin = vcell / parcel_info%vfraction
 
             ! These parcels are marked for merger:
             l_merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
             nmerge=0
-            ! Form list of small parcels:
-            do i=1,n_parcels
-                if (l_merge(i)) then
-                    nmerge=nmerge+1
-                    isma(nmerge)=i
-                endif
-            enddo
 
             !---------------------------------------------------------------------
             ! Initialise search:
             nppc=0 !nppc(ic) will contain the number of parcels in grid cell ic
 
             ! Bin parcels in cells:
+            ! Form list of small parcels:
             do i=1,n_parcels
-                ix=int(dxi(1)*(parcels%position(i,1)-lower(1)))
-                iz=int(dxi(2)*(parcels%position(i,2)-lower(2)))
+                if (l_merge(i)) then
+                    nmerge=nmerge+1
+                    isma(nmerge)=i
+                else
+                    ix=int(dxi(1)*(parcels%position(i,1)-lower(1)))
+                    iz=int(dxi(2)*(parcels%position(i,2)-lower(2)))
 
-                ! Cell index of parcel:
-                ic=1+ix+nx*iz !This runs from 1 to ncell
+                    ! Cell index of parcel:
+                    ic=1+ix+nx*iz !This runs from 1 to ncell
 
-                ! Accumulate number of parcels in this grid cell:
-                nppc(ic)=nppc(ic)+1
+                    ! Accumulate number of parcels in this grid cell:
+                    nppc(ic)=nppc(ic)+1
 
-                ! Store grid cell that this parcel is in:
-                loc(i)=ic
+                    ! Store grid cell that this parcel is in:
+                    loc(i)=ic
+                endif
             enddo
-
 
             ! Find arrays kc1(ic) & kc2(ic) which indicate the parcels in grid cell ic
             ! through i = node(k), for k = kc1(ic),kc2(ic):
@@ -79,10 +74,12 @@ module nearest
 
             kc2=kc1-1
             do i=1,n_parcels
-                ic=loc(i)
-                k=kc2(ic)+1
-                node(k)=i
-                kc2(ic)=k
+                if (.not. l_merge(i)) then
+                    ic=loc(i)
+                    k=kc2(ic)+1
+                    node(k)=i
+                    kc2(ic)=k
+                end if
             enddo
 
             !---------------------------------------------------------------------
@@ -92,13 +89,20 @@ module nearest
             ! j counts the actual number of mergers found
             do m=1,nmerge
                 i0=isma(m)
+                x_small=parcels%position(i0,1)
+                z_small=parcels%position(i0,2)
                 ! Parcel i0 is small and should be merged; find closest other:
-                ix0=mod(nint(dxi(1)*(parcels%position(i0,1)-lower(1))),nx) ! ranges from 0 to nx-1
-                iz0=nint(dxi(2)*(parcels%position(i0,2)-lower(2)))         ! ranges from 0 to nz
+                ix0=mod(nint(dxi(1)*(x_small-lower(1))),nx) ! ranges from 0 to nx-1
+                iz0=nint(dxi(2)*(z_small-lower(2)))         ! ranges from 0 to nz
+                
                 ! Grid point (ix0,iz0) is closest to parcel i0
 
                 ! Initialise scaled squared distance between parcels and parcel index:
-                dscmin=dscmax
+                ! ensure dsq*pi < 0.5*parcel_info%lambda*vmerge
+                ! Might seem a bit radical to take a large vmergemin and small dscmin
+                ! but computationally easy
+                dscmin=0.5*parcel_info%lambda
+                vmergemin=pi
                 imin=0
 
                 ! Loop over 8 cells surrounding (ix0,iz0):
@@ -109,17 +113,19 @@ module nearest
                         ! Search parcels for closest:
                         do k=kc1(ic),kc2(ic)
                             i=node(k)
-                            if (.not. l_merge(i)) then
+                            delz=parcels%position(i,2)-z_small
                             ! Avoid merger with another small parcel
-                            delx=parcels%position(i,1)-parcels%position(i0,1)
-                            delx=delx-extent(1)*dble(int(delx*hli(1))) ! works across periodic edge
-                            delz=parcels%position(i,2)-parcels%position(i0,2)
-                            dsq=delx**2+delz**2
                             vmerge=parcels%volume(i, 1)+parcels%volume(i0, 1) ! Summed area fraction:
-                            if (dsq < dscmin*vmerge) then
-                                dscmin=dsq/vmerge
-                                imin=i
-                            endif
+                            ! Prevent division in all comparisons here
+                            if (delz*delz*vmergemin < dscmin*vmerge) then
+                                delx=parcels%position(i,1)-x_small
+                                delx=delx-mesh%extent(1)*dble(int(delx*hlxi)) ! works across periodic edge
+                                dsq=delz*delz+delx*delx
+                                if (dsq*vmergemin < dscmin*vmerge) then
+                                    dscmin=dsq
+                                    vmergemin=vmerge
+                                    imin=i
+                                endif
                             endif
                         enddo
                     enddo

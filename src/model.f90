@@ -66,7 +66,6 @@ module model
                         print "(a30)", "write fields and parcels to h5"
                     endif
                     call write_h5_step(nw, t, dt)
-                    nw = nw + 1
                 endif
 
                 call rk4_step(dt)
@@ -94,12 +93,7 @@ module model
                     print "(a30)", "write fields and parcels to h5"
                 endif
                 call write_h5_step(nw, t, dt)
-                nw = nw + 1
             endif
-
-            ! write number of iterations to h5 file
-            call write_h5_num_steps(nw)
-
         end subroutine run
 
         subroutine post_run
@@ -108,44 +102,54 @@ module model
         end subroutine
 
 
-        subroutine write_h5_step(iter, t, dt)
+        subroutine write_h5_step(nw, t, dt)
             use options, only : output
-            integer,          intent(in) :: iter
-            double precision, intent(in) :: t
-            double precision, intent(in) :: dt
+            integer,          intent(inout) :: nw
+            double precision, intent(in)    :: t
+            double precision, intent(in)    :: dt
 
             call open_h5_file(trim(output%h5fname))
 
-            call write_h5_double_scalar_step_attrib(iter, "t", t)
+            call write_h5_double_scalar_step_attrib(nw, "t", t)
 
-            call write_h5_double_scalar_step_attrib(iter, "dt", dt)
+            call write_h5_double_scalar_step_attrib(nw, "dt", dt)
 
-            call write_h5_integer_scalar_step_attrib(iter, "num parcel", n_parcels)
+            call write_h5_integer_scalar_step_attrib(nw, "num parcel", n_parcels)
 
-            call write_h5_parcels(iter)
+            call write_h5_parcels(nw)
 
-            call write_h5_diagnostics(iter)
+            call write_h5_diagnostics(nw)
 
-            call write_h5_fields(iter)
+            call write_h5_fields(nw)
+
+            ! update number of iterations to h5 file
+            call write_h5_num_steps(nw+1)
 
             call close_h5_file
+
+            ! increment counter
+            nw = nw + 1
 
         end subroutine write_h5_step
 
-        subroutine write_h5_num_steps(iter)
+        subroutine write_h5_num_steps(nw)
             use options, only : output
-            integer, intent(in) :: iter
+            integer, intent(in) :: nw
             integer(hid_t)      :: group
-
-            call open_h5_file(trim(output%h5fname))
+            logical             :: attr_exists
 
             group = open_h5_group("/")
 
-            call write_h5_integer_scalar_attrib(group, "nsteps", iter)
+            ! in principle not necessary but we still check
+            call h5aexists_f(group, "nsteps", attr_exists, h5err)
+
+            if (attr_exists) then
+                call h5adelete_f(group, "nsteps", h5err)
+            endif
+
+            call write_h5_integer_scalar_attrib(group, "nsteps", nw)
 
             call h5gclose_f(group, h5err)
-
-            call close_h5_file
 
         end subroutine write_h5_num_steps
 
