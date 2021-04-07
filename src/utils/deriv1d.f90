@@ -39,7 +39,7 @@ module deriv1d
         !   *** coeffiecients in their second argument ***
         subroutine deriv(m, n, k, var, der)
             integer,          intent(in)  :: m, n
-            double precision, intent(in)  :: k(n), var(m,n),
+            double precision, intent(in)  :: k(n), var(m,n)
             double precision, intent(out) :: der(m,n)
             integer                       :: nw, np2, i, j, ic
             double precision              :: ktmp
@@ -103,7 +103,7 @@ module deriv1d
         !   *** coeffiecients in their second argument ***
         subroutine deriv_s(m, n, k, var, der)
             integer,          intent(in)  :: m,n
-            double precision, intent(in)  :: k(n), var(m,n),
+            double precision, intent(in)  :: k(n), var(m,n)
             double precision, intent(out) :: der(m, 0:n)
             integer                       :: i, j
             double precision              :: ktmp
