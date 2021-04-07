@@ -48,10 +48,10 @@ module interpolation
             field(:, 0, :)  = 2.0 * field(:, 0, :)
             field(:, nz, :) = 2.0 * field(:, nz, :)
 
-!             field(:, 1, :)    = field(:, 1, :) + field(:, -1, :)
-!             field(:, nz-1, :) = field(:, nz-1, :) + field(:, nz+1, :)
-!             field(:, 0, :)  = 2.0 * (field(:, 0, :) + field(:, -1, :))
-!             field(:, nz, :) = 2.0 * (field(:, nz, :) + field(:, nz+1, :))
+            ! free slip boundary condition is reflective with mirror
+            ! axis at the physical domain
+            field(:, 1, :)    = field(:, 1, :) + field(:, -1, :)
+            field(:, nz-1, :) = field(:, nz-1, :) + field(:, nz+1, :)
 
         end subroutine par2grid
 
