@@ -1,3 +1,7 @@
+! =============================================================================
+! This module contains all non-modifiable parameters and all quantities which
+! never change throughout a simulation.
+! =============================================================================
 module constants
     implicit none
 

@@ -1,3 +1,6 @@
+! =============================================================================
+!               This module initializes all parcels and fields.
+! =============================================================================
 module init
     use options, only : parcel_info, time
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz

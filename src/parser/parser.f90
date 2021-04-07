@@ -1,3 +1,7 @@
+! =============================================================================
+!             This module to parses the user specifications provided
+!             by the namelist.
+! =============================================================================
 module parser
     use constants
     use parameters

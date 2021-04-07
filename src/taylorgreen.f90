@@ -1,3 +1,14 @@
+! =============================================================================
+!                           2D TAYLOR-GREEN FLOW
+!
+!                   u(x, y) = A * cos(ax + d) * sin(by + e)
+!                   v(x, y) = B * sin(ax + d) * cos(by + e)
+!
+!                   The code uses following variable names:
+!                           flow%freq  = (/a, b/)
+!                           flow%amp   = (/A, B/)
+!                           flow%phase = (/d, e/)
+! =============================================================================
 module taylorgreen
     use options, only : flow
     implicit none

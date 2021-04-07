@@ -1,9 +1,6 @@
-!===================================================================
-!         Finds the parcels nearest every "small" parcel
-
-!         Initialise data first using ranpar.f90
-!===================================================================
-
+!==============================================================================
+!               Finds the parcels nearest every "small" parcel
+!==============================================================================
 module nearest
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcels, n_parcels
@@ -16,9 +13,6 @@ module nearest
     integer, allocatable :: nppc(:), kc1(:),kc2(:)
     integer :: loc(max_num_parcels)
     integer :: node(max_num_parcels)
-!     integer :: isma(max_num_parcels/8)
-!     integer :: ibig(max_num_parcels/8)
-!     integer :: nmerge
     logical :: l_merge(max_num_parcels)
 
     !Other variables:

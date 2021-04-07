@@ -1,3 +1,8 @@
+! =============================================================================
+!                       Module to merge ellipses
+! The module provides a 'geometric' and 'optimal' merge procedure which can be
+! selected by the user at runtime.
+! =============================================================================
 module parcel_merge
     use nearest
     use constants, only : pi, max_num_parcels

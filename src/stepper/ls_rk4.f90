@@ -1,3 +1,7 @@
+! =============================================================================
+!               Low-storage 4th order Runge-Kutta method
+!            (see https://doi.org/10.5194/gmd-10-3145-2017)
+! =============================================================================
 module ls_rk4
     use options, only : parcel_info
     implicit none

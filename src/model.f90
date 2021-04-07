@@ -1,3 +1,6 @@
+! =============================================================================
+!             This module does the setup and runs the simulation.
+! =============================================================================
 module model
     use hdf5
     use constants, only : max_num_parcels

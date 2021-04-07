@@ -1,3 +1,7 @@
+! =============================================================================
+!     This module specifies all fields and implements specific subroutines
+!     and functions.
+! =============================================================================
 module fields
     use parameters, only : dx, dxi, extent, lower, nx, nz
     use hdf5

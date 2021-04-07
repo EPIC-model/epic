@@ -1,3 +1,7 @@
+! =============================================================================
+! This module contains the subroutines to do parcel-to-grid and grid-to-parcel
+! interpolation.
+! =============================================================================
 module interpolation
     use constants, only : max_num_parcels
     use parameters, only : nx, nz
@@ -43,6 +47,9 @@ module interpolation
             ! apply free slip boundary condition
             field(:, 0, :)  = 2.0 * field(:, 0, :)
             field(:, nz, :) = 2.0 * field(:, nz, :)
+
+!             field(:, 1, :)    = field(:, 1, :) + field(:, -1, :)
+!             field(:, nz-1, :) = field(:, nz-1, :) + field(:, nz+1, :)
 !             field(:, 0, :)  = 2.0 * (field(:, 0, :) + field(:, -1, :))
 !             field(:, nz, :) = 2.0 * (field(:, nz, :) + field(:, nz+1, :))
 

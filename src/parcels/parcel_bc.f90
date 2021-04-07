@@ -1,3 +1,8 @@
+! =============================================================================
+!                       Parcel boundary conditions
+!                       periodic in x (horizontal)
+!                       free slip in z (vertical)
+! =============================================================================
 module parcel_bc
     use parameters, only : lower, upper, extent, hli
     use parcel_container, only : n_parcels

@@ -1,3 +1,6 @@
+! =============================================================================
+!                           Module to split ellipses
+! =============================================================================
 module parcel_split
     use options, only : verbose
     use constants, only : pi

@@ -1,8 +1,9 @@
-!
-!
-! Fortran HDF5 examples at
-! https://support.hdfgroup.org/HDF5/examples/api-fortran.html
-! https://support.hdfgroup.org/HDF5/doc1.8/RM/RM_H5S.html
+! =============================================================================
+! This module is used to write data into a HDF5 file. Examples of HDF5 can be
+! found at https://support.hdfgroup.org/HDF5/examples/api-fortran.html
+! The API specifications are found in
+! https://support.hdfgroup.org/HDF5/doc1.8/RM/RM_H5Front.html
+! =============================================================================
 module writer
     use hdf5
     implicit none

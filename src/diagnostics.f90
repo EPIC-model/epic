@@ -1,3 +1,6 @@
+! =============================================================================
+!           This module contains diagnostics that are written to HDF5.
+! =============================================================================
 module diagnostics
     use parcel_container
     use parameters, only : vcell, ncell, nx, nz
