@@ -1,5 +1,5 @@
 module stafft
-    use constants, only : twopi
+    use constants, only : pi, twopi
 
     implicit none
 
@@ -59,13 +59,13 @@ module stafft
     ! [Here, for even n, nw=n/2, and for odd n, nw=(n-1)/2].
 
     double precision , parameter :: &
-        , rt2      = 1.414213562373095048801688724209698078569671875376948073176679737990732d0   &
-        , rtf12    = 0.7071067811865475244008443621048490392848359376884740365883398689953662d0  &
-        , rtf516   = 0.5590169943749474241022934171828190588601545899028814310677243113526302d0  &
-        , sinf2pi5 = 0.9510565162951535721164393333793821434056986341257502224473056444301532d0  &
-        , sinfpi3  = 0.8660254037844386467637231707529361834714026269051903140279034897259665d0  &
-        , sinfpi5  = 0.5877852522924731291687059546390727685976524376431459910722724807572785d0  &
-        , sinrat   = 0.6180339887498948482045868343656381177203091798057628621354486227052605d0
+        rt2      = 1.414213562373095048801688724209698078569671875376948073176679737990732d0   &
+      , rtf12    = 0.7071067811865475244008443621048490392848359376884740365883398689953662d0  &
+      , rtf516   = 0.5590169943749474241022934171828190588601545899028814310677243113526302d0  &
+      , sinf2pi5 = 0.9510565162951535721164393333793821434056986341257502224473056444301532d0  &
+      , sinfpi3  = 0.8660254037844386467637231707529361834714026269051903140279034897259665d0  &
+      , sinfpi5  = 0.5877852522924731291687059546390727685976524376431459910722724807572785d0  &
+      , sinrat   = 0.6180339887498948482045868343656381177203091798057628621354486227052605d0
 
     private :: rt2, rtf12, rtf516, sinf2pi5, sinfpi3, sinfpi5, sinrat
 
@@ -75,10 +75,11 @@ module stafft
         ! It calls routines to factorise the array length n and then sets up
         ! a trig array full of sin/cos values used in the transform backend.
         subroutine initfft(n, factors, trig)
-            integer,          intent(in)  :: n, factors(5)
-            double precision, intent(out) :: trig(2*n)
-            double precision              :: ftwopin
-            integer                       :: i, j, k, l, m, fac(5), rem, ierr
+            integer,          intent(in)    :: n
+            integer,          intent(inout) :: factors(5)
+            double precision, intent(out)   :: trig(2*n)
+            double precision                :: ftwopin
+            integer                         :: i, j, k, l, m, fac(5), rem, ierr
 
             ! First factorise n:
             call factorisen(n, factors, ierr)
@@ -126,7 +127,8 @@ module stafft
 
 
         subroutine factorisen(n, factors, ierr)
-            integer, intent(in) :: n, factors(5), ierr
+            integer, intent(in)    :: n
+            integer, intent(inout) :: factors(5), ierr
             integer             :: i, rem
 
             ierr = 0
