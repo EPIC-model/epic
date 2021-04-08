@@ -13,6 +13,8 @@ module constants
 
     double precision, parameter :: pi = acos(-one)
 
+    double precision, parameter :: twopi = two * pi
+
     ! maximum number of allowed parcels
     integer, parameter :: max_num_parcels = 1e6
 
