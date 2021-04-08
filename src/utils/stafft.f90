@@ -58,6 +58,16 @@ module stafft
     ! the sine modes (in reverse order ie. wave number increasing from n back to nw+1).
     ! [Here, for even n, nw=n/2, and for odd n, nw=(n-1)/2].
 
+    double precision , parameter :: &
+        , rt2      = 1.414213562373095048801688724209698078569671875376948073176679737990732d0   &
+        , rtf12    = 0.7071067811865475244008443621048490392848359376884740365883398689953662d0  &
+        , rtf516   = 0.5590169943749474241022934171828190588601545899028814310677243113526302d0  &
+        , sinf2pi5 = 0.9510565162951535721164393333793821434056986341257502224473056444301532d0  &
+        , sinfpi3  = 0.8660254037844386467637231707529361834714026269051903140279034897259665d0  &
+        , sinfpi5  = 0.5877852522924731291687059546390727685976524376431459910722724807572785d0  &
+        , sinrat   = 0.6180339887498948482045868343656381177203091798057628621354486227052605d0
+
+    private :: rt2, rtf12, rtf516, sinf2pi5, sinfpi3, sinfpi5, sinrat
 
     contains
 
@@ -393,16 +403,9 @@ module stafft
     ! of doubles using the forfft routine to compute the FFT,
     ! along with pre- and post-processing steps to extract the dst.
     subroutine dct(m,n,x,trig,factors)
+        integer,          intent(in)    :: m, n, factors(5)
+        double precision, intent(inout) :: x(m,0:n), trig(2*n)
 
-        implicit none
-
-        !Argument declarations:
-        integer:: m,n,factors(5)
-        double precision:: x(m,0:n),trig(2*n)
-
-        !Local declarations:
-        double precision,parameter:: pi=3.141592653589793238462643383279502884197169399375105820974944592307816d0
-        double precision,parameter:: rt2=1.414213562373095048801688724209698078569671875376948073176679737990732d0
         double precision:: wk(1:m,0:n-1),fpin,rtn,rowsum
         integer:: i,j,nd2
 
@@ -482,8 +485,6 @@ module stafft
         double precision:: x(m,n),trig(2*n)
 
         !Local declarations:
-        double precision,parameter:: pi=3.141592653589793238462643383279502884197169399375105820974944592307816d0
-        double precision,parameter:: rt2=1.414213562373095048801688724209698078569671875376948073176679737990732d0
         double precision:: wk(1:m,0:n-1),fpin
         integer:: i,j
 
@@ -558,7 +559,6 @@ module stafft
         double precision:: a(0:nv-1,0:5,0:lv-1),b(0:nv-1,0:lv-1,0:5),cosine(0:lv-1,5),sine(0:lv-1,5)
 
         !Local declarations:
-        double precision,parameter:: sinfpi3=0.8660254037844386467637231707529361834714026269051903140279034897259665d0
         double precision:: x1p,x2p,x3p,x4p,x5p
         double precision:: y1p,y2p,y3p,y4p,y5p
         double precision:: s1k,s2k,s3k,s4k,s5k
@@ -736,10 +736,6 @@ module stafft
         integer:: nv,lv
         double precision:: a(0:nv-1,0:4,0:lv-1),b(0:nv-1,0:lv-1,0:4),cosine(0:lv-1,1:4),sine(0:lv-1,1:4)
         !Local declarations:
-        double precision,parameter:: rtf516=0.5590169943749474241022934171828190588601545899028814310677243113526302d0
-        double precision,parameter:: sinf2pi5=0.9510565162951535721164393333793821434056986341257502224473056444301532d0
-        double precision,parameter:: sinfpi5=0.5877852522924731291687059546390727685976524376431459910722724807572785d0
-        double precision,parameter:: sinrat=0.6180339887498948482045868343656381177203091798057628621354486227052605d0
         double precision:: x1p,x2p,x3p,x4p,y1p,y2p,y3p,y4p
         double precision:: s1k,s2k,s3k,s4k,c1k,c2k,c3k,c4k
         double precision:: t1i,t1r,t2i,t2r,t3i,t3r,t4i,t4r,t5i,t5r,t6i,t6r
@@ -880,7 +876,6 @@ module stafft
         double precision:: a(0:nv-1,0:3,0:lv-1),b(0:nv-1,0:lv-1,0:3),cosine(0:lv-1,1:3),sine(0:lv-1,1:3)
 
         !Local declarations:
-        double precision,parameter:: rtf12=0.7071067811865475244008443621048490392848359376884740365883398689953662d0
         double precision:: x1p,x2p,x3p,y1p,y2p,y3p
         double precision:: s1k,s2k,s3k,c1k,c2k,c3k
         double precision:: t1i,t1r,t2i,t2r,t3i,t3r,t4i,t4r
@@ -990,7 +985,6 @@ module stafft
         double precision:: a(0:nv-1,0:2,0:lv-1),b(0:nv-1,0:lv-1,0:2),cosine(0:lv-1,1:2),sine(0:lv-1,1:2)
 
         !Local declarations:
-        double precision,parameter:: sinfpi3=0.8660254037844386467637231707529361834714026269051903140279034897259665d0
         double precision:: x1p,x2p,y1p,y2p
         double precision:: s1k,s2k,c1k,c2k
         double precision:: t1i,t1r,t2i,t2r,t3i,t3r
@@ -1127,7 +1121,6 @@ module stafft
         double precision:: a(0:nv-1,0:lv-1,0:5),b(0:nv-1,0:5,0:lv-1),cosine(0:lv-1,1:5),sine(0:lv-1,1:5)
 
         !Local declarations:
-        double precision,parameter:: sinfpi3=0.8660254037844386467637231707529361834714026269051903140279034897259665d0
         double precision:: x1p,x2p,x3p,x4p,x5p
         double precision:: y1p,y2p,y3p,y4p,y5p
         double precision:: s1k,s2k,s3k,s4k,s5k
@@ -1308,10 +1301,6 @@ module stafft
         integer:: nv,lv
         double precision:: a(0:nv-1,0:lv-1,0:4),b(0:nv-1,0:4,0:lv-1),cosine(0:lv-1,1:4),sine(0:lv-1,1:4)
         !Local declarations:
-        double precision,parameter:: rtf516=0.5590169943749474241022934171828190588601545899028814310677243113526302d0
-        double precision,parameter:: sinf2pi5=0.9510565162951535721164393333793821434056986341257502224473056444301532d0
-        double precision,parameter:: sinfpi5=0.5877852522924731291687059546390727685976524376431459910722724807572785d0
-        double precision,parameter:: sinrat=0.6180339887498948482045868343656381177203091798057628621354486227052605d0
         double precision:: x1p,x2p,x3p,x4p,y1p,y2p,y3p,y4p
         double precision:: s1k,s2k,s3k,s4k,c1k,c2k,c3k,c4k
         double precision:: t1i,t1r,t2i,t2r,t3i,t3r,t4i,t4r,t5i,t5r,t6i,t6r
@@ -1454,7 +1443,6 @@ module stafft
         double precision:: a(0:nv-1,0:lv-1,0:3),b(0:nv-1,0:3,0:lv-1),cosine(0:lv-1,1:3),sine(0:lv-1,1:3)
 
         !Local declarations:
-        double precision,parameter:: rtf12=0.7071067811865475244008443621048490392848359376884740365883398689953662d0
         double precision:: x1p,x2p,x3p,y1p,y2p,y3p
         double precision:: s1k,s2k,s3k,c1k,c2k,c3k
         double precision:: t1i,t1r,t2i,t2r,t3i,t3r,t4i,t4r
@@ -1565,7 +1553,6 @@ module stafft
         double precision:: a(0:nv-1,0:lv-1,0:2),b(0:nv-1,0:2,0:lv-1),cosine(0:lv-1,1:2),sine(0:lv-1,1:2)
 
         !Local declarations:
-        double precision,parameter:: sinfpi3=0.8660254037844386467637231707529361834714026269051903140279034897259665d0
         double precision:: x1p,x2p,y1p,y2p
         double precision:: c2k,c1k,s2k,s1k
         double precision:: t1i,t1r,t2i,t2r,t3i,t3r
