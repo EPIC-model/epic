@@ -32,7 +32,7 @@ module interpolation
     contains
 
         subroutine par2grid(parcels, attrib, field)
-            type(parcel_container_type), intent(inout) :: parcels
+            type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(0:, -1:, :)
 
@@ -98,12 +98,13 @@ module interpolation
 
 
         subroutine par2grid_non_elliptic(parcels, attrib, field)
-            type(parcel_container_type), intent(inout) :: parcels
+            type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(0:, -1:, :)
             integer                                    :: ncomp, ngp
             integer                                    :: n, c, i
             integer                                    :: the_shape(3)
+            double precision                           :: pos(2)
 
             ! number of field components
             the_shape = shape(field)
@@ -111,11 +112,13 @@ module interpolation
 
             do n = 1, n_parcels
 
+                pos = parcels%position(n, :)
+
                 ! ensure parcel is within the domain
-                call apply_periodic_bc(parcels%position(n, :))
+                call apply_periodic_bc(pos)
 
                 ! get interpolation weights and mesh indices
-                call get_indices_and_weights(parcels%position(n, :), ngp)
+                call get_indices_and_weights(pos, ngp)
 
                 ! loop over field components
                 do c = 1, ncomp
@@ -132,11 +135,11 @@ module interpolation
 
 
         subroutine grid2par(position, volume, attrib, field, B)
-            double precision,           intent(inout) :: position(:, :)
-            double precision,           intent(in)    :: volume(:, :)
-            double precision,           intent(out)   :: attrib(:, :)
-            double precision,           intent(in)    :: field(0:, -1:, :)
-            double precision, optional, intent(in)    :: B(:, :)
+            double precision,           intent(in)  :: position(:, :)
+            double precision,           intent(in)  :: volume(:, :)
+            double precision,           intent(out) :: attrib(:, :)
+            double precision,           intent(in)  :: field(0:, -1:, :)
+            double precision, optional, intent(in)  :: B(:, :)
 
             if (parcel_info%is_elliptic) then
                 if (.not. present(B)) then
@@ -151,11 +154,11 @@ module interpolation
         end subroutine grid2par
 
         subroutine grid2par_add(position, volume, attrib, field, B)
-            double precision,           intent(inout) :: position(:, :)
-            double precision,           intent(in)    :: volume(:, :)
-            double precision,           intent(out)   :: attrib(:, :)
-            double precision,           intent(in)    :: field(0:, 0:, :)
-            double precision, optional, intent(in)    :: B(:, :)
+            double precision,           intent(in)  :: position(:, :)
+            double precision,           intent(in)  :: volume(:, :)
+            double precision,           intent(out) :: attrib(:, :)
+            double precision,           intent(in)  :: field(0:, 0:, :)
+            double precision, optional, intent(in)  :: B(:, :)
 
             if (parcel_info%is_elliptic) then
                 if (.not. present(B)) then
@@ -223,13 +226,14 @@ module interpolation
 
 
         subroutine grid2par_non_elliptic(position, attrib, field, add)
-            double precision, intent(inout) :: position(:, :)
-            double precision, intent(out)   :: attrib(:, :)
-            double precision, intent(in)    :: field(0:, -1:, :)
-            logical, optional, intent(in)   :: add
-            integer                         :: ncomp, ngp
-            integer                         :: n, c, i
-            integer                         :: the_shape(3)
+            double precision, intent(in)  :: position(:, :)
+            double precision, intent(out) :: attrib(:, :)
+            double precision, intent(in)  :: field(0:, -1:, :)
+            logical, optional, intent(in) :: add
+            integer                       :: ncomp, ngp
+            integer                       :: n, c, i
+            integer                       :: the_shape(3)
+            double precision              :: pos(2)
 
             ! number of field components
             the_shape = shape(field)
@@ -246,11 +250,13 @@ module interpolation
                    attrib(n, :) = 0.0
                 endif
 
+                pos = position(n, :)
+
                 ! ensure parcel is within the domain
-                call apply_periodic_bc(position(n, :))
+                call apply_periodic_bc(pos)
 
                 ! get interpolation weights and mesh indices
-                call get_indices_and_weights(position(n, :), ngp)
+                call get_indices_and_weights(pos, ngp)
 
                 ! loop over field components
                 do c = 1, ncomp
