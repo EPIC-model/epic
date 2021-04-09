@@ -1,8 +1,8 @@
 bin_PROGRAMS = epic
 epic_SOURCES = 					\
+	utils/constants.f90 			\
 	utils/stafft.f90			\
 	utils/deriv1d.f90			\
-	utils/constants.f90 			\
 	utils/options.f90			\
 	utils/parameters.f90 			\
 	taylorgreen.f90				\

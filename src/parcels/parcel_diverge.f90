@@ -11,6 +11,8 @@ module parcel_diverge
 
     use parameters, only : nx, nz, extent, vcell
     use parcel_container, only : parcels, n_parcels
+    use parcel_bc, only : apply_periodic_bc
+    use interpl_methods
 
     ! import parameters and constants:
     use constants, only : one, zero
