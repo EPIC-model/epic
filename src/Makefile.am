@@ -14,6 +14,7 @@ epic_SOURCES = 					\
 	parcels/nearest.f90			\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\
+	parcels/parcel_diverge.f90		\
 	parser/parser.f90 			\
 	interpolation/interpl_methods.f90	\
 	interpolation/interpolation.f90 	\
