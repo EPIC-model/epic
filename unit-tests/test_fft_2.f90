@@ -58,9 +58,9 @@ program test_fft_2
 
     ! final check
     if (err > 1.0e-14) then
-        print '(a10, a26)', 'Test FFT:', 'FAILED'
+        print '(a20, a16)', 'Test FFT transform:', 'FAILED'
     else
-        print '(a10, a26)', 'Test FFT:', 'PASSED'
+        print '(a20, a16)', 'Test FFT transform:', 'PASSED'
     endif
 
 
