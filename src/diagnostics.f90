@@ -21,7 +21,7 @@ module diagnostics
             double precision :: sqerrsum
 
             ! do not take halo cells into account
-            ! nx == 0 due to periodicity in x
+            ! x indices run from 0 to nx-1
             sqerrsum = sum((volume_f(0:nx-1, 0:nz, :) - vcell) ** 2)
 
             rms = sqrt(sqerrsum / dble(ncell)) / vcell
