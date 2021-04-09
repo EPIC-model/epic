@@ -1,5 +1,8 @@
+! =============================================================================
+!                           Module to split ellipses
+! =============================================================================
 module parcel_split
-    use parameters, only : verbose
+    use options, only : verbose
     use constants, only : pi
     use parcel_container, only : parcel_container_type, n_parcels
     use ellipse, only : get_eigenvalue, get_eigenvector, get_B22

@@ -1,3 +1,6 @@
+! =============================================================================
+!             This module does the setup and runs the simulation.
+! =============================================================================
 module model
     use hdf5
     use constants, only : max_num_parcels
@@ -43,7 +46,7 @@ module model
 
 
         subroutine run
-            use parameters, only : time, output, verbose, parcel_info
+            use options, only : time, output, verbose, parcel_info
             double precision :: t    = 0.0 ! current time
             double precision :: dt   = 0.0 ! time step
             integer          :: iter = 0   ! simulation iteration
@@ -100,7 +103,7 @@ module model
 
 
         subroutine write_h5_step(nw, t, dt)
-            use parameters, only : output
+            use options, only : output
             integer,          intent(inout) :: nw
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
@@ -130,7 +133,7 @@ module model
         end subroutine write_h5_step
 
         subroutine write_h5_num_steps(nw)
-            use parameters, only : output
+            use options, only : output
             integer, intent(in) :: nw
             integer(hid_t)      :: group
             logical             :: attr_exists
@@ -152,7 +155,7 @@ module model
 
 
         function get_time_step() result(dt)
-            use parameters, only : time
+            use options, only : time
             double precision :: dt
             double precision :: max_vorticity
 

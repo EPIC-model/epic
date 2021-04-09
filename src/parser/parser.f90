@@ -1,5 +1,11 @@
+! =============================================================================
+!             This module to parses the user specifications provided
+!             by the namelist.
+! =============================================================================
 module parser
+    use constants
     use parameters
+    use options
     use hdf5
     use writer
     implicit none
@@ -20,7 +26,7 @@ module parser
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODEL/ output, mesh, parcel, stepper, time, flow, interpl
+            namelist /MODEL/ output, grid, parcel, stepper, time, flow, interpl
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -50,8 +56,11 @@ module parser
                 stop
             endif
 
-            ! update parcel parameters
+            ! update parcel options
             parcel_info = parcel
+
+            ! update global parameters
+            call update_parameters()
 
         end subroutine read_config_file
 
@@ -104,10 +113,9 @@ module parser
             !
             group = open_h5_group("mesh")
 
-            call write_h5_double_vector_attrib(group, "extent", mesh%extent)
-            call write_h5_double_vector_attrib(group, "origin", mesh%origin)
-            call write_h5_integer_vector_attrib(group, "grid", mesh%grid)
-            call write_h5_character_vector_attrib(group, "bc", mesh%bc)
+            call write_h5_double_vector_attrib(group, "extent", extent)
+            call write_h5_double_vector_attrib(group, "origin", lower)
+            call write_h5_integer_vector_attrib(group, "grid", grid)
 
             call h5gclose_f(group, h5err)
 

@@ -1,10 +1,16 @@
+! =============================================================================
+! This module contains the subroutines to do parcel-to-grid and grid-to-parcel
+! interpolation.
+! =============================================================================
 module interpolation
     use constants, only : max_num_parcels
-    use parameters, only : parcel_info, interpl
+    use parameters, only : nx, nz
+    use options, only : parcel_info, interpl
     use parcel_container, only : parcel_container_type, n_parcels
+    use parcel_bc, only : apply_periodic_bc
     use ellipse
     use interpl_methods
-    use field_bc
+    use fields
     implicit none
 
     private :: par2grid_elliptic,       &
@@ -28,7 +34,7 @@ module interpolation
         subroutine par2grid(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(0:, 0:, :)
+            double precision,            intent(inout) :: field(0:, -1:, :)
 
             field = 0.0
 
@@ -38,15 +44,21 @@ module interpolation
                 call par2grid_non_elliptic(parcels, attrib, field)
             endif
 
-            ! apply boundary condition
-            call apply_field_bc(field)
+            ! apply free slip boundary condition
+            field(:, 0, :)  = 2.0 * field(:, 0, :)
+            field(:, nz, :) = 2.0 * field(:, nz, :)
+
+            ! free slip boundary condition is reflective with mirror
+            ! axis at the physical domain
+            field(:, 1, :)    = field(:, 1, :) + field(:, -1, :)
+            field(:, nz-1, :) = field(:, nz-1, :) + field(:, nz+1, :)
 
         end subroutine par2grid
 
         subroutine par2grid_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(0:, 0:, :)
+            double precision,            intent(inout) :: field(0:, -1:, :)
             integer                                    :: ncomp, ngp
             double precision                           :: points(2, 2)
             integer                                    :: n, p, c, i
@@ -64,6 +76,9 @@ module interpolation
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
+
+                    ! ensure point is within the domain
+                    call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
                     call get_indices_and_weights(points(p, :), ngp)
@@ -85,10 +100,11 @@ module interpolation
         subroutine par2grid_non_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(0:, 0:, :)
+            double precision,            intent(inout) :: field(0:, -1:, :)
             integer                                    :: ncomp, ngp
             integer                                    :: n, c, i
             integer                                    :: the_shape(3)
+            double precision                           :: pos(2)
 
             ! number of field components
             the_shape = shape(field)
@@ -96,8 +112,13 @@ module interpolation
 
             do n = 1, n_parcels
 
+                pos = parcels%position(n, :)
+
+                ! ensure parcel is within the domain
+                call apply_periodic_bc(pos)
+
                 ! get interpolation weights and mesh indices
-                call get_indices_and_weights(parcels%position(n, :), ngp)
+                call get_indices_and_weights(pos, ngp)
 
                 ! loop over field components
                 do c = 1, ncomp
@@ -117,7 +138,7 @@ module interpolation
             double precision,           intent(in)  :: position(:, :)
             double precision,           intent(in)  :: volume(:, :)
             double precision,           intent(out) :: attrib(:, :)
-            double precision,           intent(in)  :: field(0:, 0:, :)
+            double precision,           intent(in)  :: field(0:, -1:, :)
             double precision, optional, intent(in)  :: B(:, :)
 
             if (parcel_info%is_elliptic) then
@@ -156,8 +177,8 @@ module interpolation
             double precision, intent(in)  :: volume(:, :)
             double precision, intent(in)  :: B(:, :)
             double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(0:, 0:, :)
-            logical, optional, intent(in)  :: add
+            double precision, intent(in)  :: field(0:, -1:, :)
+            logical, optional, intent(in) :: add
             integer                       :: ncomp, ngp
             double precision              :: points(2, 2)
             integer                       :: n, p, c, i
@@ -183,6 +204,9 @@ module interpolation
                 ! we have 2 points per ellipse
                 do p = 1, 2
 
+                    ! ensure point is within the domain
+                    call apply_periodic_bc(points(p, :))
+
                     ! get interpolation weights and mesh indices
                     call get_indices_and_weights(points(p, :), ngp)
 
@@ -204,11 +228,12 @@ module interpolation
         subroutine grid2par_non_elliptic(position, attrib, field, add)
             double precision, intent(in)  :: position(:, :)
             double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(0:, 0:, :)
-            logical, optional, intent(in)  :: add
+            double precision, intent(in)  :: field(0:, -1:, :)
+            logical, optional, intent(in) :: add
             integer                       :: ncomp, ngp
             integer                       :: n, c, i
             integer                       :: the_shape(3)
+            double precision              :: pos(2)
 
             ! number of field components
             the_shape = shape(field)
@@ -225,8 +250,13 @@ module interpolation
                    attrib(n, :) = 0.0
                 endif
 
+                pos = position(n, :)
+
+                ! ensure parcel is within the domain
+                call apply_periodic_bc(pos)
+
                 ! get interpolation weights and mesh indices
-                call get_indices_and_weights(position(n, :), ngp)
+                call get_indices_and_weights(pos, ngp)
 
                 ! loop over field components
                 do c = 1, ncomp

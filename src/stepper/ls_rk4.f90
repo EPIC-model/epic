@@ -1,10 +1,15 @@
+! =============================================================================
+!               Low-storage 4th order Runge-Kutta method
+!            (see https://doi.org/10.5194/gmd-10-3145-2017)
+! =============================================================================
 module ls_rk4
-    use parameters, only : parcel_info
+    use options, only : parcel_info
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
     use interpolation, only : grid2par, grid2par_add
     use fields, only : strain_f, velocity_f
+
     implicit none
 
     double precision, allocatable, dimension(:, :) :: &

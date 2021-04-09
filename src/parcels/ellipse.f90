@@ -1,3 +1,6 @@
+! =============================================================================
+!               This module contains all ellipse operations.
+! =============================================================================
 module ellipse
     use constants, only : pi
     implicit none

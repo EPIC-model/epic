@@ -1,3 +1,7 @@
+! =============================================================================
+! This module stores the parcel data and provides subroutines to write, modify
+! allocate and deallocate it.
+! =============================================================================
 module parcel_container
     use hdf5
     use writer, only : h5file,              &
@@ -6,7 +10,7 @@ module parcel_container
                        write_h5_dataset_2d, &
                        open_h5_group,       &
                        get_step_group_name
-    use parameters, only : verbose
+    use options, only : verbose
     use ellipse, only : get_angles
     implicit none
 

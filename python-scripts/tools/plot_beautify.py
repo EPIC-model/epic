@@ -19,3 +19,10 @@ def add_number_of_parcels(plt, num):
                  xy=(0.01, 1.05),
                  xycoords='axes fraction',
                  bbox=bbox)
+
+def add_box(plt, label, value, unit='', xy=(0.01, 1.05), fmt='%1.3f'):
+    bbox = dict(boxstyle="round", facecolor='wheat', alpha=0.5)
+    plt.annotate(label + ' = ' + fmt%(value) + unit,
+                 xy=xy,
+                 xycoords='axes fraction',
+                 bbox=bbox)

@@ -14,6 +14,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    unit-tests/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
@@ -124,6 +125,20 @@ else
     FCFLAGS="$FCFLAGS -O3"
 fi
 
+
+ENABLE_UNIT_TESTS='no'
+AC_ARG_ENABLE([unit-tests],
+              [AS_HELP_STRING([--enable-unit-tests], [build with unit tests (default=no)])],
+              [ENABLE_UNIT_TESTS=$enableval])
+
+AM_CONDITIONAL([ENABLE_UNIT_TESTS], [test "$ENABLE_UNIT_TESTS" = "yes"])
+
+AC_MSG_CHECKING([whether we build unit tests])
+if test "x$ENABLE_UNIT_TESTS" = "xyes"; then
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+fi
 
 #######################################################################################
 ##

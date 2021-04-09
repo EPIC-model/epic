@@ -1,3 +1,6 @@
+! =============================================================================
+!                       EPIC - Elliptic Parcel-in-Cell
+! =============================================================================
 program epic
     use model, only : pre_run, run, post_run
     implicit none
@@ -19,7 +22,7 @@ end program epic
 
 ! Get the file name provided via the command line
 subroutine parse_command_line
-    use parameters, only : filename, verbose
+    use options, only : filename, verbose
     integer                          :: i
     character(len=32)                :: arg
 

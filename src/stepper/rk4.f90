@@ -1,8 +1,11 @@
+! =============================================================================
+!                       Module for Runge-Kutta methods
+! =============================================================================
 module rk4
     use classic_rk4
     use ls_rk4
     use constants, only : max_num_parcels
-    use parameters, only : parcel_info, stepper
+    use options, only : parcel_info, stepper
     implicit none
 
     contains

@@ -1,5 +1,9 @@
+! =============================================================================
+!     This module specifies all fields and implements specific subroutines
+!     and functions.
+! =============================================================================
 module fields
-    use parameters, only : mesh
+    use parameters, only : dx, dxi, extent, lower, nx, nz
     use hdf5
     use writer, only : h5file,              &
                        h5err,               &
@@ -8,42 +12,51 @@ module fields
                        get_step_group_name
     implicit none
 
+    ! Halo grid points in vertical direction z are -1 and grid(2),
+    ! hence the valid regrion is from 0 to grid(2)-1 = nz
+    ! Due to periodicity in x, the grid points in x go from 0 to nx-1 = grid(1)-2
     double precision, allocatable, dimension(:, :, :) :: &
-        velocity_f,       &   ! velocity vector field (has 1 halo cell layer)
-        strain_f,         &   ! velocity gradient tensor (has 1 halo cell layer)
-        volume_f,         &   ! volume scalar field (has 1 halo cell layer)
+        velocity_f,       &   ! velocity vector field (has 1 halo cell layer in z)
+        strain_f,         &   ! velocity gradient tensor (has 1 halo cell layer in z)
+        volume_f,         &   ! volume scalar field (has 1 halo cell layer in z)
         vorticity_f           ! vorticity scalar field (has no halo cell layers)
 
     contains
-        function get_mesh_spacing() result(dx)
-            double precision :: dx(2)
-            dx = mesh%extent / (mesh%grid - 1)
-        end function get_mesh_spacing
 
-        ! get the lower field index given the parcel position
-        function get_lower_index(pos) result(idx)
+        ! get the lower index of the cell the parcel is in
+        ! this function does not take x periodicity into account
+        function get_index(pos) result(idx)
             double precision, intent(in)  :: pos(2)
             integer                       :: idx(2)
-            double precision              :: dx(2)
 
-            dx = get_mesh_spacing()
+            idx = floor((pos - lower) * dxi)
 
-            ! + 1 since Fortran starts with 1
-            idx = (pos - mesh%origin) / dx + 1
+        end function get_index
 
-        end function get_lower_index
+
+        ! do periodic shift of the index
+        subroutine periodic_index_shift(idx, n)
+            integer, intent(inout) :: idx(2, n)
+            integer, intent(in)    :: n
+
+            ! account for x periodicity:
+            ! [nx = grid(1) -1]
+            ! -1   --> nx-1
+            !  0   --> 0
+            ! nx+1 --> 1
+            ! nx   --> 0
+            ! nx-1 --> nx-1
+            idx(1, :) = mod(idx(1, :) + nx, nx)
+
+        end subroutine periodic_index_shift
+
 
         ! get a position given a field index
         function get_position(idx) result(pos)
             integer,         intent(in) :: idx(2)
             double precision            :: pos(2)
-            double precision            :: dx(2)
 
-            dx = get_mesh_spacing()
-
-            ! we need to subtract 1 from the index
-            ! since Fortran starts with 1 not with 0
-            pos = mesh%origin + (idx - 1) * dx
+            pos = lower + idx * dx
 
         end function get_position
 
@@ -69,16 +82,16 @@ module fields
             if (iter == 0) then
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity",          &
-                    velocity_f(1:mesh%grid(1), 1:mesh%grid(2), :))
+                    velocity_f(0:nx-1, 0:nz, :))
 
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity strain",   &
-                    strain_f(1:mesh%grid(1), 1:mesh%grid(2), :))
+                    strain_f(0:nx-1, 0:nz, :))
             endif
 
             ! do not write halo cells
             call write_h5_dataset_3d(name, "volume",            &
-                volume_f(1:mesh%grid(1), 1:mesh%grid(2), :))
+                volume_f(0:nx-1, 0:nz, :))
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)

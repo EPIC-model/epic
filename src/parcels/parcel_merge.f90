@@ -1,9 +1,14 @@
+! =============================================================================
+!                       Module to merge ellipses
+! The module provides a 'geometric' and 'optimal' merge procedure which can be
+! selected by the user at runtime.
+! =============================================================================
 module parcel_merge
     use nearest
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcel_container_type, n_parcels, parcel_replace
     use ellipse, only : get_B22
-    use parameters
+    use options, only : parcel_info, verbose
     use parcel_bc
 
     implicit none
@@ -76,7 +81,7 @@ module parcel_merge
             mu2 = a2b2 / ab
 
             delx=(parcels%position(j, 1) - parcels%position(i, 1))
-            delx=delx-mesh%extent(1)*dble(int(delx*0.5*mesh%extent(1))) ! works across periodic edge
+            delx=delx-extent(1)*dble(int(delx*0.5*extent(1))) ! works across periodic edge
 
             zet = 2.0 * isqrab * delx
 

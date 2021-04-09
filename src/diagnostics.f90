@@ -1,5 +1,9 @@
+! =============================================================================
+!           This module contains diagnostics that are written to HDF5.
+! =============================================================================
 module diagnostics
     use parcel_container
+    use parameters, only : vcell, ncell, nx, nz
     use fields
     use hdf5
     use writer, only : h5file,                        &
@@ -13,19 +17,15 @@ module diagnostics
     contains
 
         function get_rms_volume_error() result(rms)
-            double precision              :: V0  ! cell volume
-            double precision              :: n
-            double precision              :: rms ! rms volume error
-            double precision, allocatable :: V(:, :, :)
+            double precision :: rms ! rms volume error
+            double precision :: sqerrsum
 
-            ! remove halo cells
-            V = volume_f(1:mesh%grid(1), 1:mesh%grid(2), :)
+            ! do not take halo cells into account
+            ! x indices run from 0 to nx-1
+            sqerrsum = sum((volume_f(0:nx-1, 0:nz, :) - vcell) ** 2)
 
-            n = size(V)
-            V0 = product(get_mesh_spacing())
-            rms = sqrt(sum((V - V0) ** 2) / n) / V0
+            rms = sqrt(sqerrsum / dble(ncell)) / vcell
         end function get_rms_volume_error
-
 
         subroutine write_h5_diagnostics(iter)
             integer, intent(in)           :: iter ! iteration

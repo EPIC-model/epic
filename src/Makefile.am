@@ -1,14 +1,13 @@
 bin_PROGRAMS = epic
 epic_SOURCES = 					\
 	constants.f90 				\
-	types.f90				\
+	options.f90				\
 	parameters.f90 				\
 	taylorgreen.f90				\
 	writer.f90				\
 	fields/fields.f90			\
-	fields/field_bc.f90			\
 	parcels/ellipse.f90			\
-	parcels/parcels.f90 			\
+	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
 	parcels/nearest.f90			\
 	parcels/parcel_merge.f90		\

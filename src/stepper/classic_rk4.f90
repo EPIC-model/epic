@@ -1,6 +1,10 @@
+! =============================================================================
+!               Classical 4th order Runge-Kutta method
+!     (see https://de.wikipedia.org/wiki/Klassisches_Runge-Kutta-Verfahren)
+! =============================================================================
 module classic_rk4
     use constants, only : max_num_parcels
-    use parameters, only : parcel_info
+    use options, only : parcel_info
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
