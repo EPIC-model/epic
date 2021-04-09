@@ -12,7 +12,7 @@ module parcel_diverge
     use parameters, only : nx, nz, extent, vcell
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
-    use interpl_methods
+    use interpl_methods, only : trilinear
 
     ! import parameters and constants:
     use constants, only : one, zero
@@ -131,13 +131,14 @@ module parcel_diverge
     end subroutine init_diverge
 
 
-    subroutine apply_divergent_flow(volg)
-        double precision, intent(in) :: volg(:, :)
+    subroutine apply_diverge(volg)
+        double precision, intent(in) :: volg(0:, -1:, :)
         double precision             :: ud(nx, 0:nz),  wd(nx, 0:nz),  wka(nx, nz)
         double precision             :: phi(0:nz, nx), uds(0:nz, nx), wds(nz, nx)
         integer                      :: i, n, ngp, ij(2, 4)
         integer                      :: ix, iz, kx, kz
         double precision             :: weight(4)
+        double precision             :: pos(2)
 
 ! ! ! ! !-----------------------------------------------------------------
 ! ! ! ! Compute gridded area fractions:
@@ -145,7 +146,10 @@ module parcel_diverge
 
         ! Form divergence field * dt and store in ud temporarily:
         ! (normalize volg by cell volume)
-        ud = volg / vcell - one
+        ud = volg(0:nx-1, 0:nz, 1) - vcell
+
+!         print *, shape(phi)
+!         stop
 
 !         ! Write data
 !         write(80,rec=istep) real(istep),real(ud)
@@ -212,19 +216,19 @@ module parcel_diverge
         ! Increment parcel positions usind (ud,wd) field:
         do n = 1, n_parcels
 
-            call trilinear(parcels%position(n, i), ij, weight, ngp)
+            call trilinear(parcels%position(n, :), ij, weight, ngp)
 
             do i = 1, ngp
                 parcels%position(n, 1) = parcels%position(n, 1)             &
-                                       + weight(i) * ud(ij(1, i), ij(2, i))
+                                       + weight(i) * ud(ij(1, i)+1, ij(2, i))
 
                 parcels%position(n, 2) = parcels%position(n, 2)             &
-                                       + weight(i) * wd(ij(1, i), ij(2, i))
+                                       + weight(i) * wd(ij(1, i)+1, ij(2, i))
             enddo
 
             call apply_periodic_bc(parcels%position(n, :))
         enddo
-    end subroutine apply_divergent_flow
+    end subroutine apply_diverge
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
