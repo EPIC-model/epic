@@ -19,18 +19,6 @@ module parcel_diverge
 
     implicit none
 
-!  !Total number of parcels:
-! c integer:: n
-
-!  !Parcel positions (x,z) and area fractions:
-! c double precision:: x(nm),z(nm),v(nm)
-
-!  !Rates of change (dx/dt,dz/dt):
-! c double precision:: dxdt(nm),dzdt(nm)
-
-!     !Gridded area fraction:
-!     double precision:: volg(nx,0:nz)
-
     ! Wavenumbers and inverse Laplacian:
     double precision, allocatable :: hrkx(:), rkx(:), rkz(:)
     double precision, allocatable :: laplinv(:, :)
@@ -38,44 +26,6 @@ module parcel_diverge
     ! Quantities needed in FFTs:
     double precision, allocatable :: xtrig(:), ztrig(:)
     integer          :: xfactors(5), zfactors(5)
-
-!  !Next horizontal grid point used in bilinear interpolation:
-! c integer:: ixp(nx)
-
-!  !Time step (does not matter):
-! c double precision,parameter:: dt=0.01d0
-
-! c double precision:: t
-! c integer:: istep,nsteps
-
-! !---------------------------------------------------------------------
-! ! Initialise (read data, define fixed arrays):
-! call initialise
-!
-! write(*,*) ' Enter the number of time steps used to relax the'
-! write(*,*) ' gridded area fraction back to unity:'
-! read(*,*) nsteps
-
-! ! Evolve parcels:
-! do istep=1,nsteps
-!   call evolve(istep)
-! enddo
-
-! ! Finalise:
-! call par2grid
-!
-! ! Write final data
-! write(80,rec=nsteps+1) real(nsteps+1),real(volg-one)
-!
-! close(40)
-! close(80)
-!
-! write(*,*)
-! write(*,*) ' The rms area fraction error is in volf.asc and the'
-! write(*,*) ' gridded area fraction error is in dv.r4; view with'
-! write(*,*)
-! write(*,'(a,i3,1x,i3,a)') '  dataview -ndim ',nx,nz+1,' dv.r4 -mod &'
-! write(*,*)
 
     contains
 
@@ -121,13 +71,6 @@ module parcel_diverge
         ! For z derivatives of a cosine in z function:
         rkz(nz) = zero
 
-        ! !---------------------------------------------------------------
-        ! ! File to contain rms area fraction - 1 & max abs value vs time:
-        ! open(40,file='volf.asc',status='replace')
-        !
-        ! ! File to contain the gridded area fraction - 1 vs time:
-        ! open(80,file='dv.r4',form='unformatted',access='direct', &
-        !                    status='replace',recl=4*(nx*(nz+1)+1))
     end subroutine init_diverge
 
 
@@ -140,19 +83,9 @@ module parcel_diverge
         double precision             :: weight(4)
         double precision             :: pos(2)
 
-! ! ! ! !-----------------------------------------------------------------
-! ! ! ! Compute gridded area fractions:
-! ! ! ! call par2grid
-
         ! Form divergence field * dt and store in ud temporarily:
         ! (normalize volg by cell volume)
         ud = volg(0:nx-1, 0:nz, 1) - vcell
-
-!         print *, shape(phi)
-!         stop
-
-!         ! Write data
-!         write(80,rec=istep) real(istep),real(ud)
 
         !-----------------------------------------
         ! Forward z cosine FFT:
@@ -229,52 +162,5 @@ module parcel_diverge
             call apply_periodic_bc(parcels%position(n, :))
         enddo
     end subroutine apply_diverge
-
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-! subroutine par2grid
-!
-! ! Reverse bi-linearly interpolates the area fraction (v)
-! ! on all parcels to obtain the gridded area fraction (volg).
-!
-!  !Declarations:
-! implicit none
-!
-!  !Local variables:
-! double precision:: xx,px,pxc,zz,pz,pzc
-! integer:: i,ix0,ix1,iz0,iz1
-!
-! !--------------------------------------------------
-! volg = zero
-!
-! do i = 1,n
-!   xx = dxi*(x(i)-xmin)
-!   ix0 = min(1+int(xx),nx)
-!   pxc = dble(ix0)-xx
-!   px = one-pxc
-!   ix1 = ixp(ix0)
-!
-!   zz = dzi*(z(i)-zmin)
-!   iz0 = min(int(zz),nz-1)
-!   pz = zz-dble(iz0)
-!   pzc = one-pz
-!   iz1 = iz0+1
-!
-!   volg(ix0,iz0) = volg(ix0,iz0)+v(i)*pxc*pzc
-!   volg(ix0,iz1) = volg(ix0,iz1)+v(i)*pxc*pz
-!   volg(ix1,iz0) = volg(ix1,iz0)+v(i)*px*pzc
-!   volg(ix1,iz1) = volg(ix1,iz1)+v(i)*px*pz
-! enddo
-!
-!  !Double edge values:
-! volg(:, 0) = two*volg(:, 0)
-! volg(:,nz) = two*volg(:,nz)
-!
-!  !Write out diagnostics:
-! write(40,'(f7.2,2(1x,f15.12))') t,sqrt(sum((volg-one)**2)/dble(ncell)), &
-!                                   maxval(abs(volg-one))
-!
-! return
-! end subroutine par2grid
 
 end module parcel_diverge
