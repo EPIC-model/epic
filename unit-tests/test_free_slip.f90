@@ -9,7 +9,7 @@
 !       (volume = 0.25 * vcell per parcel), the gridded volume is
 !       ngrid * vcell where ngrid is the number of grid points.
 ! =============================================================================
-program free_slip
+program test_free_slip
     use constants, only : pi
     use parcel_container
     use interpolation, only : par2grid
@@ -72,4 +72,4 @@ program free_slip
         print '(a16, a20)', 'Test free slip:', 'PASSED'
     endif
 
-end program free_slip
+end program test_free_slip
