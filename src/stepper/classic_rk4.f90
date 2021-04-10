@@ -11,6 +11,7 @@ module classic_rk4
     use interpolation, only : grid2par
     use fields, only : strain_f, velocity_f
     implicit none
+    integer, parameter :: dp=kind(0.d0)           ! double precision
 
     type(parcel_container_type) state
 
@@ -86,36 +87,36 @@ module classic_rk4
             state%position = parcels%position
             state%B = parcels%B
 
-            call grid2par(state%position, parcels%volume, k1o, velocity_f, state%B)
-            call grid2par(state%position, parcels%volume, strain, strain_f, state%B)
+            call grid2par(state%position, parcels%volume, k1o, velocity_f, state%B, exact='velocity')
+            call grid2par(state%position, parcels%volume, strain, strain_f, state%B, exact='strain')
             b1o = get_B(state%B, strain)
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k1o)
 
 
-            state%position = parcels%position + 0.5 * dt * k1o
-            state%B = parcels%B + 0.5 * dt * b1o
+            state%position = parcels%position + 0.5_dp * dt * k1o
+            state%B = parcels%B + 0.5_dp * dt * b1o
 
             ! apply position BC
             call apply_parcel_bc(state%position, k1o)
 
-            call grid2par(state%position, parcels%volume, k2o, velocity_f, state%B)
-            call grid2par(state%position, parcels%volume, strain, strain_f, state%B)
+            call grid2par(state%position, parcels%volume, k2o, velocity_f, state%B, exact='velocity')
+            call grid2par(state%position, parcels%volume, strain, strain_f, state%B, exact='strain')
             b2o = get_B(state%B, strain)
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k2o)
 
 
-            state%position = parcels%position + 0.5 * dt * k2o
-            state%B = parcels%B + 0.5 * dt * b2o
+            state%position = parcels%position + 0.5_dp * dt * k2o
+            state%B = parcels%B + 0.5_dp * dt * b2o
 
             ! apply position BC
             call apply_parcel_bc(state%position, k2o)
 
-            call grid2par(state%position, parcels%volume, k3o, velocity_f, state%B)
-            call grid2par(state%position, parcels%volume, strain, strain_f, state%B)
+            call grid2par(state%position, parcels%volume, k3o, velocity_f, state%B, exact='velocity')
+            call grid2par(state%position, parcels%volume, strain, strain_f, state%B, exact='strain')
             b3o = get_B(state%B, strain)
 
 
@@ -128,8 +129,8 @@ module classic_rk4
             ! apply position BC
             call apply_parcel_bc(state%position, k3o)
 
-            call grid2par(state%position, parcels%volume, k4o, velocity_f, state%B)
-            call grid2par(state%position, parcels%volume, strain, strain_f, state%B)
+            call grid2par(state%position, parcels%volume, k4o, velocity_f, state%B, exact='velocity')
+            call grid2par(state%position, parcels%volume, strain, strain_f, state%B, exact='strain')
             b4o = get_B(state%B, strain)
 
             ! apply velocity BC --> only important for free slip
@@ -137,17 +138,17 @@ module classic_rk4
 
 
             parcels%position = parcels%position &
-                             + dt / 6.0 * (k1o + 2.0 * k2o + 2.0 * k3o + k4o)
+                             + dt / 6.0_dp * (k1o + 2.0_dp * k2o + 2.0_dp * k3o + k4o)
 
             parcels%B = parcels%B &
-                      + dt / 6.0 * (b1o + 2.0 * b2o + 2.0 * b3o + b4o)
+                      + dt / 6.0_dp * (b1o + 2.0_dp * b2o + 2.0_dp * b3o + b4o)
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, k4o)
 
             ! update parcel velocity
             call grid2par(parcels%position, parcels%volume, &
-                          parcels%velocity, velocity_f, parcels%B)
+                          parcels%velocity, velocity_f, parcels%B, exact='velocity')
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(parcels%position, parcels%velocity)
@@ -160,28 +161,28 @@ module classic_rk4
 
             state%position = parcels%position
 
-            call grid2par(state%position, parcels%volume, k1o, velocity_f)
+            call grid2par(state%position, parcels%volume, k1o, velocity_f, exact='velocity')
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k1o)
 
 
-            state%position = parcels%position + 0.5 * dt * k1o
+            state%position = parcels%position + 0.5_dp * dt * k1o
 
             ! apply position BC
             call apply_parcel_bc(state%position, k1o)
 
-            call grid2par(state%position, parcels%volume, k2o, velocity_f)
+            call grid2par(state%position, parcels%volume, k2o, velocity_f, exact='velocity')
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k2o)
 
-            state%position = parcels%position + 0.5 * dt * k2o
+            state%position = parcels%position + 0.5_dp * dt * k2o
 
             ! apply position BC
             call apply_parcel_bc(state%position, k2o)
 
-            call grid2par(state%position, parcels%volume, k3o, velocity_f)
+            call grid2par(state%position, parcels%volume, k3o, velocity_f, exact='velocity')
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k3o)
@@ -191,19 +192,19 @@ module classic_rk4
             ! apply position BC
             call apply_parcel_bc(state%position, k3o)
 
-            call grid2par(state%position, parcels%volume, k4o, velocity_f)
+            call grid2par(state%position, parcels%volume, k4o, velocity_f, exact='velocity')
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(state%position, k4o)
 
             parcels%position = parcels%position &
-                             + dt / 6.0 * (k1o + 2.0 * k2o + 2.0 * k3o + k4o)
+                             + dt / 6.0_dp * (k1o + 2.0_dp * k2o + 2.0_dp * k3o + k4o)
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, k4o)
 
             ! update parcel velocity
-            call grid2par(parcels%position, parcels%volume, parcels%velocity, velocity_f)
+            call grid2par(parcels%position, parcels%volume, parcels%velocity, velocity_f, exact='velocity')
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(parcels%position, parcels%velocity)

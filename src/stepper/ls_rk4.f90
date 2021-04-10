@@ -9,8 +9,9 @@ module ls_rk4
     use rk4_utils, only: get_B
     use interpolation, only : grid2par, grid2par_add
     use fields, only : strain_f, velocity_f
-
     implicit none
+
+    integer, parameter :: dp=kind(0.d0)           ! double precision
 
     double precision, allocatable, dimension(:, :) :: &
         velocity_p, &   ! position integration
@@ -18,16 +19,16 @@ module ls_rk4
         dbdt      ! B matrix integration
 
     double precision, parameter :: &
-        ca1 = - 567301805773.0/1357537059087.0,  &
-        ca2 = -2404267990393.0/2016746695238.0,  &
-        ca3 = -3550918686646.0/2091501179385.0,  &
-        ca4 = -1275806237668.0/842570457699.0,   &
+        ca1 = - 567301805773.0_dp/1357537059087.0_dp,  &
+        ca2 = -2404267990393.0_dp/2016746695238.0_dp,  &
+        ca3 = -3550918686646.0_dp/2091501179385.0_dp,  &
+        ca4 = -1275806237668.0_dp/842570457699.0_dp,   &
         ca5 = 0.0,   &  !dummy value, not actually used
-        cb1 =  1432997174477.0/9575080441755.0,  &
-        cb2 =  5161836677717.0/13612068292357.0, &
-        cb3 =  1720146321549.0/2090206949498.0,  &
-        cb4 =  3134564353537.0/4481467310338.0,  &
-        cb5 =  2277821191437.0/14882151754819.0
+        cb1 =  1432997174477.0_dp/9575080441755.0_dp,  &
+        cb2 =  5161836677717.0_dp/13612068292357.0_dp, &
+        cb3 =  1720146321549.0_dp/2090206949498.0_dp,  &
+        cb4 =  3134564353537.0_dp/4481467310338.0_dp,  &
+        cb5 =  2277821191437.0_dp/14882151754819.0_dp
 
     contains
 
@@ -77,11 +78,11 @@ module ls_rk4
             integer, intent(in) :: step
 
             if(step==1) then
-               call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
+               call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B, exact='velocity')
             else
-               call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
+               call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B, exact='velocity')
             endif
-            call grid2par(parcels%position, parcels%volume, strain, strain_f, parcels%B)
+            call grid2par(parcels%position, parcels%volume, strain, strain_f, parcels%B, exact='strain')
             if(step==1) then
                dbdt = get_B(parcels%B, strain)
             else
@@ -120,9 +121,9 @@ module ls_rk4
 
 
             if(step==1) then
-               call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
+               call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, exact='velocity')
             else
-               call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B)
+               call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, exact='velocity')
             endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
             call apply_parcel_bc(parcels%position, velocity_p)
