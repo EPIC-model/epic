@@ -144,7 +144,6 @@ module interpolation
             double precision,           intent(in)  :: field(0:, -1:, :)
             double precision, optional, intent(in)  :: B(:, :)
             character(*), optional, intent(in)      :: exact
-            integer :: n, p
 
             if (parcel_info%is_elliptic) then
                 if (.not. present(B)) then
@@ -174,7 +173,6 @@ module interpolation
             double precision,           intent(in)  :: field(0:, 0:, :)
             double precision, optional, intent(in)  :: B(:, :)
             character(*), optional, intent(in)      :: exact
-            integer :: n, p
 
             if (parcel_info%is_elliptic) then
                 if (.not. present(B)) then
