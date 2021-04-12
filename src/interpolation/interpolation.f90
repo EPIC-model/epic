@@ -340,9 +340,7 @@ module interpolation
             integer,          intent(out) :: ngp
 
 
-            if (interpl == 'nearest-grid-point') then
-                call nearest_grid_point(pos, ij, weight, ngp)
-            else if (interpl == 'trilinear') then
+            if (interpl == 'trilinear') then
                 call trilinear(pos, ij, weight, ngp)
             else if (interpl == 'exact') then ! only applies to par2grid
                 call trilinear(pos, ij, weight, ngp)
