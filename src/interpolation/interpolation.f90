@@ -9,30 +9,72 @@ module interpolation
     use parcel_container, only : parcel_container_type, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use ellipse
-    use interpl_methods
     use fields
     use taylorgreen, only : get_flow_velocity, &
                             get_flow_gradient
 
     implicit none
 
-    private :: par2grid_elliptic,       &
-               par2grid_non_elliptic,   &
-               grid2par_elliptic,       &
-               grid2par_non_elliptic,   &
-               get_indices_and_weights
+    private :: par2grid_elliptic,                       &
+               par2grid_non_elliptic,                   &
+               grid2par_elliptic,                       &
+               grid2par_non_elliptic,                   &
+               cache_parcel_interp_weights_elliptic,    &
+               cache_parcel_interp_weights_non_elliptic
 
+
+    ! flag to see if this is intiialised or not
+    logical :: initialised = .false.
+
+    ! cached variables
+    integer, allocatable, dimension(:, :) ::  is, js
 
     ! interpolation indices
     ! (first dimension x, y; second dimension k-th index)
     integer ij(2, 4)
 
-    ! interpolation weights
-    double precision weight(4)
+    ! trilinear interpolation requires 4 grid points in 2D
+    integer, parameter :: ngp = 4
 
-    private :: ij, weight
+    ! interpolation weights
+    double precision, allocatable, dimension(:, :) :: weights
+
+    private :: is, js, weights, ngp
 
     contains
+
+        subroutine initialise_parcel_interp
+            if (initialised) then
+                return
+            endif
+
+            initialised = .true.
+
+            ! allocate cache arrays
+            if (parcel_info%is_elliptic) then
+                ! we have 2 points per parcel
+                allocate(is(ngp, 2 * max_num_parcels))
+                allocate(js(ngp, 2 * max_num_parcels))
+                allocate(weights(ngp, 2 * max_num_parcels))
+            else
+                allocate(is(ngp, max_num_parcels))
+                allocate(js(ngp, max_num_parcels))
+                allocate(weights(ngp, max_num_parcels))
+            endif
+
+        end subroutine initialise_parcel_interp
+
+        ! finalise parcel interpolation data structures
+        subroutine finalise_parcel_interp
+            if (.not. initialised) then
+                return
+            endif
+
+            deallocate(is)
+            deallocate(js)
+            deallocate(weights)
+
+        end subroutine finalise_parcel_interp
 
         subroutine par2grid(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
@@ -64,7 +106,7 @@ module interpolation
             double precision,            intent(inout) :: field(0:, -1:, :)
             integer                                    :: ncomp, ngp
             double precision                           :: points(2, 2)
-            integer                                    :: n, p, c, i
+            integer                                    :: n, p, c, i, k
             integer                                    :: the_shape(3)
 
             ! number of field components
@@ -80,19 +122,14 @@ module interpolation
                 ! we have 2 points per ellipse
                 do p = 1, 2
 
-                    ! ensure point is within the domain
-                    call apply_periodic_bc(points(p, :))
-
-                    ! get interpolation weights and mesh indices
-                    call get_indices_and_weights(points(p, :), ngp)
+                    k = 2 * (n - 1) + p
 
                     ! loop over field components
                     do c = 1, ncomp
                         ! loop over grid points which are part of the interpolation
                         do i = 1, ngp
-                            ! the weight is halved due to 2 points per ellipse
-                            field(ij(1, i), ij(2, i), c) = field(ij(1, i), ij(2, i), c)     &
-                                                         + 0.5 * weight(i) * attrib(n, c)
+                            field(is(i, k), js(i, k), c) = field(is(i, k), js(i, k), c)     &
+                                                         + weights(i, k) * attrib(n, c)
                         enddo
                     enddo
                 enddo
@@ -114,22 +151,12 @@ module interpolation
             ncomp = the_shape(3)
 
             do n = 1, n_parcels
-
-                pos = parcels%position(n, :)
-
-                ! ensure parcel is within the domain
-                call apply_periodic_bc(pos)
-
-                ! get interpolation weights and mesh indices
-                call get_indices_and_weights(pos, ngp)
-
                 ! loop over field components
                 do c = 1, ncomp
                     ! loop over grid points which are part of the interpolation
                     do i = 1, ngp
-                        ! the weight is halved due to 2 points per ellipse
-                        field(ij(1, i), ij(2, i), c) = field(ij(1, i), ij(2, i), c) &
-                                                     + weight(i) * attrib(n, c)
+                        field(is(i, n), js(i, n), c) = field(is(i, n), js(i, n), c) &
+                                                     + weights(i, n) * attrib(n, c)
                     enddo
                 enddo
             enddo
@@ -205,7 +232,7 @@ module interpolation
             character(*), optional, intent(in)      :: exact
             integer                       :: ncomp, ngp
             double precision              :: points(2, 2)
-            integer                       :: n, p, c, i
+            integer                       :: n, p, c, i, k
             integer                       :: the_shape(3)
 
 
@@ -244,17 +271,10 @@ module interpolation
             endif
 
             do n = 1, n_parcels
-
-                points = get_ellipse_points(position(n, :), volume(n, 1), B(n, :))
-
                 ! we have 2 points per ellipse
                 do p = 1, 2
 
-                    ! ensure point is within the domain
-                    call apply_periodic_bc(points(p, :))
-
-                    ! get interpolation weights and mesh indices
-                    call get_indices_and_weights(points(p, :), ngp)
+                    k = 2 * (n - 1) + p
 
                     ! loop over field components
                     do c = 1, ncomp
@@ -262,7 +282,7 @@ module interpolation
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
                             attrib(n, c) = attrib(n, c) &
-                                         + 0.5 * weight(i) * field(ij(1, i), ij(2, i), c)
+                                         + weights(i, k) * field(is(i, k), js(i, k), c)
                         enddo
                     enddo
                 enddo
@@ -313,42 +333,101 @@ module interpolation
             endif
 
             do n = 1, n_parcels
-
-                pos = position(n, :)
-
-                ! ensure parcel is within the domain
-                call apply_periodic_bc(pos)
-
-                ! get interpolation weights and mesh indices
-                call get_indices_and_weights(pos, ngp)
-
                 ! loop over field components
                 do c = 1, ncomp
                     ! loop over grid points which are part of the interpolation
                     do i = 1, ngp
                         attrib(n, c) = attrib(n, c) &
-                                     + weight(i) * field(ij(1, i), ij(2, i), c)
+                                     + weights(i, n) * field(is(i, n), js(i, n), c)
                     enddo
                 enddo
             enddo
 
         end subroutine grid2par_non_elliptic
 
+        ! cache indices and weights of tri-linear interpolation
+        subroutine cache_parcel_interp_weights(parcels)
+            type(parcel_container_type), intent(in) :: parcels
 
-        subroutine get_indices_and_weights(pos, ngp)
-            double precision, intent(in)  :: pos(2)
-            integer,          intent(out) :: ngp
-
-
-            if (interpl == 'trilinear') then
-                call trilinear(pos, ij, weight, ngp)
-            else if (interpl == 'exact') then ! only applies to par2grid
-                call trilinear(pos, ij, weight, ngp)
+            if (parcel_info%is_elliptic) then
+                call cache_parcel_interp_weights_elliptic(parcels)
             else
-                print *, "Unknown interpolation method '", interpl, "'."
-                stop
+                call cache_parcel_interp_weights_non_elliptic(parcels)
             endif
+        end subroutine cache_parcel_interp_weights
 
-        end subroutine get_indices_and_weights
+        ! cache indices and weights of tri-linear interpolation (elliptic version)
+        subroutine cache_parcel_interp_weights_elliptic(parcels)
+            type(parcel_container_type), intent(in) :: parcels
+            double precision                        :: pos(2), xy(2)
+            integer                                 :: idx(2), n, p
+            double precision                        :: points(2, 2)
+
+            do n = 1, n_parcels
+
+                points = get_ellipse_points(parcels%position(n, :), &
+                                            parcels%volume(n, 1),   &
+                                            parcels%B(n, :))
+
+                ! we have 2 points per ellipse
+                do p = 1, 2
+                    ! the weight is halved due to 2 points per ellipse --> factor = 0.5
+                    call trilinear_interp(points(p, :), 2 * (n - 1) + p, 0.5d0)
+                enddo
+            enddo
+        end subroutine cache_parcel_interp_weights_elliptic
+
+        ! cache indices and weights of tri-linear interpolation (non elliptic version)
+        subroutine cache_parcel_interp_weights_non_elliptic(parcels)
+            type(parcel_container_type), intent(in) :: parcels
+            double precision                        :: pos(2), xy(2)
+            integer                                 :: idx(2), n
+
+            do n = 1, n_parcels
+                call trilinear_interp(parcels%position(n, :), n, 1.0d0)
+            enddo
+        end subroutine cache_parcel_interp_weights_non_elliptic
+
+
+        subroutine trilinear_interp(inpos, n, factor)
+            double precision, intent(in) :: inpos(2), factor
+            integer,          intent(in) :: n
+            double precision             :: xy(2), pos(2)
+            integer                      :: idx(2)
+
+            pos = inpos
+
+            ! ensure point is within the domain
+            call apply_periodic_bc(pos)
+
+            ! (i, j)
+            idx = get_index(pos)
+            xy = get_position(idx)
+            weights(1, n) = factor * product(1.0 - abs(pos - xy) * dxi)
+            is(1, n) = idx(1)
+            js(1, n) = idx(2)
+
+            ! (i+1, j)
+            xy = get_position(idx + (/1, 0/))
+            weights(2, n) = factor * product(1.0 - abs(pos - xy) * dxi)
+            is(2, n) = idx(1) + 1
+            js(2, n) = idx(2)
+
+            ! (i, j+1)
+            xy = get_position(idx + (/0, 1/))
+            weights(3, n) = factor * product(1.0 - abs(pos - xy) * dxi)
+            is(3, n) = idx(1)
+            js(3, n) = idx(2) + 1
+
+            ! (i+1, j+1)
+            xy = get_position(idx + (/1, 1/))
+            weights(4, n) = factor * product(1.0 - abs(pos - xy) * dxi)
+            is(4, n) = idx(1) + 1
+            js(4, n) = idx(2) + 1
+
+            ! account for x periodicity
+            call periodic_index_shift(is(:, n))
+
+        end subroutine trilinear_interp
 
 end module interpolation

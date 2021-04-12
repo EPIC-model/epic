@@ -35,9 +35,8 @@ module fields
 
 
         ! do periodic shift of the index
-        subroutine periodic_index_shift(idx, n)
-            integer, intent(inout) :: idx(2, n)
-            integer, intent(in)    :: n
+        subroutine periodic_index_shift(idx)
+            integer, intent(inout) :: idx(:)
 
             ! account for x periodicity:
             ! [nx = grid(1) -1]
@@ -46,7 +45,7 @@ module fields
             ! nx+1 --> 1
             ! nx   --> 0
             ! nx-1 --> nx-1
-            idx(1, :) = mod(idx(1, :) + nx, nx)
+            idx = mod(idx + nx, nx)
 
         end subroutine periodic_index_shift
 
