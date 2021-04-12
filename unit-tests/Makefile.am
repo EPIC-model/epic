@@ -16,7 +16,8 @@ unittests_PROGRAMS = 			\
 	test_free_slip			\
 	test_fft_1			\
 	test_fft_2			\
-	test_trilinear
+	test_trilinear			\
+	test_diverge
 
 # 7 April 2021
 # https://www.gnu.org/software/automake/manual/html_node/Scripts.html
@@ -27,5 +28,6 @@ test_free_slip_SOURCES = test_free_slip.f90
 test_fft_1_SOURCES = test_fft_1.f90
 test_fft_2_SOURCES = test_fft_2.f90
 test_trilinear_SOURCES = test_trilinear.f90
+test_diverge_SOURCES = test_diverge.f90
 
 endif
