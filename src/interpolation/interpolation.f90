@@ -25,18 +25,11 @@ module interpolation
     ! flag to see if this is intiialised or not
     logical :: initialised = .false.
 
-    ! cached variables
-    integer, allocatable, dimension(:, :) ::  is, js
-
-    ! interpolation indices
-    ! (first dimension x, y; second dimension k-th index)
-    integer ij(2, 4)
+    ! cached variables (interpolation indices and weights)
+    integer, allocatable, dimension(:, :) ::  is, js, weights
 
     ! trilinear interpolation requires 4 grid points in 2D
     integer, parameter :: ngp = 4
-
-    ! interpolation weights
-    double precision, allocatable, dimension(:, :) :: weights
 
     private :: is, js, weights, ngp
 
