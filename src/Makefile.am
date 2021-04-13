@@ -13,7 +13,6 @@ epic_SOURCES = 					\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\
 	parser/parser.f90 			\
-	interpolation/interpl_methods.f90	\
 	interpolation/interpolation.f90 	\
 	diagnostics.f90				\
 	stepper/rk4_utils.f90			\

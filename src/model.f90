@@ -39,8 +39,10 @@ module model
 
             call init_fields
 
+            call interp_alloc(max_num_parcels)
+
             ! update volume on the grid
-            call par2grid(parcels, parcels%volume, volume_f)
+            call par2grid(parcels, parcels%volume, volume_f, recache=.true.)
 
         end subroutine
 
@@ -80,9 +82,8 @@ module model
                     call split_ellipses(parcels, parcel_info%lambda)
                 endif
 
-
                 ! update volume on the grid
-                call par2grid(parcels, parcels%volume, volume_f)
+                call par2grid(parcels, parcels%volume, volume_f, recache=.true.)
 
                 t = t + dt
                 iter = iter + 1
@@ -99,6 +100,7 @@ module model
         subroutine post_run
             call parcel_dealloc
             call rk4_dealloc
+            call interp_dealloc
         end subroutine
 
 

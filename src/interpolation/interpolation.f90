@@ -3,7 +3,6 @@
 ! interpolation.
 ! =============================================================================
 module interpolation
-    use constants, only : max_num_parcels
     use parameters, only : nx, nz
     use options, only : parcel_info, interpl
     use parcel_container, only : parcel_container_type, n_parcels
@@ -43,7 +42,8 @@ module interpolation
 
     contains
 
-        subroutine initialise_parcel_interp
+        subroutine interp_alloc(num)
+            integer, intent(in) :: num
             if (initialised) then
                 return
             endif
@@ -53,19 +53,18 @@ module interpolation
             ! allocate cache arrays
             if (parcel_info%is_elliptic) then
                 ! we have 2 points per parcel
-                allocate(is(ngp, 2 * max_num_parcels))
-                allocate(js(ngp, 2 * max_num_parcels))
-                allocate(weights(ngp, 2 * max_num_parcels))
+                allocate(is(ngp, 2 * num))
+                allocate(js(ngp, 2 * num))
+                allocate(weights(ngp, 2 * num))
             else
-                allocate(is(ngp, max_num_parcels))
-                allocate(js(ngp, max_num_parcels))
-                allocate(weights(ngp, max_num_parcels))
+                allocate(is(ngp, num))
+                allocate(js(ngp, num))
+                allocate(weights(ngp, num))
             endif
 
-        end subroutine initialise_parcel_interp
+        end subroutine interp_alloc
 
-        ! finalise parcel interpolation data structures
-        subroutine finalise_parcel_interp
+        subroutine interp_dealloc
             if (.not. initialised) then
                 return
             endif
@@ -74,18 +73,28 @@ module interpolation
             deallocate(js)
             deallocate(weights)
 
-        end subroutine finalise_parcel_interp
+        end subroutine interp_dealloc
 
-        subroutine par2grid(parcels, attrib, field)
+        subroutine par2grid(parcels, attrib, field, recache)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(0:, -1:, :)
+            logical,          optional,  intent(in)    :: recache
 
             field = 0.0
 
             if (parcel_info%is_elliptic) then
+                if (present(recache)) then
+                    call cache_parcel_interp_weights(parcels%position,  &
+                                                     parcels%volume,    &
+                                                     parcels%B)
+                endif
                 call par2grid_elliptic(parcels, attrib, field)
             else
+                if (present(recache)) then
+                    call cache_parcel_interp_weights(parcels%position,  &
+                                                     parcels%volume)
+                endif
                 call par2grid_non_elliptic(parcels, attrib, field)
             endif
 
@@ -104,7 +113,7 @@ module interpolation
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(0:, -1:, :)
-            integer                                    :: ncomp, ngp
+            integer                                    :: ncomp
             double precision                           :: points(2, 2)
             integer                                    :: n, p, c, i, k
             integer                                    :: the_shape(3)
@@ -141,7 +150,7 @@ module interpolation
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(0:, -1:, :)
-            integer                                    :: ncomp, ngp
+            integer                                    :: ncomp
             integer                                    :: n, c, i
             integer                                    :: the_shape(3)
             double precision                           :: pos(2)
@@ -164,26 +173,31 @@ module interpolation
         end subroutine par2grid_non_elliptic
 
 
-        subroutine grid2par(position, volume, attrib, field, B, exact)
+        subroutine grid2par(position, volume, attrib, field, B, exact, recache)
             double precision,           intent(in)  :: position(:, :)
             double precision,           intent(in)  :: volume(:, :)
             double precision,           intent(out) :: attrib(:, :)
             double precision,           intent(in)  :: field(0:, -1:, :)
             double precision, optional, intent(in)  :: B(:, :)
-            character(*), optional, intent(in)      :: exact
+            character(*),     optional, intent(in)  :: exact
+            logical,          optional, intent(in)  :: recache
+
+            if (present(recache)) then
+                call cache_parcel_interp_weights(position, volume, B)
+            endif
 
             if (parcel_info%is_elliptic) then
                 if (.not. present(B)) then
                     print *, "B matrix not passed to grid2par!"
                     stop
                 endif
-                if(present(exact)) then
+                if (present(exact)) then
                    call grid2par_elliptic(position, volume, B, attrib, field, exact=exact)
                 else
                    call grid2par_elliptic(position, volume, B, attrib, field)
                 endif
             else
-                if(present(exact)) then
+                if (present(exact)) then
                    call grid2par_non_elliptic(position, attrib, field, exact=exact)
                 else
                    call grid2par_non_elliptic(position, attrib, field)
@@ -199,20 +213,20 @@ module interpolation
             double precision,           intent(out) :: attrib(:, :)
             double precision,           intent(in)  :: field(0:, 0:, :)
             double precision, optional, intent(in)  :: B(:, :)
-            character(*), optional, intent(in)      :: exact
+            character(*),     optional, intent(in)  :: exact
 
             if (parcel_info%is_elliptic) then
                 if (.not. present(B)) then
                     print *, "B matrix not passed to grid2par!"
                     stop
                 endif
-                if(present(exact)) then
+                if (present(exact)) then
                    call grid2par_elliptic(position, volume, B, attrib, field, add=.true., exact=exact)
                 else
                    call grid2par_elliptic(position, volume, B, attrib, field, add=.true.)
                 endif
             else
-                if(present(exact)) then
+                if (present(exact)) then
                    call grid2par_non_elliptic(position, attrib, field, add=.true., exact=exact)
                 else
                    call grid2par_non_elliptic(position, attrib, field, add=.true.)
@@ -223,17 +237,17 @@ module interpolation
 
 
         subroutine grid2par_elliptic(position, volume, B, attrib, field, add, exact)
-            double precision, intent(in)  :: position(:, :)
-            double precision, intent(in)  :: volume(:, :)
-            double precision, intent(in)  :: B(:, :)
-            double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(0:, -1:, :)
-            logical, optional, intent(in) :: add
-            character(*), optional, intent(in)      :: exact
-            integer                       :: ncomp, ngp
-            double precision              :: points(2, 2)
-            integer                       :: n, p, c, i, k
-            integer                       :: the_shape(3)
+            double precision,           intent(in)  :: position(:, :)
+            double precision,           intent(in)  :: volume(:, :)
+            double precision,           intent(in)  :: B(:, :)
+            double precision,           intent(out) :: attrib(:, :)
+            double precision,           intent(in)  :: field(0:, -1:, :)
+            logical,          optional, intent(in)  :: add
+            character(*),     optional, intent(in)  :: exact
+            integer                                 :: ncomp
+            double precision                        :: points(2, 2)
+            integer                                 :: n, p, c, i, k
+            integer                                 :: the_shape(3)
 
 
             ! number of field components
@@ -250,7 +264,7 @@ module interpolation
             endif
 
             ! put if statement here for computational efficiency
-            if(present(exact)) then
+            if (present(exact)) then
                do n = 1, n_parcels
 
                   points = get_ellipse_points(position(n, :), volume(n, 1), B(n, :))
@@ -292,23 +306,23 @@ module interpolation
 
 
         subroutine grid2par_non_elliptic(position, attrib, field, add, exact)
-            double precision, intent(in)  :: position(:, :)
-            double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(0:, -1:, :)
-            logical, optional, intent(in) :: add
-            character(*), optional, intent(in)      :: exact
-            integer                       :: ncomp, ngp
-            integer                       :: n, c, i
-            integer                       :: the_shape(3)
-            double precision              :: pos(2)
+            double precision,           intent(in)  :: position(:, :)
+            double precision,           intent(out) :: attrib(:, :)
+            double precision,           intent(in)  :: field(0:, -1:, :)
+            logical,          optional, intent(in)  :: add
+            character(*),     optional, intent(in)  :: exact
+            integer                                 :: ncomp
+            integer                                 :: n, c, i
+            integer                                 :: the_shape(3)
+            double precision                        :: pos(2)
 
             ! number of field components
             the_shape = shape(field)
             ncomp = the_shape(3)
 
             ! clear old data efficiently
-            if(present(add)) then
-               if(add .eqv. .false.) then
+            if (present(add)) then
+               if (add .eqv. .false.) then
                    attrib(1:n_parcels, :) = 0.0
                endif
             else
@@ -316,13 +330,13 @@ module interpolation
             endif
 
             ! put if statement here for computational efficiency
-            if(present(exact)) then
+            if (present(exact)) then
                do n = 1, n_parcels
                   pos = position(n, :)
                   call apply_periodic_bc(pos)
-                  if(exact=='velocity') then
+                  if (exact=='velocity') then
                      attrib(n,:)=attrib(n,:)+get_flow_velocity(pos)
-                  elseif(exact=='strain') then
+                  elseif (exact=='strain') then
                      attrib(n,:)=attrib(n,:)+get_flow_gradient(pos)
                   else
                      print *, "Exact interpolation field passed not implemented"
@@ -346,28 +360,34 @@ module interpolation
         end subroutine grid2par_non_elliptic
 
         ! cache indices and weights of tri-linear interpolation
-        subroutine cache_parcel_interp_weights(parcels)
-            type(parcel_container_type), intent(in) :: parcels
+        subroutine cache_parcel_interp_weights(position, volume, B)
+            double precision,           intent(in)  :: position(:, :)
+            double precision,           intent(in)  :: volume(:, :)
+            double precision, optional, intent(in)  :: B(:, :)
 
             if (parcel_info%is_elliptic) then
-                call cache_parcel_interp_weights_elliptic(parcels)
+                if (.not. present(B)) then
+                    print *, "B matrix not passed to cache_parcel_interp_weights!"
+                    stop
+                endif
+                call cache_parcel_interp_weights_elliptic(position, volume, B)
             else
-                call cache_parcel_interp_weights_non_elliptic(parcels)
+                call cache_parcel_interp_weights_non_elliptic(position)
             endif
         end subroutine cache_parcel_interp_weights
 
         ! cache indices and weights of tri-linear interpolation (elliptic version)
-        subroutine cache_parcel_interp_weights_elliptic(parcels)
-            type(parcel_container_type), intent(in) :: parcels
-            double precision                        :: pos(2), xy(2)
-            integer                                 :: idx(2), n, p
-            double precision                        :: points(2, 2)
+        subroutine cache_parcel_interp_weights_elliptic(position, volume, B)
+            double precision, intent(in)  :: position(:, :)
+            double precision, intent(in)  :: volume(:, :)
+            double precision, intent(in)  :: B(:, :)
+            double precision              :: pos(2), xy(2)
+            integer                       :: idx(2), n, p
+            double precision              :: points(2, 2)
 
             do n = 1, n_parcels
 
-                points = get_ellipse_points(parcels%position(n, :), &
-                                            parcels%volume(n, 1),   &
-                                            parcels%B(n, :))
+                points = get_ellipse_points(position(n, :), volume(n, 1), B(n, :))
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -378,13 +398,13 @@ module interpolation
         end subroutine cache_parcel_interp_weights_elliptic
 
         ! cache indices and weights of tri-linear interpolation (non elliptic version)
-        subroutine cache_parcel_interp_weights_non_elliptic(parcels)
-            type(parcel_container_type), intent(in) :: parcels
-            double precision                        :: pos(2), xy(2)
-            integer                                 :: idx(2), n
+        subroutine cache_parcel_interp_weights_non_elliptic(position)
+            double precision, intent(in)  :: position(:, :)
+            double precision              :: pos(2), xy(2)
+            integer                       :: idx(2), n
 
             do n = 1, n_parcels
-                call trilinear_interp(parcels%position(n, :), n, 1.0d0)
+                call trilinear_interp(position(n, :), n, 1.0d0)
             enddo
         end subroutine cache_parcel_interp_weights_non_elliptic
 

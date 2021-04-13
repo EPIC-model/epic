@@ -7,7 +7,7 @@ module ls_rk4
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
-    use interpolation, only : grid2par, grid2par_add
+    use interpolation, only : grid2par, grid2par_add, cache_parcel_interp_weights
     use fields, only : strain_f, velocity_f
     implicit none
 
@@ -77,6 +77,8 @@ module ls_rk4
             double precision, intent(in) :: dt
             integer, intent(in) :: step
 
+            call cache_parcel_interp_weights(parcels%position, parcels%volume, parcels%B)
+
             if(step==1) then
                call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B, exact='velocity')
             else
@@ -119,6 +121,7 @@ module ls_rk4
             double precision, intent(in) :: dt
             integer, intent(in) :: step
 
+            call cache_parcel_interp_weights(parcels%position, parcels%volume)
 
             if(step==1) then
                call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, exact='velocity')
