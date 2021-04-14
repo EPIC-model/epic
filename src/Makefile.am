@@ -9,7 +9,7 @@ epic_SOURCES = 					\
 	parcels/ellipse.f90			\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
-	parcels/nearest.f90			\
+	parcels/parcel_nearest.f90		\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\
 	parser/parser.f90 			\
