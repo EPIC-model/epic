@@ -4,9 +4,9 @@
 ! selected by the user at runtime.
 ! =============================================================================
 module parcel_merge
-    use nearest
+    use parcel_nearest
     use constants, only : pi, max_num_parcels
-    use parcel_container, only : parcel_container_type, n_parcels, parcel_replace
+    use parcel_container, only : parcel_container_type, n_parcels, parcel_replace, get_delx
     use ellipse, only : get_B22
     use options, only : parcel_info, verbose
     use parcel_bc
@@ -61,6 +61,7 @@ module parcel_merge
             double precision                            :: a1b1, a2b2, isqrab, ab
             double precision                            :: mu1, mu2, zet, eta
             double precision                            :: mu11, mu22, mu12
+            double precision                            :: delx
 
             B11_1 = parcels%B(i, 1)
             B11_2 = parcels%B(j, 1)
@@ -80,8 +81,8 @@ module parcel_merge
             mu1 = a1b1 / ab
             mu2 = a2b2 / ab
 
-            delx=(parcels%position(j, 1) - parcels%position(i, 1))
-            delx=delx-extent(1)*dble(int(delx*0.5*extent(1))) ! works across periodic edge
+            ! works across periodic edge
+            delx = get_delx(parcels%position(j, 1), parcels%position(i, 1))
 
             zet = 2.0 * isqrab * delx
 
