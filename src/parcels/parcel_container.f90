@@ -11,6 +11,7 @@ module parcel_container
                        open_h5_group,       &
                        get_step_group_name
     use options, only : verbose
+    use parameters, only : extent
     use ellipse, only : get_angles
     implicit none
 
@@ -29,6 +30,15 @@ module parcel_container
 
 
     contains
+
+        elemental function get_delx(x1, x2) result (delx)
+            double precision, intent(in) :: x1, x2
+            double precision             :: delx
+
+            delx = x1 - x2
+            ! works across periodic edge
+            delx = delx - extent(1) * dble(int(delx / extent(1)))
+        end function get_delx
 
         subroutine write_h5_parcels(iter)
             integer, intent(in)           :: iter ! iteration

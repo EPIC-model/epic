@@ -7,7 +7,7 @@
 ! =============================================================================
 program ellipse_orientation
     use constants, only : pi
-    use parcel_container
+    use parcel_container, only : parcels, n_parcels, parcel_alloc, parcel_dealloc
     use ellipse
     implicit none
 

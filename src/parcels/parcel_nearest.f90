@@ -1,13 +1,15 @@
 !==============================================================================
 !               Finds the parcels nearest every "small" parcel
 !==============================================================================
-module nearest
+module parcel_nearest
     use constants, only : pi, max_num_parcels
-    use parcel_container, only : parcels, n_parcels
+    use parcel_container, only : parcels, n_parcels, get_delx
     use parameters, only : dx, dxi, vcell, grid, hli, lower, extent, ncell, nx, nz
     use options, only : parcel_info
 
     implicit none
+
+    private
 
     !Used for searching for possible parcel merger:
     integer, allocatable :: nppc(:), kc1(:),kc2(:)
@@ -19,6 +21,8 @@ module nearest
     double precision:: vmin, delx,delz,dsq,dscmin,vmerge,vmergemin,x_small,z_small
     integer:: i,ic,i0,imin,k,m,j
     integer:: ix,iz,ix0,iz0
+
+    public :: find_nearest
 
     contains
 
@@ -118,8 +122,7 @@ module nearest
                             vmerge=parcels%volume(i, 1)+parcels%volume(i0, 1) ! Summed area fraction:
                             ! Prevent division in all comparisons here
                             if (delz*delz*vmergemin < dscmin*vmerge) then
-                                delx=parcels%position(i,1)-x_small
-                                delx=delx-extent(1)*dble(int(delx*hli(1))) ! works across periodic edge
+                                delx = get_delx(parcels%position(i,1), x_small) ! works across periodic edge
                                 dsq=delz*delz+delx*delx
                                 if (dsq*vmergemin < dscmin*vmerge) then
                                     dscmin=dsq
@@ -141,4 +144,4 @@ module nearest
             nmerge = j
         end subroutine find_nearest
 
-end module nearest
+end module parcel_nearest
