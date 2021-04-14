@@ -57,3 +57,9 @@ The directory `$PREFIX/bin` contains following scripts:
 * merge-ellipses.py
 
 Please append the argument `--help` when calling the scripts to get further information.
+
+
+## Performance analysis
+When configuring EPIC with `--enable-scalasca`, it is built with the performance tool [Scalasca](https://www.scalasca.org/) and [Score-P](https://www.vi-hps.org/projects/score-p/). Scripts to install Scalasca and Score-P are found in the directory `dependencies`.
+
+
