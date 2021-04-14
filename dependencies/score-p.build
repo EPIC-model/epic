@@ -7,9 +7,9 @@ V_MINOR=0
 V=${V_MAJOR}.${V_MINOR}
 
 # download
-# curl -L \
-#     --output "${DOWNLOADS_DIR}/$P-$V.tar.gz" \
-#     "https://perftools.pages.jsc.fz-juelich.de/cicd/$P/tags/$P-$V/$P-$V.tar.gz"
+curl -L \
+    --output "${DOWNLOADS_DIR}/$P-$V.tar.gz" \
+    "https://perftools.pages.jsc.fz-juelich.de/cicd/$P/tags/$P-$V/$P-$V.tar.gz"
 
 # unpack
 mkdir -p "${SRC_DIR}/$P" && cd "$_"
