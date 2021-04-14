@@ -5,7 +5,7 @@
 ! =============================================================================
 module parcel_bc
     use parameters, only : lower, upper, extent, hli
-    use parcel_container, only : n_parcels
+    use parcel_container, only : n_parcels, are_parcels_modified
     implicit none
 
     contains
@@ -24,6 +24,9 @@ module parcel_bc
                 ! vertical bc
                 call apply_free_slip_bc(position(n, :), velocity(n, :))
             enddo
+
+            are_parcels_modified = .true.
+
         end subroutine apply_parcel_bc
 
 

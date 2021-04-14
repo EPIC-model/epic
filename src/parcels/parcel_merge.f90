@@ -6,7 +6,11 @@
 module parcel_merge
     use parcel_nearest
     use constants, only : pi, max_num_parcels
-    use parcel_container, only : parcel_container_type, n_parcels, parcel_replace, get_delx
+    use parcel_container, only : parcel_container_type &
+                               , n_parcels             &
+                               , are_parcels_modified  &
+                               , parcel_replace        &
+                               , get_delx
     use ellipse, only : get_B22
     use options, only : parcel_info, verbose
     use parcel_bc
@@ -46,6 +50,8 @@ module parcel_merge
 
                 ! overwrite invalid parcels
                 call pack_parcels(isma, n_merge)
+
+                are_parcels_modified = .true.
             endif
 
         end subroutine merge_ellipses

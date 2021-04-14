@@ -17,6 +17,10 @@ module parcel_container
 
     integer :: n_parcels
 
+    ! keeps track if the parcel container got modified
+    ! (is important for caching in interpolation)
+    logical :: are_parcels_modified = .false.
+
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
             position,   &
@@ -115,6 +119,9 @@ module parcel_container
             allocate(parcels%stretch(num, 1))
             allocate(parcels%B(num, 2))
             allocate(parcels%volume(num, 1))
+
+            are_parcels_modified = .true.
+
         end subroutine parcel_alloc
 
 
@@ -131,6 +138,9 @@ module parcel_container
             endif
 
             deallocate(parcels%volume)
+
+            are_parcels_modified = .true.
+
         end subroutine parcel_dealloc
 
 end module parcel_container

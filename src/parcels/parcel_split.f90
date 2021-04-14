@@ -4,7 +4,9 @@
 module parcel_split
     use options, only : verbose
     use constants, only : pi
-    use parcel_container, only : parcel_container_type, n_parcels
+    use parcel_container, only : parcel_container_type  &
+                               , n_parcels              &
+                               , are_parcels_modified
     use ellipse, only : get_eigenvalue, get_eigenvector, get_B22
     implicit none
 
@@ -58,6 +60,8 @@ module parcel_split
                 parcels%position(n_parcels, :) = parcels%position(i, :) - h * evec
                 parcels%position(i, :) = parcels%position(i, :)  + h * evec
             enddo
+
+            are_parcels_modified = (are_parcels_modified .or. (n_parcels .ne. last_index))
 
             if (verbose) then
                 print "(a36, i0, a3, i0)", &

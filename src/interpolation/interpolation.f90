@@ -5,7 +5,9 @@
 module interpolation
     use parameters, only : nx, nz
     use options, only : parcel_info, interpl
-    use parcel_container, only : parcel_container_type, n_parcels
+    use parcel_container, only : parcel_container_type  &
+                               , n_parcels              &
+                               , are_parcels_modified
     use parcel_bc, only : apply_periodic_bc
     use ellipse
     use fields
@@ -26,13 +28,11 @@ module interpolation
     logical :: initialised = .false.
 
     ! cached variables (interpolation indices and weights)
-    integer, allocatable, dimension(:, :) ::  is, js, weights
+    integer, allocatable, dimension(:, :) ::  is, js
+    double precision, allocatable, dimension(:, :) :: weights
 
     ! trilinear interpolation requires 4 grid points in 2D
     integer, parameter :: ngp = 4
-
-    ! number of parcels cached
-    integer :: n_parcels_used_in_caching = 0
 
     private :: is, js, weights, ngp
 
@@ -80,14 +80,14 @@ module interpolation
             field = 0.0
 
             if (parcel_info%is_elliptic) then
-                if (present(recache) .or. (n_parcels .ne. n_parcels_used_in_caching)) then
+                if (present(recache) .or. are_parcels_modified) then
                     call cache_parcel_interp_weights(parcels%position,  &
                                                      parcels%volume,    &
                                                      parcels%B)
                 endif
                 call par2grid_elliptic(parcels, attrib, field)
             else
-                if (present(recache) .or. (n_parcels .ne. n_parcels_used_in_caching)) then
+                if (present(recache) .or. are_parcels_modified) then
                     call cache_parcel_interp_weights(parcels%position,  &
                                                      parcels%volume)
                 endif
@@ -119,10 +119,6 @@ module interpolation
             ncomp = the_shape(3)
 
             do n = 1, n_parcels
-
-                points = get_ellipse_points(parcels%position(n, :), &
-                                            parcels%volume(n, 1),   &
-                                            parcels%B(n, :))
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -178,7 +174,7 @@ module interpolation
             character(*),     optional, intent(in)  :: exact
             logical,          optional, intent(in)  :: recache
 
-            if (present(recache) .or. (n_parcels .ne. n_parcels_used_in_caching)) then
+            if (present(recache) .or. are_parcels_modified) then
                 call cache_parcel_interp_weights(position, volume, B)
             endif
 
