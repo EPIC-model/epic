@@ -31,6 +31,9 @@ module interpolation
     ! trilinear interpolation requires 4 grid points in 2D
     integer, parameter :: ngp = 4
 
+    ! number of parcels cached
+    integer :: n_parcels_used_in_caching = 0
+
     private :: is, js, weights, ngp
 
     contains
@@ -77,14 +80,14 @@ module interpolation
             field = 0.0
 
             if (parcel_info%is_elliptic) then
-                if (present(recache)) then
+                if (present(recache) .or. (n_parcels .ne. n_parcels_used_in_caching)) then
                     call cache_parcel_interp_weights(parcels%position,  &
                                                      parcels%volume,    &
                                                      parcels%B)
                 endif
                 call par2grid_elliptic(parcels, attrib, field)
             else
-                if (present(recache)) then
+                if (present(recache) .or. (n_parcels .ne. n_parcels_used_in_caching)) then
                     call cache_parcel_interp_weights(parcels%position,  &
                                                      parcels%volume)
                 endif
@@ -175,7 +178,7 @@ module interpolation
             character(*),     optional, intent(in)  :: exact
             logical,          optional, intent(in)  :: recache
 
-            if (present(recache)) then
+            if (present(recache) .or. (n_parcels .ne. n_parcels_used_in_caching)) then
                 call cache_parcel_interp_weights(position, volume, B)
             endif
 
