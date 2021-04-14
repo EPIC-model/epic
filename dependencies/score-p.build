@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# recipe for:
+P=scorep
+V_MAJOR=7
+V_MINOR=0
+V=${V_MAJOR}.${V_MINOR}
+
+# download
+# curl -L \
+#     --output "${DOWNLOADS_DIR}/$P-$V.tar.gz" \
+#     "https://perftools.pages.jsc.fz-juelich.de/cicd/$P/tags/$P-$V/$P-$V.tar.gz"
+
+# unpack
+mkdir -p "${SRC_DIR}/$P" && cd "$_"
+tar xvf "${DOWNLOADS_DIR}/$P-$V.tar.gz"
+
+# guess system type
+system_type="$(${SRC_DIR}/$P/$P-$V/build-config/config.guess)"
+
+# configure
+mkdir -p "${SRC_DIR}/$P/build" && cd "$_"
+${SRC_DIR}/$P/$P-$V/configure       \
+    --build="$system_type"          \
+    --host="$system_type"           \
+    --target="$system_type"         \
+    --without-mpi                   \
+    --without-shmem                 \
+    --prefix=${PREFIX}              \
+    ${SRC_DIR}/$P/$P-$V
+
+# compile & install
+make -j ${NJOBS}
+make install
