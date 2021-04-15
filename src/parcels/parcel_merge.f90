@@ -115,7 +115,7 @@ module parcel_merge
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: n, i, j
-            double precision                           :: B11, B12, B22, detB
+            double precision                           :: B11, B12, B22, sqrtdetB
 
             do n = 1, n_merge
                 i = isma(n)
@@ -125,10 +125,10 @@ module parcel_merge
                 call do_merge(parcels, i, j, B11, B12, B22)
 
                 ! normalize such that determinant of the merger is 1
-                detB = B11 * B22 - B12 ** 2
+                sqrtdetB = sqrt(B11 * B22 - B12 ** 2)
 
-                parcels%B(j, 1) = B11 / detB
-                parcels%B(j, 2) = B12 / detB
+                parcels%B(j, 1) = B11 / sqrtdetB
+                parcels%B(j, 2) = B12 / sqrtdetB
             enddo
 
             call apply_parcel_bc(parcels%position, parcels%velocity)
