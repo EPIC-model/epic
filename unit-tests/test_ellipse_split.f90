@@ -13,7 +13,7 @@ program test_ellipse_split
     double precision, parameter :: lam = 5.0d0
     double precision, parameter :: angle = 0.25d0 * pi
     double precision, parameter :: evec(2) = (/cos(angle), sin(angle)/)
-    double precision :: h, c, ab, B11, B12, B22, pos(2, 2), error
+    double precision :: h, ab, B11, B12, B22, pos(2, 2), error
 
     n_parcels = 1
     call parcel_alloc(2)
@@ -32,7 +32,6 @@ program test_ellipse_split
 
     ! analytic split
     h = 0.25 * sqrt(3.0d0 * ab * lam)
-    c = sqrt(ab * abs(2.0d0 * lam - B11 - B22))
     B11 = 2.0d0 * B11 - 1.5d0 * lam * evec(1) ** 2
     B12 = 2.0d0 * B12 - 1.5d0 * lam * evec(1) * evec(2)
     pos(1, :) = parcels%position(1, :) + h * evec
@@ -51,12 +50,14 @@ program test_ellipse_split
     error = max(error, abs(parcels%B(1, 1) - B11))
     error = max(error, abs(parcels%B(1, 2) - B12))
     error = max(error, sum(abs(pos(1, :) - parcels%position(1, :))))
+    error = max(error, sum(abs(0.5d0 * ab * pi - parcels%volume(1, :))))
 
 
     ! second parcel
     error = max(error, abs(parcels%B(2, 1) - B11))
     error = max(error, abs(parcels%B(2, 2) - B12))
     error = max(error, sum(abs(pos(2, :) - parcels%position(2, :))))
+    error = max(error, sum(abs(0.5d0 * ab * pi - parcels%volume(2, :))))
     error = max(error, dble(abs(n_parcels - 2)))
 
     if (error > 1.0e-15) then
