@@ -90,7 +90,7 @@ module parcel_merge
 
             eta = two * (parcels%position(j, 2) - parcels%position(i, 2))
 
-            mu12 = (mu1 + mu2) * mu1 * mu2
+            mu12 = mu1 * mu2
 
             B11 = mu12 * zet ** 2  + mu1 * B11_1 + mu2 * B11_2
             B12 = mu12 * zet * eta + mu1 * B12_1 + mu2 * B12_2
