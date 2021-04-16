@@ -7,7 +7,7 @@ module parcel_merge
     use parcel_nearest
     use constants, only : pi, one, two, max_num_parcels
     use parcel_container, only : parcel_container_type, n_parcels, parcel_replace, get_delx
-    use ellipse, only : get_B22, get_area
+    use ellipse, only : get_B22, get_ab
     use options, only : parcel_info, verbose
     use parcel_bc
 
@@ -71,8 +71,8 @@ module parcel_merge
             B22_1 = get_B22(B11_1, B12_1, parcels%volume(i, 1))
             B22_2 = get_B22(B11_2, B12_2, parcels%volume(j, 1))
 
-            a1b1 = get_area(parcels%volume(i, 1))
-            a2b2 = get_area(parcels%volume(j, 1))
+            a1b1 = get_ab(parcels%volume(i, 1))
+            a2b2 = get_ab(parcels%volume(j, 1))
 
             ab = a1b1 + a2b2
             abi = one / ab

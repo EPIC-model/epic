@@ -73,13 +73,13 @@ module ellipse
             double precision             :: B22
             double precision             :: a2b2
 
-            a2b2 = get_area(volume) ** 2
+            a2b2 = get_ab(volume) ** 2
 
             B22 = (a2b2 + B12 ** 2) / B11
 
         end function get_B22
 
-        elemental function get_area(volume) result(ab)
+        elemental function get_ab(volume) result(ab)
             double precision, intent(in) :: volume
             double precision             :: ab
 
