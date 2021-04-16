@@ -76,7 +76,7 @@ module ellipse
             double precision             :: B22
             double precision             :: ab
 
-            ab = get_ab(volume) ** 2
+            ab = get_ab(volume)
 
             B22 = (ab ** 2 + B12 ** 2) / B11
 
