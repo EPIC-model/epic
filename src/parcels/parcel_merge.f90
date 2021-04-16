@@ -5,14 +5,11 @@
 ! =============================================================================
 module parcel_merge
     use parcel_nearest
-    use constants, only : pi
-                        , one
-                        , two
-                        , four
+    use constants, only : pi, one, two, four    &
                         , max_num_parcels
-    use parcel_container, only : parcel_container_type
-                               , n_parcels
-                               , parcel_replace
+    use parcel_container, only : parcel_container_type  &
+                               , n_parcels              &
+                               , parcel_replace         &
                                , get_delx
     use ellipse, only : get_B22, get_ab
     use options, only : parcel_info, verbose
@@ -184,7 +181,7 @@ module parcel_merge
 
                 ! optimal B
                 parcels%B(j, 1) = (B11 - mu * B22) / (one - mu ** 2)
-                parcels%B(j, 2) = B12 / (onw - mu)
+                parcels%B(j, 2) = B12 / (one - mu)
             enddo
 
             call apply_parcel_bc(parcels%position, parcels%velocity)

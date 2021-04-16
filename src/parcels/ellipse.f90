@@ -3,7 +3,9 @@
 ! =============================================================================
 module ellipse
     use constants, only : pi            &
-                        , one_over_pi
+                        , one_over_pi   &
+                        , zero          &
+                        , two
     implicit none
 
     contains
@@ -27,7 +29,7 @@ module ellipse
             evec(1) = a2 - B22
             evec(2) = B12
 
-            if (abs(evec(1)) + abs(evec(2)) == 0.0d0) then
+            if (abs(evec(1)) + abs(evec(2)) == zero) then
                 evec = evec + epsilon(evec)
             endif
 
@@ -72,11 +74,11 @@ module ellipse
             double precision, intent(in) :: B12
             double precision, intent(in) :: volume
             double precision             :: B22
-            double precision             :: a2b2
+            double precision             :: ab
 
-            a2b2 = get_ab(volume) ** 2
+            ab = get_ab(volume) ** 2
 
-            B22 = (a2b2 + B12 ** 2) / B11
+            B22 = (ab ** 2 + B12 ** 2) / B11
 
         end function get_B22
 
@@ -110,7 +112,7 @@ module ellipse
 
             a2 = get_eigenvalue(B(1), B(2), B22)
 
-            c = sqrt(abs(2.0d0 * a2 - B(1) - B22))
+            c = sqrt(abs(two * a2 - B(1) - B22))
 
             evec = get_eigenvector(a2, B(2), B22)
 
