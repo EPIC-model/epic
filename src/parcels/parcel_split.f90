@@ -3,7 +3,7 @@
 ! =============================================================================
 module parcel_split
     use options, only : verbose
-    use constants, only : pi
+    use constants, only : pi, three
     use parcel_container, only : parcel_container_type, n_parcels
     use ellipse, only : get_eigenvalue      &
                       , get_eigenvector     &
@@ -48,11 +48,11 @@ module parcel_split
 
                 evec = get_eigenvector(a2, B12, B22)
 
-                parcels%B(i, 1) = B11 - 0.75 * a2 * evec(1) ** 2
-                parcels%B(i, 2) = B12 - 0.75 * a2 * (evec(1) * evec(2))
+                parcels%B(i, 1) = B11 - 0.75d0 * a2 * evec(1) ** 2
+                parcels%B(i, 2) = B12 - 0.75d0 * a2 * (evec(1) * evec(2))
 
-                h = 0.25 * sqrt(3.0 * a2)
-                parcels%volume(i, 1) = 0.5 * V
+                h = 0.25d0 * sqrt(three * a2)
+                parcels%volume(i, 1) = 0.5d0 * V
 
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1

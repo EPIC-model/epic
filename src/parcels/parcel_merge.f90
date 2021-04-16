@@ -5,8 +5,15 @@
 ! =============================================================================
 module parcel_merge
     use parcel_nearest
-    use constants, only : pi, one, two, max_num_parcels
-    use parcel_container, only : parcel_container_type, n_parcels, parcel_replace, get_delx
+    use constants, only : pi
+                        , one
+                        , two
+                        , four
+                        , max_num_parcels
+    use parcel_container, only : parcel_container_type
+                               , n_parcels
+                               , parcel_replace
+                               , get_delx
     use ellipse, only : get_B22, get_ab
     use options, only : parcel_info, verbose
     use parcel_bc
@@ -161,23 +168,23 @@ module parcel_merge
                 !          f'(mu_{n}) = 4 * mu_{n} ** 3 + b * 2 * mu_{n} + a
                 a2b2i = one / ab ** 2
                 detB = (B11 * B22 - B12 * B12) * a2b2i
-                a = (B11 ** 2 + B22 ** 2 + 2.0 * B12 ** 2) * a2b2i
-                b = -2.0 - detB
-                c = 1.0 - detB
+                a = (B11 ** 2 + B22 ** 2 + two * B12 ** 2) * a2b2i
+                b = -two - detB
+                c = one - detB
 
                 ! initial guess
                 mu = - c / a
 
                 merr = 1.0
                 do while (merr > 1.e-12)
-                    mup = (c + mu * (a + mu * (b + mu * mu))) / (a + mu * (2.0 * b + 4.0 * mu * mu))
+                    mup = (c + mu * (a + mu * (b + mu * mu))) / (a + mu * (two * b + four * mu * mu))
                     mu = mu - mup
                     merr = abs(mup)
                 enddo
 
                 ! optimal B
-                parcels%B(j, 1) = (B11 - mu * B22) / (1.0 - mu ** 2)
-                parcels%B(j, 2) = B12 / (1.0 - mu)
+                parcels%B(j, 1) = (B11 - mu * B22) / (one - mu ** 2)
+                parcels%B(j, 2) = B12 / (onw - mu)
             enddo
 
             call apply_parcel_bc(parcels%position, parcels%velocity)
