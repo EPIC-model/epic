@@ -13,27 +13,30 @@ program test_ellipse_split
     double precision, parameter :: lam = 5.0d0
     double precision, parameter :: angle = 0.25d0 * pi
     double precision, parameter :: evec(2) = (/cos(angle), sin(angle)/)
-    double precision :: h, ab, B11, B12, B22, pos(2, 2), error
+    double precision :: h, ab, B11, B12, B22, pos(2, 2), error, a2, b2
 
     n_parcels = 1
     call parcel_alloc(2)
 
     ab = 1.0d0
 
+    a2 = ab * lam
+    b2 = ab / lam
+
     parcels%position(1, :) = 0.0d0
     parcels%volume(1, 1) = ab * pi
 
-    B11 = lam * cos(angle) ** 2 + 1.0 / lam * sin(angle) ** 2
-    B12 = 0.5 * (lam - 1.0 / lam) * sin(2.0 * angle)
-    B22 = lam * sin(angle) ** 2 + 1.0 / lam * cos(angle) ** 2
+    B11 = a2 * cos(angle) ** 2 + b2 * sin(angle) ** 2
+    B12 = 0.5 * (a2 - b2) * sin(2.0 * angle)
+    B22 = a2 * sin(angle) ** 2 + b2 * cos(angle) ** 2
 
     parcels%B(1, 1) = B11
     parcels%B(1, 2) = B12
 
     ! analytic split
-    h = 0.25 * sqrt(3.0d0 * ab * lam)
-    B11 = 2.0d0 * B11 - 1.5d0 * lam * evec(1) ** 2
-    B12 = 2.0d0 * B12 - 1.5d0 * lam * evec(1) * evec(2)
+    h = 0.25 * sqrt(3.0d0 * a2)
+    B11 = B11 - 0.75d0 * a2 * evec(1) ** 2
+    B12 = B12 - 0.75d0 * a2 * evec(1) * evec(2)
     pos(1, :) = parcels%position(1, :) + h * evec
     pos(2, :) = parcels%position(1, :) - h * evec
 
