@@ -11,35 +11,6 @@ module interpl_methods
     contains
 
         !
-        ! nearest grid point (NGP) interpolation
-        !
-        subroutine nearest_grid_point(pos, ij, weight, ngp)
-            double precision, intent(in)  :: pos(2)
-            integer,          intent(out) :: ij(2, 4)
-            double precision, intent(out) :: weight(4)
-            integer,          intent(out) :: ngp
-            double precision              :: xy(2), dx(2)
-            integer                       :: i
-
-            ij(:, 1) = get_index(pos)
-
-            xy = get_position(ij(:, 1))
-
-            do i = 1, 2
-                if (pos(i) - xy(i) > 0.5 * dx(i)) then
-                    ij(i, 1) = ij(i, 1) + 1
-                endif
-            enddo
-
-            weight(1) = 1.0
-            ngp = 1
-
-            ! account for x periodicity
-            call periodic_index_shift(ij, ngp)
-
-        end subroutine nearest_grid_point
-
-        !
         ! tri-linear interpolation
         !
         subroutine trilinear(pos, ij, weight, ngp)

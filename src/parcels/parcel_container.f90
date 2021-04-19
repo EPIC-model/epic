@@ -11,6 +11,7 @@ module parcel_container
                        open_h5_group,       &
                        get_step_group_name
     use options, only : verbose
+    use parameters, only : extent, hli
     use ellipse, only : get_angles
     implicit none
 
@@ -29,6 +30,15 @@ module parcel_container
 
 
     contains
+
+        elemental function get_delx(x1, x2) result (delx)
+            double precision, intent(in) :: x1, x2
+            double precision             :: delx
+
+            delx = x1 - x2
+            ! works across periodic edge
+            delx = delx - extent(1) * dble(int(delx * hli(1)))
+        end function get_delx
 
         subroutine write_h5_parcels(iter)
             integer, intent(in)           :: iter ! iteration
@@ -61,7 +71,7 @@ module parcel_container
             if (allocated(parcels%B)) then
                 call write_h5_dataset_2d(name, "B", parcels%B(1:n_parcels, :))
 
-                angle = get_angles(parcels%B, n_parcels)
+                angle = get_angles(parcels%B, parcels%volume, n_parcels)
                 call write_h5_dataset_1d(name, "orientation", angle)
             endif
 

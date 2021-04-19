@@ -11,6 +11,9 @@ module interpolation
     use ellipse
     use interpl_methods
     use fields
+    use taylorgreen, only : get_flow_velocity, &
+                            get_flow_gradient
+
     implicit none
 
     private :: par2grid_elliptic,       &
@@ -134,70 +137,113 @@ module interpolation
         end subroutine par2grid_non_elliptic
 
 
-        subroutine grid2par(position, volume, attrib, field, B)
+        subroutine grid2par(position, volume, attrib, field, B, exact)
             double precision,           intent(in)  :: position(:, :)
             double precision,           intent(in)  :: volume(:, :)
             double precision,           intent(out) :: attrib(:, :)
             double precision,           intent(in)  :: field(0:, -1:, :)
             double precision, optional, intent(in)  :: B(:, :)
+            character(*), optional, intent(in)      :: exact
 
             if (parcel_info%is_elliptic) then
                 if (.not. present(B)) then
                     print *, "B matrix not passed to grid2par!"
                     stop
                 endif
-                call grid2par_elliptic(position, volume, B, attrib, field)
+                if(present(exact)) then
+                   call grid2par_elliptic(position, volume, B, attrib, field, exact=exact)
+                else
+                   call grid2par_elliptic(position, volume, B, attrib, field)
+                endif
             else
-                call grid2par_non_elliptic(position, attrib, field)
+                if(present(exact)) then
+                   call grid2par_non_elliptic(position, attrib, field, exact=exact)
+                else
+                   call grid2par_non_elliptic(position, attrib, field)
+                endif
             endif
 
         end subroutine grid2par
 
-        subroutine grid2par_add(position, volume, attrib, field, B)
+
+        subroutine grid2par_add(position, volume, attrib, field, B, exact)
             double precision,           intent(in)  :: position(:, :)
             double precision,           intent(in)  :: volume(:, :)
             double precision,           intent(out) :: attrib(:, :)
             double precision,           intent(in)  :: field(0:, 0:, :)
             double precision, optional, intent(in)  :: B(:, :)
+            character(*), optional, intent(in)      :: exact
 
             if (parcel_info%is_elliptic) then
                 if (.not. present(B)) then
                     print *, "B matrix not passed to grid2par!"
                     stop
                 endif
-                call grid2par_elliptic(position, volume, B, attrib, field, add=.true.)
+                if(present(exact)) then
+                   call grid2par_elliptic(position, volume, B, attrib, field, add=.true., exact=exact)
+                else
+                   call grid2par_elliptic(position, volume, B, attrib, field, add=.true.)
+                endif
             else
-                call grid2par_non_elliptic(position, attrib, field, add=.true.)
+                if(present(exact)) then
+                   call grid2par_non_elliptic(position, attrib, field, add=.true., exact=exact)
+                else
+                   call grid2par_non_elliptic(position, attrib, field, add=.true.)
+                endif
             endif
 
         end subroutine grid2par_add
 
-        subroutine grid2par_elliptic(position, volume, B, attrib, field, add)
+
+        subroutine grid2par_elliptic(position, volume, B, attrib, field, add, exact)
             double precision, intent(in)  :: position(:, :)
             double precision, intent(in)  :: volume(:, :)
             double precision, intent(in)  :: B(:, :)
             double precision, intent(out) :: attrib(:, :)
             double precision, intent(in)  :: field(0:, -1:, :)
             logical, optional, intent(in) :: add
+            character(*), optional, intent(in)      :: exact
             integer                       :: ncomp, ngp
             double precision              :: points(2, 2)
             integer                       :: n, p, c, i
             integer                       :: the_shape(3)
 
+
             ! number of field components
             the_shape = shape(field)
             ncomp = the_shape(3)
 
-            do n = 1, n_parcels
+            ! clear old data efficiently
+            if(present(add)) then
+               if(add .eqv. .false.) then
+                   attrib(1:n_parcels, :) = 0.0
+               endif
+            else
+               attrib(1:n_parcels, :) = 0.0
+            endif
 
-                ! clear old data
-                if(present(add)) then
-                   if(add .eqv. .false.) then
-                      attrib(n, :) = 0.0
-                   endif
-                else
-                   attrib(n, :) = 0.0
-                endif
+            ! put if statement here for computational efficiency
+            if(present(exact)) then
+               do n = 1, n_parcels
+
+                  points = get_ellipse_points(position(n, :), volume(n, 1), B(n, :))
+
+                  do p = 1, 2
+                     call apply_periodic_bc(points(p, :))
+                     if(exact=='velocity') then
+                        attrib(n,:)=attrib(n,:)+0.5*get_flow_velocity(points(p, :))
+                     elseif(exact=='strain') then
+                        attrib(n,:)=attrib(n,:)+0.5*get_flow_gradient(points(p, :))
+                     else
+                        print *, "Exact interpolation field passed not implemented"
+                        stop
+                     end if
+                  end do
+               end do
+               return
+            endif
+
+            do n = 1, n_parcels
 
                 points = get_ellipse_points(position(n, :), volume(n, 1), B(n, :))
 
@@ -225,11 +271,12 @@ module interpolation
         end subroutine grid2par_elliptic
 
 
-        subroutine grid2par_non_elliptic(position, attrib, field, add)
+        subroutine grid2par_non_elliptic(position, attrib, field, add, exact)
             double precision, intent(in)  :: position(:, :)
             double precision, intent(out) :: attrib(:, :)
             double precision, intent(in)  :: field(0:, -1:, :)
             logical, optional, intent(in) :: add
+            character(*), optional, intent(in)      :: exact
             integer                       :: ncomp, ngp
             integer                       :: n, c, i
             integer                       :: the_shape(3)
@@ -239,16 +286,33 @@ module interpolation
             the_shape = shape(field)
             ncomp = the_shape(3)
 
-            do n = 1, n_parcels
+            ! clear old data efficiently
+            if(present(add)) then
+               if(add .eqv. .false.) then
+                   attrib(1:n_parcels, :) = 0.0
+               endif
+            else
+               attrib(1:n_parcels, :) = 0.0
+            endif
 
-                ! clear old data
-                if(present(add)) then
-                   if(add .eqv. .false.) then
-                      attrib(n, :) = 0.0
-                   endif
-                else
-                   attrib(n, :) = 0.0
-                endif
+            ! put if statement here for computational efficiency
+            if(present(exact)) then
+               do n = 1, n_parcels
+                  pos = position(n, :)
+                  call apply_periodic_bc(pos)
+                  if(exact=='velocity') then
+                     attrib(n,:)=attrib(n,:)+get_flow_velocity(pos)
+                  elseif(exact=='strain') then
+                     attrib(n,:)=attrib(n,:)+get_flow_gradient(pos)
+                  else
+                     print *, "Exact interpolation field passed not implemented"
+                     stop
+                  end if
+               end do
+               return
+            endif
+
+            do n = 1, n_parcels
 
                 pos = position(n, :)
 
@@ -276,9 +340,9 @@ module interpolation
             integer,          intent(out) :: ngp
 
 
-            if (interpl == 'nearest-grid-point') then
-                call nearest_grid_point(pos, ij, weight, ngp)
-            else if (interpl == 'trilinear') then
+            if (interpl == 'trilinear') then
+                call trilinear(pos, ij, weight, ngp)
+            else if (interpl == 'exact') then ! only applies to par2grid
                 call trilinear(pos, ij, weight, ngp)
             else
                 print *, "Unknown interpolation method '", interpl, "'."

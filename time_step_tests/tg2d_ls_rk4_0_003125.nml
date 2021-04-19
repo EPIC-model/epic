@@ -3,9 +3,9 @@
  ! output info
  !
 
- output%h5freq      = 1
+ output%h5freq      = 32
 
- output%h5fname     = 'taylorgreen2d_ls_rk4.hdf5'
+ output%h5fname     = 'tg2d_ls_rk4_0_003125.hdf5'
 
  !
  ! grid info
@@ -42,9 +42,9 @@
 
  time%limit         = 2.5
 
- time%dt            = 0.025
+ time%dt            = 0.003125
 
- time%is_adaptive   = .true.
+ time%is_adaptive   = .false.
 
  !
  ! Taylor-Green flow parameters:
@@ -65,5 +65,5 @@
  !
  ! interpolation method
  !
- interpl            = 'trilinear'
+ interpl            = 'exact'
 /
