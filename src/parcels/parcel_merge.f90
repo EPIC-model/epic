@@ -94,7 +94,7 @@ module parcel_merge
 
             B11 = mu12 * zet ** 2  + mu1 * B11_1 + mu2 * B11_2
             B12 = mu12 * zet * eta + mu1 * B12_1 + mu2 * B12_2
-            B22 = mu12 * eta ** 2  + mu1 * B22_2 + mu2 * B22_2
+            B22 = mu12 * eta ** 2  + mu1 * B22_1 + mu2 * B22_2
 
 
             ! update center of mass
