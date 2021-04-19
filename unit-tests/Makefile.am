@@ -14,7 +14,8 @@ unittestsdir = $(prefix)/unit-tests
 
 unittests_PROGRAMS = 		\
 	ellipse_orientation 	\
-	free_slip
+	free_slip		\
+	test_ellipse_split
 
 # 7 April 2021
 # https://www.gnu.org/software/automake/manual/html_node/Scripts.html
@@ -22,5 +23,6 @@ unittests_SCRIPTS = run_unit_tests.sh
 
 ellipse_orientation_SOURCES = ellipse_orientation.f90
 free_slip_SOURCES = free_slip.f90
+test_ellipse_split_SOURCES = test_ellipse_split.f90
 
 endif
