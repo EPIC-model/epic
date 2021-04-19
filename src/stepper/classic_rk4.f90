@@ -13,13 +13,14 @@ module classic_rk4
     implicit none
     integer, parameter :: dp=kind(0.d0)           ! double precision
 
-    type(parcel_container_type) state
-
     ! classic_rk4 temporaries
     double precision, allocatable, dimension(:, :) :: &
         k1o, k2o, k3o, k4o, &   ! position integration
         strain,             &   ! strain at parcel location
-        b1o, b2o, b3o, b4o      ! B matrix integration
+        b1o, b2o, b3o, b4o, &   ! B matrix integration
+        inipos, iniB            ! input parcel attributes (before RK4 step)
+
+
 
     contains
 
@@ -27,7 +28,7 @@ module classic_rk4
         subroutine classic_rk4_alloc(num)
             integer, intent(in) :: num
 
-            allocate(state%position(num, 2))
+            allocate(inipos(num, 2))
 
             allocate(k1o(num, 2))
             allocate(k2o(num, 2))
@@ -35,7 +36,7 @@ module classic_rk4
             allocate(k4o(num, 2))
 
             if (parcel_info%is_elliptic) then
-                allocate(state%B(num, 2))
+                allocate(iniB(num, 2))
                 allocate(strain(num, 4))
 
                 allocate(b1o(num, 2))
@@ -49,7 +50,7 @@ module classic_rk4
         ! deallocate memory of temporaries
         subroutine classic_rk4_dealloc
 
-            deallocate(state%position)
+            deallocate(inipos)
 
             deallocate(k1o)
             deallocate(k2o)
@@ -57,7 +58,7 @@ module classic_rk4
             deallocate(k4o)
 
             if (parcel_info%is_elliptic) then
-                deallocate(state%B)
+                deallocate(iniB)
                 deallocate(strain)
 
                 deallocate(b1o)
@@ -84,68 +85,69 @@ module classic_rk4
         subroutine classic_rk4_elliptic(dt)
             double precision, intent(in) :: dt
 
-            state%position(1:n_parcels,:) = parcels%position(1:n_parcels,:)
-            state%B(1:n_parcels,:) = parcels%B(1:n_parcels,:)
+            ! copy input position and B matrix
+            inipos(1:n_parcels,:) = parcels%position(1:n_parcels,:)
+            iniB(1:n_parcels,:) = parcels%B(1:n_parcels,:)
 
-            call grid2par(state%position, parcels%volume, k1o, velocity_f, state%B, exact='velocity')
-            call grid2par(state%position, parcels%volume, strain, strain_f, state%B, exact='strain')
-            b1o(1:n_parcels,:) = get_B(state%B(1:n_parcels,:), strain(1:n_parcels,:), &
+            call grid2par(parcels%position, parcels%volume, k1o, velocity_f, parcels%B, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, strain, strain_f, parcels%B, exact='strain')
+            b1o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels, 1))
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(state%position, k1o)
+            call apply_parcel_bc(parcels%position, k1o)
 
 
-            state%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + 0.5_dp * dt * k1o(1:n_parcels,:)
-            state%B(1:n_parcels,:) = parcels%B(1:n_parcels,:) + 0.5_dp * dt * b1o(1:n_parcels,:)
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) + 0.5_dp * dt * k1o(1:n_parcels,:)
+            parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + 0.5_dp * dt * b1o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(state%position, k1o)
+            call apply_parcel_bc(parcels%position, k1o)
 
-            call grid2par(state%position, parcels%volume, k2o, velocity_f, state%B, exact='velocity')
-            call grid2par(state%position, parcels%volume, strain, strain_f, state%B, exact='strain')
-            b2o(1:n_parcels,:) = get_B(state%B(1:n_parcels,:), strain(1:n_parcels,:), &
+            call grid2par(parcels%position, parcels%volume, k2o, velocity_f, parcels%B, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, strain, strain_f, parcels%B, exact='strain')
+            b2o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels, 1))
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(state%position, k2o)
+            call apply_parcel_bc(parcels%position, k2o)
 
 
-            state%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + 0.5_dp * dt * k2o(1:n_parcels,:)
-            state%B(1:n_parcels,:) = parcels%B(1:n_parcels,:) + 0.5_dp * dt * b2o(1:n_parcels,:)
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) + 0.5_dp * dt * k2o(1:n_parcels,:)
+            parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + 0.5_dp * dt * b2o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(state%position, k2o)
+            call apply_parcel_bc(parcels%position, k2o)
 
-            call grid2par(state%position, parcels%volume, k3o, velocity_f, state%B, exact='velocity')
-            call grid2par(state%position, parcels%volume, strain, strain_f, state%B, exact='strain')
-            b3o(1:n_parcels,:) = get_B(state%B(1:n_parcels,:), strain(1:n_parcels,:), &
+            call grid2par(parcels%position, parcels%volume, k3o, velocity_f, parcels%B, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, strain, strain_f, parcels%B, exact='strain')
+            b3o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels, 1))
 
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(state%position, k3o)
+            call apply_parcel_bc(parcels%position, k3o)
 
-            state%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + dt * k3o(1:n_parcels,:)
-            state%B(1:n_parcels,:) = parcels%B(1:n_parcels,:) + dt * b3o(1:n_parcels,:)
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) + dt * k3o(1:n_parcels,:)
+            parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + dt * b3o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(state%position, k3o)
+            call apply_parcel_bc(parcels%position, k3o)
 
-            call grid2par(state%position, parcels%volume, k4o, velocity_f, state%B, exact='velocity')
-            call grid2par(state%position, parcels%volume, strain, strain_f, state%B, exact='strain')
-            b4o(1:n_parcels,:) = get_B(state%B(1:n_parcels,:), strain(1:n_parcels,:), &
+            call grid2par(parcels%position, parcels%volume, k4o, velocity_f, parcels%B, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, strain, strain_f, parcels%B, exact='strain')
+            b4o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels, 1))
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(state%position, k4o)
+            call apply_parcel_bc(parcels%position, k4o)
 
 
-            parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                              + dt / 6.0_dp * (k1o(1:n_parcels,:) + 2.0_dp &
                              * k2o(1:n_parcels,:) + 2.0_dp * k3o(1:n_parcels,:) + k4o(1:n_parcels,:))
 
-            parcels%B(1:n_parcels,:) = parcels%B(1:n_parcels,:) &
+            parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) &
                       + dt / 6.0_dp * (b1o(1:n_parcels,:) + 2.0_dp * b2o(1:n_parcels,:) &
                       + 2.0_dp * b3o(1:n_parcels,:) + b4o(1:n_parcels,:))
 
@@ -165,48 +167,49 @@ module classic_rk4
         subroutine classic_rk4_non_elliptic(dt)
             double precision, intent(in) :: dt
 
-            state%position = parcels%position
+            ! copy input position and B matrix
+            inipos(1:n_parcels,:) = parcels%position(1:n_parcels,:)
 
-            call grid2par(state%position, parcels%volume, k1o, velocity_f, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, k1o, velocity_f, exact='velocity')
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(state%position, k1o)
+            call apply_parcel_bc(parcels%position, k1o)
 
 
-            state%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                                           + 0.5_dp * dt * k1o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(state%position, k1o)
+            call apply_parcel_bc(parcels%position, k1o)
 
-            call grid2par(state%position, parcels%volume, k2o, velocity_f, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, k2o, velocity_f, exact='velocity')
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(state%position, k2o)
+            call apply_parcel_bc(parcels%position, k2o)
 
-            state%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                                           + 0.5_dp * dt * k2o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(state%position, k2o)
+            call apply_parcel_bc(parcels%position, k2o)
 
-            call grid2par(state%position, parcels%volume, k3o, velocity_f, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, k3o, velocity_f, exact='velocity')
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(state%position, k3o)
+            call apply_parcel_bc(parcels%position, k3o)
 
-            state%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                                             + dt * k3o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(state%position, k3o)
+            call apply_parcel_bc(parcels%position, k3o)
 
-            call grid2par(state%position, parcels%volume, k4o, velocity_f, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, k4o, velocity_f, exact='velocity')
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(state%position, k4o)
+            call apply_parcel_bc(parcels%position, k4o)
 
-            parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                              + dt / 6.0_dp * (k1o(1:n_parcels,:) + 2.0_dp &
                              * k2o(1:n_parcels,:) + 2.0_dp * k3o(1:n_parcels,:) + k4o(1:n_parcels,:))
 
