@@ -3,12 +3,9 @@
 ! =============================================================================
 module parcel_split
     use options, only : verbose
-    use constants, only : pi, three
+    use constants, only : pi
     use parcel_container, only : parcel_container_type, n_parcels
-    use ellipse, only : get_eigenvalue      &
-                      , get_eigenvector     &
-                      , get_B22             &
-                      , get_aspect_ratio
+    use ellipse, only : get_eigenvalue, get_eigenvector, get_B22
     implicit none
 
     contains
@@ -19,7 +16,7 @@ module parcel_split
             double precision                           :: B11
             double precision                           :: B12
             double precision                           :: B22
-            double precision                           :: a2, lam, V
+            double precision                           :: eval
             double precision                           :: evec(2)
             double precision                           :: h
             integer                                    :: last_index
@@ -30,15 +27,11 @@ module parcel_split
             do i = 1, last_index
                 B11 = parcels%B(i, 1)
                 B12 = parcels%B(i, 2)
-                V = parcels%volume(i, 1)
-                B22 = get_B22(B11, B12, V)
+                B22 = get_B22(B11, B12)
 
-                a2 = get_eigenvalue(B11, B12, B22)
+                eval = get_eigenvalue(B11, B12, B22)
 
-                ! a/b
-                lam = get_aspect_ratio(a2, V)
-
-                if (lam <= threshold) then
+                if (eval <= threshold) then
                     cycle
                 endif
 
@@ -46,13 +39,13 @@ module parcel_split
                 ! this ellipse is split, i.e., add a new parcel
                 !
 
-                evec = get_eigenvector(a2, B12, B22)
+                evec = get_eigenvector(eval, B12, B22)
 
-                parcels%B(i, 1) = B11 - 0.75d0 * a2 * evec(1) ** 2
-                parcels%B(i, 2) = B12 - 0.75d0 * a2 * (evec(1) * evec(2))
+                parcels%B(i, 1) = 2.0 * B11 - 1.5 * eval * evec(1) ** 2
+                parcels%B(i, 2) = 2.0 * B12 - 1.5 * eval * (evec(1) * evec(2))
 
-                h = 0.25d0 * sqrt(three * a2)
-                parcels%volume(i, 1) = 0.5d0 * V
+                h = 0.25 * sqrt(3.0 * eval * parcels%volume(i, 1) / pi)
+                parcels%volume(i, 1) = 0.5 * parcels%volume(i, 1)
 
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1

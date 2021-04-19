@@ -9,7 +9,6 @@ module init
                        volume_f,         &
                        vorticity_f,      &
                        get_position
-    use ellipse, only : get_ab
     use parcel_container, only : parcels, n_parcels
     implicit none
 
@@ -39,13 +38,12 @@ module init
 
             call init_stretch
 
-            ! initialize the volume of each parcel
-            parcels%volume(1:n_parcels, 1) = vcell / parcel_info%n_per_cell
-
             call init_B_matrix
 
             call init_velocity
 
+            ! initialize the volume of each parcel
+            parcels%volume(1:n_parcels, 1) = vcell / parcel_info%n_per_cell
 
         end subroutine init_parcels
 
@@ -108,9 +106,8 @@ module init
 
         subroutine init_B_matrix
             if (parcel_info%is_elliptic) then
-                ! initialze circles
-                parcels%B(1:n_parcels, 1) = get_ab(parcels%volume(1:n_parcels, 1)) ! B11
-                parcels%B(1:n_parcels, 2) = 0.0                                    ! B12
+                parcels%B(1:n_parcels, 1) = 1.0   ! B11
+                parcels%B(1:n_parcels, 2) = 0.0   ! B12
             else
                 deallocate(parcels%B)
             endif

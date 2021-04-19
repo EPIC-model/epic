@@ -71,7 +71,7 @@ module parcel_container
             if (allocated(parcels%B)) then
                 call write_h5_dataset_2d(name, "B", parcels%B(1:n_parcels, :))
 
-                angle = get_angles(parcels%B, parcels%volume, n_parcels)
+                angle = get_angles(parcels%B, n_parcels)
                 call write_h5_dataset_1d(name, "orientation", angle)
             endif
 

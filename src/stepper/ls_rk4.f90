@@ -84,12 +84,9 @@ module ls_rk4
             endif
             call grid2par(parcels%position, parcels%volume, strain, strain_f, parcels%B, exact='strain')
             if(step==1) then
-               dbdt(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
-                                           parcels%volume(1:n_parcels, 1))
+               dbdt(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:))
             else
-               dbdt(1:n_parcels,:) = dbdt(1:n_parcels,:) &
-                                   + get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
-                                           parcels%volume(1:n_parcels, 1))
+               dbdt(1:n_parcels,:) = dbdt(1:n_parcels,:) + get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:))
             endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
             parcels%B(1:n_parcels,:) = parcels%B(1:n_parcels,:) + cb*dt*dbdt(1:n_parcels,:)
