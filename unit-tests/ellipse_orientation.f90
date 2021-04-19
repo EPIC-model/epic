@@ -27,8 +27,8 @@ program ellipse_orientation
 
     V = parcels%volume(1, 1)
 
-    a2 = lam * V / pi
-    b2 = V / pi / lam
+    a2 = (lam * V) / pi
+    b2 = V / (pi * lam)
 
     do iter = 0, 360
 

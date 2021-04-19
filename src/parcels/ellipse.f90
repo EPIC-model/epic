@@ -94,7 +94,7 @@ module ellipse
             double precision, intent(in) :: volume
             double precision             :: lam
 
-            lam = a2 / volume * pi
+            lam = (a2 / volume) * pi
         end function
 
         function get_ellipse_points(position, volume, B) result(points)
