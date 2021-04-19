@@ -15,7 +15,7 @@ program ellipse_orientation
     double precision :: extent(2) =  (/0.2, 0.2/)
     integer :: iter
     integer :: grid(2) = (/2, 2/)
-    double precision :: angle, B11, B12
+    double precision :: angle, B11, B12, V, a2, b2
     double precision, parameter :: lam = 3.0
     logical :: failed = .false.
 
@@ -25,13 +25,18 @@ program ellipse_orientation
     parcels%position = 0.0
     parcels%volume = 0.25 * product(extent / (grid - 1))
 
+    V = parcels%volume(1, 1)
+
+    a2 = (lam * V) / pi
+    b2 = V / (pi * lam)
+
     do iter = 0, 360
 
         angle = dble(iter) * pi / 180.0d0
 
-        B11 = lam * cos(angle) ** 2 + 1.0 / lam * sin(angle) ** 2
+        B11 = a2 * cos(angle) ** 2 + b2 * sin(angle) ** 2
 
-        B12 = 0.5 * (lam - 1.0 / lam) * sin(2.0 * angle)
+        B12 = (a2 - b2) * sin(angle) * cos(angle)
 
         parcels%B(1, 1) = B11
 
@@ -45,7 +50,7 @@ program ellipse_orientation
             angle = angle - 2 * pi
         endif
 
-        failed = (failed .or. abs(angle - get_angle(B11, B12)) > 1.0e-13)
+        failed = (failed .or. abs(angle - get_angle(B11, B12, V)) > 1.0e-13)
 
     enddo
 
