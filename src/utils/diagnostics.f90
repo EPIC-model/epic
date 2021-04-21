@@ -22,7 +22,7 @@ module diagnostics
 
             ! do not take halo cells into account
             ! x indices run from 0 to nx-1
-            sqerrsum = sum((volume_f(0:nx-1, 0:nz, :) - vcell) ** 2)
+            sqerrsum = sum((volg(0:nz, 0:nx-1, :) - vcell) ** 2)
 
             rms = sqrt(sqerrsum / dble(ncell)) / vcell
         end function get_rms_volume_error

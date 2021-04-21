@@ -4,10 +4,10 @@
 module init
     use options, only : parcel_info, time
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
-    use fields, only : velocity_f,       &
-                       strain_f,         &
-                       volume_f,         &
-                       vorticity_f,      &
+    use fields, only : velocity_f,      &
+                       strain_f,        &
+                       volg,            &
+                       vorticity_f,     &
                        get_position
     use ellipse, only : get_ab
     use parcel_container, only : parcels, n_parcels
@@ -132,8 +132,8 @@ module init
         subroutine init_fields
             call init_velocity_field
 
-            allocate(volume_f(0:nx-1, -1:nz+1, 1))
-            volume_f = 0.0
+            allocate(volg(-1:nz+1, 0:nx-1, 1))
+            volg = 0.0
 
             if (time%is_adaptive) then
                 call init_vorticity_field

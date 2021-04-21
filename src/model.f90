@@ -43,7 +43,7 @@ module model
             call init_diverge
 
             ! update volume on the grid
-            call par2grid(parcels, parcels%volume, volume_f)
+            call par2grid(parcels, parcels%volume, volg)
 
         end subroutine
 
@@ -85,10 +85,10 @@ module model
 
 
                 ! update volume on the grid
-                call par2grid(parcels, parcels%volume, volume_f)
+                call par2grid(parcels, parcels%volume, volg)
 
 !                 if (mod(iter, parcel_info%diverge_freq) == 0) then
-!                     call apply_diverge(volume_f)
+!                     call apply_diverge(volg)
 !                 endif
 
                 t = t + dt
