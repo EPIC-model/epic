@@ -12,45 +12,78 @@ module parcel_diverge
     ! import FFT library:
     use stafft
     use deriv1d
+    use interpl_methods
+    use parcel_bc
 
     use constants
-    use parameters, only : vcell
+    use parameters, only : vcell, nx, nz, dx, dxi
 
     use parcel_container
 
     implicit none
 
- !Gridded area fraction:
-! c double precision:: volg(0:nz,nx)
+    private
 
-    ! tri-diagonal arrays:
-    double precision :: ap(nx),apb(nx)
-    double precision :: etdv(0:nz,nx),htdv(0:nz,nx)
-    double precision :: etd1(nz-1),htd1(nz-1)
-    double precision :: etda(nz),htda(nz)
+        double precision, parameter :: f12 = one / two
+        double precision, parameter :: f13 = one / three
+        double precision, parameter :: f14 = one / four
+        double precision, parameter :: f23 = two / three
+        double precision, parameter :: f112 = one / 12.d0
+        double precision, parameter :: f16 = one / six
+        double precision, parameter :: f56 = five / six
+        double precision, parameter :: f76 = 7.d0 / six
+        double precision, parameter :: f124 = one / 24.d0
+        double precision, parameter :: f1112 = 11.d0 / 12.d0
 
-    ! wavenumbers::
-    double precision :: hrkx(nx),rkx(nx)
+    !Gridded area fraction:
+    ! c double precision:: volg(0:nz,nx)
 
-    ! quantities needed in FFTs:
-    double precision :: xtrig(2*nx)
-    integer          :: xfactors(5)
+        ! tri-diagonal arrays:
+        double precision, allocatable :: ap(:), apb(:)
+        double precision, allocatable :: etdv(:, :), htdv(:, :)
+        double precision, allocatable :: etd1(:), htd1(:)
+        double precision, allocatable :: etda(:), htda(:)
+
+        ! wavenumbers::
+        double precision, allocatable :: hrkx(:), rkx(:)
+
+        ! quantities needed in FFTs:
+        double precision, allocatable :: xtrig(:)
+        integer                       :: xfactors(5)
+
+    public :: init_diverge, apply_diverge
 
     contains
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         subroutine init_diverge
-            double precision:: a0(nx),a0b(nx),ksq(nx)
-            double precision,parameter:: dzisq=dzi**2
-            integer,parameter:: nwx=nx/2
-            integer:: i,ix,kx,iz
+            double precision :: a0(nx), a0b(nx), ksq(nx)
+            double precision :: dzisq
+            integer          :: nwx, kx, iz
+
+            dzisq = dxi(2) ** 2
+            nwx = nx / 2
+
+            if (.not. allocated(ap)) then
+                allocate(ap(nx))
+                allocate(apb(nx))
+                allocate(etdv(0:nz,nx))
+                allocate(htdv(0:nz,nx))
+                allocate(etd1(nz-1))
+                allocate(htd1(nz-1))
+                allocate(etda(nz))
+                allocate(htda(nz))
+                allocate(hrkx(nx))
+                allocate(rkx(nx))
+                allocate(xtrig(2*nx))
+            endif
 
             !----------------------------------------------------------
             ! set up FFTs:
-            call initfft(nx,xfactors,xtrig)
+            call initfft(nx, xfactors, xtrig)
 
             ! define x wavenumbers:
-            call init_deriv(nx,ellx,hrkx)
+            call init_deriv(nx, extent(1), hrkx)
             rkx(1) = zero
             do kx = 1, nwx-1
                 rkx(kx+1)    = hrkx(2*kx)
@@ -106,14 +139,14 @@ module parcel_diverge
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine apply_diverge(volg)
-        double precision, intent(in) :: volg(0:, -1:, :)
-        double precision             :: phi(0:nz,nx),ud(0:nz,nx),wd(0:nz,nx)
+        double precision, intent(in) :: volg(-1:, 0:, :)
+        double precision             :: phi(0:nz,nx), ud(0:nz,nx), wd(0:nz,nx)
         double precision             :: wbar(0:nz)
         double precision             :: weight(4)
-        integer                      :: i, ngp, ij(2, 4)
+        integer                      :: n, i, ngp, ij(2, 4)
 
         ! form divergence field * dt and store in phi temporarily:
-        phi = volg - vcell
+        phi = volg(0:, 0:, 1) - vcell
 
         !-----------------------------------------
         ! Forward x FFT:
@@ -142,7 +175,7 @@ module parcel_diverge
 
         !------------------------------------------------------------------
         ! Increment parcel positions usind (ud,wd) field:
-        do i = 1, n_parcels
+        do n = 1, n_parcels
             call trilinear(parcels%position(n, :), ij, weight, ngp)
 
             do i = 1, ngp
@@ -196,6 +229,9 @@ module parcel_diverge
         double precision, intent(in)  :: fs(0:nz,nx)
         double precision, intent(out) :: ds(0:nz,nx)
         integer                       :: ix, iz
+        double precision              :: hdzi
+
+        hdzi = f12 * dxi(2)
 
         do ix = 1, nx
             do iz = 1, nz-1
@@ -224,6 +260,13 @@ module parcel_diverge
         double precision, intent(out) :: fs(0:nz)
         double precision              :: es(nz), esum
         integer                       :: iz
+        double precision              :: dz2
+        double precision              :: hdzi
+        double precision              :: dz24
+
+        dz2  = f12 * dx(2)
+        hdzi = f12 * dxi(2)
+        dz24 = f124 * dx(2)
 
         !-------------------------------------------
         ! First interpolate ds to a half grid as es:
