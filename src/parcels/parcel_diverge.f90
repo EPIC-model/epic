@@ -35,14 +35,14 @@ module parcel_diverge
 
         allocate(hrkx(nx))
         allocate(rkx(nx))
-        allocate(rkz(nz))
+        allocate(rkz(0:nz+1))
         allocate(xtrig(2 * nx))
-        allocate(ztrig(2 * nz))
-        allocate(laplinv(0:nz, nx))
+        allocate(ztrig(2 * (nz+2)))
+        allocate(laplinv(-1:nz+1, nx))
 
         ! Set up FFTs:
         call initfft(nx, xfactors, xtrig)
-        call initfft(nz, zfactors, ztrig)
+        call initfft(nz+2, zfactors, ztrig)
 
         ! Define x wavenumbers:
         call init_deriv(nx, extent(1), hrkx)
@@ -54,30 +54,30 @@ module parcel_diverge
         rkx(nx/2 + 1) = hrkx(nx)
 
         ! Define z wavenumbers:
-        call init_deriv(nz, extent(2), rkz)
+        call init_deriv(nz+2, extent(2), rkz)
 
         ! Define spectral inverse Laplacian for inverting Poisson's equation:
         do kx = 1, nx
-            do kz = 1, nz
+            do kz = 0, nz+1
                 laplinv(kz,kx) = -one / (rkx(kx)**2 + rkz(kz)**2)
             enddo
         enddo
         ! kz = 0:
         do kx=2,nx
-            laplinv(0, kx) = -one / rkx(kx)**2
+            laplinv(-1, kx) = -one / rkx(kx)**2
         enddo
         ! The zero wavenumber mode has no significance:
-        laplinv(0, 1) = zero
+        laplinv(-1, 1) = zero
         ! For z derivatives of a cosine in z function:
-        rkz(nz) = zero
+        rkz(nz+1) = zero
 
     end subroutine init_diverge
 
 
     subroutine apply_diverge(volg)
         double precision, intent(in) :: volg(0:, -1:, :)
-        double precision             :: ud(nx, 0:nz),  wd(nx, 0:nz),  wka(nx, nz)
-        double precision             :: phi(0:nz, nx), uds(0:nz, nx), wds(nz, nx)
+        double precision             :: ud(nx, -1:nz+1),  wd(nx, -1:nz+1),  wka(nx, 0:nz+1)
+        double precision             :: phi(-1:nz+1, nx), uds(-1:nz+1, nx), wds(0:nz+1, nx)
         integer                      :: i, n, ngp, ij(2, 4)
         integer                      :: ix, iz, kx, kz
         double precision             :: weight(4)
@@ -85,19 +85,19 @@ module parcel_diverge
 
         ! Form divergence field * dt and store in ud temporarily:
         ! (normalize volg by cell volume)
-        ud = volg(0:nx-1, 0:nz, 1) - vcell
+        ud = volg(:, :, 1) - vcell
 
         !-----------------------------------------
         ! Forward z cosine FFT:
-        call dct(nx, nz, ud, ztrig, zfactors)
+        call dct(nx, nz+2, ud, ztrig, zfactors)
         ! Transpose array:
         do ix = 1, nx
-            do kz = 0, nz
+            do kz = -1, nz+1
                 phi(kz, ix) = ud(ix, kz)
             enddo
         enddo
         ! Forward x FFT:
-        call forfft(nz+1, nx, phi, xtrig, xfactors)
+        call forfft(nz+3, nx, phi, xtrig, xfactors)
 
         ! Invert Laplace's operator spectrally:
         phi = laplinv * phi
@@ -105,45 +105,45 @@ module parcel_diverge
 
         !-----------------------------------------
         ! Compute x derivative spectrally:
-        call deriv(nz+1, nx, hrkx, phi, uds)
+        call deriv(nz+3, nx, hrkx, phi, uds)
 
         ! Reverse x FFT:
-        call revfft(nz+1, nx, uds, xtrig, xfactors)
+        call revfft(nz+3, nx, uds, xtrig, xfactors)
         ! Transpose array:
-        do kz = 0, nz
+        do kz = -1, nz+1
             do ix = 1, nx
                 ud(ix, kz) = uds(kz, ix)
             enddo
         enddo
         ! Reverse z cosine FFT:
-        call dct(nx, nz, ud, ztrig, zfactors)
+        call dct(nx, nz+2, ud, ztrig, zfactors)
 
         !-----------------------------------------
         ! Compute z derivative spectrally:
         do kx = 1, nx
-            do kz = 1, nz
+            do kz = 0, nz+1
                 wds(kz, kx) = -rkz(kz) * phi(kz, kx)
             enddo
         enddo
         ! This makes wds a sine series in z
 
         ! Reverse x FFT:
-        call revfft(nz, nx, wds, xtrig, xfactors)
+        call revfft(nz+2, nx, wds, xtrig, xfactors)
         ! Transpose array:
-        do kz = 1, nz
+        do kz = 0, nz+1
             do ix = 1, nx
                 wka(ix, kz) = wds(kz, ix)
             enddo
         enddo
         ! Reverse z sine FFT:
-        call dst(nx, nz, wka, ztrig, zfactors)
+        call dst(nx, nz+2, wka, ztrig, zfactors)
 
         ! Copy into wd with zero edge values:
-        wd(:, 0) = zero
-        do iz = 1, nz-1
+        wd(:, -1) = zero
+        do iz = 0, nz
             wd(:, iz) = wka(:, iz)
         enddo
-        wd(:, nz) = zero
+        wd(:, nz+1) = zero
 
         !------------------------------------------------------------------
         ! Increment parcel positions usind (ud,wd) field:
