@@ -82,7 +82,7 @@ module fields
             if (iter == 0) then
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity",          &
-                    velg(0:nz, 0:nx-1, :))
+                    velocity_f(0:nz, 0:nx-1, :))
 
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity strain",   &
