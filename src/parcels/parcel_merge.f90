@@ -25,7 +25,7 @@ module parcel_merge
     contains
         subroutine merge_ellipses(parcels)
             type(parcel_container_type), intent(inout) :: parcels
-            integer                                    :: isma(max_num_parcels / 8)
+            integer                                    :: isma(0:max_num_parcels / 8)
             integer                                    :: ibig(max_num_parcels / 8)
             integer                                    :: n_merge ! number of merges
 
@@ -110,7 +110,7 @@ module parcel_merge
 
         subroutine geometric_merge(parcels, isma, ibig, n_merge)
             type(parcel_container_type), intent(inout) :: parcels
-            integer,                     intent(in)    :: isma(:)
+            integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: n, i, j
@@ -138,7 +138,7 @@ module parcel_merge
 
         subroutine optimal_merge(parcels, isma, ibig, n_merge)
             type(parcel_container_type), intent(inout) :: parcels
-            integer,                     intent(in)    :: isma(:)
+            integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: n, i, j
@@ -191,7 +191,7 @@ module parcel_merge
         ! this algorithm replaces invalid parcels with valid parcels
         ! from the end of the container
         subroutine pack_parcels(isma, n_merge)
-            integer, intent(in) :: isma(:)
+            integer, intent(in) :: isma(0:)
             integer, intent(in) :: n_merge
             integer             :: k, l, m
 
@@ -205,9 +205,6 @@ module parcel_merge
             do while ((k > 0) .and. (l == isma(k)))
                 l = l - 1
                 k = k - 1
-                if (k == 0) then
-                    exit
-                endif
             enddo
 
             if (l == 0) then
@@ -228,9 +225,6 @@ module parcel_merge
                 do while ((k > 0) .and. (l == isma(k)))
                     l = l - 1
                     k = k - 1
-                    if (k == 0) then
-                        exit
-                    endif
                 enddo
 
                 ! next invalid
