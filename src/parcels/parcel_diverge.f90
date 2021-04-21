@@ -12,6 +12,7 @@ module parcel_diverge
     ! import FFT library:
     use stafft
     use deriv1d
+
     use interpl_methods
     use parcel_bc
 
@@ -180,10 +181,10 @@ module parcel_diverge
 
             do i = 1, ngp
                 parcels%position(n, 1) = parcels%position(n, 1)             &
-                                       + weight(i) * ud(ij(1, i)+1, ij(2, i))
+                                       + weight(i) * ud(ij(2, i), ij(1, i))
 
                 parcels%position(n, 2) = parcels%position(n, 2)             &
-                                       + weight(i) * wd(ij(1, i)+1, ij(2, i))
+                                       + weight(i) * wd(ij(2, i), ij(1, i))
             enddo
 
             call apply_periodic_bc(parcels%position(n, :))
