@@ -169,7 +169,7 @@ module model
             if (time%is_adaptive) then
                 ! adaptive time stepping according to
                 ! https://doi.org/10.1002/qj.3319
-                max_vorticity = maxval(abs(vorticity_f))
+                max_vorticity = maxval(abs(vortg))
                 dt = min(0.5 / max_vorticity, time%dt)
             else
                 dt = time%dt

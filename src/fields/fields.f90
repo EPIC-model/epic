@@ -19,7 +19,7 @@ module fields
         velocity_f,     &   ! velocity vector field (has 1 halo cell layer in z)
         strain_f,       &   ! velocity gradient tensor (has 1 halo cell layer in z)
         volg,           &   ! volume scalar field (has 1 halo cell layer in z)
-        vorticity_f           ! vorticity scalar field (has no halo cell layers)
+        vortg               ! vorticity scalar field (has no halo cell layers)
 
     contains
 
@@ -82,7 +82,7 @@ module fields
             if (iter == 0) then
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity",          &
-                    velocity_f(0:nx-1, 0:nz, :))
+                    velg(0:nz, 0:nx-1, :))
 
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity strain",   &
