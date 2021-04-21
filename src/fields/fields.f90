@@ -86,7 +86,7 @@ module fields
 
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity strain",   &
-                    strain_f(0:nx-1, 0:nz, :))
+                    strain_f(0:nz, 0:nx-1, :))
             endif
 
             ! do not write halo cells
