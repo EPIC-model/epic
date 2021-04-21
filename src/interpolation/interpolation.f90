@@ -37,7 +37,7 @@ module interpolation
         subroutine par2grid(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(0:, -1:, :)
+            double precision,            intent(inout) :: field(-1, 0:, :)
 
             field = 0.0
 
@@ -48,20 +48,20 @@ module interpolation
             endif
 
             ! apply free slip boundary condition
-            field(:, 0, :)  = 2.0 * field(:, 0, :)
-            field(:, nz, :) = 2.0 * field(:, nz, :)
+            field(0,  :, :) = 2.0 * field(0,  :, :)
+            field(nz, :, :) = 2.0 * field(nz, :, :)
 
             ! free slip boundary condition is reflective with mirror
             ! axis at the physical domain
-            field(:, 1, :)    = field(:, 1, :) + field(:, -1, :)
-            field(:, nz-1, :) = field(:, nz-1, :) + field(:, nz+1, :)
+            field(1,    :, :) = field(1,    :, :) + field(-1,   :, :)
+            field(nz-1, :, :) = field(nz-1, :, :) + field(nz+1, :, :)
 
         end subroutine par2grid
 
         subroutine par2grid_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(0:, -1:, :)
+            double precision,            intent(inout) :: field(-1, 0:, :)
             integer                                    :: ncomp, ngp
             double precision                           :: points(2, 2)
             integer                                    :: n, p, c, i
@@ -91,7 +91,7 @@ module interpolation
                         ! loop over grid points which are part of the interpolation
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
-                            field(ij(1, i), ij(2, i), c) = field(ij(1, i), ij(2, i), c)     &
+                            field(ij(2, i), ij(1, i), c) = field(ij(2, i), ij(1, i), c)     &
                                                          + 0.5 * weight(i) * attrib(n, c)
                         enddo
                     enddo
@@ -103,7 +103,7 @@ module interpolation
         subroutine par2grid_non_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(0:, -1:, :)
+            double precision,            intent(inout) :: field(-1, 0:, :)
             integer                                    :: ncomp, ngp
             integer                                    :: n, c, i
             integer                                    :: the_shape(3)
@@ -128,7 +128,7 @@ module interpolation
                     ! loop over grid points which are part of the interpolation
                     do i = 1, ngp
                         ! the weight is halved due to 2 points per ellipse
-                        field(ij(1, i), ij(2, i), c) = field(ij(1, i), ij(2, i), c) &
+                        field(ij(2, i), ij(1, i), c) = field(ij(2, i), ij(1, i), c) &
                                                      + weight(i) * attrib(n, c)
                     enddo
                 enddo
@@ -141,7 +141,7 @@ module interpolation
             double precision,           intent(in)  :: position(:, :)
             double precision,           intent(in)  :: volume(:, :)
             double precision,           intent(out) :: attrib(:, :)
-            double precision,           intent(in)  :: field(0:, -1:, :)
+            double precision,           intent(in)  :: field(-1, 0:, :)
             double precision, optional, intent(in)  :: B(:, :)
             character(*), optional, intent(in)      :: exact
 
@@ -200,7 +200,7 @@ module interpolation
             double precision, intent(in)  :: volume(:, :)
             double precision, intent(in)  :: B(:, :)
             double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(0:, -1:, :)
+            double precision, intent(in)  :: field(-1, 0:, :)
             logical, optional, intent(in) :: add
             character(*), optional, intent(in)      :: exact
             integer                       :: ncomp, ngp
@@ -262,7 +262,7 @@ module interpolation
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
                             attrib(n, c) = attrib(n, c) &
-                                         + 0.5 * weight(i) * field(ij(1, i), ij(2, i), c)
+                                         + 0.5 * weight(i) * field(ij(2, i), ij(1, i), c)
                         enddo
                     enddo
                 enddo
@@ -274,7 +274,7 @@ module interpolation
         subroutine grid2par_non_elliptic(position, attrib, field, add, exact)
             double precision, intent(in)  :: position(:, :)
             double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(0:, -1:, :)
+            double precision, intent(in)  :: field(-1, 0:, :)
             logical, optional, intent(in) :: add
             character(*), optional, intent(in)      :: exact
             integer                       :: ncomp, ngp
@@ -327,7 +327,7 @@ module interpolation
                     ! loop over grid points which are part of the interpolation
                     do i = 1, ngp
                         attrib(n, c) = attrib(n, c) &
-                                     + weight(i) * field(ij(1, i), ij(2, i), c)
+                                     + weight(i) * field(ij(2, i), ij(1, i), c)
                     enddo
                 enddo
             enddo
