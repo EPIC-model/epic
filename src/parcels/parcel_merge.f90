@@ -202,9 +202,12 @@ module parcel_merge
             k = n_merge
 
             ! find last parcel which is not invalid
-            do while (k > 0 .and. l == isma(k))
+            do while ((k > 0) .and. (l == isma(k)))
                 l = l - 1
                 k = k - 1
+                if (k == 0) then
+                    exit
+                endif
             enddo
 
             if (l == 0) then
@@ -222,9 +225,12 @@ module parcel_merge
                 l = l - 1
 
                 ! find next valid last parcel
-                do while (k > 0 .and. l == isma(k))
+                do while ((k > 0) .and. (l == isma(k)))
                     l = l - 1
                     k = k - 1
+                    if (k == 0) then
+                        exit
+                    endif
                 enddo
 
                 ! next invalid
