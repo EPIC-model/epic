@@ -17,23 +17,25 @@
  ! parcel info
  !
 
- parcel%n_per_cell  = 4
+ parcel%n_per_cell   = 4
 
- parcel%is_random   = .false.
+ parcel%is_random    = .false.
 
- parcel%seed        = 42
+ parcel%seed         = 42
 
- parcel%is_elliptic = .true.
+ parcel%is_elliptic  = .true.
 
- parcel%lambda      = 5.0
+ parcel%lambda       = 5.0
 
- parcel%split_freq = 1
+ parcel%split_freq   = 1
 
- parcel%merge_type  = 'geometric'
+ parcel%merge_type   = 'geometric'
 
- parcel%merge_freq  = 1
+ parcel%merge_freq   = 1
 
- parcel%vfraction   = 36.0
+ parcel%vfraction    = 36.0
+
+ parcel%diverge_freq = 1
 
  !
  ! stepper info

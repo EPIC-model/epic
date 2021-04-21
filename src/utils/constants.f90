@@ -17,6 +17,8 @@ module constants
 
     double precision, parameter :: pi = acos(-one)
 
+    double precision, parameter :: twopi = two * pi
+
     double precision, parameter :: one_over_pi = one / pi
 
     ! maximum number of allowed parcels

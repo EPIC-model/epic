@@ -11,6 +11,7 @@ module model
     use parcel_bc
     use parcel_split, only : split_ellipses
     use parcel_merge, only : merge_ellipses
+    use parcel_diverge, only : init_diverge, apply_diverge
     use fields
     use interpolation
     use rk4
@@ -38,6 +39,8 @@ module model
             call init_parcels
 
             call init_fields
+
+            call init_diverge
 
             ! update volume on the grid
             call par2grid(parcels, parcels%volume, volume_f)
@@ -83,6 +86,10 @@ module model
 
                 ! update volume on the grid
                 call par2grid(parcels, parcels%volume, volume_f)
+
+!                 if (mod(iter, parcel_info%diverge_freq) == 0) then
+!                     call apply_diverge(volume_f)
+!                 endif
 
                 t = t + dt
                 iter = iter + 1

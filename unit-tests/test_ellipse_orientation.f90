@@ -5,7 +5,7 @@
 !       B matrix values, i.e., B11 and B12. The angle computed via the
 !       B matrix is within [-pi/2, pi/2].
 ! =============================================================================
-program ellipse_orientation
+program test_ellipse_orientation
     use constants, only : pi
     use parcel_container, only : parcels, n_parcels, parcel_alloc, parcel_dealloc
     use ellipse
@@ -62,4 +62,4 @@ program ellipse_orientation
         print '(a26, a10)', 'Test ellipse orientation:', 'PASSED'
     endif
 
-end program ellipse_orientation
+end program test_ellipse_orientation
