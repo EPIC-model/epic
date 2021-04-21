@@ -87,9 +87,9 @@ module model
                 ! update volume on the grid
                 call par2grid(parcels, parcels%volume, volume_f)
 
-                if (mod(iter, parcel_info%diverge_freq) == 0) then
-                    call apply_diverge(volume_f)
-                endif
+!                 if (mod(iter, parcel_info%diverge_freq) == 0) then
+!                     call apply_diverge(volume_f)
+!                 endif
 
                 t = t + dt
                 iter = iter + 1
