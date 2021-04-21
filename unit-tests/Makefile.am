@@ -18,7 +18,8 @@ unittests_PROGRAMS = 			\
 	test_fft_2			\
 	test_trilinear			\
 	test_diverge			\
-	test_ellipse_split
+	test_ellipse_split		\
+	test_ellipse_merge
 
 # 7 April 2021
 # https://www.gnu.org/software/automake/manual/html_node/Scripts.html
@@ -31,5 +32,6 @@ test_fft_2_SOURCES = test_fft_2.f90
 test_trilinear_SOURCES = test_trilinear.f90
 test_diverge_SOURCES = test_diverge.f90
 test_ellipse_split_SOURCES = test_ellipse_split.f90
+test_ellipse_merge_SOURCES = test_ellipse_merge.f90
 
 endif
