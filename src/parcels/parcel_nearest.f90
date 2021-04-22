@@ -18,7 +18,7 @@ module parcel_nearest
     logical :: l_merge(max_num_parcels)
 
     !Other variables:
-    double precision:: vmin, delx,delz,dsq,dscmin,vmerge,vmergemin,x_small,z_small
+    double precision:: vmin, delx,delz,dsq,dsqmin,vmerge,vmergemin,x_small,z_small
     integer:: i,ic,i0,imin,k,m,j
     integer:: ix,iz,ix0,iz0
 
@@ -102,10 +102,18 @@ module parcel_nearest
                 ! Grid point (ix0,iz0) is closest to parcel i0
 
                 ! Initialise scaled squared distance between parcels and parcel index:
-                ! ensure dsq*pi < 0.5*parcel_info%lambda*vmerge
-                ! Might seem a bit radical to take a large vmergemin and small dscmin
-                ! but computationally easy
-                dscmin=0.5*parcel_info%lambda
+                ! In the loop below we want to minimise dsq/vmerge
+                ! By storing dsqmin and vmergemin separately, we can avoid a division
+                ! In the calculation we also want to ensure
+                !   dsq/(a*b) < lambda_max/2
+                ! This will ensure a merged parcel does not split again
+                ! Since vmerge=pi*a*b, this implies
+                !   dsq*pi < 0.5*parcel_info%lambda*vmerge
+                ! This is ensured by initialising the minimisation
+                ! with the values below
+                ! Might seem a bit radical to take a large vmergemin and small dsqmin
+                ! but computationally it is easy
+                dsqmin=0.5*parcel_info%lambda
                 vmergemin=pi
                 imin=0
 
@@ -120,12 +128,14 @@ module parcel_nearest
                             delz=parcels%position(i,2)-z_small
                             ! Avoid merger with another small parcel
                             vmerge=parcels%volume(i, 1)+parcels%volume(i0, 1) ! Summed area fraction:
-                            ! Prevent division in all comparisons here
-                            if (delz*delz*vmergemin < dscmin*vmerge) then
+                            ! Minimise dsq/vmerge
+                            ! Prevent division in comparisons here by storing both
+                            ! vmergemin and dsqmin
+                            if (delz*delz*vmergemin < dsqmin*vmerge) then
                                 delx = get_delx(parcels%position(i,1), x_small) ! works across periodic edge
                                 dsq=delz*delz+delx*delx
-                                if (dsq*vmergemin < dscmin*vmerge) then
-                                    dscmin=dsq
+                                if (dsq*vmergemin < dsqmin*vmerge) then
+                                    dsqmin=dsq
                                     vmergemin=vmerge
                                     imin=i
                                 endif
