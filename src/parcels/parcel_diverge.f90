@@ -58,7 +58,7 @@ module parcel_diverge
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         subroutine init_diverge
-            double precision :: a0(nx), a0b(nx), ksq(nx)
+            double precision :: a0(0:nx-1), a0b(0:nx-1), ksq(0:nx-1)
             double precision :: dzisq
             integer          :: nwx, kx, iz
 
@@ -66,16 +66,16 @@ module parcel_diverge
             nwx = nx / 2
 
             if (.not. allocated(ap)) then
-                allocate(ap(nx))
-                allocate(apb(nx))
-                allocate(etdv(0:nz,nx))
-                allocate(htdv(0:nz,nx))
+                allocate(ap(0:nx-1))
+                allocate(apb(0:nx-1))
+                allocate(etdv(0:nz,0:nx-1))
+                allocate(htdv(0:nz,0:nx-1))
                 allocate(etd1(nz-1))
                 allocate(htd1(nz-1))
                 allocate(etda(nz))
                 allocate(htda(nz))
-                allocate(hrkx(nx))
-                allocate(rkx(nx))
+                allocate(hrkx(0:nx-1))
+                allocate(rkx(0:nx-1))
                 allocate(xtrig(2*nx))
             endif
 
@@ -85,12 +85,12 @@ module parcel_diverge
 
             ! define x wavenumbers:
             call init_deriv(nx, extent(1), hrkx)
-            rkx(1) = zero
+            rkx(0) = zero
             do kx = 1, nwx-1
-                rkx(kx+1)    = hrkx(2*kx)
-                rkx(nx+1-kx) = hrkx(2*kx)
+                rkx(kx)    = hrkx(2*kx-1)
+                rkx(nx-kx) = hrkx(2*kx-1)
             enddo
-            rkx(nwx+1) = hrkx(nx)
+            rkx(nwx) = hrkx(nx-1)
 
             ! squared wavenumber array (used in tridiagonal solve):
             ksq = rkx**2
@@ -104,9 +104,9 @@ module parcel_diverge
 
             !-----------------------------------------------------------------------
             ! Tridiagonal arrays for inversion of Poisson's equation:
-            htdv(:,1) = zero
-            etdv(:,1) = zero
-            do kx = 2,nx
+            htdv(:,0) = zero
+            etdv(:,0) = zero
+            do kx = 1,nx-1
                 htdv(0,kx) = one / a0b(kx)
                 etdv(0,kx) = -apb(kx) * htdv(0,kx)
                 do iz = 1,nz-1
@@ -141,38 +141,44 @@ module parcel_diverge
 
     subroutine apply_diverge(volg)
         double precision, intent(in) :: volg(-1:, 0:, :)
-        double precision             :: phi(0:nz,nx), ud(0:nz,nx), wd(0:nz,nx)
+        double precision             :: phi(0:nz,0:nx-1), ud(-1:nz+1,0:nx-1), wd(-1:nz+1,0:nx-1)
         double precision             :: wbar(0:nz)
         double precision             :: weight(4)
         integer                      :: n, i, ngp, ij(2, 4)
 
         ! form divergence field * dt and store in phi temporarily:
-        phi = volg(0:, 0:, 1) - vcell
+        phi = volg(0:nz, :, 1) - vcell
 
         !-----------------------------------------
         ! Forward x FFT:
         call forfft(nz+1,nx,phi,xtrig,xfactors)
 
         ! Compute the x-independent part of wd by integration:
-        call vertint(phi(0,1),wbar)
+        call vertint(phi(0,0),wbar)
 
         ! Invert Laplace's operator semi-spectrally with compact differences:
         call lapinv1(phi)
 
         ! Compute x derivative spectrally:
-        call deriv(nz+1,nx,hrkx,phi,ud)
+        call deriv(nz+1,nx,hrkx,phi,ud(0:nz, :)
 
         ! Reverse x FFT to define x velocity component ud:
-        call revfft(nz+1,nx,ud,xtrig,xfactors)
+        call revfft(nz+1,nx,ud(0:nz, :),xtrig,xfactors)
 
         ! Compute z derivative by compact differences:
-        call diffz1(phi,wd)
+        call diffz1(phi,wd(0:nz, :))
 
         ! Add on the x-independent part of wd:
-        wd(:,1) = wd(:,1) + wbar
+        wd(0:nz,0) = wd(0:nz,0) + wbar
 
         ! Reverse x FFT:
-        call revfft(nz+1,nx,wd,xtrig,xfactors)
+        call revfft(nz+1,nx,wd(0:nz,:),xtrig,xfactors)
+
+        ! Use symmetry to fill z grid lines outside domain:
+        ud(-1,:)   =  ud(1,:)
+        wd(-1,:)   = -wd(1,:)
+        ud(nz+1,:) =  ud(nz-1,:)
+        wd(nz+1,:) = -wd(nz-1,:)
 
         !------------------------------------------------------------------
         ! Increment parcel positions usind (ud,wd) field:
@@ -198,12 +204,12 @@ module parcel_diverge
     ! Uses 4th-order compact differencing
     ! *** Overwrites fs ***
     subroutine lapinv1(fs)
-        double precision, intent(inout) :: fs(0:nz,nx)
-        double precision                :: rs(0:nz,nx)
+        double precision, intent(inout) :: fs(0:nz,0:nx-1)
+        double precision                :: rs(0:nz,0:nx-1)
         integer                         :: kx, iz
 
-        fs(:,1) = zero
-        do kx = 2, nx
+        fs(:,0) = zero
+        do kx = 1, nx-1
             rs(0,kx) = f13 * fs(0,kx) + f16 * fs(1,kx)
             do iz = 1,nz-1
                 rs(iz,kx) = f112 * (fs(iz-1,kx) + fs(iz+1,kx)) + f56 * fs(iz,kx)
@@ -227,14 +233,14 @@ module parcel_diverge
     ! Calculates df/dz for a field f which has df/dz = 0 at the boundaries
     ! using 4th-order compact differencing.  Here fs = f and ds = df/dz.
     subroutine diffz1(fs,ds)
-        double precision, intent(in)  :: fs(0:nz,nx)
-        double precision, intent(out) :: ds(0:nz,nx)
+        double precision, intent(in)  :: fs(0:nz,0:nx-1)
+        double precision, intent(out) :: ds(0:nz,0:nx-1)
         integer                       :: ix, iz
         double precision              :: hdzi
 
         hdzi = f12 * dxi(2)
 
-        do ix = 1, nx
+        do ix = 0, nx-1
             do iz = 1, nz-1
                 ds(iz,ix) = (fs(iz+1,ix) - fs(iz-1,ix)) * hdzi
             enddo
