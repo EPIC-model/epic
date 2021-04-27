@@ -45,6 +45,13 @@ module model
             ! update volume on the grid
             call par2grid(parcels, parcels%volume, volume_f)
 
+            if (mod(iter, output%h5freq) == 0) then
+                if(verbose) then
+                    print "(a30)", "write fields and parcels to h5"
+                endif
+                call write_h5_step(nw, t, dt)
+            endif
+
         end subroutine
 
 
@@ -52,8 +59,11 @@ module model
             use options, only : time, output, verbose, parcel_info
             double precision :: t    = 0.0 ! current time
             double precision :: dt   = 0.0 ! time step
-            integer          :: iter = 0   ! simulation iteration
+            integer          :: iter = 1   ! simulation iteration
             integer          :: nw   = 0   ! number of writes to h5
+
+            ! write initial step
+            call write_h5_step(nw, t, dt)
 
             do while (t <= time%limit)
 
@@ -65,9 +75,6 @@ module model
                 endif
 
                 if (mod(iter, output%h5freq) == 0) then
-                    if(verbose) then
-                        print "(a30)", "write fields and parcels to h5"
-                    endif
                     call write_h5_step(nw, t, dt)
                 endif
 
@@ -95,12 +102,9 @@ module model
                 iter = iter + 1
             end do
 
-            if (mod(iter, output%h5freq) == 0) then
-                if(verbose) then
-                    print "(a30)", "write fields and parcels to h5"
-                endif
-                call write_h5_step(nw, t, dt)
-            endif
+            ! write final step
+            call write_h5_step(nw, t, dt)
+
         end subroutine run
 
         subroutine post_run
@@ -114,6 +118,10 @@ module model
             integer,          intent(inout) :: nw
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
+
+            if (verbose) then
+                print "(a30)", "write fields and parcels to h5"
+            endif
 
             call open_h5_file(trim(output%h5fname))
 
