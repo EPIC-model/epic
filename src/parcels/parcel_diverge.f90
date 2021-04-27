@@ -160,7 +160,7 @@ module parcel_diverge
         call lapinv1(phi)
 
         ! Compute x derivative spectrally:
-        call deriv(nz+1,nx,hrkx,phi,ud(0:nz, :)
+        call deriv(nz+1,nx,hrkx,phi,ud(0:nz, :))
 
         ! Reverse x FFT to define x velocity component ud:
         call revfft(nz+1,nx,ud(0:nz, :),xtrig,xfactors)
