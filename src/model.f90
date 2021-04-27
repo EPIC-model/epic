@@ -45,13 +45,6 @@ module model
             ! update volume on the grid
             call par2grid(parcels, parcels%volume, volume_f)
 
-            if (mod(iter, output%h5freq) == 0) then
-                if(verbose) then
-                    print "(a30)", "write fields and parcels to h5"
-                endif
-                call write_h5_step(nw, t, dt)
-            endif
-
         end subroutine
 
 
