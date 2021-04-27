@@ -55,9 +55,6 @@ module model
             integer          :: iter = 1   ! simulation iteration
             integer          :: nw   = 0   ! number of writes to h5
 
-            ! write initial step
-            call write_h5_step(nw, t, dt)
-
             do while (t <= time%limit)
 
                 dt = get_time_step()
@@ -67,7 +64,8 @@ module model
                     print "(a15, i0)", "iteration:     ", iter
                 endif
 
-                if (mod(iter, output%h5freq) == 0) then
+                ! make sure we always write initial setup
+                if ((iter == 1) .or. (mod(iter, output%h5freq) == 0)) then
                     call write_h5_step(nw, t, dt)
                 endif
 
