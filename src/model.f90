@@ -65,7 +65,7 @@ module model
                 endif
 
                 ! make sure we always write initial setup
-                if ((iter == 1) .or. (mod(iter, output%h5freq) == 0)) then
+                if (mod(iter - 1, output%h5freq) == 0)) then
                     call write_h5_step(nw, t, dt)
                 endif
 
