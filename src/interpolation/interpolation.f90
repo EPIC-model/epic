@@ -25,12 +25,12 @@ module interpolation
 
     ! interpolation indices
     ! (first dimension x, y; second dimension k-th index)
-    integer ji(2, 4)
+    integer ij(2, 4)
 
     ! interpolation weights
     double precision weight(4)
 
-    private :: ji, weight
+    private :: ij, weight
 
     contains
 
@@ -91,7 +91,7 @@ module interpolation
                         ! loop over grid points which are part of the interpolation
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
-                            field(ji(1, i), ji(2, i), c) = field(ji(1, i), ji(2, i), c)     &
+                            field(ij(2, i), ij(1, i), c) = field(ij(2, i), ij(1, i), c)     &
                                                          + 0.5 * weight(i) * attrib(n, c)
                         enddo
                     enddo
@@ -128,7 +128,7 @@ module interpolation
                     ! loop over grid points which are part of the interpolation
                     do i = 1, ngp
                         ! the weight is halved due to 2 points per ellipse
-                        field(ji(1, i), ji(2, i), c) = field(ji(1, i), ji(2, i), c) &
+                        field(ij(2, i), ij(1, i), c) = field(ij(2, i), ij(1, i), c) &
                                                      + weight(i) * attrib(n, c)
                     enddo
                 enddo
@@ -262,7 +262,7 @@ module interpolation
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
                             attrib(n, c) = attrib(n, c) &
-                                         + 0.5 * weight(i) * field(ji(1, i), ji(2, i), c)
+                                         + 0.5 * weight(i) * field(ij(2, i), ij(1, i), c)
                         enddo
                     enddo
                 enddo
@@ -327,7 +327,7 @@ module interpolation
                     ! loop over grid points which are part of the interpolation
                     do i = 1, ngp
                         attrib(n, c) = attrib(n, c) &
-                                     + weight(i) * field(ji(1, i), ji(2, i), c)
+                                     + weight(i) * field(ij(2, i), ij(1, i), c)
                     enddo
                 enddo
             enddo
@@ -341,9 +341,9 @@ module interpolation
 
 
             if (interpl == 'trilinear') then
-                call trilinear(pos, ji, weight, ngp)
+                call trilinear(pos, ij, weight, ngp)
             else if (interpl == 'exact') then ! only applies to par2grid
-                call trilinear(pos, ji, weight, ngp)
+                call trilinear(pos, ij, weight, ngp)
             else
                 print *, "Unknown interpolation method '", interpl, "'."
                 stop
