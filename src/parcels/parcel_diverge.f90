@@ -13,7 +13,7 @@ module parcel_diverge
     use stafft
     use deriv1d
 
-    use interpl_methods
+    use parcel_interpl
     use parcel_bc
 
     use constants
