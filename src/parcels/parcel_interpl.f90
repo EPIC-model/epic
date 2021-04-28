@@ -22,14 +22,17 @@ module parcel_interpl
                get_indices_and_weights
 
 
+    ! number of indices and weights
+    integer, parameter :: ngp = 4
+
     ! interpolation indices
     ! (first dimension x, y; second dimension k-th index)
-    integer ij(2, 4)
+    integer :: is(ngp), js(ngp)
 
     ! interpolation weights
-    double precision weight(4)
+    double precision :: ws(ngp)
 
-    private :: ij, weight
+    private :: is, js, ws
 
     contains
 
@@ -61,7 +64,7 @@ module parcel_interpl
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(-1:, 0:, :)
-            integer                                    :: ncomp, ngp
+            integer                                    :: ncomp
             double precision                           :: points(2, 2)
             integer                                    :: n, p, c, i
             integer                                    :: the_shape(3)
@@ -83,15 +86,15 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call get_indices_and_weights(points(p, :), ngp)
+                    call get_indices_and_weights(points(p, :))
 
                     ! loop over field components
                     do c = 1, ncomp
                         ! loop over grid points which are part of the interpolation
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
-                            field(ij(2, i), ij(1, i), c) = field(ij(2, i), ij(1, i), c)     &
-                                                         + 0.5 * weight(i) * attrib(n, c)
+                            field(js(i), is(i), c) = field(js(i), is(i), c)         &
+                                                   + 0.5 * ws(i) * attrib(n, c)
                         enddo
                     enddo
                 enddo
@@ -103,7 +106,7 @@ module parcel_interpl
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(-1:, 0:, :)
-            integer                                    :: ncomp, ngp
+            integer                                    :: ncomp
             integer                                    :: n, c, i
             integer                                    :: the_shape(3)
             double precision                           :: pos(2)
@@ -120,15 +123,15 @@ module parcel_interpl
                 call apply_periodic_bc(pos)
 
                 ! get interpolation weights and mesh indices
-                call get_indices_and_weights(pos, ngp)
+                call get_indices_and_weights(pos)
 
                 ! loop over field components
                 do c = 1, ncomp
                     ! loop over grid points which are part of the interpolation
                     do i = 1, ngp
                         ! the weight is halved due to 2 points per ellipse
-                        field(ij(2, i), ij(1, i), c) = field(ij(2, i), ij(1, i), c) &
-                                                     + weight(i) * attrib(n, c)
+                        field(js(i), is(i), c) = field(js(i), is(i), c)   &
+                                               + ws(i) * attrib(n, c)
                     enddo
                 enddo
             enddo
@@ -202,7 +205,7 @@ module parcel_interpl
             double precision, intent(in)  :: field(-1:, 0:, :)
             logical, optional, intent(in) :: add
             character(*), optional, intent(in)      :: exact
-            integer                       :: ncomp, ngp
+            integer                       :: ncomp
             double precision              :: points(2, 2)
             integer                       :: n, p, c, i
             integer                       :: the_shape(3)
@@ -253,7 +256,7 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call get_indices_and_weights(points(p, :), ngp)
+                    call get_indices_and_weights(points(p, :))
 
                     ! loop over field components
                     do c = 1, ncomp
@@ -261,7 +264,7 @@ module parcel_interpl
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
                             attrib(n, c) = attrib(n, c) &
-                                         + 0.5 * weight(i) * field(ij(2, i), ij(1, i), c)
+                                         + 0.5 * ws(i) * field(js(i), is(i), c)
                         enddo
                     enddo
                 enddo
@@ -276,7 +279,7 @@ module parcel_interpl
             double precision, intent(in)  :: field(-1:, 0:, :)
             logical, optional, intent(in) :: add
             character(*), optional, intent(in)      :: exact
-            integer                       :: ncomp, ngp
+            integer                       :: ncomp
             integer                       :: n, c, i
             integer                       :: the_shape(3)
             double precision              :: pos(2)
@@ -319,14 +322,14 @@ module parcel_interpl
                 call apply_periodic_bc(pos)
 
                 ! get interpolation weights and mesh indices
-                call get_indices_and_weights(pos, ngp)
+                call get_indices_and_weights(pos)
 
                 ! loop over field components
                 do c = 1, ncomp
                     ! loop over grid points which are part of the interpolation
                     do i = 1, ngp
                         attrib(n, c) = attrib(n, c) &
-                                     + weight(i) * field(ij(2, i), ij(1, i), c)
+                                     + ws(i) * field(js(i), is(i), c)
                     enddo
                 enddo
             enddo
@@ -334,15 +337,13 @@ module parcel_interpl
         end subroutine grid2par_non_elliptic
 
 
-        subroutine get_indices_and_weights(pos, ngp)
+        subroutine get_indices_and_weights(pos)
             double precision, intent(in)  :: pos(2)
-            integer,          intent(out) :: ngp
-
 
             if (interpl == 'trilinear') then
-                call trilinear(pos, ij, weight, ngp)
+                call trilinear(pos, is, js, ws)
             else if (interpl == 'exact') then ! only applies to par2grid
-                call trilinear(pos, ij, weight, ngp)
+                call trilinear(pos, is, js, ws)
             else
                 print *, "Unknown interpolation method '", interpl, "'."
                 stop
@@ -351,42 +352,39 @@ module parcel_interpl
         end subroutine get_indices_and_weights
 
         !
-        ! tri-linear interpolation
+        ! tri-linear interpolationij
         !
-        subroutine trilinear(pos, ij, weight, ngp)
+        subroutine trilinear(pos, ii, jj, ww)
             double precision, intent(in)  :: pos(2)
-            integer,          intent(out) :: ij(2, 4)
-            double precision, intent(out) :: weight(4)
-            integer,          intent(out) :: ngp
-            double precision              :: xy(2)
+            integer,          intent(out) :: ii(4), jj(4)
+            double precision, intent(out) :: ww(4)
+            double precision              :: idx(2), xy(2)
 
             ! (i, j)
-            ij(:, 1) = get_index(pos)
-            xy = get_position(ij(:, 1))
-            weight(1) = product(1.0 - abs(pos - xy) * dxi)
+            call get_index(pos, ii(1), jj(1))
+            call get_position(ii(1), jj(1), xy)
+            ww(1) = product(1.0 - abs(pos - xy) * dxi)
 
             ! (i+1, j)
-            ij(:, 2) = ij(:, 1)
-            ij(1, 2) = ij(1, 1) + 1
-            xy = get_position(ij(:, 2))
-            weight(2) = product(1.0 - abs(pos - xy) * dxi)
+            ii(2) = ii(1) + 1
+            jj(2) = jj(1)
+            call get_position(ii(2), jj(2), xy)
+            ww(2) = product(1.0 - abs(pos - xy) * dxi)
 
             ! (i, j+1)
-            ij(:, 3) = ij(:, 1)
-            ij(2, 3) = ij(2, 3) + 1
-            xy = get_position(ij(:, 3))
-            weight(3) = product(1.0 - abs(pos - xy) * dxi)
+            ii(3) = ii(1)
+            jj(3) = jj(1) + 1
+            call get_position(ii(3), jj(3), xy)
+            ww(3) = product(1.0 - abs(pos - xy) * dxi)
 
             ! (i+1, j+1)
-            ij(:, 4) = ij(:, 2)
-            ij(2, 4) = ij(2, 4) + 1
-            xy = get_position(ij(:, 4))
-            weight(4) = product(1.0 - abs(pos - xy) * dxi)
-
-            ngp = 4
+            ii(4) = ii(2)
+            jj(4) = jj(3)
+            call get_position(ii(4), jj(4), xy)
+            ww(4) = product(1.0 - abs(pos - xy) * dxi)
 
             ! account for x periodicity
-            call periodic_index_shift(ij, ngp)
+            call periodic_index_shift(ii)
 
         end subroutine trilinear
 
