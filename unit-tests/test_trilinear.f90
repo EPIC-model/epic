@@ -11,7 +11,7 @@ program test_trilinear
     use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz, ngrid
     implicit none
 
-    double precision :: volg(0:31, -1:33, 1), error
+    double precision :: volg(-1:33, 0:31, 1), error
     integer :: i, j, k, jj, ii
 
     grid = (/33, 33/)
@@ -55,7 +55,7 @@ program test_trilinear
 
     call par2grid(parcels, parcels%volume, volg)
 
-    error = abs(sum(volg(0:nx-1,0:nz, :)) - ngrid * vcell)
+    error = abs(sum(volg(0:nz, 0:nx-1, :)) - ngrid * vcell)
 
     if (error > 1.0e-15) then
         print '(a27, a9)', 'Test trilinear (par2grid):', 'FAILED'

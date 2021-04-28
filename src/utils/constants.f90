@@ -15,6 +15,10 @@ module constants
 
     double precision, parameter :: four = 4.0d0
 
+    double precision, parameter :: five = 5.0d0
+
+    double precision, parameter :: six = 6.0d0
+
     double precision, parameter :: pi = acos(-one)
 
     double precision, parameter :: twopi = two * pi

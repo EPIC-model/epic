@@ -4,10 +4,10 @@
 module init
     use options, only : parcel_info, time
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
-    use fields, only : velocity_f,       &
-                       strain_f,         &
-                       volume_f,         &
-                       vorticity_f,      &
+    use fields, only : velocity_f,      &
+                       strain_f,        &
+                       volg,            &
+                       vortg,           &
                        get_position
     use ellipse, only : get_ab
     use parcel_container, only : parcels, n_parcels
@@ -132,8 +132,8 @@ module init
         subroutine init_fields
             call init_velocity_field
 
-            allocate(volume_f(0:nx-1, -1:nz+1, 1))
-            volume_f = 0.0
+            allocate(volg(-1:nz+1, 0:nx-1, 1))
+            volg = 0.0
 
             if (time%is_adaptive) then
                 call init_vorticity_field
@@ -147,17 +147,17 @@ module init
             integer :: i, j
             double precision :: pos(2)
 
-            allocate(velocity_f(0:nx-1, -1:nz+1, 2))
+            allocate(velocity_f(-1:nz+1, 0:nx-1, 2))
 
-            allocate(strain_f(0:nx-1, -1:nz+1, 4))
+            allocate(strain_f(-1:nz+1, 0:nx-1, 4))
 
-            do j = -1, nz+1
-                do i = 0, nx-1
+            do i = 0, nx-1
+                do j = -1, nz+1
                     pos = get_position((/i, j/))
 
-                    velocity_f(i, j, :) = get_flow_velocity(pos)
+                    velocity_f(j, i, :) = get_flow_velocity(pos)
 
-                    strain_f(i, j, :) = get_flow_gradient(pos)
+                    strain_f(j, i, :) = get_flow_gradient(pos)
                 enddo
             enddo
         end subroutine init_velocity_field
@@ -168,13 +168,13 @@ module init
             double precision :: pos(2)
 
             ! vorticity has no halo grid points in y
-            allocate(vorticity_f(0:nx-1, 0:nz, 1))
+            allocate(vortg(0:nz, 0:nx-1, 1))
 
-            do j = 0, nz
-                do i = 0, nx-1
+            do i = 0, nx-1
+                do j = 0, nz
                     pos = get_position((/i, j/))
 
-                    vorticity_f(i, j, :) = get_flow_vorticity(pos)
+                    vortg(j, i, :) = get_flow_vorticity(pos)
                 enddo
             enddo
 

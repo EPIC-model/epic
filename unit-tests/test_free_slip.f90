@@ -17,7 +17,7 @@ program test_free_slip
     use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz, ngrid
     implicit none
 
-    double precision :: volume_f(0:3, -1:5, 1)
+    double precision :: volg(-1:5, 0:3, 1)
     integer :: i, j, k, jj, ii
     double precision, parameter :: angle = 0.5 * pi
     double precision, parameter :: lam = 3.5 ! >= 3.5 --> 1 ellipse point outside domain
@@ -48,7 +48,7 @@ program test_free_slip
 
     n_parcels = 64
 
-    volume_f = 0.0
+    volg = 0.0
 
     parcel_info%is_elliptic = .true.
 
@@ -61,10 +61,10 @@ program test_free_slip
     parcels%B(:, 2) = 0.5 * (lam - 1.0 / lam) * sin(2.0 * angle)
 
 
-    call par2grid(parcels, parcels%volume, volume_f)
+    call par2grid(parcels, parcels%volume, volg)
 
 
-    error = abs(sum(volume_f(0:nx-1,0:nz, :)) - ngrid * vcell)
+    error = abs(sum(volg(0:nz, 0:nx-1, :)) - ngrid * vcell)
 
     if (error > 1.0e-15) then
         print '(a16, a20)', 'Test free slip:', 'FAILED'

@@ -16,10 +16,10 @@ module fields
     ! hence the valid regrion is from 0 to grid(2)-1 = nz
     ! Due to periodicity in x, the grid points in x go from 0 to nx-1 = grid(1)-2
     double precision, allocatable, dimension(:, :, :) :: &
-        velocity_f,       &   ! velocity vector field (has 1 halo cell layer in z)
-        strain_f,         &   ! velocity gradient tensor (has 1 halo cell layer in z)
-        volume_f,         &   ! volume scalar field (has 1 halo cell layer in z)
-        vorticity_f           ! vorticity scalar field (has no halo cell layers)
+        velocity_f,     &   ! velocity vector field (has 1 halo cell layer in z)
+        strain_f,       &   ! velocity gradient tensor (has 1 halo cell layer in z)
+        volg,           &   ! volume scalar field (has 1 halo cell layer in z)
+        vortg               ! vorticity scalar field (has no halo cell layers)
 
     contains
 
@@ -82,16 +82,16 @@ module fields
             if (iter == 0) then
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity",          &
-                    velocity_f(0:nx-1, 0:nz, :))
+                    velocity_f(0:nz, 0:nx-1, :))
 
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity strain",   &
-                    strain_f(0:nx-1, 0:nz, :))
+                    strain_f(0:nz, 0:nx-1, :))
             endif
 
             ! do not write halo cells
             call write_h5_dataset_3d(name, "volume",            &
-                volume_f(0:nx-1, 0:nz, :))
+                volg(0:nz, 0:nx-1, :))
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)
