@@ -153,7 +153,7 @@ module init
 
             do i = 0, nx-1
                 do j = -1, nz+1
-                    pos = get_position((/i, j/))
+                    call get_position(i, j, pos)
 
                     velocity_f(j, i, :) = get_flow_velocity(pos)
 
@@ -172,7 +172,7 @@ module init
 
             do i = 0, nx-1
                 do j = 0, nz
-                    pos = get_position((/i, j/))
+                    call get_position(i, j, pos)
 
                     vortg(j, i, :) = get_flow_vorticity(pos)
                 enddo

@@ -7,7 +7,7 @@ module ls_rk4
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
-    use interpolation, only : grid2par, grid2par_add
+    use parcel_interpl, only : grid2par, grid2par_add
     use fields, only : strain_f, velocity_f
     implicit none
 

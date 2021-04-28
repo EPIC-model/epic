@@ -24,20 +24,22 @@ module fields
     contains
 
         ! get the lower index of the cell the parcel is in
-        ! this function does not take x periodicity into account
-        function get_index(pos) result(idx)
+        ! this subroutine does not take x periodicity into account
+        subroutine get_index(pos, i, j)
             double precision, intent(in)  :: pos(2)
+            integer,          intent(out) :: i, j
             integer                       :: idx(2)
 
             idx = floor((pos - lower) * dxi)
 
-        end function get_index
+            i = idx(1)
+            j = idx(2)
+        end subroutine get_index
 
 
         ! do periodic shift of the index
-        subroutine periodic_index_shift(idx, n)
-            integer, intent(inout) :: idx(2, n)
-            integer, intent(in)    :: n
+        subroutine periodic_index_shift(ii)
+            integer, intent(inout) :: ii(:)
 
             ! account for x periodicity:
             ! [nx = grid(1) -1]
@@ -46,19 +48,19 @@ module fields
             ! nx+1 --> 1
             ! nx   --> 0
             ! nx-1 --> nx-1
-            idx(1, :) = mod(idx(1, :) + nx, nx)
+            ii = mod(ii + nx, nx)
 
         end subroutine periodic_index_shift
 
 
         ! get a position given a field index
-        function get_position(idx) result(pos)
-            integer,         intent(in) :: idx(2)
-            double precision            :: pos(2)
+        subroutine get_position(i, j, pos)
+            integer,          intent(in)  :: i, j
+            double precision, intent(out) :: pos(2)
 
-            pos = lower + idx * dx
+            pos = lower + (/i, j/) * dx
 
-        end function get_position
+        end subroutine get_position
 
 
         subroutine write_h5_fields(iter)
