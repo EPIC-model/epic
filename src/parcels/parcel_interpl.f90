@@ -352,7 +352,7 @@ module parcel_interpl
         end subroutine get_indices_and_weights
 
         !
-        ! tri-linear interpolationij
+        ! tri-linear interpolation
         !
         subroutine trilinear(pos, ii, jj, ww)
             double precision, intent(in)  :: pos(2)
