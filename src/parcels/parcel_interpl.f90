@@ -358,7 +358,7 @@ module parcel_interpl
             double precision, intent(in)  :: pos(2)
             integer,          intent(out) :: ii(4), jj(4)
             double precision, intent(out) :: ww(4)
-            double precision              :: idx(2), xy(2)
+            double precision              :: xy(2)
 
             ! (i, j)
             call get_index(pos, ii(1), jj(1))
