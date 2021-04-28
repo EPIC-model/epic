@@ -143,7 +143,7 @@ module parcel_diverge
         double precision, intent(in) :: volg(-1:, 0:, :)
         double precision             :: phi(0:nz,0:nx-1), ud(-1:nz+1,0:nx-1), wd(-1:nz+1,0:nx-1)
         double precision             :: wbar(0:nz)
-        double precision             :: ws(ngp)
+        double precision             :: weights(ngp)
         integer                      :: n, i, is(ngp), js(ngp)
 
         ! form divergence field * dt and store in phi temporarily:
@@ -183,14 +183,14 @@ module parcel_diverge
         !------------------------------------------------------------------
         ! Increment parcel positions usind (ud,wd) field:
         do n = 1, n_parcels
-            call trilinear(parcels%position(n, :), is, js, ws)
+            call trilinear(parcels%position(n, :), is, js, weights)
 
             do i = 1, ngp
                 parcels%position(n, 1) = parcels%position(n, 1)             &
-                                       + ws(i) * ud(js(i), is(i))
+                                       + weights(i) * ud(js(i), is(i))
 
                 parcels%position(n, 2) = parcels%position(n, 2)             &
-                                       + ws(i) * wd(js(i), is(i))
+                                       + weights(i) * wd(js(i), is(i))
             enddo
 
             call apply_periodic_bc(parcels%position(n, :))

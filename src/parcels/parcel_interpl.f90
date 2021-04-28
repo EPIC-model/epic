@@ -30,9 +30,9 @@ module parcel_interpl
     integer :: is(ngp), js(ngp)
 
     ! interpolation weights
-    double precision :: ws(ngp)
+    double precision :: weights(ngp)
 
-    private :: is, js, ws
+    private :: is, js, weights
 
     contains
 
@@ -94,7 +94,7 @@ module parcel_interpl
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
                             field(js(i), is(i), c) = field(js(i), is(i), c)         &
-                                                   + 0.5 * ws(i) * attrib(n, c)
+                                                   + 0.5 * weights(i) * attrib(n, c)
                         enddo
                     enddo
                 enddo
@@ -131,7 +131,7 @@ module parcel_interpl
                     do i = 1, ngp
                         ! the weight is halved due to 2 points per ellipse
                         field(js(i), is(i), c) = field(js(i), is(i), c)   &
-                                               + ws(i) * attrib(n, c)
+                                               + weights(i) * attrib(n, c)
                     enddo
                 enddo
             enddo
@@ -264,7 +264,7 @@ module parcel_interpl
                         do i = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
                             attrib(n, c) = attrib(n, c) &
-                                         + 0.5 * ws(i) * field(js(i), is(i), c)
+                                         + 0.5 * weights(i) * field(js(i), is(i), c)
                         enddo
                     enddo
                 enddo
@@ -329,7 +329,7 @@ module parcel_interpl
                     ! loop over grid points which are part of the interpolation
                     do i = 1, ngp
                         attrib(n, c) = attrib(n, c) &
-                                     + ws(i) * field(js(i), is(i), c)
+                                     + weights(i) * field(js(i), is(i), c)
                     enddo
                 enddo
             enddo
@@ -341,9 +341,9 @@ module parcel_interpl
             double precision, intent(in)  :: pos(2)
 
             if (interpl == 'trilinear') then
-                call trilinear(pos, is, js, ws)
+                call trilinear(pos, is, js, weights)
             else if (interpl == 'exact') then ! only applies to par2grid
-                call trilinear(pos, is, js, ws)
+                call trilinear(pos, is, js, weights)
             else
                 print *, "Unknown interpolation method '", interpl, "'."
                 stop
