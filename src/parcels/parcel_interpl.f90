@@ -66,7 +66,7 @@ module parcel_interpl
             double precision,            intent(inout) :: field(-1:, 0:, :)
             integer                                    :: ncomp
             double precision                           :: points(2, 2)
-            integer                                    :: n, p, c, i
+            integer                                    :: n, p, c, l
             integer                                    :: the_shape(3)
 
             ! number of field components
@@ -91,10 +91,10 @@ module parcel_interpl
                     ! loop over field components
                     do c = 1, ncomp
                         ! loop over grid points which are part of the interpolation
-                        do i = 1, ngp
+                        do l = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
-                            field(js(i), is(i), c) = field(js(i), is(i), c)         &
-                                                   + 0.5 * weights(i) * attrib(n, c)
+                            field(js(l), is(l), c) = field(js(l), is(l), c)         &
+                                                   + 0.5 * weights(l) * attrib(n, c)
                         enddo
                     enddo
                 enddo
@@ -107,7 +107,7 @@ module parcel_interpl
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(-1:, 0:, :)
             integer                                    :: ncomp
-            integer                                    :: n, c, i
+            integer                                    :: n, c, l
             integer                                    :: the_shape(3)
             double precision                           :: pos(2)
 
@@ -128,10 +128,10 @@ module parcel_interpl
                 ! loop over field components
                 do c = 1, ncomp
                     ! loop over grid points which are part of the interpolation
-                    do i = 1, ngp
+                    do l = 1, ngp
                         ! the weight is halved due to 2 points per ellipse
-                        field(js(i), is(i), c) = field(js(i), is(i), c)   &
-                                               + weights(i) * attrib(n, c)
+                        field(js(l), is(l), c) = field(js(l), is(l), c)   &
+                                               + weights(l) * attrib(n, c)
                     enddo
                 enddo
             enddo
@@ -207,7 +207,7 @@ module parcel_interpl
             character(*), optional, intent(in)      :: exact
             integer                       :: ncomp
             double precision              :: points(2, 2)
-            integer                       :: n, p, c, i
+            integer                       :: n, p, c, l
             integer                       :: the_shape(3)
 
 
@@ -261,10 +261,10 @@ module parcel_interpl
                     ! loop over field components
                     do c = 1, ncomp
                         ! loop over grid points which are part of the interpolation
-                        do i = 1, ngp
+                        do l = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
                             attrib(n, c) = attrib(n, c) &
-                                         + 0.5 * weights(i) * field(js(i), is(i), c)
+                                         + 0.5 * weights(l) * field(js(l), is(l), c)
                         enddo
                     enddo
                 enddo
@@ -280,7 +280,7 @@ module parcel_interpl
             logical, optional, intent(in) :: add
             character(*), optional, intent(in)      :: exact
             integer                       :: ncomp
-            integer                       :: n, c, i
+            integer                       :: n, c, l
             integer                       :: the_shape(3)
             double precision              :: pos(2)
 
@@ -327,9 +327,9 @@ module parcel_interpl
                 ! loop over field components
                 do c = 1, ncomp
                     ! loop over grid points which are part of the interpolation
-                    do i = 1, ngp
+                    do l = 1, ngp
                         attrib(n, c) = attrib(n, c) &
-                                     + weights(i) * field(js(i), is(i), c)
+                                     + weights(l) * field(js(l), is(l), c)
                     enddo
                 enddo
             enddo

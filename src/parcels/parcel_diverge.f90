@@ -144,7 +144,7 @@ module parcel_diverge
         double precision             :: phi(0:nz,0:nx-1), ud(-1:nz+1,0:nx-1), wd(-1:nz+1,0:nx-1)
         double precision             :: wbar(0:nz)
         double precision             :: weights(ngp)
-        integer                      :: n, i, is(ngp), js(ngp)
+        integer                      :: n, l, is(ngp), js(ngp)
 
         ! form divergence field * dt and store in phi temporarily:
         phi = volg(0:nz, :, 1) - vcell
@@ -185,12 +185,12 @@ module parcel_diverge
         do n = 1, n_parcels
             call trilinear(parcels%position(n, :), is, js, weights)
 
-            do i = 1, ngp
+            do l = 1, ngp
                 parcels%position(n, 1) = parcels%position(n, 1)             &
-                                       + weights(i) * ud(js(i), is(i))
+                                       + weights(l) * ud(js(l), is(l))
 
                 parcels%position(n, 2) = parcels%position(n, 2)             &
-                                       + weights(i) * wd(js(i), is(i))
+                                       + weights(l) * wd(js(l), is(l))
             enddo
 
             call apply_periodic_bc(parcels%position(n, :))
