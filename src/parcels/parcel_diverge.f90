@@ -201,7 +201,7 @@ module parcel_diverge
         double precision, intent(in) :: volg(-1:, 0:, :)
         double precision, intent(in) :: gradient_pref
         double precision             :: phi(0:nz,0:nx-1)
-        double precision             :: ws(ngp)
+        double precision             :: weights(ngp)
         double precision             :: points(2, 2)
         integer                      :: n, i, p, is(ngp), js(ngp)
 
@@ -212,15 +212,15 @@ module parcel_diverge
 
             call apply_periodic_bc(parcels%position(n, :))
 
-            call trilinear(parcels%position(n, :), is, js, ws)
+            call trilinear(parcels%position(n, :), is, js, weights)
 
             parcels%position(n, 1) = parcels%position(n, 1)    &
-            - gradient_pref*dx(1)*(ws(2)+ws(1))*(phi(js(2), is(2))-phi(js(1), is(1)))  &
-            - gradient_pref*dx(1)*(ws(4)+ws(3))*(phi(js(4), is(4))-phi(js(3), is(3)))
+            - gradient_pref*dx(1)*(weights(2)+weights(1))*(phi(js(2), is(2))-phi(js(1), is(1)))  &
+            - gradient_pref*dx(1)*(weights(4)+weights(3))*(phi(js(4), is(4))-phi(js(3), is(3)))
 
             parcels%position(n, 2) = parcels%position(n, 2)             &
-            - gradient_pref*dx(2)*(ws(3)+ws(1))*(phi(js(3), is(3))-phi(js(1), is(1))) &
-            - gradient_pref*dx(2)*(ws(4)+ws(2))*(phi(js(4), is(4))-phi(js(2), is(2)))
+            - gradient_pref*dx(2)*(weights(3)+weights(1))*(phi(js(3), is(3))-phi(js(1), is(1))) &
+            - gradient_pref*dx(2)*(weights(4)+weights(2))*(phi(js(4), is(4))-phi(js(2), is(2)))
 
             call apply_periodic_bc(parcels%position(n, :))
         enddo
