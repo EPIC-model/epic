@@ -172,16 +172,17 @@ module parcel_merge
         end subroutine optimal_bimerge
 
 
-        subroutine do_multimerge(parcels, isma, ibig, n_merge, B11m, B12m, B22m)
+        subroutine do_multimerge(parcels, isma, ibig, n_merge, B11m, B12m, B22m, vm)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, is, l, n
             integer                                    :: loc(n_parcels)
-            double precision                           :: vm(n_merge), x0(n_merge), xm(n_merge)
+            double precision                           :: x0(n_merge), xm(n_merge)
             double precision                           :: zm(n_merge), delx, vmerge, dely, B22, mu
-            double precision,            intent(out)   :: B11m(n_merge), B12m(n_merge), B22m(n_merge)
+            double precision,            intent(out)   :: B11m(n_merge), B12m(n_merge), B22m(n_merge), &
+                                                          vm(n_merge)
 
             loc = zero
 
@@ -262,9 +263,6 @@ module parcel_merge
                 B11m(n) = B11m(n) + mu * (four * delx ** 2   + parcels%B(is, 1))
                 B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(is, 2))
                 B22m(n) = B22m(n) + mu * (four * dely ** 2   + B22)
-
-                parcels%volume(ib, 1) = vm(n)
-
             enddo
 
         end subroutine do_multimerge
@@ -277,12 +275,13 @@ module parcel_merge
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, l
             integer                                    :: loc(n_parcels)
-            double precision                           :: factor
+            double precision                           :: factor, mu
             double precision                           :: B11(n_merge), &
                                                           B12(n_merge), &
-                                                          B22(n_merge)
+                                                          B22(n_merge), &
+                                                          V(n_merge)
 
-            call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22)
+            call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
 
 
             loc = zero
@@ -296,11 +295,19 @@ module parcel_merge
                     l = l + 1
                     loc(ib) = l
 
+                    mu = parcels%volume(ib, 1) / V(l)
+
+                    B11(l) = B11(l) + mu * parcels%B(ib, 1)
+                    B12(l) = B12(l) + mu * parcels%B(ib, 2)
+                    B22(l) = B22(l) + mu * get_B22(parcels%B(ib, 1), parcels%B(ib, 2), parcels%volume(ib, 1))
+
+                    parcels%volume(ib, 1)  = V(l)
+
                     ! normalize such that determinant of the merger is (ab)**2
                     ! ab / sqrt(det(B))
-                    factor = parcels%volume(ib, 1) / (pi * sqrt(B11(l) * B22(l) - B12(l) ** 2))
+                    factor = get_ab(V(l)) / sqrt(B11(l) * B22(l) - B12(l) ** 2)
 
-                    print *, 'B11', parcels%B(ib, 1),  B11(l) * factor, parcels%volume(ib, 1)
+                    print *, 'B11', parcels%B(ib, 1),  B11(l) * factor, parcels%volume(ib, 1), factor
                     print *, 'B12', parcels%B(ib, 2),  B12(l) * factor
                     parcels%B(ib, 1) = B11(l) * factor
                     parcels%B(ib, 2) = B12(l) * factor
@@ -323,9 +330,10 @@ module parcel_merge
             double precision                           :: mu
             double precision                           :: B11(n_merge), &
                                                           B12(n_merge), &
-                                                          B22(n_merge)
+                                                          B22(n_merge), &
+                                                          V(n_merge)
 
-            call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22)
+            call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
 
             l = 1
             do m = 1, n_merge
