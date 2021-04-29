@@ -5,7 +5,7 @@
 ! =============================================================================
 module parcel_merge
     use parcel_nearest
-    use constants, only : pi, one, two, four    &
+    use constants, only : pi, zero, one, two, four    &
                         , max_num_parcels
     use parcel_container, only : parcel_container_type  &
                                , n_parcels              &
@@ -22,7 +22,7 @@ module parcel_merge
                optimal_bimerge,      &
                geometric_multimerge, &
                optimal_multimerge,   &
-!                do_multimerge,        &
+               do_multimerge,        &
                solve_quartic,        &
                pack_parcels
 
@@ -62,10 +62,10 @@ module parcel_merge
 
         end subroutine merge_ellipses
 
-        ! merge ith parcel into jth parcel (without B matrix scaling)
-        subroutine do_bimerge(parcels, i, j, B11, B12, B22, ab)
+        ! merge is-th parcel into ib-th parcel (without B matrix scaling)
+        subroutine do_bimerge(parcels, is, ib, B11, B12, B22, ab)
             type(parcel_container_type), intent(inout)  :: parcels
-            integer,                     intent(in)     :: i, j
+            integer,                     intent(in)     :: is, ib
             double precision,            intent(out)    :: B11, B12, B22, ab
             double precision                            :: B11_1, B11_2
             double precision                            :: B12_1, B12_2
@@ -74,17 +74,17 @@ module parcel_merge
             double precision                            :: mu1, mu2, zet, eta, mu12
             double precision                            :: delx
 
-            B11_1 = parcels%B(i, 1)
-            B11_2 = parcels%B(j, 1)
+            B11_1 = parcels%B(is, 1)
+            B11_2 = parcels%B(ib, 1)
 
-            B12_1 = parcels%B(i, 2)
-            B12_2 = parcels%B(j, 2)
+            B12_1 = parcels%B(is, 2)
+            B12_2 = parcels%B(ib, 2)
 
-            B22_1 = get_B22(B11_1, B12_1, parcels%volume(i, 1))
-            B22_2 = get_B22(B11_2, B12_2, parcels%volume(j, 1))
+            B22_1 = get_B22(B11_1, B12_1, parcels%volume(is, 1))
+            B22_2 = get_B22(B11_2, B12_2, parcels%volume(ib, 1))
 
-            a1b1 = get_ab(parcels%volume(i, 1))
-            a2b2 = get_ab(parcels%volume(j, 1))
+            a1b1 = get_ab(parcels%volume(is, 1))
+            a2b2 = get_ab(parcels%volume(ib, 1))
 
             ab = a1b1 + a2b2
             abi = one / ab
@@ -92,11 +92,11 @@ module parcel_merge
             mu2 = a2b2 * abi
 
             ! works across periodic edge
-            delx = get_delx(parcels%position(j, 1), parcels%position(i, 1))
+            delx = get_delx(parcels%position(ib, 1), parcels%position(is, 1))
 
             zet = two * delx
 
-            eta = two * (parcels%position(j, 2) - parcels%position(i, 2))
+            eta = two * (parcels%position(ib, 2) - parcels%position(is, 2))
 
             mu12 = mu1 * mu2
 
@@ -105,14 +105,14 @@ module parcel_merge
             B22 = mu12 * eta ** 2  + mu1 * B22_1 + mu2 * B22_2
 
             ! update center of mass
-            parcels%position(j, 1) = - mu1 * delx &
-                                   + parcels%position(j, 1)
+            parcels%position(ib, 1) = - mu1 * delx &
+                                    + parcels%position(ib, 1)
 
-            parcels%position(j, 2) = mu1 * parcels%position(i, 2) &
-                                   + mu2 * parcels%position(j, 2)
+            parcels%position(ib, 2) = mu1 * parcels%position(is, 2) &
+                                    + mu2 * parcels%position(ib, 2)
 
             ! update volume
-            parcels%volume(j, 1) = ab * pi
+            parcels%volume(ib, 1) = ab * pi
         end subroutine do_bimerge
 
 
@@ -121,22 +121,22 @@ module parcel_merge
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
-            integer                                    :: n, i, j
+            integer                                    :: m, is, ib
             double precision                           :: B11, B12, B22, factor, ab
 
-            do n = 1, n_merge
-                i = isma(n)
-                j = ibig(n)
+            do m = 1, n_merge
+                is = isma(m)
+                ib = ibig(m)
 
                 ! merge small into big parcel --> return B11, B12, B22, ab
-                call do_bimerge(parcels, i, j, B11, B12, B22, ab)
+                call do_bimerge(parcels, is, ib, B11, B12, B22, ab)
 
                 ! normalize such that determinant of the merger is (ab)**2
                 ! ab / sqrt(det(B))
                 factor = ab / sqrt(B11 * B22 - B12 ** 2)
 
-                parcels%B(j, 1) = B11 * factor
-                parcels%B(j, 2) = B12 * factor
+                parcels%B(ib, 1) = B11 * factor
+                parcels%B(ib, 2) = B12 * factor
             enddo
 
             call apply_parcel_bc(parcels%position, parcels%velocity)
@@ -149,21 +149,21 @@ module parcel_merge
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
-            integer                                    :: n, i, j
+            integer                                    :: m, is, ib
             double precision                           :: B11, B12, B22, ab, mu
 
-            do n = 1, n_merge
-                i = isma(n)
-                j = ibig(n)
+            do m = 1, n_merge
+                is = isma(m)
+                ib = ibig(m)
 
                 ! merge small into big parcel --> return B11, B12, B22, ab
-                call do_bimerge(parcels, i, j, B11, B12, B22, ab)
+                call do_bimerge(parcels, is, ib, B11, B12, B22, ab)
 
                 mu = solve_quartic(B11, B12, B22, ab)
 
                 ! optimal B
-                parcels%B(j, 1) = (B11 - mu * B22) / (one - mu ** 2)
-                parcels%B(j, 2) = B12 / (one - mu)
+                parcels%B(ib, 1) = (B11 - mu * B22) / (one - mu ** 2)
+                parcels%B(ib, 2) = B12 / (one - mu)
             enddo
 
             call apply_parcel_bc(parcels%position, parcels%velocity)
@@ -171,11 +171,124 @@ module parcel_merge
         end subroutine optimal_bimerge
 
 
+        subroutine do_multimerge(parcels, isma, ibig, n_merge, B11m, B12m, B22m)
+            type(parcel_container_type), intent(inout) :: parcels
+            integer,                     intent(in)    :: isma(0:)
+            integer,                     intent(in)    :: ibig(:)
+            integer,                     intent(in)    :: n_merge
+            integer                                    :: m, ib, is, l, n
+            integer                                    :: loc(n_parcels)
+            double precision                           :: vm(n_parcels), x0(n_parcels), xm(n_parcels)
+            double precision                           :: zm(n_parcels), delx, vmerge, dely, B22
+            double precision,            intent(out)   :: B11m(n_parcels), B12m(n_parcels), B22m(n_parcels)
+
+            loc = zero
+
+            l = 0
+            do m = 1, n_merge
+                ib = ibig(m) ! Index of large parcel
+
+                if (loc(ib) .eq. 0) then
+                    ! Start a new merged parcel, indexed l:
+                    l = l + 1
+                    loc(ib) = l
+
+                    ! vm will contain the total volume of the merged parcel
+                    vm(l) = parcels%volume(ib, 1)
+
+                    !x0 stores the x centre of the large parcel
+                    x0(l) = parcels%position(ib, 1)
+
+                    ! xm will sum v(is)*(x(is)-x(ib)) modulo periodicity
+                    xm(l) = zero
+
+                    ! zm will contain v(ib)*z(ib)+sum{v(is)*z(is)}
+                    zm(l) = parcels%volume(ib, 1) * parcels%position(ib, 2)
+                else
+                    ! Sum up all the small parcels merging with a common larger one:
+                    ! "is" refers to the small parcel index
+                    is = isma(m) !Small parcel
+                    n = loc(ib)  !Index of merged parcel
+                    vm(n) = vm(n) + parcels%volume(is, 1) !Accumulate volume of merged parcel
+
+                    ! works across periodic edge
+                    delx = get_delx(parcels%position(is, 1), x0(n))
+
+                    ! Accumulate sum of v(is)*(x(is)-x(ib))
+                    xm(n) = xm(n) + parcels%volume(is, 1) * delx
+
+                    ! Accumulate v(ib)*z(ib)+sum{v(is)*z(is)}
+                    zm(n) = zm(n) + parcels%volume(is, 1) * parcels%position(is, 2)
+                endif
+            enddo
+
+            ! Obtain the merged parcel centres and merged B matrix
+            ! (l = total number of merged parcels)
+            do m = 1, l
+                ! temporary scalar containing 1 / vm(m)
+                vmerge = one / vm(m)
+
+                ib = ibig(m)
+
+                ! x centre of merged parcel, modulo periodicity
+                parcels%position(ib, 1) = get_delx(x0(m), - vmerge * xm(m))
+
+                ! z centre of merged parcel
+                parcels%position(ib, 2) = vmerge * zm(m)
+            enddo
+
+            do m = 1, n_merge
+                ib = ibig(m)
+                is = isma(m)
+                n = loc(ib)
+
+                vmerge = one / vm(n)
+
+                delx = get_delx(parcels%position(is, 1), parcels%position(ib, 1))
+                dely = parcels%position(is, 2) - parcels%position(ib, 2)
+
+                B11m(n) = B11m(n) + vmerge * parcels%volume(is, 1) &
+                        * (four * delx ** 2 + parcels%B(is, 1))
+
+                B12m(n) = B12m(n) + vmerge * parcels%volume(is, 1) &
+                        * (four * delx * dely + parcels%B(is, 2))
+
+                B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is, 1))
+
+                B22m(n) = B22m(n) + vmerge * parcels%volume(is, 1) &
+                        * (four * dely ** 2 + B22)
+            enddo
+
+        end subroutine do_multimerge
+
+
         subroutine geometric_multimerge(parcels, isma, ibig, n_merge)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
+            integer                                    :: m, ib, l
+            double precision                           :: factor
+            double precision                           :: B11(n_parcels), &
+                                                          B12(n_parcels), &
+                                                          B22(n_parcels)
+
+            call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22)
+
+            l = 1
+            do m = 1, n_merge
+                ib = ibig(m)
+
+                ! normalize such that determinant of the merger is (ab)**2
+                ! ab / sqrt(det(B))
+                factor = parcels%volume(ib, 1) / (pi * sqrt(B11(l) * B22(l) - B12(l) ** 2))
+
+                parcels%B(ib, 1) = B11(l) * factor
+                parcels%B(ib, 2) = B12(l) * factor
+
+                l = l + 1
+            enddo
+
         end subroutine geometric_multimerge
 
 
@@ -184,6 +297,27 @@ module parcel_merge
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
+            integer                                    :: m, ib, l
+            double precision                           :: mu
+            double precision                           :: B11(n_parcels), &
+                                                          B12(n_parcels), &
+                                                          B22(n_parcels)
+
+            call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22)
+
+            l = 1
+            do m = 1, n_merge
+                ib = ibig(m)
+
+                mu = solve_quartic(B11(l), B12(l), B22(l), parcels%volume(ib, 1) / pi)
+
+                ! optimal B
+                parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / (one - mu ** 2)
+                parcels%B(ib, 2) = B12(l) / (one - mu)
+
+                l = l + 1
+            enddo
+
         end subroutine optimal_multimerge
 
 
