@@ -179,9 +179,9 @@ module parcel_merge
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, is, l, n
             integer                                    :: loc(n_parcels)
-            double precision                           :: vm(n_parcels), x0(n_parcels), xm(n_parcels)
-            double precision                           :: zm(n_parcels), delx, vmerge, dely, B22
-            double precision,            intent(out)   :: B11m(n_parcels), B12m(n_parcels), B22m(n_parcels)
+            double precision                           :: vm(n_merge), x0(n_merge), xm(n_merge)
+            double precision                           :: zm(n_merge), delx, vmerge, dely, B22
+            double precision,            intent(out)   :: B11m(n_merge), B12m(n_merge), B22m(n_merge)
 
             loc = zero
 
@@ -275,9 +275,9 @@ module parcel_merge
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, l
             double precision                           :: factor
-            double precision                           :: B11(n_parcels), &
-                                                          B12(n_parcels), &
-                                                          B22(n_parcels)
+            double precision                           :: B11(n_merge), &
+                                                          B12(n_merge), &
+                                                          B22(n_merge)
 
             call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22)
 
@@ -295,6 +295,8 @@ module parcel_merge
                 l = l + 1
             enddo
 
+            call apply_parcel_bc(parcels%position, parcels%velocity)
+
         end subroutine geometric_multimerge
 
 
@@ -305,9 +307,9 @@ module parcel_merge
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, l
             double precision                           :: mu
-            double precision                           :: B11(n_parcels), &
-                                                          B12(n_parcels), &
-                                                          B22(n_parcels)
+            double precision                           :: B11(n_merge), &
+                                                          B12(n_merge), &
+                                                          B22(n_merge)
 
             call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22)
 
@@ -323,6 +325,8 @@ module parcel_merge
 
                 l = l + 1
             enddo
+
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
         end subroutine optimal_multimerge
 
