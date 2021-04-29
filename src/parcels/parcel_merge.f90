@@ -54,6 +54,7 @@ module parcel_merge
                     call optimal_multimerge(parcels, isma, ibig, n_merge)
                 else
                     print *, "Unknown merge type '", trim(parcel_info%merge_type), "'."
+                    stop
                 endif
 
                 ! overwrite invalid parcels
