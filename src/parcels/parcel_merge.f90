@@ -204,6 +204,11 @@ module parcel_merge
 
                     ! zm will contain v(ib)*z(ib)+sum{v(is)*z(is)}
                     zm(l) = parcels%volume(ib, 1) * parcels%position(ib, 2)
+
+                    B11m(l) = zero
+                    B12m(l) = zero
+                    B22m(l) = zero
+
                 else
                     ! Sum up all the small parcels merging with a common larger one:
                     ! "is" refers to the small parcel index
