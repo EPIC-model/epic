@@ -89,6 +89,9 @@ module model
                     call apply_diverge(volg)
                 endif
 
+                ! update volume on the grid
+                call par2grid(parcels, parcels%volume, volg)
+
                 t = t + dt
                 iter = iter + 1
             end do
