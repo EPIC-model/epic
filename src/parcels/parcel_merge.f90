@@ -180,7 +180,7 @@ module parcel_merge
             integer                                    :: m, ib, is, l, n
             integer                                    :: loc(n_parcels)
             double precision                           :: vm(n_merge), x0(n_merge), xm(n_merge)
-            double precision                           :: zm(n_merge), delx, vmerge, dely, B22
+            double precision                           :: zm(n_merge), delx, vmerge, dely, B22, mu
             double precision,            intent(out)   :: B11m(n_merge), B12m(n_merge), B22m(n_merge)
 
             loc = zero
@@ -241,6 +241,7 @@ module parcel_merge
 
                 ! z centre of merged parcel
                 parcels%position(ib, 2) = vmerge * zm(m)
+
             enddo
 
             do m = 1, n_merge
@@ -253,16 +254,15 @@ module parcel_merge
                 delx = get_delx(parcels%position(is, 1), parcels%position(ib, 1))
                 dely = parcels%position(is, 2) - parcels%position(ib, 2)
 
-                B11m(n) = B11m(n) + vmerge * parcels%volume(is, 1) &
-                        * (four * delx ** 2 + parcels%B(is, 1))
-
-                B12m(n) = B12m(n) + vmerge * parcels%volume(is, 1) &
-                        * (four * delx * dely + parcels%B(is, 2))
-
                 B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is, 1))
 
-                B22m(n) = B22m(n) + vmerge * parcels%volume(is, 1) &
-                        * (four * dely ** 2 + B22)
+                ! volume fraction A_{is} / A
+                mu = vmerge * parcels%volume(is, 1)
+
+                B11m(n) = B11m(n) + mu * (four * delx ** 2   + parcels%B(is, 1))
+                B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(is, 2))
+                B22m(n) = B22m(n) + mu * (four * dely ** 2   + B22)
+
             enddo
 
         end subroutine do_multimerge
