@@ -20,6 +20,9 @@ module parcel_merge
     private :: do_bimerge,           &
                geometric_bimerge,    &
                optimal_bimerge,      &
+               geometric_multimerge, &
+               optimal_multimerge,   &
+!                do_multimerge,        &
                solve_quartic,        &
                pack_parcels
 
@@ -41,10 +44,14 @@ module parcel_merge
 
             if (n_merge > 0) then
                 ! merge small parcels into large parcels
-                if (parcel_info%merge_type == 'geometric') then
+                if (parcel_info%merge_type == 'bi-geometric') then
                     call geometric_bimerge(parcels, isma, ibig, n_merge)
-                else if (parcel_info%merge_type == 'optimal') then
+                else if (parcel_info%merge_type == 'bi-optimal') then
                     call optimal_bimerge(parcels, isma, ibig, n_merge)
+                else if (parcel_info%merge_type == 'multi-geometric') then
+                    call geometric_multimerge(parcels, isma, ibig, n_merge)
+                else if (parcel_info%merge_type == 'multi-optimal') then
+                    call optimal_multimerge(parcels, isma, ibig, n_merge)
                 else
                     print *, "Unknown merge type '", trim(parcel_info%merge_type), "'."
                 endif
@@ -162,6 +169,22 @@ module parcel_merge
             call apply_parcel_bc(parcels%position, parcels%velocity)
 
         end subroutine optimal_bimerge
+
+
+        subroutine geometric_multimerge(parcels, isma, ibig, n_merge)
+            type(parcel_container_type), intent(inout) :: parcels
+            integer,                     intent(in)    :: isma(0:)
+            integer,                     intent(in)    :: ibig(:)
+            integer,                     intent(in)    :: n_merge
+        end subroutine geometric_multimerge
+
+
+        subroutine optimal_multimerge(parcels, isma, ibig, n_merge)
+            type(parcel_container_type), intent(inout) :: parcels
+            integer,                     intent(in)    :: isma(0:)
+            integer,                     intent(in)    :: ibig(:)
+            integer,                     intent(in)    :: n_merge
+        end subroutine optimal_multimerge
 
 
         function solve_quartic(B11, B12, B22, ab) result(mu)
