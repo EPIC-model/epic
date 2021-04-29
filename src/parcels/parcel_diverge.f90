@@ -52,7 +52,7 @@ module parcel_diverge
         double precision, allocatable :: xtrig(:)
         integer                       :: xfactors(5)
 
-    public :: init_diverge, apply_diverge
+    public :: init_diverge, apply_diverge, apply_gradient
 
     contains
 
@@ -197,6 +197,35 @@ module parcel_diverge
         enddo
     end subroutine apply_diverge
 
+    subroutine apply_gradient(volg,gradient_pref)
+        double precision, intent(in) :: volg(-1:, 0:, :)
+        double precision, intent(in) :: gradient_pref
+        double precision             :: phi(0:nz,0:nx-1)
+        double precision             :: ws(ngp)
+        double precision             :: points(2, 2)
+        integer                      :: n, i, p, is(ngp), js(ngp)
+
+        ! form divergence field * dt and store in phi temporarily:
+        phi = (volg(0:nz, :, 1) - vcell)/(vcell)
+
+        do n = 1, n_parcels
+
+            call apply_periodic_bc(parcels%position(n, :))
+
+            call trilinear(parcels%position(n, :), is, js, ws)
+
+            parcels%position(n, 1) = parcels%position(n, 1)    &
+            - gradient_pref*dx(1)*(ws(2)+ws(1))*(phi(js(2), is(2))-phi(js(1), is(1)))  &
+            - gradient_pref*dx(1)*(ws(4)+ws(3))*(phi(js(4), is(4))-phi(js(3), is(3)))
+
+            parcels%position(n, 2) = parcels%position(n, 2)             &
+            - gradient_pref*dx(2)*(ws(3)+ws(1))*(phi(js(3), is(3))-phi(js(1), is(1))) &
+            - gradient_pref*dx(2)*(ws(4)+ws(2))*(phi(js(4), is(4))-phi(js(2), is(2)))
+
+            call apply_periodic_bc(parcels%position(n, :))
+        enddo
+
+    end subroutine apply_gradient
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     ! Inverts Laplace's operator on fs in semi-spectral space.

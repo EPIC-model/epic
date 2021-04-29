@@ -36,13 +36,17 @@
  parcel%vfraction    = 36.0
 
  parcel%diverge_freq = 1
+ 
+ parcel%diverge_iters = 5
+ 
+ parcel%gradient_pref = 0.3
 
  !
  ! stepper info
  !
  stepper            = 'classic-rk4'
 
- time%limit         = 2.5
+ time%limit         = 10.0
 
  time%dt            = 0.025
 

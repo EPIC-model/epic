@@ -11,7 +11,7 @@ module model
     use parcel_bc
     use parcel_split, only : split_ellipses
     use parcel_merge, only : merge_ellipses
-    use parcel_diverge, only : init_diverge, apply_diverge
+    use parcel_diverge, only : init_diverge, apply_diverge, apply_gradient
     use fields
     use parcel_interpl
     use rk4
@@ -54,6 +54,7 @@ module model
             double precision :: dt   = 0.0 ! time step
             integer          :: iter = 1   ! simulation iteration
             integer          :: nw   = 0   ! number of writes to h5
+            integer          :: diverge_iter ! current divergence iteration
 
             do while (t <= time%limit)
 
@@ -86,11 +87,14 @@ module model
                 call par2grid(parcels, parcels%volume, volg)
 
                 if (mod(iter, parcel_info%diverge_freq) == 0) then
-                    call apply_diverge(volg)
+                    do diverge_iter=1,parcel_info%diverge_iters
+                        call apply_diverge(volg)
+                        call par2grid(parcels, parcels%volume, volg)
+                        call apply_gradient(volg,parcel_info%gradient_pref)
+                        call par2grid(parcels, parcels%volume, volg)
+                    end do
                 endif
 
-                ! update volume on the grid
-                call par2grid(parcels, parcels%volume, volg)
 
                 t = t + dt
                 iter = iter + 1
