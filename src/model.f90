@@ -13,7 +13,7 @@ module model
     use parcel_merge, only : merge_ellipses
     use parcel_diverge, only : init_diverge, apply_diverge
     use fields
-    use interpolation
+    use parcel_interpl
     use rk4
     use writer, only : open_h5_file,                        &
                        close_h5_file,                       &

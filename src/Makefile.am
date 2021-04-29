@@ -8,16 +8,15 @@ epic_SOURCES = 					\
 	taylorgreen.f90				\
 	utils/writer.f90			\
 	fields/fields.f90			\
-	interpolation/interpl_methods.f90	\
 	parcels/ellipse.f90			\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
 	parcels/parcel_nearest.f90		\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\
+	parcels/parcel_interpl.f90 		\
 	parcels/parcel_diverge.f90		\
 	parser/parser.f90 			\
-	interpolation/interpolation.f90 	\
 	utils/diagnostics.f90			\
 	stepper/rk4_utils.f90			\
 	stepper/classic_rk4.f90			\

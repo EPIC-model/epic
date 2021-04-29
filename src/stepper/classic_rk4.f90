@@ -8,7 +8,7 @@ module classic_rk4
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
-    use interpolation, only : grid2par
+    use parcel_interpl, only : grid2par
     use fields, only : strain_f, velocity_f
     implicit none
     integer, parameter :: dp=kind(0.d0)           ! double precision
