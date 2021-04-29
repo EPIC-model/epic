@@ -263,6 +263,8 @@ module parcel_merge
                 B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(is, 2))
                 B22m(n) = B22m(n) + mu * (four * dely ** 2   + B22)
 
+                parcels%volume(ib, 1) = vm(n)
+
             enddo
 
         end subroutine do_multimerge
@@ -274,6 +276,7 @@ module parcel_merge
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, l
+            integer                                    :: loc(n_parcels)
             double precision                           :: factor
             double precision                           :: B11(n_merge), &
                                                           B12(n_merge), &
@@ -281,19 +284,30 @@ module parcel_merge
 
             call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22)
 
-            l = 1
+
+            loc = zero
+
+            l = 0
             do m = 1, n_merge
                 ib = ibig(m)
 
-                ! normalize such that determinant of the merger is (ab)**2
-                ! ab / sqrt(det(B))
-                factor = parcels%volume(ib, 1) / (pi * sqrt(B11(l) * B22(l) - B12(l) ** 2))
+                if (loc(ib) .eq. 0) then
+                    ! Start a new merged parcel, indexed l:
+                    l = l + 1
+                    loc(ib) = l
 
-                parcels%B(ib, 1) = B11(l) * factor
-                parcels%B(ib, 2) = B12(l) * factor
+                    ! normalize such that determinant of the merger is (ab)**2
+                    ! ab / sqrt(det(B))
+                    factor = parcels%volume(ib, 1) / (pi * sqrt(B11(l) * B22(l) - B12(l) ** 2))
 
-                l = l + 1
+                    print *, 'B11', parcels%B(ib, 1),  B11(l) * factor, parcels%volume(ib, 1)
+                    print *, 'B12', parcels%B(ib, 2),  B12(l) * factor
+                    parcels%B(ib, 1) = B11(l) * factor
+                    parcels%B(ib, 2) = B12(l) * factor
+                endif
             enddo
+
+!             stop
 
             call apply_parcel_bc(parcels%position, parcels%velocity)
 
