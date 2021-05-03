@@ -90,8 +90,10 @@ module model
                     do diverge_iter=1,parcel_info%diverge_iters
                         call apply_diverge(volg)
                         call par2grid(parcels, parcels%volume, volg)
-                        call apply_gradient(volg,parcel_info%gradient_pref)
-                        call par2grid(parcels, parcels%volume, volg)
+                        if(parcel_info%diverge_grad) then
+                            call apply_gradient(volg,parcel_info%gradient_pref)
+                            call par2grid(parcels, parcels%volume, volg)
+                        end if
                     end do
                 endif
 

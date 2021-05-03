@@ -43,6 +43,7 @@ module options
         double precision :: vfraction    = 36.0        ! volume fraction in merge
         integer          :: diverge_freq = 1           ! diverge frequency, 1 = call diverge module every step
         integer          :: diverge_iters= 1           ! diverge iterations
+        logical          :: diverge_grad = .true.      ! diverge uses gradient descent to adjust parcel positions on small scale
         double precision :: gradient_pref= 0.3         ! prefactor for gradient descent
     end type parcel_info_type
 

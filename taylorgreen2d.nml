@@ -36,9 +36,11 @@
  parcel%vfraction    = 36.0
 
  parcel%diverge_freq = 1
- 
+
  parcel%diverge_iters = 5
- 
+
+ parcel%diverge_grad = .true.
+
  parcel%gradient_pref = 0.3
 
  !
