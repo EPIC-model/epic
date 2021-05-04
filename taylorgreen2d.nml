@@ -34,6 +34,8 @@
  parcel%merge_freq   = 1
 
  parcel%vfraction    = 36.0
+ 
+ parcel%vmaxfraction    = 2.89
 
  parcel%diverge_freq = 1
 
