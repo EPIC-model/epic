@@ -210,23 +210,22 @@ module parcel_merge
                     B11m(l) = zero
                     B12m(l) = zero
                     B22m(l) = zero
-
-                else
-                    ! Sum up all the small parcels merging with a common larger one:
-                    ! "is" refers to the small parcel index
-                    is = isma(m) !Small parcel
-                    n = loc(ib)  !Index of merged parcel
-                    vm(n) = vm(n) + parcels%volume(is, 1) !Accumulate volume of merged parcel
-
-                    ! works across periodic edge
-                    delx = get_delx(parcels%position(is, 1), x0(n))
-
-                    ! Accumulate sum of v(is)*(x(is)-x(ib))
-                    xm(n) = xm(n) + parcels%volume(is, 1) * delx
-
-                    ! Accumulate v(ib)*z(ib)+sum{v(is)*z(is)}
-                    zm(n) = zm(n) + parcels%volume(is, 1) * parcels%position(is, 2)
                 endif
+
+                ! Sum up all the small parcels merging with a common larger one:
+                ! "is" refers to the small parcel index
+                is = isma(m) !Small parcel
+                n = loc(ib)  !Index of merged parcel
+                vm(n) = vm(n) + parcels%volume(is, 1) !Accumulate volume of merged parcel
+
+                ! works across periodic edge
+                delx = get_delx(parcels%position(is, 1), x0(n))
+
+                ! Accumulate sum of v(is)*(x(is)-x(ib))
+                xm(n) = xm(n) + parcels%volume(is, 1) * delx
+
+                ! Accumulate v(ib)*z(ib)+sum{v(is)*z(is)}
+                zm(n) = zm(n) + parcels%volume(is, 1) * parcels%position(is, 2)
             enddo
 
             ! Obtain the merged parcel centres
@@ -266,24 +265,24 @@ module parcel_merge
                     parcels%position(ib, 1) = xm(l)
                     parcels%position(ib, 2) = zm(l)
 
-                else
-                    is = isma(m)
-                    n = loc(ib)
-
-                    vmerge = one / vm(n)
-
-                    delx = get_delx(parcels%position(is, 1), xm(n))
-                    dely = parcels%position(is, 2) - zm(n)
-
-                    B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is, 1))
-
-                    ! volume fraction A_{is} / A
-                    mu = vmerge * parcels%volume(is, 1)
-
-                    B11m(n) = B11m(n) + mu * (four * delx ** 2   + parcels%B(is, 1))
-                    B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(is, 2))
-                    B22m(n) = B22m(n) + mu * (four * dely ** 2   + B22)
                 endif
+
+                is = isma(m)
+                n = loc(ib)
+
+                vmerge = one / vm(n)
+
+                delx = get_delx(parcels%position(is, 1), xm(n))
+                dely = parcels%position(is, 2) - zm(n)
+
+                B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is, 1))
+
+                ! volume fraction A_{is} / A
+                mu = vmerge * parcels%volume(is, 1)
+
+                B11m(n) = B11m(n) + mu * (four * delx ** 2   + parcels%B(is, 1))
+                B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(is, 2))
+                B22m(n) = B22m(n) + mu * (four * dely ** 2   + B22)
             enddo
 
         end subroutine do_multimerge
@@ -320,14 +319,10 @@ module parcel_merge
                     ! ab / sqrt(det(B))
                     factor = get_ab(V(l)) / sqrt(B11(l) * B22(l) - B12(l) ** 2)
 
-                    print *, 'B11', parcels%B(ib, 1),  B11(l) * factor, parcels%volume(ib, 1), factor
-                    print *, 'B12', parcels%B(ib, 2),  B12(l) * factor
                     parcels%B(ib, 1) = B11(l) * factor
                     parcels%B(ib, 2) = B12(l) * factor
                 endif
             enddo
-
-!             stop
 
             call apply_parcel_bc(parcels%position, parcels%velocity)
 
