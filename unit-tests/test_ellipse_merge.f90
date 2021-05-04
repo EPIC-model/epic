@@ -39,7 +39,7 @@ program test_ellipse_bi_merge
 
     ! geometric merge
     parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'bi-geometric'
+    parcel_info%merge_type = 'geometric'
     parcel_info%vfraction = 1.0e-2
 
     call merge_ellipses(parcels)
@@ -88,7 +88,7 @@ program test_ellipse_bi_merge
 
     ! optimal merge
     parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'bi-optimal'
+    parcel_info%merge_type = 'optimal'
     parcel_info%vfraction = 1.0e-2
 
     call merge_ellipses(parcels)
