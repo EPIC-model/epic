@@ -6,7 +6,7 @@
 program test_trilinear
     use constants, only : pi
     use parcel_container
-    use interpolation, only : par2grid, grid2par
+    use parcel_interpl, only : par2grid, grid2par
     use options, only : parcel_info, grid, interpl
     use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz, ngrid
     implicit none
