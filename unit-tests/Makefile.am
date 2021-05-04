@@ -6,8 +6,7 @@ AM_LDFLAGS =					\
 	$(top_builddir)/src/parcels/*.o 	\
 	$(top_builddir)/src/taylorgreen.o	\
 	$(top_builddir)/src/utils/*.o		\
-	$(top_builddir)/src/fields/*.o		\
-	$(top_builddir)/src/interpolation/*.o
+	$(top_builddir)/src/fields/*.o
 
 unittestsdir = $(prefix)/unit-tests
 
@@ -19,7 +18,8 @@ unittests_PROGRAMS = 			\
 	test_trilinear			\
 	test_diverge			\
 	test_ellipse_split		\
-	test_ellipse_merge
+	test_ellipse_bi_merge		\
+	test_ellipse_multi_merge
 
 # 7 April 2021
 # https://www.gnu.org/software/automake/manual/html_node/Scripts.html
@@ -32,6 +32,7 @@ test_fft_2_SOURCES = test_fft_2.f90
 test_trilinear_SOURCES = test_trilinear.f90
 test_diverge_SOURCES = test_diverge.f90
 test_ellipse_split_SOURCES = test_ellipse_split.f90
-test_ellipse_merge_SOURCES = test_ellipse_merge.f90
+test_ellipse_bi_merge_SOURCES = test_ellipse_bi_merge.f90
+test_ellipse_multi_merge_SOURCES = test_ellipse_multi_merge.f90
 
 endif

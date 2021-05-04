@@ -39,7 +39,7 @@ program test_ellipse_bi_merge
 
     ! geometric merge
     parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'geometric'
+    parcel_info%merge_type = 'bi-geometric'
     parcel_info%vfraction = 1.0e-2
 
     call merge_ellipses(parcels)
@@ -66,9 +66,9 @@ program test_ellipse_bi_merge
     error = max(error, abs(parcels%volume(1, 1) - vol))
 
     if (error > 1.0e-15) then
-        print '(a26, a10)', 'Test ellipse merge (geo):', 'FAILED'
+        print '(a29, a7)', 'Test ellipse bi-merge (geo):', 'FAILED'
     else
-        print '(a26, a10)', 'Test ellipse merge (geo):', 'PASSED'
+        print '(a29, a7)', 'Test ellipse bi-merge (geo):', 'PASSED'
     endif
 
 
@@ -88,7 +88,7 @@ program test_ellipse_bi_merge
 
     ! optimal merge
     parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'optimal'
+    parcel_info%merge_type = 'bi-optimal'
     parcel_info%vfraction = 1.0e-2
 
     call merge_ellipses(parcels)
@@ -109,9 +109,9 @@ program test_ellipse_bi_merge
 
 
     if (error > 1.0e-15) then
-        print '(a26, a10)', 'Test ellipse merge (opt):', 'FAILED'
+        print '(a29, a7)', 'Test ellipse bi-merge (opt):', 'FAILED'
     else
-        print '(a26, a10)', 'Test ellipse merge (opt):', 'PASSED'
+        print '(a29, a7)', 'Test ellipse bi-merge (opt):', 'PASSED'
     endif
 
     call parcel_dealloc
