@@ -147,7 +147,7 @@ module parcel_diverge
         integer                      :: n, l, is(ngp), js(ngp)
 
         ! form divergence field * dt and store in phi temporarily:
-        phi = volg(0:nz, :, 1) - vcell
+        phi = volg(0:nz, :, 1) / vcell - one
 
         !-----------------------------------------
         ! Forward x FFT:
