@@ -229,40 +229,61 @@ module parcel_merge
                 endif
             enddo
 
-            ! Obtain the merged parcel centres and merged B matrix
+            ! Obtain the merged parcel centres
             ! (l = total number of merged parcels)
             do m = 1, l
                 ! temporary scalar containing 1 / vm(m)
                 vmerge = one / vm(m)
 
-                ib = ibig(m)
-
                 ! x centre of merged parcel, modulo periodicity
-                parcels%position(ib, 1) = get_delx(x0(m), - vmerge * xm(m))
+                xm(m) = get_delx(x0(m), - vmerge * xm(m))
 
                 ! z centre of merged parcel
-                parcels%position(ib, 2) = vmerge * zm(m)
-
+                zm(m) = vmerge * zm(m)
             enddo
+
+            loc = zero
+            l = 0
 
             do m = 1, n_merge
                 ib = ibig(m)
-                is = isma(m)
-                n = loc(ib)
 
-                vmerge = one / vm(n)
+                if (loc(ib) .eq. 0) then
+                    l = l + 1
+                    loc(ib) = l
 
-                delx = get_delx(parcels%position(is, 1), parcels%position(ib, 1))
-                dely = parcels%position(is, 2) - parcels%position(ib, 2)
+                    B22 = get_B22(parcels%B(ib, 1), parcels%B(ib, 2), parcels%volume(ib, 1))
 
-                B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is, 1))
+                    delx = get_delx(parcels%position(ib, 1), xm(l))
+                    dely = parcels%position(ib, 2) - zm(l)
 
-                ! volume fraction A_{is} / A
-                mu = vmerge * parcels%volume(is, 1)
+                    mu = parcels%volume(ib, 1) * vmerge
+                    B11m(l) = mu * (four * delx ** 2 + parcels%B(ib, 1))
+                    B12m(l) = mu * (four * delx * dely + parcels%B(ib, 2))
+                    B22m(l) = mu * (four * dely ** 2 + B22)
 
-                B11m(n) = B11m(n) + mu * (four * delx ** 2   + parcels%B(is, 1))
-                B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(is, 2))
-                B22m(n) = B22m(n) + mu * (four * dely ** 2   + B22)
+                    parcels%volume(ib, 1)  = vm(l)
+                    parcels%position(ib, 1) = xm(l)
+                    parcels%position(ib, 2) = zm(l)
+
+                else
+                    is = isma(m)
+                    n = loc(ib)
+
+                    vmerge = one / vm(n)
+
+                    delx = get_delx(parcels%position(is, 1), xm(n))
+                    dely = parcels%position(is, 2) - zm(n)
+
+                    B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is, 1))
+
+                    ! volume fraction A_{is} / A
+                    mu = vmerge * parcels%volume(is, 1)
+
+                    B11m(n) = B11m(n) + mu * (four * delx ** 2   + parcels%B(is, 1))
+                    B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(is, 2))
+                    B22m(n) = B22m(n) + mu * (four * dely ** 2   + B22)
+                endif
             enddo
 
         end subroutine do_multimerge
@@ -294,14 +315,6 @@ module parcel_merge
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
                     loc(ib) = l
-
-                    mu = parcels%volume(ib, 1) / V(l)
-
-                    B11(l) = B11(l) + mu * parcels%B(ib, 1)
-                    B12(l) = B12(l) + mu * parcels%B(ib, 2)
-                    B22(l) = B22(l) + mu * get_B22(parcels%B(ib, 1), parcels%B(ib, 2), parcels%volume(ib, 1))
-
-                    parcels%volume(ib, 1)  = V(l)
 
                     ! normalize such that determinant of the merger is (ab)**2
                     ! ab / sqrt(det(B))
