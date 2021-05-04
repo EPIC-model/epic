@@ -15,7 +15,7 @@ program test_ellipse_multi_merge
     use ellipse
     implicit none
 
-    double precision :: ab, a1b1, a2b2, B11, B12, B22, error, vol
+    double precision :: a1b1, a2b2, error
 
     grid = (/2, 2/)
 
@@ -41,26 +41,8 @@ program test_ellipse_multi_merge
 
     call merge_ellipses(parcels)
 
-    ! reference solution
-    ab = a1b1 + 4.0d0 * a2b2  ! a == b since it is a circle
-    B11 = ab
-    B12 = 0.0d0
-    B22 = ab
-    vol = ab * pi
-
-    !
     ! check result
-    !
-    error = 0.0d0
-
-    error = max(error, abs(dble(n_parcels - 1)))
-    error = max(error, abs(parcels%B(1, 1) - B11))
-    error = max(error, abs(parcels%B(1, 2) - B12))
-    error = max(error, abs(get_B22(parcels%B(1, 1), &
-                                   parcels%B(1, 2), &
-                                   parcels%volume(1, 1)) - B22))
-    error = max(error, sum(abs(parcels%position(1, :))))
-    error = max(error, abs(parcels%volume(1, 1) - vol))
+    error = eval_max_error()
 
     if (error > 1.0e-15) then
         print '(a32, a7)', 'Test ellipse multi-merge (geo):', 'FAILED'
@@ -89,20 +71,8 @@ program test_ellipse_multi_merge
 
     call merge_ellipses(parcels)
 
-    !
     ! check result
-    !
-    error = 0.0d0
-
-    error = max(error, abs(dble(n_parcels - 1)))
-    error = max(error, abs(parcels%B(1, 1) - B11))
-    error = max(error, abs(parcels%B(1, 2) - B12))
-    error = max(error, abs(get_B22(parcels%B(1, 1), &
-                                   parcels%B(1, 2), &
-                                   parcels%volume(1, 1)) - B22))
-    error = max(error, sum(abs(parcels%position(1, :))))
-    error = max(error, abs(parcels%volume(1, 1) - vol))
-
+    error = eval_max_error()
 
     if (error > 1.0e-15) then
         print '(a32, a7)', 'Test ellipse multi-merge (opt):', 'FAILED'
@@ -148,5 +118,30 @@ program test_ellipse_multi_merge
             parcels%B(5, 1) = a2b2
             parcels%B(5, 2) = 0.0d0
         end subroutine parcel_setup
+
+        function eval_max_error() result(max_err)
+            double precision :: ab, B11, B12, B22, vol
+            double precision :: max_err
+
+            ! reference solution
+            ab = a1b1 + 4.0d0 * a2b2  ! a == b since it is a circle
+            B11 = ab
+            B12 = 0.0d0
+            B22 = ab
+            vol = ab * pi
+
+            max_err = 0.0d0
+
+            max_err = max(max_err, abs(dble(n_parcels - 1)))
+            max_err = max(max_err, abs(parcels%B(1, 1) - B11))
+            max_err = max(max_err, abs(parcels%B(1, 2) - B12))
+            max_err = max(max_err, abs(get_B22(parcels%B(1, 1), &
+                                               parcels%B(1, 2), &
+                                               parcels%volume(1, 1)) - B22))
+            max_err = max(max_err, sum(abs(parcels%position(1, :))))
+            max_err = max(max_err, abs(parcels%volume(1, 1) - vol))
+        end function eval_max_error
+
+
 
 end program test_ellipse_multi_merge
