@@ -1,11 +1,11 @@
 ! =============================================================================
-!                       Test ellipse merge
+!                       Test ellipse bi merge
 !
 !         This unit test checks the merging of two ellipses. The two
 !         ellipses, i.e., circles, are located at the origin. The final
 !         ellipse is again a circle located at the origin.
 ! =============================================================================
-program test_ellipse_split
+program test_ellipse_bi_merge
     use constants, only : pi
     use parcel_container
     use parcel_merge, only : merge_ellipses
@@ -39,7 +39,7 @@ program test_ellipse_split
 
     ! geometric merge
     parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'geometric'
+    parcel_info%merge_type = 'bi-geometric'
     parcel_info%vfraction = 1.0e-2
 
     call merge_ellipses(parcels)
@@ -88,7 +88,7 @@ program test_ellipse_split
 
     ! optimal merge
     parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'optimal'
+    parcel_info%merge_type = 'bi-optimal'
     parcel_info%vfraction = 1.0e-2
 
     call merge_ellipses(parcels)
@@ -116,4 +116,4 @@ program test_ellipse_split
 
     call parcel_dealloc
 
-end program test_ellipse_split
+end program test_ellipse_bi_merge
