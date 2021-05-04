@@ -12,7 +12,7 @@
 program test_free_slip
     use constants, only : pi
     use parcel_container
-    use interpolation, only : par2grid
+    use parcel_interpl, only : par2grid
     use options, only : parcel_info, grid
     use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz, ngrid
     implicit none
