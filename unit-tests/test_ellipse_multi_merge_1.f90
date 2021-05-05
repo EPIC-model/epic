@@ -6,7 +6,7 @@
 !         on all four sides. The final ellipse is a circle located at the
 !         origin.
 ! =============================================================================
-program test_ellipse_multi_merge
+program test_ellipse_multi_merge_1
     use constants, only : pi
     use parcel_container
     use parcel_merge, only : merge_ellipses
@@ -137,4 +137,4 @@ program test_ellipse_multi_merge
 
 
 
-end program test_ellipse_multi_merge
+end program test_ellipse_multi_merge_1
