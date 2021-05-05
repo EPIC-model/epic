@@ -16,7 +16,7 @@ program test_ellipse_bi_merge
 
     double precision :: ab, a1b1, a2b2, B11, B12, B22, error, vol
 
-    grid = (/21, 21/)
+    grid = (/2, 2/)
 
     call update_parameters()
 
@@ -40,7 +40,7 @@ program test_ellipse_bi_merge
     ! geometric merge
     parcel_info%lambda = 5.0
     parcel_info%merge_type = 'bi-geometric'
-    parcel_info%vfraction = 1.0e-2
+    parcel_info%vfraction = 2.0
 
     call merge_ellipses(parcels)
 
@@ -87,9 +87,7 @@ program test_ellipse_bi_merge
     parcels%B(2, 2) = 0.0d0
 
     ! optimal merge
-    parcel_info%lambda = 5.0
     parcel_info%merge_type = 'bi-optimal'
-    parcel_info%vfraction = 1.0e-2
 
     call merge_ellipses(parcels)
 
