@@ -6,6 +6,7 @@
 !         ellipse is again a circle located at the origin.
 ! =============================================================================
 program test_ellipse_bi_merge
+    use unit_test
     use constants, only : pi
     use parcel_container
     use parcel_merge, only : merge_ellipses
@@ -65,12 +66,7 @@ program test_ellipse_bi_merge
     error = max(error, sum(abs(parcels%position(1, :))))
     error = max(error, abs(parcels%volume(1, 1) - vol))
 
-    if (error > 1.0e-15) then
-        print '(a29, a7)', 'Test ellipse bi-merge (geo):', 'FAILED'
-    else
-        print '(a29, a7)', 'Test ellipse bi-merge (geo):', 'PASSED'
-    endif
-
+    call print_result_dp('Test ellipse bi-merge (geometric)', error)
 
     ! parcels
     n_parcels = 2
@@ -106,11 +102,7 @@ program test_ellipse_bi_merge
     error = max(error, abs(parcels%volume(1, 1) - vol))
 
 
-    if (error > 1.0e-15) then
-        print '(a29, a7)', 'Test ellipse bi-merge (opt):', 'FAILED'
-    else
-        print '(a29, a7)', 'Test ellipse bi-merge (opt):', 'PASSED'
-    endif
+    call print_result_dp('Test ellipse bi-merge (optimal)', error)
 
     call parcel_dealloc
 

@@ -7,6 +7,7 @@
 !         located at the origin.
 ! =============================================================================
 program test_ellipse_multi_merge_2
+    use unit_test
     use constants, only : pi, one, two, four
     use parcel_container
     use parcel_merge, only : merge_ellipses
@@ -43,11 +44,7 @@ program test_ellipse_multi_merge_2
     ! check result
     error = eval_max_error('multi-geometric')
 
-    if (error > 1.0e-15) then
-        print '(a32, a7)', 'Test ellipse multi-merge (geo):', 'FAILED'
-    else
-        print '(a32, a7)', 'Test ellipse multi-merge (geo):', 'PASSED'
-    endif
+    call print_result_dp('Test ellipse multi-merge 2 (geometric)', error)
 
     !
     ! muti-optimal merging
@@ -65,11 +62,7 @@ program test_ellipse_multi_merge_2
     ! check result
     error = eval_max_error('multi-optimal')
 
-    if (error > 1.0e-15) then
-        print '(a32, a7)', 'Test ellipse multi-merge (opt):', 'FAILED'
-    else
-        print '(a32, a7)', 'Test ellipse multi-merge (opt):', 'PASSED'
-    endif
+    call print_result_dp('Test ellipse multi-merge 2 (optimal)', error)
 
     call parcel_dealloc
 

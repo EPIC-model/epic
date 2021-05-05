@@ -6,6 +6,7 @@
 !         It then performs 500 relaxation steps.
 ! =============================================================================
 program test_diverge
+    use unit_test
     use constants, only : pi
     use parcel_container
     use parcel_diverge
@@ -71,11 +72,6 @@ program test_diverge
 
     final_error = abs(sum(volg(0:nz, 0:nx-1, :)) - ngrid * vcell)
 
-
-    if (final_error >= init_error) then
-        print '(a14, a22)', 'Test diverge:', 'FAILED'
-    else
-        print '(a14, a22)', 'Test diverge:', 'PASSED'
-    endif
+    call print_result_dp('Test diverge', final_error, init_error)
 
 end program test_diverge

@@ -5,11 +5,12 @@
 !         are centred at (1.5, 0.2). Hence, this checks periodicity in x.
 ! =============================================================================
 program test_ellipse_multi_merge_3
+    use unit_test
     use constants, only : pi, one, two, four
     use parcel_container
     use parcel_merge, only : merge_ellipses
     use options, only : parcel_info, grid
-    use parameters, only : update_parameters
+    use parameters, only : update_parameters, extent
     use ellipse
     implicit none
 
@@ -41,11 +42,7 @@ program test_ellipse_multi_merge_3
     ! check result
     error = eval_max_error('multi-geometric')
 
-    if (error > 1.0e-15) then
-        print '(a32, a7)', 'Test ellipse multi-merge (geo):', 'FAILED'
-    else
-        print '(a32, a7)', 'Test ellipse multi-merge (geo):', 'PASSED'
-    endif
+    call print_result_dp('Test ellipse multi-merge 3 (geometric)', error)
 
     !
     ! muti-optimal merging
@@ -63,11 +60,7 @@ program test_ellipse_multi_merge_3
     ! check result
     error = eval_max_error('multi-optimal')
 
-    if (error > 1.0e-15) then
-        print '(a32, a7)', 'Test ellipse multi-merge (opt):', 'FAILED'
-    else
-        print '(a32, a7)', 'Test ellipse multi-merge (opt):', 'PASSED'
-    endif
+    call print_result_dp('Test ellipse multi-merge 3 (optimal)', error)
 
     call parcel_dealloc
 
@@ -93,7 +86,7 @@ program test_ellipse_multi_merge_3
             parcels%B(2, 2) = 0.0d0
 
             ! small parcel right
-            parcels%position(3, 1) = 1.5d0 + d
+            parcels%position(3, 1) = -extent(1) + 1.5d0 + d
             parcels%position(3, 2) = 0.2d0 + d
             parcels%volume(3, 1) = a2b2 * pi
             parcels%B(3, 1) = a2b2

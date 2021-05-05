@@ -5,6 +5,7 @@
 !         are centred at (1.5, 0.2). Hence, this checks periodicity in x.
 ! =============================================================================
 program test_ellipse_bi_vs_multi_merge
+    use unit_test
     use constants, only : pi, one, two, four
     use parcel_container
     use parcel_merge, only : merge_ellipses
@@ -43,12 +44,6 @@ program test_ellipse_bi_vs_multi_merge
     parcel_info%merge_type = 'bi-geometric'
     call merge_ellipses(parcels)
 
-
-    print *, B11, parcels%B(1, 1)
-    print *, B12, parcels%B(1, 2)
-    print *, vol, parcels%volume(1, 1)
-    print *, pos, parcels%position(1, :)
-
     ! check result
     error = 0.0d0
     error = max(error, abs(parcels%B(1, 1) - B11))
@@ -56,11 +51,7 @@ program test_ellipse_bi_vs_multi_merge
     error = max(error, sum(abs(parcels%position(1, :) - pos)))
     error = max(error, abs(parcels%volume(1, 1) - vol))
 
-    if (error > 1.0e-15) then
-        print '(a32, a7)', 'Test ellipse bi-merge vs multi-merge (geo):', 'FAILED'
-    else
-        print '(a32, a7)', 'Test ellipse multi-merge (geo):', 'PASSED'
-    endif
+    call print_result_dp('Test ellipse bi-merge vs multi-merge (geometric)', error)
 
     !
     ! muti-optimal merging
@@ -84,12 +75,6 @@ program test_ellipse_bi_vs_multi_merge
     parcel_info%merge_type = 'bi-optimal'
     call merge_ellipses(parcels)
 
-    print *, "---------------------"
-    print *, B11, parcels%B(1, 1)
-    print *, B12, parcels%B(1, 2)
-    print *, vol, parcels%volume(1, 1)
-    print *, pos, parcels%position(1, :)
-
     ! check result
     error = 0.0d0
     error = max(error, abs(parcels%B(1, 1) - B11))
@@ -97,11 +82,7 @@ program test_ellipse_bi_vs_multi_merge
     error = max(error, sum(abs(parcels%position(1, :) - pos)))
     error = max(error, abs(parcels%volume(1, 1) - vol))
 
-    if (error > 1.0e-15) then
-        print '(a32, a7)', 'Test ellipse multi-merge (opt):', 'FAILED'
-    else
-        print '(a32, a7)', 'Test ellipse multi-merge (opt):', 'PASSED'
-    endif
+    call print_result_dp('Test ellipse bi-merge vs multi-merge (optimal)', error)
 
     call parcel_dealloc
 
@@ -122,9 +103,9 @@ program test_ellipse_bi_vs_multi_merge
             parcels%B(1, 1) = a1b1
             parcels%B(1, 2) = 0.0d0
 
-            ! small parcel right
-            parcels%position(2, 1) = 1.5d0 + d
-            parcels%position(2, 2) = 0.2d0 + d
+            ! small parcel left
+            parcels%position(2, 1) = 1.5d0 - d
+            parcels%position(2, 2) = 0.2d0 - d
             parcels%volume(2, 1) = a2b2 * pi
             parcels%B(2, 1) = a2b2
             parcels%B(2, 2) = 0.0d0
