@@ -23,7 +23,6 @@ program test_ellipse_multi_merge
 
     call parcel_alloc(5)
 
-    n_parcels = 5
     a1b1 = 2.0d0
     a2b2 = 1.0d0
 
@@ -50,21 +49,14 @@ program test_ellipse_multi_merge
         print '(a32, a7)', 'Test ellipse multi-merge (geo):', 'PASSED'
     endif
 
+
     !
     ! muti-optimal merging
     !
 
     call parcel_setup
 
-    ! geometric merge
-    parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'multi-geometric'
-    parcel_info%vfraction = 2
-    n_parcels = 5
-
-    call parcel_setup
-
-    ! geometric merge
+    ! optimal merge
     parcel_info%lambda = 5.0
     parcel_info%merge_type = 'multi-optimal'
     parcel_info%vfraction = 2
@@ -85,6 +77,7 @@ program test_ellipse_multi_merge
     contains
 
         subroutine parcel_setup
+            n_parcels = 5
             parcels%position(1, :) = 0.0d0
             parcels%volume(1, 1) = a1b1 * pi
             parcels%B(1, 1) = a1b1

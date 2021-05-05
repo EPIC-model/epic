@@ -335,6 +335,7 @@ module parcel_merge
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, l
+            integer                                    :: loc(n_parcels)
             double precision                           :: mu
             double precision                           :: B11(n_merge), &
                                                           B12(n_merge), &
@@ -343,17 +344,24 @@ module parcel_merge
 
             call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
 
-            l = 1
+            loc = zero
+
+            l = 0
             do m = 1, n_merge
                 ib = ibig(m)
 
-                mu = solve_quartic(B11(l), B12(l), B22(l), parcels%volume(ib, 1) / pi)
+                if (loc(ib) .eq. 0) then
+                    ! Start a new merged parcel, indexed l:
+                    l = l + 1
+                    loc(ib) = l
 
-                ! optimal B
-                parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / (one - mu ** 2)
-                parcels%B(ib, 2) = B12(l) / (one - mu)
 
-                l = l + 1
+                    mu = solve_quartic(B11(l), B12(l), B22(l), V(l) / pi)
+
+                    ! optimal B
+                    parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / (one - mu ** 2)
+                    parcels%B(ib, 2) = B12(l) / (one - mu)
+                endif
             enddo
 
             call apply_parcel_bc(parcels%position, parcels%velocity)

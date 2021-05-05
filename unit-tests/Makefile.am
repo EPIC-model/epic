@@ -19,7 +19,8 @@ unittests_PROGRAMS = 			\
 	test_diverge			\
 	test_ellipse_split		\
 	test_ellipse_bi_merge		\
-	test_ellipse_multi_merge
+	test_ellipse_multi_merge_1	\
+	test_ellipse_multi_merge_2
 
 # 7 April 2021
 # https://www.gnu.org/software/automake/manual/html_node/Scripts.html
@@ -33,6 +34,7 @@ test_trilinear_SOURCES = test_trilinear.f90
 test_diverge_SOURCES = test_diverge.f90
 test_ellipse_split_SOURCES = test_ellipse_split.f90
 test_ellipse_bi_merge_SOURCES = test_ellipse_bi_merge.f90
-test_ellipse_multi_merge_SOURCES = test_ellipse_multi_merge.f90
+test_ellipse_multi_merge_1_SOURCES = test_ellipse_multi_merge_1.f90
+test_ellipse_multi_merge_2_SOURCES = test_ellipse_multi_merge_2.f90
 
 endif
