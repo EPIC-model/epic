@@ -16,10 +16,10 @@ module diagnostics
 
     contains
 
-        function get_max_abs_volume_error() result(err)
+        function get_max_abs_normalised_volume_error() result(err)
             double precision :: err
-            err = maxval(abs(volg(0:nz, 0:nx-1, :)  - vcell))
-        end function get_max_abs_volume_error
+            err = maxval(abs(volg(0:nz, 0:nx-1, :)  - vcell)) / vcell
+        end function get_max_abs_normalised_volume_error
 
         function get_rms_volume_error() result(rms)
             double precision :: rms ! rms volume error
@@ -54,8 +54,8 @@ module diagnostics
             rms_v = get_rms_volume_error()
             call write_h5_double_scalar_attrib(group, "rms volume error", rms_v)
 
-            abserr_v = get_max_abs_volume_error()
-            call write_h5_double_scalar_attrib(group, "max absolute volume error", abserr_v)
+            abserr_v = get_max_abs_normalised_volume_error()
+            call write_h5_double_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
 
 
             ! close all
