@@ -1,5 +1,5 @@
 ! =============================================================================
-!                       Test ellipse multi merge
+!                     Test ellipse bi-merge vs multi-merge
 !
 !         This unit test is like test_ellipse_multi_merge_2 but the ellipses
 !         are centred at (1.5, 0.2). Hence, this checks periodicity in x.
