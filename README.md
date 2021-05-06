@@ -33,7 +33,7 @@ export PATH=$PREFIX/bin:$PATH
 ## Running
 In order to run the model, execute
 ```
-$ ./epic --config filename
+$ epic --config filename
 ```
 where `filename` is the configuration file.
 
