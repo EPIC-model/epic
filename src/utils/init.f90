@@ -2,7 +2,8 @@
 !               This module initializes all parcels and fields.
 ! =============================================================================
 module init
-    use options, only : parcel_info, time, zero, two
+    use constants, only : zero, two
+    use options, only : parcel_info, time
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
     use fields, only : velocity_f,      &
                        strain_f,        &
