@@ -9,7 +9,7 @@ EPIC has following requirements:
 A script to install hdf5 is found in the subdirectory `dependencies`. If you do not install hdf5 to the system
 location, replace `../configure` below by
 ```
-$ ../configure --with-hdf5="$PREFIX"
+$ ../configure --with-hdf5=$PREFIX
 ```
 where `$PREFIX` is the root directory of your hdf5 installation.
 
