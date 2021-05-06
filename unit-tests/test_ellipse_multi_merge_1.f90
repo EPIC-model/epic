@@ -24,8 +24,8 @@ program test_ellipse_multi_merge_1
 
     call parcel_alloc(5)
 
-    a1b1 = 2.0d0
-    a2b2 = 1.0d0
+    a1b1 = 1.44d0
+    a2b2 = 0.25d0
 
 
     !
@@ -37,7 +37,7 @@ program test_ellipse_multi_merge_1
     ! geometric merge
     parcel_info%lambda = 5.0
     parcel_info%merge_type = 'multi-geometric'
-    parcel_info%vfraction = 2
+    parcel_info%vfraction = 3
 
     call merge_ellipses(parcels)
 
@@ -55,7 +55,7 @@ program test_ellipse_multi_merge_1
     ! optimal merge
     parcel_info%lambda = 5.0
     parcel_info%merge_type = 'multi-optimal'
-    parcel_info%vfraction = 2
+    parcel_info%vfraction = 3
 
     call merge_ellipses(parcels)
 
@@ -76,14 +76,14 @@ program test_ellipse_multi_merge_1
             parcels%B(1, 2) = 0.0d0
 
             ! small parcel left
-            parcels%position(2, 1) = -1.5d0
+            parcels%position(2, 1) = -1.2d0
             parcels%position(2, 2) = 0.0d0
             parcels%volume(2, 1) = a2b2 * pi
             parcels%B(2, 1) = a2b2
             parcels%B(2, 2) = 0.0d0
 
             ! small parcel right
-            parcels%position(3, 1) = 1.5d0
+            parcels%position(3, 1) = 1.2d0
             parcels%position(3, 2) = 0.0d0
             parcels%volume(3, 1) = a2b2 * pi
             parcels%B(3, 1) = a2b2
@@ -91,14 +91,14 @@ program test_ellipse_multi_merge_1
 
             ! small parcel below
             parcels%position(4, 1) = 0.0d0
-            parcels%position(4, 2) = -1.5d0
+            parcels%position(4, 2) = -1.2d0
             parcels%volume(4, 1) = a2b2 * pi
             parcels%B(4, 1) = a2b2
             parcels%B(4, 2) = 0.0d0
 
             ! small parcel above
             parcels%position(5, 1) = 0.0d0
-            parcels%position(5, 2) = 1.5d0
+            parcels%position(5, 2) = 1.2d0
             parcels%volume(5, 1) = a2b2 * pi
             parcels%B(5, 1) = a2b2
             parcels%B(5, 2) = 0.0d0
