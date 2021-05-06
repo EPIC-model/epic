@@ -2,7 +2,7 @@
 !               This module initializes all parcels and fields.
 ! =============================================================================
 module init
-    use options, only : parcel_info, time
+    use options, only : parcel_info, time, zero, two
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
     use fields, only : velocity_f,      &
                        strain_f,        &
@@ -40,7 +40,7 @@ module init
             call init_stretch
 
             ! initialize the volume of each parcel
-            parcels%volume(1:n_parcels, 1) = vcell / parcel_info%n_per_cell
+            parcels%volume(1:n_parcels, 1) = vcell / dble(parcel_info%n_per_cell)
 
             call init_B_matrix
 
@@ -75,22 +75,22 @@ module init
             double precision :: del(2)
 
             ! number of parcels per dimension
-            n_per_dim = sqrt(parcel_info%n_per_cell + 0.0)
+            n_per_dim = sqrt(parcel_info%n_per_cell + zero)
             if (n_per_dim ** 2 .ne. parcel_info%n_per_cell) then
                 print *, "Number of parcels per cell (", &
                          parcel_info%n_per_cell, ") not a square."
                 stop
             endif
 
-            del = dx / (2.0 * n_per_dim)
+            del = dx / dble(two * n_per_dim)
 
             k = 1
             do j = 0, nz-1
                 do i = 0, nx-1
                     do jj = 1, 2 * n_per_dim, 2
                         do ii = 1, 2 * n_per_dim, 2
-                            parcels%position(k, 1) = lower(1) + i * dx(1) + del(1) * ii
-                            parcels%position(k, 2) = lower(2) + j * dx(2) + del(2) * jj
+                            parcels%position(k, 1) = lower(1) + dble(i) * dx(1) + del(1) * dble(ii)
+                            parcels%position(k, 2) = lower(2) + dble(j) * dx(2) + del(2) * dble(jj)
                             k = k + 1
                         enddo
                     enddo
@@ -102,7 +102,7 @@ module init
             if (parcel_info%is_elliptic) then
                 deallocate(parcels%stretch)
             else
-                parcels%stretch = 0.0
+                parcels%stretch = zero
             endif
         end subroutine init_stretch
 
@@ -110,7 +110,7 @@ module init
             if (parcel_info%is_elliptic) then
                 ! initialze circles
                 parcels%B(1:n_parcels, 1) = get_ab(parcels%volume(1:n_parcels, 1)) ! B11
-                parcels%B(1:n_parcels, 2) = 0.0                                    ! B12
+                parcels%B(1:n_parcels, 2) = zero                                   ! B12
             else
                 deallocate(parcels%B)
             endif
@@ -133,7 +133,7 @@ module init
             call init_velocity_field
 
             allocate(volg(-1:nz+1, 0:nx-1, 1))
-            volg = 0.0
+            volg = zero
 
             if (time%is_adaptive) then
                 call init_vorticity_field
