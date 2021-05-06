@@ -58,7 +58,7 @@ module fields
             integer,          intent(in)  :: i, j
             double precision, intent(out) :: pos(2)
 
-            pos = lower + (/i, j/) * dx
+            pos = lower + (/dble(i), dble(j)/) * dx
 
         end subroutine get_position
 
