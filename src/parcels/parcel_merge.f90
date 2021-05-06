@@ -336,7 +336,7 @@ module parcel_merge
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, l
             integer                                    :: loc(n_parcels)
-            double precision                           :: mu
+            double precision                           :: mu, ab
             double precision                           :: B11(n_merge), &
                                                           B12(n_merge), &
                                                           B22(n_merge), &
@@ -355,8 +355,8 @@ module parcel_merge
                     l = l + 1
                     loc(ib) = l
 
-
-                    mu = solve_quartic(B11(l), B12(l), B22(l), V(l) / pi)
+                    ab = get_ab(V(l))
+                    mu = solve_quartic(B11(l), B12(l), B22(l), ab)
 
                     ! optimal B
                     parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / (one - mu ** 2)
