@@ -5,7 +5,8 @@ Elliptic and non-elliptic model for PIC in fluid dynamics
 EPIC has following requirements:
 * gfortran
 * hdf5
-Procedures to install hdf5 is found in the subdirectory `dependencies`. If you do not install hdf5 to the system
+
+A script to install hdf5 is found in the subdirectory `dependencies`. If you do not install hdf5 to the system
 location, replace `../configure` below by
 ```
 $ ../configure --with-hdf5="$PREFIX"
