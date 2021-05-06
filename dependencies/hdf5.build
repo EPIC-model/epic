@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# recipe for:
+P=hdf5
+V_MAJOR=1
+V_MINOR=12
+V=${V_MAJOR}.${V_MINOR}.0
+
+# download
+curl -L \
+    --output "${DOWNLOADS_DIR}/$P-$V.tar.gz" \
+    "https://support.hdfgroup.org/ftp/HDF5/prev-releases/$P-$V_MAJOR.$V_MINOR/$P-$V/src/$P-$V.tar.gz"
+
+# unpack
+mkdir -p "${SRC_DIR}/$P" && cd "$_"
+tar xvf "${DOWNLOADS_DIR}/$P-$V.tar.gz"
+
+# guess system type
+system_type="$(${SRC_DIR}/$P/$P-$V/bin/config.guess)"
+
+# configure
+mkdir -p "${SRC_DIR}/$P/build" && cd "$_"
+${SRC_DIR}/$P/$P-$V/configure       \
+    --build="$system_type"          \
+    --host="$system_type"           \
+    --target="$system_type"         \
+    --enable-fortran                \
+    --enable-shared                 \
+    --with-pic                      \
+    --prefix=${PREFIX}              \
+    ${SRC_DIR}/$P/$P-$V
+
+# compile & install
+make -j ${NJOBS}
+make install
