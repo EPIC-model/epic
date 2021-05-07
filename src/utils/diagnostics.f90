@@ -29,7 +29,7 @@ module diagnostics
             ! x indices run from 0 to nx-1
             sqerrsum = sum((volg(0:nz, 0:nx-1, :) - vcell) ** 2)
 
-            rms = sqrt(sqerrsum / dble(ncell)) / vcell
+            rms = dsqrt(sqerrsum / dble(ncell)) / vcell
         end function get_rms_volume_error
 
         subroutine write_h5_diagnostics(iter)
