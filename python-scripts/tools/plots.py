@@ -166,3 +166,48 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
     plt.close()
 
     h5reader.close()
+
+
+def plot_volume_symmetry_error(fname, show=False, fmt="png"):
+    mpl.rcParams['text.usetex'] = True
+    mpl.rcParams['font.family'] = 'serif'
+
+    h5reader = H5Reader()
+    h5reader.open(fname)
+
+    nsteps = h5reader.get_num_steps()
+
+    vmean = np.zeros(nsteps)
+    vmin = np.zeros(nsteps)
+    vmax = np.zeros(nsteps)
+    vstd = np.zeros(nsteps)
+    iters = range(nsteps)
+    for i in iters:
+        volg = h5reader.get_field_dataset(i, 'volume')
+        vmean[i] = volg.mean()
+        vstd[i] = volg.std()
+        vmin[i] = volg.min()
+        vmax[i] = volg.max()
+
+    h5reader.close()
+
+    plt.figure(figsize=(6, 4), dpi=200)
+    plt.grid(which='both', linestyle='dashed')
+    #plt.plot(iters, vmean, label='mean', color='darkorange', linewidth=1.5)
+    plt.fill_between(iters, vmean - vstd, vmin, label='min-max', color='cornflowerblue',
+                     edgecolor='cornflowerblue', linewidth=0.75)
+    plt.fill_between(iters, vmean + vstd, vmax, color='cornflowerblue',
+                     edgecolor='cornflowerblue', linewidth=0.75)
+    plt.fill_between(iters, vmean - vstd, vmean + vstd, label='std', color='royalblue',
+                     edgecolor='royalblue', linewidth=0.75)
+
+    plt.xlabel('number of iterations')
+    plt.ylabel('absolute volume symmetry error')
+
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.12))
+
+    if show:
+        plt.show()
+    else:
+        plt.savefig('volume_symmetry_error.' + fmt, bbox_inches='tight')
+    plt.close()
