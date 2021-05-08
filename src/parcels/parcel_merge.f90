@@ -134,7 +134,7 @@ module parcel_merge
 
                 ! normalize such that determinant of the merger is (ab)**2
                 ! ab / sqrt(det(B))
-                factor = ab / sqrt(B11 * B22 - B12 ** 2)
+                factor = ab / dsqrt(B11 * B22 - B12 ** 2)
 
                 parcels%B(ib, 1) = B11 * factor
                 parcels%B(ib, 2) = B12 * factor
@@ -178,22 +178,22 @@ module parcel_merge
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, is, l, n
-            integer                                    :: loc(n_parcels)
+            integer                                    :: loca(n_parcels)
             double precision                           :: x0(n_merge), xm(n_merge)
             double precision                           :: zm(n_merge), delx, vmerge, dely, B22, mu
             double precision,            intent(out)   :: B11m(n_merge), B12m(n_merge), B22m(n_merge), &
                                                           vm(n_merge)
 
-            loc = zero
+            loca = zero
 
             l = 0
             do m = 1, n_merge
                 ib = ibig(m) ! Index of large parcel
 
-                if (loc(ib) .eq. 0) then
+                if (loca(ib) .eq. 0) then
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
-                    loc(ib) = l
+                    loca(ib) = l
 
                     ! vm will contain the total volume of the merged parcel
                     vm(l) = parcels%volume(ib, 1)
@@ -215,7 +215,7 @@ module parcel_merge
                 ! Sum up all the small parcels merging with a common larger one:
                 ! "is" refers to the small parcel index
                 is = isma(m) !Small parcel
-                n = loc(ib)  !Index of merged parcel
+                n = loca(ib)  !Index of merged parcel
                 vm(n) = vm(n) + parcels%volume(is, 1) !Accumulate volume of merged parcel
 
                 ! works across periodic edge
@@ -241,15 +241,17 @@ module parcel_merge
                 zm(m) = vmerge * zm(m)
             enddo
 
-            loc = zero
+            loca = zero
             l = 0
 
             do m = 1, n_merge
                 ib = ibig(m)
 
-                if (loc(ib) .eq. 0) then
+                if (loca(ib) .eq. 0) then
                     l = l + 1
-                    loc(ib) = l
+                    loca(ib) = l
+
+                    vmerge = one / vm(l)
 
                     B22 = get_B22(parcels%B(ib, 1), parcels%B(ib, 2), parcels%volume(ib, 1))
 
@@ -268,7 +270,7 @@ module parcel_merge
                 endif
 
                 is = isma(m)
-                n = loc(ib)
+                n = loca(ib)
 
                 vmerge = one / vm(n)
 
@@ -294,7 +296,7 @@ module parcel_merge
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, l
-            integer                                    :: loc(n_parcels)
+            integer                                    :: loca(n_parcels)
             double precision                           :: factor, mu
             double precision                           :: B11(n_merge), &
                                                           B12(n_merge), &
@@ -304,23 +306,24 @@ module parcel_merge
             call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
 
 
-            loc = zero
+            loca = zero
 
             l = 0
             do m = 1, n_merge
                 ib = ibig(m)
 
-                if (loc(ib) .eq. 0) then
+                if (loca(ib) .eq. 0) then
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
-                    loc(ib) = l
+                    loca(ib) = l
 
                     ! normalize such that determinant of the merger is (ab)**2
                     ! ab / sqrt(det(B))
-                    factor = get_ab(V(l)) / sqrt(B11(l) * B22(l) - B12(l) ** 2)
+                    factor = get_ab(V(l)) / dsqrt(B11(l) * B22(l) - B12(l) ** 2)
 
                     parcels%B(ib, 1) = B11(l) * factor
                     parcels%B(ib, 2) = B12(l) * factor
+
                 endif
             enddo
 
@@ -335,7 +338,7 @@ module parcel_merge
             integer,                     intent(in)    :: ibig(:)
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, l
-            integer                                    :: loc(n_parcels)
+            integer                                    :: loca(n_parcels)
             double precision                           :: mu, ab
             double precision                           :: B11(n_merge), &
                                                           B12(n_merge), &
@@ -344,16 +347,16 @@ module parcel_merge
 
             call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
 
-            loc = zero
+            loca = zero
 
             l = 0
             do m = 1, n_merge
                 ib = ibig(m)
 
-                if (loc(ib) .eq. 0) then
+                if (loca(ib) .eq. 0) then
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
-                    loc(ib) = l
+                    loca(ib) = l
 
                     ab = get_ab(V(l))
                     mu = solve_quartic(B11(l), B12(l), B22(l), ab)
