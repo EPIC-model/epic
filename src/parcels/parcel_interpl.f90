@@ -102,6 +102,57 @@ module parcel_interpl
         end subroutine par2grid_elliptic
 
 
+        subroutine par2grid_elliptic_symmetry_check(parcels, attrib, field)
+            type(parcel_container_type), intent(in)    :: parcels
+            double precision,            intent(in)    :: attrib(:, :)
+            double precision,            intent(inout) :: field(-1:, 0:, :)
+            integer                                    :: ncomp
+            double precision                           :: points(2, 2), V, B(2), pos(2)
+            integer                                    :: n, p, c, l, m
+            integer                                    :: the_shape(3)
+
+            field = zero
+
+            ! number of field components
+            the_shape = shape(field)
+            ncomp = the_shape(3)
+
+            do m = -1, 1, 2
+                do n = 1, n_parcels
+
+                    pos = parcels%position(n, :)
+                    pos(1) = dble(m) * pos(1)
+                    V = dble(m) * parcels%volume(n, 1)
+                    B = parcels%B(n, :)
+
+                    B(2) = dble(m) * B(2)
+
+                    points = get_ellipse_points(pos, V, B)
+
+                    ! we have 2 points per ellipse
+                    do p = 1, 2
+
+                        ! ensure point is within the domain
+                        call apply_periodic_bc(points(p, :))
+
+                        ! get interpolation weights and mesh indices
+                        call get_indices_and_weights(points(p, :))
+
+                        ! loop over field components
+                        do c = 1, ncomp
+                            ! loop over grid points which are part of the interpolation
+                            do l = 1, ngp
+                                ! the weight is halved due to 2 points per ellipse
+                                field(js(l), is(l), c) = field(js(l), is(l), c)         &
+                                                       + dble(m) * 0.5d0 * weights(l) * attrib(n, c)
+                            enddo
+                        enddo
+                    enddo
+                enddo
+            enddo
+        end subroutine par2grid_elliptic_symmetry_check
+
+
         subroutine par2grid_non_elliptic(parcels, attrib, field)
             type(parcel_container_type), intent(in)    :: parcels
             double precision,            intent(in)    :: attrib(:, :)
