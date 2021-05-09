@@ -172,6 +172,7 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
 def plot_volume_symmetry_error(fname, show=False, fmt="png"):
     mpl.rcParams['text.usetex'] = True
     mpl.rcParams['font.family'] = 'serif'
+    mpl.rcParams['font.size'] = 18
 
     h5reader = H5Reader()
     h5reader.open(fname)
@@ -192,7 +193,7 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
 
     h5reader.close()
 
-    plt.figure(figsize=(6, 4), dpi=200)
+    plt.figure(figsize=(8, 6), dpi=250)
     plt.grid(which='both', linestyle='dashed')
     #plt.plot(iters, vmean, label='mean', color='darkorange', linewidth=1.5)
     plt.fill_between(iters, vmean - vstd, vmin, label='min-max', color='cornflowerblue',
@@ -203,9 +204,9 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
                      edgecolor='royalblue', linewidth=0.75)
 
     plt.xlabel('number of iterations')
-    plt.ylabel('absolute volume symmetry error')
+    plt.ylabel('volume symmetry error')
 
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.12))
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
 
     if show:
         plt.show()
