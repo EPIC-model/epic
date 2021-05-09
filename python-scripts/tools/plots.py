@@ -4,6 +4,7 @@ import matplotlib.colors as cls
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+import os
 
 def plot_ellipses(fname, step=-1, show=False, fmt="png"):
     h5reader = H5Reader()
@@ -209,5 +210,6 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
     if show:
         plt.show()
     else:
-        plt.savefig('volume_symmetry_error.' + fmt, bbox_inches='tight')
+        prefix = os.path.splitext(fname)[0]
+        plt.savefig(prefix + '_volsymerr.' + fmt, bbox_inches='tight')
     plt.close()
