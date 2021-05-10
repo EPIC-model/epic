@@ -42,13 +42,13 @@
  !
  stepper            = 'classic-rk4'
 
- time%limit         = 5.0
+ time%limit         = 50.0
 
  time%dt            = 0.025
 
  time%is_adaptive   = .true.
 
- time%alpha         = 0.25
+ time%alpha         = 0.125
 
  !
  ! Taylor-Green flow parameters:
