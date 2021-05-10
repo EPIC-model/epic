@@ -17,11 +17,12 @@ try:
                           required=True,
                           help="hdf5 output file of EPIC")
 
-    parser.add_argument("--step",
-                        type=int,
+    parser.add_argument("--steps",
+                        type=str,
                         required=False,
-                        default=-1,
-                        help="step to plot (default: -1 [all])")
+                        default='-1',
+                        help="steps to plot, a range is specified with a colon, " \
+                            + "e.g. 0:10 plots step 0 to 10) (default: -1 [all])")
 
     parser.add_argument("--show",
                         required=False,
@@ -40,10 +41,27 @@ try:
 
     args = parser.parse_args()
 
+    steps = args.steps
+
+    if ':' in steps:
+        steps = steps.split(':')
+        begin=int(steps[0])
+        end=int(steps[1])
+    elif steps.isdigit():
+        end = int(steps)
+        begin = end
+        if end == -1:
+            begin = 0
+    else:
+        raise IOError("Invalid --steps argument format.")
+
+    if end > -1 and end < begin:
+        raise ValueError("Invalid plot range: (begin) " + str(begin) + " > " + str(end) + " (end).")
+
     if not os.path.exists(args.filename):
         raise IOError("File '" + args.filename + "' does not exist.")
 
-    plot_ellipses(fname=args.filename, step=args.step, show=args.show, fmt=args.fmt)
+    plot_ellipses(fname=args.filename, begin=begin, end=end, show=args.show, fmt=args.fmt)
 
 except Exception as ex:
     print(ex)

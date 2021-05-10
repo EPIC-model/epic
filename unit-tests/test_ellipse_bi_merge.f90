@@ -6,6 +6,7 @@
 !         ellipse is again a circle located at the origin.
 ! =============================================================================
 program test_ellipse_bi_merge
+    use unit_test
     use constants, only : pi
     use parcel_container
     use parcel_merge, only : merge_ellipses
@@ -16,7 +17,7 @@ program test_ellipse_bi_merge
 
     double precision :: ab, a1b1, a2b2, B11, B12, B22, error, vol
 
-    grid = (/21, 21/)
+    grid = (/2, 2/)
 
     call update_parameters()
 
@@ -39,8 +40,8 @@ program test_ellipse_bi_merge
 
     ! geometric merge
     parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'geometric'
-    parcel_info%vfraction = 1.0e-2
+    parcel_info%merge_type = 'bi-geometric'
+    parcel_info%vfraction = 2.0
 
     call merge_ellipses(parcels)
 
@@ -65,12 +66,7 @@ program test_ellipse_bi_merge
     error = max(error, sum(abs(parcels%position(1, :))))
     error = max(error, abs(parcels%volume(1, 1) - vol))
 
-    if (error > 1.0e-15) then
-        print '(a26, a10)', 'Test ellipse merge (geo):', 'FAILED'
-    else
-        print '(a26, a10)', 'Test ellipse merge (geo):', 'PASSED'
-    endif
-
+    call print_result_dp('Test ellipse bi-merge (geometric)', error)
 
     ! parcels
     n_parcels = 2
@@ -87,9 +83,7 @@ program test_ellipse_bi_merge
     parcels%B(2, 2) = 0.0d0
 
     ! optimal merge
-    parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'optimal'
-    parcel_info%vfraction = 1.0e-2
+    parcel_info%merge_type = 'bi-optimal'
 
     call merge_ellipses(parcels)
 
@@ -108,11 +102,7 @@ program test_ellipse_bi_merge
     error = max(error, abs(parcels%volume(1, 1) - vol))
 
 
-    if (error > 1.0e-15) then
-        print '(a26, a10)', 'Test ellipse merge (opt):', 'FAILED'
-    else
-        print '(a26, a10)', 'Test ellipse merge (opt):', 'PASSED'
-    endif
+    call print_result_dp('Test ellipse bi-merge (optimal)', error)
 
     call parcel_dealloc
 

@@ -3,7 +3,7 @@
 ! =============================================================================
 module model
     use hdf5
-    use constants, only : max_num_parcels
+    use constants, only : max_num_parcels, zero
     use diagnostics
     use init, only : init_parcels, init_fields
     use parser, only : read_config_file, write_h5_params
@@ -50,8 +50,8 @@ module model
 
         subroutine run
             use options, only : time, output, verbose, parcel_info
-            double precision :: t    = 0.0 ! current time
-            double precision :: dt   = 0.0 ! time step
+            double precision :: t    = zero ! current time
+            double precision :: dt   = zero ! time step
             integer          :: iter = 1   ! simulation iteration
             integer          :: nw   = 0   ! number of writes to h5
 
@@ -172,12 +172,12 @@ module model
                 ! adaptive time stepping according to
                 ! https://doi.org/10.1002/qj.3319
                 max_vorticity = maxval(abs(vortg))
-                dt = min(0.5 / max_vorticity, time%dt)
+                dt = min(0.5d0 / max_vorticity, time%dt)
             else
                 dt = time%dt
             endif
 
-            if (dt <= 0.0) then
+            if (dt <= zero) then
                 print "(a10, f0.2, a6)", "Time step ", dt, " <= 0!"
                 stop
             endif

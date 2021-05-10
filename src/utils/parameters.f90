@@ -44,7 +44,7 @@ module parameters
     ! Update all parameters according to the
     ! user-defined global options.
     subroutine update_parameters
-        dx = extent / (grid - 1)
+        dx = extent / dble(grid - 1)
         dxi = one / dx;
 
         vcell = product(dx)

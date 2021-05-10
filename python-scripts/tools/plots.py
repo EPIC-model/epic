@@ -5,19 +5,15 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
 
-def plot_ellipses(fname, step=-1, show=False, fmt="png"):
+def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png"):
     h5reader = H5Reader()
 
     h5reader.open(fname)
 
     nsteps = h5reader.get_num_steps()
 
-    start = 0
-    stop = nsteps
-
-    if step > -1:
-        start = step
-        stop = step + 1
+    if end == -1:
+        end = nsteps + 1
 
     lam = h5reader.get_parcel_info('lambda')
 
@@ -29,7 +25,7 @@ def plot_ellipses(fname, step=-1, show=False, fmt="png"):
     origin = h5reader.get_mesh_origin()
     extent = h5reader.get_mesh_extent()
 
-    for i in range(start, stop):
+    for i in range(begin, end+1):
         ells = h5reader.get_ellipses(step=i)
 
         fig, ax = plt.subplots(figsize=(5, 4), dpi=300, num=i)

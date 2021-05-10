@@ -5,6 +5,7 @@
 !         is centred at the origin with an orientation of 45 degrees.
 ! =============================================================================
 program test_ellipse_split
+    use unit_test
     use constants, only : pi
     use parcel_container
     use parcel_split, only : split_ellipses
@@ -63,11 +64,7 @@ program test_ellipse_split
     error = max(error, sum(abs(0.5d0 * ab * pi - parcels%volume(2, :))))
     error = max(error, dble(abs(n_parcels - 2)))
 
-    if (error > 1.0e-15) then
-        print '(a20, a16)', 'Test ellipse split:', 'FAILED'
-    else
-        print '(a20, a16)', 'Test ellipse split:', 'PASSED'
-    endif
+    call print_result_dp('Test ellipse split', error)
 
     call parcel_dealloc
 
