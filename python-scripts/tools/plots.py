@@ -170,6 +170,9 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
 
 
 def plot_volume_symmetry_error(fname, show=False, fmt="png"):
+    """
+    Plot the symmetry error of the gridded volume.
+    """
     mpl.rcParams['text.usetex'] = True
     mpl.rcParams['font.family'] = 'serif'
     mpl.rcParams['font.size'] = 18
@@ -217,6 +220,9 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
 
 
 def plot_rms_volume_error(fnames, show=False, fmt="png"):
+    """
+    Plot the gridded rms volume error.
+    """
     mpl.rcParams['text.usetex'] = True
     mpl.rcParams['font.family'] = 'serif'
     mpl.rcParams['font.size'] = 18
@@ -250,6 +256,10 @@ def plot_rms_volume_error(fnames, show=False, fmt="png"):
 
 
 def plot_max_volume_error(fnames, show=False, fmt="png"):
+    """
+    Plot the gridded absolute volume error (normalised with
+    cell volume).
+    """
     mpl.rcParams['text.usetex'] = True
     mpl.rcParams['font.family'] = 'serif'
     mpl.rcParams['font.size'] = 18
@@ -283,6 +293,9 @@ def plot_max_volume_error(fnames, show=False, fmt="png"):
 
 
 def plot_aspect_ratio(fname, show=False, fmt="png"):
+    """
+    Plot the mean and standard deviation of the parcel aspect ratio.
+    """
     mpl.rcParams['text.usetex'] = True
     mpl.rcParams['font.family'] = 'serif'
     mpl.rcParams['font.size'] = 14
@@ -331,6 +344,10 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
 
 
 def plot_parcel_volume(fname, show=False, fmt="png"):
+    """
+    Plot the mean and standard deviation of the parcel volume
+    normalised with the cell volume.
+    """
     mpl.rcParams['text.usetex'] = True
     mpl.rcParams['font.family'] = 'serif'
     mpl.rcParams['font.size'] = 14
