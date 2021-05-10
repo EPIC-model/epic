@@ -6,8 +6,7 @@ AM_LDFLAGS =					\
 	$(top_builddir)/src/parcels/*.o 	\
 	$(top_builddir)/src/taylorgreen.o	\
 	$(top_builddir)/src/utils/*.o		\
-	$(top_builddir)/src/fields/*.o		\
-	$(top_builddir)/src/interpolation/*.o
+	$(top_builddir)/src/fields/*.o
 
 unittestsdir = $(prefix)/unit-tests
 
