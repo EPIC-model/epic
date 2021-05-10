@@ -1,8 +1,8 @@
 from h5_reader import H5Reader
 from plot_beautify import *
+from plot_style import *
 import matplotlib.colors as cls
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import numpy as np
 import os
 
@@ -77,8 +77,6 @@ def plot_ellipses(fname, step=-1, show=False, fmt="png"):
 
 
 def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
-    mpl.rcParams['text.usetex'] = True
-
     h5reader = H5Reader()
 
     h5reader.open(fname)
@@ -173,10 +171,6 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
     """
     Plot the symmetry error of the gridded volume.
     """
-    mpl.rcParams['text.usetex'] = True
-    mpl.rcParams['font.family'] = 'serif'
-    mpl.rcParams['font.size'] = 18
-
     h5reader = H5Reader()
     h5reader.open(fname)
 
@@ -223,10 +217,6 @@ def plot_rms_volume_error(fnames, show=False, fmt="png"):
     """
     Plot the gridded rms volume error.
     """
-    mpl.rcParams['text.usetex'] = True
-    mpl.rcParams['font.family'] = 'serif'
-    mpl.rcParams['font.size'] = 18
-
     n = len(fnames)
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
@@ -260,10 +250,6 @@ def plot_max_volume_error(fnames, show=False, fmt="png"):
     Plot the gridded absolute volume error (normalised with
     cell volume).
     """
-    mpl.rcParams['text.usetex'] = True
-    mpl.rcParams['font.family'] = 'serif'
-    mpl.rcParams['font.size'] = 18
-
     n = len(fnames)
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
@@ -296,10 +282,6 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
     """
     Plot the mean and standard deviation of the parcel aspect ratio.
     """
-    mpl.rcParams['text.usetex'] = True
-    mpl.rcParams['font.family'] = 'serif'
-    mpl.rcParams['font.size'] = 14
-
     h5reader = H5Reader()
     h5reader.open(fname)
 
@@ -348,10 +330,6 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
     Plot the mean and standard deviation of the parcel volume
     normalised with the cell volume.
     """
-    mpl.rcParams['text.usetex'] = True
-    mpl.rcParams['font.family'] = 'serif'
-    mpl.rcParams['font.size'] = 14
-
     h5reader = H5Reader()
     h5reader.open(fname)
 
