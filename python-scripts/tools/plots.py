@@ -328,3 +328,53 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
         prefix = os.path.splitext(fname)[0]
         plt.savefig(prefix + '_aspect_ratio_profile.' + fmt, bbox_inches='tight')
     plt.close()
+
+
+def plot_parcel_volume(fname, show=False, fmt="png"):
+    mpl.rcParams['text.usetex'] = True
+    mpl.rcParams['font.family'] = 'serif'
+    mpl.rcParams['font.size'] = 14
+
+    h5reader = H5Reader()
+    h5reader.open(fname)
+
+    nsteps = h5reader.get_num_steps()
+
+    vol_mean = np.zeros(nsteps)
+    vol_std = np.zeros(nsteps)
+
+    extent = h5reader.get_mesh_extent()
+    grid   = h5reader.get_mesh_grid()
+    vcell = np.prod(extent / (grid - 1))
+
+    for step in range(nsteps):
+        vol = h5reader.get_parcel_dataset(step, 'volume')
+
+        vol_mean[step] = vol.mean() / vcell
+        vol_std[step] = vol.std() / vcell
+
+    h5reader.close()
+
+    plt.figure(figsize=(6, 4), dpi=200)
+    plt.plot(vol_mean, color='blue', label=r'mean')
+    plt.fill_between(range(nsteps), vol_mean - vol_std, vol_mean + vol_std,
+                     alpha=0.5, label=r'std. dev.')
+
+    plt.axhline(1.0, linestyle='dashed', color='black',
+                label=r'cell volume $V_{0}$')
+
+    plt.grid(linestyle='dashed', zorder=-1)
+
+    plt.xlabel(r'number of iterations')
+    plt.ylabel(r'parcel volume / $V_{0}$')
+
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.25))
+
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fname)[0]
+        plt.savefig(prefix + '_parcel_volume_profile.' + fmt, bbox_inches='tight')
+    plt.close()

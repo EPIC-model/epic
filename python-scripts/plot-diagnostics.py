@@ -3,13 +3,13 @@ import argparse
 from tools.plots import     \
     plot_rms_volume_error,  \
     plot_max_volume_error,  \
-    plot_aspect_ratio
+    plot_aspect_ratio,      \
+    plot_parcel_volume
 import os
 import sys
 
 try:
-    parser = argparse.ArgumentParser(
-        description="Creates diagnostic plots.")
+    parser = argparse.ArgumentParser(description="Creates diagnostic plots.")
 
     # 24 March 2021
     # https://stackoverflow.com/questions/24180527/argparse-required-arguments-listed-under-optional-arguments
@@ -18,7 +18,8 @@ try:
     kinds = [
         'rms-volume-error',
         'max-volume-error',
-        'aspect-ratio'
+        'aspect-ratio',
+        'parcel-volume'
     ]
 
 
@@ -62,6 +63,9 @@ try:
     elif args.kind == kinds[2]:
         for fname in args.filenames:
             plot_aspect_ratio(fname, show=args.show, fmt=args.fmt)
+    elif args.kind == kinds[3]:
+        for fname in args.filenames:
+            plot_parcel_volume(fname, show=args.show, fmt=args.fmt)
     else:
         raise ValuError("Plot '" + args.kind + "' not supported!")
 
