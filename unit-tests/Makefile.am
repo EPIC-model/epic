@@ -10,18 +10,19 @@ AM_LDFLAGS =					\
 
 unittestsdir = $(prefix)/unit-tests
 
-unittests_PROGRAMS = 			\
-	test_ellipse_orientation 	\
-	test_free_slip			\
-	test_fft_1			\
-	test_fft_2			\
-	test_trilinear			\
-	test_diverge			\
-	test_ellipse_split		\
-	test_ellipse_bi_merge		\
-	test_ellipse_multi_merge_1	\
-	test_ellipse_multi_merge_2	\
-	test_ellipse_multi_merge_3	\
+unittests_PROGRAMS = 				\
+	test_ellipse_orientation 		\
+	test_free_slip				\
+	test_fft_1				\
+	test_fft_2				\
+	test_trilinear				\
+	test_diverge				\
+	test_ellipse_split			\
+	test_ellipse_bi_merge			\
+	test_ellipse_multi_merge_1		\
+	test_ellipse_multi_merge_2		\
+	test_ellipse_multi_merge_3		\
+	test_ellipse_multi_merge_symmetry	\
 	test_ellipse_bi_vs_multi_merge
 
 # 7 April 2021
@@ -39,6 +40,7 @@ test_ellipse_bi_merge_SOURCES = test_ellipse_bi_merge.f90 unit_test.f90
 test_ellipse_multi_merge_1_SOURCES = test_ellipse_multi_merge_1.f90 unit_test.f90
 test_ellipse_multi_merge_2_SOURCES = test_ellipse_multi_merge_2.f90 unit_test.f90
 test_ellipse_multi_merge_3_SOURCES = test_ellipse_multi_merge_3.f90 unit_test.f90
+test_ellipse_multi_merge_symmetry_SOURCES = test_ellipse_multi_merge_symmetry.f90 unit_test.f90
 test_ellipse_bi_vs_multi_merge_SOURCES = test_ellipse_bi_vs_multi_merge.f90 unit_test.f90
 
 endif
