@@ -2,7 +2,8 @@
 import argparse
 from tools.plots import     \
     plot_rms_volume_error,  \
-    plot_max_volume_error
+    plot_max_volume_error,  \
+    plot_aspect_ratio
 import os
 import sys
 
@@ -16,7 +17,8 @@ try:
 
     kinds = [
         'rms-volume-error',
-        'max-volume-error'
+        'max-volume-error',
+        'aspect-ratio'
     ]
 
 
@@ -53,13 +55,15 @@ try:
         if not os.path.exists(fname):
             raise IOError("File '" + fname + "' does not exist.")
 
-    if args.kind not in kinds:
-        raise ValuError("Plot '" + args.kind + "' not supported!")
-
     if args.kind == kinds[0]:
         plot_rms_volume_error(args.filenames, show=args.show, fmt=args.fmt)
     elif args.kind == kinds[1]:
         plot_max_volume_error(args.filenames, show=args.show, fmt=args.fmt)
+    elif args.kind == kinds[2]:
+        for fname in args.filenames:
+            plot_aspect_ratio(fname, show=args.show, fmt=args.fmt)
+    else:
+        raise ValuError("Plot '" + args.kind + "' not supported!")
 
 
 except Exception as ex:

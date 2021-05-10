@@ -280,3 +280,51 @@ def plot_max_volume_error(fnames, show=False, fmt="png"):
     else:
         plt.savefig('max_normalised_vol_err.' + fmt, bbox_inches='tight')
     plt.close()
+
+
+def plot_aspect_ratio(fname, show=False, fmt="png"):
+    mpl.rcParams['text.usetex'] = True
+    mpl.rcParams['font.family'] = 'serif'
+    mpl.rcParams['font.size'] = 14
+
+    h5reader = H5Reader()
+    h5reader.open(fname)
+
+    nsteps = h5reader.get_num_steps()
+
+    lam_mean = np.zeros(nsteps)
+    lam_std = np.zeros(nsteps)
+
+    for step in range(nsteps):
+        lam = h5reader.get_aspect_ratio(step)
+
+        lam_mean[step] = lam.mean()
+        lam_std[step] = lam.std()
+
+    lmax = h5reader.get_parcel_info('lambda')[0]
+
+    h5reader.close()
+
+    plt.figure(figsize=(6, 4), dpi=200)
+    plt.plot(lam_mean, color='blue', label=r'mean')
+    plt.fill_between(range(nsteps), lam_mean - lam_std, lam_mean + lam_std,
+                     alpha=0.5, label=r'std. dev.')
+
+    plt.axhline(lmax, linestyle='dashed', color='black',
+                label=r'$\lambda\le\lambda_{\max} = ' + str(lmax) + '$')
+
+    plt.grid(linestyle='dashed', zorder=-1)
+
+    plt.xlabel(r'number of iterations')
+    plt.ylabel(r'aspect ratio $\lambda$')
+
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.25))
+
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fname)[0]
+        plt.savefig(prefix + '_aspect_ratio_profile.' + fmt, bbox_inches='tight')
+    plt.close()
