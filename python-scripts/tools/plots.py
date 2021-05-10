@@ -190,7 +190,7 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
 
     h5reader.close()
 
-    plt.figure(figsize=(8, 6), dpi=250)
+    plt.figure()
     plt.grid(which='both', linestyle='dashed')
     #plt.plot(iters, vmean, label='mean', color='darkorange', linewidth=1.5)
     plt.fill_between(iters, vmean - vstd, vmin, label='min-max', color='cornflowerblue',
@@ -221,7 +221,7 @@ def plot_rms_volume_error(fnames, show=False, fmt="png"):
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
 
-    plt.figure(figsize=(8, 6), dpi=200)
+    plt.figure()
 
     h5reader = H5Reader()
     for i, fname in enumerate(fnames):
@@ -254,7 +254,7 @@ def plot_max_volume_error(fnames, show=False, fmt="png"):
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
 
-    plt.figure(figsize=(8, 6), dpi=200)
+    plt.figure()
 
     h5reader = H5Reader()
     for i, fname in enumerate(fnames):
@@ -300,7 +300,7 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
 
     h5reader.close()
 
-    plt.figure(figsize=(6, 4), dpi=200)
+    plt.figure()
     plt.plot(lam_mean, color='blue', label=r'mean')
     plt.fill_between(range(nsteps), lam_mean - lam_std, lam_mean + lam_std,
                      alpha=0.5, label=r'std. dev.')
@@ -350,7 +350,7 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
 
     h5reader.close()
 
-    plt.figure(figsize=(6, 4), dpi=200)
+    plt.figure()
     plt.plot(vol_mean, color='blue', label=r'mean')
     plt.fill_between(range(nsteps), vol_mean - vol_std, vol_mean + vol_std,
                      alpha=0.5, label=r'std. dev.')
