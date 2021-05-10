@@ -167,12 +167,28 @@ module model
             use options, only : time
             double precision :: dt
             double precision :: max_vorticity
+            double precision :: H, S11, S12, S21, S22, gmax
+            integer          :: i, j
 
-            if (time%is_adaptive) then
-                ! adaptive time stepping according to
-                ! https://doi.org/10.1002/qj.3319
-                max_vorticity = maxval(abs(vortg))
-                dt = min(0.5d0 / max_vorticity, time%dt)
+            if (parcel_info%is_elliptic .and. time%is_adaptive) then
+                do i = 0, nx-1
+                    do j = 0, nz
+                        S11 = strain_f(j, i, 1)
+                        S12 = strain_f(j, i, 2)
+                        S21 = strain_f(j, i, 3)
+                        S22 = strain_f(j, i, 4)
+                        H = max(H, (S11 - S22) ** 2 + (S12 + S21) * 2)
+                    enddo
+                enddo
+
+                gmax = 0.5d0 * dsqrt(H)
+                dt = time%alpha * gmax
+
+            else if (time%is_adaptive) then
+                    ! adaptive time stepping according to
+                    ! https://doi.org/10.1002/qj.3319
+                    max_vorticity = maxval(abs(vortg))
+                    dt = min(0.5d0 / max_vorticity, time%dt)
             else
                 dt = time%dt
             endif

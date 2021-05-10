@@ -56,6 +56,7 @@ module options
         double precision :: limit       = 0.0       ! time limit
         double precision :: dt          = 0.0       ! time step
         logical          :: is_adaptive = .false.
+        double precision :: alpha       = 0.5       ! factor for adaptive time stepping with strain
     end type time_info_type
 
     type(time_info_type) :: time
