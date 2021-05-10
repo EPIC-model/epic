@@ -214,3 +214,69 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
         prefix = os.path.splitext(fname)[0]
         plt.savefig(prefix + '_volsymerr.' + fmt, bbox_inches='tight')
     plt.close()
+
+
+def plot_rms_volume_error(fnames, show=False, fmt="png"):
+    mpl.rcParams['text.usetex'] = True
+    mpl.rcParams['font.family'] = 'serif'
+    mpl.rcParams['font.size'] = 18
+
+    n = len(fnames)
+
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    plt.figure(figsize=(8, 6), dpi=200)
+
+    h5reader = H5Reader()
+    for i, fname in enumerate(fnames):
+        h5reader.open(fname)
+        vrms = h5reader.get_diagnostic('rms volume error')
+        h5reader.close()
+
+        prefix = os.path.splitext(fname)[0]
+        plt.plot(vrms, label=r'' + prefix, linewidth=2, color=colors[i])
+
+    plt.xlabel(r'number of iterations')
+    plt.ylabel(r'rms volume error')
+    plt.grid(linestyle='dashed', zorder=-1)
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.35))
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        plt.savefig('rms_vol_err.' + fmt, bbox_inches='tight')
+    plt.close()
+
+
+def plot_max_volume_error(fnames, show=False, fmt="png"):
+    mpl.rcParams['text.usetex'] = True
+    mpl.rcParams['font.family'] = 'serif'
+    mpl.rcParams['font.size'] = 18
+
+    n = len(fnames)
+
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    plt.figure(figsize=(8, 6), dpi=200)
+
+    h5reader = H5Reader()
+    for i, fname in enumerate(fnames):
+        h5reader.open(fname)
+        vrms = h5reader.get_diagnostic('max absolute normalised volume error')
+        h5reader.close()
+
+        prefix = os.path.splitext(fname)[0]
+        plt.plot(vrms, label=r'' + prefix, linewidth=2, color=colors[i])
+
+    plt.xlabel(r'number of iterations')
+    plt.ylabel(r'max normalised volume error')
+    plt.grid(linestyle='dashed', zorder=-1)
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.35))
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        plt.savefig('max_normalised_vol_err.' + fmt, bbox_inches='tight')
+    plt.close()

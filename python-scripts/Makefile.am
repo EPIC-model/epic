@@ -9,5 +9,8 @@ plot_ellipsesdir = $(bindir)
 plot_fields_PYTHON = plot-fields.py
 plot_fieldsdir = $(bindir)
 
+plot_diagnostics_PYTHON = plot-diagnostics.py
+plot_diagnosticsdir = $(bindir)
+
 merge_ellipses_PYTHON = merge-ellipses.py
 merge_ellipsesdir = $(bindir)
