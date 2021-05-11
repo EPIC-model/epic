@@ -4,14 +4,16 @@ Elliptic and non-elliptic model for PIC in fluid dynamics
 ## Dependencies
 EPIC has following requirements:
 * gfortran
+* zlib
 * hdf5
 
-A script to install hdf5 is found in the subdirectory `dependencies`. If you do not install hdf5 to the system
-location, replace `../configure --prefix=$HDF5` below by
+The scripts to install hdf5 and zlib are found in the subdirectory `dependencies`. If you do not install hdf5 to
+the system location, replace `../configure --prefix=$HDF5` below by
 ```
 $ ../configure --prefix=$PREFIX --with-hdf5=$HDF5
 ```
-where `$HDF5` is the root directory of your hdf5 installation.
+where `$HDF5` is the root directory of your hdf5 installation. To install hdf5 with zlib, you need to export
+the variable `ZLIB_DIR` to the root install directory.
 
 ## Compile
 In the following `$PREFIX` denotes the installation directory of EPIC.
