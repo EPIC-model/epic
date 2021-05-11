@@ -5,4 +5,6 @@ dist_doc_DATA = README.md
 install-exec-hook:
 	chmod 755 $(bindir)/animate-ellipses.py
 	chmod 755 $(bindir)/plot-ellipses.py
+	chmod 755 $(bindir)/plot-fields.py
+	chmod 755 $(bindir)/plot-diagnostics.py
 	chmod 755 $(bindir)/merge-ellipses.py

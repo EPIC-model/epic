@@ -54,10 +54,17 @@ where `filename` is the configuration file.
 The directory `$PREFIX/bin` contains following scripts:
 * animate-ellipses.py
 * plot-ellipses.py
+* plot-fields.py
+* plot-diagnostics.py
 * merge-ellipses.py
 
-Please append the argument `--help` when calling the scripts to get further information.
-
+Please append the argument `--help` when calling the scripts to get further information. We recommend to install
+a separate [Python virtual environment](https://docs.python.org/3/library/venv.html) for EPIC. After activating
+the environment all necessary Python packages can be installed via:
+```
+$ pip install -r requirements.txt
+```
+The file `requirements.txt` is contained in the root directory of EPIC.
 
 ## Performance analysis
 When configuring EPIC with `--enable-scalasca`, it is built with the performance tool [Scalasca](https://www.scalasca.org/) and [Score-P](https://www.vi-hps.org/projects/score-p/). Scripts to install Scalasca and Score-P are found in the directory `dependencies`.
