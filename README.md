@@ -1,30 +1,19 @@
 # EPIC - Elliptic Parcel-in-Cell
 Elliptic and non-elliptic model for PIC in fluid dynamics
 
+## Dependencies
+EPIC has following requirements:
+* gfortran
+* zlib
+* hdf5
 
-## Building HDF5 from scratch
-Tested with
-zlib-1.2.11 (https://zlib.net/)
-hdf5-1.10.5 (https://support.hdfgroup.org/ftp/HDF5/prev-releases/hdf5-1.10/hdf5-1.10.5/src/)
-
-
-Example compilation command showing some possible dependencies (use sudo if needed):
-For zlib
+The scripts to install hdf5 and zlib are found in the subdirectory `dependencies`. If you do not install hdf5 to
+the system location, replace `../configure --prefix=$HDF5` below by
 ```
-$ ./configure --prefix=$HOME/dependencies/zlib CC=mpicc
-$ sudo make install
+$ ../configure --prefix=$PREFIX --with-hdf5=$HDF5
 ```
-
-For HDF5 with fortran enabled
-```
-$ ./configure --with-zlib=$HOME/dependencies/zlib --enable-parallel --enable-fortran --prefix=$HOME/dependencies/hdf5 CC='/usr/lib64/openmpi/bin/mpicc' CXX='/usr/lib64/openmpi/bin/mpicxx' FC='/usr/lib64/openmpi/bin/mpif90'
-$ sudo make install
-```
-
-In this case, also replace ../configure below by
-```
-$ ../configure --with-hdf5="$HOME/dependencies/hdf5"
-```
+where `$HDF5` is the root directory of your hdf5 installation. To install hdf5 with zlib, you need to export
+the variable `ZLIB_DIR` to the root install directory.
 
 ## Compile
 In the following `$PREFIX` denotes the installation directory of EPIC.
@@ -46,7 +35,7 @@ export PATH=$PREFIX/bin:$PATH
 ## Running
 In order to run the model, execute
 ```
-$ ./epic --config filename
+$ epic --config filename
 ```
 where `filename` is the configuration file.
 
