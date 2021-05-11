@@ -70,7 +70,7 @@ program test_ellipse_multi_merge_3
         subroutine parcel_setup
             double precision :: d
 
-            d = (sqrt(a1b1) + sqrt(a2b2)) * 0.5d0 * sqrt(2.0d0)
+            d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
 
             n_parcels = 3
             parcels%position(1, 1) = 1.5d0
@@ -101,16 +101,16 @@ program test_ellipse_multi_merge_3
             double precision :: max_err
 
             ! reference solution
-            d = (sqrt(a1b1) + sqrt(a2b2)) * 0.5d0 * sqrt(2.0d0)
-            ab = a1b1 + 2.0d0 * a2b2
+            d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
+            ab = a1b1 + two * a2b2
             vol = ab * pi
 
-            B11 = a1b1 ** 2 / ab + 2.0d0 * a2b2 / ab * (4.0d0 * d ** 2 + a2b2)
-            B12 = 2.0d0 * a2b2 / ab * (4.0d0 * d ** 2)
+            B11 = a1b1 ** 2 / ab + two * a2b2 / ab * (four * d ** 2 + a2b2)
+            B12 = two * a2b2 / ab * (four * d ** 2)
             B22 = B11
 
             if (method .eq. 'multi-geometric') then
-                factor = ab / sqrt(B11 * B22 - B12 ** 2)
+                factor = ab / dsqrt(B11 * B22 - B12 ** 2)
                 B11 = B11 * factor
                 B12 = B12 * factor
                 B22 = B22 * factor

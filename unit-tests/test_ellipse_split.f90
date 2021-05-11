@@ -6,12 +6,12 @@
 ! =============================================================================
 program test_ellipse_split
     use unit_test
-    use constants, only : pi, zero, one, four
+    use constants, only : pi, zero, one, three, four, five
     use parcel_container
     use parcel_split, only : split_ellipses
     implicit none
 
-    double precision, parameter :: lam = 5.0d0
+    double precision, parameter :: lam = five
     double precision, parameter :: angle = 0.25d0 * pi
     double precision, parameter :: evec(2) = (/dcos(angle), dsin(angle)/)
     double precision :: h, ab, B11, B12, B22, pos(2, 2), error, a2, b2
@@ -35,7 +35,7 @@ program test_ellipse_split
     parcels%B(1, 2) = B12
 
     ! analytic split
-    h = 0.25d0 * sqrt(3.0d0 * a2)
+    h = 0.25d0 * dsqrt(three * a2)
     B11 = B11 - 0.75d0 * a2 * evec(1) ** 2
     B12 = B12 - 0.75d0 * a2 * evec(1) * evec(2)
     pos(1, :) = parcels%position(1, :) + h * evec

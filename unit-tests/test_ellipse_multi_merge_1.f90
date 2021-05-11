@@ -8,7 +8,7 @@
 ! =============================================================================
 program test_ellipse_multi_merge_1
     use unit_test
-    use constants, only : pi
+    use constants, only : pi, three, four, five
     use parcel_container
     use parcel_merge, only : merge_ellipses
     use options, only : parcel_info, box
@@ -36,9 +36,9 @@ program test_ellipse_multi_merge_1
     call parcel_setup
 
     ! geometric merge
-    parcel_info%lambda = 5.0d0
+    parcel_info%lambda = five
     parcel_info%merge_type = 'multi-geometric'
-    parcel_info%vfraction = 3.0d0
+    parcel_info%vfraction = three
 
     call merge_ellipses(parcels)
 
@@ -54,9 +54,9 @@ program test_ellipse_multi_merge_1
     call parcel_setup
 
     ! optimal merge
-    parcel_info%lambda = 5.0d0
+    parcel_info%lambda = five
     parcel_info%merge_type = 'multi-optimal'
-    parcel_info%vfraction = 3.0d0
+    parcel_info%vfraction = three
 
     call merge_ellipses(parcels)
 
@@ -110,7 +110,7 @@ program test_ellipse_multi_merge_1
             double precision :: max_err
 
             ! reference solution
-            ab = a1b1 + 4.0d0 * a2b2  ! a == b since it is a circle
+            ab = a1b1 + four * a2b2  ! a == b since it is a circle
             B11 = ab
             B12 = zero
             B22 = ab

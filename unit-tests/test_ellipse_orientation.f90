@@ -17,7 +17,7 @@ program test_ellipse_orientation
     integer :: iter
     integer :: grid(2) = (/2, 2/)
     double precision :: angle, B11, B12, V, a2, b2
-    double precision, parameter :: lam = 3.0d0
+    double precision, parameter :: lam = three
     logical :: failed = .false.
 
     n_parcels = 1
