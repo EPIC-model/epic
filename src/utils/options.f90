@@ -25,7 +25,7 @@ module options
     type(output_info_type) :: output
 
     !
-    ! number of cells per dimension
+    ! domain options
     !
     type box_type
         integer          :: nc(2) = (/20, 20/)                  ! number of cells
