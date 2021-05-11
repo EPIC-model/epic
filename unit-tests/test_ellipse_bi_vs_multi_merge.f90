@@ -46,7 +46,7 @@ program test_ellipse_bi_vs_multi_merge
     call merge_ellipses(parcels)
 
     ! check result
-    error = 0.0d0
+    error = zero
     error = max(error, abs(parcels%B(1, 1) - B11))
     error = max(error, abs(parcels%B(1, 2) - B12))
     error = max(error, sum(abs(parcels%position(1, :) - pos)))
@@ -77,7 +77,7 @@ program test_ellipse_bi_vs_multi_merge
     call merge_ellipses(parcels)
 
     ! check result
-    error = 0.0d0
+    error = zero
     error = max(error, abs(parcels%B(1, 1) - B11))
     error = max(error, abs(parcels%B(1, 2) - B12))
     error = max(error, sum(abs(parcels%position(1, :) - pos)))
@@ -102,14 +102,14 @@ program test_ellipse_bi_vs_multi_merge
             parcels%position(1, 2) = 0.2d0
             parcels%volume(1, 1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
-            parcels%B(1, 2) = 0.0d0
+            parcels%B(1, 2) = zero
 
             ! small parcel left
             parcels%position(2, 1) = 1.5d0 - d
             parcels%position(2, 2) = 0.2d0 - d
             parcels%volume(2, 1) = a2b2 * pi
             parcels%B(2, 1) = a2b2
-            parcels%B(2, 2) = 0.0d0
+            parcels%B(2, 2) = zero
 
         end subroutine parcel_setup
 

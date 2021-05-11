@@ -107,7 +107,7 @@ program test_ellipse_multi_merge_symmetry
         function eval_max_error() result(max_err)
             double precision :: max_err
 
-            max_err = 0.0d0
+            max_err = zero
             max_err = max(max_err, abs(dble(n_parcels - 2)))
 
             call par2grid_elliptic_symmetry_check(parcels, parcels%volume, volg)

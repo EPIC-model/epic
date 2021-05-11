@@ -75,24 +75,24 @@ program test_ellipse_multi_merge_2
             d = (sqrt(a1b1) + sqrt(a2b2)) * 0.5d0 * sqrt(2.0d0)
 
             n_parcels = 3
-            parcels%position(1, :) = 0.0d0
+            parcels%position(1, :) = zero
             parcels%volume(1, 1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
-            parcels%B(1, 2) = 0.0d0
+            parcels%B(1, 2) = zero
 
             ! small parcel left
             parcels%position(2, 1) = -d
             parcels%position(2, 2) = -d
             parcels%volume(2, 1) = a2b2 * pi
             parcels%B(2, 1) = a2b2
-            parcels%B(2, 2) = 0.0d0
+            parcels%B(2, 2) = zero
 
             ! small parcel right
             parcels%position(3, 1) = d
             parcels%position(3, 2) = d
             parcels%volume(3, 1) = a2b2 * pi
             parcels%B(3, 1) = a2b2
-            parcels%B(3, 2) = 0.0d0
+            parcels%B(3, 2) = zero
 
         end subroutine parcel_setup
 
@@ -123,7 +123,7 @@ program test_ellipse_multi_merge_2
                 B22 = (B22 - mu * tmp) / (one - mu ** 2)
             endif
 
-            max_err = 0.0d0
+            max_err = zero
             max_err = max(max_err, abs(dble(n_parcels - 1)))
             max_err = max(max_err, abs(parcels%B(1, 1) - B11))
             max_err = max(max_err, abs(parcels%B(1, 2) - B12))

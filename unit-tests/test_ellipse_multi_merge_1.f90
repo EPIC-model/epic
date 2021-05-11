@@ -71,38 +71,38 @@ program test_ellipse_multi_merge_1
 
         subroutine parcel_setup
             n_parcels = 5
-            parcels%position(1, :) = 0.0d0
+            parcels%position(1, :) = zero
             parcels%volume(1, 1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
-            parcels%B(1, 2) = 0.0d0
+            parcels%B(1, 2) = zero
 
             ! small parcel left
             parcels%position(2, 1) = -1.2d0
-            parcels%position(2, 2) = 0.0d0
+            parcels%position(2, 2) = zero
             parcels%volume(2, 1) = a2b2 * pi
             parcels%B(2, 1) = a2b2
-            parcels%B(2, 2) = 0.0d0
+            parcels%B(2, 2) = zero
 
             ! small parcel right
             parcels%position(3, 1) = 1.2d0
-            parcels%position(3, 2) = 0.0d0
+            parcels%position(3, 2) = zero
             parcels%volume(3, 1) = a2b2 * pi
             parcels%B(3, 1) = a2b2
-            parcels%B(3, 2) = 0.0d0
+            parcels%B(3, 2) = zero
 
             ! small parcel below
-            parcels%position(4, 1) = 0.0d0
+            parcels%position(4, 1) = zero
             parcels%position(4, 2) = -1.2d0
             parcels%volume(4, 1) = a2b2 * pi
             parcels%B(4, 1) = a2b2
-            parcels%B(4, 2) = 0.0d0
+            parcels%B(4, 2) = zero
 
             ! small parcel above
-            parcels%position(5, 1) = 0.0d0
+            parcels%position(5, 1) = zero
             parcels%position(5, 2) = 1.2d0
             parcels%volume(5, 1) = a2b2 * pi
             parcels%B(5, 1) = a2b2
-            parcels%B(5, 2) = 0.0d0
+            parcels%B(5, 2) = zero
         end subroutine parcel_setup
 
         function eval_max_error() result(max_err)
@@ -112,11 +112,11 @@ program test_ellipse_multi_merge_1
             ! reference solution
             ab = a1b1 + 4.0d0 * a2b2  ! a == b since it is a circle
             B11 = ab
-            B12 = 0.0d0
+            B12 = zero
             B22 = ab
             vol = ab * pi
 
-            max_err = 0.0d0
+            max_err = zero
 
             max_err = max(max_err, abs(dble(n_parcels - 1)))
             max_err = max(max_err, abs(parcels%B(1, 1) - B11))
