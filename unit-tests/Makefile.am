@@ -23,7 +23,8 @@ unittests_PROGRAMS = 				\
 	test_ellipse_multi_merge_2		\
 	test_ellipse_multi_merge_3		\
 	test_ellipse_multi_merge_symmetry	\
-	test_ellipse_bi_vs_multi_merge
+	test_ellipse_bi_vs_multi_merge		\
+	test_tri_inversion			\
 
 # 7 April 2021
 # https://www.gnu.org/software/automake/manual/html_node/Scripts.html
@@ -42,5 +43,6 @@ test_ellipse_multi_merge_2_SOURCES = test_ellipse_multi_merge_2.f90 unit_test.f9
 test_ellipse_multi_merge_3_SOURCES = test_ellipse_multi_merge_3.f90 unit_test.f90
 test_ellipse_multi_merge_symmetry_SOURCES = test_ellipse_multi_merge_symmetry.f90 unit_test.f90
 test_ellipse_bi_vs_multi_merge_SOURCES = test_ellipse_bi_vs_multi_merge.f90 unit_test.f90
+test_tri_inversion_SOURCES = test_tri_inversion.f90
 
 endif

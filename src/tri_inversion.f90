@@ -98,42 +98,14 @@ module tri_inversion
 
         ! Inverts the vorticity in the array pp to obtain uu = -dpp/dz
         ! and ww = dpp/dx.
-        subroutine vor2vel
-            double precision :: pp(0:nz,0:nx-1), uu(-1:nz+1,0:nx-1), ww(-1:nz+1,0:nx-1)
+        subroutine vor2vel(pp, uu, ww)
+            double precision, intent(in)  :: pp(0:nz,0:nx-1)
+            double precision, intent(out) :: uu(-1:nz+1,0:nx-1), ww(-1:nz+1,0:nx-1)
             double precision :: ubar(0:nz), obot(0:nx-1), otop(0:nx-1)
             integer          :: iz
             double precision :: dz2
 
             dz2  = f12 * dx(2)
-
-            ! !##########################
-            !  !for testing purposes only
-            ! double precision,parameter:: pi=acos(-1.d0)
-            ! double precision,parameter:: k=two*pi/ellx,m=pi/ellz
-            ! double precision:: ue(0:nz,0:nx-1),we(0:nz,0:nx-1)
-            ! double precision:: px,xx,az,mz,zz,uea,a
-            ! integer:: ix
-            !
-            ! ! Set up analytical test (for testing purposes only):
-            ! px=one
-            ! !px=zero  !uncomment to have no mean component of the vorticity
-            ! mz=m*zmin
-            ! a=sqrt(m**2+k**2)
-            ! uea=px*m*exp(mz)*sin(mz)     !Ensures mean ue = 0 at z = zmin
-            ! do ix=0,nx-1
-            !   xx=k*(dx*dble(ix)-hlx)     !xx = k*x
-            !   do iz=0,nz
-            !     zz=zmin+dz*dble(iz)
-            !     az=a*zz                  !az = a*z
-            !     mz=m*zz                  !mz = m*z
-            !     ue(iz,ix)=exp(az)*(m*sin(mz)-a*cos(mz))*sin(xx) &
-            !           +px*exp(mz)*m*(sin(mz)-cos(mz))-uea
-            !     we(iz,ix)=k*exp(az)*cos(mz)*cos(xx)
-            !     pp(iz,ix)=-two*m*(a*exp(az)*sin(xx)+px*m*exp(mz))*sin(mz)
-            !   enddo
-            ! enddo
-            !  !for testing purposes only
-            ! !##########################
 
             !-----------------------------------------
             ! Forward x FFT:
@@ -156,7 +128,7 @@ module tri_inversion
             call lapinv0(pp)
 
             ! Compute x derivative spectrally:
-            call deriv(nz+1, nx, hrkx, pp,ww(0:nz,:))
+            call deriv(nz+1, nx, hrkx, pp, ww(0:nz,:))
 
             ! Reverse x FFT to define z velocity component ww:
             call revfft(nz+1, nx, ww(0:nz,:), xtrig, xfactors)
@@ -176,23 +148,6 @@ module tri_inversion
             ww(-1,:) = -ww(1,:)
             uu(nz+1,:) = uu(nz-1,:)
             ww(nz+1,:) = -ww(nz-1,:)
-
-            ! !##########################
-            !  !for testing purposes only
-            ! open(77,file='duw.r4',form='unformatted',access='direct', &
-            !                     status='replace',recl=4*(nx*(nz+1)+1))
-            ! write(77,rec=1) real(0.),real(uu(0:nz,:)-ue)
-            ! write(77,rec=2) real(0.),real(ww(0:nz,:)-we)
-            ! close(77)
-            !
-            ! ue=(uu(0:nz,:)-ue)**2
-            ! xx=sqrt((f12*sum(ue(0,:)+ue(nz,:))+sum(ue(1:nz-1,:)))/dble(ncell))
-            ! we=(ww(0:nz,:)-we)**2
-            ! zz=sqrt(sum(we(1:nz-1,:))/dble(ncell))
-            ! write(*,*) ' nx     rms u error         rms w error'
-            ! write(*,'(i4,2(2x,f18.16))') nx,xx,zz
-            !  !for testing purposes only
-            ! !##########################
         end subroutine vor2vel
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
