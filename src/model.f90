@@ -183,7 +183,7 @@ module model
                 enddo
 
                 gmax = 0.5d0 * dsqrt(H)
-                dt = time%alpha / gmax
+                dt = min(time%dt_max, time%alpha / gmax)
 
             else if (time%is_adaptive) then
                     ! adaptive time stepping according to
