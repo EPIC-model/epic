@@ -22,8 +22,8 @@ module taylorgreen
             xx = flow%freq(1) * pos(1) + flow%phase(1)
             zz = flow%freq(2) * pos(2) + flow%phase(2)
 
-            vel(1) = flow%amp(1) * cos(xx) * sin(zz)
-            vel(2) = flow%amp(2) * sin(xx) * cos(zz)
+            vel(1) = flow%amp(1) * dcos(xx) * dsin(zz)
+            vel(2) = flow%amp(2) * dsin(xx) * dcos(zz)
         end function get_flow_velocity
 
         ! grad ordering : dudx, dudy, dvdx, dvdy
@@ -36,16 +36,16 @@ module taylorgreen
             zz = flow%freq(2) * pos(2) + flow%phase(2)
 
             ! du/dx = - a * A * sin(xx) * sin(zz)
-            grad(1) = - flow%freq(1) * flow%amp(1) * sin(xx) * sin(zz)
+            grad(1) = - flow%freq(1) * flow%amp(1) * dsin(xx) * dsin(zz)
 
             ! du/dy = b * A * cos(xx) * cos(zz)
-            grad(2) = flow%freq(2) * flow%amp(1) * cos(xx) * cos(zz)
+            grad(2) = flow%freq(2) * flow%amp(1) * dcos(xx) * dcos(zz)
 
             ! dv/dx = a * B * cos(xx) * np.cos(zz)
-            grad(3) = flow%freq(1) * flow%amp(2) * cos(xx) * cos(zz)
+            grad(3) = flow%freq(1) * flow%amp(2) * dcos(xx) * dcos(zz)
 
             ! dv/dy = - b * B * sin(xx) * sin(zz)
-            grad(4) = - flow%freq(2) * flow%amp(2) * sin(xx) * sin(zz)
+            grad(4) = - flow%freq(2) * flow%amp(2) * dsin(xx) * dsin(zz)
 
         end function get_flow_gradient
 
@@ -59,7 +59,7 @@ module taylorgreen
 
             omega = (flow%amp(2) * flow%freq(1)     &
                    - flow%amp(1) * flow%freq(2))    &
-                   * cos(xx) * cos(zz)
+                   * dcos(xx) * dcos(zz)
         end function get_flow_vorticity
 
 end module taylorgreen

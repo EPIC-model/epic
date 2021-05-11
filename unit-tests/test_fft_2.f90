@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_fft_2
     use unit_test
-    use constants, only : pi, twopi
+    use constants, only : pi, twopi, zero, one
     use stafft, only : initfft, forfft
     implicit none
 
@@ -16,8 +16,8 @@ program test_fft_2
     double precision            :: ref(2 * n)            ! reference solution in Fourier space
     double precision            :: a ! 0 < a < 1
     double precision            :: da = 0.1d0
-    double precision            :: err = 0.0d0
-    double precision, parameter :: atol = 1.0e-14
+    double precision            :: err = zero
+    double precision, parameter :: atol = dble(1.0e-14)
 
     ! set up FFT
     call initfft(n, factors, trig)
@@ -74,12 +74,12 @@ program test_fft_2
             double precision             :: dx, xx, phase
             integer                      :: j
 
-            phase = 1.0d0 ! phase offset in radians
+            phase = one ! phase offset in radians
 
             dx = twopi / dble(n)
             do j = 0, n-1
                 xx = -pi + dx * dble(j)
-                f1(j+1) = 1.d0 / (1.d0 - a * cos(xx + phase))
+                f1(j+1) = one / (one - a * dcos(xx + phase))
             enddo
         end function func_1
 
@@ -93,12 +93,12 @@ program test_fft_2
             double precision             :: dx, xx, phase
             integer                      :: j
 
-            phase = 1.0d0 ! phase offset in radians
+            phase = one ! phase offset in radians
 
             dx = twopi / dble(n)
             do j = 0, n-1
                 xx = -pi + dx * dble(j)
-                f2(j+1) = 1.d0 / (1.d0 - a * sin(xx + phase))
+                f2(j+1) = one / (one - a * dsin(xx + phase))
             enddo
         end function func_2
 
@@ -117,12 +117,12 @@ program test_fft_2
             do k = 0, m - 1
                 do l = 0, m - 1
                     arg = fac * dble(k * l)
-                    fhat(k+1)   = fhat(k+1)   + f(l+1) * cos(arg)
-                    fhat(k+1+m) = fhat(k+1+m) - f(l+1) * sin(arg)
+                    fhat(k+1)   = fhat(k+1)   + f(l+1) * dcos(arg)
+                    fhat(k+1+m) = fhat(k+1+m) - f(l+1) * dsin(arg)
                 enddo
             enddo
 
-            sfac = 1.d0 / sqrt(dble(m))
+            sfac = one / dsqrt(dble(m))
 
             fhat = fhat * sfac
 

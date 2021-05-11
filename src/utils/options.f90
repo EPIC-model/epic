@@ -2,6 +2,7 @@
 ! This module contains global options that can be set at runtime by the user.
 ! =============================================================================
 module options
+    use constants, only : two, pi
     implicit none
     !
     ! global options
@@ -24,9 +25,14 @@ module options
     type(output_info_type) :: output
 
     !
-    ! number of grid points
+    ! number of cells per dimension
     !
-    integer :: grid(2) = (/ 21, 21 /)
+    type box_type
+        integer          :: nc(2) = (/20, 20/)                  ! number of cells
+        double precision :: extent(2) = (/-pi, pi/)
+    end type box_type
+
+    type(box_type) :: box
 
     !
     ! parcel options

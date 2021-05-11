@@ -9,14 +9,15 @@ program test_ellipse_bi_vs_multi_merge
     use constants, only : pi, one, two, four
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, grid
+    use options, only : parcel_info, box
     use parameters, only : update_parameters
     use ellipse
     implicit none
 
     double precision :: error, B11, B12, vol, pos(2)
 
-    grid = (/2, 2/)
+    box%nc = (/1, 1/)
+    box%extent = (/pi, pi/)
 
     call update_parameters()
 

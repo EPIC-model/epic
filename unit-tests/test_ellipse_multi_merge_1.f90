@@ -11,14 +11,15 @@ program test_ellipse_multi_merge_1
     use constants, only : pi
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, grid
-    use parameters, only : update_parameters
+    use options, only : parcel_info, box
+    use parameters, only : update_parameters, lower
     use ellipse
     implicit none
 
     double precision :: a1b1, a2b2, error
 
-    grid = (/2, 2/)
+    box%nc = (/1, 1/)
+    box%extent = (/pi, pi/)
 
     call update_parameters()
 
@@ -35,9 +36,9 @@ program test_ellipse_multi_merge_1
     call parcel_setup
 
     ! geometric merge
-    parcel_info%lambda = 5.0
+    parcel_info%lambda = 5.0d0
     parcel_info%merge_type = 'multi-geometric'
-    parcel_info%vfraction = 3
+    parcel_info%vfraction = 3.0d0
 
     call merge_ellipses(parcels)
 
@@ -53,9 +54,9 @@ program test_ellipse_multi_merge_1
     call parcel_setup
 
     ! optimal merge
-    parcel_info%lambda = 5.0
+    parcel_info%lambda = 5.0d0
     parcel_info%merge_type = 'multi-optimal'
-    parcel_info%vfraction = 3
+    parcel_info%vfraction = 3.0d0
 
     call merge_ellipses(parcels)
 

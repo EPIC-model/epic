@@ -12,9 +12,9 @@ module fields
                        get_step_group_name
     implicit none
 
-    ! Halo grid points in vertical direction z are -1 and grid(2),
-    ! hence the valid regrion is from 0 to grid(2)-1 = nz
-    ! Due to periodicity in x, the grid points in x go from 0 to nx-1 = grid(1)-2
+    ! Halo grid points in vertical direction z are -1 and nz+1,
+    ! hence the valid regrion is from 0 to nz
+    ! Due to periodicity in x, the grid points in x go from 0 to nx-1
     double precision, allocatable, dimension(:, :, :) :: &
         velocity_f,     &   ! velocity vector field (has 1 halo cell layer in z)
         strain_f,       &   ! velocity gradient tensor (has 1 halo cell layer in z)
@@ -42,7 +42,6 @@ module fields
             integer, intent(inout) :: ii(:)
 
             ! account for x periodicity:
-            ! [nx = grid(1) -1]
             ! -1   --> nx-1
             !  0   --> 0
             ! nx+1 --> 1

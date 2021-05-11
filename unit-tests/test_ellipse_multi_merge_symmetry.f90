@@ -10,7 +10,7 @@ program test_ellipse_multi_merge_symmetry
     use parcel_container
     use parcel_interpl, only : par2grid_elliptic_symmetry_check
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, grid
+    use options, only : parcel_info, box
     use parameters, only : update_parameters, extent
     use ellipse
     implicit none
@@ -18,7 +18,8 @@ program test_ellipse_multi_merge_symmetry
     double precision :: error
     double precision :: volg(-1:3, 0:1, 1)
 
-    grid = (/3, 3/)
+    box%nc = (/2, 2/)
+    box%extent = (/pi, pi/)
 
     call update_parameters()
 
