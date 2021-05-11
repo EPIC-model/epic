@@ -1,9 +1,10 @@
 from h5_reader import H5Reader
 from plot_beautify import *
+from plot_style import *
 import matplotlib.colors as cls
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import numpy as np
+import os
 
 def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png"):
     h5reader = H5Reader()
@@ -72,8 +73,6 @@ def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png"):
 
 
 def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
-    mpl.rcParams['text.usetex'] = True
-
     h5reader = H5Reader()
 
     h5reader.open(fname)
@@ -162,3 +161,211 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
     plt.close()
 
     h5reader.close()
+
+
+def plot_volume_symmetry_error(fname, show=False, fmt="png"):
+    """
+    Plot the symmetry error of the gridded volume.
+    """
+    h5reader = H5Reader()
+    h5reader.open(fname)
+
+    nsteps = h5reader.get_num_steps()
+
+    vmean = np.zeros(nsteps)
+    vmin = np.zeros(nsteps)
+    vmax = np.zeros(nsteps)
+    vstd = np.zeros(nsteps)
+    iters = range(nsteps)
+    for i in iters:
+        volg = h5reader.get_field_dataset(i, 'volume')
+        vmean[i] = volg.mean()
+        vstd[i] = volg.std()
+        vmin[i] = volg.min()
+        vmax[i] = volg.max()
+
+    h5reader.close()
+
+    plt.figure()
+    plt.grid(which='both', linestyle='dashed')
+    #plt.plot(iters, vmean, label='mean', color='darkorange', linewidth=1.5)
+    plt.fill_between(iters, vmean - vstd, vmin, label='min-max', color='cornflowerblue',
+                     edgecolor='cornflowerblue', linewidth=0.75)
+    plt.fill_between(iters, vmean + vstd, vmax, color='cornflowerblue',
+                     edgecolor='cornflowerblue', linewidth=0.75)
+    plt.fill_between(iters, vmean - vstd, vmean + vstd, label='std', color='royalblue',
+                     edgecolor='royalblue', linewidth=0.75)
+
+    plt.xlabel('number of iterations')
+    plt.ylabel('volume symmetry error')
+
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
+
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fname)[0]
+        plt.savefig(prefix + '_volsymerr.' + fmt, bbox_inches='tight')
+    plt.close()
+
+
+def plot_rms_volume_error(fnames, show=False, fmt="png"):
+    """
+    Plot the gridded rms volume error.
+    """
+    n = len(fnames)
+
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    plt.figure()
+
+    h5reader = H5Reader()
+    for i, fname in enumerate(fnames):
+        h5reader.open(fname)
+        vrms = h5reader.get_diagnostic('rms volume error')
+        h5reader.close()
+
+        prefix = os.path.splitext(fname)[0]
+        plt.plot(vrms, label=r'' + prefix, linewidth=2, color=colors[i])
+
+    plt.xlabel(r'number of iterations')
+    plt.ylabel(r'rms volume error')
+    plt.grid(linestyle='dashed', zorder=-1)
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.35))
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        plt.savefig('rms_vol_err.' + fmt, bbox_inches='tight')
+    plt.close()
+
+
+def plot_max_volume_error(fnames, show=False, fmt="png"):
+    """
+    Plot the gridded absolute volume error (normalised with
+    cell volume).
+    """
+    n = len(fnames)
+
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    plt.figure()
+
+    h5reader = H5Reader()
+    for i, fname in enumerate(fnames):
+        h5reader.open(fname)
+        vrms = h5reader.get_diagnostic('max absolute normalised volume error')
+        h5reader.close()
+
+        prefix = os.path.splitext(fname)[0]
+        plt.plot(vrms, label=r'' + prefix, linewidth=2, color=colors[i])
+
+    plt.xlabel(r'number of iterations')
+    plt.ylabel(r'max normalised volume error')
+    plt.grid(linestyle='dashed', zorder=-1)
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.35))
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        plt.savefig('max_normalised_vol_err.' + fmt, bbox_inches='tight')
+    plt.close()
+
+
+def plot_aspect_ratio(fname, show=False, fmt="png"):
+    """
+    Plot the mean and standard deviation of the parcel aspect ratio.
+    """
+    h5reader = H5Reader()
+    h5reader.open(fname)
+
+    nsteps = h5reader.get_num_steps()
+
+    lam_mean = np.zeros(nsteps)
+    lam_std = np.zeros(nsteps)
+
+    for step in range(nsteps):
+        lam = h5reader.get_aspect_ratio(step)
+
+        lam_mean[step] = lam.mean()
+        lam_std[step] = lam.std()
+
+    lmax = h5reader.get_parcel_info('lambda')[0]
+
+    h5reader.close()
+
+    plt.figure()
+    plt.plot(lam_mean, color='blue', label=r'mean')
+    plt.fill_between(range(nsteps), lam_mean - lam_std, lam_mean + lam_std,
+                     alpha=0.5, label=r'std. dev.')
+
+    plt.axhline(lmax, linestyle='dashed', color='black',
+                label=r'$\lambda\le\lambda_{\max} = ' + str(lmax) + '$')
+
+    plt.grid(linestyle='dashed', zorder=-1)
+
+    plt.xlabel(r'number of iterations')
+    plt.ylabel(r'aspect ratio $\lambda$')
+
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.25))
+
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fname)[0]
+        plt.savefig(prefix + '_aspect_ratio_profile.' + fmt, bbox_inches='tight')
+    plt.close()
+
+
+def plot_parcel_volume(fname, show=False, fmt="png"):
+    """
+    Plot the mean and standard deviation of the parcel volume
+    normalised with the cell volume.
+    """
+    h5reader = H5Reader()
+    h5reader.open(fname)
+
+    nsteps = h5reader.get_num_steps()
+
+    vol_mean = np.zeros(nsteps)
+    vol_std = np.zeros(nsteps)
+
+    extent = h5reader.get_mesh_extent()
+    grid   = h5reader.get_mesh_grid()
+    vcell = np.prod(extent / (grid - 1))
+
+    for step in range(nsteps):
+        vol = h5reader.get_parcel_dataset(step, 'volume')
+
+        vol_mean[step] = vol.mean() / vcell
+        vol_std[step] = vol.std() / vcell
+
+    h5reader.close()
+
+    plt.figure()
+    plt.plot(vol_mean, color='blue', label=r'mean')
+    plt.fill_between(range(nsteps), vol_mean - vol_std, vol_mean + vol_std,
+                     alpha=0.5, label=r'std. dev.')
+
+    plt.axhline(1.0, linestyle='dashed', color='black',
+                label=r'cell volume $V_{0}$')
+
+    plt.grid(linestyle='dashed', zorder=-1)
+
+    plt.xlabel(r'number of iterations')
+    plt.ylabel(r'parcel volume / $V_{0}$')
+
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.25))
+
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fname)[0]
+        plt.savefig(prefix + '_parcel_volume_profile.' + fmt, bbox_inches='tight')
+    plt.close()
