@@ -61,8 +61,8 @@ program test_tri_inversion
     max_err = zero
 
     ! absolute error (reference obtained from David's program (tri_inversion.f90)
-    max_err = max(max_err, maxval(abs(velog(0:nz, :, 1) - ue)) - 0.72528494909253993d0)
-    max_err = max(max_err, maxval(abs(velog(0:nz, :, 2) - we)) - 3.9197805283164300E-005)
+    max_err = max(max_err, abs(maxval(abs(velog(0:nz, :, 1) - ue)) - 0.72528494909253993d0))
+    max_err = max(max_err, abs(maxval(abs(velog(0:nz, :, 2) - we)) - 0.000039197805283164300d0))
 
     ! rms error
     ue = (velog(0:nz, :, 1) - ue) ** 2
@@ -71,8 +71,8 @@ program test_tri_inversion
     zz = dsqrt(sum(we(1:nz-1, :)) / dble(ncell))
 
     ! referene obtaind from David's program (tri_inversion.f90)
-    max_err = max(max_err, xx - 0.1203711977266676d0)
-    max_err = max(max_err, zz - 0.0000181041574751d0)
+    max_err = max(max_err, abs(xx - 0.1203711977266676d0))
+    max_err = max(max_err, abs(zz - 0.0000181041574751d0))
 
     call print_result_dp('Test tri-inversion', max_err)
 
