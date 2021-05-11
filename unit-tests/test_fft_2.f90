@@ -4,18 +4,20 @@
 !       This unit test checks the FFT module with reference solutions.
 ! =============================================================================
 program test_fft_2
+    use unit_test
     use constants, only : pi, twopi
     use stafft, only : initfft, forfft
     implicit none
 
-    integer, parameter :: n = 16
-    double precision   :: trig(2 * n)
-    integer            :: factors(5)
-    double precision   :: fun(n)
-    double precision   :: ref(2 * n)            ! reference solution in Fourier space
-    double precision   :: a ! 0 < a < 1
-    double precision   :: da = 0.1d0
-    double precision   :: err = 0.0d0
+    integer, parameter          :: n = 16
+    double precision            :: trig(2 * n)
+    integer                     :: factors(5)
+    double precision            :: fun(n)
+    double precision            :: ref(2 * n)            ! reference solution in Fourier space
+    double precision            :: a ! 0 < a < 1
+    double precision            :: da = 0.1d0
+    double precision            :: err = 0.0d0
+    double precision, parameter :: atol = 1.0e-14
 
     ! set up FFT
     call initfft(n, factors, trig)
@@ -57,12 +59,8 @@ program test_fft_2
     enddo
 
     ! final check
-    if (err > 1.0e-14) then
-        print '(a20, a16)', 'Test FFT transform:', 'FAILED'
-    else
-        print '(a20, a16)', 'Test FFT transform:', 'PASSED'
-    endif
 
+    call print_result_dp('Test FFT transform', err, atol)
 
     contains
 

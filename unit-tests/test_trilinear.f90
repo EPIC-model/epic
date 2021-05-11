@@ -4,6 +4,7 @@
 !         This unit test checks the trilinear interoplation par2grid
 ! =============================================================================
 program test_trilinear
+    use unit_test
     use constants, only : pi
     use parcel_container
     use parcel_interpl, only : par2grid, grid2par
@@ -57,10 +58,6 @@ program test_trilinear
 
     error = abs(sum(volg(0:nz, 0:nx-1, :)) - ngrid * vcell)
 
-    if (error > 1.0e-15) then
-        print '(a27, a9)', 'Test trilinear (par2grid):', 'FAILED'
-    else
-        print '(a27, a9)', 'Test trilinear (par2grid):', 'PASSED'
-    endif
+    call print_result_dp('Test trilinear (par2grid)', error)
 
 end program test_trilinear

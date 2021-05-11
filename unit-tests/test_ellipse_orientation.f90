@@ -6,6 +6,7 @@
 !       B matrix is within [-pi/2, pi/2].
 ! =============================================================================
 program test_ellipse_orientation
+    use unit_test
     use constants, only : pi
     use parcel_container, only : parcels, n_parcels, parcel_alloc, parcel_dealloc
     use ellipse
@@ -56,10 +57,6 @@ program test_ellipse_orientation
 
     call parcel_dealloc()
 
-    if (failed) then
-        print '(a26, a10)', 'Test ellipse orientation:', 'FAILED'
-    else
-        print '(a26, a10)', 'Test ellipse orientation:', 'PASSED'
-    endif
+    call print_result_logical('Test ellipse orientation', failed)
 
 end program test_ellipse_orientation

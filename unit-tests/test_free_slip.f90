@@ -10,6 +10,7 @@
 !       ngrid * vcell where ngrid is the number of grid points.
 ! =============================================================================
 program test_free_slip
+    use unit_test
     use constants, only : pi
     use parcel_container
     use parcel_interpl, only : par2grid
@@ -66,10 +67,6 @@ program test_free_slip
 
     error = abs(sum(volg(0:nz, 0:nx-1, :)) - ngrid * vcell)
 
-    if (error > 1.0e-15) then
-        print '(a16, a20)', 'Test free slip:', 'FAILED'
-    else
-        print '(a16, a20)', 'Test free slip:', 'PASSED'
-    endif
+    call print_result_dp('Test free slip', error)
 
 end program test_free_slip

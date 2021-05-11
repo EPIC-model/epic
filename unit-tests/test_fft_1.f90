@@ -5,6 +5,7 @@
 !                    (start index 0 vs start index 1)
 ! =============================================================================
 program test_fft_1
+    use unit_test
 
     !Import FFT library:
     use stafft, only : initfft, dct, forfft
@@ -118,10 +119,6 @@ program test_fft_1
     enddo
 
     ! final check
-    if (emax > 1.0e-15) then
-        print '(a19, a17)', 'Test FFT indexing:', 'FAILED'
-    else
-        print '(a19, a17)', 'Test FFT indexing:', 'PASSED'
-    endif
+    call print_result_dp('Test FFT indexing', emax)
 
 end program test_fft_1

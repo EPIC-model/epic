@@ -51,7 +51,7 @@ module parcel_split
                 parcels%B(i, 1) = B11 - 0.75d0 * a2 * evec(1) ** 2
                 parcels%B(i, 2) = B12 - 0.75d0 * a2 * (evec(1) * evec(2))
 
-                h = 0.25d0 * sqrt(three * a2)
+                h = 0.25d0 * dsqrt(three * a2)
                 parcels%volume(i, 1) = 0.5d0 * V
 
                 ! we only need to add one new parcel

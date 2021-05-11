@@ -3,7 +3,7 @@
 ! =============================================================================
 module model
     use hdf5
-    use constants, only : max_num_parcels
+    use constants, only : max_num_parcels, zero
     use diagnostics
     use init, only : init_parcels, init_fields
     use parser, only : read_config_file, write_h5_params
@@ -50,8 +50,8 @@ module model
 
         subroutine run
             use options, only : time, output, verbose, parcel_info
-            double precision :: t    = 0.0 ! current time
-            double precision :: dt   = 0.0 ! time step
+            double precision :: t    = zero ! current time
+            double precision :: dt   = zero ! time step
             integer          :: iter = 1   ! simulation iteration
             integer          :: nw   = 0   ! number of writes to h5
             integer          :: diverge_iter ! current divergence iteration
@@ -173,17 +173,34 @@ module model
             use options, only : time
             double precision :: dt
             double precision :: max_vorticity
+            double precision :: H, S11, S12, S21, S22, gmax
+            integer          :: i, j
 
-            if (time%is_adaptive) then
-                ! adaptive time stepping according to
-                ! https://doi.org/10.1002/qj.3319
-                max_vorticity = maxval(abs(vortg))
-                dt = min(0.5 / max_vorticity, time%dt)
+            H = zero
+            if (parcel_info%is_elliptic .and. time%is_adaptive) then
+                do i = 0, nx-1
+                    do j = 0, nz
+                        S11 = strain_f(j, i, 1)
+                        S12 = strain_f(j, i, 2)
+                        S21 = strain_f(j, i, 3)
+                        S22 = strain_f(j, i, 4)
+                        H = max(H, (S11 - S22) ** 2 + (S12 + S21) ** 2)
+                    enddo
+                enddo
+
+                gmax = 0.5d0 * dsqrt(H)
+                dt = min(time%dt_max, time%alpha / gmax)
+
+            else if (time%is_adaptive) then
+                    ! adaptive time stepping according to
+                    ! https://doi.org/10.1002/qj.3319
+                    max_vorticity = maxval(abs(vortg))
+                    dt = min(time%alpha / max_vorticity, time%dt)
             else
                 dt = time%dt
             endif
 
-            if (dt <= 0.0) then
+            if (dt <= zero) then
                 print "(a10, f0.2, a6)", "Time step ", dt, " <= 0!"
                 stop
             endif

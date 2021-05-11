@@ -273,7 +273,7 @@ module stafft
 
             ! Multiply by the normalisation constant and put
             ! transformed array in the right location:
-            normfac = 1.0d0 / sqrt(dble(n))
+            normfac = 1.0d0 / dsqrt(dble(n))
             if (orig) then
                 do i= 0, m * n - 1
                     x(i) = x(i) * normfac
@@ -387,7 +387,7 @@ module stafft
 
         ! Multiply by the normalisation constant and put
         ! transformed array in the right location:
-        normfac = 2.0d0 / sqrt(dble(n))
+        normfac = 2.0d0 / dsqrt(dble(n))
         if (orig) then
             do i = 0, m * n - 1
                 x(i) = x(i) * normfac
@@ -411,7 +411,7 @@ module stafft
         integer                         :: i, j, nd2
 
         fpin = pi / dble(n)
-        rtn = sqrt(dble(n))
+        rtn = dsqrt(dble(n))
 
         !Pre-process the array and store it in wk:
         do i = 1, m
