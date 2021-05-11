@@ -96,58 +96,58 @@ module tri_inversion
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Inverts the vorticity in the array pp to obtain uu = -dpp/dz
-        ! and ww = dpp/dx.
-        subroutine vor2vel(pp, uu, ww)
-            double precision, intent(in)  :: pp(0:nz,0:nx-1)
-            double precision, intent(out) :: uu(-1:nz+1,0:nx-1), ww(-1:nz+1,0:nx-1)
-            double precision :: ubar(0:nz), obot(0:nx-1), otop(0:nx-1)
-            integer          :: iz
-            double precision :: dz2
+        ! Inverts the vorticity "vortg" to obtain the gridded velocity field
+        ! u = velog(:, :, 1) = -dvortg/dz and w = velog(:, :, 2) = dvortg/dx.
+        subroutine vor2vel(vortg, velog)
+            double precision, intent(inout) :: vortg(0:nz, 0:nx-1)
+            double precision, intent(out)   :: velog(-1:nz+1, 0:nx-1, 2)
+            double precision                :: ubar(0:nz), obot(0:nx-1), otop(0:nx-1)
+            integer                         :: iz
+            double precision                :: dz2
 
             dz2  = f12 * dx(2)
 
             !-----------------------------------------
             ! Forward x FFT:
-            call forfft(nz+1, nx, pp, xtrig, xfactors)
+            call forfft(nz+1, nx, vortg, xtrig, xfactors)
 
             ! Store vorticity values at z = zmin and zmax in obot and otop:
-            obot = pp(0 ,:)
-            otop = pp(nz,:)
+            obot = vortg(0 ,:)
+            otop = vortg(nz,:)
 
-            ! Compute the x-independent part of uu by integration:
+            ! Compute the x-independent part of velog(:, :, 1) by integration:
             ubar(0) = zero
             do iz = 1, nz
-                ubar(iz) = ubar(iz-1) + dz2 * (pp(iz-1,0) + pp(iz,0))
+                ubar(iz) = ubar(iz-1) + dz2 * (vortg(iz-1,0) + vortg(iz,0))
             enddo
 
             ! Remove x independent mode (already dealt with):
-            pp(:,0) = zero
+            vortg(:,0) = zero
 
             ! Invert Laplace's operator semi-spectrally with compact differences:
-            call lapinv0(pp)
+            call lapinv0(vortg)
 
-            ! Compute x derivative spectrally:
-            call deriv(nz+1, nx, hrkx, pp, ww(0:nz,:))
+            ! Compute x derivative spectrally of velog(:, :, 2):
+            call deriv(nz+1, nx, hrkx, vortg, velog(0:nz, :, 2))
 
-            ! Reverse x FFT to define z velocity component ww:
-            call revfft(nz+1, nx, ww(0:nz,:), xtrig, xfactors)
+            ! Reverse x FFT to define z velocity component velog(:, :, 2):
+            call revfft(nz+1, nx, velog(0:nz, :, 2), xtrig, xfactors)
 
-            ! Compute z derivative by compact differences:
-            call diffz0(pp, uu(0:nz,:), obot, otop)
+            ! Compute z derivative of velog(:, :, 1) by compact differences:
+            call diffz0(vortg, velog(0:nz, :, 1), obot, otop)
 
-            ! Add on the x-independent part of uu and switch sign:
-            uu(0:nz,0) = uu(0:nz,0) + ubar
-            uu(0:nz,:) = -uu(0:nz,:)
+            ! Add on the x-independent part of velog and switch sign:
+            velog(0:nz, 0, 1) = velog(0:nz, 0, 1) + ubar
+            velog(0:nz, :, 1) = -velog(0:nz, :, 1)
 
             ! Reverse x FFT:
-            call revfft(nz+1, nx, uu(0:nz,:), xtrig, xfactors)
+            call revfft(nz+1, nx, velog(0:nz, :, 1), xtrig, xfactors)
 
             ! Use symmetry to fill z grid lines outside domain:
-            uu(-1,:) = uu(1,:)
-            ww(-1,:) = -ww(1,:)
-            uu(nz+1,:) = uu(nz-1,:)
-            ww(nz+1,:) = -ww(nz-1,:)
+            velog(-1, :, 1) = velog(1, :, 1)
+            velog(-1, :, 2) = -velog(1, :, 2)
+            velog(nz+1, :, 1) = velog(nz-1, :, 1)
+            velog(nz+1, :, 2) = -velog(nz-1, :, 2)
         end subroutine vor2vel
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

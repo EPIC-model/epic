@@ -24,7 +24,7 @@ unittests_PROGRAMS = 				\
 	test_ellipse_multi_merge_3		\
 	test_ellipse_multi_merge_symmetry	\
 	test_ellipse_bi_vs_multi_merge		\
-	test_tri_inversion			\
+	test_tri_inversion
 
 # 7 April 2021
 # https://www.gnu.org/software/automake/manual/html_node/Scripts.html

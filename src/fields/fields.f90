@@ -7,6 +7,7 @@ module fields
     use hdf5
     use writer, only : h5file,              &
                        h5err,               &
+                       write_h5_dataset_2d, &
                        write_h5_dataset_3d, &
                        open_h5_group,       &
                        get_step_group_name
@@ -18,7 +19,9 @@ module fields
     double precision, allocatable, dimension(:, :, :) :: &
         velocity_f,     &   ! velocity vector field (has 1 halo cell layer in z)
         strain_f,       &   ! velocity gradient tensor (has 1 halo cell layer in z)
-        volg,           &   ! volume scalar field (has 1 halo cell layer in z)
+        volg                ! volume scalar field (has 1 halo cell layer in z)
+
+    double precision, allocatable, dimension(:, :) :: &
         vortg               ! vorticity scalar field (has no halo cell layers)
 
     contains
@@ -89,6 +92,9 @@ module fields
                 ! do not write halo cells
                 call write_h5_dataset_3d(name, "velocity strain",   &
                     strain_f(0:nz, 0:nx-1, :))
+
+                call write_h5_dataset_2d(name, "vorticity",         &
+                    vortg(0:nz, 0:nx-1))
             endif
 
             ! do not write halo cells
