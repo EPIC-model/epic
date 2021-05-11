@@ -48,7 +48,9 @@
 
  time%is_adaptive   = .true.
 
- time%alpha         = 0.125
+ time%alpha         = 0.025
+
+ time%dt_max        = 0.125
 
  !
  ! Taylor-Green flow parameters:
