@@ -27,7 +27,7 @@ program test_tri_inversion
     ! Set up analytical test:
     px = one
     !px = zero  !uncomment to have no mean component of the vorticity
-    mz =m * zmin
+    mz = m * zmin
     a = dsqrt(m**2 + k**2)
     uea = px * m * dexp(mz) * dsin(mz)     !Ensures mean ue = 0 at z = zmin
     do ix = 0,nx-1
