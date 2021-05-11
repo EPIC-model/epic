@@ -189,7 +189,7 @@ module model
                     ! adaptive time stepping according to
                     ! https://doi.org/10.1002/qj.3319
                     max_vorticity = maxval(abs(vortg))
-                    dt = min(0.5d0 / max_vorticity, time%dt)
+                    dt = min(time%alpha / max_vorticity, time%dt)
             else
                 dt = time%dt
             endif
