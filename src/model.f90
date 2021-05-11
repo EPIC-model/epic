@@ -178,7 +178,7 @@ module model
                         S12 = strain_f(j, i, 2)
                         S21 = strain_f(j, i, 3)
                         S22 = strain_f(j, i, 4)
-                        H = max(H, (S11 - S22) ** 2 + (S12 + S21) * 2)
+                        H = max(H, (S11 - S22) ** 2 + (S12 + S21) ** 2)
                     enddo
                 enddo
 
