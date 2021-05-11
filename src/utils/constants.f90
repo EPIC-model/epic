@@ -13,9 +13,9 @@ module constants
     double precision, parameter :: five  = 5.0d0
     double precision, parameter :: six   = 6.0d0
 
-    double precision, parameter :: pi          = acos(-one)
-    double precision, parameter :: twopi       = two * pi
-    double precision, parameter :: one_over_pi = one / pi
+    double precision, parameter :: pi    = acos(-one)
+    double precision, parameter :: twopi = two * pi
+    double precision, parameter :: fpi   = one / pi
 
     double precision, parameter :: f12   = one / two
     double precision, parameter :: f13   = one / three
