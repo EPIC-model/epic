@@ -48,6 +48,9 @@ module init
             ! initialize the volume of each parcel
             parcels%volume(1:n_parcels, 1) = vcell / dble(parcel_info%n_per_cell)
 
+            parcels%buoyancy(1:n_parcels, 1) = zero
+            parcels%humidity(1:n_parcels, 1) = zero
+
             call init_B_matrix
 
             call init_velocity
