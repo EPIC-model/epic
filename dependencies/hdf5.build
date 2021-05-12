@@ -36,8 +36,7 @@ ${SRC_DIR}/$P/$P-$V/configure       \
     --enable-shared                 \
     --with-zlib=${ZLIB_DIR}         \
     --with-pic                      \
-    --prefix=${PREFIX}              \
-    ${SRC_DIR}/$P/$P-$V
+    --prefix=${PREFIX}
 
 # compile & install
 make -j ${NJOBS}
