@@ -11,9 +11,36 @@
 ! =============================================================================
 module taylorgreen
     use options, only : flow
+    use constants, only : zero
+    use parcel_container, only : parcels, n_parcels
+    use fields
     implicit none
 
     contains
+        subroutine taylorgreen_init
+            double precision :: pos(2)
+            integer          :: i, j, n
+
+            do n = 1, n_parcels
+                parcels%velocity(n, :) = get_flow_velocity(parcels%position(n, :))
+            enddo
+
+            do i = 0, nx-1
+                do j = -1, nz+1
+                    call get_position(i, j, pos)
+
+                    velog(j, i, :) = get_flow_velocity(pos)
+
+                    velgradg(j, i, :) = get_flow_gradient(pos)
+
+                    if ((j > -1) .and. (j < nz+1)) then
+                        vortg(j, i, :) = get_flow_vorticity(pos)
+                    endif
+                enddo
+            enddo
+        end subroutine taylorgreen_init
+
+
         function get_flow_velocity(pos) result(vel)
             double precision, intent(in) :: pos(2)
             double precision             :: xx, zz

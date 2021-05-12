@@ -4,6 +4,7 @@
 ! =============================================================================
 module fields
     use parameters, only : dx, dxi, extent, lower, nx, nz
+    use constants, only : zero
     use hdf5
     use writer, only : h5file,              &
                        h5err,               &
@@ -25,6 +26,39 @@ module fields
         humlig         ! condensed humidity
 
     contains
+
+        ! allocate all fields
+        subroutine field_alloc
+            if (allocated(velog)) then
+                return
+            endif
+
+            allocate(velog(-1:nz+1, 0:nx-1, 2))
+            allocate(velgradg(-1:nz+1, 0:nx-1, 4))
+
+            allocate(volg(-1:nz+1, 0:nx-1, 1))
+
+            ! vorticity has no halo grid points in y
+            allocate(vortg(0:nz, 0:nx-1, 1))
+
+            allocate(buoyg(-1:nz+1, 0:nx-1, 1))
+
+            allocate(humg(-1:nz+1, 0:nx-1, 1))
+
+            allocate(humlig(-1:nz+1, 0:nx-1, 1))
+
+        end subroutine field_alloc
+
+        subroutine field_default
+            call field_alloc
+
+            velog    = zero
+            velgradg = zero
+            volg     = zero
+            buoyg    = zero
+            humg     = zero
+            humlig   = zero
+        end subroutine
 
         ! get the lower index of the cell the parcel is in
         ! this subroutine does not take x periodicity into account
