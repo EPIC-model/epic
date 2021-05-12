@@ -8,7 +8,7 @@ module ls_rk4
     use parcel_bc
     use rk4_utils, only: get_B
     use parcel_interpl, only : grid2par, grid2par_add
-    use fields, only : strain_f, velocity_f
+    use fields, only : strain_f, velog
     implicit none
 
     integer, parameter :: dp=kind(0.d0)           ! double precision
@@ -78,9 +78,9 @@ module ls_rk4
             integer, intent(in) :: step
 
             if(step==1) then
-               call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B, exact='velocity')
+               call grid2par(parcels%position, parcels%volume, velocity_p, velog, parcels%B, exact='velocity')
             else
-               call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, parcels%B, exact='velocity')
+               call grid2par_add(parcels%position, parcels%volume, velocity_p, velog, parcels%B, exact='velocity')
             endif
             call grid2par(parcels%position, parcels%volume, strain, strain_f, parcels%B, exact='strain')
             if(step==1) then
@@ -124,9 +124,9 @@ module ls_rk4
 
 
             if(step==1) then
-               call grid2par(parcels%position, parcels%volume, velocity_p, velocity_f, exact='velocity')
+               call grid2par(parcels%position, parcels%volume, velocity_p, velog, exact='velocity')
             else
-               call grid2par_add(parcels%position, parcels%volume, velocity_p, velocity_f, exact='velocity')
+               call grid2par_add(parcels%position, parcels%volume, velocity_p, velog, exact='velocity')
             endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
             call apply_parcel_bc(parcels%position, velocity_p)

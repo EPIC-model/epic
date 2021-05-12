@@ -5,7 +5,7 @@ module init
     use constants, only : zero, two
     use options, only : parcel_info, time
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
-    use fields, only : velocity_f,      &
+    use fields, only : velog,           &
                        strain_f,        &
                        volg,            &
                        vortg,           &
@@ -148,7 +148,7 @@ module init
             integer :: i, j
             double precision :: pos(2)
 
-            allocate(velocity_f(-1:nz+1, 0:nx-1, 2))
+            allocate(velog(-1:nz+1, 0:nx-1, 2))
 
             allocate(strain_f(-1:nz+1, 0:nx-1, 4))
 
@@ -156,7 +156,7 @@ module init
                 do j = -1, nz+1
                     call get_position(i, j, pos)
 
-                    velocity_f(j, i, :) = get_flow_velocity(pos)
+                    velog(j, i, :) = get_flow_velocity(pos)
 
                     strain_f(j, i, :) = get_flow_gradient(pos)
                 enddo
