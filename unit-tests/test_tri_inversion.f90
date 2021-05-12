@@ -8,8 +8,7 @@ program test_tri_inversion
     use constants, only : pi, twopi, one, zero, two, four, f12
     use parcel_container
     use tri_inversion
-!     use options, only : box
-    use options, only : grid
+    use options, only : box
     use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz, hl, ncell
     implicit none
 
@@ -18,10 +17,8 @@ program test_tri_inversion
     double precision              :: k, m, px, xx, az, mz, zz, uea, a, max_err
     integer                       :: ix, iz
 
-    grid = (/41, 21/)
-    extent = (/four, two/)
-!     box%nc = (/40, 20/)
-!     box%extent = (/4.0d0, 2.0d0/)
+    box%nc = (/40, 20/)
+    box%extent = (/four, two/)
 
     call update_parameters()
 
