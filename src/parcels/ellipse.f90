@@ -2,9 +2,9 @@
 !               This module contains all ellipse operations.
 ! =============================================================================
 module ellipse
-    use constants, only : pi            &
-                        , one_over_pi   &
-                        , zero          &
+    use constants, only : pi   &
+                        , fpi  &
+                        , zero &
                         , two
     implicit none
 
@@ -86,7 +86,7 @@ module ellipse
             double precision, intent(in) :: volume
             double precision             :: ab
 
-            ab = volume * one_over_pi
+            ab = volume * fpi
         end function
 
         elemental function get_aspect_ratio(a2, volume) result(lam)

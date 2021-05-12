@@ -26,8 +26,7 @@ ${SRC_DIR}/$P/$P-$V/configure       \
     --target="$system_type"         \
     --disable-openmp                \
     --without-mpi                   \
-    --prefix=${PREFIX}              \
-    ${SRC_DIR}/$P/$P-$V
+    --prefix=${PREFIX}
 
 # compile & install
 make -j ${NJOBS}
