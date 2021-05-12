@@ -97,44 +97,49 @@ module tri_inversion
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Inverts the vorticity "vortg" to obtain the gridded velocity field
-        ! u = velog(:, :, 1) = -dvortg/dz and w = velog(:, :, 2) = dvortg/dx.
+        ! u = velog(:, :, 1) = -dpsig/dz and w = velog(:, :, 2) = dpsig/dx.
         subroutine vor2vel(vortg, velog)
-            double precision, intent(inout) :: vortg(0:nz, 0:nx-1)
-            double precision, intent(out)   :: velog(-1:nz+1, 0:nx-1, 2)
-            double precision                :: ubar(0:nz), obot(0:nx-1), otop(0:nx-1)
-            integer                         :: iz
-            double precision                :: dz2
+            double precision, intent(in)  :: vortg(0:nz, 0:nx-1)
+            double precision, intent(out) :: velog(-1:nz+1, 0:nx-1, 2)
+            double precision              :: ubar(0:nz), obot(0:nx-1), otop(0:nx-1)
+            integer                       :: iz
+            double precision              :: dz2
+            double precision              :: psig(0:nz, 0:nx-1) ! stream function
+
+            ! copy vorticity
+            psig = vortg
 
             dz2  = f12 * dx(2)
 
             !-----------------------------------------
             ! Forward x FFT:
-            call forfft(nz+1, nx, vortg, xtrig, xfactors)
+            call forfft(nz+1, nx, psig, xtrig, xfactors)
 
             ! Store vorticity values at z = zmin and zmax in obot and otop:
-            obot = vortg(0 ,:)
-            otop = vortg(nz,:)
+            obot = psig(0 ,:)
+            otop = psig(nz,:)
 
             ! Compute the x-independent part of velog(:, :, 1) by integration:
             ubar(0) = zero
             do iz = 1, nz
-                ubar(iz) = ubar(iz-1) + dz2 * (vortg(iz-1,0) + vortg(iz,0))
+                ubar(iz) = ubar(iz-1) + dz2 * (psig(iz-1,0) + psig(iz,0))
             enddo
 
             ! Remove x independent mode (already dealt with):
-            vortg(:,0) = zero
+            psig(:,0) = zero
 
             ! Invert Laplace's operator semi-spectrally with compact differences:
-            call lapinv0(vortg)
+            ! Laplacian(psig) = vortg --> psig
+            call lapinv0(psig)
 
             ! Compute x derivative spectrally of velog(:, :, 2):
-            call deriv(nz+1, nx, hrkx, vortg, velog(0:nz, :, 2))
+            call deriv(nz+1, nx, hrkx, psig, velog(0:nz, :, 2))
 
             ! Reverse x FFT to define z velocity component velog(:, :, 2):
             call revfft(nz+1, nx, velog(0:nz, :, 2), xtrig, xfactors)
 
             ! Compute z derivative of velog(:, :, 1) by compact differences:
-            call diffz0(vortg, velog(0:nz, :, 1), obot, otop)
+            call diffz0(psig, velog(0:nz, :, 1), obot, otop)
 
             ! Add on the x-independent part of velog and switch sign:
             velog(0:nz, 0, 1) = velog(0:nz, 0, 1) + ubar
