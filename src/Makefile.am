@@ -24,4 +24,5 @@ epic_SOURCES = 					\
 	stepper/classic_rk4.f90			\
 	stepper/ls_rk4.f90			\
 	stepper/rk4.f90 			\
+	tri_inversion.f90			\
 	epic.f90

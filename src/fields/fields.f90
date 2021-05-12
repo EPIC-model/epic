@@ -8,6 +8,7 @@ module fields
     use hdf5
     use writer, only : h5file,              &
                        h5err,               &
+                       write_h5_dataset_2d, &
                        write_h5_dataset_3d, &
                        open_h5_group,       &
                        get_step_group_name
@@ -132,6 +133,9 @@ module fields
 
             call write_h5_dataset_3d(name, "humidity", &
                                      humg(0:nz, 0:nx-1, :))
+
+            call write_h5_dataset_2d(name, "vorticity", &
+                                     vortg(0:nz, 0:nx-1))
 
             call write_h5_dataset_3d(name, "liquid humidity", &
                                      humlig(0:nz, 0:nx-1, :))
