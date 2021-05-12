@@ -8,7 +8,7 @@ module ls_rk4
     use parcel_bc
     use rk4_utils, only: get_B
     use parcel_interpl, only : grid2par, grid2par_add
-    use fields, only : strain_f, velog
+    use fields, only : vstrag, velog
     implicit none
 
     integer, parameter :: dp=kind(0.d0)           ! double precision
@@ -82,7 +82,7 @@ module ls_rk4
             else
                call grid2par_add(parcels%position, parcels%volume, velocity_p, velog, parcels%B, exact='velocity')
             endif
-            call grid2par(parcels%position, parcels%volume, strain, strain_f, parcels%B, exact='strain')
+            call grid2par(parcels%position, parcels%volume, strain, vstrag, parcels%B, exact='strain')
             if(step==1) then
                dbdt(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                            parcels%volume(1:n_parcels, 1))

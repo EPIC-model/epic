@@ -6,9 +6,12 @@ module init
     use options, only : parcel_info, time
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
     use fields, only : velog,           &
-                       strain_f,        &
+                       vstrag,          &
                        volg,            &
                        vortg,           &
+                       buoyg,           &
+                       humg,            &
+                       humlig,          &
                        get_position
     use ellipse, only : get_ab
     use parcel_container, only : parcels, n_parcels
@@ -19,7 +22,9 @@ module init
                init_stretch,           &
                init_B_matrix,          &
                init_velocity,          &
-               init_velocity_field
+               init_velocity_field,    &
+               init_buoyancy,          &
+               init_humidity
 
     contains
 
@@ -136,21 +141,25 @@ module init
             allocate(volg(-1:nz+1, 0:nx-1, 1))
             volg = zero
 
-            if (time%is_adaptive) then
-                call init_vorticity_field
-            endif
+            call init_buoyancy
+
+            call init_humidity
 
         end subroutine init_fields
 
         subroutine init_velocity_field
             use taylorgreen, only : get_flow_velocity, &
-                                    get_flow_gradient
+                                    get_flow_gradient, &
+                                    get_flow_vorticity
             integer :: i, j
             double precision :: pos(2)
 
             allocate(velog(-1:nz+1, 0:nx-1, 2))
 
-            allocate(strain_f(-1:nz+1, 0:nx-1, 4))
+            allocate(vstrag(-1:nz+1, 0:nx-1, 4))
+
+            ! vorticity has no halo grid points in y
+            allocate(vortg(0:nz, 0:nx-1, 1))
 
             do i = 0, nx-1
                 do j = -1, nz+1
@@ -158,27 +167,23 @@ module init
 
                     velog(j, i, :) = get_flow_velocity(pos)
 
-                    strain_f(j, i, :) = get_flow_gradient(pos)
-                enddo
-            enddo
-        end subroutine init_velocity_field
-
-        subroutine init_vorticity_field
-            use taylorgreen, only : get_flow_vorticity
-            integer :: i, j
-            double precision :: pos(2)
-
-            ! vorticity has no halo grid points in y
-            allocate(vortg(0:nz, 0:nx-1, 1))
-
-            do i = 0, nx-1
-                do j = 0, nz
-                    call get_position(i, j, pos)
+                    vstrag(j, i, :) = get_flow_gradient(pos)
 
                     vortg(j, i, :) = get_flow_vorticity(pos)
                 enddo
             enddo
+        end subroutine init_velocity_field
 
-        end subroutine init_vorticity_field
+        subroutine init_buoyancy
+            allocate(buoyg(-1:nz+1, 0:nx-1, 1))
+            buoyg = zero
+        end subroutine init_buoyancy
+
+        subroutine init_humidity
+            allocate(humg(-1:nz+1, 0:nx-1, 1))
+            allocate(humlig(-1:nz+1, 0:nx-1, 1))
+            humg = zero
+            humlig = zero
+        end subroutine init_humidity
 
 end module init

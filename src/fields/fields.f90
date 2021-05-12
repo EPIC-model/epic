@@ -17,9 +17,12 @@ module fields
     ! Due to periodicity in x, the grid points in x go from 0 to nx-1 = grid(1)-2
     double precision, allocatable, dimension(:, :, :) :: &
         velog,     &   ! velocity vector field (has 1 halo cell layer in z)
-        strain_f,  &   ! velocity gradient tensor (has 1 halo cell layer in z)
+        vstrag,    &   ! velocity gradient tensor (has 1 halo cell layer in z)
         volg,      &   ! volume scalar field (has 1 halo cell layer in z)
-        vortg          ! vorticity scalar field (has no halo cell layers)
+        vortg,     &   ! vorticity scalar field (has no halo cell layers)
+        buoyg,     &   ! buoyancy (has 1 halo cell layer in z)
+        humg,      &   ! specific humidity
+        humlig         ! condensed humidity
 
     contains
 
@@ -78,22 +81,26 @@ module fields
             group = open_h5_group(name)
 
             !
-            ! write fields
+            ! write fields (do not write halo cells)
             !
 
-            if (iter == 0) then
-                ! do not write halo cells
-                call write_h5_dataset_3d(name, "velocity",          &
-                    velog(0:nz, 0:nx-1, :))
+            call write_h5_dataset_3d(name, "velocity", &
+                                     velog(0:nz, 0:nx-1, :))
 
-                ! do not write halo cells
-                call write_h5_dataset_3d(name, "velocity strain",   &
-                    strain_f(0:nz, 0:nx-1, :))
-            endif
+            call write_h5_dataset_3d(name, "velocity gradient tensor", &
+                                     vstrag(0:nz, 0:nx-1, :))
 
-            ! do not write halo cells
-            call write_h5_dataset_3d(name, "volume",            &
-                volg(0:nz, 0:nx-1, :))
+            call write_h5_dataset_3d(name, "volume", &
+                                     volg(0:nz, 0:nx-1, :))
+
+            call write_h5_dataset_3d(name, "buoyancy", &
+                                     buoyg(0:nz, 0:nx-1, :))
+
+            call write_h5_dataset_3d(name, "humidity", &
+                                     humg(0:nz, 0:nx-1, :))
+
+            call write_h5_dataset_3d(name, "liquid humidity", &
+                                     humlig(0:nz, 0:nx-1, :))
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)

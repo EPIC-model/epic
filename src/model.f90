@@ -174,10 +174,10 @@ module model
             if (parcel_info%is_elliptic .and. time%is_adaptive) then
                 do i = 0, nx-1
                     do j = 0, nz
-                        S11 = strain_f(j, i, 1)
-                        S12 = strain_f(j, i, 2)
-                        S21 = strain_f(j, i, 3)
-                        S22 = strain_f(j, i, 4)
+                        S11 = vstrag(j, i, 1)
+                        S12 = vstrag(j, i, 2)
+                        S21 = vstrag(j, i, 3)
+                        S22 = vstrag(j, i, 4)
                         H = max(H, (S11 - S22) ** 2 + (S12 + S21) ** 2)
                     enddo
                 enddo
