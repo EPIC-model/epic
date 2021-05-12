@@ -34,7 +34,7 @@ module taylorgreen
                     velgradg(j, i, :) = get_flow_gradient(pos)
 
                     if ((j > -1) .and. (j < nz+1)) then
-                        vortg(j, i, :) = get_flow_vorticity(pos)
+                        vortg(j, i) = get_flow_vorticity(pos)
                     endif
                 enddo
             enddo

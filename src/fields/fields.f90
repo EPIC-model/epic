@@ -21,11 +21,12 @@ module fields
         velog,     &   ! velocity vector field (has 1 halo cell layer in z)
         velgradg,  &   ! velocity gradient tensor (has 1 halo cell layer in z)
         volg,      &   ! volume scalar field (has 1 halo cell layer in z)
-        vortg,     &   ! vorticity scalar field (has no halo cell layers)
         buoyg,     &   ! buoyancy (has 1 halo cell layer in z)
         humg,      &   ! specific humidity
         humlig         ! condensed humidity
 
+    double precision, allocatable, dimension(:, :) :: &
+        vortg          ! vorticity scalar field (has no halo cell layers)
     contains
 
         ! allocate all fields
@@ -40,7 +41,7 @@ module fields
             allocate(volg(-1:nz+1, 0:nx-1, 1))
 
             ! vorticity has no halo grid points in y
-            allocate(vortg(0:nz, 0:nx-1, 1))
+            allocate(vortg(0:nz, 0:nx-1))
 
             allocate(buoyg(-1:nz+1, 0:nx-1, 1))
 
