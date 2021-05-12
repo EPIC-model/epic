@@ -172,7 +172,9 @@ module init
 
                     velgradg(j, i, :) = get_flow_gradient(pos)
 
-                    vortg(j, i, :) = get_flow_vorticity(pos)
+                    if ((j > -1) .and. (j < nz+1)) then
+                        vortg(j, i, :) = get_flow_vorticity(pos)
+                    endif
                 enddo
             enddo
         end subroutine init_velocity_field
