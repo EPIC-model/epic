@@ -169,13 +169,13 @@ module init
             double precision :: pos(2)
 
             ! vorticity has no halo grid points in y
-            allocate(vortg(0:nz, 0:nx-1, 1))
+            allocate(vortg(0:nz, 0:nx-1))
 
             do i = 0, nx-1
                 do j = 0, nz
                     call get_position(i, j, pos)
 
-                    vortg(j, i, :) = get_flow_vorticity(pos)
+                    vortg(j, i) = get_flow_vorticity(pos)
                 enddo
             enddo
 
