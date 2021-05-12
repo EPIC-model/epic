@@ -18,7 +18,7 @@ epic_SOURCES = 					\
 	models/model.f90			\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_diverge.f90		\
-	parser/parser.f90 			\
+	utils/parser.f90 			\
 	utils/diagnostics.f90			\
 	stepper/rk4_utils.f90			\
 	stepper/classic_rk4.f90			\
