@@ -6,7 +6,7 @@ module init
     use options, only : parcel_info, time
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
     use fields, only : velog,           &
-                       vstrag,          &
+                       velgradg,        &
                        volg,            &
                        vortg,           &
                        buoyg,           &
@@ -156,7 +156,7 @@ module init
 
             allocate(velog(-1:nz+1, 0:nx-1, 2))
 
-            allocate(vstrag(-1:nz+1, 0:nx-1, 4))
+            allocate(velgradg(-1:nz+1, 0:nx-1, 4))
 
             ! vorticity has no halo grid points in y
             allocate(vortg(0:nz, 0:nx-1, 1))
@@ -167,7 +167,7 @@ module init
 
                     velog(j, i, :) = get_flow_velocity(pos)
 
-                    vstrag(j, i, :) = get_flow_gradient(pos)
+                    velgradg(j, i, :) = get_flow_gradient(pos)
 
                     vortg(j, i, :) = get_flow_vorticity(pos)
                 enddo

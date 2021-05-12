@@ -9,7 +9,7 @@ module classic_rk4
     use parcel_bc
     use rk4_utils, only: get_B
     use parcel_interpl, only : grid2par
-    use fields, only : vstrag, velog
+    use fields, only : velgradg, velog
     implicit none
     integer, parameter :: dp=kind(0.d0)           ! double precision
 
@@ -90,7 +90,7 @@ module classic_rk4
             iniB(1:n_parcels,:) = parcels%B(1:n_parcels,:)
 
             call grid2par(parcels%position, parcels%volume, k1o, velog, parcels%B, exact='velocity')
-            call grid2par(parcels%position, parcels%volume, strain, vstrag, parcels%B, exact='strain')
+            call grid2par(parcels%position, parcels%volume, strain, velgradg, parcels%B, exact='strain')
             b1o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels, 1))
 
@@ -105,7 +105,7 @@ module classic_rk4
             call apply_parcel_bc(parcels%position, k1o)
 
             call grid2par(parcels%position, parcels%volume, k2o, velog, parcels%B, exact='velocity')
-            call grid2par(parcels%position, parcels%volume, strain, vstrag, parcels%B, exact='strain')
+            call grid2par(parcels%position, parcels%volume, strain, velgradg, parcels%B, exact='strain')
             b2o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels, 1))
 
@@ -120,7 +120,7 @@ module classic_rk4
             call apply_parcel_bc(parcels%position, k2o)
 
             call grid2par(parcels%position, parcels%volume, k3o, velog, parcels%B, exact='velocity')
-            call grid2par(parcels%position, parcels%volume, strain, vstrag, parcels%B, exact='strain')
+            call grid2par(parcels%position, parcels%volume, strain, velgradg, parcels%B, exact='strain')
             b3o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels, 1))
 
@@ -135,7 +135,7 @@ module classic_rk4
             call apply_parcel_bc(parcels%position, k3o)
 
             call grid2par(parcels%position, parcels%volume, k4o, velog, parcels%B, exact='velocity')
-            call grid2par(parcels%position, parcels%volume, strain, vstrag, parcels%B, exact='strain')
+            call grid2par(parcels%position, parcels%volume, strain, velgradg, parcels%B, exact='strain')
             b4o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels, 1))
 

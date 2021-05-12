@@ -17,7 +17,7 @@ module fields
     ! Due to periodicity in x, the grid points in x go from 0 to nx-1 = grid(1)-2
     double precision, allocatable, dimension(:, :, :) :: &
         velog,     &   ! velocity vector field (has 1 halo cell layer in z)
-        vstrag,    &   ! velocity gradient tensor (has 1 halo cell layer in z)
+        velgradg,  &   ! velocity gradient tensor (has 1 halo cell layer in z)
         volg,      &   ! volume scalar field (has 1 halo cell layer in z)
         vortg,     &   ! vorticity scalar field (has no halo cell layers)
         buoyg,     &   ! buoyancy (has 1 halo cell layer in z)
@@ -88,7 +88,7 @@ module fields
                                      velog(0:nz, 0:nx-1, :))
 
             call write_h5_dataset_3d(name, "velocity gradient tensor", &
-                                     vstrag(0:nz, 0:nx-1, :))
+                                     velgradg(0:nz, 0:nx-1, :))
 
             call write_h5_dataset_3d(name, "volume", &
                                      volg(0:nz, 0:nx-1, :))
