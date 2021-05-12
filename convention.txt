@@ -1,0 +1,8 @@
+In EPIC the gridded fields are named as follows:
+
+volg    -- volume
+velog   -- velocity
+vortg   -- vorticity
+buoyg   -- buoyancy
+humg    -- specific humidity
+humlig  -- condensed humidity
