@@ -29,7 +29,7 @@ module options
     !
     type box_type
         integer          :: nc(2) = (/20, 20/)                  ! number of cells
-        double precision :: extent(2) = (/-pi, pi/)
+        double precision :: extent(2) = (/pi, pi/)
     end type box_type
 
     type(box_type) :: box
