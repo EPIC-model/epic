@@ -4,6 +4,7 @@
 ! =============================================================================
 module fields
     use parameters, only : dx, dxi, extent, lower, nx, nz
+    use constants, only : zero
     use hdf5
     use writer, only : h5file,              &
                        h5err,               &
@@ -17,14 +18,49 @@ module fields
     ! hence the valid regrion is from 0 to nz
     ! Due to periodicity in x, the grid points in x go from 0 to nx-1
     double precision, allocatable, dimension(:, :, :) :: &
-        velocity_f,     &   ! velocity vector field (has 1 halo cell layer in z)
-        strain_f,       &   ! velocity gradient tensor (has 1 halo cell layer in z)
-        volg                ! volume scalar field (has 1 halo cell layer in z)
+        velog,     &   ! velocity vector field (has 1 halo cell layer in z)
+        velgradg,  &   ! velocity gradient tensor (has 1 halo cell layer in z)
+        volg,      &   ! volume scalar field (has 1 halo cell layer in z)
+        buoyg,     &   ! buoyancy (has 1 halo cell layer in z)
+        humg,      &   ! specific humidity
+        humlig         ! condensed humidity
 
     double precision, allocatable, dimension(:, :) :: &
-        vortg               ! vorticity scalar field (has no halo cell layers)
-
+        vortg          ! vorticity scalar field (has no halo cell layers)
     contains
+
+        ! allocate all fields
+        subroutine field_alloc
+            if (allocated(velog)) then
+                return
+            endif
+
+            allocate(velog(-1:nz+1, 0:nx-1, 2))
+            allocate(velgradg(-1:nz+1, 0:nx-1, 4))
+
+            allocate(volg(-1:nz+1, 0:nx-1, 1))
+
+            ! vorticity has no halo grid points in y
+            allocate(vortg(0:nz, 0:nx-1))
+
+            allocate(buoyg(-1:nz+1, 0:nx-1, 1))
+
+            allocate(humg(-1:nz+1, 0:nx-1, 1))
+
+            allocate(humlig(-1:nz+1, 0:nx-1, 1))
+
+        end subroutine field_alloc
+
+        subroutine field_default
+            call field_alloc
+
+            velog    = zero
+            velgradg = zero
+            volg     = zero
+            buoyg    = zero
+            humg     = zero
+            humlig   = zero
+        end subroutine
 
         ! get the lower index of the cell the parcel is in
         ! this subroutine does not take x periodicity into account
@@ -80,25 +116,29 @@ module fields
             group = open_h5_group(name)
 
             !
-            ! write fields
+            ! write fields (do not write halo cells)
             !
 
-            if (iter == 0) then
-                ! do not write halo cells
-                call write_h5_dataset_3d(name, "velocity",          &
-                    velocity_f(0:nz, 0:nx-1, :))
+            call write_h5_dataset_3d(name, "velocity", &
+                                     velog(0:nz, 0:nx-1, :))
 
-                ! do not write halo cells
-                call write_h5_dataset_3d(name, "velocity strain",   &
-                    strain_f(0:nz, 0:nx-1, :))
+            call write_h5_dataset_3d(name, "velocity gradient tensor", &
+                                     velgradg(0:nz, 0:nx-1, :))
 
-                call write_h5_dataset_2d(name, "vorticity",         &
-                    vortg(0:nz, 0:nx-1))
-            endif
+            call write_h5_dataset_3d(name, "volume", &
+                                     volg(0:nz, 0:nx-1, :))
 
-            ! do not write halo cells
-            call write_h5_dataset_3d(name, "volume",            &
-                volg(0:nz, 0:nx-1, :))
+            call write_h5_dataset_3d(name, "buoyancy", &
+                                     buoyg(0:nz, 0:nx-1, :))
+
+            call write_h5_dataset_3d(name, "humidity", &
+                                     humg(0:nz, 0:nx-1, :))
+
+            call write_h5_dataset_2d(name, "vorticity", &
+                                     vortg(0:nz, 0:nx-1))
+
+            call write_h5_dataset_3d(name, "liquid humidity", &
+                                     humlig(0:nz, 0:nx-1, :))
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)
