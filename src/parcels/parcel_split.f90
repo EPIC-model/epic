@@ -61,8 +61,8 @@ module parcel_split
 
                 parcels%velocity(n_parcels, :) = parcels%velocity(i, :)
                 parcels%volume(n_parcels, 1) = parcels%volume(i, 1)
-!                 parcels%buoyancy(n_parcels, 1) = parcels%buoyancy(i, 1)
-!                 parcels%humidity(n_parcels, 1) = parcels%humidity(i, 1)
+                parcels%buoyancy(n_parcels, 1) = parcels%buoyancy(i, 1)
+                parcels%humidity(n_parcels, 1) = parcels%humidity(i, 1)
 
                 parcels%position(n_parcels, :) = parcels%position(i, :) - h * evec
                 parcels%position(i, :) = parcels%position(i, :)  + h * evec
