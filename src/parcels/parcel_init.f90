@@ -46,6 +46,7 @@ module parcel_init
             endif
 
             parcels%velocity(1:n_parcels, :) = zero
+            parcels%vorticity(1:n_parcels, :) = zero
             parcels%buoyancy(1:n_parcels, 1) = zero
             parcels%humidity(1:n_parcels, 1) = zero
         end subroutine parcel_default
