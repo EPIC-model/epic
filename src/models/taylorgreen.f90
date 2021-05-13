@@ -21,7 +21,8 @@ module taylorgreen
 
     public :: get_flow_velocity,    &
               get_flow_gradient,    &
-              get_flow_vorticity
+              get_flow_vorticity,   &
+              taylorgreen_init
 
     contains
         subroutine taylorgreen_init
