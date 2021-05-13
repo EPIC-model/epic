@@ -112,12 +112,12 @@ module parcel_merge
             parcels%position(ib, 2) = mu1 * parcels%position(is, 2) &
                                     + mu2 * parcels%position(ib, 2)
 
-!             ! update buoyancy and humidity
-!             parcels%buoyancy(ib, 1) = mu1 * parcels%buoyancy(is, 1) &
-!                                     + mu2 * parcels%buoyancy(ib, 1)
-!
-!             parcels%humidity(ib, 1) = mu1 * parcels%humidity(is, 1) &
-!                                     + mu2 * parcels%humidity(ib, 1)
+            ! update buoyancy and humidity
+            parcels%buoyancy(ib, 1) = mu1 * parcels%buoyancy(is, 1) &
+                                    + mu2 * parcels%buoyancy(ib, 1)
+
+            parcels%humidity(ib, 1) = mu1 * parcels%humidity(is, 1) &
+                                    + mu2 * parcels%humidity(ib, 1)
 
             ! update volume
             parcels%volume(ib, 1) = ab * pi
@@ -188,7 +188,7 @@ module parcel_merge
             integer                                    :: loca(n_parcels)
             double precision                           :: x0(n_merge), xm(n_merge)
             double precision                           :: zm(n_merge), delx, vmerge, dely, B22, mu
-!             double precision                           :: buoym(n_merge), hum(n_merge)
+            double precision                           :: buoym(n_merge), hum(n_merge)
             double precision,            intent(out)   :: B11m(n_merge), B12m(n_merge), B22m(n_merge), &
                                                           vm(n_merge)
 
@@ -215,9 +215,9 @@ module parcel_merge
                     ! zm will contain v(ib)*z(ib)+sum{v(is)*z(is)}
                     zm(l) = parcels%volume(ib, 1) * parcels%position(ib, 2)
 
-!                     ! buoyancy and humidity
-!                     buoym(n) = parcels%volume(ib, 1) * parcels%buoyancy(ib, 1)
-!                     hum(n) = parcels%volume(ib, 1) * parcels%humidity(ib, 1)
+                    ! buoyancy and humidity
+                    buoym(l) = parcels%volume(ib, 1) * parcels%buoyancy(ib, 1)
+                    hum(l) = parcels%volume(ib, 1) * parcels%humidity(ib, 1)
 
                     B11m(l) = zero
                     B12m(l) = zero
@@ -239,9 +239,9 @@ module parcel_merge
                 ! Accumulate v(ib)*z(ib)+sum{v(is)*z(is)}
                 zm(n) = zm(n) + parcels%volume(is, 1) * parcels%position(is, 2)
 
-!                 ! Accumulate buoyancy and humidity
-!                 buoym(n) = buoym(n) + parcels%volume(is, 1) * parcels%buoyancy(is, 1)
-!                 hum(n) = hum(n) + parcels%volume(is, 1) * parcels%humidity(is, 1)
+                ! Accumulate buoyancy and humidity
+                buoym(n) = buoym(n) + parcels%volume(is, 1) * parcels%buoyancy(is, 1)
+                hum(n) = hum(n) + parcels%volume(is, 1) * parcels%humidity(is, 1)
             enddo
 
             ! Obtain the merged parcel centres
@@ -256,9 +256,9 @@ module parcel_merge
                 ! z centre of merged parcel
                 zm(m) = vmerge * zm(m)
 
-!                 ! buoyancy and humidity
-!                 buoym(m) = vmerge * buoym(m)
-!                 hum(m) = vmerge * hum(m)
+                ! buoyancy and humidity
+                buoym(m) = vmerge * buoym(m)
+                hum(m) = vmerge * hum(m)
             enddo
 
             loca = zero
@@ -287,8 +287,8 @@ module parcel_merge
                     parcels%position(ib, 1) = xm(l)
                     parcels%position(ib, 2) = zm(l)
 
-!                     parcels%buoyancy(ib, 1) = buoym(l)
-!                     parcels%humidity(ib, 1) = hum(l)
+                    parcels%buoyancy(ib, 1) = buoym(l)
+                    parcels%humidity(ib, 1) = hum(l)
 
                 endif
 
