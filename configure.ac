@@ -7,7 +7,7 @@ AC_LANG(Fortran)
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
 
-FCFLAGS=""
+FCFLAGS="-fdefault-real-8 -fdefault-double-8"
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
