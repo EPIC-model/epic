@@ -51,7 +51,7 @@ program test_ellipse_orientation
             angle = angle - two * pi
         endif
 
-        failed = (failed .or. abs(angle - get_angle(B11, B12, V)) > 1.0e-13)
+        failed = (failed .or. abs(angle - get_angle(B11, B12, V)) > dble(1.0e-13))
 
     enddo
 
