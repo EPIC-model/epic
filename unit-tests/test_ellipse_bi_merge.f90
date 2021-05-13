@@ -7,17 +7,18 @@
 ! =============================================================================
 program test_ellipse_bi_merge
     use unit_test
-    use constants, only : pi
+    use constants, only : pi, one, two, five
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, grid
+    use options, only : parcel_info, box
     use parameters, only : update_parameters
     use ellipse
     implicit none
 
     double precision :: ab, a1b1, a2b2, B11, B12, B22, error, vol
 
-    grid = (/2, 2/)
+    box%nc = (/1, 1/)
+    box%extent = (/pi, pi/)
 
     call update_parameters()
 
@@ -26,36 +27,36 @@ program test_ellipse_bi_merge
 
 
     ! parcels
-    a1b1 = 2.0d0
-    parcels%position(1, :) = 0.0d0
+    a1b1 = two
+    parcels%position(1, :) = zero
     parcels%volume(1, 1) = a1b1 * pi
     parcels%B(1, 1) = a1b1
-    parcels%B(1, 2) = 0.0d0
+    parcels%B(1, 2) = zero
 
     a2b2 = 0.5d0
-    parcels%position(2, :) = 0.0d0
+    parcels%position(2, :) = zero
     parcels%volume(2, 1) = a2b2 * pi
     parcels%B(2, 1) = a2b2
-    parcels%B(2, 2) = 0.0d0
+    parcels%B(2, 2) = zero
 
     ! geometric merge
-    parcel_info%lambda = 5.0
+    parcel_info%lambda = five
     parcel_info%merge_type = 'bi-geometric'
-    parcel_info%vfraction = 2.0
+    parcel_info%vfraction = two
 
     call merge_ellipses(parcels)
 
     ! reference solution
     ab = a1b1 + a2b2  ! a == b since it is a circle
     B11 = ab
-    B12 = 0.0d0
+    B12 = zero
     B22 = ab
     vol = ab * pi
 
     !
     ! check result
     !
-    error = 0.0d0
+    error = zero
 
     error = max(error, abs(dble(n_parcels - 1)))
     error = max(error, abs(parcels%B(1, 1) - B11))
@@ -70,17 +71,17 @@ program test_ellipse_bi_merge
 
     ! parcels
     n_parcels = 2
-    a1b1 = 2.0d0
-    parcels%position(1, :) = 0.0d0
+    a1b1 = two
+    parcels%position(1, :) = zero
     parcels%volume(1, 1) = a1b1 * pi
     parcels%B(1, 1) = a1b1
-    parcels%B(1, 2) = 0.0d0
+    parcels%B(1, 2) = zero
 
     a2b2 = 0.5d0
-    parcels%position(2, :) = 0.0d0
+    parcels%position(2, :) = zero
     parcels%volume(2, 1) = a2b2 * pi
     parcels%B(2, 1) = a2b2
-    parcels%B(2, 2) = 0.0d0
+    parcels%B(2, 2) = zero
 
     ! optimal merge
     parcel_info%merge_type = 'bi-optimal'
@@ -90,7 +91,7 @@ program test_ellipse_bi_merge
     !
     ! check result
     !
-    error = 0.0d0
+    error = zero
 
     error = max(error, abs(dble(n_parcels - 1)))
     error = max(error, abs(parcels%B(1, 1) - B11))

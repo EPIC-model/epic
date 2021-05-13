@@ -120,8 +120,8 @@ module stafft
             enddo
 
             do i = 1, n-1
-                trig(n+i) = -sin(trig(i))
-                trig(i)   =  cos(trig(i))
+                trig(n+i) = -dsin(trig(i))
+                trig(i)   =  dcos(trig(i))
             enddo
         end subroutine
 
@@ -420,7 +420,7 @@ module stafft
 
         do j = 1, n - 1
             do i = 1, m
-                wk(i, j) = 0.5d0 * (x(i, j) + x(i, n - j)) - sin(dble(j) * fpin) * (x(i, j) - x(i, n - j))
+                wk(i, j) = 0.5d0 * (x(i, j) + x(i, n - j)) - dsin(dble(j) * fpin) * (x(i, j) - x(i, n - j))
             enddo
         enddo
 
@@ -431,7 +431,7 @@ module stafft
             rowsum = 0.0d0
             rowsum = rowsum + 0.5d0 * x(i, 0)
             do j = 1, n - 1
-                rowsum = rowsum + x(i, j) * cos(dble(j) * fpin)
+                rowsum = rowsum + x(i, j) * dcos(dble(j) * fpin)
             enddo
             rowsum = rowsum - 0.5d0 * x(i, n)
             x(i, n) = rt2 * rowsum / rtn
@@ -491,7 +491,7 @@ module stafft
         !Next set up the rest of the array:
         do j = 1, n - 1
             do i = 1, m
-                wk(i, j) = 0.5d0 * (x(i, j) - x(i, n - j)) + sin(dble(j) * fpin) * (x(i, j) + x(i, n - j))
+                wk(i, j) = 0.5d0 * (x(i, j) - x(i, n - j)) + dsin(dble(j) * fpin) * (x(i, j) + x(i, n - j))
             enddo
         enddo
 

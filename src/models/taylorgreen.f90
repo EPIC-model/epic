@@ -11,10 +11,17 @@
 ! =============================================================================
 module taylorgreen
     use options, only : flow
-    use constants, only : zero
+    use constants, only : pi
     use parcel_container, only : parcels, n_parcels
     use fields
     implicit none
+
+    private
+        double precision, parameter :: hpi = 0.5d0 * pi
+
+    public :: get_flow_velocity,    &
+              get_flow_gradient,    &
+              get_flow_vorticity
 
     contains
         subroutine taylorgreen_init
@@ -46,11 +53,10 @@ module taylorgreen
             double precision             :: xx, zz
             double precision             :: vel(2)
 
-            xx = flow%freq(1) * pos(1) + flow%phase(1)
-            zz = flow%freq(2) * pos(2) + flow%phase(2)
+            call get_flow_pos(pos, xx, zz)
 
-            vel(1) = flow%amp(1) * cos(xx) * sin(zz)
-            vel(2) = flow%amp(2) * sin(xx) * cos(zz)
+            vel(1) = flow%amp(1) * dcos(xx) * dsin(zz)
+            vel(2) = flow%amp(2) * dsin(xx) * dcos(zz)
         end function get_flow_velocity
 
         ! grad ordering : dudx, dudy, dvdx, dvdy
@@ -59,20 +65,19 @@ module taylorgreen
             double precision             :: xx, zz
             double precision             :: grad(4)
 
-            xx = flow%freq(1) * pos(1) + flow%phase(1)
-            zz = flow%freq(2) * pos(2) + flow%phase(2)
+            call get_flow_pos(pos, xx, zz)
 
             ! du/dx = - a * A * sin(xx) * sin(zz)
-            grad(1) = - flow%freq(1) * flow%amp(1) * sin(xx) * sin(zz)
+            grad(1) = - flow%freq(1) * flow%amp(1) * dsin(xx) * dsin(zz)
 
             ! du/dy = b * A * cos(xx) * cos(zz)
-            grad(2) = flow%freq(2) * flow%amp(1) * cos(xx) * cos(zz)
+            grad(2) = flow%freq(2) * flow%amp(1) * dcos(xx) * dcos(zz)
 
             ! dv/dx = a * B * cos(xx) * np.cos(zz)
-            grad(3) = flow%freq(1) * flow%amp(2) * cos(xx) * cos(zz)
+            grad(3) = flow%freq(1) * flow%amp(2) * dcos(xx) * dcos(zz)
 
             ! dv/dy = - b * B * sin(xx) * sin(zz)
-            grad(4) = - flow%freq(2) * flow%amp(2) * sin(xx) * sin(zz)
+            grad(4) = - flow%freq(2) * flow%amp(2) * dsin(xx) * dsin(zz)
 
         end function get_flow_gradient
 
@@ -81,12 +86,20 @@ module taylorgreen
             double precision             :: xx, zz
             double precision             :: omega
 
-            xx = flow%freq(1) * pos(1) + flow%phase(1)
-            zz = flow%freq(2) * pos(2) + flow%phase(2)
+            call get_flow_pos(pos, xx, zz)
 
             omega = (flow%amp(2) * flow%freq(1)     &
                    - flow%amp(1) * flow%freq(2))    &
-                   * cos(xx) * cos(zz)
+                   * dcos(xx) * dcos(zz)
         end function get_flow_vorticity
+
+        subroutine get_flow_pos(pos, xx, zz)
+            double precision, intent(in) :: pos(2)
+            double precision, intent(out) :: xx, zz
+
+            xx = flow%freq(1) * pos(1) + flow%phase(1) + hpi
+            zz = flow%freq(2) * pos(2) + flow%phase(2)
+
+        end subroutine get_flow_pos
 
 end module taylorgreen

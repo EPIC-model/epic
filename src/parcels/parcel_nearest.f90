@@ -4,7 +4,7 @@
 module parcel_nearest
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcels, n_parcels, get_delx
-    use parameters, only : dx, dxi, vcell, grid, hli, lower, extent, ncell, nx, nz
+    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz
     use options, only : parcel_info
 
     implicit none
@@ -38,7 +38,7 @@ module parcel_nearest
                 allocate(kc2(ncell))
             endif
 
-            vmin = vcell / parcel_info%vfraction
+            vmin = vcell / dble(parcel_info%vfraction)
 
             ! These parcels are marked for merger:
             l_merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
