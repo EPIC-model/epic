@@ -79,6 +79,8 @@ program test_ellipse_multi_merge_2
             parcels%volume(1, 1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
             parcels%B(1, 2) = zero
+            parcels%buoyancy(1, 1) = 1.5d0
+            parcels%humidity(1, 1) = 1.3d0
 
             ! small parcel left
             parcels%position(2, 1) = -d
@@ -86,6 +88,8 @@ program test_ellipse_multi_merge_2
             parcels%volume(2, 1) = a2b2 * pi
             parcels%B(2, 1) = a2b2
             parcels%B(2, 2) = zero
+            parcels%buoyancy(2, 1) = 1.8d0
+            parcels%humidity(2, 1) = 1.2d0
 
             ! small parcel right
             parcels%position(3, 1) = d
@@ -93,18 +97,23 @@ program test_ellipse_multi_merge_2
             parcels%volume(3, 1) = a2b2 * pi
             parcels%B(3, 1) = a2b2
             parcels%B(3, 2) = zero
+            parcels%buoyancy(3, 1) = 1.4d0
+            parcels%humidity(3, 1) = 1.1d0
 
         end subroutine parcel_setup
 
         function eval_max_error(method) result(max_err)
             character(*), intent(in) :: method
             double precision :: ab, B11, B12, B22, vol, angle, d, factor, tmp, mu
-            double precision :: max_err
+            double precision :: max_err, hum, buoy
 
             ! reference solution
             d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
             ab = a1b1 + two * a2b2
             vol = ab * pi
+
+            buoy = (1.5d0 * a1b1 + (1.8d0 + 1.4d0) * a2b2) / ab
+            hum  = (1.3d0 * a1b1 + (1.2d0 + 1.1d0) * a2b2) / ab
 
             B11 = a1b1 ** 2 / ab + two * a2b2 / ab * (four * d ** 2 + a2b2)
             B12 = two * a2b2 / ab * (four * d ** 2)
@@ -132,6 +141,8 @@ program test_ellipse_multi_merge_2
                                                parcels%volume(1, 1)) - B22))
             max_err = max(max_err, sum(abs(parcels%position(1, :))))
             max_err = max(max_err, abs(parcels%volume(1, 1) - vol))
+            max_err = max(max_err, abs(parcels%buoyancy(1, 1) - buoy))
+            max_err = max(max_err, abs(parcels%humidity(1, 1) - hum))
         end function eval_max_error
 
 
