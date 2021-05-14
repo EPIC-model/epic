@@ -12,6 +12,7 @@ program epic
     use parcel_merge, only : merge_ellipses
     use parcel_diverge, only : init_diverge, apply_diverge
     use fields
+    use tri_inversion, only : init_inversion
     use parcel_interpl
     use rk4
     use model, only : model_init
@@ -48,6 +49,8 @@ program epic
             call model_init("TaylorGreen")
 
             call rk4_alloc(max_num_parcels)
+
+            call init_inversion
 
             call init_diverge
 

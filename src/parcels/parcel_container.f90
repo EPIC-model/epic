@@ -64,7 +64,7 @@ module parcel_container
 
             call write_h5_dataset_2d(name, "position", parcels%position(1:n_parcels, :))
             call write_h5_dataset_2d(name, "velocity", parcels%velocity(1:n_parcels, :))
-            call write_h5_dataset_1d(name, "vorticity", parcels%vorticity(1:n_parcels, 1))
+            call write_h5_dataset_2d(name, "vorticity", parcels%vorticity(1:n_parcels, :))
 
             if (allocated(parcels%stretch)) then
                 call write_h5_dataset_1d(name, "stretch", parcels%stretch(1:n_parcels, 1))

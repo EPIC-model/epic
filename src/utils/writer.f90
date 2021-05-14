@@ -372,6 +372,7 @@ module writer
             call h5acreate_f(group, name,                           &
                              H5T_NATIVE_INTEGER, space, attr, h5err)
 
+            dummy = 0
             if (val) then
                 dummy = 1
             endif

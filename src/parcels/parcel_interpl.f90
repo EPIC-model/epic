@@ -11,7 +11,8 @@ module parcel_interpl
     use ellipse
     use fields
     use taylorgreen, only : get_flow_velocity, &
-                            get_flow_gradient
+                            get_flow_gradient, &
+                            get_flow_vorticity
 
     implicit none
 
@@ -357,6 +358,8 @@ module parcel_interpl
                      attrib(n,:)=attrib(n,:)+get_flow_velocity(pos)
                   elseif(exact=='strain') then
                      attrib(n,:)=attrib(n,:)+get_flow_gradient(pos)
+                  elseif(exact=='vorticity') then
+                     attrib(n,:)=attrib(n,:)+get_flow_vorticity(pos)
                   else
                      print *, "Exact interpolation field passed not implemented"
                      stop
