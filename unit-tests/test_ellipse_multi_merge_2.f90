@@ -11,14 +11,15 @@ program test_ellipse_multi_merge_2
     use constants, only : pi, one, two, four
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, grid
+    use options, only : parcel_info, box
     use parameters, only : update_parameters
     use ellipse
     implicit none
 
     double precision :: a1b1, a2b2, error
 
-    grid = (/2, 2/)
+    box%nc = (/1, 1/)
+    box%extent = (/pi, pi/)
 
     call update_parameters()
 
@@ -71,46 +72,55 @@ program test_ellipse_multi_merge_2
         subroutine parcel_setup
             double precision :: d
 
-            d = (sqrt(a1b1) + sqrt(a2b2)) * 0.5d0 * sqrt(2.0d0)
+            d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
 
             n_parcels = 3
-            parcels%position(1, :) = 0.0d0
+            parcels%position(1, :) = zero
             parcels%volume(1, 1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
-            parcels%B(1, 2) = 0.0d0
+            parcels%B(1, 2) = zero
+            parcels%buoyancy(1, 1) = 1.5d0
+            parcels%humidity(1, 1) = 1.3d0
 
             ! small parcel left
             parcels%position(2, 1) = -d
             parcels%position(2, 2) = -d
             parcels%volume(2, 1) = a2b2 * pi
             parcels%B(2, 1) = a2b2
-            parcels%B(2, 2) = 0.0d0
+            parcels%B(2, 2) = zero
+            parcels%buoyancy(2, 1) = 1.8d0
+            parcels%humidity(2, 1) = 1.2d0
 
             ! small parcel right
             parcels%position(3, 1) = d
             parcels%position(3, 2) = d
             parcels%volume(3, 1) = a2b2 * pi
             parcels%B(3, 1) = a2b2
-            parcels%B(3, 2) = 0.0d0
+            parcels%B(3, 2) = zero
+            parcels%buoyancy(3, 1) = 1.4d0
+            parcels%humidity(3, 1) = 1.1d0
 
         end subroutine parcel_setup
 
         function eval_max_error(method) result(max_err)
             character(*), intent(in) :: method
             double precision :: ab, B11, B12, B22, vol, angle, d, factor, tmp, mu
-            double precision :: max_err
+            double precision :: max_err, hum, buoy
 
             ! reference solution
-            d = (sqrt(a1b1) + sqrt(a2b2)) * 0.5d0 * sqrt(2.0d0)
-            ab = a1b1 + 2.0d0 * a2b2
+            d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
+            ab = a1b1 + two * a2b2
             vol = ab * pi
 
-            B11 = a1b1 ** 2 / ab + 2.0d0 * a2b2 / ab * (4.0d0 * d ** 2 + a2b2)
-            B12 = 2.0d0 * a2b2 / ab * (4.0d0 * d ** 2)
+            buoy = (1.5d0 * a1b1 + (1.8d0 + 1.4d0) * a2b2) / ab
+            hum  = (1.3d0 * a1b1 + (1.2d0 + 1.1d0) * a2b2) / ab
+
+            B11 = a1b1 ** 2 / ab + two * a2b2 / ab * (four * d ** 2 + a2b2)
+            B12 = two * a2b2 / ab * (four * d ** 2)
             B22 = B11
 
             if (method .eq. 'multi-geometric') then
-                factor = ab / sqrt(B11 * B22 - B12 ** 2)
+                factor = ab / dsqrt(B11 * B22 - B12 ** 2)
                 B11 = B11 * factor
                 B12 = B12 * factor
                 B22 = B22 * factor
@@ -122,7 +132,7 @@ program test_ellipse_multi_merge_2
                 B22 = (B22 - mu * tmp) / (one - mu ** 2)
             endif
 
-            max_err = 0.0d0
+            max_err = zero
             max_err = max(max_err, abs(dble(n_parcels - 1)))
             max_err = max(max_err, abs(parcels%B(1, 1) - B11))
             max_err = max(max_err, abs(parcels%B(1, 2) - B12))
@@ -131,6 +141,8 @@ program test_ellipse_multi_merge_2
                                                parcels%volume(1, 1)) - B22))
             max_err = max(max_err, sum(abs(parcels%position(1, :))))
             max_err = max(max_err, abs(parcels%volume(1, 1) - vol))
+            max_err = max(max_err, abs(parcels%buoyancy(1, 1) - buoy))
+            max_err = max(max_err, abs(parcels%humidity(1, 1) - hum))
         end function eval_max_error
 
 

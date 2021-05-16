@@ -9,14 +9,15 @@ program test_ellipse_multi_merge_3
     use constants, only : pi, one, two, four
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, grid
+    use options, only : parcel_info, box
     use parameters, only : update_parameters, extent
     use ellipse
     implicit none
 
     double precision :: a1b1, a2b2, error
 
-    grid = (/2, 2/)
+    box%nc = (/1, 1/)
+    box%extent = (/pi, pi/)
 
     call update_parameters()
 
@@ -69,28 +70,28 @@ program test_ellipse_multi_merge_3
         subroutine parcel_setup
             double precision :: d
 
-            d = (sqrt(a1b1) + sqrt(a2b2)) * 0.5d0 * sqrt(2.0d0)
+            d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
 
             n_parcels = 3
             parcels%position(1, 1) = 1.5d0
             parcels%position(1, 2) = 0.2d0
             parcels%volume(1, 1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
-            parcels%B(1, 2) = 0.0d0
+            parcels%B(1, 2) = zero
 
             ! small parcel left
             parcels%position(2, 1) = 1.5d0 - d
             parcels%position(2, 2) = 0.2d0 -d
             parcels%volume(2, 1) = a2b2 * pi
             parcels%B(2, 1) = a2b2
-            parcels%B(2, 2) = 0.0d0
+            parcels%B(2, 2) = zero
 
             ! small parcel right
             parcels%position(3, 1) = -extent(1) + 1.5d0 + d
             parcels%position(3, 2) = 0.2d0 + d
             parcels%volume(3, 1) = a2b2 * pi
             parcels%B(3, 1) = a2b2
-            parcels%B(3, 2) = 0.0d0
+            parcels%B(3, 2) = zero
 
         end subroutine parcel_setup
 
@@ -100,16 +101,16 @@ program test_ellipse_multi_merge_3
             double precision :: max_err
 
             ! reference solution
-            d = (sqrt(a1b1) + sqrt(a2b2)) * 0.5d0 * sqrt(2.0d0)
-            ab = a1b1 + 2.0d0 * a2b2
+            d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
+            ab = a1b1 + two * a2b2
             vol = ab * pi
 
-            B11 = a1b1 ** 2 / ab + 2.0d0 * a2b2 / ab * (4.0d0 * d ** 2 + a2b2)
-            B12 = 2.0d0 * a2b2 / ab * (4.0d0 * d ** 2)
+            B11 = a1b1 ** 2 / ab + two * a2b2 / ab * (four * d ** 2 + a2b2)
+            B12 = two * a2b2 / ab * (four * d ** 2)
             B22 = B11
 
             if (method .eq. 'multi-geometric') then
-                factor = ab / sqrt(B11 * B22 - B12 ** 2)
+                factor = ab / dsqrt(B11 * B22 - B12 ** 2)
                 B11 = B11 * factor
                 B12 = B12 * factor
                 B22 = B22 * factor
@@ -121,7 +122,7 @@ program test_ellipse_multi_merge_3
                 B22 = (B22 - mu * tmp) / (one - mu ** 2)
             endif
 
-            max_err = 0.0d0
+            max_err = zero
             max_err = max(max_err, abs(dble(n_parcels - 1)))
             max_err = max(max_err, abs(parcels%B(1, 1) - B11))
             max_err = max(max_err, abs(parcels%B(1, 2) - B12))

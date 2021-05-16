@@ -24,21 +24,6 @@ module parcel_diverge
     implicit none
 
     private
-
-        double precision, parameter :: f12 = one / two
-        double precision, parameter :: f13 = one / three
-        double precision, parameter :: f14 = one / four
-        double precision, parameter :: f23 = two / three
-        double precision, parameter :: f112 = one / 12.d0
-        double precision, parameter :: f16 = one / six
-        double precision, parameter :: f56 = five / six
-        double precision, parameter :: f76 = 7.d0 / six
-        double precision, parameter :: f124 = one / 24.d0
-        double precision, parameter :: f1112 = 11.d0 / 12.d0
-
-    !Gridded area fraction:
-    ! c double precision:: volg(0:nz,nx)
-
         ! tri-diagonal arrays:
         double precision, allocatable :: ap(:), apb(:)
         double precision, allocatable :: etdv(:, :), htdv(:, :)

@@ -9,14 +9,15 @@ program test_ellipse_bi_vs_multi_merge
     use constants, only : pi, one, two, four
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, grid
+    use options, only : parcel_info, box
     use parameters, only : update_parameters
     use ellipse
     implicit none
 
     double precision :: error, B11, B12, vol, pos(2)
 
-    grid = (/2, 2/)
+    box%nc = (/1, 1/)
+    box%extent = (/pi, pi/)
 
     call update_parameters()
 
@@ -45,7 +46,7 @@ program test_ellipse_bi_vs_multi_merge
     call merge_ellipses(parcels)
 
     ! check result
-    error = 0.0d0
+    error = zero
     error = max(error, abs(parcels%B(1, 1) - B11))
     error = max(error, abs(parcels%B(1, 2) - B12))
     error = max(error, sum(abs(parcels%position(1, :) - pos)))
@@ -76,7 +77,7 @@ program test_ellipse_bi_vs_multi_merge
     call merge_ellipses(parcels)
 
     ! check result
-    error = 0.0d0
+    error = zero
     error = max(error, abs(parcels%B(1, 1) - B11))
     error = max(error, abs(parcels%B(1, 2) - B12))
     error = max(error, sum(abs(parcels%position(1, :) - pos)))
@@ -94,21 +95,21 @@ program test_ellipse_bi_vs_multi_merge
             a1b1 = 1.44d0
             a2b2 = 0.25d0
 
-            d = (sqrt(a1b1) + sqrt(a2b2)) * 0.5d0 * sqrt(2.0d0)
+            d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
 
             n_parcels = 2
             parcels%position(1, 1) = 1.5d0
             parcels%position(1, 2) = 0.2d0
             parcels%volume(1, 1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
-            parcels%B(1, 2) = 0.0d0
+            parcels%B(1, 2) = zero
 
             ! small parcel left
             parcels%position(2, 1) = 1.5d0 - d
             parcels%position(2, 2) = 0.2d0 - d
             parcels%volume(2, 1) = a2b2 * pi
             parcels%B(2, 1) = a2b2
-            parcels%B(2, 2) = 0.0d0
+            parcels%B(2, 2) = zero
 
         end subroutine parcel_setup
 

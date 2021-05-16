@@ -60,18 +60,18 @@
 
  !
  ! Taylor-Green flow parameters:
- !      u(x, y) = A * cos(ax + d) * sin(by + e)
- !      v(x, y) = B * sin(ax + d) * cos(by + e)
+ !      u(x, y) = A * cos(ax + d + pi/2) * sin(by + e)
+ !      v(x, y) = B * sin(ax + d + pi/2) * cos(by + e)
  !
 
  ! amplitudes: A, B
- flow%amp           = 0.5,                -1.0
+ flow%amp           = 0.5, -1.0
 
  ! frequencies: a, b
- flow%freq          = 2.0,                 1.0
+ flow%freq          = 2.0, 1.0
 
  ! phase shifts: d, e
- flow%phase         = 1.5707963267948966,  0.0
+ flow%phase         = 0.0, 0.0
 
 
  !

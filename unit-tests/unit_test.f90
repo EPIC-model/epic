@@ -2,7 +2,7 @@ module unit_test
     implicit none
 
     ! abolute tolerance
-    double precision, parameter :: atol_m = 1.0e-15
+    double precision, parameter :: atol_m = dble(1.0e-15)
 
     private :: atol_m
 
