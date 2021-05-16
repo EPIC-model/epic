@@ -42,4 +42,31 @@ module unit_test
             print '(a60, a7)', ' '//test//':'//repeat(' ', 57), res
 
         end subroutine print_result_logical
+
+        ! Get the file name provided via the command line
+        subroutine parse_command_line
+            use options, only : filename, verbose
+            integer                          :: i
+            character(len=32)                :: arg
+
+            filename = ''
+            i = 0
+            do
+                call get_command_argument(i, arg)
+                if (len_trim(arg) == 0) then
+                    exit
+                endif
+
+                if (arg == '--verbose') then
+                    verbose = .true.
+                endif
+                i = i+1
+            end do
+
+            ! This is the main application of EPIC
+            if (verbose) then
+                print *, 'Running test_diverge_gradient verbosely'
+            endif
+        end subroutine parse_command_line
+
 end module unit_test

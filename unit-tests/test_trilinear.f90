@@ -9,6 +9,7 @@ program test_trilinear
     use parcel_container
     use parcel_interpl, only : par2grid, grid2par
     use options, only : parcel_info, grid, interpl
+    use ellipse, only : get_ab
     use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz, ngrid
     implicit none
 
@@ -46,7 +47,7 @@ program test_trilinear
     parcels%volume = 0.25d0 * vcell
 
     ! b11
-    parcels%B(:, 1) = 1.0d0
+    parcels%B(:, 1) = get_ab(parcels%volume(1:n_parcels, 1))
 
     ! b12
     parcels%B(:, 2) = 0.0d0

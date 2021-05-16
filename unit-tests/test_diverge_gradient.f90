@@ -5,7 +5,7 @@
 !         the parcels with a small deviation from the optimal position.
 !         It then performs 500 relaxation steps.
 ! =============================================================================
-program test_diverge
+program test_diverge_gradient
     use unit_test
     use constants, only : pi
     use parcel_container
@@ -19,7 +19,7 @@ program test_diverge
     double precision :: volg(-1:33, 0:31, 1), final_error, init_error
     integer :: i, j, k, jj, ii
 
-    call  parse_command_line
+    call parse_command_line
 
     grid = (/33, 33/)
 
@@ -65,7 +65,7 @@ program test_diverge
     init_error = sum(abs(volg(0:nz, 0:nx-1, :) - vcell))
 
     if (verbose) then
-        write(*,*) 'test diverge, initial error'
+        write(*,*) 'Test diverge and gradient, initial error'
         write(*,*) init_error
     endif
 
@@ -75,20 +75,19 @@ program test_diverge
         call par2grid(parcels, parcels%volume, volg)
         call apply_diverge(volg)
         call par2grid(parcels, parcels%volume, volg)
+        call apply_gradient(volg,0.30d0)
+        call par2grid(parcels, parcels%volume, volg)
         if (verbose) then
-            write(*,*) 'test diverge, error after iteration ', i
+            write(*,*) 'Test diverge and gradient, error after iteration ', i
             write(*,*) sum(abs(volg(0:nz, 0:nx-1, :) - vcell))
         endif
     enddo
 
-    final_error = sum(abs(volg(0:nz, 0:nx-1, :) - vcell))
-
     if (verbose) then
-        write(*,*) 'test diverge, final error'
+        write(*,*) 'Test diverge and gradient, final error'
         write(*,*) final_error
-    end if
+    endif
 
-    call print_result_dp('Test diverge', final_error, init_error)
+    call print_result_dp('Test diverge and gradient', final_error, init_error)
 
-end program test_diverge
-
+end program test_diverge_gradient

@@ -194,6 +194,7 @@ module parcel_diverge
             enddo
 
             call apply_periodic_bc(parcels%position(n, :))
+            call apply_vert_bc(parcels%position(n, :))
         enddo
     end subroutine apply_diverge
 
@@ -205,11 +206,9 @@ module parcel_diverge
         integer                      :: n, is(ngp), js(ngp)
 
         ! form divergence field * dt and store in phi temporarily:
-        phi = (volg(0:nz, :, 1) - vcell)/(vcell)
+        phi = volg(0:nz, :, 1) / vcell - one
 
         do n = 1, n_parcels
-
-            call apply_periodic_bc(parcels%position(n, :))
 
             call trilinear(parcels%position(n, :), is, js, weights)
 
@@ -222,6 +221,7 @@ module parcel_diverge
             - prefactor*dx(2)*(weights(4)+weights(2))*(phi(js(4), is(4))-phi(js(2), is(2)))
 
             call apply_periodic_bc(parcels%position(n, :))
+            call apply_vert_bc(parcels%position(n, :))
         enddo
 
     end subroutine apply_gradient
