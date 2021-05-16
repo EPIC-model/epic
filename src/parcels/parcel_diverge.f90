@@ -24,21 +24,6 @@ module parcel_diverge
     implicit none
 
     private
-
-        double precision, parameter :: f12 = one / two
-        double precision, parameter :: f13 = one / three
-        double precision, parameter :: f14 = one / four
-        double precision, parameter :: f23 = two / three
-        double precision, parameter :: f112 = one / 12.d0
-        double precision, parameter :: f16 = one / six
-        double precision, parameter :: f56 = five / six
-        double precision, parameter :: f76 = 7.d0 / six
-        double precision, parameter :: f124 = one / 24.d0
-        double precision, parameter :: f1112 = 11.d0 / 12.d0
-
-    !Gridded area fraction:
-    ! c double precision:: volg(0:nz,nx)
-
         ! tri-diagonal arrays:
         double precision, allocatable :: ap(:), apb(:)
         double precision, allocatable :: etdv(:, :), htdv(:, :)
@@ -194,34 +179,34 @@ module parcel_diverge
             enddo
 
             call apply_periodic_bc(parcels%position(n, :))
+            call apply_vert_bc(parcels%position(n, :))
         enddo
     end subroutine apply_diverge
 
-    subroutine apply_gradient(volg,gradient_pref)
+    subroutine apply_gradient(volg,prefactor)
         double precision, intent(in) :: volg(-1:, 0:, :)
-        double precision, intent(in) :: gradient_pref
+        double precision, intent(in) :: prefactor
         double precision             :: phi(0:nz,0:nx-1)
         double precision             :: weights(ngp)
         integer                      :: n, is(ngp), js(ngp)
 
         ! form divergence field * dt and store in phi temporarily:
-        phi = (volg(0:nz, :, 1) - vcell)/(vcell)
+        phi = volg(0:nz, :, 1) / vcell - one
 
         do n = 1, n_parcels
-
-            call apply_periodic_bc(parcels%position(n, :))
 
             call trilinear(parcels%position(n, :), is, js, weights)
 
             parcels%position(n, 1) = parcels%position(n, 1)    &
-            - gradient_pref*dx(1)*(weights(2)+weights(1))*(phi(js(2), is(2))-phi(js(1), is(1)))  &
-            - gradient_pref*dx(1)*(weights(4)+weights(3))*(phi(js(4), is(4))-phi(js(3), is(3)))
+            - prefactor*dx(1)*(weights(2)+weights(1))*(phi(js(2), is(2))-phi(js(1), is(1)))  &
+            - prefactor*dx(1)*(weights(4)+weights(3))*(phi(js(4), is(4))-phi(js(3), is(3)))
 
             parcels%position(n, 2) = parcels%position(n, 2)             &
-            - gradient_pref*dx(2)*(weights(3)+weights(1))*(phi(js(3), is(3))-phi(js(1), is(1))) &
-            - gradient_pref*dx(2)*(weights(4)+weights(2))*(phi(js(4), is(4))-phi(js(2), is(2)))
+            - prefactor*dx(2)*(weights(3)+weights(1))*(phi(js(3), is(3))-phi(js(1), is(1))) &
+            - prefactor*dx(2)*(weights(4)+weights(2))*(phi(js(4), is(4))-phi(js(2), is(2)))
 
             call apply_periodic_bc(parcels%position(n, :))
+            call apply_vert_bc(parcels%position(n, :))
         enddo
 
     end subroutine apply_gradient

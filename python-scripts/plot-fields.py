@@ -1,28 +1,32 @@
 #!/usr/bin/env python
 import argparse
-from tools.plots import plot_ellipses
+from tools.plots import plot_volume_symmetry_error
 import os
 import sys
 
 try:
     parser = argparse.ArgumentParser(
-        description="Plot the ellipses of several or individual time steps.")
+        description="Creates field plots.")
 
     # 24 March 2021
     # https://stackoverflow.com/questions/24180527/argparse-required-arguments-listed-under-optional-arguments
     required = parser.add_argument_group('required arguments')
+
+    kinds = [
+        'volume-symmetry-error'
+    ]
+
 
     required.add_argument("--filename",
                           type=str,
                           required=True,
                           help="hdf5 output file of EPIC")
 
-    parser.add_argument("--steps",
+    parser.add_argument("--kind",
                         type=str,
-                        required=False,
-                        default='-1',
-                        help="steps to plot, a range is specified with a colon, " \
-                            + "e.g. 0:10 plots step 0 to 10) (default: -1 [all])")
+                        required=True,
+                        default=kinds[0],
+                        help="what kind of field plot: " + str(kinds))
 
     parser.add_argument("--show",
                         required=False,
@@ -41,27 +45,15 @@ try:
 
     args = parser.parse_args()
 
-    steps = args.steps
-
-    if ':' in steps:
-        steps = steps.split(':')
-        begin=int(steps[0])
-        end=int(steps[1])
-    elif steps.isdigit():
-        end = int(steps)
-        begin = end
-        if end == -1:
-            begin = 0
-    else:
-        raise IOError("Invalid --steps argument format.")
-
-    if end > -1 and end < begin:
-        raise ValueError("Invalid plot range: (begin) " + str(begin) + " > " + str(end) + " (end).")
-
     if not os.path.exists(args.filename):
         raise IOError("File '" + args.filename + "' does not exist.")
 
-    plot_ellipses(fname=args.filename, begin=begin, end=end, show=args.show, fmt=args.fmt)
+    if args.kind not in kinds:
+        raise ValuError("Plot '" + args.kind + "' not supported!")
+
+    if args.kind == kinds[0]:
+        plot_volume_symmetry_error(args.filename, show=args.show, fmt=args.fmt)
+
 
 except Exception as ex:
     print(ex)

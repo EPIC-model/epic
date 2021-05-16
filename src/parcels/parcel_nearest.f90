@@ -4,7 +4,7 @@
 module parcel_nearest
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcels, n_parcels, get_delx
-    use parameters, only : dx, dxi, vcell, grid, hli, lower, extent, ncell, nx, nz
+    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz
     use options, only : parcel_info
 
     implicit none
@@ -13,7 +13,7 @@ module parcel_nearest
 
     !Used for searching for possible parcel merger:
     integer, allocatable :: nppc(:), kc1(:),kc2(:)
-    integer :: loc(max_num_parcels)
+    integer :: loca(max_num_parcels)
     integer :: node(max_num_parcels)
     logical :: l_merge(max_num_parcels)
 
@@ -38,7 +38,7 @@ module parcel_nearest
                 allocate(kc2(ncell))
             endif
 
-            vmin = vcell / parcel_info%vfraction
+            vmin = vcell / dble(parcel_info%vfraction)
 
             ! These parcels are marked for merger:
             l_merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
@@ -65,7 +65,7 @@ module parcel_nearest
                     nppc(ic)=nppc(ic)+1
 
                     ! Store grid cell that this parcel is in:
-                    loc(i)=ic
+                    loca(i)=ic
                 endif
             enddo
 
@@ -79,7 +79,7 @@ module parcel_nearest
             kc2=kc1-1
             do i=1,n_parcels
                 if (.not. l_merge(i)) then
-                    ic=loc(i)
+                    ic=loca(i)
                     k=kc2(ic)+1
                     node(k)=i
                     kc2(ic)=k

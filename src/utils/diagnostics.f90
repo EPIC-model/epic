@@ -16,6 +16,11 @@ module diagnostics
 
     contains
 
+        function get_max_abs_normalised_volume_error() result(err)
+            double precision :: err
+            err = maxval(abs(volg(0:nz, 0:nx-1, :)  - vcell)) / vcell
+        end function get_max_abs_normalised_volume_error
+
         function get_rms_volume_error() result(rms)
             double precision :: rms ! rms volume error
             double precision :: sqerrsum
@@ -24,7 +29,7 @@ module diagnostics
             ! x indices run from 0 to nx-1
             sqerrsum = sum((volg(0:nz, 0:nx-1, :) - vcell) ** 2)
 
-            rms = sqrt(sqerrsum / dble(ncell)) / vcell
+            rms = dsqrt(sqerrsum / dble(ncell)) / vcell
         end function get_rms_volume_error
 
         subroutine write_h5_diagnostics(iter)
@@ -33,7 +38,7 @@ module diagnostics
             integer(hid_t)                :: step_group
             character(:), allocatable     :: step
             character(:), allocatable     :: name
-            double precision              :: rms_v
+            double precision              :: rms_v, abserr_v
 
             step = trim(get_step_group_name(iter))
 
@@ -48,6 +53,9 @@ module diagnostics
 
             rms_v = get_rms_volume_error()
             call write_h5_double_scalar_attrib(group, "rms volume error", rms_v)
+
+            abserr_v = get_max_abs_normalised_volume_error()
+            call write_h5_double_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
 
 
             ! close all

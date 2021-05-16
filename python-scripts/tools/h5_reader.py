@@ -51,18 +51,24 @@ class H5Reader:
         shape[0] = nsteps
         data = np.zeros(shape)
         for step in range(nsteps):
-            s = 'step#' + str(step).zfill(10)
+            s = self._get_step_string(step)
             data[step] = np.array(self.h5file[s]['diagnostics'].attrs[name])
         return data
 
     def get_parcel_dataset(self, step, name):
-        s = 'step#' + str(step).zfill(10)
+        s = self._get_step_string(step)
         if not name in self.h5file[s]['parcels'].keys():
             raise IOError("Parcel dataset '" + name + "' unknown.")
         return np.array(self.h5file[s]['parcels'][name])
 
+    def get_field_dataset(self, step, name):
+        s = self._get_step_string(step)
+        if not name in self.h5file[s]['fields'].keys():
+            raise IOError("Field dataset '" + name + "' unknown.")
+        return np.array(self.h5file[s]['fields'][name])
+
     def get_step_attribute(self, step, name):
-        s = 'step#' + str(step).zfill(10)
+        s = self._get_step_string(step)
         if not name in self.h5file[s].attrs.keys():
             raise IOError("Step attribute '" + name + "' unknown.")
         return self.h5file[s].attrs[name]
@@ -113,3 +119,6 @@ class H5Reader:
 
     def _get_eigenvalue(self, B11, B12, B22):
         return 0.5 * (B11 + B22) + np.sqrt(0.25 * (B11 - B22) ** 2 + B12 ** 2)
+
+    def _get_step_string(self, step):
+        return 'step#' + str(step).zfill(10)

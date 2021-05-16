@@ -2,9 +2,9 @@
 !               This module contains all ellipse operations.
 ! =============================================================================
 module ellipse
-    use constants, only : pi            &
-                        , one_over_pi   &
-                        , zero          &
+    use constants, only : pi   &
+                        , fpi  &
+                        , zero &
                         , two
     implicit none
 
@@ -17,7 +17,7 @@ module ellipse
             double precision, intent(in) :: B22
             double precision             :: a2
 
-            a2 = 0.5d0 * (B11 + B22) + sqrt(0.25d0 * (B11 - B22) ** 2 + B12 ** 2)
+            a2 = 0.5d0 * (B11 + B22) + dsqrt(0.25d0 * (B11 - B22) ** 2 + B12 ** 2)
         end function get_eigenvalue
 
         function get_eigenvector(a2, B12, B22) result(evec)
@@ -86,7 +86,7 @@ module ellipse
             double precision, intent(in) :: volume
             double precision             :: ab
 
-            ab = volume * one_over_pi
+            ab = volume * fpi
         end function
 
         elemental function get_aspect_ratio(a2, volume) result(lam)
@@ -112,7 +112,7 @@ module ellipse
 
             a2 = get_eigenvalue(B(1), B(2), B22)
 
-            c = sqrt(abs(two * a2 - B(1) - B22))
+            c = dsqrt(abs(two * a2 - B(1) - B22))
 
             evec = get_eigenvector(a2, B(2), B22)
 

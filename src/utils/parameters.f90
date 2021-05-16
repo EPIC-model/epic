@@ -3,7 +3,7 @@
 ! simulation.
 ! =============================================================================
 module parameters
-    use options, only : grid
+    use options, only : box
     use constants
     implicit none
 
@@ -26,7 +26,7 @@ module parameters
     integer :: ngrid
 
     ! domain size
-    double precision :: extent(2) = (/ pi, pi /)
+    double precision :: extent(2)
 
     ! domain half widths and edge values:
     double precision :: hl(2)
@@ -44,13 +44,15 @@ module parameters
     ! Update all parameters according to the
     ! user-defined global options.
     subroutine update_parameters
-        dx = extent / (grid - 1)
+        extent = dble(box%extent)
+
+        dx = extent / dble(box%nc)
         dxi = one / dx;
 
         vcell = product(dx)
 
-        nx = grid(1) - 1
-        nz = grid(2) - 1
+        nx = box%nc(1)
+        nz = box%nc(2)
 
         ncell = nx * nz
 

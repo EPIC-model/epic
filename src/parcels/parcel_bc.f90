@@ -4,6 +4,7 @@
 !                       free slip in z (vertical)
 ! =============================================================================
 module parcel_bc
+    use constants, only : zero, two
     use parameters, only : lower, upper, extent, hli
     use parcel_container, only : n_parcels
     implicit none
@@ -39,14 +40,27 @@ module parcel_bc
             double precision, intent(inout) :: position(2), velocity(2)
 
             if (position(2) >= upper(2)) then
-                velocity(2) = 0.0
-                position(2) = 2.0 * upper(2) - position(2)
+                velocity(2) = zero
+                position(2) = two * upper(2) - position(2)
             endif
 
             if (position(2) <= lower(2)) then
-                velocity(2) = 0.0
-                position(2) = 2.0 * lower(2) - position(2)
+                velocity(2) = zero
+                position(2) = two * lower(2) - position(2)
             endif
         end subroutine apply_free_slip_bc
+
+        ! apply free slip bc on n-th parcel
+        subroutine apply_vert_bc(position)
+            double precision, intent(inout) :: position(2)
+
+            if (position(2) >= upper(2)) then
+                position(2) = two * upper(2) - position(2)
+            endif
+
+            if (position(2) <= lower(2)) then
+                position(2) = two * lower(2) - position(2)
+            endif
+        end subroutine apply_vert_bc
 
 end module parcel_bc

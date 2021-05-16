@@ -3,7 +3,7 @@
 ! interpolation.
 ! =============================================================================
 module parcel_interpl
-    use constants, only : max_num_parcels
+    use constants, only : max_num_parcels, zero, one, two
     use parameters, only : nx, nz
     use options, only : parcel_info, interpl
     use parcel_container, only : parcel_container_type, n_parcels
@@ -41,7 +41,7 @@ module parcel_interpl
             double precision,            intent(in)    :: attrib(:, :)
             double precision,            intent(inout) :: field(-1:, 0:, :)
 
-            field = 0.0
+            field = zero
 
             if (parcel_info%is_elliptic) then
                 call par2grid_elliptic(parcels, attrib, field)
@@ -50,8 +50,8 @@ module parcel_interpl
             endif
 
             ! apply free slip boundary condition
-            field(0,  :, :) = 2.0 * field(0,  :, :)
-            field(nz, :, :) = 2.0 * field(nz, :, :)
+            field(0,  :, :) = two * field(0,  :, :)
+            field(nz, :, :) = two * field(nz, :, :)
 
             ! free slip boundary condition is reflective with mirror
             ! axis at the physical domain
@@ -94,12 +94,63 @@ module parcel_interpl
                         do l = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
                             field(js(l), is(l), c) = field(js(l), is(l), c)         &
-                                                   + 0.5 * weights(l) * attrib(n, c)
+                                                   + 0.5d0 * weights(l) * attrib(n, c)
                         enddo
                     enddo
                 enddo
             enddo
         end subroutine par2grid_elliptic
+
+
+        subroutine par2grid_elliptic_symmetry_check(parcels, attrib, field)
+            type(parcel_container_type), intent(in)    :: parcels
+            double precision,            intent(in)    :: attrib(:, :)
+            double precision,            intent(inout) :: field(-1:, 0:, :)
+            integer                                    :: ncomp
+            double precision                           :: points(2, 2), V, B(2), pos(2)
+            integer                                    :: n, p, c, l, m
+            integer                                    :: the_shape(3)
+
+            field = zero
+
+            ! number of field components
+            the_shape = shape(field)
+            ncomp = the_shape(3)
+
+            do m = -1, 1, 2
+                do n = 1, n_parcels
+
+                    pos = parcels%position(n, :)
+                    pos(1) = dble(m) * pos(1)
+                    V = dble(m) * parcels%volume(n, 1)
+                    B = parcels%B(n, :)
+
+                    B(2) = dble(m) * B(2)
+
+                    points = get_ellipse_points(pos, V, B)
+
+                    ! we have 2 points per ellipse
+                    do p = 1, 2
+
+                        ! ensure point is within the domain
+                        call apply_periodic_bc(points(p, :))
+
+                        ! get interpolation weights and mesh indices
+                        call get_indices_and_weights(points(p, :))
+
+                        ! loop over field components
+                        do c = 1, ncomp
+                            ! loop over grid points which are part of the interpolation
+                            do l = 1, ngp
+                                ! the weight is halved due to 2 points per ellipse
+                                field(js(l), is(l), c) = field(js(l), is(l), c)         &
+                                                       + dble(m) * 0.5d0 * weights(l) * attrib(n, c)
+                            enddo
+                        enddo
+                    enddo
+                enddo
+            enddo
+        end subroutine par2grid_elliptic_symmetry_check
 
 
         subroutine par2grid_non_elliptic(parcels, attrib, field)
@@ -218,10 +269,10 @@ module parcel_interpl
             ! clear old data efficiently
             if(present(add)) then
                if(add .eqv. .false.) then
-                   attrib(1:n_parcels, :) = 0.0
+                   attrib(1:n_parcels, :) = zero
                endif
             else
-               attrib(1:n_parcels, :) = 0.0
+               attrib(1:n_parcels, :) = zero
             endif
 
             ! put if statement here for computational efficiency
@@ -233,9 +284,9 @@ module parcel_interpl
                   do p = 1, 2
                      call apply_periodic_bc(points(p, :))
                      if(exact=='velocity') then
-                        attrib(n,:)=attrib(n,:)+0.5*get_flow_velocity(points(p, :))
+                        attrib(n,:)=attrib(n,:) +0.5d0 * get_flow_velocity(points(p, :))
                      elseif(exact=='strain') then
-                        attrib(n,:)=attrib(n,:)+0.5*get_flow_gradient(points(p, :))
+                        attrib(n,:)=attrib(n,:) + 0.5d0 * get_flow_gradient(points(p, :))
                      else
                         print *, "Exact interpolation field passed not implemented"
                         stop
@@ -264,7 +315,7 @@ module parcel_interpl
                         do l = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
                             attrib(n, c) = attrib(n, c) &
-                                         + 0.5 * weights(l) * field(js(l), is(l), c)
+                                         + 0.5d0 * weights(l) * field(js(l), is(l), c)
                         enddo
                     enddo
                 enddo
@@ -291,10 +342,10 @@ module parcel_interpl
             ! clear old data efficiently
             if(present(add)) then
                if(add .eqv. .false.) then
-                   attrib(1:n_parcels, :) = 0.0
+                   attrib(1:n_parcels, :) = zero
                endif
             else
-               attrib(1:n_parcels, :) = 0.0
+               attrib(1:n_parcels, :) = zero
             endif
 
             ! put if statement here for computational efficiency
@@ -363,25 +414,25 @@ module parcel_interpl
             ! (i, j)
             call get_index(pos, ii(1), jj(1))
             call get_position(ii(1), jj(1), xy)
-            ww(1) = product(1.0 - abs(pos - xy) * dxi)
+            ww(1) = product(one - abs(pos - xy) * dxi)
 
             ! (i+1, j)
             ii(2) = ii(1) + 1
             jj(2) = jj(1)
             call get_position(ii(2), jj(2), xy)
-            ww(2) = product(1.0 - abs(pos - xy) * dxi)
+            ww(2) = product(one - abs(pos - xy) * dxi)
 
             ! (i, j+1)
             ii(3) = ii(1)
             jj(3) = jj(1) + 1
             call get_position(ii(3), jj(3), xy)
-            ww(3) = product(1.0 - abs(pos - xy) * dxi)
+            ww(3) = product(one - abs(pos - xy) * dxi)
 
             ! (i+1, j+1)
             ii(4) = ii(2)
             jj(4) = jj(3)
             call get_position(ii(4), jj(4), xy)
-            ww(4) = product(1.0 - abs(pos - xy) * dxi)
+            ww(4) = product(one - abs(pos - xy) * dxi)
 
             ! account for x periodicity
             call periodic_index_shift(ii)

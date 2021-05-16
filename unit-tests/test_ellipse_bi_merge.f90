@@ -1,22 +1,24 @@
 ! =============================================================================
-!                       Test ellipse merge
+!                       Test ellipse bi merge
 !
 !         This unit test checks the merging of two ellipses. The two
 !         ellipses, i.e., circles, are located at the origin. The final
 !         ellipse is again a circle located at the origin.
 ! =============================================================================
-program test_ellipse_split
-    use constants, only : pi
+program test_ellipse_bi_merge
+    use unit_test
+    use constants, only : pi, one, two, five
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, grid
+    use options, only : parcel_info, box
     use parameters, only : update_parameters
     use ellipse
     implicit none
 
-    double precision :: ab, a1b1, a2b2, B11, B12, B22, error, vol
+    double precision :: ab, a1b1, a2b2, B11, B12, B22, error, vol, hum, buoy
 
-    grid = (/21, 21/)
+    box%nc = (/1, 1/)
+    box%extent = (/pi, pi/)
 
     call update_parameters()
 
@@ -25,36 +27,42 @@ program test_ellipse_split
 
 
     ! parcels
-    a1b1 = 2.0d0
-    parcels%position(1, :) = 0.0d0
+    a1b1 = two
+    parcels%position(1, :) = zero
     parcels%volume(1, 1) = a1b1 * pi
     parcels%B(1, 1) = a1b1
-    parcels%B(1, 2) = 0.0d0
+    parcels%B(1, 2) = zero
+    parcels%buoyancy(1, 1) = 1.5d0
+    parcels%humidity(1, 1) = 1.3d0
 
     a2b2 = 0.5d0
-    parcels%position(2, :) = 0.0d0
+    parcels%position(2, :) = zero
     parcels%volume(2, 1) = a2b2 * pi
     parcels%B(2, 1) = a2b2
-    parcels%B(2, 2) = 0.0d0
+    parcels%B(2, 2) = zero
+    parcels%buoyancy(2, 1) = 1.8d0
+    parcels%humidity(2, 1) = 1.2d0
 
     ! geometric merge
-    parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'geometric'
-    parcel_info%vfraction = 1.0e-2
+    parcel_info%lambda = five
+    parcel_info%merge_type = 'bi-geometric'
+    parcel_info%vfraction = two
 
     call merge_ellipses(parcels)
 
     ! reference solution
     ab = a1b1 + a2b2  ! a == b since it is a circle
     B11 = ab
-    B12 = 0.0d0
+    B12 = zero
     B22 = ab
     vol = ab * pi
+    buoy = (1.5d0 * a1b1 + 1.8d0 * a2b2) / ab
+    hum  = (1.3d0 * a1b1 + 1.2d0 * a2b2) / ab
 
     !
     ! check result
     !
-    error = 0.0d0
+    error = zero
 
     error = max(error, abs(dble(n_parcels - 1)))
     error = max(error, abs(parcels%B(1, 1) - B11))
@@ -64,39 +72,38 @@ program test_ellipse_split
                                    parcels%volume(1, 1)) - B22))
     error = max(error, sum(abs(parcels%position(1, :))))
     error = max(error, abs(parcels%volume(1, 1) - vol))
+    error = max(error, abs(parcels%buoyancy(1, 1) - buoy))
+    error = max(error, abs(parcels%humidity(1, 1) - hum))
 
-    if (error > 1.0e-15) then
-        print '(a26, a10)', 'Test ellipse merge (geo):', 'FAILED'
-    else
-        print '(a26, a10)', 'Test ellipse merge (geo):', 'PASSED'
-    endif
-
+    call print_result_dp('Test ellipse bi-merge (geometric)', error)
 
     ! parcels
     n_parcels = 2
-    a1b1 = 2.0d0
-    parcels%position(1, :) = 0.0d0
+    a1b1 = two
+    parcels%position(1, :) = zero
     parcels%volume(1, 1) = a1b1 * pi
     parcels%B(1, 1) = a1b1
-    parcels%B(1, 2) = 0.0d0
+    parcels%B(1, 2) = zero
+    parcels%buoyancy(1, 1) = 1.5d0
+    parcels%humidity(1, 1) = 1.3d0
 
     a2b2 = 0.5d0
-    parcels%position(2, :) = 0.0d0
+    parcels%position(2, :) = zero
     parcels%volume(2, 1) = a2b2 * pi
     parcels%B(2, 1) = a2b2
-    parcels%B(2, 2) = 0.0d0
+    parcels%B(2, 2) = zero
+    parcels%buoyancy(2, 1) = 1.8d0
+    parcels%humidity(2, 1) = 1.2d0
 
     ! optimal merge
-    parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'optimal'
-    parcel_info%vfraction = 1.0e-2
+    parcel_info%merge_type = 'bi-optimal'
 
     call merge_ellipses(parcels)
 
     !
     ! check result
     !
-    error = 0.0d0
+    error = zero
 
     error = max(error, abs(dble(n_parcels - 1)))
     error = max(error, abs(parcels%B(1, 1) - B11))
@@ -106,14 +113,12 @@ program test_ellipse_split
                                    parcels%volume(1, 1)) - B22))
     error = max(error, sum(abs(parcels%position(1, :))))
     error = max(error, abs(parcels%volume(1, 1) - vol))
+    error = max(error, abs(parcels%buoyancy(1, 1) - buoy))
+    error = max(error, abs(parcels%humidity(1, 1) - hum))
 
 
-    if (error > 1.0e-15) then
-        print '(a26, a10)', 'Test ellipse merge (opt):', 'FAILED'
-    else
-        print '(a26, a10)', 'Test ellipse merge (opt):', 'PASSED'
-    endif
+    call print_result_dp('Test ellipse bi-merge (optimal)', error)
 
     call parcel_dealloc
 
-end program test_ellipse_split
+end program test_ellipse_bi_merge
