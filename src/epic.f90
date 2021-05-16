@@ -88,7 +88,7 @@ program epic
 
                 if (parcel_info%is_elliptic .and.           &
                     mod(iter, parcel_info%split_freq) == 0) then
-                    call split_ellipses(parcels, parcel_info%lambda)
+                    call split_ellipses(parcels, parcel_info%lambda, parcel_info%vmaxfraction)
                 endif
 
 
