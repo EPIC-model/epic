@@ -11,7 +11,7 @@
  ! grid info
  !
 
- grid          = 11, 11
+ box%nc          = 10, 10
 
  !
  ! parcel info
@@ -36,6 +36,12 @@
  parcel%vfraction    = 36.0
 
  parcel%diverge_freq = 1
+
+ parcel%diverge_iters = 2
+
+ parcel%diverge_grad = .true.
+
+ parcel%gradient_pref = 0.3
 
  !
  ! stepper info

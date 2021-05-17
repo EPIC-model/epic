@@ -42,4 +42,31 @@ module unit_test
             print '(a60, a7)', ' '//test//':'//repeat(' ', 57), res
 
         end subroutine print_result_logical
+
+        ! Give option to run unit tests verbosely using command line
+        subroutine parse_command_line
+            use options, only : verbose
+            integer                          :: i
+            character(len=32)                :: arg
+            character(len=32)                :: testname
+
+            testname = ''
+            i = 0
+            do
+                call get_command_argument(i, arg)
+                if(i==0) then
+                    testname=trim(arg)
+                elseif (len_trim(arg) == 0) then
+                    exit
+                elseif (arg == '--verbose') then
+                    verbose = .true.
+                endif
+                i = i+1
+            end do
+
+            if (verbose) then
+                print *, 'Running ', trim(testname),' verbosely'
+            endif
+        end subroutine parse_command_line
+
 end module unit_test

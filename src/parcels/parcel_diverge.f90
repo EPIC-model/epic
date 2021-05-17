@@ -37,7 +37,7 @@ module parcel_diverge
         double precision, allocatable :: xtrig(:)
         integer                       :: xfactors(5)
 
-    public :: init_diverge, apply_diverge
+    public :: init_diverge, apply_diverge, apply_gradient
 
     contains
 
@@ -177,11 +177,43 @@ module parcel_diverge
                 parcels%position(n, 2) = parcels%position(n, 2)             &
                                        + weights(l) * wd(js(l), is(l))
             enddo
-
-            call apply_periodic_bc(parcels%position(n, :))
         enddo
+
+        call apply_parcel_bc(parcels%position,parcels%velocity)
+
     end subroutine apply_diverge
 
+    subroutine apply_gradient(volg, prefactor)
+        double precision, intent(in) :: volg(-1:, 0:)
+        double precision, intent(in) :: prefactor
+        double precision             :: phi(0:nz,0:nx-1)
+        double precision             :: weights(ngp)
+        double precision             :: shift_x1, shift_x2
+        integer                      :: n, is(ngp), js(ngp)
+
+        ! form divergence field * dt and store in phi temporarily:
+        phi = volg(0:nz, :) / vcell - one
+
+        do n = 1, n_parcels
+
+            call trilinear(parcels%position(n, :), is, js, weights)
+
+            shift_x1= - prefactor*dx(1)*(weights(2)+weights(1))*(phi(js(2), is(2))-phi(js(1), is(1)))  &
+            - prefactor*dx(1)*(weights(4)+weights(3))*(phi(js(4), is(4))-phi(js(3), is(3)))
+            shift_x1= max(-0.5*dx(1),min(shift_x1,0.5*dx(1))) ! safety measure: limit to half a grid cell displacement
+
+            shift_x2= - prefactor*dx(2)*(weights(3)+weights(1))*(phi(js(3), is(3))-phi(js(1), is(1))) &
+            - prefactor*dx(2)*(weights(4)+weights(2))*(phi(js(4), is(4))-phi(js(2), is(2)))
+            shift_x2= max(-0.5*dx(2),min(shift_x2,0.5*dx(2))) ! safety measure: limit to half a grid cell displacement
+
+            parcels%position(n, 1) = parcels%position(n, 1) + shift_x1
+            parcels%position(n, 2) = parcels%position(n, 2) + shift_x2
+
+        enddo
+
+        call apply_parcel_bc(parcels%position,parcels%velocity)
+
+    end subroutine apply_gradient
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     ! Inverts Laplace's operator on fs in semi-spectral space.
