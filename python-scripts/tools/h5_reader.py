@@ -1,7 +1,7 @@
 import h5py
 import os
 import numpy as np
-from matplotlib.patches import Ellipse
+from matplotlib.patches import Ellipse, Circle
 
 class H5Reader:
 
@@ -89,16 +89,15 @@ class H5Reader:
             a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
 
             b2 = (V / np.pi) ** 2 / a2
+            return [Ellipse(xy=position[:, i],
+                            width=2 * np.sqrt(a2[i]),
+                            height=2 * np.sqrt(b2[i]),
+                            angle=np.rad2deg(angle[i]))
+                    for i in range(len(V))]
         else:
-            a2= (V / np.pi)
-            b2= (V / np.pi)
-            angle=0.*V
-
-        return [Ellipse(xy=position[:, i],
-                        width=2 * np.sqrt(a2[i]),
-                        height=2 * np.sqrt(b2[i]),
-                        angle=np.rad2deg(angle[i]))
-                for i in range(len(V))]
+            return [Circle(xy=position[:, i],
+                            radius= np.sqrt(V[i]/np.pi) )
+                    for i in range(len(V))]
 
 
     def get_aspect_ratio(self, step):
