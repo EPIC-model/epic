@@ -182,9 +182,7 @@ module parcel_interpl
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
 
-            volg(0:nz, :) = one / volg(0:nz, :)
-
-            vortg(0:nz, :, 1) = vortg(0:nz, :, 1) * volg(0:nz, :)
+            vortg(0:nz, :, 1) = vortg(0:nz, :, 1) / volg(0:nz, :)
 
         end subroutine par2grid
 
