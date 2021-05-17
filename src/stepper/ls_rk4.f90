@@ -8,7 +8,7 @@ module ls_rk4
     use parcel_bc
     use rk4_utils, only: get_B
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
-    use fields, only : velgradg, velog, vortg, velgradg
+    use fields, only : velgradg, velog, vortg
     use tri_inversion, only : vor2vel
     use parameters, only : nx, nz
     implicit none
@@ -118,8 +118,8 @@ module ls_rk4
 
 
         subroutine ls_rk4_elliptic(dt)
-            double precision, intent(in) :: ds(-1:nz+1, 0:nx-1, 1)  ! vorticity tendency
             double precision, intent(in) :: dt
+            double precision             :: ds(-1:nz+1, 0:nx-1, 1)  ! vorticity tendency
 
             ! at the moment we have no tendency!
             ds = zero
