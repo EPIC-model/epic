@@ -82,8 +82,6 @@ program epic
                     call write_h5_step(nw, t, dt)
                 endif
 
-                call par2grid
-
                 call rk4_step(dt)
 
                 if (parcel_info%is_elliptic .and.           &
