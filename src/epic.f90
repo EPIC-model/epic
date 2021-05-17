@@ -54,7 +54,7 @@ program epic
 
             call init_diverge
 
-            call par2grid
+            call vol2grid
 
 
         end subroutine
@@ -82,6 +82,8 @@ program epic
                     call write_h5_step(nw, t, dt)
                 endif
 
+                call par2grid
+
                 call rk4_step(dt)
 
                 if (parcel_info%is_elliptic .and.           &
@@ -94,10 +96,8 @@ program epic
                     call split_ellipses(parcels, parcel_info%lambda)
                 endif
 
-
-                call vol2grid
-
                 if (mod(iter, parcel_info%diverge_freq) == 0) then
+                    call vol2grid
                     do diverge_iter=1,parcel_info%diverge_iters
                         call apply_diverge(volg)
                         call vol2grid
@@ -108,11 +108,12 @@ program epic
                     end do
                  endif
 
-                call par2grid
 
                 t = t + dt
                 iter = iter + 1
             end do
+
+            call par2grid
 
             ! write final step
             call write_h5_step(nw, t, dt)
