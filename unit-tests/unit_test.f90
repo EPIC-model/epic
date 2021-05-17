@@ -43,29 +43,29 @@ module unit_test
 
         end subroutine print_result_logical
 
-        ! Get the file name provided via the command line
+        ! Give option to run unit tests verbosely using command line
         subroutine parse_command_line
-            use options, only : filename, verbose
+            use options, only : verbose
             integer                          :: i
             character(len=32)                :: arg
+            character(len=32)                :: testname
 
-            filename = ''
+            testname = ''
             i = 0
             do
                 call get_command_argument(i, arg)
-                if (len_trim(arg) == 0) then
+                if(i==0) then
+                    testname=trim(arg)
+                elseif (len_trim(arg) == 0) then
                     exit
-                endif
-
-                if (arg == '--verbose') then
+                elseif (arg == '--verbose') then
                     verbose = .true.
                 endif
                 i = i+1
             end do
 
-            ! This is the main application of EPIC
             if (verbose) then
-                print *, 'Running test_diverge_gradient verbosely'
+                print *, 'Running ', trim(testname),' verbosely'
             endif
         end subroutine parse_command_line
 
