@@ -438,9 +438,6 @@ module parcel_interpl
                      attrib(n,:)=attrib(n,:)+get_flow_velocity(pos)
                   elseif(exact=='strain') then
                      attrib(n,:)=attrib(n,:)+get_flow_gradient(pos)
-                  elseif(exact=='vorticity') then
-                     attrib(n,:)=attrib(n,:)+get_flow_vorticity(pos)
-                  else
                      print *, "Exact interpolation field passed not implemented"
                      stop
                   end if

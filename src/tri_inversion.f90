@@ -98,9 +98,10 @@ module tri_inversion
 
         ! Inverts the vorticity "vortg" to obtain the gridded velocity field
         ! u = velog(:, :, 1) = -dpsig/dz and w = velog(:, :, 2) = dpsig/dx.
-        subroutine vor2vel(vortg, velog)
+        subroutine vor2vel(vortg, velog, velgradg)
             double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1, 1)
             double precision, intent(out) :: velog(-1:nz+1, 0:nx-1, 2)
+            double precision, intent(out) :: velgradg(-1:nz+1, 0:nx-1, 4)
             double precision              :: ubar(0:nz), obot(0:nx-1), otop(0:nx-1)
             integer                       :: iz
             double precision              :: dz2

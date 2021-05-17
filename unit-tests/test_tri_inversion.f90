@@ -13,7 +13,7 @@ program test_tri_inversion
     implicit none
 
     double precision, allocatable :: ue(:, :), we(:, :)
-    double precision, allocatable :: vortg(:, :, :), velog(:, :, :)
+    double precision, allocatable :: vortg(:, :, :), velog(:, :, :), velgradg(:, :, :)
     double precision              :: k, m, px, xx, az, mz, zz, uea, a, max_err
     integer                       :: ix, iz
 
@@ -29,9 +29,11 @@ program test_tri_inversion
     allocate(we(0:nz,0:nx-1))
     allocate(vortg(-1:nz+1,0:nx-1, 1))
     allocate(velog(-1:nz+1, 0:nx-1, 2))
+    allocate(velgradg(-1:nz+1, 0:nx-1, 4))
 
     velog = zero
     vortg = zero
+    velgradg = zero
 
     ! Set up analytical test:
     px = one
@@ -54,7 +56,7 @@ program test_tri_inversion
 
     call init_inversion
 
-    call vor2vel(vortg, velog)
+    call vor2vel(vortg, velog, velgradg)
 
     max_err = zero
 
@@ -79,5 +81,6 @@ program test_tri_inversion
     deallocate(we)
     deallocate(vortg)
     deallocate(velog)
+    deallocate(velgradg)
 
 end program test_tri_inversion
