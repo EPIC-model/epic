@@ -48,6 +48,10 @@ module options
         integer          :: merge_freq   = 1              ! merge frequency, 1 = call merge subroutine every step
         double precision :: vfraction    = 36.0d0         ! volume fraction in merge
         integer          :: diverge_freq = 1              ! diverge frequency, 1 = call diverge module every step
+        integer          :: diverge_iters= 1              ! diverge iterations
+        logical          :: diverge_grad = .true.         ! diverge uses gradient descent to adjust parcel positions on small scale
+        double precision :: gradient_pref= 0.3d0          ! prefactor for gradient descent
+
     end type parcel_info_type
 
     type(parcel_info_type) :: parcel_info
