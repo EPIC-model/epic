@@ -17,7 +17,8 @@ module ls_rk4
     double precision, allocatable, dimension(:, :) :: &
         velocity_p, &   ! position integration
         strain, &   ! strain at parcel location
-        dbdt        ! B matrix integration
+        dbdt, &        ! B matrix integration
+        dwdt           ! vorticity integration
 
     double precision, parameter :: &
         ca1 = - 567301805773.0_dp/1357537059087.0_dp,  &
@@ -38,6 +39,7 @@ module ls_rk4
             integer, intent(in) :: num
 
             allocate(velocity_p(num, 2))
+            allocate(dwdt(num, 1))
 
             if (parcel_info%is_elliptic) then
                 allocate(strain(num, 4))
@@ -51,6 +53,7 @@ module ls_rk4
 
             ! TODO
             deallocate(velocity_p)
+            deallocate(dwdt)
 
             if (parcel_info%is_elliptic) then
                deallocate(strain)
@@ -127,18 +130,21 @@ module ls_rk4
             call vor2vel(vortg, velog)
 
             if(step==1) then
-               call grid2par(parcels%position, parcels%volume, velocity_p, velog)
+                call grid2par(parcels%position, parcels%volume, velocity_p, velog)
+                call grid2par(parcels%position, parcels%volume, dwdt, vortg)
             else
-               call grid2par_add(parcels%position, parcels%volume, velocity_p, velog)
+                call grid2par_add(parcels%position, parcels%volume, velocity_p, velog)
+                call grid2par_add(parcels%position, parcels%volume, dwdt, vortg)
             endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :) + cb*dt*dwdt(1:n_parcels, :)
             call apply_parcel_bc(parcels%position, velocity_p)
             if(step==5) then
                return
             endif
             velocity_p(1:n_parcels,:) = ca*velocity_p(1:n_parcels,:)
-
-            call grid2par(parcels%position, parcels%volume, parcels%vorticity, vortg, exact='vorticity')
+            dwdt(1:n_parcels, :) = ca * dwdt(1:n_parcels, :)
+            return
 
         end subroutine ls_rk4_non_elliptic_substep
 
