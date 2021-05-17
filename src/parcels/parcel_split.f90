@@ -4,6 +4,7 @@
 module parcel_split
     use options, only : verbose
     use constants, only : pi, three
+    use parameters, only : vcell
     use parcel_container, only : parcel_container_type, n_parcels
     use ellipse, only : get_eigenvalue      &
                       , get_eigenvector     &
@@ -13,9 +14,10 @@ module parcel_split
 
     contains
 
-        subroutine split_ellipses(parcels, threshold)
+        subroutine split_ellipses(parcels, threshold, vthreshold)
             type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: threshold
+            double precision,            intent(in)    :: vthreshold
             double precision                           :: B11
             double precision                           :: B12
             double precision                           :: B22
@@ -38,7 +40,7 @@ module parcel_split
                 ! a/b
                 lam = get_aspect_ratio(a2, V)
 
-                if (lam <= threshold) then
+                if (lam <= threshold .and. V <= vcell/vthreshold) then
                     cycle
                 endif
 

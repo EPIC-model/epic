@@ -51,6 +51,7 @@ module options
         integer          :: diverge_iters= 1              ! diverge iterations
         logical          :: diverge_grad = .true.         ! diverge uses gradient descent to adjust parcel positions on small scale
         double precision :: gradient_pref= 0.3d0          ! prefactor for gradient descent
+        double precision :: vmaxfraction = 2.0         ! prefactor for gradient descent
 
     end type parcel_info_type
 

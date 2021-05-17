@@ -44,7 +44,7 @@ program test_ellipse_split
     pos(2, :) = parcels%position(1, :) - h * evec
 
     ! numerical split
-    call split_ellipses(parcels, threshold=four)
+    call split_ellipses(parcels, threshold=four, vthreshold=one)
 
     !
     ! check result

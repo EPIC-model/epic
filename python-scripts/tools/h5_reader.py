@@ -1,7 +1,7 @@
 import h5py
 import os
 import numpy as np
-from matplotlib.patches import Ellipse
+from matplotlib.patches import Ellipse, Circle
 
 class H5Reader:
 
@@ -42,7 +42,7 @@ class H5Reader:
         return np.array(self.h5file['mesh'].attrs['origin'])
 
     def get_diagnostic(self, name):
-        s = 'step#' + str(0).zfill(10)
+        s = self._get_step_string(0)
         if not name in self.h5file[s]['diagnostics'].attrs.keys():
             raise IOError("Diagnostic '" + name + "' unknown.")
 
@@ -78,29 +78,38 @@ class H5Reader:
 
     def get_ellipses(self, step):
         position = self.get_parcel_dataset(step, 'position')
-        B = self.get_parcel_dataset(step, 'B')
         V = self.get_parcel_dataset(step, 'volume')
-        angle = self.get_parcel_dataset(step, 'orientation')
+        s = self._get_step_string(step)
+        if 'B' in self.h5file[s]['parcels'].keys():
+            B = self.get_parcel_dataset(step, 'B')
 
-        B22 = self._get_B22(B[0, :], B[1, :], V)
-        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
+            angle = self.get_parcel_dataset(step, 'orientation')
 
-        b2 = (V / np.pi) ** 2 / a2
+            B22 = self._get_B22(B[0, :], B[1, :], V)
+            a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
 
-        return [Ellipse(xy=position[:, i],
-                        width=2 * np.sqrt(a2[i]),
-                        height=2 * np.sqrt(b2[i]),
-                        angle=np.rad2deg(angle[i]))
-                for i in range(B.shape[1])]
+            b2 = (V / np.pi) ** 2 / a2
+            return [Ellipse(xy=position[:, i],
+                            width=2 * np.sqrt(a2[i]),
+                            height=2 * np.sqrt(b2[i]),
+                            angle=np.rad2deg(angle[i]))
+                    for i in range(len(V))]
+        else:
+            return [Circle(xy=position[:, i],
+                            radius= np.sqrt(V[i]/np.pi) )
+                    for i in range(len(V))]
 
 
     def get_aspect_ratio(self, step):
-        B = self.get_parcel_dataset(step, 'B')
         V = self.get_parcel_dataset(step, 'volume')
-
-        B22 = self._get_B22(B[0, :], B[1, :], V)
-        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
-        return a2 / V * np.pi
+        s = self._get_step_string(step)
+        if 'B' in self.h5file[s]['parcels'].keys():
+            B = self.get_parcel_dataset(step, 'B')
+            B22 = self._get_B22(B[0, :], B[1, :], V)
+            a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
+            return a2 / V * np.pi
+        else:
+            return np.ones(len(V))
 
 
     def _get_B22(self, B11, B12, V):
