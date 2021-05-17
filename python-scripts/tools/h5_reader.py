@@ -42,7 +42,7 @@ class H5Reader:
         return np.array(self.h5file['mesh'].attrs['origin'])
 
     def get_diagnostic(self, name):
-        s = 'step#' + str(0).zfill(10)
+        s = self._get_step_string(0)
         if not name in self.h5file[s]['diagnostics'].attrs.keys():
             raise IOError("Diagnostic '" + name + "' unknown.")
 
@@ -79,10 +79,10 @@ class H5Reader:
     def get_ellipses(self, step):
         position = self.get_parcel_dataset(step, 'position')
         V = self.get_parcel_dataset(step, 'volume')
-        s = 'step#' + str(step).zfill(10)
+        s = self._get_step_string(step)
         if 'B' in self.h5file[s]['parcels'].keys():
             B = self.get_parcel_dataset(step, 'B')
-            
+
             angle = self.get_parcel_dataset(step, 'orientation')
 
             B22 = self._get_B22(B[0, :], B[1, :], V)
@@ -103,7 +103,7 @@ class H5Reader:
 
     def get_aspect_ratio(self, step):
         V = self.get_parcel_dataset(step, 'volume')
-        s = 'step#' + str(step).zfill(10)
+        s = self._get_step_string(step)
         if 'B' in self.h5file[s]['parcels'].keys():
             B = self.get_parcel_dataset(step, 'B')
             B22 = self._get_B22(B[0, :], B[1, :], V)
