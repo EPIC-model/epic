@@ -39,7 +39,7 @@
 
  parcel%diverge_freq = 1
 
- parcel%diverge_iters = 5
+ parcel%diverge_iters = 2
 
  parcel%diverge_grad = .true.
 
