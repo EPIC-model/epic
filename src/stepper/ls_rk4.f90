@@ -7,8 +7,9 @@ module ls_rk4
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
-    use parcel_interpl, only : grid2par, grid2par_add
-    use fields, only : velgradg, velog
+    use parcel_interpl, only : par2grid, grid2par, grid2par_add
+    use fields, only : velgradg, velog, vortg
+    use tri_inversion, only : vor2vel
     implicit none
 
     integer, parameter :: dp=kind(0.d0)           ! double precision
@@ -122,11 +123,13 @@ module ls_rk4
             double precision, intent(in) :: dt
             integer, intent(in) :: step
 
+            call par2grid
+            call vor2vel(vortg, velog)
 
             if(step==1) then
-               call grid2par(parcels%position, parcels%volume, velocity_p, velog, exact='velocity')
+               call grid2par(parcels%position, parcels%volume, velocity_p, velog)
             else
-               call grid2par_add(parcels%position, parcels%volume, velocity_p, velog, exact='velocity')
+               call grid2par_add(parcels%position, parcels%volume, velocity_p, velog)
             endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
             call apply_parcel_bc(parcels%position, velocity_p)
@@ -134,7 +137,8 @@ module ls_rk4
                return
             endif
             velocity_p(1:n_parcels,:) = ca*velocity_p(1:n_parcels,:)
-            return
+
+            call grid2par(parcels%position, parcels%volume, parcels%vorticity, vortg, exact='vorticity')
 
         end subroutine ls_rk4_non_elliptic_substep
 
