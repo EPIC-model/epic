@@ -10,18 +10,21 @@ program test_diverge
     use constants, only : pi, one, zero
     use parcel_container
     use parcel_diverge
-    use parcel_interpl, only : par2grid, grid2par
+    use parcel_interpl, only : vol2grid
     use options, only : parcel_info, box, interpl
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
+    use fields, only : volg
     implicit none
 
-    double precision :: volg(-1:33, 0:31), final_error, init_error
+    double precision :: final_error, init_error
     integer :: i, j, k, jj, ii
 
     box%nc = (/32, 32/)
     box%extent =  (/0.4d0, 0.4d0/)
 
     call update_parameters()
+
+    allocate(volg(-1:nz+1, 0:nx-1))
 
     n_parcels = 4*nx*nz
     call parcel_alloc(n_parcels)
@@ -55,14 +58,14 @@ program test_diverge
     ! b12
     parcels%B(:, 2) = zero
 
-    call par2grid(parcels)
+    call vol2grid
 
     init_error = abs(sum(volg(0:nz, 0:nx-1)) - ngrid * vcell)
 
     call init_diverge
 
     do i = 1, 500
-        call par2grid(parcels)
+        call vol2grid
 
         call apply_diverge(volg)
     enddo
@@ -70,5 +73,7 @@ program test_diverge
     final_error = abs(sum(volg(0:nz, 0:nx-1)) - ngrid * vcell)
 
     call print_result_dp('Test diverge', final_error, init_error)
+
+    deallocate(volg)
 
 end program test_diverge

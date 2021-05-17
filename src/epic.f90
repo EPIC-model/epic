@@ -54,7 +54,7 @@ program epic
 
             call init_diverge
 
-            call par2grid(parcels)
+            call par2grid
 
 
         end subroutine
@@ -94,13 +94,13 @@ program epic
                 endif
 
 
-                call par2grid(parcels)
+                call par2grid
 
                 if (mod(iter, parcel_info%diverge_freq) == 0) then
                     call apply_diverge(volg)
                 endif
 
-                call par2grid(parcels)
+                call par2grid
 
                 t = t + dt
                 iter = iter + 1
