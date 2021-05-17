@@ -15,7 +15,7 @@ program test_diverge
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
     implicit none
 
-    double precision :: volg(-1:33, 0:31, 1), final_error, init_error
+    double precision :: volg(-1:33, 0:31), final_error, init_error
     integer :: i, j, k, jj, ii
 
     box%nc = (/32, 32/)
@@ -50,24 +50,24 @@ program test_diverge
     parcels%volume = 0.25d0 * vcell
 
     ! b11
-    parcels%B(:, 1) = one
+    parcels%B(:, 1) = 0.25d0 * vcell / pi
 
     ! b12
     parcels%B(:, 2) = zero
 
-    call par2grid(parcels, parcels%volume, volg)
+    call par2grid(parcels)
 
-    init_error = abs(sum(volg(0:nz, 0:nx-1, :)) - ngrid * vcell)
+    init_error = abs(sum(volg(0:nz, 0:nx-1)) - ngrid * vcell)
 
     call init_diverge
 
     do i = 1, 500
-        call par2grid(parcels, parcels%volume, volg)
+        call par2grid(parcels)
 
         call apply_diverge(volg)
     enddo
 
-    final_error = abs(sum(volg(0:nz, 0:nx-1, :)) - ngrid * vcell)
+    final_error = abs(sum(volg(0:nz, 0:nx-1)) - ngrid * vcell)
 
     call print_result_dp('Test diverge', final_error, init_error)
 

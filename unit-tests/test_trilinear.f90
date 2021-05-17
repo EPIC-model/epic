@@ -12,7 +12,7 @@ program test_trilinear
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
     implicit none
 
-    double precision :: volg(-1:33, 0:31, 1), error
+    double precision :: volg(-1:33, 0:31), error
     integer :: i, j, k, jj, ii
 
     box%nc = (/32, 32/)
@@ -43,7 +43,7 @@ program test_trilinear
     parcels%volume = 0.25d0 * vcell
 
     ! b11
-    parcels%B(:, 1) = one
+    parcels%B(:, 1) = 0.25d0 * vcell / pi
 
     ! b12
     parcels%B(:, 2) = zero
@@ -51,9 +51,9 @@ program test_trilinear
 
     interpl = 'trilinear'
 
-    call par2grid(parcels, parcels%volume, volg)
+    call par2grid(parcels)
 
-    error = abs(sum(volg(0:nz, 0:nx-1, :)) - dble(ngrid) * vcell)
+    error = abs(sum(volg(0:nz, 0:nx-1)) - dble(ngrid) * vcell)
 
     call print_result_dp('Test trilinear (par2grid)', error, atol=dble(1.0e-14))
 

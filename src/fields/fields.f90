@@ -20,11 +20,13 @@ module fields
     double precision, allocatable, dimension(:, :, :) :: &
         velog,     &   ! velocity vector field (has 1 halo cell layer in z)
         velgradg,  &   ! velocity gradient tensor (has 1 halo cell layer in z)
-        volg,      &   ! volume scalar field (has 1 halo cell layer in z)
         buoyg,     &   ! buoyancy (has 1 halo cell layer in z)
         humg,      &   ! specific humidity
         humlig,    &   ! condensed humidity
         vortg          ! vorticity scalar field (has no halo cell layers)
+
+    double precision, allocatable, dimension(:, :) :: &
+        volg           ! volume scalar field (has 1 halo cell layer in z)
 
     contains
 
@@ -37,7 +39,7 @@ module fields
             allocate(velog(-1:nz+1, 0:nx-1, 2))
             allocate(velgradg(-1:nz+1, 0:nx-1, 4))
 
-            allocate(volg(-1:nz+1, 0:nx-1, 1))
+            allocate(volg(-1:nz+1, 0:nx-1))
 
             ! vorticity has no halo grid points in y
             allocate(vortg(-1:nz+1, 0:nx-1, 1))
@@ -124,8 +126,8 @@ module fields
             call write_h5_dataset_3d(name, "velocity gradient tensor", &
                                      velgradg(0:nz, 0:nx-1, :))
 
-            call write_h5_dataset_3d(name, "volume", &
-                                     volg(0:nz, 0:nx-1, :))
+            call write_h5_dataset_2d(name, "volume", &
+                                     volg(0:nz, 0:nx-1))
 
             call write_h5_dataset_3d(name, "buoyancy", &
                                      buoyg(0:nz, 0:nx-1, :))

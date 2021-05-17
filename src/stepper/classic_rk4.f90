@@ -207,9 +207,9 @@ module classic_rk4
             inipos(1:n_parcels,:) = parcels%position(1:n_parcels,:)
             inivor(1:n_parcels,:) = parcels%vorticity(1:n_parcels,:)
 
-            call par2grid(parcels, parcels%vorticity, vortg)
+            call par2grid(parcels)
             call vor2vel(vortg, velog)
-            call grid2par(parcels%position, parcels%volume, k1o, velog, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, k1o, velog)
 
             call grid2par(parcels%position, parcels%volume, w1o, ds, exact='vorticity')
 
@@ -226,9 +226,9 @@ module classic_rk4
             ! apply position BC
             call apply_parcel_bc(parcels%position, k1o)
 
-            call par2grid(parcels, parcels%vorticity, vortg)
+            call par2grid(parcels)
             call vor2vel(vortg, velog)
-            call grid2par(parcels%position, parcels%volume, k2o, velog, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, k2o, velog)
 
             call grid2par(parcels%position, parcels%volume, w2o, ds, exact='vorticity')
 
@@ -244,9 +244,9 @@ module classic_rk4
             ! apply position BC
             call apply_parcel_bc(parcels%position, k2o)
 
-            call par2grid(parcels, parcels%vorticity, vortg)
+            call par2grid(parcels)
             call vor2vel(vortg, velog)
-            call grid2par(parcels%position, parcels%volume, k3o, velog, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, k3o, velog)
 
             call grid2par(parcels%position, parcels%volume, w3o, ds, exact='vorticity')
 
@@ -262,9 +262,9 @@ module classic_rk4
             ! apply position BC
             call apply_parcel_bc(parcels%position, k3o)
 
-            call par2grid(parcels, parcels%vorticity, vortg)
+            call par2grid(parcels)
             call vor2vel(vortg, velog)
-            call grid2par(parcels%position, parcels%volume, k4o, velog, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, k4o, velog)
 
             call grid2par(parcels%position, parcels%volume, w4o, ds, exact='vorticity')
 
@@ -283,9 +283,9 @@ module classic_rk4
             call apply_parcel_bc(parcels%position, k4o)
 
             ! update parcel velocity
-            call par2grid(parcels, parcels%vorticity, vortg)
+            call par2grid(parcels)
             call vor2vel(vortg, velog)
-            call grid2par(parcels%position, parcels%volume, parcels%velocity, velog, exact='velocity')
+            call grid2par(parcels%position, parcels%volume, parcels%velocity, velog)
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(parcels%position, parcels%velocity)

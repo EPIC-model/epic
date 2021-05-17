@@ -125,14 +125,14 @@ module parcel_diverge
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine apply_diverge(volg)
-        double precision, intent(in) :: volg(-1:, 0:, :)
+        double precision, intent(in) :: volg(-1:, 0:)
         double precision             :: phi(0:nz,0:nx-1), ud(-1:nz+1,0:nx-1), wd(-1:nz+1,0:nx-1)
         double precision             :: wbar(0:nz)
         double precision             :: weights(ngp)
         integer                      :: n, l, is(ngp), js(ngp)
 
         ! form divergence field * dt and store in phi temporarily:
-        phi = volg(0:nz, :, 1) / vcell - one
+        phi = volg(0:nz, :) / vcell - one
 
         !-----------------------------------------
         ! Forward x FFT:

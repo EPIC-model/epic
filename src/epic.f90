@@ -54,8 +54,8 @@ program epic
 
             call init_diverge
 
-            ! update volume on the grid
-            call par2grid(parcels, parcels%volume, volg)
+            call par2grid(parcels)
+
 
         end subroutine
 
@@ -94,15 +94,13 @@ program epic
                 endif
 
 
-                ! update volume on the grid
-                call par2grid(parcels, parcels%volume, volg)
+                call par2grid(parcels)
 
                 if (mod(iter, parcel_info%diverge_freq) == 0) then
                     call apply_diverge(volg)
                 endif
 
-                ! update volume on the grid
-                call par2grid(parcels, parcels%volume, volg)
+                call par2grid(parcels)
 
                 t = t + dt
                 iter = iter + 1

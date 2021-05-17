@@ -37,48 +37,61 @@ module parcel_interpl
 
     contains
 
-        subroutine par2grid(parcels, attrib, field)
-            type(parcel_container_type), intent(in)    :: parcels
-            double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(-1:, 0:, :)
+        subroutine par2grid(parcels)
+            type(parcel_container_type), intent(in) :: parcels
 
-            field = zero
+            vortg = zero
+            volg = zero
 
             if (parcel_info%is_elliptic) then
-                call par2grid_elliptic(parcels, attrib, field)
+                call par2grid_elliptic(parcels)
             else
-                call par2grid_non_elliptic(parcels, attrib, field)
+                call par2grid_non_elliptic(parcels)
             endif
 
             ! apply free slip boundary condition
-            field(0,  :, :) = two * field(0,  :, :)
-            field(nz, :, :) = two * field(nz, :, :)
+            vortg(0,  :, :) = two * vortg(0,  :, :)
+            vortg(nz, :, :) = two * vortg(nz, :, :)
 
             ! free slip boundary condition is reflective with mirror
             ! axis at the physical domain
-            field(1,    :, :) = field(1,    :, :) + field(-1,   :, :)
-            field(nz-1, :, :) = field(nz-1, :, :) + field(nz+1, :, :)
+            vortg(1,    :, :) = vortg(1,    :, :) + vortg(-1,   :, :)
+            vortg(nz-1, :, :) = vortg(nz-1, :, :) + vortg(nz+1, :, :)
+
+
+
+            ! apply free slip boundary condition
+            volg(0,  :) = two * volg(0,  :)
+            volg(nz, :) = two * volg(nz, :)
+
+            ! free slip boundary condition is reflective with mirror
+            ! axis at the physical domain
+            volg(1,    :) = volg(1,    :) + volg(-1,   :)
+            volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
+
+
+            volg(0:nz, :) = one / volg(0:nz, :)
+
+            vortg(0:nz, :, 1) = vortg(0:nz, :, 1) * volg(0:nz, :)
 
         end subroutine par2grid
 
-        subroutine par2grid_elliptic(parcels, attrib, field)
+        subroutine par2grid_elliptic(parcels)
             type(parcel_container_type), intent(in)    :: parcels
-            double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(-1:, 0:, :)
             integer                                    :: ncomp
             double precision                           :: points(2, 2)
             integer                                    :: n, p, c, l
-            integer                                    :: the_shape(3)
+            double precision                           :: pvol, pvor
 
             ! number of field components
-            the_shape = shape(field)
-            ncomp = the_shape(3)
+            ncomp = 1
 
             do n = 1, n_parcels
+                pvol = parcels%volume(n, 1)
 
                 points = get_ellipse_points(parcels%position(n, :), &
-                                            parcels%volume(n, 1),   &
-                                            parcels%B(n, :))
+                                            pvol, parcels%B(n, :))
+
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -91,12 +104,18 @@ module parcel_interpl
 
                     ! loop over field components
                     do c = 1, ncomp
+                        pvor = parcels%vorticity(n, c)
                         ! loop over grid points which are part of the interpolation
                         do l = 1, ngp
                             ! the weight is halved due to 2 points per ellipse
-                            field(js(l), is(l), c) = field(js(l), is(l), c)         &
-                                                   + 0.5d0 * weights(l) * attrib(n, c)
+                            vortg(js(l), is(l), c) = vortg(js(l), is(l), c) &
+                                                   + 0.5d0 * weights(l) * pvor * pvol
                         enddo
+                    enddo
+
+                    do l = 1, ngp
+                        volg(js(l), is(l)) = volg(js(l), is(l)) &
+                                           + 0.5d0 * weights(l) * pvol
                     enddo
                 enddo
             enddo
@@ -144,9 +163,16 @@ module parcel_interpl
                             ! loop over grid points which are part of the interpolation
                             do l = 1, ngp
                                 ! the weight is halved due to 2 points per ellipse
-                                field(js(l), is(l), c) = field(js(l), is(l), c)         &
-                                                       + dble(m) * 0.5d0 * weights(l) * attrib(n, c)
+                                field(js(l), is(l), c) = field(js(l), is(l), c)                      &
+                                                       + dble(m) * 0.5d0 * weights(l) * attrib(n, c) &
+                                                       * parcels%volume(n, 1)
                             enddo
+
+                        enddo
+
+                        do l = 1, ngp
+                            volg(js(l), is(l)) = volg(js(l), is(l)) &
+                                               + dble(m) * 0.5d0 * weights(l) * parcels%volume(n, 1)
                         enddo
                     enddo
                 enddo
@@ -154,22 +180,20 @@ module parcel_interpl
         end subroutine par2grid_elliptic_symmetry_check
 
 
-        subroutine par2grid_non_elliptic(parcels, attrib, field)
+        subroutine par2grid_non_elliptic(parcels)
             type(parcel_container_type), intent(in)    :: parcels
-            double precision,            intent(in)    :: attrib(:, :)
-            double precision,            intent(inout) :: field(-1:, 0:, :)
             integer                                    :: ncomp
             integer                                    :: n, c, l
-            integer                                    :: the_shape(3)
             double precision                           :: pos(2)
+            double precision                           :: pvor, pvol
 
             ! number of field components
-            the_shape = shape(field)
-            ncomp = the_shape(3)
+            ncomp = 1
 
             do n = 1, n_parcels
 
                 pos = parcels%position(n, :)
+                pvol = parcels%volume(n, 1)
 
                 ! ensure parcel is within the domain
                 call apply_periodic_bc(pos)
@@ -179,12 +203,18 @@ module parcel_interpl
 
                 ! loop over field components
                 do c = 1, ncomp
+
+                    pvor = parcels%vorticity(n, c)
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp
                         ! the weight is halved due to 2 points per ellipse
-                        field(js(l), is(l), c) = field(js(l), is(l), c)   &
-                                               + weights(l) * attrib(n, c)
+                        vortg(js(l), is(l), c) = vortg(js(l), is(l), c)  &
+                                               + weights(l) * pvor * pvol
                     enddo
+                enddo
+
+                do l = 1, ngp
+                    volg(js(l), is(l)) = volg(js(l), is(l)) + weights(l) * pvol
                 enddo
             enddo
 

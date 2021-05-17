@@ -60,7 +60,7 @@ program test_free_slip
     parcels%B(:, 2) = 0.5d0 * (lam - one / lam) * dsin(two * angle)
 
 
-    call par2grid(parcels, parcels%volume, volg)
+    call par2grid(parcels)
 
 
     error = abs(sum(volg(0:nz, 0:nx-1, :)) - ngrid * vcell)
