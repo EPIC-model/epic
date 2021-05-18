@@ -130,7 +130,7 @@ module parcel_interpl
         subroutine vol2grid_non_elliptic
             integer          :: n, l
             double precision :: pos(2)
-            double precision :: pvor, pvol
+            double precision :: pvol
 
             do n = 1, n_parcels
 
@@ -182,7 +182,7 @@ module parcel_interpl
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
 
-            vortg(0:nz, :, 1) = vortg(0:nz, :, 1) / volg(0:nz, :)
+            vortg(:, :, 1) = vortg(:, :, 1) / volg
 
         end subroutine par2grid
 

@@ -30,21 +30,15 @@ module taylorgreen
             integer          :: i, j, n
 
             do n = 1, n_parcels
-!                 parcels%velocity(n, :) = get_flow_velocity(parcels%position(n, :))
                 parcels%vorticity(n, :) = get_flow_vorticity(parcels%position(n, :))
             enddo
 
-            do i = 0, nx-1
-                do j = -1, nz+1
-                    call get_position(i, j, pos)
-
-!                     velog(j, i, :) = get_flow_velocity(pos)
-
-                    velgradg(j, i, :) = get_flow_gradient(pos)
-
-                    vortg(j, i, :) = get_flow_vorticity(pos)
-                enddo
-            enddo
+!             do i = 0, nx-1
+!                 do j = -1, nz+1
+!                     call get_position(i, j, pos)
+!                     vortg(j, i, :) = get_flow_vorticity(pos)
+!                 enddo
+!             enddo
         end subroutine taylorgreen_init
 
 
