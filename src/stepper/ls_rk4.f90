@@ -8,7 +8,7 @@ module ls_rk4
     use parcel_bc
     use rk4_utils, only: get_B
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
-    use fields, only : velgradg, velog, vortg
+    use fields, only : velgradg, velog, vortg, vtend
     use tri_inversion, only : vor2vel
     use parameters, only : nx, nz
     implicit none
@@ -41,9 +41,9 @@ module ls_rk4
 
             allocate(velocity_p(num, 2))
             allocate(dwdt(num, 1))
+            allocate(strain(num, 4))
 
             if (parcel_info%is_elliptic) then
-                allocate(strain(num, 4))
                 allocate(dbdt(num, 2))
             endif
 
@@ -55,9 +55,9 @@ module ls_rk4
             ! TODO
             deallocate(velocity_p)
             deallocate(dwdt)
+            deallocate(strain)
 
             if (parcel_info%is_elliptic) then
-               deallocate(strain)
                deallocate(dbdt)
             endif
 
@@ -76,8 +76,7 @@ module ls_rk4
         end subroutine ls_rk4_step
 
 
-        subroutine ls_rk4_elliptic_substep(ds, ca, cb, dt, step)
-            double precision, intent(in) :: ds(-1:nz+1, 0:nx-1, 1)  ! vorticity tendency
+        subroutine ls_rk4_elliptic_substep(ca, cb, dt, step)
             double precision, intent(in) :: ca
             double precision, intent(in) :: cb
             double precision, intent(in) :: dt
@@ -87,13 +86,10 @@ module ls_rk4
             call vor2vel(vortg, velog, velgradg)
 
             if(step==1) then
-               call grid2par(parcels%position, parcels%volume, velocity_p, velog, parcels%B)
-               call grid2par(parcels%position, parcels%volume, dwdt, ds)
+               call grid2par(velocity_p, dwdt, strain)
             else
-               call grid2par_add(parcels%position, parcels%volume, velocity_p, velog, parcels%B)
-               call grid2par_add(parcels%position, parcels%volume, dwdt, ds)
+               call grid2par_add(velocity_p, dwdt, strain)
             endif
-            call grid2par(parcels%position, parcels%volume, strain, velgradg, parcels%B)
             if(step==1) then
                dbdt(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                            parcels%volume(1:n_parcels, 1))
@@ -119,22 +115,17 @@ module ls_rk4
 
         subroutine ls_rk4_elliptic(dt)
             double precision, intent(in) :: dt
-            double precision             :: ds(-1:nz+1, 0:nx-1, 1)  ! vorticity tendency
 
-            ! at the moment we have no tendency!
-            ds = zero
-
-            call ls_rk4_elliptic_substep(ds, ca1, cb1, dt, 1)
-            call ls_rk4_elliptic_substep(ds, ca2, cb2, dt, 2)
-            call ls_rk4_elliptic_substep(ds, ca3, cb3, dt, 3)
-            call ls_rk4_elliptic_substep(ds, ca4, cb4, dt, 4)
-            call ls_rk4_elliptic_substep(ds, ca5, cb5, dt, 5)
+            call ls_rk4_elliptic_substep(ca1, cb1, dt, 1)
+            call ls_rk4_elliptic_substep(ca2, cb2, dt, 2)
+            call ls_rk4_elliptic_substep(ca3, cb3, dt, 3)
+            call ls_rk4_elliptic_substep(ca4, cb4, dt, 4)
+            call ls_rk4_elliptic_substep(ca5, cb5, dt, 5)
 
         end subroutine ls_rk4_elliptic
 
 
-        subroutine ls_rk4_non_elliptic_substep(ds, ca, cb, dt, step)
-            double precision, intent(in) :: ds(-1:nz+1, 0:nx-1, 1)  ! vorticity tendency
+        subroutine ls_rk4_non_elliptic_substep(ca, cb, dt, step)
             double precision, intent(in) :: ca
             double precision, intent(in) :: cb
             double precision, intent(in) :: dt
@@ -144,11 +135,9 @@ module ls_rk4
             call vor2vel(vortg, velog, velgradg)
 
             if(step==1) then
-                call grid2par(parcels%position, parcels%volume, velocity_p, velog)
-                call grid2par(parcels%position, parcels%volume, dwdt, ds)
+                call grid2par(velocity_p, dwdt, strain)
             else
-                call grid2par_add(parcels%position, parcels%volume, velocity_p, velog)
-                call grid2par_add(parcels%position, parcels%volume, dwdt, ds)
+                call grid2par_add(velocity_p, dwdt, strain)
             endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
             parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :) + cb*dt*dwdt(1:n_parcels, :)
@@ -164,16 +153,12 @@ module ls_rk4
 
         subroutine ls_rk4_non_elliptic(dt)
             double precision, intent(in) :: dt
-            double precision             :: ds(-1:nz+1, 0:nx-1, 1)  ! vorticity tendency
 
-            ! at the moment we have no tendency!
-            ds = zero
-
-            call ls_rk4_non_elliptic_substep(ds, ca1, cb1, dt, 1)
-            call ls_rk4_non_elliptic_substep(ds, ca2, cb2, dt, 2)
-            call ls_rk4_non_elliptic_substep(ds, ca3, cb3, dt, 4)
-            call ls_rk4_non_elliptic_substep(ds, ca4, cb4, dt, 4)
-            call ls_rk4_non_elliptic_substep(ds, ca5, cb5, dt, 5)
+            call ls_rk4_non_elliptic_substep(ca1, cb1, dt, 1)
+            call ls_rk4_non_elliptic_substep(ca2, cb2, dt, 2)
+            call ls_rk4_non_elliptic_substep(ca3, cb3, dt, 4)
+            call ls_rk4_non_elliptic_substep(ca4, cb4, dt, 4)
+            call ls_rk4_non_elliptic_substep(ca5, cb5, dt, 5)
 
         end subroutine ls_rk4_non_elliptic
 

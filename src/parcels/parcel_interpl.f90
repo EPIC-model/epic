@@ -268,103 +268,87 @@ module parcel_interpl
         end subroutine par2grid_non_elliptic
 
 
-        subroutine grid2par(position, volume, attrib, field, B, exact)
-            double precision,           intent(in)  :: position(:, :)
-            double precision,           intent(in)  :: volume(:, :)
-            double precision,           intent(out) :: attrib(:, :)
-            double precision,           intent(in)  :: field(-1:, 0:, :)
-            double precision, optional, intent(in)  :: B(:, :)
-            character(*), optional, intent(in)      :: exact
+        subroutine grid2par(vel, vor, vgrad, exact)
+            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            character(*), optional, intent(in)    :: exact
 
             if (parcel_info%is_elliptic) then
-                if (.not. present(B)) then
-                    print *, "B matrix not passed to grid2par!"
-                    stop
-                endif
                 if(present(exact)) then
-                   call grid2par_elliptic(position, volume, B, attrib, field, exact=exact)
+                   call grid2par_elliptic(vel, vor, vgrad, exact=exact)
                 else
-                   call grid2par_elliptic(position, volume, B, attrib, field)
+                   call grid2par_elliptic(vel, vor, vgrad)
                 endif
             else
                 if(present(exact)) then
-                   call grid2par_non_elliptic(position, attrib, field, exact=exact)
+                   call grid2par_non_elliptic(vel, vor, vgrad, exact=exact)
                 else
-                   call grid2par_non_elliptic(position, attrib, field)
+                   call grid2par_non_elliptic(vel, vor, vgrad)
                 endif
             endif
 
         end subroutine grid2par
 
 
-        subroutine grid2par_add(position, volume, attrib, field, B, exact)
-            double precision,           intent(in)  :: position(:, :)
-            double precision,           intent(in)  :: volume(:, :)
-            double precision,           intent(out) :: attrib(:, :)
-            double precision,           intent(in)  :: field(0:, 0:, :)
-            double precision, optional, intent(in)  :: B(:, :)
-            character(*), optional, intent(in)      :: exact
+        subroutine grid2par_add(vel, vor, vgrad, exact)
+            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            character(*), optional, intent(in)    :: exact
 
             if (parcel_info%is_elliptic) then
-                if (.not. present(B)) then
-                    print *, "B matrix not passed to grid2par!"
-                    stop
-                endif
                 if(present(exact)) then
-                   call grid2par_elliptic(position, volume, B, attrib, field, add=.true., exact=exact)
+                   call grid2par_elliptic(vel, vor, vgrad, add=.true., exact=exact)
                 else
-                   call grid2par_elliptic(position, volume, B, attrib, field, add=.true.)
+                   call grid2par_elliptic(vel, vor, vgrad, add=.true.)
                 endif
             else
                 if(present(exact)) then
-                   call grid2par_non_elliptic(position, attrib, field, add=.true., exact=exact)
+                   call grid2par_non_elliptic(vel, vor, vgrad, add=.true., exact=exact)
                 else
-                   call grid2par_non_elliptic(position, attrib, field, add=.true.)
+                   call grid2par_non_elliptic(vel, vor, vgrad, add=.true.)
                 endif
             endif
 
         end subroutine grid2par_add
 
 
-        subroutine grid2par_elliptic(position, volume, B, attrib, field, add, exact)
-            double precision, intent(in)  :: position(:, :)
-            double precision, intent(in)  :: volume(:, :)
-            double precision, intent(in)  :: B(:, :)
-            double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(-1:, 0:, :)
-            logical, optional, intent(in) :: add
-            character(*), optional, intent(in)      :: exact
-            integer                       :: ncomp
-            double precision              :: points(2, 2)
-            integer                       :: n, p, c, l
-            integer                       :: the_shape(3)
-
+        subroutine grid2par_elliptic(vel, vor, vgrad, add, exact)
+            double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            logical, optional, intent(in)       :: add
+            character(*), optional, intent(in)  :: exact
+            integer                             :: ncomp
+            double precision                    :: points(2, 2)
+            integer                             :: n, p, c, l
 
             ! number of field components
-            the_shape = shape(field)
-            ncomp = the_shape(3)
+            ncomp = 2
 
             ! clear old data efficiently
             if(present(add)) then
                if(add .eqv. .false.) then
-                   attrib(1:n_parcels, :) = zero
+                    vel(1:n_parcels, :) = zero
+                    vor(1:n_parcels, :) = zero
                endif
             else
-               attrib(1:n_parcels, :) = zero
+               vel(1:n_parcels, :) = zero
+               vor(1:n_parcels, :) = zero
             endif
+
+            vgrad(1:n_parcels, :) = zero
 
             ! put if statement here for computational efficiency
             if(present(exact)) then
                do n = 1, n_parcels
 
-                  points = get_ellipse_points(position(n, :), volume(n, 1), B(n, :))
+                  points = get_ellipse_points(parcels%position(n, :), &
+                                              parcels%volume(n, 1),   &
+                                              parcels%B(n, :))
 
                   do p = 1, 2
                      call apply_periodic_bc(points(p, :))
                      if(exact=='velocity') then
-                        attrib(n,:)=attrib(n,:) +0.5d0 * get_flow_velocity(points(p, :))
-                     elseif(exact=='strain') then
-                        attrib(n,:)=attrib(n,:) + 0.5d0 * get_flow_gradient(points(p, :))
+                        vel(n,:) = vel(n,:) &
+                                              + 0.5d0 * get_flow_velocity(points(p, :))
+!                      elseif(exact=='strain') then
+!                         attrib(n,:)=attrib(n,:) + 0.5d0 * get_flow_gradient(points(p, :))
                      else
                         print *, "Exact interpolation field passed not implemented"
                         stop
@@ -376,7 +360,9 @@ module parcel_interpl
 
             do n = 1, n_parcels
 
-                points = get_ellipse_points(position(n, :), volume(n, 1), B(n, :))
+                points = get_ellipse_points(parcels%position(n, :), &
+                                            parcels%volume(n, 1),   &
+                                            parcels%B(n, :))
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -387,14 +373,22 @@ module parcel_interpl
                     ! get interpolation weights and mesh indices
                     call get_indices_and_weights(points(p, :))
 
-                    ! loop over field components
-                    do c = 1, ncomp
-                        ! loop over grid points which are part of the interpolation
-                        do l = 1, ngp
+                    ! loop over grid points which are part of the interpolation
+                    do l = 1, ngp
+                        ! loop over field components
+                        do c = 1, ncomp
                             ! the weight is halved due to 2 points per ellipse
-                            attrib(n, c) = attrib(n, c) &
-                                         + 0.5d0 * weights(l) * field(js(l), is(l), c)
+                            vel(n, c) = vel(n, c) &
+                                      + 0.5d0 * weights(l) * velog(js(l), is(l), c)
                         enddo
+
+                        do c = 1, 4
+                            vgrad(n, c) = vgrad(n, c) &
+                                        + 0.5d0 * weights(l) * velgradg(js(l), is(l), c)
+                        enddo
+
+                        vor(n, 1) = vor(n, 1) &
+                                  + 0.5d0 * weights(l) * vtend(js(l), is(l), 1)
                     enddo
                 enddo
             enddo
@@ -402,39 +396,41 @@ module parcel_interpl
         end subroutine grid2par_elliptic
 
 
-        subroutine grid2par_non_elliptic(position, attrib, field, add, exact)
-            double precision, intent(in)  :: position(:, :)
-            double precision, intent(out) :: attrib(:, :)
-            double precision, intent(in)  :: field(-1:, 0:, :)
-            logical, optional, intent(in) :: add
-            character(*), optional, intent(in)      :: exact
-            integer                       :: ncomp
-            integer                       :: n, c, l
-            integer                       :: the_shape(3)
-            double precision              :: pos(2)
+        subroutine grid2par_non_elliptic(vel, vor, vgrad, add, exact)
+            double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            logical, optional, intent(in)       :: add
+            character(*), optional, intent(in)  :: exact
+            integer                             :: ncomp
+            integer                             :: n, c, l
+            double precision                    :: pos(2)
 
             ! number of field components
-            the_shape = shape(field)
-            ncomp = the_shape(3)
+            ncomp = 2
 
             ! clear old data efficiently
             if(present(add)) then
                if(add .eqv. .false.) then
-                   attrib(1:n_parcels, :) = zero
+                   vel(1:n_parcels, :) = zero
+                   vor(1:n_parcels, :) = zero
                endif
             else
-               attrib(1:n_parcels, :) = zero
+               vel(1:n_parcels, :) = zero
+               vor(1:n_parcels, :) = zero
             endif
+
+            vgrad(1:n_parcels, :) = zero
 
             ! put if statement here for computational efficiency
             if(present(exact)) then
                do n = 1, n_parcels
-                  pos = position(n, :)
+                  pos = parcels%position(n, :)
                   call apply_periodic_bc(pos)
                   if(exact=='velocity') then
-                     attrib(n,:)=attrib(n,:)+get_flow_velocity(pos)
-                  elseif(exact=='strain') then
-                     attrib(n,:)=attrib(n,:)+get_flow_gradient(pos)
+                     vel(n,:) = vel(n,:) &
+                                           + get_flow_velocity(pos)
+!                   elseif(exact=='strain') then
+!                      attrib(n,:)=attrib(n,:)+get_flow_gradient(pos)
+                  else
                      print *, "Exact interpolation field passed not implemented"
                      stop
                   end if
@@ -444,7 +440,7 @@ module parcel_interpl
 
             do n = 1, n_parcels
 
-                pos = position(n, :)
+                pos = parcels%position(n, :)
 
                 ! ensure parcel is within the domain
                 call apply_periodic_bc(pos)
@@ -452,13 +448,22 @@ module parcel_interpl
                 ! get interpolation weights and mesh indices
                 call get_indices_and_weights(pos)
 
-                ! loop over field components
-                do c = 1, ncomp
-                    ! loop over grid points which are part of the interpolation
-                    do l = 1, ngp
-                        attrib(n, c) = attrib(n, c) &
-                                     + weights(l) * field(js(l), is(l), c)
+                ! loop over grid points which are part of the interpolation
+                do l = 1, ngp
+                    ! loop over field components
+                    do c = 1, ncomp
+                        vel(n, c) = vel(n, c) &
+                                  + weights(l) * velog(js(l), is(l), c)
                     enddo
+
+                    do c = 1, 4
+                        vgrad(n, c) = vgrad(n, c) &
+                                    + weights(l) * velgradg(js(l), is(l), c)
+                    enddo
+
+                    vor(n, 1) = vor(n, 1) &
+                              + weights(l) * vtend(js(l), is(l), 1)
+
                 enddo
             enddo
 

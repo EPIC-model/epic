@@ -23,7 +23,8 @@ module fields
         buoyg,     &   ! buoyancy (has 1 halo cell layer in z)
         humg,      &   ! specific humidity
         humlig,    &   ! condensed humidity
-        vortg          ! vorticity scalar field (has no halo cell layers)
+        vortg,     &   ! vorticity scalar field
+        vtend          ! vorticity tendency
 
     double precision, allocatable, dimension(:, :) :: &
         volg           ! volume scalar field (has 1 halo cell layer in z)
@@ -41,8 +42,9 @@ module fields
 
             allocate(volg(-1:nz+1, 0:nx-1))
 
-            ! vorticity has no halo grid points in y
             allocate(vortg(-1:nz+1, 0:nx-1, 1))
+
+            allocate(vtend(-1:nz+1, 0:nx-1, 1))
 
             allocate(buoyg(-1:nz+1, 0:nx-1, 1))
 
@@ -58,6 +60,8 @@ module fields
             velog    = zero
             velgradg = zero
             volg     = zero
+            vortg    = zero
+            vtend    = zero
             buoyg    = zero
             humg     = zero
             humlig   = zero
