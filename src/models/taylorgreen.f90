@@ -26,19 +26,12 @@ module taylorgreen
 
     contains
         subroutine taylorgreen_init
-            double precision :: pos(2)
-            integer          :: i, j, n
+            integer          :: n
 
             do n = 1, n_parcels
                 parcels%vorticity(n, :) = get_flow_vorticity(parcels%position(n, :))
             enddo
 
-!             do i = 0, nx-1
-!                 do j = -1, nz+1
-!                     call get_position(i, j, pos)
-!                     vortg(j, i, :) = get_flow_vorticity(pos)
-!                 enddo
-!             enddo
         end subroutine taylorgreen_init
 
 

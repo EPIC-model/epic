@@ -54,7 +54,7 @@ program epic
 
             call init_diverge
 
-            call vol2grid
+            call par2grid
 
 
         end subroutine

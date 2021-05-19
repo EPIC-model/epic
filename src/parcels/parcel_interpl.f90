@@ -161,16 +161,13 @@ module parcel_interpl
                 call par2grid_non_elliptic
             endif
 
-            ! apply free slip boundary condition
-            vortg(0,  :, :) = two * vortg(0,  :, :)
-            vortg(nz, :, :) = two * vortg(nz, :, :)
+            vortg(0,  :, :) = zero
+            vortg(nz, :, :) = zero
+            vortg(-1, :, :) = -vortg(-1, :, :)
+            vortg(nz+1, :, :) = -vortg(nz+1, :, :)
 
-            ! free slip boundary condition is reflective with mirror
-            ! axis at the physical domain
             vortg(1,    :, :) = vortg(1,    :, :) + vortg(-1,   :, :)
             vortg(nz-1, :, :) = vortg(nz-1, :, :) + vortg(nz+1, :, :)
-
-
 
             ! apply free slip boundary condition
             volg(0,  :) = two * volg(0,  :)
@@ -181,8 +178,8 @@ module parcel_interpl
             volg(1,    :) = volg(1,    :) + volg(-1,   :)
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
-
-            vortg(:, :, 1) = vortg(:, :, 1) / volg
+            ! exclude halo cells to avoid division by zero
+            vortg(0:nz, :, 1) = vortg(0:nz, :, 1) / volg(0:nz, :)
 
         end subroutine par2grid
 
