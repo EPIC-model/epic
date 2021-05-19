@@ -153,7 +153,7 @@ module classic_rk4
             call apply_parcel_bc(parcels%position, k3o)
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) + dt * k3o(1:n_parcels,:)
-            parcels%vorticity(1:n_parcels,:) = inipos(1:n_parcels, :) + dt * w3o(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + dt * w3o(1:n_parcels,:)
             parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + dt * b3o(1:n_parcels,:)
 
             ! apply position BC
