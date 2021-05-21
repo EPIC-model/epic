@@ -321,6 +321,41 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
     plt.close()
 
 
+def plot_parcel_number(fname, show=False, fmt="png"):
+    """
+    Plot the number of parcels in simulation.
+    """
+    h5reader = H5Reader()
+    h5reader.open(fname)
+
+    nsteps = h5reader.get_num_steps()
+
+    nparcels = np.zeros(nsteps)
+
+    for step in range(nsteps):
+        nparcels[step] = h5reader.get_num_parcels(step)
+
+    h5reader.close()
+
+    plt.figure()
+    plt.plot(nparcels, color='blue')
+    plt.grid(linestyle='dashed', zorder=-1)
+
+    plt.xlabel(r'number of iterations')
+    plt.ylabel(r'parcel count$')
+
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.25))
+
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fname)[0]
+        plt.savefig(prefix + '_parcel_number_profile.' + fmt, bbox_inches='tight')
+    plt.close()
+
+
 def plot_parcel_volume(fname, show=False, fmt="png"):
     """
     Plot the mean and standard deviation of the parcel volume
