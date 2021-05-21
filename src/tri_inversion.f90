@@ -98,7 +98,7 @@ module tri_inversion
 
         ! Inverts the vorticity "vortg" to obtain the gridded velocity field
         ! u = velog(:, :, 1) = -dpsig/dz and w = velog(:, :, 2) = dpsig/dx
-        ! and computes the velocity strain "velgradg".
+        ! and computes the velocity gradient "velgradg".
         subroutine vor2vel(vortg, velog, velgradg)
             double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1, 1)
             double precision, intent(out) :: velog(-1:nz+1, 0:nx-1, 2)
@@ -162,7 +162,7 @@ module tri_inversion
             velog(nz+1, :, 1) = velog(nz-1, :, 1)
             velog(nz+1, :, 2) = -velog(nz-1, :, 2)
 
-            ! Reverse x FFT of velocity strain
+            ! Reverse x FFT of velocity gradient
             call revfft(nz+1, nx, velgradg(0:nz, :, 1), xtrig, xfactors)
             call revfft(nz+1, nx, velgradg(0:nz, :, 3), xtrig, xfactors)
 
