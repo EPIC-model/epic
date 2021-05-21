@@ -4,7 +4,8 @@ from tools.plots import     \
     plot_rms_volume_error,  \
     plot_max_volume_error,  \
     plot_aspect_ratio,      \
-    plot_parcel_volume
+    plot_parcel_volume,     \
+    plot_parcel_number
 import os
 import sys
 
@@ -19,7 +20,8 @@ try:
         'rms-volume-error',
         'max-volume-error',
         'aspect-ratio',
-        'parcel-volume'
+        'parcel-volume',
+        'parcel-number'
     ]
 
 
@@ -66,6 +68,9 @@ try:
     elif args.kind == kinds[3]:
         for fname in args.filenames:
             plot_parcel_volume(fname, show=args.show, fmt=args.fmt)
+    elif args.kind == kinds[4]:
+        for fname in args.filenames:
+            plot_parcel_number(fname, show=args.show, fmt=args.fmt)
     else:
         raise ValuError("Plot '" + args.kind + "' not supported!")
 
