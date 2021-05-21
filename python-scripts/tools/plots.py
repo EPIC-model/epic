@@ -342,10 +342,7 @@ def plot_parcel_number(fname, show=False, fmt="png"):
     plt.grid(linestyle='dashed', zorder=-1)
 
     plt.xlabel(r'number of iterations')
-    plt.ylabel(r'parcel count$')
-
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.25))
-
+    plt.ylabel(r'parcel count')
     plt.tight_layout()
 
     if show:

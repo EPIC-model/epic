@@ -68,7 +68,7 @@ try:
     elif args.kind == kinds[3]:
         for fname in args.filenames:
             plot_parcel_volume(fname, show=args.show, fmt=args.fmt)
-    elif args.kind == kinds[3]:
+    elif args.kind == kinds[4]:
         for fname in args.filenames:
             plot_parcel_number(fname, show=args.show, fmt=args.fmt)
     else:
