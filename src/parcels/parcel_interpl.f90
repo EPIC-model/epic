@@ -343,8 +343,8 @@ module parcel_interpl
                      if(exact=='velocity') then
                         vel(n,:) = vel(n,:) &
                                               + 0.5d0 * get_flow_velocity(points(p, :))
-!                      elseif(exact=='strain') then
-!                         attrib(n,:)=attrib(n,:) + 0.5d0 * get_flow_gradient(points(p, :))
+                     elseif(exact=='strain') then
+                        vgrad(n,:)=vgrad(n,:) + 0.5d0 * get_flow_gradient(points(p, :))
                      else
                         print *, "Exact interpolation field passed not implemented"
                         stop
