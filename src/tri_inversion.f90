@@ -137,6 +137,9 @@ module tri_inversion
             ! Compute x derivative spectrally of psig:
             call deriv(nz+1, nx, hrkx, psig, velog(0:nz, :, 2))
 
+            ! Compute x derivative spectrally of w to obtain dw/dx
+            call deriv(nz+1, nx, hrkx, velog(0:nz, :, 2), velgradg(0:nz, :, 3))
+
             ! Reverse x FFT to define z velocity component velog(:, :, 2):
             call revfft(nz+1, nx, velog(0:nz, :, 2), xtrig, xfactors)
 
@@ -147,6 +150,9 @@ module tri_inversion
             velog(0:nz, 0, 1) = velog(0:nz, 0, 1) + ubar
             velog(0:nz, :, 1) = -velog(0:nz, :, 1)
 
+            ! Compute x derivative spectrally of u to obtain du/dx
+            call deriv(nz+1, nx, hrkx, velog(0:nz, :, 1), velgradg(0:nz, :, 1))
+
             ! Reverse x FFT:
             call revfft(nz+1, nx, velog(0:nz, :, 1), xtrig, xfactors)
 
@@ -156,23 +162,9 @@ module tri_inversion
             velog(nz+1, :, 1) = velog(nz-1, :, 1)
             velog(nz+1, :, 2) = -velog(nz-1, :, 2)
 
-
-            psig = velog(0:nz, 0:nx-1, 1)
-            call forfft(nz+1, nx, psig, xtrig, xfactors)
-
-            ! Compute x derivative spectrally of u to obtain du/dx
-            call deriv(nz+1, nx, hrkx, psig, velgradg(0:nz, :, 1))
-
-            psig = velog(0:nz, 0:nx-1, 2)
-            call forfft(nz+1, nx, psig, xtrig, xfactors)
-
-            ! Compute x derivative spectrally of w to obtain dw/dx
-            call deriv(nz+1, nx, hrkx, psig, velgradg(0:nz, :, 3))
-
             ! Reverse x FFT of velocity strain
             call revfft(nz+1, nx, velgradg(0:nz, :, 1), xtrig, xfactors)
             call revfft(nz+1, nx, velgradg(0:nz, :, 3), xtrig, xfactors)
-
 
             ! Use symmetry to fill z grid lines outside domain:
             ! u_x(nz+1) = u_x(nz-1)  (also for w_z)
@@ -182,6 +174,10 @@ module tri_inversion
             velgradg(nz+1, :, 1) = velgradg(nz-1, :, 1)
             velgradg(nz+1, :, 3) = -velgradg(nz-1, :, 3)
 
+            ! div(\vec{u}) = u_x + w_z = 0
+            ! curl(\vec{u}) = w_x - u_z = zeta (= vorticity)
+            ! --> u_z = w_x - zeta
+            ! --> w_z = - u_x
             velgradg(:, :, 2) = velgradg(:, :, 3) - vortg(:, :, 1)
             velgradg(:, :, 4) = -velgradg(:, :, 1)
         end subroutine vor2vel
