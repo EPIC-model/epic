@@ -12,6 +12,7 @@ program epic
     use parcel_merge, only : merge_ellipses
     use parcel_diverge, only : init_diverge, apply_diverge, apply_gradient
     use fields
+    use tri_inversion, only : init_inversion
     use parcel_interpl
     use rk4
     use model, only : model_init
@@ -49,10 +50,12 @@ program epic
 
             call rk4_alloc(max_num_parcels)
 
+            call init_inversion
+
             call init_diverge
 
-            ! update volume on the grid
-            call par2grid(parcels, parcels%volume, volg)
+            call par2grid
+
 
         end subroutine
 
@@ -91,27 +94,24 @@ program epic
                     call split_ellipses(parcels, parcel_info%lambda, parcel_info%vmaxfraction)
                 endif
 
-
-                ! update volume on the grid
-                call par2grid(parcels, parcels%volume, volg)
-
                 if (mod(iter, parcel_info%diverge_freq) == 0) then
+                    call vol2grid
                     do diverge_iter=1,parcel_info%diverge_iters
                         call apply_diverge(volg)
-                        call par2grid(parcels, parcels%volume, volg)
+                        call vol2grid
                         if(parcel_info%diverge_grad) then
                             call apply_gradient(volg,parcel_info%gradient_pref)
-                            call par2grid(parcels, parcels%volume, volg)
+                            call vol2grid
                         end if
                     end do
                  endif
 
-                ! update volume on the grid
-                call par2grid(parcels, parcels%volume, volg)
 
                 t = t + dt
                 iter = iter + 1
             end do
+
+            call par2grid
 
             ! write final step
             call write_h5_step(nw, t, dt)

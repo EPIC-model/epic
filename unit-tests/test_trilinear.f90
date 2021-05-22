@@ -1,26 +1,29 @@
 ! =============================================================================
 !                       Test trilinear interpolation
 !
-!         This unit test checks the trilinear interoplation par2grid
+!         This unit test checks the trilinear interpolation par2grid
 ! =============================================================================
 program test_trilinear
     use unit_test
     use constants, only : pi, zero, one
     use parcel_container
-    use parcel_interpl, only : par2grid, grid2par
+    use parcel_interpl, only : par2grid
     use options, only : parcel_info, box, interpl
     use ellipse, only : get_ab
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
-
+    use fields, only : volg, vortg
     implicit none
 
-    double precision :: volg(-1:33, 0:31, 1), error
+    double precision :: error
     integer :: i, j, k, jj, ii
 
     box%nc = (/32, 32/)
     box%extent =  (/0.4d0, 0.4d0/)
 
     call update_parameters()
+
+    allocate(volg(-1:nz+1, 0:nx-1))
+    allocate(vortg(-1:nz+1, 0:nx-1, 1))
 
     n_parcels = 4*nx*nz
     call parcel_alloc(n_parcels)
@@ -53,10 +56,13 @@ program test_trilinear
 
     interpl = 'trilinear'
 
-    call par2grid(parcels, parcels%volume, volg)
+    call par2grid
 
-    error = abs(sum(volg(0:nz, 0:nx-1, :)) - dble(ngrid) * vcell)
+    error = abs(sum(volg(0:nz, 0:nx-1)) - dble(ngrid) * vcell)
 
     call print_result_dp('Test trilinear (par2grid)', error, atol=dble(1.0e-14))
+
+    deallocate(volg)
+    deallocate(vortg)
 
 end program test_trilinear

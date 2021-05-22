@@ -62,6 +62,7 @@ module parcel_split
                 parcels%B(n_parcels, :) = parcels%B(i, :)
 
                 parcels%velocity(n_parcels, :) = parcels%velocity(i, :)
+                parcels%vorticity(n_parcels, :) = parcels%vorticity(i, :)
                 parcels%volume(n_parcels, 1) = parcels%volume(i, 1)
                 parcels%buoyancy(n_parcels, 1) = parcels%buoyancy(i, 1)
                 parcels%humidity(n_parcels, 1) = parcels%humidity(i, 1)

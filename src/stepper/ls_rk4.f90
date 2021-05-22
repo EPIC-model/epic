@@ -7,8 +7,10 @@ module ls_rk4
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
-    use parcel_interpl, only : grid2par, grid2par_add
-    use fields, only : velgradg, velog
+    use parcel_interpl, only : par2grid, grid2par, grid2par_add
+    use fields, only : velgradg, velog, vortg, vtend
+    use tri_inversion, only : vor2vel
+    use parameters, only : nx, nz
     implicit none
 
     integer, parameter :: dp=kind(0.d0)           ! double precision
@@ -16,7 +18,8 @@ module ls_rk4
     double precision, allocatable, dimension(:, :) :: &
         velocity_p, &   ! position integration
         strain, &   ! strain at parcel location
-        dbdt        ! B matrix integration
+        dbdt, &        ! B matrix integration
+        dwdt           ! vorticity integration
 
     double precision, parameter :: &
         ca1 = - 567301805773.0_dp/1357537059087.0_dp,  &
@@ -37,9 +40,10 @@ module ls_rk4
             integer, intent(in) :: num
 
             allocate(velocity_p(num, 2))
+            allocate(dwdt(num, 1))
+            allocate(strain(num, 4))
 
             if (parcel_info%is_elliptic) then
-                allocate(strain(num, 4))
                 allocate(dbdt(num, 2))
             endif
 
@@ -50,9 +54,10 @@ module ls_rk4
 
             ! TODO
             deallocate(velocity_p)
+            deallocate(dwdt)
+            deallocate(strain)
 
             if (parcel_info%is_elliptic) then
-               deallocate(strain)
                deallocate(dbdt)
             endif
 
@@ -71,18 +76,20 @@ module ls_rk4
         end subroutine ls_rk4_step
 
 
-        subroutine ls_rk4_elliptic_substep(ca,cb,dt,step)
+        subroutine ls_rk4_elliptic_substep(ca, cb, dt, step)
             double precision, intent(in) :: ca
             double precision, intent(in) :: cb
             double precision, intent(in) :: dt
             integer, intent(in) :: step
 
+            call par2grid
+            call vor2vel(vortg, velog, velgradg)
+
             if(step==1) then
-               call grid2par(parcels%position, parcels%volume, velocity_p, velog, parcels%B, exact='velocity')
+               call grid2par(velocity_p, dwdt, strain)
             else
-               call grid2par_add(parcels%position, parcels%volume, velocity_p, velog, parcels%B, exact='velocity')
+               call grid2par_add(velocity_p, dwdt, strain)
             endif
-            call grid2par(parcels%position, parcels%volume, strain, velgradg, parcels%B, exact='strain')
             if(step==1) then
                dbdt(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                            parcels%volume(1:n_parcels, 1))
@@ -92,12 +99,14 @@ module ls_rk4
                                            parcels%volume(1:n_parcels, 1))
             endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :) + cb*dt*dwdt(1:n_parcels, :)
             parcels%B(1:n_parcels,:) = parcels%B(1:n_parcels,:) + cb*dt*dbdt(1:n_parcels,:)
             call apply_parcel_bc(parcels%position, velocity_p)
             if(step==5) then
                return
             endif
             velocity_p(1:n_parcels,:) = ca*velocity_p(1:n_parcels,:)
+            dwdt(1:n_parcels, :) = ca * dwdt(1:n_parcels, :)
             dbdt(1:n_parcels,:) = ca*dbdt(1:n_parcels,:)
             return
 
@@ -107,33 +116,37 @@ module ls_rk4
         subroutine ls_rk4_elliptic(dt)
             double precision, intent(in) :: dt
 
-            call ls_rk4_elliptic_substep(ca1,cb1,dt,1)
-            call ls_rk4_elliptic_substep(ca2,cb2,dt,2)
-            call ls_rk4_elliptic_substep(ca3,cb3,dt,3)
-            call ls_rk4_elliptic_substep(ca4,cb4,dt,4)
-            call ls_rk4_elliptic_substep(ca5,cb5,dt,5)
+            call ls_rk4_elliptic_substep(ca1, cb1, dt, 1)
+            call ls_rk4_elliptic_substep(ca2, cb2, dt, 2)
+            call ls_rk4_elliptic_substep(ca3, cb3, dt, 3)
+            call ls_rk4_elliptic_substep(ca4, cb4, dt, 4)
+            call ls_rk4_elliptic_substep(ca5, cb5, dt, 5)
 
         end subroutine ls_rk4_elliptic
 
 
-        subroutine ls_rk4_non_elliptic_substep(ca,cb,dt,step)
+        subroutine ls_rk4_non_elliptic_substep(ca, cb, dt, step)
             double precision, intent(in) :: ca
             double precision, intent(in) :: cb
             double precision, intent(in) :: dt
             integer, intent(in) :: step
 
+            call par2grid
+            call vor2vel(vortg, velog, velgradg)
 
             if(step==1) then
-               call grid2par(parcels%position, parcels%volume, velocity_p, velog, exact='velocity')
+                call grid2par(velocity_p, dwdt, strain)
             else
-               call grid2par_add(parcels%position, parcels%volume, velocity_p, velog, exact='velocity')
+                call grid2par_add(velocity_p, dwdt, strain)
             endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :) + cb*dt*dwdt(1:n_parcels, :)
             call apply_parcel_bc(parcels%position, velocity_p)
             if(step==5) then
                return
             endif
             velocity_p(1:n_parcels,:) = ca*velocity_p(1:n_parcels,:)
+            dwdt(1:n_parcels, :) = ca * dwdt(1:n_parcels, :)
             return
 
         end subroutine ls_rk4_non_elliptic_substep
@@ -141,11 +154,11 @@ module ls_rk4
         subroutine ls_rk4_non_elliptic(dt)
             double precision, intent(in) :: dt
 
-            call ls_rk4_non_elliptic_substep(ca1,cb1,dt,1)
-            call ls_rk4_non_elliptic_substep(ca2,cb2,dt,2)
-            call ls_rk4_non_elliptic_substep(ca3,cb3,dt,4)
-            call ls_rk4_non_elliptic_substep(ca4,cb4,dt,4)
-            call ls_rk4_non_elliptic_substep(ca5,cb5,dt,5)
+            call ls_rk4_non_elliptic_substep(ca1, cb1, dt, 1)
+            call ls_rk4_non_elliptic_substep(ca2, cb2, dt, 2)
+            call ls_rk4_non_elliptic_substep(ca3, cb3, dt, 4)
+            call ls_rk4_non_elliptic_substep(ca4, cb4, dt, 4)
+            call ls_rk4_non_elliptic_substep(ca5, cb5, dt, 5)
 
         end subroutine ls_rk4_non_elliptic
 

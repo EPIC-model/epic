@@ -13,12 +13,12 @@ program test_free_slip
     use unit_test
     use constants, only : pi, zero, one, two
     use parcel_container
-    use parcel_interpl, only : par2grid
+    use parcel_interpl, only : vol2grid
     use options, only : parcel_info, box
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
+    use fields, only : volg
     implicit none
 
-    double precision :: volg(-1:5, 0:3, 1)
     integer :: i, j, k, jj, ii
     double precision, parameter :: angle = 0.5d0 * pi
     double precision, parameter :: lam = 3.5d0 ! >= 3.5 --> 1 ellipse point outside domain
@@ -28,6 +28,8 @@ program test_free_slip
     box%nc = (/4, 4/)
 
     call update_parameters()
+
+    allocate(volg(-1:nz+1, 0:nx-1))
 
     call parcel_alloc(64)
 
@@ -60,11 +62,14 @@ program test_free_slip
     parcels%B(:, 2) = 0.5d0 * (lam - one / lam) * dsin(two * angle)
 
 
-    call par2grid(parcels, parcels%volume, volg)
+    call vol2grid
 
 
-    error = abs(sum(volg(0:nz, 0:nx-1, :)) - ngrid * vcell)
+    error = abs(sum(volg(0:nz, 0:nx-1)) - ngrid * vcell)
 
     call print_result_dp('Test free slip', error)
+
+    call parcel_dealloc
+    deallocate(volg)
 
 end program test_free_slip

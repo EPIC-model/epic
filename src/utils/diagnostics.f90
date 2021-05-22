@@ -18,7 +18,7 @@ module diagnostics
 
         function get_max_abs_normalised_volume_error() result(err)
             double precision :: err
-            err = maxval(abs(volg(0:nz, 0:nx-1, :)  - vcell)) / vcell
+            err = maxval(abs(volg(0:nz, 0:nx-1)  - vcell)) / vcell
         end function get_max_abs_normalised_volume_error
 
         function get_rms_volume_error() result(rms)
@@ -27,7 +27,7 @@ module diagnostics
 
             ! do not take halo cells into account
             ! x indices run from 0 to nx-1
-            sqerrsum = sum((volg(0:nz, 0:nx-1, :) - vcell) ** 2)
+            sqerrsum = sum((volg(0:nz, 0:nx-1) - vcell) ** 2)
 
             rms = dsqrt(sqerrsum / dble(ncell)) / vcell
         end function get_rms_volume_error

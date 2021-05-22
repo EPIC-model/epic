@@ -8,20 +8,22 @@ program test_ellipse_multi_merge_symmetry
     use unit_test
     use constants, only : pi, one, two, four
     use parcel_container
-    use parcel_interpl, only : par2grid_elliptic_symmetry_check
+    use parcel_interpl, only : vol2grid_elliptic_symmetry_check
     use parcel_merge, only : merge_ellipses
     use options, only : parcel_info, box
-    use parameters, only : update_parameters, extent
+    use parameters, only : update_parameters, extent, nx, nz
+    use fields, only : volg
     use ellipse
     implicit none
 
     double precision :: error
-    double precision :: volg(-1:3, 0:1, 1)
 
     box%nc = (/2, 2/)
     box%extent = (/pi, pi/)
 
     call update_parameters()
+
+    allocate(volg(-1:nz+1, 0:nx-1))
 
     call parcel_alloc(6)
 
@@ -62,6 +64,8 @@ program test_ellipse_multi_merge_symmetry
     call print_result_dp('Test ellipse multi-merge symmetry (optimal)', error)
 
     call parcel_dealloc
+
+    deallocate(volg)
 
     contains
 
@@ -110,7 +114,7 @@ program test_ellipse_multi_merge_symmetry
             max_err = zero
             max_err = max(max_err, abs(dble(n_parcels - 2)))
 
-            call par2grid_elliptic_symmetry_check(parcels, parcels%volume, volg)
+            call vol2grid_elliptic_symmetry_check
 
             max_err = max(max_err, maxval(abs(volg)))
 

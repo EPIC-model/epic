@@ -97,17 +97,19 @@ module tri_inversion
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Inverts the vorticity "vortg" to obtain the gridded velocity field
-        ! u = velog(:, :, 1) = -dpsig/dz and w = velog(:, :, 2) = dpsig/dx.
-        subroutine vor2vel(vortg, velog)
-            double precision, intent(in)  :: vortg(0:nz, 0:nx-1)
+        ! u = velog(:, :, 1) = -dpsig/dz and w = velog(:, :, 2) = dpsig/dx
+        ! and computes the velocity gradient "velgradg".
+        subroutine vor2vel(vortg, velog, velgradg)
+            double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1, 1)
             double precision, intent(out) :: velog(-1:nz+1, 0:nx-1, 2)
+            double precision, intent(out) :: velgradg(-1:nz+1, 0:nx-1, 4)
             double precision              :: ubar(0:nz), obot(0:nx-1), otop(0:nx-1)
             integer                       :: iz
             double precision              :: dz2
             double precision              :: psig(0:nz, 0:nx-1) ! stream function
 
             ! copy vorticity
-            psig = vortg
+            psig = vortg(0:nz, 0:nx-1, 1)
 
             dz2  = f12 * dx(2)
 
@@ -132,18 +134,24 @@ module tri_inversion
             ! Laplacian(psig) = vortg --> psig
             call lapinv0(psig)
 
-            ! Compute x derivative spectrally of velog(:, :, 2):
+            ! Compute x derivative spectrally of psig:
             call deriv(nz+1, nx, hrkx, psig, velog(0:nz, :, 2))
+
+            ! Compute x derivative spectrally of w to obtain dw/dx
+            call deriv(nz+1, nx, hrkx, velog(0:nz, :, 2), velgradg(0:nz, :, 3))
 
             ! Reverse x FFT to define z velocity component velog(:, :, 2):
             call revfft(nz+1, nx, velog(0:nz, :, 2), xtrig, xfactors)
 
-            ! Compute z derivative of velog(:, :, 1) by compact differences:
+            ! Compute z derivative of psig by compact differences:
             call diffz0(psig, velog(0:nz, :, 1), obot, otop)
 
             ! Add on the x-independent part of velog and switch sign:
             velog(0:nz, 0, 1) = velog(0:nz, 0, 1) + ubar
             velog(0:nz, :, 1) = -velog(0:nz, :, 1)
+
+            ! Compute x derivative spectrally of u to obtain du/dx
+            call deriv(nz+1, nx, hrkx, velog(0:nz, :, 1), velgradg(0:nz, :, 1))
 
             ! Reverse x FFT:
             call revfft(nz+1, nx, velog(0:nz, :, 1), xtrig, xfactors)
@@ -153,6 +161,25 @@ module tri_inversion
             velog(-1, :, 2) = -velog(1, :, 2)
             velog(nz+1, :, 1) = velog(nz-1, :, 1)
             velog(nz+1, :, 2) = -velog(nz-1, :, 2)
+
+            ! Reverse x FFT of velocity gradient
+            call revfft(nz+1, nx, velgradg(0:nz, :, 1), xtrig, xfactors)
+            call revfft(nz+1, nx, velgradg(0:nz, :, 3), xtrig, xfactors)
+
+            ! Use symmetry to fill z grid lines outside domain:
+            ! u_x(nz+1) = u_x(nz-1)  (also for w_z)
+            ! w_x(nz+1) = -w_x(nz-1) (also for u_z)
+            velgradg(-1, :, 1) = velgradg(1, :, 1)
+            velgradg(-1, :, 3) = -velgradg(1, :, 3)
+            velgradg(nz+1, :, 1) = velgradg(nz-1, :, 1)
+            velgradg(nz+1, :, 3) = -velgradg(nz-1, :, 3)
+
+            ! div(\vec{u}) = u_x + w_z = 0
+            ! curl(\vec{u}) = w_x - u_z = zeta (= vorticity)
+            ! --> u_z = w_x - zeta
+            ! --> w_z = - u_x
+            velgradg(:, :, 2) = velgradg(:, :, 3) - vortg(:, :, 1)
+            velgradg(:, :, 4) = -velgradg(:, :, 1)
         end subroutine vor2vel
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

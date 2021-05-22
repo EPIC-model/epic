@@ -13,7 +13,7 @@ program test_tri_inversion
     implicit none
 
     double precision, allocatable :: ue(:, :), we(:, :)
-    double precision, allocatable :: vortg(:, :), velog(:, :, :)
+    double precision, allocatable :: vortg(:, :, :), velog(:, :, :), velgradg(:, :, :)
     double precision              :: k, m, px, xx, az, mz, zz, uea, a, max_err
     integer                       :: ix, iz
 
@@ -27,10 +27,13 @@ program test_tri_inversion
 
     allocate(ue(0:nz,0:nx-1))
     allocate(we(0:nz,0:nx-1))
-    allocate(vortg(0:nz,0:nx-1))
+    allocate(vortg(-1:nz+1,0:nx-1, 1))
     allocate(velog(-1:nz+1, 0:nx-1, 2))
+    allocate(velgradg(-1:nz+1, 0:nx-1, 4))
 
     velog = zero
+    vortg = zero
+    velgradg = zero
 
     ! Set up analytical test:
     px = one
@@ -47,19 +50,20 @@ program test_tri_inversion
             ue(iz,ix) = dexp(az) * (m * dsin(mz) - a * dcos(mz)) * dsin(xx) &
                       + px * dexp(mz) * m * (dsin(mz) - dcos(mz)) - uea
             we(iz,ix) = k * dexp(az) * dcos(mz) * dcos(xx)
-            vortg(iz,ix) = -two * m * (a * dexp(az) * dsin(xx) + px * m * dexp(mz)) * dsin(mz)
+            vortg(iz,ix, 1) = -two * m * (a * dexp(az) * dsin(xx) + px * m * dexp(mz)) * dsin(mz)
         enddo
     enddo
 
     call init_inversion
 
-    call vor2vel(vortg, velog)
+    call vor2vel(vortg, velog, velgradg)
 
     max_err = zero
 
     ! absolute error (reference obtained from David's program (tri_inversion.f90)
     max_err = max(max_err, abs(maxval(abs(velog(0:nz, :, 1) - ue)) - 0.72528494909253993d0))
     max_err = max(max_err, abs(maxval(abs(velog(0:nz, :, 2) - we)) - 0.000039197805283164300d0))
+
 
     ! rms error
     ue = (velog(0:nz, :, 1) - ue) ** 2
@@ -77,5 +81,6 @@ program test_tri_inversion
     deallocate(we)
     deallocate(vortg)
     deallocate(velog)
+    deallocate(velgradg)
 
 end program test_tri_inversion

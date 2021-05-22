@@ -10,14 +10,14 @@ program test_diverge
     use constants, only : pi, one, zero
     use parcel_container
     use parcel_diverge
-    use parcel_interpl, only : par2grid, grid2par
+    use parcel_interpl, only : vol2grid
     use options, only : parcel_info, box, interpl
     use ellipse, only : get_ab
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
-
+    use fields, only : volg
     implicit none
 
-    double precision :: volg(-1:33, 0:31, 1), final_error, init_error
+    double precision :: final_error, init_error
     integer :: i, j, k, jj, ii
 
     call  parse_command_line
@@ -26,6 +26,8 @@ program test_diverge
     box%extent =  (/0.4d0, 0.4d0/)
 
     call update_parameters()
+
+    allocate(volg(-1:nz+1, 0:nx-1))
 
     n_parcels = 4*nx*nz
     call parcel_alloc(n_parcels)
@@ -59,9 +61,9 @@ program test_diverge
     ! b12
     parcels%B(:, 2) = zero
 
-    call par2grid(parcels, parcels%volume, volg)
+    call vol2grid
 
-    init_error = sum(abs(volg(0:nz, 0:nx-1, :) - vcell))
+    init_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
 
     if (verbose) then
         write(*,*) 'test diverge, initial error'
@@ -71,16 +73,16 @@ program test_diverge
     call init_diverge
 
     do i = 1, 500
-        call par2grid(parcels, parcels%volume, volg)
+        call vol2grid
         call apply_diverge(volg)
-        call par2grid(parcels, parcels%volume, volg)
+        call vol2grid
         if (verbose) then
             write(*,*) 'test diverge, error after iteration ', i
-            write(*,*) sum(abs(volg(0:nz, 0:nx-1, :) - vcell))
+            write(*,*) sum(abs(volg(0:nz, 0:nx-1) - vcell))
         endif
     enddo
 
-    final_error = sum(abs(volg(0:nz, 0:nx-1, :) - vcell))
+    final_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
 
     if (verbose) then
         write(*,*) 'test diverge, final error'
@@ -88,6 +90,8 @@ program test_diverge
     end if
 
     call print_result_dp('Test diverge', final_error, init_error)
+
+    deallocate(volg)
 
 end program test_diverge
 
