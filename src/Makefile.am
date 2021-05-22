@@ -26,3 +26,6 @@ epic_SOURCES = 					\
 	stepper/ls_rk4.f90			\
 	stepper/rk4.f90 			\
 	epic.f90
+
+clean-local:
+	rm -f *.mod
