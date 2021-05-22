@@ -30,15 +30,15 @@ module parcel_init
             endif
 
             ! initialize the volume of each parcel
-            parcels%volume(1:n_parcels, 1) = vcell / dble(parcel_info%n_per_cell)
+            parcels%volume(1:n_parcels) = vcell / dble(parcel_info%n_per_cell)
 
             if (parcel_info%is_elliptic) then
                 deallocate(parcels%stretch)
 
 
                 ! initialze circles
-                parcels%B(1:n_parcels, 1) = get_ab(parcels%volume(1:n_parcels, 1)) ! B11
-                parcels%B(1:n_parcels, 2) = zero                                   ! B12
+                parcels%B(1:n_parcels, 1) = get_ab(parcels%volume(1:n_parcels)) ! B11
+                parcels%B(1:n_parcels, 2) = zero                                ! B12
 
             else
                 deallocate(parcels%B)

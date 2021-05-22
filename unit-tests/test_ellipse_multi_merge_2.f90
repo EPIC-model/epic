@@ -76,7 +76,7 @@ program test_ellipse_multi_merge_2
 
             n_parcels = 3
             parcels%position(1, :) = zero
-            parcels%volume(1, 1) = a1b1 * pi
+            parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
             parcels%B(1, 2) = zero
             parcels%buoyancy(1, 1) = 1.5d0
@@ -85,7 +85,7 @@ program test_ellipse_multi_merge_2
             ! small parcel left
             parcels%position(2, 1) = -d
             parcels%position(2, 2) = -d
-            parcels%volume(2, 1) = a2b2 * pi
+            parcels%volume(2) = a2b2 * pi
             parcels%B(2, 1) = a2b2
             parcels%B(2, 2) = zero
             parcels%buoyancy(2, 1) = 1.8d0
@@ -94,7 +94,7 @@ program test_ellipse_multi_merge_2
             ! small parcel right
             parcels%position(3, 1) = d
             parcels%position(3, 2) = d
-            parcels%volume(3, 1) = a2b2 * pi
+            parcels%volume(3) = a2b2 * pi
             parcels%B(3, 1) = a2b2
             parcels%B(3, 2) = zero
             parcels%buoyancy(3, 1) = 1.4d0
@@ -138,9 +138,9 @@ program test_ellipse_multi_merge_2
             max_err = max(max_err, abs(parcels%B(1, 2) - B12))
             max_err = max(max_err, abs(get_B22(parcels%B(1, 1), &
                                                parcels%B(1, 2), &
-                                               parcels%volume(1, 1)) - B22))
+                                               parcels%volume(1)) - B22))
             max_err = max(max_err, sum(abs(parcels%position(1, :))))
-            max_err = max(max_err, abs(parcels%volume(1, 1) - vol))
+            max_err = max(max_err, abs(parcels%volume(1) - vol))
             max_err = max(max_err, abs(parcels%buoyancy(1, 1) - buoy))
             max_err = max(max_err, abs(parcels%humidity(1, 1) - hum))
         end function eval_max_error

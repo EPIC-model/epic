@@ -79,19 +79,19 @@ program test_ellipse_multi_merge_symmetry
             n_parcels = 6
             parcels%position(1, 1) = -0.5d0
             parcels%position(1, 2) = 0.2d0
-            parcels%volume(1, 1) = a1b1 * pi
+            parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = 1.2d0 * a1b1
             parcels%B(1, 2) = -0.4d0
 
             parcels%position(2, 1) = -0.6d0
             parcels%position(2, 2) = 0.3d0
-            parcels%volume(2, 1) = a2b2 * pi
+            parcels%volume(2) = a2b2 * pi
             parcels%B(2, 1) = 0.8d0 * a2b2
             parcels%B(2, 2) = 0.5d0
 
             parcels%position(3, 1) = -0.3d0
             parcels%position(3, 2) = -0.1d0
-            parcels%volume(3, 1) = a2b2 * pi
+            parcels%volume(3) = a2b2 * pi
             parcels%B(3, 1) = 0.9d0 * a2b2
             parcels%B(3, 2) = -0.1d0
 
@@ -101,7 +101,7 @@ program test_ellipse_multi_merge_symmetry
             do n = 1, 3
                 parcels%position(3+n, 1) = -parcels%position(n, 1)
                 parcels%position(3+n, 2) =  parcels%position(n, 2)
-                parcels%volume(3+n, 1) = parcels%volume(n, 1)
+                parcels%volume(3+n) = parcels%volume(n)
                 parcels%B(3+n, 1) =  parcels%B(n, 1)
                 parcels%B(3+n, 2) = -parcels%B(n, 2)
             enddo

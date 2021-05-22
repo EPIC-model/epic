@@ -58,13 +58,13 @@ module ellipse
 
         function get_angles(B, volume, n_parcels) result(angle)
             double precision, intent(in)   :: B(:, :)
-            double precision, intent(in)   :: volume(:, :)
+            double precision, intent(in)   :: volume(:)
             integer,          intent(in)   :: n_parcels
             double precision               :: angle(n_parcels)
             integer                        :: n
 
             do n = 1, n_parcels
-                angle(n) = get_angle(B(n, 1), B(n, 2), volume(n, 1))
+                angle(n) = get_angle(B(n, 1), B(n, 2), volume(n))
             enddo
         end function get_angles
 

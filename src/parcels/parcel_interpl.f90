@@ -64,7 +64,7 @@ module parcel_interpl
             double precision  :: pvol, pvor
 
             do n = 1, n_parcels
-                pvol = parcels%volume(n, 1)
+                pvol = parcels%volume(n)
 
                 points = get_ellipse_points(parcels%position(n, :), &
                                             pvol, parcels%B(n, :))
@@ -99,7 +99,7 @@ module parcel_interpl
                 do n = 1, n_parcels
 
                     pos = parcels%position(n, :)
-                    pvol = parcels%volume(n, 1)
+                    pvol = parcels%volume(n)
                     pos(1) = dble(m) * pos(1)
                     V = dble(m) * pvol
                     B = parcels%B(n, :)
@@ -135,7 +135,7 @@ module parcel_interpl
             do n = 1, n_parcels
 
                 pos = parcels%position(n, :)
-                pvol = parcels%volume(n, 1)
+                pvol = parcels%volume(n)
 
                 ! ensure parcel is within the domain
                 call apply_periodic_bc(pos)
@@ -189,7 +189,7 @@ module parcel_interpl
             ncomp = 1
 
             do n = 1, n_parcels
-                pvol = parcels%volume(n, 1)
+                pvol = parcels%volume(n)
 
                 points = get_ellipse_points(parcels%position(n, :), &
                                             pvol, parcels%B(n, :))
@@ -236,7 +236,7 @@ module parcel_interpl
             do n = 1, n_parcels
 
                 pos = parcels%position(n, :)
-                pvol = parcels%volume(n, 1)
+                pvol = parcels%volume(n)
 
                 ! ensure parcel is within the domain
                 call apply_periodic_bc(pos)
@@ -335,7 +335,7 @@ module parcel_interpl
                do n = 1, n_parcels
 
                   points = get_ellipse_points(parcels%position(n, :), &
-                                              parcels%volume(n, 1),   &
+                                              parcels%volume(n),      &
                                               parcels%B(n, :))
 
                   do p = 1, 2
@@ -357,7 +357,7 @@ module parcel_interpl
             do n = 1, n_parcels
 
                 points = get_ellipse_points(parcels%position(n, :), &
-                                            parcels%volume(n, 1),   &
+                                            parcels%volume(n),      &
                                             parcels%B(n, :))
 
                 ! we have 2 points per ellipse

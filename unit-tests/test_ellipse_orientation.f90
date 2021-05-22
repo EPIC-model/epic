@@ -26,7 +26,7 @@ program test_ellipse_orientation
     parcels%position = zero
     parcels%volume = 0.25d0 * product(extent / (grid - 1))
 
-    V = parcels%volume(1, 1)
+    V = parcels%volume(1)
 
     a2 = (lam * V) / pi
     b2 = V / (pi * lam)

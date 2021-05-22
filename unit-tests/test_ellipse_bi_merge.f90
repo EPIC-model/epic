@@ -29,7 +29,7 @@ program test_ellipse_bi_merge
     ! parcels
     a1b1 = two
     parcels%position(1, :) = zero
-    parcels%volume(1, 1) = a1b1 * pi
+    parcels%volume(1) = a1b1 * pi
     parcels%B(1, 1) = a1b1
     parcels%B(1, 2) = zero
     parcels%buoyancy(1, 1) = 1.5d0
@@ -37,7 +37,7 @@ program test_ellipse_bi_merge
 
     a2b2 = 0.5d0
     parcels%position(2, :) = zero
-    parcels%volume(2, 1) = a2b2 * pi
+    parcels%volume(2) = a2b2 * pi
     parcels%B(2, 1) = a2b2
     parcels%B(2, 2) = zero
     parcels%buoyancy(2, 1) = 1.8d0
@@ -69,9 +69,9 @@ program test_ellipse_bi_merge
     error = max(error, abs(parcels%B(1, 2) - B12))
     error = max(error, abs(get_B22(parcels%B(1, 1), &
                                    parcels%B(1, 2), &
-                                   parcels%volume(1, 1)) - B22))
+                                   parcels%volume(1)) - B22))
     error = max(error, sum(abs(parcels%position(1, :))))
-    error = max(error, abs(parcels%volume(1, 1) - vol))
+    error = max(error, abs(parcels%volume(1) - vol))
     error = max(error, abs(parcels%buoyancy(1, 1) - buoy))
     error = max(error, abs(parcels%humidity(1, 1) - hum))
 
@@ -81,7 +81,7 @@ program test_ellipse_bi_merge
     n_parcels = 2
     a1b1 = two
     parcels%position(1, :) = zero
-    parcels%volume(1, 1) = a1b1 * pi
+    parcels%volume(1) = a1b1 * pi
     parcels%B(1, 1) = a1b1
     parcels%B(1, 2) = zero
     parcels%buoyancy(1, 1) = 1.5d0
@@ -89,7 +89,7 @@ program test_ellipse_bi_merge
 
     a2b2 = 0.5d0
     parcels%position(2, :) = zero
-    parcels%volume(2, 1) = a2b2 * pi
+    parcels%volume(2) = a2b2 * pi
     parcels%B(2, 1) = a2b2
     parcels%B(2, 2) = zero
     parcels%buoyancy(2, 1) = 1.8d0
@@ -110,9 +110,9 @@ program test_ellipse_bi_merge
     error = max(error, abs(parcels%B(1, 2) - B12))
     error = max(error, abs(get_B22(parcels%B(1, 1), &
                                    parcels%B(1, 2), &
-                                   parcels%volume(1, 1)) - B22))
+                                   parcels%volume(1)) - B22))
     error = max(error, sum(abs(parcels%position(1, :))))
-    error = max(error, abs(parcels%volume(1, 1) - vol))
+    error = max(error, abs(parcels%volume(1) - vol))
     error = max(error, abs(parcels%buoyancy(1, 1) - buoy))
     error = max(error, abs(parcels%humidity(1, 1) - hum))
 
