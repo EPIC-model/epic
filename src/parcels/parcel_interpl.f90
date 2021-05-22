@@ -178,6 +178,12 @@ module parcel_interpl
             vortg(0,  :, 1) = two * vortg(1,    :, 1) - vortg(2,    :, 1)
             vortg(nz, :, 1) = two * vortg(nz-1, :, 1) - vortg(nz-2, :, 1)
 
+            ! sum halo contribution into internal cells
+            ! (be aware that halo cell contribution at upper boundary
+            ! are added to cell nz)
+            nparg(0,    :) = nparg(0,    :) + nparg(-1, :)
+            nparg(nz-1, :) = nparg(nz-1, :) + nparg(nz, :)
+
         end subroutine par2grid
 
         subroutine par2grid_elliptic
@@ -196,7 +202,8 @@ module parcel_interpl
                                             pvol, parcels%B(n, :))
 
                 call get_index(parcels%position(n, :), i, j)
-                nparg(i, j) = nparg(i, j) + 1
+                i = mod(i + nx, nx)
+                nparg(j, i) = nparg(j, i) + 1
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -242,7 +249,8 @@ module parcel_interpl
                 pvol = parcels%volume(n, 1)
 
                 call get_index(pos, i, j)
-                nparg(i, j) = nparg(i, j) + 1
+                i = mod(i + nx, nx)
+                nparg(j, i) = nparg(j, i) + 1
 
                 ! ensure parcel is within the domain
                 call apply_periodic_bc(pos)
