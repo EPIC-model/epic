@@ -7,3 +7,4 @@ vortg    -- vorticity
 buoyg    -- buoyancy
 humg     -- specific humidity
 humlig   -- condensed humidity
+nparg    -- number of parcels per grid box

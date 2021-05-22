@@ -154,6 +154,7 @@ module parcel_interpl
         subroutine par2grid
             vortg = zero
             volg = zero
+            nparg = zero
 
             if (parcel_info%is_elliptic) then
                 call par2grid_elliptic
@@ -177,12 +178,24 @@ module parcel_interpl
             vortg(0,  :, 1) = two * vortg(1,    :, 1) - vortg(2,    :, 1)
             vortg(nz, :, 1) = two * vortg(nz-1, :, 1) - vortg(nz-2, :, 1)
 
+            ! sum halo contribution into internal cells
+            ! (be aware that halo cell contribution at upper boundary
+            ! are added to cell nz)
+            nparg(0,    :) = nparg(0,    :) + nparg(-1, :)
+            nparg(nz-1, :) = nparg(nz-1, :) + nparg(nz, :)
+
+            ! sanity check
+            if (sum(nparg(0:nz-1, :)) /= n_parcels) then
+                print *, "par2grid: Wrong total number of parcels!"
+                stop
+            endif
+
         end subroutine par2grid
 
         subroutine par2grid_elliptic
             integer           :: ncomp
             double precision  :: points(2, 2)
-            integer           :: n, p, c, l
+            integer           :: n, p, c, l, i, j
             double precision  :: pvol, pvor
 
             ! number of field components
@@ -194,6 +207,9 @@ module parcel_interpl
                 points = get_ellipse_points(parcels%position(n, :), &
                                             pvol, parcels%B(n, :))
 
+                call get_index(parcels%position(n, :), i, j)
+                i = mod(i + nx, nx)
+                nparg(j, i) = nparg(j, i) + 1
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -226,7 +242,7 @@ module parcel_interpl
 
         subroutine par2grid_non_elliptic
             integer          :: ncomp
-            integer          :: n, c, l
+            integer          :: n, c, l, i, j
             double precision :: pos(2)
             double precision :: pvor, pvol
 
@@ -237,6 +253,10 @@ module parcel_interpl
 
                 pos = parcels%position(n, :)
                 pvol = parcels%volume(n)
+
+                call get_index(pos, i, j)
+                i = mod(i + nx, nx)
+                nparg(j, i) = nparg(j, i) + 1
 
                 ! ensure parcel is within the domain
                 call apply_periodic_bc(pos)
