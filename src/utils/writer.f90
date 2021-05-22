@@ -101,6 +101,38 @@ module writer
             call h5sclose_f(dataspace, h5err)
         end subroutine write_h5_dataset_2d
 
+        subroutine write_h5_int_dataset_2d(group, name, data)
+            ! 12 March 2021
+            ! https://stackoverflow.com/questions/48816383/passing-character-strings-of-different-lengths-to-functions-in-fortran
+            character(*),     intent(in)     :: group
+            character(*),     intent(in)     :: name
+            integer,          intent(in)     :: data(:, :)
+            integer(hid_t)                   :: dset, dataspace
+            integer(hsize_t), dimension(1:2) :: dims
+
+            if (size(data) == 0) then
+                print *, "Error in 'write_h5_int_dataset_2d': ", &
+                         "No memory for '", name, "' allocated!"
+                stop
+            endif
+
+            dims = shape(data)
+
+            ! create space for data
+            call h5screate_simple_f(2, dims, dataspace, h5err)
+
+            ! create the dataset
+            call h5dcreate_f(h5file, group // "/" // name,              &
+                             H5T_NATIVE_INTEGER, dataspace, dset, h5err)
+
+            ! write dataset
+            call h5dwrite_f(dset, H5T_NATIVE_INTEGER, data, dims, h5err)
+
+            ! close all
+            call h5dclose_f(dset , h5err)
+            call h5sclose_f(dataspace, h5err)
+        end subroutine write_h5_int_dataset_2d
+
         subroutine write_h5_dataset_3d(group, name, data)
             character(*),     intent(in)     :: group
             character(*),     intent(in)     :: name

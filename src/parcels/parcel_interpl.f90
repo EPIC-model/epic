@@ -154,6 +154,7 @@ module parcel_interpl
         subroutine par2grid
             vortg = zero
             volg = zero
+            nparg = zero
 
             if (parcel_info%is_elliptic) then
                 call par2grid_elliptic
@@ -182,7 +183,7 @@ module parcel_interpl
         subroutine par2grid_elliptic
             integer           :: ncomp
             double precision  :: points(2, 2)
-            integer           :: n, p, c, l
+            integer           :: n, p, c, l, i, j
             double precision  :: pvol, pvor
 
             ! number of field components
@@ -194,6 +195,8 @@ module parcel_interpl
                 points = get_ellipse_points(parcels%position(n, :), &
                                             pvol, parcels%B(n, :))
 
+                call get_index(parcels%position(n, :), i, j)
+                nparg(i, j) = nparg(i, j) + 1
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -226,7 +229,7 @@ module parcel_interpl
 
         subroutine par2grid_non_elliptic
             integer          :: ncomp
-            integer          :: n, c, l
+            integer          :: n, c, l, i, j
             double precision :: pos(2)
             double precision :: pvor, pvol
 
@@ -237,6 +240,9 @@ module parcel_interpl
 
                 pos = parcels%position(n, :)
                 pvol = parcels%volume(n, 1)
+
+                call get_index(pos, i, j)
+                nparg(i, j) = nparg(i, j) + 1
 
                 ! ensure parcel is within the domain
                 call apply_periodic_bc(pos)

@@ -6,11 +6,12 @@ module fields
     use parameters, only : dx, dxi, extent, lower, nx, nz
     use constants, only : zero
     use hdf5
-    use writer, only : h5file,              &
-                       h5err,               &
-                       write_h5_dataset_2d, &
-                       write_h5_dataset_3d, &
-                       open_h5_group,       &
+    use writer, only : h5file,                  &
+                       h5err,                   &
+                       write_h5_dataset_2d,     &
+                       write_h5_int_dataset_2d, &
+                       write_h5_dataset_3d,     &
+                       open_h5_group,           &
                        get_step_group_name
     implicit none
 
@@ -28,6 +29,10 @@ module fields
 
     double precision, allocatable, dimension(:, :) :: &
         volg           ! volume scalar field (has 1 halo cell layer in z)
+
+
+    integer, allocatable, dimension(:, :) :: &
+        nparg          ! number of parcels per grid box (from -1 to nz and 0 to nx-1)
 
     contains
 
@@ -52,6 +57,8 @@ module fields
 
             allocate(humlig(-1:nz+1, 0:nx-1, 1))
 
+            allocate(nparg(-1:nz, 0:nx-1))
+
         end subroutine field_alloc
 
         subroutine field_default
@@ -65,6 +72,7 @@ module fields
             buoyg    = zero
             humg     = zero
             humlig   = zero
+            nparg    = zero
         end subroutine
 
         ! get the lower index of the cell the parcel is in
@@ -144,6 +152,9 @@ module fields
 
             call write_h5_dataset_3d(name, "liquid humidity", &
                                      humlig(0:nz, 0:nx-1, :))
+
+            call write_h5_int_dataset_2d(name, "num parcels per cell", &
+                                         nparg(-1:nz, 0:nx-1))
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)
