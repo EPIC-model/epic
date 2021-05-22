@@ -184,6 +184,12 @@ module parcel_interpl
             nparg(0,    :) = nparg(0,    :) + nparg(-1, :)
             nparg(nz-1, :) = nparg(nz-1, :) + nparg(nz, :)
 
+            ! sanity check
+            if (sum(nparg(0:nz-1, :)) /= n_parcels) then
+                print *, "par2grid: Wrong total number of parcels!"
+                stop
+            endif
+
         end subroutine par2grid
 
         subroutine par2grid_elliptic
