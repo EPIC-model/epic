@@ -26,7 +26,7 @@ module parser
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODEL/ output, box, parcel, stepper, time, flow, interpl
+            namelist /EPIC/ model, output, box, parcel, stepper, time, flow, interpl
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -39,7 +39,7 @@ module parser
             ! open and read Namelist file.
             open(action='read', file=filename, iostat=ios, newunit=fn)
 
-            read(nml=MODEL, iostat=ios, unit=fn)
+            read(nml=EPIC, iostat=ios, unit=fn)
 
             if (ios /= 0) then
                 print *, 'Error: invalid Namelist format.'

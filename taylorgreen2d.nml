@@ -1,4 +1,7 @@
-&MODEL
+&EPIC
+
+ model              = 'TaylorGreen'
+
  !
  ! output info
  !

@@ -14,6 +14,8 @@ module options
     ! configuration file
     character(len=32) :: filename = ''
 
+    character(len=32) :: model = 'TaylorGreen'
+
     !
     ! output options
     !
