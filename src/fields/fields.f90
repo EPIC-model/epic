@@ -32,7 +32,7 @@ module fields
 
 
     integer, allocatable, dimension(:, :) :: &
-        nparg          ! number of parcels per grid box (from -1 to nz and 0 to nx-1)
+        nparg          ! number of parcels per grid box (from 0 to nz-1 and 0 to nx-1)
 
     contains
 
@@ -57,7 +57,7 @@ module fields
 
             allocate(humlig(-1:nz+1, 0:nx-1, 1))
 
-            allocate(nparg(-1:nz, 0:nx-1))
+            allocate(nparg(0:nz-1, 0:nx-1))
 
         end subroutine field_alloc
 
@@ -154,7 +154,7 @@ module fields
                                      humlig(0:nz, 0:nx-1, :))
 
             call write_h5_int_dataset_2d(name, "num parcels per cell", &
-                                         nparg(-1:nz, 0:nx-1))
+                                         nparg)
 
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)

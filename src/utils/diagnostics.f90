@@ -6,10 +6,11 @@ module diagnostics
     use parameters, only : vcell, ncell, nx, nz
     use fields
     use hdf5
-    use writer, only : h5file,                        &
-                       h5err,                         &
-                       write_h5_double_scalar_attrib, &
-                       open_h5_group,       &
+    use writer, only : h5file,                         &
+                       h5err,                          &
+                       write_h5_double_scalar_attrib,  &
+                       write_h5_integer_scalar_attrib, &
+                       open_h5_group,                  &
                        get_step_group_name
     implicit none
 
@@ -39,6 +40,7 @@ module diagnostics
             character(:), allocatable     :: step
             character(:), allocatable     :: name
             double precision              :: rms_v, abserr_v
+            integer                       :: max_npar, min_npar
 
             step = trim(get_step_group_name(iter))
 
@@ -56,6 +58,12 @@ module diagnostics
 
             abserr_v = get_max_abs_normalised_volume_error()
             call write_h5_double_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
+
+            max_npar = maxval(nparg)
+            call write_h5_integer_scalar_attrib(group, "max num parcels per cell", max_npar)
+
+            min_npar = minval(nparg)
+            call write_h5_integer_scalar_attrib(group, "min num parcels per cell", min_npar)
 
 
             ! close all
