@@ -25,7 +25,7 @@ program test_ellipse_split
     b2 = ab / lam
 
     parcels%position(1, :) = zero
-    parcels%volume(1, 1) = ab * pi
+    parcels%volume(1) = ab * pi
     parcels%buoyancy(1, 1) = one
     parcels%humidity(1, 1) = one
 
@@ -56,7 +56,7 @@ program test_ellipse_split
     error = max(error, abs(parcels%B(1, 1) - B11))
     error = max(error, abs(parcels%B(1, 2) - B12))
     error = max(error, sum(abs(pos(1, :) - parcels%position(1, :))))
-    error = max(error, sum(abs(0.5d0 * ab * pi - parcels%volume(1, :))))
+    error = max(error, abs(0.5d0 * ab * pi - parcels%volume(1)))
     error = max(error, abs(parcels%buoyancy(1, 1) - one))
     error = max(error, abs(parcels%humidity(1, 1) - one))
 
@@ -65,7 +65,7 @@ program test_ellipse_split
     error = max(error, abs(parcels%B(2, 1) - B11))
     error = max(error, abs(parcels%B(2, 2) - B12))
     error = max(error, sum(abs(pos(2, :) - parcels%position(2, :))))
-    error = max(error, sum(abs(0.5d0 * ab * pi - parcels%volume(2, :))))
+    error = max(error, abs(0.5d0 * ab * pi - parcels%volume(2)))
     error = max(error, dble(abs(n_parcels - 2)))
     error = max(error, abs(parcels%buoyancy(2, 1) - one))
     error = max(error, abs(parcels%humidity(2, 1) - one))

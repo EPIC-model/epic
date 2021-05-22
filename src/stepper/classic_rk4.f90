@@ -112,7 +112,7 @@ module classic_rk4
             call vor2vel(vortg, velog, velgradg)
             call grid2par(k1o, w1o, strain)
             b1o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
-                                       parcels%volume(1:n_parcels, 1))
+                                       parcels%volume(1:n_parcels))
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(parcels%position, k1o)
@@ -129,7 +129,7 @@ module classic_rk4
             call vor2vel(vortg, velog, velgradg)
             call grid2par(k2o, w2o, strain)
             b2o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
-                                       parcels%volume(1:n_parcels, 1))
+                                       parcels%volume(1:n_parcels))
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(parcels%position, k2o)
@@ -146,7 +146,7 @@ module classic_rk4
             call vor2vel(vortg, velog, velgradg)
             call grid2par(k3o, w3o, strain)
             b3o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
-                                       parcels%volume(1:n_parcels, 1))
+                                       parcels%volume(1:n_parcels))
 
 
             ! apply velocity BC --> only important for free slip
@@ -163,7 +163,7 @@ module classic_rk4
             call vor2vel(vortg, velog, velgradg)
             call grid2par(k4o, w4o, strain)
             b4o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
-                                       parcels%volume(1:n_parcels, 1))
+                                       parcels%volume(1:n_parcels))
 
             ! apply velocity BC --> only important for free slip
             call apply_parcel_bc(parcels%position, k4o)

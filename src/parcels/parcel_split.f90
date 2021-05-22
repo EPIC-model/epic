@@ -25,14 +25,14 @@ module parcel_split
             double precision                           :: evec(2)
             double precision                           :: h
             integer                                    :: last_index
-            integer                                    :: i
+            integer                                    :: n
 
             last_index = n_parcels
 
-            do i = 1, last_index
-                B11 = parcels%B(i, 1)
-                B12 = parcels%B(i, 2)
-                V = parcels%volume(i, 1)
+            do n = 1, last_index
+                B11 = parcels%B(n, 1)
+                B12 = parcels%B(n, 2)
+                V = parcels%volume(n)
                 B22 = get_B22(B11, B12, V)
 
                 a2 = get_eigenvalue(B11, B12, B22)
@@ -50,25 +50,25 @@ module parcel_split
 
                 evec = get_eigenvector(a2, B12, B22)
 
-                parcels%B(i, 1) = B11 - 0.75d0 * a2 * evec(1) ** 2
-                parcels%B(i, 2) = B12 - 0.75d0 * a2 * (evec(1) * evec(2))
+                parcels%B(n, 1) = B11 - 0.75d0 * a2 * evec(1) ** 2
+                parcels%B(n, 2) = B12 - 0.75d0 * a2 * (evec(1) * evec(2))
 
                 h = 0.25d0 * dsqrt(three * a2)
-                parcels%volume(i, 1) = 0.5d0 * V
+                parcels%volume(n) = 0.5d0 * V
 
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
 
-                parcels%B(n_parcels, :) = parcels%B(i, :)
+                parcels%B(n_parcels, :) = parcels%B(n, :)
 
-                parcels%velocity(n_parcels, :) = parcels%velocity(i, :)
-                parcels%vorticity(n_parcels, :) = parcels%vorticity(i, :)
-                parcels%volume(n_parcels, 1) = parcels%volume(i, 1)
-                parcels%buoyancy(n_parcels, 1) = parcels%buoyancy(i, 1)
-                parcels%humidity(n_parcels, 1) = parcels%humidity(i, 1)
+                parcels%velocity(n_parcels, :) = parcels%velocity(n, :)
+                parcels%vorticity(n_parcels, :) = parcels%vorticity(n, :)
+                parcels%volume(n_parcels) = parcels%volume(n)
+                parcels%buoyancy(n_parcels, 1) = parcels%buoyancy(n, 1)
+                parcels%humidity(n_parcels, 1) = parcels%humidity(n, 1)
 
-                parcels%position(n_parcels, :) = parcels%position(i, :) - h * evec
-                parcels%position(i, :) = parcels%position(i, :)  + h * evec
+                parcels%position(n_parcels, :) = parcels%position(n, :) - h * evec
+                parcels%position(n, :) = parcels%position(n, :)  + h * evec
             enddo
 
             if (verbose) then

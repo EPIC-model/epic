@@ -39,7 +39,7 @@ program test_ellipse_bi_vs_multi_merge
     B11 = parcels%B(1, 1)
     B12 = parcels%B(1, 2)
     pos = parcels%position(1, :)
-    vol = parcels%volume(1, 1)
+    vol = parcels%volume(1)
 
     call parcel_setup
     parcel_info%merge_type = 'bi-geometric'
@@ -50,7 +50,7 @@ program test_ellipse_bi_vs_multi_merge
     error = max(error, abs(parcels%B(1, 1) - B11))
     error = max(error, abs(parcels%B(1, 2) - B12))
     error = max(error, sum(abs(parcels%position(1, :) - pos)))
-    error = max(error, abs(parcels%volume(1, 1) - vol))
+    error = max(error, abs(parcels%volume(1) - vol))
 
     call print_result_dp('Test ellipse bi-merge vs multi-merge (geometric)', error)
 
@@ -70,7 +70,7 @@ program test_ellipse_bi_vs_multi_merge
     B11 = parcels%B(1, 1)
     B12 = parcels%B(1, 2)
     pos = parcels%position(1, :)
-    vol = parcels%volume(1, 1)
+    vol = parcels%volume(1)
 
     call parcel_setup
     parcel_info%merge_type = 'bi-optimal'
@@ -81,7 +81,7 @@ program test_ellipse_bi_vs_multi_merge
     error = max(error, abs(parcels%B(1, 1) - B11))
     error = max(error, abs(parcels%B(1, 2) - B12))
     error = max(error, sum(abs(parcels%position(1, :) - pos)))
-    error = max(error, abs(parcels%volume(1, 1) - vol))
+    error = max(error, abs(parcels%volume(1) - vol))
 
     call print_result_dp('Test ellipse bi-merge vs multi-merge (optimal)', error)
 
@@ -100,14 +100,14 @@ program test_ellipse_bi_vs_multi_merge
             n_parcels = 2
             parcels%position(1, 1) = 1.5d0
             parcels%position(1, 2) = 0.2d0
-            parcels%volume(1, 1) = a1b1 * pi
+            parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
             parcels%B(1, 2) = zero
 
             ! small parcel left
             parcels%position(2, 1) = 1.5d0 - d
             parcels%position(2, 2) = 0.2d0 - d
-            parcels%volume(2, 1) = a2b2 * pi
+            parcels%volume(2) = a2b2 * pi
             parcels%B(2, 1) = a2b2
             parcels%B(2, 2) = zero
 

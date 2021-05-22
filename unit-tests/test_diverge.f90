@@ -56,7 +56,7 @@ program test_diverge
     parcels%volume = 0.25d0 * vcell
 
     ! b11
-    parcels%B(:, 1) = get_ab(parcels%volume(1:n_parcels, 1))
+    parcels%B(:, 1) = get_ab(parcels%volume(1:n_parcels))
 
     ! b12
     parcels%B(:, 2) = zero

@@ -41,7 +41,7 @@ module parcel_nearest
             vmin = vcell / dble(parcel_info%vfraction)
 
             ! These parcels are marked for merger:
-            l_merge(1:n_parcels)=(parcels%volume(1:n_parcels, 1) < vmin)
+            l_merge(1:n_parcels)=(parcels%volume(1:n_parcels) < vmin)
             nmerge=0
 
             !---------------------------------------------------------------------
@@ -127,7 +127,7 @@ module parcel_nearest
                             i=node(k)
                             delz=parcels%position(i,2)-z_small
                             ! Avoid merger with another small parcel
-                            vmerge=parcels%volume(i, 1)+parcels%volume(i0, 1) ! Summed area fraction:
+                            vmerge=parcels%volume(i)+parcels%volume(i0) ! Summed area fraction:
                             ! Minimise dsq/vmerge
                             ! Prevent division in comparisons here by storing both
                             ! vmergemin and dsqmin

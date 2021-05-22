@@ -81,11 +81,11 @@ module parcel_merge
             B12_1 = parcels%B(is, 2)
             B12_2 = parcels%B(ib, 2)
 
-            B22_1 = get_B22(B11_1, B12_1, parcels%volume(is, 1))
-            B22_2 = get_B22(B11_2, B12_2, parcels%volume(ib, 1))
+            B22_1 = get_B22(B11_1, B12_1, parcels%volume(is))
+            B22_2 = get_B22(B11_2, B12_2, parcels%volume(ib))
 
-            a1b1 = get_ab(parcels%volume(is, 1))
-            a2b2 = get_ab(parcels%volume(ib, 1))
+            a1b1 = get_ab(parcels%volume(is))
+            a2b2 = get_ab(parcels%volume(ib))
 
             ab = a1b1 + a2b2
             abi = one / ab
@@ -123,7 +123,7 @@ module parcel_merge
                                      + mu2 * parcels%vorticity(ib, 1)
 
             ! update volume
-            parcels%volume(ib, 1) = ab * pi
+            parcels%volume(ib) = ab * pi
         end subroutine do_bimerge
 
 
@@ -207,7 +207,7 @@ module parcel_merge
                     loca(ib) = l
 
                     ! vm will contain the total volume of the merged parcel
-                    vm(l) = parcels%volume(ib, 1)
+                    vm(l) = parcels%volume(ib)
 
                     !x0 stores the x centre of the large parcel
                     x0(l) = parcels%position(ib, 1)
@@ -216,12 +216,12 @@ module parcel_merge
                     xm(l) = zero
 
                     ! zm will contain v(ib)*z(ib)+sum{v(is)*z(is)}
-                    zm(l) = parcels%volume(ib, 1) * parcels%position(ib, 2)
+                    zm(l) = parcels%volume(ib) * parcels%position(ib, 2)
 
                     ! buoyancy and humidity
-                    buoym(l) = parcels%volume(ib, 1) * parcels%buoyancy(ib, 1)
-                    hum(l) = parcels%volume(ib, 1) * parcels%humidity(ib, 1)
-                    vortm(l) = parcels%volume(ib, 1) * parcels%vorticity(ib, 1)
+                    buoym(l) = parcels%volume(ib) * parcels%buoyancy(ib, 1)
+                    hum(l) = parcels%volume(ib) * parcels%humidity(ib, 1)
+                    vortm(l) = parcels%volume(ib) * parcels%vorticity(ib, 1)
 
                     B11m(l) = zero
                     B12m(l) = zero
@@ -232,21 +232,21 @@ module parcel_merge
                 ! "is" refers to the small parcel index
                 is = isma(m) !Small parcel
                 n = loca(ib)  !Index of merged parcel
-                vm(n) = vm(n) + parcels%volume(is, 1) !Accumulate volume of merged parcel
+                vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
 
                 ! works across periodic edge
                 delx = get_delx(parcels%position(is, 1), x0(n))
 
                 ! Accumulate sum of v(is)*(x(is)-x(ib))
-                xm(n) = xm(n) + parcels%volume(is, 1) * delx
+                xm(n) = xm(n) + parcels%volume(is) * delx
 
                 ! Accumulate v(ib)*z(ib)+sum{v(is)*z(is)}
-                zm(n) = zm(n) + parcels%volume(is, 1) * parcels%position(is, 2)
+                zm(n) = zm(n) + parcels%volume(is) * parcels%position(is, 2)
 
                 ! Accumulate buoyancy and humidity
-                buoym(n) = buoym(n) + parcels%volume(is, 1) * parcels%buoyancy(is, 1)
-                hum(n) = hum(n) + parcels%volume(is, 1) * parcels%humidity(is, 1)
-                vortm(n) = vortm(n) + parcels%volume(is, 1) * parcels%vorticity(is, 1)
+                buoym(n) = buoym(n) + parcels%volume(is) * parcels%buoyancy(is, 1)
+                hum(n) = hum(n) + parcels%volume(is) * parcels%humidity(is, 1)
+                vortm(n) = vortm(n) + parcels%volume(is) * parcels%vorticity(is, 1)
             enddo
 
             ! Obtain the merged parcel centres
@@ -279,17 +279,17 @@ module parcel_merge
 
                     vmerge = one / vm(l)
 
-                    B22 = get_B22(parcels%B(ib, 1), parcels%B(ib, 2), parcels%volume(ib, 1))
+                    B22 = get_B22(parcels%B(ib, 1), parcels%B(ib, 2), parcels%volume(ib))
 
                     delx = get_delx(parcels%position(ib, 1), xm(l))
                     dely = parcels%position(ib, 2) - zm(l)
 
-                    mu = parcels%volume(ib, 1) * vmerge
+                    mu = parcels%volume(ib) * vmerge
                     B11m(l) = mu * (four * delx ** 2 + parcels%B(ib, 1))
                     B12m(l) = mu * (four * delx * dely + parcels%B(ib, 2))
                     B22m(l) = mu * (four * dely ** 2 + B22)
 
-                    parcels%volume(ib, 1)  = vm(l)
+                    parcels%volume(ib)  = vm(l)
                     parcels%position(ib, 1) = xm(l)
                     parcels%position(ib, 2) = zm(l)
 
@@ -307,10 +307,10 @@ module parcel_merge
                 delx = get_delx(parcels%position(is, 1), xm(n))
                 dely = parcels%position(is, 2) - zm(n)
 
-                B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is, 1))
+                B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is))
 
                 ! volume fraction A_{is} / A
-                mu = vmerge * parcels%volume(is, 1)
+                mu = vmerge * parcels%volume(is)
 
                 B11m(n) = B11m(n) + mu * (four * delx ** 2   + parcels%B(is, 1))
                 B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(is, 2))

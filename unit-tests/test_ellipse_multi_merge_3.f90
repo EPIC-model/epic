@@ -75,21 +75,21 @@ program test_ellipse_multi_merge_3
             n_parcels = 3
             parcels%position(1, 1) = 1.5d0
             parcels%position(1, 2) = 0.2d0
-            parcels%volume(1, 1) = a1b1 * pi
+            parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
             parcels%B(1, 2) = zero
 
             ! small parcel left
             parcels%position(2, 1) = 1.5d0 - d
             parcels%position(2, 2) = 0.2d0 -d
-            parcels%volume(2, 1) = a2b2 * pi
+            parcels%volume(2) = a2b2 * pi
             parcels%B(2, 1) = a2b2
             parcels%B(2, 2) = zero
 
             ! small parcel right
             parcels%position(3, 1) = -extent(1) + 1.5d0 + d
             parcels%position(3, 2) = 0.2d0 + d
-            parcels%volume(3, 1) = a2b2 * pi
+            parcels%volume(3) = a2b2 * pi
             parcels%B(3, 1) = a2b2
             parcels%B(3, 2) = zero
 
@@ -128,9 +128,9 @@ program test_ellipse_multi_merge_3
             max_err = max(max_err, abs(parcels%B(1, 2) - B12))
             max_err = max(max_err, abs(get_B22(parcels%B(1, 1), &
                                                parcels%B(1, 2), &
-                                               parcels%volume(1, 1)) - B22))
+                                               parcels%volume(1)) - B22))
             max_err = max(max_err, sum(abs(parcels%position(1, :) - (/1.5d0, 0.2d0/))))
-            max_err = max(max_err, abs(parcels%volume(1, 1) - vol))
+            max_err = max(max_err, abs(parcels%volume(1) - vol))
         end function eval_max_error
 
 
