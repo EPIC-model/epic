@@ -11,7 +11,7 @@ program test_trilinear
     use options, only : parcel_info, box, interpl
     use ellipse, only : get_ab
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
-    use fields, only : volg, vortg
+    use fields, only : volg, field_alloc
     implicit none
 
     double precision :: error
@@ -22,8 +22,7 @@ program test_trilinear
 
     call update_parameters()
 
-    allocate(volg(-1:nz+1, 0:nx-1))
-    allocate(vortg(-1:nz+1, 0:nx-1, 1))
+    call field_alloc
 
     n_parcels = 4*nx*nz
     call parcel_alloc(n_parcels)
@@ -40,8 +39,6 @@ program test_trilinear
             enddo
         enddo
     enddo
-
-    volg = zero
 
     parcel_info%is_elliptic = .true.
 
@@ -61,8 +58,5 @@ program test_trilinear
     error = abs(sum(volg(0:nz, 0:nx-1)) - dble(ngrid) * vcell)
 
     call print_result_dp('Test trilinear (par2grid)', error, atol=dble(1.0e-14))
-
-    deallocate(volg)
-    deallocate(vortg)
 
 end program test_trilinear
