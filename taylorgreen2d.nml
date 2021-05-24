@@ -41,6 +41,8 @@
 
  parcel%correction_iters = 2
 
+ parcel%apply_laplace = .true.
+
  parcel%apply_gradient = .true.
 
  parcel%gradient_pref = 0.3

@@ -49,6 +49,7 @@ module options
         double precision :: vfraction    = 36.0d0         ! volume fraction in merge
         integer          :: correction_freq = 1           ! parcel correction frequency, 1 = call module every step
         integer          :: correction_iters= 1           ! parcel correction iterations
+        logical          :: apply_laplace = .true.        ! use Laplacian parcel correction
         logical          :: apply_gradient = .true.       ! use gradient descent to adjust parcel positions on small scale
         double precision :: gradient_pref= 0.3d0          ! prefactor for gradient descent
         double precision :: vmaxfraction = 2.0         ! prefactor for gradient descent
