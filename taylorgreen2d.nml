@@ -37,11 +37,11 @@
 
  parcel%vmaxfraction = 2.89
 
- parcel%diverge_freq = 1
+ parcel%correction_freq = 1
 
- parcel%diverge_iters = 2
+ parcel%correction_iters = 2
 
- parcel%diverge_grad = .true.
+ parcel%apply_gradient = .true.
 
  parcel%gradient_pref = 0.3
 

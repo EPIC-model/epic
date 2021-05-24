@@ -66,7 +66,7 @@ program epic
             double precision :: dt   = zero ! time step
             integer          :: iter = 1    ! simulation iteration
             integer          :: nw   = 0    ! number of writes to h5
-            integer          :: diverge_iter! iterator for divergence correction
+            integer          :: cor_iter    ! iterator for parcel correction
 
             do while (t <= time%limit)
 
@@ -94,12 +94,12 @@ program epic
                     call split_ellipses(parcels, parcel_info%lambda, parcel_info%vmaxfraction)
                 endif
 
-                if (mod(iter, parcel_info%diverge_freq) == 0) then
+                if (mod(iter, parcel_info%correction_freq) == 0) then
                     call vol2grid
-                    do diverge_iter=1,parcel_info%diverge_iters
+                    do cor_iter=1,parcel_info%correction_iters
                         call apply_laplace(volg)
                         call vol2grid
-                        if(parcel_info%diverge_grad) then
+                        if(parcel_info%apply_gradient) then
                             call apply_gradient(volg,parcel_info%gradient_pref)
                             call vol2grid
                         end if
