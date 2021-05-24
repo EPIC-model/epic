@@ -97,9 +97,11 @@ program epic
                 if (mod(iter, parcel_info%correction_freq) == 0) then
                     call vol2grid
                     do cor_iter=1,parcel_info%correction_iters
-                        call apply_laplace(volg)
-                        call vol2grid
-                        if(parcel_info%apply_gradient) then
+                        if (parcel_info%apply_laplace) then
+                            call apply_laplace(volg)
+                            call vol2grid
+                        endif
+                        if (parcel_info%apply_gradient) then
                             call apply_gradient(volg,parcel_info%gradient_pref)
                             call vol2grid
                         end if
