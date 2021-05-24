@@ -5,7 +5,7 @@
 !         the parcels with a small deviation from the optimal position.
 !         It then performs 500 relaxation steps.
 ! =============================================================================
-program test_gradient_correction
+program test_parcel_correction
    use unit_test
     use constants, only : pi, one, zero
     use parcel_container
@@ -94,4 +94,4 @@ program test_gradient_correction
 
     deallocate(volg)
 
-end program test_gradient_correction
+end program test_parcel_correction
