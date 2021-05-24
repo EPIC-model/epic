@@ -3,8 +3,10 @@
 ! =============================================================================
 module diagnostics
     use parcel_container
-    use parameters, only : vcell, ncell, nx, nz
+    use constants, only : zero
+    use parameters, only : vcell, nx, nz, ngrid
     use fields
+    use taylorgreen, only : get_flow_vorticity
     use hdf5
     use writer, only : h5file,                         &
                        h5err,                          &
@@ -30,8 +32,27 @@ module diagnostics
             ! x indices run from 0 to nx-1
             sqerrsum = sum((volg(0:nz, 0:nx-1) - vcell) ** 2)
 
-            rms = dsqrt(sqerrsum / dble(ncell)) / vcell
+            rms = dsqrt(sqerrsum / dble(ngrid)) / vcell
         end function get_rms_volume_error
+
+        function get_rms_vorticity_error() result(rms)
+            double precision :: rms
+            double precision :: sqerrsum, vexact, pos(2)
+            integer          :: i, j
+
+            sqerrsum = zero
+            do j = 0, nz
+                do i = 0, nx-1
+                    call get_position(i, j, pos)
+                    vexact = get_flow_vorticity(pos)
+                    sqerrsum = sqerrsum + (vortg(j, i, 1) - vexact) ** 2
+                enddo
+            enddo
+
+            rms = dsqrt(sqerrsum / dble(ngrid))
+
+        end function get_rms_vorticity_error
+
 
         subroutine write_h5_diagnostics(iter)
             integer, intent(in)           :: iter ! iteration
@@ -64,6 +85,9 @@ module diagnostics
 
             min_npar = minval(nparg)
             call write_h5_integer_scalar_attrib(group, "min num parcels per cell", min_npar)
+
+            rms_v = get_rms_vorticity_error()
+            call write_h5_double_scalar_attrib(group, "rms vorticity error", rms_v)
 
 
             ! close all
