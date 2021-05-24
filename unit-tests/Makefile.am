@@ -17,8 +17,8 @@ unittests_PROGRAMS = 				\
 	test_fft_1				\
 	test_fft_2				\
 	test_trilinear				\
-	test_diverge				\
-	test_diverge_gradient		  	\
+	test_laplace_correction			\
+	test_parcel_correction		  	\
 	test_ellipse_split			\
 	test_ellipse_bi_merge			\
 	test_ellipse_multi_merge_1		\
@@ -37,8 +37,8 @@ test_free_slip_SOURCES = test_free_slip.f90 unit_test.f90
 test_fft_1_SOURCES = test_fft_1.f90 unit_test.f90
 test_fft_2_SOURCES = test_fft_2.f90 unit_test.f90
 test_trilinear_SOURCES = test_trilinear.f90 unit_test.f90
-test_diverge_SOURCES = test_diverge.f90 unit_test.f90
-test_diverge_gradient_SOURCES = test_diverge_gradient.f90 unit_test.f90
+test_laplace_correction_SOURCES = test_laplace_correction.f90 unit_test.f90
+test_parcel_correction_SOURCES = test_parcel_correction.f90 unit_test.f90
 test_ellipse_split_SOURCES = test_ellipse_split.f90 unit_test.f90
 test_ellipse_bi_merge_SOURCES = test_ellipse_bi_merge.f90 unit_test.f90
 test_ellipse_multi_merge_1_SOURCES = test_ellipse_multi_merge_1.f90 unit_test.f90

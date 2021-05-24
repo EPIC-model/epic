@@ -8,7 +8,7 @@
 !           Initialise data first using inipar.f90
 !===================================================================
 
-module parcel_diverge
+module parcel_correction
     ! import FFT library:
     use stafft
     use deriv1d
@@ -37,12 +37,12 @@ module parcel_diverge
         double precision, allocatable :: xtrig(:)
         integer                       :: xfactors(5)
 
-    public :: init_diverge, apply_diverge, apply_gradient
+    public :: init_parcel_correction, apply_laplace, apply_gradient
 
     contains
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        subroutine init_diverge
+        subroutine init_parcel_correction
             double precision :: a0(0:nx-1), a0b(0:nx-1), ksq(0:nx-1)
             double precision :: dzisq
             integer          :: nwx, kx, iz
@@ -120,11 +120,11 @@ module parcel_diverge
             enddo
             htda(nz) = one / (f76 + f16 * etda(nz-2))
 
-    end subroutine init_diverge
+    end subroutine init_parcel_correction
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    subroutine apply_diverge(volg)
+    subroutine apply_laplace(volg)
         double precision, intent(in) :: volg(-1:, 0:)
         double precision             :: phi(0:nz,0:nx-1), ud(-1:nz+1,0:nx-1), wd(-1:nz+1,0:nx-1)
         double precision             :: wbar(0:nz)
@@ -181,7 +181,7 @@ module parcel_diverge
 
         call apply_parcel_bc(parcels%position,parcels%velocity)
 
-    end subroutine apply_diverge
+    end subroutine apply_laplace
 
     subroutine apply_gradient(volg, prefactor)
         double precision, intent(in) :: volg(-1:, 0:)
@@ -322,4 +322,4 @@ module parcel_diverge
 
     end subroutine
 
-end module parcel_diverge
+end module parcel_correction
