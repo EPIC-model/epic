@@ -1,15 +1,15 @@
 ! =============================================================================
-!                       Test diverge module
+!                        Test parcel correction module
 !
-!         This unit test checks the diverge module by initializing
+!         This unit test checks the parcel correction by initializing
 !         the parcels with a small deviation from the optimal position.
 !         It then performs 500 relaxation steps.
 ! =============================================================================
-program test_diverge_gradient
+program test_gradient_correction
    use unit_test
     use constants, only : pi, one, zero
     use parcel_container
-    use parcel_diverge
+    use parcel_correction
     use parcel_interpl, only : vol2grid
     use options, only : parcel_info, box, interpl
     use ellipse, only : get_ab
@@ -67,31 +67,31 @@ program test_diverge_gradient
     init_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
 
     if (verbose) then
-        write(*,*) 'Test diverge and gradient, initial error'
+        write(*,*) 'Test laplace and gradient, initial error'
         write(*,*) init_error
     endif
 
-    call init_diverge
+    call init_parcel_correction
 
     do i = 1, 500
         call vol2grid
-        call apply_diverge(volg)
+        call apply_laplace(volg)
         call vol2grid
         call apply_gradient(volg,0.30d0)
         call vol2grid
         if (verbose) then
-            write(*,*) 'Test diverge and gradient, error after iteration ', i
+            write(*,*) 'Test laplace and gradient, error after iteration ', i
             write(*,*) sum(abs(volg(0:nz, 0:nx-1) - vcell))
         endif
     enddo
 
     if (verbose) then
-        write(*,*) 'Test diverge and gradient, final error'
+        write(*,*) 'Test laplace and gradient, final error'
         write(*,*) final_error
     endif
 
-    call print_result_dp('Test diverge and gradient', final_error, init_error)
+    call print_result_dp('Test laplace and gradient', final_error, init_error)
 
     deallocate(volg)
 
-end program test_diverge_gradient
+end program test_gradient_correction

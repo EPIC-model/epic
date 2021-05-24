@@ -1,15 +1,15 @@
 ! =============================================================================
-!                       Test diverge module
+!                       Test parcel laplace correction module
 !
-!         This unit test checks the diverge module by initializing
+!         This unit test checks the correction module by initializing
 !         the parcels with a small deviation from the optimal position.
 !         It then performs 500 relaxation steps.
 ! =============================================================================
-program test_diverge
+program test_laplace_correction
     use unit_test
     use constants, only : pi, one, zero
     use parcel_container
-    use parcel_diverge
+    use parcel_correction
     use parcel_interpl, only : vol2grid
     use options, only : parcel_info, box, interpl
     use ellipse, only : get_ab
@@ -66,18 +66,18 @@ program test_diverge
     init_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
 
     if (verbose) then
-        write(*,*) 'test diverge, initial error'
+        write(*,*) 'test laplace correction, initial error'
         write(*,*) init_error
     endif
 
-    call init_diverge
+    call init_parcel_correction
 
     do i = 1, 500
         call vol2grid
-        call apply_diverge(volg)
+        call apply_laplace(volg)
         call vol2grid
         if (verbose) then
-            write(*,*) 'test diverge, error after iteration ', i
+            write(*,*) 'test laplace correction, error after iteration ', i
             write(*,*) sum(abs(volg(0:nz, 0:nx-1) - vcell))
         endif
     enddo
@@ -85,13 +85,13 @@ program test_diverge
     final_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
 
     if (verbose) then
-        write(*,*) 'test diverge, final error'
+        write(*,*) 'test laplace correction, final error'
         write(*,*) final_error
     end if
 
-    call print_result_dp('Test diverge', final_error, init_error)
+    call print_result_dp('Test laplace correction', final_error, init_error)
 
     deallocate(volg)
 
-end program test_diverge
+end program test_laplace_correction
 
