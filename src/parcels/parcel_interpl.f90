@@ -155,6 +155,7 @@ module parcel_interpl
             vortg = zero
             volg = zero
             nparg = zero
+            buoyg = zero
 
             if (parcel_info%is_elliptic) then
                 call par2grid_elliptic
@@ -177,6 +178,13 @@ module parcel_interpl
             ! linear extrapolation
             vortg(0,  :, 1) = two * vortg(1,    :, 1) - vortg(2,    :, 1)
             vortg(nz, :, 1) = two * vortg(nz-1, :, 1) - vortg(nz-2, :, 1)
+
+            ! exclude halo cells to avoid division by zero
+            buoyg(0:nz, :) = buoyg(0:nz, :) / volg(0:nz, :)
+
+            ! linear extrapolation
+            buoyg(0,  :) = two * buoyg(1,    :) - buoyg(2,    :)
+            buoyg(nz, :) = two * buoyg(nz-1, :) - buoyg(nz-2, :)
 
             ! sum halo contribution into internal cells
             ! (be aware that halo cell contribution at upper boundary
@@ -232,6 +240,9 @@ module parcel_interpl
                     enddo
 
                     do l = 1, ngp
+                        buoyg(js(l), is(l)) = buoyg(js(l), is(l)) &
+                                            + 0.5d0 * weights(l) * pvol * parcels%buoyancy(n)
+
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
                                            + 0.5d0 * weights(l) * pvol
                     enddo
@@ -277,6 +288,9 @@ module parcel_interpl
                 enddo
 
                 do l = 1, ngp
+                    buoyg(js(l), is(l)) = buoyg(js(l), is(l)) &
+                                        + weights(l) * pvol * parcels%buoyancy(n)
+
                     volg(js(l), is(l)) = volg(js(l), is(l)) + weights(l) * pvol
                 enddo
             enddo
