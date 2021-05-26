@@ -113,11 +113,11 @@ module parcel_merge
                                     + mu2 * parcels%position(ib, 2)
 
             ! update buoyancy, humidity and vorticity
-            parcels%buoyancy(ib, 1) = mu1 * parcels%buoyancy(is, 1) &
-                                    + mu2 * parcels%buoyancy(ib, 1)
+            parcels%buoyancy(ib) = mu1 * parcels%buoyancy(is) &
+                                 + mu2 * parcels%buoyancy(ib)
 
-            parcels%humidity(ib, 1) = mu1 * parcels%humidity(is, 1) &
-                                    + mu2 * parcels%humidity(ib, 1)
+            parcels%humidity(ib) = mu1 * parcels%humidity(is) &
+                                 + mu2 * parcels%humidity(ib)
 
             parcels%vorticity(ib, 1) = mu1 * parcels%vorticity(is, 1) &
                                      + mu2 * parcels%vorticity(ib, 1)
@@ -219,8 +219,8 @@ module parcel_merge
                     zm(l) = parcels%volume(ib) * parcels%position(ib, 2)
 
                     ! buoyancy and humidity
-                    buoym(l) = parcels%volume(ib) * parcels%buoyancy(ib, 1)
-                    hum(l) = parcels%volume(ib) * parcels%humidity(ib, 1)
+                    buoym(l) = parcels%volume(ib) * parcels%buoyancy(ib)
+                    hum(l) = parcels%volume(ib) * parcels%humidity(ib)
                     vortm(l) = parcels%volume(ib) * parcels%vorticity(ib, 1)
 
                     B11m(l) = zero
@@ -244,8 +244,8 @@ module parcel_merge
                 zm(n) = zm(n) + parcels%volume(is) * parcels%position(is, 2)
 
                 ! Accumulate buoyancy and humidity
-                buoym(n) = buoym(n) + parcels%volume(is) * parcels%buoyancy(is, 1)
-                hum(n) = hum(n) + parcels%volume(is) * parcels%humidity(is, 1)
+                buoym(n) = buoym(n) + parcels%volume(is) * parcels%buoyancy(is)
+                hum(n) = hum(n) + parcels%volume(is) * parcels%humidity(is)
                 vortm(n) = vortm(n) + parcels%volume(is) * parcels%vorticity(is, 1)
             enddo
 
@@ -293,8 +293,8 @@ module parcel_merge
                     parcels%position(ib, 1) = xm(l)
                     parcels%position(ib, 2) = zm(l)
 
-                    parcels%buoyancy(ib, 1) = buoym(l)
-                    parcels%humidity(ib, 1) = hum(l)
+                    parcels%buoyancy(ib) = buoym(l)
+                    parcels%humidity(ib) = hum(l)
                     parcels%vorticity(ib, 1) = vortm(l)
 
                 endif

@@ -28,7 +28,7 @@ module parameters
     ! domain size
     double precision :: extent(2)
 
-    ! domain half widths and edge values:
+    ! domain half widths values
     double precision :: hl(2)
 
     double precision :: hli(2)
@@ -45,6 +45,7 @@ module parameters
     ! user-defined global options.
     subroutine update_parameters
         extent = dble(box%extent)
+        lower  = dble(box%origin)
 
         dx = extent / dble(box%nc)
         dxi = one / dx;
@@ -56,14 +57,19 @@ module parameters
 
         ncell = nx * nz
 
-        ! due to x periodicity is is only nx
+        ! due to x periodicity it is only nx
         ngrid = nx * (nz + 1)
 
         ! domain
         hl = extent / two
         hli = one / hl
-        lower = -hl
-        upper = hl
+
+        ! we need to be symmetric around zero in x
+        lower(1) = -hl(1)
+        upper(1) = hl(1)
+
+        lower(2) = dble(box%origin(2))
+        upper(2) = dble(box%origin(2)) + extent(2)
 
     end subroutine update_parameters
 

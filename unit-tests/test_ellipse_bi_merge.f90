@@ -32,16 +32,16 @@ program test_ellipse_bi_merge
     parcels%volume(1) = a1b1 * pi
     parcels%B(1, 1) = a1b1
     parcels%B(1, 2) = zero
-    parcels%buoyancy(1, 1) = 1.5d0
-    parcels%humidity(1, 1) = 1.3d0
+    parcels%buoyancy(1) = 1.5d0
+    parcels%humidity(1) = 1.3d0
 
     a2b2 = 0.5d0
     parcels%position(2, :) = zero
     parcels%volume(2) = a2b2 * pi
     parcels%B(2, 1) = a2b2
     parcels%B(2, 2) = zero
-    parcels%buoyancy(2, 1) = 1.8d0
-    parcels%humidity(2, 1) = 1.2d0
+    parcels%buoyancy(2) = 1.8d0
+    parcels%humidity(2) = 1.2d0
 
     ! geometric merge
     parcel_info%lambda = five
@@ -72,8 +72,8 @@ program test_ellipse_bi_merge
                                    parcels%volume(1)) - B22))
     error = max(error, sum(abs(parcels%position(1, :))))
     error = max(error, abs(parcels%volume(1) - vol))
-    error = max(error, abs(parcels%buoyancy(1, 1) - buoy))
-    error = max(error, abs(parcels%humidity(1, 1) - hum))
+    error = max(error, abs(parcels%buoyancy(1) - buoy))
+    error = max(error, abs(parcels%humidity(1) - hum))
 
     call print_result_dp('Test ellipse bi-merge (geometric)', error)
 
@@ -84,16 +84,16 @@ program test_ellipse_bi_merge
     parcels%volume(1) = a1b1 * pi
     parcels%B(1, 1) = a1b1
     parcels%B(1, 2) = zero
-    parcels%buoyancy(1, 1) = 1.5d0
-    parcels%humidity(1, 1) = 1.3d0
+    parcels%buoyancy(1) = 1.5d0
+    parcels%humidity(1) = 1.3d0
 
     a2b2 = 0.5d0
     parcels%position(2, :) = zero
     parcels%volume(2) = a2b2 * pi
     parcels%B(2, 1) = a2b2
     parcels%B(2, 2) = zero
-    parcels%buoyancy(2, 1) = 1.8d0
-    parcels%humidity(2, 1) = 1.2d0
+    parcels%buoyancy(2) = 1.8d0
+    parcels%humidity(2) = 1.2d0
 
     ! optimal merge
     parcel_info%merge_type = 'bi-optimal'
@@ -113,8 +113,8 @@ program test_ellipse_bi_merge
                                    parcels%volume(1)) - B22))
     error = max(error, sum(abs(parcels%position(1, :))))
     error = max(error, abs(parcels%volume(1) - vol))
-    error = max(error, abs(parcels%buoyancy(1, 1) - buoy))
-    error = max(error, abs(parcels%humidity(1, 1) - hum))
+    error = max(error, abs(parcels%buoyancy(1) - buoy))
+    error = max(error, abs(parcels%humidity(1) - hum))
 
 
     call print_result_dp('Test ellipse bi-merge (optimal)', error)

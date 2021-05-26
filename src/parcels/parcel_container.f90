@@ -23,12 +23,12 @@ module parcel_container
             velocity,   &
             vorticity,  &
             stretch,    &
-            buoyancy,   &
-            humidity,   &
             B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12
 
         double precision, allocatable, dimension(:) :: &
-            volume
+            volume,     &
+            buoyancy,   &
+            humidity
     end type parcel_container_type
 
     type(parcel_container_type) parcels
@@ -74,9 +74,9 @@ module parcel_container
 
             call write_h5_dataset_1d(name, "volume", parcels%volume(1:n_parcels))
 
-            call write_h5_dataset_1d(name, "buoyancy", parcels%buoyancy(1:n_parcels, 1))
+            call write_h5_dataset_1d(name, "buoyancy", parcels%buoyancy(1:n_parcels))
 
-            call write_h5_dataset_1d(name, "humidity", parcels%humidity(1:n_parcels, 1))
+            call write_h5_dataset_1d(name, "humidity", parcels%humidity(1:n_parcels))
 
             if (allocated(parcels%B)) then
                 call write_h5_dataset_2d(name, "B", parcels%B(1:n_parcels, :))
@@ -112,8 +112,8 @@ module parcel_container
             endif
 
             parcels%volume(n)  = parcels%volume(m)
-            parcels%buoyancy(n, 1) = parcels%buoyancy(m, 1)
-            parcels%humidity(n, 1) = parcels%humidity(m, 1)
+            parcels%buoyancy(n) = parcels%buoyancy(m)
+            parcels%humidity(n) = parcels%humidity(m)
 
             parcels%B(n, 1) = parcels%B(m, 1)
             parcels%B(n, 2) = parcels%B(m, 2)
@@ -130,8 +130,8 @@ module parcel_container
             allocate(parcels%stretch(num, 1))
             allocate(parcels%B(num, 2))
             allocate(parcels%volume(num))
-            allocate(parcels%buoyancy(num, 1))
-            allocate(parcels%humidity(num, 1))
+            allocate(parcels%buoyancy(num))
+            allocate(parcels%humidity(num))
         end subroutine parcel_alloc
 
 

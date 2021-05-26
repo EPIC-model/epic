@@ -47,8 +47,8 @@ module parcel_init
 
             parcels%velocity(1:n_parcels, :) = zero
             parcels%vorticity(1:n_parcels, :) = zero
-            parcels%buoyancy(1:n_parcels, 1) = zero
-            parcels%humidity(1:n_parcels, 1) = zero
+            parcels%buoyancy(1:n_parcels) = zero
+            parcels%humidity(1:n_parcels) = zero
         end subroutine parcel_default
 
 
