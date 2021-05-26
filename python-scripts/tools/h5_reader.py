@@ -61,6 +61,17 @@ class H5Reader:
             raise IOError("Parcel dataset '" + name + "' unknown.")
         return np.array(self.h5file[s]['parcels'][name])
 
+    def get_parcel_min_max(self, name):
+        nsteps = self.get_num_steps()
+        data = self.get_parcel_dataset(0, name)
+        vmax = data.max()
+        vmin = data.min()
+        for step in range(1, nsteps):
+            data = self.get_parcel_dataset(step, name)
+            vmax = max(vmax, data.max())
+            vmin = min(vmin, data.min())
+        return vmin, vmax
+
     def get_field_dataset(self, step, name):
         s = self._get_step_string(step)
         if not name in self.h5file[s]['fields'].keys():
