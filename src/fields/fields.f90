@@ -153,6 +153,9 @@ module fields
             call write_h5_dataset_2d(name, "liquid humidity", &
                                      humlig(0:nz, 0:nx-1))
 
+            call write_h5_dataset_3d(name, "tendency", &
+                                     vtend(0:nz, 0:nx-1, :))
+
             call write_h5_int_dataset_2d(name, "num parcels per cell", &
                                          nparg(0:nz-1, :))
 
