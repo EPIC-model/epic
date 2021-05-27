@@ -23,6 +23,11 @@ try:
                         default='',
                         help="file name of saved animation (default: FILENAME.mp4)")
 
+    parser.add_argument("--coloring",
+                        type=str,
+                        required=False,
+                        help="how to color the ellipses")
+
     if not '--filename' in sys.argv:
         parser.print_help()
         exit(0)
@@ -40,7 +45,7 @@ try:
 
     anim = EllipseAnimation()
 
-    anim.create(args.filename)
+    anim.create(args.filename, coloring=args.coloring)
 
     anim.save(args.saveas)
 

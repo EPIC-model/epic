@@ -40,11 +40,11 @@ class EllipseAnimation:
 
         if coloring == 'aspect-ratio':
             self.vmin = 1.0
-            self.vmax = h5reader.get_parcel_info('lambda')
+            self.vmax = self.h5reader.get_parcel_info('lambda')
         else:
-            self.vmin, self.vmax = h5reader.get_parcel_min_max(coloring)
+            self.vmin, self.vmax = self.h5reader.get_parcel_min_max(coloring)
 
-        self.norm = cls.Normalize(vmin=vmin, vmax=vmax)
+        self.norm = cls.Normalize(vmin=self.vmin, vmax=self.vmax)
         self.cmap = plt.cm.viridis_r
 
         self.ani = animation.FuncAnimation(fig       = fig,
@@ -86,8 +86,8 @@ class EllipseAnimation:
 
         self._resize()
 
-        _plot_ellipses(self.ax, h5reader, i, self.coloring,
-                       self.vmin, self.vmax)
+        _plot_ellipses(self.ax, self.h5reader, step, self.coloring,
+                       self.vmin, self.vmax, draw_cbar=(step == 0))
 
         if step == self.nsteps - 1:
             self.bar.finish()

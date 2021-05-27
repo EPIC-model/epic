@@ -7,7 +7,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import os
 
-def _plot_ellipses(ax, h5reader, step, coloring, vmin, vmax):
+def _plot_ellipses(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
 
     # 19 Feb 2021
     # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
@@ -43,24 +43,25 @@ def _plot_ellipses(ax, h5reader, step, coloring, vmin, vmax):
 
     add_number_of_parcels(ax, len(data))
 
-    # 27 May 2021
-    # https://stackoverflow.com/questions/29516157/set-equal-aspect-in-plot-with-colorbar
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.1)
-    #fig.add_axes(cax)
+    if draw_cbar:
+        # 27 May 2021
+        # https://stackoverflow.com/questions/29516157/set-equal-aspect-in-plot-with-colorbar
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.1)
+        #fig.add_axes(cax)
 
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    cbar = plt.colorbar(sm, drawedges=False, ax=ax, cax=cax)
-    # 19 Feb 2021
-    # https://stackoverflow.com/questions/15003353/why-does-my-colorbar-have-lines-in-it
-    cbar.set_alpha(0.75)
-    cbar.solids.set_edgecolor("face")
-    cbar.draw_all()
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        cbar = plt.colorbar(sm, drawedges=False, ax=ax, cax=cax)
+        # 19 Feb 2021
+        # https://stackoverflow.com/questions/15003353/why-does-my-colorbar-have-lines-in-it
+        cbar.set_alpha(0.75)
+        cbar.solids.set_edgecolor("face")
+        cbar.draw_all()
 
-    if coloring == 'aspect ratio':
-        cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
-    else:
-        cbar.set_label(coloring)
+        if coloring == 'aspect ratio':
+            cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
+        else:
+            cbar.set_label(coloring)
 
     ax.set_xlabel(r'$x$')
     ax.set_ylabel(r'$y$')
