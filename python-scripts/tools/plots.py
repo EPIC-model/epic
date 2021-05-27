@@ -3,10 +3,72 @@ from tools.plot_beautify import *
 from tools.plot_style import *
 import matplotlib.colors as cls
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import os
 
-def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png"):
+def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
+
+    # 19 Feb 2021
+    # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
+    norm = cls.Normalize(vmin=vmin, vmax=vmax)
+    cmap = plt.cm.viridis_r
+
+    origin = h5reader.get_mesh_origin()
+    extent = h5reader.get_mesh_extent()
+
+    if coloring == 'aspect-ratio':
+        data = h5reader.get_aspect_ratio(step=step)
+    else:
+        data = h5reader.get_parcel_dataset(step=step, name=coloring)
+
+    ells = h5reader.get_ellipses(step=step)
+    for j, e in enumerate(ells):
+        ax.add_artist(e)
+        #e.set_clip_box(ax.bbox)
+        e.set_alpha(0.75)
+        e.set_facecolor(cmap(norm(data[j])))
+
+    ax.axvline(origin[0], color='black', linewidth=0.25)
+    ax.axvline(origin[0] + extent[0], color='black', linewidth=0.25)
+
+    ax.axhline(origin[1], color='black', linewidth=0.25)
+    ax.axhline(origin[1] + extent[1], color='black', linewidth=0.25)
+
+    # 26 May 2021
+    # https://matplotlib.org/stable/gallery/subplots_axes_and_figures/axis_equal_demo.html
+    ax.set_aspect('equal', 'box')
+
+    add_timestamp(ax, h5reader.get_step_attribute(step=step, name='t'))
+
+    add_number_of_parcels(ax, len(data))
+
+    if draw_cbar:
+        # 27 May 2021
+        # https://stackoverflow.com/questions/29516157/set-equal-aspect-in-plot-with-colorbar
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.1)
+        #fig.add_axes(cax)
+
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        cbar = plt.colorbar(sm, drawedges=False, ax=ax, cax=cax)
+        # 19 Feb 2021
+        # https://stackoverflow.com/questions/15003353/why-does-my-colorbar-have-lines-in-it
+        cbar.set_alpha(0.75)
+        cbar.solids.set_edgecolor("face")
+        cbar.draw_all()
+
+        if coloring == 'aspect ratio':
+            cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
+        else:
+            cbar.set_label(coloring)
+
+    ax.set_xlabel(r'$x$')
+    ax.set_ylabel(r'$y$')
+
+
+def plot_parcels(fname, begin=0, end=-1, show=False, fmt="png",
+                  coloring='aspect-ratio'):
     h5reader = H5Reader()
 
     h5reader.open(fname)
@@ -16,60 +78,26 @@ def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png"):
     if end == -1:
         end = nsteps + 1
 
-    lam = h5reader.get_parcel_info('lambda')
-
-    # 19 Feb 2021
-    # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
-    norm = cls.Normalize(vmin=1.0, vmax=lam)
-    cmap = plt.cm.viridis_r
-
-    origin = h5reader.get_mesh_origin()
-    extent = h5reader.get_mesh_extent()
+    if coloring == 'aspect-ratio':
+        vmin = 1.0
+        vmax = h5reader.get_parcel_info('lambda')
+    else:
+        vmin, vmax = h5reader.get_parcel_min_max(coloring)
 
     for i in range(begin, end+1):
-        ells = h5reader.get_ellipses(step=i)
+        fig, ax = plt.subplots(figsize=(15, 14), dpi=300, num=i)
 
-        fig, ax = plt.subplots(figsize=(5, 4), dpi=300, num=i)
-
-        ratio = h5reader.get_aspect_ratio(step=i)
-        for j, e in enumerate(ells):
-            ax.add_artist(e)
-            #e.set_clip_box(ax.bbox)
-            e.set_alpha(0.75)
-            e.set_facecolor(cmap(norm(ratio[j])))
-
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        cbar = fig.colorbar(sm, drawedges=False)
-        ## 19 Feb 2021
-        ## https://stackoverflow.com/questions/15003353/why-does-my-colorbar-have-lines-in-it
-        cbar.set_alpha(0.75)
-        cbar.solids.set_edgecolor("face")
-        cbar.draw_all()
-        cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
-
-
-        plt.axvline(origin[0], color='black', linewidth=0.25)
-        plt.axvline(origin[0] + extent[0], color='black', linewidth=0.25)
-
-        plt.axhline(origin[1], color='black', linewidth=0.25)
-        plt.axhline(origin[1] + extent[1], color='black', linewidth=0.25)
-
-        add_timestamp(plt, h5reader.get_step_attribute(step=i, name='t'))
-
-        add_number_of_parcels(plt, len(ratio))
-
-        plt.xlabel(r'$x$')
-        plt.ylabel(r'$y$')
-        plt.tight_layout()
-
-        if show:
-            plt.show()
-        else:
-            plt.savefig('ellipses_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
-                        bbox_inches='tight')
-        plt.close()
+        _plot_parcels(ax, h5reader, i, coloring, vmin, vmax)
 
     h5reader.close()
+
+    if show:
+        plt.show()
+        plt.close()
+    else:
+        plt.savefig('parcels_'  + coloring + '_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
+                    bbox_inches='tight')
+
 
 
 def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):

@@ -23,6 +23,11 @@ try:
                         default='',
                         help="file name of saved animation (default: FILENAME.mp4)")
 
+    parser.add_argument("--coloring",
+                        type=str,
+                        required=False,
+                        help="how to color the parcels")
+
     if not '--filename' in sys.argv:
         parser.print_help()
         exit(0)
@@ -34,13 +39,13 @@ try:
 
 
     if args.saveas == '':
-        args.saveas = os.path.splitext(args.filename)[0] + '.mp4'
+        args.saveas = os.path.splitext(args.filename)[0] + '-' + args.coloring + '.mp4'
     else:
         args.saveas = os.path.splitext(args.saveas)[0] + '.mp4'
 
     anim = ParcelAnimation()
 
-    anim.create(args.filename)
+    anim.create(args.filename, coloring=args.coloring)
 
     anim.save(args.saveas)
 
