@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from matplotlib import animation
 from tools.h5_reader import H5Reader
 import matplotlib.colors as cls
-from tools.plots import _plot_ellipses
+from tools.plots import _plot_parcels
 from tools.plot_beautify import *
 import progressbar
 
@@ -80,7 +80,7 @@ class EllipseAnimation:
         self.ax.clear()
         self._resize()
 
-        _plot_ellipses(self.ax, self.h5reader, step, self.coloring,
+        _plot_parcels(self.ax, self.h5reader, step, self.coloring,
                        self.vmin, self.vmax, draw_cbar=(step == 0))
 
         if step == self.nsteps - 1:

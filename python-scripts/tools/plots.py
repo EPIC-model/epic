@@ -7,7 +7,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import os
 
-def _plot_ellipses(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
+def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
 
     # 19 Feb 2021
     # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
@@ -67,7 +67,7 @@ def _plot_ellipses(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
     ax.set_ylabel(r'$y$')
 
 
-def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png",
+def plot_parcels(fname, begin=0, end=-1, show=False, fmt="png",
                   coloring='aspect-ratio'):
     h5reader = H5Reader()
 
@@ -87,7 +87,7 @@ def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png",
     for i in range(begin, end+1):
         fig, ax = plt.subplots(figsize=(15, 14), dpi=300, num=i)
 
-        _plot_ellipses(ax, h5reader, i, coloring, vmin, vmax)
+        _plot_parcels(ax, h5reader, i, coloring, vmin, vmax)
 
     h5reader.close()
 
@@ -95,7 +95,7 @@ def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png",
         plt.show()
         plt.close()
     else:
-        plt.savefig('ellipses_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
+        plt.savefig('parcels_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
                     bbox_inches='tight')
 
 

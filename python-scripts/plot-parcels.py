@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import argparse
-from tools.plots import plot_ellipses
+from tools.plots import plot_parcels
 import os
 import sys
 
 try:
     parser = argparse.ArgumentParser(
-        description="Plot the ellipses of several or individual time steps.")
+        description="Plot the parcels of several or individual time steps.")
 
     # 24 March 2021
     # https://stackoverflow.com/questions/24180527/argparse-required-arguments-listed-under-optional-arguments
@@ -67,7 +67,7 @@ try:
     if not os.path.exists(args.filename):
         raise IOError("File '" + args.filename + "' does not exist.")
 
-    plot_ellipses(fname=args.filename, begin=begin, end=end, show=args.show,
+    plot_parcels(fname=args.filename, begin=begin, end=end, show=args.show,
                   fmt=args.fmt, coloring=args.coloring)
 
 except Exception as ex:
