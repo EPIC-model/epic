@@ -33,21 +33,22 @@ class EllipseAnimation:
         self.extent = self.h5reader.get_mesh_extent()
         self.origin = self.h5reader.get_mesh_origin()
 
-        fig = plt.figure(figsize=(5, 4), dpi=200)
+        fig = plt.figure(figsize=(12, 4), dpi=300)
         self.ax = plt.gca()
 
         lam = self.h5reader.get_parcel_info('lambda')
-        self.norm = cls.Normalize(vmin=1.0, vmax=lam)
+        self.norm = cls.Normalize(vmin=-1.2, vmax=0)
         self.cmap = plt.cm.viridis_r
+        plt.tight_layout()
 
-        sm = plt.cm.ScalarMappable(cmap=self.cmap, norm=self.norm)
-        cbar = fig.colorbar(sm, drawedges=False)
+        #sm = plt.cm.ScalarMappable(cmap=self.cmap, norm=self.norm)
+        #cbar = fig.colorbar(sm, drawedges=False)
         # 19 Feb 2021
         # https://stackoverflow.com/questions/15003353/why-does-my-colorbar-have-lines-in-it
-        cbar.set_alpha(0.75)
-        cbar.solids.set_edgecolor("face")
-        cbar.draw_all()
-        cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
+        #cbar.set_alpha(0.75)
+        #cbar.solids.set_edgecolor("face")
+        #cbar.draw_all()
+        #cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
 
         self.ani = animation.FuncAnimation(fig       = fig,
                                            func      = self._update,
@@ -66,11 +67,12 @@ class EllipseAnimation:
 
     def _resize(self):
         # make plot domain 5 percent larger
-        self.ax.set_xlim([self.origin[0] - 0.05 * self.extent[0],
-                          self.origin[0] + 1.05 * self.extent[0]])
+        self.ax.set_aspect('equal', 'box')
+        #self.ax.set_xlim([self.origin[0] - 0.05 * self.extent[0],
+                          #self.origin[0] + 1.05 * self.extent[0]])
 
-        self.ax.set_ylim([self.origin[1] - 0.05 * self.extent[0],
-                          self.origin[0] + 1.05 * self.extent[1]])
+        #self.ax.set_ylim([self.origin[1] - 0.05 * self.extent[0],
+                          #self.origin[0] + 1.05 * self.extent[1]])
 
 
     def _update(self, step):
@@ -90,7 +92,8 @@ class EllipseAnimation:
         self.ax.set_xlabel(r'$x$')
         self.ax.set_ylabel(r'$y$')
 
-        ratio = self.h5reader.get_aspect_ratio(step)
+        #ratio = self.h5reader.get_aspect_ratio(step)
+        ratio = self.h5reader.get_parcel_dataset(step, 'buoyancy')
         for j, e in enumerate(ells):
             e.set_alpha(0.75)
             e.set_facecolor(self.cmap(self.norm(ratio[j])))
@@ -106,6 +109,7 @@ class EllipseAnimation:
         add_timestamp(self.ax, self.h5reader.get_step_attribute(step, name='t'))
 
         add_number_of_parcels(self.ax, len(ratio))
+        plt.tight_layout()
 
         if step == self.nsteps - 1:
             self.bar.finish()

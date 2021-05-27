@@ -3,6 +3,7 @@ from tools.plot_beautify import *
 from tools.plot_style import *
 import matplotlib.colors as cls
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import os
 
@@ -46,15 +47,6 @@ def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png", coloring='aspec
             e.set_alpha(0.75)
             e.set_facecolor(cmap(norm(data[j])))
 
-        #sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        #cbar = fig.colorbar(sm, drawedges=False)
-        ## 19 Feb 2021
-        ## https://stackoverflow.com/questions/15003353/why-does-my-colorbar-have-lines-in-it
-        #cbar.set_alpha(0.75)
-        #cbar.solids.set_edgecolor("face")
-        #cbar.draw_all()
-        #cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
-
         plt.axvline(origin[0], color='black', linewidth=0.25)
         plt.axvline(origin[0] + extent[0], color='black', linewidth=0.25)
 
@@ -69,18 +61,38 @@ def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png", coloring='aspec
 
         add_number_of_parcels(plt, len(data))
 
-        plt.xlabel(r'$x$')
-        plt.ylabel(r'$y$')
-        plt.tight_layout()
+        # 27 May 2021
+        # https://stackoverflow.com/questions/29516157/set-equal-aspect-in-plot-with-colorbar
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.1)
+        fig.add_axes(cax)
 
-        if show:
-            plt.show()
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        cbar = fig.colorbar(sm, drawedges=False, ax=ax, cax=cax)
+        ## 19 Feb 2021
+        # https://stackoverflow.com/questions/15003353/why-does-my-colorbar-have-lines-in-it
+        cbar.set_alpha(0.75)
+        cbar.solids.set_edgecolor("face")
+        cbar.draw_all()
+
+        if coloring == 'aspect ratio':
+            cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
         else:
-            plt.savefig('ellipses_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
-                        bbox_inches='tight')
-        plt.close()
+            cbar.set_label(coloring)
+
+        ax.set_xlabel(r'$x$')
+        ax.set_ylabel(r'$y$')
 
     h5reader.close()
+
+
+    if show:
+        plt.show()
+        plt.close()
+    else:
+        plt.savefig('ellipses_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
+                    bbox_inches='tight')
+
 
 
 def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
