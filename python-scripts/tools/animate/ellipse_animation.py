@@ -27,9 +27,6 @@ class EllipseAnimation:
 
         self.h5reader.open(fname)
 
-        if not self.h5reader.is_elliptic():
-            raise RuntimeError("The model saved in '" + fname + "' is non-elliptic.")
-
         self.nsteps = self.h5reader.get_num_steps()
         self.extent = self.h5reader.get_mesh_extent()
         self.origin = self.h5reader.get_mesh_origin()
@@ -80,10 +77,7 @@ class EllipseAnimation:
 
         self.bar.update(step+1)
 
-        ells = self.h5reader.get_ellipses(step)
-        patches = []
         self.ax.clear()
-
         self._resize()
 
         _plot_ellipses(self.ax, self.h5reader, step, self.coloring,
