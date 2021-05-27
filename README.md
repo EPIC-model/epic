@@ -42,7 +42,7 @@ where `filename` is the configuration file.
 ## Post-processing
 The directory `$PREFIX/bin` contains following scripts:
 * animate-parcels.py
-* plot-ellipses.py
+* plot-parcels.py
 * plot-fields.py
 * plot-diagnostics.py
 * merge-ellipses.py
