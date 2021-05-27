@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 from matplotlib import animation
 from tools.h5_reader import H5Reader
 import matplotlib.colors as cls
+from tools.plots import _plot_ellipses
 from tools.plot_beautify import *
 import progressbar
 
@@ -21,7 +22,7 @@ class EllipseAnimation:
     def __init__(self):
         self.ani = None
 
-    def create(self, fname):
+    def create(self, fname, coloring='aspect-ratio'):
         self.h5reader = H5Reader()
 
         self.h5reader.open(fname)
@@ -32,23 +33,19 @@ class EllipseAnimation:
         self.nsteps = self.h5reader.get_num_steps()
         self.extent = self.h5reader.get_mesh_extent()
         self.origin = self.h5reader.get_mesh_origin()
+        self.coloring = coloring
 
         fig = plt.figure(figsize=(12, 4), dpi=300)
         self.ax = plt.gca()
 
-        lam = self.h5reader.get_parcel_info('lambda')
-        self.norm = cls.Normalize(vmin=-1.2, vmax=0)
-        self.cmap = plt.cm.viridis_r
-        plt.tight_layout()
+        if coloring == 'aspect-ratio':
+            self.vmin = 1.0
+            self.vmax = h5reader.get_parcel_info('lambda')
+        else:
+            self.vmin, self.vmax = h5reader.get_parcel_min_max(coloring)
 
-        #sm = plt.cm.ScalarMappable(cmap=self.cmap, norm=self.norm)
-        #cbar = fig.colorbar(sm, drawedges=False)
-        # 19 Feb 2021
-        # https://stackoverflow.com/questions/15003353/why-does-my-colorbar-have-lines-in-it
-        #cbar.set_alpha(0.75)
-        #cbar.solids.set_edgecolor("face")
-        #cbar.draw_all()
-        #cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
+        self.norm = cls.Normalize(vmin=vmin, vmax=vmax)
+        self.cmap = plt.cm.viridis_r
 
         self.ani = animation.FuncAnimation(fig       = fig,
                                            func      = self._update,
@@ -89,27 +86,8 @@ class EllipseAnimation:
 
         self._resize()
 
-        self.ax.set_xlabel(r'$x$')
-        self.ax.set_ylabel(r'$y$')
-
-        #ratio = self.h5reader.get_aspect_ratio(step)
-        ratio = self.h5reader.get_parcel_dataset(step, 'buoyancy')
-        for j, e in enumerate(ells):
-            e.set_alpha(0.75)
-            e.set_facecolor(self.cmap(self.norm(ratio[j])))
-            patches.append(self.ax.add_patch(e))
-
-        self.ax.axvline(self.origin[0], color='black', linewidth=0.25)
-        self.ax.axvline(self.origin[0] + self.extent[0], color='black', linewidth=0.25)
-
-        self.ax.axhline(self.origin[1], color='black', linewidth=0.25)
-        self.ax.axhline(self.origin[1] + self.extent[1], color='black', linewidth=0.25)
-
-        # add some additional information
-        add_timestamp(self.ax, self.h5reader.get_step_attribute(step, name='t'))
-
-        add_number_of_parcels(self.ax, len(ratio))
-        plt.tight_layout()
+        _plot_ellipses(self.ax, h5reader, i, self.coloring,
+                       self.vmin, self.vmax)
 
         if step == self.nsteps - 1:
             self.bar.finish()
