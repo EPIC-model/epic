@@ -95,7 +95,7 @@ def plot_parcels(fname, begin=0, end=-1, show=False, fmt="png",
         plt.show()
         plt.close()
     else:
-        plt.savefig('parcels_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
+        plt.savefig('parcels_'  + coloring + '_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
                     bbox_inches='tight')
 
 

@@ -39,7 +39,7 @@ try:
 
 
     if args.saveas == '':
-        args.saveas = os.path.splitext(args.filename)[0] + '.mp4'
+        args.saveas = os.path.splitext(args.filename)[0] + '-' + args.coloring + '.mp4'
     else:
         args.saveas = os.path.splitext(args.saveas)[0] + '.mp4'
 

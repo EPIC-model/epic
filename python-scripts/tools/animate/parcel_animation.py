@@ -7,7 +7,7 @@ from tools.plots import _plot_parcels
 from tools.plot_beautify import *
 import progressbar
 
-class EllipseAnimation:
+class ParcelAnimation:
     """
         22 March 2021
         https://stackoverflow.com/questions/19981054/animating-patch-objects-in-python-matplotlib
