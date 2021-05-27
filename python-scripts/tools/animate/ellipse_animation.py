@@ -87,7 +87,7 @@ class EllipseAnimation:
             self.bar.finish()
             print("done.")
 
-        return patches
+        return []
 
     def _init(self):
         self._resize()
