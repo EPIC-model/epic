@@ -1,8 +1,5 @@
 SUBDIRS = tools
 
-animate_ellipses_PYTHON = animate-ellipses.py
-animate_ellipsesdir = $(bindir)
-
 animate_parcels_PYTHON = animate-parcels.py
 animate_parcelsdir = $(bindir)
 

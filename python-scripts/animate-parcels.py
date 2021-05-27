@@ -6,7 +6,7 @@ import sys
 
 try:
     parser = argparse.ArgumentParser(
-        description="Save a mp4 animation of the evolving parcels.")
+        description="Save a mp4 animation of the evolving ellipses.")
 
     # 24 March 2021
     # https://stackoverflow.com/questions/24180527/argparse-required-arguments-listed-under-optional-arguments
@@ -22,6 +22,11 @@ try:
                         required=False,
                         default='',
                         help="file name of saved animation (default: FILENAME.mp4)")
+
+    parser.add_argument("--coloring",
+                        type=str,
+                        required=False,
+                        help="how to color the ellipses")
 
     if not '--filename' in sys.argv:
         parser.print_help()
@@ -40,7 +45,7 @@ try:
 
     anim = ParcelAnimation()
 
-    anim.create(args.filename)
+    anim.create(args.filename, coloring=args.coloring)
 
     anim.save(args.saveas)
 

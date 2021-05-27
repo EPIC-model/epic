@@ -3,19 +3,26 @@ from matplotlib import pyplot as plt
 from matplotlib import animation
 from tools.h5_reader import H5Reader
 import matplotlib.colors as cls
+from tools.plots import _plot_ellipses
 from tools.plot_beautify import *
 import progressbar
 
+class EllipseAnimation:
+    """
+        22 March 2021
+        https://stackoverflow.com/questions/19981054/animating-patch-objects-in-python-matplotlib
+        https://stackoverflow.com/questions/44620263/how-to-get-animated-patches-instead-of-n-times-plotted-patches-using-python-and
+        https://stackoverflow.com/questions/9401658/how-to-animate-a-scatter-plot
+        https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html#matplotlib.pyplot.plot
+        https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html#matplotlib.animation.FuncAnimation
+        https://stackoverflow.com/questions/23791922/saving-animation-with-matplotlib
+        https://github.com/niltonvolpato/python-progressbar
+    """
 
-class ParcelAnimation:
-    """
-    14 May 2021
-    https://stackoverflow.com/questions/9401658/how-to-animate-a-scatter-plot
-    """
     def __init__(self):
         self.ani = None
 
-    def create(self, fname):
+    def create(self, fname, coloring='aspect-ratio'):
         self.h5reader = H5Reader()
 
         self.h5reader.open(fname)
@@ -23,9 +30,19 @@ class ParcelAnimation:
         self.nsteps = self.h5reader.get_num_steps()
         self.extent = self.h5reader.get_mesh_extent()
         self.origin = self.h5reader.get_mesh_origin()
+        self.coloring = coloring
 
-        fig = plt.figure(figsize=(5, 4), dpi=200)
+        fig = plt.figure(figsize=(12, 4), dpi=300)
         self.ax = plt.gca()
+
+        if coloring == 'aspect-ratio':
+            self.vmin = 1.0
+            self.vmax = self.h5reader.get_parcel_info('lambda')
+        else:
+            self.vmin, self.vmax = self.h5reader.get_parcel_min_max(coloring)
+
+        self.norm = cls.Normalize(vmin=self.vmin, vmax=self.vmax)
+        self.cmap = plt.cm.viridis_r
 
         self.ani = animation.FuncAnimation(fig       = fig,
                                            func      = self._update,
@@ -44,11 +61,12 @@ class ParcelAnimation:
 
     def _resize(self):
         # make plot domain 5 percent larger
-        self.ax.set_xlim([self.origin[0] - 0.05 * self.extent[0],
-                          self.origin[0] + 1.05 * self.extent[0]])
+        self.ax.set_aspect('equal', 'box')
+        #self.ax.set_xlim([self.origin[0] - 0.05 * self.extent[0],
+                          #self.origin[0] + 1.05 * self.extent[0]])
 
-        self.ax.set_ylim([self.origin[1] - 0.05 * self.extent[0],
-                          self.origin[0] + 1.05 * self.extent[1]])
+        #self.ax.set_ylim([self.origin[1] - 0.05 * self.extent[0],
+                          #self.origin[0] + 1.05 * self.extent[1]])
 
 
     def _update(self, step):
@@ -60,32 +78,16 @@ class ParcelAnimation:
         self.bar.update(step+1)
 
         self.ax.clear()
-
         self._resize()
 
-        self.ax.set_xlabel(r'$x$')
-        self.ax.set_ylabel(r'$y$')
-
-        pos = self.h5reader.get_parcel_dataset(step, 'position')
-
-        sc = self.ax.scatter(pos[0, :], pos[1, :], marker='.', s=2)
-
-        self.ax.axvline(self.origin[0], color='black', linewidth=0.25)
-        self.ax.axvline(self.origin[0] + self.extent[0], color='black', linewidth=0.25)
-
-        self.ax.axhline(self.origin[1], color='black', linewidth=0.25)
-        self.ax.axhline(self.origin[1] + self.extent[1], color='black', linewidth=0.25)
-
-        # add some additional information
-        add_timestamp(self.ax, self.h5reader.get_step_attribute(step, name='t'))
-
-        add_number_of_parcels(self.ax, pos.shape[1])
+        _plot_ellipses(self.ax, self.h5reader, step, self.coloring,
+                       self.vmin, self.vmax, draw_cbar=(step == 0))
 
         if step == self.nsteps - 1:
             self.bar.finish()
             print("done.")
 
-        return sc,
+        return []
 
     def _init(self):
         self._resize()
