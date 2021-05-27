@@ -29,6 +29,12 @@ try:
                         action='store_true',
                         help="show plot instead of saving")
 
+    parser.add_argument("--coloring",
+                        type=str,
+                        required=False,
+                        help="how to color the ellipses")
+
+
     parser.add_argument("--fmt",
                         type=str,
                         required=False,
@@ -61,7 +67,8 @@ try:
     if not os.path.exists(args.filename):
         raise IOError("File '" + args.filename + "' does not exist.")
 
-    plot_ellipses(fname=args.filename, begin=begin, end=end, show=args.show, fmt=args.fmt)
+    plot_ellipses(fname=args.filename, begin=begin, end=end, show=args.show,
+                  fmt=args.fmt, coloring=args.coloring)
 
 except Exception as ex:
     print(ex)

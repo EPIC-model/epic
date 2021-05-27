@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png"):
+def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png", coloring='aspect-ratio'):
     h5reader = H5Reader()
 
     h5reader.open(fname)
@@ -16,11 +16,15 @@ def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png"):
     if end == -1:
         end = nsteps + 1
 
-    lam = h5reader.get_parcel_info('lambda')
+    if coloring == 'aspect-ratio':
+        vmin = 1.0
+        vmax = h5reader.get_parcel_info('lambda')
+    else:
+        vmin, vmax = h5reader.get_parcel_min_max(coloring)
 
     # 19 Feb 2021
     # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
-    norm = cls.Normalize(vmin=1.0, vmax=lam)
+    norm = cls.Normalize(vmin=vmin, vmax=vmax)
     cmap = plt.cm.viridis_r
 
     origin = h5reader.get_mesh_origin()
@@ -29,24 +33,27 @@ def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png"):
     for i in range(begin, end+1):
         ells = h5reader.get_ellipses(step=i)
 
-        fig, ax = plt.subplots(figsize=(5, 4), dpi=300, num=i)
+        fig, ax = plt.subplots(figsize=(15, 14), dpi=300, num=i)
 
-        ratio = h5reader.get_aspect_ratio(step=i)
+        if coloring == 'aspect-ratio':
+            data = h5reader.get_aspect_ratio(step=i)
+        else:
+            data = h5reader.get_parcel_dataset(step=i, name=coloring)
+
         for j, e in enumerate(ells):
             ax.add_artist(e)
             #e.set_clip_box(ax.bbox)
             e.set_alpha(0.75)
-            e.set_facecolor(cmap(norm(ratio[j])))
+            e.set_facecolor(cmap(norm(data[j])))
 
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        cbar = fig.colorbar(sm, drawedges=False)
+        #sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        #cbar = fig.colorbar(sm, drawedges=False)
         ## 19 Feb 2021
         ## https://stackoverflow.com/questions/15003353/why-does-my-colorbar-have-lines-in-it
-        cbar.set_alpha(0.75)
-        cbar.solids.set_edgecolor("face")
-        cbar.draw_all()
-        cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
-
+        #cbar.set_alpha(0.75)
+        #cbar.solids.set_edgecolor("face")
+        #cbar.draw_all()
+        #cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
 
         plt.axvline(origin[0], color='black', linewidth=0.25)
         plt.axvline(origin[0] + extent[0], color='black', linewidth=0.25)
@@ -54,9 +61,13 @@ def plot_ellipses(fname, begin=0, end=-1, show=False, fmt="png"):
         plt.axhline(origin[1], color='black', linewidth=0.25)
         plt.axhline(origin[1] + extent[1], color='black', linewidth=0.25)
 
+        # 26 May 2021
+        # https://matplotlib.org/stable/gallery/subplots_axes_and_figures/axis_equal_demo.html
+        plt.gca().set_aspect('equal', 'box')
+
         add_timestamp(plt, h5reader.get_step_attribute(step=i, name='t'))
 
-        add_number_of_parcels(plt, len(ratio))
+        add_number_of_parcels(plt, len(data))
 
         plt.xlabel(r'$x$')
         plt.ylabel(r'$y$')
