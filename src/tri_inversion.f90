@@ -199,9 +199,9 @@ module tri_inversion
             ! Reverse x FFT
             call revfft(nz+1, nx, vtend(0:nz, :, 1), xtrig, xfactors)
 
-            ! Use symmetry to fill z grid lines outside domain:
-            vtend(-1, :, 1) = zero !vtend(1, :, 1)
-            vtend(nz+1, :, 1) = zero !vtend(nz-1, :, 1)
+            ! Fill z grid lines outside domain:
+            vtend(-1,   :, 1) = -vtend(1, :, 1)
+            vtend(nz+1, :, 1) = -vtend(nz-1, :, 1)
 
         end subroutine tendency
 
