@@ -11,7 +11,7 @@ module straka
             integer          :: n
             double precision :: xc, xr, zc, zr, L, dT, dtheta, theta_0
 
-            ! in km
+            ! in metres
             xc = zero
             xr = four
             zc = three
@@ -36,6 +36,10 @@ module straka
 
                 ! potential temperatur
                 dtheta = dT * pi
+
+                ! MPIC paper:
+                ! liquid-water buoyancy is defined by b = g * (theta − theta_0) / theta_0
+                ! (dtheta = theta - theta_0)
                 parcels%buoyancy(n) = gravity * dtheta / theta_0
             enddo
         end subroutine straka_init
