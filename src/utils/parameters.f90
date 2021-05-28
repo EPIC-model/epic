@@ -46,6 +46,7 @@ module parameters
     subroutine update_parameters
         extent = dble(box%extent)
         lower  = dble(box%origin)
+        upper = dble(box%origin) + extent
 
         dx = extent / dble(box%nc)
         dxi = one / dx;
@@ -63,9 +64,6 @@ module parameters
         ! domain
         hl = extent / two
         hli = one / hl
-
-        lower = dble(box%origin)
-        upper = dble(box%origin) + extent
 
     end subroutine update_parameters
 
