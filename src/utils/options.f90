@@ -12,7 +12,7 @@ module options
     logical :: verbose = .false.
 
     ! configuration file
-    character(len=32) :: filename = ''
+    character(len=64) :: filename = ''
 
     character(len=32) :: model = 'TaylorGreen'
 
