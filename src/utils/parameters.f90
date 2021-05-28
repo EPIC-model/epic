@@ -64,12 +64,8 @@ module parameters
         hl = extent / two
         hli = one / hl
 
-        ! we need to be symmetric around zero in x
-        lower(1) = -hl(1)
-        upper(1) = hl(1)
-
-        lower(2) = dble(box%origin(2))
-        upper(2) = dble(box%origin(2)) + extent(2)
+        lower = dble(box%origin)
+        upper = dble(box%origin) + extent
 
     end subroutine update_parameters
 

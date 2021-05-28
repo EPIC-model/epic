@@ -204,7 +204,7 @@ module parcel_interpl
             integer           :: ncomp
             double precision  :: points(2, 2)
             integer           :: n, p, c, l, i, j
-            double precision  :: pvol, pvor
+            double precision  :: pvol, pvor, weight
 
             ! number of field components
             ncomp = 1
@@ -228,23 +228,24 @@ module parcel_interpl
                     ! get interpolation weights and mesh indices
                     call get_indices_and_weights(points(p, :))
 
-                    ! loop over field components
-                    do c = 1, ncomp
-                        pvor = parcels%vorticity(n, c)
-                        ! loop over grid points which are part of the interpolation
-                        do l = 1, ngp
-                            ! the weight is halved due to 2 points per ellipse
-                            vortg(js(l), is(l), c) = vortg(js(l), is(l), c) &
-                                                   + 0.5d0 * weights(l) * pvor * pvol
-                        enddo
-                    enddo
-
+                    ! loop over grid points which are part of the interpolation
+                    ! the weight is halved due to 2 points per ellipse
                     do l = 1, ngp
+
+                        weight = 0.5d0 * weights(l) * pvol
+
+                        ! loop over field components
+                        do c = 1, ncomp
+                            pvor = parcels%vorticity(n, c)
+                            vortg(js(l), is(l), c) = vortg(js(l), is(l), c) &
+                                                   + weight * pvor
+                        enddo
+
                         tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
-                                            + 0.5d0 * weights(l) * pvol * parcels%buoyancy(n)
+                                             + weight * parcels%buoyancy(n)
 
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
-                                           + 0.5d0 * weights(l) * pvol
+                                           + weight
                     enddo
                 enddo
             enddo
@@ -255,7 +256,7 @@ module parcel_interpl
             integer          :: ncomp
             integer          :: n, c, l, i, j
             double precision :: pos(2)
-            double precision :: pvor, pvol
+            double precision :: pvol, weight
 
             ! number of field components
             ncomp = 1
@@ -275,23 +276,22 @@ module parcel_interpl
                 ! get interpolation weights and mesh indices
                 call get_indices_and_weights(pos)
 
-                ! loop over field components
-                do c = 1, ncomp
+                ! loop over grid points which are part of the interpolation
+                do l = 1, ngp
 
-                    pvor = parcels%vorticity(n, c)
-                    ! loop over grid points which are part of the interpolation
-                    do l = 1, ngp
+                    weight = pvol * weights(l)
+
+                    ! loop over field components
+                    do c = 1, ncomp
                         ! the weight is halved due to 2 points per ellipse
                         vortg(js(l), is(l), c) = vortg(js(l), is(l), c)  &
-                                               + weights(l) * pvor * pvol
+                                               + weight * parcels%vorticity(n, c)
                     enddo
-                enddo
 
-                do l = 1, ngp
                     tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
-                                        + weights(l) * pvol * parcels%buoyancy(n)
+                                         + weight * parcels%buoyancy(n)
 
-                    volg(js(l), is(l)) = volg(js(l), is(l)) + weights(l) * pvol
+                    volg(js(l), is(l)) = volg(js(l), is(l)) + weight
                 enddo
             enddo
 
@@ -345,7 +345,7 @@ module parcel_interpl
             logical, optional, intent(in)       :: add
             character(*), optional, intent(in)  :: exact
             integer                             :: ncomp
-            double precision                    :: points(2, 2)
+            double precision                    :: points(2, 2), weight
             integer                             :: n, p, c, l
 
             ! number of field components
@@ -405,20 +405,21 @@ module parcel_interpl
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp
+                        weight = 0.5d0 * weights(l)
+
                         ! loop over field components
                         do c = 1, ncomp
                             ! the weight is halved due to 2 points per ellipse
                             vel(n, c) = vel(n, c) &
-                                      + 0.5d0 * weights(l) * velog(js(l), is(l), c)
+                                      + weight * velog(js(l), is(l), c)
                         enddo
 
                         do c = 1, 4
                             vgrad(n, c) = vgrad(n, c) &
-                                        + 0.5d0 * weights(l) * velgradg(js(l), is(l), c)
+                                        + weight * velgradg(js(l), is(l), c)
                         enddo
 
-                        vor(n, 1) = vor(n, 1) &
-                                  + 0.5d0 * weights(l) * vtend(js(l), is(l), 1)
+                        vor(n, 1) = vor(n, 1) + weight * vtend(js(l), is(l), 1)
                     enddo
                 enddo
             enddo
