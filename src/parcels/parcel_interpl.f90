@@ -186,10 +186,6 @@ module parcel_interpl
             buoyg(0,  :) = two * buoyg(1,    :) - buoyg(2,    :)
             buoyg(nz, :) = two * buoyg(nz-1, :) - buoyg(nz-2, :)
 
-            ! fill halo grid points
-            buoyg(-1,   :) = -buoyg(1,    :)
-            buoyg(nz+1, :) = -buoyg(nz-1, :)
-
             ! sum halo contribution into internal cells
             ! (be aware that halo cell contribution at upper boundary
             ! are added to cell nz)
