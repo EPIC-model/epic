@@ -120,16 +120,13 @@ module parcel_init
                 return
             endif
 
-            print *, "lam = ", lam
             ! do refining by splitting
             do while (lam >= parcel_info%lambda)
-                print *, "split"
                 call split_ellipses(parcels, parcel_info%lambda, parcel_info%vmaxfraction)
                 B22 = get_B22(parcels%B(1, 1), zero, parcels%volume(1))
                 a2 = get_eigenvalue(parcels%B(1, 1), zero, B22)
                 lam = a2 / get_ab(parcels%volume(1))
             end do
-            print *, "lam = ", lam
         end subroutine init_refine
 
 end module parcel_init
