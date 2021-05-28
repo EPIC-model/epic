@@ -47,8 +47,11 @@ module parcel_init
                     ratio = one / ratio
                 endif
 
+                ! B11
                 parcels%B(1:n_parcels, 1) = ratio * get_ab(parcels%volume(1:n_parcels))
-                parcels%B(1:n_parcels, 2) = zero ! B12
+
+                ! B12
+                parcels%B(1:n_parcels, 2) = zero
 
                 call init_refine(lam)
 
