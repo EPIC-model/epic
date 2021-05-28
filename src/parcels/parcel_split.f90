@@ -48,7 +48,7 @@ module parcel_split
                 ! this ellipse is split, i.e., add a new parcel
                 !
 
-                evec = get_eigenvector(a2, B12, B22)
+                evec = get_eigenvector(a2, B11, B12, B22)
 
                 parcels%B(n, 1) = B11 - 0.75d0 * a2 * evec(1) ** 2
                 parcels%B(n, 2) = B12 - 0.75d0 * a2 * (evec(1) * evec(2))
