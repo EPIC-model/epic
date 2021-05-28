@@ -38,14 +38,10 @@ module parcel_init
             if (parcel_info%is_elliptic) then
                 deallocate(parcels%stretch)
 
-                ! aspect ratio: lam = a / b
-                ratio = max(dx(2) / dx(1), dx(1) / dx(2))
-                lam = ratio
+                ratio = dx(1) / dx(2)
 
-                if (dx(2) > dx(1)) then
-                    ! rotate ellipses by 90 degrees
-                    ratio = one / ratio
-                endif
+                ! aspect ratio: lam = a / b
+                lam = max(dx(2) / dx(1), ratio)
 
                 ! B11
                 parcels%B(1:n_parcels, 1) = ratio * get_ab(parcels%volume(1:n_parcels))

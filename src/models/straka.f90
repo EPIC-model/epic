@@ -10,13 +10,13 @@ module straka
 
         subroutine straka_init
             integer          :: n
-            double precision :: xc, xr, zc, zr, L, dT, dtheta, theta_0
+            double precision :: xc, xr, zc, zr, L, dT, dtheta, theta_0, pos(2)
 
             ! in metres
             xc = zero
-            xr = four
-            zc = three
-            zr = two
+            xr = four * thousand
+            zc = three * thousand
+            zr = two * thousand
 
             ! reference potential temperature
             theta_0 = 300.0d0 ! Kelvin

@@ -14,9 +14,9 @@
  ! grid info
  !
 
- box%nc          = 30, 10
- box%extent      = 20, 6.4
- box%origin      = -10.0, 0.0
+ box%nc          = 32, 16
+ box%extent      = 20000, 6400
+ box%origin      = -1000.0, 0.0
 
  !
  ! parcel info

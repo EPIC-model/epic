@@ -25,7 +25,7 @@ module fields
         vtend          ! vorticity tendency
 
     double precision, allocatable, dimension(:, :) :: &
-        buoyg,     &   ! buoyancy (has 1 halo cell layer in z)
+        tbuoyg,     &   ! buoyancy (has 1 halo cell layer in z)
         humg,      &   ! specific humidity
         humlig,    &   ! condensed humidity
         volg           ! volume scalar field (has 1 halo cell layer in z)
@@ -51,7 +51,7 @@ module fields
 
             allocate(vtend(-1:nz+1, 0:nx-1, 1))
 
-            allocate(buoyg(-1:nz+1, 0:nx-1))
+            allocate(tbuoyg(-1:nz+1, 0:nx-1))
 
             allocate(humg(-1:nz+1, 0:nx-1))
 
@@ -69,7 +69,7 @@ module fields
             volg     = zero
             vortg    = zero
             vtend    = zero
-            buoyg    = zero
+            tbuoyg    = zero
             humg     = zero
             humlig   = zero
             nparg    = zero
@@ -141,8 +141,8 @@ module fields
             call write_h5_dataset_2d(name, "volume", &
                                      volg(0:nz, 0:nx-1))
 
-            call write_h5_dataset_2d(name, "buoyancy", &
-                                     buoyg(0:nz, 0:nx-1))
+            call write_h5_dataset_2d(name, "total buoyancy", &
+                                     tbuoyg(0:nz, 0:nx-1))
 
             call write_h5_dataset_2d(name, "humidity", &
                                      humg(0:nz, 0:nx-1))
