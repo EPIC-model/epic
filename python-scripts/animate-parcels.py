@@ -26,6 +26,7 @@ try:
     parser.add_argument("--coloring",
                         type=str,
                         required=False,
+                        default='aspect-ratio',
                         help="how to color the parcels")
 
     if not '--filename' in sys.argv:
