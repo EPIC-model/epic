@@ -190,7 +190,7 @@ program epic
             double precision :: H, S11, S12, S21, S22, gmax
             integer          :: i, j
 
-            H = zero
+            H = epsilon(zero)
             if (parcel_info%is_elliptic .and. time%is_adaptive) then
                 do i = 0, nx-1
                     do j = 0, nz
