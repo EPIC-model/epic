@@ -149,7 +149,7 @@ AM_CONDITIONAL([ENABLE_DEBUG], [test "$ENABLE_DEBUG" = "yes"])
 AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
-    FCFLAGS="$FCFLAGS -g -O0 -fbounds-check -fbacktrace"
+    FCFLAGS="$FCFLAGS -g -O0 -fbounds-check -fbacktrace -ffpe-trap=zero,overflow,underflow"
 else
     AC_MSG_RESULT([no])
     FCFLAGS="$FCFLAGS -O3"
