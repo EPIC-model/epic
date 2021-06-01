@@ -1,6 +1,6 @@
 &EPIC
 
- model              = 'Robert-gaussian'  ! Robert-gaussian
+ model              = 'Robert-gaussian'  ! Robert-uniform
 
  !
  ! output info
