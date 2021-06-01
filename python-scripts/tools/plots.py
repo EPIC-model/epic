@@ -89,14 +89,13 @@ def plot_parcels(fname, begin=0, end=-1, show=False, fmt="png",
 
         _plot_parcels(ax, h5reader, i, coloring, vmin, vmax)
 
-    h5reader.close()
-
-    if show:
-        plt.show()
+        if show:
+            plt.show()
+        else:
+            plt.savefig('parcels_'  + coloring + '_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
+                        bbox_inches='tight')
         plt.close()
-    else:
-        plt.savefig('parcels_'  + coloring + '_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
-                    bbox_inches='tight')
+    h5reader.close()
 
 
 
@@ -429,3 +428,25 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
         prefix = os.path.splitext(fname)[0]
         plt.savefig(prefix + '_parcel_volume_profile.' + fmt, bbox_inches='tight')
     plt.close()
+
+
+#def plot_field(fname, show=False, fmt="png", ax=None):
+
+    #h5reader = H5Reader()
+    #h5reader.open(fname)
+
+    #extent = h5reader.get_mesh_extent()
+    #origin = h5reader.get_mesh_origin()
+    #grid   = h5reader.get_mesh_grid()
+
+    #xx = np.linspace(origin[0], origin[0] + extent[0], grid[0]-1, endpoint=False)
+    #yy = np.linspace(origin[1], origin[1] + extent[1], grid[1]-1, endpoint=False)
+    #yy, xx = np.meshgrid(yy, xx)
+
+#sc = axes.pcolormesh(xx, yy, npc, shading='nearest')
+#plt.colorbar(sc, ax=axes)
+#plt.xlabel('x')
+#plt.ylabel('y')
+#plt.tight_layout()
+#plt.show()
+#plt.close()
