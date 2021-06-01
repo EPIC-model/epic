@@ -35,7 +35,7 @@ module straka
                     dT = -7.5d0 * (dcos(pi * L) + one)
                 endif
 
-                ! potential temperatur
+                ! potential temperature
                 dtheta = dT * pi
 
                 ! MPIC paper:
