@@ -9,9 +9,9 @@ module classic_rk4
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
-    use tri_inversion, only : vor2vel
+    use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
-    use fields, only : velgradg, velog, vortg, vtend
+    use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     implicit none
     integer, parameter :: dp=kind(0.d0)           ! double precision
 
@@ -110,6 +110,7 @@ module classic_rk4
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
             call grid2par(k1o, w1o, strain)
             b1o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels))
@@ -127,6 +128,7 @@ module classic_rk4
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
             call grid2par(k2o, w2o, strain)
             b2o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels))
@@ -144,6 +146,7 @@ module classic_rk4
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
             call grid2par(k3o, w3o, strain)
             b3o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels))
@@ -161,6 +164,7 @@ module classic_rk4
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
             call grid2par(k4o, w4o, strain)
             b4o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels))
@@ -196,6 +200,7 @@ module classic_rk4
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
             call grid2par(k1o, w1o, strain)
 
             ! apply velocity BC --> only important for free slip
@@ -213,6 +218,7 @@ module classic_rk4
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
             call grid2par(k2o, w2o, strain)
 
             ! apply velocity BC --> only important for free slip
@@ -229,6 +235,7 @@ module classic_rk4
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
             call grid2par(k3o, w3o, strain)
 
             ! apply velocity BC --> only important for free slip
@@ -245,6 +252,7 @@ module classic_rk4
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
             call grid2par(k4o, w4o, strain)
 
             ! apply velocity BC --> only important for free slip

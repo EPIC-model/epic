@@ -12,7 +12,9 @@ module options
     logical :: verbose = .false.
 
     ! configuration file
-    character(len=32) :: filename = ''
+    character(len=64) :: filename = ''
+
+    character(len=32) :: model = 'TaylorGreen'
 
     !
     ! output options
@@ -28,8 +30,9 @@ module options
     ! domain options
     !
     type box_type
-        integer          :: nc(2) = (/20, 20/)                  ! number of cells
+        integer          :: nc(2)     = (/20, 20/)                  ! number of cells
         double precision :: extent(2) = (/pi, pi/)
+        double precision :: origin(2)  = (/-0.5d0 * pi, -0.5d0 * pi/)
     end type box_type
 
     type(box_type) :: box

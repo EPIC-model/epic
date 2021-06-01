@@ -48,7 +48,7 @@ module parcel_split
                 ! this ellipse is split, i.e., add a new parcel
                 !
 
-                evec = get_eigenvector(a2, B12, B22)
+                evec = get_eigenvector(a2, B11, B12, B22)
 
                 parcels%B(n, 1) = B11 - 0.75d0 * a2 * evec(1) ** 2
                 parcels%B(n, 2) = B12 - 0.75d0 * a2 * (evec(1) * evec(2))
@@ -64,8 +64,8 @@ module parcel_split
                 parcels%velocity(n_parcels, :) = parcels%velocity(n, :)
                 parcels%vorticity(n_parcels, :) = parcels%vorticity(n, :)
                 parcels%volume(n_parcels) = parcels%volume(n)
-                parcels%buoyancy(n_parcels, 1) = parcels%buoyancy(n, 1)
-                parcels%humidity(n_parcels, 1) = parcels%humidity(n, 1)
+                parcels%buoyancy(n_parcels) = parcels%buoyancy(n)
+                parcels%humidity(n_parcels) = parcels%humidity(n)
 
                 parcels%position(n_parcels, :) = parcels%position(n, :) - h * evec
                 parcels%position(n, :) = parcels%position(n, :)  + h * evec

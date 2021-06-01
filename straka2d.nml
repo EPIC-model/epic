@@ -1,20 +1,22 @@
 &EPIC
 
- model              = 'TaylorGreen'
+ model              = 'Straka'
 
  !
  ! output info
  !
 
- output%h5freq      = 1
+ output%h5freq      = 10
 
- output%h5fname     = 'taylorgreen2d.hdf5'
+ output%h5fname     = 'straka2d.hdf5'
 
  !
  ! grid info
  !
 
- box%nc          = 10, 10
+ box%nc          = 32, 16
+ box%extent      = 20000, 6400
+ box%origin      = -10000.0, 0.0
 
  !
  ! parcel info
@@ -55,15 +57,15 @@
  !
  stepper            = 'classic-rk4'
 
- time%limit         = 20.0
+ time%limit         = 600.0
 
- time%dt            = 0.025
+ time%dt            = 1.0
 
  time%is_adaptive   = .true.
 
  time%alpha         = 0.025
 
- time%dt_max        = 0.125
+ time%dt_max        = 1.0
 
  !
  ! Taylor-Green flow parameters:

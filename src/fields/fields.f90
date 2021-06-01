@@ -21,13 +21,13 @@ module fields
     double precision, allocatable, dimension(:, :, :) :: &
         velog,     &   ! velocity vector field (has 1 halo cell layer in z)
         velgradg,  &   ! velocity gradient tensor (has 1 halo cell layer in z)
-        buoyg,     &   ! buoyancy (has 1 halo cell layer in z)
-        humg,      &   ! specific humidity
-        humlig,    &   ! condensed humidity
         vortg,     &   ! vorticity scalar field
         vtend          ! vorticity tendency
 
     double precision, allocatable, dimension(:, :) :: &
+        tbuoyg,     &   ! buoyancy (has 1 halo cell layer in z)
+        humg,      &   ! specific humidity
+        humlig,    &   ! condensed humidity
         volg           ! volume scalar field (has 1 halo cell layer in z)
 
 
@@ -51,11 +51,11 @@ module fields
 
             allocate(vtend(-1:nz+1, 0:nx-1, 1))
 
-            allocate(buoyg(-1:nz+1, 0:nx-1, 1))
+            allocate(tbuoyg(-1:nz+1, 0:nx-1))
 
-            allocate(humg(-1:nz+1, 0:nx-1, 1))
+            allocate(humg(-1:nz+1, 0:nx-1))
 
-            allocate(humlig(-1:nz+1, 0:nx-1, 1))
+            allocate(humlig(-1:nz+1, 0:nx-1))
 
             allocate(nparg(-1:nz, 0:nx-1))
 
@@ -69,7 +69,7 @@ module fields
             volg     = zero
             vortg    = zero
             vtend    = zero
-            buoyg    = zero
+            tbuoyg    = zero
             humg     = zero
             humlig   = zero
             nparg    = zero
@@ -141,17 +141,20 @@ module fields
             call write_h5_dataset_2d(name, "volume", &
                                      volg(0:nz, 0:nx-1))
 
-            call write_h5_dataset_3d(name, "buoyancy", &
-                                     buoyg(0:nz, 0:nx-1, :))
+            call write_h5_dataset_2d(name, "total buoyancy", &
+                                     tbuoyg(0:nz, 0:nx-1))
 
-            call write_h5_dataset_3d(name, "humidity", &
-                                     humg(0:nz, 0:nx-1, :))
+            call write_h5_dataset_2d(name, "humidity", &
+                                     humg(0:nz, 0:nx-1))
 
             call write_h5_dataset_3d(name, "vorticity", &
                                      vortg(0:nz, 0:nx-1, :))
 
-            call write_h5_dataset_3d(name, "liquid humidity", &
-                                     humlig(0:nz, 0:nx-1, :))
+            call write_h5_dataset_2d(name, "liquid humidity", &
+                                     humlig(0:nz, 0:nx-1))
+
+            call write_h5_dataset_3d(name, "tendency", &
+                                     vtend(0:nz, 0:nx-1, :))
 
             call write_h5_int_dataset_2d(name, "num parcels per cell", &
                                          nparg(0:nz-1, :))

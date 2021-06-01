@@ -1,10 +1,11 @@
 ! =============================================================================
 !               This module initializes all parcels and fields.
 ! =============================================================================
-module model
+module models
     use parcel_init, only : parcel_default
     use fields, only : field_default
     use taylorgreen
+    use straka
     implicit none
 
     contains
@@ -16,12 +17,14 @@ module model
 
             call field_default
 
-            select case (name)
+            select case (trim(name))
                 case ('TaylorGreen')
                     call taylorgreen_init
+                case ('Straka')
+                    call straka_init
                 case default
-                    print *, "Invalid simulation type: '", name, "'"
+                    print *, "Invalid simulation type: '", trim(name), "'"
                     stop
             end select
         end subroutine model_init
-end module model
+end module models

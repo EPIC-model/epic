@@ -4,7 +4,8 @@ volg     -- volume
 velog    -- velocity
 velgradg -- velocity gradient tensor
 vortg    -- vorticity
-buoyg    -- buoyancy
+tbuoyg   -- total buoyancy
+dbuoyg   -- dry buoyancy
 humg     -- specific humidity
 humlig   -- condensed humidity
 nparg    -- number of parcels per grid box

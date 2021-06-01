@@ -8,8 +8,8 @@ module ls_rk4
     use parcel_bc
     use rk4_utils, only: get_B
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
-    use fields, only : velgradg, velog, vortg, vtend
-    use tri_inversion, only : vor2vel
+    use fields, only : velgradg, velog, vortg, vtend, tbuoyg
+    use tri_inversion, only : vor2vel, vorticity_tendency
     use parameters, only : nx, nz
     implicit none
 
@@ -84,6 +84,7 @@ module ls_rk4
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
 
             if(step==1) then
                call grid2par(velocity_p, dwdt, strain)
@@ -133,6 +134,7 @@ module ls_rk4
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
 
             if(step==1) then
                 call grid2par(velocity_p, dwdt, strain)

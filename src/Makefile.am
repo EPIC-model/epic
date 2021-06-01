@@ -1,6 +1,7 @@
 bin_PROGRAMS = epic
 epic_SOURCES = 					\
 	utils/constants.f90 			\
+	utils/physics.f90			\
 	utils/stafft.f90			\
 	utils/deriv1d.f90			\
 	utils/options.f90			\
@@ -15,7 +16,8 @@ epic_SOURCES = 					\
 	parcels/parcel_split.f90		\
 	parcels/parcel_init.f90			\
 	models/taylorgreen.f90			\
-	models/model.f90			\
+	models/straka.f90			\
+	models/models.f90			\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_correction.f90		\
 	utils/parser.f90 			\

@@ -26,7 +26,7 @@ module parser
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODEL/ output, box, parcel, stepper, time, flow, interpl
+            namelist /EPIC/ model, output, box, parcel, stepper, time, flow, interpl
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -39,7 +39,7 @@ module parser
             ! open and read Namelist file.
             open(action='read', file=filename, iostat=ios, newunit=fn)
 
-            read(nml=MODEL, iostat=ios, unit=fn)
+            read(nml=EPIC, iostat=ios, unit=fn)
 
             if (ios /= 0) then
                 print *, 'Error: invalid Namelist format.'
@@ -114,7 +114,7 @@ module parser
             group = open_h5_group("mesh")
 
             call write_h5_double_vector_attrib(group, "extent", box%extent)
-            call write_h5_double_vector_attrib(group, "origin", lower)
+            call write_h5_double_vector_attrib(group, "origin", box%origin)
             call write_h5_integer_vector_attrib(group, "grid", box%nc + 1)
 
             call h5gclose_f(group, h5err)

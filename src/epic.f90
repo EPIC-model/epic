@@ -15,7 +15,7 @@ program epic
     use tri_inversion, only : init_inversion
     use parcel_interpl
     use rk4
-    use model, only : model_init
+    use models, only : model_init
     use writer, only : open_h5_file,                        &
                        close_h5_file,                       &
                        write_h5_double_scalar_step_attrib,  &
@@ -39,6 +39,8 @@ program epic
     contains
 
         subroutine pre_run
+            use options, only : model
+
             ! parse the config file
             call read_config_file
 
@@ -46,7 +48,7 @@ program epic
 
             call parcel_alloc(max_num_parcels)
 
-            call model_init("TaylorGreen")
+            call model_init(model)
 
             call rk4_alloc(max_num_parcels)
 
@@ -55,7 +57,6 @@ program epic
             call init_parcel_correction
 
             call par2grid
-
 
         end subroutine
 
@@ -189,7 +190,7 @@ program epic
             double precision :: H, S11, S12, S21, S22, gmax
             integer          :: i, j
 
-            H = zero
+            H = epsilon(zero)
             if (parcel_info%is_elliptic .and. time%is_adaptive) then
                 do i = 0, nx-1
                     do j = 0, nz

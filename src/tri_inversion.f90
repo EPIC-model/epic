@@ -25,7 +25,7 @@ module tri_inversion
         double precision, allocatable :: xtrig(:)
         integer                       :: xfactors(5)
 
-    public :: init_inversion, vor2vel
+    public :: init_inversion, vor2vel, vorticity_tendency
 
     contains
 
@@ -181,6 +181,30 @@ module tri_inversion
             velgradg(:, :, 2) = velgradg(:, :, 3) - vortg(:, :, 1)
             velgradg(:, :, 4) = -velgradg(:, :, 1)
         end subroutine vor2vel
+
+
+        subroutine vorticity_tendency(tbuoyg, vtend)
+            double precision, intent(in)  :: tbuoyg(-1:nz+1, 0:nx-1)
+            double precision, intent(out) :: vtend(-1:nz+1, 0:nx-1, 1)
+            double precision              :: psig(0:nz, 0:nx-1)
+
+            psig = tbuoyg(0:nz, 0:nx-1)
+
+            ! Forward x FFT:
+            call forfft(nz+1, nx, psig, xtrig, xfactors)
+
+            ! Compute x derivative spectrally of psig:
+            call deriv(nz+1, nx, hrkx, psig, vtend(0:nz, :, 1))
+
+            ! Reverse x FFT
+            call revfft(nz+1, nx, vtend(0:nz, :, 1), xtrig, xfactors)
+
+            ! Fill z grid lines outside domain:
+            vtend(-1,   :, 1) = two * vtend(0,  :, 1) - vtend(1,    :, 1)
+            vtend(nz+1, :, 1) = two * vtend(nz, :, 1) - vtend(nz-1, :, 1)
+
+        end subroutine vorticity_tendency
+
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

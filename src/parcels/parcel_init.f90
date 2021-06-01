@@ -3,9 +3,10 @@
 ! =============================================================================
 module parcel_init
     use options, only : parcel_info
-    use constants, only : zero, two
+    use constants, only : zero, two, one
     use parcel_container, only : parcels, n_parcels
-    use ellipse, only : get_ab
+    use ellipse, only : get_ab, get_B22, get_eigenvalue
+    use parcel_split, only : split_ellipses
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
     implicit none
 
@@ -19,6 +20,8 @@ module parcel_init
         ! Attention: This subroutine assumes that the parcel
         !            container is already allocated!
         subroutine parcel_default
+            double precision :: lam, ratio
+
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
             n_parcels = parcel_info%n_per_cell * ncell
@@ -35,10 +38,18 @@ module parcel_init
             if (parcel_info%is_elliptic) then
                 deallocate(parcels%stretch)
 
+                ratio = dx(1) / dx(2)
 
-                ! initialze circles
-                parcels%B(1:n_parcels, 1) = get_ab(parcels%volume(1:n_parcels)) ! B11
-                parcels%B(1:n_parcels, 2) = zero                                ! B12
+                ! aspect ratio: lam = a / b
+                lam = max(dx(2) / dx(1), ratio)
+
+                ! B11
+                parcels%B(1:n_parcels, 1) = ratio * get_ab(parcels%volume(1:n_parcels))
+
+                ! B12
+                parcels%B(1:n_parcels, 2) = zero
+
+                call init_refine(lam)
 
             else
                 deallocate(parcels%B)
@@ -47,8 +58,8 @@ module parcel_init
 
             parcels%velocity(1:n_parcels, :) = zero
             parcels%vorticity(1:n_parcels, :) = zero
-            parcels%buoyancy(1:n_parcels, 1) = zero
-            parcels%humidity(1:n_parcels, 1) = zero
+            parcels%buoyancy(1:n_parcels) = zero
+            parcels%humidity(1:n_parcels) = zero
         end subroutine parcel_default
 
 
@@ -100,5 +111,22 @@ module parcel_init
                 enddo
             enddo
         end subroutine init_regular_positions
+
+        subroutine init_refine(lam)
+            double precision, intent(inout) :: lam
+            double precision                :: B22, a2
+
+            if (.not. parcel_info%is_elliptic) then
+                return
+            endif
+
+            ! do refining by splitting
+            do while (lam >= parcel_info%lambda)
+                call split_ellipses(parcels, parcel_info%lambda, parcel_info%vmaxfraction)
+                B22 = get_B22(parcels%B(1, 1), zero, parcels%volume(1))
+                a2 = get_eigenvalue(parcels%B(1, 1), zero, B22)
+                lam = a2 / get_ab(parcels%volume(1))
+            end do
+        end subroutine init_refine
 
 end module parcel_init
