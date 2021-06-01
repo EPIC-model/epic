@@ -3,7 +3,7 @@
 !     (see https://de.wikipedia.org/wiki/Klassisches_Runge-Kutta-Verfahren)
 ! =============================================================================
 module classic_rk4
-    use constants, only : max_num_parcels
+    use constants, only : max_num_parcels, f16
     use parameters, only : nx, nz
     use options, only : parcel_info
     use parcel_container
@@ -17,7 +17,7 @@ module classic_rk4
 
     ! classic_rk4 temporaries
     double precision, allocatable, dimension(:, :) :: &
-        k1o, k2o, k3o, k4o,     &   ! position integration
+        veo,                    &   ! sum of velocities
         w1o, w2o, w3o, w4o,     &   ! vorticity integration
         strain,                 &   ! strain at parcel location
         b1o, b2o, b3o, b4o,     &   ! B matrix integration
@@ -35,10 +35,7 @@ module classic_rk4
             allocate(inipos(num, 2))
             allocate(inivor(num, 1))
 
-            allocate(k1o(num, 2))
-            allocate(k2o(num, 2))
-            allocate(k3o(num, 2))
-            allocate(k4o(num, 2))
+            allocate(veo(num, 2))
 
             allocate(w1o(num, 1))
             allocate(w2o(num, 1))
@@ -64,10 +61,7 @@ module classic_rk4
             deallocate(inipos)
             deallocate(inivor)
 
-            deallocate(k1o)
-            deallocate(k2o)
-            deallocate(k3o)
-            deallocate(k4o)
+            deallocate(veo)
 
             deallocate(w1o)
             deallocate(w2o)
@@ -111,82 +105,89 @@ module classic_rk4
             call par2grid
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
-            call grid2par(k1o, w1o, strain)
+            call grid2par(parcels%velocity, w1o, strain)
             b1o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels))
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(parcels%position, k1o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
 
-            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) + 0.5_dp * dt * k1o(1:n_parcels,:)
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
+                                            + 0.5_dp * dt * parcels%velocity(1:n_parcels,:)
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + 0.5_dp * dt * w1o(1:n_parcels,:)
             parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + 0.5_dp * dt * b1o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(parcels%position, k1o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
+            veo(1:n_parcels, :) = parcels%velocity(1:n_parcels, :)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
-            call grid2par(k2o, w2o, strain)
+            call grid2par(parcels%velocity, w2o, strain)
             b2o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels))
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(parcels%position, k2o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
 
-            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) + 0.5_dp * dt * k2o(1:n_parcels,:)
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
+                                            + 0.5_dp * dt * parcels%velocity(1:n_parcels,:)
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + 0.5_dp * dt * w2o(1:n_parcels,:)
             parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + 0.5_dp * dt * b2o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(parcels%position, k2o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
+            veo(1:n_parcels, :) = veo(1:n_parcels, :) + 2.0_dp * parcels%velocity(1:n_parcels, :)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
-            call grid2par(k3o, w3o, strain)
+            call grid2par(parcels%velocity, w3o, strain)
             b3o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels))
 
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(parcels%position, k3o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
-            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) + dt * k3o(1:n_parcels,:)
+            parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
+                                            + dt * parcels%velocity(1:n_parcels,:)
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + dt * w3o(1:n_parcels,:)
             parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + dt * b3o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(parcels%position, k3o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
+            veo(1:n_parcels, :) = veo(1:n_parcels, :) + 2.0_dp * parcels%velocity(1:n_parcels, :)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
-            call grid2par(k4o, w4o, strain)
+            call grid2par(parcels%velocity, w4o, strain)
             b4o(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                        parcels%volume(1:n_parcels))
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(parcels%position, k4o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
+
+            parcels%velocity(1:n_parcels, :) = (veo(1:n_parcels, :) + parcels%velocity(1:n_parcels, :)) * f16
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
-                             + dt / 6.0_dp * (k1o(1:n_parcels,:) + 2.0_dp &
-                             * k2o(1:n_parcels,:) + 2.0_dp * k3o(1:n_parcels,:) + k4o(1:n_parcels,:))
+                                            + dt * parcels%velocity(1:n_parcels, :)
 
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                             + dt / 6.0_dp * (w1o(1:n_parcels,:) + 2.0_dp &
+                             + dt * f16 * (w1o(1:n_parcels,:) + 2.0_dp &
                              * w2o(1:n_parcels,:) + 2.0_dp * w3o(1:n_parcels,:) + w4o(1:n_parcels,:))
 
             parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) &
-                      + dt / 6.0_dp * (b1o(1:n_parcels,:) + 2.0_dp * b2o(1:n_parcels,:) &
+                      + dt * f16 * (b1o(1:n_parcels,:) + 2.0_dp * b2o(1:n_parcels,:) &
                       + 2.0_dp * b3o(1:n_parcels,:) + b4o(1:n_parcels,:))
 
             ! apply position BC
-            call apply_parcel_bc(parcels%position, k4o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
         end subroutine classic_rk4_elliptic
 
@@ -201,73 +202,79 @@ module classic_rk4
             call par2grid
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
-            call grid2par(k1o, w1o, strain)
+            call grid2par(parcels%velocity, w1o, strain)
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(parcels%position, k1o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
-                                          + 0.5_dp * dt * k1o(1:n_parcels,:)
+                                          + 0.5_dp * dt * parcels%velocity(1:n_parcels,:)
 
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
                                           + 0.5_dp * dt * w1o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(parcels%position, k1o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
+            veo(1:n_parcels, :) = parcels%velocity(1:n_parcels, :)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
-            call grid2par(k2o, w2o, strain)
+            call grid2par(parcels%velocity, w2o, strain)
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(parcels%position, k2o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
-                                          + 0.5_dp * dt * k2o(1:n_parcels,:)
+                                          + 0.5_dp * dt * parcels%velocity(1:n_parcels,:)
 
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
                                           + 0.5_dp * dt * w2o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(parcels%position, k2o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
+            veo(1:n_parcels, :) = veo(1:n_parcels, :) &
+                                + 2.0_dp * parcels%velocity(1:n_parcels, :)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
-            call grid2par(k3o, w3o, strain)
+            call grid2par(parcels%velocity, w3o, strain)
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(parcels%position, k3o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
-                                            + dt * k3o(1:n_parcels,:)
+                                            + dt * parcels%velocity(1:n_parcels,:)
 
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
                                             + dt * w3o(1:n_parcels,:)
 
             ! apply position BC
-            call apply_parcel_bc(parcels%position, k3o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
+            veo(1:n_parcels, :) = veo(1:n_parcels, :) &
+                                + 2.0_dp * parcels%velocity(1:n_parcels, :)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
-            call grid2par(k4o, w4o, strain)
+            call grid2par(parcels%velocity, w4o, strain)
 
             ! apply velocity BC --> only important for free slip
-            call apply_parcel_bc(parcels%position, k4o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
+
+            parcels%velocity(1:n_parcels, :) = (veo(1:n_parcels, :) + parcels%velocity(1:n_parcels, :)) * f16
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
-                             + dt / 6.0_dp * (k1o(1:n_parcels,:) + 2.0_dp &
-                             * k2o(1:n_parcels,:) + 2.0_dp * k3o(1:n_parcels,:) + k4o(1:n_parcels,:))
+                             + dt * parcels%velocity(1:n_parcels, :)
 
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                             + dt / 6.0_dp * (w1o(1:n_parcels,:) + 2.0_dp &
+                             + dt * f16 * (w1o(1:n_parcels,:) + 2.0_dp &
                              * w2o(1:n_parcels,:) + 2.0_dp * w3o(1:n_parcels,:) + w4o(1:n_parcels,:))
 
             ! apply position BC
-            call apply_parcel_bc(parcels%position, k4o)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
 
         end subroutine classic_rk4_non_elliptic
 

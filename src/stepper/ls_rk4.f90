@@ -16,10 +16,9 @@ module ls_rk4
     integer, parameter :: dp=kind(0.d0)           ! double precision
 
     double precision, allocatable, dimension(:, :) :: &
-        velocity_p, &   ! position integration
         strain, &   ! strain at parcel location
-        dbdt, &        ! B matrix integration
-        dwdt           ! vorticity integration
+        dbdt,   &   ! B matrix integration
+        dwdt        ! vorticity integration
 
     double precision, parameter :: &
         ca1 = - 567301805773.0_dp/1357537059087.0_dp,  &
@@ -39,7 +38,6 @@ module ls_rk4
         subroutine ls_rk4_alloc(num)
             integer, intent(in) :: num
 
-            allocate(velocity_p(num, 2))
             allocate(dwdt(num, 1))
             allocate(strain(num, 4))
 
@@ -53,7 +51,6 @@ module ls_rk4
         subroutine ls_rk4_dealloc
 
             ! TODO
-            deallocate(velocity_p)
             deallocate(dwdt)
             deallocate(strain)
 
@@ -87,9 +84,9 @@ module ls_rk4
             call vorticity_tendency(tbuoyg, vtend)
 
             if(step==1) then
-               call grid2par(velocity_p, dwdt, strain)
+               call grid2par(parcels%velocity, dwdt, strain)
             else
-               call grid2par_add(velocity_p, dwdt, strain)
+               call grid2par_add(parcels%velocity, dwdt, strain)
             endif
             if(step==1) then
                dbdt(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
@@ -99,14 +96,15 @@ module ls_rk4
                                    + get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                            parcels%volume(1:n_parcels))
             endif
-            parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
+            parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
+                                            + cb*dt*parcels%velocity(1:n_parcels,:)
             parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :) + cb*dt*dwdt(1:n_parcels, :)
             parcels%B(1:n_parcels,:) = parcels%B(1:n_parcels,:) + cb*dt*dbdt(1:n_parcels,:)
-            call apply_parcel_bc(parcels%position, velocity_p)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
             if(step==5) then
                return
             endif
-            velocity_p(1:n_parcels,:) = ca*velocity_p(1:n_parcels,:)
+            parcels%velocity(1:n_parcels,:) = ca*parcels%velocity(1:n_parcels,:)
             dwdt(1:n_parcels, :) = ca * dwdt(1:n_parcels, :)
             dbdt(1:n_parcels,:) = ca*dbdt(1:n_parcels,:)
             return
@@ -137,17 +135,18 @@ module ls_rk4
             call vorticity_tendency(tbuoyg, vtend)
 
             if(step==1) then
-                call grid2par(velocity_p, dwdt, strain)
+                call grid2par(parcels%velocity, dwdt, strain)
             else
-                call grid2par_add(velocity_p, dwdt, strain)
+                call grid2par_add(parcels%velocity, dwdt, strain)
             endif
-            parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) + cb*dt*velocity_p(1:n_parcels,:)
+            parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
+                                            + cb*dt*parcels%velocity(1:n_parcels,:)
             parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :) + cb*dt*dwdt(1:n_parcels, :)
-            call apply_parcel_bc(parcels%position, velocity_p)
+            call apply_parcel_bc(parcels%position, parcels%velocity)
             if(step==5) then
                return
             endif
-            velocity_p(1:n_parcels,:) = ca*velocity_p(1:n_parcels,:)
+            parcels%velocity(1:n_parcels,:) = ca*parcels%velocity(1:n_parcels,:)
             dwdt(1:n_parcels, :) = ca * dwdt(1:n_parcels, :)
             return
 
