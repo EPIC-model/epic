@@ -72,5 +72,5 @@ class BokehAnimation:
     def save(self, fname):
         ffmpeg_cmd1 = ['ffmpeg','-f','image2','-framerate','5','-i',os.path.join('temp-movie/movie.%05d.png'),'-c:','libx264','-pix_fmt','yuv444p','-vf','fps=5','-crf','20',fname]
         subprocess.call(ffmpeg_cmd1,shell=False)
-        #shutil.rmtree("temp-movie")
+        shutil.rmtree("temp-movie")
 
