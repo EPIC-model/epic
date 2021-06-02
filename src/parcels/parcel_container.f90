@@ -95,9 +95,11 @@ module parcel_container
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
 
+#ifdef ENABLE_VERBOSE
             if (verbose) then
                 print '(a19, i0, a6, i0)', '    replace parcel ', n, ' with ', m
             endif
+#endif
 
             parcels%position(n, 1) = parcels%position(m, 1)
             parcels%position(n, 2) = parcels%position(m, 2)
