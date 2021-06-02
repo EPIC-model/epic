@@ -73,10 +73,12 @@ program epic
 
                 dt = get_time_step()
 
+#ifdef ENABLE_VERBOSE
                 if (verbose) then
                     print "(a15, f0.4)", "time:          ", t
                     print "(a15, i0)", "iteration:     ", iter
                 endif
+#endif
 
                 ! make sure we always write initial setup
                 if (mod(iter - 1, output%h5freq) == 0) then
@@ -133,9 +135,11 @@ program epic
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
 
+#ifdef ENABLE_VERBOSE
             if (verbose) then
                 print "(a30)", "write fields and parcels to h5"
             endif
+#endif
 
             call open_h5_file(trim(output%h5fname))
 
@@ -239,8 +243,10 @@ program epic
                 i = i + 1
                 call get_command_argument(i, arg)
                 filename = trim(arg)
+#ifdef ENABLE_VERBOSE
             else if (arg == '--verbose') then
                 verbose = .true.
+#endif
             endif
             i = i+1
         end do
@@ -250,9 +256,11 @@ program epic
             stop
         endif
 
+#ifdef ENABLE_VERBOSE
         ! This is the main application of EPIC
         if (verbose) then
             print *, 'Running EPIC with "', trim(filename), '"'
         endif
+#endif
     end subroutine parse_command_line
 end program epic

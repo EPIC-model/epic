@@ -36,11 +36,13 @@ module parcel_merge
             ! find parcels to merge
             call find_nearest(isma, ibig, n_merge)
 
+#ifdef ENABLE_VERBOSE
             if (verbose) then
                 print "(a36, i0, a3, i0)",                               &
                       "no. parcels before and after merge: ", n_parcels, &
                       "...", n_parcels - n_merge
             endif
+#endif
 
             if (n_merge > 0) then
                 ! merge small parcels into large parcels
