@@ -72,8 +72,6 @@ module parcel_point
             last_index = n_parcels
             max_stretch = get_max_stretch(threshold, prefactor)
 
-
-
             do n = 1, last_index
                 if (.not. parcels%stretch(n) > max_stretch) then
                     cycle
@@ -103,7 +101,6 @@ module parcel_point
 
                 parcels%stretch(n) = zero
                 parcels%stretch(n_parcels) = zero
-
             enddo
 
             if (verbose) then
