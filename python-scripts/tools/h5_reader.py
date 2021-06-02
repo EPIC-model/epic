@@ -110,6 +110,19 @@ class H5Reader:
                             radius= np.sqrt(V[i]/np.pi) )
                     for i in range(len(V))]
 
+    def get_ellipses_for_bokeh(self, step):
+        position = self.get_parcel_dataset(step, 'position')
+        V = self.get_parcel_dataset(step, 'volume')
+        s = self._get_step_string(step)
+        if 'B' in self.h5file[s]['parcels'].keys():
+            B = self.get_parcel_dataset(step, 'B')
+            angle = self.get_parcel_dataset(step, 'orientation')
+            B22 = self._get_B22(B[0, :], B[1, :], V)
+            a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
+            b2 = (V / np.pi) ** 2 / a2
+            return position[0,:],position[1, :],2 * np.sqrt(a2[:]),2 * np.sqrt(b2[:]),angle[:]
+        else:
+            return position[0,:],position[1, :],2 * np.sqrt(V[:]/np.pi),2 * np.sqrt(V[:]/np.pi),0.*position[1, :]
 
     def get_aspect_ratio(self, step):
         V = self.get_parcel_dataset(step, 'volume')
