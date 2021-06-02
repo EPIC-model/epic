@@ -11,7 +11,7 @@ module parcel_merge
                                , n_parcels              &
                                , parcel_replace         &
                                , get_delx
-    use ellipse, only : get_B22, get_ab
+    use parcel_ellipse, only : get_B22, get_ab
     use options, only : parcel_info, verbose
     use parcel_bc
 

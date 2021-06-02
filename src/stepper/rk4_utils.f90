@@ -1,5 +1,5 @@
 module rk4_utils
-    use ellipse, only : get_B22
+    use parcel_ellipse, only : get_B22
     use constants, only : two
 
     implicit none

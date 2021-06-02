@@ -11,7 +11,7 @@ program test_ellipse_bi_vs_multi_merge
     use parcel_merge, only : merge_ellipses
     use options, only : parcel_info, box
     use parameters, only : update_parameters
-    use ellipse
+    use parcel_ellipse
     implicit none
 
     double precision :: error, B11, B12, vol, pos(2)

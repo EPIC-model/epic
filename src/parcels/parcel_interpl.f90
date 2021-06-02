@@ -8,7 +8,7 @@ module parcel_interpl
     use options, only : parcel_info, interpl
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
-    use ellipse
+    use parcel_ellipse
     use fields
     use taylorgreen, only : get_flow_velocity, &
                             get_flow_gradient, &

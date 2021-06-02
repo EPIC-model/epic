@@ -8,7 +8,7 @@ epic_SOURCES = 					\
 	utils/parameters.f90 			\
 	utils/writer.f90			\
 	fields/fields.f90			\
-	parcels/ellipse.f90			\
+	parcels/parcel_ellipse.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
 	parcels/parcel_nearest.f90		\
@@ -20,6 +20,7 @@ epic_SOURCES = 					\
 	models/models.f90			\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_correction.f90		\
+	parcels/parcel_point.f90		\
 	utils/parser.f90 			\
 	utils/diagnostics.f90			\
 	tri_inversion.f90			\

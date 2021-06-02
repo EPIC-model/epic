@@ -6,10 +6,10 @@ module parcel_split
     use constants, only : pi, three
     use parameters, only : vcell
     use parcel_container, only : parcel_container_type, n_parcels
-    use ellipse, only : get_eigenvalue      &
-                      , get_eigenvector     &
-                      , get_B22             &
-                      , get_aspect_ratio
+    use parcel_ellipse, only : get_eigenvalue      &
+                             , get_eigenvector     &
+                             , get_B22             &
+                             , get_aspect_ratio
     implicit none
 
     contains
