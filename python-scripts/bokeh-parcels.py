@@ -29,6 +29,30 @@ try:
                         default='aspect-ratio',
                         help="how to color the parcels")
 
+    parser.add_argument("--xmin",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help=" float to determine x min")
+
+    parser.add_argument("--xmax",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help=" float to determine x max")
+
+    parser.add_argument("--ymin",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help="float to determine y min")
+
+    parser.add_argument("--ymax",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help="float to determine y max")
+
     if not '--filename' in sys.argv:
         parser.print_help()
         exit(0)
@@ -46,7 +70,7 @@ try:
 
     anim = BokehAnimation()
 
-    anim.create(args.filename, coloring=args.coloring)
+    anim.create(args.filename, coloring=args.coloring, xmin=args.xmin, xmax=args.xmax, ymin=args.ymin, ymax=args.ymax)
 
     anim.save(args.saveas)
 
