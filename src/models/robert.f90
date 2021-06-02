@@ -1,3 +1,16 @@
+! =============================================================================
+!                       Robert ("Rising bubble") test case
+!
+!   This module sets up a bubble with uniform or Gaussian buoyancy profile.
+!   The setup is from the paper
+!
+!   Robert, A. (1993). Bubble Convection Experiments with a Semi-implicit
+!   Formulation of the Euler Equations, Journal of Atmospheric Sciences,
+!   50(13), 1865-1873. Retrieved Jun 2, 2021, from
+!   https://doi.org/10.1175/1520-0469(1993)050<1865:BCEWAS>2.0.CO;2
+!
+! =============================================================================
+
 module robert
     use physics
     use options, only : parcel_info
@@ -84,6 +97,4 @@ module robert
                 parcels%buoyancy(n) = gravity * dtheta / theta_0
             enddo
         end subroutine robert_gaussian_init
-
-
 end module
