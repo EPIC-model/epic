@@ -51,6 +51,14 @@ module parameters
         dx = extent / dble(box%nc)
         dxi = one / dx;
 
+        if (max(dxi(1) * dx(2), dxi(2) * dx(1)) > two) then
+            print *, '**********************************************************************'
+            print *, '*                                                                    *'
+            print *, '*   Warning: A mesh spacing ratio of more than 2 is not advisable!   *'
+            print *, '*                                                                    *'
+            print *, '**********************************************************************'
+        endif
+
         vcell = product(dx)
 
         nx = box%nc(1)
