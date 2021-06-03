@@ -23,7 +23,7 @@ module robert
 
         subroutine robert_uniform_init
             integer          :: n
-            double precision :: xc, zc, r, r2, dT, dtheta, theta_0, pos(2)
+            double precision :: xc, zc, r, r2, dtheta, theta_0, pos(2)
 
             ! in metres
             xc = zero
@@ -31,22 +31,18 @@ module robert
             r2 = 62500.d0
 
             ! reference potential temperature
-            theta_0 = 303.15d0 * pi ! Kelvin (approx 30 degree Celsius)
+            theta_0 = 303.15d0 ! Kelvin (approx 30 degree Celsius)
 
-            dT = zero
             do n = 1, n_parcels
                 r = (parcels%position(n, 1) - xc) ** 2 &
                   + (parcels%position(n, 2) - zc) ** 2
 
-                ! temperature perturbation
-                dT = zero
+                ! potential temperature perturbation
+                dtheta = zero
 
                 if (r <= r2) then
-                    dT = 0.5d0
+                    dtheta = 0.5d0
                 endif
-
-                ! potential temperatur
-                dtheta = dT * pi
 
                 ! MPIC paper:
                 ! liquid-water buoyancy is defined by b = g * (theta − theta_0) / theta_0
@@ -58,7 +54,7 @@ module robert
 
         subroutine robert_gaussian_init
             integer          :: n
-            double precision :: xc, zc, r, rr, dT, dtheta, theta_0, pos(2), a, fs2
+            double precision :: xc, zc, r, rr, dtheta, theta_0, pos(2), a, fs2
 
             ! in metres
             xc  = zero
@@ -68,28 +64,24 @@ module robert
             fs2 = (one / hundred) ** 2
 
             ! reference potential temperature
-            theta_0 = 303.15d0 * pi ! Kelvin (approx 30 degree Celsius)
+            theta_0 = 303.15d0 ! Kelvin (approx 30 degree Celsius)
 
-            dT = zero
             do n = 1, n_parcels
                 r = (parcels%position(n, 1) - xc) ** 2 &
                   + (parcels%position(n, 2) - zc) ** 2
 
                 r = dsqrt(r)
 
-                ! temperature perturbation
-                dT = zero
+                ! potential temperature perturbation
+                dtheta = zero
 
                 if (r <= rr) then
                     if (r <= a) then
-                        dT = 0.5d0
+                        dtheta = 0.5d0
                     else
-                        dT = 0.5d0 * dexp(-(r - a) ** 2 * fs2)
+                        dtheta = 0.5d0 * dexp(-(r - a) ** 2 * fs2)
                     endif
                 endif
-
-                ! potential temperatur
-                dtheta = dT * pi
 
                 ! MPIC paper:
                 ! liquid-water buoyancy is defined by b = g * (theta − theta_0) / theta_0
