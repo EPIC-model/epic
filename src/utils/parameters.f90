@@ -58,7 +58,7 @@ module parameters
             print *, '*                                                                    *'
             print *, '**********************************************************************'
 
-            if (box%isotropic) then
+            if (.not. box%allow_larger_anisotropy) then
                 stop
             endif
         endif
