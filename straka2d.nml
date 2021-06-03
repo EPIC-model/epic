@@ -68,19 +68,20 @@
  time%dt_max        = 1.0
 
  !
- ! Taylor-Green flow parameters:
- !      u(x, y) = A * cos(ax + d + pi/2) * sin(by + e)
- !      v(x, y) = B * sin(ax + d + pi/2) * cos(by + e)
+ ! Straka parameters:
  !
 
- ! amplitudes: A, B
- flow%amp           = 0.5, -1.0
+ ![Kelvin] reference potential temperature
+ straka_opt%theta_ref = 300.0d0
 
- ! frequencies: a, b
- flow%freq          = 2.0, 1.0
+ ![Kelvin] max. pot. temp. perturbation
+ straka_opt%theta_max = 15.0d0
 
- ! phase shifts: d, e
- flow%phase         = 0.0, 0.0
+ ![m] sphere center (x, z)
+ straka_opt%center(2) = (/zero, 3000.0d0/)
+
+ ![m] ellipse radii (x, z)
+ straka_opt%radii(2)  = (/4000.0d0, 2000.d0/)
 
 
  !

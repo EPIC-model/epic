@@ -72,13 +72,13 @@
  !
 
  ! amplitudes: A, B
- flow%amp           = 0.5, -1.0
+ taylor_green_opt%amp           = 0.5, -1.0
 
  ! frequencies: a, b
- flow%freq          = 2.0, 1.0
+ taylor_green_opt%freq          = 2.0, 1.0
 
  ! phase shifts: d, e
- flow%phase         = 0.0, 0.0
+ taylor_green_opt%phase         = 0.0, 0.0
 
 
  !

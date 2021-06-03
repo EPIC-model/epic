@@ -1,6 +1,6 @@
 &EPIC
 
- model              = 'Robert-gaussian'  ! Robert-uniform
+ model              = 'Robert'
 
  !
  ! output info
@@ -68,20 +68,29 @@
  time%dt_max        = 1.5
 
  !
- ! Taylor-Green flow parameters:
- !      u(x, y) = A * cos(ax + d + pi/2) * sin(by + e)
- !      v(x, y) = B * sin(ax + d + pi/2) * cos(by + e)
+ ! Robert parameters:
  !
 
- ! amplitudes: A, B
- flow%amp           = 0.5, -1.0
+ ! or 'uniform'
+ robert_opt%distr        = 'gaussian'
 
- ! frequencies: a, b
- flow%freq          = 2.0, 1.0
+ ![Kelvin] reference potential temperature
+ robert_opt%theta_ref    = 303.15d0
 
- ! phase shifts: d, e
- flow%phase         = 0.0, 0.0
+ ![Kelvin] max. pot. temp. perturbation
+ robert_opt%theta_max    = 0.5d0
 
+ ![m] sphere center (x, z)
+ robert_opt%center(2)    = (zero, 260.0d0)
+
+ ![m] sphere radius
+ robert_opt%outer_radius = 250.0d0
+
+ ![m] plateau radius ('gaussian' only)
+ robert_opt%inner_radius = 50.0d0
+
+ ![m] standard deviation of Gaussian
+ robert_opt%width        = 100.0d0
 
  !
  ! interpolation method
