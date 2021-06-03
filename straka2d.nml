@@ -72,16 +72,16 @@
  !
 
  ![Kelvin] reference potential temperature
- straka_opt%theta_ref = 300.0d0
+ straka_opt%theta_ref = 300.0
 
  ![Kelvin] max. pot. temp. perturbation
- straka_opt%theta_max = 15.0d0
+ straka_opt%theta_max = 15.0
 
  ![m] sphere center (x, z)
- straka_opt%center(2) = (/zero, 3000.0d0/)
+ straka_opt%center = 0.0, 3000.0
 
  ![m] ellipse radii (x, z)
- straka_opt%radii(2)  = (/4000.0d0, 2000.d0/)
+ straka_opt%radii = 4000.0, 2000.0
 
 
  !

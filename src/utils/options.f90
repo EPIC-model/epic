@@ -109,13 +109,13 @@ module options
     ! Robert case options
     !
     type robert_type
-        character(len=8) :: distr        = 'gaussian'      ! or 'uniform'
-        double precision :: theta_ref    = 303.15d0        ![Kelvin] reference potential temperature
-        double precision :: theta_max    = 0.5d0           ![Kelvin] max. pot. temp. perturbation
-        double precision :: center(2)    = (zero, 260.0d0) ![m] sphere center (x, z)
-        double precision :: outer_radius = 250.0d0         ![m] sphere radius
-        double precision :: inner_radius = 50.0d0          ![m] plateau radius ('gaussian' only)
-        double precision :: width        = 100.0d0         ![m] standard deviation of Gaussian
+        character(len=8) :: distr        = 'gaussian'        ! or 'uniform'
+        double precision :: theta_ref    = 303.15d0          ![Kelvin] reference potential temperature
+        double precision :: theta_max    = 0.5d0             ![Kelvin] max. pot. temp. perturbation
+        double precision :: center(2)    = (/zero, 260.0d0/) ![m] sphere center (x, z)
+        double precision :: outer_radius = 250.0d0           ![m] sphere radius
+        double precision :: inner_radius = 50.0d0            ![m] plateau radius ('gaussian' only)
+        double precision :: width        = 100.0d0           ![m] standard deviation of Gaussian
     end type robert_type
 
     type(robert_type) :: robert_opt
