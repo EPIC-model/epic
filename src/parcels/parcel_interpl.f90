@@ -173,11 +173,11 @@ module parcel_interpl
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
             ! add halo values to internals
-            vortg(1,  :, 1) = vortg(1,  :, 1) + vortg(-1,   :, 1)
-            vortg(nz, :, 1) = vortg(nz, :, 1) + vortg(nz+1, :, 1)
+            vortg(1,    :, 1) = vortg(1,    :, 1) + vortg(-1,   :, 1)
+            vortg(nz-1, :, 1) = vortg(nz-1, :, 1) + vortg(nz+1, :, 1)
 
-            tbuoyg(1,  :) = tbuoyg(1,  :) + tbuoyg(-1,   :)
-            tbuoyg(nz, :) = tbuoyg(nz, :) + tbuoyg(nz+1, :)
+            tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
+            tbuoyg(nz-1, :) = tbuoyg(nz-1, :) + tbuoyg(nz+1, :)
 
             ! linear extrapolation
             vortg(0,  :, 1) = two * vortg(1,    :, 1) - vortg(2,    :, 1)
