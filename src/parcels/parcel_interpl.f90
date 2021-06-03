@@ -153,7 +153,7 @@ module parcel_interpl
 
         subroutine par2grid
             vortg = zero
-            volg = epsilon(zero)
+            volg = zero
             nparg = zero
             tbuoyg = zero
 
@@ -172,21 +172,23 @@ module parcel_interpl
             volg(1,    :) = volg(1,    :) + volg(-1,   :)
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
-            vortg(:, :, 1) = vortg(:, :, 1) / volg
-
+            ! add halo values to internals
             vortg(1,  :, 1) = vortg(1,  :, 1) + vortg(-1,   :, 1)
             vortg(nz, :, 1) = vortg(nz, :, 1) + vortg(nz+1, :, 1)
+
+            tbuoyg(1,  :) = tbuoyg(1,  :) + tbuoyg(-1,   :)
+            tbuoyg(nz, :) = tbuoyg(nz, :) + tbuoyg(nz+1, :)
 
             ! linear extrapolation
             vortg(0,  :, 1) = two * vortg(1,    :, 1) - vortg(2,    :, 1)
             vortg(nz, :, 1) = two * vortg(nz-1, :, 1) - vortg(nz-2, :, 1)
 
-            ! exclude halo cells to avoid division by zero
-            tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
-
-            ! linear extrapolation
             tbuoyg(0,  :) = two * tbuoyg(1,    :) - tbuoyg(2,    :)
             tbuoyg(nz, :) = two * tbuoyg(nz-1, :) - tbuoyg(nz-2, :)
+
+            ! exclude halo cells to avoid division by zero
+            vortg(0:nz, :, 1) = vortg(0:nz, :, 1) / volg(0:nz, :)
+            tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
 
             ! sum halo contribution into internal cells
             ! (be aware that halo cell contribution at upper boundary
