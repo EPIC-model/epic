@@ -67,6 +67,9 @@ class BokehAnimation:
                 variable_of_interest=self.h5reader.get_parcel_dataset(step, coloring)
             new_source = dict(x=x,y=y, width=width, height=height,angle=angle,fill_color=variable_of_interest)
             source.data=new_source
+            nparcels= self.h5reader.get_num_parcels(step)
+            ttime=self.h5reader.get_step_attribute(step=step, name='t')
+            graph.title=coloring+'                              time=%15.3f'%ttime+'                              nparcels= %10d'%nparcels
             export_png(graph, filename = "temp-movie/movie.%05d.png"%step)
 
     def save(self, fname):
