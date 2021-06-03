@@ -57,6 +57,10 @@ module parameters
             print *, '*   Warning: A mesh spacing ratio of more than 2 is not advisable!   *'
             print *, '*                                                                    *'
             print *, '**********************************************************************'
+
+            if (box%isotropic) then
+                stop
+            endif
         endif
 
         vcell = product(dx)
