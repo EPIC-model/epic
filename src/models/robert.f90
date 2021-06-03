@@ -13,25 +13,45 @@
 
 module robert
     use physics
-    use options, only : parcel_info
+    use options, only : parcel_info, robert_opt
     use constants
     use parcel_container, only : parcels, n_parcels
     use fields, only : get_position
     implicit none
 
+    private :: robert_uniform_init, &
+               robert_gaussian_init
+
     contains
+
+        subroutine robert_init
+            character(:), allocatable :: distr
+
+            distr = trim(robert_opt%distr)
+
+            select case (distr)
+                case ('uniform')
+                    call robert_uniform_init
+                case ('gaussian')
+                    call robert_gaussian_init
+                case default
+                    print *, "Invalid distribution type: '", distr, "'"
+                    stop
+            end select
+
+        end subroutine robert_init
 
         subroutine robert_uniform_init
             integer          :: n
-            double precision :: xc, zc, r, r2, dtheta, theta_0, pos(2)
+            double precision :: xc, zc, r, r2, dtheta, theta_ref, pos(2)
 
             ! in metres
-            xc = zero
-            zc = 250.0d0 + ten
-            r2 = 62500.d0
+            xc = robert_opt%center(1)
+            zc = robert_opt%center(2)
+            r2 = robert_opt%outer_radius ** 2
 
             ! reference potential temperature
-            theta_0 = 303.15d0 ! Kelvin (approx 30 degree Celsius)
+            theta_ref = robert_opt%theta_ref
 
             do n = 1, n_parcels
                 r = (parcels%position(n, 1) - xc) ** 2 &
@@ -41,30 +61,34 @@ module robert
                 dtheta = zero
 
                 if (r <= r2) then
-                    dtheta = 0.5d0
+                    dtheta = robert_opt%theta_max
                 endif
 
                 ! MPIC paper:
-                ! liquid-water buoyancy is defined by b = g * (theta − theta_0) / theta_0
-                ! (dtheta = theta - theta_0)
-                parcels%buoyancy(n) = gravity * dtheta / theta_0
+                ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
+                ! (dtheta = theta - theta_ref)
+                parcels%buoyancy(n) = gravity * dtheta / theta_ref
             enddo
         end subroutine robert_uniform_init
 
 
         subroutine robert_gaussian_init
             integer          :: n
-            double precision :: xc, zc, r, rr, dtheta, theta_0, pos(2), a, fs2
+            double precision :: xc, zc, r, rr, dtheta, theta_ref, theta_max, pos(2), a, s, fs2
 
             ! in metres
-            xc  = zero
-            zc  = 250.0d0 + ten
-            rr  = 250.0d0
-            a   = 50.0d0
-            fs2 = (one / hundred) ** 2
+            xc = robert_opt%center(1)
+            zc = robert_opt%center(2)
+            rr = robert_opt%outer_radius
+            a  = robert_opt%inner_radius
+            s  = robert_opt%width
+            fs2 = (one / s) ** 2
 
             ! reference potential temperature
-            theta_0 = 303.15d0 ! Kelvin (approx 30 degree Celsius)
+            theta_ref = robert_opt%theta_ref
+
+            ! max. potential temperature perturbation
+            theta_max = robert_opt%theta_max
 
             do n = 1, n_parcels
                 r = (parcels%position(n, 1) - xc) ** 2 &
@@ -77,16 +101,16 @@ module robert
 
                 if (r <= rr) then
                     if (r <= a) then
-                        dtheta = 0.5d0
+                        dtheta = theta_max
                     else
-                        dtheta = 0.5d0 * dexp(-(r - a) ** 2 * fs2)
+                        dtheta = theta_max * dexp(-(r - a) ** 2 * fs2)
                     endif
                 endif
 
                 ! MPIC paper:
-                ! liquid-water buoyancy is defined by b = g * (theta − theta_0) / theta_0
-                ! (dtheta = theta - theta_0)
-                parcels%buoyancy(n) = gravity * dtheta / theta_0
+                ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
+                ! (dtheta = theta - theta_ref)
+                parcels%buoyancy(n) = gravity * dtheta / theta_ref
             enddo
         end subroutine robert_gaussian_init
 end module

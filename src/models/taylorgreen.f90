@@ -5,12 +5,12 @@
 !                   v(x, y) = B * sin(ax + d) * cos(by + e)
 !
 !                   The code uses following variable names:
-!                           flow%freq  = (/a, b/)
-!                           flow%amp   = (/A, B/)
-!                           flow%phase = (/d, e/)
+!                       taylor_green_opt%freq  = (/a, b/)
+!                       taylor_green_opt%amp   = (/A, B/)
+!                       taylor_green_opt%phase = (/d, e/)
 ! =============================================================================
 module taylorgreen
-    use options, only : flow
+    use options, only : taylor_green_opt
     use constants, only : pi
     use parcel_container, only : parcels, n_parcels
     use fields
@@ -42,8 +42,8 @@ module taylorgreen
 
             call get_flow_pos(pos, xx, zz)
 
-            vel(1) = flow%amp(1) * dcos(xx) * dsin(zz)
-            vel(2) = flow%amp(2) * dsin(xx) * dcos(zz)
+            vel(1) = taylor_green_opt%amp(1) * dcos(xx) * dsin(zz)
+            vel(2) = taylor_green_opt%amp(2) * dsin(xx) * dcos(zz)
         end function get_flow_velocity
 
         ! grad ordering : dudx, dudy, dvdx, dvdy
@@ -55,16 +55,16 @@ module taylorgreen
             call get_flow_pos(pos, xx, zz)
 
             ! du/dx = - a * A * sin(xx) * sin(zz)
-            grad(1) = - flow%freq(1) * flow%amp(1) * dsin(xx) * dsin(zz)
+            grad(1) = - taylor_green_opt%freq(1) * taylor_green_opt%amp(1) * dsin(xx) * dsin(zz)
 
             ! du/dy = b * A * cos(xx) * cos(zz)
-            grad(2) = flow%freq(2) * flow%amp(1) * dcos(xx) * dcos(zz)
+            grad(2) = taylor_green_opt%freq(2) * taylor_green_opt%amp(1) * dcos(xx) * dcos(zz)
 
             ! dv/dx = a * B * cos(xx) * np.cos(zz)
-            grad(3) = flow%freq(1) * flow%amp(2) * dcos(xx) * dcos(zz)
+            grad(3) = taylor_green_opt%freq(1) * taylor_green_opt%amp(2) * dcos(xx) * dcos(zz)
 
             ! dv/dy = - b * B * sin(xx) * sin(zz)
-            grad(4) = - flow%freq(2) * flow%amp(2) * dsin(xx) * dsin(zz)
+            grad(4) = - taylor_green_opt%freq(2) * taylor_green_opt%amp(2) * dsin(xx) * dsin(zz)
 
         end function get_flow_gradient
 
@@ -75,8 +75,8 @@ module taylorgreen
 
             call get_flow_pos(pos, xx, zz)
 
-            omega = (flow%amp(2) * flow%freq(1)     &
-                   - flow%amp(1) * flow%freq(2))    &
+            omega = (taylor_green_opt%amp(2) * taylor_green_opt%freq(1)     &
+                   - taylor_green_opt%amp(1) * taylor_green_opt%freq(2))    &
                    * dcos(xx) * dcos(zz)
         end function get_flow_vorticity
 
@@ -84,8 +84,8 @@ module taylorgreen
             double precision, intent(in) :: pos(2)
             double precision, intent(out) :: xx, zz
 
-            xx = flow%freq(1) * pos(1) + flow%phase(1) + hpi
-            zz = flow%freq(2) * pos(2) + flow%phase(2)
+            xx = taylor_green_opt%freq(1) * pos(1) + taylor_green_opt%phase(1) + hpi
+            zz = taylor_green_opt%freq(2) * pos(2) + taylor_green_opt%phase(2)
 
         end subroutine get_flow_pos
 

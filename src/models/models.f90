@@ -23,10 +23,8 @@ module models
                     call taylorgreen_init
                 case ('Straka')
                     call straka_init
-                case ('Robert-uniform')
-                    call robert_uniform_init
-                case ('Robert-gaussian')
-                    call robert_gaussian_init
+                case ('Robert')
+                    call robert_init
                 case default
                     print *, "Invalid simulation type: '", trim(name), "'"
                     stop

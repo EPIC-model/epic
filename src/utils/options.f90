@@ -83,14 +83,41 @@ module options
     character(len=32) :: interpl = 'trilinear'
 
     !
-    ! TaylorGreen flow options
+    ! TaylorGreen options
     !
-    type flow_type
+    type taylor_green_type
         double precision :: amp(2) = one    ! amplitudes
         double precision :: freq(2) = one   ! frequencies
         double precision :: phase(2) = one  ! phase shift
-    end type flow_type
+    end type taylor_green_type
 
-    type(flow_type) :: flow
+    type(taylor_green_type) :: taylor_green_opt
+
+    !
+    ! Straka case options
+    !
+    type straka_type
+        double precision :: theta_ref = 300.0d0               ![Kelvin] reference potential temperature
+        double precision :: theta_max = 15.0d0                ![Kelvin] max. pot. temp. perturbation
+        double precision :: center(2) = (/zero, 3000.0d0/)    ![m] sphere center (x, z)
+        double precision :: radii(2)  = (/4000.0d0, 2000.d0/) ![m] ellipse radii (x, z)
+    end type straka_type
+
+    type(straka_type) :: straka_opt
+
+    !
+    ! Robert case options
+    !
+    type robert_type
+        character(len=8) :: distr        = 'gaussian'      ! or 'uniform'
+        double precision :: theta_ref    = 303.15d0        ![Kelvin] reference potential temperature
+        double precision :: theta_max    = 0.5d0           ![Kelvin] max. pot. temp. perturbation
+        double precision :: center(2)    = (zero, 260.0d0) ![m] sphere center (x, z)
+        double precision :: outer_radius = 250.0d0         ![m] sphere radius
+        double precision :: inner_radius = 50.0d0          ![m] plateau radius ('gaussian' only)
+        double precision :: width        = 100.0d0         ![m] standard deviation of Gaussian
+    end type robert_type
+
+    type(robert_type) :: robert_opt
 
 end module options
