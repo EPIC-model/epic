@@ -153,7 +153,7 @@ module parcel_interpl
 
         subroutine par2grid
             vortg = zero
-            volg = zero
+            volg = epsilon(zero)
             nparg = zero
             tbuoyg = zero
 
@@ -172,8 +172,10 @@ module parcel_interpl
             volg(1,    :) = volg(1,    :) + volg(-1,   :)
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
-            ! exclude halo cells to avoid division by zero
-            vortg(0:nz, :, 1) = vortg(0:nz, :, 1) / volg(0:nz, :)
+            vortg(:, :, 1) = vortg(:, :, 1) / volg
+
+            vortg(1,  :, 1) = vortg(1,  :, 1) + vortg(-1,   :, 1)
+            vortg(nz, :, 1) = vortg(nz, :, 1) + vortg(nz+1, :, 1)
 
             ! linear extrapolation
             vortg(0,  :, 1) = two * vortg(1,    :, 1) - vortg(2,    :, 1)
