@@ -72,26 +72,17 @@
  ! Robert parameters:
  !
 
- ! or 'uniform'
- robert_opt%distr = 'gaussian'
-
  ![Kelvin] reference potential temperature
  robert_opt%theta_ref = 303.15
 
- ![Kelvin] max. pot. temp. perturbation
- robert_opt%theta_max = 0.5
+ robert_opt%n_bubbles = 1
 
- ![m] sphere center (x, z)
- robert_opt%center = 0.0, 260.0
-
- ![m] sphere radius
- robert_opt%outer_radius = 250.0
-
- ![m] plateau radius ('gaussian' only)
- robert_opt%inner_radius = 50.0
-
- ![m] standard deviation of Gaussian
- robert_opt%width = 100.0
+ robert_opt%bubbles(1)%distr = 'gaussian'
+ robert_opt%bubbles(1)%theta_max = 0.5
+ robert_opt%bubbles(1)%center = 0.0, 260.0
+ robert_opt%bubbles(1)%outer_radius = 250.0
+ robert_opt%bubbles(1)%inner_radius = 50.0
+ robert_opt%bubbles(1)%width = 100.0
 
  !
  ! interpolation method

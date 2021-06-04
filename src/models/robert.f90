@@ -13,7 +13,7 @@
 
 module robert
     use physics
-    use options, only : parcel_info, robert_opt
+    use options, only : parcel_info, robert_opt, bubble_type
     use constants
     use parcel_container, only : parcels, n_parcels
     use fields, only : get_position
@@ -25,30 +25,41 @@ module robert
     contains
 
         subroutine robert_init
-            character(:), allocatable :: distr
+            integer           :: k
+            type(bubble_type) :: bubble
 
-            distr = trim(robert_opt%distr)
+            parcels%buoyancy(1:n_parcels) = zero
 
-            select case (distr)
-                case ('uniform')
-                    call robert_uniform_init
-                case ('gaussian')
-                    call robert_gaussian_init
-                case default
-                    print *, "Invalid distribution type: '", distr, "'"
-                    stop
-            end select
+            if (robert_opt%n_bubbles > size(robert_opt%bubbles)) then
+                print *, 'Number of bubbles beyond upper limit.'
+                stop
+            endif
 
+
+            do k = 1, robert_opt%n_bubbles
+                bubble = robert_opt%bubbles(k)
+
+                select case (trim(bubble%distr))
+                    case ('uniform')
+                        call robert_uniform_init(bubble)
+                    case ('gaussian')
+                        call robert_gaussian_init(bubble)
+                    case default
+                        print *, "Invalid distribution type: '", trim(bubble%distr), "'"
+                        stop
+                end select
+            enddo
         end subroutine robert_init
 
-        subroutine robert_uniform_init
-            integer          :: n
-            double precision :: xc, zc, r2, r2_out, dtheta, theta_ref, pos(2)
+        subroutine robert_uniform_init(bubble)
+            type(bubble_type), intent(in) :: bubble
+            integer                       :: n
+            double precision              :: xc, zc, r2, r2_out, dtheta, theta_ref, pos(2)
 
             ! in metres
-            xc = robert_opt%center(1)
-            zc = robert_opt%center(2)
-            r2_out = robert_opt%outer_radius ** 2
+            xc = bubble%center(1)
+            zc = bubble%center(2)
+            r2_out = bubble%outer_radius ** 2
 
             ! reference potential temperature
             theta_ref = robert_opt%theta_ref
@@ -61,35 +72,37 @@ module robert
                 dtheta = zero
 
                 if (r2 <= r2_out) then
-                    dtheta = robert_opt%theta_max
+                    dtheta = bubble%theta_max
                 endif
 
                 ! MPIC paper:
                 ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
                 ! (dtheta = theta - theta_ref)
-                parcels%buoyancy(n) = gravity * dtheta / theta_ref
+                parcels%buoyancy(n) = parcels%buoyancy(n) &
+                                    + gravity * dtheta / theta_ref
             enddo
         end subroutine robert_uniform_init
 
 
-        subroutine robert_gaussian_init
-            integer          :: n
-            double precision :: xc, zc, r, r_out, r_in, dtheta
-            double precision :: theta_ref, theta_max, pos(2), s, fs2
+        subroutine robert_gaussian_init(bubble)
+            type(bubble_type), intent(in) :: bubble
+            integer                       :: n
+            double precision              :: xc, zc, r, r_out, r_in, dtheta
+            double precision              :: theta_ref, theta_max, pos(2), s, fs2
 
             ! in metres
-            xc = robert_opt%center(1)
-            zc = robert_opt%center(2)
-            r_out = robert_opt%outer_radius
-            r_in = robert_opt%inner_radius
-            s = robert_opt%width
+            xc = bubble%center(1)
+            zc = bubble%center(2)
+            r_out = bubble%outer_radius
+            r_in = bubble%inner_radius
+            s = bubble%width
             fs2 = (one / s) ** 2
 
             ! reference potential temperature
             theta_ref = robert_opt%theta_ref
 
             ! max. potential temperature perturbation
-            theta_max = robert_opt%theta_max
+            theta_max = bubble%theta_max
 
             do n = 1, n_parcels
                 r = (parcels%position(n, 1) - xc) ** 2 &
@@ -111,7 +124,8 @@ module robert
                 ! MPIC paper:
                 ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
                 ! (dtheta = theta - theta_ref)
-                parcels%buoyancy(n) = gravity * dtheta / theta_ref
+                parcels%buoyancy(n) = parcels%buoyancy(n) &
+                                    + gravity * dtheta / theta_ref
             enddo
         end subroutine robert_gaussian_init
 end module
