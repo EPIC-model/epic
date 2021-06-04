@@ -43,24 +43,24 @@ module robert
 
         subroutine robert_uniform_init
             integer          :: n
-            double precision :: xc, zc, r, r2, dtheta, theta_ref, pos(2)
+            double precision :: xc, zc, r2, r2_out, dtheta, theta_ref, pos(2)
 
             ! in metres
             xc = robert_opt%center(1)
             zc = robert_opt%center(2)
-            r2 = robert_opt%outer_radius ** 2
+            r2_out = robert_opt%outer_radius ** 2
 
             ! reference potential temperature
             theta_ref = robert_opt%theta_ref
 
             do n = 1, n_parcels
-                r = (parcels%position(n, 1) - xc) ** 2 &
-                  + (parcels%position(n, 2) - zc) ** 2
+                r2 = (parcels%position(n, 1) - xc) ** 2 &
+                   + (parcels%position(n, 2) - zc) ** 2
 
                 ! potential temperature perturbation
                 dtheta = zero
 
-                if (r <= r2) then
+                if (r2 <= r2_out) then
                     dtheta = robert_opt%theta_max
                 endif
 
@@ -74,14 +74,15 @@ module robert
 
         subroutine robert_gaussian_init
             integer          :: n
-            double precision :: xc, zc, r, rr, dtheta, theta_ref, theta_max, pos(2), a, s, fs2
+            double precision :: xc, zc, r, r_out, r_in, dtheta
+            double precision :: theta_ref, theta_max, pos(2), s, fs2
 
             ! in metres
             xc = robert_opt%center(1)
             zc = robert_opt%center(2)
-            rr = robert_opt%outer_radius
-            a  = robert_opt%inner_radius
-            s  = robert_opt%width
+            r_out = robert_opt%outer_radius
+            r_in = robert_opt%inner_radius
+            s = robert_opt%width
             fs2 = (one / s) ** 2
 
             ! reference potential temperature
@@ -99,11 +100,11 @@ module robert
                 ! potential temperature perturbation
                 dtheta = zero
 
-                if (r <= rr) then
-                    if (r <= a) then
+                if (r <= r_out) then
+                    if (r <= r_in) then
                         dtheta = theta_max
                     else
-                        dtheta = theta_max * dexp(-(r - a) ** 2 * fs2)
+                        dtheta = theta_max * dexp(-(r - r_in) ** 2 * fs2)
                     endif
                 endif
 
