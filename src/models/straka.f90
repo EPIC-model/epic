@@ -1,3 +1,15 @@
+! =============================================================================
+!                       Straka ("Cold bubble") test case
+!
+!   This module sets up a cold bubble as described in Straka et al (1993).
+!
+!   Straka, J.M., Wilhelmson, R.B., Wicker, L.J., Anderson, J.R. and
+!   Droegemeier, K.K. (1993), Numerical solutions of a non-linear density
+!   current: A benchmark solution and comparisons. Int. J. Numer. Meth. Fluids,
+!   17: 1-22. https://doi.org/10.1002/fld.1650170103
+!
+! =============================================================================
+
 module straka
     use physics
     use options, only : parcel_info, straka_opt
