@@ -2,7 +2,9 @@
 !                               Parcel diagnostics
 ! =============================================================================
 module parcel_diagnostics
-    use constants, only : zero
+    use constants, only : zero, one
+    use merge_sort
+    use parameters, only : extent, lower
     use parcel_container, only : parcels, n_parcels
     use hdf5
     use writer, only : h5file,                         &
@@ -26,27 +28,40 @@ module parcel_diagnostics
 
         ! compute the reference potential energy
         subroutine init_parcel_diagnostics
+            integer          :: ii(n_parcels), n
+            double precision :: gam, zmean
 
-            !TODO
-            peref = zero
+            ! sort buoyancy in ascending order
+            call msort(parcels%buoyancy(1:n_parcels), ii)
 
+            gam = one / extent(1)
+            zmean = lower(2) + 0.5d0 * gam * parcels%volume(ii(1))
+
+            peref = - parcels%buoyancy(ii(1)) * parcels%volume(ii(1)) * zmean
+            do n = 2, n_parcels
+                zmean = zmean + gam * parcels%volume(ii(n-1))
+
+                peref = peref &
+                      - parcels%buoyancy(ii(n)) * parcels%volume(ii(n)) * zmean
+            enddo
         end subroutine init_parcel_diagnostics
 
 
         subroutine calculate_diagnostics
             integer          :: n
-            double precision :: b, z, v, vel(2), vol
+            double precision :: b, z, v, vel(2), vol, zmin
 
             ! reset
             ke = zero
             pe = zero
 
+            zmin = lower(2)
             do n = 1, n_parcels
 
                 vel = parcels%velocity(n, :)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
-                z   = parcels%position(n, 2)
+                z   = parcels%position(n, 2) - zmin
 
                 ! kinetic energy
                 ke = ke + (vel(1) ** 2 + vel(2) ** 2) * vol
