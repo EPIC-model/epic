@@ -29,20 +29,23 @@ module parcel_diagnostics
         ! compute the reference potential energy
         subroutine init_parcel_diagnostics
             integer          :: ii(n_parcels), n
+            double precision :: b(n_parcels)
             double precision :: gam, zmean
 
+            b = parcels%buoyancy(1:n_parcels)
+
             ! sort buoyancy in ascending order
-            call msort(parcels%buoyancy(1:n_parcels), ii)
+            call msort(b, ii)
 
             gam = one / extent(1)
             zmean = lower(2) + 0.5d0 * gam * parcels%volume(ii(1))
 
-            peref = - parcels%buoyancy(ii(1)) * parcels%volume(ii(1)) * zmean
+            peref = - b(1) * parcels%volume(ii(1)) * zmean
             do n = 2, n_parcels
                 zmean = zmean + gam * parcels%volume(ii(n-1))
 
                 peref = peref &
-                      - parcels%buoyancy(ii(n)) * parcels%volume(ii(n)) * zmean
+                      - b(n) * parcels%volume(ii(n)) * zmean
             enddo
         end subroutine init_parcel_diagnostics
 
