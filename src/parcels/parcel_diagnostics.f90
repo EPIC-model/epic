@@ -14,12 +14,10 @@ module parcel_diagnostics
 
     private
 
-    ! potential energy reference
-    double precision :: peref
-
-    ! pe : potential energy
-    ! ke : kinetic energy
-    double precision :: pe, ke
+    ! peref : potential energy reference
+    ! pe    : potential energy
+    ! ke    : kinetic energy
+    double precision :: peref, pe, ke
 
     public :: init_parcel_diagnostics, &
               write_h5_parcel_diagnostics
