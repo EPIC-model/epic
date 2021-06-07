@@ -18,10 +18,10 @@ epic_SOURCES = 					\
 	models/taylorgreen.f90			\
 	models/straka.f90			\
 	models/models.f90			\
+	fields/field_diagnostics.f90		\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_correction.f90		\
 	utils/parser.f90 			\
-	utils/diagnostics.f90			\
 	tri_inversion.f90			\
 	stepper/rk4_utils.f90			\
 	stepper/classic_rk4.f90			\

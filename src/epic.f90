@@ -4,7 +4,7 @@
 program epic
     use hdf5
     use constants, only : max_num_parcels, zero
-    use diagnostics
+    use field_diagnostics
     use parser, only : read_config_file, write_h5_params
     use parcel_container
     use parcel_bc
@@ -151,7 +151,7 @@ program epic
 
             call write_h5_parcels(nw)
 
-            call write_h5_diagnostics(nw)
+            call write_h5_field_diagnostics(nw)
 
             call write_h5_fields(nw)
 
