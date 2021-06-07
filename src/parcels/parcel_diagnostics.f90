@@ -83,12 +83,8 @@ module parcel_diagnostics
             call write_h5_double_scalar_attrib(group, "kinetic energy", ke)
             call write_h5_double_scalar_attrib(group, "total energy", ke + pe)
 
-
             ! close all
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)
         end subroutine write_h5_parcel_diagnostics
-
-
-
 end module parcel_diagnostics
