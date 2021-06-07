@@ -37,7 +37,7 @@ module parcel_diagnostics
 
         subroutine calculate_diagnostics
             integer          :: n
-            double precision :: b, z, v, vel, vol
+            double precision :: b, z, v, vel(2), vol
 
             ! reset
             ke = zero

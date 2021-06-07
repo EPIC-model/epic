@@ -15,6 +15,7 @@ epic_SOURCES = 					\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\
 	parcels/parcel_init.f90			\
+	parcels/parcel_diagnostics.f90		\
 	models/taylorgreen.f90			\
 	models/straka.f90			\
 	models/models.f90			\
