@@ -42,7 +42,7 @@ module parcel_diagnostics
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
             do n = 2, n_parcels
-                zmean = zmean + gam * parcels%volume(ii(n-1))
+                zmean = zmean + gam * parcels%volume(ii(n))
 
                 peref = peref &
                       - b(n) * parcels%volume(ii(n)) * zmean
