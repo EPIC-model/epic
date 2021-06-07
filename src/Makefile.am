@@ -7,6 +7,7 @@ epic_SOURCES = 					\
 	utils/options.f90			\
 	utils/parameters.f90 			\
 	utils/writer.f90			\
+	utils/merge_sort.f90			\
 	fields/fields.f90			\
 	parcels/ellipse.f90			\
 	parcels/parcel_container.f90 		\
