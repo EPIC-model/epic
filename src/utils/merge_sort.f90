@@ -16,9 +16,9 @@ module merge_sort
         ! a  : value array to sort
         ! ai : index array
         subroutine msort(a, ai)
-            integer, intent(inout) :: a(:)
-            integer, intent(out)   :: ai(:)
-            integer                :: n, m
+            double precision, intent(inout) :: a(:)
+            integer, intent(out)            :: ai(:)
+            integer                         :: n, m
 
             m = size(a)
 
@@ -31,9 +31,10 @@ module merge_sort
         end subroutine msort
 
         recursive subroutine mergesort(a, ai, l, r)
-            integer, intent(inout)  :: a(:), ai(:)
-            integer, intent(in)  :: l, r
-            integer :: m
+            double precision, intent(inout) :: a(:)
+            integer,          intent(inout) :: ai(:)
+            integer,          intent(in)    :: l, r
+            integer                         :: m
 
             if (l < r) then
                 m = (l + r) / 2
@@ -46,10 +47,12 @@ module merge_sort
         end subroutine mergesort
 
         subroutine merging(a, ai, l, m, r)
-            integer, intent(inout) :: a(:), ai(:)
-            integer, intent(in)    :: l, m, r
-            integer                :: b(r), bi(r)
-            integer                :: i, j, k, h
+            double precision, intent(inout) :: a(:)
+            integer,          intent(inout) :: ai(:)
+            integer,          intent(in)    :: l, m, r
+            double precision                :: b(r)
+            integer                         :: bi(r)
+            integer                         :: i, j, k, h
 
             i = l
             j = m + 1
