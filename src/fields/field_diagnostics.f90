@@ -1,8 +1,7 @@
 ! =============================================================================
-!           This module contains diagnostics that are written to HDF5.
+!                   Field diagnostics that are written to HDF5.
 ! =============================================================================
-module diagnostics
-    use parcel_container
+module field_diagnostics
     use constants, only : zero
     use parameters, only : vcell, nx, nz, ngrid
     use fields
@@ -54,7 +53,7 @@ module diagnostics
         end function get_rms_vorticity_error
 
 
-        subroutine write_h5_diagnostics(iter)
+        subroutine write_h5_field_diagnostics(iter)
             integer, intent(in)           :: iter ! iteration
             integer(hid_t)                :: group
             integer(hid_t)                :: step_group
@@ -93,6 +92,6 @@ module diagnostics
             ! close all
             call h5gclose_f(group, h5err)
             call h5gclose_f(step_group, h5err)
-        end subroutine write_h5_diagnostics
+        end subroutine write_h5_field_diagnostics
 
-end module diagnostics
+end module field_diagnostics

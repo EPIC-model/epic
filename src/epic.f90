@@ -4,13 +4,14 @@
 program epic
     use hdf5
     use constants, only : max_num_parcels, zero
-    use diagnostics
+    use field_diagnostics
     use parser, only : read_config_file, write_h5_params
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses
     use parcel_merge, only : merge_ellipses
     use parcel_correction, only : init_parcel_correction, apply_laplace, apply_gradient
+    use parcel_diagnostics
     use fields
     use tri_inversion, only : init_inversion
     use parcel_interpl
@@ -55,6 +56,8 @@ program epic
             call init_inversion
 
             call init_parcel_correction
+
+            call init_parcel_diagnostics
 
             call par2grid
 
@@ -151,7 +154,8 @@ program epic
 
             call write_h5_parcels(nw)
 
-            call write_h5_diagnostics(nw)
+            call write_h5_field_diagnostics(nw)
+            call write_h5_parcel_diagnostics(nw)
 
             call write_h5_fields(nw)
 
