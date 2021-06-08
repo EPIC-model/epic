@@ -19,6 +19,7 @@ epic_SOURCES = 					\
 	parcels/parcel_diagnostics.f90		\
 	models/taylorgreen.f90			\
 	models/straka.f90			\
+	models/robert.f90			\
 	models/models.f90			\
 	fields/field_diagnostics.f90		\
 	parcels/parcel_interpl.f90 		\
