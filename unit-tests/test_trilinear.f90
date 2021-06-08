@@ -8,7 +8,7 @@ program test_trilinear
     use constants, only : pi, zero, one
     use parcel_container
     use parcel_interpl, only : par2grid
-    use options, only : parcel_info, box, interpl
+    use options, only : parcel_info, box
     use ellipse, only : get_ab
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg, field_alloc
@@ -49,9 +49,6 @@ program test_trilinear
 
     ! b12
     parcels%B(:, 2) = zero
-
-
-    interpl = 'trilinear'
 
     call par2grid
 

@@ -91,8 +91,4 @@
  robert_opt%bubbles(2)%inner_radius = 0.0
  robert_opt%bubbles(2)%width = 50.0
 
- !
- ! interpolation method
- !
- interpl            = 'trilinear'
 /

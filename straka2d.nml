@@ -83,9 +83,4 @@
  ![m] ellipse radii (x, z)
  straka_opt%radii = 4000.0, 2000.0
 
-
- !
- ! interpolation method
- !
- interpl            = 'trilinear'
 /
