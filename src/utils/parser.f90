@@ -26,7 +26,8 @@ module parser
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ model, output, box, parcel, stepper, time, flow, interpl
+            namelist /EPIC/ model, output, box, parcel, stepper, time, &
+                            taylor_green_opt, robert_opt, straka_opt, interpl
 
             ! check whether file exists
             inquire(file=filename, exist=exists)

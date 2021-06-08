@@ -1,20 +1,22 @@
 &EPIC
 
- model              = 'TaylorGreen'
+ model              = 'Robert'
 
  !
  ! output info
  !
 
- output%h5freq      = 1
+ output%h5freq      = 10
 
- output%h5fname     = 'taylorgreen2d.hdf5'
+ output%h5fname     = 'robert2d.hdf5'
 
  !
  ! grid info
  !
 
- box%nc          = 10, 10
+ box%nc          = 32, 48
+ box%extent      = 1000, 1500
+ box%origin      = -500.0, 0.0
 
  !
  ! parcel info
@@ -55,31 +57,32 @@
  !
  stepper            = 'classic-rk4'
 
- time%limit         = 20.0
+ time%limit         = 720.0
 
- time%dt            = 0.025
+ time%dt            = 1.0
 
  time%is_adaptive   = .true.
 
  time%alpha         = 0.025
 
- time%dt_max        = 0.125
+ time%dt_max        = 1.5
+
 
  !
- ! Taylor-Green flow parameters:
- !      u(x, y) = A * cos(ax + d + pi/2) * sin(by + e)
- !      v(x, y) = B * sin(ax + d + pi/2) * cos(by + e)
+ ! Robert parameters:
  !
 
- ! amplitudes: A, B
- taylor_green_opt%amp           = 0.5, -1.0
+ ![Kelvin] reference potential temperature
+ robert_opt%theta_ref = 303.15
 
- ! frequencies: a, b
- taylor_green_opt%freq          = 2.0, 1.0
+ robert_opt%n_bubbles = 1
 
- ! phase shifts: d, e
- taylor_green_opt%phase         = 0.0, 0.0
-
+ robert_opt%bubbles(1)%distr = 'gaussian'
+ robert_opt%bubbles(1)%theta_max = 0.5
+ robert_opt%bubbles(1)%center = 0.0, 260.0
+ robert_opt%bubbles(1)%outer_radius = 250.0
+ robert_opt%bubbles(1)%inner_radius = 50.0
+ robert_opt%bubbles(1)%width = 100.0
 
  !
  ! interpolation method
