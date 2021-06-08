@@ -10,12 +10,6 @@ module parser
     use writer
     implicit none
 
-    private
-    public :: read_config_file, &
-              write_h5_params
-
-    type(parcel_info_type) :: parcel
-
     contains
 
         ! parse configuration file
@@ -57,9 +51,6 @@ module parser
                 stop
             endif
 
-            ! update parcel options
-            parcel_info = parcel
-
             ! update global parameters
             call update_parameters()
 
@@ -75,11 +66,11 @@ module parser
             !
             group = open_h5_group("parcel")
 
-            call write_h5_integer_scalar_attrib(group, "n_per_cell", parcel_info%n_per_cell)
-            call write_h5_logical_attrib(group, "is_random", parcel_info%is_random)
-            call write_h5_integer_scalar_attrib(group, "seed", parcel_info%seed)
-            call write_h5_logical_attrib(group, "is_elliptic", parcel_info%is_elliptic)
-            call write_h5_double_scalar_attrib(group, "lambda", parcel_info%lambda)
+            call write_h5_integer_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
+            call write_h5_logical_attrib(group, "is_random", parcel%is_random)
+            call write_h5_integer_scalar_attrib(group, "seed", parcel%seed)
+            call write_h5_logical_attrib(group, "is_elliptic", parcel%is_elliptic)
+            call write_h5_double_scalar_attrib(group, "lambda", parcel%lambda)
 
             call h5gclose_f(group, h5err)
 
