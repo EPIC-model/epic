@@ -5,7 +5,7 @@ module parcel_nearest
     use constants, only : pi, max_num_parcels
     use parcel_container, only : parcels, n_parcels, get_delx
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz
-    use options, only : parcel_info
+    use options, only : parcel
 
     implicit none
 
@@ -38,7 +38,7 @@ module parcel_nearest
                 allocate(kc2(ncell))
             endif
 
-            vmin = vcell / dble(parcel_info%vfraction)
+            vmin = vcell / dble(parcel%vfraction)
 
             ! These parcels are marked for merger:
             l_merge(1:n_parcels)=(parcels%volume(1:n_parcels) < vmin)
@@ -108,12 +108,12 @@ module parcel_nearest
                 !   dsq/(a*b) < lambda_max/2
                 ! This will ensure a merged parcel does not split again
                 ! Since vmerge=pi*a*b, this implies
-                !   dsq*pi < 0.5*parcel_info%lambda*vmerge
+                !   dsq*pi < 0.5*parcel%lambda*vmerge
                 ! This is ensured by initialising the minimisation
                 ! with the values below
                 ! Might seem a bit radical to take a large vmergemin and small dsqmin
                 ! but computationally it is easy
-                dsqmin=0.5*parcel_info%lambda
+                dsqmin=0.5*parcel%lambda
                 vmergemin=pi
                 imin=0
 

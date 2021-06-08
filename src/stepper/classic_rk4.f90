@@ -5,7 +5,7 @@
 module classic_rk4
     use constants, only : max_num_parcels, f16
     use parameters, only : nx, nz
-    use options, only : parcel_info
+    use options, only : parcel
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
@@ -44,7 +44,7 @@ module classic_rk4
 
             allocate(strain(num, 4))
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                 allocate(iniB(num, 2))
 
                 allocate(b1o(num, 2))
@@ -70,7 +70,7 @@ module classic_rk4
 
             deallocate(strain)
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                 deallocate(iniB)
 
                 deallocate(b1o)
@@ -85,7 +85,7 @@ module classic_rk4
         subroutine classic_rk4_step(dt)
             double precision, intent(in) :: dt
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                 call classic_rk4_elliptic(dt)
             else
                 call classic_rk4_non_elliptic(dt)

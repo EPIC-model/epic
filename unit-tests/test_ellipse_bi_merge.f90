@@ -10,7 +10,7 @@ program test_ellipse_bi_merge
     use constants, only : pi, one, two, five
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, box
+    use options, only : parcel, box
     use parameters, only : update_parameters
     use ellipse
     implicit none
@@ -44,9 +44,9 @@ program test_ellipse_bi_merge
     parcels%humidity(2) = 1.2d0
 
     ! geometric merge
-    parcel_info%lambda = five
-    parcel_info%merge_type = 'bi-geometric'
-    parcel_info%vfraction = two
+    parcel%lambda = five
+    parcel%merge_type = 'bi-geometric'
+    parcel%vfraction = two
 
     call merge_ellipses(parcels)
 
@@ -96,7 +96,7 @@ program test_ellipse_bi_merge
     parcels%humidity(2) = 1.2d0
 
     ! optimal merge
-    parcel_info%merge_type = 'bi-optimal'
+    parcel%merge_type = 'bi-optimal'
 
     call merge_ellipses(parcels)
 

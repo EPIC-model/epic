@@ -12,7 +12,7 @@
 
 module straka
     use physics
-    use options, only : parcel_info, straka_opt
+    use options, only : parcel, straka_opt
     use constants
     use parcel_container, only : parcels, n_parcels
     use fields, only : get_position

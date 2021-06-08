@@ -11,7 +11,7 @@ program test_ellipse_multi_merge_1
     use constants, only : pi, three, four, five
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, box
+    use options, only : parcel, box
     use parameters, only : update_parameters, lower
     use ellipse
     implicit none
@@ -36,9 +36,9 @@ program test_ellipse_multi_merge_1
     call parcel_setup
 
     ! geometric merge
-    parcel_info%lambda = five
-    parcel_info%merge_type = 'multi-geometric'
-    parcel_info%vfraction = three
+    parcel%lambda = five
+    parcel%merge_type = 'multi-geometric'
+    parcel%vfraction = three
 
     call merge_ellipses(parcels)
 
@@ -54,9 +54,9 @@ program test_ellipse_multi_merge_1
     call parcel_setup
 
     ! optimal merge
-    parcel_info%lambda = five
-    parcel_info%merge_type = 'multi-optimal'
-    parcel_info%vfraction = three
+    parcel%lambda = five
+    parcel%merge_type = 'multi-optimal'
+    parcel%vfraction = three
 
     call merge_ellipses(parcels)
 
