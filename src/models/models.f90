@@ -6,6 +6,7 @@ module models
     use fields, only : field_default
     use taylorgreen
     use straka
+    use robert
     implicit none
 
     contains
@@ -22,6 +23,8 @@ module models
                     call taylorgreen_init
                 case ('Straka')
                     call straka_init
+                case ('Robert')
+                    call robert_init
                 case default
                     print *, "Invalid simulation type: '", trim(name), "'"
                     stop

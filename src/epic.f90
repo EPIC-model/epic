@@ -4,13 +4,14 @@
 program epic
     use hdf5
     use constants, only : max_num_parcels, zero
-    use diagnostics
+    use field_diagnostics
     use parser, only : read_config_file, write_h5_params
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses
     use parcel_merge, only : merge_ellipses
     use parcel_correction, only : init_parcel_correction, apply_laplace, apply_gradient
+    use parcel_diagnostics
     use fields
     use tri_inversion, only : init_inversion
     use parcel_interpl
@@ -56,13 +57,15 @@ program epic
 
             call init_parcel_correction
 
+            call init_parcel_diagnostics
+
             call par2grid
 
         end subroutine
 
 
         subroutine run
-            use options, only : time, output, verbose, parcel_info
+            use options, only : time, output, verbose, parcel
             double precision :: t    = zero ! current time
             double precision :: dt   = zero ! time step
             integer          :: iter = 1    ! simulation iteration
@@ -73,10 +76,12 @@ program epic
 
                 dt = get_time_step()
 
+#ifdef ENABLE_VERBOSE
                 if (verbose) then
                     print "(a15, f0.4)", "time:          ", t
                     print "(a15, i0)", "iteration:     ", iter
                 endif
+#endif
 
                 ! make sure we always write initial setup
                 if (mod(iter - 1, output%h5freq) == 0) then
@@ -85,25 +90,25 @@ program epic
 
                 call rk4_step(dt)
 
-                if (parcel_info%is_elliptic .and.           &
-                    mod(iter, parcel_info%merge_freq) == 0) then
+                if (parcel%is_elliptic .and.           &
+                    mod(iter, parcel%merge_freq) == 0) then
                     call merge_ellipses(parcels)
                 endif
 
-                if (parcel_info%is_elliptic .and.           &
-                    mod(iter, parcel_info%split_freq) == 0) then
-                    call split_ellipses(parcels, parcel_info%lambda, parcel_info%vmaxfraction)
+                if (parcel%is_elliptic .and.           &
+                    mod(iter, parcel%split_freq) == 0) then
+                    call split_ellipses(parcels, parcel%lambda, parcel%vmaxfraction)
                 endif
 
-                if (mod(iter, parcel_info%correction_freq) == 0) then
+                if (mod(iter, parcel%correction_freq) == 0) then
                     call vol2grid
-                    do cor_iter=1,parcel_info%correction_iters
-                        if (parcel_info%apply_laplace) then
+                    do cor_iter=1,parcel%correction_iters
+                        if (parcel%apply_laplace) then
                             call apply_laplace(volg)
                             call vol2grid
                         endif
-                        if (parcel_info%apply_gradient) then
-                            call apply_gradient(volg,parcel_info%gradient_pref)
+                        if (parcel%apply_gradient) then
+                            call apply_gradient(volg,parcel%gradient_pref)
                             call vol2grid
                         end if
                     end do
@@ -133,9 +138,11 @@ program epic
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
 
+#ifdef ENABLE_VERBOSE
             if (verbose) then
                 print "(a30)", "write fields and parcels to h5"
             endif
+#endif
 
             call open_h5_file(trim(output%h5fname))
 
@@ -147,7 +154,8 @@ program epic
 
             call write_h5_parcels(nw)
 
-            call write_h5_diagnostics(nw)
+            call write_h5_field_diagnostics(nw)
+            call write_h5_parcel_diagnostics(nw)
 
             call write_h5_fields(nw)
 
@@ -191,7 +199,7 @@ program epic
             integer          :: i, j
 
             H = epsilon(zero)
-            if (parcel_info%is_elliptic .and. time%is_adaptive) then
+            if (parcel%is_elliptic .and. time%is_adaptive) then
                 do i = 0, nx-1
                     do j = 0, nz
                         S11 = velgradg(j, i, 1)
@@ -239,8 +247,10 @@ program epic
                 i = i + 1
                 call get_command_argument(i, arg)
                 filename = trim(arg)
+#ifdef ENABLE_VERBOSE
             else if (arg == '--verbose') then
                 verbose = .true.
+#endif
             endif
             i = i+1
         end do
@@ -250,9 +260,11 @@ program epic
             stop
         endif
 
+#ifdef ENABLE_VERBOSE
         ! This is the main application of EPIC
         if (verbose) then
             print *, 'Running EPIC with "', trim(filename), '"'
         endif
+#endif
     end subroutine parse_command_line
 end program epic

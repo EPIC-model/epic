@@ -10,7 +10,7 @@ program test_ellipse_multi_merge_symmetry
     use parcel_container
     use parcel_interpl, only : vol2grid_elliptic_symmetry_check
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel_info, box
+    use options, only : parcel, box
     use parameters, only : update_parameters, extent, nx, nz
     use fields, only : volg
     use parcel_ellipse
@@ -34,9 +34,9 @@ program test_ellipse_multi_merge_symmetry
     call parcel_setup
 
     ! geometric merge
-    parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'multi-geometric'
-    parcel_info%vfraction = 3
+    parcel%lambda = 5.0
+    parcel%merge_type = 'multi-geometric'
+    parcel%vfraction = 3
 
     call merge_ellipses(parcels)
 
@@ -52,9 +52,9 @@ program test_ellipse_multi_merge_symmetry
     call parcel_setup
 
     ! optimal merge
-    parcel_info%lambda = 5.0
-    parcel_info%merge_type = 'multi-optimal'
-    parcel_info%vfraction = 3
+    parcel%lambda = 5.0
+    parcel%merge_type = 'multi-optimal'
+    parcel%vfraction = 3
 
     call merge_ellipses(parcels)
 

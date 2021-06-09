@@ -7,7 +7,7 @@ AC_LANG(Fortran)
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
 
-FCFLAGS="-fdefault-real-8 -fdefault-double-8"
+FCFLAGS="-fdefault-real-8 -fdefault-double-8 -cpp"
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
@@ -139,6 +139,22 @@ AC_MSG_RESULT([$hdf5_found])
 ## "--enable" flags
 ##
 
+ENABLE_VERBOSE='no'
+AC_ARG_ENABLE([verbose],
+              [AS_HELP_STRING([--enable-verbose], [enable verbose mode (default=no)])],
+              [ENABLE_VERBOSE=$enableval])
+
+AM_CONDITIONAL([ENABLE_VERBOSE], [test "$ENABLE_VERBOSE" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling in verbose mode])
+if test "x$ENABLE_VERBOSE" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_VERBOSE"
+else
+    AC_MSG_RESULT([no])
+fi
+
+
 ENABLE_DEBUG='no'
 AC_ARG_ENABLE([debug],
               [AS_HELP_STRING([--enable-debug], [compile in debug mode (default=no)])],
@@ -150,6 +166,7 @@ AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
     FCFLAGS="$FCFLAGS -g -O0 -fbounds-check -fbacktrace -ffpe-trap=zero,overflow,underflow"
+    FCFLAGS="$FCFLAGS -DENABLE_VERBOSE"
 else
     AC_MSG_RESULT([no])
     FCFLAGS="$FCFLAGS -O3"

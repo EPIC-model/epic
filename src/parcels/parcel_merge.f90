@@ -12,7 +12,7 @@ module parcel_merge
                                , parcel_replace         &
                                , get_delx
     use parcel_ellipse, only : get_B22, get_ab
-    use options, only : parcel_info, verbose
+    use options, only : parcel, verbose
     use parcel_bc
 
     implicit none
@@ -36,24 +36,26 @@ module parcel_merge
             ! find parcels to merge
             call find_nearest(isma, ibig, n_merge)
 
+#ifdef ENABLE_VERBOSE
             if (verbose) then
                 print "(a36, i0, a3, i0)",                               &
                       "no. parcels before and after merge: ", n_parcels, &
                       "...", n_parcels - n_merge
             endif
+#endif
 
             if (n_merge > 0) then
                 ! merge small parcels into large parcels
-                if (parcel_info%merge_type == 'bi-geometric') then
+                if (parcel%merge_type == 'bi-geometric') then
                     call geometric_bimerge(parcels, isma, ibig, n_merge)
-                else if (parcel_info%merge_type == 'bi-optimal') then
+                else if (parcel%merge_type == 'bi-optimal') then
                     call optimal_bimerge(parcels, isma, ibig, n_merge)
-                else if (parcel_info%merge_type == 'multi-geometric') then
+                else if (parcel%merge_type == 'multi-geometric') then
                     call geometric_multimerge(parcels, isma, ibig, n_merge)
-                else if (parcel_info%merge_type == 'multi-optimal') then
+                else if (parcel%merge_type == 'multi-optimal') then
                     call optimal_multimerge(parcels, isma, ibig, n_merge)
                 else
-                    print *, "Unknown merge type '", trim(parcel_info%merge_type), "'."
+                    print *, "Unknown merge type '", trim(parcel%merge_type), "'."
                     stop
                 endif
 

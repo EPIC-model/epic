@@ -71,10 +71,12 @@ module parcel_split
                 parcels%position(n, :) = parcels%position(n, :)  + h * evec
             enddo
 
+#ifdef ENABLE_VERBOSE
             if (verbose) then
                 print "(a36, i0, a3, i0)", &
                       "no. parcels before and after split: ", last_index, "...", n_parcels
             endif
+#endif
 
         end subroutine split_ellipses
 

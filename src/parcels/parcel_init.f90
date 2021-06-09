@@ -2,7 +2,7 @@
 !               This module initializes parcel default values.
 ! =============================================================================
 module parcel_init
-    use options, only : parcel_info
+    use options, only : parcel
     use constants, only : zero, two, one
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
@@ -24,18 +24,18 @@ module parcel_init
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
-            n_parcels = parcel_info%n_per_cell * ncell
+            n_parcels = parcel%n_per_cell * ncell
 
-            if (parcel_info%is_random) then
+            if (parcel%is_random) then
                 call init_random_positions
             else
                 call init_regular_positions
             endif
 
             ! initialize the volume of each parcel
-            parcels%volume(1:n_parcels) = vcell / dble(parcel_info%n_per_cell)
+            parcels%volume(1:n_parcels) = vcell / dble(parcel%n_per_cell)
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                 deallocate(parcels%stretch)
 
                 ratio = dx(1) / dx(2)
@@ -70,7 +70,7 @@ module parcel_init
 
             call random_seed(size=k)
             allocate(seed(1:k))
-            seed(:) = parcel_info%seed
+            seed(:) = parcel%seed
             call random_seed(put=seed)
 
             do n = 1, n_parcels
@@ -89,10 +89,10 @@ module parcel_init
             double precision :: del(2)
 
             ! number of parcels per dimension
-            n_per_dim = dsqrt(dble(parcel_info%n_per_cell))
-            if (n_per_dim ** 2 .ne. parcel_info%n_per_cell) then
+            n_per_dim = dsqrt(dble(parcel%n_per_cell))
+            if (n_per_dim ** 2 .ne. parcel%n_per_cell) then
                 print *, "Number of parcels per cell (", &
-                         parcel_info%n_per_cell, ") not a square."
+                         parcel%n_per_cell, ") not a square."
                 stop
             endif
 
@@ -116,13 +116,13 @@ module parcel_init
             double precision, intent(inout) :: lam
             double precision                :: B22, a2
 
-            if (.not. parcel_info%is_elliptic) then
+            if (.not. parcel%is_elliptic) then
                 return
             endif
 
             ! do refining by splitting
-            do while (lam >= parcel_info%lambda)
-                call split_ellipses(parcels, parcel_info%lambda, parcel_info%vmaxfraction)
+            do while (lam >= parcel%lambda)
+                call split_ellipses(parcels, parcel%lambda, parcel%vmaxfraction)
                 B22 = get_B22(parcels%B(1, 1), zero, parcels%volume(1))
                 a2 = get_eigenvalue(parcels%B(1, 1), zero, B22)
                 lam = a2 / get_ab(parcels%volume(1))
