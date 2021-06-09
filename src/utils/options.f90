@@ -47,6 +47,7 @@ module options
         integer          :: seed         = 42             ! seed of random initialization
         logical          :: is_elliptic  = .true.         ! use elliptic model
         double precision :: lambda       = five           ! max. ellipse aspect ratio a/b
+        double precision :: prefactor    = 2.5d0          ! factor to compute max. stretch (non-elliptic only)
         integer          :: split_freq   = 1              ! split frequency, 1 = call split subroutine every step
         character(15)    :: merge_type   = 'bi-geometric' ! merge method in use (other option: 'optimal')
         integer          :: merge_freq   = 1              ! merge frequency, 1 = call merge subroutine every step
