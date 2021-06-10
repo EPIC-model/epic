@@ -85,7 +85,7 @@ module parcel_point
                 ! separate along direction of eigenvector
                 evec = get_eigenvector(S)
 
-                h = max_stretch * dsqrt(0.5d0 * parcels%volume(n) * fpi)
+                h = parcels%stretch(n) * dsqrt(0.5d0 * parcels%volume(n) * fpi)
 
                 parcels%volume(n) = 0.5d0 * parcels%volume(n)
 
@@ -190,12 +190,6 @@ module parcel_point
             res_tbuoyg(0,  :) = two * res_tbuoyg(1,    :) - res_tbuoyg(2,    :)
             res_tbuoyg(nz, :) = two * res_tbuoyg(nz-1, :) - res_tbuoyg(nz-2, :)
 
-
-            res_volg(0:nz, :) = res_volg(0:nz, :) / ori_volg(0:nz, :)
-            res_tbuoyg(0:nz, :) = res_tbuoyg(0:nz, :) / ori_volg(0:nz, :)
-            res_vortg(0:nz, :) = res_vortg(0:nz, :) / ori_volg(0:nz, :)
-
-
             if (n_remove > 0) then
 !                 print *, sum(parcels%volume(1:n_parcels))
 !                 print *, sum(parcels%vorticity(1:n_parcels, 1) * parcels%volume(1:n_parcels))
@@ -217,7 +211,7 @@ module parcel_point
                     call trilinear(pos, is, js, weights)
 
                     do l = 1, ngp
-                        ww = weights(l) * parcels%volume(n)
+                        ww = weights(l) * parcels%volume(n) / ori_volg(js(l), is(l))
                         vres(n) = vres(n) &
                                 + ww * res_volg(js(l), is(l))
 
