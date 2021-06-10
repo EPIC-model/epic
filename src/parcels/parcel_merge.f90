@@ -23,8 +23,8 @@ module parcel_merge
                geometric_multimerge, &
                optimal_multimerge,   &
                do_multimerge,        &
-               solve_quartic,        &
-               pack_parcels
+               solve_quartic!,        &
+               !pack_parcels
 
     contains
         subroutine merge_ellipses(parcels)

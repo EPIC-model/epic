@@ -1,10 +1,12 @@
 module parcel_point
     use parcel_container, only : parcels, n_parcels
+    use parcel_merge, only : pack_parcels
     use constants, only : zero, one, two , four, fpi
     use parcel_interpl, only : trilinear, ngp
-    use fields, only : velgradg
+    use fields, only : velgradg, volg
     use parcel_bc
     use options, only : verbose
+    use parameters, only : vcell, nx, nz
 
     contains
 
@@ -101,6 +103,11 @@ module parcel_point
 
                 parcels%stretch(n) = zero
                 parcels%stretch(n_parcels) = zero
+
+                call apply_periodic_bc(parcels%position(n, :))
+                call apply_free_slip_bc(parcels%position(n, :), parcels%velocity(n, :))
+                call apply_periodic_bc(parcels%position(n_parcels, :))
+                call apply_free_slip_bc(parcels%position(n_parcels, :), parcels%velocity(n_parcels, :))
             enddo
 
             if (verbose) then
@@ -109,5 +116,127 @@ module parcel_point
             endif
 
         end subroutine point_split
+
+        subroutine point_merge(vfraction)
+            double precision, intent(in) :: vfraction
+            double precision             :: vmin
+            integer                      :: isma(0:n_parcels), n_remove, l
+            double precision             :: vres(n_parcels), bres(n_parcels), zres(n_parcels)
+            double precision             :: res_volg(-1:nz+1, 0:nx-1)
+            double precision             :: ori_volg(-1:nz+1, 0:nx-1)
+            double precision             :: res_vortg(-1:nz+1, 0:nx-1)
+            double precision             :: res_tbuoyg(-1:nz+1, 0:nx-1)
+            double precision             :: pos(2), weights(ngp), ww, ivol
+            integer :: is(ngp), js(ngp)
+
+            vmin = vcell / dble(vfraction)
+
+            isma = zero
+
+            res_volg = zero
+            ori_volg = zero
+            res_vortg = zero
+            res_tbuoyg = zero
+
+            n_remove = 0
+            do n = 1, n_parcels
+                pos = parcels%position(n, :)
+
+                ! ensure parcel is within the domain
+                call apply_periodic_bc(pos)
+
+                ! get interpolation weights and mesh indices
+                call trilinear(pos, is, js, weights)
+
+                if (parcels%volume(n) < vmin) then
+                    n_remove = n_remove + 1
+                    isma(n_remove) = n
+
+                    do l = 1, ngp
+                        ww = weights(l) * parcels%volume(n)
+                        res_volg(js(l), is(l)) = res_volg(js(l), is(l)) + ww
+
+                        res_vortg(js(l), is(l)) = res_vortg(js(l), is(l)) &
+                                                + ww * parcels%vorticity(n, 1)
+
+                        res_tbuoyg(js(l), is(l)) = res_tbuoyg(js(l), is(l)) &
+                                                 + ww * parcels%buoyancy(n)
+                    enddo
+                else
+                    do l = 1, ngp
+                        ww = weights(l) * parcels%volume(n)
+                        ori_volg(js(l), is(l)) = ori_volg(js(l), is(l)) + ww
+                    enddo
+                endif
+            enddo
+
+
+            ! apply free slip boundary condition
+            ori_volg(0,  :) = two * ori_volg(0,  :)
+            ori_volg(nz, :) = two * ori_volg(nz, :)
+
+            res_volg(0,  :) = two * res_volg(0,  :)
+            res_volg(nz, :) = two * res_volg(nz, :)
+
+            res_volg(1,    :) = res_volg(1,    :) + res_volg(-1,   :)
+            res_volg(nz-1, :) = res_volg(nz-1, :) + res_volg(nz+1, :)
+
+            ori_volg(1,    :) = ori_volg(1,    :) + ori_volg(-1,   :)
+            ori_volg(nz-1, :) = ori_volg(nz-1, :) + ori_volg(nz+1, :)
+
+            ! linear extrapolation
+            res_vortg(0,  :) = two * res_vortg(1,    :) - res_vortg(2,    :)
+            res_vortg(nz, :) = two * res_vortg(nz-1, :) - res_vortg(nz-2, :)
+            res_tbuoyg(0,  :) = two * res_tbuoyg(1,    :) - res_tbuoyg(2,    :)
+            res_tbuoyg(nz, :) = two * res_tbuoyg(nz-1, :) - res_tbuoyg(nz-2, :)
+
+
+            res_volg(0:nz, :) = res_volg(0:nz, :) / ori_volg(0:nz, :)
+            res_tbuoyg(0:nz, :) = res_tbuoyg(0:nz, :) / ori_volg(0:nz, :)
+            res_vortg(0:nz, :) = res_vortg(0:nz, :) / ori_volg(0:nz, :)
+
+
+            if (n_remove > 0) then
+!                 print *, sum(parcels%volume(1:n_parcels))
+!                 print *, sum(parcels%vorticity(1:n_parcels, 1) * parcels%volume(1:n_parcels))
+!                 print *, sum(parcels%buoyancy(1:n_parcels) * parcels%volume(1:n_parcels))
+
+                ! remove invalid parcels
+                call pack_parcels(isma, n_remove)
+
+                do n = 1, n_parcels
+                    vres(n) = zero
+                    zres(n) = zero
+                    bres(n) = zero
+
+                    pos = parcels%position(n, :)
+                    ! ensure parcel is within the domain
+                    call apply_periodic_bc(pos)
+
+                    ! get interpolation weights and mesh indices
+                    call trilinear(pos, is, js, weights)
+
+                    do l = 1, ngp
+                        ww = weights(l) * parcels%volume(n)
+                        vres(n) = vres(n) &
+                                + ww * res_volg(js(l), is(l))
+
+                        bres(n) = bres(n) &
+                                + ww * res_tbuoyg(js(l), is(l))
+
+                        zres(n) = zres(n) &
+                                + ww * res_vortg(js(l), is(l))
+                    enddo
+                    ivol = one / (parcels%volume(n) + vres(n))
+                    parcels%buoyancy(n) = (parcels%buoyancy(n) * parcels%volume(n) + bres(n)) * ivol
+                    parcels%vorticity(n, 1) = (parcels%vorticity(n, 1) * parcels%volume(n) + zres(n)) * ivol
+                    parcels%volume(n) = parcels%volume(n) + vres(n)
+
+                enddo
+!                     print *, sum(parcels%volume(1:n_parcels))
+!                     print *, sum(parcels%vorticity(1:n_parcels, 1) * parcels%volume(1:n_parcels))
+!                     print *, sum(parcels%buoyancy(1:n_parcels) * parcels%volume(1:n_parcels))
+            endif
+        end subroutine point_merge
 
 end module parcel_point

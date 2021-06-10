@@ -8,7 +8,7 @@ module classic_rk4
     use options, only : parcel
     use parcel_container
     use parcel_bc
-    use rk4_utils, only: get_B
+    use rk4_utils, only: get_B, get_stretch
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
@@ -23,6 +23,8 @@ module classic_rk4
         b1o, b2o, b3o, b4o,     &   ! B matrix integration
         inipos, inivor, iniB        ! input parcel attributes (before RK4 step)
 
+    double precision, allocatable, dimension(:) :: &
+        seo                         ! sum of stretches (non-elliptic only)
 
 
 
@@ -43,6 +45,10 @@ module classic_rk4
             allocate(w4o(num, 1))
 
             allocate(strain(num, 4))
+
+            if (.not. parcel%is_elliptic) then
+                allocate(seo(num))
+            endif
 
             if (parcel%is_elliptic) then
                 allocate(iniB(num, 2))
@@ -69,6 +75,10 @@ module classic_rk4
             deallocate(w4o)
 
             deallocate(strain)
+
+            if (.not. parcel%is_elliptic) then
+                deallocate(seo)
+            endif
 
             if (parcel%is_elliptic) then
                 deallocate(iniB)
@@ -217,6 +227,7 @@ module classic_rk4
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
             veo(1:n_parcels, :) = parcels%velocity(1:n_parcels, :)
+            seo(1:n_parcels) = get_stretch(strain, n_parcels)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
@@ -236,6 +247,8 @@ module classic_rk4
             call apply_parcel_bc(parcels%position, parcels%velocity)
             veo(1:n_parcels, :) = veo(1:n_parcels, :) &
                                 + 2.0_dp * parcels%velocity(1:n_parcels, :)
+            seo(1:n_parcels) = seo(1:n_parcels) &
+                             + two * get_stretch(strain, n_parcels)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
@@ -255,6 +268,8 @@ module classic_rk4
             call apply_parcel_bc(parcels%position, parcels%velocity)
             veo(1:n_parcels, :) = veo(1:n_parcels, :) &
                                 + 2.0_dp * parcels%velocity(1:n_parcels, :)
+            seo(1:n_parcels) = seo(1:n_parcels) &
+                             + two * get_stretch(strain, n_parcels)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
@@ -265,6 +280,9 @@ module classic_rk4
             call apply_parcel_bc(parcels%position, parcels%velocity)
 
             parcels%velocity(1:n_parcels, :) = (veo(1:n_parcels, :) + parcels%velocity(1:n_parcels, :)) * f16
+
+            parcels%stretch(1:n_parcels) = parcels%stretch(1:n_parcels) &
+                                         + (seo(1:n_parcels) + get_stretch(strain, n_parcels)) * f16
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                              + dt * parcels%velocity(1:n_parcels, :)

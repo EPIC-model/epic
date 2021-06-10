@@ -117,8 +117,10 @@ module parcel_container
             parcels%buoyancy(n) = parcels%buoyancy(m)
             parcels%humidity(n) = parcels%humidity(m)
 
-            parcels%B(n, 1) = parcels%B(m, 1)
-            parcels%B(n, 2) = parcels%B(m, 2)
+            if (allocated(parcels%B)) then
+                parcels%B(n, 1) = parcels%B(m, 1)
+                parcels%B(n, 2) = parcels%B(m, 2)
+            endif
 
         end subroutine parcel_replace
 
