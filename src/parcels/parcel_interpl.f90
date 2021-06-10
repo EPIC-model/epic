@@ -5,7 +5,7 @@
 module parcel_interpl
     use constants, only : max_num_parcels, zero, one, two
     use parameters, only : nx, nz
-    use options, only : parcel, interpl
+    use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use ellipse
@@ -19,8 +19,7 @@ module parcel_interpl
     private :: par2grid_elliptic,       &
                par2grid_non_elliptic,   &
                grid2par_elliptic,       &
-               grid2par_non_elliptic,   &
-               get_indices_and_weights
+               grid2par_non_elliptic
 
 
     ! number of indices and weights
@@ -77,7 +76,7 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call get_indices_and_weights(points(p, :))
+                    call trilinear(points(p, :), is, js, weights)
 
                     do l = 1, ngp
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
@@ -115,7 +114,7 @@ module parcel_interpl
                         call apply_periodic_bc(points(p, :))
 
                         ! get interpolation weights and mesh indices
-                        call get_indices_and_weights(points(p, :))
+                        call trilinear(points(p, :), is, js, weights)
 
                         do l = 1, ngp
                             volg(js(l), is(l)) = volg(js(l), is(l)) &
@@ -141,7 +140,7 @@ module parcel_interpl
                 call apply_periodic_bc(pos)
 
                 ! get interpolation weights and mesh indices
-                call get_indices_and_weights(pos)
+                call trilinear(pos, is, js, weights)
 
                 do l = 1, ngp
                     volg(js(l), is(l)) = volg(js(l), is(l)) + weights(l) * pvol
@@ -226,7 +225,7 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call get_indices_and_weights(points(p, :))
+                    call trilinear(points(p, :), is, js, weights)
 
                     ! loop over grid points which are part of the interpolation
                     ! the weight is halved due to 2 points per ellipse
@@ -274,7 +273,7 @@ module parcel_interpl
                 call apply_periodic_bc(pos)
 
                 ! get interpolation weights and mesh indices
-                call get_indices_and_weights(pos)
+                call trilinear(pos, is, js, weights)
 
                 ! loop over grid points which are part of the interpolation
                 do l = 1, ngp
@@ -298,52 +297,33 @@ module parcel_interpl
         end subroutine par2grid_non_elliptic
 
 
-        subroutine grid2par(vel, vor, vgrad, exact)
+        subroutine grid2par(vel, vor, vgrad)
             double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
-            character(*), optional, intent(in)    :: exact
 
             if (parcel%is_elliptic) then
-                if(present(exact)) then
-                   call grid2par_elliptic(vel, vor, vgrad, exact=exact)
-                else
                    call grid2par_elliptic(vel, vor, vgrad)
-                endif
             else
-                if(present(exact)) then
-                   call grid2par_non_elliptic(vel, vor, vgrad, exact=exact)
-                else
                    call grid2par_non_elliptic(vel, vor, vgrad)
-                endif
             endif
 
         end subroutine grid2par
 
 
-        subroutine grid2par_add(vel, vor, vgrad, exact)
+        subroutine grid2par_add(vel, vor, vgrad)
             double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
-            character(*), optional, intent(in)    :: exact
 
             if (parcel%is_elliptic) then
-                if(present(exact)) then
-                   call grid2par_elliptic(vel, vor, vgrad, add=.true., exact=exact)
-                else
                    call grid2par_elliptic(vel, vor, vgrad, add=.true.)
-                endif
             else
-                if(present(exact)) then
-                   call grid2par_non_elliptic(vel, vor, vgrad, add=.true., exact=exact)
-                else
                    call grid2par_non_elliptic(vel, vor, vgrad, add=.true.)
-                endif
             endif
 
         end subroutine grid2par_add
 
 
-        subroutine grid2par_elliptic(vel, vor, vgrad, add, exact)
+        subroutine grid2par_elliptic(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
-            character(*), optional, intent(in)  :: exact
             integer                             :: ncomp
             double precision                    :: points(2, 2), weight
             integer                             :: n, p, c, l
@@ -364,30 +344,6 @@ module parcel_interpl
 
             vgrad(1:n_parcels, :) = zero
 
-            ! put if statement here for computational efficiency
-            if(present(exact)) then
-               do n = 1, n_parcels
-
-                  points = get_ellipse_points(parcels%position(n, :), &
-                                              parcels%volume(n),      &
-                                              parcels%B(n, :))
-
-                  do p = 1, 2
-                     call apply_periodic_bc(points(p, :))
-                     if(exact=='velocity') then
-                        vel(n,:) = vel(n,:) &
-                                              + 0.5d0 * get_flow_velocity(points(p, :))
-                     elseif(exact=='strain') then
-                        vgrad(n,:)=vgrad(n,:) + 0.5d0 * get_flow_gradient(points(p, :))
-                     else
-                        print *, "Exact interpolation field passed not implemented"
-                        stop
-                     end if
-                  end do
-               end do
-               return
-            endif
-
             do n = 1, n_parcels
 
                 points = get_ellipse_points(parcels%position(n, :), &
@@ -401,7 +357,7 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call get_indices_and_weights(points(p, :))
+                    call trilinear(points(p, :), is, js, weights)
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp
@@ -427,10 +383,9 @@ module parcel_interpl
         end subroutine grid2par_elliptic
 
 
-        subroutine grid2par_non_elliptic(vel, vor, vgrad, add, exact)
+        subroutine grid2par_non_elliptic(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
-            character(*), optional, intent(in)  :: exact
             integer                             :: ncomp
             integer                             :: n, c, l
             double precision                    :: pos(2)
@@ -451,24 +406,6 @@ module parcel_interpl
 
             vgrad(1:n_parcels, :) = zero
 
-            ! put if statement here for computational efficiency
-            if(present(exact)) then
-               do n = 1, n_parcels
-                  pos = parcels%position(n, :)
-                  call apply_periodic_bc(pos)
-                  if(exact=='velocity') then
-                     vel(n,:) = vel(n,:) &
-                                           + get_flow_velocity(pos)
-!                   elseif(exact=='strain') then
-!                      attrib(n,:)=attrib(n,:)+get_flow_gradient(pos)
-                  else
-                     print *, "Exact interpolation field passed not implemented"
-                     stop
-                  end if
-               end do
-               return
-            endif
-
             do n = 1, n_parcels
 
                 pos = parcels%position(n, :)
@@ -477,7 +414,7 @@ module parcel_interpl
                 call apply_periodic_bc(pos)
 
                 ! get interpolation weights and mesh indices
-                call get_indices_and_weights(pos)
+                call trilinear(pos, is, js, weights)
 
                 ! loop over grid points which are part of the interpolation
                 do l = 1, ngp
@@ -500,20 +437,6 @@ module parcel_interpl
 
         end subroutine grid2par_non_elliptic
 
-
-        subroutine get_indices_and_weights(pos)
-            double precision, intent(in)  :: pos(2)
-
-            if (interpl == 'trilinear') then
-                call trilinear(pos, is, js, weights)
-            else if (interpl == 'exact') then ! only applies to par2grid
-                call trilinear(pos, is, js, weights)
-            else
-                print *, "Unknown interpolation method '", interpl, "'."
-                stop
-            endif
-
-        end subroutine get_indices_and_weights
 
         !
         ! tri-linear interpolation
