@@ -41,7 +41,7 @@ module options
     !
     ! parcel options
     !
-    type parcel_info_type
+    type parcel_type
         integer          :: n_per_cell   = 4              ! number of parcels per cell (need to be a square)
         logical          :: is_random    = .false.        ! random parcel initialization
         integer          :: seed         = 42             ! seed of random initialization
@@ -58,9 +58,9 @@ module options
         double precision :: gradient_pref= 0.3d0          ! prefactor for gradient descent
         double precision :: vmaxfraction = 2.0         ! prefactor for gradient descent
 
-    end type parcel_info_type
+    end type parcel_type
 
-    type(parcel_info_type) :: parcel_info
+    type(parcel_type) :: parcel
 
     !
     ! stepper options

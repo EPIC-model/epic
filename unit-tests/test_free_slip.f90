@@ -14,7 +14,7 @@ program test_free_slip
     use constants, only : pi, zero, one, two
     use parcel_container
     use parcel_interpl, only : vol2grid
-    use options, only : parcel_info, box
+    use options, only : parcel, box
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg
     implicit none
@@ -51,7 +51,7 @@ program test_free_slip
 
     volg = zero
 
-    parcel_info%is_elliptic = .true.
+    parcel%is_elliptic = .true.
 
     parcels%volume = 0.25d0 * vcell
 

@@ -3,7 +3,7 @@
 !            (see https://doi.org/10.5194/gmd-10-3145-2017)
 ! =============================================================================
 module ls_rk4
-    use options, only : parcel_info
+    use options, only : parcel
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
@@ -41,7 +41,7 @@ module ls_rk4
             allocate(dwdt(num, 1))
             allocate(strain(num, 4))
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                 allocate(dbdt(num, 2))
             endif
 
@@ -54,7 +54,7 @@ module ls_rk4
             deallocate(dwdt)
             deallocate(strain)
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                deallocate(dbdt)
             endif
 
@@ -64,7 +64,7 @@ module ls_rk4
         subroutine ls_rk4_step(dt)
             double precision, intent(in) :: dt
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                 call ls_rk4_elliptic(dt)
             else
                 call ls_rk4_non_elliptic(dt)

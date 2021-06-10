@@ -5,7 +5,7 @@ module rk4
     use classic_rk4
     use ls_rk4
     use constants, only : max_num_parcels
-    use options, only : parcel_info, stepper
+    use options, only : parcel, stepper
     implicit none
 
     contains

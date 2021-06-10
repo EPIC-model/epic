@@ -5,7 +5,7 @@
 module parcel_interpl
     use constants, only : max_num_parcels, zero, one, two
     use parameters, only : nx, nz
-    use options, only : parcel_info
+    use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use ellipse
@@ -39,7 +39,7 @@ module parcel_interpl
         subroutine vol2grid
             volg = zero
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                 call vol2grid_elliptic
             else
                 call vol2grid_non_elliptic
@@ -156,7 +156,7 @@ module parcel_interpl
             nparg = zero
             tbuoyg = zero
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                 call par2grid_elliptic
             else
                 call par2grid_non_elliptic
@@ -300,7 +300,7 @@ module parcel_interpl
         subroutine grid2par(vel, vor, vgrad)
             double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                    call grid2par_elliptic(vel, vor, vgrad)
             else
                    call grid2par_non_elliptic(vel, vor, vgrad)
@@ -312,7 +312,7 @@ module parcel_interpl
         subroutine grid2par_add(vel, vor, vgrad)
             double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
 
-            if (parcel_info%is_elliptic) then
+            if (parcel%is_elliptic) then
                    call grid2par_elliptic(vel, vor, vgrad, add=.true.)
             else
                    call grid2par_non_elliptic(vel, vor, vgrad, add=.true.)

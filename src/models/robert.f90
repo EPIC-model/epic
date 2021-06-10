@@ -13,7 +13,7 @@
 
 module robert
     use physics
-    use options, only : parcel_info, robert_opt, bubble_type
+    use options, only : parcel, robert_opt, bubble_type
     use constants
     use parcel_container, only : parcels, n_parcels
     use fields, only : get_position
