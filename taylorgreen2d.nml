@@ -82,9 +82,4 @@
  ! phase shifts: d, e
  taylor_green_opt%phase         = 0.0, 0.0
 
-
- !
- ! interpolation method
- !
- interpl            = 'trilinear'
 /

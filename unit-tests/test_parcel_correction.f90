@@ -11,8 +11,7 @@ program test_parcel_correction
     use parcel_container
     use parcel_correction
     use parcel_interpl, only : vol2grid
-    use options, only : parcel, box, interpl
-    use parcel_ellipse, only : get_ab
+    use options, only : parcel, box
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg
 

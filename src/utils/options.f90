@@ -80,11 +80,6 @@ module options
     type(time_info_type) :: time
 
     !
-    ! interpolation
-    !
-    character(len=32) :: interpl = 'trilinear'
-
-    !
     ! TaylorGreen options
     !
     type taylor_green_type
