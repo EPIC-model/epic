@@ -6,7 +6,7 @@ module parcel_point
     use fields, only : velgradg, volg
     use parcel_bc
     use options, only : verbose
-    use parameters, only : vcell, nx, nz
+    use parameters, only : vcell, nx, nz, dx
 
     contains
 
@@ -68,6 +68,9 @@ module parcel_point
             last_index = n_parcels
             max_stretch = prefactor * dlog(threshold)
 
+            ! distance of child parcel to parent parcel
+            h = 0.1d0 * minval(dx)
+
             do n = 1, last_index
                 if (.not. parcels%stretch(n) > max_stretch) then
                     cycle
@@ -80,8 +83,6 @@ module parcel_point
                 evec = get_eigenvector(S)
 
                 parcels%volume(n) = f12 * parcels%volume(n)
-
-                h = parcels%stretch(n) * dsqrt(parcels%volume(n) * fpi)
 
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
@@ -185,10 +186,6 @@ module parcel_point
             res_tbuoyg(nz, :) = two * res_tbuoyg(nz-1, :) - res_tbuoyg(nz-2, :)
 
             if (n_remove > 0) then
-!                 print *, sum(parcels%volume(1:n_parcels))
-!                 print *, sum(parcels%vorticity(1:n_parcels, 1) * parcels%volume(1:n_parcels))
-!                 print *, sum(parcels%buoyancy(1:n_parcels) * parcels%volume(1:n_parcels))
-
                 ! remove invalid parcels
                 call pack_parcels(isma, n_remove)
 
@@ -221,9 +218,6 @@ module parcel_point
                     parcels%volume(n) = parcels%volume(n) + vres(n)
 
                 enddo
-!                     print *, sum(parcels%volume(1:n_parcels))
-!                     print *, sum(parcels%vorticity(1:n_parcels, 1) * parcels%volume(1:n_parcels))
-!                     print *, sum(parcels%buoyancy(1:n_parcels) * parcels%volume(1:n_parcels))
             endif
         end subroutine point_merge
 
