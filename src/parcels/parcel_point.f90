@@ -1,7 +1,7 @@
 module parcel_point
     use parcel_container, only : parcels, n_parcels
     use parcel_merge, only : pack_parcels
-    use constants, only : zero, one, two , four, fpi
+    use constants, only : zero, one, two , four, fpi, f12
     use parcel_interpl, only : trilinear, ngp
     use fields, only : velgradg, volg
     use parcel_bc
@@ -14,7 +14,7 @@ module parcel_point
             double precision, intent(in) :: S(4)
             double precision             :: eval
             eval = dsqrt(dabs(S(1) ** 2 - two * S(1) * S(4) + four * S(2) * S(3) + S(4) ** 2))
-            eval = 0.5d0 * (S(1) + S(4) + eval)
+            eval = f12 * (S(1) + S(4) + eval)
         end function get_eigenvalue
 
         function get_eigenvector(S) result(evec)
@@ -32,12 +32,6 @@ module parcel_point
 
             evec = evec / norm2(evec)
         end function get_eigenvector
-
-        function get_max_stretch(threshold, prefactor) result(max_stretch)
-            double precision, intent(in) :: threshold, prefactor
-            double precision             :: max_stretch
-            max_stretch = prefactor * dlog(threshold)
-        end function get_max_stretch
 
         function get_velocity_gradient(inpos) result(S)
             double precision, intent(in) :: inpos(2)
@@ -72,7 +66,7 @@ module parcel_point
             integer                      :: n, last_index
 
             last_index = n_parcels
-            max_stretch = get_max_stretch(threshold, prefactor)
+            max_stretch = prefactor * dlog(threshold)
 
             do n = 1, last_index
                 if (.not. parcels%stretch(n) > max_stretch) then
@@ -85,9 +79,9 @@ module parcel_point
                 ! separate along direction of eigenvector
                 evec = get_eigenvector(S)
 
-                h = parcels%stretch(n) * dsqrt(0.5d0 * parcels%volume(n) * fpi)
+                parcels%volume(n) = f12 * parcels%volume(n)
 
-                parcels%volume(n) = 0.5d0 * parcels%volume(n)
+                h = parcels%stretch(n) * dsqrt(parcels%volume(n) * fpi)
 
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
@@ -99,7 +93,7 @@ module parcel_point
                 parcels%humidity(n_parcels) = parcels%humidity(n)
 
                 parcels%position(n_parcels, :) = parcels%position(n, :) - h * evec
-                parcels%position(n, :) = parcels%position(n, :)  + h * evec
+                parcels%position(n, :) = parcels%position(n, :) + h * evec
 
                 parcels%stretch(n) = zero
                 parcels%stretch(n_parcels) = zero
