@@ -173,18 +173,18 @@ module parcel_point
             enddo
 
 
-            ! apply free slip boundary condition
+            ! edge-value doubling
             ori_volg(0,  :) = two * ori_volg(0,  :)
             ori_volg(nz, :) = two * ori_volg(nz, :)
 
             res_volg(0,  :) = two * res_volg(0,  :)
             res_volg(nz, :) = two * res_volg(nz, :)
 
-            ! linear extrapolation
-            res_vortg(0,  :) = two * res_vortg(1,    :) - res_vortg(2,    :)
-            res_vortg(nz, :) = two * res_vortg(nz-1, :) - res_vortg(nz-2, :)
-            res_tbuoyg(0,  :) = two * res_tbuoyg(1,    :) - res_tbuoyg(2,    :)
-            res_tbuoyg(nz, :) = two * res_tbuoyg(nz-1, :) - res_tbuoyg(nz-2, :)
+            res_vortg(0,  :) = two * res_vortg(0,  :)
+            res_vortg(nz, :) = two * res_vortg(nz, :)
+
+            res_tbuoyg(0,  :) = two * res_tbuoyg(0,  :)
+            res_tbuoyg(nz, :) = two * res_tbuoyg(nz, :)
 
             if (n_remove > 0) then
                 ! remove invalid parcels
