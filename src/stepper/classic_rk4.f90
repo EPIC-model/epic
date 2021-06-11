@@ -282,7 +282,7 @@ module classic_rk4
             parcels%velocity(1:n_parcels, :) = (veo(1:n_parcels, :) + parcels%velocity(1:n_parcels, :)) * f16
 
             parcels%stretch(1:n_parcels) = parcels%stretch(1:n_parcels) &
-                                         + (seo(1:n_parcels) + get_stretch(strain, n_parcels)) * f16
+                                         + dt * f16 * (seo(1:n_parcels) + get_stretch(strain, n_parcels))
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                              + dt * parcels%velocity(1:n_parcels, :)

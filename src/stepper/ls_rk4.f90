@@ -152,7 +152,7 @@ module ls_rk4
                                             + cb*dt*parcels%velocity(1:n_parcels,:)
             parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :) + cb*dt*dwdt(1:n_parcels, :)
             parcels%stretch(1:n_parcels) = parcels%stretch(1:n_parcels) &
-                                         + cb * dsdt(1:n_parcels)
+                                         + cb * dt * dsdt(1:n_parcels)
 
             call apply_parcel_bc(parcels%position, parcels%velocity)
 
