@@ -20,7 +20,7 @@ module parser
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ model, output, box, parcel, stepper, time, &
+            namelist /EPIC/ model, output, box, parcel, time, &
                             taylor_green_opt, robert_opt, straka_opt
 
             ! check whether file exists
@@ -87,11 +87,6 @@ module parser
             !
             ! write stepper info
             !
-            group = open_h5_group("stepper")
-
-            call write_h5_character_scalar_attrib(group, "method", stepper)
-
-            call h5gclose_f(group, h5err)
 
             group = open_h5_group("time")
 
