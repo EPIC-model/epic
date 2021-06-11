@@ -50,4 +50,19 @@ module parcel_bc
             endif
         end subroutine apply_free_slip_bc
 
+
+        subroutine apply_reflective_bc(position, B)
+            double precision, intent(inout) :: position(2), B(2)
+
+            if (position(2) > upper(2)) then
+                position(2) = two * upper(2) - position(2)
+                B(2) = -B(2)
+            endif
+
+            if (position(2) < lower(2)) then
+                position(2) = two * lower(2) - position(2)
+                B(2) = -B(2)
+            endif
+        end subroutine apply_reflective_bc
+
 end module parcel_bc

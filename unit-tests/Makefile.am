@@ -20,6 +20,7 @@ unittests_PROGRAMS = 				\
 	test_laplace_correction			\
 	test_parcel_correction		  	\
 	test_ellipse_split			\
+	test_ellipse_reflection			\
 	test_ellipse_bi_merge			\
 	test_ellipse_multi_merge_1		\
 	test_ellipse_multi_merge_2		\
@@ -40,6 +41,7 @@ test_trilinear_SOURCES = test_trilinear.f90 unit_test.f90
 test_laplace_correction_SOURCES = test_laplace_correction.f90 unit_test.f90
 test_parcel_correction_SOURCES = test_parcel_correction.f90 unit_test.f90
 test_ellipse_split_SOURCES = test_ellipse_split.f90 unit_test.f90
+test_ellipse_reflection_SOURCES = test_ellipse_reflection.f90 unit_test.f90
 test_ellipse_bi_merge_SOURCES = test_ellipse_bi_merge.f90 unit_test.f90
 test_ellipse_multi_merge_1_SOURCES = test_ellipse_multi_merge_1.f90 unit_test.f90
 test_ellipse_multi_merge_2_SOURCES = test_ellipse_multi_merge_2.f90 unit_test.f90
