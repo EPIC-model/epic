@@ -6,7 +6,7 @@ module parcel_point
     use fields, only : velgradg, volg
     use parcel_bc
     use options, only : verbose
-    use parameters, only : vcell, nx, nz, dx
+    use parameters, only : vcell, nx, nz, dx, lower, upper
 
     contains
 
