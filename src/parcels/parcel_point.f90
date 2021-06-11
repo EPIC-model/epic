@@ -180,12 +180,6 @@ module parcel_point
             res_volg(0,  :) = two * res_volg(0,  :)
             res_volg(nz, :) = two * res_volg(nz, :)
 
-            res_volg(1,    :) = res_volg(1,    :) + res_volg(-1,   :)
-            res_volg(nz-1, :) = res_volg(nz-1, :) + res_volg(nz+1, :)
-
-            ori_volg(1,    :) = ori_volg(1,    :) + ori_volg(-1,   :)
-            ori_volg(nz-1, :) = ori_volg(nz-1, :) + ori_volg(nz+1, :)
-
             ! linear extrapolation
             res_vortg(0,  :) = two * res_vortg(1,    :) - res_vortg(2,    :)
             res_vortg(nz, :) = two * res_vortg(nz-1, :) - res_vortg(nz-2, :)
