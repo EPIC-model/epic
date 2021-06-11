@@ -3,7 +3,7 @@
 !     (see https://de.wikipedia.org/wiki/Klassisches_Runge-Kutta-Verfahren)
 ! =============================================================================
 module classic_rk4
-    use constants, only : max_num_parcels, f16
+    use constants, only : max_num_parcels, f16, f12, two
     use parameters, only : nx, nz
     use options, only : parcel
     use parcel_container
@@ -124,9 +124,9 @@ module classic_rk4
 
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
-                                            + 0.5_dp * dt * parcels%velocity(1:n_parcels,:)
-            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + 0.5_dp * dt * w1o(1:n_parcels,:)
-            parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + 0.5_dp * dt * b1o(1:n_parcels,:)
+                                            + f12 * dt * parcels%velocity(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + f12 * dt * w1o(1:n_parcels,:)
+            parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + f12 * dt * b1o(1:n_parcels,:)
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
@@ -144,13 +144,13 @@ module classic_rk4
 
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
-                                            + 0.5_dp * dt * parcels%velocity(1:n_parcels,:)
-            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + 0.5_dp * dt * w2o(1:n_parcels,:)
-            parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + 0.5_dp * dt * b2o(1:n_parcels,:)
+                                            + f12 * dt * parcels%velocity(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + f12 * dt * w2o(1:n_parcels,:)
+            parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + f12 * dt * b2o(1:n_parcels,:)
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
-            veo(1:n_parcels, :) = veo(1:n_parcels, :) + 2.0_dp * parcels%velocity(1:n_parcels, :)
+            veo(1:n_parcels, :) = veo(1:n_parcels, :) + two * parcels%velocity(1:n_parcels, :)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
@@ -170,7 +170,7 @@ module classic_rk4
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
-            veo(1:n_parcels, :) = veo(1:n_parcels, :) + 2.0_dp * parcels%velocity(1:n_parcels, :)
+            veo(1:n_parcels, :) = veo(1:n_parcels, :) + two * parcels%velocity(1:n_parcels, :)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
@@ -189,12 +189,12 @@ module classic_rk4
                                             + dt * parcels%velocity(1:n_parcels, :)
 
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                             + dt * f16 * (w1o(1:n_parcels,:) + 2.0_dp &
-                             * w2o(1:n_parcels,:) + 2.0_dp * w3o(1:n_parcels,:) + w4o(1:n_parcels,:))
+                             + dt * f16 * (w1o(1:n_parcels,:) + two &
+                             * w2o(1:n_parcels,:) + two * w3o(1:n_parcels,:) + w4o(1:n_parcels,:))
 
             parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) &
-                      + dt * f16 * (b1o(1:n_parcels,:) + 2.0_dp * b2o(1:n_parcels,:) &
-                      + 2.0_dp * b3o(1:n_parcels,:) + b4o(1:n_parcels,:))
+                      + dt * f16 * (b1o(1:n_parcels,:) + two * b2o(1:n_parcels,:) &
+                      + two * b3o(1:n_parcels,:) + b4o(1:n_parcels,:))
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
@@ -219,10 +219,10 @@ module classic_rk4
 
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
-                                          + 0.5_dp * dt * parcels%velocity(1:n_parcels,:)
+                                          + f12 * dt * parcels%velocity(1:n_parcels,:)
 
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                                          + 0.5_dp * dt * w1o(1:n_parcels,:)
+                                          + f12 * dt * w1o(1:n_parcels,:)
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
@@ -238,15 +238,15 @@ module classic_rk4
             call apply_parcel_bc(parcels%position, parcels%velocity)
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
-                                          + 0.5_dp * dt * parcels%velocity(1:n_parcels,:)
+                                          + f12 * dt * parcels%velocity(1:n_parcels,:)
 
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                                          + 0.5_dp * dt * w2o(1:n_parcels,:)
+                                          + f12 * dt * w2o(1:n_parcels,:)
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
             veo(1:n_parcels, :) = veo(1:n_parcels, :) &
-                                + 2.0_dp * parcels%velocity(1:n_parcels, :)
+                                + two * parcels%velocity(1:n_parcels, :)
             seo(1:n_parcels) = seo(1:n_parcels) &
                              + two * get_stretch(strain, n_parcels)
 
@@ -267,7 +267,7 @@ module classic_rk4
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
             veo(1:n_parcels, :) = veo(1:n_parcels, :) &
-                                + 2.0_dp * parcels%velocity(1:n_parcels, :)
+                                + two * parcels%velocity(1:n_parcels, :)
             seo(1:n_parcels) = seo(1:n_parcels) &
                              + two * get_stretch(strain, n_parcels)
 
@@ -288,8 +288,8 @@ module classic_rk4
                              + dt * parcels%velocity(1:n_parcels, :)
 
             parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                             + dt * f16 * (w1o(1:n_parcels,:) + 2.0_dp &
-                             * w2o(1:n_parcels,:) + 2.0_dp * w3o(1:n_parcels,:) + w4o(1:n_parcels,:))
+                             + dt * f16 * (w1o(1:n_parcels,:) + two &
+                             * w2o(1:n_parcels,:) + two * w3o(1:n_parcels,:) + w4o(1:n_parcels,:))
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
