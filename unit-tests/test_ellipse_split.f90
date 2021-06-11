@@ -6,15 +6,22 @@
 ! =============================================================================
 program test_ellipse_split
     use unit_test
-    use constants, only : pi, zero, one, three, four, five
+    use constants, only : pi, zero, one, three, four, five, ten
     use parcel_container
     use parcel_split, only : split_ellipses
+    use parameters, only : update_parameters
+    use options, only : box
     implicit none
 
     double precision, parameter :: lam = five
     double precision, parameter :: angle = 0.25d0 * pi
     double precision, parameter :: evec(2) = (/dcos(angle), dsin(angle)/)
     double precision :: h, ab, B11, B12, B22, pos(2, 2), error, a2, b2
+
+    box%nc = (/10, 10/)
+    box%extent = (/ten, ten/)
+    box%origin = (/-five, -five/)
+    call update_parameters
 
     n_parcels = 1
     call parcel_alloc(2)
