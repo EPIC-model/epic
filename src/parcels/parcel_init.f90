@@ -129,4 +129,9 @@ module parcel_init
             end do
         end subroutine init_refine
 
+
+        subroutine parcel_init_from_grids
+
+        end subroutine parcel_init_from_grids
+
 end module parcel_init
