@@ -68,9 +68,6 @@ module parcel_point
             last_index = n_parcels
             max_stretch = prefactor * dlog(threshold)
 
-            ! distance of child parcel to parent parcel
-            h = 0.1d0 * minval(dx)
-
             do n = 1, last_index
                 if (.not. parcels%stretch(n) > max_stretch) then
                     cycle
@@ -83,6 +80,9 @@ module parcel_point
                 evec = get_eigenvector(S)
 
                 parcels%volume(n) = f12 * parcels%volume(n)
+
+                ! distance of child parcels to parent parcel
+                h = parcels%stretch(n) * dsqrt(parcels%volume(n) * fpi)
 
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
@@ -217,7 +217,6 @@ module parcel_point
                     parcels%buoyancy(n) = (parcels%buoyancy(n) * parcels%volume(n) + bres(n)) * volfi
                     parcels%vorticity(n, 1) = (parcels%vorticity(n, 1) * parcels%volume(n) + zres(n)) * volfi
                     parcels%volume(n) = parcels%volume(n) + vres(n)
-
                 enddo
             endif
         end subroutine point_merge
