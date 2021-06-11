@@ -13,7 +13,7 @@ module parcel_point
         function get_eigenvalue(S) result(eval)
             double precision, intent(in) :: S(4)
             double precision             :: eval
-            eval = dsqrt(dabs(S(1) ** 2 - two * S(1) * S(4) + four * S(2) * S(3) + S(4) ** 2))
+            eval = dsqrt(dabs((S(1) - S(4)) ** 2 + four * S(2) * S(3)))
             eval = f12 * (S(1) + S(4) + eval)
         end function get_eigenvalue
 
