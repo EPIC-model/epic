@@ -6,6 +6,7 @@ module parcel_split
     use constants, only : pi, three
     use parameters, only : vcell
     use parcel_container, only : parcel_container_type, n_parcels
+    use parcel_bc, only : apply_reflective_bc
     use parcel_ellipse, only : get_eigenvalue      &
                              , get_eigenvector     &
                              , get_B22             &
@@ -68,6 +69,15 @@ module parcel_split
 
                 parcels%position(n_parcels, :) = parcels%position(n, :) - h * evec
                 parcels%position(n, :) = parcels%position(n, :)  + h * evec
+
+
+                ! child parcels need to be reflected into domain, if their center
+                ! is inside the halo region
+                call apply_reflective_bc(parcels%position(n_parcels, :), &
+                                         parcels%B(n_parcels, :))
+
+                call apply_reflective_bc(parcels%position(n, :), parcels%B(n, :))
+
             enddo
 
 #ifdef ENABLE_VERBOSE
