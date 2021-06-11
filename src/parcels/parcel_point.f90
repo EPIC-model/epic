@@ -128,7 +128,7 @@ module parcel_point
             double precision             :: ori_volg(-1:nz+1, 0:nx-1)
             double precision             :: res_vortg(-1:nz+1, 0:nx-1)
             double precision             :: res_tbuoyg(-1:nz+1, 0:nx-1)
-            double precision             :: pos(2), weights(ngp), ww, ivol
+            double precision             :: pos(2), weights(ngp), ww, volfi
             integer :: is(ngp), js(ngp)
 
             vmin = vcell / dble(vfraction)
@@ -219,9 +219,9 @@ module parcel_point
                         zres(n) = zres(n) &
                                 + ww * res_vortg(js(l), is(l))
                     enddo
-                    ivol = one / (parcels%volume(n) + vres(n))
-                    parcels%buoyancy(n) = (parcels%buoyancy(n) * parcels%volume(n) + bres(n)) * ivol
-                    parcels%vorticity(n, 1) = (parcels%vorticity(n, 1) * parcels%volume(n) + zres(n)) * ivol
+                    volfi = one / (parcels%volume(n) + vres(n))
+                    parcels%buoyancy(n) = (parcels%buoyancy(n) * parcels%volume(n) + bres(n)) * volfi
+                    parcels%vorticity(n, 1) = (parcels%vorticity(n, 1) * parcels%volume(n) + zres(n)) * volfi
                     parcels%volume(n) = parcels%volume(n) + vres(n)
 
                 enddo
