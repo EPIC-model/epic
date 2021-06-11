@@ -87,7 +87,6 @@ module parcel_point
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
 
-                parcels%velocity(n_parcels, :) = parcels%velocity(n, :)
                 parcels%vorticity(n_parcels, :) = parcels%vorticity(n, :)
                 parcels%volume(n_parcels) = parcels%volume(n)
                 parcels%buoyancy(n_parcels) = parcels%buoyancy(n)
@@ -100,9 +99,17 @@ module parcel_point
                 parcels%stretch(n_parcels) = zero
 
                 call apply_periodic_bc(parcels%position(n, :))
-                call apply_free_slip_bc(parcels%position(n, :), parcels%velocity(n, :))
                 call apply_periodic_bc(parcels%position(n_parcels, :))
-                call apply_free_slip_bc(parcels%position(n_parcels, :), parcels%velocity(n_parcels, :))
+
+                if (parcels%position(n, 2)) > upper(2)) then
+                    parcels%position(n, 2)) = two * upper(2) &
+                                            - parcels%position(n, 2))
+                endif
+
+                if (parcels%position(n_parcels, 2)) < lower(2)) then
+                    parcels%position(n_parcels, 2)) = two * lower(2) &
+                                                    - parcels%position(n_parcels, 2))
+                endif
             enddo
 
             if (verbose) then
