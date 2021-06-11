@@ -101,14 +101,14 @@ module parcel_point
                 call apply_periodic_bc(parcels%position(n, :))
                 call apply_periodic_bc(parcels%position(n_parcels, :))
 
-                if (parcels%position(n, 2)) > upper(2)) then
-                    parcels%position(n, 2)) = two * upper(2) &
-                                            - parcels%position(n, 2))
+                if (parcels%position(n, 2) > upper(2)) then
+                    parcels%position(n, 2) = two * upper(2) &
+                                           - parcels%position(n, 2)
                 endif
 
-                if (parcels%position(n_parcels, 2)) < lower(2)) then
-                    parcels%position(n_parcels, 2)) = two * lower(2) &
-                                                    - parcels%position(n_parcels, 2))
+                if (parcels%position(n_parcels, 2) < lower(2)) then
+                    parcels%position(n_parcels, 2) = two * lower(2) &
+                                                   - parcels%position(n_parcels, 2)
                 endif
             enddo
 
