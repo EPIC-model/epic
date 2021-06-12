@@ -38,6 +38,9 @@ module options
 
     type(box_type) :: box
 
+
+    character(len=32)   :: input_fields = ''
+
     !
     ! parcel options
     !

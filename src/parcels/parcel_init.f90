@@ -2,12 +2,14 @@
 !               This module initializes parcel default values.
 ! =============================================================================
 module parcel_init
-    use options, only : parcel
-    use constants, only : zero, two, one
+    use options, only : parcel, input_fields
+    use constants, only : zero, two, one, f12
     use parcel_container, only : parcels, n_parcels
     use ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
+    use parcel_interpl, only : trilinear, ngp
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
+    use reader
     implicit none
 
     private :: init_random_positions,  &
@@ -131,7 +133,118 @@ module parcel_init
 
 
         subroutine parcel_init_from_grids
+            double precision, allocatable :: buffer_2d(:, :)
+
+            call open_h5_file(trim(input_fields))
+
+            if (has_dataset('vorticity')) then
+                call read_h5_dataset_2d('vorticity', buffer_2d)
+!                 call gen_parcel_scalar_attr(buffer_2d, 1.0d-9, parcels%vorticity)
+                deallocate(buffer_2d)
+            endif
+
+
+            if (has_dataset('buoyancy')) then
+                call read_h5_dataset_2d('buoyancy', buffer_2d)
+                call gen_parcel_scalar_attr(buffer_2d, 1.0d-9, parcels%buoyancy)
+                deallocate(buffer_2d)
+            endif
+
+            call close_h5_file
+
+
+            stop
 
         end subroutine parcel_init_from_grids
+
+        subroutine gen_parcel_scalar_attr(field, tol, par)
+            double precision, intent(in)  :: field(:, :)
+            double precision, intent(in)  :: tol
+            double precision, intent(out) :: par(:)
+            double precision :: resi(0:nz, 0:nx-1)
+            double precision :: apar(n_parcels)
+            double precision :: rms, rtol, rerr, rsum, fsum
+            integer          :: is(ngp), js(ngp), n, l
+            double precision :: weights(ngp)
+
+
+            ! Compute rms field value:
+            rms = dsqrt((f12 * sum(field(0, :) ** 2 + field(nz,:) ** 2) &
+                             + sum(field(1:nz-1,:) ** 2) ) / dble(ncell))
+
+            ! Maximum error permitted below in gridded residue:
+            rtol = rms * tol
+
+            ! Compute mean parcel density:
+            resi = zero
+            do n = 1, n_parcels
+
+                ! get interpolation weights and mesh indices
+                call trilinear(parcels%position(n, :), is, js, weights)
+
+                do l = 1, ngp
+                    resi(js(l), is(l)) = resi(js(l), is(l)) + weights(l)
+                enddo
+            enddo
+
+            !Double edge values at iz = 0 and nz:
+            resi(0, :) = two * resi(0, :)
+            resi(nz,:) = two * resi(nz,:)
+
+
+            ! Determine local inverse density of parcels (apar)
+            ! and initialise (volume-weighted) parcel attribute with a guess
+            do n = 1, n_parcels
+                ! get interpolation weights and mesh indices
+                call trilinear(parcels%position(n, :), is, js, weights)
+
+                rsum = zero
+                fsum = zero
+                do l = 1, ngp
+                    rsum = rsum + resi(js(l), is(l)) * weights(l)
+                    fsum = fsum + field(js(l), is(l)) * weights(l)
+                enddo
+                apar(n) = one / rsum
+                par(n) = apar(n) * fsum
+            enddo
+
+            ! Iteratively compute a residual and update (volume-weighted) attribute:
+            rerr = one
+
+            do while (rerr .gt. rtol)
+                !Compute residual:
+                resi(0:nz, :) = zero
+                do n = 1, n_parcels
+                    ! get interpolation weights and mesh indices
+                    call trilinear(parcels%position(n, :), is, js, weights)
+
+                    do l = 1, ngp
+                        resi(js(l), is(l)) = resi(js(l), is(l)) + weights(l) * par(n)
+                    enddo
+                enddo
+
+                resi(0, :)    = two * resi(0, :)
+                resi(nz, :)   = two * resi(nz, :)
+                resi(0:nz, :) = field(0:nz, :) - resi(0:nz, :)
+
+                !Update (volume-weighted) attribute:
+                do n = 1, n_parcels
+                    ! get interpolation weights and mesh indices
+                    call trilinear(parcels%position(n, :), is, js, weights)
+
+                    rsum = zero
+                    do l = 1, ngp
+                        rsum = rsum + resi(js(l), is(l)) * weights(l)
+                    enddo
+                    par(n) = par(n) + apar(n) * rsum
+                enddo
+
+                !Compute maximum error:
+                rerr = maxval(abs(resi))
+            enddo
+
+            !Finally divide by parcel volume to define attribute:
+            par(1:n_parcels) = par(1:n_parcels) / parcels%volume(1:n_parcels)
+        end subroutine gen_parcel_scalar_attr
 
 end module parcel_init
