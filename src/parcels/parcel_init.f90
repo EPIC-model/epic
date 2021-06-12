@@ -157,6 +157,8 @@ module parcel_init
 
         end subroutine parcel_init_from_grids
 
+        ! Generates the parcel attribute "par" from the field values provided
+        ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)
         subroutine gen_parcel_scalar_attr(field, tol, par)
             double precision, intent(in)  :: field(:, :)
             double precision, intent(in)  :: tol
@@ -166,7 +168,6 @@ module parcel_init
             double precision :: rms, rtol, rerr, rsum, fsum
             integer          :: is(ngp), js(ngp), n, l
             double precision :: weights(ngp)
-
 
             ! Compute rms field value:
             rms = dsqrt((f12 * sum(field(0, :) ** 2 + field(nz,:) ** 2) &
