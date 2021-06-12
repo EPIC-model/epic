@@ -62,7 +62,7 @@ module reader
 
             call h5sget_simple_extent_dims_f(dataspace_id, dims, maxdims, h5err)
 
-            if (sum(dims -  maxdims) > 0) then
+            if (.not. sum(dims -  maxdims) == 0) then
                 print *, "Dimensions do not agree."
                 stop
             endif
