@@ -1,3 +1,9 @@
+! =============================================================================
+!                               HDF5 reader
+!   This module reads in datatsets. For further information about the
+!   HDF5 API please visit
+!   https://support.hdfgroup.org/HDF5/doc1.6/RM_H5Front.html
+! =============================================================================
 module reader
     use hdf5
     implicit none
