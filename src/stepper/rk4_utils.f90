@@ -1,5 +1,5 @@
 module rk4_utils
-    use ellipse, only : get_B22
+    use parcel_ellipse, only : get_B22
     use constants, only : two
 
     implicit none
@@ -21,5 +21,17 @@ module rk4_utils
                        + S(:, 2) * get_B22(Bin(:, 1), Bin(:, 2), volume)
 
         end function get_B
+
+        function get_stretch(S, n) result(l)
+            use parcel_point, only : get_eigenvalue
+            double precision, intent(in) :: S(:, :)
+            integer,          intent(in) :: n
+            integer                      :: i
+            double precision             :: l(n)
+
+            do i = 1, n
+                l(i) = get_eigenvalue(S(i, :))
+            enddo
+        end function get_stretch
 
 end module rk4_utils

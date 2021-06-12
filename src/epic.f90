@@ -9,6 +9,7 @@ program epic
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses
+    use parcel_point, only : point_split, point_merge
     use parcel_merge, only : merge_ellipses
     use parcel_correction, only : init_parcel_correction, apply_laplace, apply_gradient
     use parcel_diagnostics
@@ -90,14 +91,20 @@ program epic
 
                 call ls_rk4_step(dt)
 
-                if (parcel%is_elliptic .and.           &
-                    mod(iter, parcel%merge_freq) == 0) then
-                    call merge_ellipses(parcels)
+                if (mod(iter, parcel%merge_freq) == 0) then
+                    if (parcel%is_elliptic) then
+                        call merge_ellipses(parcels)
+                    else
+                        call point_merge(parcel%vfraction)
+                    endif
                 endif
 
-                if (parcel%is_elliptic .and.           &
-                    mod(iter, parcel%split_freq) == 0) then
-                    call split_ellipses(parcels, parcel%lambda, parcel%vmaxfraction)
+                if (mod(iter, parcel%split_freq) == 0) then
+                    if (parcel%is_elliptic) then
+                        call split_ellipses(parcels, parcel%lambda, parcel%vmaxfraction)
+                    else
+                        call point_split(parcel%lambda, parcel%prefactor)
+                    endif
                 endif
 
                 if (mod(iter, parcel%correction_freq) == 0) then

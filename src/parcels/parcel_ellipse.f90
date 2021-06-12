@@ -1,7 +1,7 @@
 ! =============================================================================
 !               This module contains all ellipse operations.
 ! =============================================================================
-module ellipse
+module parcel_ellipse
     use constants, only : pi   &
                         , fpi  &
                         , zero &
@@ -127,4 +127,4 @@ module ellipse
             points(2, :) = position + dx
 
         end function get_ellipse_points
-end module ellipse
+end module parcel_ellipse

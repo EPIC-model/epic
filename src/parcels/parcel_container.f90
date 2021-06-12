@@ -12,7 +12,7 @@ module parcel_container
                        get_step_group_name
     use options, only : verbose
     use parameters, only : extent, hli
-    use ellipse, only : get_angles
+    use parcel_ellipse, only : get_angles
     implicit none
 
     integer :: n_parcels
@@ -22,13 +22,13 @@ module parcel_container
             position,   &
             velocity,   &
             vorticity,  &
-            stretch,    &
             B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12
 
         double precision, allocatable, dimension(:) :: &
             volume,     &
             buoyancy,   &
-            humidity
+            humidity,   &
+            stretch
     end type parcel_container_type
 
     type(parcel_container_type) parcels
@@ -69,7 +69,7 @@ module parcel_container
             call write_h5_dataset_2d(name, "vorticity", parcels%vorticity(1:n_parcels, :))
 
             if (allocated(parcels%stretch)) then
-                call write_h5_dataset_1d(name, "stretch", parcels%stretch(1:n_parcels, 1))
+                call write_h5_dataset_1d(name, "stretch", parcels%stretch(1:n_parcels))
             endif
 
             call write_h5_dataset_1d(name, "volume", parcels%volume(1:n_parcels))
@@ -110,15 +110,17 @@ module parcel_container
             parcels%vorticity(n, 1) = parcels%vorticity(m, 1)
 
             if (allocated(parcels%stretch)) then
-                parcels%stretch(n, 1)  = parcels%stretch(m, 1)
+                parcels%stretch(n)  = parcels%stretch(m)
             endif
 
             parcels%volume(n)  = parcels%volume(m)
             parcels%buoyancy(n) = parcels%buoyancy(m)
             parcels%humidity(n) = parcels%humidity(m)
 
-            parcels%B(n, 1) = parcels%B(m, 1)
-            parcels%B(n, 2) = parcels%B(m, 2)
+            if (allocated(parcels%B)) then
+                parcels%B(n, 1) = parcels%B(m, 1)
+                parcels%B(n, 2) = parcels%B(m, 2)
+            endif
 
         end subroutine parcel_replace
 
@@ -129,7 +131,7 @@ module parcel_container
             allocate(parcels%position(num, 2))
             allocate(parcels%velocity(num, 2))
             allocate(parcels%vorticity(num, 1))
-            allocate(parcels%stretch(num, 1))
+            allocate(parcels%stretch(num))
             allocate(parcels%B(num, 2))
             allocate(parcels%volume(num))
             allocate(parcels%buoyancy(num))

@@ -30,6 +30,8 @@
 
  parcel%lambda       = 5.0
 
+ parcel%prefactor    = 2.5
+
  parcel%split_freq   = 1
 
  parcel%merge_type   = 'multi-geometric'

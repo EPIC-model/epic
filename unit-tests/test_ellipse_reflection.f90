@@ -11,7 +11,7 @@ program test_ellipse_reflection
     use parcel_container
     use parcel_bc, only : apply_reflective_bc
     use options, only : box
-    use ellipse, only : get_ab, get_angle
+    use parcel_ellipse, only : get_ab, get_angle
     use parameters, only : update_parameters, lower, dx, vcell
     implicit none
 
