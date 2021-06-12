@@ -143,11 +143,12 @@ module ls_rk4
                 dsdt(1:n_parcels) = get_stretch(strain, n_parcels)
             else
                 call grid2par_add(parcels%velocity, dvordt, strain)
+                dsdt(1:n_parcels) = dsdt(1:n_parcels) + get_stretch(strain, n_parcels)
             endif
 
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
                                             + cb*dt*parcels%velocity(1:n_parcels,:)
-            parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :)
+            parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :) &
                                               + cb*dt*dvordt(1:n_parcels, :)
             parcels%stretch(1:n_parcels) = parcels%stretch(1:n_parcels) &
                                          + cb * dt * dsdt(1:n_parcels)
@@ -159,7 +160,7 @@ module ls_rk4
             endif
             parcels%velocity(1:n_parcels,:) = ca*parcels%velocity(1:n_parcels,:)
             dvordt(1:n_parcels, :) = ca * dvordt(1:n_parcels, :)
-            dsdt(1:n_parcels) = get_stretch(strain, n_parcels) + ca * dsdt(1:n_parcels)
+            dsdt(1:n_parcels) = ca * dsdt(1:n_parcels)
             return
 
         end subroutine ls_rk4_non_elliptic_substep
