@@ -7,10 +7,10 @@ module parcel_split
     use parameters, only : vcell
     use parcel_container, only : parcel_container_type, n_parcels
     use parcel_bc, only : apply_reflective_bc
-    use ellipse, only : get_eigenvalue      &
-                      , get_eigenvector     &
-                      , get_B22             &
-                      , get_aspect_ratio
+    use parcel_ellipse, only : get_eigenvalue      &
+                             , get_eigenvector     &
+                             , get_B22             &
+                             , get_aspect_ratio
     implicit none
 
     contains
@@ -62,7 +62,6 @@ module parcel_split
 
                 parcels%B(n_parcels, :) = parcels%B(n, :)
 
-                parcels%velocity(n_parcels, :) = parcels%velocity(n, :)
                 parcels%vorticity(n_parcels) = parcels%vorticity(n)
                 parcels%volume(n_parcels) = parcels%volume(n)
                 parcels%buoyancy(n_parcels) = parcels%buoyancy(n)

@@ -10,7 +10,7 @@ epic_SOURCES = 					\
 	utils/reader.f90			\
 	utils/merge_sort.f90			\
 	fields/fields.f90			\
-	parcels/ellipse.f90			\
+	parcels/parcel_ellipse.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
 	parcels/parcel_nearest.f90		\
@@ -20,6 +20,7 @@ epic_SOURCES = 					\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_init.f90			\
 	parcels/parcel_correction.f90		\
+	parcels/parcel_point.f90		\
 	models/taylorgreen.f90			\
 	models/straka.f90			\
 	models/robert.f90			\

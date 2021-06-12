@@ -5,7 +5,7 @@ module parcel_init
     use options, only : parcel, input_fields
     use constants, only : zero, two, one, f12
     use parcel_container, only : parcels, n_parcels
-    use ellipse, only : get_ab, get_B22, get_eigenvalue
+    use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : trilinear, ngp
     use parameters, only : dx, vcell, ncell, extent, lower, nx, nz

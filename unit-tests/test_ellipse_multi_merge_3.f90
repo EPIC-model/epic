@@ -11,7 +11,7 @@ program test_ellipse_multi_merge_3
     use parcel_merge, only : merge_ellipses
     use options, only : parcel, box
     use parameters, only : update_parameters, extent
-    use ellipse
+    use parcel_ellipse
     implicit none
 
     double precision :: a1b1, a2b2, error

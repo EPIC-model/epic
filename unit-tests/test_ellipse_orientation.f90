@@ -9,7 +9,7 @@ program test_ellipse_orientation
     use unit_test
     use constants, only : pi, zero, two, three
     use parcel_container, only : parcels, n_parcels, parcel_alloc, parcel_dealloc
-    use ellipse
+    use parcel_ellipse
     implicit none
 
     double precision :: origin(2) = (/zero, zero/)

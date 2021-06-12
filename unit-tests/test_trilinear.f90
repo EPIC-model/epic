@@ -9,7 +9,7 @@ program test_trilinear
     use parcel_container
     use parcel_interpl, only : par2grid
     use options, only : parcel, box
-    use ellipse, only : get_ab
+    use parcel_ellipse, only : get_ab
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg, field_alloc
     implicit none
