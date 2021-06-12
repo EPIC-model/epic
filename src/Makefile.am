@@ -9,7 +9,7 @@ epic_SOURCES = 					\
 	utils/writer.f90			\
 	utils/merge_sort.f90			\
 	fields/fields.f90			\
-	parcels/ellipse.f90			\
+	parcels/parcel_ellipse.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
 	parcels/parcel_nearest.f90		\
@@ -24,6 +24,7 @@ epic_SOURCES = 					\
 	fields/field_diagnostics.f90		\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_correction.f90		\
+	parcels/parcel_point.f90		\
 	utils/parser.f90 			\
 	tri_inversion.f90			\
 	stepper/rk4_utils.f90			\

@@ -13,7 +13,7 @@ program test_ellipse_multi_merge_symmetry
     use options, only : parcel, box
     use parameters, only : update_parameters, extent, nx, nz
     use fields, only : volg
-    use ellipse
+    use parcel_ellipse
     implicit none
 
     double precision :: error
