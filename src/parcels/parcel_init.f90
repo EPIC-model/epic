@@ -59,7 +59,7 @@ module parcel_init
             endif
 
             parcels%velocity(1:n_parcels, :) = zero
-            parcels%vorticity(1:n_parcels, :) = zero
+            parcels%vorticity(1:n_parcels) = zero
             parcels%buoyancy(1:n_parcels) = zero
             parcels%humidity(1:n_parcels) = zero
         end subroutine parcel_default
@@ -139,7 +139,7 @@ module parcel_init
 
             if (has_dataset('vorticity')) then
                 call read_h5_dataset_2d('vorticity', buffer_2d)
-!                 call gen_parcel_scalar_attr(buffer_2d, 1.0d-9, parcels%vorticity)
+                call gen_parcel_scalar_attr(buffer_2d, 1.0d-9, parcels%vorticity)
                 deallocate(buffer_2d)
             endif
 

@@ -10,10 +10,6 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipse
     use fields
-    use taylorgreen, only : get_flow_velocity, &
-                            get_flow_gradient, &
-                            get_flow_vorticity
-
     implicit none
 
     private :: par2grid_elliptic,       &
@@ -283,7 +279,7 @@ module parcel_interpl
 
 
         subroutine grid2par(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
 
             if (parcel%is_elliptic) then
                    call grid2par_elliptic(vel, vor, vgrad)
@@ -295,7 +291,7 @@ module parcel_interpl
 
 
         subroutine grid2par_add(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
 
             if (parcel%is_elliptic) then
                    call grid2par_elliptic(vel, vor, vgrad, add=.true.)
@@ -307,7 +303,7 @@ module parcel_interpl
 
 
         subroutine grid2par_elliptic(vel, vor, vgrad, add)
-            double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
             logical, optional, intent(in)       :: add
             integer                             :: ncomp
             double precision                    :: points(2, 2), weight
@@ -320,11 +316,11 @@ module parcel_interpl
             if(present(add)) then
                if(add .eqv. .false.) then
                     vel(1:n_parcels, :) = zero
-                    vor(1:n_parcels, :) = zero
+                    vor(1:n_parcels)    = zero
                endif
             else
                vel(1:n_parcels, :) = zero
-               vor(1:n_parcels, :) = zero
+               vor(1:n_parcels)    = zero
             endif
 
             vgrad(1:n_parcels, :) = zero
@@ -369,7 +365,7 @@ module parcel_interpl
 
 
         subroutine grid2par_non_elliptic(vel, vor, vgrad, add)
-            double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
             logical, optional, intent(in)       :: add
             integer                             :: ncomp
             integer                             :: n, c, l
@@ -382,11 +378,11 @@ module parcel_interpl
             if(present(add)) then
                if(add .eqv. .false.) then
                    vel(1:n_parcels, :) = zero
-                   vor(1:n_parcels, :) = zero
+                   vor(1:n_parcels)    = zero
                endif
             else
                vel(1:n_parcels, :) = zero
-               vor(1:n_parcels, :) = zero
+               vor(1:n_parcels)    = zero
             endif
 
             vgrad(1:n_parcels, :) = zero

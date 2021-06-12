@@ -21,7 +21,6 @@ module parcel_container
         double precision, allocatable, dimension(:, :) :: &
             position,   &
             velocity,   &
-            stretch,    &
             B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12
 
         double precision, allocatable, dimension(:) :: &

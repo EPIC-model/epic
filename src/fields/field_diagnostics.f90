@@ -44,7 +44,7 @@ module field_diagnostics
                 do i = 0, nx-1
                     call get_position(i, j, pos)
                     vexact = get_flow_vorticity(pos)
-                    sqerrsum = sqerrsum + (vortg(j, i, 1) - vexact) ** 2
+                    sqerrsum = sqerrsum + (vortg(j, i) - vexact) ** 2
                 enddo
             enddo
 
