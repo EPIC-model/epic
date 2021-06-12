@@ -85,13 +85,10 @@ module ls_rk4
 
             if(step==1) then
                call grid2par(parcels%velocity, dwdt, strain)
-            else
-               call grid2par_add(parcels%velocity, dwdt, strain)
-            endif
-            if(step==1) then
                dbdt(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                            parcels%volume(1:n_parcels))
             else
+               call grid2par_add(parcels%velocity, dwdt, strain)
                dbdt(1:n_parcels,:) = dbdt(1:n_parcels,:) &
                                    + get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
                                            parcels%volume(1:n_parcels))
