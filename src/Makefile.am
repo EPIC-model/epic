@@ -16,15 +16,15 @@ epic_SOURCES = 					\
 	parcels/parcel_nearest.f90		\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\
-	parcels/parcel_init.f90			\
 	parcels/parcel_diagnostics.f90		\
+	parcels/parcel_interpl.f90 		\
+	parcels/parcel_init.f90			\
+	parcels/parcel_correction.f90		\
 	models/taylorgreen.f90			\
 	models/straka.f90			\
 	models/robert.f90			\
 	models/models.f90			\
 	fields/field_diagnostics.f90		\
-	parcels/parcel_interpl.f90 		\
-	parcels/parcel_correction.f90		\
 	utils/parser.f90 			\
 	tri_inversion.f90			\
 	stepper/rk4_utils.f90			\

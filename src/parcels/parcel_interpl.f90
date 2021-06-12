@@ -172,11 +172,11 @@ module parcel_interpl
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
             ! exclude halo cells to avoid division by zero
-            vortg(0:nz, :, 1) = vortg(0:nz, :, 1) / volg(0:nz, :)
+            vortg(0:nz, :) = vortg(0:nz, :) / volg(0:nz, :)
 
             ! linear extrapolation
-            vortg(0,  :, 1) = two * vortg(1,    :, 1) - vortg(2,    :, 1)
-            vortg(nz, :, 1) = two * vortg(nz-1, :, 1) - vortg(nz-2, :, 1)
+            vortg(0,  :) = two * vortg(1,    :) - vortg(2,    :)
+            vortg(nz, :) = two * vortg(nz-1, :) - vortg(nz-2, :)
 
             ! exclude halo cells to avoid division by zero
             tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
@@ -200,13 +200,9 @@ module parcel_interpl
         end subroutine par2grid
 
         subroutine par2grid_elliptic
-            integer           :: ncomp
             double precision  :: points(2, 2)
-            integer           :: n, p, c, l, i, j
+            integer           :: n, p, l, i, j
             double precision  :: pvol, pvor, weight
-
-            ! number of field components
-            ncomp = 1
 
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -233,12 +229,8 @@ module parcel_interpl
 
                         weight = 0.5d0 * weights(l) * pvol
 
-                        ! loop over field components
-                        do c = 1, ncomp
-                            pvor = parcels%vorticity(n, c)
-                            vortg(js(l), is(l), c) = vortg(js(l), is(l), c) &
-                                                   + weight * pvor
-                        enddo
+                        vortg(js(l), is(l)) = vortg(js(l), is(l)) &
+                                            + weight * parcels%vorticity(n)
 
                         tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
                                              + weight * parcels%buoyancy(n)
@@ -252,13 +244,9 @@ module parcel_interpl
 
 
         subroutine par2grid_non_elliptic
-            integer          :: ncomp
-            integer          :: n, c, l, i, j
+            integer          :: n, l, i, j
             double precision :: pos(2)
             double precision :: pvol, weight
-
-            ! number of field components
-            ncomp = 1
 
             do n = 1, n_parcels
 
@@ -280,12 +268,9 @@ module parcel_interpl
 
                     weight = pvol * weights(l)
 
-                    ! loop over field components
-                    do c = 1, ncomp
-                        ! the weight is halved due to 2 points per ellipse
-                        vortg(js(l), is(l), c) = vortg(js(l), is(l), c)  &
-                                               + weight * parcels%vorticity(n, c)
-                    enddo
+                    ! the weight is halved due to 2 points per ellipse
+                    vortg(js(l), is(l)) = vortg(js(l), is(l))  &
+                                        + weight * parcels%vorticity(n)
 
                     tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
                                          + weight * parcels%buoyancy(n)
@@ -375,7 +360,7 @@ module parcel_interpl
                                         + weight * velgradg(js(l), is(l), c)
                         enddo
 
-                        vor(n, 1) = vor(n, 1) + weight * vtend(js(l), is(l), 1)
+                        vor(n) = vor(n) + weight * vtend(js(l), is(l))
                     enddo
                 enddo
             enddo
@@ -429,8 +414,8 @@ module parcel_interpl
                                     + weights(l) * velgradg(js(l), is(l), c)
                     enddo
 
-                    vor(n, 1) = vor(n, 1) &
-                              + weights(l) * vtend(js(l), is(l), 1)
+                    vor(n) = vor(n) &
+                           + weights(l) * vtend(js(l), is(l))
 
                 enddo
             enddo

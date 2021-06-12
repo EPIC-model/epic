@@ -21,12 +21,12 @@ module parcel_container
         double precision, allocatable, dimension(:, :) :: &
             position,   &
             velocity,   &
-            vorticity,  &
             stretch,    &
             B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12
 
         double precision, allocatable, dimension(:) :: &
             volume,     &
+            vorticity,  &
             buoyancy,   &
             humidity
     end type parcel_container_type
@@ -66,7 +66,7 @@ module parcel_container
 
             call write_h5_dataset_2d(name, "position", parcels%position(1:n_parcels, :))
             call write_h5_dataset_2d(name, "velocity", parcels%velocity(1:n_parcels, :))
-            call write_h5_dataset_2d(name, "vorticity", parcels%vorticity(1:n_parcels, :))
+            call write_h5_dataset_1d(name, "vorticity", parcels%vorticity(1:n_parcels))
 
             if (allocated(parcels%stretch)) then
                 call write_h5_dataset_1d(name, "stretch", parcels%stretch(1:n_parcels, 1))
@@ -107,7 +107,7 @@ module parcel_container
             parcels%velocity(n, 1) = parcels%velocity(m, 1)
             parcels%velocity(n, 2) = parcels%velocity(m, 2)
 
-            parcels%vorticity(n, 1) = parcels%vorticity(m, 1)
+            parcels%vorticity(n) = parcels%vorticity(m)
 
             if (allocated(parcels%stretch)) then
                 parcels%stretch(n, 1)  = parcels%stretch(m, 1)
@@ -128,7 +128,7 @@ module parcel_container
 
             allocate(parcels%position(num, 2))
             allocate(parcels%velocity(num, 2))
-            allocate(parcels%vorticity(num, 1))
+            allocate(parcels%vorticity(num))
             allocate(parcels%stretch(num, 1))
             allocate(parcels%B(num, 2))
             allocate(parcels%volume(num))

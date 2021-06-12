@@ -29,7 +29,7 @@ module taylorgreen
             integer          :: n
 
             do n = 1, n_parcels
-                parcels%vorticity(n, :) = get_flow_vorticity(parcels%position(n, :))
+                parcels%vorticity(n) = get_flow_vorticity(parcels%position(n, :))
             enddo
 
         end subroutine taylorgreen_init
