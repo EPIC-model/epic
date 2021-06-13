@@ -16,8 +16,8 @@ program epic
     use fields
     use tri_inversion, only : init_inversion
     use parcel_interpl
+    use parcel_init, only : init_parcels
     use rk4
-    use models, only : model_init
     use writer, only : open_h5_file,                        &
                        close_h5_file,                       &
                        write_h5_double_scalar_step_attrib,  &
@@ -41,7 +41,7 @@ program epic
     contains
 
         subroutine pre_run
-            use options, only : model
+            use options, only : model, input_fields
 
             ! parse the config file
             call read_config_file
@@ -50,7 +50,7 @@ program epic
 
             call parcel_alloc(max_num_parcels)
 
-            call model_init(model)
+            call init_parcels(input_fields)
 
             call rk4_alloc(max_num_parcels)
 

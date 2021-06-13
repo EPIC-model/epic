@@ -2,7 +2,7 @@
 !               This module initializes parcel default values.
 ! =============================================================================
 module parcel_init
-    use options, only : parcel, input_fields
+    use options, only : parcel
     use constants, only : zero, two, one, f12
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
@@ -12,8 +12,11 @@ module parcel_init
     use reader
     implicit none
 
-    private :: init_random_positions,  &
-               init_regular_positions
+    private :: init_random_positions,       &
+               init_regular_positions,      &
+               init_refine,                 &
+               init_from_grids,             &
+               fill_field_from_buffer_2d
 
     contains
 
@@ -21,8 +24,9 @@ module parcel_init
         ! Set default values for parcel attributes
         ! Attention: This subroutine assumes that the parcel
         !            container is already allocated!
-        subroutine parcel_default
-            double precision :: lam, ratio
+        subroutine init_parcels(filename)
+            character(*), intent(in) :: filename
+            double precision         :: lam, ratio
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
@@ -62,7 +66,10 @@ module parcel_init
             parcels%vorticity(1:n_parcels) = zero
             parcels%buoyancy(1:n_parcels) = zero
             parcels%humidity(1:n_parcels) = zero
-        end subroutine parcel_default
+
+            call init_from_grids(filename)
+
+        end subroutine init_parcels
 
 
         subroutine init_random_positions
@@ -132,11 +139,12 @@ module parcel_init
         end subroutine init_refine
 
 
-        subroutine parcel_init_from_grids
+        subroutine init_from_grids(filename)
+            character(*), intent(in)      :: filename
             double precision, allocatable :: buffer_2d(:, :)
             double precision              :: field_2d(-1:nz+1, 0:nx-1)
 
-            call open_h5_file(trim(input_fields))
+            call open_h5_file(filename)
 
             if (has_dataset('vorticity')) then
                 call read_h5_dataset_2d('vorticity', buffer_2d)
@@ -155,7 +163,7 @@ module parcel_init
 
             call close_h5_file
 
-        end subroutine parcel_init_from_grids
+        end subroutine init_from_grids
 
         subroutine fill_field_from_buffer_2d(buffer, field)
             double precision, allocatable :: buffer(:, :)
@@ -177,8 +185,6 @@ module parcel_init
                     field(j, i) = buffer(j, i)
                 enddo
             enddo
-
-
         end subroutine fill_field_from_buffer_2d
 
 

@@ -21,7 +21,7 @@ module parser
 
             ! namelist definitions
             namelist /EPIC/ model, output, box, parcel, stepper, time, &
-                            input_fields, taylor_green_opt, robert_opt, straka_opt
+                            input_fields
 
             ! check whether file exists
             inquire(file=filename, exist=exists)

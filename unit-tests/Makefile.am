@@ -3,7 +3,6 @@ if ENABLE_UNIT_TESTS
 AM_FCFLAGS = -I $(top_builddir)/src/
 
 AM_LDFLAGS =						\
-	$(top_builddir)/src/models/taylorgreen.o	\
 	$(top_builddir)/src/parcels/*.o 		\
 	$(top_builddir)/src/utils/*.o			\
 	$(top_builddir)/src/fields/*.o			\

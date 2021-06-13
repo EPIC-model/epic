@@ -21,10 +21,6 @@ epic_SOURCES = 					\
 	parcels/parcel_init.f90			\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_point.f90		\
-	models/taylorgreen.f90			\
-	models/straka.f90			\
-	models/robert.f90			\
-	models/models.f90			\
 	fields/field_diagnostics.f90		\
 	utils/parser.f90 			\
 	tri_inversion.f90			\
