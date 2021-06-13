@@ -12,8 +12,7 @@
 module taylorgreen
     use options, only : taylor_green_opt
     use constants, only : pi
-    use parcel_container, only : parcels, n_parcels
-    use fields
+!     use fields
     implicit none
 
     private
@@ -28,9 +27,9 @@ module taylorgreen
         subroutine taylorgreen_init
             integer          :: n
 
-            do n = 1, n_parcels
-                parcels%vorticity(n) = get_flow_vorticity(parcels%position(n, :))
-            enddo
+!             do n = 1, n_parcels
+!                 parcels%vorticity(n) = get_flow_vorticity(parcels%position(n, :))
+!             enddo
 
         end subroutine taylorgreen_init
 
