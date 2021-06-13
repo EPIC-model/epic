@@ -8,12 +8,25 @@ program models
     implicit none
 
     character(len=32) :: filename = ''
+    character(len=32) :: model = ''
+    character(len=32) :: h5fname = ''
     logical           :: verbose = .false.
+
+    type box_type
+        integer          :: nc(2)       ! number of cells
+        double precision :: extent(2)   ! size of domain
+        double precision :: origin(2)   ! origin of domain (lower left corner)
+    end type box_type
+
+    type(box_type) :: box
+
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
 
-    call generate_fields(trim(filename))
+    call read_config_file
+
+    call generate_fields(trim(model))
 
     contains
 
@@ -33,6 +46,45 @@ program models
             end select
         end subroutine generate_fields
 
+
+        ! parse configuration file
+        ! (see https://cyber.dabamos.de/programming/modernfortran/namelists.html [8 March 2021])
+        subroutine read_config_file
+            integer :: ios
+            integer :: fn = 1
+            logical :: exists = .false.
+
+            ! namelist definitions
+            namelist /MODELS/ model, h5fname, box
+
+            ! check whether file exists
+            inquire(file=filename, exist=exists)
+
+            if (exists .eqv. .false.) then
+                print *, 'Error: input file "', trim(filename), '" does not exist.'
+                stop
+            endif
+
+            ! open and read Namelist file.
+            open(action='read', file=filename, iostat=ios, newunit=fn)
+
+            read(nml=MODELS, iostat=ios, unit=fn)
+
+            if (ios /= 0) then
+                print *, 'Error: invalid Namelist format.'
+                stop
+            end if
+
+            close(fn)
+
+            ! check whether h5 file already exists
+            inquire(file=h5fname, exist=exists)
+
+            if (exists) then
+                print *, 'Error: output file "', trim(h5fname), '" already exists.'
+                stop
+            endif
+        end subroutine read_config_file
 
         ! Get the file name provided via the command line
         subroutine parse_command_line
