@@ -10,7 +10,6 @@ modelsdir = $(prefix)/bin
 models_PROGRAMS = models
 
 models_SOURCES =		\
-	options.f90		\
 	taylorgreen.f90		\
 	straka.f90		\
 	robert.f90		\
