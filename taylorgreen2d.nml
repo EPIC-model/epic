@@ -1,71 +1,12 @@
-&EPIC
+&MODELS
 
- model              = 'TaylorGreen'
+ model      = 'TaylorGreen'
 
- !
- ! output info
- !
+ h5fname    = 'taylorgreen2d.hdf5'
 
- output%h5freq      = 1
-
- output%h5fname     = 'taylorgreen2d.hdf5'
-
- !
- ! grid info
- !
-
- box%nc          = 10, 10
-
- !
- ! parcel info
- !
-
- parcel%n_per_cell   = 4
-
- parcel%is_random    = .false.
-
- parcel%seed         = 42
-
- parcel%is_elliptic  = .true.
-
- parcel%lambda       = 5.0
-
- parcel%prefactor    = 2.5
-
- parcel%split_freq   = 1
-
- parcel%merge_type   = 'multi-geometric'
-
- parcel%merge_freq   = 1
-
- parcel%vfraction    = 36.0
-
- parcel%vmaxfraction = 2.89
-
- parcel%correction_freq = 1
-
- parcel%correction_iters = 2
-
- parcel%apply_laplace = .true.
-
- parcel%apply_gradient = .true.
-
- parcel%gradient_pref = 0.3
-
- !
- ! stepper info
- !
- stepper            = 'classic-rk4'
-
- time%limit         = 20.0
-
- time%dt            = 0.025
-
- time%is_adaptive   = .true.
-
- time%alpha         = 0.025
-
- time%dt_max        = 0.125
+ box%ncells = 10, 10
+ box%extent = 5.0, 5.0
+ box%origin = 0.0, 0.0
 
  !
  ! Taylor-Green flow parameters:
@@ -74,12 +15,12 @@
  !
 
  ! amplitudes: A, B
- taylor_green_opt%amp           = 0.5, -1.0
+ tg_flow%amp           = 0.5, -1.0
 
  ! frequencies: a, b
- taylor_green_opt%freq          = 2.0, 1.0
+ tg_flow%freq          = 2.0, 1.0
 
  ! phase shifts: d, e
- taylor_green_opt%phase         = 0.0, 0.0
+ tg_flow%phase         = 0.0, 0.0
 
 /

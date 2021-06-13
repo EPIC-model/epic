@@ -12,45 +12,73 @@
 
 module straka
     use physics
-    use options, only : straka_opt
     use constants
-!     use fields, only : get_position
+    use writer
     implicit none
+
+    private
+
+    type flow_type
+        double precision :: theta_ref = 300.0d0               ![Kelvin] reference potential temperature
+        double precision :: theta_max = 15.0d0                ![Kelvin] max. pot. temp. perturbation
+        double precision :: center(2) = (/zero, 3000.0d0/)    ![m] sphere center (x, z)
+        double precision :: radii(2)  = (/4000.0d0, 2000.d0/) ![m] ellipse radii (x, z)
+    end type flow_type
+
+    type(flow_type) :: straka_flow
+
+    public :: straka_init, straka_flow
 
     contains
 
-        subroutine straka_init
-!             integer          :: n
-!             double precision :: xc, xr, zc, zr, L, dtheta, theta_ref, theta_max, pos(2)
-!
-!             ! in metres
-!             xc = straka_opt%center(1)
-!             xr = straka_opt%radii(2)
-!             zc = straka_opt%center(2)
-!             zr = straka_opt%radii(2)
-!
-!             ![Kelvin] reference potential temperature
-!             theta_ref = straka_opt%theta_ref
-!
-!             theta_max = -0.5d0 * straka_opt%theta_max
-!
-!             do n = 1, n_parcels
-!                 L = ((parcels%position(n, 1) - xc) / xr) ** 2 &
-!                   + ((parcels%position(n, 2) - zc) / zr) ** 2
-!
-!                 L = dsqrt(L)
-!
-!                 ! potential temperature perturbation
-!                 dtheta = zero
-!
-!                 if (L <= one) then
-!                     dtheta = theta_max * (dcos(pi * L) + one)
-!                 endif
-!
-!                 ! MPIC paper:
-!                 ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
-!                 ! (dtheta = theta - theta_ref)
-!                 parcels%buoyancy(n) = gravity * dtheta / theta_ref
-!             enddo
+        subroutine straka_init(filename, nx, nz, origin, dx)
+            character(*),     intent(in) :: filename
+            integer,          intent(in) :: nx, nz
+            double precision, intent(in) :: origin(2)
+            double precision, intent(in) :: dx(2)
+            double precision             :: pos(2)
+            double precision             :: xc, xr, zc, zr, L
+            double precision             :: dtheta, theta_ref, theta_max
+            double precision             :: buoyg(0:nz, 0:nx-1)
+            integer                      :: i, j
+
+            ! in metres
+            xc = straka_flow%center(1)
+            xr = straka_flow%radii(2)
+            zc = straka_flow%center(2)
+            zr = straka_flow%radii(2)
+
+            ![Kelvin] reference potential temperature
+            theta_ref = straka_flow%theta_ref
+
+            theta_max = -0.5d0 * straka_flow%theta_max
+
+            do j = 0, nz
+                do i = 0, nx - 1
+                    pos = origin + dx * dble((/i, j/))
+
+                    L = ((pos(1) - xc) / xr) ** 2 &
+                      + ((pos(2) - zc) / zr) ** 2
+
+                    L = dsqrt(L)
+
+                    ! potential temperature perturbation
+                    dtheta = zero
+
+                    if (L <= one) then
+                        dtheta = theta_max * (dcos(pi * L) + one)
+                    endif
+
+                    ! MPIC paper:
+                    ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
+                    ! (dtheta = theta - theta_ref)
+                    buoyg(j, i) = gravity * dtheta / theta_ref
+                enddo
+            enddo
+
+            call open_h5_file(filename)
+            call write_h5_dataset_2d('/', 'buoyancy', buoyg)
+            call close_h5_file
+
         end subroutine straka_init
 end module

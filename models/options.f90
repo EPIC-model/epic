@@ -9,14 +9,7 @@ module options
     !
     ! Straka case options
     !
-    type straka_type
-        double precision :: theta_ref = 300.0d0               ![Kelvin] reference potential temperature
-        double precision :: theta_max = 15.0d0                ![Kelvin] max. pot. temp. perturbation
-        double precision :: center(2) = (/0.0d0, 3000.0d0/)   ![m] sphere center (x, z)
-        double precision :: radii(2)  = (/4000.0d0, 2000.d0/) ![m] ellipse radii (x, z)
-    end type straka_type
 
-    type(straka_type) :: straka_opt
 
     !
     ! Robert case options

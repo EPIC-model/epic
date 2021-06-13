@@ -1,86 +1,22 @@
-&EPIC
+&MODELS
 
- model              = 'Straka'
+ model       = 'Straka'
+ h5fname     = 'straka2d.hdf5'
 
- !
- ! output info
- !
-
- output%h5freq      = 10
-
- output%h5fname     = 'straka2d.hdf5'
-
- !
- ! grid info
- !
-
- box%nc          = 32, 16
- box%extent      = 20000, 6400
- box%origin      = -10000.0, 0.0
-
- !
- ! parcel info
- !
-
- parcel%n_per_cell   = 4
-
- parcel%is_random    = .false.
-
- parcel%seed         = 42
-
- parcel%is_elliptic  = .true.
-
- parcel%lambda       = 5.0
-
- parcel%split_freq   = 1
-
- parcel%merge_type   = 'multi-geometric'
-
- parcel%merge_freq   = 1
-
- parcel%vfraction    = 36.0
-
- parcel%vmaxfraction = 2.89
-
- parcel%correction_freq = 1
-
- parcel%correction_iters = 2
-
- parcel%apply_laplace = .true.
-
- parcel%apply_gradient = .true.
-
- parcel%gradient_pref = 0.3
-
- !
- ! stepper info
- !
- stepper            = 'classic-rk4'
-
- time%limit         = 600.0
-
- time%dt            = 1.0
-
- time%is_adaptive   = .true.
-
- time%alpha         = 0.025
-
- time%dt_max        = 1.0
-
- !
- ! Straka parameters:
- !
+ box%ncells  = 32, 16
+ box%extent  = 20000, 6400
+ box%origin  = -10000.0, 0.0
 
  ![Kelvin] reference potential temperature
- straka_opt%theta_ref = 300.0
+ straka_flow%theta_ref = 300.0
 
  ![Kelvin] max. pot. temp. perturbation
- straka_opt%theta_max = 15.0
+ straka_flow%theta_max = 15.0
 
  ![m] sphere center (x, z)
- straka_opt%center = 0.0, 3000.0
+ straka_flow%center = 0.0, 3000.0
 
  ![m] ellipse radii (x, z)
- straka_opt%radii = 4000.0, 2000.0
+ straka_flow%radii = 4000.0, 2000.0
 
 /

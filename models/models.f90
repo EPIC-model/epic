@@ -43,7 +43,7 @@ program models
                 case ('TaylorGreen')
                     call taylorgreen_init(trim(h5fname), nx, nz, box%origin, dx)
                 case ('Straka')
-                    call straka_init
+                    call straka_init(trim(h5fname), nx, nz, box%origin, dx)
                 case ('Robert')
                     call robert_init
                 case default
@@ -61,7 +61,7 @@ program models
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODELS/ model, h5fname, box, tg_flow
+            namelist /MODELS/ model, h5fname, box, tg_flow, straka_flow
 
             ! check whether file exists
             inquire(file=filename, exist=exists)

@@ -11,7 +11,6 @@
 ! =============================================================================
 module taylorgreen
     use writer
-    use hdf5
     use constants, only : pi, f12, zero, one, two
     implicit none
 
