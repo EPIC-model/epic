@@ -5,31 +5,55 @@
 !                   v(x, y) = B * sin(ax + d) * cos(by + e)
 !
 !                   The code uses following variable names:
-!                       taylor_green_opt%freq  = (/a, b/)
-!                       taylor_green_opt%amp   = (/A, B/)
-!                       taylor_green_opt%phase = (/d, e/)
+!                       tg_flow%freq  = (/a, b/)
+!                       tg_flow%amp   = (/A, B/)
+!                       tg_flow%phase = (/d, e/)
 ! =============================================================================
 module taylorgreen
-    use options, only : taylor_green_opt
-    use constants, only : pi
-!     use fields
+    use writer
+    use hdf5
+    use constants, only : pi, f12, zero, one, two
     implicit none
 
     private
+        type flow_type
+            double precision :: amp(2) = (/f12, -one/)      ! amplitudes
+            double precision :: freq(2) = (/two, one/)      ! frequencies
+            double precision :: phase(2) = (/zero, zero/)   ! phase shift
+        end type flow_type
+
+        type(flow_type) :: tg_flow
+
+
         double precision, parameter :: hpi = 0.5d0 * pi
 
     public :: get_flow_velocity,    &
               get_flow_gradient,    &
               get_flow_vorticity,   &
-              taylorgreen_init
+              taylorgreen_init,     &
+              tg_flow
+
 
     contains
-        subroutine taylorgreen_init
-            integer          :: n
+        subroutine taylorgreen_init(filename, nx, nz, origin, dx)
+            character(*),     intent(in) :: filename
+            integer,          intent(in) :: nx, nz
+            double precision, intent(in) :: origin(2)
+            double precision, intent(in) :: dx(2)
+            double precision             :: pos(2)
+            double precision             :: vortg(0:nz, 0:nx-1)
+            integer                      :: i, j
 
-!             do n = 1, n_parcels
-!                 parcels%vorticity(n) = get_flow_vorticity(parcels%position(n, :))
-!             enddo
+            do j = 0, nz
+                do i = 0, nx - 1
+                    pos = origin + dx * dble((/i, j/))
+                    vortg(j, i) = get_flow_vorticity(pos)
+                enddo
+            enddo
+
+            call open_h5_file(filename)
+            call write_h5_dataset_2d('/', 'vorticity', vortg)
+            call close_h5_file
 
         end subroutine taylorgreen_init
 
@@ -41,8 +65,8 @@ module taylorgreen
 
             call get_flow_pos(pos, xx, zz)
 
-            vel(1) = taylor_green_opt%amp(1) * dcos(xx) * dsin(zz)
-            vel(2) = taylor_green_opt%amp(2) * dsin(xx) * dcos(zz)
+            vel(1) = tg_flow%amp(1) * dcos(xx) * dsin(zz)
+            vel(2) = tg_flow%amp(2) * dsin(xx) * dcos(zz)
         end function get_flow_velocity
 
         ! grad ordering : dudx, dudy, dvdx, dvdy
@@ -54,16 +78,16 @@ module taylorgreen
             call get_flow_pos(pos, xx, zz)
 
             ! du/dx = - a * A * sin(xx) * sin(zz)
-            grad(1) = - taylor_green_opt%freq(1) * taylor_green_opt%amp(1) * dsin(xx) * dsin(zz)
+            grad(1) = - tg_flow%freq(1) * tg_flow%amp(1) * dsin(xx) * dsin(zz)
 
             ! du/dy = b * A * cos(xx) * cos(zz)
-            grad(2) = taylor_green_opt%freq(2) * taylor_green_opt%amp(1) * dcos(xx) * dcos(zz)
+            grad(2) = tg_flow%freq(2) * tg_flow%amp(1) * dcos(xx) * dcos(zz)
 
             ! dv/dx = a * B * cos(xx) * np.cos(zz)
-            grad(3) = taylor_green_opt%freq(1) * taylor_green_opt%amp(2) * dcos(xx) * dcos(zz)
+            grad(3) = tg_flow%freq(1) * tg_flow%amp(2) * dcos(xx) * dcos(zz)
 
             ! dv/dy = - b * B * sin(xx) * sin(zz)
-            grad(4) = - taylor_green_opt%freq(2) * taylor_green_opt%amp(2) * dsin(xx) * dsin(zz)
+            grad(4) = - tg_flow%freq(2) * tg_flow%amp(2) * dsin(xx) * dsin(zz)
 
         end function get_flow_gradient
 
@@ -74,8 +98,8 @@ module taylorgreen
 
             call get_flow_pos(pos, xx, zz)
 
-            omega = (taylor_green_opt%amp(2) * taylor_green_opt%freq(1)     &
-                   - taylor_green_opt%amp(1) * taylor_green_opt%freq(2))    &
+            omega = (tg_flow%amp(2) * tg_flow%freq(1)     &
+                   - tg_flow%amp(1) * tg_flow%freq(2))    &
                    * dcos(xx) * dcos(zz)
         end function get_flow_vorticity
 
@@ -83,8 +107,8 @@ module taylorgreen
             double precision, intent(in) :: pos(2)
             double precision, intent(out) :: xx, zz
 
-            xx = taylor_green_opt%freq(1) * pos(1) + taylor_green_opt%phase(1) + hpi
-            zz = taylor_green_opt%freq(2) * pos(2) + taylor_green_opt%phase(2)
+            xx = tg_flow%freq(1) * pos(1) + tg_flow%phase(1) + hpi
+            zz = tg_flow%freq(2) * pos(2) + tg_flow%phase(2)
 
         end subroutine get_flow_pos
 

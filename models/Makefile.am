@@ -2,7 +2,8 @@ AM_FCFLAGS = -I $(top_builddir)/src/
 
 AM_LDFLAGS =                                            \
         $(top_builddir)/src/utils/constants.o		\
-        $(top_builddir)/src/utils/physics.o
+        $(top_builddir)/src/utils/physics.o		\
+        $(top_builddir)/src/utils/writer.o
 
 modelsdir = $(prefix)/bin
 

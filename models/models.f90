@@ -13,7 +13,7 @@ program models
     logical           :: verbose = .false.
 
     type box_type
-        integer          :: nc(2)       ! number of cells
+        integer          :: ncells(2)   ! number of cells
         double precision :: extent(2)   ! size of domain
         double precision :: origin(2)   ! origin of domain (lower left corner)
     end type box_type
@@ -32,10 +32,16 @@ program models
 
         subroutine generate_fields(name)
             character(*), intent(in) :: name
+            double precision         :: dx(2)
+            integer                  :: nx, nz
+
+            dx = box%extent / dble(box%ncells)
+            nx = box%ncells(1)
+            nz = box%ncells(2)
 
             select case (trim(name))
                 case ('TaylorGreen')
-                    call taylorgreen_init
+                    call taylorgreen_init(trim(h5fname), nx, nz, box%origin, dx)
                 case ('Straka')
                     call straka_init
                 case ('Robert')
@@ -55,7 +61,7 @@ program models
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODELS/ model, h5fname, box
+            namelist /MODELS/ model, h5fname, box, tg_flow
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -104,6 +110,9 @@ program models
                     filename = trim(arg)
                 else if (arg == '--verbose') then
                     verbose = .true.
+                else if (arg == '--help') then
+                    print *, 'Run code with "./models --config [config file]"'
+                    stop
                 endif
                 i = i+1
             end do

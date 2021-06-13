@@ -4,13 +4,7 @@ module options
     !
     ! TaylorGreen options
     !
-    type taylor_green_type
-        double precision :: amp(2) = 1.0d0    ! amplitudes
-        double precision :: freq(2) = 1.0d0   ! frequencies
-        double precision :: phase(2) = 1.0d0  ! phase shift
-    end type taylor_green_type
 
-    type(taylor_green_type) :: taylor_green_opt
 
     !
     ! Straka case options
