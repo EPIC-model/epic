@@ -134,43 +134,58 @@ module parcel_init
 
         subroutine parcel_init_from_grids
             double precision, allocatable :: buffer_2d(:, :)
-            integer                       :: dims(2), bdims(2)
-
-            dims = (/nz+1, nx/)
+            double precision              :: field_2d(-1:nz+1, 0:nx-1)
 
             call open_h5_file(trim(input_fields))
 
             if (has_dataset('vorticity')) then
                 call read_h5_dataset_2d('vorticity', buffer_2d)
-
-                bdims = shape(buffer_2d)
-                if (.not. sum(dims - bdims) == 0) then
-                    print "(a32, i4, a1, i4, a6, i4, a1, i4, a1)", &
-                          "Field dimensions do not agree: (", dims(1), ",", &
-                          dims(2), ") != (", bdims(1), ",", bdims(2), ")"
-                    stop
-                endif
-
-                call gen_parcel_scalar_attr(buffer_2d, 1.0d-9, parcels%vorticity)
+                call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
+                call gen_parcel_scalar_attr(field_2d, 1.0d-9, parcels%vorticity)
             endif
 
 
             if (has_dataset('buoyancy')) then
                 call read_h5_dataset_2d('buoyancy', buffer_2d)
-                call gen_parcel_scalar_attr(buffer_2d, 1.0d-9, parcels%buoyancy)
+                call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
+                call gen_parcel_scalar_attr(field_2d, 1.0d-9, parcels%buoyancy)
             endif
 
             call close_h5_file
 
         end subroutine parcel_init_from_grids
 
+        subroutine fill_field_from_buffer_2d(buffer, field)
+            double precision, allocatable :: buffer(:, :)
+            double precision              :: field(-1:nz+1, 0:nx-1)
+            integer                       :: dims(2), bdims(2), i, j
+
+            dims = (/nz+1, nx/)
+
+            bdims = shape(buffer)
+            if (.not. sum(dims - bdims) == 0) then
+                print "(a32, i4, a1, i4, a6, i4, a1, i4, a1)", &
+                      "Field dimensions do not agree: (", dims(1), ",", &
+                      dims(2), ") != (", bdims(1), ",", bdims(2), ")"
+                stop
+            endif
+
+            do j = 0, nz
+                do i = 0, nx-1
+                    field(j, i) = buffer(j, i)
+                enddo
+            enddo
+
+
+        end subroutine fill_field_from_buffer_2d
+
 
         ! Generates the parcel attribute "par" from the field values provided
         ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)
         subroutine gen_parcel_scalar_attr(field, tol, par)
-            double precision, intent(in)  :: field(0:nz, 0:nx-1)
+            double precision, intent(in)  :: field(-1:nz+1, 0:nx-1)
             double precision, intent(in)  :: tol
             double precision, intent(out) :: par(:)
             double precision :: resi(0:nz, 0:nx-1)
@@ -251,7 +266,7 @@ module parcel_init
                 enddo
 
                 !Compute maximum error:
-                rerr = maxval(abs(resi))
+                rerr = maxval(dabs(resi))
             enddo
 
             !Finally divide by parcel volume to define attribute:

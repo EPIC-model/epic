@@ -174,12 +174,17 @@ module parcel_interpl
             vortg(0,  :) = two * vortg(1,    :) - vortg(2,    :)
             vortg(nz, :) = two * vortg(nz-1, :) - vortg(nz-2, :)
 
+            tbuoyg(0,  :) = two * tbuoyg(0,  :)
+            tbuoyg(nz, :) = two * tbuoyg(nz, :)
+            tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
+            tbuoyg(nz-1, :) = tbuoyg(nz-1, :) + tbuoyg(nz+1, :)
+
             ! exclude halo cells to avoid division by zero
             tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
 
             ! linear extrapolation
-            tbuoyg(0,  :) = two * tbuoyg(1,    :) - tbuoyg(2,    :)
-            tbuoyg(nz, :) = two * tbuoyg(nz-1, :) - tbuoyg(nz-2, :)
+!             tbuoyg(0,  :) = two * tbuoyg(1,    :) - tbuoyg(2,    :)
+!             tbuoyg(nz, :) = two * tbuoyg(nz-1, :) - tbuoyg(nz-2, :)
 
             ! sum halo contribution into internal cells
             ! (be aware that halo cell contribution at upper boundary
