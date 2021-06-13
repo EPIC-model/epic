@@ -17,7 +17,7 @@ program test_tri_inversion
     double precision              :: k, m, px, xx, az, mz, zz, uea, a, max_err
     integer                       :: ix, iz
 
-    box%nc = (/40, 20/)
+    box%ncells = (/40, 20/)
     box%extent = (/four, two/)
 
     call update_parameters()

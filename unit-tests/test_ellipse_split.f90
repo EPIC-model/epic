@@ -18,7 +18,7 @@ program test_ellipse_split
     double precision, parameter :: evec(2) = (/dcos(angle), dsin(angle)/)
     double precision :: h, ab, B11, B12, B22, pos(2, 2), error, a2, b2
 
-    box%nc = (/10, 10/)
+    box%ncells = (/10, 10/)
     box%extent = (/ten, ten/)
     box%origin = (/-five, -five/)
     call update_parameters

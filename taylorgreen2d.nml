@@ -5,8 +5,8 @@
  h5fname    = 'taylorgreen2d.hdf5'
 
  box%ncells = 10, 10
- box%extent = 5.0, 5.0
- box%origin = 0.0, 0.0
+ box%extent =  3.14159265359,  3.14159265359
+ box%origin = -1.57079632679, -1.57079632679
 
  !
  ! Taylor-Green flow parameters:

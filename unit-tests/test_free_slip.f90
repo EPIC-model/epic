@@ -25,7 +25,7 @@ program test_free_slip
     double precision :: error
 
     box%extent = (/0.4d0, 0.4d0/)
-    box%nc = (/4, 4/)
+    box%ncells = (/4, 4/)
 
     call update_parameters()
 

@@ -14,7 +14,8 @@ module options
     ! configuration file
     character(len=64) :: filename = ''
 
-    character(len=32) :: model = 'TaylorGreen'
+    ! field input file
+    character(len=32)   :: model = ''
 
     !
     ! output options
@@ -30,16 +31,13 @@ module options
     ! domain options
     !
     type box_type
-        integer          :: nc(2)                   = (/20, 20/)                  ! number of cells
+        integer          :: ncells(2)               = (/20, 20/)                  ! number of cells
         double precision :: extent(2)               = (/pi, pi/)
         double precision :: origin(2)               = (/-0.5d0 * pi, -0.5d0 * pi/)
         logical          :: allow_larger_anisotropy = .false.
     end type box_type
 
     type(box_type) :: box
-
-
-    character(len=32)   :: input_fields = ''
 
     !
     ! parcel options

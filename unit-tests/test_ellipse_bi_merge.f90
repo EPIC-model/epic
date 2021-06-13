@@ -17,7 +17,7 @@ program test_ellipse_bi_merge
 
     double precision :: ab, a1b1, a2b2, B11, B12, B22, error, vol, hum, buoy
 
-    box%nc = (/1, 1/)
+    box%ncells = (/1, 1/)
     box%extent = (/pi, pi/)
 
     call update_parameters()

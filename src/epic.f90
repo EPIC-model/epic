@@ -41,7 +41,7 @@ program epic
     contains
 
         subroutine pre_run
-            use options, only : model, input_fields
+            use options, only : model
 
             ! parse the config file
             call read_config_file
@@ -50,7 +50,7 @@ program epic
 
             call parcel_alloc(max_num_parcels)
 
-            call init_parcels(input_fields)
+            call init_parcels(model)
 
             call rk4_alloc(max_num_parcels)
 
@@ -59,6 +59,8 @@ program epic
             call init_parcel_correction
 
             call init_parcel_diagnostics
+
+            call field_default
 
             call par2grid
 

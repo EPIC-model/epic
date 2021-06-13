@@ -28,7 +28,7 @@ program test_parcel_init
     double precision, parameter :: dxf = one / dble(nbgx), &
                                    dzf = one / dble(nbgz)
 
-    box%nc = (/64, 32/)
+    box%ncells = (/64, 32/)
     box%extent = (/8.0d0, four/)
     box%origin = (/-four, -two/)
 

@@ -18,7 +18,7 @@ program test_ellipse_multi_merge_symmetry
 
     double precision :: error
 
-    box%nc = (/2, 2/)
+    box%ncells = (/2, 2/)
     box%extent = (/pi, pi/)
 
     call update_parameters()

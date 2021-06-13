@@ -23,7 +23,7 @@ program test_parcel_correction
 
     call  parse_command_line
 
-    box%nc = (/32, 32/)
+    box%ncells = (/32, 32/)
     box%extent =  (/0.4d0, 0.4d0/)
 
     call update_parameters()

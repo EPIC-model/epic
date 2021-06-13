@@ -18,7 +18,7 @@ program test_ellipse_reflection
     integer :: iter
     double precision :: angle, ab, B11, B12, B22, error, a2, b2
 
-    box%nc = (/10, 10/)
+    box%ncells = (/10, 10/)
     box%extent = (/one, one/)
     box%origin  = (/zero, zero/)
 

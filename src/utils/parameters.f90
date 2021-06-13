@@ -48,7 +48,7 @@ module parameters
         lower  = dble(box%origin)
         upper = dble(box%origin) + extent
 
-        dx = extent / dble(box%nc)
+        dx = extent / dble(box%ncells)
         dxi = one / dx;
 
         if (max(dxi(1) * dx(2), dxi(2) * dx(1)) > two) then
@@ -65,8 +65,8 @@ module parameters
 
         vcell = product(dx)
 
-        nx = box%nc(1)
-        nz = box%nc(2)
+        nx = box%ncells(1)
+        nz = box%ncells(2)
 
         ncell = nx * nz
 

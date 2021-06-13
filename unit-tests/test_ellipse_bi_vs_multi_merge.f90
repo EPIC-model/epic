@@ -16,7 +16,7 @@ program test_ellipse_bi_vs_multi_merge
 
     double precision :: error, B11, B12, vol, pos(2)
 
-    box%nc = (/1, 1/)
+    box%ncells = (/1, 1/)
     box%extent = (/pi, pi/)
 
     call update_parameters()

@@ -20,8 +20,7 @@ module parser
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ model, output, box, parcel, stepper, time, &
-                            input_fields
+            namelist /EPIC/ model, output, box, parcel, stepper, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -107,7 +106,7 @@ module parser
 
             call write_h5_double_vector_attrib(group, "extent", box%extent)
             call write_h5_double_vector_attrib(group, "origin", box%origin)
-            call write_h5_integer_vector_attrib(group, "grid", box%nc + 1)
+            call write_h5_integer_vector_attrib(group, "grid",  box%ncells + 1)
 
             call h5gclose_f(group, h5err)
 
