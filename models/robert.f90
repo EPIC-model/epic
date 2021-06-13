@@ -51,13 +51,14 @@ module robert
             integer           :: k
             type(bubble_type) :: bubble
 
-            allocate(buoyg(0:nz, 0:nx-1))
-
             if (robert_flow%n_bubbles > size(robert_flow%bubbles)) then
                 print *, 'Number of bubbles beyond upper limit.'
                 stop
             endif
 
+            allocate(buoyg(0:nz, 0:nx-1))
+
+            buoyg = zero
 
             do k = 1, robert_flow%n_bubbles
                 bubble = robert_flow%bubbles(k)
@@ -113,7 +114,8 @@ module robert
                     ! MPIC paper:
                     ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
                     ! (dtheta = theta - theta_ref)
-                    buoyg(j, i) = gravity * dtheta / theta_ref
+                    buoyg(j, i) = buoyg(j, i) &
+                                + gravity * dtheta / theta_ref
                 enddo
             enddo
         end subroutine robert_uniform_init
@@ -164,7 +166,8 @@ module robert
                     ! MPIC paper:
                     ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
                     ! (dtheta = theta - theta_ref)
-                    buoyg(j, i) = gravity * dtheta / theta_ref
+                    buoyg(j, i) = buoyg(j, i) &
+                                + gravity * dtheta / theta_ref
                 enddo
             enddo
         end subroutine robert_gaussian_init
