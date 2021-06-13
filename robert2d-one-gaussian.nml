@@ -1,87 +1,22 @@
-&EPIC
+&MODELS
 
- model              = 'Robert'
+ model      = 'Robert'
+ h5fname    = 'robert2d.hdf5'
 
- !
- ! output info
- !
-
- output%h5freq      = 10
-
- output%h5fname     = 'robert2d.hdf5'
-
- !
- ! grid info
- !
-
- box%nc          = 32, 48
- box%extent      = 1000, 1500
- box%origin      = -500.0, 0.0
-
- !
- ! parcel info
- !
-
- parcel%n_per_cell   = 4
-
- parcel%is_random    = .false.
-
- parcel%seed         = 42
-
- parcel%is_elliptic  = .true.
-
- parcel%lambda       = 5.0
-
- parcel%split_freq   = 1
-
- parcel%merge_type   = 'multi-geometric'
-
- parcel%merge_freq   = 1
-
- parcel%vfraction    = 36.0
-
- parcel%vmaxfraction = 2.89
-
- parcel%correction_freq = 1
-
- parcel%correction_iters = 2
-
- parcel%apply_laplace = .true.
-
- parcel%apply_gradient = .true.
-
- parcel%gradient_pref = 0.3
-
- !
- ! stepper info
- !
- stepper            = 'classic-rk4'
-
- time%limit         = 720.0
-
- time%dt            = 1.0
-
- time%is_adaptive   = .true.
-
- time%alpha         = 0.025
-
- time%dt_max        = 1.5
-
-
- !
- ! Robert parameters:
- !
+ box%ncells = 32, 48
+ box%extent = 1000, 1500
+ box%origin = -500.0, 0.0
 
  ![Kelvin] reference potential temperature
- robert_opt%theta_ref = 303.15
+ robert_flow%theta_ref = 303.15
 
- robert_opt%n_bubbles = 1
+ robert_flow%n_bubbles = 1
 
- robert_opt%bubbles(1)%distr = 'gaussian'
- robert_opt%bubbles(1)%theta_max = 0.5
- robert_opt%bubbles(1)%center = 0.0, 260.0
- robert_opt%bubbles(1)%outer_radius = 250.0
- robert_opt%bubbles(1)%inner_radius = 50.0
- robert_opt%bubbles(1)%width = 100.0
+ robert_flow%bubbles(1)%distr = 'gaussian'
+ robert_flow%bubbles(1)%theta_max = 0.5
+ robert_flow%bubbles(1)%center = 0.0, 260.0
+ robert_flow%bubbles(1)%outer_radius = 250.0
+ robert_flow%bubbles(1)%inner_radius = 50.0
+ robert_flow%bubbles(1)%width = 100.0
 
 /

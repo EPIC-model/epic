@@ -45,7 +45,7 @@ program models
                 case ('Straka')
                     call straka_init(trim(h5fname), nx, nz, box%origin, dx)
                 case ('Robert')
-                    call robert_init
+                    call robert_init(trim(h5fname), nx, nz, box%origin, dx)
                 case default
                     print *, "Invalid simulation type: '", trim(name), "'"
                     stop
@@ -61,7 +61,7 @@ program models
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODELS/ model, h5fname, box, tg_flow, straka_flow
+            namelist /MODELS/ model, h5fname, box, tg_flow, straka_flow, robert_flow
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
