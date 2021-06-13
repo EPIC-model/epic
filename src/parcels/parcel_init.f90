@@ -134,11 +134,23 @@ module parcel_init
 
         subroutine parcel_init_from_grids
             double precision, allocatable :: buffer_2d(:, :)
+            integer                       :: dims(2), bdims(2)
+
+            dims = (/nz+1, nx/)
 
             call open_h5_file(trim(input_fields))
 
             if (has_dataset('vorticity')) then
                 call read_h5_dataset_2d('vorticity', buffer_2d)
+
+                bdims = shape(buffer_2d)
+                if (.not. sum(dims - bdims) == 0) then
+                    print "(a32, i4, a1, i4, a6, i4, a1, i4, a1)", &
+                          "Field dimensions do not agree: (", dims(1), ",", &
+                          dims(2), ") != (", bdims(1), ",", bdims(2), ")"
+                    stop
+                endif
+
                 call gen_parcel_scalar_attr(buffer_2d, 1.0d-9, parcels%vorticity)
                 deallocate(buffer_2d)
             endif
@@ -152,15 +164,13 @@ module parcel_init
 
             call close_h5_file
 
-
-            stop
-
         end subroutine parcel_init_from_grids
+
 
         ! Generates the parcel attribute "par" from the field values provided
         ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)
         subroutine gen_parcel_scalar_attr(field, tol, par)
-            double precision, intent(in)  :: field(:, :)
+            double precision, intent(in)  :: field(0:nz, 0:nx-1)
             double precision, intent(in)  :: tol
             double precision, intent(out) :: par(:)
             double precision :: resi(0:nz, 0:nx-1)
@@ -246,6 +256,7 @@ module parcel_init
 
             !Finally divide by parcel volume to define attribute:
             par(1:n_parcels) = par(1:n_parcels) / parcels%volume(1:n_parcels)
+
         end subroutine gen_parcel_scalar_attr
 
 end module parcel_init

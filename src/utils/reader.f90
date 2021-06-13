@@ -67,7 +67,7 @@ module reader
                 stop
             endif
 
-            allocate(buffer(dims(1), dims(2)))
+            allocate(buffer(0:dims(1)-1, 0:dims(2)-1))
 
             call h5dread_f(dset_id, H5T_NATIVE_DOUBLE, buffer, dims, h5err)
 
