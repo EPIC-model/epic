@@ -46,7 +46,7 @@ module parameters
     subroutine update_parameters
         extent = dble(box%extent)
         lower  = dble(box%origin)
-        upper = dble(box%origin) + extent
+        upper = lower + extent
 
         dx = extent / dble(box%ncells)
         dxi = one / dx;
