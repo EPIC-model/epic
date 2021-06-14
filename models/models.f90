@@ -41,6 +41,11 @@ program models
 
             select case (trim(name))
                 case ('TaylorGreen')
+                    ! make origin and extent always a multiple of pi
+                    box%origin = pi * box%origin
+                    box%extent = pi * box%extent
+                    dx = dx * pi
+
                     call taylorgreen_init(trim(h5fname), nx, nz, box%origin, dx)
                 case ('Straka')
                     call straka_init(trim(h5fname), nx, nz, box%origin, dx)
