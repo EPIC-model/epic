@@ -2,13 +2,16 @@
 !               This module initializes parcel default values.
 ! =============================================================================
 module parcel_init
-    use options, only : parcel
+    use options, only : parcel, output
     use constants, only : zero, two, one, f12
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : trilinear, ngp
-    use parameters, only : update_parameters, dx, vcell, ncell, extent, lower, nx, nz
+    use parameters, only : update_parameters,   &
+                           write_h5_parameters, &
+                           dx, vcell, ncell,    &
+                           extent, lower, nx, nz
     use reader
     implicit none
 
@@ -35,6 +38,8 @@ module parcel_init
 
             ! update global parameters
             call update_parameters
+
+            call write_h5_parameters(trim(output%h5fname))
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
