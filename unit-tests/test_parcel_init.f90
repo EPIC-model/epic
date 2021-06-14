@@ -10,7 +10,7 @@ program test_parcel_init
     use parcel_init, only : gen_parcel_scalar_attr
     use parcel_interpl, only : par2grid
     use parcel_ellipse, only : get_ab
-    use fields, only : tbuoyg, field_alloc
+    use fields, only : tbuoyg, field_default
     use parameters, only : update_parameters, dx, ncell, nx, nz, lower
     use options, only : box
     implicit none
@@ -34,7 +34,7 @@ program test_parcel_init
 
     call update_parameters
 
-    call field_alloc
+    call field_default
 
     !Maximum number of parcels:
 
