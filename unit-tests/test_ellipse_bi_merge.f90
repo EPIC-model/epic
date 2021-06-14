@@ -10,15 +10,17 @@ program test_ellipse_bi_merge
     use constants, only : pi, one, two, five
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel, box
-    use parameters, only : update_parameters
+    use options, only : parcel
+    use parameters, only : update_parameters, nx, nz, lower, extent
     use parcel_ellipse
     implicit none
 
     double precision :: ab, a1b1, a2b2, B11, B12, B22, error, vol, hum, buoy
 
-    box%ncells = (/1, 1/)
-    box%extent = (/pi, pi/)
+    nx = 1
+    nz = 1
+    lower  = (/-pi / two, -pi /two/)
+    extent = (/pi, pi/)
 
     call update_parameters()
 

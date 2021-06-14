@@ -9,15 +9,17 @@ program test_ellipse_multi_merge_3
     use constants, only : pi, one, two, four
     use parcel_container
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel, box
-    use parameters, only : update_parameters, extent
+    use options, only : parcel
+    use parameters, only : update_parameters, lower, extent, nx, nz
     use parcel_ellipse
     implicit none
 
     double precision :: a1b1, a2b2, error
 
-    box%ncells = (/1, 1/)
-    box%extent = (/pi, pi/)
+    nx = 1
+    nz = 1
+    lower  = (/-pi / two, -pi /two/)
+    extent = (/pi, pi/)
 
     call update_parameters()
 

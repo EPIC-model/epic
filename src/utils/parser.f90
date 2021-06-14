@@ -4,7 +4,6 @@
 ! =============================================================================
 module parser
     use constants
-    use parameters
     use options
     use hdf5
     use writer
@@ -20,7 +19,7 @@ module parser
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ model, output, box, parcel, stepper, time
+            namelist /EPIC/ model, output, parcel, stepper, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -49,9 +48,6 @@ module parser
                 print *, 'Error: output file "', trim(output%h5fname), '" already exists.'
                 stop
             endif
-
-            ! update global parameters
-            call update_parameters()
 
         end subroutine read_config_file
 
@@ -102,13 +98,13 @@ module parser
             !
             ! mesh info
             !
-            group = open_h5_group("mesh")
+!             group = open_h5_group("mesh")
 
-            call write_h5_double_vector_attrib(group, "extent", box%extent)
-            call write_h5_double_vector_attrib(group, "origin", box%origin)
-            call write_h5_integer_vector_attrib(group, "grid",  box%ncells + 1)
+!             call write_h5_double_vector_attrib(group, "extent", box%extent)
+!             call write_h5_double_vector_attrib(group, "origin", box%origin)
+!             call write_h5_integer_vector_attrib(group, "grid",  box%ncells + 1)
 
-            call h5gclose_f(group, h5err)
+!             call h5gclose_f(group, h5err)
 
             call close_h5_file
 

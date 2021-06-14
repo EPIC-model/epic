@@ -12,7 +12,6 @@ program test_parcel_init
     use parcel_ellipse, only : get_ab
     use fields, only : tbuoyg, field_default
     use parameters, only : update_parameters, dx, ncell, nx, nz, lower
-    use options, only : box
     implicit none
 
     double precision  :: xg, zg, facx, facz, argx, argz, v0
@@ -28,9 +27,11 @@ program test_parcel_init
     double precision, parameter :: dxf = one / dble(nbgx), &
                                    dzf = one / dble(nbgz)
 
-    box%ncells = (/64, 32/)
-    box%extent = (/8.0d0, four/)
-    box%origin = (/-four, -two/)
+    nx = 64
+    nz = 32
+    lower  = (/-1.5, -1.5/)
+    extent = (/8.0d0, four/)
+    lower = (/-four, -two/)
 
     call update_parameters
 
@@ -45,8 +46,8 @@ program test_parcel_init
 
     !--------------------------------------------------------
     ! Define a gridded field "tbuoyg" (this can be arbitrary):
-    facx = two * pi / box%extent(1)
-    facz = one / box%extent(2)
+    facx = two * pi / extent(1)
+    facz = one / extent(2)
     do ix = 0, nx-1
         xg = dx(1) * dble(ix)
         argx = facx * xg

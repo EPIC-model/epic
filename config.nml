@@ -12,12 +12,6 @@
  output%h5fname     = 'output.hdf5'
 
  !
- ! grid info
- !
-
- box%ncells      = 10, 10
-
- !
  ! parcel info
  !
 

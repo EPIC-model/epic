@@ -30,14 +30,7 @@ module options
     !
     ! domain options
     !
-    type box_type
-        integer          :: ncells(2)               = (/20, 20/)                  ! number of cells
-        double precision :: extent(2)               = (/pi, pi/)
-        double precision :: origin(2)               = (/-0.5d0 * pi, -0.5d0 * pi/)
-        logical          :: allow_larger_anisotropy = .false.
-    end type box_type
-
-    type(box_type) :: box
+    logical :: allow_larger_anisotropy = .false.
 
     !
     ! parcel options

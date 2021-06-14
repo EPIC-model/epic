@@ -3,7 +3,7 @@
 ! simulation.
 ! =============================================================================
 module parameters
-    use options, only : box
+    use options, only : allow_larger_anisotropy
     use constants
     implicit none
 
@@ -44,11 +44,10 @@ module parameters
     ! Update all parameters according to the
     ! user-defined global options.
     subroutine update_parameters
-        extent = dble(box%extent)
-        lower  = dble(box%origin)
+
         upper = lower + extent
 
-        dx = extent / dble(box%ncells)
+        dx = extent / dble((/nx, nz/))
         dxi = one / dx;
 
         if (max(dxi(1) * dx(2), dxi(2) * dx(1)) > two) then
@@ -58,15 +57,12 @@ module parameters
             print *, '*                                                                    *'
             print *, '**********************************************************************'
 
-            if (.not. box%allow_larger_anisotropy) then
+            if (.not. allow_larger_anisotropy) then
                 stop
             endif
         endif
 
         vcell = product(dx)
-
-        nx = box%ncells(1)
-        nz = box%ncells(2)
 
         ncell = nx * nz
 

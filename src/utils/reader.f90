@@ -39,6 +39,22 @@ module reader
             endif
         end subroutine close_h5_file
 
+        ! open existing group or create one
+        function open_h5_group(name) result(group)
+            character(*),   intent(in) :: name
+            integer(hid_t)             :: group
+            logical                    :: link_exists = .false.
+
+            call h5lexists_f(h5file, name, link_exists, h5err)
+
+            if (link_exists) then
+                call h5gopen_f(h5file, name, group, h5err)
+            else
+                print *, "Group '", name, "' does not exist!"
+                stop
+            endif
+        end function open_h5_group
+
 
         function has_dataset(name) result(link_exists)
             character(*), intent(in) :: name
@@ -73,5 +89,53 @@ module reader
 
             call h5dclose_f(dset_id, h5err)
         end subroutine read_h5_dataset_2d
+
+        subroutine read_h5_vector_integer_attrib(group, name, buf)
+            integer(hid_t), intent(in)       :: group
+            character(*),   intent(in)       :: name
+            integer,        intent(out)      :: buf(2)
+            integer(hid_t)                   :: attr_id, space_id, type_id
+            integer(hsize_t), dimension(1:1) :: dims = 2
+
+            call h5aopen_name_f(group, name, attr_id, h5err)
+            call h5aget_space_f(attr_id, space_id, h5err)
+            call h5aget_type_f(attr_id, type_id, h5err)
+            call h5aread_f(attr_id, type_id, buf, dims, h5err)
+            call h5aclose_f(attr_id, h5err)
+        end subroutine read_h5_vector_integer_attrib
+
+
+        subroutine read_h5_vector_double_attrib(group, name, buf)
+            integer(hid_t),   intent(in)       :: group
+            character(*),     intent(in)       :: name
+            double precision, intent(out)      :: buf(2)
+            integer(hid_t)                     :: attr_id, space_id, type_id
+            integer(hsize_t), dimension(1:1)   :: dims = 2
+
+            call h5aopen_name_f(group, name, attr_id, h5err)
+            call h5aget_space_f(attr_id, space_id, h5err)
+            call h5aget_type_f(attr_id, type_id, h5err)
+            call h5aread_f(attr_id, type_id, buf, dims, h5err)
+            call h5aclose_f(attr_id, h5err)
+        end subroutine read_h5_vector_double_attrib
+
+        subroutine read_h5_box(nx, nz, extent, origin)
+            integer,          intent(out)    :: nx, nz
+            double precision, intent(out)    :: extent(2), origin(2)
+            integer(hid_t)                   :: group
+            integer                          :: ncells(2)
+
+            group = open_h5_group("box")
+
+            call read_h5_vector_integer_attrib(group, 'ncells', ncells)
+            call read_h5_vector_double_attrib(group, 'extent', extent)
+            call read_h5_vector_double_attrib(group, 'origin', origin)
+
+            nx = ncells(1)
+            nz = ncells(2)
+
+            ! close all
+            call h5gclose_f(group, h5err)
+        end subroutine read_h5_box
 
 end module reader

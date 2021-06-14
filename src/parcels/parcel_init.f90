@@ -8,7 +8,7 @@ module parcel_init
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : trilinear, ngp
-    use parameters, only : dx, vcell, ncell, extent, lower, nx, nz
+    use parameters, only : update_parameters, dx, vcell, ncell, extent, lower, nx, nz
     use reader
     implicit none
 
@@ -27,6 +27,14 @@ module parcel_init
         subroutine init_parcels(filename)
             character(*), intent(in) :: filename
             double precision         :: lam, ratio
+
+            ! read domain dimensions
+            call open_h5_file(filename)
+            call read_h5_box(nx, nz, extent, lower)
+            call close_h5_file
+
+            ! update global parameters
+            call update_parameters
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell

@@ -10,16 +10,18 @@ program test_ellipse_multi_merge_symmetry
     use parcel_container
     use parcel_interpl, only : vol2grid_elliptic_symmetry_check
     use parcel_merge, only : merge_ellipses
-    use options, only : parcel, box
-    use parameters, only : update_parameters, extent, nx, nz
+    use options, only : parcel
+    use parameters, only : update_parameters, lower, extent, nx, nz
     use fields, only : volg
     use parcel_ellipse
     implicit none
 
     double precision :: error
 
-    box%ncells = (/2, 2/)
-    box%extent = (/pi, pi/)
+    nx = 2
+    nz = 2
+    lower  = (/-pi / two, -pi /two/)
+    extent = (/pi, pi/)
 
     call update_parameters()
 

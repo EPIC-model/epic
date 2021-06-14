@@ -8,7 +8,7 @@ program test_trilinear
     use constants, only : pi, zero, one
     use parcel_container
     use parcel_interpl, only : par2grid
-    use options, only : parcel, box
+    use options, only : parcel
     use parcel_ellipse, only : get_ab
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg, field_alloc
@@ -17,8 +17,10 @@ program test_trilinear
     double precision :: error
     integer :: i, j, k, jj, ii
 
-    box%ncells = (/32, 32/)
-    box%extent =  (/0.4d0, 0.4d0/)
+    nx = 32
+    nz = 32
+    lower  = (/-1.5, -1.5/)
+    extent =  (/0.4d0, 0.4d0/)
 
     call update_parameters()
 
