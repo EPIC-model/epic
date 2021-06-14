@@ -10,6 +10,7 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipse
     use fields
+    use physics, only : glat, q0
     use taylorgreen, only : get_flow_velocity, &
                             get_flow_gradient, &
                             get_flow_vorticity
@@ -203,13 +204,19 @@ module parcel_interpl
             integer           :: ncomp
             double precision  :: points(2, 2)
             integer           :: n, p, c, l, i, j
-            double precision  :: pvol, pvor, weight
+            double precision  :: pvol, pvor, weight, btot, qc
 
             ! number of field components
             ncomp = 1
 
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
+
+                ! liquid water content
+                qc = max(zero, parcels%humidity(n) - q0 * dexp(lower(2) - parcels%position(n, 2)))
+
+                ! total buoyancy (including effects of latent heating)
+                btot = parcels%buoyancy(n) + glat * qc
 
                 points = get_ellipse_points(parcels%position(n, :), &
                                             pvol, parcels%B(n, :))
@@ -241,7 +248,7 @@ module parcel_interpl
                         enddo
 
                         tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
-                                             + weight * parcels%buoyancy(n)
+                                             + weight * btot
 
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
                                            + weight
@@ -255,7 +262,7 @@ module parcel_interpl
             integer          :: ncomp
             integer          :: n, c, l, i, j
             double precision :: pos(2)
-            double precision :: pvol, weight
+            double precision :: pvol, weight, qc, btot
 
             ! number of field components
             ncomp = 1
@@ -264,6 +271,12 @@ module parcel_interpl
 
                 pos = parcels%position(n, :)
                 pvol = parcels%volume(n)
+
+                ! liquid water content
+                qc = max(zero, parcels%humidity(n) - q0 * dexp(lower(2) - pos(2)))
+
+                ! total buoyancy (including effects of latent heating)
+                btot = parcels%buoyancy(n) + glat * qc
 
                 call get_index(pos, i, j)
                 i = mod(i + nx, nx)
@@ -288,7 +301,7 @@ module parcel_interpl
                     enddo
 
                     tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
-                                         + weight * parcels%buoyancy(n)
+                                         + weight * btot
 
                     volg(js(l), is(l)) = volg(js(l), is(l)) + weight
                 enddo
