@@ -39,7 +39,7 @@ module reader
             endif
         end subroutine close_h5_file
 
-        ! open existing group or create one
+        ! open existing group
         function open_h5_group(name) result(group)
             character(*),   intent(in) :: name
             integer(hid_t)             :: group
