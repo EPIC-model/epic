@@ -21,7 +21,7 @@ program test_tri_inversion
     lower  = (/-1.5, -1.5/)
     extent = (/four, two/)
 
-    call update_parameters()
+    call update_parameters
 
     k = twopi / extent(1)
     m = pi / extent(2)

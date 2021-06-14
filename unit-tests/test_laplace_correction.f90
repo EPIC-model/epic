@@ -27,7 +27,7 @@ program test_laplace_correction
     lower  = (/-1.5d0, -1.5d0/)
     extent = (/0.4d0, 0.4d0/)
 
-    call update_parameters()
+    call update_parameters
 
     allocate(volg(-1:nz+1, 0:nx-1))
 

@@ -23,7 +23,7 @@ program test_ellipse_multi_merge_1
     lower  = (/-pi / two, -pi /two/)
     extent = (/pi, pi/)
 
-    call update_parameters()
+    call update_parameters
 
     call parcel_alloc(5)
 

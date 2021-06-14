@@ -28,7 +28,7 @@ program test_parcel_correction
     lower  = (/-1.5, -1.5/)
     extent =  (/0.4d0, 0.4d0/)
 
-    call update_parameters()
+    call update_parameters
 
     allocate(volg(-1:nz+1, 0:nx-1))
 

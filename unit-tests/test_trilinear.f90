@@ -22,7 +22,7 @@ program test_trilinear
     lower  = (/-1.5, -1.5/)
     extent =  (/0.4d0, 0.4d0/)
 
-    call update_parameters()
+    call update_parameters
 
     call field_alloc
 

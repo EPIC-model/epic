@@ -23,7 +23,7 @@ program test_ellipse_multi_merge_symmetry
     lower  = (/-pi / two, -pi /two/)
     extent = (/pi, pi/)
 
-    call update_parameters()
+    call update_parameters
 
     allocate(volg(-1:nz+1, 0:nx-1))
 

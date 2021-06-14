@@ -22,7 +22,7 @@ program test_ellipse_reflection
     extent = (/one, one/)
     lower  = (/zero, zero/)
 
-    call update_parameters()
+    call update_parameters
 
     n_parcels = 1
     call parcel_alloc(1)
