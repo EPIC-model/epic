@@ -5,6 +5,9 @@ program models
     use taylorgreen
     use straka
     use robert
+    use constants, only : pi
+    use writer
+    use hdf5
     implicit none
 
     character(len=32) :: filename = ''
@@ -34,6 +37,7 @@ program models
             character(*), intent(in) :: name
             double precision         :: dx(2)
             integer                  :: nx, nz
+            integer(hid_t)           :: group
 
             dx = box%extent / dble(box%ncells)
             nx = box%ncells(1)
@@ -55,6 +59,15 @@ program models
                     print *, "Invalid simulation type: '", trim(name), "'"
                     stop
             end select
+
+            ! write box
+            call open_h5_file(filename)
+            group = open_h5_group("box")
+            call write_h5_integer_vector_attrib(group, "ncells", box%ncells)
+            call write_h5_double_vector_attrib(group, "extent", box%extent)
+            call write_h5_double_vector_attrib(group, "origin", box%origin)
+            call h5gclose_f(group, h5err)
+            call close_h5_file
         end subroutine generate_fields
 
 
