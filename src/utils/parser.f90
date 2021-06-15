@@ -41,11 +41,11 @@ module parser
 
             close(fn)
 
-            ! check whether h5 file already exists
-            inquire(file=output%h5fname, exist=exists)
+            ! check whether h5 files already exist
+            inquire(file=output%h5_basename, exist=exists)
 
             if (exists) then
-                print *, 'Error: output file "', trim(output%h5fname), '" already exists.'
+                print *, 'Error: output file "', trim(output%h5_basename), '" already exists.'
                 stop
             endif
 

@@ -14,29 +14,43 @@ module field_hdf5
         character(len=512) :: h5fname
         integer(hid_t)     :: h5file_id
 
-    public :: write_h5_field_step
+    public :: create_h5_field_file, &
+              write_h5_field_step
 
 
     contains
+
+        subroutine create_h5_field_file(basename, overwrite)
+            character(*), intent(in) :: basename
+            logical                  :: overwrite
+            logical                  :: exists = .true.
+
+            h5fname =  basename // '_fields.hdf5'
+
+            ! check whether file exists
+            inquire(file=h5fname, exist=exists)
+
+            if (exists .and. overwrite) then
+                call delete_h5_file(trim(h5fname))
+            else if (exists) then
+                print *, "File '" // trim(h5fname) // "' already exists. Exiting."
+                stop
+            endif
+
+            call create_h5_file(h5fname, h5file_id)
+        end subroutine create_h5_field_file
 
         subroutine write_h5_field_step(nw, t, dt)
             use options, only : output
             integer,          intent(inout) :: nw
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
-            logical                         :: exists = .false.
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
                 print "(a30)", "write fields to h5"
             endif
 #endif
-
-            ! check whether file exists
-            inquire(file=h5fname, exist=exists)
-            if (exists .eqv. .false.) then
-                call create_h5_file(h5fname, h5file_id)
-            endif
 
             call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
 

@@ -37,12 +37,15 @@ program epic
     contains
 
         subroutine pre_run
-            use options, only : model
+            use options, only : model, output
 
             call initialise_hdf5
 
             ! parse the config file
             call read_config_file
+
+            call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
+            call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
 
             call parcel_alloc(max_num_parcels)
 
@@ -68,7 +71,8 @@ program epic
             double precision :: t    = zero ! current time
             double precision :: dt   = zero ! time step
             integer          :: iter = 1    ! simulation iteration
-            integer          :: nw   = 0    ! number of writes to h5
+            integer          :: nfw  = 0    ! number of field writes to h5
+            integer          :: npw  = 0    ! number of parcel writes to h5
             integer          :: cor_iter    ! iterator for parcel correction
 
             do while (t <= time%limit)
@@ -85,12 +89,12 @@ program epic
                 ! make sure we always write initial setup
                 if (output%h5_dump_fields .and. &
                     (mod(iter - 1, output%h5_field_freq) == 0)) then
-                    call write_h5_field_step(nw, t, dt)
+                    call write_h5_field_step(nfw, t, dt)
                 endif
 
                 if (output%h5_dump_parcels .and. &
                     (mod(iter - 1, output%h5_parcel_freq) == 0)) then
-                    call write_h5_field_step(nw, t, dt)
+                    call write_h5_parcel_step(npw, t, dt)
                 endif
 
                 call rk4_step(dt)
@@ -133,7 +137,8 @@ program epic
             call par2grid
 
             ! write final step
-            call write_h5_field_step(nw, t, dt)
+            call write_h5_field_step(nfw, t, dt)
+            call write_h5_parcel_step(npw, t, dt)
 
         end subroutine run
 

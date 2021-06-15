@@ -9,24 +9,23 @@ module reader
     use h5_utils
     implicit none
 
-    ! h5 file handle
-    integer(hid_t) :: h5file_id
-
     ! if non-zero an error occurred
     integer :: h5err = 0
 
-    private :: h5file_id, h5err
+    private :: h5err
 
     contains
 
-        function has_dataset(name) result(link_exists)
-            character(*), intent(in) :: name
-            logical                  :: link_exists
+        function has_dataset(h5file_id, name) result(link_exists)
+            integer(hid_t), intent(in) :: h5file_id
+            character(*),   intent(in) :: name
+            logical                    :: link_exists
             link_exists = .false.
             call h5lexists_f(h5file_id, name, link_exists, h5err)
         end function has_dataset
 
-        subroutine read_h5_dataset_2d(name, buffer)
+        subroutine read_h5_dataset_2d(h5file_id, name, buffer)
+            integer(hid_t),                intent(in)  :: h5file_id
             character(*),                  intent(in)  :: name
             double precision, allocatable, intent(out) :: buffer(:, :)
             integer(hid_t)                             :: dataspace_id   ! Dataspace identifier
@@ -82,7 +81,8 @@ module reader
             call h5aclose_f(attr_id, h5err)
         end subroutine read_h5_vector_double_attrib
 
-        subroutine read_h5_box(nx, nz, extent, origin)
+        subroutine read_h5_box(h5file_id, nx, nz, extent, origin)
+            integer(hid_t),   intent(in)     :: h5file_id
             integer,          intent(out)    :: nx, nz
             double precision, intent(out)    :: extent(2), origin(2)
             integer(hid_t)                   :: group

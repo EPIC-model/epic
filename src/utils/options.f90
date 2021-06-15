@@ -24,8 +24,9 @@ module options
         integer             :: h5_field_freq    = 1
         logical             :: h5_dump_fields   = .true.
         integer             :: h5_parcel_freq   = 1
+        logical             :: h5_overwrite     = .false.
         logical             :: h5_dump_parcels  = .true.
-        character(len=32)   :: h5fname          = ''
+        character(len=32)   :: h5_basename      = ''
     end type output_info_type
 
     type(output_info_type) :: output

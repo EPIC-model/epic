@@ -41,6 +41,18 @@ module h5_utils
             call check_h5_error("Failed to create hdf5 file'" // trim(h5fname) // "'.")
         end subroutine create_h5_file
 
+        subroutine delete_h5_file(h5fname)
+            character(*), intent(in) :: h5fname
+            integer                  :: stat
+
+            ! 15 June 2021
+            ! https://stackoverflow.com/questions/18668832/how-delete-file-from-fortran-code
+            open(unit=1234, iostat=stat, file=h5fname, status='old')
+            if (stat == 0) then
+                close(1234, status='delete')
+            endif
+        end subroutine delete_h5_file
+
 
         subroutine open_h5_file(h5fname, access_flag, h5file_id)
             character(*),   intent(in)  :: h5fname

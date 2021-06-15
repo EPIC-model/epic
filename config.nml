@@ -7,9 +7,13 @@
  !
 
 
- output%h5freq      = 1
+ output%h5_field_freq   = 1
 
- output%h5fname     = 'output.hdf5'
+ output%h5_parcel_freq  = 1
+
+ output%h5_overwrite    = .false.
+
+ output%h5_basename     = 'taylor_green'
 
  !
  ! parcel info
@@ -52,7 +56,7 @@
  !
  stepper            = 'classic-rk4'
 
- time%limit         = 20.0
+ time%limit         = 0.025
 
  time%dt            = 0.025
 

@@ -12,6 +12,8 @@ module writer
     ! if non-zero an error occurred
     integer :: h5err = 0
 
+    private :: h5err
+
     contains
 
         subroutine write_h5_dataset_1d(h5file_id, group, name, data)

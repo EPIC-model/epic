@@ -34,13 +34,13 @@ module parcel_init
 
             ! read domain dimensions
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
-            call read_h5_box(nx, nz, extent, lower)
+            call read_h5_box(h5handle, nx, nz, extent, lower)
             call close_h5_file(h5handle)
 
             ! update global parameters
             call update_parameters
 
-            call write_h5_parameters(trim(output%h5fname))
+            call write_h5_parameters(h5fname)
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
@@ -161,16 +161,16 @@ module parcel_init
 
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
 
-            if (has_dataset('vorticity')) then
-                call read_h5_dataset_2d('vorticity', buffer_2d)
+            if (has_dataset(h5handle, 'vorticity')) then
+                call read_h5_dataset_2d(h5handle, 'vorticity', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
                 call gen_parcel_scalar_attr(field_2d, 1.0d-9, parcels%vorticity)
             endif
 
 
-            if (has_dataset('buoyancy')) then
-                call read_h5_dataset_2d('buoyancy', buffer_2d)
+            if (has_dataset(h5handle, 'buoyancy')) then
+                call read_h5_dataset_2d(h5handle, 'buoyancy', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
                 call gen_parcel_scalar_attr(field_2d, 1.0d-9, parcels%buoyancy)
