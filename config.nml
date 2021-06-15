@@ -3,7 +3,7 @@
  model              = 'taylorgreen2d.hdf5'
 
  !
- ! output info
+ ! h5 output info
  !
 
 
@@ -11,12 +11,12 @@
 
  output%h5_parcel_freq  = 1
 
- output%h5_overwrite    = .false.
+ output%h5_overwrite    = .true.
 
  output%h5_basename     = 'taylor_green'
 
  !
- ! parcel info
+ ! parcel info Km5aHe
  !
 
  parcel%n_per_cell   = 4

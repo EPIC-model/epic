@@ -4,7 +4,7 @@
 program epic
     use constants, only : max_num_parcels, zero
     use field_diagnostics
-    use parser, only : read_config_file
+    use parser, only : read_config_file, write_h5_options
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses
@@ -47,6 +47,9 @@ program epic
             call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
             call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
 
+            call write_h5_options(h5_parcel_fname)
+            call write_h5_options(h5_field_fname)
+
             call parcel_alloc(max_num_parcels)
 
             call init_parcels(model)
@@ -87,12 +90,12 @@ program epic
 #endif
 
                 ! make sure we always write initial setup
-                if (output%h5_dump_fields .and. &
+                if (output%h5_write_fields .and. &
                     (mod(iter - 1, output%h5_field_freq) == 0)) then
                     call write_h5_field_step(nfw, t, dt)
                 endif
 
-                if (output%h5_dump_parcels .and. &
+                if (output%h5_write_parcels .and. &
                     (mod(iter - 1, output%h5_parcel_freq) == 0)) then
                     call write_h5_parcel_step(npw, t, dt)
                 endif
@@ -192,7 +195,7 @@ program epic
     subroutine parse_command_line
         use options, only : filename, verbose
         integer                          :: i
-        character(len=32)                :: arg
+        character(len=512)               :: arg
 
         filename = ''
         i = 0

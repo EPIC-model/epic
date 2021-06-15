@@ -2,22 +2,17 @@ module parcel_hdf5
     use parcel_container, only : parcels, n_parcels
     use parcel_diagnostics, only : write_h5_parcel_diagnostics
     use parcel_ellipse, only : get_angles
-    use options, only : verbose
+    use options, only : verbose, parcel, time, output, stepper
     use hdf5
     use h5_utils
     use h5_writer
     implicit none
 
-    private
-        character(len=512) :: h5fname
+    ! h5 file handle
+    integer(hid_t)     :: h5file_id
+    character(len=512) :: h5_parcel_fname
 
-        ! h5 file handle
-        integer(hid_t) :: h5file_id
-
-
-    public :: create_h5_parcel_file, &
-              write_h5_parcel_step
-
+    private :: h5file_id
 
     contains
 
@@ -26,19 +21,19 @@ module parcel_hdf5
             logical                  :: overwrite
             logical                  :: exists = .true.
 
-            h5fname =  basename // '_parcels.hdf5'
+            h5_parcel_fname =  basename // '_parcels.hdf5'
 
             ! check whether file exists
-            inquire(file=h5fname, exist=exists)
+            inquire(file=h5_parcel_fname, exist=exists)
 
             if (exists .and. overwrite) then
-                call delete_h5_file(trim(h5fname))
+                call delete_h5_file(trim(h5_parcel_fname))
             else if (exists) then
-                print *, "File '" // trim(h5fname) // "' already exists. Exiting."
+                print *, "File '" // trim(h5_parcel_fname) // "' already exists. Exiting."
                 stop
             endif
 
-            call create_h5_file(h5fname, h5file_id)
+            call create_h5_file(h5_parcel_fname, h5file_id)
 
         end subroutine create_h5_parcel_file
 
@@ -49,11 +44,11 @@ module parcel_hdf5
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
-                print "(a30)", "write parcels to h5"
+                print "(a19)", "write parcels to h5"
             endif
 #endif
 
-            call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
+            call open_h5_file(h5_parcel_fname, H5F_ACC_RDWR_F, h5file_id)
 
             call write_h5_int_scalar_step_attrib(h5file_id, nw, "num parcel", n_parcels)
 
@@ -120,5 +115,4 @@ module parcel_hdf5
             call close_h5_group(group)
 
         end subroutine write_h5_parcels
-
 end module parcel_hdf5

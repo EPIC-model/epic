@@ -50,53 +50,34 @@ module parser
 
         end subroutine read_config_file
 
-        subroutine write_h5_options(fname)
-            character(*), intent(in) :: fname
-!             integer(hid_t)           :: group
 
-!             call open_h5_file(fname)
-!
-!             !
-!             ! write parcel info
-!             !
-!             group = open_h5_group("parcel")
-!
-!             call write_h5_integer_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
-!             call write_h5_logical_attrib(group, "is_random", parcel%is_random)
-!             call write_h5_integer_scalar_attrib(group, "seed", parcel%seed)
-!             call write_h5_logical_attrib(group, "is_elliptic", parcel%is_elliptic)
-!             call write_h5_double_scalar_attrib(group, "lambda", parcel%lambda)
-!
-!             call h5gclose_f(group, h5err)
-!
-!             !
-!             ! write output info
-!             !
-!             group = open_h5_group("output")
-!
-!             call write_h5_integer_scalar_attrib(group, "h5_field_freq", &
-!                                                 output%h5_field_freq)
-!
-!             call h5gclose_f(group, h5err)
-!
-!             !
-!             ! write stepper info
-!             !
-!             group = open_h5_group("stepper")
-!
-!             call write_h5_character_scalar_attrib(group, "method", stepper)
-!
-!             call h5gclose_f(group, h5err)
-!
-!             group = open_h5_group("time")
-!
-!             call write_h5_double_scalar_attrib(group, "limit", time%limit)
-!             call write_h5_logical_attrib(group, "is_adaptive", time%is_adaptive)
-!
-!             call h5gclose_f(group, h5err)
-!
-!             call close_h5_file
+        subroutine write_h5_options(h5fname)
+            character(*), intent(in) :: h5fname
+            integer(hid_t)           :: h5handle, opts, group
 
+            call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5handle)
+            call open_or_create_h5_group(h5handle, "options", opts)
+
+            call open_or_create_h5_group(opts, "parcel", group)
+                call write_h5_int_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
+                call write_h5_logical_attrib(group, "is_random", parcel%is_random)
+                call write_h5_int_scalar_attrib(group, "seed", parcel%seed)
+                call write_h5_logical_attrib(group, "is_elliptic", parcel%is_elliptic)
+                call write_h5_double_scalar_attrib(group, "lambda", parcel%lambda)
+                call write_h5_int_scalar_attrib(group, "h5_parcel_freq", output%h5_parcel_freq)
+            call close_h5_group(group)
+
+            call open_or_create_h5_group(opts, "time", group)
+                call write_h5_double_scalar_attrib(group, "time limit", time%limit)
+                call write_h5_logical_attrib(group, "is_adaptive", time%is_adaptive)
+            call close_h5_group(group)
+
+            call open_or_create_h5_group(opts, "stepper", group)
+                call write_h5_char_scalar_attrib(group, "method", stepper)
+            call close_h5_group(group)
+
+            call close_h5_group(opts)
+            call close_h5_file(h5handle)
         end subroutine write_h5_options
 
 end module parser

@@ -5,13 +5,10 @@ module field_hdf5
     use fields
     implicit none
 
-    private
-        character(len=512) :: h5fname
-        integer(hid_t)     :: h5file_id
+    character(len=512) :: h5_field_fname
+    integer(hid_t)     :: h5file_id
 
-    public :: create_h5_field_file, &
-              write_h5_field_step
-
+    private :: h5file_id
 
     contains
 
@@ -20,19 +17,19 @@ module field_hdf5
             logical                  :: overwrite
             logical                  :: exists = .true.
 
-            h5fname =  basename // '_fields.hdf5'
+            h5_field_fname =  basename // '_fields.hdf5'
 
             ! check whether file exists
-            inquire(file=h5fname, exist=exists)
+            inquire(file=h5_field_fname, exist=exists)
 
             if (exists .and. overwrite) then
-                call delete_h5_file(trim(h5fname))
+                call delete_h5_file(trim(h5_field_fname))
             else if (exists) then
-                print *, "File '" // trim(h5fname) // "' already exists. Exiting."
+                print *, "File '" // trim(h5_field_fname) // "' already exists. Exiting."
                 stop
             endif
 
-            call create_h5_file(h5fname, h5file_id)
+            call create_h5_file(h5_field_fname, h5file_id)
         end subroutine create_h5_field_file
 
         subroutine write_h5_field_step(nw, t, dt)
@@ -43,11 +40,11 @@ module field_hdf5
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
-                print "(a30)", "write fields to h5"
+                print "(a18)", "write fields to h5"
             endif
 #endif
 
-            call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
+            call open_h5_file(h5_field_fname, H5F_ACC_RDWR_F, h5file_id)
 
             call write_h5_double_scalar_step_attrib(h5file_id, nw, "t", t)
 
