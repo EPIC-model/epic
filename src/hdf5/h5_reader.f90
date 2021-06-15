@@ -4,7 +4,7 @@
 !   HDF5 API please visit
 !   https://support.hdfgroup.org/HDF5/doc1.6/RM_H5Front.html
 ! =============================================================================
-module reader
+module h5_reader
     use hdf5
     use h5_utils
     implicit none
@@ -101,4 +101,4 @@ module reader
             call h5gclose_f(group, h5err)
         end subroutine read_h5_box
 
-end module reader
+end module h5_reader

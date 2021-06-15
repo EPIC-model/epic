@@ -6,9 +6,7 @@ module field_diagnostics
     use parameters, only : vcell, nx, nz, ngrid
     use fields
     use h5_utils
-    use writer, only : write_h5_double_scalar_attrib,  &
-                       write_h5_int_scalar_attrib,     &
-                       get_step_group_name
+    use h5_writer
     implicit none
 
 

@@ -7,8 +7,7 @@ module parcel_diagnostics
     use parameters, only : extent, lower
     use parcel_container, only : parcels, n_parcels
     use h5_utils
-    use writer, only : write_h5_double_scalar_attrib,  &
-                       get_step_group_name
+    use h5_writer
     implicit none
 
     private

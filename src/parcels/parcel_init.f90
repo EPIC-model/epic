@@ -12,7 +12,7 @@ module parcel_init
                            write_h5_parameters, &
                            dx, vcell, ncell,    &
                            extent, lower, nx, nz
-    use reader
+    use h5_reader
     implicit none
 
     private :: init_random_positions,       &

@@ -7,7 +7,7 @@ program models
     use robert
     use constants, only : pi
     use h5_utils
-    use writer
+    use h5_writer
     implicit none
 
     character(len=32) :: filename = ''

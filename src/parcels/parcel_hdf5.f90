@@ -5,12 +5,7 @@ module parcel_hdf5
     use options, only : verbose
     use hdf5
     use h5_utils
-    use writer, only : write_h5_double_scalar_step_attrib,  &
-                       write_h5_int_scalar_step_attrib, &
-                       write_h5_int_scalar_attrib,      &
-                       write_h5_dataset_1d, &
-                       write_h5_dataset_2d, &
-                       get_step_group_name
+    use h5_writer
     implicit none
 
     private

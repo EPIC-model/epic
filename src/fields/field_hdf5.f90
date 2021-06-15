@@ -1,12 +1,7 @@
 module field_hdf5
     use options, only : verbose
     use h5_utils
-    use writer, only : write_h5_double_scalar_step_attrib,  &
-                       write_h5_dataset_1d,                 &
-                       write_h5_dataset_2d,                 &
-                       write_h5_int_dataset_2d,             &
-                       write_h5_dataset_3d,                 &
-                       get_step_group_name
+    use h5_writer
     use fields
     implicit none
 

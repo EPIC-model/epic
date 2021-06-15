@@ -5,11 +5,11 @@ epic_SOURCES = 					\
 	utils/stafft.f90			\
 	utils/deriv1d.f90			\
 	utils/options.f90			\
-	utils/h5_utils.f90			\
-	utils/writer.f90			\
-	utils/parameters.f90 			\
-	utils/reader.f90			\
 	utils/merge_sort.f90			\
+	hdf5/h5_utils.f90			\
+	hdf5/h5_writer.f90			\
+	hdf5/h5_reader.f90			\
+	utils/parameters.f90 			\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_hdf5.f90			\

@@ -5,8 +5,7 @@
 module parser
     use constants
     use options
-    use hdf5
-    use writer
+    use h5_writer
     implicit none
 
     contains

@@ -14,7 +14,7 @@
 module robert
     use physics
     use constants
-    use writer
+    use h5_writer
     implicit none
 
     private

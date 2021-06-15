@@ -4,7 +4,7 @@
 ! The API specifications are found in
 ! https://support.hdfgroup.org/HDF5/doc1.8/RM/RM_H5Front.html
 ! =============================================================================
-module writer
+module h5_writer
     use hdf5
     use h5_utils
     implicit none
@@ -382,4 +382,4 @@ module writer
             call h5sclose_f(space, h5err)
         end subroutine write_h5_logical_attrib
 
-end module writer
+end module h5_writer
