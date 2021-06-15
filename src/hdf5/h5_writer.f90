@@ -173,10 +173,15 @@ module h5_writer
             character(:), allocatable        :: grn
             integer(hid_t)                   :: attr, space
             integer(hsize_t), dimension(1:1) :: dims = 1
+            logical                          :: created
 
             grn = trim(get_step_group_name(iter))
 
-            call open_or_create_h5_group(h5file_id, grn, group)
+            call create_h5_group(h5file_id, grn, group, created)
+
+            if (.not. created) then
+                call open_h5_group(h5file_id, grn, group)
+            endif
 
             call write_h5_double_scalar_attrib(group, name, val)
 
@@ -193,10 +198,15 @@ module h5_writer
             character(:), allocatable        :: grn
             integer(hid_t)                   :: attr, space
             integer(hsize_t), dimension(1:1) :: dims = 1
+            logical                          :: created
 
             grn = trim(get_step_group_name(iter))
 
-            call open_or_create_h5_group(h5file_id, grn, group)
+            call create_h5_group(h5file_id, grn, group, created)
+
+            if (.not. created) then
+                call open_h5_group(h5file_id, grn, group)
+            endif
 
             call write_h5_int_scalar_attrib(group, name, val)
 
@@ -333,10 +343,12 @@ module h5_writer
         subroutine write_h5_char_scalar_attrib(group, name, val)
             integer(hid_t),    intent(in)     :: group
             character(*),      intent(in)     :: name
-            character(len=16), intent(in)     :: val
+            character(len=*), intent(in)     :: val
             integer(hid_t)                    :: attr, space, filetype, memtype
             integer(hsize_t),  dimension(1:1) :: dims = 1
-            integer(size_t),   parameter      :: sdim = 16
+            integer(size_t)                   :: sdim
+
+            sdim = len(val)
 
             ! create space for data
             call h5screate_simple_f(1, dims, space, h5err)
@@ -376,15 +388,16 @@ module h5_writer
         end subroutine write_h5_char_scalar_attrib
 
 
-        subroutine write_h5_character_vector_attrib(group, name, val)
+        subroutine write_h5_char_vector_attrib(group, name, val)
             integer(hid_t),    intent(in)     :: group
             character(*),      intent(in)     :: name
-            character(len=16), intent(in)     :: val(:)
+            character(len=*), intent(in)      :: val(:)
             integer(hid_t)                    :: attr, space, filetype, memtype
             integer(hsize_t),  dimension(1:1) :: dims
-            integer(size_t),   parameter      :: sdim = 16
+            integer(size_t)                   :: sdim
 
             dims = size(val)
+            sdim = len(val(1))
 
             ! create space for data
             call h5screate_simple_f(1, dims, space, h5err)
@@ -424,7 +437,7 @@ module h5_writer
 
             call h5tclose_f(memtype, h5err)
             call check_h5_error("Failed to close memory space.")
-        end subroutine write_h5_character_vector_attrib
+        end subroutine write_h5_char_vector_attrib
 
 
         subroutine write_h5_logical_attrib(group, name, val)

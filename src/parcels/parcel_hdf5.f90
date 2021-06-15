@@ -72,10 +72,15 @@ module parcel_hdf5
             integer(hid_t)                :: group
             character(:), allocatable     :: name
             double precision, allocatable :: angle(:)
+            logical                       :: created
 
             name = trim(get_step_group_name(iter))
 
-            call open_or_create_h5_group(h5file_id, name, group)
+            call create_h5_group(h5file_id, name, group, created)
+
+            if (.not. created) then
+                call open_h5_group(h5file_id, name, group)
+            endif
 
             !
             ! write parcel data

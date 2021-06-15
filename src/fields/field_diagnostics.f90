@@ -36,10 +36,15 @@ module field_diagnostics
             character(:), allocatable     :: name
             double precision              :: rms_v, abserr_v
             integer                       :: max_npar, min_npar
+            logical                       :: created
 
             name = trim(get_step_group_name(iter))
 
-            call open_or_create_h5_group(h5file_id, name, group)
+            call create_h5_group(h5file_id, name, group, created)
+
+            if (.not. created) then
+                call open_h5_group(h5file_id, name, group)
+            endif
 
             !
             ! write diagnostics

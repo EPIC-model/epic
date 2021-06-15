@@ -1,3 +1,6 @@
+! =============================================================================
+!               HDF5 utilities common to h5_reader and h5_writer
+! =============================================================================
 module h5_utils
     use hdf5
     implicit none
@@ -74,25 +77,31 @@ module h5_utils
         end subroutine close_h5_file
 
 
-        ! open existing group or create one
-        subroutine open_or_create_h5_group(h5file_id, name, group)
-            integer(hid_t), intent(in)  :: h5file_id
-            character(*),   intent(in)  :: name
-            integer(hid_t), intent(out) :: group
-            logical                     :: link_exists = .false.
+        subroutine create_h5_group(h5file_id, name, group, created)
+            integer(hid_t),            intent(in)  :: h5file_id
+            character(*),              intent(in)  :: name
+            integer(hid_t),            intent(out) :: group
+            logical,        optional,  intent(out) :: created
+            logical                                :: link_exists = .false.
 
             call h5lexists_f(h5file_id, name, link_exists, h5err)
 
             call check_h5_error("Failed to check if hdf5 link exists.")
 
             if (link_exists) then
-                call h5gopen_f(h5file_id, name, group, h5err)
-                call check_h5_error("Failed to open hdf5 group.")
-            else
-                call h5gcreate_f(h5file_id, name, group, h5err)
-                call check_h5_error("Failed to create hdf5 group.")
+                if (present(created)) then
+                    created = .false.
+                endif
+                return
             endif
-        end subroutine open_or_create_h5_group
+
+            if (present(created)) then
+                created = .true.
+            endif
+
+            call h5gcreate_f(h5file_id, name, group, h5err)
+            call check_h5_error("Failed to create hdf5 group.")
+        end subroutine create_h5_group
 
 
         ! open existing group
