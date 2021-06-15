@@ -11,6 +11,10 @@
 
  output%h5_parcel_freq  = 1
 
+ output%h5_write_fields = .true.
+
+ output%h5_write_parcels = .true.
+
  output%h5_overwrite    = .true.
 
  output%h5_basename     = 'taylor_green'

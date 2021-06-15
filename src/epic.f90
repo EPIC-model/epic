@@ -44,11 +44,16 @@ program epic
             ! parse the config file
             call read_config_file
 
-            call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
-            call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
+            if (output%h5_write_fields) then
+                call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
+                call write_h5_options(h5_field_fname)
+            endif
 
-            call write_h5_options(h5_parcel_fname)
-            call write_h5_options(h5_field_fname)
+            if (output%h5_write_parcels) then
+                call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
+                call write_h5_options(h5_parcel_fname)
+            endif
+
 
             call parcel_alloc(max_num_parcels)
 
@@ -140,8 +145,13 @@ program epic
             call par2grid
 
             ! write final step
-            call write_h5_field_step(nfw, t, dt)
-            call write_h5_parcel_step(npw, t, dt)
+            if (output%h5_write_fields) then
+                call write_h5_field_step(nfw, t, dt)
+            endif
+
+            if (output%h5_write_parcels) then
+                call write_h5_parcel_step(npw, t, dt)
+            endif
 
         end subroutine run
 
