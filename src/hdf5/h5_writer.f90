@@ -9,11 +9,6 @@ module h5_writer
     use h5_utils
     implicit none
 
-    ! if non-zero an error occurred
-    integer :: h5err = 0
-
-    private :: h5err
-
     contains
 
         subroutine write_h5_dataset_1d(h5file_id, group, name, data)
@@ -34,17 +29,23 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(1, dims, dataspace, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! create the dataset
             call h5dcreate_f(h5file_id, group // "/" // name,              &
                              H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
+            call check_h5_error("Failed to create dataset.")
 
             ! write dataset
             call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
+            call check_h5_error("Failed to write dataset.")
 
             ! close all
             call h5dclose_f(dset , h5err)
+            call check_h5_error("Failed to close dataset.")
+
             call h5sclose_f(dataspace, h5err)
+            call check_h5_error("Failed to close data space.")
         end subroutine write_h5_dataset_1d
 
         subroutine write_h5_dataset_2d(h5file_id, group, name, data)
@@ -67,17 +68,23 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(2, dims, dataspace, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! create the dataset
             call h5dcreate_f(h5file_id, group // "/" // name,              &
                              H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
+            call check_h5_error("Failed to create dataset.")
 
             ! write dataset
             call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
+            call check_h5_error("Failed to write dataset.")
 
             ! close all
             call h5dclose_f(dset , h5err)
+            call check_h5_error("Failed to close dataset.")
+
             call h5sclose_f(dataspace, h5err)
+            call check_h5_error("Failed to close data space.")
         end subroutine write_h5_dataset_2d
 
         subroutine write_h5_int_dataset_2d(h5file_id, group, name, data)
@@ -100,17 +107,23 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(2, dims, dataspace, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! create the dataset
             call h5dcreate_f(h5file_id, group // "/" // name,            &
                              H5T_NATIVE_INTEGER, dataspace, dset, h5err)
+            call check_h5_error("Failed to create dataset.")
 
             ! write dataset
             call h5dwrite_f(dset, H5T_NATIVE_INTEGER, data, dims, h5err)
+            call check_h5_error("Failed to write dataset.")
 
             ! close all
             call h5dclose_f(dset , h5err)
+            call check_h5_error("Failed to close dataset.")
+
             call h5sclose_f(dataspace, h5err)
+            call check_h5_error("Failed to close data space.")
         end subroutine write_h5_int_dataset_2d
 
         subroutine write_h5_dataset_3d(h5file_id, group, name, data)
@@ -131,17 +144,23 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(3, dims, dataspace, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! create the dataset
             call h5dcreate_f(h5file_id, group // "/" // name,              &
                              H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
+            call check_h5_error("Failed to create dataset.")
 
             ! write dataset
             call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
+            call check_h5_error("Failed to write dataset.")
 
             ! close all
             call h5dclose_f(dset , h5err)
+            call check_h5_error("Failed to close dataset.")
+
             call h5sclose_f(dataspace, h5err)
+            call check_h5_error("Failed to close data space.")
         end subroutine write_h5_dataset_3d
 
 
@@ -208,16 +227,22 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(1, dims, space, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! create the dataset
             call h5acreate_f(group, name,                           &
                              H5T_NATIVE_DOUBLE, space, attr, h5err)
+            call check_h5_error("Failed to create attribute.")
 
             call h5awrite_f(attr, H5T_NATIVE_DOUBLE, val, dims, h5err)
+            call check_h5_error("Failed to write attribute.")
 
             ! close all
             call h5aclose_f(attr, h5err)
+            call check_h5_error("Failed to close attribute space.")
+
             call h5sclose_f(space, h5err)
+            call check_h5_error("Failed to close data space.")
         end subroutine write_h5_double_vector_attrib
 
         subroutine write_h5_double_scalar_attrib(group, name, val)
@@ -229,16 +254,22 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(1, dims, space, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! create the dataset
             call h5acreate_f(group, name,                           &
                              H5T_NATIVE_DOUBLE, space, attr, h5err)
+            call check_h5_error("Failed to create attribute.")
 
             call h5awrite_f(attr, H5T_NATIVE_DOUBLE, val, dims, h5err)
+            call check_h5_error("Failed to write attribute.")
 
             ! close all
             call h5aclose_f(attr, h5err)
+            call check_h5_error("Failed to close attribute space.")
+
             call h5sclose_f(space, h5err)
+            call check_h5_error("Failed to close data space.")
         end subroutine write_h5_double_scalar_attrib
 
         subroutine write_h5_int_scalar_attrib(group, name, val)
@@ -250,16 +281,22 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(1, dims, space, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! create the dataset
             call h5acreate_f(group, name,                           &
                              H5T_NATIVE_INTEGER, space, attr, h5err)
+            call check_h5_error("Failed to create attribute.")
 
             call h5awrite_f(attr, H5T_NATIVE_INTEGER, val, dims, h5err)
+            call check_h5_error("Failed to write attribute.")
 
             ! close all
             call h5aclose_f(attr, h5err)
+            call check_h5_error("Failed to close attribute space.")
+
             call h5sclose_f(space, h5err)
+            call check_h5_error("Failed to close data space.")
         end subroutine write_h5_int_scalar_attrib
 
 
@@ -274,16 +311,22 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(1, dims, space, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! create the dataset
             call h5acreate_f(group, name,                           &
                              H5T_NATIVE_INTEGER, space, attr, h5err)
+            call check_h5_error("Failed to create attribute.")
 
             call h5awrite_f(attr, H5T_NATIVE_INTEGER, val, dims, h5err)
+            call check_h5_error("Failed to write attribute.")
 
             ! close all
             call h5aclose_f(attr, h5err)
+            call check_h5_error("Failed to close attribute space.")
+
             call h5sclose_f(space, h5err)
+            call check_h5_error("Failed to close data space.")
         end subroutine write_h5_int_vector_attrib
 
 
@@ -297,6 +340,7 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(1, dims, space, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! type in file
             call h5tcopy_f(H5T_C_S1, filetype, h5err)
@@ -304,19 +348,31 @@ module h5_writer
 
             ! type in run
             call h5tcopy_f(H5T_FORTRAN_S1, memtype, h5err)
+            call check_h5_error("Failed to copy memory type.")
+
             call h5tset_size_f(memtype, sdim, h5err)
+            call check_h5_error("Failed to create memory space.")
 
             ! create the dataset
             call h5acreate_f(group, name, filetype, space, attr, h5err)
+            call check_h5_error("Failed to create attribute.")
 
             ! write attribte
             call h5awrite_f(attr, memtype, val, dims, h5err)
+            call check_h5_error("Failed to write attribute.")
 
             ! close all
             call h5aclose_f(attr, h5err)
+            call check_h5_error("Failed to close attribute space.")
+
             call h5sclose_f(space, h5err)
+            call check_h5_error("Failed to close data space.")
+
             call h5tclose_f(filetype, h5err)
+            call check_h5_error("Failed to close file type space.")
+
             call h5tclose_f(memtype, h5err)
+            call check_h5_error("Failed to close memory space.")
         end subroutine write_h5_char_scalar_attrib
 
 
@@ -332,26 +388,42 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(1, dims, space, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! type in file
             call h5tcopy_f(H5T_C_S1, filetype, h5err)
+            call check_h5_error("Failed to copy file type.")
+
             call h5tset_size_f(filetype, sdim+1, h5err)
+            call check_h5_error("Failed to set size.")
 
             ! type in run
             call h5tcopy_f(H5T_FORTRAN_S1, memtype, h5err)
+            call check_h5_error("Failed to copy memory sace.")
+
             call h5tset_size_f(memtype, sdim, h5err)
+            call check_h5_error("Failed to set memory size.")
 
             ! create the dataset
             call h5acreate_f(group, name, filetype, space, attr, h5err)
+            call check_h5_error("Failed to create attribute.")
 
             ! write attribte
             call h5awrite_f(attr, memtype, val, dims, h5err)
+            call check_h5_error("Failed to write attribute.")
 
             ! close all
             call h5aclose_f(attr, h5err)
+            call check_h5_error("Failed to close attribute.")
+
             call h5sclose_f(space, h5err)
+            call check_h5_error("Failed to close data space.")
+
             call h5tclose_f(filetype, h5err)
+            call check_h5_error("Failed to file type space.")
+
             call h5tclose_f(memtype, h5err)
+            call check_h5_error("Failed to close memory space.")
         end subroutine write_h5_character_vector_attrib
 
 
@@ -365,10 +437,12 @@ module h5_writer
 
             ! create space for data
             call h5screate_simple_f(1, dims, space, h5err)
+            call check_h5_error("Failed to create data space.")
 
             ! create the dataset
             call h5acreate_f(group, name,                           &
                              H5T_NATIVE_INTEGER, space, attr, h5err)
+            call check_h5_error("Failed to create attribute.")
 
             dummy = 0
             if (val) then
@@ -376,10 +450,37 @@ module h5_writer
             endif
 
             call h5awrite_f(attr, H5T_NATIVE_INTEGER, dummy, dims, h5err)
+            call check_h5_error("Failed to write attribute.")
 
             ! close all
             call h5aclose_f(attr, h5err)
+            call check_h5_error("Failed to close attribute.")
+
             call h5sclose_f(space, h5err)
+            call check_h5_error("Failed to close data space.")
         end subroutine write_h5_logical_attrib
+
+        subroutine write_h5_num_steps(h5file_id, nw)
+            integer(hid_t),   intent(in) :: h5file_id
+            integer,          intent(in) :: nw
+            integer(hid_t)               :: group
+            logical                      :: attr_exists
+
+            call open_h5_group(h5file_id, "/", group)
+
+            ! in principle not necessary but we still check
+            call h5aexists_f(group, "nsteps", attr_exists, h5err)
+            call check_h5_error("Failed to check if attribute exists.")
+
+            if (attr_exists) then
+                call h5adelete_f(group, "nsteps", h5err)
+                call check_h5_error("Failed to delete attribute.")
+            endif
+
+            call write_h5_int_scalar_attrib(group, "nsteps", nw)
+
+            call close_h5_group(group)
+
+        end subroutine write_h5_num_steps
 
 end module h5_writer

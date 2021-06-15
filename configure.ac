@@ -170,7 +170,7 @@ if test "x$ENABLE_DEBUG" = "xyes"; then
     FCFLAGS="$FCFLAGS -DENABLE_VERBOSE"
 else
     AC_MSG_RESULT([no])
-    FCFLAGS="$FCFLAGS -O3"
+    FCFLAGS="$FCFLAGS -O3 -DNDEBUG"
 fi
 
 

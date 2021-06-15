@@ -9,11 +9,6 @@ module h5_reader
     use h5_utils
     implicit none
 
-    ! if non-zero an error occurred
-    integer :: h5err = 0
-
-    private :: h5err
-
     contains
 
         function has_dataset(h5file_id, name) result(link_exists)
@@ -22,6 +17,7 @@ module h5_reader
             logical                    :: link_exists
             link_exists = .false.
             call h5lexists_f(h5file_id, name, link_exists, h5err)
+            call check_h5_error("Failed to check if link exists.")
         end function has_dataset
 
         subroutine read_h5_dataset_2d(h5file_id, name, buffer)
@@ -34,11 +30,22 @@ module h5_reader
             integer(hsize_t)                           :: dims(2), maxdims(2)
 
             call h5dopen_f(h5file_id, name, dset_id, h5err)
+            call check_h5_error("Failed to open dataset.")
+
             call h5dget_space_f(dset_id, dataspace_id, h5err)
+            call check_h5_error("Failed to get data space.")
 
             call h5sget_simple_extent_ndims_f(dataspace_id, rank, h5err)
+            call check_h5_error("Failed to get data extent.")
 
+            ! h5err: Dataspace rank on success and -1 on failure
             call h5sget_simple_extent_dims_f(dataspace_id, dims, maxdims, h5err)
+#ifndef NDEBUG
+            if (h5err >= 0) then
+                h5err = 0
+            endif
+#endif
+            call check_h5_error("Failed to get dimensions.")
 
             if (.not. sum(dims -  maxdims) == 0) then
                 print *, "Dimensions do not agree."
@@ -48,8 +55,10 @@ module h5_reader
             allocate(buffer(0:dims(1)-1, 0:dims(2)-1))
 
             call h5dread_f(dset_id, H5T_NATIVE_DOUBLE, buffer, dims, h5err)
+            call check_h5_error("Failed to read dataset.")
 
             call h5dclose_f(dset_id, h5err)
+            call check_h5_error("Failed to close dataset.")
         end subroutine read_h5_dataset_2d
 
         subroutine read_h5_vector_int_attrib(group, name, buf)
@@ -60,10 +69,15 @@ module h5_reader
             integer(hsize_t), dimension(1:1) :: dims = 2
 
             call h5aopen_name_f(group, name, attr_id, h5err)
+            call check_h5_error("Failed to open attribute.")
             call h5aget_space_f(attr_id, space_id, h5err)
+            call check_h5_error("Failed to get attribute space.")
             call h5aget_type_f(attr_id, type_id, h5err)
+            call check_h5_error("Failed to retrieve attribute type.")
             call h5aread_f(attr_id, type_id, buf, dims, h5err)
+            call check_h5_error("Failed to read attribute.")
             call h5aclose_f(attr_id, h5err)
+            call check_h5_error("Failed to close attribute.")
         end subroutine read_h5_vector_int_attrib
 
 
@@ -75,10 +89,15 @@ module h5_reader
             integer(hsize_t), dimension(1:1)   :: dims = 2
 
             call h5aopen_name_f(group, name, attr_id, h5err)
+            call check_h5_error("Failed to open attribute.")
             call h5aget_space_f(attr_id, space_id, h5err)
+            call check_h5_error("Failed to get attribute space.")
             call h5aget_type_f(attr_id, type_id, h5err)
+            call check_h5_error("Failed to retrieve attribute type.")
             call h5aread_f(attr_id, type_id, buf, dims, h5err)
+            call check_h5_error("Failed to read attribute.")
             call h5aclose_f(attr_id, h5err)
+            call check_h5_error("Failed to close attribute.")
         end subroutine read_h5_vector_double_attrib
 
         subroutine read_h5_box(h5file_id, nx, nz, extent, origin)
@@ -98,7 +117,7 @@ module h5_reader
             nz = ncells(2)
 
             ! close all
-            call h5gclose_f(group, h5err)
+            call close_h5_group(group)
         end subroutine read_h5_box
 
 end module h5_reader

@@ -7,7 +7,7 @@ module h5_utils
 
     logical :: is_initialised = .false.
 
-    private :: h5err, is_initialised
+    private :: is_initialised
 
     contains
 
@@ -124,33 +124,11 @@ module h5_utils
 
         subroutine check_h5_error(msg)
             character(*), intent(in) :: msg
+#ifndef NDEBUG
             if (h5err .ne. 0) then
                 print *, msg
                 stop
             endif
+#endif
         end subroutine check_h5_error
-
-
-
-        !         subroutine write_h5_num_steps(nw)
-!             use options, only : output
-!             integer, intent(in) :: nw
-!             integer(hid_t)      :: group
-!             logical             :: attr_exists
-!
-!             group = open_h5_group("/")
-!
-!             ! in principle not necessary but we still check
-!             call h5aexists_f(group, "nsteps", attr_exists, h5err)
-!
-!             if (attr_exists) then
-!                 call h5adelete_f(group, "nsteps", h5err)
-!             endif
-!
-!             call write_h5_integer_scalar_attrib(group, "nsteps", nw)
-!
-!             call h5gclose_f(group, h5err)
-!
-!         end subroutine write_h5_num_steps
-
 end module h5_utils
