@@ -6,40 +6,16 @@
 ! =============================================================================
 module writer
     use hdf5
+    use h5_utils
     implicit none
-
-    ! h5 file handle
-    integer(hid_t) :: h5file = 0
 
     ! if non-zero an error occurred
     integer :: h5err = 0
 
     contains
-        subroutine open_h5_file(filename)
-            character(*), intent(in) :: filename
 
-            call h5open_f(h5err)
-
-            if (h5file .eq. 0) then
-                call h5fcreate_f(filename, H5F_ACC_TRUNC_F, h5file, h5err)
-            endif
-
-            if (h5err .ne. 0) then
-                print *, "Opening the H5 file failed."
-                stop
-            endif
-        end subroutine open_h5_file
-
-        subroutine close_h5_file
-            call h5close_f(h5err)
-
-            if (h5err .ne. 0) then
-                print *, "Closing the H5 file failed."
-                stop
-            endif
-        end subroutine close_h5_file
-
-        subroutine write_h5_dataset_1d(group, name, data)
+        subroutine write_h5_dataset_1d(h5file_id, group, name, data)
+            integer(hid_t),   intent(in)     :: h5file_id
             character(*),     intent(in)     :: group
             character(*),     intent(in)     :: name
             double precision, intent(in)     :: data(:)
@@ -58,7 +34,7 @@ module writer
             call h5screate_simple_f(1, dims, dataspace, h5err)
 
             ! create the dataset
-            call h5dcreate_f(h5file, group // "/" // name,              &
+            call h5dcreate_f(h5file_id, group // "/" // name,              &
                              H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
 
             ! write dataset
@@ -69,7 +45,8 @@ module writer
             call h5sclose_f(dataspace, h5err)
         end subroutine write_h5_dataset_1d
 
-        subroutine write_h5_dataset_2d(group, name, data)
+        subroutine write_h5_dataset_2d(h5file_id, group, name, data)
+            integer(hid_t),   intent(in)     :: h5file_id
             ! 12 March 2021
             ! https://stackoverflow.com/questions/48816383/passing-character-strings-of-different-lengths-to-functions-in-fortran
             character(*),     intent(in)     :: group
@@ -90,7 +67,7 @@ module writer
             call h5screate_simple_f(2, dims, dataspace, h5err)
 
             ! create the dataset
-            call h5dcreate_f(h5file, group // "/" // name,              &
+            call h5dcreate_f(h5file_id, group // "/" // name,              &
                              H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
 
             ! write dataset
@@ -101,7 +78,8 @@ module writer
             call h5sclose_f(dataspace, h5err)
         end subroutine write_h5_dataset_2d
 
-        subroutine write_h5_int_dataset_2d(group, name, data)
+        subroutine write_h5_int_dataset_2d(h5file_id, group, name, data)
+            integer(hid_t),   intent(in)     :: h5file_id
             ! 12 March 2021
             ! https://stackoverflow.com/questions/48816383/passing-character-strings-of-different-lengths-to-functions-in-fortran
             character(*),     intent(in)     :: group
@@ -122,7 +100,7 @@ module writer
             call h5screate_simple_f(2, dims, dataspace, h5err)
 
             ! create the dataset
-            call h5dcreate_f(h5file, group // "/" // name,              &
+            call h5dcreate_f(h5file_id, group // "/" // name,            &
                              H5T_NATIVE_INTEGER, dataspace, dset, h5err)
 
             ! write dataset
@@ -133,7 +111,8 @@ module writer
             call h5sclose_f(dataspace, h5err)
         end subroutine write_h5_int_dataset_2d
 
-        subroutine write_h5_dataset_3d(group, name, data)
+        subroutine write_h5_dataset_3d(h5file_id, group, name, data)
+            integer(hid_t),   intent(in)     :: h5file_id
             character(*),     intent(in)     :: group
             character(*),     intent(in)     :: name
             double precision, intent(in)     :: data(:, :, :)
@@ -152,7 +131,7 @@ module writer
             call h5screate_simple_f(3, dims, dataspace, h5err)
 
             ! create the dataset
-            call h5dcreate_f(h5file, group // "/" // name,              &
+            call h5dcreate_f(h5file_id, group // "/" // name,              &
                              H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
 
             ! write dataset
@@ -164,7 +143,8 @@ module writer
         end subroutine write_h5_dataset_3d
 
 
-        subroutine write_h5_double_scalar_step_attrib(iter, name, val)
+        subroutine write_h5_double_scalar_step_attrib(h5file_id, iter, name, val)
+            integer(hid_t),   intent(in)     :: h5file_id
             integer,          intent(in)     :: iter ! iteration
             character(*),     intent(in)     :: name
             double precision, intent(in)     :: val
@@ -175,16 +155,16 @@ module writer
 
             grn = trim(get_step_group_name(iter))
 
-            ! create or open group
-            group = open_h5_group(grn)
+            call open_or_create_h5_group(h5file_id, grn, group)
 
             call write_h5_double_scalar_attrib(group, name, val)
 
-            call h5gclose_f(group, h5err)
+            call close_h5_group(group)
         end subroutine write_h5_double_scalar_step_attrib
 
 
-        subroutine write_h5_integer_scalar_step_attrib(iter, name, val)
+        subroutine write_h5_int_scalar_step_attrib(h5file_id, iter, name, val)
+            integer(hid_t),   intent(in)     :: h5file_id
             integer,          intent(in)     :: iter ! iteration
             character(*),     intent(in)     :: name
             integer,          intent(in)     :: val
@@ -195,29 +175,13 @@ module writer
 
             grn = trim(get_step_group_name(iter))
 
-            ! create or open group
-            group = open_h5_group(grn)
+            call open_or_create_h5_group(h5file_id, grn, group)
 
-            call write_h5_integer_scalar_attrib(group, name, val)
+            call write_h5_int_scalar_attrib(group, name, val)
 
-            call h5gclose_f(group, h5err)
-        end subroutine write_h5_integer_scalar_step_attrib
+            call close_h5_group(group)
+        end subroutine write_h5_int_scalar_step_attrib
 
-
-        ! open existing group or create one
-        function open_h5_group(name) result(group)
-            character(*),   intent(in) :: name
-            integer(hid_t)             :: group
-            logical                    :: link_exists = .false.
-
-            call h5lexists_f(h5file, name, link_exists, h5err)
-
-            if (link_exists) then
-                call h5gopen_f(h5file, name, group, h5err)
-            else
-                call h5gcreate_f(h5file, name, group, h5err)
-            endif
-        end function open_h5_group
 
         ! convert iteration number to string
         function get_step_group_name(iter) result(name)
@@ -275,7 +239,7 @@ module writer
             call h5sclose_f(space, h5err)
         end subroutine write_h5_double_scalar_attrib
 
-        subroutine write_h5_integer_scalar_attrib(group, name, val)
+        subroutine write_h5_int_scalar_attrib(group, name, val)
             integer(hid_t),   intent(in)     :: group
             character(*),     intent(in)     :: name
             integer,          intent(in)     :: val
@@ -294,10 +258,10 @@ module writer
             ! close all
             call h5aclose_f(attr, h5err)
             call h5sclose_f(space, h5err)
-        end subroutine write_h5_integer_scalar_attrib
+        end subroutine write_h5_int_scalar_attrib
 
 
-        subroutine write_h5_integer_vector_attrib(group, name, val)
+        subroutine write_h5_int_vector_attrib(group, name, val)
             integer(hid_t),   intent(in)     :: group
             character(*),     intent(in)     :: name
             integer,          intent(in)     :: val(:)
@@ -318,10 +282,10 @@ module writer
             ! close all
             call h5aclose_f(attr, h5err)
             call h5sclose_f(space, h5err)
-        end subroutine write_h5_integer_vector_attrib
+        end subroutine write_h5_int_vector_attrib
 
 
-        subroutine write_h5_character_scalar_attrib(group, name, val)
+        subroutine write_h5_char_scalar_attrib(group, name, val)
             integer(hid_t),    intent(in)     :: group
             character(*),      intent(in)     :: name
             character(len=16), intent(in)     :: val
@@ -351,7 +315,7 @@ module writer
             call h5sclose_f(space, h5err)
             call h5tclose_f(filetype, h5err)
             call h5tclose_f(memtype, h5err)
-        end subroutine write_h5_character_scalar_attrib
+        end subroutine write_h5_char_scalar_attrib
 
 
         subroutine write_h5_character_vector_attrib(group, name, val)

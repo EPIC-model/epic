@@ -53,50 +53,50 @@ module parser
 
         subroutine write_h5_options(fname)
             character(*), intent(in) :: fname
-            integer(hid_t)           :: group
+!             integer(hid_t)           :: group
 
-            call open_h5_file(fname)
-
-            !
-            ! write parcel info
-            !
-            group = open_h5_group("parcel")
-
-            call write_h5_integer_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
-            call write_h5_logical_attrib(group, "is_random", parcel%is_random)
-            call write_h5_integer_scalar_attrib(group, "seed", parcel%seed)
-            call write_h5_logical_attrib(group, "is_elliptic", parcel%is_elliptic)
-            call write_h5_double_scalar_attrib(group, "lambda", parcel%lambda)
-
-            call h5gclose_f(group, h5err)
-
-            !
-            ! write output info
-            !
-            group = open_h5_group("output")
-
-            call write_h5_integer_scalar_attrib(group, "h5freq", output%h5freq)
-
-            call h5gclose_f(group, h5err)
-
-
-            !
-            ! write stepper info
-            !
-            group = open_h5_group("stepper")
-
-            call write_h5_character_scalar_attrib(group, "method", stepper)
-
-            call h5gclose_f(group, h5err)
-
-            group = open_h5_group("time")
-
-            call write_h5_double_scalar_attrib(group, "limit", time%limit)
-            call write_h5_logical_attrib(group, "is_adaptive", time%is_adaptive)
-
-            call h5gclose_f(group, h5err)
-
-            call close_h5_file
+!             call open_h5_file(fname)
+!
+!             !
+!             ! write parcel info
+!             !
+!             group = open_h5_group("parcel")
+!
+!             call write_h5_integer_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
+!             call write_h5_logical_attrib(group, "is_random", parcel%is_random)
+!             call write_h5_integer_scalar_attrib(group, "seed", parcel%seed)
+!             call write_h5_logical_attrib(group, "is_elliptic", parcel%is_elliptic)
+!             call write_h5_double_scalar_attrib(group, "lambda", parcel%lambda)
+!
+!             call h5gclose_f(group, h5err)
+!
+!             !
+!             ! write output info
+!             !
+!             group = open_h5_group("output")
+!
+!             call write_h5_integer_scalar_attrib(group, "h5_field_freq", &
+!                                                 output%h5_field_freq)
+!
+!             call h5gclose_f(group, h5err)
+!
+!             !
+!             ! write stepper info
+!             !
+!             group = open_h5_group("stepper")
+!
+!             call write_h5_character_scalar_attrib(group, "method", stepper)
+!
+!             call h5gclose_f(group, h5err)
+!
+!             group = open_h5_group("time")
+!
+!             call write_h5_double_scalar_attrib(group, "limit", time%limit)
+!             call write_h5_logical_attrib(group, "is_adaptive", time%is_adaptive)
+!
+!             call h5gclose_f(group, h5err)
+!
+!             call close_h5_file
 
         end subroutine write_h5_options
 

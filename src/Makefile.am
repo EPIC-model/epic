@@ -5,11 +5,14 @@ epic_SOURCES = 					\
 	utils/stafft.f90			\
 	utils/deriv1d.f90			\
 	utils/options.f90			\
+	utils/h5_utils.f90			\
 	utils/writer.f90			\
 	utils/parameters.f90 			\
 	utils/reader.f90			\
 	utils/merge_sort.f90			\
 	fields/fields.f90			\
+	fields/field_diagnostics.f90		\
+	fields/field_hdf5.f90			\
 	parcels/parcel_ellipse.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
@@ -21,7 +24,7 @@ epic_SOURCES = 					\
 	parcels/parcel_init.f90			\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_point.f90		\
-	fields/field_diagnostics.f90		\
+	parcels/parcel_hdf5.f90			\
 	utils/parser.f90 			\
 	tri_inversion.f90			\
 	stepper/rk4_utils.f90			\

@@ -79,15 +79,15 @@ module parameters
 
     subroutine write_h5_parameters(fname)
         character(*), intent(in) :: fname
-        integer(hid_t)           :: group
-
-        call open_h5_file(fname)
-        group = open_h5_group("box")
-        call write_h5_double_vector_attrib(group, "extent", extent)
-        call write_h5_double_vector_attrib(group, "origin", lower)
-        call write_h5_integer_vector_attrib(group, "ncells", (/nx, nz/))
-        call h5gclose_f(group, h5err)
-        call close_h5_file
+!         integer(hid_t)           :: group
+!
+!         call open_h5_file(fname)
+!         group = open_h5_group("box")
+!         call write_h5_double_vector_attrib(group, "extent", extent)
+!         call write_h5_double_vector_attrib(group, "origin", lower)
+!         call write_h5_integer_vector_attrib(group, "ncells", (/nx, nz/))
+!         call h5gclose_f(group, h5err)
+!         call close_h5_file
     end subroutine write_h5_parameters
 
 end module parameters

@@ -21,8 +21,11 @@ module options
     ! output options
     !
     type output_info_type
-        integer                     :: h5freq   = 1
-        character(len=32)           :: h5fname  = ''
+        integer             :: h5_field_freq    = 1
+        logical             :: h5_dump_fields   = .true.
+        integer             :: h5_parcel_freq   = 1
+        logical             :: h5_dump_parcels  = .true.
+        character(len=32)   :: h5fname          = ''
     end type output_info_type
 
     type(output_info_type) :: output

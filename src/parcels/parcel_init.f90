@@ -27,14 +27,15 @@ module parcel_init
         ! Set default values for parcel attributes
         ! Attention: This subroutine assumes that the parcel
         !            container is already allocated!
-        subroutine init_parcels(filename)
-            character(*), intent(in) :: filename
+        subroutine init_parcels(h5fname)
+            character(*), intent(in) :: h5fname
             double precision         :: lam, ratio
+            integer(hid_t)           :: h5handle
 
             ! read domain dimensions
-            call open_h5_file(filename)
+            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
             call read_h5_box(nx, nz, extent, lower)
-            call close_h5_file
+            call close_h5_file(h5handle)
 
             ! update global parameters
             call update_parameters
@@ -80,7 +81,7 @@ module parcel_init
             parcels%buoyancy(1:n_parcels) = zero
             parcels%humidity(1:n_parcels) = zero
 
-            call init_from_grids(filename)
+            call init_from_grids(h5fname)
 
         end subroutine init_parcels
 
@@ -152,12 +153,13 @@ module parcel_init
         end subroutine init_refine
 
 
-        subroutine init_from_grids(filename)
-            character(*), intent(in)      :: filename
+        subroutine init_from_grids(h5fname)
+            character(*), intent(in)      :: h5fname
             double precision, allocatable :: buffer_2d(:, :)
             double precision              :: field_2d(-1:nz+1, 0:nx-1)
+            integer(hid_t)                :: h5handle
 
-            call open_h5_file(filename)
+            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
 
             if (has_dataset('vorticity')) then
                 call read_h5_dataset_2d('vorticity', buffer_2d)
@@ -174,7 +176,7 @@ module parcel_init
                 call gen_parcel_scalar_attr(field_2d, 1.0d-9, parcels%buoyancy)
             endif
 
-            call close_h5_file
+            call close_h5_file(h5handle)
 
         end subroutine init_from_grids
 
