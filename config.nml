@@ -20,7 +20,7 @@
  output%h5_basename     = 'taylor_green'
 
  !
- ! parcel info Km5aHe
+ ! parcel info
  !
 
  parcel%n_per_cell   = 4
