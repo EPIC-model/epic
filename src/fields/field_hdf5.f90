@@ -32,6 +32,8 @@ module field_hdf5
 
             call create_h5_file(h5fname, h5file_id)
 
+            call write_h5_char_scalar_attrib(h5file_id, 'output_type', 'fields')
+
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
             call write_h5_box(h5file_id)
