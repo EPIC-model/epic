@@ -5,6 +5,7 @@
 ! https://support.hdfgroup.org/HDF5/doc1.8/RM/RM_H5Front.html
 ! =============================================================================
 module h5_writer
+    use options, only : parcel, time, stepper, output
     use hdf5
     use h5_utils
     implicit none
@@ -495,5 +496,75 @@ module h5_writer
             call close_h5_group(group)
 
         end subroutine write_h5_num_steps
+
+        subroutine write_h5_timestamp(h5file_id)
+            integer(hid_t),   intent(in) :: h5file_id
+            character(len=8)             :: cdate, tmp2
+            character(len=10)            :: ctime, tmp1
+            character(len=5)             :: czone
+            character(len=9)             :: tmp3
+
+            ! 15 June 2021
+            ! https://gcc.gnu.org/onlinedocs/gfortran/DATE_005fAND_005fTIME.html
+            call date_and_time(date=cdate, time=ctime, zone=czone)
+            ! 15 June 2021
+            ! https://stackoverflow.com/questions/13755762/access-character-at-specific-index-in-a-string-in-fortran
+            tmp1 = cdate(1:4) // '/' // cdate(5:6) // '/' // cdate(7:8)
+            tmp2 = ctime(1:2) // ':' // ctime(3:4) // ':' // ctime(5:6)
+            tmp3 = 'UTC' // czone(1:3) // ':' // czone(4:5)
+            call write_h5_char_scalar_attrib(h5file_id, "creation date", tmp1)
+            call write_h5_char_scalar_attrib(h5file_id, "creation time", tmp2)
+            call write_h5_char_scalar_attrib(h5file_id, "creation zone", tmp3)
+        end subroutine write_h5_timestamp
+
+
+        subroutine write_h5_options(h5file_id)
+            integer(hid_t),   intent(in) :: h5file_id
+            integer(hid_t)               :: gopts, group
+
+            call create_h5_group(h5file_id, "options", gopts)
+
+            call create_h5_group(gopts, "parcel", group)
+                call write_h5_int_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
+                call write_h5_logical_attrib(group, "is_random", parcel%is_random)
+                call write_h5_int_scalar_attrib(group, "seed", parcel%seed)
+                call write_h5_logical_attrib(group, "is_elliptic", parcel%is_elliptic)
+                call write_h5_double_scalar_attrib(group, "lambda", parcel%lambda)
+                call write_h5_double_scalar_attrib(group, "prefactor", parcel%prefactor)
+                call write_h5_int_scalar_attrib(group, "split_freq", parcel%split_freq)
+                call write_h5_char_scalar_attrib(group, "merge_type", trim(parcel%merge_type))
+                call write_h5_int_scalar_attrib(group, "merge_freq", parcel%merge_freq)
+                call write_h5_double_scalar_attrib(group, "vfraction", parcel%vfraction)
+                call write_h5_int_scalar_attrib(group, "correction_freq", parcel%correction_freq)
+                call write_h5_int_scalar_attrib(group, "correction_iters", parcel%correction_iters)
+                call write_h5_logical_attrib(group, "apply_laplace", parcel%apply_laplace)
+                call write_h5_logical_attrib(group, "apply_gradient", parcel%apply_gradient)
+                call write_h5_double_scalar_attrib(group, "gradient_pref", parcel%gradient_pref)
+                call write_h5_double_scalar_attrib(group, "vmaxfraction", parcel%vmaxfraction)
+            call close_h5_group(group)
+
+            call create_h5_group(gopts, "output", group)
+                call write_h5_int_scalar_attrib(group, "h5_parcel_freq", output%h5_parcel_freq)
+                call write_h5_int_scalar_attrib(group, "h5_field_freq", output%h5_field_freq)
+                call write_h5_logical_attrib(group, "h5_write_fields", output%h5_write_fields)
+                call write_h5_logical_attrib(group, "h5_overwrite", output%h5_overwrite)
+                call write_h5_logical_attrib(group, "h5_write_parcels", output%h5_write_parcels)
+                call write_h5_char_scalar_attrib(group, "h5_basename", trim(output%h5_basename))
+            call close_h5_group(group)
+
+            call create_h5_group(gopts, "time", group)
+                call write_h5_double_scalar_attrib(group, "limit", time%limit)
+                call write_h5_logical_attrib(group, "is_adaptive", time%is_adaptive)
+                call write_h5_double_scalar_attrib(group, "alpha", time%alpha)
+                call write_h5_double_scalar_attrib(group, "dt", time%dt)
+                call write_h5_double_scalar_attrib(group, "dt_max", time%dt_max)
+            call close_h5_group(group)
+
+            call create_h5_group(gopts, "stepper", group)
+                call write_h5_char_scalar_attrib(group, "method", stepper)
+            call close_h5_group(group)
+
+            call close_h5_group(gopts)
+        end subroutine write_h5_options
 
 end module h5_writer

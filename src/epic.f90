@@ -4,7 +4,7 @@
 program epic
     use constants, only : max_num_parcels, zero
     use field_diagnostics
-    use parser, only : read_config_file, write_h5_options
+    use parser, only : read_config_file
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses
@@ -46,12 +46,10 @@ program epic
 
             if (output%h5_write_fields) then
                 call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
-                call write_h5_options(h5_field_fname)
             endif
 
             if (output%h5_write_parcels) then
                 call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
-                call write_h5_options(h5_parcel_fname)
             endif
 
 

@@ -81,6 +81,7 @@ module parcel_diagnostics
             character(:), allocatable     :: name
             logical                       :: created
 
+            call calculate_diagnostics
             name = trim(get_step_group_name(iter))
 
             call create_h5_group(h5file_id, name, group, created)
@@ -88,8 +89,6 @@ module parcel_diagnostics
             if (.not. created) then
                 call open_h5_group(h5file_id, name, group)
             endif
-
-            call calculate_diagnostics
 
             !
             ! write diagnostics
