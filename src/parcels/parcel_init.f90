@@ -2,7 +2,7 @@
 !               This module initializes parcel default values.
 ! =============================================================================
 module parcel_init
-    use options, only : parcel, output
+    use options, only : parcel, output, verbose
     use constants, only : zero, two, one, f12
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
@@ -213,12 +213,16 @@ module parcel_init
             integer          :: is(ngp), js(ngp), n, l
             double precision :: weights(ngp)
 
+#ifdef ENABLE_VERBOSE
+                if (verbose) then
+                    print *, 'Generate parcel attribute'
+                endif
+#endif ENABLE_VERBOSE
+
             ! Compute mean field value:
             ! (divide by ncell since lower and upper edge weights are halved)
             avg_field = (f12 * sum(field(0, :) + field(nz, :)) &
                              + sum(field(1:nz-1,:))) / dble(ncell)
-
-            print *, avg_field
 
             resi = zero
             resi(0:nz,:) = field(0:nz,:) - avg_field
@@ -303,7 +307,11 @@ module parcel_init
                 !Compute maximum error:
                 rerr = maxval(dabs(resi))
 
-                write(*,*) ' Max abs error = ',rerr
+#ifdef ENABLE_VERBOSE
+                if (verbose) then
+                    print *, ' Max abs error = ', rerr
+                endif
+#endif ENABLE_VERBOSE
             enddo
 
             !Finally divide by parcel volume to define attribute:
