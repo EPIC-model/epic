@@ -217,7 +217,7 @@ module parcel_init
                 if (verbose) then
                     print *, 'Generate parcel attribute'
                 endif
-#endif ENABLE_VERBOSE
+#endif
 
             ! Compute mean field value:
             ! (divide by ncell since lower and upper edge weights are halved)
@@ -311,7 +311,7 @@ module parcel_init
                 if (verbose) then
                     print *, ' Max abs error = ', rerr
                 endif
-#endif ENABLE_VERBOSE
+#endif
             enddo
 
             !Finally divide by parcel volume to define attribute:
