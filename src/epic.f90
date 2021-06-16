@@ -44,15 +44,6 @@ program epic
             ! parse the config file
             call read_config_file
 
-            if (output%h5_write_fields) then
-                call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
-            endif
-
-            if (output%h5_write_parcels) then
-                call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
-            endif
-
-
             call parcel_alloc(max_num_parcels)
 
             call init_parcels(model)
@@ -68,6 +59,14 @@ program epic
             call field_default
 
             call par2grid
+
+            if (output%h5_write_fields) then
+                call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
+            endif
+
+            if (output%h5_write_parcels) then
+                call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
+            endif
 
         end subroutine
 

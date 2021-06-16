@@ -34,6 +34,7 @@ module field_hdf5
 
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
+            call write_h5_box(h5file_id)
 
             call close_h5_file(h5file_id)
 

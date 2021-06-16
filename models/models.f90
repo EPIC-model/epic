@@ -2,6 +2,7 @@
 !               This program writes fields to HDF5 in EPIC format.
 ! =============================================================================
 program models
+    use options, only : model, filename, verbose
     use taylorgreen
     use straka
     use robert
@@ -10,10 +11,7 @@ program models
     use h5_writer
     implicit none
 
-    character(len=32) :: filename = ''
-    character(len=32) :: model = ''
-    character(len=32) :: h5fname = ''
-    logical           :: verbose = .false.
+    character(len=512) :: h5fname = ''
 
     type box_type
         integer          :: ncells(2)   ! number of cells
@@ -62,11 +60,7 @@ program models
 
             ! write box
             call open_h5_file(filename, H5F_ACC_RDWR_F, h5handle)
-            call open_h5_group(h5handle, "box", group)
-            call write_h5_int_vector_attrib(group, "ncells", box%ncells)
-            call write_h5_double_vector_attrib(group, "extent", box%extent)
-            call write_h5_double_vector_attrib(group, "origin", box%origin)
-            call close_h5_group(group)
+            call write_h5_box(h5handle)
             call close_h5_file(h5handle)
         end subroutine generate_fields
 

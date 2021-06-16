@@ -9,7 +9,6 @@ module parcel_init
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : trilinear, ngp
     use parameters, only : update_parameters,   &
-                           write_h5_parameters, &
                            dx, vcell, ncell,    &
                            extent, lower, nx, nz
     use h5_reader
@@ -39,8 +38,6 @@ module parcel_init
 
             ! update global parameters
             call update_parameters
-
-            call write_h5_parameters(h5fname)
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell

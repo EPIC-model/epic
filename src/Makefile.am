@@ -6,10 +6,11 @@ epic_SOURCES = 					\
 	utils/deriv1d.f90			\
 	utils/options.f90			\
 	utils/merge_sort.f90			\
+	utils/parser.f90 			\
+	utils/parameters.f90 			\
 	hdf5/h5_utils.f90			\
 	hdf5/h5_writer.f90			\
 	hdf5/h5_reader.f90			\
-	utils/parameters.f90 			\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_hdf5.f90			\
@@ -25,7 +26,6 @@ epic_SOURCES = 					\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_point.f90		\
 	parcels/parcel_hdf5.f90			\
-	utils/parser.f90 			\
 	tri_inversion.f90			\
 	stepper/rk4_utils.f90			\
 	stepper/classic_rk4.f90			\

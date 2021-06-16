@@ -5,7 +5,10 @@
 ! https://support.hdfgroup.org/HDF5/doc1.8/RM/RM_H5Front.html
 ! =============================================================================
 module h5_writer
-    use options, only : parcel, time, stepper, output
+    use options, only : allow_larger_anisotropy,    &
+                        output, verbose, model,     &
+                        parcel, time, stepper
+    use parameters, only : nx, nz, lower, extent
     use hdf5
     use h5_utils
     implicit none
@@ -524,6 +527,11 @@ module h5_writer
 
             call create_h5_group(h5file_id, "options", gopts)
 
+#ifdef ENABLE_VERBOSE
+            call write_h5_logical_attrib(gopts, "verbose", verbose)
+#endif
+            call write_h5_char_scalar_attrib(gopts, "model", model)
+
             call create_h5_group(gopts, "parcel", group)
                 call write_h5_int_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
                 call write_h5_logical_attrib(group, "is_random", parcel%is_random)
@@ -566,5 +574,18 @@ module h5_writer
 
             call close_h5_group(gopts)
         end subroutine write_h5_options
+
+        subroutine write_h5_box(h5file_id)
+            integer(hid_t), intent(in) :: h5file_id
+            integer(hid_t)             :: group
+
+            call create_h5_group(h5file_id, "box", group)
+            call write_h5_logical_attrib(group, "allow_larger_anisotropy", &
+                                         allow_larger_anisotropy)
+            call write_h5_int_vector_attrib(group, "ncells", (/nx, nz/))
+            call write_h5_double_vector_attrib(group, "extent", extent)
+            call write_h5_double_vector_attrib(group, "origin", lower)
+            call close_h5_group(group)
+        end subroutine write_h5_box
 
 end module h5_writer
