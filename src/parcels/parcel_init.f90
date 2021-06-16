@@ -10,7 +10,7 @@ module parcel_init
     use parcel_interpl, only : trilinear, ngp
     use parameters, only : update_parameters,       &
                            write_h5_parameters,     &
-                           dx, vcell, ncell, ngrid, &
+                           dx, vcell, ncell         &
                            extent, lower, nx, nz
     use reader
     implicit none
@@ -213,9 +213,10 @@ module parcel_init
             integer          :: is(ngp), js(ngp), n, l
             double precision :: weights(ngp)
 
-            ! Compute mean field value
+            ! Compute mean field value:
+            ! (divide by ncell since lower and upper edge weights are halved)
             fmean = (f12 * sum(field(0, :) + field(nz, :)) &
-                         + sum(field(1:nz-1,:))) / dble(ngrid)
+                         + sum(field(1:nz-1,:))) / dble(ncell)
 
             ! Maximum error permitted below in gridded residue:
             rtol = dabs(fmean) * tol
