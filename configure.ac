@@ -48,6 +48,7 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
         AC_MSG_RESULT([yes])
     else
         AC_MSG_RESULT([no])
+        AC_MSG_NOTICE([Install argparse with "conda install -c conda-forge argparse".])
         exit 1
     fi
 
@@ -60,7 +61,7 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
         AC_MSG_RESULT([yes])
     else
         AC_MSG_RESULT([no])
-        AC_MSG_NOTICE([Install numpy with "pip install numpy".])
+        AC_MSG_NOTICE([Install numpy with "conda install -c anaconda numpy".])
         exit 1
     fi
 
@@ -73,7 +74,7 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
         AC_MSG_RESULT([yes])
     else
         AC_MSG_RESULT([no])
-        AC_MSG_NOTICE([Install matplotlib with "pip install matplotlib".])
+        AC_MSG_NOTICE([Install matplotlib with "conda install -c conda-forge matplotlib".])
         exit 1
     fi
 
@@ -86,7 +87,7 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
         AC_MSG_RESULT([yes])
     else
         AC_MSG_RESULT([no])
-        AC_MSG_NOTICE([Install h5py with "pip install h5py".])
+        AC_MSG_NOTICE([Install h5py with "conda install -c anaconda h5py".])
         exit 1
     fi
 
@@ -99,8 +100,24 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
         AC_MSG_RESULT([yes])
     else
         AC_MSG_RESULT([no])
-        AC_MSG_NOTICE([Install progressbar with "pip install progressbar".])
+        AC_MSG_NOTICE([Install progressbar with "conda install -c conda-forge progressbar".])
         exit 1
+    fi
+
+    #
+    # bokeh
+    #
+    AC_MSG_CHECKING([for python bokeh library])
+    `${PYTHON} -c 'import bokeh' 2> config.log`
+    if test "x$?" = "x0" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_NOTICE([Install bokeh with "conda install -c conda-forge bokeh".])
+        AC_MSG_NOTICE([Install phantomjs with "conda install -c conda-forge phantomjs".])
+        AC_MSG_NOTICE([Install selenium with "conda install -c bokeh selenium".])
+        AC_MSG_NOTICE([Install geckodriver with "conda install -c conda-forge firefox geckodriver".])
+        exit 1
+        AC_MSG_RESULT([no])
     fi
 fi
 
