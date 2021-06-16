@@ -10,7 +10,7 @@ module parcel_init
     use parcel_interpl, only : trilinear, ngp
     use parameters, only : update_parameters,       &
                            write_h5_parameters,     &
-                           dx, vcell, ncell         &
+                           dx, vcell, ncell,        &
                            extent, lower, nx, nz
     use reader
     implicit none
@@ -209,22 +209,32 @@ module parcel_init
             double precision, intent(out) :: par(:)
             double precision :: resi(0:nz, 0:nx-1)
             double precision :: apar(n_parcels)
-            double precision :: rtol, rerr, rsum, fsum, fmean
+            double precision :: rms, rtol, rerr, rsum, fsum, avg_field
             integer          :: is(ngp), js(ngp), n, l
             double precision :: weights(ngp)
 
             ! Compute mean field value:
             ! (divide by ncell since lower and upper edge weights are halved)
-            fmean = (f12 * sum(field(0, :) + field(nz, :)) &
-                         + sum(field(1:nz-1,:))) / dble(ncell)
+            avg_field = (f12 * sum(field(0, :) + field(nz, :)) &
+                             + sum(field(1:nz-1,:))) / dble(ncell)
 
-            ! Maximum error permitted below in gridded residue:
-            rtol = dabs(fmean) * tol
+            print *, avg_field
 
-            if (rtol == zero) then
-                ! keep initialisation to zero
+            resi = zero
+            resi(0:nz,:) = field(0:nz,:) - avg_field
+
+            rms = (f12 * sum(resi(0, :) ** 2 + resi(nz, :) ** 2) &
+                       + sum(resi(1:nz-1,:) ** 2)) / dble(ncell)
+
+
+            if (rms == zero) then
+                ! assign mean value
+                par(1:n_parcels) = avg_field
                 return
             endif
+
+            ! Maximum error permitted below in gridded residue:
+            rtol = rms * tol
 
             ! Compute mean parcel density:
             resi = zero
