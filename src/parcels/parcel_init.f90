@@ -209,7 +209,7 @@ module parcel_init
             double precision, intent(out) :: par(:)
             double precision :: resi(0:nz, 0:nx-1)
             double precision :: apar(n_parcels)
-            double precision :: rms, rtol, rerr, rsum, fsum, fmean
+            double precision :: rtol, rerr, rsum, fsum, fmean
             integer          :: is(ngp), js(ngp), n, l
             double precision :: weights(ngp)
 
