@@ -8,9 +8,9 @@ module parcel_init
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : trilinear, ngp
-    use parameters, only : update_parameters,   &
-                           write_h5_parameters, &
-                           dx, vcell, ncell,    &
+    use parameters, only : update_parameters,       &
+                           write_h5_parameters,     &
+                           dx, vcell, ncell, ngrid, &
                            extent, lower, nx, nz
     use reader
     implicit none
@@ -209,16 +209,21 @@ module parcel_init
             double precision, intent(out) :: par(:)
             double precision :: resi(0:nz, 0:nx-1)
             double precision :: apar(n_parcels)
-            double precision :: rms, rtol, rerr, rsum, fsum
+            double precision :: rms, rtol, rerr, rsum, fsum, fmean
             integer          :: is(ngp), js(ngp), n, l
             double precision :: weights(ngp)
 
-            ! Compute rms field value:
-            rms = dsqrt((f12 * sum(field(0, :) ** 2 + field(nz,:) ** 2) &
-                             + sum(field(1:nz-1,:) ** 2) ) / dble(ncell))
+            ! Compute mean field value
+            fmean = (f12 * sum(field(0, :) + field(nz, :)) &
+                         + sum(field(1:nz-1,:))) / dble(ngrid)
 
             ! Maximum error permitted below in gridded residue:
-            rtol = rms * tol
+            rtol = dabs(fmean) * tol
+
+            if (rtol == zero) then
+                ! keep initialisation to zero
+                return
+            endif
 
             ! Compute mean parcel density:
             resi = zero
@@ -286,6 +291,8 @@ module parcel_init
 
                 !Compute maximum error:
                 rerr = maxval(dabs(resi))
+
+                write(*,*) ' Max abs error = ',rerr
             enddo
 
             !Finally divide by parcel volume to define attribute:
