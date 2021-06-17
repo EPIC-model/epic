@@ -28,9 +28,7 @@ epic_SOURCES = 					\
 	parcels/parcel_hdf5.f90			\
 	tri_inversion.f90			\
 	stepper/rk4_utils.f90			\
-	stepper/classic_rk4.f90			\
 	stepper/ls_rk4.f90			\
-	stepper/rk4.f90 			\
 	epic.f90
 
 clean-local:
