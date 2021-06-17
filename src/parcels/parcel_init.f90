@@ -45,7 +45,7 @@ module parcel_init
         subroutine init_parcels(fname, tol)
             character(*),     intent(in) :: fname
             double precision, intent(in) :: tol
-            double precision              :: lam, ratio
+            double precision             :: lam, ratio
 
             ! read domain dimensions
             call open_h5_file(fname)
@@ -321,7 +321,7 @@ module parcel_init
 
             do while (rerr .gt. rtol)
                 !Compute residual:
-                resi(0:nz, :) = zero
+                resi = zero
                 do n = 1, n_parcels
                     do l = 1, ngp
                         resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) &
