@@ -18,7 +18,7 @@ program epic
     use tri_inversion, only : init_inversion
     use parcel_interpl
     use parcel_init, only : init_parcels
-    use rk4
+    use ls_rk4
     use h5_utils, only : initialise_hdf5, finalise_hdf5
     implicit none
 
@@ -48,7 +48,7 @@ program epic
 
             call init_parcels(field_file, field_tol)
 
-            call rk4_alloc(max_num_parcels)
+            call ls_rk4_alloc(max_num_parcels)
 
             call init_inversion
 
@@ -102,7 +102,7 @@ program epic
                     call write_h5_parcel_step(npw, t, dt)
                 endif
 
-                call rk4_step(dt)
+                call ls_rk4_step(dt)
 
                 if (mod(iter, parcel%merge_freq) == 0) then
                     if (parcel%is_elliptic) then
@@ -154,8 +154,7 @@ program epic
 
         subroutine post_run
             call parcel_dealloc
-            call rk4_dealloc
-
+            call ls_rk4_dealloc
             call finalise_hdf5
         end subroutine
 

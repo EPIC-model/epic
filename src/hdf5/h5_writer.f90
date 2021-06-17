@@ -8,7 +8,7 @@ module h5_writer
     use options, only : allow_larger_anisotropy,    &
                         output, verbose,            &
                         field_file, field_tol,      &
-                        parcel, time, stepper
+                        parcel, time
     use parameters, only : nx, nz, lower, extent
     use hdf5
     use h5_utils
@@ -568,10 +568,6 @@ module h5_writer
                 call write_h5_double_scalar_attrib(group, "alpha", time%alpha)
                 call write_h5_double_scalar_attrib(group, "dt", time%dt)
                 call write_h5_double_scalar_attrib(group, "dt_max", time%dt_max)
-            call close_h5_group(group)
-
-            call create_h5_group(gopts, "stepper", group)
-                call write_h5_char_scalar_attrib(group, "method", stepper)
             call close_h5_group(group)
 
             call close_h5_group(gopts)
