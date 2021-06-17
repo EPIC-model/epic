@@ -76,7 +76,7 @@ program test_ellipse_multi_merge_symmetry
             integer :: n
 
             a1b1 = 1.44d0
-            a2b2 = f14
+            a2b2 = 0.25d0
 
             n_parcels = 6
             parcels%position(1, 1) = -f12

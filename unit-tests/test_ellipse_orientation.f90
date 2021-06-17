@@ -24,7 +24,7 @@ program test_ellipse_orientation
     call parcel_alloc(1)
 
     parcels%position = zero
-    parcels%volume = f14 * product(extent / (grid - 1))
+    parcels%volume = 0.25d0 * product(extent / (grid - 1))
 
     V = parcels%volume(1)
 

@@ -11,7 +11,7 @@
 ! =============================================================================
 program test_free_slip
     use unit_test
-    use constants, only : pi, zero, one, two, f12, f14, f23
+    use constants, only : pi, zero, one, two, f12
     use parcel_container
     use parcel_interpl, only : vol2grid
     use options, only : parcel
@@ -26,7 +26,7 @@ program test_free_slip
 
     nx = 4
     nz = 4
-    lower  = (/-f23, -f23/)
+    lower  = (/-1.5d0, -1.5d0/)
     extent = (/0.4d0, 0.4d0/)
 
     call update_parameters
@@ -41,8 +41,8 @@ program test_free_slip
         do i = 0, nx-1
             do jj = 1, 4, 2
                 do ii = 1, 4, 2
-                    parcels%position(k, 1) = lower(1) + i * dx(1) + f14 * dx(1) * ii
-                    parcels%position(k, 2) = lower(2) + j * dx(2) + f14 * dx(2) * jj
+                    parcels%position(k, 1) = lower(1) + i * dx(1) + 0.25d0 * dx(1) * ii
+                    parcels%position(k, 2) = lower(2) + j * dx(2) + 0.25d0 * dx(2) * jj
                     k = k + 1
                 enddo
             enddo
@@ -55,7 +55,7 @@ program test_free_slip
 
     parcel%is_elliptic = .true.
 
-    parcels%volume = f14 * vcell
+    parcels%volume = 0.25d0 * vcell
 
     ! b11
     parcels%B(:, 1) = lam * dcos(angle) ** 2 + one / lam * dsin(angle) ** 2
