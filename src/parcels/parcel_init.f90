@@ -353,7 +353,7 @@ module parcel_init
             enddo
 
             !Finally divide by parcel volume to define attribute:
-            par(1:n_parcels) = par(1:n_parcels) / parcels%volume(1:n_parcels)
+            par(1:n_parcels) = par(1:n_parcels) / parcels%volume(1:n_parcels) * vcell
 
         end subroutine gen_parcel_scalar_attr
 
