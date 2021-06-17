@@ -27,6 +27,9 @@ class ParcelAnimation:
 
         self.h5reader.open(fname)
 
+        if not self.h5reader.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+
         self.nsteps = self.h5reader.get_num_steps()
         self.extent = self.h5reader.get_box_extent()
         self.origin = self.h5reader.get_box_origin()
@@ -37,9 +40,9 @@ class ParcelAnimation:
 
         if coloring == 'aspect-ratio':
             self.vmin = 1.0
-            self.vmax = self.h5reader.get_parcel_info('lambda')
+            self.vmax = self.h5reader.get_parcel_option('lambda')
         else:
-            self.vmin, self.vmax = self.h5reader.get_parcel_min_max(coloring)
+            self.vmin, self.vmax = self.h5reader.get_dataset_min_max(coloring)
 
         self.norm = cls.Normalize(vmin=self.vmin, vmax=self.vmax)
         self.cmap = plt.cm.viridis_r

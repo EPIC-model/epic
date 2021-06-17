@@ -42,6 +42,7 @@ where `filename` is the configuration file.
 ## Post-processing
 The directory `$PREFIX/bin` contains following scripts:
 * animate-parcels.py
+* bokeh-parcels.py
 * plot-parcels.py
 * plot-fields.py
 * plot-diagnostics.py

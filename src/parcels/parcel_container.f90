@@ -3,13 +3,6 @@
 ! allocate and deallocate it.
 ! =============================================================================
 module parcel_container
-    use hdf5
-    use writer, only : h5file,              &
-                       h5err,               &
-                       write_h5_dataset_1d, &
-                       write_h5_dataset_2d, &
-                       open_h5_group,       &
-                       get_step_group_name
     use options, only : verbose
     use parameters, only : extent, hli
     use parcel_ellipse, only : get_angles
@@ -44,51 +37,6 @@ module parcel_container
             ! works across periodic edge
             delx = delx - extent(1) * dble(int(delx * hli(1)))
         end function get_delx
-
-        subroutine write_h5_parcels(iter)
-            integer, intent(in)           :: iter ! iteration
-            integer(hid_t)                :: group
-            integer(hid_t)                :: step_group
-            character(:), allocatable     :: step
-            character(:), allocatable     :: name
-            double precision, allocatable :: angle(:)
-
-            step = trim(get_step_group_name(iter))
-
-            ! create or open groups
-            name = step // "/parcels"
-            step_group = open_h5_group(step)
-            group = open_h5_group(name)
-
-            !
-            ! write parcel data
-            !
-
-            call write_h5_dataset_2d(name, "position", parcels%position(1:n_parcels, :))
-            call write_h5_dataset_2d(name, "velocity", parcels%velocity(1:n_parcels, :))
-            call write_h5_dataset_1d(name, "vorticity", parcels%vorticity(1:n_parcels))
-
-            if (allocated(parcels%stretch)) then
-                call write_h5_dataset_1d(name, "stretch", parcels%stretch(1:n_parcels))
-            endif
-
-            call write_h5_dataset_1d(name, "volume", parcels%volume(1:n_parcels))
-
-            call write_h5_dataset_1d(name, "buoyancy", parcels%buoyancy(1:n_parcels))
-
-            call write_h5_dataset_1d(name, "humidity", parcels%humidity(1:n_parcels))
-
-            if (allocated(parcels%B)) then
-                call write_h5_dataset_2d(name, "B", parcels%B(1:n_parcels, :))
-
-                angle = get_angles(parcels%B, parcels%volume, n_parcels)
-                call write_h5_dataset_1d(name, "orientation", angle)
-            endif
-
-            call h5gclose_f(group, h5err)
-            call h5gclose_f(step_group, h5err)
-
-        end subroutine write_h5_parcels
 
 
         ! overwrite parcel n with parcel m

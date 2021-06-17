@@ -6,95 +6,135 @@ from matplotlib.patches import Ellipse, Circle
 class H5Reader:
 
     def __init__(self):
-        self.h5file = None
+        self._h5file = None
+
+        # either a field or parcel file
+        self._h5type = None
 
 
     def open(self, fname):
         if not os.path.exists(fname):
             raise IOError("File '" + fname + "' does not exist.")
-        self.h5file = h5py.File(fname, 'r')
+        self._h5file = h5py.File(fname, 'r')
+        self._h5type = self.get_global_attribute('output_type')
 
 
     def close(self):
-        self.h5file.close()
+        self._h5file.close()
+
+    @property
+    def is_parcel_file(self):
+        return self._h5type == 'parcels'
 
     def get_num_steps(self):
-        return self.h5file['/'].attrs['nsteps'][0]
+        return self._h5file.attrs['nsteps'][0]
 
     def get_box_extent(self):
-        return np.array(self.h5file['box'].attrs['extent'])
+        return np.array(self._h5file['box'].attrs['extent'])
 
 
     def get_box_ncells(self):
-        return np.array(self.h5file['box'].attrs['ncells'])
+        return np.array(self._h5file['box'].attrs['ncells'])
 
-
+    @property
     def is_elliptic(self):
-        return bool(self.h5file['parcel'].attrs['is_elliptic'])
+        return bool(self.get_parcel_option('is_elliptic'))
 
-    def get_parcel_info(self, name):
-        if not name in self.h5file['parcel'].attrs.keys():
-            raise IOError("Parcel info '" + name + "' unknown.")
-        return self.h5file['parcel'].attrs[name]
+
+    def get_parcel_option(self, name):
+        if not name in self._h5file['options']['parcel'].attrs.keys():
+            raise IOError("Parcel options '" + name + "' unknown.")
+        opt = self._h5file['options']['parcel'].attrs[name][0]
+        if isinstance(opt, np.bytes_):
+            # 16 June 2021
+            # https://stackoverflow.com/questions/35576999/how-to-read-strings-from-hdf5-dataset-using-h5py
+            opt = opt.decode()
+        return opt
 
 
     def get_box_origin(self):
-        return np.array(self.h5file['box'].attrs['origin'])
+        return np.array(self._h5file['box'].attrs['origin'])
 
-    def get_diagnostic(self, name):
-        s = self._get_step_string(0)
-        if not name in self.h5file[s]['diagnostics'].attrs.keys():
-            raise IOError("Diagnostic '" + name + "' unknown.")
 
-        nsteps = self.get_num_steps()
-        shape = np.array(self.h5file[s]['diagnostics'].attrs[name].shape)
-        shape[0] = nsteps
-        data = np.zeros(shape)
-        for step in range(nsteps):
-            s = self._get_step_string(step)
-            data[step] = np.array(self.h5file[s]['diagnostics'].attrs[name])
-        return data
-
-    def get_parcel_dataset(self, step, name):
+    def get_dataset(self, step, name):
         s = self._get_step_string(step)
-        if not name in self.h5file[s]['parcels'].keys():
-            raise IOError("Parcel dataset '" + name + "' unknown.")
-        return np.array(self.h5file[s]['parcels'][name])
+        if not name in self._h5file[s].keys():
+            raise IOError("Dataset '" + name + "' unknown.")
+        return np.array(self._h5file[s][name])
 
-    def get_parcel_min_max(self, name):
+
+    def get_dataset_min_max(self, name):
         nsteps = self.get_num_steps()
-        data = self.get_parcel_dataset(0, name)
+        data = self.get_dataset(0, name)
         vmax = data.max()
         vmin = data.min()
         for step in range(1, nsteps):
-            data = self.get_parcel_dataset(step, name)
+            data = self.get_dataset(step, name)
             vmax = max(vmax, data.max())
             vmin = min(vmin, data.min())
         return vmin, vmax
 
-    def get_field_dataset(self, step, name):
+
+    def get_global_attribute_names(self):
+        return list(self._h5file.attrs.keys())
+
+
+    def get_global_attribute(self, name):
+        if not name in self._h5file.attrs.keys():
+            raise IOError("Global attribute '" + name + "' unknown.")
+        attr = self._h5file.attrs[name][0]
+        if isinstance(attr, np.bytes_):
+            attr = attr.decode()
+        return attr
+
+
+    def get_step_attribute_names(self):
         s = self._get_step_string(step)
-        if not name in self.h5file[s]['fields'].keys():
-            raise IOError("Field dataset '" + name + "' unknown.")
-        return np.array(self.h5file[s]['fields'][name])
+        return list(self._h5file[s].attrs.keys())
+
 
     def get_step_attribute(self, step, name):
         s = self._get_step_string(step)
-        if not name in self.h5file[s].attrs.keys():
+        if not name in self._h5file[s].attrs.keys():
             raise IOError("Step attribute '" + name + "' unknown.")
-        return self.h5file[s].attrs[name]
+        return self._h5file[s].attrs[name]
+
+
+    def get_diagnostic_names(self):
+        return self.get_step_attribute_names()
+
+
+    def get_diagnostic(self, name):
+        s = self._get_step_string(0)
+        if not name in self._h5file[s].attrs.keys():
+            raise IOError("Attribute '" + name + "' unknown.")
+
+        nsteps = self.get_num_steps()
+        shape = np.array(self._h5file[s].attrs[name].shape)
+        shape[0] = nsteps
+        data = np.zeros(shape)
+        for step in range(nsteps):
+            s = self._get_step_string(step)
+            data[step] = np.array(self._h5file[s].attrs[name])
+        return data
+
 
     def get_num_parcels(self, step):
+        if not self.is_parcel_file:
+            raise IOError('Not a parcel output file.')
         return self.get_step_attribute(step, 'num parcel')[0]
 
-    def get_ellipses(self, step):
-        position = self.get_parcel_dataset(step, 'position')
-        V = self.get_parcel_dataset(step, 'volume')
-        s = self._get_step_string(step)
-        if 'B' in self.h5file[s]['parcels'].keys():
-            B = self.get_parcel_dataset(step, 'B')
 
-            angle = self.get_parcel_dataset(step, 'orientation')
+    def get_ellipses(self, step):
+        if not self.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+        position = self.get_dataset(step, 'position')
+        V = self.get_dataset(step, 'volume')
+        s = self._get_step_string(step)
+        if 'B' in self._h5file[s].keys():
+            B = self.get_dataset(step, 'B')
+
+            angle = self.get_dataset(step, 'orientation')
 
             B22 = self._get_B22(B[0, :], B[1, :], V)
             a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
@@ -111,12 +151,14 @@ class H5Reader:
                     for i in range(len(V))]
 
     def get_ellipses_for_bokeh(self, step):
-        position = self.get_parcel_dataset(step, 'position')
-        V = self.get_parcel_dataset(step, 'volume')
+        if not self.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+        position = self.get_dataset(step, 'position')
+        V = self.get_dataset(step, 'volume')
         s = self._get_step_string(step)
-        if 'B' in self.h5file[s]['parcels'].keys():
-            B = self.get_parcel_dataset(step, 'B')
-            angle = self.get_parcel_dataset(step, 'orientation')
+        if 'B' in self._h5file[s].keys():
+            B = self.get_dataset(step, 'B')
+            angle = self.get_dataset(step, 'orientation')
             B22 = self._get_B22(B[0, :], B[1, :], V)
             a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
             b2 = (V / np.pi) ** 2 / a2
@@ -124,11 +166,14 @@ class H5Reader:
         else:
             return position[0,:],position[1, :],2 * np.sqrt(V[:]/np.pi),2 * np.sqrt(V[:]/np.pi),0.*position[1, :]
 
+
     def get_aspect_ratio(self, step):
-        V = self.get_parcel_dataset(step, 'volume')
+        if not self.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+        V = self.get_dataset(step, 'volume')
         s = self._get_step_string(step)
-        if 'B' in self.h5file[s]['parcels'].keys():
-            B = self.get_parcel_dataset(step, 'B')
+        if 'B' in self._h5file[s].keys():
+            B = self.get_dataset(step, 'B')
             B22 = self._get_B22(B[0, :], B[1, :], V)
             a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
             return a2 / V * np.pi

@@ -5,6 +5,7 @@ AM_FCFLAGS = -I $(top_builddir)/src/
 AM_LDFLAGS =						\
 	$(top_builddir)/src/parcels/*.o 		\
 	$(top_builddir)/src/utils/*.o			\
+	$(top_builddir)/src/hdf5/*.o			\
 	$(top_builddir)/src/fields/*.o			\
 	$(top_builddir)/src/tri_inversion.o
 

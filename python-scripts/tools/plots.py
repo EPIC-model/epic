@@ -20,7 +20,7 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
     if coloring == 'aspect-ratio':
         data = h5reader.get_aspect_ratio(step=step)
     else:
-        data = h5reader.get_parcel_dataset(step=step, name=coloring)
+        data = h5reader.get_dataset(step=step, name=coloring)
 
     ells = h5reader.get_ellipses(step=step)
     for j, e in enumerate(ells):
@@ -73,6 +73,9 @@ def plot_parcels(fname, begin=0, end=-1, show=False, fmt="png",
 
     h5reader.open(fname)
 
+    if not h5reader.is_parcel_file:
+        raise IOError('Not a parcel output file.')
+
     nsteps = h5reader.get_num_steps()
 
     if end == -1:
@@ -80,9 +83,9 @@ def plot_parcels(fname, begin=0, end=-1, show=False, fmt="png",
 
     if coloring == 'aspect-ratio':
         vmin = 1.0
-        vmax = h5reader.get_parcel_info('lambda')
+        vmax = h5reader.get_parcel_option('lambda')
     else:
-        vmin, vmax = h5reader.get_parcel_min_max(coloring)
+        vmin, vmax = h5reader.get_dataset_min_max(coloring)
 
     for i in range(begin, end+1):
         fig, ax = plt.subplots(figsize=(15, 14), dpi=300, num=i)
@@ -104,6 +107,9 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
 
     h5reader.open(fname)
 
+    if not h5reader.is_parcel_file:
+        raise IOError('Not a parcel output file.')
+
     nsteps = h5reader.get_num_steps()
 
     if step > nsteps - 1:
@@ -114,7 +120,7 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
     if parcel > num_parcels - 1:
         raise ValueError('Parcel index ' + str(parcel) + ' > ' + str(num_parcels - 1))
 
-    lam = h5reader.get_parcel_info('lambda')
+    lam = h5reader.get_parcel_option('lambda')
 
     # 19 Feb 2021
     # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
@@ -126,7 +132,7 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
 
     ell = h5reader.get_ellipses(step=step)[parcel]
 
-    vol = h5reader.get_parcel_dataset(step=step, name='volume')[parcel]
+    vol = h5reader.get_dataset(step=step, name='volume')[parcel]
     ratio = h5reader.get_aspect_ratio(step=step)[parcel]
     ab = vol / np.pi
     a = 1.02 * np.sqrt(ab * ratio)
@@ -171,7 +177,7 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
     cbar.draw_all()
     cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
 
-    phi = np.rad2deg(h5reader.get_parcel_dataset(step, 'orientation')[parcel])
+    phi = np.rad2deg(h5reader.get_dataset(step, 'orientation')[parcel])
     add_box(plt, label=r'ellipse orientation', value=phi, unit=r'$^\circ$', fmt='%-3.1f')
 
     plt.xlim([-1.2 * a, 1.2 * a])
@@ -196,6 +202,9 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
     """
     h5reader = H5Reader()
     h5reader.open(fname)
+
+    if h5reader.is_parcel_file:
+            raise IOError('Not a field output file.')
 
     nsteps = h5reader.get_num_steps()
 
@@ -249,6 +258,10 @@ def plot_rms_volume_error(fnames, show=False, fmt="png"):
     h5reader = H5Reader()
     for i, fname in enumerate(fnames):
         h5reader.open(fname)
+
+        if h5reader.is_parcel_file:
+            raise IOError('Not a field output file.')
+
         vrms = h5reader.get_diagnostic('rms volume error')
         h5reader.close()
 
@@ -282,6 +295,10 @@ def plot_max_volume_error(fnames, show=False, fmt="png"):
     h5reader = H5Reader()
     for i, fname in enumerate(fnames):
         h5reader.open(fname)
+
+        if h5reader.is_parcel_file:
+            raise IOError('Not a field output file.')
+
         vrms = h5reader.get_diagnostic('max absolute normalised volume error')
         h5reader.close()
 
@@ -308,6 +325,9 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
     h5reader = H5Reader()
     h5reader.open(fname)
 
+    if not h5reader.is_parcel_file:
+        raise IOError('Not a parcel output file.')
+
     nsteps = h5reader.get_num_steps()
 
     lam_mean = np.zeros(nsteps)
@@ -319,7 +339,7 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
         lam_mean[step] = lam.mean()
         lam_std[step] = lam.std()
 
-    lmax = h5reader.get_parcel_info('lambda')[0]
+    lmax = h5reader.get_parcel_option('lambda')[0]
 
     h5reader.close()
 
@@ -355,6 +375,9 @@ def plot_parcel_number(fname, show=False, fmt="png"):
     h5reader = H5Reader()
     h5reader.open(fname)
 
+    if not h5reader.is_parcel_file:
+        raise IOError('Not a parcel output file.')
+
     nsteps = h5reader.get_num_steps()
 
     nparcels = np.zeros(nsteps)
@@ -388,6 +411,9 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
     h5reader = H5Reader()
     h5reader.open(fname)
 
+    if not h5reader.is_parcel_file:
+        raise IOError('Not a parcel output file.')
+
     nsteps = h5reader.get_num_steps()
 
     vol_mean = np.zeros(nsteps)
@@ -398,7 +424,7 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
     vcell = np.prod(extent / ncells)
 
     for step in range(nsteps):
-        vol = h5reader.get_parcel_dataset(step, 'volume')
+        vol = h5reader.get_dataset(step, 'volume')
 
         vol_mean[step] = vol.mean() / vcell
         vol_std[step] = vol.std() / vcell

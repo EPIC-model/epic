@@ -2,18 +2,17 @@
 !               This program writes fields to HDF5 in EPIC format.
 ! =============================================================================
 program models
+    use options, only : filename, verbose
     use taylorgreen
     use straka
     use robert
     use constants, only : pi
-    use writer
-    use hdf5
+    use h5_utils
+    use h5_writer
     implicit none
 
-    character(len=32) :: filename = ''
-    character(len=32) :: model = ''
-    character(len=32) :: h5fname = ''
-    logical           :: verbose = .false.
+    character(len=512) :: model = ''
+    character(len=512) :: h5fname = ''
 
     type box_type
         integer          :: ncells(2)   ! number of cells
@@ -29,21 +28,20 @@ program models
 
     call read_config_file
 
-    call generate_fields(trim(model))
+    call generate_fields
 
     contains
 
-        subroutine generate_fields(name)
-            character(*), intent(in) :: name
+        subroutine generate_fields
             double precision         :: dx(2)
             integer                  :: nx, nz
-            integer(hid_t)           :: group
+            integer(hid_t)           :: group, h5handle
 
             dx = box%extent / dble(box%ncells)
             nx = box%ncells(1)
             nz = box%ncells(2)
 
-            select case (trim(name))
+            select case (trim(model))
                 case ('TaylorGreen')
                     ! make origin and extent always a multiple of pi
                     box%origin = pi * box%origin
@@ -56,18 +54,14 @@ program models
                 case ('Robert')
                     call robert_init(trim(h5fname), nx, nz, box%origin, dx)
                 case default
-                    print *, "Invalid simulation type: '", trim(name), "'"
+                    print *, "Unknown model: '", trim(model), "'."
                     stop
             end select
 
             ! write box
-            call open_h5_file(filename)
-            group = open_h5_group("box")
-            call write_h5_integer_vector_attrib(group, "ncells", box%ncells)
-            call write_h5_double_vector_attrib(group, "extent", box%extent)
-            call write_h5_double_vector_attrib(group, "origin", box%origin)
-            call h5gclose_f(group, h5err)
-            call close_h5_file
+            call open_h5_file(filename, H5F_ACC_RDWR_F, h5handle)
+            call write_h5_box(h5handle)
+            call close_h5_file(h5handle)
         end subroutine generate_fields
 
 

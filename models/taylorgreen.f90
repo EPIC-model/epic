@@ -10,7 +10,7 @@
 !                       tg_flow%phase = (/d, e/)
 ! =============================================================================
 module taylorgreen
-    use writer
+    use h5_writer
     use constants, only : pi, f12, zero, one, two
     implicit none
 
@@ -34,14 +34,16 @@ module taylorgreen
 
 
     contains
-        subroutine taylorgreen_init(filename, nx, nz, origin, dx)
-            character(*),     intent(in) :: filename
+        subroutine taylorgreen_init(h5fname, nx, nz, origin, dx)
+            character(*),     intent(in) :: h5fname
             integer,          intent(in) :: nx, nz
             double precision, intent(in) :: origin(2)
             double precision, intent(in) :: dx(2)
             double precision             :: pos(2)
             double precision             :: vortg(0:nz, 0:nx-1)
             integer                      :: i, j
+            integer(hid_t)               :: h5handle
+            logical                      :: exists = .true.
 
             do j = 0, nz
                 do i = 0, nx - 1
@@ -50,9 +52,16 @@ module taylorgreen
                 enddo
             enddo
 
-            call open_h5_file(filename)
-            call write_h5_dataset_2d('/', 'vorticity', vortg)
-            call close_h5_file
+            ! check whether file exists
+            inquire(file=h5fname, exist=exists)
+            if (exists) then
+                print *, "File '" // h5fname // "'already exists."
+                stop
+            endif
+
+            call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5handle)
+            call write_h5_dataset_2d(h5handle, '/', 'vorticity', vortg)
+            call close_h5_file(h5handle)
 
         end subroutine taylorgreen_init
 

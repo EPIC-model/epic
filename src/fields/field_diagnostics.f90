@@ -5,13 +5,8 @@ module field_diagnostics
     use constants, only : zero
     use parameters, only : vcell, nx, nz, ngrid
     use fields
-    use hdf5
-    use writer, only : h5file,                         &
-                       h5err,                          &
-                       write_h5_double_scalar_attrib,  &
-                       write_h5_integer_scalar_attrib, &
-                       open_h5_group,                  &
-                       get_step_group_name
+    use h5_utils
+    use h5_writer
     implicit none
 
 
@@ -34,21 +29,22 @@ module field_diagnostics
         end function get_rms_volume_error
 
 
-        subroutine write_h5_field_diagnostics(iter)
-            integer, intent(in)           :: iter ! iteration
+        subroutine write_h5_field_diagnostics(h5file_id, iter)
+            integer(hid_t), intent(in)    :: h5file_id
+            integer,        intent(in)    :: iter ! iteration
             integer(hid_t)                :: group
-            integer(hid_t)                :: step_group
-            character(:), allocatable     :: step
             character(:), allocatable     :: name
             double precision              :: rms_v, abserr_v
             integer                       :: max_npar, min_npar
+            logical                       :: created
 
-            step = trim(get_step_group_name(iter))
+            name = trim(get_step_group_name(iter))
 
-            ! create or open groups
-            name = step // "/diagnostics"
-            step_group = open_h5_group(step)
-            group = open_h5_group(name)
+            call create_h5_group(h5file_id, name, group, created)
+
+            if (.not. created) then
+                call open_h5_group(h5file_id, name, group)
+            endif
 
             !
             ! write diagnostics
@@ -61,14 +57,12 @@ module field_diagnostics
             call write_h5_double_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
 
             max_npar = maxval(nparg)
-            call write_h5_integer_scalar_attrib(group, "max num parcels per cell", max_npar)
+            call write_h5_int_scalar_attrib(group, "max num parcels per cell", max_npar)
 
             min_npar = minval(nparg)
-            call write_h5_integer_scalar_attrib(group, "min num parcels per cell", min_npar)
+            call write_h5_int_scalar_attrib(group, "min num parcels per cell", min_npar)
 
-            ! close all
-            call h5gclose_f(group, h5err)
-            call h5gclose_f(step_group, h5err)
+            call close_h5_group(group)
         end subroutine write_h5_field_diagnostics
 
 end module field_diagnostics

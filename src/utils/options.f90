@@ -12,21 +12,25 @@ module options
     logical :: verbose = .false.
 
     ! configuration file
-    character(len=64) :: filename = ''
+    character(len=512) :: filename = ''
 
     ! field input file
-    character(len=32)   :: field_file = ''
+    character(len=512)  :: field_file = ''
     double precision    :: field_tol  = 1.0d-10
 
     !
     ! output options
     !
-    type output_info_type
-        integer                     :: h5freq   = 1
-        character(len=32)           :: h5fname  = ''
-    end type output_info_type
+    type h5_info
+        integer             :: h5_field_freq    = 1
+        logical             :: h5_write_fields  = .true.
+        integer             :: h5_parcel_freq   = 1
+        logical             :: h5_overwrite     = .false.
+        logical             :: h5_write_parcels = .true.
+        character(len=512)  :: h5_basename      = ''
+    end type h5_info
 
-    type(output_info_type) :: output
+    type(h5_info) :: output
 
     !
     ! domain options
