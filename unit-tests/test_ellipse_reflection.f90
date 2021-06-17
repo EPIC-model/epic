@@ -10,19 +10,19 @@ program test_ellipse_reflection
     use constants, only : pi, zero, one, two, three, four, f12, f14
     use parcel_container
     use parcel_bc, only : apply_reflective_bc
-    use options, only : box
     use parcel_ellipse, only : get_ab, get_angle
-    use parameters, only : update_parameters, lower, dx, vcell
+    use parameters, only : update_parameters, lower, dx, vcell, extent, nx, nz
     implicit none
 
     integer :: iter
     double precision :: angle, ab, B11, B12, B22, error, a2, b2
 
-    box%nc = (/10, 10/)
-    box%extent = (/one, one/)
-    box%origin  = (/zero, zero/)
+    nx = 10
+    nz = 10
+    extent = (/one, one/)
+    lower  = (/zero, zero/)
 
-    call update_parameters()
+    call update_parameters
 
     n_parcels = 1
     call parcel_alloc(1)

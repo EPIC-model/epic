@@ -21,12 +21,12 @@ class H5Reader:
     def get_num_steps(self):
         return self.h5file['/'].attrs['nsteps'][0]
 
-    def get_mesh_extent(self):
-        return np.array(self.h5file['mesh'].attrs['extent'])
+    def get_box_extent(self):
+        return np.array(self.h5file['box'].attrs['extent'])
 
 
-    def get_mesh_grid(self):
-        return np.array(self.h5file['mesh'].attrs['grid'])
+    def get_box_ncells(self):
+        return np.array(self.h5file['box'].attrs['ncells'])
 
 
     def is_elliptic(self):
@@ -38,8 +38,8 @@ class H5Reader:
         return self.h5file['parcel'].attrs[name]
 
 
-    def get_mesh_origin(self):
-        return np.array(self.h5file['mesh'].attrs['origin'])
+    def get_box_origin(self):
+        return np.array(self.h5file['box'].attrs['origin'])
 
     def get_diagnostic(self, name):
         s = self._get_step_string(0)

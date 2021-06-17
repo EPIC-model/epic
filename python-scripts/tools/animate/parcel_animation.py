@@ -28,8 +28,8 @@ class ParcelAnimation:
         self.h5reader.open(fname)
 
         self.nsteps = self.h5reader.get_num_steps()
-        self.extent = self.h5reader.get_mesh_extent()
-        self.origin = self.h5reader.get_mesh_origin()
+        self.extent = self.h5reader.get_box_extent()
+        self.origin = self.h5reader.get_box_origin()
         self.coloring = coloring
 
         fig = plt.figure(figsize=(12, 4), dpi=300)

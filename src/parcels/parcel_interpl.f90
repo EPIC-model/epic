@@ -10,10 +10,6 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipse
     use fields
-    use taylorgreen, only : get_flow_velocity, &
-                            get_flow_gradient, &
-                            get_flow_vorticity
-
     implicit none
 
     private :: par2grid_elliptic,       &
@@ -171,19 +167,19 @@ module parcel_interpl
             volg(1,    :) = volg(1,    :) + volg(-1,   :)
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
-            ! exclude halo cells to avoid division by zero
-            vortg(0:nz, :, 1) = vortg(0:nz, :, 1) / volg(0:nz, :)
+            vortg(0,  :) = two * vortg(0,  :)
+            vortg(nz, :) = two * vortg(nz, :)
+            vortg(1,    :) = vortg(1,    :) + vortg(-1,   :)
+            vortg(nz-1, :) = vortg(nz-1, :) + vortg(nz+1, :)
 
-            ! linear extrapolation
-            vortg(0,  :, 1) = two * vortg(1,    :, 1) - vortg(2,    :, 1)
-            vortg(nz, :, 1) = two * vortg(nz-1, :, 1) - vortg(nz-2, :, 1)
+            tbuoyg(0,  :) = two * tbuoyg(0,  :)
+            tbuoyg(nz, :) = two * tbuoyg(nz, :)
+            tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
+            tbuoyg(nz-1, :) = tbuoyg(nz-1, :) + tbuoyg(nz+1, :)
 
             ! exclude halo cells to avoid division by zero
+            vortg(0:nz, :) = vortg(0:nz, :) / volg(0:nz, :)
             tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
-
-            ! linear extrapolation
-            tbuoyg(0,  :) = two * tbuoyg(1,    :) - tbuoyg(2,    :)
-            tbuoyg(nz, :) = two * tbuoyg(nz-1, :) - tbuoyg(nz-2, :)
 
             ! sum halo contribution into internal cells
             ! (be aware that halo cell contribution at upper boundary
@@ -200,13 +196,9 @@ module parcel_interpl
         end subroutine par2grid
 
         subroutine par2grid_elliptic
-            integer           :: ncomp
             double precision  :: points(2, 2)
-            integer           :: n, p, c, l, i, j
+            integer           :: n, p, l, i, j
             double precision  :: pvol, pvor, weight
-
-            ! number of field components
-            ncomp = 1
 
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -233,12 +225,8 @@ module parcel_interpl
 
                         weight = 0.5d0 * weights(l) * pvol
 
-                        ! loop over field components
-                        do c = 1, ncomp
-                            pvor = parcels%vorticity(n, c)
-                            vortg(js(l), is(l), c) = vortg(js(l), is(l), c) &
-                                                   + weight * pvor
-                        enddo
+                        vortg(js(l), is(l)) = vortg(js(l), is(l)) &
+                                            + weight * parcels%vorticity(n)
 
                         tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
                                              + weight * parcels%buoyancy(n)
@@ -252,13 +240,9 @@ module parcel_interpl
 
 
         subroutine par2grid_non_elliptic
-            integer          :: ncomp
-            integer          :: n, c, l, i, j
+            integer          :: n, l, i, j
             double precision :: pos(2)
             double precision :: pvol, weight
-
-            ! number of field components
-            ncomp = 1
 
             do n = 1, n_parcels
 
@@ -280,12 +264,9 @@ module parcel_interpl
 
                     weight = pvol * weights(l)
 
-                    ! loop over field components
-                    do c = 1, ncomp
-                        ! the weight is halved due to 2 points per ellipse
-                        vortg(js(l), is(l), c) = vortg(js(l), is(l), c)  &
-                                               + weight * parcels%vorticity(n, c)
-                    enddo
+                    ! the weight is halved due to 2 points per ellipse
+                    vortg(js(l), is(l)) = vortg(js(l), is(l))  &
+                                        + weight * parcels%vorticity(n)
 
                     tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
                                          + weight * parcels%buoyancy(n)
@@ -298,7 +279,7 @@ module parcel_interpl
 
 
         subroutine grid2par(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
 
             if (parcel%is_elliptic) then
                    call grid2par_elliptic(vel, vor, vgrad)
@@ -310,7 +291,7 @@ module parcel_interpl
 
 
         subroutine grid2par_add(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
 
             if (parcel%is_elliptic) then
                    call grid2par_elliptic(vel, vor, vgrad, add=.true.)
@@ -322,7 +303,7 @@ module parcel_interpl
 
 
         subroutine grid2par_elliptic(vel, vor, vgrad, add)
-            double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
             logical, optional, intent(in)       :: add
             integer                             :: ncomp
             double precision                    :: points(2, 2), weight
@@ -335,11 +316,11 @@ module parcel_interpl
             if(present(add)) then
                if(add .eqv. .false.) then
                     vel(1:n_parcels, :) = zero
-                    vor(1:n_parcels, :) = zero
+                    vor(1:n_parcels)    = zero
                endif
             else
                vel(1:n_parcels, :) = zero
-               vor(1:n_parcels, :) = zero
+               vor(1:n_parcels)    = zero
             endif
 
             vgrad(1:n_parcels, :) = zero
@@ -375,7 +356,7 @@ module parcel_interpl
                                         + weight * velgradg(js(l), is(l), c)
                         enddo
 
-                        vor(n, 1) = vor(n, 1) + weight * vtend(js(l), is(l), 1)
+                        vor(n) = vor(n) + weight * vtend(js(l), is(l))
                     enddo
                 enddo
             enddo
@@ -384,7 +365,7 @@ module parcel_interpl
 
 
         subroutine grid2par_non_elliptic(vel, vor, vgrad, add)
-            double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
             logical, optional, intent(in)       :: add
             integer                             :: ncomp
             integer                             :: n, c, l
@@ -397,11 +378,11 @@ module parcel_interpl
             if(present(add)) then
                if(add .eqv. .false.) then
                    vel(1:n_parcels, :) = zero
-                   vor(1:n_parcels, :) = zero
+                   vor(1:n_parcels)    = zero
                endif
             else
                vel(1:n_parcels, :) = zero
-               vor(1:n_parcels, :) = zero
+               vor(1:n_parcels)    = zero
             endif
 
             vgrad(1:n_parcels, :) = zero
@@ -429,8 +410,8 @@ module parcel_interpl
                                     + weights(l) * velgradg(js(l), is(l), c)
                     enddo
 
-                    vor(n, 1) = vor(n, 1) &
-                              + weights(l) * vtend(js(l), is(l), 1)
+                    vor(n) = vor(n) &
+                           + weights(l) * vtend(js(l), is(l))
 
                 enddo
             enddo

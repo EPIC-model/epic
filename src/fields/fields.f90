@@ -20,12 +20,12 @@ module fields
     ! Due to periodicity in x, the grid points in x go from 0 to nx-1
     double precision, allocatable, dimension(:, :, :) :: &
         velog,     &   ! velocity vector field (has 1 halo cell layer in z)
-        velgradg,  &   ! velocity gradient tensor (has 1 halo cell layer in z)
-        vortg,     &   ! vorticity scalar field
-        vtend          ! vorticity tendency
+        velgradg       ! velocity gradient tensor (has 1 halo cell layer in z)
 
     double precision, allocatable, dimension(:, :) :: &
-        tbuoyg,     &   ! buoyancy (has 1 halo cell layer in z)
+        vortg,     &   ! vorticity scalar field
+        vtend,     &   ! vorticity tendency
+        tbuoyg,    &   ! buoyancy (has 1 halo cell layer in z)
         humg,      &   ! specific humidity
         humlig,    &   ! condensed humidity
         volg           ! volume scalar field (has 1 halo cell layer in z)
@@ -47,9 +47,9 @@ module fields
 
             allocate(volg(-1:nz+1, 0:nx-1))
 
-            allocate(vortg(-1:nz+1, 0:nx-1, 1))
+            allocate(vortg(-1:nz+1, 0:nx-1))
 
-            allocate(vtend(-1:nz+1, 0:nx-1, 1))
+            allocate(vtend(-1:nz+1, 0:nx-1))
 
             allocate(tbuoyg(-1:nz+1, 0:nx-1))
 
@@ -147,14 +147,14 @@ module fields
             call write_h5_dataset_2d(name, "humidity", &
                                      humg(0:nz, 0:nx-1))
 
-            call write_h5_dataset_3d(name, "vorticity", &
-                                     vortg(0:nz, 0:nx-1, :))
+            call write_h5_dataset_2d(name, "vorticity", &
+                                     vortg(0:nz, 0:nx-1))
 
             call write_h5_dataset_2d(name, "liquid humidity", &
                                      humlig(0:nz, 0:nx-1))
 
-            call write_h5_dataset_3d(name, "tendency", &
-                                     vtend(0:nz, 0:nx-1, :))
+            call write_h5_dataset_2d(name, "tendency", &
+                                     vtend(0:nz, 0:nx-1))
 
             call write_h5_int_dataset_2d(name, "num parcels per cell", &
                                          nparg(0:nz-1, :))

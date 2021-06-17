@@ -121,8 +121,8 @@ module parcel_merge
             parcels%humidity(ib) = mu1 * parcels%humidity(is) &
                                  + mu2 * parcels%humidity(ib)
 
-            parcels%vorticity(ib, 1) = mu1 * parcels%vorticity(is, 1) &
-                                     + mu2 * parcels%vorticity(ib, 1)
+            parcels%vorticity(ib) = mu1 * parcels%vorticity(is) &
+                                  + mu2 * parcels%vorticity(ib)
 
             ! update volume
             parcels%volume(ib) = ab * pi
@@ -223,7 +223,7 @@ module parcel_merge
                     ! buoyancy and humidity
                     buoym(l) = parcels%volume(ib) * parcels%buoyancy(ib)
                     hum(l) = parcels%volume(ib) * parcels%humidity(ib)
-                    vortm(l) = parcels%volume(ib) * parcels%vorticity(ib, 1)
+                    vortm(l) = parcels%volume(ib) * parcels%vorticity(ib)
 
                     B11m(l) = zero
                     B12m(l) = zero
@@ -248,7 +248,7 @@ module parcel_merge
                 ! Accumulate buoyancy and humidity
                 buoym(n) = buoym(n) + parcels%volume(is) * parcels%buoyancy(is)
                 hum(n) = hum(n) + parcels%volume(is) * parcels%humidity(is)
-                vortm(n) = vortm(n) + parcels%volume(is) * parcels%vorticity(is, 1)
+                vortm(n) = vortm(n) + parcels%volume(is) * parcels%vorticity(is)
             enddo
 
             ! Obtain the merged parcel centres
@@ -297,7 +297,7 @@ module parcel_merge
 
                     parcels%buoyancy(ib) = buoym(l)
                     parcels%humidity(ib) = hum(l)
-                    parcels%vorticity(ib, 1) = vortm(l)
+                    parcels%vorticity(ib) = vortm(l)
 
                 endif
 

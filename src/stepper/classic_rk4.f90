@@ -18,13 +18,14 @@ module classic_rk4
     ! classic_rk4 temporaries
     double precision, allocatable, dimension(:, :) :: &
         veo,                        &   ! sum of velocities
-        vor1o, vor2o, vor3o, vor4o, &   ! vorticity integration
         strain,                     &   ! strain at parcel location
         b1o, b2o, b3o, b4o,         &   ! B matrix integration
-        inipos, inivor, iniB            ! input parcel attributes (before RK4 step)
+        inipos, iniB                    ! input parcel attributes (before RK4 step)
 
     double precision, allocatable, dimension(:) :: &
-        seo                         ! sum of stretches (non-elliptic only)
+        inivor,                     &   ! input parcel vorticity (before RK4 step)
+        vor1o, vor2o, vor3o, vor4o, &   ! vorticity integration
+        seo                             ! sum of stretches (non-elliptic only)
 
 
 
@@ -35,14 +36,14 @@ module classic_rk4
             integer, intent(in) :: num
 
             allocate(inipos(num, 2))
-            allocate(inivor(num, 1))
+            allocate(inivor(num))
 
             allocate(veo(num, 2))
 
-            allocate(vor1o(num, 1))
-            allocate(vor2o(num, 1))
-            allocate(vor3o(num, 1))
-            allocate(vor4o(num, 1))
+            allocate(vor1o(num))
+            allocate(vor2o(num))
+            allocate(vor3o(num))
+            allocate(vor4o(num))
 
             allocate(strain(num, 4))
 
@@ -109,7 +110,7 @@ module classic_rk4
 
             ! copy input position and B matrix
             inipos(1:n_parcels,:) = parcels%position(1:n_parcels,:)
-            inivor(1:n_parcels,:) = parcels%vorticity(1:n_parcels,:)
+            inivor(1:n_parcels) = parcels%vorticity(1:n_parcels)
             iniB(1:n_parcels,:) = parcels%B(1:n_parcels,:)
 
             call par2grid
@@ -125,7 +126,7 @@ module classic_rk4
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                                             + f12 * dt * parcels%velocity(1:n_parcels,:)
-            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + f12 * dt * vor1o(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels) = inivor(1:n_parcels) + f12 * dt * vor1o(1:n_parcels)
             parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + f12 * dt * b1o(1:n_parcels,:)
 
             ! apply position BC
@@ -145,7 +146,7 @@ module classic_rk4
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                                             + f12 * dt * parcels%velocity(1:n_parcels,:)
-            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + f12 * dt * vor2o(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels) = inivor(1:n_parcels) + f12 * dt * vor2o(1:n_parcels)
             parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + f12 * dt * b2o(1:n_parcels,:)
 
             ! apply position BC
@@ -165,7 +166,7 @@ module classic_rk4
 
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                                             + dt * parcels%velocity(1:n_parcels,:)
-            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) + dt * vor3o(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels) = inivor(1:n_parcels) + dt * vor3o(1:n_parcels)
             parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) + dt * b3o(1:n_parcels,:)
 
             ! apply position BC
@@ -188,9 +189,9 @@ module classic_rk4
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                                             + dt * parcels%velocity(1:n_parcels, :)
 
-            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                             + dt * f16 * (vor1o(1:n_parcels,:) + two &
-                             * vor2o(1:n_parcels,:) + two * vor3o(1:n_parcels,:) + vor4o(1:n_parcels,:))
+            parcels%vorticity(1:n_parcels) = inivor(1:n_parcels) &
+                             + dt * f16 * (vor1o(1:n_parcels) + two &
+                             * vor2o(1:n_parcels) + two * vor3o(1:n_parcels) + vor4o(1:n_parcels))
 
             parcels%B(1:n_parcels,:) = iniB(1:n_parcels, :) &
                       + dt * f16 * (b1o(1:n_parcels,:) + two * b2o(1:n_parcels,:) &
@@ -207,7 +208,7 @@ module classic_rk4
 
             ! copy input position and B matrix
             inipos(1:n_parcels,:) = parcels%position(1:n_parcels,:)
-            inivor(1:n_parcels,:) = parcels%vorticity(1:n_parcels,:)
+            inivor(1:n_parcels) = parcels%vorticity(1:n_parcels)
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
@@ -221,8 +222,8 @@ module classic_rk4
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                                           + f12 * dt * parcels%velocity(1:n_parcels,:)
 
-            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                                          + f12 * dt * vor1o(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels) = inivor(1:n_parcels) &
+                                          + f12 * dt * vor1o(1:n_parcels)
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
@@ -240,8 +241,8 @@ module classic_rk4
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                                           + f12 * dt * parcels%velocity(1:n_parcels,:)
 
-            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                                          + f12 * dt * vor2o(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels) = inivor(1:n_parcels) &
+                                          + f12 * dt * vor2o(1:n_parcels)
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
@@ -261,8 +262,8 @@ module classic_rk4
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                                             + dt * parcels%velocity(1:n_parcels,:)
 
-            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                                            + dt * vor3o(1:n_parcels,:)
+            parcels%vorticity(1:n_parcels) = inivor(1:n_parcels) &
+                                            + dt * vor3o(1:n_parcels)
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
@@ -287,9 +288,9 @@ module classic_rk4
             parcels%position(1:n_parcels,:) = inipos(1:n_parcels, :) &
                              + dt * parcels%velocity(1:n_parcels, :)
 
-            parcels%vorticity(1:n_parcels,:) = inivor(1:n_parcels, :) &
-                             + dt * f16 * (vor1o(1:n_parcels,:) + two &
-                             * vor2o(1:n_parcels,:) + two * vor3o(1:n_parcels,:) + vor4o(1:n_parcels,:))
+            parcels%vorticity(1:n_parcels) = inivor(1:n_parcels) &
+                             + dt * f16 * (vor1o(1:n_parcels) + two &
+                             * vor2o(1:n_parcels) + two * vor3o(1:n_parcels) + vor4o(1:n_parcels))
 
             ! apply position BC
             call apply_parcel_bc(parcels%position, parcels%velocity)
