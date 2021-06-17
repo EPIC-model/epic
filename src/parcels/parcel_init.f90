@@ -320,7 +320,7 @@ module parcel_init
 
             do while (rerr .gt. rtol)
                 !Compute residual:
-                resi(0:nz, :) = zero
+                resi = zero
                 do n = 1, n_parcels
                     do l = 1, ngp
                         resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) &
@@ -352,7 +352,8 @@ module parcel_init
             enddo
 
             !Finally divide by parcel volume to define attribute:
-            par(1:n_parcels) = par(1:n_parcels) / parcels%volume(1:n_parcels) * vcell
+            ! (multiply with vcell since algorithm is designed for volume fractions)
+            par(1:n_parcels) = vcell * par(1:n_parcels) / parcels%volume(1:n_parcels)
 
         end subroutine gen_parcel_scalar_attr
 
