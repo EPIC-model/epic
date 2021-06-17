@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_trilinear
     use unit_test
-    use constants, only : pi, zero, one
+    use constants, only : pi, zero, one, f32
     use parcel_container
     use parcel_interpl, only : par2grid
     use options, only : parcel
@@ -19,7 +19,7 @@ program test_trilinear
 
     nx = 32
     nz = 32
-    lower  = (/-1.5, -1.5/)
+    lower  = (/-f32, -f32/)
     extent =  (/0.4d0, 0.4d0/)
 
     call update_parameters

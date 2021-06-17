@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_tri_inversion
     use unit_test
-    use constants, only : pi, twopi, one, zero, two, four, f12
+    use constants, only : pi, twopi, one, zero, two, four, f12, f32
     use parcel_container
     use tri_inversion
     use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz, hl, ncell
@@ -18,7 +18,7 @@ program test_tri_inversion
 
     nx = 40
     nz = 20
-    lower  = (/-1.5, -1.5/)
+    lower  = (/-f32, -f32/)
     extent = (/four, two/)
 
     call update_parameters

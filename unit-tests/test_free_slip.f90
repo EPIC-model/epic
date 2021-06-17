@@ -11,7 +11,7 @@
 ! =============================================================================
 program test_free_slip
     use unit_test
-    use constants, only : pi, zero, one, two, f12
+    use constants, only : pi, zero, one, two, f12, f32
     use parcel_container
     use parcel_interpl, only : vol2grid
     use options, only : parcel
@@ -26,7 +26,7 @@ program test_free_slip
 
     nx = 4
     nz = 4
-    lower  = (/-1.5d0, -1.5d0/)
+    lower  = (/-f32, -f32/)
     extent = (/0.4d0, 0.4d0/)
 
     call update_parameters

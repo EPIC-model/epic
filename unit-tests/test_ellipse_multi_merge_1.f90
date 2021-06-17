@@ -8,7 +8,7 @@
 ! =============================================================================
 program test_ellipse_multi_merge_1
     use unit_test
-    use constants, only : pi, three, four, five
+    use constants, only : pi, three, four, five, f32
     use parcel_container
     use parcel_merge, only : merge_ellipses
     use options, only : parcel
@@ -77,7 +77,7 @@ program test_ellipse_multi_merge_1
             parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
             parcels%B(1, 2) = zero
-            parcels%buoyancy(1) = 1.5d0
+            parcels%buoyancy(1) = f32
             parcels%humidity(1) = 1.3d0
 
             ! small parcel left
@@ -113,7 +113,7 @@ program test_ellipse_multi_merge_1
             parcels%volume(5) = a2b2 * pi
             parcels%B(5, 1) = a2b2
             parcels%B(5, 2) = zero
-            parcels%buoyancy(5) = 1.5d0
+            parcels%buoyancy(5) = f32
             parcels%humidity(5) = 1.4d0
         end subroutine parcel_setup
 
@@ -128,7 +128,7 @@ program test_ellipse_multi_merge_1
             B22 = ab
             vol = ab * pi
 
-            buoy = (1.5d0 * a1b1 + (1.8d0 + 1.4d0 + 1.7d0 + 1.5d0) * a2b2) / ab
+            buoy = (f32 * a1b1 + (1.8d0 + 1.4d0 + 1.7d0 + f32) * a2b2) / ab
             hum  = (1.3d0 * a1b1 + (1.2d0 + 1.1d0 + 1.0d0 + 1.4d0) * a2b2) / ab
 
             max_err = zero

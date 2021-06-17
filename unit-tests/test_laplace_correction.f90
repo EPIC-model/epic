@@ -7,7 +7,7 @@
 ! =============================================================================
 program test_laplace_correction
     use unit_test
-    use constants, only : pi, one, zero
+    use constants, only : pi, one, zero, f32
     use parcel_container
     use parcel_correction
     use parcel_interpl, only : vol2grid
@@ -24,7 +24,7 @@ program test_laplace_correction
 
     nx = 32
     nz = 32
-    lower  = (/-1.5d0, -1.5d0/)
+    lower  = (/-f32, -f32/)
     extent = (/0.4d0, 0.4d0/)
 
     call update_parameters

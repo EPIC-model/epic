@@ -2,11 +2,11 @@
 !                     Test ellipse bi-merge vs multi-merge
 !
 !         This unit test is like test_ellipse_multi_merge_2 but the ellipses
-!         are centred at (1.5, 0.2). Hence, this checks periodicity in x.
+!         are centred at (f32, 0.2). Hence, this checks periodicity in x.
 ! =============================================================================
 program test_ellipse_bi_vs_multi_merge
     use unit_test
-    use constants, only : pi, one, two, four
+    use constants, only : pi, one, two, four, f32
     use parcel_container
     use parcel_merge, only : merge_ellipses
     use options, only : parcel
@@ -100,14 +100,14 @@ program test_ellipse_bi_vs_multi_merge
             d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
 
             n_parcels = 2
-            parcels%position(1, 1) = 1.5d0
+            parcels%position(1, 1) = f32
             parcels%position(1, 2) = 0.2d0
             parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
             parcels%B(1, 2) = zero
 
             ! small parcel left
-            parcels%position(2, 1) = 1.5d0 - d
+            parcels%position(2, 1) = f32 - d
             parcels%position(2, 2) = 0.2d0 - d
             parcels%volume(2) = a2b2 * pi
             parcels%B(2, 1) = a2b2
