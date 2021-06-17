@@ -2,7 +2,7 @@ module parcel_hdf5
     use parcel_container, only : parcels, n_parcels
     use parcel_diagnostics, only : write_h5_parcel_diagnostics
     use parcel_ellipse, only : get_angles
-    use options, only : verbose, parcel, time, output, stepper
+    use options, only : verbose, parcel, time, output
     use hdf5
     use h5_utils
     use h5_writer
