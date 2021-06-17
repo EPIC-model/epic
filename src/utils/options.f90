@@ -58,11 +58,6 @@ module options
 
     type(parcel_type) :: parcel
 
-    !
-    ! stepper options
-    !
-    character(len=16) :: stepper = 'classic-rk4'
-
     ! time limit
     type time_info_type
         double precision :: limit       = zero       ! time limit
