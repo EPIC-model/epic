@@ -167,7 +167,6 @@ module parcel_interpl
             volg(1,    :) = volg(1,    :) + volg(-1,   :)
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
-            ! linear extrapolation
             vortg(0,  :) = two * vortg(0,  :)
             vortg(nz, :) = two * vortg(nz, :)
             vortg(1,    :) = vortg(1,    :) + vortg(-1,   :)

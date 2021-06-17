@@ -15,7 +15,8 @@ module options
     character(len=64) :: filename = ''
 
     ! field input file
-    character(len=32)   :: model = ''
+    character(len=32)   :: field_file = ''
+    double precision    :: field_tol  = 1.0d-10
 
     !
     ! output options

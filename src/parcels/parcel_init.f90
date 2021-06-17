@@ -2,7 +2,7 @@
 !               This module initializes parcel default values.
 ! =============================================================================
 module parcel_init
-    use options, only : parcel, output, verbose
+    use options, only : parcel, output, verbose, field_tol
     use constants, only : zero, two, one, f12
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
@@ -27,12 +27,13 @@ module parcel_init
         ! Set default values for parcel attributes
         ! Attention: This subroutine assumes that the parcel
         !            container is already allocated!
-        subroutine init_parcels(filename)
-            character(*), intent(in) :: filename
-            double precision         :: lam, ratio
+        subroutine init_parcels(fname, tol)
+            character(*),     intent(in) :: fname
+            double precision, intent(in) :: tol
+            double precision              :: lam, ratio
 
             ! read domain dimensions
-            call open_h5_file(filename)
+            call open_h5_file(fname)
             call read_h5_box(nx, nz, extent, lower)
             call close_h5_file
 
@@ -80,7 +81,7 @@ module parcel_init
             parcels%buoyancy(1:n_parcels) = zero
             parcels%humidity(1:n_parcels) = zero
 
-            call init_from_grids(filename)
+            call init_from_grids(fname, tol)
 
         end subroutine init_parcels
 
@@ -132,6 +133,11 @@ module parcel_init
                     enddo
                 enddo
             enddo
+
+            if (.not. n_parcels == k - 1) then
+                print *, "Number of parcels disagree!"
+                stop
+            endif
         end subroutine init_regular_positions
 
         subroutine init_refine(lam)
@@ -152,18 +158,19 @@ module parcel_init
         end subroutine init_refine
 
 
-        subroutine init_from_grids(filename)
-            character(*), intent(in)      :: filename
+        subroutine init_from_grids(fname, tol)
+            character(*),     intent(in)  :: fname
+            double precision, intent(in)  :: tol
             double precision, allocatable :: buffer_2d(:, :)
             double precision              :: field_2d(-1:nz+1, 0:nx-1)
 
-            call open_h5_file(filename)
+            call open_h5_file(fname)
 
             if (has_dataset('vorticity')) then
                 call read_h5_dataset_2d('vorticity', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
-                call gen_parcel_scalar_attr(field_2d, 1.0d-9, parcels%vorticity)
+                call gen_parcel_scalar_attr(field_2d, tol, parcels%vorticity)
             endif
 
 
@@ -171,7 +178,7 @@ module parcel_init
                 call read_h5_dataset_2d('buoyancy', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
-                call gen_parcel_scalar_attr(field_2d, 1.0d-9, parcels%buoyancy)
+                call gen_parcel_scalar_attr(field_2d, tol, parcels%buoyancy)
             endif
 
             call close_h5_file
@@ -226,8 +233,8 @@ module parcel_init
 
             resi(0:nz,:) = (field(0:nz,:) - avg_field) ** 2
 
-            rms = (f12 * sum(resi(0, :) + resi(nz, :)) &
-                       + sum(resi(1:nz-1,:))) / dble(ncell)
+            rms = dsqrt((f12 * sum(resi(0, :) + resi(nz, :)) &
+                             + sum(resi(1:nz-1,:))) / dble(ncell))
 
 
             if (rms == zero) then
