@@ -2,7 +2,7 @@
 !               This program writes fields to HDF5 in EPIC format.
 ! =============================================================================
 program models
-    use options, only : model, filename, verbose
+    use options, only : filename, verbose
     use taylorgreen
     use straka
     use robert
@@ -11,6 +11,7 @@ program models
     use h5_writer
     implicit none
 
+    character(len=512) :: model = ''
     character(len=512) :: h5fname = ''
 
     type box_type
@@ -27,12 +28,11 @@ program models
 
     call read_config_file
 
-    call generate_fields(trim(model))
+    call generate_fields
 
     contains
 
-        subroutine generate_fields(name)
-            character(*), intent(in) :: name
+        subroutine generate_fields
             double precision         :: dx(2)
             integer                  :: nx, nz
             integer(hid_t)           :: group, h5handle
@@ -41,7 +41,7 @@ program models
             nx = box%ncells(1)
             nz = box%ncells(2)
 
-            select case (trim(name))
+            select case (trim(model))
                 case ('TaylorGreen')
                     ! make origin and extent always a multiple of pi
                     box%origin = pi * box%origin
@@ -54,7 +54,7 @@ program models
                 case ('Robert')
                     call robert_init(trim(h5fname), nx, nz, box%origin, dx)
                 case default
-                    print *, "Invalid simulation type: '", trim(name), "'"
+                    print *, "Unknown model: '", trim(model), "'."
                     stop
             end select
 

@@ -7,7 +7,7 @@ program test_parcel_init
     use unit_test
     use constants, only : pi, zero, one, two, four, f12
     use parcel_container
-    use parcel_init, only : gen_parcel_scalar_attr
+    use parcel_init, only : gen_parcel_scalar_attr, unit_test_parcel_init_alloc
     use parcel_interpl, only : par2grid
     use parcel_ellipse, only : get_ab
     use fields, only : tbuoyg, field_default
@@ -77,6 +77,8 @@ program test_parcel_init
         enddo
     enddo
 
+    ! Prepare for "gen_parcel_scalar_attr"
+    call unit_test_parcel_init_alloc
 
     !---------------------------
     ! Generate parcel attribute:

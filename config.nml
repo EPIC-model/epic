@@ -1,6 +1,7 @@
 &EPIC
 
- model              = 'taylorgreen2d.hdf5'
+ field_file     = 'taylorgreen2d.hdf5'
+ field_tol      = 1.0e-9
 
  !
  ! h5 output info

@@ -6,7 +6,8 @@
 ! =============================================================================
 module h5_writer
     use options, only : allow_larger_anisotropy,    &
-                        output, verbose, model,     &
+                        output, verbose,            &
+                        field_file, field_tol,      &
                         parcel, time, stepper
     use parameters, only : nx, nz, lower, extent
     use hdf5
@@ -530,7 +531,8 @@ module h5_writer
 #ifdef ENABLE_VERBOSE
             call write_h5_logical_attrib(gopts, "verbose", verbose)
 #endif
-            call write_h5_char_scalar_attrib(gopts, "model", model)
+            call write_h5_char_scalar_attrib(gopts, "field_file", field_file)
+            call write_h5_double_scalar_attrib(gopts, "field_tol", field_tol)
 
             call create_h5_group(gopts, "parcel", group)
                 call write_h5_int_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)

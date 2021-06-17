@@ -37,7 +37,7 @@ program epic
     contains
 
         subroutine pre_run
-            use options, only : model, output
+            use options, only : field_file, field_tol, output
 
             call initialise_hdf5
 
@@ -46,7 +46,7 @@ program epic
 
             call parcel_alloc(max_num_parcels)
 
-            call init_parcels(model)
+            call init_parcels(field_file, field_tol)
 
             call rk4_alloc(max_num_parcels)
 
