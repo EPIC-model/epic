@@ -6,7 +6,7 @@
 ! =============================================================================
 program test_ellipse_bi_vs_multi_merge
     use unit_test
-    use constants, only : pi, one, two, four
+    use constants, only : pi, one, two, four, f23
     use parcel_container
     use parcel_merge, only : merge_ellipses
     use options, only : parcel
@@ -95,19 +95,19 @@ program test_ellipse_bi_vs_multi_merge
             double precision :: a1b1, a2b2, d
 
             a1b1 = 1.44d0
-            a2b2 = 0.25d0
+            a2b2 = f14
 
             d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
 
             n_parcels = 2
-            parcels%position(1, 1) = 1.5d0
+            parcels%position(1, 1) = f23
             parcels%position(1, 2) = 0.2d0
             parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
             parcels%B(1, 2) = zero
 
             ! small parcel left
-            parcels%position(2, 1) = 1.5d0 - d
+            parcels%position(2, 1) = f23 - d
             parcels%position(2, 2) = 0.2d0 - d
             parcels%volume(2) = a2b2 * pi
             parcels%B(2, 1) = a2b2

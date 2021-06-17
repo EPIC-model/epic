@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_parcel_init
     use unit_test
-    use constants, only : pi, zero, one, two, four, f12
+    use constants, only : pi, zero, one, two, four, f12, f23
     use parcel_container
     use parcel_init, only : gen_parcel_scalar_attr, unit_test_parcel_init_alloc
     use parcel_interpl, only : par2grid
@@ -29,7 +29,7 @@ program test_parcel_init
 
     nx = 64
     nz = 32
-    lower  = (/-1.5, -1.5/)
+    lower  = (/-f23, -f23/)
     extent = (/8.0d0, four/)
     lower = (/-four, -two/)
 

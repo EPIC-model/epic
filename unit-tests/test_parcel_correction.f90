@@ -7,7 +7,7 @@
 ! =============================================================================
 program test_parcel_correction
    use unit_test
-    use constants, only : pi, one, zero
+    use constants, only : pi, one, zero, f14, f23
     use parcel_container
     use parcel_correction
     use parcel_interpl, only : vol2grid
@@ -25,7 +25,7 @@ program test_parcel_correction
 
     nx = 32
     nz = 32
-    lower  = (/-1.5, -1.5/)
+    lower  = (/-f23, -f23/)
     extent =  (/0.4d0, 0.4d0/)
 
     call update_parameters
@@ -40,8 +40,8 @@ program test_parcel_correction
         do i = 0, nx-1
             do jj = 1, 4, 2
                 do ii = 1, 4, 2
-                    parcels%position(k, 1) = lower(1) + i * dx(1) + 0.25d0 * dx(1) * ii
-                    parcels%position(k, 2) = lower(2) + j * dx(2) + 0.25d0 * dx(2) * jj
+                    parcels%position(k, 1) = lower(1) + i * dx(1) + f14 * dx(1) * ii
+                    parcels%position(k, 2) = lower(2) + j * dx(2) + f14 * dx(2) * jj
 
                     ! add some deviation
                     parcels%position(k, 1) = (one + 1.0e-7) * parcels%position(k, 1)
@@ -56,7 +56,7 @@ program test_parcel_correction
 
     parcel%is_elliptic = .true.
 
-    parcels%volume = 0.25d0 * vcell
+    parcels%volume = f14 * vcell
 
     ! b11
     parcels%B(:, 1) = get_ab(parcels%volume(1:n_parcels))

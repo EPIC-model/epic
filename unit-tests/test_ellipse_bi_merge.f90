@@ -7,7 +7,7 @@
 ! =============================================================================
 program test_ellipse_bi_merge
     use unit_test
-    use constants, only : pi, one, two, five
+    use constants, only : pi, one, two, five, f23
     use parcel_container
     use parcel_merge, only : merge_ellipses
     use options, only : parcel
@@ -34,7 +34,7 @@ program test_ellipse_bi_merge
     parcels%volume(1) = a1b1 * pi
     parcels%B(1, 1) = a1b1
     parcels%B(1, 2) = zero
-    parcels%buoyancy(1) = 1.5d0
+    parcels%buoyancy(1) = f23
     parcels%humidity(1) = 1.3d0
 
     a2b2 = f12
@@ -58,7 +58,7 @@ program test_ellipse_bi_merge
     B12 = zero
     B22 = ab
     vol = ab * pi
-    buoy = (1.5d0 * a1b1 + 1.8d0 * a2b2) / ab
+    buoy = (f23 * a1b1 + 1.8d0 * a2b2) / ab
     hum  = (1.3d0 * a1b1 + 1.2d0 * a2b2) / ab
 
     !
@@ -86,7 +86,7 @@ program test_ellipse_bi_merge
     parcels%volume(1) = a1b1 * pi
     parcels%B(1, 1) = a1b1
     parcels%B(1, 2) = zero
-    parcels%buoyancy(1) = 1.5d0
+    parcels%buoyancy(1) = f23
     parcels%humidity(1) = 1.3d0
 
     a2b2 = f12
