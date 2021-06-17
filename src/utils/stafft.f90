@@ -1,5 +1,5 @@
 module stafft
-    use constants, only : pi, twopi
+    use constants, only : pi, twopi, one, two
 
     implicit none
 
@@ -273,7 +273,7 @@ module stafft
 
             ! Multiply by the normalisation constant and put
             ! transformed array in the right location:
-            normfac = 1.0d0 / dsqrt(dble(n))
+            normfac = one / dsqrt(dble(n))
             if (orig) then
                 do i= 0, m * n - 1
                     x(i) = x(i) * normfac
@@ -387,7 +387,7 @@ module stafft
 
         ! Multiply by the normalisation constant and put
         ! transformed array in the right location:
-        normfac = 2.0d0 / dsqrt(dble(n))
+        normfac = two / dsqrt(dble(n))
         if (orig) then
             do i = 0, m * n - 1
                 x(i) = x(i) * normfac
