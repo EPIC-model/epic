@@ -3,7 +3,7 @@
 ! =============================================================================
 module parcel_split
     use options, only : verbose
-    use constants, only : pi, three, f12
+    use constants, only : pi, three, f12, f14
     use parameters, only : vcell
     use parcel_container, only : parcel_container_type, n_parcels
     use parcel_bc, only : apply_reflective_bc
@@ -54,7 +54,7 @@ module parcel_split
                 parcels%B(n, 1) = B11 - 0.75d0 * a2 * evec(1) ** 2
                 parcels%B(n, 2) = B12 - 0.75d0 * a2 * (evec(1) * evec(2))
 
-                h = 0.25d0 * dsqrt(three * a2)
+                h = f14 * dsqrt(three * a2)
                 parcels%volume(n) = f12 * V
 
                 ! we only need to add one new parcel

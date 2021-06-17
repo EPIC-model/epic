@@ -1,5 +1,5 @@
 module stafft
-    use constants, only : pi, twopi, one, two, f12
+    use constants, only : pi, twopi, one, two, f12, f14
     implicit none
 
     ! Fourier transform module.
@@ -730,7 +730,7 @@ module stafft
             t4r = sinf2pi5 * (a(i, 2, 0) - a(i, 3, 0))
             t5r = t1r + t2r
             t6r = rtf516 * (t1r - t2r)
-            t7r = a(i, 0, 0) - 0.25d0 * t5r
+            t7r = a(i, 0, 0) - f14 * t5r
             b(i, 0, 0) = a(i, 0, 0) + t5r
             b(i, 0, 1) = t7r + t6r
             b(i, 0, 2) = t7r - t6r
@@ -762,8 +762,8 @@ module stafft
                     t5i = t1i + t2i
                     t6r = rtf516 * (t1r - t2r)
                     t6i = rtf516 * (t1i - t2i)
-                    t7r = a(i, 0, k) - 0.25d0 * t5r
-                    t7i = a(i, 0, kc) - 0.25d0 * t5i
+                    t7r = a(i, 0, k) - f14 * t5r
+                    t7i = a(i, 0, kc) - f14 * t5i
                     t8r = t7r + t6r
                     t8i = t7i + t6i
                     t9r = t7r - t6r
@@ -816,8 +816,8 @@ module stafft
                     t5i = t1i + t2i
                     t6r = rtf516 * (t1r - t2r)
                     t6i = rtf516 * (t1i - t2i)
-                    t7r = a(i, 0, k) - 0.25d0 * t5r
-                    t7i = a(i, 0, kc) - 0.25d0 * t5i
+                    t7r = a(i, 0, k) - f14 * t5r
+                    t7i = a(i, 0, kc) - f14 * t5i
                     t8r = t7r + t6r
                     t8i = t7i + t6i
                     t9r = t7r - t6r
@@ -1259,7 +1259,7 @@ module stafft
             t4r = sinf2pi5 * a(i, 0, 3)
             t5r = a(i, 0, 1) + a(i, 0, 2)
             t6r = rtf516 * (a(i, 0, 1) - a(i, 0, 2))
-            t7r = a(i, 0, 0) - 0.25d0 * t5r
+            t7r = a(i, 0, 0) - f14 * t5r
             t8r = t7r + t6r
             t9r = t7r - t6r
             t10r = t3r + sinrat * t4r
@@ -1287,8 +1287,8 @@ module stafft
                     t5i = t1i + t2i
                     t6r = rtf516 * (t1r - t2r)
                     t6i = rtf516 * (t1i - t2i)
-                    t7r = a(i, k, 0) - 0.25d0 * t5r
-                    t7i = a(i, kc, 4) - 0.25d0 * t5i
+                    t7r = a(i, k, 0) - f14 * t5r
+                    t7i = a(i, kc, 4) - f14 * t5i
                     t8r = t7r + t6r
                     t8i = t7i + t6i
                     t9r = t7r - t6r
@@ -1341,8 +1341,8 @@ module stafft
                     t5i = t1i + t2i
                     t6r = rtf516 * (t1r - t2r)
                     t6i = rtf516 * (t1i - t2i)
-                    t7r = a(i, k, 0) - 0.25d0 * t5r
-                    t7i = a(i, kc, 4) - 0.25d0 * t5i
+                    t7r = a(i, k, 0) - f14 * t5r
+                    t7i = a(i, kc, 4) - f14 * t5i
                     t8r = t7r + t6r
                     t8i = t7i + t6i
                     t9r = t7r - t6r

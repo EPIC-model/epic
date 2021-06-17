@@ -6,7 +6,8 @@ module parcel_ellipse
                         , fpi  &
                         , zero &
                         , two  &
-                        , f12
+                        , f12  &
+                        , f14
     implicit none
 
     contains
@@ -18,7 +19,7 @@ module parcel_ellipse
             double precision, intent(in) :: B22
             double precision             :: a2
 
-            a2 = f12 * (B11 + B22) + dsqrt(0.25d0 * (B11 - B22) ** 2 + B12 ** 2)
+            a2 = f12 * (B11 + B22) + dsqrt(f14 * (B11 - B22) ** 2 + B12 ** 2)
         end function get_eigenvalue
 
         function get_eigenvector(a2, B11, B12, B22) result(evec)
