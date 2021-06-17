@@ -100,7 +100,7 @@ module tri_inversion
         ! u = velog(:, :, 1) = -dpsig/dz and w = velog(:, :, 2) = dpsig/dx
         ! and computes the velocity gradient "velgradg".
         subroutine vor2vel(vortg, velog, velgradg)
-            double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1, 1)
+            double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1)
             double precision, intent(out) :: velog(-1:nz+1, 0:nx-1, 2)
             double precision, intent(out) :: velgradg(-1:nz+1, 0:nx-1, 4)
             double precision              :: ubar(0:nz), obot(0:nx-1), otop(0:nx-1)
@@ -109,7 +109,7 @@ module tri_inversion
             double precision              :: psig(0:nz, 0:nx-1) ! stream function
 
             ! copy vorticity
-            psig = vortg(0:nz, 0:nx-1, 1)
+            psig = vortg(0:nz, 0:nx-1)
 
             dz2  = f12 * dx(2)
 
@@ -178,7 +178,7 @@ module tri_inversion
             ! curl(\vec{u}) = w_x - u_z = zeta (= vorticity)
             ! --> u_z = w_x - zeta
             ! --> w_z = - u_x
-            velgradg(:, :, 2) = velgradg(:, :, 3) - vortg(:, :, 1)
+            velgradg(:, :, 2) = velgradg(:, :, 3) - vortg(:, :)
             velgradg(:, :, 4) = -velgradg(:, :, 1)
         end subroutine vor2vel
 

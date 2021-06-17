@@ -62,7 +62,7 @@ module parcel_split
 
                 parcels%B(n_parcels, :) = parcels%B(n, :)
 
-                parcels%vorticity(n_parcels, :) = parcels%vorticity(n, :)
+                parcels%vorticity(n_parcels) = parcels%vorticity(n)
                 parcels%volume(n_parcels) = parcels%volume(n)
                 parcels%buoyancy(n_parcels) = parcels%buoyancy(n)
                 parcels%humidity(n_parcels) = parcels%humidity(n)

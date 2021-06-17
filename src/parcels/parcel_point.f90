@@ -87,7 +87,7 @@ module parcel_point
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
 
-                parcels%vorticity(n_parcels, :) = parcels%vorticity(n, :)
+                parcels%vorticity(n_parcels) = parcels%vorticity(n)
                 parcels%volume(n_parcels) = parcels%volume(n)
                 parcels%buoyancy(n_parcels) = parcels%buoyancy(n)
                 parcels%humidity(n_parcels) = parcels%humidity(n)
@@ -157,7 +157,7 @@ module parcel_point
                         res_volg(js(l), is(l)) = res_volg(js(l), is(l)) + ww
 
                         res_vortg(js(l), is(l)) = res_vortg(js(l), is(l)) &
-                                                + ww * parcels%vorticity(n, 1)
+                                                + ww * parcels%vorticity(n)
                     enddo
                 else
                     do l = 1, ngp
@@ -202,7 +202,7 @@ module parcel_point
                                 + ww * res_vortg(js(l), is(l))
                     enddo
                     volfi = one / (parcels%volume(n) + vres(n))
-                    parcels%vorticity(n, 1) = (parcels%vorticity(n, 1) * parcels%volume(n) + zres(n)) * volfi
+                    parcels%vorticity(n) = (parcels%vorticity(n) * parcels%volume(n) + zres(n)) * volfi
                     parcels%volume(n) = parcels%volume(n) + vres(n)
                 enddo
             endif

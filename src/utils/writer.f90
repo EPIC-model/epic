@@ -18,11 +18,11 @@ module writer
         subroutine open_h5_file(filename)
             character(*), intent(in) :: filename
 
+            call h5open_f(h5err)
+
             if (h5file .eq. 0) then
                 call h5fcreate_f(filename, H5F_ACC_TRUNC_F, h5file, h5err)
             endif
-
-            call h5open_f(h5err)
 
             if (h5err .ne. 0) then
                 print *, "Opening the H5 file failed."

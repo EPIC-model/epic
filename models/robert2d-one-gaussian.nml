@@ -1,0 +1,22 @@
+&MODELS
+
+ model      = 'Robert'
+ h5fname    = 'robert2d.hdf5'
+
+ box%ncells = 32, 48
+ box%extent = 1000, 1500
+ box%origin = -500.0, 0.0
+
+ ![Kelvin] reference potential temperature
+ robert_flow%theta_ref = 303.15
+
+ robert_flow%n_bubbles = 1
+
+ robert_flow%bubbles(1)%distr = 'gaussian'
+ robert_flow%bubbles(1)%theta_max = 0.5
+ robert_flow%bubbles(1)%center = 0.0, 260.0
+ robert_flow%bubbles(1)%outer_radius = 250.0
+ robert_flow%bubbles(1)%inner_radius = 50.0
+ robert_flow%bubbles(1)%width = 100.0
+
+/

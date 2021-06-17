@@ -4,7 +4,6 @@
 ! =============================================================================
 module parser
     use constants
-    use parameters
     use options
     use hdf5
     use writer
@@ -20,8 +19,7 @@ module parser
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ model, output, box, parcel, stepper, time, &
-                            taylor_green_opt, robert_opt, straka_opt
+            namelist /EPIC/ field_file, field_tol, output, parcel, stepper, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -51,15 +49,13 @@ module parser
                 stop
             endif
 
-            ! update global parameters
-            call update_parameters()
-
         end subroutine read_config_file
 
-        subroutine write_h5_params
-            integer(hid_t) :: group
+        subroutine write_h5_options(fname)
+            character(*), intent(in) :: fname
+            integer(hid_t)           :: group
 
-            call open_h5_file(trim(output%h5fname))
+            call open_h5_file(fname)
 
             !
             ! write parcel info
@@ -100,19 +96,8 @@ module parser
 
             call h5gclose_f(group, h5err)
 
-            !
-            ! mesh info
-            !
-            group = open_h5_group("mesh")
-
-            call write_h5_double_vector_attrib(group, "extent", box%extent)
-            call write_h5_double_vector_attrib(group, "origin", box%origin)
-            call write_h5_integer_vector_attrib(group, "grid", box%nc + 1)
-
-            call h5gclose_f(group, h5err)
-
             call close_h5_file
 
-        end subroutine write_h5_params
+        end subroutine write_h5_options
 
 end module parser

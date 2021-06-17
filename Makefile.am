@@ -1,4 +1,4 @@
-SUBDIRS = src unit-tests python-scripts
+SUBDIRS = src unit-tests python-scripts models
 dist_doc_DATA = README.md
 
 # make python script an executable script

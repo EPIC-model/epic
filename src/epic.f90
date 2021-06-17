@@ -5,7 +5,7 @@ program epic
     use hdf5
     use constants, only : max_num_parcels, zero
     use field_diagnostics
-    use parser, only : read_config_file, write_h5_params
+    use parser, only : read_config_file, write_h5_options
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses
@@ -16,8 +16,9 @@ program epic
     use fields
     use tri_inversion, only : init_inversion
     use parcel_interpl
+    use parcel_init, only : init_parcels
     use rk4
-    use models, only : model_init
+    use parameters, only : write_h5_parameters
     use writer, only : open_h5_file,                        &
                        close_h5_file,                       &
                        write_h5_double_scalar_step_attrib,  &
@@ -41,16 +42,16 @@ program epic
     contains
 
         subroutine pre_run
-            use options, only : model
+            use options, only : field_file, field_tol, output
 
             ! parse the config file
             call read_config_file
 
-            call write_h5_params
+            call write_h5_options(trim(output%h5fname))
 
             call parcel_alloc(max_num_parcels)
 
-            call model_init(model)
+            call init_parcels(field_file, field_tol)
 
             call rk4_alloc(max_num_parcels)
 
@@ -59,6 +60,8 @@ program epic
             call init_parcel_correction
 
             call init_parcel_diagnostics
+
+            call field_default
 
             call par2grid
 
