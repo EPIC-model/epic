@@ -224,11 +224,10 @@ module parcel_init
             avg_field = (f12 * sum(field(0, :) + field(nz, :)) &
                              + sum(field(1:nz-1,:))) / dble(ncell)
 
-            resi = zero
-            resi(0:nz,:) = field(0:nz,:) - avg_field
+            resi(0:nz,:) = (field(0:nz,:) - avg_field) ** 2
 
-            rms = (f12 * sum(resi(0, :) ** 2 + resi(nz, :) ** 2) &
-                       + sum(resi(1:nz-1,:) ** 2)) / dble(ncell)
+            rms = (f12 * sum(resi(0, :) + resi(nz, :)) &
+                       + sum(resi(1:nz-1,:))) / dble(ncell)
 
 
             if (rms == zero) then
