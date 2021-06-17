@@ -4,13 +4,21 @@
  field_tol      = 1.0e-9
 
  !
- ! output info
+ ! h5 output info
  !
 
 
- output%h5freq      = 1
+ output%h5_field_freq   = 1
 
- output%h5fname     = 'output.hdf5'
+ output%h5_parcel_freq  = 1
+
+ output%h5_write_fields = .true.
+
+ output%h5_write_parcels = .true.
+
+ output%h5_overwrite    = .true.
+
+ output%h5_basename     = 'taylor_green'
 
  !
  ! parcel info
@@ -51,8 +59,6 @@
  !
  ! stepper info
  !
- stepper            = 'classic-rk4'
-
  time%limit         = 20.0
 
  time%dt            = 0.025

@@ -19,6 +19,9 @@ class BokehAnimation:
 
         self.h5reader.open(fname)
 
+        if not self.h5reader.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+
         self.nsteps = self.h5reader.get_num_steps()
         self.extent = self.h5reader.get_box_extent()
         self.origin = self.h5reader.get_box_origin()
@@ -41,9 +44,9 @@ class BokehAnimation:
         if (coloring=='aspect-ratio'):
             variable_of_interest=self.h5reader.get_aspect_ratio(step)
             variable_of_interest_min=1
-            variable_of_interest_max=self.h5reader.get_parcel_info('lambda')[0]
+            variable_of_interest_max=self.h5reader.get_parcel_option('lambda')
         else:
-            variable_of_interest=self.h5reader.get_parcel_dataset(step, coloring)
+            variable_of_interest=self.h5reader.get_dataset(step, coloring)
             variable_of_interest_min=np.nanmin(variable_of_interest)
             variable_of_interest_max=np.nanmax(variable_of_interest)
         source = ColumnDataSource(dict(x=x,y=y, width=width, height=height,
@@ -60,7 +63,7 @@ class BokehAnimation:
             if (coloring=='aspect-ratio'):
                 variable_of_interest=self.h5reader.get_aspect_ratio(step)
             else:
-                variable_of_interest=self.h5reader.get_parcel_dataset(step, coloring)
+                variable_of_interest=self.h5reader.get_dataset(step, coloring)
             new_source = dict(x=x,y=y, width=width, height=height,angle=angle,fill_color=variable_of_interest)
             source.data=new_source
             nparcels= self.h5reader.get_num_parcels(step)

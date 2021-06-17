@@ -6,12 +6,8 @@ module parcel_diagnostics
     use merge_sort
     use parameters, only : extent, lower
     use parcel_container, only : parcels, n_parcels
-    use hdf5
-    use writer, only : h5file,                         &
-                       h5err,                          &
-                       write_h5_double_scalar_attrib,  &
-                       open_h5_group,                  &
-                       get_step_group_name
+    use h5_utils
+    use h5_writer
     implicit none
 
     private
@@ -78,21 +74,21 @@ module parcel_diagnostics
         end subroutine calculate_diagnostics
 
 
-        subroutine write_h5_parcel_diagnostics(iter)
-            integer, intent(in)           :: iter ! iteration
+        subroutine write_h5_parcel_diagnostics(h5file_id, iter)
+            integer(hid_t), intent(in)    :: h5file_id
+            integer,        intent(in)    :: iter ! iteration
             integer(hid_t)                :: group
-            integer(hid_t)                :: step_group
-            character(:), allocatable     :: step
             character(:), allocatable     :: name
-
-            step = trim(get_step_group_name(iter))
-
-            ! create or open groups
-            name = step // "/diagnostics"
-            step_group = open_h5_group(step)
-            group = open_h5_group(name)
+            logical                       :: created
 
             call calculate_diagnostics
+            name = trim(get_step_group_name(iter))
+
+            call create_h5_group(h5file_id, name, group, created)
+
+            if (.not. created) then
+                call open_h5_group(h5file_id, name, group)
+            endif
 
             !
             ! write diagnostics
@@ -102,7 +98,6 @@ module parcel_diagnostics
             call write_h5_double_scalar_attrib(group, "total energy", ke + pe)
 
             ! close all
-            call h5gclose_f(group, h5err)
-            call h5gclose_f(step_group, h5err)
+            call close_h5_group(group)
         end subroutine write_h5_parcel_diagnostics
 end module parcel_diagnostics

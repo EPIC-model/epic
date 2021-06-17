@@ -2,10 +2,9 @@
 !                       EPIC - Elliptic Parcel-in-Cell
 ! =============================================================================
 program epic
-    use hdf5
     use constants, only : max_num_parcels, zero
     use field_diagnostics
-    use parser, only : read_config_file, write_h5_options
+    use parser, only : read_config_file
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses
@@ -13,18 +12,14 @@ program epic
     use parcel_merge, only : merge_ellipses
     use parcel_correction, only : init_parcel_correction, apply_laplace, apply_gradient
     use parcel_diagnostics
+    use parcel_hdf5
     use fields
+    use field_hdf5
     use tri_inversion, only : init_inversion
     use parcel_interpl
     use parcel_init, only : init_parcels
-    use rk4
-    use parameters, only : write_h5_parameters
-    use writer, only : open_h5_file,                        &
-                       close_h5_file,                       &
-                       write_h5_double_scalar_step_attrib,  &
-                       write_h5_integer_scalar_step_attrib, &
-                       write_h5_integer_scalar_attrib,      &
-                       h5err
+    use ls_rk4
+    use h5_utils, only : initialise_hdf5, finalise_hdf5
     implicit none
 
     ! Read command line (verbose, filename, etc.)
@@ -44,16 +39,16 @@ program epic
         subroutine pre_run
             use options, only : field_file, field_tol, output
 
+            call initialise_hdf5
+
             ! parse the config file
             call read_config_file
-
-            call write_h5_options(trim(output%h5fname))
 
             call parcel_alloc(max_num_parcels)
 
             call init_parcels(field_file, field_tol)
 
-            call rk4_alloc(max_num_parcels)
+            call ls_rk4_alloc(max_num_parcels)
 
             call init_inversion
 
@@ -65,6 +60,14 @@ program epic
 
             call par2grid
 
+            if (output%h5_write_fields) then
+                call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
+            endif
+
+            if (output%h5_write_parcels) then
+                call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
+            endif
+
         end subroutine
 
 
@@ -73,7 +76,8 @@ program epic
             double precision :: t    = zero ! current time
             double precision :: dt   = zero ! time step
             integer          :: iter = 1    ! simulation iteration
-            integer          :: nw   = 0    ! number of writes to h5
+            integer          :: nfw  = 0    ! number of field writes to h5
+            integer          :: npw  = 0    ! number of parcel writes to h5
             integer          :: cor_iter    ! iterator for parcel correction
 
             do while (t <= time%limit)
@@ -88,11 +92,17 @@ program epic
 #endif
 
                 ! make sure we always write initial setup
-                if (mod(iter - 1, output%h5freq) == 0) then
-                    call write_h5_step(nw, t, dt)
+                if (output%h5_write_fields .and. &
+                    (mod(iter - 1, output%h5_field_freq) == 0)) then
+                    call write_h5_field_step(nfw, t, dt)
                 endif
 
-                call rk4_step(dt)
+                if (output%h5_write_parcels .and. &
+                    (mod(iter - 1, output%h5_parcel_freq) == 0)) then
+                    call write_h5_parcel_step(npw, t, dt)
+                endif
+
+                call ls_rk4_step(dt)
 
                 if (mod(iter, parcel%merge_freq) == 0) then
                     if (parcel%is_elliptic) then
@@ -132,73 +142,21 @@ program epic
             call par2grid
 
             ! write final step
-            call write_h5_step(nw, t, dt)
+            if (output%h5_write_fields) then
+                call write_h5_field_step(nfw, t, dt)
+            endif
+
+            if (output%h5_write_parcels) then
+                call write_h5_parcel_step(npw, t, dt)
+            endif
 
         end subroutine run
 
         subroutine post_run
             call parcel_dealloc
-            call rk4_dealloc
+            call ls_rk4_dealloc
+            call finalise_hdf5
         end subroutine
-
-
-        subroutine write_h5_step(nw, t, dt)
-            use options, only : output
-            integer,          intent(inout) :: nw
-            double precision, intent(in)    :: t
-            double precision, intent(in)    :: dt
-
-#ifdef ENABLE_VERBOSE
-            if (verbose) then
-                print "(a30)", "write fields and parcels to h5"
-            endif
-#endif
-
-            call open_h5_file(trim(output%h5fname))
-
-            call write_h5_double_scalar_step_attrib(nw, "t", t)
-
-            call write_h5_double_scalar_step_attrib(nw, "dt", dt)
-
-            call write_h5_integer_scalar_step_attrib(nw, "num parcel", n_parcels)
-
-            call write_h5_parcels(nw)
-
-            call write_h5_field_diagnostics(nw)
-            call write_h5_parcel_diagnostics(nw)
-
-            call write_h5_fields(nw)
-
-            ! update number of iterations to h5 file
-            call write_h5_num_steps(nw+1)
-
-            call close_h5_file
-
-            ! increment counter
-            nw = nw + 1
-
-        end subroutine write_h5_step
-
-        subroutine write_h5_num_steps(nw)
-            use options, only : output
-            integer, intent(in) :: nw
-            integer(hid_t)      :: group
-            logical             :: attr_exists
-
-            group = open_h5_group("/")
-
-            ! in principle not necessary but we still check
-            call h5aexists_f(group, "nsteps", attr_exists, h5err)
-
-            if (attr_exists) then
-                call h5adelete_f(group, "nsteps", h5err)
-            endif
-
-            call write_h5_integer_scalar_attrib(group, "nsteps", nw)
-
-            call h5gclose_f(group, h5err)
-
-        end subroutine write_h5_num_steps
 
 
         function get_time_step() result(dt)
@@ -243,7 +201,7 @@ program epic
     subroutine parse_command_line
         use options, only : filename, verbose
         integer                          :: i
-        character(len=32)                :: arg
+        character(len=512)               :: arg
 
         filename = ''
         i = 0

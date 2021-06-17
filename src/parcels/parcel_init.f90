@@ -8,11 +8,10 @@ module parcel_init
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : trilinear, ngp
-    use parameters, only : update_parameters,       &
-                           write_h5_parameters,     &
-                           dx, vcell, ncell,        &
+    use parameters, only : update_parameters,   &
+                           dx, vcell, ncell,    &
                            extent, lower, nx, nz
-    use reader
+    use h5_reader
     implicit none
 
 
@@ -42,20 +41,19 @@ module parcel_init
         ! Set default values for parcel attributes
         ! Attention: This subroutine assumes that the parcel
         !            container is already allocated!
-        subroutine init_parcels(fname, tol)
-            character(*),     intent(in) :: fname
+        subroutine init_parcels(h5fname, tol)
+            character(*),     intent(in) :: h5fname
             double precision, intent(in) :: tol
             double precision             :: lam, ratio
+            integer(hid_t)               :: h5handle
 
             ! read domain dimensions
-            call open_h5_file(fname)
-            call read_h5_box(nx, nz, extent, lower)
-            call close_h5_file
+            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
+            call read_h5_box(h5handle, nx, nz, extent, lower)
+            call close_h5_file(h5handle)
 
             ! update global parameters
             call update_parameters
-
-            call write_h5_parameters(trim(output%h5fname))
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
@@ -95,7 +93,7 @@ module parcel_init
             parcels%buoyancy(1:n_parcels) = zero
             parcels%humidity(1:n_parcels) = zero
 
-            call init_from_grids(fname, tol)
+            call init_from_grids(h5fname, tol)
 
         end subroutine init_parcels
 
@@ -217,32 +215,33 @@ module parcel_init
         end subroutine dealloc
 
 
-        subroutine init_from_grids(fname, tol)
-            character(*),     intent(in)  :: fname
+        subroutine init_from_grids(h5fname, tol)
+            character(*),     intent(in)  :: h5fname
             double precision, intent(in)  :: tol
             double precision, allocatable :: buffer_2d(:, :)
             double precision              :: field_2d(-1:nz+1, 0:nx-1)
+            integer(hid_t)                :: h5handle
 
             call alloc_and_precompute
 
-            call open_h5_file(fname)
+            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
 
-            if (has_dataset('vorticity')) then
-                call read_h5_dataset_2d('vorticity', buffer_2d)
+            if (has_dataset(h5handle, 'vorticity')) then
+                call read_h5_dataset_2d(h5handle, 'vorticity', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
                 call gen_parcel_scalar_attr(field_2d, tol, parcels%vorticity)
             endif
 
 
-            if (has_dataset('buoyancy')) then
-                call read_h5_dataset_2d('buoyancy', buffer_2d)
+            if (has_dataset(h5handle, 'buoyancy')) then
+                call read_h5_dataset_2d(h5handle, 'buoyancy', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
                 call gen_parcel_scalar_attr(field_2d, tol, parcels%buoyancy)
             endif
 
-            call close_h5_file
+            call close_h5_file(h5handle)
 
             call dealloc
 

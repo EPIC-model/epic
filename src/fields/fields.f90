@@ -5,14 +5,6 @@
 module fields
     use parameters, only : dx, dxi, extent, lower, nx, nz
     use constants, only : zero
-    use hdf5
-    use writer, only : h5file,                  &
-                       h5err,                   &
-                       write_h5_dataset_2d,     &
-                       write_h5_int_dataset_2d, &
-                       write_h5_dataset_3d,     &
-                       open_h5_group,           &
-                       get_step_group_name
     implicit none
 
     ! Halo grid points in vertical direction z are -1 and nz+1,
@@ -116,59 +108,5 @@ module fields
             pos = lower + (/dble(i), dble(j)/) * dx
 
         end subroutine get_position
-
-
-        subroutine write_h5_fields(iter)
-            integer, intent(in)        :: iter ! iteration
-            integer(hid_t)             :: group
-            integer(hid_t)             :: step_group
-            character(:), allocatable  :: step
-            character(:), allocatable  :: name
-
-            step = trim(get_step_group_name(iter))
-
-            ! create or open groups
-            name = step // "/fields"
-            step_group = open_h5_group(step)
-            group = open_h5_group(name)
-
-            !
-            ! write fields (do not write halo cells)
-            !
-
-            call write_h5_dataset_3d(name, "velocity", &
-                                     velog(0:nz, 0:nx-1, :))
-
-            call write_h5_dataset_3d(name, "velocity gradient tensor", &
-                                     velgradg(0:nz, 0:nx-1, :))
-
-            call write_h5_dataset_2d(name, "volume", &
-                                     volg(0:nz, 0:nx-1))
-
-            call write_h5_dataset_2d(name, "total buoyancy", &
-                                     tbuoyg(0:nz, 0:nx-1))
-
-            call write_h5_dataset_2d(name, "dry buoyancy", &
-                                     dbuoyg(0:nz, 0:nx-1))
-
-!             call write_h5_dataset_2d(name, "humidity", &
-!                                      humg(0:nz, 0:nx-1))
-
-            call write_h5_dataset_2d(name, "vorticity", &
-                                     vortg(0:nz, 0:nx-1))
-
-!             call write_h5_dataset_2d(name, "liquid humidity", &
-!                                      humlig(0:nz, 0:nx-1))
-
-            call write_h5_dataset_2d(name, "tendency", &
-                                     vtend(0:nz, 0:nx-1))
-
-            call write_h5_int_dataset_2d(name, "num parcels per cell", &
-                                         nparg(0:nz-1, :))
-
-            call h5gclose_f(group, h5err)
-            call h5gclose_f(step_group, h5err)
-
-        end subroutine write_h5_fields
 
 end module fields

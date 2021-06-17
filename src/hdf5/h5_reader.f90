@@ -4,66 +4,24 @@
 !   HDF5 API please visit
 !   https://support.hdfgroup.org/HDF5/doc1.6/RM_H5Front.html
 ! =============================================================================
-module reader
+module h5_reader
     use hdf5
+    use h5_utils
     implicit none
-
-    ! h5 file handle
-    integer(hid_t) :: h5file = 0
-
-    ! if non-zero an error occurred
-    integer :: h5err = 0
-
-    private :: h5file, h5err
 
     contains
 
-        subroutine open_h5_file(filename)
-            character(*), intent(in) :: filename
-
-            call h5open_f(h5err)
-            call h5fopen_f(filename, H5F_ACC_RDONLY_F, h5file, h5err)
-
-            if (h5err .ne. 0) then
-                print *, "Opening the H5 file failed."
-                stop
-            endif
-        end subroutine open_h5_file
-
-        subroutine close_h5_file
-            call h5close_f(h5err)
-
-            if (h5err .ne. 0) then
-                print *, "Closing the H5 file failed."
-                stop
-            endif
-        end subroutine close_h5_file
-
-        ! open existing group
-        function open_h5_group(name) result(group)
+        function has_dataset(h5file_id, name) result(link_exists)
+            integer(hid_t), intent(in) :: h5file_id
             character(*),   intent(in) :: name
-            integer(hid_t)             :: group
-            logical                    :: link_exists = .false.
-
-            call h5lexists_f(h5file, name, link_exists, h5err)
-
-            if (link_exists) then
-                call h5gopen_f(h5file, name, group, h5err)
-            else
-                print *, "Group '", name, "' does not exist!"
-                stop
-            endif
-        end function open_h5_group
-
-
-        function has_dataset(name) result(link_exists)
-            character(*), intent(in) :: name
-            logical                  :: link_exists
+            logical                    :: link_exists
             link_exists = .false.
-            call h5lexists_f(h5file, name, link_exists, h5err)
+            call h5lexists_f(h5file_id, name, link_exists, h5err)
+            call check_h5_error("Failed to check if link exists.")
         end function has_dataset
 
-        subroutine read_h5_dataset_2d(name, buffer)
+        subroutine read_h5_dataset_2d(h5file_id, name, buffer)
+            integer(hid_t),                intent(in)  :: h5file_id
             character(*),                  intent(in)  :: name
             double precision, allocatable, intent(out) :: buffer(:, :)
             integer(hid_t)                             :: dataspace_id   ! Dataspace identifier
@@ -71,12 +29,23 @@ module reader
             integer                                    :: rank
             integer(hsize_t)                           :: dims(2), maxdims(2)
 
-            call h5dopen_f(h5file, name, dset_id, h5err)
+            call h5dopen_f(h5file_id, name, dset_id, h5err)
+            call check_h5_error("Failed to open dataset.")
+
             call h5dget_space_f(dset_id, dataspace_id, h5err)
+            call check_h5_error("Failed to get data space.")
 
             call h5sget_simple_extent_ndims_f(dataspace_id, rank, h5err)
+            call check_h5_error("Failed to get data extent.")
 
+            ! h5err: Dataspace rank on success and -1 on failure
             call h5sget_simple_extent_dims_f(dataspace_id, dims, maxdims, h5err)
+#ifndef NDEBUG
+            if (h5err >= 0) then
+                h5err = 0
+            endif
+#endif
+            call check_h5_error("Failed to get dimensions.")
 
             if (.not. sum(dims -  maxdims) == 0) then
                 print *, "Dimensions do not agree."
@@ -86,11 +55,13 @@ module reader
             allocate(buffer(0:dims(1)-1, 0:dims(2)-1))
 
             call h5dread_f(dset_id, H5T_NATIVE_DOUBLE, buffer, dims, h5err)
+            call check_h5_error("Failed to read dataset.")
 
             call h5dclose_f(dset_id, h5err)
+            call check_h5_error("Failed to close dataset.")
         end subroutine read_h5_dataset_2d
 
-        subroutine read_h5_vector_integer_attrib(group, name, buf)
+        subroutine read_h5_vector_int_attrib(group, name, buf)
             integer(hid_t), intent(in)       :: group
             character(*),   intent(in)       :: name
             integer,        intent(out)      :: buf(2)
@@ -98,11 +69,16 @@ module reader
             integer(hsize_t), dimension(1:1) :: dims = 2
 
             call h5aopen_name_f(group, name, attr_id, h5err)
+            call check_h5_error("Failed to open attribute.")
             call h5aget_space_f(attr_id, space_id, h5err)
+            call check_h5_error("Failed to get attribute space.")
             call h5aget_type_f(attr_id, type_id, h5err)
+            call check_h5_error("Failed to retrieve attribute type.")
             call h5aread_f(attr_id, type_id, buf, dims, h5err)
+            call check_h5_error("Failed to read attribute.")
             call h5aclose_f(attr_id, h5err)
-        end subroutine read_h5_vector_integer_attrib
+            call check_h5_error("Failed to close attribute.")
+        end subroutine read_h5_vector_int_attrib
 
 
         subroutine read_h5_vector_double_attrib(group, name, buf)
@@ -113,21 +89,27 @@ module reader
             integer(hsize_t), dimension(1:1)   :: dims = 2
 
             call h5aopen_name_f(group, name, attr_id, h5err)
+            call check_h5_error("Failed to open attribute.")
             call h5aget_space_f(attr_id, space_id, h5err)
+            call check_h5_error("Failed to get attribute space.")
             call h5aget_type_f(attr_id, type_id, h5err)
+            call check_h5_error("Failed to retrieve attribute type.")
             call h5aread_f(attr_id, type_id, buf, dims, h5err)
+            call check_h5_error("Failed to read attribute.")
             call h5aclose_f(attr_id, h5err)
+            call check_h5_error("Failed to close attribute.")
         end subroutine read_h5_vector_double_attrib
 
-        subroutine read_h5_box(nx, nz, extent, origin)
+        subroutine read_h5_box(h5file_id, nx, nz, extent, origin)
+            integer(hid_t),   intent(in)     :: h5file_id
             integer,          intent(out)    :: nx, nz
             double precision, intent(out)    :: extent(2), origin(2)
             integer(hid_t)                   :: group
             integer                          :: ncells(2)
 
-            group = open_h5_group("box")
+            call open_h5_group(h5file_id, "box", group)
 
-            call read_h5_vector_integer_attrib(group, 'ncells', ncells)
+            call read_h5_vector_int_attrib(group, 'ncells', ncells)
             call read_h5_vector_double_attrib(group, 'extent', extent)
             call read_h5_vector_double_attrib(group, 'origin', origin)
 
@@ -135,7 +117,7 @@ module reader
             nz = ncells(2)
 
             ! close all
-            call h5gclose_f(group, h5err)
+            call close_h5_group(group)
         end subroutine read_h5_box
 
-end module reader
+end module h5_reader

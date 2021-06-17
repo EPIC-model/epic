@@ -38,8 +38,6 @@
  !
  ! stepper info
  !
- stepper            = 'ls-rk4'
-
  time%limit         = 2.5
 
  time%dt            = 0.025

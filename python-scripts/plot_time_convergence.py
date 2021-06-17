@@ -21,7 +21,7 @@ def plot_error(ref_file,file_list,zorder=0):
     errors=[]
     h5reader = H5Reader()
     h5reader.open(ref_file)
-    ref_positions=h5reader.get_parcel_dataset(step, 'position')
+    ref_positions=h5reader.get_dataset(step, 'position')
     h5reader.close()
     for this_file in file_list:
         h5reader = H5Reader()
@@ -29,7 +29,7 @@ def plot_error(ref_file,file_list,zorder=0):
         #num_parcels = h5reader.get_num_parcels(step)
         dt=h5reader.get_step_attribute(step, 'dt')
         #t=h5reader.get_step_attribute(step, 't')
-        positions=h5reader.get_parcel_dataset(step, 'position')
+        positions=h5reader.get_dataset(step, 'position')
         #print(this_file,num_parcels,dt,t)
         h5reader.close()
         dts.append(dt[0])
