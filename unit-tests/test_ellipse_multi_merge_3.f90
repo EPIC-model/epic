@@ -6,7 +6,7 @@
 ! =============================================================================
 program test_ellipse_multi_merge_3
     use unit_test
-    use constants, only : pi, one, two, four, f32
+    use constants, only : pi, one, two, four, f14, f32
     use parcel_container
     use parcel_merge, only : merge_ellipses
     use options, only : parcel
@@ -26,7 +26,7 @@ program test_ellipse_multi_merge_3
     call parcel_alloc(3)
 
     a1b1 = 1.44d0
-    a2b2 = 0.25d0
+    a2b2 = f14
 
 
     !
