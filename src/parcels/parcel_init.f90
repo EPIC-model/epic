@@ -15,13 +15,28 @@ module parcel_init
     use reader
     implicit none
 
+
+    double precision, allocatable :: weights(:, :), apar(:)
+    integer, allocatable :: is(:, :), js(:, :)
+
+    private :: weights, apar, is, js
+
+
     private :: init_random_positions,       &
                init_regular_positions,      &
                init_refine,                 &
                init_from_grids,             &
-               fill_field_from_buffer_2d
+               fill_field_from_buffer_2d,   &
+               alloc_and_precompute,        &
+               dealloc
 
     contains
+
+        ! This subroutine is only used in the unit test
+        ! "test_parcel_init"
+        subroutine unit_test_parcel_init_alloc
+            call alloc_and_precompute
+        end subroutine unit_test_parcel_init_alloc
 
 
         ! Set default values for parcel attributes
@@ -76,7 +91,6 @@ module parcel_init
                 parcels%stretch = zero
             endif
 
-            parcels%velocity(1:n_parcels, :) = zero
             parcels%vorticity(1:n_parcels) = zero
             parcels%buoyancy(1:n_parcels) = zero
             parcels%humidity(1:n_parcels) = zero
@@ -158,11 +172,58 @@ module parcel_init
         end subroutine init_refine
 
 
+        ! Precompute weights, indices of trilinear
+        ! interpolation and "apar"
+        subroutine alloc_and_precompute
+            double precision :: resi(0:nz, 0:nx-1), rsum
+            integer          :: n, l
+
+            allocate(apar(n_parcels))
+            allocate(weights(n_parcels, ngp))
+            allocate(is(n_parcels, ngp))
+            allocate(js(n_parcels, ngp))
+
+            ! Compute mean parcel density:
+            resi = zero
+            do n = 1, n_parcels
+                ! get interpolation weights and mesh indices
+                call trilinear(parcels%position(n, :), is(n, :), js(n, :), weights(n, :))
+
+                do l = 1, ngp
+                    resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) + weights(n, l)
+                enddo
+            enddo
+
+            !Double edge values at iz = 0 and nz:
+            resi(0, :) = two * resi(0, :)
+            resi(nz,:) = two * resi(nz,:)
+
+            ! Determine local inverse density of parcels (apar)
+            do n = 1, n_parcels
+                rsum = zero
+                do l = 1, ngp
+                    rsum = rsum + resi(js(n, l), is(n, l)) * weights(n, l)
+                enddo
+                apar(n) = one / rsum
+            enddo
+
+        end subroutine alloc_and_precompute
+
+        subroutine dealloc
+            deallocate(apar)
+            deallocate(weights)
+            deallocate(is)
+            deallocate(js)
+        end subroutine dealloc
+
+
         subroutine init_from_grids(fname, tol)
             character(*),     intent(in)  :: fname
             double precision, intent(in)  :: tol
             double precision, allocatable :: buffer_2d(:, :)
             double precision              :: field_2d(-1:nz+1, 0:nx-1)
+
+            call alloc_and_precompute
 
             call open_h5_file(fname)
 
@@ -182,6 +243,8 @@ module parcel_init
             endif
 
             call close_h5_file
+
+            call dealloc
 
         end subroutine init_from_grids
 
@@ -215,10 +278,8 @@ module parcel_init
             double precision, intent(in)  :: tol
             double precision, intent(out) :: par(:)
             double precision :: resi(0:nz, 0:nx-1)
-            double precision :: apar(n_parcels)
             double precision :: rms, rtol, rerr, rsum, fsum, avg_field
-            integer          :: is(ngp), js(ngp), n, l
-            double precision :: weights(ngp)
+            integer          :: n, l
 
 #ifdef ENABLE_VERBOSE
                 if (verbose) then
@@ -246,36 +307,12 @@ module parcel_init
             ! Maximum error permitted below in gridded residue:
             rtol = rms * tol
 
-            ! Compute mean parcel density:
-            resi = zero
+            ! Initialise (volume-weighted) parcel attribute with a guess
             do n = 1, n_parcels
-
-                ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(n, :), is, js, weights)
-
-                do l = 1, ngp
-                    resi(js(l), is(l)) = resi(js(l), is(l)) + weights(l)
-                enddo
-            enddo
-
-            !Double edge values at iz = 0 and nz:
-            resi(0, :) = two * resi(0, :)
-            resi(nz,:) = two * resi(nz,:)
-
-
-            ! Determine local inverse density of parcels (apar)
-            ! and initialise (volume-weighted) parcel attribute with a guess
-            do n = 1, n_parcels
-                ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(n, :), is, js, weights)
-
-                rsum = zero
                 fsum = zero
                 do l = 1, ngp
-                    rsum = rsum + resi(js(l), is(l)) * weights(l)
-                    fsum = fsum + field(js(l), is(l)) * weights(l)
+                    fsum = fsum + field(js(n, l), is(n, l)) * weights(n, l)
                 enddo
-                apar(n) = one / rsum
                 par(n) = apar(n) * fsum
             enddo
 
@@ -286,11 +323,9 @@ module parcel_init
                 !Compute residual:
                 resi(0:nz, :) = zero
                 do n = 1, n_parcels
-                    ! get interpolation weights and mesh indices
-                    call trilinear(parcels%position(n, :), is, js, weights)
-
                     do l = 1, ngp
-                        resi(js(l), is(l)) = resi(js(l), is(l)) + weights(l) * par(n)
+                        resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) &
+                                                 + weights(n, l) * par(n)
                     enddo
                 enddo
 
@@ -300,12 +335,9 @@ module parcel_init
 
                 !Update (volume-weighted) attribute:
                 do n = 1, n_parcels
-                    ! get interpolation weights and mesh indices
-                    call trilinear(parcels%position(n, :), is, js, weights)
-
                     rsum = zero
                     do l = 1, ngp
-                        rsum = rsum + resi(js(l), is(l)) * weights(l)
+                        rsum = rsum + resi(js(n, l), is(n, l)) * weights(n, l)
                     enddo
                     par(n) = par(n) + apar(n) * rsum
                 enddo
