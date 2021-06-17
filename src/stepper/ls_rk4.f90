@@ -17,10 +17,10 @@ module ls_rk4
 
     double precision, allocatable, dimension(:, :) :: &
         strain, &   ! strain at parcel location
-        dbdt,   &   ! B matrix integration
-        dvordt      ! vorticity integration
+        dbdt        ! B matrix integration
 
     double precision, allocatable, dimension(:) :: &
+        dvordt, &   ! vorticity integration
         dsdt        ! stretch integration (non-elliptic only)
 
     double precision, parameter :: &
@@ -41,7 +41,7 @@ module ls_rk4
         subroutine ls_rk4_alloc(num)
             integer, intent(in) :: num
 
-            allocate(dvordt(num, 1))
+            allocate(dvordt(num))
             allocate(strain(num, 4))
 
             if (parcel%is_elliptic) then
@@ -102,14 +102,14 @@ module ls_rk4
             endif
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
                                             + cb*dt*parcels%velocity(1:n_parcels,:)
-            parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :) + cb*dt*dvordt(1:n_parcels, :)
+            parcels%vorticity(1:n_parcels) = parcels%vorticity(1:n_parcels) + cb*dt*dvordt(1:n_parcels)
             parcels%B(1:n_parcels,:) = parcels%B(1:n_parcels,:) + cb*dt*dbdt(1:n_parcels,:)
             call apply_parcel_bc(parcels%position, parcels%velocity)
             if(step==5) then
                return
             endif
             parcels%velocity(1:n_parcels,:) = ca*parcels%velocity(1:n_parcels,:)
-            dvordt(1:n_parcels, :) = ca * dvordt(1:n_parcels, :)
+            dvordt(1:n_parcels) = ca * dvordt(1:n_parcels)
             dbdt(1:n_parcels,:) = ca*dbdt(1:n_parcels,:)
             return
 
@@ -148,8 +148,8 @@ module ls_rk4
 
             parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
                                             + cb*dt*parcels%velocity(1:n_parcels,:)
-            parcels%vorticity(1:n_parcels, :) = parcels%vorticity(1:n_parcels, :) &
-                                              + cb*dt*dvordt(1:n_parcels, :)
+            parcels%vorticity(1:n_parcels) = parcels%vorticity(1:n_parcels) &
+                                              + cb*dt*dvordt(1:n_parcels)
             parcels%stretch(1:n_parcels) = parcels%stretch(1:n_parcels) &
                                          + cb * dt * dsdt(1:n_parcels)
 
@@ -159,7 +159,7 @@ module ls_rk4
                return
             endif
             parcels%velocity(1:n_parcels,:) = ca*parcels%velocity(1:n_parcels,:)
-            dvordt(1:n_parcels, :) = ca * dvordt(1:n_parcels, :)
+            dvordt(1:n_parcels) = ca * dvordt(1:n_parcels)
             dsdt(1:n_parcels) = ca * dsdt(1:n_parcels)
             return
 

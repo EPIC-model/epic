@@ -1,0 +1,30 @@
+&MODELS
+
+ model      = 'TaylorGreen'
+
+ h5fname    = 'taylorgreen2d.hdf5'
+
+ box%ncells = 10, 10
+
+ ! the extent and origin are multiples of pi,
+ ! i.e., extent = 1.0, results in pi and origin = -0.5
+ ! in -0.5 * pi
+ box%extent =  1.0, 1.0
+ box%origin = -0.5, -0.5
+
+ !
+ ! Taylor-Green flow parameters:
+ !      u(x, y) = A * cos(ax + d + pi/2) * sin(by + e)
+ !      v(x, y) = B * sin(ax + d + pi/2) * cos(by + e)
+ !
+
+ ! amplitudes: A, B
+ tg_flow%amp           = 0.5, -1.0
+
+ ! frequencies: a, b
+ tg_flow%freq          = 2.0, 1.0
+
+ ! phase shifts: d, e
+ tg_flow%phase         = 0.0, 0.0
+
+/

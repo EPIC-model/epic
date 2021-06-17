@@ -20,8 +20,8 @@ class BokehAnimation:
         self.h5reader.open(fname)
 
         self.nsteps = self.h5reader.get_num_steps()
-        self.extent = self.h5reader.get_mesh_extent()
-        self.origin = self.h5reader.get_mesh_origin()
+        self.extent = self.h5reader.get_box_extent()
+        self.origin = self.h5reader.get_box_origin()
 
         os.mkdir("temp-movie")
 

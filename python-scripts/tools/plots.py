@@ -14,8 +14,8 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
     norm = cls.Normalize(vmin=vmin, vmax=vmax)
     cmap = plt.cm.viridis_r
 
-    origin = h5reader.get_mesh_origin()
-    extent = h5reader.get_mesh_extent()
+    origin = h5reader.get_box_origin()
+    extent = h5reader.get_box_extent()
 
     if coloring == 'aspect-ratio':
         data = h5reader.get_aspect_ratio(step=step)
@@ -121,8 +121,8 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
     norm = cls.Normalize(vmin=1.0, vmax=lam)
     cmap = plt.cm.viridis_r
 
-    origin = h5reader.get_mesh_origin()
-    extent = h5reader.get_mesh_extent()
+    origin = h5reader.get_box_origin()
+    extent = h5reader.get_box_extent()
 
     ell = h5reader.get_ellipses(step=step)[parcel]
 
@@ -393,9 +393,9 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
     vol_mean = np.zeros(nsteps)
     vol_std = np.zeros(nsteps)
 
-    extent = h5reader.get_mesh_extent()
-    grid   = h5reader.get_mesh_grid()
-    vcell = np.prod(extent / (grid - 1))
+    extent = h5reader.get_box_extent()
+    ncells = h5reader.get_box_ncells()
+    vcell = np.prod(extent / ncells)
 
     for step in range(nsteps):
         vol = h5reader.get_parcel_dataset(step, 'volume')
@@ -435,15 +435,15 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
     #h5reader = H5Reader()
     #h5reader.open(fname)
 
-    #extent = h5reader.get_mesh_extent()
-    #origin = h5reader.get_mesh_origin()
-    #grid   = h5reader.get_mesh_grid()
+    #extent = h5reader.get_box_extent()
+    #origin = h5reader.get_box_origin()
+    #ncells = h5reader.get_box_ncells()
 
-    #xx = np.linspace(origin[0], origin[0] + extent[0], grid[0]-1, endpoint=False)
-    #yy = np.linspace(origin[1], origin[1] + extent[1], grid[1]-1, endpoint=False)
-    #yy, xx = np.meshgrid(yy, xx)
+    #xx = np.linspace(origin[0], origin[0] + extent[0], ncells[0], endpoint=False)
+    #yy = np.linspace(origin[1], origin[1] + extent[1], ncells[1], endpoint=False)
+    #yy, xx = np.boxgrid(yy, xx)
 
-#sc = axes.pcolormesh(xx, yy, npc, shading='nearest')
+#sc = axes.pcolorbox(xx, yy, npc, shading='nearest')
 #plt.colorbar(sc, ax=axes)
 #plt.xlabel('x')
 #plt.ylabel('y')

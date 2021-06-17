@@ -1,20 +1,16 @@
 &EPIC
 
- model              = 'TaylorGreen'
+ field_file     = 'taylorgreen2d.hdf5'
+ field_tol      = 1.0e-9
 
  !
  ! output info
  !
 
+
  output%h5freq      = 1
 
- output%h5fname     = 'taylorgreen2d.hdf5'
-
- !
- ! grid info
- !
-
- box%nc          = 10, 10
+ output%h5fname     = 'output.hdf5'
 
  !
  ! parcel info
@@ -64,20 +60,4 @@
  time%alpha         = 0.025
 
  time%dt_max        = 0.125
-
- !
- ! Taylor-Green flow parameters:
- !      u(x, y) = A * cos(ax + d + pi/2) * sin(by + e)
- !      v(x, y) = B * sin(ax + d + pi/2) * cos(by + e)
- !
-
- ! amplitudes: A, B
- taylor_green_opt%amp           = 0.5, -1.0
-
- ! frequencies: a, b
- taylor_green_opt%freq          = 2.0, 1.0
-
- ! phase shifts: d, e
- taylor_green_opt%phase         = 0.0, 0.0
-
 /

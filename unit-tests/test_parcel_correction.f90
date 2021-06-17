@@ -12,8 +12,8 @@ program test_parcel_correction
     use parcel_correction
     use parcel_interpl, only : vol2grid
     use parcel_ellipse, only : get_ab
-    use options, only : parcel, box
-    use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
+    use options, only : parcel
+    use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg
 
     implicit none
@@ -23,10 +23,12 @@ program test_parcel_correction
 
     call  parse_command_line
 
-    box%nc = (/32, 32/)
-    box%extent =  (/0.4d0, 0.4d0/)
+    nx = 32
+    nz = 32
+    lower  = (/-1.5, -1.5/)
+    extent =  (/0.4d0, 0.4d0/)
 
-    call update_parameters()
+    call update_parameters
 
     allocate(volg(-1:nz+1, 0:nx-1))
 

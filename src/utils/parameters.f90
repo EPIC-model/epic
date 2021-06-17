@@ -3,8 +3,9 @@
 ! simulation.
 ! =============================================================================
 module parameters
-    use options, only : box
+    use options, only : allow_larger_anisotropy
     use constants
+    use writer
     implicit none
 
     ! mesh spacing
@@ -44,11 +45,10 @@ module parameters
     ! Update all parameters according to the
     ! user-defined global options.
     subroutine update_parameters
-        extent = dble(box%extent)
-        lower  = dble(box%origin)
-        upper = dble(box%origin) + extent
 
-        dx = extent / dble(box%nc)
+        upper = lower + extent
+
+        dx = extent / dble((/nx, nz/))
         dxi = one / dx;
 
         if (max(dxi(1) * dx(2), dxi(2) * dx(1)) > two) then
@@ -58,15 +58,12 @@ module parameters
             print *, '*                                                                    *'
             print *, '**********************************************************************'
 
-            if (.not. box%allow_larger_anisotropy) then
+            if (.not. allow_larger_anisotropy) then
                 stop
             endif
         endif
 
         vcell = product(dx)
-
-        nx = box%nc(1)
-        nz = box%nc(2)
 
         ncell = nx * nz
 
@@ -78,5 +75,19 @@ module parameters
         hli = one / hl
 
     end subroutine update_parameters
+
+
+    subroutine write_h5_parameters(fname)
+        character(*), intent(in) :: fname
+        integer(hid_t)           :: group
+
+        call open_h5_file(fname)
+        group = open_h5_group("box")
+        call write_h5_double_vector_attrib(group, "extent", extent)
+        call write_h5_double_vector_attrib(group, "origin", lower)
+        call write_h5_integer_vector_attrib(group, "ncells", (/nx, nz/))
+        call h5gclose_f(group, h5err)
+        call close_h5_file
+    end subroutine write_h5_parameters
 
 end module parameters

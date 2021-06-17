@@ -11,9 +11,9 @@ program test_laplace_correction
     use parcel_container
     use parcel_correction
     use parcel_interpl, only : vol2grid
-    use options, only : parcel, box
+    use options, only : parcel
     use parcel_ellipse, only : get_ab
-    use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
+    use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg
     implicit none
 
@@ -22,10 +22,12 @@ program test_laplace_correction
 
     call  parse_command_line
 
-    box%nc = (/32, 32/)
-    box%extent =  (/0.4d0, 0.4d0/)
+    nx = 32
+    nz = 32
+    lower  = (/-1.5d0, -1.5d0/)
+    extent = (/0.4d0, 0.4d0/)
 
-    call update_parameters()
+    call update_parameters
 
     allocate(volg(-1:nz+1, 0:nx-1))
 

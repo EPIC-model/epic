@@ -14,8 +14,8 @@ program test_free_slip
     use constants, only : pi, zero, one, two
     use parcel_container
     use parcel_interpl, only : vol2grid
-    use options, only : parcel, box
-    use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
+    use options, only : parcel
+    use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg
     implicit none
 
@@ -24,10 +24,12 @@ program test_free_slip
     double precision, parameter :: lam = 3.5d0 ! >= 3.5 --> 1 ellipse point outside domain
     double precision :: error
 
-    box%extent = (/0.4d0, 0.4d0/)
-    box%nc = (/4, 4/)
+    nx = 4
+    nz = 4
+    lower  = (/-1.5d0, -1.5d0/)
+    extent = (/0.4d0, 0.4d0/)
 
-    call update_parameters()
+    call update_parameters
 
     allocate(volg(-1:nz+1, 0:nx-1))
 
