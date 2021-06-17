@@ -61,7 +61,7 @@
  !
  stepper            = 'classic-rk4'
 
- time%limit         = 0.025
+ time%limit         = 20.0
 
  time%dt            = 0.025
 
