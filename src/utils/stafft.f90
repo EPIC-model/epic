@@ -1,5 +1,5 @@
 module stafft
-    use constants, only : pi, twopi
+    use constants, only : pi, twopi, f12
 
     implicit none
 
@@ -306,12 +306,12 @@ module stafft
 
         !Scale 0 and Nyquist frequencies:
         do i= 0, m-1
-            x(i) = 0.5d0 * x(i)
+            x(i) = f12 * x(i)
         enddo
         if (mod(n, 2) .eq. 0) then
             k = m * n / 2
             do i = 0, m-1
-                x(k+i) = 0.5d0 * x(k+i)
+                x(k+i) = f12 * x(k+i)
             enddo
         endif
 
@@ -415,12 +415,12 @@ module stafft
 
         !Pre-process the array and store it in wk:
         do i = 1, m
-            wk(i, 0) = 0.5d0 * (x(i, 0) + x(i, n))
+            wk(i, 0) = f12 * (x(i, 0) + x(i, n))
         enddo
 
         do j = 1, n - 1
             do i = 1, m
-                wk(i, j) = 0.5d0 * (x(i, j) + x(i, n - j)) - dsin(dble(j) * fpin) * (x(i, j) - x(i, n - j))
+                wk(i, j) = f12 * (x(i, j) + x(i, n - j)) - dsin(dble(j) * fpin) * (x(i, j) - x(i, n - j))
             enddo
         enddo
 
@@ -429,11 +429,11 @@ module stafft
         !as a work array in the forfft routine called next:
         do i = 1, m
             rowsum = 0.0d0
-            rowsum = rowsum + 0.5d0 * x(i, 0)
+            rowsum = rowsum + f12 * x(i, 0)
             do j = 1, n - 1
                 rowsum = rowsum + x(i, j) * dcos(dble(j) * fpin)
             enddo
-            rowsum = rowsum - 0.5d0 * x(i, n)
+            rowsum = rowsum - f12 * x(i, n)
             x(i, n) = rt2 * rowsum / rtn
         enddo
 
@@ -491,7 +491,7 @@ module stafft
         !Next set up the rest of the array:
         do j = 1, n - 1
             do i = 1, m
-                wk(i, j) = 0.5d0 * (x(i, j) - x(i, n - j)) + dsin(dble(j) * fpin) * (x(i, j) + x(i, n - j))
+                wk(i, j) = f12 * (x(i, j) - x(i, n - j)) + dsin(dble(j) * fpin) * (x(i, j) + x(i, n - j))
             enddo
         enddo
 
@@ -558,11 +558,11 @@ module stafft
         !Do k = 0 first:
         do i = 0, nv - 1
             t1r = a(i, 2, 0) + a(i, 4, 0)
-            t2r = a(i, 0, 0) - 0.5d0 * t1r
+            t2r = a(i, 0, 0) - f12 * t1r
             t3r = sinfpi3 * (a(i, 4, 0) - a(i, 2, 0))
             u0r = a(i, 0, 0) + t1r
             t1i = a(i, 5, 0) + a(i, 1, 0)
-            t2i = a(i, 3, 0) - 0.5d0 * t1i
+            t2i = a(i, 3, 0) - f12 * t1i
             t3i = sinfpi3 * (a(i, 5, 0) - a(i, 1, 0))
             v0r = a(i, 3, 0) + t1i
             b(i, 0, 0) = u0r + v0r
@@ -589,8 +589,8 @@ module stafft
                     y5p = cosine(k, 5) * a(i, 5, kc) + sine(k, 5) * a(i, 5,  k)
                     t1r = x2p + x4p
                     t1i = y2p + y4p
-                    t2r = a(i, 0, k) - 0.5d0 * t1r
-                    t2i = a(i, 0, kc) - 0.5d0 * t1i
+                    t2r = a(i, 0, k) - f12 * t1r
+                    t2i = a(i, 0, kc) - f12 * t1i
                     t3r = sinfpi3 * (x2p - x4p)
                     t3i = sinfpi3 * (y2p - y4p)
                     u0r = a(i, 0, k) + t1r
@@ -601,8 +601,8 @@ module stafft
                     u2i = t2i + t3r
                     t1r = x5p + x1p
                     t1i = y5p + y1p
-                    t2r = x3p - 0.5d0 * t1r
-                    t2i = y3p - 0.5d0 * t1i
+                    t2r = x3p - f12 * t1r
+                    t2i = y3p - f12 * t1i
                     t3r = sinfpi3 * (x5p - x1p)
                     t3i = sinfpi3 * (y5p - y1p)
                     v0r = x3p + t1r
@@ -651,8 +651,8 @@ module stafft
                     y5p = c5k * a(i, 5, kc) + s5k * a(i, 5,  k)
                     t1r = x2p + x4p
                     t1i = y2p + y4p
-                    t2r = a(i, 0, k) - 0.5d0 * t1r
-                    t2i = a(i, 0, kc) - 0.5d0 * t1i
+                    t2r = a(i, 0, k) - f12 * t1r
+                    t2i = a(i, 0, kc) - f12 * t1i
                     t3r = sinfpi3 * (x2p - x4p)
                     t3i = sinfpi3 * (y2p - y4p)
                     u0r = a(i, 0, k) + t1r
@@ -663,8 +663,8 @@ module stafft
                     u2i = t2i + t3r
                     t1r = x5p + x1p
                     t1i = y5p + y1p
-                    t2r = x3p - 0.5d0 * t1r
-                    t2i = y3p - 0.5d0 * t1i
+                    t2r = x3p - f12 * t1r
+                    t2i = y3p - f12 * t1i
                     t3r = sinfpi3 * (x5p - x1p)
                     t3i = sinfpi3 * (y5p - y1p)
                     v0r = x3p + t1r
@@ -694,10 +694,10 @@ module stafft
             lvd2 = lv / 2
             do i = 0, nv - 1
                 q1 = a(i, 2, lvd2) - a(i, 4, lvd2)
-                q2 = a(i, 0, lvd2) + 0.5d0 * q1
+                q2 = a(i, 0, lvd2) + f12 * q1
                 q3 = sinfpi3 * (a(i, 2, lvd2) + a(i, 4, lvd2))
                 q4 = a(i, 1, lvd2) + a(i, 5, lvd2)
-                q5 = - a(i, 3, lvd2) - 0.5d0 * q4
+                q5 = - a(i, 3, lvd2) - f12 * q4
                 q6 = sinfpi3 * (a(i, 1, lvd2) - a(i, 5, lvd2))
                 b(i, lvd2, 0) = q2 + q6
                 b(i, lvd2, 1) = a(i, 0, lvd2) - q1
@@ -961,7 +961,7 @@ module stafft
         do i = 0, nv - 1
             t1r = a(i, 1, 0) + a(i, 2, 0)
             b(i, 0, 0) = a(i, 0, 0) + t1r
-            b(i, 0, 1) = a(i, 0, 0) - 0.5d0 * t1r
+            b(i, 0, 1) = a(i, 0, 0) - f12 * t1r
             b(i, 0, 2) = sinfpi3 * (a(i, 2, 0) - a(i, 1, 0))
         enddo
         !Next do remaining k:
@@ -975,8 +975,8 @@ module stafft
                     y2p = cosine(k, 2) * a(i, 2, kc) + sine(k, 2) * a(i, 2,  k)
                     t1r = x1p + x2p
                     t1i = y1p + y2p
-                    t2r = a(i, 0,  k) - 0.5d0 * t1r
-                    t2i = 0.5d0 * t1i - a(i, 0, kc)
+                    t2r = a(i, 0,  k) - f12 * t1r
+                    t2i = f12 * t1i - a(i, 0, kc)
                     t3r = sinfpi3 * (x2p - x1p)
                     t3i = sinfpi3 * (y1p - y2p)
                     b(i,  k, 0) = a(i, 0,  k) + t1r
@@ -1001,8 +1001,8 @@ module stafft
                     y2p = c2k * a(i, 2, kc) + s2k * a(i, 2,  k)
                     t1r = x1p + x2p
                     t1i = y1p + y2p
-                    t2r = a(i, 0,  k) - 0.5d0 * t1r
-                    t2i = 0.5d0 * t1i - a(i, 0, kc)
+                    t2r = a(i, 0,  k) - f12 * t1r
+                    t2i = f12 * t1i - a(i, 0, kc)
                     t3r = sinfpi3 * (x2p - x1p)
                     t3i = sinfpi3 * (y1p - y2p)
                     b(i,  k, 0) = a(i, 0,  k) + t1r
@@ -1086,12 +1086,12 @@ module stafft
 
         !Do k = 0 first:
         do i = 0, nv - 1
-            t2r = a(i, 0, 0) - 0.5d0 * a(i, 0, 2)
+            t2r = a(i, 0, 0) - f12 * a(i, 0, 2)
             t3r = sinfpi3 * a(i, 0, 4)
             u0r = a(i, 0, 0) + a(i, 0, 2)
             u1r = t2r + t3r
             u2r = t2r - t3r
-            t2i = a(i, 0, 3) - 0.5d0 * a(i, 0, 1)
+            t2i = a(i, 0, 3) - f12 * a(i, 0, 1)
             t3i = - sinfpi3 * a(i, 0, 5)
             v0r = a(i, 0, 3) + a(i, 0, 1)
             v1r = t2i + t3i
@@ -1110,8 +1110,8 @@ module stafft
                     kc = lv - k
                     t1r = a(i,  k, 2) + a(i, kc, 1)
                     t1i = a(i, kc, 3) - a(i,  k, 4)
-                    t2r = a(i,  k, 0) - 0.5d0 * t1r
-                    t2i = a(i, kc, 5) - 0.5d0 * t1i
+                    t2r = a(i,  k, 0) - f12 * t1r
+                    t2i = a(i, kc, 5) - f12 * t1i
                     t3r = sinfpi3 * (a(i,  k, 2) - a(i, kc, 1))
                     t3i = sinfpi3 * (a(i, kc, 3) + a(i,  k, 4))
                     u0r = a(i,  k, 0) + t1r
@@ -1122,8 +1122,8 @@ module stafft
                     u2i = t2i + t3r
                     t1r = a(i, kc, 0) + a(i, k, 1)
                     t1i = a(i, kc, 4) - a(i, k, 5)
-                    t2r = a(i, kc, 2) - 0.5d0 * t1r
-                    t2i = - a(i, k, 3) - 0.5d0 * t1i
+                    t2r = a(i, kc, 2) - f12 * t1r
+                    t2i = - a(i, k, 3) - f12 * t1i
                     t3r = sinfpi3 * (a(i, kc, 0) - a(i,  k, 1))
                     t3i = sinfpi3 * ( - a(i, k, 5) - a(i, kc, 4))
                     v0r = a(i, kc, 2) + t1r
@@ -1172,8 +1172,8 @@ module stafft
                 do i = 0, nv - 1
                     t1r = a(i,  k, 2) + a(i, kc, 1)
                     t1i = a(i, kc, 3) - a(i,  k, 4)
-                    t2r = a(i,  k, 0) - 0.5d0 * t1r
-                    t2i = a(i, kc, 5) - 0.5d0 * t1i
+                    t2r = a(i,  k, 0) - f12 * t1r
+                    t2i = a(i, kc, 5) - f12 * t1i
                     t3r = sinfpi3 * (a(i,  k, 2) - a(i, kc, 1))
                     t3i = sinfpi3 * (a(i, kc, 3) + a(i,  k, 4))
                     u0r = a(i,  k, 0) + t1r
@@ -1184,8 +1184,8 @@ module stafft
                     u2i = t2i + t3r
                     t1r = a(i, kc, 0) + a(i, k, 1)
                     t1i = a(i, kc, 4) - a(i, k, 5)
-                    t2r = a(i, kc, 2) - 0.5d0 * t1r
-                    t2i = - a(i, k, 3) - 0.5d0 * t1i
+                    t2r = a(i, kc, 2) - f12 * t1r
+                    t2i = - a(i, k, 3) - f12 * t1i
                     t3r = sinfpi3 * (a(i, kc, 0) - a(i,  k, 1))
                     t3i = sinfpi3 * ( - a(i, k, 5) - a(i, kc, 4))
                     v0r = a(i, kc, 2) + t1r
@@ -1226,8 +1226,8 @@ module stafft
             do i = 0, nv - 1
                 q1 = a(i, lvd2, 0) + a(i, lvd2, 2)
                 q2 = a(i, lvd2, 5) + a(i, lvd2, 3)
-                q3 = a(i, lvd2, 1) - 0.5d0 * q1
-                q4 = a(i, lvd2, 4) + 0.5d0 * q2
+                q3 = a(i, lvd2, 1) - f12 * q1
+                q4 = a(i, lvd2, 4) + f12 * q2
                 q5 = sinfpi3 * (a(i, lvd2, 0) - a(i, lvd2, 2))
                 q6 = sinfpi3 * (a(i, lvd2, 5) - a(i, lvd2, 3))
                 b(i, 0, lvd2) = a(i, lvd2, 1) + q1
@@ -1494,7 +1494,7 @@ module stafft
         !Do k = 0 first:
         do i = 0, nv - 1
             t1r = a(i, 0, 1)
-            t2r = a(i, 0, 0) - 0.5d0 * t1r
+            t2r = a(i, 0, 0) - f12 * t1r
             t3r = sinfpi3 * a(i, 0, 2)
             b(i, 0, 0) = a(i, 0, 0) + t1r
             b(i, 1, 0) = t2r + t3r
@@ -1507,8 +1507,8 @@ module stafft
                     kc = lv - k
                     t1r = a(i,  k, 1) + a(i, kc, 0)
                     t1i = a(i, kc, 1) - a(i,  k, 2)
-                    t2r = a(i,  k, 0) - 0.5d0 * t1r
-                    t2i = a(i, kc, 2) - 0.5d0 * t1i
+                    t2r = a(i,  k, 0) - f12 * t1r
+                    t2i = a(i, kc, 2) - f12 * t1i
                     t3r = sinfpi3 * (a(i,  k, 1) - a(i, kc, 0))
                     t3i = sinfpi3 * (a(i, kc, 1) + a(i,  k, 2))
                     x1p = t2r + t3i
@@ -1533,8 +1533,8 @@ module stafft
                 do i = 0, nv - 1
                     t1r = a(i,  k, 1) + a(i, kc, 0)
                     t1i = a(i, kc, 1) - a(i,  k, 2)
-                    t2r = a(i,  k, 0) - 0.5d0 * t1r
-                    t2i = a(i, kc, 2) - 0.5d0 * t1i
+                    t2r = a(i,  k, 0) - f12 * t1r
+                    t2i = a(i, kc, 2) - f12 * t1i
                     t3r = sinfpi3 * (a(i,  k, 1) - a(i, kc, 0))
                     t3i = sinfpi3 * (a(i, kc, 1) + a(i,  k, 2))
                     x1p = t2r + t3i

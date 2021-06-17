@@ -179,7 +179,7 @@ program epic
                     enddo
                 enddo
 
-                gmax = 0.5d0 * dsqrt(H)
+                gmax = f12 * dsqrt(H)
                 dt = min(time%dt_max, time%alpha / gmax)
 
             else if (time%is_adaptive) then

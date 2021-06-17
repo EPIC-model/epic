@@ -5,7 +5,8 @@ module parcel_ellipse
     use constants, only : pi   &
                         , fpi  &
                         , zero &
-                        , two
+                        , two  &
+                        , f12
     implicit none
 
     contains
@@ -17,7 +18,7 @@ module parcel_ellipse
             double precision, intent(in) :: B22
             double precision             :: a2
 
-            a2 = 0.5d0 * (B11 + B22) + dsqrt(0.25d0 * (B11 - B22) ** 2 + B12 ** 2)
+            a2 = f12 * (B11 + B22) + dsqrt(0.25d0 * (B11 - B22) ** 2 + B12 ** 2)
         end function get_eigenvalue
 
         function get_eigenvector(a2, B11, B12, B22) result(evec)
@@ -121,7 +122,7 @@ module parcel_ellipse
 
             evec = get_eigenvector(a2, B(1), B(2), B22)
 
-            dx = 0.5d0 * c * evec
+            dx = f12 * c * evec
 
             points(1, :) = position - dx
             points(2, :) = position + dx

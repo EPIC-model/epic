@@ -11,7 +11,7 @@
 ! =============================================================================
 program test_free_slip
     use unit_test
-    use constants, only : pi, zero, one, two
+    use constants, only : pi, zero, one, two, f12
     use parcel_container
     use parcel_interpl, only : vol2grid
     use options, only : parcel
@@ -20,7 +20,7 @@ program test_free_slip
     implicit none
 
     integer :: i, j, k, jj, ii
-    double precision, parameter :: angle = 0.5d0 * pi
+    double precision, parameter :: angle = f12 * pi
     double precision, parameter :: lam = 3.5d0 ! >= 3.5 --> 1 ellipse point outside domain
     double precision :: error
 
@@ -61,7 +61,7 @@ program test_free_slip
     parcels%B(:, 1) = lam * dcos(angle) ** 2 + one / lam * dsin(angle) ** 2
 
     ! b12
-    parcels%B(:, 2) = 0.5d0 * (lam - one / lam) * dsin(two * angle)
+    parcels%B(:, 2) = f12 * (lam - one / lam) * dsin(two * angle)
 
 
     call vol2grid
