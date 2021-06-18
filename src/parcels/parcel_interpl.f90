@@ -10,7 +10,7 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipse
     use fields
-    use phys_parameters, only : glat_c, q0_c
+    use phys_parameters, only : glat, h_0
     implicit none
 
     private :: par2grid_elliptic,       &
@@ -205,16 +205,16 @@ module parcel_interpl
         subroutine par2grid_elliptic
             double precision  :: points(2, 2)
             integer           :: n, p, l, i, j
-            double precision  :: pvol, pvor, weight, btot, qc
+            double precision  :: pvol, pvor, weight, btot, h_c
 
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
                 ! liquid water content
-                qc = max(zero, parcels%humidity(n) - q0_c * dexp(lower(2) - parcels%position(n, 2)))
+                h_c = max(zero, parcels%humidity(n) - h_0 * dexp(lower(2) - parcels%position(n, 2)))
 
                 ! total buoyancy (including effects of latent heating)
-                btot = parcels%buoyancy(n) + glat_c * qc
+                btot = parcels%buoyancy(n) + glat * h_c
 
                 points = get_ellipse_points(parcels%position(n, :), &
                                             pvol, parcels%B(n, :))
@@ -258,7 +258,7 @@ module parcel_interpl
         subroutine par2grid_non_elliptic
             integer          :: n, l, i, j
             double precision :: pos(2)
-            double precision :: pvol, weight, qc, btot
+            double precision :: pvol, weight, h_c, btot
 
             do n = 1, n_parcels
 
@@ -266,10 +266,10 @@ module parcel_interpl
                 pvol = parcels%volume(n)
 
                 ! liquid water content
-                qc = max(zero, parcels%humidity(n) - q0_c * dexp(lower(2) - pos(2)))
+                h_c = max(zero, parcels%humidity(n) - h_0 * dexp(lower(2) - pos(2)))
 
                 ! total buoyancy (including effects of latent heating)
-                btot = parcels%buoyancy(n) + glat_c * qc
+                btot = parcels%buoyancy(n) + glat * h_c
 
                 call get_index(pos, i, j)
                 i = mod(i + nx, nx)
