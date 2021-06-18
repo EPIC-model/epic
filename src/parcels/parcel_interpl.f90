@@ -10,7 +10,8 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipse
     use fields
-    use phys_parameters, only : glat, h_0
+    use phys_constants, only : h_0
+    use phys_parameters, only : glat
     implicit none
 
     private :: par2grid_elliptic,       &
