@@ -128,7 +128,7 @@ program epic
                             call vol2grid
                         endif
                         if (parcel%apply_gradient) then
-                            call apply_gradient(volg,parcel%gradient_pref)
+                            call apply_gradient(volg,parcel%gradient_pref,parcel%max_compression)
                             call vol2grid
                         end if
                     end do

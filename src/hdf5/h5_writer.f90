@@ -550,6 +550,7 @@ module h5_writer
                 call write_h5_logical_attrib(group, "apply_laplace", parcel%apply_laplace)
                 call write_h5_logical_attrib(group, "apply_gradient", parcel%apply_gradient)
                 call write_h5_double_scalar_attrib(group, "gradient_pref", parcel%gradient_pref)
+                call write_h5_double_scalar_attrib(group, "max_compression", parcel%max_compression)
                 call write_h5_double_scalar_attrib(group, "vmaxfraction", parcel%vmaxfraction)
             call close_h5_group(group)
 
