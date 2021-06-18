@@ -1,5 +1,5 @@
 module stafft
-    use constants, only : pi, twopi, one, two, f12, f14
+    use constants, only : pi, twopi, zero, one, two, f12, f14
     implicit none
 
     ! Fourier transform module.
@@ -427,7 +427,7 @@ module stafft
         !in x(i, n), as this is not overwritten when x is used
         !as a work array in the forfft routine called next:
         do i = 1, m
-            rowsum = 0.0d0
+            rowsum = zero
             rowsum = rowsum + f12 * x(i, 0)
             do j = 1, n - 1
                 rowsum = rowsum + x(i, j) * dcos(dble(j) * fpin)
@@ -484,7 +484,7 @@ module stafft
         !Pre-process the array and store it in wk:
         !First set 0 frequency element to zero:
         do i = 1, m
-            wk(i, 0) = 0.0d0
+            wk(i, 0) = zero
         enddo
 
         !Next set up the rest of the array:
@@ -525,7 +525,7 @@ module stafft
 
         !  Set the Nyquist frequency element to zero:
         do i = 1, m
-            x(i, n) = 0.0d0
+            x(i, n) = zero
         enddo
     end subroutine
 
