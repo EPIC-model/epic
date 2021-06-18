@@ -4,7 +4,7 @@
 module phys_constants
     implicit none
 
-    ![m/s**2] gravity
+    ![m/s**2]
     double precision, parameter :: gravity = 9.81d0
 
 end module phys_constants
