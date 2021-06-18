@@ -106,14 +106,17 @@ module field_hdf5
             call write_h5_dataset_2d(h5file_id, name, "total buoyancy", &
                                      tbuoyg(0:nz, 0:nx-1))
 
-            call write_h5_dataset_2d(h5file_id, name, "humidity", &
-                                     humg(0:nz, 0:nx-1))
+            call write_h5_dataset_2d(h5file_id, name, "dry buoyancy", &
+                                     dbuoyg(0:nz, 0:nx-1))
+
+!             call write_h5_dataset_2d(h5file_id, name, "humidity", &
+!                                      humg(0:nz, 0:nx-1))
 
             call write_h5_dataset_2d(h5file_id, name, "vorticity", &
                                      vortg(0:nz, 0:nx-1))
 
-            call write_h5_dataset_2d(h5file_id, name, "liquid humidity", &
-                                     humlig(0:nz, 0:nx-1))
+!             call write_h5_dataset_2d(h5file_id, name, "liquid humidity", &
+!                                      humlig(0:nz, 0:nx-1))
 
             call write_h5_dataset_2d(h5file_id, name, "tendency", &
                                      vtend(0:nz, 0:nx-1))

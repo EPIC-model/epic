@@ -10,6 +10,8 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipse
     use fields
+    use phys_constants, only : h_0
+    use phys_parameters, only : glat, lam_c
     implicit none
 
     private :: par2grid_elliptic,       &
@@ -172,6 +174,11 @@ module parcel_interpl
             vortg(1,    :) = vortg(1,    :) + vortg(-1,   :)
             vortg(nz-1, :) = vortg(nz-1, :) + vortg(nz+1, :)
 
+            dbuoyg(0,  :) = two * dbuoyg(0,  :)
+            dbuoyg(nz, :) = two * dbuoyg(nz, :)
+            dbuoyg(1,    :) = dbuoyg(1,    :) + dbuoyg(-1,   :)
+            dbuoyg(nz-1, :) = dbuoyg(nz-1, :) + dbuoyg(nz+1, :)
+
             tbuoyg(0,  :) = two * tbuoyg(0,  :)
             tbuoyg(nz, :) = two * tbuoyg(nz, :)
             tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
@@ -179,6 +186,7 @@ module parcel_interpl
 
             ! exclude halo cells to avoid division by zero
             vortg(0:nz, :) = vortg(0:nz, :) / volg(0:nz, :)
+            dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)
             tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
 
             ! sum halo contribution into internal cells
@@ -198,10 +206,18 @@ module parcel_interpl
         subroutine par2grid_elliptic
             double precision  :: points(2, 2)
             integer           :: n, p, l, i, j
-            double precision  :: pvol, pvor, weight
+            double precision  :: pvol, pvor, weight, btot, h_c
 
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
+
+                ! liquid water content
+                h_c = parcels%humidity(n) &
+                    - h_0 * dexp(lam_c * (lower(2) - parcels%position(n, 2)))
+                h_c = max(zero, h_c)
+
+                ! total buoyancy (including effects of latent heating)
+                btot = parcels%buoyancy(n) + glat * h_c
 
                 points = get_ellipse_points(parcels%position(n, :), &
                                             pvol, parcels%B(n, :))
@@ -228,8 +244,11 @@ module parcel_interpl
                         vortg(js(l), is(l)) = vortg(js(l), is(l)) &
                                             + weight * parcels%vorticity(n)
 
-                        tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
+                        dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
                                              + weight * parcels%buoyancy(n)
+
+                        tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
+                                             + weight * btot
 
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
                                            + weight
@@ -242,12 +261,20 @@ module parcel_interpl
         subroutine par2grid_non_elliptic
             integer          :: n, l, i, j
             double precision :: pos(2)
-            double precision :: pvol, weight
+            double precision :: pvol, weight, h_c, btot
 
             do n = 1, n_parcels
 
                 pos = parcels%position(n, :)
                 pvol = parcels%volume(n)
+
+                ! liquid water content
+                h_c = parcels%humidity(n) &
+                    - h_0 * dexp(lam_c * (lower(2) - pos(2)))
+                h_c = max(zero, h_c)
+
+                ! total buoyancy (including effects of latent heating)
+                btot = parcels%buoyancy(n) + glat * h_c
 
                 call get_index(pos, i, j)
                 i = mod(i + nx, nx)
@@ -268,8 +295,11 @@ module parcel_interpl
                     vortg(js(l), is(l)) = vortg(js(l), is(l))  &
                                         + weight * parcels%vorticity(n)
 
-                    tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
+                    dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
                                          + weight * parcels%buoyancy(n)
+
+                    tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
+                                         + weight * btot
 
                     volg(js(l), is(l)) = volg(js(l), is(l)) + weight
                 enddo

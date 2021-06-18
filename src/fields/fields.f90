@@ -17,9 +17,10 @@ module fields
     double precision, allocatable, dimension(:, :) :: &
         vortg,     &   ! vorticity scalar field
         vtend,     &   ! vorticity tendency
+        dbuoyg,    &   ! dry buoyancy (or liquid-water buoyancy)
         tbuoyg,    &   ! buoyancy (has 1 halo cell layer in z)
-        humg,      &   ! specific humidity
-        humlig,    &   ! condensed humidity
+!         humg,      &   ! specific humidity
+!         humlig,    &   ! condensed humidity
         volg           ! volume scalar field (has 1 halo cell layer in z)
 
 
@@ -45,9 +46,11 @@ module fields
 
             allocate(tbuoyg(-1:nz+1, 0:nx-1))
 
-            allocate(humg(-1:nz+1, 0:nx-1))
+            allocate(dbuoyg(-1:nz+1, 0:nx-1))
 
-            allocate(humlig(-1:nz+1, 0:nx-1))
+!             allocate(humg(-1:nz+1, 0:nx-1))
+
+!             allocate(humlig(-1:nz+1, 0:nx-1))
 
             allocate(nparg(-1:nz, 0:nx-1))
 
@@ -61,9 +64,10 @@ module fields
             volg     = zero
             vortg    = zero
             vtend    = zero
-            tbuoyg    = zero
-            humg     = zero
-            humlig   = zero
+            tbuoyg   = zero
+            dbuoyg   = zero
+!             humg     = zero
+!             humlig   = zero
             nparg    = zero
         end subroutine
 
