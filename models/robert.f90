@@ -12,7 +12,7 @@
 ! =============================================================================
 
 module robert
-    use physics
+    use phys_constants
     use constants
     use h5_writer
     implicit none
