@@ -42,22 +42,13 @@ module robert
 
     contains
 
-        subroutine robert_init(h5fname, nx, nz, origin, dx)
-            character(*),     intent(in) :: h5fname
-            integer,          intent(in) :: nx, nz
-            double precision, intent(in) :: origin(2)
-            double precision, intent(in) :: dx(2)
-            integer                      :: k
-            type(bubble_type)            :: bubble
-            integer(hid_t)               :: h5handle
-            logical                      :: exists = .true.
-
-            ! check whether file exists
-            inquire(file=h5fname, exist=exists)
-            if (exists) then
-                print *, "File '" // h5fname // "'already exists."
-                stop
-            endif
+        subroutine robert_init(h5handle, nx, nz, origin, dx)
+            integer(hid_t),   intent(inout) :: h5handle
+            integer,          intent(in)    :: nx, nz
+            double precision, intent(in)    :: origin(2)
+            double precision, intent(in)    :: dx(2)
+            integer                         :: k
+            type(bubble_type)               :: bubble
 
             if (robert_flow%n_bubbles > size(robert_flow%bubbles)) then
                 print *, 'Number of bubbles beyond upper limit.'
@@ -82,9 +73,7 @@ module robert
                 end select
             enddo
 
-            call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5handle)
             call write_h5_dataset_2d(h5handle, '/', 'buoyancy', buoyg)
-            call close_h5_file(h5handle)
 
             deallocate(buoyg)
 

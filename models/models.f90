@@ -7,12 +7,14 @@ program models
     use straka
     use robert
     use constants, only : pi
+    use parameters, only : nx, nz, dx, lower, extent
     use h5_utils
     use h5_writer
     implicit none
 
     character(len=512) :: model = ''
     character(len=512) :: h5fname = ''
+    integer(hid_t)     :: h5handle
 
     type box_type
         integer          :: ncells(2)   ! number of cells
@@ -28,14 +30,25 @@ program models
 
     call read_config_file
 
+    call initialise_hdf5
+
     call generate_fields
+
+    call finalise_hdf5
 
     contains
 
         subroutine generate_fields
-            double precision         :: dx(2)
-            integer                  :: nx, nz
-            integer(hid_t)           :: group, h5handle
+            logical                  :: exists = .true.
+
+            ! check whether file exists
+            inquire(file=h5fname, exist=exists)
+            if (exists) then
+                print *, "File '" // trim(h5fname) // "'already exists."
+                stop
+            endif
+
+            call create_h5_file(h5fname, h5handle)
 
             dx = box%extent / dble(box%ncells)
             nx = box%ncells(1)
@@ -48,18 +61,19 @@ program models
                     box%extent = pi * box%extent
                     dx = dx * pi
 
-                    call taylorgreen_init(trim(h5fname), nx, nz, box%origin, dx)
+                    call taylorgreen_init(h5handle, nx, nz, box%origin, dx)
                 case ('Straka')
-                    call straka_init(trim(h5fname), nx, nz, box%origin, dx)
+                    call straka_init(h5handle, nx, nz, box%origin, dx)
                 case ('Robert')
-                    call robert_init(trim(h5fname), nx, nz, box%origin, dx)
+                    call robert_init(h5handle, nx, nz, box%origin, dx)
                 case default
                     print *, "Unknown model: '", trim(model), "'."
                     stop
             end select
 
             ! write box
-            call open_h5_file(filename, H5F_ACC_RDWR_F, h5handle)
+            lower = box%origin
+            extent = box%extent
             call write_h5_box(h5handle)
             call close_h5_file(h5handle)
         end subroutine generate_fields
@@ -107,7 +121,7 @@ program models
         ! Get the file name provided via the command line
         subroutine parse_command_line
             integer                          :: i
-            character(len=32)                :: arg
+            character(len=512)               :: arg
 
             i = 0
             do

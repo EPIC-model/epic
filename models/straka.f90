@@ -30,25 +30,16 @@ module straka
 
     contains
 
-        subroutine straka_init(h5fname, nx, nz, origin, dx)
-            character(*),     intent(in) :: h5fname
-            integer,          intent(in) :: nx, nz
-            double precision, intent(in) :: origin(2)
-            double precision, intent(in) :: dx(2)
-            double precision             :: pos(2)
-            double precision             :: xc, xr, zc, zr, L
-            double precision             :: dtheta, dtheta_max
-            double precision             :: buoyg(0:nz, 0:nx-1)
-            integer                      :: i, j
-            integer(hid_t)               :: h5handle
-            logical                      :: exists = .true.
-
-            ! check whether file exists
-            inquire(file=h5fname, exist=exists)
-            if (exists) then
-                print *, "File '" // h5fname // "'already exists."
-                stop
-            endif
+        subroutine straka_init(h5handle, nx, nz, origin, dx)
+            integer(hid_t),   intent(inout) :: h5handle
+            integer,          intent(in)    :: nx, nz
+            double precision, intent(in)    :: origin(2)
+            double precision, intent(in)    :: dx(2)
+            double precision                :: pos(2)
+            double precision                :: xc, xr, zc, zr, L
+            double precision                :: dtheta, dtheta_max
+            double precision                :: buoyg(0:nz, 0:nx-1)
+            integer                         :: i, j
 
             ! in metres
             xc = straka_flow%center(1)
@@ -81,9 +72,7 @@ module straka
                 enddo
             enddo
 
-            call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5handle)
             call write_h5_dataset_2d(h5handle, '/', 'buoyancy', buoyg)
-            call close_h5_file(h5handle)
 
         end subroutine straka_init
 end module

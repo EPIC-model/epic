@@ -11,7 +11,7 @@ module parcel_interpl
     use parcel_ellipse
     use fields
     use phys_constants, only : h_0
-    use phys_parameters, only : glat
+    use phys_parameters, only : glat, lam_c
     implicit none
 
     private :: par2grid_elliptic,       &
@@ -212,7 +212,9 @@ module parcel_interpl
                 pvol = parcels%volume(n)
 
                 ! liquid water content
-                h_c = max(zero, parcels%humidity(n) - h_0 * dexp(lower(2) - parcels%position(n, 2)))
+                h_c = parcels%humidity(n) &
+                    - h_0 * dexp(lam_c * (lower(2) - parcels%position(n, 2)))
+                h_c = max(zero, h_c)
 
                 ! total buoyancy (including effects of latent heating)
                 btot = parcels%buoyancy(n) + glat * h_c
@@ -267,7 +269,9 @@ module parcel_interpl
                 pvol = parcels%volume(n)
 
                 ! liquid water content
-                h_c = max(zero, parcels%humidity(n) - h_0 * dexp(lower(2) - pos(2)))
+                h_c = parcels%humidity(n) &
+                    - h_0 * dexp(lam_c * (lower(2) - pos(2)))
+                h_c = max(zero, h_c)
 
                 ! total buoyancy (including effects of latent heating)
                 btot = parcels%buoyancy(n) + glat * h_c
