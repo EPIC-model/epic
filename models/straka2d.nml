@@ -7,11 +7,8 @@
  box%extent  = 20000, 6400
  box%origin  = -10000.0, 0.0
 
- ![Kelvin] reference potential temperature
- straka_flow%theta_ref = 300.0
-
- ![Kelvin] max. pot. temp. perturbation
- straka_flow%theta_max = 15.0
+ ![K] max. pot. temp. perturbation
+ straka_flow%dtheta_max = 15.0
 
  ![m] sphere center (x, z)
  straka_flow%center = 0.0, 3000.0
