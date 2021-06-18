@@ -205,6 +205,10 @@ else
     AC_MSG_RESULT([no])
 fi
 
+if test "x$ENABLE_UNIT_TESTS" == "xyes" && test "x$ENABLE_DEBUG" == "xno"; then
+    AC_MSG_WARN([Volume symmetry unit test disabled since not built in debug mode.])
+fi
+
 #
 # Scalasca and Score-P
 #
