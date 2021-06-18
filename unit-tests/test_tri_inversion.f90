@@ -18,7 +18,7 @@ program test_tri_inversion
 
     nx = 40
     nz = 20
-    lower  = (/-f32, -f32/)
+    lower  = (/-two, -one/)
     extent = (/four, two/)
 
     call update_parameters

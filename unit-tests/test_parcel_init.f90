@@ -11,7 +11,7 @@ program test_parcel_init
     use parcel_interpl, only : par2grid
     use parcel_ellipse, only : get_ab
     use fields, only : tbuoyg, field_default
-    use parameters, only : update_parameters, dx, ncell, nx, nz, lower
+    use parameters, only : update_parameters, dx, ncell, nx, nz, lower, vcell
     implicit none
 
     double precision  :: xg, zg, facx, facz, argx, argz, v0
@@ -60,7 +60,7 @@ program test_parcel_init
 
     !---------------------------------------------------------
     !Initialise parcel volume positions and volume fractions:
-    v0 = dxf * dzf !use equal volume fraction for each parcel
+    v0 = dxf * dzf * vcell
     i = 0
     do iz = 0, nz-1
         do ix = 0, nx-1
