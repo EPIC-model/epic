@@ -18,7 +18,7 @@ program test_tri_inversion
 
     nx = 40
     nz = 20
-    lower  = (/-1.5, -1.5/)
+    lower  = (/-two, -one/)
     extent = (/four, two/)
 
     call update_parameters
