@@ -81,7 +81,7 @@ module straka
                     ! MPIC paper:
                     ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
                     ! (dtheta = theta - theta_ref)
-                    buoyg(j, i) = g_c * dtheta / theta_ref
+                    buoyg(j, i) = gravity * dtheta / theta_ref
                 enddo
             enddo
 

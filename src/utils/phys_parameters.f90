@@ -21,6 +21,6 @@ module phys_parameters
     double precision, parameter :: theta_c = 1.0d0 ! FIXME
 
     ![] see equation (5) of MPIC paper
-    double precision, parameter :: glat_c = g_c * L_c / (cp_c * theta_c)
+    double precision, parameter :: glat_c = gravity * L_c / (cp_c * theta_c)
 
 end module phys_parameters

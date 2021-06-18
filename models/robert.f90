@@ -124,7 +124,7 @@ module robert
                     ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
                     ! (dtheta = theta - theta_ref)
                     buoyg(j, i) = buoyg(j, i) &
-                                + g_c * dtheta / theta_ref
+                                + gravity * dtheta / theta_ref
                 enddo
             enddo
         end subroutine robert_uniform_init
@@ -176,7 +176,7 @@ module robert
                     ! liquid-water buoyancy is defined by b = g * (theta − theta_ref) / theta_ref
                     ! (dtheta = theta - theta_ref)
                     buoyg(j, i) = buoyg(j, i) &
-                                + g_c * dtheta / theta_ref
+                                + gravity * dtheta / theta_ref
                 enddo
             enddo
         end subroutine robert_gaussian_init
