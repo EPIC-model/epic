@@ -26,10 +26,6 @@
 
  parcel%n_per_cell   = 4
 
- parcel%is_random    = .false.
-
- parcel%seed         = 42
-
  parcel%is_elliptic  = .true.
 
  parcel%lambda       = 5.0
