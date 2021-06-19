@@ -184,7 +184,7 @@ program epic
                     enddo
                 enddo
 
-                gmax = 0.5d0 * dsqrt(H)
+                gmax = f12 * dsqrt(H)
                 dt = min(time%dt_max, time%alpha / gmax)
 
             else if (time%is_adaptive) then
@@ -221,6 +221,9 @@ program epic
                 i = i + 1
                 call get_command_argument(i, arg)
                 filename = trim(arg)
+            else if (arg == '--help') then
+                print *, 'Run code with "./epic --config [config file]"'
+                stop
 #ifdef ENABLE_VERBOSE
             else if (arg == '--verbose') then
                 verbose = .true.

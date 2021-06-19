@@ -76,7 +76,7 @@ module parcel_interpl
 
                     do l = 1, ngp
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
-                                           + 0.5d0 * weights(l) * pvol
+                                           + f12 * weights(l) * pvol
                     enddo
                 enddo
             enddo
@@ -122,7 +122,7 @@ module parcel_interpl
 
                         do l = 1, ngp
                             sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
-                                                   + dble(m) * 0.5d0 * weights(l) * pvol
+                                                   + dble(m) * f12 * weights(l) * pvol
                         enddo
                     enddo
                 enddo
@@ -260,7 +260,7 @@ module parcel_interpl
                     ! the weight is halved due to 2 points per ellipse
                     do l = 1, ngp
 
-                        weight = 0.5d0 * weights(l) * pvol
+                        weight = f12 * weights(l) * pvol
 
                         vortg(js(l), is(l)) = vortg(js(l), is(l)) &
                                             + weight * parcels%vorticity(n)
@@ -379,7 +379,7 @@ module parcel_interpl
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp
-                        weight = 0.5d0 * weights(l)
+                        weight = f12 * weights(l)
 
                         ! loop over field components
                         do c = 1, ncomp

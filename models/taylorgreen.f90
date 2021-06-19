@@ -24,7 +24,7 @@ module taylorgreen
         type(flow_type) :: tg_flow
 
 
-        double precision, parameter :: hpi = 0.5d0 * pi
+        double precision, parameter :: hpi = f12 * pi
 
     public :: get_flow_velocity,    &
               get_flow_gradient,    &
