@@ -2,7 +2,9 @@ SUBDIRS = src unit-tests python-scripts models
 dist_doc_DATA = README.md
 
 dataroot_DATA = 				\
-	config.nml				\
+	taylor_green.config			\
+	robert.config				\
+	straka.config				\
 	models/robert2d-one-gaussian.nml	\
 	models/robert2d-one-uniform.nml		\
 	models/robert2d-two-gaussians.nml	\

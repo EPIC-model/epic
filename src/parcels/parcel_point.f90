@@ -123,11 +123,11 @@ module parcel_point
             double precision, intent(in) :: vfraction
             double precision             :: vmin
             integer                      :: isma(0:n_parcels), n_remove, l
-            double precision             :: vres(n_parcels), bres(n_parcels), zres(n_parcels)
+            double precision             :: vres(n_parcels), zres(n_parcels), bres(n_parcels)
             double precision             :: res_volg(-1:nz+1, 0:nx-1)
             double precision             :: ori_volg(-1:nz+1, 0:nx-1)
             double precision             :: res_vortg(-1:nz+1, 0:nx-1)
-            double precision             :: res_tbuoyg(-1:nz+1, 0:nx-1)
+            double precision             :: res_dbuoyg(-1:nz+1, 0:nx-1)
             double precision             :: pos(2), weights(ngp), ww, volfi
             integer :: is(ngp), js(ngp)
 
@@ -138,7 +138,7 @@ module parcel_point
             res_volg = zero
             ori_volg = zero
             res_vortg = zero
-            res_tbuoyg = zero
+            res_dbuoyg = zero
 
             n_remove = 0
             do n = 1, n_parcels
@@ -161,7 +161,7 @@ module parcel_point
                         res_vortg(js(l), is(l)) = res_vortg(js(l), is(l)) &
                                                 + ww * parcels%vorticity(n)
 
-                        res_tbuoyg(js(l), is(l)) = res_tbuoyg(js(l), is(l)) &
+                        res_dbuoyg(js(l), is(l)) = res_dbuoyg(js(l), is(l)) &
                                                  + ww * parcels%buoyancy(n)
                     enddo
                 else
@@ -183,8 +183,8 @@ module parcel_point
             res_vortg(0,  :) = two * res_vortg(0,  :)
             res_vortg(nz, :) = two * res_vortg(nz, :)
 
-            res_tbuoyg(0,  :) = two * res_tbuoyg(0,  :)
-            res_tbuoyg(nz, :) = two * res_tbuoyg(nz, :)
+            res_dbuoyg(0,  :) = two * res_dbuoyg(0,  :)
+            res_dbuoyg(nz, :) = two * res_dbuoyg(nz, :)
 
             if (n_remove > 0) then
                 ! remove invalid parcels
@@ -207,15 +207,15 @@ module parcel_point
                         vres(n) = vres(n) &
                                 + ww * res_volg(js(l), is(l))
 
-                        bres(n) = bres(n) &
-                                + ww * res_tbuoyg(js(l), is(l))
-
                         zres(n) = zres(n) &
                                 + ww * res_vortg(js(l), is(l))
+
+                        bres(n) = bres(n) &
+                                + ww * res_dbuoyg(js(l), is(l))
                     enddo
                     volfi = one / (parcels%volume(n) + vres(n))
-                    parcels%buoyancy(n) = (parcels%buoyancy(n) * parcels%volume(n) + bres(n)) * volfi
                     parcels%vorticity(n) = (parcels%vorticity(n) * parcels%volume(n) + zres(n)) * volfi
+                    parcels%buoyancy(n) = (parcels%buoyancy(n) * parcels%volume(n) + bres(n)) * volfi
                     parcels%volume(n) = parcels%volume(n) + vres(n)
                 enddo
             endif
