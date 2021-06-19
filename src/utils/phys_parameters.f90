@@ -7,7 +7,7 @@ module phys_parameters
     implicit none
 
     ![m] inverse condensation scale-height
-    double precision, parameter :: lam_c = 0.01d0
+    double precision, parameter :: lam_c = 0.001d0
 
     ![] see equation (5) of MPIC paper
     double precision, parameter :: glat = gravity * L_c / (c_p * theta_l0)
