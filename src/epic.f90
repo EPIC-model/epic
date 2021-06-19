@@ -94,6 +94,9 @@ program epic
                 ! make sure we always write initial setup
                 if (output%h5_write_fields .and. &
                     (mod(iter - 1, output%h5_field_freq) == 0)) then
+#ifndef NDEBUG
+                    call vol2grid_symmetry_error
+#endif
                     call write_h5_field_step(nfw, t, dt)
                 endif
 
@@ -143,6 +146,9 @@ program epic
 
             ! write final step
             if (output%h5_write_fields) then
+#ifndef NDEBUG
+                call vol2grid_symmetry_error
+#endif
                 call write_h5_field_step(nfw, t, dt)
             endif
 

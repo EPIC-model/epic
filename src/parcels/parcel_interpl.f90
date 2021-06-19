@@ -82,12 +82,21 @@ module parcel_interpl
             enddo
         end subroutine vol2grid_elliptic
 
-        subroutine vol2grid_elliptic_symmetry_check
+#ifndef NDEBUG
+        subroutine vol2grid_symmetry_error
+            if (parcel%is_elliptic) then
+                call vol2grid_elliptic_symmetry_error
+            else
+                call vol2grid_non_elliptic_symmetry_error
+            endif
+        end subroutine vol2grid_symmetry_error
+
+        subroutine vol2grid_elliptic_symmetry_error
             double precision :: points(2, 2), V, B(2), pos(2)
             integer          :: n, p, l, m
             double precision :: pvol
 
-            volg = zero
+            sym_volg = zero
 
             do m = -1, 1, 2
                 do n = 1, n_parcels
@@ -112,14 +121,43 @@ module parcel_interpl
                         call trilinear(points(p, :), is, js, weights)
 
                         do l = 1, ngp
-                            volg(js(l), is(l)) = volg(js(l), is(l)) &
-                                               + dble(m) * f12 * weights(l) * pvol
+                            sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
+                                                   + dble(m) * f12 * weights(l) * pvol
                         enddo
                     enddo
                 enddo
             enddo
-        end subroutine vol2grid_elliptic_symmetry_check
+        end subroutine vol2grid_elliptic_symmetry_error
 
+
+        subroutine vol2grid_non_elliptic_symmetry_error
+            double precision :: pos(2)
+            integer          :: n, l, m
+            double precision :: pvol
+
+            sym_volg = zero
+
+            do m = -1, 1, 2
+                do n = 1, n_parcels
+
+                    pos = dble(m) * parcels%position(n, :)
+                    pvol = parcels%volume(n)
+                    pos(1) = dble(m) * pos(1)
+
+                    ! ensure point is within the domain
+                    call apply_periodic_bc(pos)
+
+                    ! get interpolation weights and mesh indices
+                    call trilinear(pos, is, js, weights)
+
+                    do l = 1, ngp
+                        sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
+                                               + weights(l) * pvol
+                    enddo
+                enddo
+            enddo
+        end subroutine vol2grid_non_elliptic_symmetry_error
+#endif
 
         subroutine vol2grid_non_elliptic
             integer          :: n, l
