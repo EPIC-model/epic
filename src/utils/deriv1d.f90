@@ -2,7 +2,7 @@
 !           Module to compute 1D derivatives of Fourier series
 ! =============================================================================
 module deriv1d
-    use constants, only : pi
+    use constants, only : pi, zero
     implicit none
 
     contains
@@ -15,7 +15,7 @@ module deriv1d
             integer                       :: i
 
             ! define wavenumber array:
-            if (l .ne. 0.d0) then
+            if (l .ne. zero) then
                 ! define wavenumbers:
                 sc = pi / l
                 do i = 1, n
@@ -49,7 +49,7 @@ module deriv1d
 
             ! Carry out differentiation by wavenumber multiplication:
             do j=1,m
-                der(j, 1) = 0.d0
+                der(j, 1) = zero
             enddo
 
             do i = 2, n - nw
@@ -64,7 +64,7 @@ module deriv1d
             if (mod(n,2) .eq. 0) then
                 ic=nw+1
                 do j = 1, m
-                    der(j,ic) = 0.d0
+                    der(j,ic) = zero
                 enddo
             endif
         end subroutine
@@ -91,7 +91,7 @@ module deriv1d
             enddo
 
             do j = 1, m
-                der(j, n) = 0.d0
+                der(j, n) = zero
             enddo
         end subroutine
 
@@ -117,8 +117,8 @@ module deriv1d
             enddo
 
             do j = 1, m
-                der(j, 0) = 0.d0
-                der(j, n) = 0.d0
+                der(j, 0) = zero
+                der(j, n) = zero
             enddo
         end subroutine
 end module

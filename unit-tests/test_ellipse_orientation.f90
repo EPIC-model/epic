@@ -7,7 +7,7 @@
 ! =============================================================================
 program test_ellipse_orientation
     use unit_test
-    use constants, only : pi, zero, two, three
+    use constants, only : pi, zero, two, three, f14
     use parcel_container, only : parcels, n_parcels, parcel_alloc, parcel_dealloc
     use parcel_ellipse
     implicit none
@@ -24,7 +24,7 @@ program test_ellipse_orientation
     call parcel_alloc(1)
 
     parcels%position = zero
-    parcels%volume = 0.25d0 * product(extent / (grid - 1))
+    parcels%volume = f14 * product(extent / (grid - 1))
 
     V = parcels%volume(1)
 

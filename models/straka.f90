@@ -60,7 +60,7 @@ module straka
             ![Kelvin] reference potential temperature
             theta_ref = straka_flow%theta_ref
 
-            theta_max = -0.5d0 * straka_flow%theta_max
+            theta_max = -f12 * straka_flow%theta_max
 
             do j = 0, nz
                 do i = 0, nx - 1

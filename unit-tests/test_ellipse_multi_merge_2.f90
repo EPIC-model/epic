@@ -74,7 +74,7 @@ program test_ellipse_multi_merge_2
         subroutine parcel_setup
             double precision :: d
 
-            d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
+            d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
 
             n_parcels = 3
             parcels%position(1, :) = zero
@@ -110,7 +110,7 @@ program test_ellipse_multi_merge_2
             double precision :: max_err, hum, buoy
 
             ! reference solution
-            d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
+            d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
             ab = a1b1 + two * a2b2
             vol = ab * pi
 
