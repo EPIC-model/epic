@@ -97,7 +97,7 @@ program test_ellipse_bi_vs_multi_merge
             a1b1 = 1.44d0
             a2b2 = 0.25d0
 
-            d = (dsqrt(a1b1) + dsqrt(a2b2)) * 0.5d0 * dsqrt(two)
+            d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
 
             n_parcels = 2
             parcels%position(1, 1) = 1.5d0

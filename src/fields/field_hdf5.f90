@@ -103,6 +103,11 @@ module field_hdf5
             call write_h5_dataset_2d(h5file_id, name, "volume", &
                                      volg(0:nz, 0:nx-1))
 
+#ifndef NDEBUG
+            call write_h5_dataset_2d(h5file_id, name, "symmetry volume", &
+                                     sym_volg(0:nz, 0:nx-1))
+#endif
+
             call write_h5_dataset_2d(h5file_id, name, "total buoyancy", &
                                      tbuoyg(0:nz, 0:nx-1))
 

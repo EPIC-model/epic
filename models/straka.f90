@@ -47,7 +47,7 @@ module straka
             zc = straka_flow%center(2)
             zr = straka_flow%radii(2)
 
-            dtheta_max = -0.5d0 * straka_flow%dtheta_max
+            dtheta_max = -f12 * straka_flow%dtheta_max
 
             do j = 0, nz
                 do i = 0, nx - 1

@@ -21,8 +21,10 @@ module fields
         tbuoyg,    &   ! buoyancy (has 1 halo cell layer in z)
 !         humg,      &   ! specific humidity
 !         humlig,    &   ! condensed humidity
+#ifndef NDEBUG
+        sym_volg,  &   ! symmetry volume (debug mode only)
+#endif
         volg           ! volume scalar field (has 1 halo cell layer in z)
-
 
     integer, allocatable, dimension(:, :) :: &
         nparg          ! number of parcels per grid box (from 0 to nz-1 and 0 to nx-1)
@@ -39,6 +41,10 @@ module fields
             allocate(velgradg(-1:nz+1, 0:nx-1, 4))
 
             allocate(volg(-1:nz+1, 0:nx-1))
+
+#ifndef NDEBUG
+            allocate(sym_volg(-1:nz+1, 0:nx-1))
+#endif
 
             allocate(vortg(-1:nz+1, 0:nx-1))
 

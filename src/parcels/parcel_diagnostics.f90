@@ -2,7 +2,7 @@
 !                               Parcel diagnostics
 ! =============================================================================
 module parcel_diagnostics
-    use constants, only : zero, one
+    use constants, only : zero, one, f12
     use merge_sort
     use parameters, only : extent, lower
     use parcel_container, only : parcels, n_parcels
@@ -34,7 +34,7 @@ module parcel_diagnostics
             call msort(b, ii)
 
             gam = one / extent(1)
-            zmean = lower(2) + 0.5d0 * gam * parcels%volume(ii(1))
+            zmean = lower(2) + f12 * gam * parcels%volume(ii(1))
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
             do n = 2, n_parcels
@@ -69,7 +69,7 @@ module parcel_diagnostics
                 pe = pe - b * z * vol
             enddo
 
-            ke = 0.5d0 * ke
+            ke = f12 * ke
             pe = pe - peref
         end subroutine calculate_diagnostics
 
