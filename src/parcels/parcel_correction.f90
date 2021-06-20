@@ -189,7 +189,7 @@ module parcel_correction
         double precision, intent(in) :: max_compression
         double precision             :: phi(0:nz,0:nx-1)
         double precision             :: weights(ngp)
-        double precision             :: shift_x1, shift_x2, x1_fpos,x2_fpos, lim_x1,lim_x2
+        double precision             :: shift_x1, shift_x2, x1_fpos, x2_fpos, lim_x1, lim_x2
         integer                      :: n, is(ngp), js(ngp)
 
         ! form divergence field * dt and store in phi temporarily:
@@ -202,10 +202,9 @@ module parcel_correction
             x1_fpos=weights(2)+weights(4) ! fractional position along x1
             x2_fpos=weights(3)+weights(4) ! fractional position along x2
 
-
             shift_x1= - prefactor*dx(1)*x1_fpos*(one-x1_fpos)*(&
                         (one-x2_fpos)*(phi(js(2), is(2))-phi(js(1), is(1)))  &
-                       +    (x2_fpos)*(phi(js(4), is(4))-phi(js(3), is(3))))
+                      +     (x2_fpos)*(phi(js(4), is(4))-phi(js(3), is(3))))
 
             lim_x1=max_compression*dx(1)*x1_fpos*(one-x1_fpos)
 
