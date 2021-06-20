@@ -199,12 +199,18 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
 def plot_volume_symmetry_error(fname, show=False, fmt="png"):
     """
     Plot the symmetry error of the gridded volume.
+    (The gridded symmetry volume is only written in debug mode.)
     """
     h5reader = H5Reader()
     h5reader.open(fname)
 
     if h5reader.is_parcel_file:
-            raise IOError('Not a field output file.')
+        raise IOError('Not a field output file.')
+
+    try:
+        h5reader.get_dataset(0, 'symmetry volume')
+    except:
+        raise IOError('This plot is only available in debug mode.')
 
     nsteps = h5reader.get_num_steps()
 
@@ -214,11 +220,11 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
     vstd = np.zeros(nsteps)
     iters = range(nsteps)
     for i in iters:
-        volg = h5reader.get_field_dataset(i, 'volume')
-        vmean[i] = volg.mean()
-        vstd[i] = volg.std()
-        vmin[i] = volg.min()
-        vmax[i] = volg.max()
+        sym_volg = h5reader.get_dataset(i, 'symmetry volume')
+        vmean[i] = sym_volg.mean()
+        vstd[i] = sym_volg.std()
+        vmin[i] = sym_volg.min()
+        vmax[i] = sym_volg.max()
 
     h5reader.close()
 

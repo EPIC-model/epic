@@ -37,7 +37,7 @@ program test_ellipse_bi_merge
     parcels%buoyancy(1) = 1.5d0
     parcels%humidity(1) = 1.3d0
 
-    a2b2 = 0.5d0
+    a2b2 = f12
     parcels%position(2, :) = zero
     parcels%volume(2) = a2b2 * pi
     parcels%B(2, 1) = a2b2
@@ -89,7 +89,7 @@ program test_ellipse_bi_merge
     parcels%buoyancy(1) = 1.5d0
     parcels%humidity(1) = 1.3d0
 
-    a2b2 = 0.5d0
+    a2b2 = f12
     parcels%position(2, :) = zero
     parcels%volume(2) = a2b2 * pi
     parcels%B(2, 1) = a2b2

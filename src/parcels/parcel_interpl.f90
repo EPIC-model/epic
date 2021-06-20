@@ -78,19 +78,27 @@ module parcel_interpl
 
                     do l = 1, ngp
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
-                                           + 0.5d0 * weights(l) * pvol
+                                           + f12 * weights(l) * pvol
                     enddo
                 enddo
             enddo
         end subroutine vol2grid_elliptic
 
+#ifndef NDEBUG
+        subroutine vol2grid_symmetry_error
+            if (parcel%is_elliptic) then
+                call vol2grid_elliptic_symmetry_error
+            else
+                call vol2grid_non_elliptic_symmetry_error
+            endif
+        end subroutine vol2grid_symmetry_error
 
-        subroutine vol2grid_elliptic_symmetry_check
+        subroutine vol2grid_elliptic_symmetry_error
             double precision :: points(2, 2), V, B(2), pos(2)
             integer          :: n, p, l, m
             double precision :: pvol
 
-            volg = zero
+            sym_volg = zero
 
             do m = -1, 1, 2
                 do n = 1, n_parcels
@@ -115,14 +123,43 @@ module parcel_interpl
                         call trilinear(points(p, :), is, js, weights)
 
                         do l = 1, ngp
-                            volg(js(l), is(l)) = volg(js(l), is(l)) &
-                                               + dble(m) * 0.5d0 * weights(l) * pvol
+                            sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
+                                                   + dble(m) * f12 * weights(l) * pvol
                         enddo
                     enddo
                 enddo
             enddo
-        end subroutine vol2grid_elliptic_symmetry_check
+        end subroutine vol2grid_elliptic_symmetry_error
 
+
+        subroutine vol2grid_non_elliptic_symmetry_error
+            double precision :: pos(2)
+            integer          :: n, l, m
+            double precision :: pvol
+
+            sym_volg = zero
+
+            do m = -1, 1, 2
+                do n = 1, n_parcels
+
+                    pos = dble(m) * parcels%position(n, :)
+                    pvol = parcels%volume(n)
+                    pos(1) = dble(m) * pos(1)
+
+                    ! ensure point is within the domain
+                    call apply_periodic_bc(pos)
+
+                    ! get interpolation weights and mesh indices
+                    call trilinear(pos, is, js, weights)
+
+                    do l = 1, ngp
+                        sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
+                                               + weights(l) * pvol
+                    enddo
+                enddo
+            enddo
+        end subroutine vol2grid_non_elliptic_symmetry_error
+#endif
 
         subroutine vol2grid_non_elliptic
             integer          :: n, l
@@ -239,7 +276,7 @@ module parcel_interpl
                     ! the weight is halved due to 2 points per ellipse
                     do l = 1, ngp
 
-                        weight = 0.5d0 * weights(l) * pvol
+                        weight = f12 * weights(l) * pvol
 
                         vortg(js(l), is(l)) = vortg(js(l), is(l)) &
                                             + weight * parcels%vorticity(n)
@@ -372,7 +409,7 @@ module parcel_interpl
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp
-                        weight = 0.5d0 * weights(l)
+                        weight = f12 * weights(l)
 
                         ! loop over field components
                         do c = 1, ncomp

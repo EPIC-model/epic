@@ -13,7 +13,7 @@ module ls_rk4
     use parameters, only : nx, nz
     implicit none
 
-    integer, parameter :: dp=kind(0.d0)           ! double precision
+    integer, parameter :: dp=kind(zero)           ! double precision
 
     double precision, allocatable, dimension(:, :) :: &
         strain, &   ! strain at parcel location

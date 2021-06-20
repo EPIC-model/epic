@@ -42,8 +42,6 @@ module options
     !
     type parcel_type
         integer          :: n_per_cell   = 4              ! number of parcels per cell (need to be a square)
-        logical          :: is_random    = .false.        ! random parcel initialization
-        integer          :: seed         = 42             ! seed of random initialization
         logical          :: is_elliptic  = .true.         ! use elliptic model
         double precision :: lambda       = five           ! max. ellipse aspect ratio a/b
         double precision :: prefactor    = 2.5d0          ! factor to compute max. stretch (non-elliptic only)

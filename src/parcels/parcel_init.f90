@@ -21,8 +21,7 @@ module parcel_init
     private :: weights, apar, is, js
 
 
-    private :: init_random_positions,       &
-               init_regular_positions,      &
+    private :: init_regular_positions,      &
                init_refine,                 &
                init_from_grids,             &
                fill_field_from_buffer_2d,   &
@@ -59,11 +58,7 @@ module parcel_init
             ! we use "n_per_cell" parcels per grid cell
             n_parcels = parcel%n_per_cell * ncell
 
-            if (parcel%is_random) then
-                call init_random_positions
-            else
-                call init_regular_positions
-            endif
+            call init_regular_positions
 
             ! initialize the volume of each parcel
             parcels%volume(1:n_parcels) = vcell / dble(parcel%n_per_cell)
@@ -96,27 +91,6 @@ module parcel_init
             call init_from_grids(h5fname, tol)
 
         end subroutine init_parcels
-
-
-        subroutine init_random_positions
-            double precision :: val
-            integer          :: n, k
-            integer, allocatable :: seed(:)
-
-            call random_seed(size=k)
-            allocate(seed(1:k))
-            seed(:) = parcel%seed
-            call random_seed(put=seed)
-
-            do n = 1, n_parcels
-                call random_number(val)
-                parcels%position(n, 1)= lower(1) + val * extent(1)
-                call random_number(val)
-                parcels%position(n, 2) = lower(2) + val * extent(2)
-            enddo
-
-            deallocate(seed)
-        end subroutine init_random_positions
 
 
         subroutine init_regular_positions

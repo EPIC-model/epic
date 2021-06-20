@@ -10,17 +10,12 @@ program test_fft_1
     !Import FFT library:
     use stafft, only : initfft, dct, forfft
     use deriv1d
+    use constants
 
     implicit none
 
     !Parameters and constants:
     !---------------------------------------------------------------------
-    !Generic double precision numerical constants:
-    double precision,parameter:: zero=0.d0, one=1.d0
-    double precision,parameter:: two=2.d0
-
-    double precision,parameter:: f12=one/two
-
     !Number of x & z grid divisions:
     integer,parameter:: nx=40, nz=20
 

@@ -3,7 +3,7 @@
 ! =============================================================================
 module parcel_split
     use options, only : verbose
-    use constants, only : pi, three
+    use constants, only : pi, three, f12, f14, f34
     use parameters, only : vcell
     use parcel_container, only : parcel_container_type, n_parcels
     use parcel_bc, only : apply_reflective_bc
@@ -51,11 +51,11 @@ module parcel_split
 
                 evec = get_eigenvector(a2, B11, B12, B22)
 
-                parcels%B(n, 1) = B11 - 0.75d0 * a2 * evec(1) ** 2
-                parcels%B(n, 2) = B12 - 0.75d0 * a2 * (evec(1) * evec(2))
+                parcels%B(n, 1) = B11 - f34 * a2 * evec(1) ** 2
+                parcels%B(n, 2) = B12 - f34 * a2 * (evec(1) * evec(2))
 
-                h = 0.25d0 * dsqrt(three * a2)
-                parcels%volume(n) = 0.5d0 * V
+                h = f14 * dsqrt(three * a2)
+                parcels%volume(n) = f12 * V
 
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
