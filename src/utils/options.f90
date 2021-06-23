@@ -53,8 +53,9 @@ module options
         integer          :: correction_iters= 1           ! parcel correction iterations
         logical          :: apply_laplace = .true.        ! use Laplacian parcel correction
         logical          :: apply_gradient = .true.       ! use gradient descent to adjust parcel positions on small scale
-        double precision :: gradient_pref= 0.3d0          ! prefactor for gradient descent
-        double precision :: vmaxfraction = 2.0         ! prefactor for gradient descent
+        double precision :: gradient_pref= 1.8d0          ! prefactor for gradient descent
+        double precision :: max_compression= 0.5d0        ! parameter for gradient descent (limits the shift in parcel position)
+        double precision :: vmaxfraction = 2.0         
 
     end type parcel_type
 

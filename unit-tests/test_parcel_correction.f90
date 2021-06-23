@@ -79,7 +79,7 @@ program test_parcel_correction
         call vol2grid
         call apply_laplace(volg)
         call vol2grid
-        call apply_gradient(volg,0.30d0)
+        call apply_gradient(volg,1.80d0,0.5d0)
         call vol2grid
         if (verbose) then
             write(*,*) 'Test laplace and gradient, error after iteration ', i
