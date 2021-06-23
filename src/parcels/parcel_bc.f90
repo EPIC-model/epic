@@ -5,7 +5,7 @@
 ! =============================================================================
 module parcel_bc
     use constants, only : zero, two
-    use parameters, only : lower, upper, extent, hli
+    use parameters, only : lower, upper, extent, hli, center
     use parcel_container, only : n_parcels
     implicit none
 
