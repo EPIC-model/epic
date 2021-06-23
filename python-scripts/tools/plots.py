@@ -524,6 +524,8 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
             wi_vi[j-1] = (vor * vol).mean()
             wi_vi_xi[j-1] = (vor * vol * pos[0, :]).mean()
             wi_vi_zi[j-1] = (vor * vol * pos[1, :]).mean()
+
+            # second moment
             wi_vi_2[j-1] = stats.moment(vor * vol, moment=2)
             wi_vi_xi_2[j-1] = stats.moment(vor * vol * pos[0, :], moment=2)
             wi_vi_zi_2[j-1] = stats.moment(vor * vol * pos[1, :], moment=2)
