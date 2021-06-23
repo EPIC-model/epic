@@ -5,7 +5,8 @@ from tools.plots import     \
     plot_max_volume_error,  \
     plot_aspect_ratio,      \
     plot_parcel_volume,     \
-    plot_parcel_number
+    plot_parcel_number,     \
+    plot_center_of_mass
 import os
 import sys
 
@@ -21,7 +22,8 @@ try:
         'max-volume-error',
         'aspect-ratio',
         'parcel-volume',
-        'parcel-number'
+        'parcel-number',
+        'center-of-mass'
     ]
 
 
@@ -71,8 +73,11 @@ try:
     elif args.kind == kinds[4]:
         for fname in args.filenames:
             plot_parcel_number(fname, show=args.show, fmt=args.fmt)
+    elif args.kind == kinds[5]:
+        for fname in args.filenames:
+            plot_center_of_mass(fname, show=args.show, fmt=args.fmt)
     else:
-        raise ValuError("Plot '" + args.kind + "' not supported!")
+        raise ValueError("Plot '" + args.kind + "' not supported!")
 
 
 except Exception as ex:

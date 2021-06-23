@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import os
+import pandas as pd
+import scipy.stats as stats
 
 def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
 
@@ -460,6 +462,122 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
         prefix = os.path.splitext(fname)[0]
         plt.savefig(prefix + '_parcel_volume_profile.' + fmt, bbox_inches='tight')
     plt.close()
+
+
+def plot_center_of_mass(fname, show=False, fmt="png"):
+    prefix, ext = os.path.splitext(fname)
+
+    if ext == '.hdf5':
+        print('Extract data, evaluate quantities, write CSV file and plot.')
+
+        h5reader = H5Reader()
+        h5reader.open(fname)
+
+        nsteps = h5reader.get_num_steps()
+
+        bi_vi = np.zeros(nsteps-1)
+        bi_vi_xi = np.zeros(nsteps-1)
+        bi_vi_zi = np.zeros(nsteps-1)
+
+        bi_vi_2 = np.zeros(nsteps-1)
+        bi_vi_xi_2 = np.zeros(nsteps-1)
+        bi_vi_zi_2 = np.zeros(nsteps-1)
+
+        wi_vi = np.zeros(nsteps-1)
+        wi_vi_xi = np.zeros(nsteps-1)
+        wi_vi_zi = np.zeros(nsteps-1)
+
+        wi_vi_2 = np.zeros(nsteps-1)
+        wi_vi_xi_2 = np.zeros(nsteps-1)
+        wi_vi_zi_2 = np.zeros(nsteps-1)
+
+        t = np.zeros(nsteps-1)
+
+        # skip zero step since vorticity is not given
+        for j in range(1, nsteps):
+
+            pos = h5reader.get_dataset(j, 'position')
+            vol = h5reader.get_dataset(j, 'volume')
+            vor = h5reader.get_dataset(j, 'vorticity')
+            buo = h5reader.get_dataset(j, 'buoyancy')
+            t[j-1] = h5reader.get_step_attribute(j, 't')
+
+            # we only want parcels with x > 0
+            ind = (pos[0, :] > 0.0)
+
+            pos = pos[:, ind]
+            vol = vol[ind]
+            vor = vor[ind]
+            buo = buo[ind]
+
+            # first moment
+            bi_vi[j-1] = (buo * vol).mean()
+            bi_vi_xi[j-1] = (buo * vol * pos[0, :]).mean()
+            bi_vi_zi[j-1] = (buo * vol * pos[1, :]).mean()
+
+            # second moment
+            bi_vi_2[j-1] = stats.moment(buo * vol, moment=2)
+            bi_vi_xi_2[j-1] = stats.moment(buo * vol * pos[0, :], moment=2)
+            bi_vi_zi_2[j-1] = stats.moment(buo * vol * pos[1, :], moment=2)
+
+            # first moment
+            wi_vi[j-1] = (vor * vol).mean()
+            wi_vi_xi[j-1] = (vor * vol * pos[0, :]).mean()
+            wi_vi_zi[j-1] = (vor * vol * pos[1, :]).mean()
+            wi_vi_2[j-1] = stats.moment(vor * vol, moment=2)
+            wi_vi_xi_2[j-1] = stats.moment(vor * vol * pos[0, :], moment=2)
+            wi_vi_zi_2[j-1] = stats.moment(vor * vol * pos[1, :], moment=2)
+
+        h5reader.close()
+
+        data = {
+            't':        t,
+            'xb_bar':   bi_vi_xi / bi_vi,
+            'zb_bar':   bi_vi_zi / bi_vi,
+            'x2b_bar':  bi_vi_xi_2 / bi_vi_2,
+            'z2b_bar':  bi_vi_zi_2 / bi_vi_2,
+            'xw_bar':   wi_vi_xi / wi_vi,
+            'zw_bar':   wi_vi_zi / wi_vi,
+            'x2w_bar':  wi_vi_xi_2 / wi_vi_2,
+            'z2w_bar':  wi_vi_zi_2 / wi_vi_2
+        }
+
+        df = pd.DataFrame(data=data)
+
+        df.to_csv(prefix + '.csv', index=False)
+    elif ext == '.csv':
+        print('Read CSV file and plot.')
+        df = pd.read_csv(prefix + '.csv')
+    else:
+        raise IOError('From file format. Requires parcel hdf5 or CSV file.')
+
+
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
+    axes[0].plot(df['t'], df['xb_bar'], label=r'$\bar{x}_b$')
+    axes[1].semilogy(df['t'], df['x2b_bar'], label=r'$\bar{x^2}_b$')
+    axes[0].plot(df['t'], df['zb_bar'], label=r'$\bar{z}_b$')
+    axes[1].semilogy(df['t'], df['z2b_bar'], label=r'$\bar{z^2}_b$')
+
+    axes[0].plot(df['t'], df['xw_bar'], label=r'$\bar{x}_\zeta$')
+    axes[1].semilogy(df['t'], df['x2w_bar'], label=r'$\bar{x^2}_\zeta$')
+    axes[0].plot(df['t'], df['zw_bar'], label=r'$\bar{z}_\zeta$')
+    axes[1].semilogy(df['t'], df['z2w_bar'], label=r'$\bar{z^2}_\zeta$')
+
+    axes[0].grid(which='both', linestyle='dashed')
+    axes[0].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.05))
+
+    axes[1].grid(which='both', linestyle='dashed')
+    axes[1].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.27, 1.05))
+    axes[1].set_xlabel(r'time (s)')
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        plt.savefig(prefix + '_center_of_mass.' + fmt,
+                    bbox_inches='tight')
+    plt.close()
+
 
 
 #def plot_field(fname, show=False, fmt="png", ax=None):
