@@ -549,7 +549,7 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
         print('Read CSV file and plot.')
         df = pd.read_csv(prefix + '.csv')
     else:
-        raise IOError('From file format. Requires parcel hdf5 or CSV file.')
+        raise IOError('Wrong file format. Requires parcel hdf5 or CSV file.')
 
 
     fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
