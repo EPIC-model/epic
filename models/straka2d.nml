@@ -3,9 +3,9 @@
  model       = 'Straka'
  h5fname     = 'straka2d.hdf5'
 
- box%ncells  = 32, 16
- box%extent  = 20000, 6400
- box%origin  = -10000.0, 0.0
+ box%ncells  = 128, 16
+ box%extent  = 51200, 6400
+ box%origin  = -25600.0, 0.0
 
  ![K] max. pot. temp. perturbation
  straka_flow%dtheta_max = 15.0
