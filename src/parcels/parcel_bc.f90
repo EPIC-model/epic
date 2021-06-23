@@ -31,7 +31,7 @@ module parcel_bc
         ! apply periodic bc on n-th parcel
         subroutine apply_periodic_bc(position)
             double precision, intent(inout) :: position(2)
-            position(1) = position(1) - extent(1) * dble(int(position(1) * hli(1)))
+            position(1) = position(1) - extent(1) * dble(int((position(1) - center(1)) * hli(1)))
         end subroutine apply_periodic_bc
 
 
