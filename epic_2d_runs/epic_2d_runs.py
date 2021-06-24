@@ -36,6 +36,12 @@ def load_json(fname):
         setup = json.load(f)
     return setup
 
+def dump_json(data, fname):
+    # 24 June 2021
+    # https://stackoverflow.com/questions/12309269/how-do-i-write-json-data-to-a-file
+    with open(fname, 'w') as f:
+        json.dump(data, f, indent=4)
+
 
 def create_config_file(params, tmpl_dir, fname):
     # 24 June 2021
@@ -111,20 +117,28 @@ try:
         setup = load_json(fname)
         name = setup['name']
 
+        output = {}
 
         constants = setup['constants']
 
-        print('Running', name, 'in directory:', args.run_dir)
+        cwd = os.path.join(args.run_dir, name)
+        if not os.path.isdir(cwd):
+            os.mkdir(cwd)
+        os.chdir(cwd)
+
+        print('Running in directory:', cwd)
 
         for key, values in setup['parameters'].items():
+
+            key = key.upper()
 
             # the process list
             processes = []
 
             params = reset_parameters()
 
-            if not key.upper() in params.keys():
-                raise KeyError("Parameter '" + key.upper() + "' not available.")
+            if not key in params.keys():
+                raise KeyError("Parameter '" + key + "' not available.")
 
             for kk in constants.keys():
                 if kk in params.keys():
@@ -132,16 +146,19 @@ try:
 
             num = 1
             for val in list(values):
-                cwd = os.path.join(args.run_dir, name)
-                if not os.path.isdir(cwd):
-                    os.mkdir(cwd)
-                os.chdir(cwd)
+
+                # update parameter
+                params[key] = val
+
 
                 # create config file
                 basename = name.lower() + '_' + key.lower() + '_' + str(num)
                 params['H5_BASENAME'] = "'" + basename + "'"
                 config = basename + '.config'
-                create_config_file(params, args.run_dir, config)
+                create_config_file(params, args.run_dir,config)
+
+                # add to database
+                output[basename] = params.copy()
 
                 # run simulation
                 proc = run_job(config)
@@ -149,15 +166,13 @@ try:
                 # add to process list
                 processes.append(proc)
 
-                os.chdir(args.run_dir)
                 num += 1
 
             wait_running_processes(processes)
 
-            # add to database
+        dump_json(output, os.path.join('output.json'))
 
-
-
+        os.chdir(args.run_dir)
 
 except Exception as ex:
     print(ex)
