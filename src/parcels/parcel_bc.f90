@@ -5,7 +5,7 @@
 ! =============================================================================
 module parcel_bc
     use constants, only : zero, two
-    use parameters, only : lower, upper, extent, hli
+    use parameters, only : lower, upper, extent, hli, center
     use parcel_container, only : n_parcels
     implicit none
 
@@ -31,7 +31,7 @@ module parcel_bc
         ! apply periodic bc on n-th parcel
         subroutine apply_periodic_bc(position)
             double precision, intent(inout) :: position(2)
-            position(1) = position(1) - extent(1) * dble(int(position(1) * hli(1)))
+            position(1) = position(1) - extent(1) * dble(int((position(1) - center(1)) * hli(1)))
         end subroutine apply_periodic_bc
 
 

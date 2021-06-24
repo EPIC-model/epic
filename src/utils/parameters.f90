@@ -28,6 +28,9 @@ module parameters
     ! domain size
     double precision :: extent(2)
 
+    ! domain centre
+    double precision :: center(2)
+
     ! domain half widths values
     double precision :: hl(2)
 
@@ -70,6 +73,7 @@ module parameters
         ngrid = nx * (nz + 1)
 
         ! domain
+        center = f12 * (lower + upper)
         hl = extent / two
         hli = one / hl
 

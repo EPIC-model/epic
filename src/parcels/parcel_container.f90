@@ -4,7 +4,7 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use parameters, only : extent, hli
+    use parameters, only : extent, hli, center
     use parcel_ellipse, only : get_angles
     implicit none
 
@@ -35,7 +35,7 @@ module parcel_container
 
             delx = x1 - x2
             ! works across periodic edge
-            delx = delx - extent(1) * dble(int(delx * hli(1)))
+            delx = delx - extent(1) * dble(int((delx - center(1)) * hli(1)))
         end function get_delx
 
 
