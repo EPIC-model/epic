@@ -8,6 +8,7 @@ import numpy as np
 import os
 import pandas as pd
 import scipy.stats as stats
+import seaborn as sns
 
 def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
 
@@ -473,6 +474,9 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
         h5reader = H5Reader()
         h5reader.open(fname)
 
+        if not h5reader.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+
         nsteps = h5reader.get_num_steps()
 
         bi_vi = np.zeros(nsteps-1)
@@ -604,6 +608,40 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
     else:
         plt.savefig(prefix + '_center_of_mass.' + fmt,
                     bbox_inches='tight')
+    plt.close()
+
+
+
+def plot_cumulative(fname, step=0, dset='volume', show=False, fmt="png"):
+    """
+    Plot the mean and standard deviation of the parcel volume
+    normalised with the cell volume.
+    """
+    h5reader = H5Reader()
+    h5reader.open(fname)
+
+    if not h5reader.is_parcel_file:
+        raise IOError('Not a parcel output file.')
+
+    nsteps = h5reader.get_num_steps()
+
+    if step < 0 or step > nsteps-1:
+        raise ValueError('Number of steps exceeded.')
+
+
+    data = {dset: h5reader.get_dataset(step, dset)}
+
+    sns.ecdfplot(data=data, x=dset, stat='proportion')
+    plt.ylabel('proportion')
+    plt.grid(which='both', linestyle='dashed')
+
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fname)[0]
+        plt.savefig(prefix + '_parcel_cumulative.' + fmt, bbox_inches='tight')
     plt.close()
 
 

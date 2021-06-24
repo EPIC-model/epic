@@ -6,7 +6,8 @@ from tools.plots import     \
     plot_aspect_ratio,      \
     plot_parcel_volume,     \
     plot_parcel_number,     \
-    plot_center_of_mass
+    plot_center_of_mass,    \
+    plot_cumulative
 import os
 import sys
 
@@ -23,7 +24,8 @@ try:
         'aspect-ratio',
         'parcel-volume',
         'parcel-number',
-        'center-of-mass'
+        'center-of-mass',
+        'parcel-cumulative'
     ]
 
 
@@ -49,6 +51,19 @@ try:
                         required=False,
                         default="png",
                         help="save format (default: png)")
+
+    parser.add_argument("--step",
+                        type=int,
+                        required=False,
+                        default=0,
+                        help="step in hdf5 file (cumulative plot only)")
+
+
+    parser.add_argument("--dataset",
+                        type=str,
+                        required=False,
+                        default='volume',
+                        help="parcel attribute (cumulative plot only)")
 
     if not '--filenames' in sys.argv:
         parser.print_help()
@@ -76,6 +91,9 @@ try:
     elif args.kind == kinds[5]:
         for fname in args.filenames:
             plot_center_of_mass(fname, show=args.show, fmt=args.fmt)
+    elif args.kind == kinds[6]:
+        for fname in args.filenames:
+            plot_cumulative(fname, step=args.step, dset=args.dataset, show=args.show, fmt=args.fmt)
     else:
         raise ValueError("Plot '" + args.kind + "' not supported!")
 
