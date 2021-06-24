@@ -254,11 +254,16 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
     plt.close()
 
 
-def plot_rms_volume_error(fnames, show=False, fmt="png"):
+def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
     """
     Plot the gridded rms volume error.
     """
     n = len(fnames)
+
+    labels = kwargs.pop('labels', n * [None])
+
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
 
@@ -274,13 +279,18 @@ def plot_rms_volume_error(fnames, show=False, fmt="png"):
         vrms = h5reader.get_diagnostic('rms volume error')
         h5reader.close()
 
-        prefix = os.path.splitext(fname)[0]
-        plt.plot(vrms, label=r'' + prefix, linewidth=2, color=colors[i])
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = label.split('_fields')[0]
+
+        plt.plot(vrms, label=label, linewidth=2, color=colors[i])
 
     plt.xlabel(r'number of iterations')
+    plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.ylabel(r'rms volume error')
     plt.grid(linestyle='dashed', zorder=-1)
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.35))
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
     plt.tight_layout()
 
     if show:
@@ -290,12 +300,17 @@ def plot_rms_volume_error(fnames, show=False, fmt="png"):
     plt.close()
 
 
-def plot_max_volume_error(fnames, show=False, fmt="png"):
+def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
     """
     Plot the gridded absolute volume error (normalised with
     cell volume).
     """
     n = len(fnames)
+
+    labels = kwargs.pop('labels', n * [None])
+
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
 
@@ -311,13 +326,18 @@ def plot_max_volume_error(fnames, show=False, fmt="png"):
         vrms = h5reader.get_diagnostic('max absolute normalised volume error')
         h5reader.close()
 
-        prefix = os.path.splitext(fname)[0]
-        plt.plot(vrms, label=r'' + prefix, linewidth=2, color=colors[i])
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = label.split('_fields')[0]
 
+        plt.plot(vrms, label=label, linewidth=2, color=colors[i])
+
+    plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.xlabel(r'number of iterations')
     plt.ylabel(r'max normalised volume error')
     plt.grid(linestyle='dashed', zorder=-1)
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.35))
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
     plt.tight_layout()
 
     if show:
@@ -365,7 +385,7 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
     plt.xlabel(r'number of iterations')
     plt.ylabel(r'aspect ratio $\lambda$')
 
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.25))
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
 
     plt.tight_layout()
 
@@ -453,7 +473,7 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
     plt.xlabel(r'number of iterations')
     plt.ylabel(r'parcel volume / $V_{0}$')
 
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.25))
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
 
     plt.tight_layout()
 
@@ -646,7 +666,7 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
         label = labels[i]
         if label is None:
             label = os.path.splitext(fname)[0]
-            label = prefix.split('_parcels')[0]
+            label = label.split('_parcels')[0]
 
         sns.ecdfplot(data=data, x=dset, stat='proportion',
                      color=colors[i], label=label)
@@ -656,7 +676,7 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
 
     if n > 1:
         plt.legend(loc='upper center', ncol=min(4, n),
-                   bbox_to_anchor=(0.5, 1.2))
+                   bbox_to_anchor=(0.5, 1.15))
 
     plt.tight_layout()
 

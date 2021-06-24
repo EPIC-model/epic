@@ -39,7 +39,7 @@ try:
                         type=str,
                         nargs='+',
                         required=False,
-                        help="special labels for the files (cumulative plot only)")
+                        help="special labels for the files")
 
     parser.add_argument("--kind",
                         type=str,
@@ -83,9 +83,11 @@ try:
             raise IOError("File '" + fname + "' does not exist.")
 
     if args.kind == kinds[0]:
-        plot_rms_volume_error(args.filenames, show=args.show, fmt=args.fmt)
+        plot_rms_volume_error(args.filenames, show=args.show, fmt=args.fmt,
+                              labels=args.labels)
     elif args.kind == kinds[1]:
-        plot_max_volume_error(args.filenames, show=args.show, fmt=args.fmt)
+        plot_max_volume_error(args.filenames, show=args.show, fmt=args.fmt,
+                              labels=args.labels)
     elif args.kind == kinds[2]:
         for fname in args.filenames:
             plot_aspect_ratio(fname, show=args.show, fmt=args.fmt)
