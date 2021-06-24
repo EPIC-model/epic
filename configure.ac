@@ -61,7 +61,33 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
         AC_MSG_RESULT([yes])
     else
         AC_MSG_RESULT([no])
-        AC_MSG_NOTICE([Install numpy with "conda install -c anaconda numpy".])
+        AC_MSG_NOTICE([Install numpy with "conda install -c conda-forge numpy".])
+        exit 1
+    fi
+
+    #
+    # scipy
+    #
+    AC_MSG_CHECKING([for python scipy library])
+    `${PYTHON} -c 'import scipy' 2> config.log`
+    if test "X$?" = "X0" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no])
+        AC_MSG_NOTICE([Install numpy with "conda install -c conda-forge scipy".])
+        exit 1
+    fi
+
+    #
+    # pandas
+    #
+    AC_MSG_CHECKING([for python pandas library])
+    `${PYTHON} -c 'import pandas' 2> config.log`
+    if test "X$?" = "X0" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no])
+        AC_MSG_NOTICE([Install numpy with "conda install -c conda-forge pandas".])
         exit 1
     fi
 
@@ -79,6 +105,19 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
     fi
 
     #
+    # seaborn
+    #
+    AC_MSG_CHECKING([for python seaborn library])
+    `${PYTHON} -c 'import seaborn' 2> config.log`
+    if test "X$?" = "X0" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_RESULT([no])
+        AC_MSG_NOTICE([Install numpy with "conda install -c conda-forge seaborn".])
+        exit 1
+    fi
+
+    #
     # h5py
     #
     AC_MSG_CHECKING([for python h5py library])
@@ -87,7 +126,7 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
         AC_MSG_RESULT([yes])
     else
         AC_MSG_RESULT([no])
-        AC_MSG_NOTICE([Install h5py with "conda install -c anaconda h5py".])
+        AC_MSG_NOTICE([Install h5py with "conda install -c conda-forge h5py".])
         exit 1
     fi
 
