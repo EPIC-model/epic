@@ -479,17 +479,17 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
         bi_vi_xi = np.zeros(nsteps-1)
         bi_vi_zi = np.zeros(nsteps-1)
 
-        bi_vi_2 = np.zeros(nsteps-1)
-        bi_vi_xi_2 = np.zeros(nsteps-1)
-        bi_vi_zi_2 = np.zeros(nsteps-1)
+        bi_vi_x2i = np.zeros(nsteps-1)
+        bi_vi_z2i = np.zeros(nsteps-1)
 
         wi_vi = np.zeros(nsteps-1)
         wi_vi_xi = np.zeros(nsteps-1)
         wi_vi_zi = np.zeros(nsteps-1)
 
-        wi_vi_2 = np.zeros(nsteps-1)
-        wi_vi_xi_2 = np.zeros(nsteps-1)
-        wi_vi_zi_2 = np.zeros(nsteps-1)
+        wi_vi_x2i = np.zeros(nsteps-1)
+        wi_vi_z2i = np.zeros(nsteps-1)
+
+        xi_zi = np.zeros(nsteps-1)
 
         t = np.zeros(nsteps-1)
 
@@ -510,38 +510,49 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
             vor = vor[ind]
             buo = buo[ind]
 
-            # first moment
-            bi_vi[j-1] = (buo * vol).mean()
-            bi_vi_xi[j-1] = (buo * vol * pos[0, :]).mean()
-            bi_vi_zi[j-1] = (buo * vol * pos[1, :]).mean()
-
-            # second moment
-            bi_vi_2[j-1] = stats.moment(buo * vol, moment=2)
-            bi_vi_xi_2[j-1] = stats.moment(buo * vol * pos[0, :], moment=2)
-            bi_vi_zi_2[j-1] = stats.moment(buo * vol * pos[1, :], moment=2)
+            bv = buo * vol
+            vv = vor * vol
 
             # first moment
-            wi_vi[j-1] = (vor * vol).mean()
-            wi_vi_xi[j-1] = (vor * vol * pos[0, :]).mean()
-            wi_vi_zi[j-1] = (vor * vol * pos[1, :]).mean()
+            bi_vi[j-1] = bv.mean()
+            bi_vi_xi[j-1] = (bv * pos[0, :]).mean()
+            bi_vi_zi[j-1] = (bv * pos[1, :]).mean()
 
             # second moment
-            wi_vi_2[j-1] = stats.moment(vor * vol, moment=2)
-            wi_vi_xi_2[j-1] = stats.moment(vor * vol * pos[0, :], moment=2)
-            wi_vi_zi_2[j-1] = stats.moment(vor * vol * pos[1, :], moment=2)
+            bi_vi_x2i[j-1] = (bv * pos[0, :] ** 2).mean()
+            bi_vi_z2i[j-1] = (bv * pos[1, :] ** 2).mean()
+
+            # first moment
+            wi_vi[j-1] = vv.mean()
+            wi_vi_xi[j-1] = (vv * pos[0, :]).mean()
+            wi_vi_zi[j-1] = (vv * pos[1, :]).mean()
+
+            # second moment
+            wi_vi_x2i[j-1] = (vv * pos[0, :] ** 2).mean()
+            wi_vi_z2i[j-1] = (vv * pos[1, :] ** 2).mean()
+
+            bi_vi_xi_zi = (bv * pos[0, :] * pos[1, :]).mean()
+            wi_vi_xi_zi = (vv * pos[0, :] * pos[1, :]).mean()
 
         h5reader.close()
 
+        xb_bar = bi_vi_xi / bi_vi
+        zb_bar = bi_vi_zi / bi_vi
+        xw_bar = wi_vi_xi / wi_vi
+        zw_bar = wi_vi_zi / wi_vi
+
         data = {
             't':        t,
-            'xb_bar':   bi_vi_xi / bi_vi,
-            'zb_bar':   bi_vi_zi / bi_vi,
-            'x2b_bar':  bi_vi_xi_2 / bi_vi_2,
-            'z2b_bar':  bi_vi_zi_2 / bi_vi_2,
-            'xw_bar':   wi_vi_xi / wi_vi,
-            'zw_bar':   wi_vi_zi / wi_vi,
-            'x2w_bar':  wi_vi_xi_2 / wi_vi_2,
-            'z2w_bar':  wi_vi_zi_2 / wi_vi_2
+            'xb_bar':   xb_bar,
+            'zb_bar':   zb_bar,
+            'x2b_bar':  bi_vi_x2i / bi_vi - xb_bar ** 2,
+            'z2b_bar':  bi_vi_z2i / bi_vi - zb_bar ** 2,
+            'xzb_bar':  bi_vi_xi_zi / bi_vi,
+            'xw_bar':   xw_bar,
+            'zw_bar':   zw_bar,
+            'x2w_bar':  wi_vi_x2i / wi_vi - xw_bar ** 2,
+            'z2w_bar':  wi_vi_z2i / wi_vi - zw_bar ** 2,
+            'xzw_bar':  wi_vi_xi_zi / wi_vi,
         }
 
         df = pd.DataFrame(data=data)
@@ -554,22 +565,37 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
         raise IOError('Wrong file format. Requires parcel hdf5 or CSV file.')
 
 
-    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
-    axes[0].plot(df['t'], df['xb_bar'], label=r'$\bar{x}_b$')
-    axes[1].semilogy(df['t'], df['x2b_bar'], label=r'$\bar{x^2}_b$')
-    axes[0].plot(df['t'], df['zb_bar'], label=r'$\bar{z}_b$')
-    axes[1].semilogy(df['t'], df['z2b_bar'], label=r'$\bar{z^2}_b$')
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(9, 6), dpi=200)
+    axes[0].plot(df['t'], df['xb_bar'], label=r'$\langle x\rangle_b$')
 
-    axes[0].plot(df['t'], df['xw_bar'], label=r'$\bar{x}_\zeta$')
-    axes[1].semilogy(df['t'], df['x2w_bar'], label=r'$\bar{x^2}_\zeta$')
-    axes[0].plot(df['t'], df['zw_bar'], label=r'$\bar{z}_\zeta$')
-    axes[1].semilogy(df['t'], df['z2w_bar'], label=r'$\bar{z^2}_\zeta$')
+    std = np.sqrt(df['x2b_bar'])
+    axes[0].fill_between(df['t'], df['xb_bar']-std, df['xb_bar']+std, alpha=0.5,
+                         label=r'$\pm\sqrt{\langle x^2\rangle_b}$')
+
+    axes[0].plot(df['t'], df['zb_bar'], label=r'$\langle z\rangle_b$')
+
+    std = np.sqrt(df['z2b_bar'])
+    axes[0].fill_between(df['t'], df['zb_bar']-std, df['zb_bar']+std, alpha=0.5,
+                         label=r'$\pm\sqrt{\langle z^2\rangle_b}$')
+
+
+    axes[1].plot(df['t'], df['xw_bar'], label=r'$\langle x\rangle_\zeta$')
+
+    std = np.sqrt(df['x2w_bar'])
+    axes[1].fill_between(df['t'], df['xw_bar']-std, df['xw_bar']+std, alpha=0.5,
+                         label=r'$\pm\sqrt{\langle x^2\rangle_\zeta}$')
+
+    axes[1].plot(df['t'], df['zw_bar'], label=r'$\langle z\rangle_\zeta$')
+
+    std = np.sqrt(df['z2w_bar'])
+    axes[1].fill_between(df['t'], df['zw_bar']-std, df['zw_bar']+std, alpha=0.5,
+                         label=r'$\pm\sqrt{\langle z^2\langle_\zeta}$')
 
     axes[0].grid(which='both', linestyle='dashed')
-    axes[0].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.05))
+    axes[0].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.0))
 
     axes[1].grid(which='both', linestyle='dashed')
-    axes[1].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.27, 1.05))
+    axes[1].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.0))
     axes[1].set_xlabel(r'time (s)')
     plt.tight_layout()
 
