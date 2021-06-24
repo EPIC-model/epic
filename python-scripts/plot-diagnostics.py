@@ -5,7 +5,9 @@ from tools.plots import     \
     plot_max_volume_error,  \
     plot_aspect_ratio,      \
     plot_parcel_volume,     \
-    plot_parcel_number
+    plot_parcel_number,     \
+    plot_center_of_mass,    \
+    plot_cumulative
 import os
 import sys
 
@@ -21,7 +23,9 @@ try:
         'max-volume-error',
         'aspect-ratio',
         'parcel-volume',
-        'parcel-number'
+        'parcel-number',
+        'center-of-mass',
+        'parcel-cumulative'
     ]
 
 
@@ -30,6 +34,12 @@ try:
                           nargs='+',
                           required=True,
                           help="list of hdf5 output files of EPIC")
+
+    parser.add_argument("--labels",
+                        type=str,
+                        nargs='+',
+                        required=False,
+                        help="special labels for the files")
 
     parser.add_argument("--kind",
                         type=str,
@@ -48,6 +58,20 @@ try:
                         default="png",
                         help="save format (default: png)")
 
+    parser.add_argument("--step",
+                        type=int,
+                        required=False,
+                        default=0,
+                        help="step in hdf5 file (cumulative plot only)")
+
+
+    parser.add_argument("--dataset",
+                        type=str,
+                        required=False,
+                        default='volume',
+                        help="parcel attribute (cumulative plot only)")
+
+
     if not '--filenames' in sys.argv:
         parser.print_help()
         exit(0)
@@ -59,9 +83,11 @@ try:
             raise IOError("File '" + fname + "' does not exist.")
 
     if args.kind == kinds[0]:
-        plot_rms_volume_error(args.filenames, show=args.show, fmt=args.fmt)
+        plot_rms_volume_error(args.filenames, show=args.show, fmt=args.fmt,
+                              labels=args.labels)
     elif args.kind == kinds[1]:
-        plot_max_volume_error(args.filenames, show=args.show, fmt=args.fmt)
+        plot_max_volume_error(args.filenames, show=args.show, fmt=args.fmt,
+                              labels=args.labels)
     elif args.kind == kinds[2]:
         for fname in args.filenames:
             plot_aspect_ratio(fname, show=args.show, fmt=args.fmt)
@@ -71,8 +97,15 @@ try:
     elif args.kind == kinds[4]:
         for fname in args.filenames:
             plot_parcel_number(fname, show=args.show, fmt=args.fmt)
+    elif args.kind == kinds[5]:
+        for fname in args.filenames:
+            plot_center_of_mass(fname, show=args.show, fmt=args.fmt)
+    elif args.kind == kinds[6]:
+        plot_cumulative(args.filenames, step=args.step,
+                        dset=args.dataset, show=args.show,
+                        fmt=args.fmt, labels=args.labels)
     else:
-        raise ValuError("Plot '" + args.kind + "' not supported!")
+        raise ValueError("Plot '" + args.kind + "' not supported!")
 
 
 except Exception as ex:

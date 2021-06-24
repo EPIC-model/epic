@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import os
+import pandas as pd
+import scipy.stats as stats
+import seaborn as sns
 
 def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
 
@@ -251,11 +254,16 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
     plt.close()
 
 
-def plot_rms_volume_error(fnames, show=False, fmt="png"):
+def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
     """
     Plot the gridded rms volume error.
     """
     n = len(fnames)
+
+    labels = kwargs.pop('labels', n * [None])
+
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
 
@@ -271,13 +279,18 @@ def plot_rms_volume_error(fnames, show=False, fmt="png"):
         vrms = h5reader.get_diagnostic('rms volume error')
         h5reader.close()
 
-        prefix = os.path.splitext(fname)[0]
-        plt.plot(vrms, label=r'' + prefix, linewidth=2, color=colors[i])
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = label.split('_fields')[0]
+
+        plt.plot(vrms, label=label, linewidth=2, color=colors[i])
 
     plt.xlabel(r'number of iterations')
+    plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.ylabel(r'rms volume error')
     plt.grid(linestyle='dashed', zorder=-1)
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.35))
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
     plt.tight_layout()
 
     if show:
@@ -287,12 +300,17 @@ def plot_rms_volume_error(fnames, show=False, fmt="png"):
     plt.close()
 
 
-def plot_max_volume_error(fnames, show=False, fmt="png"):
+def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
     """
     Plot the gridded absolute volume error (normalised with
     cell volume).
     """
     n = len(fnames)
+
+    labels = kwargs.pop('labels', n * [None])
+
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
 
@@ -308,13 +326,18 @@ def plot_max_volume_error(fnames, show=False, fmt="png"):
         vrms = h5reader.get_diagnostic('max absolute normalised volume error')
         h5reader.close()
 
-        prefix = os.path.splitext(fname)[0]
-        plt.plot(vrms, label=r'' + prefix, linewidth=2, color=colors[i])
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = label.split('_fields')[0]
 
+        plt.plot(vrms, label=label, linewidth=2, color=colors[i])
+
+    plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.xlabel(r'number of iterations')
     plt.ylabel(r'max normalised volume error')
     plt.grid(linestyle='dashed', zorder=-1)
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.35))
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
     plt.tight_layout()
 
     if show:
@@ -362,7 +385,7 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
     plt.xlabel(r'number of iterations')
     plt.ylabel(r'aspect ratio $\lambda$')
 
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.25))
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
 
     plt.tight_layout()
 
@@ -450,7 +473,7 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
     plt.xlabel(r'number of iterations')
     plt.ylabel(r'parcel volume / $V_{0}$')
 
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.25))
+    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
 
     plt.tight_layout()
 
@@ -460,6 +483,213 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
         prefix = os.path.splitext(fname)[0]
         plt.savefig(prefix + '_parcel_volume_profile.' + fmt, bbox_inches='tight')
     plt.close()
+
+
+def plot_center_of_mass(fname, show=False, fmt="png"):
+    prefix, ext = os.path.splitext(fname)
+
+    if ext == '.hdf5':
+        print('Extract data, evaluate quantities, write CSV file and plot.')
+
+        h5reader = H5Reader()
+        h5reader.open(fname)
+
+        if not h5reader.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+
+        nsteps = h5reader.get_num_steps()
+
+        bi_vi = np.zeros(nsteps-1)
+        bi_vi_xi = np.zeros(nsteps-1)
+        bi_vi_zi = np.zeros(nsteps-1)
+
+        bi_vi_x2i = np.zeros(nsteps-1)
+        bi_vi_z2i = np.zeros(nsteps-1)
+
+        wi_vi = np.zeros(nsteps-1)
+        wi_vi_xi = np.zeros(nsteps-1)
+        wi_vi_zi = np.zeros(nsteps-1)
+
+        wi_vi_x2i = np.zeros(nsteps-1)
+        wi_vi_z2i = np.zeros(nsteps-1)
+
+        xi_zi = np.zeros(nsteps-1)
+
+        t = np.zeros(nsteps-1)
+
+        # skip zero step since vorticity is not given
+        for j in range(1, nsteps):
+
+            pos = h5reader.get_dataset(j, 'position')
+            vol = h5reader.get_dataset(j, 'volume')
+            vor = h5reader.get_dataset(j, 'vorticity')
+            buo = h5reader.get_dataset(j, 'buoyancy')
+            t[j-1] = h5reader.get_step_attribute(j, 't')
+
+            # we only want parcels with x > 0
+            ind = (pos[0, :] > 0.0)
+
+            pos = pos[:, ind]
+            vol = vol[ind]
+            vor = vor[ind]
+            buo = buo[ind]
+
+            bv = buo * vol
+            vv = vor * vol
+
+            # first moment
+            bi_vi[j-1] = bv.mean()
+            bi_vi_xi[j-1] = (bv * pos[0, :]).mean()
+            bi_vi_zi[j-1] = (bv * pos[1, :]).mean()
+
+            # second moment
+            bi_vi_x2i[j-1] = (bv * pos[0, :] ** 2).mean()
+            bi_vi_z2i[j-1] = (bv * pos[1, :] ** 2).mean()
+
+            # first moment
+            wi_vi[j-1] = vv.mean()
+            wi_vi_xi[j-1] = (vv * pos[0, :]).mean()
+            wi_vi_zi[j-1] = (vv * pos[1, :]).mean()
+
+            # second moment
+            wi_vi_x2i[j-1] = (vv * pos[0, :] ** 2).mean()
+            wi_vi_z2i[j-1] = (vv * pos[1, :] ** 2).mean()
+
+            bi_vi_xi_zi = (bv * pos[0, :] * pos[1, :]).mean()
+            wi_vi_xi_zi = (vv * pos[0, :] * pos[1, :]).mean()
+
+        h5reader.close()
+
+        xb_bar = bi_vi_xi / bi_vi
+        zb_bar = bi_vi_zi / bi_vi
+        xw_bar = wi_vi_xi / wi_vi
+        zw_bar = wi_vi_zi / wi_vi
+
+        data = {
+            't':        t,
+            'xb_bar':   xb_bar,
+            'zb_bar':   zb_bar,
+            'x2b_bar':  bi_vi_x2i / bi_vi - xb_bar ** 2,
+            'z2b_bar':  bi_vi_z2i / bi_vi - zb_bar ** 2,
+            'xzb_bar':  bi_vi_xi_zi / bi_vi - xb_bar * zb_bar,
+            'xw_bar':   xw_bar,
+            'zw_bar':   zw_bar,
+            'x2w_bar':  wi_vi_x2i / wi_vi - xw_bar ** 2,
+            'z2w_bar':  wi_vi_z2i / wi_vi - zw_bar ** 2,
+            'xzw_bar':  wi_vi_xi_zi / wi_vi - xw_bar * zw_bar
+        }
+
+        df = pd.DataFrame(data=data)
+
+        df.to_csv(prefix + '.csv', index=False)
+    elif ext == '.csv':
+        print('Read CSV file and plot.')
+        df = pd.read_csv(prefix + '.csv')
+    else:
+        raise IOError('Wrong file format. Requires parcel hdf5 or CSV file.')
+
+
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(9, 6), dpi=200)
+    axes[0].plot(df['t'], df['xb_bar'], label=r'$\langle x\rangle_b$')
+
+    std = np.sqrt(df['x2b_bar'])
+    axes[0].fill_between(df['t'], df['xb_bar']-std, df['xb_bar']+std, alpha=0.5,
+                         label=r'$\pm\sqrt{\langle x^2\rangle_b}$')
+
+    axes[0].plot(df['t'], df['zb_bar'], label=r'$\langle z\rangle_b$')
+
+    std = np.sqrt(df['z2b_bar'])
+    axes[0].fill_between(df['t'], df['zb_bar']-std, df['zb_bar']+std, alpha=0.5,
+                         label=r'$\pm\sqrt{\langle z^2\rangle_b}$')
+
+
+    axes[1].plot(df['t'], df['xw_bar'], label=r'$\langle x\rangle_\zeta$')
+
+    std = np.sqrt(df['x2w_bar'])
+    axes[1].fill_between(df['t'], df['xw_bar']-std, df['xw_bar']+std, alpha=0.5,
+                         label=r'$\pm\sqrt{\langle x^2\rangle_\zeta}$')
+
+    axes[1].plot(df['t'], df['zw_bar'], label=r'$\langle z\rangle_\zeta$')
+
+    std = np.sqrt(df['z2w_bar'])
+    axes[1].fill_between(df['t'], df['zw_bar']-std, df['zw_bar']+std, alpha=0.5,
+                         label=r'$\pm\sqrt{\langle z^2\langle_\zeta}$')
+
+    axes[0].grid(which='both', linestyle='dashed')
+    axes[0].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.0))
+
+    axes[1].grid(which='both', linestyle='dashed')
+    axes[1].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.0))
+    axes[1].set_xlabel(r'time (s)')
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        plt.savefig(prefix + '_center_of_mass.' + fmt,
+                    bbox_inches='tight')
+    plt.close()
+
+
+
+def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwargs):
+    """
+    Plot the mean and standard deviation of the parcel volume
+    normalised with the cell volume.
+    """
+    n = len(fnames)
+
+    labels = kwargs.pop('labels', n * [None])
+
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
+
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    for i, fname in enumerate(fnames):
+        h5reader = H5Reader()
+        h5reader.open(fname)
+
+        if not h5reader.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+
+        nsteps = h5reader.get_num_steps()
+
+        if step < 0 or step > nsteps-1:
+            raise ValueError('Number of steps exceeded.')
+
+
+        data = {dset: h5reader.get_dataset(step, dset)}
+
+        h5reader.close()
+
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = label.split('_parcels')[0]
+
+        sns.ecdfplot(data=data, x=dset, stat='proportion',
+                     color=colors[i], label=label)
+
+    plt.ylabel('proportion')
+    plt.grid(which='both', linestyle='dashed')
+
+    if n > 1:
+        plt.legend(loc='upper center', ncol=min(4, n),
+                   bbox_to_anchor=(0.5, 1.15))
+
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fnames[0])[0] + '_'
+        if n > 1:
+            prefix = ''
+        plt.savefig(prefix + 'parcel_cumulative_' + dset + '.' + fmt,
+                    bbox_inches='tight')
+    plt.close()
+
 
 
 #def plot_field(fname, show=False, fmt="png", ax=None):
