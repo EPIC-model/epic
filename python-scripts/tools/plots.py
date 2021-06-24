@@ -641,7 +641,8 @@ def plot_cumulative(fname, step=0, dset='volume', show=False, fmt="png"):
         plt.show()
     else:
         prefix = os.path.splitext(fname)[0]
-        plt.savefig(prefix + '_parcel_cumulative.' + fmt, bbox_inches='tight')
+        plt.savefig(prefix + '_parcel_cumulative_' + dset + '.' + fmt,
+                    bbox_inches='tight')
     plt.close()
 
 
