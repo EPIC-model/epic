@@ -99,14 +99,27 @@ try:
                         type=str,
                         required=False,
                         default=os.getcwd(),
-                        help="running directory (default: current working directory)")
+                        help="running directory (absolute path) (default: current working directory)")
+
+    required.add_argument("--tmpl_dir",
+                          type=str,
+                          required=True,
+                          help="absolute path to template directory")
 
 
-    if not '--filenames' in sys.argv:
+
+    if (not '--filenames' in sys.argv) or (not '--tmpl_dir' in sys.argv):
         parser.print_help()
         exit(0)
 
     args = parser.parse_args()
+
+
+    if not os.path.isabs(args.tmpl_dir):
+        raise RuntimeError('Relative path to template directory provided.')
+
+    if not os.path.isabs(args.run_dir):
+        raise RuntimeError('Relative path of running directory.')
 
     # 24 June 2021
     # https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
@@ -155,7 +168,7 @@ try:
                 basename = name.lower() + '_' + key.lower() + '_' + str(num)
                 params['H5_BASENAME'] = "'" + basename + "'"
                 config = basename + '.config'
-                create_config_file(params, args.run_dir,config)
+                create_config_file(params, os.path.abspath(args.tmpl_dir), config)
 
                 # add to database
                 output[basename] = params.copy()

@@ -1,8 +1,8 @@
 {
-    "name": "TaylorGreen1",
+    "name": "TaylorGreen",
     "constants":
     {
-        "FIELD_FILE"        : "'../../install/bin/taylorgreen2d.hdf5'",
+        "FIELD_FILE"        : "'../taylorgreen2d.hdf5'",
         "FIELD_TOL"         : 1.0e-9,
         "H5_FIELD_FREQ"     : 1,
         "H5_PARCEL_FREQ"    : 1,
