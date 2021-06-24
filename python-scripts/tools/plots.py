@@ -547,12 +547,12 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
             'zb_bar':   zb_bar,
             'x2b_bar':  bi_vi_x2i / bi_vi - xb_bar ** 2,
             'z2b_bar':  bi_vi_z2i / bi_vi - zb_bar ** 2,
-            'xzb_bar':  bi_vi_xi_zi / bi_vi,
+            'xzb_bar':  bi_vi_xi_zi / bi_vi - xb_bar * zb_bar,
             'xw_bar':   xw_bar,
             'zw_bar':   zw_bar,
             'x2w_bar':  wi_vi_x2i / wi_vi - xw_bar ** 2,
             'z2w_bar':  wi_vi_z2i / wi_vi - zw_bar ** 2,
-            'xzw_bar':  wi_vi_xi_zi / wi_vi,
+            'xzw_bar':  wi_vi_xi_zi / wi_vi - xw_bar * zw_bar
         }
 
         df = pd.DataFrame(data=data)
