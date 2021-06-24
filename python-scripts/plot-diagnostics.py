@@ -35,6 +35,12 @@ try:
                           required=True,
                           help="list of hdf5 output files of EPIC")
 
+    parser.add_argument("--labels",
+                        type=str,
+                        nargs='+',
+                        required=False,
+                        help="special labels for the files (cumulative plot only)")
+
     parser.add_argument("--kind",
                         type=str,
                         required=True,
@@ -65,6 +71,7 @@ try:
                         default='volume',
                         help="parcel attribute (cumulative plot only)")
 
+
     if not '--filenames' in sys.argv:
         parser.print_help()
         exit(0)
@@ -92,8 +99,9 @@ try:
         for fname in args.filenames:
             plot_center_of_mass(fname, show=args.show, fmt=args.fmt)
     elif args.kind == kinds[6]:
-        for fname in args.filenames:
-            plot_cumulative(fname, step=args.step, dset=args.dataset, show=args.show, fmt=args.fmt)
+        plot_cumulative(args.filenames, step=args.step,
+                        dset=args.dataset, show=args.show,
+                        fmt=args.fmt, labels=args.labels)
     else:
         raise ValueError("Plot '" + args.kind + "' not supported!")
 

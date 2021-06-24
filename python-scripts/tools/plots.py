@@ -612,36 +612,61 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
 
 
 
-def plot_cumulative(fname, step=0, dset='volume', show=False, fmt="png"):
+def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwargs):
     """
     Plot the mean and standard deviation of the parcel volume
     normalised with the cell volume.
     """
-    h5reader = H5Reader()
-    h5reader.open(fname)
+    n = len(fnames)
 
-    if not h5reader.is_parcel_file:
-        raise IOError('Not a parcel output file.')
+    labels = kwargs.pop('labels', n * [None])
 
-    nsteps = h5reader.get_num_steps()
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
 
-    if step < 0 or step > nsteps-1:
-        raise ValueError('Number of steps exceeded.')
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    for i, fname in enumerate(fnames):
+        h5reader = H5Reader()
+        h5reader.open(fname)
+
+        if not h5reader.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+
+        nsteps = h5reader.get_num_steps()
+
+        if step < 0 or step > nsteps-1:
+            raise ValueError('Number of steps exceeded.')
 
 
-    data = {dset: h5reader.get_dataset(step, dset)}
+        data = {dset: h5reader.get_dataset(step, dset)}
 
-    sns.ecdfplot(data=data, x=dset, stat='proportion')
+        h5reader.close()
+
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = prefix.split('_parcels')[0]
+
+        sns.ecdfplot(data=data, x=dset, stat='proportion',
+                     color=colors[i], label=label)
+
     plt.ylabel('proportion')
     plt.grid(which='both', linestyle='dashed')
+
+    if n > 1:
+        plt.legend(loc='upper center', ncol=min(4, n),
+                   bbox_to_anchor=(0.5, 1.2))
 
     plt.tight_layout()
 
     if show:
         plt.show()
     else:
-        prefix = os.path.splitext(fname)[0]
-        plt.savefig(prefix + '_parcel_cumulative_' + dset + '.' + fmt,
+        prefix = os.path.splitext(fnames[0])[0] + '_'
+        if n > 1:
+            prefix = ''
+        plt.savefig(prefix + 'parcel_cumulative_' + dset + '.' + fmt,
                     bbox_inches='tight')
     plt.close()
 
