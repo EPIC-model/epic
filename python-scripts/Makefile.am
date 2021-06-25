@@ -15,5 +15,8 @@ plot_fieldsdir = $(bindir)
 plot_diagnostics_PYTHON = plot-diagnostics.py
 plot_diagnosticsdir = $(bindir)
 
+plot_timings_PYTHON = plot-timings.py
+plot_timingsdir = $(bindir)
+
 merge_ellipses_PYTHON = merge-ellipses.py
 merge_ellipsesdir = $(bindir)

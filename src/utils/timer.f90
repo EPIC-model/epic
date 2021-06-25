@@ -86,4 +86,26 @@ module timer
             write (*, '("|-------------------------------------------------------------|")')
         end subroutine print_timer
 
+        subroutine write_time_to_csv(fname)
+            character(*), intent(in) :: fname
+            integer                  :: n
+            double precision         :: frac
+            character(len=32)        :: s1, s2, s3
+
+            frac = hundred / timings(1)%wall_time
+
+            open(unit=1234, file=trim(fname) // '.csv', status='old')
+
+            write(1234, '("function name,#calls,total time,percentage")')
+            do n = 1, n_timers
+                write(s1, '(i8)') timings(n)%n_calls
+                write(s2, '(f9.3)') timings(n)%wall_time
+                write(s3, '(f6.2)') frac * timings(n)%wall_time
+                write(1234, "(a,',', a,',', a,',', a)") &
+                trim(timings(n)%name), trim(adjustl(s1)), trim(adjustl(s2)), trim(adjustl(s3))
+            enddo
+            close(1234)
+
+        end subroutine write_time_to_csv
+
 end module timer

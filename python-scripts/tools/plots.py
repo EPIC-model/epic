@@ -691,6 +691,64 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
     plt.close()
 
 
+def plot_time_pie_chart(fname, show=False, fmt="png"):
+    df = pd.read_csv(fname)
+    col = 'total time'
+
+    # remove epic and ls-rk4
+    total = df['total time'][0]
+    df.drop([0, 9], inplace=True)
+
+    others = total - df['total time'].sum()
+
+    ind = df['percentage'] < 1.0
+
+    others += df['total time'][ind].sum()
+
+    # 25 June 2021
+    # https://stackoverflow.com/questions/13851535/how-to-delete-rows-from-a-pandas-dataframe-based-on-a-conditional-expression
+    df.drop(df[ind].index, inplace=True)
+
+    df2 = pd.DataFrame([['others', 0, others, others / total * 100.0]],
+                       columns=df.columns)
+
+    df = df.append(df2)
+
+    n = len(df['function name'])
+
+    plt.figure()
+    ax = plt.gca()
+
+    # 25 June 2021
+    # https://matplotlib.org/stable/gallery/pie_and_polar_charts/pie_and_donut_labels.html#sphx-glr-gallery-pie-and-polar-charts-pie-and-donut-labels-py
+    wedges, texts, autotexts = ax.pie(df['total time'], autopct='%.1f%%', pctdistance=0.75,
+                                      wedgeprops=dict(width=0.5), startangle=90,
+                                      textprops=dict(color="w"))
+
+    bbox_props = dict(boxstyle="round,pad=0.3",
+                      facecolor='wheat', alpha=0.5)
+    kw = dict(arrowprops=dict(arrowstyle="-"),
+             bbox=bbox_props, zorder=0, va="center")
+
+    labels = list(df['function name'])
+
+    for i, p in enumerate(wedges):
+        ang = (p.theta2 - p.theta1)/2. + p.theta1
+        y = np.sin(np.deg2rad(ang))
+        x = np.cos(np.deg2rad(ang))
+        horizontalalignment = {-1: "right", 1: "left"}[int(np.sign(x))]
+        connectionstyle = "angle,angleA=0,angleB={}".format(ang)
+        kw["arrowprops"].update({"connectionstyle": connectionstyle})
+        ax.annotate(labels[i], xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
+                    horizontalalignment=horizontalalignment, **kw)
+
+    plt.setp(autotexts, size=12, weight="bold")
+
+    plt.show()
+
+def plot_time_bar(fnames, show=False, fmt="png"):
+    pass
+
 
 #def plot_field(fname, show=False, fmt="png", ax=None):
 

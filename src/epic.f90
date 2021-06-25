@@ -52,8 +52,8 @@ program epic
             call register_timer('grid2par', grid2par_handle)
             call register_timer('parcel split', split_handle)
             call register_timer('parcel merge', merge_handle)
-            call register_timer('parcel laplace correction', lapl_corr_handle)
-            call register_timer('parcel gradient correction', grad_corr_handle)
+            call register_timer('laplace correction', lapl_corr_handle)
+            call register_timer('gradient correction', grad_corr_handle)
             call register_timer('parcel init', init_handle)
             call register_timer('ls-rk4', ls_rk4_handle)
             call register_timer('parcel hdf5', hdf5_parcel_handle)
@@ -189,6 +189,7 @@ program epic
 
             call stop_timer(epic_handle)
 
+            call write_time_to_csv(output%h5_basename)
             call print_timer
         end subroutine
 
