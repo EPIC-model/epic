@@ -1,0 +1,27 @@
+{
+    "name": "TaylorGreen",
+    "constants":
+    {
+        "FIELD_FILE"        : "'../taylorgreen2d.hdf5'",
+        "FIELD_TOL"         : 1.0e-9,
+        "H5_FIELD_FREQ"     : 1,
+        "H5_PARCEL_FREQ"    : 1,
+        "N_PER_CELL"        : 4,
+        "LAMBDA"            : 5,
+        "MERGE_TYPE"        : "'multi-geometric'",
+        "VFRACTION"         : 36.0,
+        "VMAXFRACTION"      : 2.89,
+        "CORRECTION_ITERS"  : 2,
+        "GRADIENT_PREF"     : 1.8,
+        "MAX_COMPRESSION"   : 0.5,
+        "LIMIT"             : 5.0,
+        "DT"                : 0.025,
+        "ALPHA"             : 0.025,
+        "DT_MAX"            : 0.125
+    },
+    "parameters":
+    {
+        "ALPHA"             : [0.1, 0.2, 0.3],
+        "N_PER_CELL"        : [4, 9, 16]
+    }
+}
