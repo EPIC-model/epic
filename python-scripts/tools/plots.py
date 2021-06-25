@@ -693,7 +693,6 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
 
 def plot_time_pie_chart(fname, show=False, fmt="png"):
     df = pd.read_csv(fname)
-    col = 'total time'
 
     # remove epic and ls-rk4
     total = df['total time'][0]
@@ -719,10 +718,12 @@ def plot_time_pie_chart(fname, show=False, fmt="png"):
     plt.figure()
     ax = plt.gca()
 
+    data = list(df['total time'])
+
     # 25 June 2021
     # https://matplotlib.org/stable/gallery/pie_and_polar_charts/pie_and_donut_labels.html#sphx-glr-gallery-pie-and-polar-charts-pie-and-donut-labels-py
-    wedges, texts, autotexts = ax.pie(df['total time'], autopct='%.1f%%', pctdistance=0.75,
-                                      wedgeprops=dict(width=0.5), startangle=90,
+    wedges, texts, autotexts = ax.pie(data, autopct=lambda pct: get_autopct(pct, data), pctdistance=0.8,
+                                      wedgeprops=dict(width=0.5), startangle=100,
                                       textprops=dict(color="w"))
 
     bbox_props = dict(boxstyle="round,pad=0.3",
@@ -742,9 +743,15 @@ def plot_time_pie_chart(fname, show=False, fmt="png"):
         ax.annotate(labels[i], xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
                     horizontalalignment=horizontalalignment, **kw)
 
-    plt.setp(autotexts, size=12, weight="bold")
+    plt.setp(autotexts, size=8, weight="bold")
 
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fname)[0]
+        plt.savefig(prefix + '_timing_pie_chart.' + fmt,
+                    bbox_inches='tight')
+    plt.close()
 
 def plot_time_bar(fnames, show=False, fmt="png"):
     pass

@@ -26,3 +26,10 @@ def add_box(plt, label, value, unit='', xy=(0.01, 1.05), fmt='%1.3f'):
                  xy=xy,
                  xycoords='axes fraction',
                  bbox=bbox)
+
+# 25 June 2021
+# https://matplotlib.org/stable/gallery/pie_and_polar_charts/pie_and_donut_labels.html#sphx-glr-gallery-pie-and-polar-charts-pie-and-donut-labels-py
+def get_autopct(pct, allvals):
+    import numpy as np
+    absolute = pct/100.*np.sum(allvals)
+    return "{:.1f}$\%$\n({:.1f} s)".format(pct, absolute)
