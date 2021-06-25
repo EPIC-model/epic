@@ -1,12 +1,15 @@
 module parcel_point
     use parcel_container, only : parcels, n_parcels
-    use parcel_merge, only : pack_parcels
+    use parcel_merge, only : pack_parcels, merge_handle
     use constants, only : zero, one, two , four, fpi, f12
     use parcel_interpl, only : trilinear, ngp
     use fields, only : velgradg, volg
+    use parcel_split, only : split_handle
     use parcel_bc
     use options, only : verbose
     use parameters, only : vcell, nx, nz, dx, lower, upper
+    use timer, only : start_timer, stop_timer
+    implicit none
 
     contains
 
@@ -65,6 +68,8 @@ module parcel_point
             double precision             :: h
             integer                      :: n, last_index
 
+            call start_timer(split_handle)
+
             last_index = n_parcels
             max_stretch = prefactor * dlog(threshold)
 
@@ -117,12 +122,14 @@ module parcel_point
                       "no. parcels before and after split: ", last_index, "...", n_parcels
             endif
 
+            call stop_timer(split_handle)
+
         end subroutine point_split
 
         subroutine point_merge(vfraction)
             double precision, intent(in) :: vfraction
             double precision             :: vmin
-            integer                      :: isma(0:n_parcels), n_remove, l
+            integer                      :: isma(0:n_parcels), n_remove, l, n
             double precision             :: vres(n_parcels), zres(n_parcels), bres(n_parcels)
             double precision             :: res_volg(-1:nz+1, 0:nx-1)
             double precision             :: ori_volg(-1:nz+1, 0:nx-1)
@@ -130,6 +137,8 @@ module parcel_point
             double precision             :: res_dbuoyg(-1:nz+1, 0:nx-1)
             double precision             :: pos(2), weights(ngp), ww, volfi
             integer :: is(ngp), js(ngp)
+
+            call start_timer(merge_handle)
 
             vmin = vcell / dble(vfraction)
 
@@ -219,6 +228,9 @@ module parcel_point
                     parcels%volume(n) = parcels%volume(n) + vres(n)
                 enddo
             endif
+
+            call stop_timer(merge_handle)
+
         end subroutine point_merge
 
 end module parcel_point
