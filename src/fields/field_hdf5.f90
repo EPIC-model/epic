@@ -4,7 +4,10 @@ module field_hdf5
     use h5_writer
     use fields
     use field_diagnostics
+    use timer, only : start_timer, stop_timer
     implicit none
+
+    integer :: hdf5_field_handle
 
     character(len=512) :: h5fname
     integer(hid_t)     :: h5file_id
@@ -48,6 +51,8 @@ module field_hdf5
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
 
+            call start_timer(hdf5_field_handle)
+
 #ifdef ENABLE_VERBOSE
             if (verbose) then
                 print "(a18)", "write fields to h5"
@@ -72,6 +77,7 @@ module field_hdf5
 
             call close_h5_file(h5file_id)
 
+            call stop_timer(hdf5_field_handle)
 
         end subroutine write_h5_field_step
 

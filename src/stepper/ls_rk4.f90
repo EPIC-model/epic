@@ -11,9 +11,12 @@ module ls_rk4
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parameters, only : nx, nz
+    use timer, only : start_timer, stop_timer
     implicit none
 
     integer, parameter :: dp=kind(zero)           ! double precision
+
+    integer :: ls_rk4_handle
 
     double precision, allocatable, dimension(:, :) :: &
         strain, &   ! strain at parcel location
@@ -71,11 +74,15 @@ module ls_rk4
         subroutine ls_rk4_step(dt)
             double precision, intent(in) :: dt
 
+            call start_timer(ls_rk4_handle)
+
             if (parcel%is_elliptic) then
                 call ls_rk4_elliptic(dt)
             else
                 call ls_rk4_non_elliptic(dt)
             endif
+
+            call stop_timer(ls_rk4_handle)
 
         end subroutine ls_rk4_step
 

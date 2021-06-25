@@ -3,24 +3,31 @@
 ! =============================================================================
 program epic
     use constants, only : max_num_parcels, zero
+    use timer
     use field_diagnostics
     use parser, only : read_config_file
     use parcel_container
     use parcel_bc
-    use parcel_split, only : split_ellipses
+    use parcel_split, only : split_ellipses, split_handle
     use parcel_point, only : point_split, point_merge
-    use parcel_merge, only : merge_ellipses
-    use parcel_correction, only : init_parcel_correction, apply_laplace, apply_gradient
+    use parcel_merge, only : merge_ellipses, merge_handle
+    use parcel_correction, only : init_parcel_correction, &
+                                  apply_laplace,          &
+                                  apply_gradient,         &
+                                  lapl_corr_handle,       &
+                                  grad_corr_handle
     use parcel_diagnostics
     use parcel_hdf5
     use fields
     use field_hdf5
-    use tri_inversion, only : init_inversion
+    use tri_inversion, only : init_inversion, vor2vel_handle, vtend_handle
     use parcel_interpl
-    use parcel_init, only : init_parcels
+    use parcel_init, only : init_parcels, init_handle
     use ls_rk4
     use h5_utils, only : initialise_hdf5, finalise_hdf5
     implicit none
+
+    integer :: epic_handle
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -38,6 +45,23 @@ program epic
 
         subroutine pre_run
             use options, only : field_file, field_tol, output
+
+            call register_timer('epic', epic_handle)
+            call register_timer('vol2grid', vol2grid_handle)
+            call register_timer('par2grid', par2grid_handle)
+            call register_timer('grid2par', grid2par_handle)
+            call register_timer('parcel split', split_handle)
+            call register_timer('parcel merge', merge_handle)
+            call register_timer('parcel laplace correction', lapl_corr_handle)
+            call register_timer('parcel gradient correction', grad_corr_handle)
+            call register_timer('parcel init', init_handle)
+            call register_timer('ls-rk4', ls_rk4_handle)
+            call register_timer('parcel hdf5', hdf5_parcel_handle)
+            call register_timer('field hdf5', hdf5_field_handle)
+            call register_timer('vor2vel', vor2vel_handle)
+            call register_timer('vorticity tendency', vtend_handle)
+
+            call start_timer(epic_handle)
 
             call initialise_hdf5
 
@@ -162,6 +186,10 @@ program epic
             call parcel_dealloc
             call ls_rk4_dealloc
             call finalise_hdf5
+
+            call stop_timer(epic_handle)
+
+            call print_timer
         end subroutine
 
 

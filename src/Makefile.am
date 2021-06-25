@@ -1,6 +1,7 @@
 bin_PROGRAMS = epic
 epic_SOURCES = 					\
 	utils/constants.f90 			\
+	utils/timer.f90				\
 	utils/phys_constants.f90		\
 	utils/phys_parameters.f90		\
 	utils/stafft.f90			\
