@@ -9,7 +9,7 @@ module parcel_hdf5
     use timer, only : start_timer, stop_timer
     implicit none
 
-    integer :: hdf5_parcel_handle
+    integer :: hdf5_parcel_timer
 
     ! h5 file handle
     integer(hid_t)     :: h5file_id
@@ -53,7 +53,7 @@ module parcel_hdf5
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
 
-            call start_timer(hdf5_parcel_handle)
+            call start_timer(hdf5_parcel_timer)
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
@@ -81,7 +81,7 @@ module parcel_hdf5
 
             call close_h5_file(h5file_id)
 
-            call stop_timer(hdf5_parcel_handle)
+            call stop_timer(hdf5_parcel_timer)
 
         end subroutine write_h5_parcel_step
 

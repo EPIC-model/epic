@@ -16,7 +16,7 @@ module ls_rk4
 
     integer, parameter :: dp=kind(zero)           ! double precision
 
-    integer :: ls_rk4_handle
+    integer :: ls_rk4_timer
 
     double precision, allocatable, dimension(:, :) :: &
         strain, &   ! strain at parcel location
@@ -74,7 +74,7 @@ module ls_rk4
         subroutine ls_rk4_step(dt)
             double precision, intent(in) :: dt
 
-            call start_timer(ls_rk4_handle)
+            call start_timer(ls_rk4_timer)
 
             if (parcel%is_elliptic) then
                 call ls_rk4_elliptic(dt)
@@ -82,7 +82,7 @@ module ls_rk4
                 call ls_rk4_non_elliptic(dt)
             endif
 
-            call stop_timer(ls_rk4_handle)
+            call stop_timer(ls_rk4_timer)
 
         end subroutine ls_rk4_step
 

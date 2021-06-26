@@ -1,10 +1,10 @@
 module parcel_point
     use parcel_container, only : parcels, n_parcels
-    use parcel_merge, only : pack_parcels, merge_handle
+    use parcel_merge, only : pack_parcels, merge_timer
     use constants, only : zero, one, two , four, fpi, f12
     use parcel_interpl, only : trilinear, ngp
     use fields, only : velgradg, volg
-    use parcel_split, only : split_handle
+    use parcel_split, only : split_timer
     use parcel_bc
     use options, only : verbose
     use parameters, only : vcell, nx, nz, dx, lower, upper
@@ -68,7 +68,7 @@ module parcel_point
             double precision             :: h
             integer                      :: n, last_index
 
-            call start_timer(split_handle)
+            call start_timer(split_timer)
 
             last_index = n_parcels
             max_stretch = prefactor * dlog(threshold)
@@ -122,7 +122,7 @@ module parcel_point
                       "no. parcels before and after split: ", last_index, "...", n_parcels
             endif
 
-            call stop_timer(split_handle)
+            call stop_timer(split_timer)
 
         end subroutine point_split
 
@@ -138,7 +138,7 @@ module parcel_point
             double precision             :: pos(2), weights(ngp), ww, volfi
             integer :: is(ngp), js(ngp)
 
-            call start_timer(merge_handle)
+            call start_timer(merge_timer)
 
             vmin = vcell / dble(vfraction)
 
@@ -229,7 +229,7 @@ module parcel_point
                 enddo
             endif
 
-            call stop_timer(merge_handle)
+            call stop_timer(merge_timer)
 
         end subroutine point_merge
 

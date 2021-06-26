@@ -15,7 +15,7 @@ module parcel_init
     use timer, only : start_timer, stop_timer
     implicit none
 
-    integer :: init_handle
+    integer :: init_timer
 
     double precision, allocatable :: weights(:, :), apar(:)
     integer, allocatable :: is(:, :), js(:, :)
@@ -48,7 +48,7 @@ module parcel_init
             double precision             :: lam, ratio
             integer(hid_t)               :: h5handle
 
-            call start_timer(init_handle)
+            call start_timer(init_timer)
 
             ! read domain dimensions
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
@@ -94,7 +94,7 @@ module parcel_init
 
             call init_from_grids(h5fname, tol)
 
-            call stop_timer(init_handle)
+            call stop_timer(init_timer)
 
         end subroutine init_parcels
 

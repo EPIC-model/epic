@@ -14,7 +14,7 @@ module parcel_split
     use timer, only : start_timer, stop_timer
     implicit none
 
-    integer :: split_handle
+    integer :: split_timer
 
     contains
 
@@ -31,7 +31,7 @@ module parcel_split
             integer                                    :: last_index
             integer                                    :: n
 
-            call start_timer(split_handle)
+            call start_timer(split_timer)
 
             last_index = n_parcels
 
@@ -92,7 +92,7 @@ module parcel_split
             endif
 #endif
 
-            call stop_timer(split_handle)
+            call stop_timer(split_timer)
 
         end subroutine split_ellipses
 

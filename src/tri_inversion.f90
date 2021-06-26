@@ -13,8 +13,8 @@ module tri_inversion
     use timer, only : start_timer, stop_timer
     implicit none
 
-    integer :: vor2vel_handle,  &
-               vtend_handle
+    integer :: vor2vel_timer,  &
+               vtend_timer
 
     private
         ! Tri-diagonal arrays:
@@ -32,8 +32,8 @@ module tri_inversion
     public :: init_inversion,       &
               vor2vel,              &
               vorticity_tendency,   &
-              vor2vel_handle,       &
-              vtend_handle
+              vor2vel_timer,        &
+              vtend_timer
 
     contains
 
@@ -116,7 +116,7 @@ module tri_inversion
             double precision              :: dz2
             double precision              :: psig(0:nz, 0:nx-1) ! stream function
 
-            call start_timer(vor2vel_handle)
+            call start_timer(vor2vel_timer)
 
             ! copy vorticity
             psig = vortg(0:nz, 0:nx-1)
@@ -191,7 +191,7 @@ module tri_inversion
             velgradg(:, :, 2) = velgradg(:, :, 3) - vortg(:, :)
             velgradg(:, :, 4) = -velgradg(:, :, 1)
 
-            call stop_timer(vor2vel_handle)
+            call stop_timer(vor2vel_timer)
         end subroutine vor2vel
 
 
@@ -200,7 +200,7 @@ module tri_inversion
             double precision, intent(out) :: vtend(-1:nz+1, 0:nx-1, 1)
             double precision              :: psig(0:nz, 0:nx-1)
 
-            call start_timer(vtend_handle)
+            call start_timer(vtend_timer)
 
             psig = tbuoyg(0:nz, 0:nx-1)
 
@@ -217,7 +217,7 @@ module tri_inversion
             vtend(-1,   :, 1) = two * vtend(0,  :, 1) - vtend(1,    :, 1)
             vtend(nz+1, :, 1) = two * vtend(nz, :, 1) - vtend(nz-1, :, 1)
 
-            call stop_timer(vtend_handle)
+            call stop_timer(vtend_timer)
 
         end subroutine vorticity_tendency
 

@@ -18,7 +18,7 @@ module parcel_merge
 
     implicit none
 
-    integer :: merge_handle
+    integer :: merge_timer
 
     private :: do_bimerge,           &
                geometric_bimerge,    &
@@ -36,7 +36,7 @@ module parcel_merge
             integer                                    :: ibig(max_num_parcels / 8)
             integer                                    :: n_merge ! number of merges
 
-            call start_timer(merge_handle)
+            call start_timer(merge_timer)
 
             ! find parcels to merge
             call find_nearest(isma, ibig, n_merge)
@@ -68,7 +68,7 @@ module parcel_merge
                 call pack_parcels(isma, n_merge)
             endif
 
-            call stop_timer(merge_handle)
+            call stop_timer(merge_timer)
 
         end subroutine merge_ellipses
 
