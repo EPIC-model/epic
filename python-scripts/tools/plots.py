@@ -695,18 +695,17 @@ def plot_time_pie_chart(fname, show=False, fmt="png"):
     df = pd.read_csv(fname)
 
     # remove epic
-    total = df['total time'][0]
+    epic_time = df['total time'][0]
     df.drop([0], inplace=True)
 
     ind = df['percentage'] < 1.0
-
-    others = df['total time'][ind].sum()
-
     # 25 June 2021
     # https://stackoverflow.com/questions/13851535/how-to-delete-rows-from-a-pandas-dataframe-based-on-a-conditional-expression
     df.drop(df[ind].index, inplace=True)
 
-    df2 = pd.DataFrame([['others', 0, others, others / total * 100.0]],
+    others = epic_time - df['total time'].sum()
+
+    df2 = pd.DataFrame([['others', 0, others, others / epic_time * 100.0]],
                        columns=df.columns)
 
     df = df.append(df2)
@@ -760,13 +759,14 @@ def plot_time_bar(fname, show=False, fmt="png"):
 
     df = pd.read_csv(fname[0])
 
+    # remove epic
+    epic_time = df['total time'][0]
+    df.drop([0], inplace=True)
+
     ind = df['percentage'] < 1.0
-
-    others = df['total time'][ind].sum()
-
     df.drop(df[ind].index, inplace=True)
 
-    epic_time = df['total time'][0]
+    others = epic_time - df['total time'].sum()
 
     df2 = pd.DataFrame([['others', 0, others, others / epic_time * 100.0]],
                         columns=df.columns)
@@ -787,7 +787,7 @@ def plot_time_bar(fname, show=False, fmt="png"):
     # https://stackoverflow.com/questions/58689570/how-to-display-percentage-along-with-bar-chart
     for i, b in enumerate(bars):
         h = b.get_height()
-        plt.annotate('{:.1f} $\%$'.format(percent[i]),
+        plt.annotate('{:.2f} $\%$'.format(percent[i]),
                     xy=(b.get_x() + b.get_width() / 2, h),
                     xytext=(0, 2),
                     textcoords="offset points",

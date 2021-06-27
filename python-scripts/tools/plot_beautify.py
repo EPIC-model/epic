@@ -32,4 +32,4 @@ def add_box(plt, label, value, unit='', xy=(0.01, 1.05), fmt='%1.3f'):
 def get_autopct(pct, allvals):
     import numpy as np
     absolute = pct/100.*np.sum(allvals)
-    return "{:.1f}$\%$\n({:.1f} s)".format(pct, absolute)
+    return "{:.2f}$\%$\n({:.1f} s)".format(pct, absolute)
