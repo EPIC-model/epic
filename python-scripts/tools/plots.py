@@ -694,15 +694,13 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
 def plot_time_pie_chart(fname, show=False, fmt="png"):
     df = pd.read_csv(fname)
 
-    # remove epic and ls-rk4
+    # remove epic
     total = df['total time'][0]
-    df.drop([0, 9], inplace=True)
-
-    others = total - df['total time'].sum()
+    df.drop([0], inplace=True)
 
     ind = df['percentage'] < 1.0
 
-    others += df['total time'][ind].sum()
+    others = df['total time'][ind].sum()
 
     # 25 June 2021
     # https://stackoverflow.com/questions/13851535/how-to-delete-rows-from-a-pandas-dataframe-based-on-a-conditional-expression
@@ -713,9 +711,11 @@ def plot_time_pie_chart(fname, show=False, fmt="png"):
 
     df = df.append(df2)
 
+    df.sort_values(by=['total time'], inplace=True, ascending=False)
+
     n = len(df['function name'])
 
-    plt.figure()
+    plt.figure(figsize=(7, 5))
     ax = plt.gca()
 
     data = list(df['total time'])
@@ -723,7 +723,7 @@ def plot_time_pie_chart(fname, show=False, fmt="png"):
     # 25 June 2021
     # https://matplotlib.org/stable/gallery/pie_and_polar_charts/pie_and_donut_labels.html#sphx-glr-gallery-pie-and-polar-charts-pie-and-donut-labels-py
     wedges, texts, autotexts = ax.pie(data, autopct=lambda pct: get_autopct(pct, data), pctdistance=0.8,
-                                      wedgeprops=dict(width=0.5), startangle=100,
+                                      wedgeprops=dict(width=0.5), startangle=30,
                                       textprops=dict(color="w"))
 
     bbox_props = dict(boxstyle="round,pad=0.3",
@@ -744,6 +744,7 @@ def plot_time_pie_chart(fname, show=False, fmt="png"):
                     horizontalalignment=horizontalalignment, **kw)
 
     plt.setp(autotexts, size=8, weight="bold")
+    plt.tight_layout()
 
     if show:
         plt.show()
@@ -753,8 +754,55 @@ def plot_time_pie_chart(fname, show=False, fmt="png"):
                     bbox_inches='tight')
     plt.close()
 
-def plot_time_bar(fnames, show=False, fmt="png"):
-    pass
+def plot_time_bar(fname, show=False, fmt="png"):
+
+    plt.figure()
+
+    df = pd.read_csv(fname[0])
+
+    ind = df['percentage'] < 1.0
+
+    others = df['total time'][ind].sum()
+
+    df.drop(df[ind].index, inplace=True)
+
+    epic_time = df['total time'][0]
+
+    df2 = pd.DataFrame([['others', 0, others, others / epic_time * 100.0]],
+                        columns=df.columns)
+
+    df = df.append(df2)
+
+    df.sort_values(by=['total time'], inplace=True, ascending=False)
+
+    bars = plt.bar(df['function name'], df['total time'])
+
+    # 26 June 2021
+    # https://stackoverflow.com/questions/14852821/aligning-rotated-xticklabels-with-their-respective-xticks
+    plt.xticks(rotation=45, ha='right')
+
+    percent = list(df['percentage'])
+
+    # 26 June 2021
+    # https://stackoverflow.com/questions/58689570/how-to-display-percentage-along-with-bar-chart
+    for i, b in enumerate(bars):
+        h = b.get_height()
+        plt.annotate('{:.1f} $\%$'.format(percent[i]),
+                    xy=(b.get_x() + b.get_width() / 2, h),
+                    xytext=(0, 2),
+                    textcoords="offset points",
+                    ha='center', va='bottom')
+
+    plt.ylabel(r'wall time (s)')
+    plt.ylim([0, epic_time + 1.5])
+    plt.grid(which='both', linestyle='dashed')
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        plt.savefig('timing_bar_plot.' + fmt, bbox_inches='tight')
+    plt.close()
 
 
 #def plot_field(fname, show=False, fmt="png", ax=None):

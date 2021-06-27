@@ -55,7 +55,6 @@ program epic
             call register_timer('laplace correction', lapl_corr_timer)
             call register_timer('gradient correction', grad_corr_timer)
             call register_timer('parcel init', init_timer)
-            call register_timer('ls-rk4', ls_rk4_timer)
             call register_timer('parcel hdf5', hdf5_parcel_timer)
             call register_timer('field hdf5', hdf5_field_timer)
             call register_timer('vor2vel', vor2vel_timer)
