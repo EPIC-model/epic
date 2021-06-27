@@ -87,14 +87,26 @@ module timer
         end subroutine print_timer
 
         subroutine write_time_to_csv(fname)
-            character(*), intent(in) :: fname
-            integer                  :: n
-            double precision         :: frac
-            character(len=32)        :: s1, s2, s3
+            character(*), intent(in)    :: fname
+            integer                     :: n
+            double precision            :: frac
+            character(len=32)           :: s1, s2, s3
+            character(len=len(fname)+4) :: csv
+            logical                     :: exists = .false.
+            character(len=3)            :: status = 'new'
 
             frac = hundred / timings(1)%wall_time
 
-            open(unit=1234, file=trim(fname) // '.csv', status='old')
+            csv = trim(fname) // '.csv'
+
+            ! check whether file exists
+            inquire(file=csv, exist=exists)
+
+            if (exists) then
+                status = 'old'
+            endif
+
+            open(unit=1234, file=csv, status=status)
 
             write(1234, '("function name,#calls,total time,percentage")')
             do n = 1, n_timers
