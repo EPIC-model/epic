@@ -62,8 +62,8 @@ try:
         for fname in args.filenames:
             plot_time_pie_chart(fname, show=args.show, fmt=args.fmt)
     elif args.kind == kinds[1]:
-        plot_time_bar(args.filenames, show=args.show, fmt=args.fmt) #,
-                      #labels=args.labels)
+        plot_time_bar(args.filenames, show=args.show, fmt=args.fmt,
+                      labels=args.labels)
     else:
         raise ValueError("Plot '" + args.kind + "' not supported!")
 

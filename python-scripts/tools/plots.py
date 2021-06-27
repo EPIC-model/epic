@@ -753,48 +753,88 @@ def plot_time_pie_chart(fname, show=False, fmt="png"):
                     bbox_inches='tight')
     plt.close()
 
-def plot_time_bar(fname, show=False, fmt="png"):
+def plot_time_bar(fnames, show=False, fmt="png", **kwargs):
 
-    plt.figure()
+    labels = kwargs.pop('labels', len(fnames) * [None])
 
-    df = pd.read_csv(fname[0])
+    if len(labels) < len(fnames):
+        raise ValueError('Not enough labels provided.')
 
-    # remove epic
+    df = pd.read_csv(fnames[0])
+
+    # remove epic timer
     epic_time = df['total time'][0]
     df.drop([0], inplace=True)
 
     ind = df['percentage'] < 1.0
     df.drop(df[ind].index, inplace=True)
 
+    # remove unncessary columns
+    df.drop(['#calls', 'percentage'], axis=1, inplace=True)
+
     others = epic_time - df['total time'].sum()
 
-    df2 = pd.DataFrame([['others', 0, others, others / epic_time * 100.0]],
-                        columns=df.columns)
-
+    df2 = pd.DataFrame([['others', others]], columns=df.columns)
     df = df.append(df2)
-
     df.sort_values(by=['total time'], inplace=True, ascending=False)
 
-    bars = plt.bar(df['function name'], df['total time'])
+    # rename column
+    label = labels[0]
+    if label is None:
+        label = os.path.splitext(fnames[0])[0]
+
+    # 27 June 2021
+    # https://stackoverflow.com/questions/11346283/renaming-columns-in-pandas
+    df.columns = ['function name', label]
+
+    names = df['function name'].copy()
+
+
+    for n in range(1, len(fnames)):
+        df2 = pd.read_csv(fnames[n])
+
+        epic_time = df2['total time'][0]
+        df2.drop([0], inplace=True)
+
+        df2.drop(df2[ind].index, inplace=True)
+
+        # remove unncessary columns
+        df2.drop(['#calls', 'percentage'], axis=1, inplace=True)
+
+        others = epic_time - df2['total time'].sum()
+
+        df3 = pd.DataFrame([['others', others]], columns=df2.columns)
+        df2 = df2.append(df3)
+
+        # https://stackoverflow.com/questions/26707171/sort-pandas-dataframe-based-on-list
+        # 27 June 2021
+        df2['tmp'] = pd.Categorical(df2['function name'], categories=names, ordered=True)
+        df2.sort_values('tmp', inplace=True)
+
+        # rename column
+        label = labels[n]
+        if label is None:
+            label = os.path.splitext(fnames[n])[0]
+
+        # 27 June 2021
+        # https://stackoverflow.com/questions/27965295/dropping-rows-from-dataframe-based-on-a-not-in-condition
+        df2 = df2[df2['function name'].isin(names)]
+
+        df2.drop(['function name', 'tmp'], axis=1, inplace=True)
+        df2.columns = [label]
+
+        # append to df
+        df = pd.concat([df, df2], axis=1)
+
+
+    df.plot.bar(x='function name')
 
     # 26 June 2021
     # https://stackoverflow.com/questions/14852821/aligning-rotated-xticklabels-with-their-respective-xticks
-    plt.xticks(rotation=45, ha='right')
-
-    percent = list(df['percentage'])
-
-    # 26 June 2021
-    # https://stackoverflow.com/questions/58689570/how-to-display-percentage-along-with-bar-chart
-    for i, b in enumerate(bars):
-        h = b.get_height()
-        plt.annotate('{:.2f} $\%$'.format(percent[i]),
-                    xy=(b.get_x() + b.get_width() / 2, h),
-                    xytext=(0, 2),
-                    textcoords="offset points",
-                    ha='center', va='bottom')
+    plt.xticks(rotation=30, ha='right')
 
     plt.ylabel(r'wall time (s)')
-    plt.ylim([0, epic_time + 1.5])
+    plt.xlabel('')
     plt.grid(which='both', linestyle='dashed')
     plt.tight_layout()
 
