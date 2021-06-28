@@ -12,8 +12,10 @@ module parcel_init
                            dx, vcell, ncell,    &
                            extent, lower, nx, nz
     use h5_reader
+    use timer, only : start_timer, stop_timer
     implicit none
 
+    integer :: init_timer
 
     double precision, allocatable :: weights(:, :), apar(:)
     integer, allocatable :: is(:, :), js(:, :)
@@ -45,6 +47,8 @@ module parcel_init
             double precision, intent(in) :: tol
             double precision             :: lam, ratio
             integer(hid_t)               :: h5handle
+
+            call start_timer(init_timer)
 
             ! read domain dimensions
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
@@ -89,6 +93,8 @@ module parcel_init
             parcels%humidity(1:n_parcels) = zero
 
             call init_from_grids(h5fname, tol)
+
+            call stop_timer(init_timer)
 
         end subroutine init_parcels
 

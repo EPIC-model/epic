@@ -21,7 +21,12 @@ module parcel_correction
 
     use parcel_container
 
+    use timer, only : start_timer, stop_timer
+
     implicit none
+
+    integer :: lapl_corr_timer, &
+               grad_corr_timer
 
     private
         ! tri-diagonal arrays:
@@ -37,7 +42,12 @@ module parcel_correction
         double precision, allocatable :: xtrig(:)
         integer                       :: xfactors(5)
 
-    public :: init_parcel_correction, apply_laplace, apply_gradient
+    public :: init_parcel_correction, &
+              apply_laplace,          &
+              apply_gradient,         &
+              lapl_corr_timer,        &
+              grad_corr_timer
+
 
     contains
 
@@ -131,6 +141,8 @@ module parcel_correction
         double precision             :: weights(ngp)
         integer                      :: n, l, is(ngp), js(ngp)
 
+        call start_timer(lapl_corr_timer)
+
         ! form divergence field * dt and store in phi temporarily:
         phi = volg(0:nz, :) / vcell - one
 
@@ -181,6 +193,8 @@ module parcel_correction
 
         call apply_parcel_bc(parcels%position,parcels%velocity)
 
+        call stop_timer(lapl_corr_timer)
+
     end subroutine apply_laplace
 
     subroutine apply_gradient(volg, prefactor, max_compression)
@@ -191,6 +205,8 @@ module parcel_correction
         double precision             :: weights(ngp)
         double precision             :: shift_x1, shift_x2, x1_fpos, x2_fpos, lim_x1, lim_x2
         integer                      :: n, is(ngp), js(ngp)
+
+        call start_timer(grad_corr_timer)
 
         ! form divergence field * dt and store in phi temporarily:
         phi = volg(0:nz, :) / vcell - one
@@ -224,6 +240,8 @@ module parcel_correction
         enddo
 
         call apply_parcel_bc(parcels%position,parcels%velocity)
+
+        call stop_timer(grad_corr_timer)
 
     end subroutine apply_gradient
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

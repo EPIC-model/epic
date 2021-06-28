@@ -11,7 +11,10 @@ module parcel_split
                              , get_eigenvector     &
                              , get_B22             &
                              , get_aspect_ratio
+    use timer, only : start_timer, stop_timer
     implicit none
+
+    integer :: split_timer
 
     contains
 
@@ -27,6 +30,8 @@ module parcel_split
             double precision                           :: h
             integer                                    :: last_index
             integer                                    :: n
+
+            call start_timer(split_timer)
 
             last_index = n_parcels
 
@@ -86,6 +91,8 @@ module parcel_split
                       "no. parcels before and after split: ", last_index, "...", n_parcels
             endif
 #endif
+
+            call stop_timer(split_timer)
 
         end subroutine split_ellipses
 

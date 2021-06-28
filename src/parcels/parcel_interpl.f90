@@ -4,6 +4,7 @@
 ! =============================================================================
 module parcel_interpl
     use constants, only : max_num_parcels, zero, one, two
+    use timer, only : start_timer, stop_timer
     use parameters, only : nx, nz
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels
@@ -30,11 +31,17 @@ module parcel_interpl
     ! interpolation weights
     double precision :: weights(ngp)
 
+    integer :: vol2grid_timer, &
+               par2grid_timer, &
+               grid2par_timer
+
     private :: is, js, weights
 
     contains
 
         subroutine vol2grid
+            call start_timer(vol2grid_timer)
+
             volg = zero
 
             if (parcel%is_elliptic) then
@@ -52,6 +59,7 @@ module parcel_interpl
             volg(1,    :) = volg(1,    :) + volg(-1,   :)
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
+            call stop_timer(vol2grid_timer)
         end subroutine
 
 
@@ -186,6 +194,8 @@ module parcel_interpl
 
 
         subroutine par2grid
+            call start_timer(par2grid_timer)
+
             vortg = zero
             volg = zero
             nparg = zero
@@ -237,6 +247,8 @@ module parcel_interpl
                 print *, "par2grid: Wrong total number of parcels!"
                 stop
             endif
+
+            call stop_timer(par2grid_timer)
 
         end subroutine par2grid
 
@@ -348,11 +360,15 @@ module parcel_interpl
         subroutine grid2par(vel, vor, vgrad)
             double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
 
+            call start_timer(grid2par_timer)
+
             if (parcel%is_elliptic) then
                    call grid2par_elliptic(vel, vor, vgrad)
             else
                    call grid2par_non_elliptic(vel, vor, vgrad)
             endif
+
+            call stop_timer(grid2par_timer)
 
         end subroutine grid2par
 
@@ -360,11 +376,15 @@ module parcel_interpl
         subroutine grid2par_add(vel, vor, vgrad)
             double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
 
+            call start_timer(grid2par_timer)
+
             if (parcel%is_elliptic) then
                    call grid2par_elliptic(vel, vor, vgrad, add=.true.)
             else
                    call grid2par_non_elliptic(vel, vor, vgrad, add=.true.)
             endif
+
+            call stop_timer(grid2par_timer)
 
         end subroutine grid2par_add
 

@@ -691,6 +691,159 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
     plt.close()
 
 
+def plot_time_pie_chart(fname, show=False, fmt="png"):
+    df = pd.read_csv(fname)
+
+    # remove epic
+    epic_time = df['total time'][0]
+    df.drop([0], inplace=True)
+
+    ind = df['percentage'] < 1.0
+    # 25 June 2021
+    # https://stackoverflow.com/questions/13851535/how-to-delete-rows-from-a-pandas-dataframe-based-on-a-conditional-expression
+    df.drop(df[ind].index, inplace=True)
+
+    others = epic_time - df['total time'].sum()
+
+    df2 = pd.DataFrame([['others', 0, others, others / epic_time * 100.0]],
+                       columns=df.columns)
+
+    df = df.append(df2)
+
+    df.sort_values(by=['total time'], inplace=True, ascending=False)
+
+    n = len(df['function name'])
+
+    plt.figure(figsize=(7, 5))
+    ax = plt.gca()
+
+    data = list(df['total time'])
+
+    # 25 June 2021
+    # https://matplotlib.org/stable/gallery/pie_and_polar_charts/pie_and_donut_labels.html#sphx-glr-gallery-pie-and-polar-charts-pie-and-donut-labels-py
+    wedges, texts, autotexts = ax.pie(data, autopct=lambda pct: get_autopct(pct, data), pctdistance=0.8,
+                                      wedgeprops=dict(width=0.5), startangle=30,
+                                      textprops=dict(color="w"))
+
+    bbox_props = dict(boxstyle="round,pad=0.3",
+                      facecolor='wheat', alpha=0.5)
+    kw = dict(arrowprops=dict(arrowstyle="-"),
+             bbox=bbox_props, zorder=0, va="center")
+
+    labels = list(df['function name'])
+
+    for i, p in enumerate(wedges):
+        ang = (p.theta2 - p.theta1)/2. + p.theta1
+        y = np.sin(np.deg2rad(ang))
+        x = np.cos(np.deg2rad(ang))
+        horizontalalignment = {-1: "right", 1: "left"}[int(np.sign(x))]
+        connectionstyle = "angle,angleA=0,angleB={}".format(ang)
+        kw["arrowprops"].update({"connectionstyle": connectionstyle})
+        ax.annotate(labels[i], xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
+                    horizontalalignment=horizontalalignment, **kw)
+
+    plt.setp(autotexts, size=8, weight="bold")
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fname)[0]
+        plt.savefig(prefix + '_timing_pie_chart.' + fmt,
+                    bbox_inches='tight')
+    plt.close()
+
+def plot_time_bar(fnames, show=False, fmt="png", **kwargs):
+
+    labels = kwargs.pop('labels', len(fnames) * [None])
+
+    if len(labels) < len(fnames):
+        raise ValueError('Not enough labels provided.')
+
+    df = pd.read_csv(fnames[0])
+
+    # remove epic timer
+    epic_time = df['total time'][0]
+    df.drop([0], inplace=True)
+
+    ind = df['percentage'] < 1.0
+    df.drop(df[ind].index, inplace=True)
+
+    # remove unncessary columns
+    df.drop(['#calls', 'percentage'], axis=1, inplace=True)
+
+    others = epic_time - df['total time'].sum()
+
+    df2 = pd.DataFrame([['others', others]], columns=df.columns)
+    df = df.append(df2)
+    df.sort_values(by=['total time'], inplace=True, ascending=False)
+
+    # rename column
+    label = labels[0]
+    if label is None:
+        label = os.path.splitext(fnames[0])[0]
+
+    # 27 June 2021
+    # https://stackoverflow.com/questions/11346283/renaming-columns-in-pandas
+    df.columns = ['function name', label]
+
+    names = df['function name'].copy()
+
+
+    for n in range(1, len(fnames)):
+        df2 = pd.read_csv(fnames[n])
+
+        epic_time = df2['total time'][0]
+        df2.drop([0], inplace=True)
+
+        df2.drop(df2[ind].index, inplace=True)
+
+        # remove unncessary columns
+        df2.drop(['#calls', 'percentage'], axis=1, inplace=True)
+
+        others = epic_time - df2['total time'].sum()
+
+        df3 = pd.DataFrame([['others', others]], columns=df2.columns)
+        df2 = df2.append(df3)
+
+        # https://stackoverflow.com/questions/26707171/sort-pandas-dataframe-based-on-list
+        # 27 June 2021
+        df2['tmp'] = pd.Categorical(df2['function name'], categories=names, ordered=True)
+        df2.sort_values('tmp', inplace=True)
+
+        # rename column
+        label = labels[n]
+        if label is None:
+            label = os.path.splitext(fnames[n])[0]
+
+        # 27 June 2021
+        # https://stackoverflow.com/questions/27965295/dropping-rows-from-dataframe-based-on-a-not-in-condition
+        df2 = df2[df2['function name'].isin(names)]
+
+        df2.drop(['function name', 'tmp'], axis=1, inplace=True)
+        df2.columns = [label]
+
+        # append to df
+        df = pd.concat([df, df2], axis=1)
+
+
+    df.plot.bar(x='function name')
+
+    # 26 June 2021
+    # https://stackoverflow.com/questions/14852821/aligning-rotated-xticklabels-with-their-respective-xticks
+    plt.xticks(rotation=30, ha='right')
+
+    plt.ylabel(r'wall time (s)')
+    plt.xlabel('')
+    plt.grid(which='both', linestyle='dashed')
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        plt.savefig('timing_bar_plot.' + fmt, bbox_inches='tight')
+    plt.close()
+
 
 #def plot_field(fname, show=False, fmt="png", ax=None):
 
