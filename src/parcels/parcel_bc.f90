@@ -7,6 +7,7 @@ module parcel_bc
     use constants, only : zero, two
     use parameters, only : lower, upper, extent, hli, center
     use parcel_container, only : n_parcels
+    use omp_lib
     implicit none
 
     contains
@@ -18,6 +19,8 @@ module parcel_bc
             double precision, intent(inout) :: position(:, :), velocity(:, :)
             integer                         :: n
 
+            !$omp parallel num_threads(4)
+            !$omp do private(n)
             do n = 1, n_parcels
                 ! horizontal bc
                 call apply_periodic_bc(position(n, :))
@@ -25,6 +28,8 @@ module parcel_bc
                 ! vertical bc
                 call apply_free_slip_bc(position(n, :), velocity(n, :))
             enddo
+            !$omp end do
+            !$omp end parallel
         end subroutine apply_parcel_bc
 
 
