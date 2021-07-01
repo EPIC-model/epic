@@ -13,6 +13,7 @@ module parcel_interpl
     use fields
     use phys_constants, only : h_0
     use phys_parameters, only : glat, lam_c
+    use omp_lib
     implicit none
 
     private :: par2grid_elliptic,       &
@@ -68,6 +69,8 @@ module parcel_interpl
             integer           :: n, p, l
             double precision  :: pvol, pvor
 
+            !$omp parallel num_threads(4)
+            !$omp do private(n, p, l, points, pvol, pvor, is, js, weights)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
@@ -85,11 +88,14 @@ module parcel_interpl
                     call trilinear(points(p, :), is, js, weights)
 
                     do l = 1, ngp
+                        !$omp atomic
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
                                            + f12 * weights(l) * pvol
                     enddo
                 enddo
             enddo
+            !$omp end do
+            !$omp end parallel
         end subroutine vol2grid_elliptic
 
 #ifndef NDEBUG
@@ -257,6 +263,8 @@ module parcel_interpl
             integer           :: n, p, l, i, j
             double precision  :: pvol, pvor, weight, btot, h_c
 
+            !$omp parallel num_threads(4)
+            !$omp do private(n, p, l, i, j, points, pvol, pvor, weight, btot, h_c, is, js, weights)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
@@ -273,6 +281,7 @@ module parcel_interpl
 
                 call get_index(parcels%position(n, :), i, j)
                 i = mod(i + nx, nx)
+                !$omp atomic
                 nparg(j, i) = nparg(j, i) + 1
 
                 ! we have 2 points per ellipse
@@ -290,20 +299,26 @@ module parcel_interpl
 
                         weight = f12 * weights(l) * pvol
 
+                        !$omp atomic
                         vortg(js(l), is(l)) = vortg(js(l), is(l)) &
                                             + weight * parcels%vorticity(n)
 
+                        !$omp atomic
                         dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
                                              + weight * parcels%buoyancy(n)
 
+                        !$omp atomic
                         tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
                                              + weight * btot
 
+                        !$omp atomic
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
                                            + weight
                     enddo
                 enddo
             enddo
+            !$omp end do
+            !$omp end parallel
         end subroutine par2grid_elliptic
 
 
@@ -412,6 +427,8 @@ module parcel_interpl
 
             vgrad(1:n_parcels, :) = zero
 
+            !$omp parallel num_threads(4)
+            !$omp do private(n, p, l, c, points, weight, is, js, weights)
             do n = 1, n_parcels
 
                 points = get_ellipse_points(parcels%position(n, :), &
@@ -447,6 +464,8 @@ module parcel_interpl
                     enddo
                 enddo
             enddo
+            !$omp end do
+            !$omp end parallel
 
         end subroutine grid2par_elliptic
 
