@@ -12,6 +12,7 @@ module parcel_split
                              , get_B22             &
                              , get_aspect_ratio
     use timer, only : start_timer, stop_timer
+    use omp_lib
     implicit none
 
     integer :: split_timer
@@ -29,12 +30,14 @@ module parcel_split
             double precision                           :: evec(2)
             double precision                           :: h
             integer                                    :: last_index
-            integer                                    :: n
+            integer                                    :: n, n_thread_loc
 
             call start_timer(split_timer)
 
             last_index = n_parcels
 
+            !$omp parallel num_threads(4)
+            !$omp do private(n, B11, B12, B22, a2, lam, V, evec, h, n_thread_loc)
             do n = 1, last_index
                 B11 = parcels%B(n, 1)
                 B12 = parcels%B(n, 2)
@@ -62,28 +65,34 @@ module parcel_split
                 h = f14 * dsqrt(three * a2)
                 parcels%volume(n) = f12 * V
 
+                !$omp critical
+                n_thread_loc = n_parcels + 1
+
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
+                !$omp end critical
 
-                parcels%B(n_parcels, :) = parcels%B(n, :)
 
-                parcels%vorticity(n_parcels) = parcels%vorticity(n)
-                parcels%volume(n_parcels) = parcels%volume(n)
-                parcels%buoyancy(n_parcels) = parcels%buoyancy(n)
-                parcels%humidity(n_parcels) = parcels%humidity(n)
+                parcels%B(n_thread_loc, :) = parcels%B(n, :)
 
-                parcels%position(n_parcels, :) = parcels%position(n, :) - h * evec
+                parcels%vorticity(n_thread_loc) = parcels%vorticity(n)
+                parcels%volume(n_thread_loc) = parcels%volume(n)
+                parcels%buoyancy(n_thread_loc) = parcels%buoyancy(n)
+                parcels%humidity(n_thread_loc) = parcels%humidity(n)
+
+                parcels%position(n_thread_loc, :) = parcels%position(n, :) - h * evec
                 parcels%position(n, :) = parcels%position(n, :)  + h * evec
-
 
                 ! child parcels need to be reflected into domain, if their center
                 ! is inside the halo region
-                call apply_reflective_bc(parcels%position(n_parcels, :), &
-                                         parcels%B(n_parcels, :))
+                call apply_reflective_bc(parcels%position(n_thread_loc, :), &
+                                         parcels%B(n_thread_loc, :))
 
                 call apply_reflective_bc(parcels%position(n, :), parcels%B(n, :))
 
             enddo
+            !$omp end do
+            !$omp end parallel
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
