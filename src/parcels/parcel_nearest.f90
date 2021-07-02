@@ -40,8 +40,6 @@ module parcel_nearest
 
             vmin = vcell / dble(parcel%vfraction)
 
-            ! These parcels are marked for merger:
-            l_merge(1:n_parcels)=(parcels%volume(1:n_parcels) < vmin)
             nmerge=0
 
             !---------------------------------------------------------------------
@@ -50,7 +48,10 @@ module parcel_nearest
 
             ! Bin parcels in cells:
             ! Form list of small parcels:
-            do i=1,n_parcels
+            do i = 1, n_parcels
+                ! These parcels are marked for merger:
+                l_merge(i) = (parcels%volume(i) < vmin)
+
                 if (l_merge(i)) then
                     nmerge=nmerge+1
                     isma(nmerge)=i
