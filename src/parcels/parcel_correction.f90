@@ -180,7 +180,7 @@ module parcel_correction
 
         !------------------------------------------------------------------
         ! Increment parcel positions usind (ud,wd) field:
-        !$omp parallel num_threads(4)
+        !$omp parallel
         !$omp do private(n, l, is, js, weights)
         do n = 1, n_parcels
             call trilinear(parcels%position(n, :), is, js, weights)
@@ -216,7 +216,7 @@ module parcel_correction
         ! form divergence field * dt and store in phi temporarily:
         phi = volg(0:nz, :) / vcell - one
 
-        !$omp parallel num_threads(4)
+        !$omp parallel
         !$omp do private(n, is, js, weights, x1_fpos, x2_fpos, shift_x1, shift_x2, lim_x1, lim_x2)
         do n = 1, n_parcels
 

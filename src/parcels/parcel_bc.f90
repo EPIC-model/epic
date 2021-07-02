@@ -19,7 +19,7 @@ module parcel_bc
             double precision, intent(inout) :: position(:, :), velocity(:, :)
             integer                         :: n
 
-            !$omp parallel num_threads(4)
+            !$omp parallel
             !$omp do private(n)
             do n = 1, n_parcels
                 ! horizontal bc

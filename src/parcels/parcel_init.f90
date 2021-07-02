@@ -13,6 +13,7 @@ module parcel_init
                            extent, lower, nx, nz
     use h5_reader
     use timer, only : start_timer, stop_timer
+    use omp_lib
     implicit none
 
     integer :: init_timer
@@ -163,6 +164,8 @@ module parcel_init
 
             ! Compute mean parcel density:
             resi = zero
+
+            !$omp parallel do  private(n, l) reduction(+:resi)
             do n = 1, n_parcels
                 ! get interpolation weights and mesh indices
                 call trilinear(parcels%position(n, :), is(n, :), js(n, :), weights(n, :))
@@ -171,12 +174,14 @@ module parcel_init
                     resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) + weights(n, l)
                 enddo
             enddo
+            !$omp end parallel do
 
             !Double edge values at iz = 0 and nz:
             resi(0, :) = two * resi(0, :)
             resi(nz,:) = two * resi(nz,:)
 
             ! Determine local inverse density of parcels (apar)
+            !$omp parallel do  private(n, l, rsum)
             do n = 1, n_parcels
                 rsum = zero
                 do l = 1, ngp
@@ -184,6 +189,7 @@ module parcel_init
                 enddo
                 apar(n) = one / rsum
             enddo
+            !$omp end parallel do
 
         end subroutine alloc_and_precompute
 
@@ -287,6 +293,7 @@ module parcel_init
             rtol = rms * tol
 
             ! Initialise (volume-weighted) parcel attribute with a guess
+            !$omp parallel do  private(n, l, fsum)
             do n = 1, n_parcels
                 fsum = zero
                 do l = 1, ngp
@@ -294,6 +301,7 @@ module parcel_init
                 enddo
                 par(n) = apar(n) * fsum
             enddo
+            !$omp end parallel do
 
             ! Iteratively compute a residual and update (volume-weighted) attribute:
             rerr = one
@@ -313,6 +321,7 @@ module parcel_init
                 resi(0:nz, :) = field(0:nz, :) - resi(0:nz, :)
 
                 !Update (volume-weighted) attribute:
+                !$omp parallel do  private(n, rsum, l)
                 do n = 1, n_parcels
                     rsum = zero
                     do l = 1, ngp
@@ -320,6 +329,7 @@ module parcel_init
                     enddo
                     par(n) = par(n) + apar(n) * rsum
                 enddo
+                !$omp end parallel do
 
                 !Compute maximum error:
                 rerr = maxval(dabs(resi))

@@ -7,18 +7,16 @@ module rk4_utils
     contains
 
         function get_B(Bin, S, volume) result(Bout)
-            double precision, intent(in) :: Bin(:, :)
-            double precision, intent(in) :: S(:, :)
-            double precision, intent(in) :: volume(:)
-            double precision, dimension(size(Bin,1),size(Bin,2)) :: Bout
+            double precision, intent(in) :: Bin(2)
+            double precision, intent(in) :: S(4)
+            double precision, intent(in) :: volume
+            double precision             :: Bout(2)
 
             ! B11 = 2 * (dudx * B11 + dudy * B12)
-            Bout(:, 1) = two * (S(:, 1) * Bin(:, 1) &
-                       + S(:, 2) * Bin(:, 2))
+            Bout(1) = two * (S(1) * Bin(1) + S(2) * Bin(2))
 
             ! B12 = dvdx * B11 + dudy * B22
-            Bout(:, 2) = S(:, 3) * Bin(:, 1) &
-                       + S(:, 2) * get_B22(Bin(:, 1), Bin(:, 2), volume)
+            Bout(2) = S(3) * Bin(1) + S(2) * get_B22(Bin(1), Bin(2), volume)
 
         end function get_B
 

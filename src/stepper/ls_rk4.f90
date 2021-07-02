@@ -84,34 +84,53 @@ module ls_rk4
             double precision, intent(in) :: ca
             double precision, intent(in) :: cb
             double precision, intent(in) :: dt
-            integer, intent(in) :: step
+            integer,          intent(in) :: step
+            integer                      :: n
 
             call par2grid
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
 
-            if(step==1) then
-               call grid2par(parcels%velocity, dvordt, strain)
-               dbdt(1:n_parcels,:) = get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
-                                           parcels%volume(1:n_parcels))
+            if (step == 1) then
+                call grid2par(parcels%velocity, dvordt, strain)
+
+                !$omp parallel do private(n)
+                do n = 1, n_parcels
+                    dbdt(n,:) = get_B(parcels%B(n,:), strain(n,:), parcels%volume(n))
+                enddo
+                !$omp end parallel do
             else
-               call grid2par_add(parcels%velocity, dvordt, strain)
-               dbdt(1:n_parcels,:) = dbdt(1:n_parcels,:) &
-                                   + get_B(parcels%B(1:n_parcels,:), strain(1:n_parcels,:), &
-                                           parcels%volume(1:n_parcels))
+                call grid2par_add(parcels%velocity, dvordt, strain)
+
+                !$omp parallel do private(n)
+                do n = 1, n_parcels
+                    dbdt(n,:) = dbdt(n,:) &
+                              + get_B(parcels%B(n,:), strain(n,:), parcels%volume(n))
+                enddo
+                !$omp end parallel do
             endif
-            parcels%position(1:n_parcels,:) = parcels%position(1:n_parcels,:) &
-                                            + cb*dt*parcels%velocity(1:n_parcels,:)
-            parcels%vorticity(1:n_parcels) = parcels%vorticity(1:n_parcels) + cb*dt*dvordt(1:n_parcels)
-            parcels%B(1:n_parcels,:) = parcels%B(1:n_parcels,:) + cb*dt*dbdt(1:n_parcels,:)
+
+            !$omp parallel do private(n)
+            do n = 1, n_parcels
+                parcels%position(n,:) = parcels%position(n,:) &
+                                      + cb * dt * parcels%velocity(n,:)
+                parcels%vorticity(n) = parcels%vorticity(n) + cb * dt * dvordt(n)
+                parcels%B(n,:) = parcels%B(n,:) + cb * dt * dbdt(n,:)
+            enddo
+            !$omp end parallel do
+
             call apply_parcel_bc(parcels%position, parcels%velocity)
-            if(step==5) then
+            if (step == 5) then
                return
             endif
-            parcels%velocity(1:n_parcels,:) = ca*parcels%velocity(1:n_parcels,:)
-            dvordt(1:n_parcels) = ca * dvordt(1:n_parcels)
-            dbdt(1:n_parcels,:) = ca*dbdt(1:n_parcels,:)
-            return
+
+            !$omp parallel do private(n)
+            do n = 1, n_parcels
+                parcels%velocity(n,:) = ca * parcels%velocity(n,:)
+                dvordt(n) = ca * dvordt(n)
+                dbdt(n,:) = ca * dbdt(n,:)
+            enddo
+            !$omp end parallel do
 
         end subroutine ls_rk4_elliptic_substep
 
