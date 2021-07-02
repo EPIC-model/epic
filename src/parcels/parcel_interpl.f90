@@ -33,6 +33,9 @@ module parcel_interpl
     double precision :: weights(ngp)
 
     integer :: vol2grid_timer, &
+#ifndef NDBEBUG
+               sym_vol2grid_timer, &
+#endif
                par2grid_timer, &
                grid2par_timer
 
@@ -100,11 +103,14 @@ module parcel_interpl
 
 #ifndef NDEBUG
         subroutine vol2grid_symmetry_error
+            call start_timer(sym_vol2grid_timer)
+
             if (parcel%is_elliptic) then
                 call vol2grid_elliptic_symmetry_error
             else
                 call vol2grid_non_elliptic_symmetry_error
             endif
+            call stop_timer(sym_vol2grid_timer)
         end subroutine vol2grid_symmetry_error
 
         subroutine vol2grid_elliptic_symmetry_error
@@ -115,6 +121,9 @@ module parcel_interpl
             sym_volg = zero
 
             do m = -1, 1, 2
+                !$omp parallel
+                !$omp do private(n, p, l, points, pos, pvol, V, B, is, js, weights) &
+                !$omp& reduction(+: sym_volg)
                 do n = 1, n_parcels
 
                     pos = parcels%position(n, :)
@@ -142,6 +151,8 @@ module parcel_interpl
                         enddo
                     enddo
                 enddo
+                !$omp end do
+                !$omp end parallel
             enddo
         end subroutine vol2grid_elliptic_symmetry_error
 

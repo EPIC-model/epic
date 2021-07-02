@@ -60,6 +60,9 @@ program epic
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
             call register_timer('parcel push', rk4_timer)
+#ifndef NDEBUG
+            call register_timer('symmetric vol2grid', sym_vol2grid_timer)
+#endif
 
             call start_timer(epic_timer)
 
