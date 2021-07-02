@@ -48,6 +48,7 @@ module parcel_init
             double precision, intent(in) :: tol
             double precision             :: lam, ratio
             integer(hid_t)               :: h5handle
+            integer                      :: n
 
             call start_timer(init_timer)
 
@@ -66,7 +67,13 @@ module parcel_init
             call init_regular_positions
 
             ! initialize the volume of each parcel
-            parcels%volume(1:n_parcels) = vcell / dble(parcel%n_per_cell)
+            !$omp parallel
+            !$omp do private(n)
+            do n = 1, n_parcels
+                parcels%volume(n) = vcell / dble(parcel%n_per_cell)
+            enddo
+            !$omp end do
+            !$omp end parallel
 
             if (parcel%is_elliptic) then
                 deallocate(parcels%stretch)
@@ -76,11 +83,17 @@ module parcel_init
                 ! aspect ratio: lam = a / b
                 lam = max(dx(2) / dx(1), ratio)
 
-                ! B11
-                parcels%B(1:n_parcels, 1) = ratio * get_ab(parcels%volume(1:n_parcels))
+                !$omp parallel
+                !$omp do private(n)
+                do n = 1, n_parcels
+                    ! B11
+                    parcels%B(n, 1) = ratio * get_ab(parcels%volume(n))
 
-                ! B12
-                parcels%B(1:n_parcels, 2) = zero
+                    ! B12
+                    parcels%B(n, 2) = zero
+                enddo
+                !$omp end do
+                !$omp end parallel
 
                 call init_refine(lam)
 
@@ -89,9 +102,15 @@ module parcel_init
                 parcels%stretch = zero
             endif
 
-            parcels%vorticity(1:n_parcels) = zero
-            parcels%buoyancy(1:n_parcels) = zero
-            parcels%humidity(1:n_parcels) = zero
+            !$omp parallel
+            !$omp do private(n)
+            do n = 1, n_parcels
+                parcels%vorticity(n) = zero
+                parcels%buoyancy(n) = zero
+                parcels%humidity(n) = zero
+            enddo
+            !$omp end do
+            !$omp end parallel
 
             call init_from_grids(h5fname, tol)
 
@@ -284,8 +303,14 @@ module parcel_init
 
 
             if (rms == zero) then
-                ! assign mean value
-                par(1:n_parcels) = avg_field
+                !$omp parallel
+                !$omp do private(n)
+                do n = 1, n_parcels
+                    ! assign mean value
+                    par(n) = avg_field
+                enddo
+                !$omp end do
+                !$omp end parallel
                 return
             endif
 
@@ -343,7 +368,13 @@ module parcel_init
 
             !Finally divide by parcel volume to define attribute:
             ! (multiply with vcell since algorithm is designed for volume fractions)
-            par(1:n_parcels) = vcell * par(1:n_parcels) / parcels%volume(1:n_parcels)
+            !$omp parallel
+            !$omp do private(n)
+            do n = 1, n_parcels
+                par(n) = vcell * par(n) / parcels%volume(n)
+            enddo
+            !$omp end do
+            !$omp end parallel
 
         end subroutine gen_parcel_scalar_attr
 
