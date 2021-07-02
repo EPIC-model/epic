@@ -11,9 +11,12 @@ module ls_rk4
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parameters, only : nx, nz
+    use timer, only : start_timer, stop_timer, timings
     implicit none
 
     integer, parameter :: dp=kind(zero)           ! double precision
+
+    integer :: rk4_timer
 
     double precision, allocatable, dimension(:, :) :: &
         strain, &   ! strain at parcel location
@@ -94,13 +97,19 @@ module ls_rk4
             if (step == 1) then
                 call grid2par(parcels%velocity, dvordt, strain)
 
+                call start_timer(rk4_timer)
+
                 !$omp parallel do private(n)
                 do n = 1, n_parcels
                     dbdt(n,:) = get_B(parcels%B(n,:), strain(n,:), parcels%volume(n))
                 enddo
                 !$omp end parallel do
+
+                call stop_timer(rk4_timer)
             else
                 call grid2par_add(parcels%velocity, dvordt, strain)
+
+                call start_timer(rk4_timer)
 
                 !$omp parallel do private(n)
                 do n = 1, n_parcels
@@ -108,21 +117,31 @@ module ls_rk4
                               + get_B(parcels%B(n,:), strain(n,:), parcels%volume(n))
                 enddo
                 !$omp end parallel do
+
+                call stop_timer(rk4_timer)
             endif
+
+            call start_timer(rk4_timer)
 
             !$omp parallel do private(n)
             do n = 1, n_parcels
                 parcels%position(n,:) = parcels%position(n,:) &
                                       + cb * dt * parcels%velocity(n,:)
+
+                call apply_single_parcel_bc(parcels%position(n,:), parcels%velocity(n,:))
+
                 parcels%vorticity(n) = parcels%vorticity(n) + cb * dt * dvordt(n)
                 parcels%B(n,:) = parcels%B(n,:) + cb * dt * dbdt(n,:)
             enddo
             !$omp end parallel do
 
-            call apply_parcel_bc(parcels%position, parcels%velocity)
+            call stop_timer(rk4_timer)
+
             if (step == 5) then
                return
             endif
+
+            call start_timer(rk4_timer)
 
             !$omp parallel do private(n)
             do n = 1, n_parcels
@@ -131,6 +150,8 @@ module ls_rk4
                 dbdt(n,:) = ca * dbdt(n,:)
             enddo
             !$omp end parallel do
+
+            call stop_timer(rk4_timer)
 
         end subroutine ls_rk4_elliptic_substep
 
@@ -143,6 +164,10 @@ module ls_rk4
             call ls_rk4_elliptic_substep(ca3, cb3, dt, 3)
             call ls_rk4_elliptic_substep(ca4, cb4, dt, 4)
             call ls_rk4_elliptic_substep(ca5, cb5, dt, 5)
+
+            ! we need to subtract 13 calls since we start and stop
+            ! the timer multiple times which increments n_calls
+            timings(rk4_timer)%n_calls =  timings(rk4_timer)%n_calls - 13
 
         end subroutine ls_rk4_elliptic
 

@@ -59,6 +59,7 @@ program epic
             call register_timer('field hdf5', hdf5_field_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
+            call register_timer('parcel push', rk4_timer)
 
             call start_timer(epic_timer)
 

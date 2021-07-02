@@ -33,6 +33,17 @@ module parcel_bc
         end subroutine apply_parcel_bc
 
 
+        subroutine apply_single_parcel_bc(position, velocity)
+            double precision, intent(inout) :: position(2), velocity(2)
+
+            ! horizontal bc
+            call apply_periodic_bc(position)
+
+            ! vertical bc
+            call apply_free_slip_bc(position, velocity)
+        end subroutine apply_single_parcel_bc
+
+
         ! apply periodic bc on n-th parcel
         subroutine apply_periodic_bc(position)
             double precision, intent(inout) :: position(2)
