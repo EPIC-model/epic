@@ -228,7 +228,7 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
         vstd[i] = sym_volg.std()
         vmin[i] = sym_volg.min()
         vmax[i] = sym_volg.max()
-        t[i] = h5header.get_step_attribute(i, 't')
+        t[i] = h5reader.get_step_attribute(i, 't')
 
     h5reader.close()
 
