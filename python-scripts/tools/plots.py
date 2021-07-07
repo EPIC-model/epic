@@ -221,28 +221,29 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
     vmin = np.zeros(nsteps)
     vmax = np.zeros(nsteps)
     vstd = np.zeros(nsteps)
-    iters = range(nsteps)
-    for i in iters:
+    t = np.zeros(nsteps)
+    for i in range(nsteps):
         sym_volg = h5reader.get_dataset(i, 'symmetry volume')
         vmean[i] = sym_volg.mean()
         vstd[i] = sym_volg.std()
         vmin[i] = sym_volg.min()
         vmax[i] = sym_volg.max()
+        t[i] = h5reader.get_step_attribute(i, 't')
 
     h5reader.close()
 
     plt.figure()
     plt.grid(which='both', linestyle='dashed')
     #plt.plot(iters, vmean, label='mean', color='darkorange', linewidth=1.5)
-    plt.fill_between(iters, vmean - vstd, vmin, label='min-max', color='cornflowerblue',
+    plt.fill_between(t, vmean - vstd, vmin, label='min-max', color='cornflowerblue',
                      edgecolor='cornflowerblue', linewidth=0.75)
-    plt.fill_between(iters, vmean + vstd, vmax, color='cornflowerblue',
+    plt.fill_between(t, vmean + vstd, vmax, color='cornflowerblue',
                      edgecolor='cornflowerblue', linewidth=0.75)
-    plt.fill_between(iters, vmean - vstd, vmean + vstd, label='std', color='royalblue',
+    plt.fill_between(t, vmean - vstd, vmean + vstd, label='std', color='royalblue',
                      edgecolor='royalblue', linewidth=0.75)
 
-    plt.xlabel('number of iterations')
-    plt.ylabel('volume symmetry error')
+    plt.xlabel(r'time (s)')
+    plt.ylabel(r'volume symmetry error')
 
     plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
 
@@ -277,6 +278,7 @@ def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
             raise IOError('Not a field output file.')
 
         vrms = h5reader.get_diagnostic('rms volume error')
+        t = h5reader.get_diagnostic('t')
         h5reader.close()
 
         label = labels[i]
@@ -284,9 +286,9 @@ def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
             label = os.path.splitext(fname)[0]
             label = label.split('_fields')[0]
 
-        plt.plot(vrms, label=label, linewidth=2, color=colors[i])
+        plt.plot(t, vrms, label=label, linewidth=2, color=colors[i])
 
-    plt.xlabel(r'number of iterations')
+    plt.xlabel(r'time (s)')
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.ylabel(r'rms volume error')
     plt.grid(linestyle='dashed', zorder=-1)
@@ -323,7 +325,8 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
         if h5reader.is_parcel_file:
             raise IOError('Not a field output file.')
 
-        vrms = h5reader.get_diagnostic('max absolute normalised volume error')
+        vmax = h5reader.get_diagnostic('max absolute normalised volume error')
+        t = h5reader.get_diagnostic('t')
         h5reader.close()
 
         label = labels[i]
@@ -331,10 +334,10 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
             label = os.path.splitext(fname)[0]
             label = label.split('_fields')[0]
 
-        plt.plot(vrms, label=label, linewidth=2, color=colors[i])
+        plt.plot(t, vmax, label=label, linewidth=2, color=colors[i])
 
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
-    plt.xlabel(r'number of iterations')
+    plt.xlabel(r'time (s)')
     plt.ylabel(r'max normalised volume error')
     plt.grid(linestyle='dashed', zorder=-1)
     plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
@@ -361,6 +364,7 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
 
     lam_mean = np.zeros(nsteps)
     lam_std = np.zeros(nsteps)
+    t = np.zeros(nsteps)
 
     for step in range(nsteps):
         lam = h5reader.get_aspect_ratio(step)
@@ -368,13 +372,15 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
         lam_mean[step] = lam.mean()
         lam_std[step] = lam.std()
 
+        t[step] = h5reader.get_step_attribute(step, 't')
+
     lmax = h5reader.get_parcel_option('lambda')[0]
 
     h5reader.close()
 
     plt.figure()
-    plt.plot(lam_mean, color='blue', label=r'mean')
-    plt.fill_between(range(nsteps), lam_mean - lam_std, lam_mean + lam_std,
+    plt.plot(t, lam_mean, color='blue', label=r'mean')
+    plt.fill_between(t, lam_mean - lam_std, lam_mean + lam_std,
                      alpha=0.5, label=r'std. dev.')
 
     plt.axhline(lmax, linestyle='dashed', color='black',
@@ -382,7 +388,7 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
 
     plt.grid(linestyle='dashed', zorder=-1)
 
-    plt.xlabel(r'number of iterations')
+    plt.xlabel(r'time (s)')
     plt.ylabel(r'aspect ratio $\lambda$')
 
     plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
@@ -410,17 +416,19 @@ def plot_parcel_number(fname, show=False, fmt="png"):
     nsteps = h5reader.get_num_steps()
 
     nparcels = np.zeros(nsteps)
+    t = np.zeros(nsteps)
 
     for step in range(nsteps):
         nparcels[step] = h5reader.get_num_parcels(step)
+        t[step] = h5reader.get_step_attribute(step, 't')
 
     h5reader.close()
 
     plt.figure()
-    plt.plot(nparcels, color='blue')
+    plt.plot(t, nparcels, color='blue')
     plt.grid(linestyle='dashed', zorder=-1)
 
-    plt.xlabel(r'number of iterations')
+    plt.xlabel(r'time (s)')
     plt.ylabel(r'parcel count')
     plt.tight_layout()
 
@@ -447,6 +455,7 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
 
     vol_mean = np.zeros(nsteps)
     vol_std = np.zeros(nsteps)
+    t = np.zeros(nsteps)
 
     extent = h5reader.get_box_extent()
     ncells = h5reader.get_box_ncells()
@@ -458,11 +467,13 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
         vol_mean[step] = vol.mean() / vcell
         vol_std[step] = vol.std() / vcell
 
+        t[step] = h5reader.get_step_attribute(step, 't')
+
     h5reader.close()
 
     plt.figure()
-    plt.plot(vol_mean, color='blue', label=r'mean')
-    plt.fill_between(range(nsteps), vol_mean - vol_std, vol_mean + vol_std,
+    plt.plot(t, vol_mean, color='blue', label=r'mean')
+    plt.fill_between(t, vol_mean - vol_std, vol_mean + vol_std,
                      alpha=0.5, label=r'std. dev.')
 
     plt.axhline(1.0, linestyle='dashed', color='black',
@@ -470,7 +481,7 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
 
     plt.grid(linestyle='dashed', zorder=-1)
 
-    plt.xlabel(r'number of iterations')
+    plt.xlabel(r'time (s)')
     plt.ylabel(r'parcel volume / $V_{0}$')
 
     plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
