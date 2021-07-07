@@ -3,7 +3,7 @@
 ! interpolation.
 ! =============================================================================
 module parcel_interpl
-    use constants, only : max_num_parcels, zero, one, two
+    use constants, only : zero, one, two
     use timer, only : start_timer, stop_timer
     use parameters, only : nx, nz
     use options, only : parcel
@@ -72,7 +72,7 @@ module parcel_interpl
             integer           :: n, p, l
             double precision  :: pvol, pvor
 
-            !$omp parallel
+            !$omp parallel default(shared)
             !$omp do private(n, p, l, points, pvol, pvor, is, js, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
@@ -121,7 +121,7 @@ module parcel_interpl
             sym_volg = zero
 
             do m = -1, 1, 2
-                !$omp parallel
+                !$omp parallel default(shared)
                 !$omp do private(n, p, l, points, pos, pvol, V, B, is, js, weights) &
                 !$omp& reduction(+: sym_volg)
                 do n = 1, n_parcels
@@ -274,7 +274,7 @@ module parcel_interpl
             integer           :: n, p, l, i, j
             double precision  :: pvol, pvor, weight, btot, h_c
 
-            !$omp parallel
+            !$omp parallel default(shared)
             !$omp do private(n, p, l, i, j, points, pvol, pvor, weight, btot, h_c, is, js, weights) &
             !$omp& reduction(+:nparg, vortg, dbuoyg, tbuoyg, volg)
             do n = 1, n_parcels
@@ -424,7 +424,7 @@ module parcel_interpl
             ! clear old data efficiently
             if(present(add)) then
                if(add .eqv. .false.) then
-                    !$omp parallel
+                    !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, n_parcels
                         vel(n, :) = zero
@@ -434,7 +434,7 @@ module parcel_interpl
                     !$omp end parallel
                endif
             else
-                !$omp parallel
+                !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_parcels
                     vel(n, :) = zero
@@ -444,7 +444,7 @@ module parcel_interpl
                 !$omp end parallel
             endif
 
-            !$omp parallel
+            !$omp parallel default(shared)
             !$omp do private(n, p, l, c, points, weight, is, js, weights)
             do n = 1, n_parcels
 

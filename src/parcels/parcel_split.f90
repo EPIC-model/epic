@@ -36,7 +36,7 @@ module parcel_split
 
             last_index = n_parcels
 
-            !$omp parallel
+            !$omp parallel default(shared)
             !$omp do private(n, B11, B12, B22, a2, lam, V, evec, h, n_thread_loc)
             do n = 1, last_index
                 B11 = parcels%B(n, 1)

@@ -3,7 +3,7 @@
 ! =============================================================================
 module parcel_init
     use options, only : parcel, output, verbose, field_tol
-    use constants, only : zero, two, one, f12
+    use constants, only : zero, two, one, f12, max_num_parcels
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
@@ -64,10 +64,17 @@ module parcel_init
             ! we use "n_per_cell" parcels per grid cell
             n_parcels = parcel%n_per_cell * ncell
 
+            if (n_parcels > max_num_parcels) then
+                print *, "Number of parcels exceeds limit of", &
+                          max_num_parcels, ". Exiting."
+                stop
+            endif
+
+
             call init_regular_positions
 
             ! initialize the volume of each parcel
-            !$omp parallel
+            !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
                 parcels%volume(n) = vcell / dble(parcel%n_per_cell)
@@ -83,7 +90,7 @@ module parcel_init
                 ! aspect ratio: lam = a / b
                 lam = max(dx(2) / dx(1), ratio)
 
-                !$omp parallel
+                !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_parcels
                     ! B11
@@ -102,7 +109,7 @@ module parcel_init
                 parcels%stretch = zero
             endif
 
-            !$omp parallel
+            !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
                 parcels%vorticity(n) = zero
@@ -184,7 +191,7 @@ module parcel_init
             ! Compute mean parcel density:
             resi = zero
 
-            !$omp parallel do  private(n, l) reduction(+:resi)
+            !$omp parallel do default(shared) private(n, l) reduction(+:resi)
             do n = 1, n_parcels
                 ! get interpolation weights and mesh indices
                 call trilinear(parcels%position(n, :), is(n, :), js(n, :), weights(n, :))
@@ -200,7 +207,7 @@ module parcel_init
             resi(nz,:) = two * resi(nz,:)
 
             ! Determine local inverse density of parcels (apar)
-            !$omp parallel do  private(n, l, rsum)
+            !$omp parallel do default(shared) private(n, l, rsum)
             do n = 1, n_parcels
                 rsum = zero
                 do l = 1, ngp
@@ -303,7 +310,7 @@ module parcel_init
 
 
             if (rms == zero) then
-                !$omp parallel
+                !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_parcels
                     ! assign mean value
@@ -318,7 +325,7 @@ module parcel_init
             rtol = rms * tol
 
             ! Initialise (volume-weighted) parcel attribute with a guess
-            !$omp parallel do  private(n, l, fsum)
+            !$omp parallel do default(shared) private(n, l, fsum)
             do n = 1, n_parcels
                 fsum = zero
                 do l = 1, ngp
@@ -346,7 +353,7 @@ module parcel_init
                 resi(0:nz, :) = field(0:nz, :) - resi(0:nz, :)
 
                 !Update (volume-weighted) attribute:
-                !$omp parallel do  private(n, rsum, l)
+                !$omp parallel do default(shared) private(n, rsum, l)
                 do n = 1, n_parcels
                     rsum = zero
                     do l = 1, ngp
@@ -368,7 +375,7 @@ module parcel_init
 
             !Finally divide by parcel volume to define attribute:
             ! (multiply with vcell since algorithm is designed for volume fractions)
-            !$omp parallel
+            !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
                 par(n) = vcell * par(n) / parcels%volume(n)

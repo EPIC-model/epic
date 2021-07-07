@@ -99,7 +99,7 @@ module ls_rk4
 
                 call start_timer(rk4_timer)
 
-                !$omp parallel do private(n)
+                !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
                     dbdt(n,:) = get_B(parcels%B(n,:), strain(n,:), parcels%volume(n))
                 enddo
@@ -111,7 +111,7 @@ module ls_rk4
 
                 call start_timer(rk4_timer)
 
-                !$omp parallel do private(n)
+                !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
                     dbdt(n,:) = dbdt(n,:) &
                               + get_B(parcels%B(n,:), strain(n,:), parcels%volume(n))
@@ -123,7 +123,7 @@ module ls_rk4
 
             call start_timer(rk4_timer)
 
-            !$omp parallel do private(n)
+            !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
                 parcels%position(n,:) = parcels%position(n,:) &
                                       + cb * dt * parcels%velocity(n,:)
@@ -143,7 +143,7 @@ module ls_rk4
 
             call start_timer(rk4_timer)
 
-            !$omp parallel do private(n)
+            !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
                 parcels%velocity(n,:) = ca * parcels%velocity(n,:)
                 dvordt(n) = ca * dvordt(n)

@@ -57,7 +57,7 @@ module parcel_diagnostics
 
             zmin = lower(2)
 
-            !$omp parallel
+            !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z) reduction(+: ke, pe)
             do n = 1, n_parcels
 
