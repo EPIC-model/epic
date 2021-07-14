@@ -7,11 +7,12 @@ program test_trilinear
     use unit_test
     use constants, only : pi, zero, one, f14, f32
     use parcel_container
-    use parcel_interpl, only : par2grid
+    use parcel_interpl, only : par2grid, par2grid_timer
     use options, only : parcel
     use parcel_ellipse, only : get_ab
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg, field_alloc
+    use timer
     implicit none
 
     double precision :: error
@@ -21,6 +22,8 @@ program test_trilinear
     nz = 32
     lower  = (/-f32, -f32/)
     extent =  (/0.4d0, 0.4d0/)
+
+    call register_timer('par2grid', par2grid_timer)
 
     call update_parameters
 

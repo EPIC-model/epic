@@ -7,11 +7,12 @@ program test_parcel_init
     use unit_test
     use constants, only : pi, zero, one, two, four, f12, f32
     use parcel_container
-    use parcel_init, only : gen_parcel_scalar_attr, unit_test_parcel_init_alloc
-    use parcel_interpl, only : par2grid
+    use parcel_init, only : gen_parcel_scalar_attr, unit_test_parcel_init_alloc, init_timer
+    use parcel_interpl, only : par2grid, par2grid_timer
     use parcel_ellipse, only : get_ab
     use fields, only : tbuoyg, field_default
     use parameters, only : update_parameters, dx, ncell, nx, nz, lower, vcell
+    use timer
     implicit none
 
     double precision  :: xg, zg, facx, facz, argx, argz, v0
@@ -32,6 +33,9 @@ program test_parcel_init
     lower  = (/-f32, -f32/)
     extent = (/8.0d0, four/)
     lower = (/-four, -two/)
+
+    call register_timer('parcel init', init_timer)
+    call register_timer('par2grid', par2grid_timer)
 
     call update_parameters
 

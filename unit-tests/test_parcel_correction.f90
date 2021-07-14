@@ -10,11 +10,12 @@ program test_parcel_correction
     use constants, only : pi, one, zero, f14, f32
     use parcel_container
     use parcel_correction
-    use parcel_interpl, only : vol2grid
+    use parcel_interpl, only : vol2grid, vol2grid_timer
     use parcel_ellipse, only : get_ab
     use options, only : parcel
     use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg
+    use timer
 
     implicit none
 
@@ -22,6 +23,10 @@ program test_parcel_correction
     integer :: i, j, k, jj, ii
 
     call  parse_command_line
+
+    call register_timer('vol2grid', vol2grid_timer)
+    call register_timer('laplace correction', lapl_corr_timer)
+    call register_timer('gradient correction', grad_corr_timer)
 
     nx = 32
     nz = 32

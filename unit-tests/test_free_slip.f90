@@ -13,10 +13,11 @@ program test_free_slip
     use unit_test
     use constants, only : pi, zero, one, two, f12, f14, f32
     use parcel_container
-    use parcel_interpl, only : vol2grid
+    use parcel_interpl, only : vol2grid, vol2grid_timer
     use options, only : parcel
     use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg
+    use timer
     implicit none
 
     integer :: i, j, k, jj, ii
@@ -28,6 +29,8 @@ program test_free_slip
     nz = 4
     lower  = (/-f32, -f32/)
     extent = (/0.4d0, 0.4d0/)
+
+    call register_timer('vol2grid', vol2grid_timer)
 
     call update_parameters
 

@@ -10,10 +10,11 @@ program test_ellipse_multi_merge_2
     use unit_test
     use constants, only : pi, one, two, four
     use parcel_container
-    use parcel_merge, only : merge_ellipses
+    use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
     use parameters, only : update_parameters, nx, nz, lower, extent
     use parcel_ellipse
+    use timer
     implicit none
 
     double precision :: a1b1, a2b2, error
@@ -22,6 +23,8 @@ program test_ellipse_multi_merge_2
     nz = 1
     lower  = (/-pi / two, -pi /two/)
     extent = (/pi, pi/)
+
+    call register_timer('parcel merge', merge_timer)
 
     call update_parameters
 

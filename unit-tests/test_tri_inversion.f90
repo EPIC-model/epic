@@ -9,6 +9,7 @@ program test_tri_inversion
     use parcel_container
     use tri_inversion
     use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz, hl, ncell
+    use timer
     implicit none
 
     double precision, allocatable :: ue(:, :), we(:, :)
@@ -20,6 +21,8 @@ program test_tri_inversion
     nz = 20
     lower  = (/-two, -one/)
     extent = (/four, two/)
+
+    call register_timer('vor2vel', vor2vel_timer)
 
     call update_parameters
 

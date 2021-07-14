@@ -8,8 +8,9 @@ program test_ellipse_split
     use unit_test
     use constants, only : pi, zero, one, three, four, five, ten, f12, f14
     use parcel_container
-    use parcel_split, only : split_ellipses
+    use parcel_split, only : split_ellipses, split_timer
     use parameters, only : update_parameters, nx, nz, extent, lower
+    use timer
     implicit none
 
     double precision, parameter :: lam = five
@@ -22,6 +23,8 @@ program test_ellipse_split
     extent = (/ten, ten/)
     lower = (/-five, -five/)
     call update_parameters
+
+    call register_timer('parcel split', split_timer)
 
     n_parcels = 1
     call parcel_alloc(2)

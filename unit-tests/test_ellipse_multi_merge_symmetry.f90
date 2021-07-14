@@ -9,11 +9,12 @@ program test_ellipse_multi_merge_symmetry
     use constants, only : pi, one, two, four
     use parcel_container
     use parcel_interpl, only : vol2grid_elliptic_symmetry_error
-    use parcel_merge, only : merge_ellipses
+    use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, nz
     use fields, only : sym_volg
     use parcel_ellipse
+    use timer
     implicit none
 
     double precision :: error
@@ -22,6 +23,8 @@ program test_ellipse_multi_merge_symmetry
     nz = 2
     lower  = (/-pi / two, -pi /two/)
     extent = (/pi, pi/)
+
+    call register_timer('parcel merge', merge_timer)
 
     call update_parameters
 
