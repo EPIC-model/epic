@@ -74,8 +74,8 @@ program test_parcel_correction
     init_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
 
     if (verbose) then
-        write(*,*) 'Test laplace and gradient, initial error'
-        write(*,*) init_error
+        write(*,*) 'Test laplace and gradient'
+        write(*,*) 0, init_error
     endif
 
     call init_parcel_correction
@@ -87,15 +87,11 @@ program test_parcel_correction
         call apply_gradient(volg,1.80d0,0.5d0)
         call vol2grid
         if (verbose) then
-            write(*,*) 'Test laplace and gradient, error after iteration ', i
-            write(*,*) sum(abs(volg(0:nz, 0:nx-1) - vcell))
+            write(*,*) i, sum(abs(volg(0:nz, 0:nx-1) - vcell))
         endif
     enddo
 
-    if (verbose) then
-        write(*,*) 'Test laplace and gradient, final error'
-        write(*,*) final_error
-    endif
+    final_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
 
     call print_result_dp('Test laplace and gradient', final_error, init_error)
 
