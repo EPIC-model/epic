@@ -75,6 +75,7 @@ program test_parcel_correction
 
     if (verbose) then
         write(*,*) 'Test laplace and gradient'
+        write(*,*) 'iteration, error'
         write(*,*) 0, init_error
     endif
 
