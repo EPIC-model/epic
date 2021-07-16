@@ -1,5 +1,5 @@
 ! =============================================================================
-!                       EPIC - Elliptic Parcel-in-Cell
+!                       EPIC - Elliptical Parcel-in-Cell
 ! =============================================================================
 program epic
     use constants, only : max_num_parcels, zero
