@@ -113,7 +113,7 @@ module tri_inversion
             double precision, intent(out) :: velgradg(-1:nz+1, 0:nx-1, 4)
             double precision              :: ubar(0:nz), obot(0:nx-1), otop(0:nx-1)
             integer                       :: iz
-            double precision              :: dz2
+            double precision              :: dz2, ubaravg
             double precision              :: psig(0:nz, 0:nx-1) ! stream function
 
             call start_timer(vor2vel_timer)
@@ -136,6 +136,10 @@ module tri_inversion
             do iz = 1, nz
                 ubar(iz) = ubar(iz-1) + dz2 * (psig(iz-1,0) + psig(iz,0))
             enddo
+
+            ! Ensure that the x momentum is zero
+            ubaravg = (sum(ubar(1:nz-1)) + f12 * ubar(nz)) / dble(nz)
+            ubar = ubar - ubaravg
 
             ! Remove x independent mode (already dealt with):
             psig(:,0) = zero
