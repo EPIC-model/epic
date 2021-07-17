@@ -356,57 +356,104 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
     plt.close()
 
 
-def plot_aspect_ratio(fname, show=False, fmt="png"):
+def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
     """
     Plot the mean and standard deviation of the parcel aspect ratio.
     """
+    n = len(fnames)
+
+    labels = kwargs.pop('labels', n * [None])
+    dset = kwargs.pop('dset', 'aspect-ratio')
+
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
+
     h5reader = H5Reader()
-    h5reader.open(fname)
-
-    if not h5reader.is_parcel_file:
-        raise IOError('Not a parcel output file.')
-
-    nsteps = h5reader.get_num_steps()
-
-    lam_mean = np.zeros(nsteps)
-    lam_std = np.zeros(nsteps)
-    t = np.zeros(nsteps)
-
-    for step in range(nsteps):
-        lam = h5reader.get_aspect_ratio(step)
-
-        lam_mean[step] = lam.mean()
-        lam_std[step] = lam.std()
-
-        t[step] = h5reader.get_step_attribute(step, 't')
-
-    lmax = h5reader.get_parcel_option('lambda')[0]
-
-    h5reader.close()
 
     plt.figure()
-    plt.plot(t, lam_mean, color='blue', label=r'mean')
-    plt.fill_between(t, lam_mean - lam_std, lam_mean + lam_std,
-                     alpha=0.5, label=r'std. dev.')
 
-    plt.axhline(lmax, linestyle='dashed', color='black',
-                label=r'$\lambda\le\lambda_{\max} = ' + str(lmax) + '$')
+    lmax = 0
 
-    plt.grid(linestyle='dashed', zorder=-1)
+    for i, fname in enumerate(fnames):
+
+        h5reader.open(fname)
+
+        if not h5reader.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+
+        nsteps = h5reader.get_num_steps()
+
+        data_mean = np.zeros(nsteps)
+        data_std = np.zeros(nsteps)
+        t = np.zeros(nsteps)
+
+        for step in range(nsteps):
+
+            data = None
+
+            if dset == 'aspect-ratio':
+                data = h5reader.get_aspect_ratio(step)
+            else:
+                data = h5reader.get_dataset(step, dset)
+
+
+            if dset == 'volume':
+                extent = h5reader.get_box_extent()
+                ncells = h5reader.get_box_ncells()
+                vcell = np.prod(extent / ncells)
+                data /= vcell
+
+
+            data_mean[step] = data.mean()
+            data_std[step] = data.std()
+
+            t[step] = h5reader.get_step_attribute(step, 't')
+
+        if dset == 'aspect-ratio':
+            lmax = max(lmax, h5reader.get_parcel_option('lambda'))
+
+        h5reader.close()
+
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = label.split('_parcels')[0]
+
+        plt.plot(t, data_mean, label=label, color=colors[i])
+        plt.fill_between(t, data_mean - data_std, data_mean + data_std,
+                         alpha=0.5, color=colors[i])
+
 
     plt.xlabel(r'time (s)')
-    plt.ylabel(r'aspect ratio $\lambda$')
+    plt.grid(linestyle='dashed', zorder=-1)
 
-    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
-               bbox_to_anchor=legend_dict['bbox_to_anchor'])
+    if dset == 'aspect-ratio':
+        plt.ylabel(r'aspect ratio $\lambda$')
+        plt.axhline(lmax, linestyle='dashed', color='black',
+                    label=r'$\lambda\le\lambda_{\max} = ' + str(lmax) + '$')
+    elif dset == 'volume':
+        plt.ylabel(r'parcel volume / $V_{g}$')
+        #plt.axhline(1.0, linestyle='dashed', color='black',
+                #label=r'cell volume $V_{g}$')
+    else:
+        plt.ylabel(r'parcel ' + dset)
+
+    if n > 1:
+        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     plt.tight_layout()
 
     if show:
         plt.show()
     else:
-        prefix = os.path.splitext(fname)[0]
-        plt.savefig(prefix + '_aspect_ratio_profile.' + fmt, bbox_inches='tight')
+        prefix = os.path.splitext(fnames[0])[0] + '_'
+        if n > 1:
+            prefix = ''
+        plt.savefig(prefix + 'parcel_' + dset + '_profile.' + fmt,
+                    bbox_inches='tight')
     plt.close()
 
 
@@ -460,63 +507,6 @@ def plot_parcel_number(fnames, show=False, fmt="png", **kwargs):
         plt.show()
     else:
         plt.savefig('parcel_number_profile.' + fmt, bbox_inches='tight')
-    plt.close()
-
-
-def plot_parcel_volume(fname, show=False, fmt="png"):
-    """
-    Plot the mean and standard deviation of the parcel volume
-    normalised with the cell volume.
-    """
-    h5reader = H5Reader()
-    h5reader.open(fname)
-
-    if not h5reader.is_parcel_file:
-        raise IOError('Not a parcel output file.')
-
-    nsteps = h5reader.get_num_steps()
-
-    vol_mean = np.zeros(nsteps)
-    vol_std = np.zeros(nsteps)
-    t = np.zeros(nsteps)
-
-    extent = h5reader.get_box_extent()
-    ncells = h5reader.get_box_ncells()
-    vcell = np.prod(extent / ncells)
-
-    for step in range(nsteps):
-        vol = h5reader.get_dataset(step, 'volume')
-
-        vol_mean[step] = vol.mean() / vcell
-        vol_std[step] = vol.std() / vcell
-
-        t[step] = h5reader.get_step_attribute(step, 't')
-
-    h5reader.close()
-
-    plt.figure()
-    plt.plot(t, vol_mean, color='blue', label=r'mean')
-    plt.fill_between(t, vol_mean - vol_std, vol_mean + vol_std,
-                     alpha=0.5, label=r'std. dev.')
-
-    plt.axhline(1.0, linestyle='dashed', color='black',
-                label=r'cell volume $V_{0}$')
-
-    plt.grid(linestyle='dashed', zorder=-1)
-
-    plt.xlabel(r'time (s)')
-    plt.ylabel(r'parcel volume / $V_{0}$')
-
-    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
-               bbox_to_anchor=legend_dict['bbox_to_anchor'])
-
-    plt.tight_layout()
-
-    if show:
-        plt.show()
-    else:
-        prefix = os.path.splitext(fname)[0]
-        plt.savefig(prefix + '_parcel_volume_profile.' + fmt, bbox_inches='tight')
     plt.close()
 
 
