@@ -131,7 +131,7 @@ module parcel_init
             double precision :: del(2)
 
             ! number of parcels per dimension
-            n_per_dim = dsqrt(dble(parcel%n_per_cell))
+            n_per_dim = int(dsqrt(dble(parcel%n_per_cell)))
             if (n_per_dim ** 2 .ne. parcel%n_per_cell) then
                 print *, "Number of parcels per cell (", &
                          parcel%n_per_cell, ") not a square."

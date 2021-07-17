@@ -12,7 +12,6 @@ program test_ellipse_orientation
     use parcel_ellipse
     implicit none
 
-    double precision :: origin(2) = (/zero, zero/)
     double precision :: extent(2) =  (/0.2d0, 0.2d0/)
     integer :: iter
     integer :: grid(2) = (/2, 2/)

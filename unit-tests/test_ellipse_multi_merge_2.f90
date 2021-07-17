@@ -109,7 +109,7 @@ program test_ellipse_multi_merge_2
 
         function eval_max_error(method) result(max_err)
             character(*), intent(in) :: method
-            double precision :: ab, B11, B12, B22, vol, angle, d, factor, tmp, mu
+            double precision :: ab, B11, B12, B22, vol, d, factor, tmp, mu
             double precision :: max_err, hum, buoy
 
             ! reference solution

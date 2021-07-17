@@ -176,8 +176,6 @@ module h5_writer
             double precision, intent(in)     :: val
             integer(hid_t)                   :: group
             character(:), allocatable        :: grn
-            integer(hid_t)                   :: attr, space
-            integer(hsize_t), dimension(1:1) :: dims = 1
             logical                          :: created
 
             grn = trim(get_step_group_name(iter))
@@ -201,8 +199,6 @@ module h5_writer
             integer,          intent(in)     :: val
             integer(hid_t)                   :: group
             character(:), allocatable        :: grn
-            integer(hid_t)                   :: attr, space
-            integer(hsize_t), dimension(1:1) :: dims = 1
             logical                          :: created
 
             grn = trim(get_step_group_name(iter))

@@ -99,7 +99,10 @@ program epic
 
 
         subroutine run
-            use options, only : time, output, verbose, parcel
+            use options, only : time, output, parcel
+#ifdef ENABLE_VERBOSE
+            use options, only : verbose
+#endif
             double precision :: t    = zero ! current time
             double precision :: dt   = zero ! time step
             integer          :: iter = 1    ! simulation iteration
@@ -237,7 +240,10 @@ program epic
 
     ! Get the file name provided via the command line
     subroutine parse_command_line
-        use options, only : filename, verbose
+        use options, only : filename
+#ifdef ENABLE_VERBOSE
+        use options, only : verbose
+#endif
         integer                          :: i
         character(len=512)               :: arg
 

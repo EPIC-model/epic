@@ -75,7 +75,7 @@ program test_ellipse_multi_merge_symmetry
     contains
 
         subroutine parcel_setup
-            double precision :: d, a1b1, a2b2
+            double precision :: a1b1, a2b2
             integer :: n
 
             a1b1 = 1.44d0

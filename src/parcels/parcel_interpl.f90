@@ -70,7 +70,7 @@ module parcel_interpl
         subroutine vol2grid_elliptic
             double precision  :: points(2, 2)
             integer           :: n, p, l
-            double precision  :: pvol, pvor
+            double precision  :: pvol
 
             !$omp parallel default(shared)
             !$omp do private(n, p, l, points, pvol, pvor, is, js, weights) &
@@ -272,7 +272,7 @@ module parcel_interpl
         subroutine par2grid_elliptic
             double precision  :: points(2, 2)
             integer           :: n, p, l, i, j
-            double precision  :: pvol, pvor, weight, btot, h_c
+            double precision  :: pvol, weight, btot, h_c
 
             !$omp parallel default(shared)
             !$omp do private(n, p, l, i, j, points, pvol, pvor, weight, btot, h_c, is, js, weights) &
