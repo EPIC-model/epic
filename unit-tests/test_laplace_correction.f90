@@ -13,7 +13,7 @@ program test_laplace_correction
     use parcel_interpl, only : vol2grid, vol2grid_timer
     use options, only : parcel
     use parcel_ellipse, only : get_ab
-    use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz, ngrid
+    use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz
     use fields, only : volg
     use timer
     implicit none

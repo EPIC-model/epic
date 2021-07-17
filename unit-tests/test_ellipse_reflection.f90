@@ -15,7 +15,7 @@ program test_ellipse_reflection
     implicit none
 
     integer :: iter
-    double precision :: angle, ab, B11, B12, B22, error, a2, b2
+    double precision :: angle, ab, B11, B12, error, a2, b2
 
     nx = 10
     nz = 10

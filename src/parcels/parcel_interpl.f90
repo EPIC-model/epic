@@ -66,7 +66,7 @@ module parcel_interpl
         subroutine vol2grid_elliptic
             double precision  :: points(2, 2)
             integer           :: n, p, l
-            double precision  :: pvol, pvor
+            double precision  :: pvol
 
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -255,7 +255,7 @@ module parcel_interpl
         subroutine par2grid_elliptic
             double precision  :: points(2, 2)
             integer           :: n, p, l, i, j
-            double precision  :: pvol, pvor, weight, btot, h_c
+            double precision  :: pvol, weight, btot, h_c
 
             do n = 1, n_parcels
                 pvol = parcels%volume(n)

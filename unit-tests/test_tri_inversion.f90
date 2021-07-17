@@ -8,7 +8,7 @@ program test_tri_inversion
     use constants, only : pi, twopi, one, zero, two, four, f12, f32
     use parcel_container
     use tri_inversion
-    use parameters, only : extent, lower, update_parameters, vcell, dx, nx, nz, hl, ncell
+    use parameters, only : extent, lower, update_parameters, dx, nx, nz, hl, ncell
     use timer
     implicit none
 
@@ -65,7 +65,7 @@ program test_tri_inversion
     max_err = zero
 
     ! absolute error (reference obtained from David's program (tri_inversion.f90)
-    max_err = max(max_err, abs(maxval(abs(velog(0:nz, :, 1) - ue)) - 0.72528494909253993d0))
+    max_err = max(max_err, abs(maxval(abs(velog(0:nz, :, 1) - ue)) - 0.50258439839100966d0))
     max_err = max(max_err, abs(maxval(abs(velog(0:nz, :, 2) - we)) - 0.000039197805283164300d0))
 
 
@@ -76,7 +76,7 @@ program test_tri_inversion
     zz = dsqrt(sum(we(1:nz-1, :)) / dble(ncell))
 
     ! referene obtaind from David's program (tri_inversion.f90)
-    max_err = max(max_err, abs(xx - 0.1203711977266676d0))
+    max_err = max(max_err, abs(xx - 0.3473213454049072d0))
     max_err = max(max_err, abs(zz - 0.0000181041574751d0))
 
     call print_result_dp('Test tri-inversion', max_err)

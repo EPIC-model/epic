@@ -336,7 +336,7 @@ module parcel_merge
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ib, l
             integer                                    :: loca(n_parcels)
-            double precision                           :: factor, mu
+            double precision                           :: factor
             double precision                           :: B11(n_merge), &
                                                           B12(n_merge), &
                                                           B22(n_merge), &
