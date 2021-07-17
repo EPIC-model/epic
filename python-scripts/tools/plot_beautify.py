@@ -9,7 +9,7 @@ def add_timestamp(plt, time):
     # https://matplotlib.org/3.1.0/gallery/recipes/placing_text_boxes.html
     bbox = dict(boxstyle="round", facecolor='wheat', alpha=0.5)
     plt.annotate('t = %.3f'%(time),
-                 xy=(0.78, 1.05),
+                 xy=(0.75, 1.05),
                  xycoords='axes fraction',
                  bbox=bbox)
 

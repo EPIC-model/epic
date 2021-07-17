@@ -7,7 +7,8 @@ from tools.plots import     \
     plot_parcel_volume,     \
     plot_parcel_number,     \
     plot_center_of_mass,    \
-    plot_cumulative
+    plot_cumulative,        \
+    plot_parcels_per_cell
 import os
 import sys
 
@@ -25,7 +26,8 @@ try:
         'parcel-volume',
         'parcel-number',
         'center-of-mass',
-        'parcel-cumulative'
+        'parcel-cumulative',
+        'number-parcel-per-cell'
     ]
 
 
@@ -95,8 +97,8 @@ try:
         for fname in args.filenames:
             plot_parcel_volume(fname, show=args.show, fmt=args.fmt)
     elif args.kind == kinds[4]:
-        for fname in args.filenames:
-            plot_parcel_number(fname, show=args.show, fmt=args.fmt)
+        plot_parcel_number(args.filenames, show=args.show, fmt=args.fmt,
+                           labels=args.labels)
     elif args.kind == kinds[5]:
         for fname in args.filenames:
             plot_center_of_mass(fname, show=args.show, fmt=args.fmt)
@@ -104,6 +106,11 @@ try:
         plot_cumulative(args.filenames, step=args.step,
                         dset=args.dataset, show=args.show,
                         fmt=args.fmt, labels=args.labels)
+    elif args.kind == kinds[7]:
+        plot_parcels_per_cell(args.filenames,
+                              show=args.show,
+                              fmt=args.fmt,
+                              labels=args.labels)
     else:
         raise ValueError("Plot '" + args.kind + "' not supported!")
 
