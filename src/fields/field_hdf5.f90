@@ -46,7 +46,6 @@ module field_hdf5
         end subroutine create_h5_field_file
 
         subroutine write_h5_field_step(nw, t, dt)
-            use options, only : output
             integer,          intent(inout) :: nw
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt

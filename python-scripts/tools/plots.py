@@ -648,7 +648,7 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
 
     std = np.sqrt(df['z2w_bar'])
     axes[1].fill_between(df['t'], df['zw_bar']-std, df['zw_bar']+std, alpha=0.5,
-                         label=r'$\pm\sqrt{\langle z^2\langle_\zeta}$')
+                         label=r'$\pm\sqrt{\langle z^2\rangle_\zeta}$')
 
     axes[0].grid(which='both', linestyle='dashed')
     axes[0].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.0))
@@ -944,6 +944,101 @@ def plot_time_bar(fnames, show=False, fmt="png", **kwargs):
         plt.savefig('timing_bar_plot.' + fmt, bbox_inches='tight')
     plt.close()
 
+
+def plot_time_speedup(fnames, nthreads, show=False, fmt="png"):
+
+    if len(fnames) < 2:
+        raise ValueError('Not enough files provided.')
+
+    if not len(fnames) == len(nthreads):
+        raise RuntimeError('List of files not equal to thread list.')
+
+    df = pd.read_csv(fnames[0])
+
+    epic_time = df['total time'][0]
+
+    ind = df['percentage'] < 1.0
+    df.drop(df[ind].index, inplace=True)
+
+    # remove unncessary columns
+    df.drop(['#calls', 'percentage'], axis=1, inplace=True)
+
+    # multiply by 2 since EPIC timer is not removed from df
+    others = 2.0 * epic_time - df['total time'].sum()
+
+    df2 = pd.DataFrame([['others', others]], columns=df.columns)
+    df = df.append(df2)
+    df.sort_values(by=['total time'], inplace=True, ascending=False)
+
+    # rename column
+    # 27 June 2021
+    # https://stackoverflow.com/questions/11346283/renaming-columns-in-pandas
+    df.columns = ['function name', '0']
+
+    names = df['function name'].copy()
+
+
+    for n in range(1, len(fnames)):
+        df2 = pd.read_csv(fnames[n])
+
+        epic_time = df2['total time'][0]
+
+        df2.drop(df2[ind].index, inplace=True)
+
+        # remove unncessary columns
+        df2.drop(['#calls', 'percentage'], axis=1, inplace=True)
+
+        # multiply by 2 since EPIC timer is not removed from df
+        others = 2.0 * epic_time - df2['total time'].sum()
+
+        df3 = pd.DataFrame([['others', others]], columns=df2.columns)
+        df2 = df2.append(df3)
+
+        # https://stackoverflow.com/questions/26707171/sort-pandas-dataframe-based-on-list
+        # 27 June 2021
+        df2['tmp'] = pd.Categorical(df2['function name'], categories=names, ordered=True)
+        df2.sort_values('tmp', inplace=True)
+
+        # rename column
+        label = str(n)
+
+        # 27 June 2021
+        # https://stackoverflow.com/questions/27965295/dropping-rows-from-dataframe-based-on-a-not-in-condition
+        df2 = df2[df2['function name'].isin(names)]
+
+        df2.drop(['function name', 'tmp'], axis=1, inplace=True)
+        df2.columns = [label]
+
+        # append to df
+        df = pd.concat([df, df2], axis=1)
+
+
+    df.reset_index(drop=True, inplace=True)
+    names = list(df['function name'])
+    df.reindex(names)
+    df.drop('function name', axis=1, inplace=True)
+
+    for i, name in enumerate(names):
+        # get i-th row
+        data = df.loc[i, :]
+        plt.semilogy(nthreads, data, label=name)
+
+    # ideal timing
+    data = df.loc[0, :][0]
+    data = np.asarray(len(nthreads) * [data]) / np.asarray(nthreads)
+    plt.semilogy(nthreads, data, linestyle='dashed', color='black', label='perfect scaling')
+
+    plt.ylabel(r'wall time (s)')
+    plt.xlabel('number of OpenMP threads')
+    plt.grid(which='both', linestyle='dashed')
+    plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.4))
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        plt.savefig('timing_speedup_plot.' + fmt, bbox_inches='tight')
+    plt.close()
 
 #def plot_field(fname, show=False, fmt="png", ax=None):
 

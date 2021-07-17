@@ -223,7 +223,8 @@ AM_CONDITIONAL([ENABLE_DEBUG], [test "$ENABLE_DEBUG" = "yes"])
 AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
-    FCFLAGS="$FCFLAGS -g -O0 -fbounds-check -fbacktrace -ffpe-trap=zero,overflow,underflow"
+    FCFLAGS="$FCFLAGS -Wall -Wno-maybe-uninitialized -Werror -g -O0"
+    FCFLAGS="$FCFLAGS -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow"
 else
     AC_MSG_RESULT([no])
     FCFLAGS="$FCFLAGS -O3 -DNDEBUG"
@@ -246,6 +247,21 @@ fi
 
 if test "x$ENABLE_UNIT_TESTS" == "xyes" && test "x$ENABLE_DEBUG" == "xno"; then
     AC_MSG_WARN([Volume symmetry unit test disabled since not built in debug mode.])
+fi
+
+ENABLE_OPENMP='no'
+AC_ARG_ENABLE([openmp],
+              [AS_HELP_STRING([--enable-openmp], [enable OpenMP (default=no)])],
+              [ENABLE_OPENMP=$enableval])
+
+AM_CONDITIONAL([ENABLE_OPENMP], [test "$ENABLE_OPENMP" = "yes"])
+
+AC_MSG_CHECKING([whether we are enabling OpenMP])
+if test "x$ENABLE_OPENMP" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -fopenmp"
+else
+    AC_MSG_RESULT([no])
 fi
 
 #

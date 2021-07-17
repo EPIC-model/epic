@@ -8,6 +8,7 @@ module parcel_diagnostics
     use parcel_container, only : parcels, n_parcels
     use h5_utils
     use h5_writer
+    use omp_lib
     implicit none
 
     private
@@ -48,13 +49,16 @@ module parcel_diagnostics
 
         subroutine calculate_diagnostics
             integer          :: n
-            double precision :: b, z, v, vel(2), vol, zmin
+            double precision :: b, z, vel(2), vol, zmin
 
             ! reset
             ke = zero
             pe = zero
 
             zmin = lower(2)
+
+            !$omp parallel default(shared)
+            !$omp do private(n, vel, vol, b, z) reduction(+: ke, pe)
             do n = 1, n_parcels
 
                 vel = parcels%velocity(n, :)
@@ -68,6 +72,8 @@ module parcel_diagnostics
                 ! potential energy
                 pe = pe - b * z * vol
             enddo
+            !$omp end do
+            !$omp end parallel
 
             ke = f12 * ke
             pe = pe - peref

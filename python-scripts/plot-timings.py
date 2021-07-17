@@ -2,7 +2,8 @@
 import argparse
 from tools.plots import     \
     plot_time_pie_chart,    \
-    plot_time_bar
+    plot_time_bar,          \
+    plot_time_speedup
 import os
 import sys
 
@@ -15,7 +16,8 @@ try:
 
     kinds = [
         'pie-chart',
-        'bar-plot'
+        'bar-plot',
+        'speedup'
     ]
 
 
@@ -30,6 +32,12 @@ try:
                         nargs='+',
                         required=False,
                         help="special labels for the files (bar plot only)")
+
+    parser.add_argument("--nthreads",
+                        type=int,
+                        nargs='+',
+                        required=False,
+                        help="number of OpenMP threads (speedup plot only)")
 
     parser.add_argument("--kind",
                         type=str,
@@ -64,6 +72,8 @@ try:
     elif args.kind == kinds[1]:
         plot_time_bar(args.filenames, show=args.show, fmt=args.fmt,
                       labels=args.labels)
+    elif args.kind == kinds[2]:
+        plot_time_speedup(args.filenames, nthreads=args.nthreads, show=args.show, fmt=args.fmt)
     else:
         raise ValueError("Plot '" + args.kind + "' not supported!")
 

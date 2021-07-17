@@ -3,7 +3,7 @@
 ! interpolation.
 ! =============================================================================
 module parcel_interpl
-    use constants, only : max_num_parcels, zero, one, two
+    use constants, only : zero, one, two
     use timer, only : start_timer, stop_timer
     use parameters, only : nx, nz
     use options, only : parcel
@@ -13,6 +13,7 @@ module parcel_interpl
     use fields
     use phys_constants, only : h_0
     use phys_parameters, only : glat, lam_c
+    use omp_lib
     implicit none
 
     private :: par2grid_elliptic,       &
@@ -32,6 +33,9 @@ module parcel_interpl
     double precision :: weights(ngp)
 
     integer :: vol2grid_timer, &
+#ifndef NDBEBUG
+               sym_vol2grid_timer, &
+#endif
                par2grid_timer, &
                grid2par_timer
 
@@ -66,8 +70,11 @@ module parcel_interpl
         subroutine vol2grid_elliptic
             double precision  :: points(2, 2)
             integer           :: n, p, l
-            double precision  :: pvol, pvor
+            double precision  :: pvol
 
+            !$omp parallel default(shared)
+            !$omp do private(n, p, l, points, pvol, pvor, is, js, weights) &
+            !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
@@ -90,15 +97,20 @@ module parcel_interpl
                     enddo
                 enddo
             enddo
+            !$omp end do
+            !$omp end parallel
         end subroutine vol2grid_elliptic
 
 #ifndef NDEBUG
         subroutine vol2grid_symmetry_error
+            call start_timer(sym_vol2grid_timer)
+
             if (parcel%is_elliptic) then
                 call vol2grid_elliptic_symmetry_error
             else
                 call vol2grid_non_elliptic_symmetry_error
             endif
+            call stop_timer(sym_vol2grid_timer)
         end subroutine vol2grid_symmetry_error
 
         subroutine vol2grid_elliptic_symmetry_error
@@ -109,6 +121,9 @@ module parcel_interpl
             sym_volg = zero
 
             do m = -1, 1, 2
+                !$omp parallel default(shared)
+                !$omp do private(n, p, l, points, pos, pvol, V, B, is, js, weights) &
+                !$omp& reduction(+: sym_volg)
                 do n = 1, n_parcels
 
                     pos = parcels%position(n, :)
@@ -136,6 +151,8 @@ module parcel_interpl
                         enddo
                     enddo
                 enddo
+                !$omp end do
+                !$omp end parallel
             enddo
         end subroutine vol2grid_elliptic_symmetry_error
 
@@ -255,8 +272,11 @@ module parcel_interpl
         subroutine par2grid_elliptic
             double precision  :: points(2, 2)
             integer           :: n, p, l, i, j
-            double precision  :: pvol, pvor, weight, btot, h_c
+            double precision  :: pvol, weight, btot, h_c
 
+            !$omp parallel default(shared)
+            !$omp do private(n, p, l, i, j, points, pvol, pvor, weight, btot, h_c, is, js, weights) &
+            !$omp& reduction(+:nparg, vortg, dbuoyg, tbuoyg, volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
@@ -304,6 +324,8 @@ module parcel_interpl
                     enddo
                 enddo
             enddo
+            !$omp end do
+            !$omp end parallel
         end subroutine par2grid_elliptic
 
 
@@ -402,17 +424,31 @@ module parcel_interpl
             ! clear old data efficiently
             if(present(add)) then
                if(add .eqv. .false.) then
-                    vel(1:n_parcels, :) = zero
-                    vor(1:n_parcels)    = zero
+                    !$omp parallel default(shared)
+                    !$omp do private(n)
+                    do n = 1, n_parcels
+                        vel(n, :) = zero
+                        vor(n)    = zero
+                    enddo
+                    !$omp end do
+                    !$omp end parallel
                endif
             else
-               vel(1:n_parcels, :) = zero
-               vor(1:n_parcels)    = zero
+                !$omp parallel default(shared)
+                !$omp do private(n)
+                do n = 1, n_parcels
+                    vel(n, :) = zero
+                    vor(n)    = zero
+                enddo
+                !$omp end do
+                !$omp end parallel
             endif
 
-            vgrad(1:n_parcels, :) = zero
-
+            !$omp parallel default(shared)
+            !$omp do private(n, p, l, c, points, weight, is, js, weights)
             do n = 1, n_parcels
+
+                vgrad(n, :) = zero
 
                 points = get_ellipse_points(parcels%position(n, :), &
                                             parcels%volume(n),      &
@@ -447,6 +483,8 @@ module parcel_interpl
                     enddo
                 enddo
             enddo
+            !$omp end do
+            !$omp end parallel
 
         end subroutine grid2par_elliptic
 
