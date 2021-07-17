@@ -18,11 +18,12 @@ try:
                           help="hdf5 output file of EPIC")
 
     parser.add_argument("--steps",
-                        type=str,
+                        type=int,
+                        nargs='+',
                         required=False,
-                        default='-1',
-                        help="steps to plot, a range is specified with a colon, " \
-                            + "e.g. 0:10 plots step 0 to 10) (default: -1 [all])")
+                        default=0,
+                        help="steps to plot, " \
+                            + "e.g. 0 10  100")
 
     parser.add_argument("--show",
                         required=False,
@@ -48,28 +49,12 @@ try:
 
     args = parser.parse_args()
 
-    steps = args.steps
-
-    if ':' in steps:
-        steps = steps.split(':')
-        begin=int(steps[0])
-        end=int(steps[1])
-    elif steps.isdigit():
-        end = int(steps)
-        begin = end
-        if end == -1:
-            begin = 0
-    else:
-        raise IOError("Invalid --steps argument format.")
-
-    if end > -1 and end < begin:
-        raise ValueError("Invalid plot range: (begin) " + str(begin) + " > " + str(end) + " (end).")
-
     if not os.path.exists(args.filename):
         raise IOError("File '" + args.filename + "' does not exist.")
 
-    plot_parcels(fname=args.filename, begin=begin, end=end, show=args.show,
-                  fmt=args.fmt, coloring=args.coloring)
+    for step in args.steps:
+        plot_parcels(fname=args.filename, step=step, show=args.show,
+                     fmt=args.fmt, coloring=args.coloring)
 
 except Exception as ex:
     print(ex)

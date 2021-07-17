@@ -24,7 +24,6 @@ install-exec-hook:
 	chmod 755 $(bindir)/animate-parcels.py
 	chmod 755 $(bindir)/bokeh-parcels.py
 	chmod 755 $(bindir)/plot-parcels.py
-	chmod 755 $(bindir)/plot-fields.py
 	chmod 755 $(bindir)/plot-diagnostics.py
 	chmod 755 $(bindir)/plot-timings.py
 	chmod 755 $(bindir)/merge-ellipses.py

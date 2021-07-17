@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 import argparse
-from tools.plots import    \
-    plot_rms_volume_error, \
-    plot_max_volume_error, \
-    plot_parcel_profile,   \
-    plot_parcel_number,    \
-    plot_center_of_mass,   \
-    plot_cumulative,       \
-    plot_parcels_per_cell
+from tools.plots import         \
+    plot_rms_volume_error,      \
+    plot_max_volume_error,      \
+    plot_parcel_profile,        \
+    plot_parcel_number,         \
+    plot_center_of_mass,        \
+    plot_cumulative,            \
+    plot_parcels_per_cell,      \
+    plot_volume_symmetry_error
 import os
 import sys
 
@@ -25,7 +26,8 @@ try:
         'parcel-number',
         'center-of-mass',
         'parcel-cumulative',
-        'number-parcel-per-cell'
+        'number-parcel-per-cell',
+        'volume-symmetry-error'
     ]
 
 
@@ -106,6 +108,11 @@ try:
                               show=args.show,
                               fmt=args.fmt,
                               labels=args.labels)
+    elif args.kind == kinds[7]:
+        plot_volume_symmetry_error(fnames=args.filenames,
+                                   show=args.show,
+                                   fmt=args.fmt,
+                                   labels=args.labels)
     else:
         raise ValueError("Plot '" + args.kind + "' not supported!")
 

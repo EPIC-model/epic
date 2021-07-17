@@ -70,7 +70,7 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
     ax.set_ylabel(r'$y$')
 
 
-def plot_parcels(fname, begin=0, end=-1, show=False, fmt="png",
+def plot_parcels(fname, step, show=False, fmt="png",
                   coloring='aspect-ratio'):
     h5reader = H5Reader()
 
@@ -81,8 +81,11 @@ def plot_parcels(fname, begin=0, end=-1, show=False, fmt="png",
 
     nsteps = h5reader.get_num_steps()
 
-    if end == -1:
-        end = nsteps + 1
+    if step > nsteps - 1:
+        raise ValueError('Step number exceeds limit of ' + str(nsteps-1) + '.')
+
+    if step < 0:
+        raise ValueError('Step number cannot be negative.')
 
     if coloring == 'aspect-ratio':
         vmin = 1.0
@@ -90,18 +93,17 @@ def plot_parcels(fname, begin=0, end=-1, show=False, fmt="png",
     else:
         vmin, vmax = h5reader.get_dataset_min_max(coloring)
 
-    for i in range(begin, end+1):
-        plt.figure(num=i)
+    plt.figure(num=step)
 
-        _plot_parcels(plt.gca(), h5reader, i, coloring, vmin, vmax)
+    _plot_parcels(plt.gca(), h5reader, step, coloring, vmin, vmax)
 
-        if show:
-            plt.tight_layout()
-            plt.show()
-        else:
-            plt.savefig('parcels_'  + coloring + '_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
-                        bbox_inches='tight')
-        plt.close()
+    if show:
+        plt.tight_layout()
+        plt.show()
+    else:
+        plt.savefig('parcels_'  + coloring + '_step_' + str(step).zfill(len(str(nsteps))) + '.' + fmt,
+                    bbox_inches='tight')
+    plt.close()
     h5reader.close()
 
 
@@ -200,62 +202,75 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
     h5reader.close()
 
 
-def plot_volume_symmetry_error(fname, show=False, fmt="png"):
+def plot_volume_symmetry_error(fnames, show=False, fmt="png", **kwargs):
     """
     Plot the symmetry error of the gridded volume.
     (The gridded symmetry volume is only written in debug mode.)
     """
-    h5reader = H5Reader()
-    h5reader.open(fname)
+    n = len(fnames)
 
-    if h5reader.is_parcel_file:
-        raise IOError('Not a field output file.')
+    labels = kwargs.pop('labels', n * [None])
 
-    try:
-        h5reader.get_dataset(0, 'symmetry volume')
-    except:
-        raise IOError('This plot is only available in debug mode.')
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
 
-    nsteps = h5reader.get_num_steps()
-
-    vmean = np.zeros(nsteps)
-    vmin = np.zeros(nsteps)
-    vmax = np.zeros(nsteps)
-    vstd = np.zeros(nsteps)
-    t = np.zeros(nsteps)
-    for i in range(nsteps):
-        sym_volg = h5reader.get_dataset(i, 'symmetry volume')
-        vmean[i] = sym_volg.mean()
-        vstd[i] = sym_volg.std()
-        vmin[i] = sym_volg.min()
-        vmax[i] = sym_volg.max()
-        t[i] = h5reader.get_step_attribute(i, 't')
-
-    h5reader.close()
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
 
     plt.figure()
-    plt.grid(which='both', linestyle='dashed')
-    #plt.plot(iters, vmean, label='mean', color='darkorange', linewidth=1.5)
-    plt.fill_between(t, vmean - vstd, vmin, label='min-max', color='cornflowerblue',
-                     edgecolor='cornflowerblue', linewidth=0.75)
-    plt.fill_between(t, vmean + vstd, vmax, color='cornflowerblue',
-                     edgecolor='cornflowerblue', linewidth=0.75)
-    plt.fill_between(t, vmean - vstd, vmean + vstd, label='std', color='royalblue',
-                     edgecolor='royalblue', linewidth=0.75)
+    for i, fname in enumerate(fnames):
+        h5reader = H5Reader()
+        h5reader.open(fname)
 
+        if h5reader.is_parcel_file:
+            raise IOError('Not a field output file.')
+
+        try:
+            h5reader.get_dataset(0, 'symmetry volume')
+        except:
+            raise IOError('This plot is only available in debug mode.')
+
+        nsteps = h5reader.get_num_steps()
+
+        vmax = np.zeros(nsteps)
+        t = np.zeros(nsteps)
+        for step in range(nsteps):
+            sym_volg = h5reader.get_dataset(step, 'symmetry volume')
+            min_err = abs(sym_volg.min())
+            max_err = abs(sym_volg.max())
+            vmax[step] = max(min_err, max_err)
+            t[step] = h5reader.get_step_attribute(step, 't')
+
+        h5reader.close()
+
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = label.split('_fields')[0]
+
+        plt.fill_between(t, 0, vmax, color=colors[i], label=label,
+                        edgecolor=colors[i], linewidth=0.75)
+
+    plt.grid(which='both', linestyle='dashed')
     plt.xlabel(r'time (s)')
     plt.ylabel(r'volume symmetry error')
     plt.yscale('log')
     #plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
 
-    plt.legend(loc='upper center', ncol=legend_dict['ncol'],
-               bbox_to_anchor=legend_dict['bbox_to_anchor'])
+
+    if n > 1:
+        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
+
+    plt.tight_layout()
 
     if show:
         plt.show()
     else:
-        prefix = os.path.splitext(fname)[0]
-        plt.savefig(prefix + '_volsymerr.' + fmt, bbox_inches='tight')
+        prefix = os.path.splitext(fnames[0])[0] + '_'
+        if n > 1:
+            prefix = ''
+        plt.savefig(prefix + 'vol_sym_err.' + fmt,
+                    bbox_inches='tight')
     plt.close()
 
 

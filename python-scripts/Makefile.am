@@ -9,9 +9,6 @@ bokeh_parcelsdir = $(bindir)
 plot_parcels_PYTHON = plot-parcels.py
 plot_parcelsdir = $(bindir)
 
-plot_fields_PYTHON = plot-fields.py
-plot_fieldsdir = $(bindir)
-
 plot_diagnostics_PYTHON = plot-diagnostics.py
 plot_diagnosticsdir = $(bindir)
 
