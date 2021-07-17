@@ -14,6 +14,9 @@ def reset_parameters():
         'H5_FIELD_FREQ'     : None,
         'H5_PARCEL_FREQ'    : None,
         'H5_BASENAME'       : None,
+        'H5_WRITE_FIELDS'   : None,
+        'H5_WRITE_PARCELS'  : None,
+        'H5_OVERWRITE'      : None,
         'N_PER_CELL'        : None,
         'LAMBDA'            : None,
         'MERGE_TYPE'        : None,
@@ -24,6 +27,7 @@ def reset_parameters():
         'MAX_COMPRESSION'   : None,
         'LIMIT'             : None,
         'DT'                : None,
+        "IS_ADAPTIVE"       : None,
         'ALPHA'             : None,
         'DT_MAX'            : None
     }
