@@ -248,7 +248,7 @@ def plot_volume_symmetry_error(fname, show=False, fmt="png"):
     plt.yscale('log')
     #plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
 
-    plt.legend(loc='upper center', ncol=3,
+    plt.legend(loc='upper center', ncol=legend_dict['ncol'],
                bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     if show:
@@ -296,7 +296,7 @@ def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.ylabel(r'rms volume error')
     plt.grid(linestyle='dashed', zorder=-1)
-    plt.legend(loc='upper center', ncol=3,
+    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                bbox_to_anchor=legend_dict['bbox_to_anchor'])
     plt.tight_layout()
 
@@ -345,7 +345,7 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
     plt.xlabel(r'time (s)')
     plt.ylabel(r'max normalised volume error')
     plt.grid(linestyle='dashed', zorder=-1)
-    plt.legend(loc='upper center', ncol=3,
+    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                bbox_to_anchor=legend_dict['bbox_to_anchor'])
     plt.tight_layout()
 
@@ -397,7 +397,7 @@ def plot_aspect_ratio(fname, show=False, fmt="png"):
     plt.xlabel(r'time (s)')
     plt.ylabel(r'aspect ratio $\lambda$')
 
-    plt.legend(loc='upper center', ncol=3,
+    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     plt.tight_layout()
@@ -507,7 +507,7 @@ def plot_parcel_volume(fname, show=False, fmt="png"):
     plt.xlabel(r'time (s)')
     plt.ylabel(r'parcel volume / $V_{0}$')
 
-    plt.legend(loc='upper center', ncol=3,
+    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     plt.tight_layout()
@@ -710,7 +710,7 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
     plt.grid(which='both', linestyle='dashed')
 
     if n > 1:
-        plt.legend(loc='upper center', ncol=min(4, n),
+        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     plt.tight_layout()
@@ -775,7 +775,7 @@ def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
     plt.grid(which='both', linestyle='dashed')
 
     if n > 1:
-        plt.legend(loc='upper center', ncol=min(4, n),
+        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     plt.tight_layout()
