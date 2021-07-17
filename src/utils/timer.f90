@@ -16,11 +16,11 @@ module timer
         integer(8)        :: cr1, cr2
     end type timer_type
 
-    type(timer_type) :: timings(13)
+    type(timer_type) :: timings(15)
 
     integer :: n_timers = 0
 
-    private ::n_timers
+    private :: n_timers
 
     contains
         subroutine register_timer(name, handle)

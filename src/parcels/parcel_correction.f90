@@ -15,6 +15,7 @@ module parcel_correction
 
     use parcel_interpl, only : trilinear, ngp
     use parcel_bc
+    use omp_lib
 
     use constants
     use parameters, only : vcell, nx, nz, dx, dxi
@@ -179,6 +180,8 @@ module parcel_correction
 
         !------------------------------------------------------------------
         ! Increment parcel positions usind (ud,wd) field:
+        !$omp parallel default(shared)
+        !$omp do private(n, l, is, js, weights)
         do n = 1, n_parcels
             call trilinear(parcels%position(n, :), is, js, weights)
 
@@ -190,6 +193,8 @@ module parcel_correction
                                        + weights(l) * wd(js(l), is(l))
             enddo
         enddo
+        !$omp end do
+        !$omp end parallel
 
         call apply_parcel_bc(parcels%position,parcels%velocity)
 
@@ -211,6 +216,8 @@ module parcel_correction
         ! form divergence field * dt and store in phi temporarily:
         phi = volg(0:nz, :) / vcell - one
 
+        !$omp parallel default(shared)
+        !$omp do private(n, is, js, weights, x1_fpos, x2_fpos, shift_x1, shift_x2, lim_x1, lim_x2)
         do n = 1, n_parcels
 
             call trilinear(parcels%position(n, :), is, js, weights)
@@ -238,6 +245,8 @@ module parcel_correction
             parcels%position(n, 2) = parcels%position(n, 2) + shift_x2
 
         enddo
+        !$omp end do
+        !$omp end parallel
 
         call apply_parcel_bc(parcels%position,parcels%velocity)
 
