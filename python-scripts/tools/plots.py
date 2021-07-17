@@ -446,8 +446,8 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
 
     if dset == 'aspect-ratio':
         plt.ylabel(r'aspect ratio $\lambda$')
-        plt.axhline(lmax, linestyle='dashed', color='black',
-                    label=r'$\lambda\le\lambda_{\max} = ' + str(lmax) + '$')
+        plt.text(t[10], lmax - 0.5, r'$\lambda\le\lambda_{\max} = ' + str(lmax) + '$')
+        plt.axhline(lmax, linestyle='dashed', color='black')
     elif dset == 'volume':
         plt.ylabel(r'parcel volume / $V_{g}$')
         #plt.axhline(1.0, linestyle='dashed', color='black',
