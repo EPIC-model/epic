@@ -44,7 +44,6 @@ The directory `$PREFIX/bin` contains following scripts:
 * animate-parcels.py
 * bokeh-parcels.py
 * plot-parcels.py
-* plot-fields.py
 * plot-diagnostics.py
 * merge-ellipses.py
 
