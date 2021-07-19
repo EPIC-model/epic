@@ -43,7 +43,6 @@ module options
     type parcel_type
         integer          :: n_per_cell   = 4              ! number of parcels per cell (need to be a square)
         double precision :: lambda       = five           ! max. ellipse aspect ratio a/b
-        double precision :: prefactor    = 2.5d0          ! factor to compute max. stretch (non-elliptic only)
         integer          :: split_freq   = 1              ! split frequency, 1 = call split subroutine every step
         character(15)    :: merge_type   = 'bi-geometric' ! merge method in use (other option: 'optimal')
         integer          :: merge_freq   = 1              ! merge frequency, 1 = call merge subroutine every step

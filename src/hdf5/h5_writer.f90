@@ -533,7 +533,6 @@ module h5_writer
             call create_h5_group(gopts, "parcel", group)
                 call write_h5_int_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
                 call write_h5_double_scalar_attrib(group, "lambda", parcel%lambda)
-                call write_h5_double_scalar_attrib(group, "prefactor", parcel%prefactor)
                 call write_h5_int_scalar_attrib(group, "split_freq", parcel%split_freq)
                 call write_h5_char_scalar_attrib(group, "merge_type", trim(parcel%merge_type))
                 call write_h5_int_scalar_attrib(group, "merge_freq", parcel%merge_freq)
