@@ -36,10 +36,6 @@ class H5Reader:
     def get_box_ncells(self):
         return np.array(self._h5file['box'].attrs['ncells'])
 
-    @property
-    def is_elliptic(self):
-        return bool(self.get_parcel_option('is_elliptic'))
-
 
     def get_parcel_option(self, name):
         if not name in self._h5file['options']['parcel'].attrs.keys():
@@ -131,24 +127,19 @@ class H5Reader:
         position = self.get_dataset(step, 'position')
         V = self.get_dataset(step, 'volume')
         s = self._get_step_string(step)
-        if 'B' in self._h5file[s].keys():
-            B = self.get_dataset(step, 'B')
+        B = self.get_dataset(step, 'B')
 
-            angle = self.get_dataset(step, 'orientation')
+        angle = self.get_dataset(step, 'orientation')
 
-            B22 = self._get_B22(B[0, :], B[1, :], V)
-            a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
+        B22 = self._get_B22(B[0, :], B[1, :], V)
+        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
 
-            b2 = (V / np.pi) ** 2 / a2
-            return [Ellipse(xy=position[:, i],
-                            width=2 * np.sqrt(a2[i]),
-                            height=2 * np.sqrt(b2[i]),
-                            angle=np.rad2deg(angle[i]))
-                    for i in range(len(V))]
-        else:
-            return [Circle(xy=position[:, i],
-                            radius= np.sqrt(V[i]/np.pi) )
-                    for i in range(len(V))]
+        b2 = (V / np.pi) ** 2 / a2
+        return [Ellipse(xy=position[:, i],
+                        width=2 * np.sqrt(a2[i]),
+                        height=2 * np.sqrt(b2[i]),
+                        angle=np.rad2deg(angle[i]))
+                for i in range(len(V))]
 
     def get_ellipses_for_bokeh(self, step):
         if not self.is_parcel_file:
