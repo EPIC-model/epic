@@ -42,7 +42,6 @@ module options
     !
     type parcel_type
         integer          :: n_per_cell   = 4              ! number of parcels per cell (need to be a square)
-        logical          :: is_elliptic  = .true.         ! use elliptic model
         double precision :: lambda       = five           ! max. ellipse aspect ratio a/b
         double precision :: prefactor    = 2.5d0          ! factor to compute max. stretch (non-elliptic only)
         integer          :: split_freq   = 1              ! split frequency, 1 = call split subroutine every step
@@ -55,7 +54,7 @@ module options
         logical          :: apply_gradient = .true.       ! use gradient descent to adjust parcel positions on small scale
         double precision :: gradient_pref= 1.8d0          ! prefactor for gradient descent
         double precision :: max_compression= 0.5d0        ! parameter for gradient descent (limits the shift in parcel position)
-        double precision :: vmaxfraction = 2.0         
+        double precision :: vmaxfraction = 2.0
 
     end type parcel_type
 

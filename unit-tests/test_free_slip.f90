@@ -14,7 +14,6 @@ program test_free_slip
     use constants, only : pi, zero, one, two, f12, f14, f32
     use parcel_container
     use parcel_interpl, only : vol2grid, vol2grid_timer
-    use options, only : parcel
     use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg
     use timer
@@ -55,8 +54,6 @@ program test_free_slip
     n_parcels = 64
 
     volg = zero
-
-    parcel%is_elliptic = .true.
 
     parcels%volume = f14 * vcell
 

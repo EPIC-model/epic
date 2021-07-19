@@ -1,5 +1,5 @@
 # EPIC - Elliptical Parcel-in-Cell
-Elliptical and non-elliptical model for PIC in fluid dynamics
+Elliptical model for PIC in fluid dynamics
 
 ## Dependencies
 EPIC has following requirements:

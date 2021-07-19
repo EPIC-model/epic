@@ -8,7 +8,7 @@ program test_ellipse_multi_merge_symmetry
     use unit_test
     use constants, only : pi, one, two, four
     use parcel_container
-    use parcel_interpl, only : vol2grid_elliptic_symmetry_error
+    use parcel_interpl, only : vol2grid_symmetry_error
     use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, nz
@@ -119,7 +119,7 @@ program test_ellipse_multi_merge_symmetry
             max_err = zero
             max_err = max(max_err, abs(dble(n_parcels - 2)))
 
-            call vol2grid_elliptic_symmetry_error
+            call vol2grid_symmetry_error
 
             max_err = max(max_err, maxval(abs(sym_volg)))
 
