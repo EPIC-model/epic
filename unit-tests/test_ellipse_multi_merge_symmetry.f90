@@ -8,7 +8,7 @@ program test_ellipse_multi_merge_symmetry
     use unit_test
     use constants, only : pi, one, two, four
     use parcel_container
-    use parcel_interpl, only : vol2grid_symmetry_error
+    use parcel_interpl, only : vol2grid_symmetry_error, sym_vol2grid_timer
     use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, nz
@@ -25,6 +25,7 @@ program test_ellipse_multi_merge_symmetry
     extent = (/pi, pi/)
 
     call register_timer('parcel merge', merge_timer)
+    call register_timer('symmetric vol2grid', sym_vol2grid_timer)
 
     call update_parameters
 
