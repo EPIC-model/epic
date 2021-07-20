@@ -47,7 +47,7 @@ module parcel_interpl
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pvol, pvor, is, js, weights) &
+            !$omp do private(n, p, l, points, pvol, is, js, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -176,7 +176,7 @@ module parcel_interpl
             tbuoyg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, i, j, points, pvol, pvor, weight, btot, h_c, is, js, weights) &
+            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, h_c, is, js, weights) &
             !$omp& reduction(+:nparg, vortg, dbuoyg, tbuoyg, volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
