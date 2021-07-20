@@ -7,6 +7,7 @@ toolsdir = $(bindir)/tools
 nobase_tools_DATA = 			\
 	h5_reader.py 			\
 	plots.py			\
+	bokeh_plots.py			\
 	plot_beautify.py 		\
 	plot_style.py			\
 	__init__.py

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 from tools.plots import plot_parcels
+from tools.bokeh_plots import bokeh_plot_parcels
 import os
 import sys
 
@@ -43,6 +44,17 @@ try:
                         default="png",
                         help="save format (default: png)")
 
+    parser.add_argument("--use-bokeh",
+                        required=False,
+                        action='store_true',
+                        help="use Bokeh to plot")
+
+    parser.add_argument("--display",
+                        type=str,
+                        required=False,
+                        default='full HD',
+                        help="display (bokeh only)")
+
     if not '--filename' in sys.argv:
         parser.print_help()
         exit(0)
@@ -53,8 +65,12 @@ try:
         raise IOError("File '" + args.filename + "' does not exist.")
 
     for step in args.steps:
-        plot_parcels(fname=args.filename, step=step, show=args.show,
-                     fmt=args.fmt, coloring=args.coloring)
+        if args.use_bokeh:
+            bokeh_plot_parcels(fname=args.filename, step=step, shw=args.show,
+                               fmt=args.fmt, coloring=args.coloring, display=args.display)
+        else:
+            plot_parcels(fname=args.filename, step=step, show=args.show,
+                         fmt=args.fmt, coloring=args.coloring)
 
 except Exception as ex:
     print(ex)
