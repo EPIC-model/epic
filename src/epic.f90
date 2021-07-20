@@ -86,6 +86,10 @@ program epic
 
             call par2grid
 
+            ! need to be called in order to set initial time step
+            call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
+
             if (output%h5_write_fields) then
                 call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
             endif
@@ -194,11 +198,12 @@ program epic
         function get_time_step() result(dt)
             use options, only : time
             double precision :: dt
-            double precision :: H, S11, S12, S21, S22, gmax
+            double precision :: H, S11, S12, S21, S22, gmax, bmax
             integer          :: i, j
 
             H = epsilon(zero)
             if (time%is_adaptive) then
+                ! velocity strain
                 do i = 0, nx-1
                     do j = 0, nz
                         S11 = velgradg(j, i, 1)
@@ -210,7 +215,17 @@ program epic
                 enddo
 
                 gmax = f12 * dsqrt(H)
-                dt = min(time%dt_max, time%alpha / gmax)
+
+                ! buoyancy gradient
+                bmax = epsilon(zero)
+                do i = 0, nx-1
+                    do j = 0, nz
+                        bmax = max(bmax, dabs(vtend(j, i)))
+                    enddo
+                enddo
+                bmax = dsqrt(bmax)
+
+                dt = min(time%alpha_s / gmax, time%alpha_b / bmax)
             else
                 dt = time%dt
             endif
