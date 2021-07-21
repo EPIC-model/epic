@@ -24,8 +24,8 @@ def reset_parameters():
         'MAX_COMPRESSION'   : None,
         'LIMIT'             : None,
         'DT'                : None,
-        'ALPHA'             : None,
-        'DT_MAX'            : None
+        'ALPHA_S'           : None,
+        'ALPHA_B'           : None
     }
 
 
