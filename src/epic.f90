@@ -129,6 +129,9 @@ program epic
 #ifndef NDEBUG
                     call vol2grid_symmetry_error
 #endif
+                    ! update fields for writing
+                    call par2grid
+
                     call write_h5_field_step(nfw, t, dt)
                 endif
 
