@@ -20,8 +20,7 @@ module parcel_container
             volume,     &
             vorticity,  &
             buoyancy,   &
-            humidity,   &
-            stretch
+            humidity
     end type parcel_container_type
 
     type(parcel_container_type) parcels
@@ -57,18 +56,12 @@ module parcel_container
 
             parcels%vorticity(n) = parcels%vorticity(m)
 
-            if (allocated(parcels%stretch)) then
-                parcels%stretch(n)  = parcels%stretch(m)
-            endif
-
             parcels%volume(n)  = parcels%volume(m)
             parcels%buoyancy(n) = parcels%buoyancy(m)
             parcels%humidity(n) = parcels%humidity(m)
 
-            if (allocated(parcels%B)) then
-                parcels%B(n, 1) = parcels%B(m, 1)
-                parcels%B(n, 2) = parcels%B(m, 2)
-            endif
+            parcels%B(n, 1) = parcels%B(m, 1)
+            parcels%B(n, 2) = parcels%B(m, 2)
 
         end subroutine parcel_replace
 
@@ -79,7 +72,6 @@ module parcel_container
             allocate(parcels%position(num, 2))
             allocate(parcels%velocity(num, 2))
             allocate(parcels%vorticity(num))
-            allocate(parcels%stretch(num))
             allocate(parcels%B(num, 2))
             allocate(parcels%volume(num))
             allocate(parcels%buoyancy(num))
@@ -91,15 +83,7 @@ module parcel_container
             deallocate(parcels%position)
             deallocate(parcels%velocity)
             deallocate(parcels%vorticity)
-
-            if (allocated(parcels%stretch)) then
-                deallocate(parcels%stretch)
-            endif
-
-            if (allocated(parcels%B)) then
-                deallocate(parcels%B)
-            endif
-
+            deallocate(parcels%B)
             deallocate(parcels%volume)
             deallocate(parcels%buoyancy)
             deallocate(parcels%humidity)

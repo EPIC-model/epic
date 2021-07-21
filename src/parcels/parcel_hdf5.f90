@@ -114,11 +114,6 @@ module parcel_hdf5
             call write_h5_dataset_1d(h5file_id, name, "vorticity", &
                                      parcels%vorticity(1:n_parcels))
 
-            if (allocated(parcels%stretch)) then
-                call write_h5_dataset_1d(h5file_id, name, "stretch", &
-                                         parcels%stretch(1:n_parcels))
-            endif
-
             call write_h5_dataset_1d(h5file_id, name, "volume", &
                                      parcels%volume(1:n_parcels))
 
@@ -128,13 +123,11 @@ module parcel_hdf5
             call write_h5_dataset_1d(h5file_id, name, "humidity", &
                                      parcels%humidity(1:n_parcels))
 
-            if (allocated(parcels%B)) then
-                call write_h5_dataset_2d(h5file_id, name, "B", &
-                                         parcels%B(1:n_parcels, :))
+            call write_h5_dataset_2d(h5file_id, name, "B", &
+                                     parcels%B(1:n_parcels, :))
 
-                angle = get_angles(parcels%B, parcels%volume, n_parcels)
-                call write_h5_dataset_1d(h5file_id, name, "orientation", angle)
-            endif
+            angle = get_angles(parcels%B, parcels%volume, n_parcels)
+            call write_h5_dataset_1d(h5file_id, name, "orientation", angle)
 
             call close_h5_group(group)
 

@@ -16,12 +16,6 @@ module parcel_interpl
     use omp_lib
     implicit none
 
-    private :: par2grid_elliptic,       &
-               par2grid_non_elliptic,   &
-               grid2par_elliptic,       &
-               grid2par_non_elliptic
-
-
     ! number of indices and weights
     integer, parameter :: ngp = 4
 
@@ -44,33 +38,13 @@ module parcel_interpl
     contains
 
         subroutine vol2grid
-            call start_timer(vol2grid_timer)
-
-            volg = zero
-
-            if (parcel%is_elliptic) then
-                call vol2grid_elliptic
-            else
-                call vol2grid_non_elliptic
-            endif
-
-            ! apply free slip boundary condition
-            volg(0,  :) = two * volg(0,  :)
-            volg(nz, :) = two * volg(nz, :)
-
-            ! free slip boundary condition is reflective with mirror
-            ! axis at the physical domain
-            volg(1,    :) = volg(1,    :) + volg(-1,   :)
-            volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
-
-            call stop_timer(vol2grid_timer)
-        end subroutine
-
-
-        subroutine vol2grid_elliptic
             double precision  :: points(2, 2)
             integer           :: n, p, l
             double precision  :: pvol
+
+            call start_timer(vol2grid_timer)
+
+            volg = zero
 
             !$omp parallel default(shared)
             !$omp do private(n, p, l, points, pvol, pvor, is, js, weights) &
@@ -99,24 +73,26 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
-        end subroutine vol2grid_elliptic
+
+            ! apply free slip boundary condition
+            volg(0,  :) = two * volg(0,  :)
+            volg(nz, :) = two * volg(nz, :)
+
+            ! free slip boundary condition is reflective with mirror
+            ! axis at the physical domain
+            volg(1,    :) = volg(1,    :) + volg(-1,   :)
+            volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
+
+            call stop_timer(vol2grid_timer)
+        end subroutine vol2grid
 
 #ifndef NDEBUG
         subroutine vol2grid_symmetry_error
-            call start_timer(sym_vol2grid_timer)
-
-            if (parcel%is_elliptic) then
-                call vol2grid_elliptic_symmetry_error
-            else
-                call vol2grid_non_elliptic_symmetry_error
-            endif
-            call stop_timer(sym_vol2grid_timer)
-        end subroutine vol2grid_symmetry_error
-
-        subroutine vol2grid_elliptic_symmetry_error
             double precision :: points(2, 2), V, B(2), pos(2)
             integer          :: n, p, l, m
             double precision :: pvol
+
+            call start_timer(sym_vol2grid_timer)
 
             sym_volg = zero
 
@@ -154,7 +130,8 @@ module parcel_interpl
                 !$omp end do
                 !$omp end parallel
             enddo
-        end subroutine vol2grid_elliptic_symmetry_error
+            call stop_timer(sym_vol2grid_timer)
+        end subroutine vol2grid_symmetry_error
 
 
         subroutine vol2grid_non_elliptic_symmetry_error
@@ -186,93 +163,17 @@ module parcel_interpl
         end subroutine vol2grid_non_elliptic_symmetry_error
 #endif
 
-        subroutine vol2grid_non_elliptic
-            integer          :: n, l
-            double precision :: pos(2)
-            double precision :: pvol
-
-            do n = 1, n_parcels
-
-                pos = parcels%position(n, :)
-                pvol = parcels%volume(n)
-
-                ! ensure parcel is within the domain
-                call apply_periodic_bc(pos)
-
-                ! get interpolation weights and mesh indices
-                call trilinear(pos, is, js, weights)
-
-                do l = 1, ngp
-                    volg(js(l), is(l)) = volg(js(l), is(l)) + weights(l) * pvol
-                enddo
-            enddo
-
-        end subroutine vol2grid_non_elliptic
-
-
         subroutine par2grid
+            double precision  :: points(2, 2)
+            integer           :: n, p, l, i, j
+            double precision  :: pvol, weight, btot, h_c
+
             call start_timer(par2grid_timer)
 
             vortg = zero
             volg = zero
             nparg = zero
             tbuoyg = zero
-
-            if (parcel%is_elliptic) then
-                call par2grid_elliptic
-            else
-                call par2grid_non_elliptic
-            endif
-
-            ! apply free slip boundary condition
-            volg(0,  :) = two * volg(0,  :)
-            volg(nz, :) = two * volg(nz, :)
-
-            ! free slip boundary condition is reflective with mirror
-            ! axis at the physical domain
-            volg(1,    :) = volg(1,    :) + volg(-1,   :)
-            volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
-
-            vortg(0,  :) = two * vortg(0,  :)
-            vortg(nz, :) = two * vortg(nz, :)
-            vortg(1,    :) = vortg(1,    :) + vortg(-1,   :)
-            vortg(nz-1, :) = vortg(nz-1, :) + vortg(nz+1, :)
-
-            dbuoyg(0,  :) = two * dbuoyg(0,  :)
-            dbuoyg(nz, :) = two * dbuoyg(nz, :)
-            dbuoyg(1,    :) = dbuoyg(1,    :) + dbuoyg(-1,   :)
-            dbuoyg(nz-1, :) = dbuoyg(nz-1, :) + dbuoyg(nz+1, :)
-
-            tbuoyg(0,  :) = two * tbuoyg(0,  :)
-            tbuoyg(nz, :) = two * tbuoyg(nz, :)
-            tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
-            tbuoyg(nz-1, :) = tbuoyg(nz-1, :) + tbuoyg(nz+1, :)
-
-            ! exclude halo cells to avoid division by zero
-            vortg(0:nz, :) = vortg(0:nz, :) / volg(0:nz, :)
-            dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)
-            tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
-
-            ! sum halo contribution into internal cells
-            ! (be aware that halo cell contribution at upper boundary
-            ! are added to cell nz)
-            nparg(0,    :) = nparg(0,    :) + nparg(-1, :)
-            nparg(nz-1, :) = nparg(nz-1, :) + nparg(nz, :)
-
-            ! sanity check
-            if (sum(nparg(0:nz-1, :)) /= n_parcels) then
-                print *, "par2grid: Wrong total number of parcels!"
-                stop
-            endif
-
-            call stop_timer(par2grid_timer)
-
-        end subroutine par2grid
-
-        subroutine par2grid_elliptic
-            double precision  :: points(2, 2)
-            integer           :: n, p, l, i, j
-            double precision  :: pvol, weight, btot, h_c
 
             !$omp parallel default(shared)
             !$omp do private(n, p, l, i, j, points, pvol, pvor, weight, btot, h_c, is, js, weights) &
@@ -326,97 +227,61 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
-        end subroutine par2grid_elliptic
 
+            ! apply free slip boundary condition
+            volg(0,  :) = two * volg(0,  :)
+            volg(nz, :) = two * volg(nz, :)
 
-        subroutine par2grid_non_elliptic
-            integer          :: n, l, i, j
-            double precision :: pos(2)
-            double precision :: pvol, weight, h_c, btot
+            ! free slip boundary condition is reflective with mirror
+            ! axis at the physical domain
+            volg(1,    :) = volg(1,    :) + volg(-1,   :)
+            volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
-            do n = 1, n_parcels
+            vortg(0,  :) = two * vortg(0,  :)
+            vortg(nz, :) = two * vortg(nz, :)
+            vortg(1,    :) = vortg(1,    :) + vortg(-1,   :)
+            vortg(nz-1, :) = vortg(nz-1, :) + vortg(nz+1, :)
 
-                pos = parcels%position(n, :)
-                pvol = parcels%volume(n)
+            dbuoyg(0,  :) = two * dbuoyg(0,  :)
+            dbuoyg(nz, :) = two * dbuoyg(nz, :)
+            dbuoyg(1,    :) = dbuoyg(1,    :) + dbuoyg(-1,   :)
+            dbuoyg(nz-1, :) = dbuoyg(nz-1, :) + dbuoyg(nz+1, :)
 
-                ! liquid water content
-                h_c = parcels%humidity(n) &
-                    - h_0 * dexp(lam_c * (lower(2) - pos(2)))
-                h_c = max(zero, h_c)
+            tbuoyg(0,  :) = two * tbuoyg(0,  :)
+            tbuoyg(nz, :) = two * tbuoyg(nz, :)
+            tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
+            tbuoyg(nz-1, :) = tbuoyg(nz-1, :) + tbuoyg(nz+1, :)
 
-                ! total buoyancy (including effects of latent heating)
-                btot = parcels%buoyancy(n) + glat * h_c
+            ! exclude halo cells to avoid division by zero
+            vortg(0:nz, :) = vortg(0:nz, :) / volg(0:nz, :)
+            dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)
+            tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
 
-                call get_index(pos, i, j)
-                i = mod(i + nx, nx)
-                nparg(j, i) = nparg(j, i) + 1
+            ! sum halo contribution into internal cells
+            ! (be aware that halo cell contribution at upper boundary
+            ! are added to cell nz)
+            nparg(0,    :) = nparg(0,    :) + nparg(-1, :)
+            nparg(nz-1, :) = nparg(nz-1, :) + nparg(nz, :)
 
-                ! ensure parcel is within the domain
-                call apply_periodic_bc(pos)
-
-                ! get interpolation weights and mesh indices
-                call trilinear(pos, is, js, weights)
-
-                ! loop over grid points which are part of the interpolation
-                do l = 1, ngp
-
-                    weight = pvol * weights(l)
-
-                    ! the weight is halved due to 2 points per ellipse
-                    vortg(js(l), is(l)) = vortg(js(l), is(l))  &
-                                        + weight * parcels%vorticity(n)
-
-                    dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
-                                         + weight * parcels%buoyancy(n)
-
-                    tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
-                                         + weight * btot
-
-                    volg(js(l), is(l)) = volg(js(l), is(l)) + weight
-                enddo
-            enddo
-
-        end subroutine par2grid_non_elliptic
-
-
-        subroutine grid2par(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
-
-            call start_timer(grid2par_timer)
-
-            if (parcel%is_elliptic) then
-                   call grid2par_elliptic(vel, vor, vgrad)
-            else
-                   call grid2par_non_elliptic(vel, vor, vgrad)
+            ! sanity check
+            if (sum(nparg(0:nz-1, :)) /= n_parcels) then
+                print *, "par2grid: Wrong total number of parcels!"
+                stop
             endif
 
-            call stop_timer(grid2par_timer)
+            call stop_timer(par2grid_timer)
 
-        end subroutine grid2par
-
-
-        subroutine grid2par_add(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
-
-            call start_timer(grid2par_timer)
-
-            if (parcel%is_elliptic) then
-                   call grid2par_elliptic(vel, vor, vgrad, add=.true.)
-            else
-                   call grid2par_non_elliptic(vel, vor, vgrad, add=.true.)
-            endif
-
-            call stop_timer(grid2par_timer)
-
-        end subroutine grid2par_add
+        end subroutine par2grid
 
 
-        subroutine grid2par_elliptic(vel, vor, vgrad, add)
+        subroutine grid2par(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
             logical, optional, intent(in)       :: add
             integer                             :: ncomp
             double precision                    :: points(2, 2), weight
             integer                             :: n, p, c, l
+
+            call start_timer(grid2par_timer)
 
             ! number of field components
             ncomp = 2
@@ -486,62 +351,17 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
-        end subroutine grid2par_elliptic
+            call stop_timer(grid2par_timer)
+
+        end subroutine grid2par
 
 
-        subroutine grid2par_non_elliptic(vel, vor, vgrad, add)
-            double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
-            logical, optional, intent(in)       :: add
-            integer                             :: ncomp
-            integer                             :: n, c, l
-            double precision                    :: pos(2)
+        subroutine grid2par_add(vel, vor, vgrad)
+            double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
 
-            ! number of field components
-            ncomp = 2
+            call grid2par(vel, vor, vgrad, add=.true.)
 
-            ! clear old data efficiently
-            if(present(add)) then
-               if(add .eqv. .false.) then
-                   vel(1:n_parcels, :) = zero
-                   vor(1:n_parcels)    = zero
-               endif
-            else
-               vel(1:n_parcels, :) = zero
-               vor(1:n_parcels)    = zero
-            endif
-
-            vgrad(1:n_parcels, :) = zero
-
-            do n = 1, n_parcels
-
-                pos = parcels%position(n, :)
-
-                ! ensure parcel is within the domain
-                call apply_periodic_bc(pos)
-
-                ! get interpolation weights and mesh indices
-                call trilinear(pos, is, js, weights)
-
-                ! loop over grid points which are part of the interpolation
-                do l = 1, ngp
-                    ! loop over field components
-                    do c = 1, ncomp
-                        vel(n, c) = vel(n, c) &
-                                  + weights(l) * velog(js(l), is(l), c)
-                    enddo
-
-                    do c = 1, 4
-                        vgrad(n, c) = vgrad(n, c) &
-                                    + weights(l) * velgradg(js(l), is(l), c)
-                    enddo
-
-                    vor(n) = vor(n) &
-                           + weights(l) * vtend(js(l), is(l))
-
-                enddo
-            enddo
-
-        end subroutine grid2par_non_elliptic
+        end subroutine grid2par_add
 
 
         !
