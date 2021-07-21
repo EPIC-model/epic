@@ -120,7 +120,7 @@ module ls_rk4
                 parcels%position(n,:) = parcels%position(n,:) &
                                       + cb * dt * parcels%velocity(n,:)
 
-                call apply_single_parcel_bc(parcels%position(n,:), parcels%velocity(n,:))
+                call apply_periodic_bc(parcels%position(n,:))
 
                 parcels%vorticity(n) = parcels%vorticity(n) + cb * dt * dvordt(n)
                 parcels%B(n,:) = parcels%B(n,:) + cb * dt * dbdt(n,:)

@@ -146,16 +146,20 @@ program epic
 
                 if (mod(iter, parcel%correction_freq) == 0) then
                     call vol2grid
-                    do cor_iter=1,parcel%correction_iters
+                    do cor_iter = 1, parcel%correction_iters
                         if (parcel%apply_laplace) then
                             call apply_laplace(volg)
                             call vol2grid
                         endif
                         if (parcel%apply_gradient) then
-                            call apply_gradient(volg,parcel%gradient_pref,parcel%max_compression)
+                            call apply_gradient(volg, parcel%gradient_pref, parcel%max_compression)
                             call vol2grid
-                        end if
-                    end do
+                        endif
+                    enddo
+
+                    ! mirror parcels that have a centre outside the z boundaries
+                    call apply_all_reflective_bc(parcels%position(1:n_parcels, :), &
+                                                 parcels%B(1:n_parcels, :))
                  endif
 
 

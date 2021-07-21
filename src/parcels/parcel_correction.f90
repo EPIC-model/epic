@@ -192,11 +192,12 @@ module parcel_correction
                 parcels%position(n, 2) = parcels%position(n, 2)             &
                                        + weights(l) * wd(js(l), is(l))
             enddo
+
+            call apply_periodic_bc(parcels%position(n, :))
         enddo
         !$omp end do
         !$omp end parallel
 
-        call apply_parcel_bc(parcels%position,parcels%velocity)
 
         call stop_timer(lapl_corr_timer)
 
@@ -244,11 +245,10 @@ module parcel_correction
             parcels%position(n, 1) = parcels%position(n, 1) + shift_x1
             parcels%position(n, 2) = parcels%position(n, 2) + shift_x2
 
+            call apply_periodic_bc(parcels%position(n, :))
         enddo
         !$omp end do
         !$omp end parallel
-
-        call apply_parcel_bc(parcels%position,parcels%velocity)
 
         call stop_timer(grad_corr_timer)
 

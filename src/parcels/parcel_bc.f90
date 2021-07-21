@@ -1,7 +1,7 @@
 ! =============================================================================
 !                       Parcel boundary conditions
 !                       periodic in x (horizontal)
-!                       free slip in z (vertical)
+!                       reflective in z (vertical)
 ! =============================================================================
 module parcel_bc
     use constants, only : zero, two
@@ -12,61 +12,13 @@ module parcel_bc
 
     contains
 
-        ! apply boundary condition in all directions
-        ! x -- periodic bc
-        ! z -- free slip bc
-        subroutine apply_parcel_bc(position, velocity)
-            double precision, intent(inout) :: position(:, :), velocity(:, :)
-            integer                         :: n
-
-            !$omp parallel default(shared)
-            !$omp do private(n)
-            do n = 1, n_parcels
-                ! horizontal bc
-                call apply_periodic_bc(position(n, :))
-
-                ! vertical bc
-                call apply_free_slip_bc(position(n, :), velocity(n, :))
-            enddo
-            !$omp end do
-            !$omp end parallel
-        end subroutine apply_parcel_bc
-
-
-        subroutine apply_single_parcel_bc(position, velocity)
-            double precision, intent(inout) :: position(2), velocity(2)
-
-            ! horizontal bc
-            call apply_periodic_bc(position)
-
-            ! vertical bc
-            call apply_free_slip_bc(position, velocity)
-        end subroutine apply_single_parcel_bc
-
-
         ! apply periodic bc on n-th parcel
         subroutine apply_periodic_bc(position)
             double precision, intent(inout) :: position(2)
             position(1) = position(1) - extent(1) * dble(int((position(1) - center(1)) * hli(1)))
         end subroutine apply_periodic_bc
 
-
-        ! apply free slip bc on n-th parcel
-        subroutine apply_free_slip_bc(position, velocity)
-            double precision, intent(inout) :: position(2), velocity(2)
-
-            if (position(2) >= upper(2)) then
-                velocity(2) = zero
-                position(2) = two * upper(2) - position(2)
-            endif
-
-            if (position(2) <= lower(2)) then
-                velocity(2) = zero
-                position(2) = two * lower(2) - position(2)
-            endif
-        end subroutine apply_free_slip_bc
-
-
+        ! apply mirroring bc on n-th parcel
         subroutine apply_reflective_bc(position, B)
             double precision, intent(inout) :: position(2), B(2)
 
@@ -80,5 +32,19 @@ module parcel_bc
                 B(2) = -B(2)
             endif
         end subroutine apply_reflective_bc
+
+        ! apply reflective boundary condition to all parcels
+        subroutine apply_all_reflective_bc(position, B)
+            double precision, intent(inout) :: position(:, :), B(:, :)
+            integer                         :: n
+
+            !$omp parallel default(shared)
+            !$omp do private(n)
+            do n = 1, n_parcels
+                call apply_reflective_bc(position(n, :), B(n, :))
+            enddo
+            !$omp end do
+            !$omp end parallel
+        end subroutine apply_all_reflective_bc
 
 end module parcel_bc
