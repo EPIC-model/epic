@@ -145,15 +145,14 @@ program epic
                 endif
 
                 if (mod(iter, parcel%correction_freq) == 0) then
-                    call vol2grid
                     do cor_iter = 1, parcel%correction_iters
                         if (parcel%apply_laplace) then
-                            call apply_laplace(volg)
                             call vol2grid
+                            call apply_laplace(volg)
                         endif
                         if (parcel%apply_gradient) then
-                            call apply_gradient(volg, parcel%gradient_pref, parcel%max_compression)
                             call vol2grid
+                            call apply_gradient(volg, parcel%gradient_pref, parcel%max_compression)
                         endif
                     enddo
 
