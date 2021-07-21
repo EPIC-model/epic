@@ -86,7 +86,7 @@ class h5fields:
         group.attrs['ncells'] = ncells
 
 
-    def _add_dataset(self, name, data, dtype='f'):
+    def _add_dataset(self, name, data, dtype='f8'):
         """
         Add a field dataset. The horizontal dimension is the
         leading dimension (horizontal x vertical).
