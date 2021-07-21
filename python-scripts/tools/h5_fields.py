@@ -81,9 +81,9 @@ class h5fields:
             raise RuntimeError("Tuple 'ncells' must have length 2.")
 
         group = self._h5file.create_group('box')
-        group.attrs['origin'] = origin
-        group.attrs['extent'] = extent
-        group.attrs['ncells'] = ncells
+        group.attrs.create(name='origin', data=origin, dtype='f8')
+        group.attrs.create(name='extent', data=extent, dtype='f8')
+        group.attrs.create(name='ncells', data=ncells, dtype='i4')
 
 
     def _add_dataset(self, name, data, dtype='f8'):
