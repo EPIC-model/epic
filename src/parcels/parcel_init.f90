@@ -82,32 +82,24 @@ module parcel_init
             !$omp end do
             !$omp end parallel
 
-            if (parcel%is_elliptic) then
-                deallocate(parcels%stretch)
+            ratio = dx(1) / dx(2)
 
-                ratio = dx(1) / dx(2)
+            ! aspect ratio: lam = a / b
+            lam = max(dx(2) / dx(1), ratio)
 
-                ! aspect ratio: lam = a / b
-                lam = max(dx(2) / dx(1), ratio)
+            !$omp parallel default(shared)
+            !$omp do private(n)
+            do n = 1, n_parcels
+                ! B11
+                parcels%B(n, 1) = ratio * get_ab(parcels%volume(n))
 
-                !$omp parallel default(shared)
-                !$omp do private(n)
-                do n = 1, n_parcels
-                    ! B11
-                    parcels%B(n, 1) = ratio * get_ab(parcels%volume(n))
+                ! B12
+                parcels%B(n, 2) = zero
+            enddo
+            !$omp end do
+            !$omp end parallel
 
-                    ! B12
-                    parcels%B(n, 2) = zero
-                enddo
-                !$omp end do
-                !$omp end parallel
-
-                call init_refine(lam)
-
-            else
-                deallocate(parcels%B)
-                parcels%stretch = zero
-            endif
+            call init_refine(lam)
 
             !$omp parallel default(shared)
             !$omp do private(n)
@@ -162,10 +154,6 @@ module parcel_init
         subroutine init_refine(lam)
             double precision, intent(inout) :: lam
             double precision                :: B22, a2
-
-            if (.not. parcel%is_elliptic) then
-                return
-            endif
 
             ! do refining by splitting
             do while (lam >= parcel%lambda)

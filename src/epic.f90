@@ -9,7 +9,6 @@ program epic
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses, split_timer
-    use parcel_point, only : point_split, point_merge
     use parcel_merge, only : merge_ellipses, merge_timer
     use parcel_correction, only : init_parcel_correction, &
                                   apply_laplace,          &
@@ -138,19 +137,11 @@ program epic
                 call ls_rk4_step(dt)
 
                 if (mod(iter, parcel%merge_freq) == 0) then
-                    if (parcel%is_elliptic) then
-                        call merge_ellipses(parcels)
-                    else
-                        call point_merge(parcel%vfraction)
-                    endif
+                    call merge_ellipses(parcels)
                 endif
 
                 if (mod(iter, parcel%split_freq) == 0) then
-                    if (parcel%is_elliptic) then
-                        call split_ellipses(parcels, parcel%lambda, parcel%vmaxfraction)
-                    else
-                        call point_split(parcel%lambda, parcel%prefactor)
-                    endif
+                    call split_ellipses(parcels, parcel%lambda, parcel%vmaxfraction)
                 endif
 
                 if (mod(iter, parcel%correction_freq) == 0) then
@@ -203,12 +194,11 @@ program epic
         function get_time_step() result(dt)
             use options, only : time
             double precision :: dt
-            double precision :: max_vorticity
             double precision :: H, S11, S12, S21, S22, gmax
             integer          :: i, j
 
             H = epsilon(zero)
-            if (parcel%is_elliptic .and. time%is_adaptive) then
+            if (time%is_adaptive) then
                 do i = 0, nx-1
                     do j = 0, nz
                         S11 = velgradg(j, i, 1)
@@ -221,12 +211,6 @@ program epic
 
                 gmax = f12 * dsqrt(H)
                 dt = min(time%dt_max, time%alpha / gmax)
-
-            else if (time%is_adaptive) then
-                    ! adaptive time stepping according to
-                    ! https://doi.org/10.1002/qj.3319
-                    max_vorticity = maxval(abs(vortg))
-                    dt = min(time%alpha / max_vorticity, time%dt)
             else
                 dt = time%dt
             endif

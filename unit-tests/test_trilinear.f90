@@ -8,7 +8,6 @@ program test_trilinear
     use constants, only : pi, zero, one, f14, f32
     use parcel_container
     use parcel_interpl, only : par2grid, par2grid_timer
-    use options, only : parcel
     use parcel_ellipse, only : get_ab
     use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
     use fields, only : volg, field_alloc
@@ -44,8 +43,6 @@ program test_trilinear
             enddo
         enddo
     enddo
-
-    parcel%is_elliptic = .true.
 
     parcels%volume = f14 * vcell
 
