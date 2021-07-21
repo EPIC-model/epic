@@ -105,7 +105,7 @@ try:
     dx = extent[0] / nx
     dz = extent[1] / nz
 
-    vorticity = np.ones((nx, nz+1))
+    vorticity = np.zeros((nx, nz+1))
 
     # ranges from 0 to nx-1
     for i in range(nx):
