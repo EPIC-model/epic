@@ -130,7 +130,7 @@ module field_hdf5
             call write_h5_dataset_3d(h5file_id, name, "velocity gradient tensor", &
                                      velgradg(0:nz, 0:nx-1, :))
 
-            call write_h5_dataset_2d(h5file_id, name, "tendency", &
+            call write_h5_dataset_2d(h5file_id, name, "vorticity tendency", &
                                      vtend(0:nz, 0:nx-1))
 #endif
 
