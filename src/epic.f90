@@ -198,32 +198,17 @@ program epic
         function get_time_step() result(dt)
             use options, only : time
             double precision :: dt
-            double precision :: H, S11, S12, S21, S22, gmax, bmax
-            integer          :: i, j
+            double precision :: gmax, bmax
 
-            H = epsilon(zero)
             if (time%is_adaptive) then
                 ! velocity strain
-                do i = 0, nx-1
-                    do j = 0, nz
-                        S11 = velgradg(j, i, 1)
-                        S12 = velgradg(j, i, 2)
-                        S21 = velgradg(j, i, 3)
-                        S22 = velgradg(j, i, 4)
-                        H = max(H, (S11 - S22) ** 2 + (S12 + S21) ** 2)
-                    enddo
-                enddo
-
-                gmax = f12 * dsqrt(H)
+                gmax = f12 * dsqrt(maxval((velgradg(0:nz, :, 1) - velgradg(0:nz, :, 4)) ** 2 + &
+                                          (velgradg(0:nz, :, 2) + velgradg(0:nz, :, 3)) ** 2))
+                gmax = max(epsilon(gmax), gmax)
 
                 ! buoyancy gradient
-                bmax = epsilon(zero)
-                do i = 0, nx-1
-                    do j = 0, nz
-                        bmax = max(bmax, dabs(vtend(j, i)))
-                    enddo
-                enddo
-                bmax = dsqrt(bmax)
+                bmax = dsqrt(maxval(dabs(vtend(0:nz, :))))
+                bmax = max(epsilon(bmax), bmax)
 
                 dt = min(time%alpha_s / gmax, time%alpha_b / bmax)
             else
