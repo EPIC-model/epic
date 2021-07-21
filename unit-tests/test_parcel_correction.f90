@@ -10,7 +10,7 @@ program test_parcel_correction
     use constants, only : pi, one, zero, f14, f32
     use parcel_container
     use parcel_correction
-    use parcel_interpl, only : vol2grid, vol2grid_timer
+    use parcel_interpl, only : vol2grid
     use parcel_ellipse, only : get_ab
     use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz
     use fields, only : volg
@@ -23,7 +23,6 @@ program test_parcel_correction
 
     call  parse_command_line
 
-    call register_timer('vol2grid', vol2grid_timer)
     call register_timer('laplace correction', lapl_corr_timer)
     call register_timer('gradient correction', grad_corr_timer)
 
@@ -79,15 +78,16 @@ program test_parcel_correction
     call init_parcel_correction
 
     do i = 1, 500
+        call apply_laplace
         call vol2grid
-        call apply_laplace(volg)
-        call vol2grid
-        call apply_gradient(volg,1.80d0,0.5d0)
-        call vol2grid
+        call apply_gradient(1.80d0,0.5d0)
         if (verbose) then
+            call vol2grid
             write(*,*) i, sum(abs(volg(0:nz, 0:nx-1) - vcell))
         endif
     enddo
+
+    call vol2grid
 
     final_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
 
