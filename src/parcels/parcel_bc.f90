@@ -25,9 +25,7 @@ module parcel_bc
             if (position(2) > upper(2)) then
                 position(2) = two * upper(2) - position(2)
                 B(2) = -B(2)
-            endif
-
-            if (position(2) < lower(2)) then
+            else if (position(2) < lower(2)) then
                 position(2) = two * lower(2) - position(2)
                 B(2) = -B(2)
             endif
