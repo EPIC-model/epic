@@ -84,12 +84,12 @@ program test_laplace_correction
 
     call vol2grid
 
-    init_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
+    init_error = sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1))
 
     if (verbose) then
         write(*,*) 'test laplace correction'
-        write(*,*) 'iteration, error'
-        write(*,*) 0, init_error
+        write(*,*) 'iteration, average error, max absolute error'
+        write(*,*) 0, init_error, maxval(abs(volg(0:nz, 0:nx-1) / vcell - one))
     endif
 
     call init_parcel_correction
@@ -98,13 +98,14 @@ program test_laplace_correction
         call apply_laplace
         if (verbose) then
             call vol2grid
-            write(*,*) i, ' ', sum(abs(volg(0:nz, 0:nx-1) - vcell))
+            write(*,*) i, sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1)), &
+                          maxval(abs(volg(0:nz, 0:nx-1) / vcell - one))
         endif
     enddo
 
     call vol2grid
 
-    final_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
+    final_error = sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1))
 
     call print_result_dp('Test laplace correction', final_error, init_error)
 
