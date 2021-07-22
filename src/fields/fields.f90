@@ -11,23 +11,25 @@ module fields
     ! hence the valid regrion is from 0 to nz
     ! Due to periodicity in x, the grid points in x go from 0 to nx-1
     double precision, allocatable, dimension(:, :, :) :: &
-        velog,     &   ! velocity vector field (has 1 halo cell layer in z)
-        velgradg       ! velocity gradient tensor (has 1 halo cell layer in z)
+        velog,     &   ! velocity vector field
+        velgradg       ! velocity gradient tensor
 
     double precision, allocatable, dimension(:, :) :: &
         vortg,     &   ! vorticity scalar field
         vtend,     &   ! vorticity tendency
+#ifndef ENABLE_DRY_MODE
         dbuoyg,    &   ! dry buoyancy (or liquid-water buoyancy)
-        tbuoyg,    &   ! buoyancy (has 1 halo cell layer in z)
+#endif
+        tbuoyg,    &   ! buoyancy
 !         humg,      &   ! specific humidity
 !         humlig,    &   ! condensed humidity
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
-        volg           ! volume scalar field (has 1 halo cell layer in z)
+        volg           ! volume scalar field
 
     integer, allocatable, dimension(:, :) :: &
-        nparg          ! number of parcels per grid box (from 0 to nz-1 and 0 to nx-1)
+        nparg          ! number of parcels per grid box
 
     contains
 
@@ -52,7 +54,9 @@ module fields
 
             allocate(tbuoyg(-1:nz+1, 0:nx-1))
 
+#ifndef ENABLE_DRY_MODE
             allocate(dbuoyg(-1:nz+1, 0:nx-1))
+#endif
 
 !             allocate(humg(-1:nz+1, 0:nx-1))
 
@@ -71,7 +75,9 @@ module fields
             vortg    = zero
             vtend    = zero
             tbuoyg   = zero
+#ifndef ENABLE_DRY_MODE
             dbuoyg   = zero
+#endif
 !             humg     = zero
 !             humlig   = zero
             nparg    = zero
