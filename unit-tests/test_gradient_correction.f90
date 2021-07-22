@@ -18,8 +18,15 @@ program test_parcel_correction
 
     implicit none
 
-    double precision :: final_error, init_error
-    integer :: i, j, k, jj, ii
+    double precision :: final_error, init_error, val, tmp
+    integer :: i, j, k, jj, ii, sk
+    integer, allocatable :: seed(:)
+    double precision, parameter :: dev = 0.005d0
+
+    call random_seed(size=sk)
+    allocate(seed(1:sk))
+    seed(:) = 42
+    call random_seed(put=seed)
 
     call  parse_command_line
 
@@ -27,8 +34,8 @@ program test_parcel_correction
 
     nx = 32
     nz = 32
-    lower  = (/-f32, -f32/)
-    extent =  (/0.4d0, 0.4d0/)
+    lower  = (/zero, zero/)
+    extent = (/one, one/)
 
     call update_parameters
 
@@ -46,8 +53,19 @@ program test_parcel_correction
                     parcels%position(k, 2) = lower(2) + j * dx(2) + f14 * dx(2) * jj
 
                     ! add some deviation
-                    parcels%position(k, 1) = (one + 1.0e-7) * parcels%position(k, 1)
-                    parcels%position(k, 2) = (one + 1.0e-7) * parcels%position(k, 2)
+                    tmp = dev
+                    call random_number(val)
+                    if (val < 0.5) then
+                        tmp = -dev
+                    endif
+                    parcels%position(k, 1) = parcels%position(k, 1) + tmp
+
+                    tmp = dev
+                    call random_number(val)
+                    if (val < 0.5) then
+                        tmp = -dev
+                    endif
+                    parcels%position(k, 2) = parcels%position(k, 2) + tmp
                     k = k + 1
                 enddo
             enddo
@@ -76,7 +94,7 @@ program test_parcel_correction
 
     call init_parcel_correction
 
-    do i = 1, 500
+    do i = 1, 20
         call apply_gradient(1.80d0,0.5d0)
         if (verbose) then
             call vol2grid
