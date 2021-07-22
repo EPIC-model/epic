@@ -7,7 +7,7 @@ module ls_rk4
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_B
-    use parcel_interpl, only : par2grid, grid2par, grid2par_add
+    use parcel_interpl, only : par2grid, grid2par, grid2par_add, l_update_fields
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parameters, only : nx, nz
@@ -86,7 +86,11 @@ module ls_rk4
             integer,          intent(in) :: step
             integer                      :: n
 
-            call par2grid
+            if (l_update_fields) then
+                call par2grid
+            endif
+            l_update_fields = .true.
+
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
 

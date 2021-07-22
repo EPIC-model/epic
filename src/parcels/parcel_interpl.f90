@@ -26,6 +26,8 @@ module parcel_interpl
     ! interpolation weights
     double precision :: weights(ngp)
 
+    logical :: l_update_fields = .true.
+
     integer :: par2grid_timer, &
 #ifndef NDBEBUG
                sym_vol2grid_timer, &
@@ -235,6 +237,8 @@ module parcel_interpl
                 print *, "par2grid: Wrong total number of parcels!"
                 stop
             endif
+
+            l_update_fields = .false.
 
             call stop_timer(par2grid_timer)
 
