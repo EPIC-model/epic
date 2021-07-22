@@ -132,35 +132,6 @@ module parcel_interpl
             enddo
             call stop_timer(sym_vol2grid_timer)
         end subroutine vol2grid_symmetry_error
-
-
-        subroutine vol2grid_non_elliptic_symmetry_error
-            double precision :: pos(2)
-            integer          :: n, l, m
-            double precision :: pvol
-
-            sym_volg = zero
-
-            do m = -1, 1, 2
-                do n = 1, n_parcels
-
-                    pos = dble(m) * parcels%position(n, :)
-                    pvol = parcels%volume(n)
-                    pos(1) = dble(m) * pos(1)
-
-                    ! ensure point is within the domain
-                    call apply_periodic_bc(pos)
-
-                    ! get interpolation weights and mesh indices
-                    call trilinear(pos, is, js, weights)
-
-                    do l = 1, ngp
-                        sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
-                                               + weights(l) * pvol
-                    enddo
-                enddo
-            enddo
-        end subroutine vol2grid_non_elliptic_symmetry_error
 #endif
 
         subroutine par2grid
