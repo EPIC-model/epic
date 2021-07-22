@@ -69,10 +69,7 @@ module ls_rk4
             call ls_rk4_substep(ca5, cb5, dt, 5)
 
             call start_timer(rk4_timer)
-
-            call apply_all_reflective_bc(parcels%position(1:n_parcels, :), &
-                                         parcels%B(1:n_parcels, :))
-
+            call apply_parcel_bc(parcels%position, parcels%B)
             call stop_timer(rk4_timer)
 
             ! we need to subtract 14 calls since we start and stop
@@ -126,8 +123,6 @@ module ls_rk4
             do n = 1, n_parcels
                 parcels%position(n,:) = parcels%position(n,:) &
                                       + cb * dt * parcels%velocity(n,:)
-
-                call apply_periodic_bc(parcels%position(n,:))
 
                 parcels%vorticity(n) = parcels%vorticity(n) + cb * dt * dvordt(n)
                 parcels%B(n,:) = parcels%B(n,:) + cb * dt * dbdt(n,:)

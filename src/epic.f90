@@ -160,9 +160,7 @@ program epic
                         endif
                     enddo
 
-                    ! mirror parcels that have a centre outside the z boundaries
-                    call apply_all_reflective_bc(parcels%position(1:n_parcels, :), &
-                                                 parcels%B(1:n_parcels, :))
+                    call apply_parcel_bc(parcels%position, parcels%B)
                  endif
 
 
