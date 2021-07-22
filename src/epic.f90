@@ -46,7 +46,6 @@ program epic
             use options, only : field_file, field_tol, output
 
             call register_timer('epic', epic_timer)
-            call register_timer('vol2grid', vol2grid_timer)
             call register_timer('par2grid', par2grid_timer)
             call register_timer('grid2par', grid2par_timer)
             call register_timer('parcel split', split_timer)
@@ -130,6 +129,9 @@ program epic
 #ifndef NDEBUG
                     call vol2grid_symmetry_error
 #endif
+                    ! update fields for writing
+                    call par2grid
+
                     call write_h5_field_step(nfw, t, dt)
                 endif
 
@@ -149,18 +151,15 @@ program epic
                 endif
 
                 if (mod(iter, parcel%correction_freq) == 0) then
-                    call vol2grid
-                    do cor_iter=1,parcel%correction_iters
+                    do cor_iter = 1, parcel%correction_iters
                         if (parcel%apply_laplace) then
-                            call apply_laplace(volg)
-                            call vol2grid
+                            call apply_laplace
                         endif
                         if (parcel%apply_gradient) then
-                            call apply_gradient(volg,parcel%gradient_pref,parcel%max_compression)
-                            call vol2grid
-                        end if
-                    end do
-                 endif
+                            call apply_gradient(parcel%gradient_pref, parcel%max_compression)
+                        endif
+                    enddo
+                endif
 
 
                 t = t + dt

@@ -26,8 +26,8 @@ module parcel_merge
                geometric_multimerge, &
                optimal_multimerge,   &
                do_multimerge,        &
-               solve_quartic!,        &
-               !pack_parcels
+               solve_quartic,        &
+               pack_parcels
 
     contains
         subroutine merge_ellipses(parcels)
@@ -157,9 +157,9 @@ module parcel_merge
 
                 parcels%B(ib, 1) = B11 * factor
                 parcels%B(ib, 2) = B12 * factor
-            enddo
 
-            call apply_parcel_bc(parcels%position, parcels%velocity)
+                call apply_periodic_bc(parcels%position(ib, :))
+            enddo
 
         end subroutine geometric_bimerge
 
@@ -184,9 +184,9 @@ module parcel_merge
                 ! optimal B
                 parcels%B(ib, 1) = (B11 - mu * B22) / (one - mu ** 2)
                 parcels%B(ib, 2) = B12 / (one - mu)
-            enddo
 
-            call apply_parcel_bc(parcels%position, parcels%velocity)
+                call apply_periodic_bc(parcels%position(ib, :))
+            enddo
 
         end subroutine optimal_bimerge
 
@@ -363,10 +363,9 @@ module parcel_merge
                     parcels%B(ib, 1) = B11(l) * factor
                     parcels%B(ib, 2) = B12(l) * factor
 
+                    call apply_periodic_bc(parcels%position(ib, :))
                 endif
             enddo
-
-            call apply_parcel_bc(parcels%position, parcels%velocity)
 
         end subroutine geometric_multimerge
 
@@ -403,11 +402,10 @@ module parcel_merge
                     ! optimal B
                     parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / (one - mu ** 2)
                     parcels%B(ib, 2) = B12(l) / (one - mu)
+
+                    call apply_periodic_bc(parcels%position(ib, :))
                 endif
             enddo
-
-            call apply_parcel_bc(parcels%position, parcels%velocity)
-
         end subroutine optimal_multimerge
 
 

@@ -13,7 +13,7 @@ module parcel_correction
     use stafft
     use deriv1d
 
-    use parcel_interpl, only : trilinear, ngp
+    use parcel_interpl, only : trilinear, ngp, vol2grid
     use parcel_bc
     use omp_lib
 
@@ -23,6 +23,8 @@ module parcel_correction
     use parcel_container
 
     use timer, only : start_timer, stop_timer
+
+    use fields, only : volg
 
     implicit none
 
@@ -135,14 +137,15 @@ module parcel_correction
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    subroutine apply_laplace(volg)
-        double precision, intent(in) :: volg(-1:, 0:)
-        double precision             :: phi(0:nz,0:nx-1), ud(-1:nz+1,0:nx-1), wd(-1:nz+1,0:nx-1)
-        double precision             :: wbar(0:nz)
-        double precision             :: weights(ngp)
-        integer                      :: n, l, is(ngp), js(ngp)
+    subroutine apply_laplace
+        double precision :: phi(0:nz,0:nx-1), ud(-1:nz+1,0:nx-1), wd(-1:nz+1,0:nx-1)
+        double precision :: wbar(0:nz)
+        double precision :: weights(ngp)
+        integer          :: n, l, is(ngp), js(ngp)
 
         call start_timer(lapl_corr_timer)
+
+        call vol2grid
 
         ! form divergence field * dt and store in phi temporarily:
         phi = volg(0:nz, :) / vcell - one
@@ -192,18 +195,18 @@ module parcel_correction
                 parcels%position(n, 2) = parcels%position(n, 2)             &
                                        + weights(l) * wd(js(l), is(l))
             enddo
+
+            call apply_periodic_bc(parcels%position(n, :))
         enddo
         !$omp end do
         !$omp end parallel
 
-        call apply_parcel_bc(parcels%position,parcels%velocity)
 
         call stop_timer(lapl_corr_timer)
 
     end subroutine apply_laplace
 
-    subroutine apply_gradient(volg, prefactor, max_compression)
-        double precision, intent(in) :: volg(-1:, 0:)
+    subroutine apply_gradient(prefactor, max_compression)
         double precision, intent(in) :: prefactor
         double precision, intent(in) :: max_compression
         double precision             :: phi(0:nz,0:nx-1)
@@ -212,6 +215,8 @@ module parcel_correction
         integer                      :: n, is(ngp), js(ngp)
 
         call start_timer(grad_corr_timer)
+
+        call vol2grid
 
         ! form divergence field * dt and store in phi temporarily:
         phi = volg(0:nz, :) / vcell - one
@@ -243,12 +248,9 @@ module parcel_correction
 
             parcels%position(n, 1) = parcels%position(n, 1) + shift_x1
             parcels%position(n, 2) = parcels%position(n, 2) + shift_x2
-
         enddo
         !$omp end do
         !$omp end parallel
-
-        call apply_parcel_bc(parcels%position,parcels%velocity)
 
         call stop_timer(grad_corr_timer)
 

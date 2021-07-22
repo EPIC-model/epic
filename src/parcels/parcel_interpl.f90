@@ -26,11 +26,10 @@ module parcel_interpl
     ! interpolation weights
     double precision :: weights(ngp)
 
-    integer :: vol2grid_timer, &
+    integer :: par2grid_timer, &
 #ifndef NDBEBUG
                sym_vol2grid_timer, &
 #endif
-               par2grid_timer, &
                grid2par_timer
 
     private :: is, js, weights
@@ -41,8 +40,6 @@ module parcel_interpl
             double precision  :: points(2, 2)
             integer           :: n, p, l
             double precision  :: pvol
-
-            call start_timer(vol2grid_timer)
 
             volg = zero
 
@@ -83,7 +80,6 @@ module parcel_interpl
             volg(1,    :) = volg(1,    :) + volg(-1,   :)
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
-            call stop_timer(vol2grid_timer)
         end subroutine vol2grid
 
 #ifndef NDEBUG
