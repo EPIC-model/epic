@@ -159,9 +159,7 @@ program epic
                             call apply_gradient(parcel%gradient_pref, parcel%max_compression)
                         endif
                     enddo
-
-                    call apply_parcel_bc(parcels%position, parcels%B)
-                 endif
+                endif
 
 
                 t = t + dt

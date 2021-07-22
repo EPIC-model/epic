@@ -195,6 +195,8 @@ module parcel_correction
                 parcels%position(n, 2) = parcels%position(n, 2)             &
                                        + weights(l) * wd(js(l), is(l))
             enddo
+
+            call apply_periodic_bc(parcels%position(n, :))
         enddo
         !$omp end do
         !$omp end parallel
