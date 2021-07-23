@@ -43,7 +43,7 @@ module straka
 
             ! in metres
             xc = straka_flow%center(1)
-            xr = straka_flow%radii(2)
+            xr = straka_flow%radii(1)
             zc = straka_flow%center(2)
             zr = straka_flow%radii(2)
 
