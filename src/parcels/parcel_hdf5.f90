@@ -1,7 +1,6 @@
 module parcel_hdf5
     use parcel_container, only : parcels, n_parcels
     use parcel_diagnostics, only : write_h5_parcel_diagnostics
-    use parcel_ellipse, only : get_angles
     use options, only : verbose, parcel, time, output
     use hdf5
     use h5_utils
@@ -90,7 +89,6 @@ module parcel_hdf5
             integer, intent(in)           :: iter ! iteration
             integer(hid_t)                :: group
             character(:), allocatable     :: name
-            double precision, allocatable :: angle(:)
             logical                       :: created
 
             name = trim(get_step_group_name(iter))
@@ -108,14 +106,14 @@ module parcel_hdf5
             call write_h5_dataset_2d(h5file_id, name, "position", &
                                      parcels%position(1:n_parcels, :))
 
-            call write_h5_dataset_2d(h5file_id, name, "velocity", &
-                                     parcels%velocity(1:n_parcels, :))
-
-            call write_h5_dataset_1d(h5file_id, name, "vorticity", &
-                                     parcels%vorticity(1:n_parcels))
+            call write_h5_dataset_2d(h5file_id, name, "B", &
+                                     parcels%B(1:n_parcels, :))
 
             call write_h5_dataset_1d(h5file_id, name, "volume", &
                                      parcels%volume(1:n_parcels))
+
+            call write_h5_dataset_1d(h5file_id, name, "vorticity", &
+                                     parcels%vorticity(1:n_parcels))
 
             call write_h5_dataset_1d(h5file_id, name, "buoyancy", &
                                      parcels%buoyancy(1:n_parcels))
@@ -123,12 +121,11 @@ module parcel_hdf5
             call write_h5_dataset_1d(h5file_id, name, "humidity", &
                                      parcels%humidity(1:n_parcels))
 #endif
-            call write_h5_dataset_2d(h5file_id, name, "B", &
-                                     parcels%B(1:n_parcels, :))
 
-            angle = get_angles(parcels%B, parcels%volume, n_parcels)
-            call write_h5_dataset_1d(h5file_id, name, "orientation", angle)
-
+#if !defined(NDEBUG) || defined(ENABLE_DIAGNOSE)
+            call write_h5_dataset_2d(h5file_id, name, "velocity", &
+                                     parcels%velocity(1:n_parcels, :))
+#endif
             call close_h5_group(group)
 
         end subroutine write_h5_parcels

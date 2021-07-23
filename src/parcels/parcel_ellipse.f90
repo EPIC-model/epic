@@ -44,6 +44,7 @@ module parcel_ellipse
 
         end function get_eigenvector
 
+        ! used in unit tests only
         function get_angle(B11, B12, volume) result(angle)
             double precision, intent(in) :: B11
             double precision, intent(in) :: B12
@@ -62,19 +63,6 @@ module parcel_ellipse
             angle = atan2(evec(2), evec(1))
 
         end function get_angle
-
-        function get_angles(B, volume, n_parcels) result(angle)
-            double precision, intent(in)   :: B(:, :)
-            double precision, intent(in)   :: volume(:)
-            integer,          intent(in)   :: n_parcels
-            double precision               :: angle(n_parcels)
-            integer                        :: n
-
-            do n = 1, n_parcels
-                angle(n) = get_angle(B(n, 1), B(n, 2), volume(n))
-            enddo
-        end function get_angles
-
 
         elemental function get_B22(B11, B12, volume) result(B22)
             double precision, intent(in) :: B11
