@@ -123,15 +123,14 @@ program epic
                 endif
 #endif
 
+                call par2grid
+
                 ! make sure we always write initial setup
                 if (output%h5_write_fields .and. &
                     (mod(iter - 1, output%h5_field_freq) == 0)) then
 #ifndef NDEBUG
                     call vol2grid_symmetry_error
 #endif
-                    ! update fields for writing
-                    call par2grid
-
                     call write_h5_field_step(nfw, t, dt)
                 endif
 

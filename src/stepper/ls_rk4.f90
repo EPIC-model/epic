@@ -58,14 +58,24 @@ module ls_rk4
 
         end subroutine ls_rk4_dealloc
 
-
+        ! Precondition: this routine assumes that the fields are
+        ! up-to-date for the first sub-step
         subroutine ls_rk4_step(dt)
             double precision, intent(in) :: dt
 
+            ! no need to call par2grid (fields are up-to-date)
             call ls_rk4_substep(ca1, cb1, dt, 1)
+
+            call par2grid
             call ls_rk4_substep(ca2, cb2, dt, 2)
+
+            call par2grid
             call ls_rk4_substep(ca3, cb3, dt, 3)
+
+            call par2grid
             call ls_rk4_substep(ca4, cb4, dt, 4)
+
+            call par2grid
             call ls_rk4_substep(ca5, cb5, dt, 5)
 
             call start_timer(rk4_timer)
@@ -86,7 +96,6 @@ module ls_rk4
             integer,          intent(in) :: step
             integer                      :: n
 
-            call par2grid
             call vor2vel(vortg, velog, velgradg)
             call vorticity_tendency(tbuoyg, vtend)
 
