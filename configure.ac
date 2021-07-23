@@ -197,6 +197,22 @@ AC_MSG_RESULT([$hdf5_found])
 ## "--enable" flags
 ##
 
+ENABLE_DRY_MODE='yes'
+AC_ARG_ENABLE([dry-mode],
+              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=no)])],
+              [ENABLE_DRY_MODE=$enableval])
+
+AM_CONDITIONAL([ENABLE_DRY_MODE], [test "$ENABLE_DRY_MODE" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling in dry mode])
+if test "x$ENABLE_DRY_MODE" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_DRY_MODE"
+else
+    AC_MSG_RESULT([no])
+fi
+
+
 ENABLE_DIAGNOSE='no'
 AC_ARG_ENABLE([diagnose],
               [AS_HELP_STRING([--enable-diagnose], [enable diagnose mode (default=no)])],

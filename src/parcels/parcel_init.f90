@@ -106,7 +106,9 @@ module parcel_init
             do n = 1, n_parcels
                 parcels%vorticity(n) = zero
                 parcels%buoyancy(n) = zero
+#ifndef ENABLE_DRY_MODE
                 parcels%humidity(n) = zero
+#endif
             enddo
             !$omp end do
             !$omp end parallel

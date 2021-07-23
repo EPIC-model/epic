@@ -18,8 +18,10 @@ module parcel_container
         double precision, allocatable, dimension(:) :: &
             volume,     &
             vorticity,  &
-            buoyancy,   &
-            humidity
+#ifndef ENABLE_DRY_MODE
+            humidity,   &
+#endif
+            buoyancy
     end type parcel_container_type
 
     type(parcel_container_type) parcels
@@ -57,8 +59,9 @@ module parcel_container
 
             parcels%volume(n)  = parcels%volume(m)
             parcels%buoyancy(n) = parcels%buoyancy(m)
+#ifndef ENABLE_DRY_MODE
             parcels%humidity(n) = parcels%humidity(m)
-
+#endif
             parcels%B(n, 1) = parcels%B(m, 1)
             parcels%B(n, 2) = parcels%B(m, 2)
 
@@ -74,7 +77,9 @@ module parcel_container
             allocate(parcels%B(num, 2))
             allocate(parcels%volume(num))
             allocate(parcels%buoyancy(num))
+#ifndef ENABLE_DRY_MODE
             allocate(parcels%humidity(num))
+#endif
         end subroutine parcel_alloc
 
 
@@ -85,7 +90,9 @@ module parcel_container
             deallocate(parcels%B)
             deallocate(parcels%volume)
             deallocate(parcels%buoyancy)
+#ifndef ENABLE_DRY_MODE
             deallocate(parcels%humidity)
+#endif
         end subroutine parcel_dealloc
 
 end module parcel_container
