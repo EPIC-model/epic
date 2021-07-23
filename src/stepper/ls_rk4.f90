@@ -68,9 +68,13 @@ module ls_rk4
             call ls_rk4_substep(ca4, cb4, dt, 4)
             call ls_rk4_substep(ca5, cb5, dt, 5)
 
-            ! we need to subtract 13 calls since we start and stop
+            call start_timer(rk4_timer)
+            call apply_parcel_bc(parcels%position, parcels%B)
+            call stop_timer(rk4_timer)
+
+            ! we need to subtract 14 calls since we start and stop
             ! the timer multiple times which increments n_calls
-            timings(rk4_timer)%n_calls =  timings(rk4_timer)%n_calls - 13
+            timings(rk4_timer)%n_calls =  timings(rk4_timer)%n_calls - 14
 
         end subroutine ls_rk4_step
 
@@ -119,8 +123,6 @@ module ls_rk4
             do n = 1, n_parcels
                 parcels%position(n,:) = parcels%position(n,:) &
                                       + cb * dt * parcels%velocity(n,:)
-
-                call apply_single_parcel_bc(parcels%position(n,:), parcels%velocity(n,:))
 
                 parcels%vorticity(n) = parcels%vorticity(n) + cb * dt * dvordt(n)
                 parcels%B(n,:) = parcels%B(n,:) + cb * dt * dbdt(n,:)

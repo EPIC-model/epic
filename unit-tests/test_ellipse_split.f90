@@ -37,8 +37,9 @@ program test_ellipse_split
     parcels%position(1, :) = zero
     parcels%volume(1) = ab * pi
     parcels%buoyancy(1) = one
+#ifndef ENABLE_DRY_MODE
     parcels%humidity(1) = one
-
+#endif
     B11 = a2 * dcos(angle) ** 2 + b2 * dsin(angle) ** 2
     B12 = f12 * (a2 - b2) * dsin(2.0 * angle)
     B22 = a2 * dsin(angle) ** 2 + b2 * dcos(angle) ** 2
@@ -68,8 +69,9 @@ program test_ellipse_split
     error = max(error, sum(abs(pos(1, :) - parcels%position(1, :))))
     error = max(error, abs(f12 * ab * pi - parcels%volume(1)))
     error = max(error, abs(parcels%buoyancy(1) - one))
+#ifndef ENABLE_DRY_MODE
     error = max(error, abs(parcels%humidity(1) - one))
-
+#endif
 
     ! second parcel
     error = max(error, abs(parcels%B(2, 1) - B11))
@@ -78,8 +80,9 @@ program test_ellipse_split
     error = max(error, abs(f12 * ab * pi - parcels%volume(2)))
     error = max(error, dble(abs(n_parcels - 2)))
     error = max(error, abs(parcels%buoyancy(2) - one))
+#ifndef ENABLE_DRY_MODE
     error = max(error, abs(parcels%humidity(2) - one))
-
+#endif
     call print_result_dp('Test ellipse split', error)
 
     call parcel_dealloc

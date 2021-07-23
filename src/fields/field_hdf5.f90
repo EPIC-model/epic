@@ -99,26 +99,13 @@ module field_hdf5
             ! write fields (do not write halo cells)
             !
 
-            call write_h5_dataset_3d(h5file_id, name, "velocity", &
-                                     velog(0:nz, 0:nx-1, :))
-
-            call write_h5_dataset_3d(h5file_id, name, "velocity gradient tensor", &
-                                     velgradg(0:nz, 0:nx-1, :))
-
-            call write_h5_dataset_2d(h5file_id, name, "volume", &
-                                     volg(0:nz, 0:nx-1))
-
-#ifndef NDEBUG
-            call write_h5_dataset_2d(h5file_id, name, "symmetry volume", &
-                                     sym_volg(0:nz, 0:nx-1))
-#endif
-
             call write_h5_dataset_2d(h5file_id, name, "total buoyancy", &
                                      tbuoyg(0:nz, 0:nx-1))
 
+#ifndef ENABLE_DRY_MODE
             call write_h5_dataset_2d(h5file_id, name, "dry buoyancy", &
                                      dbuoyg(0:nz, 0:nx-1))
-
+#endif
 !             call write_h5_dataset_2d(h5file_id, name, "humidity", &
 !                                      humg(0:nz, 0:nx-1))
 
@@ -128,11 +115,27 @@ module field_hdf5
 !             call write_h5_dataset_2d(h5file_id, name, "liquid humidity", &
 !                                      humlig(0:nz, 0:nx-1))
 
-            call write_h5_dataset_2d(h5file_id, name, "tendency", &
-                                     vtend(0:nz, 0:nx-1))
+#ifdef ENABLE_DIAGNOSE
+            call write_h5_dataset_2d(h5file_id, name, "volume", &
+                                     volg(0:nz, 0:nx-1))
 
-            call write_h5_int_dataset_2d(h5file_id, name, "num parcels per cell", &
+            call write_h5_int_dataset_2d(h5file_id, name, "nparg", &
                                          nparg(0:nz-1, :))
+#endif
+
+#ifndef NDEBUG
+            call write_h5_dataset_2d(h5file_id, name, "symmetry volume", &
+                                     sym_volg(0:nz, 0:nx-1))
+
+            call write_h5_dataset_3d(h5file_id, name, "velocity", &
+                                     velog(0:nz, 0:nx-1, :))
+
+            call write_h5_dataset_3d(h5file_id, name, "velocity gradient tensor", &
+                                     velgradg(0:nz, 0:nx-1, :))
+
+            call write_h5_dataset_2d(h5file_id, name, "vorticity tendency", &
+                                     vtend(0:nz, 0:nx-1))
+#endif
 
             call close_h5_group(group)
         end subroutine write_h5_fields

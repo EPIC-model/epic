@@ -46,7 +46,6 @@ program epic
             use options, only : field_file, field_tol, output
 
             call register_timer('epic', epic_timer)
-            call register_timer('vol2grid', vol2grid_timer)
             call register_timer('par2grid', par2grid_timer)
             call register_timer('grid2par', grid2par_timer)
             call register_timer('parcel split', split_timer)
@@ -85,6 +84,10 @@ program epic
             call field_default
 
             call par2grid
+
+            ! need to be called in order to set initial time step
+            call vor2vel(vortg, velog, velgradg)
+            call vorticity_tendency(tbuoyg, vtend)
 
             if (output%h5_write_fields) then
                 call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
@@ -126,6 +129,9 @@ program epic
 #ifndef NDEBUG
                     call vol2grid_symmetry_error
 #endif
+                    ! update fields for writing
+                    call par2grid
+
                     call write_h5_field_step(nfw, t, dt)
                 endif
 
@@ -145,18 +151,15 @@ program epic
                 endif
 
                 if (mod(iter, parcel%correction_freq) == 0) then
-                    call vol2grid
-                    do cor_iter=1,parcel%correction_iters
+                    do cor_iter = 1, parcel%correction_iters
                         if (parcel%apply_laplace) then
-                            call apply_laplace(volg)
-                            call vol2grid
+                            call apply_laplace
                         endif
                         if (parcel%apply_gradient) then
-                            call apply_gradient(volg,parcel%gradient_pref,parcel%max_compression)
-                            call vol2grid
-                        end if
-                    end do
-                 endif
+                            call apply_gradient(parcel%gradient_pref, parcel%max_compression)
+                        endif
+                    enddo
+                endif
 
 
                 t = t + dt
@@ -194,23 +197,19 @@ program epic
         function get_time_step() result(dt)
             use options, only : time
             double precision :: dt
-            double precision :: H, S11, S12, S21, S22, gmax
-            integer          :: i, j
+            double precision :: gmax, bmax
 
-            H = epsilon(zero)
             if (time%is_adaptive) then
-                do i = 0, nx-1
-                    do j = 0, nz
-                        S11 = velgradg(j, i, 1)
-                        S12 = velgradg(j, i, 2)
-                        S21 = velgradg(j, i, 3)
-                        S22 = velgradg(j, i, 4)
-                        H = max(H, (S11 - S22) ** 2 + (S12 + S21) ** 2)
-                    enddo
-                enddo
+                ! velocity strain
+                gmax = f12 * dsqrt(maxval((velgradg(0:nz, :, 1) - velgradg(0:nz, :, 4)) ** 2 + &
+                                          (velgradg(0:nz, :, 2) + velgradg(0:nz, :, 3)) ** 2))
+                gmax = max(epsilon(gmax), gmax)
 
-                gmax = f12 * dsqrt(H)
-                dt = min(time%dt_max, time%alpha / gmax)
+                ! buoyancy gradient
+                bmax = dsqrt(maxval(dabs(vtend(0:nz, :))))
+                bmax = max(epsilon(bmax), bmax)
+
+                dt = min(time%alpha_s / gmax, time%alpha_b / bmax)
             else
                 dt = time%dt
             endif

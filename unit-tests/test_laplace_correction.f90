@@ -10,26 +10,32 @@ program test_laplace_correction
     use constants, only : pi, one, zero, f14, f32
     use parcel_container
     use parcel_correction
-    use parcel_interpl, only : vol2grid, vol2grid_timer
+    use parcel_interpl, only : vol2grid
     use parcel_ellipse, only : get_ab
     use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz
     use fields, only : volg
     use timer
     implicit none
 
-    double precision :: final_error, init_error
-    integer :: i, j, k, jj, ii
+    double precision :: final_error, init_error, val, tmp
+    integer :: i, j, k, jj, ii, sk
+    integer, allocatable :: seed(:)
+    double precision, parameter :: dev = 0.005d0
+
+    call random_seed(size=sk)
+    allocate(seed(1:sk))
+    seed(:) = 42
+    call random_seed(put=seed)
 
     call  parse_command_line
 
-    call register_timer('vol2grid', vol2grid_timer)
     call register_timer('laplace correction', lapl_corr_timer)
 
 
     nx = 32
     nz = 32
-    lower  = (/-f32, -f32/)
-    extent = (/0.4d0, 0.4d0/)
+    lower  = (/zero, zero/)
+    extent = (/one, one/)
 
     call update_parameters
 
@@ -47,8 +53,19 @@ program test_laplace_correction
                     parcels%position(k, 2) = lower(2) + j * dx(2) + f14 * dx(2) * jj
 
                     ! add some deviation
-                    parcels%position(k, 1) = (one + 1.0e-7) * parcels%position(k, 1)
-                    parcels%position(k, 2) = (one + 1.0e-7) * parcels%position(k, 2)
+                    tmp = dev
+                    call random_number(val)
+                    if (val < 0.5) then
+                        tmp = -dev
+                    endif
+                    parcels%position(k, 1) = parcels%position(k, 1) + tmp
+
+                    tmp = dev
+                    call random_number(val)
+                    if (val < 0.5) then
+                        tmp = -dev
+                    endif
+                    parcels%position(k, 2) = parcels%position(k, 2) + tmp
                     k = k + 1
                 enddo
             enddo
@@ -67,26 +84,28 @@ program test_laplace_correction
 
     call vol2grid
 
-    init_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
+    init_error = sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1))
 
     if (verbose) then
         write(*,*) 'test laplace correction'
-        write(*,*) 'iteration, error'
-        write(*,*) 0, init_error
+        write(*,*) 'iteration, average error, max absolute error'
+        write(*,*) 0, init_error, maxval(abs(volg(0:nz, 0:nx-1) / vcell - one))
     endif
 
     call init_parcel_correction
 
-    do i = 1, 500
-        call vol2grid
-        call apply_laplace(volg)
-        call vol2grid
+    do i = 1, 20
+        call apply_laplace
         if (verbose) then
-            write(*,*) i, ' ', sum(abs(volg(0:nz, 0:nx-1) - vcell))
+            call vol2grid
+            write(*,*) i, sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1)), &
+                          maxval(abs(volg(0:nz, 0:nx-1) / vcell - one))
         endif
     enddo
 
-    final_error = sum(abs(volg(0:nz, 0:nx-1) - vcell))
+    call vol2grid
+
+    final_error = sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1))
 
     call print_result_dp('Test laplace correction', final_error, init_error)
 

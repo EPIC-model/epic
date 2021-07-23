@@ -26,11 +26,10 @@ module parcel_interpl
     ! interpolation weights
     double precision :: weights(ngp)
 
-    integer :: vol2grid_timer, &
+    integer :: par2grid_timer, &
 #ifndef NDBEBUG
                sym_vol2grid_timer, &
 #endif
-               par2grid_timer, &
                grid2par_timer
 
     private :: is, js, weights
@@ -42,12 +41,10 @@ module parcel_interpl
             integer           :: n, p, l
             double precision  :: pvol
 
-            call start_timer(vol2grid_timer)
-
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pvol, pvor, is, js, weights) &
+            !$omp do private(n, p, l, points, pvol, is, js, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -83,7 +80,6 @@ module parcel_interpl
             volg(1,    :) = volg(1,    :) + volg(-1,   :)
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
-            call stop_timer(vol2grid_timer)
         end subroutine vol2grid
 
 #ifndef NDEBUG
@@ -132,55 +128,37 @@ module parcel_interpl
             enddo
             call stop_timer(sym_vol2grid_timer)
         end subroutine vol2grid_symmetry_error
-
-
-        subroutine vol2grid_non_elliptic_symmetry_error
-            double precision :: pos(2)
-            integer          :: n, l, m
-            double precision :: pvol
-
-            sym_volg = zero
-
-            do m = -1, 1, 2
-                do n = 1, n_parcels
-
-                    pos = dble(m) * parcels%position(n, :)
-                    pvol = parcels%volume(n)
-                    pos(1) = dble(m) * pos(1)
-
-                    ! ensure point is within the domain
-                    call apply_periodic_bc(pos)
-
-                    ! get interpolation weights and mesh indices
-                    call trilinear(pos, is, js, weights)
-
-                    do l = 1, ngp
-                        sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
-                                               + weights(l) * pvol
-                    enddo
-                enddo
-            enddo
-        end subroutine vol2grid_non_elliptic_symmetry_error
 #endif
 
         subroutine par2grid
-            double precision  :: points(2, 2)
-            integer           :: n, p, l, i, j
-            double precision  :: pvol, weight, btot, h_c
+            double precision :: points(2, 2)
+            integer          :: n, p, l, i, j
+            double precision :: pvol, weight, btot
+#ifndef ENABLE_DRY_MODE
+            double precision :: h_c
+#endif
 
             call start_timer(par2grid_timer)
 
             vortg = zero
             volg = zero
             nparg = zero
+#ifndef ENABLE_DRY_MODE
+            dbuoyg = zero
+#endif
             tbuoyg = zero
-
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, i, j, points, pvol, pvor, weight, btot, h_c, is, js, weights) &
+#ifndef ENABLE_DRY_MODE
+            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, h_c, is, js, weights) &
             !$omp& reduction(+:nparg, vortg, dbuoyg, tbuoyg, volg)
+#else
+            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, is, js, weights) &
+            !$omp& reduction(+:nparg, vortg, tbuoyg, volg)
+#endif
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
+#ifndef ENABLE_DRY_MODE
                 ! liquid water content
                 h_c = parcels%humidity(n) &
                     - h_0 * dexp(lam_c * (lower(2) - parcels%position(n, 2)))
@@ -188,7 +166,9 @@ module parcel_interpl
 
                 ! total buoyancy (including effects of latent heating)
                 btot = parcels%buoyancy(n) + glat * h_c
-
+#else
+                btot = parcels%buoyancy(n)
+#endif
                 points = get_ellipse_points(parcels%position(n, :), &
                                             pvol, parcels%B(n, :))
 
@@ -214,12 +194,12 @@ module parcel_interpl
                         vortg(js(l), is(l)) = vortg(js(l), is(l)) &
                                             + weight * parcels%vorticity(n)
 
+#ifndef ENABLE_DRY_MODE
                         dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
                                              + weight * parcels%buoyancy(n)
-
+#endif
                         tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
                                              + weight * btot
-
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
                                            + weight
                     enddo
@@ -242,21 +222,22 @@ module parcel_interpl
             vortg(1,    :) = vortg(1,    :) + vortg(-1,   :)
             vortg(nz-1, :) = vortg(nz-1, :) + vortg(nz+1, :)
 
+#ifndef ENABLE_DRY_MODE
             dbuoyg(0,  :) = two * dbuoyg(0,  :)
             dbuoyg(nz, :) = two * dbuoyg(nz, :)
             dbuoyg(1,    :) = dbuoyg(1,    :) + dbuoyg(-1,   :)
             dbuoyg(nz-1, :) = dbuoyg(nz-1, :) + dbuoyg(nz+1, :)
-
+#endif
             tbuoyg(0,  :) = two * tbuoyg(0,  :)
             tbuoyg(nz, :) = two * tbuoyg(nz, :)
             tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
             tbuoyg(nz-1, :) = tbuoyg(nz-1, :) + tbuoyg(nz+1, :)
-
             ! exclude halo cells to avoid division by zero
             vortg(0:nz, :) = vortg(0:nz, :) / volg(0:nz, :)
+#ifndef ENABLE_DRY_MODE
             dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)
+#endif
             tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
-
             ! sum halo contribution into internal cells
             ! (be aware that halo cell contribution at upper boundary
             ! are added to cell nz)

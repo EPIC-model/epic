@@ -26,8 +26,8 @@ module parcel_merge
                geometric_multimerge, &
                optimal_multimerge,   &
                do_multimerge,        &
-               solve_quartic!,        &
-               !pack_parcels
+               solve_quartic,        &
+               pack_parcels
 
     contains
         subroutine merge_ellipses(parcels)
@@ -124,10 +124,10 @@ module parcel_merge
             ! update buoyancy, humidity and vorticity
             parcels%buoyancy(ib) = mu1 * parcels%buoyancy(is) &
                                  + mu2 * parcels%buoyancy(ib)
-
+#ifndef ENABLE_DRY_MODE
             parcels%humidity(ib) = mu1 * parcels%humidity(is) &
                                  + mu2 * parcels%humidity(ib)
-
+#endif
             parcels%vorticity(ib) = mu1 * parcels%vorticity(is) &
                                   + mu2 * parcels%vorticity(ib)
 
@@ -157,9 +157,9 @@ module parcel_merge
 
                 parcels%B(ib, 1) = B11 * factor
                 parcels%B(ib, 2) = B12 * factor
-            enddo
 
-            call apply_parcel_bc(parcels%position, parcels%velocity)
+                call apply_periodic_bc(parcels%position(ib, :))
+            enddo
 
         end subroutine geometric_bimerge
 
@@ -184,9 +184,9 @@ module parcel_merge
                 ! optimal B
                 parcels%B(ib, 1) = (B11 - mu * B22) / (one - mu ** 2)
                 parcels%B(ib, 2) = B12 / (one - mu)
-            enddo
 
-            call apply_parcel_bc(parcels%position, parcels%velocity)
+                call apply_periodic_bc(parcels%position(ib, :))
+            enddo
 
         end subroutine optimal_bimerge
 
@@ -200,7 +200,10 @@ module parcel_merge
             integer                                    :: loca(n_parcels)
             double precision                           :: x0(n_merge), xm(n_merge)
             double precision                           :: zm(n_merge), delx, vmerge, dely, B22, mu
-            double precision                           :: buoym(n_merge), hum(n_merge), vortm(n_merge)
+            double precision                           :: buoym(n_merge), vortm(n_merge)
+#ifndef ENABLE_DRY_MODE
+            double precision                           :: hum(n_merge)
+#endif
             double precision,            intent(out)   :: B11m(n_merge), B12m(n_merge), B22m(n_merge), &
                                                           vm(n_merge)
 
@@ -229,7 +232,9 @@ module parcel_merge
 
                     ! buoyancy and humidity
                     buoym(l) = parcels%volume(ib) * parcels%buoyancy(ib)
+#ifndef ENABLE_DRY_MODE
                     hum(l) = parcels%volume(ib) * parcels%humidity(ib)
+#endif
                     vortm(l) = parcels%volume(ib) * parcels%vorticity(ib)
 
                     B11m(l) = zero
@@ -254,7 +259,9 @@ module parcel_merge
 
                 ! Accumulate buoyancy and humidity
                 buoym(n) = buoym(n) + parcels%volume(is) * parcels%buoyancy(is)
+#ifndef ENABLE_DRY_MODE
                 hum(n) = hum(n) + parcels%volume(is) * parcels%humidity(is)
+#endif
                 vortm(n) = vortm(n) + parcels%volume(is) * parcels%vorticity(is)
             enddo
 
@@ -272,7 +279,9 @@ module parcel_merge
 
                 ! buoyancy and humidity
                 buoym(m) = vmerge * buoym(m)
+#ifndef ENABLE_DRY_MODE
                 hum(m) = vmerge * hum(m)
+#endif
                 vortm(m) = vmerge * vortm(m)
             enddo
 
@@ -303,7 +312,9 @@ module parcel_merge
                     parcels%position(ib, 2) = zm(l)
 
                     parcels%buoyancy(ib) = buoym(l)
+#ifndef ENABLE_DRY_MODE
                     parcels%humidity(ib) = hum(l)
+#endif
                     parcels%vorticity(ib) = vortm(l)
 
                 endif
@@ -363,10 +374,9 @@ module parcel_merge
                     parcels%B(ib, 1) = B11(l) * factor
                     parcels%B(ib, 2) = B12(l) * factor
 
+                    call apply_periodic_bc(parcels%position(ib, :))
                 endif
             enddo
-
-            call apply_parcel_bc(parcels%position, parcels%velocity)
 
         end subroutine geometric_multimerge
 
@@ -403,11 +413,10 @@ module parcel_merge
                     ! optimal B
                     parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / (one - mu ** 2)
                     parcels%B(ib, 2) = B12(l) / (one - mu)
+
+                    call apply_periodic_bc(parcels%position(ib, :))
                 endif
             enddo
-
-            call apply_parcel_bc(parcels%position, parcels%velocity)
-
         end subroutine optimal_multimerge
 
 
