@@ -83,12 +83,6 @@ program epic
 
             call field_default
 
-            call par2grid
-
-            ! need to be called in order to set initial time step
-            call vor2vel(vortg, velog, velgradg)
-            call vorticity_tendency(tbuoyg, vtend)
-
             if (output%h5_write_fields) then
                 call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
             endif
@@ -114,8 +108,6 @@ program epic
 
             do while (t <= time%limit)
 
-                dt = get_time_step()
-
 #ifdef ENABLE_VERBOSE
                 if (verbose) then
                     print "(a15, f0.4)", "time:          ", t
@@ -124,6 +116,15 @@ program epic
 #endif
 
                 call par2grid
+
+                if (iter == 1) then
+                    ! need to be called in order to set initial time step
+                    call vor2vel(vortg, velog, velgradg)
+                    call vorticity_tendency(tbuoyg, vtend)
+                endif
+
+                ! update the time step
+                dt = get_time_step()
 
                 ! make sure we always write initial setup
                 if (output%h5_write_fields .and. &
