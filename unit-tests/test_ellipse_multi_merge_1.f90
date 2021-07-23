@@ -81,8 +81,9 @@ program test_ellipse_multi_merge_1
             parcels%B(1, 1) = a1b1
             parcels%B(1, 2) = zero
             parcels%buoyancy(1) = 1.5d0
+#ifndef ENABLE_DRY_MODE
             parcels%humidity(1) = 1.3d0
-
+#endif
             ! small parcel left
             parcels%position(2, 1) = -1.2d0
             parcels%position(2, 2) = zero
@@ -90,8 +91,9 @@ program test_ellipse_multi_merge_1
             parcels%B(2, 1) = a2b2
             parcels%B(2, 2) = zero
             parcels%buoyancy(2) = 1.8d0
+#ifndef ENABLE_DRY_MODE
             parcels%humidity(2) = 1.2d0
-
+#endif
             ! small parcel right
             parcels%position(3, 1) = 1.2d0
             parcels%position(3, 2) = zero
@@ -99,8 +101,9 @@ program test_ellipse_multi_merge_1
             parcels%B(3, 1) = a2b2
             parcels%B(3, 2) = zero
             parcels%buoyancy(3) = 1.4d0
+#ifndef ENABLE_DRY_MODE
             parcels%humidity(3) = 1.1d0
-
+#endif
             ! small parcel below
             parcels%position(4, 1) = zero
             parcels%position(4, 2) = -1.2d0
@@ -108,8 +111,9 @@ program test_ellipse_multi_merge_1
             parcels%B(4, 1) = a2b2
             parcels%B(4, 2) = zero
             parcels%buoyancy(4) = 1.7d0
+#ifndef ENABLE_DRY_MODE
             parcels%humidity(4) = 1.0d0
-
+#endif
             ! small parcel above
             parcels%position(5, 1) = zero
             parcels%position(5, 2) = 1.2d0
@@ -117,11 +121,16 @@ program test_ellipse_multi_merge_1
             parcels%B(5, 1) = a2b2
             parcels%B(5, 2) = zero
             parcels%buoyancy(5) = 1.5d0
+#ifndef ENABLE_DRY_MODE
             parcels%humidity(5) = 1.4d0
+#endif
         end subroutine parcel_setup
 
         function eval_max_error() result(max_err)
-            double precision :: ab, B11, B12, B22, vol, hum, buoy
+            double precision :: ab, B11, B12, B22, vol, buoy
+#ifndef ENABLE_DRY_MODE
+            double precision :: hum
+#endif
             double precision :: max_err
 
             ! reference solution
@@ -132,8 +141,9 @@ program test_ellipse_multi_merge_1
             vol = ab * pi
 
             buoy = (1.5d0 * a1b1 + (1.8d0 + 1.4d0 + 1.7d0 + 1.5d0) * a2b2) / ab
+#ifndef ENABLE_DRY_MODE
             hum  = (1.3d0 * a1b1 + (1.2d0 + 1.1d0 + 1.0d0 + 1.4d0) * a2b2) / ab
-
+#endif
             max_err = zero
 
             max_err = max(max_err, abs(dble(n_parcels - 1)))
@@ -145,7 +155,9 @@ program test_ellipse_multi_merge_1
             max_err = max(max_err, sum(abs(parcels%position(1, :))))
             max_err = max(max_err, abs(parcels%volume(1) - vol))
             max_err = max(max_err, abs(parcels%buoyancy(1) - buoy))
+#ifndef ENABLE_DRY_MODE
             max_err = max(max_err, abs(parcels%humidity(1) - hum))
+#endif
         end function eval_max_error
 
 

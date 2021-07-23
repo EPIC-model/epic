@@ -16,7 +16,10 @@ program test_ellipse_bi_merge
     use timer
     implicit none
 
-    double precision :: ab, a1b1, a2b2, B11, B12, B22, error, vol, hum, buoy
+    double precision :: ab, a1b1, a2b2, B11, B12, B22, error, vol, buoy
+#ifndef ENABLE_DRY_MODE
+    double precision :: hum
+#endif
 
     nx = 1
     nz = 1
@@ -38,16 +41,18 @@ program test_ellipse_bi_merge
     parcels%B(1, 1) = a1b1
     parcels%B(1, 2) = zero
     parcels%buoyancy(1) = 1.5d0
+#ifndef ENABLE_DRY_MODE
     parcels%humidity(1) = 1.3d0
-
+#endif
     a2b2 = f12
     parcels%position(2, :) = zero
     parcels%volume(2) = a2b2 * pi
     parcels%B(2, 1) = a2b2
     parcels%B(2, 2) = zero
     parcels%buoyancy(2) = 1.8d0
+#ifndef ENABLE_DRY_MODE
     parcels%humidity(2) = 1.2d0
-
+#endif
     ! geometric merge
     parcel%lambda = five
     parcel%merge_type = 'bi-geometric'
@@ -62,8 +67,9 @@ program test_ellipse_bi_merge
     B22 = ab
     vol = ab * pi
     buoy = (1.5d0 * a1b1 + 1.8d0 * a2b2) / ab
+#ifndef ENABLE_DRY_MODE
     hum  = (1.3d0 * a1b1 + 1.2d0 * a2b2) / ab
-
+#endif
     !
     ! check result
     !
@@ -78,8 +84,9 @@ program test_ellipse_bi_merge
     error = max(error, sum(abs(parcels%position(1, :))))
     error = max(error, abs(parcels%volume(1) - vol))
     error = max(error, abs(parcels%buoyancy(1) - buoy))
+#ifndef ENABLE_DRY_MODE
     error = max(error, abs(parcels%humidity(1) - hum))
-
+#endif
     call print_result_dp('Test ellipse bi-merge (geometric)', error)
 
     ! parcels
@@ -90,16 +97,18 @@ program test_ellipse_bi_merge
     parcels%B(1, 1) = a1b1
     parcels%B(1, 2) = zero
     parcels%buoyancy(1) = 1.5d0
+#ifndef ENABLE_DRY_MODE
     parcels%humidity(1) = 1.3d0
-
+#endif
     a2b2 = f12
     parcels%position(2, :) = zero
     parcels%volume(2) = a2b2 * pi
     parcels%B(2, 1) = a2b2
     parcels%B(2, 2) = zero
     parcels%buoyancy(2) = 1.8d0
+#ifndef ENABLE_DRY_MODE
     parcels%humidity(2) = 1.2d0
-
+#endif
     ! optimal merge
     parcel%merge_type = 'bi-optimal'
 
@@ -119,8 +128,9 @@ program test_ellipse_bi_merge
     error = max(error, sum(abs(parcels%position(1, :))))
     error = max(error, abs(parcels%volume(1) - vol))
     error = max(error, abs(parcels%buoyancy(1) - buoy))
+#ifndef ENABLE_DRY_MODE
     error = max(error, abs(parcels%humidity(1) - hum))
-
+#endif
 
     call print_result_dp('Test ellipse bi-merge (optimal)', error)
 
