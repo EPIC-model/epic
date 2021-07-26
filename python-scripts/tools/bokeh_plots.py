@@ -6,7 +6,7 @@ from bokeh.transform import linear_cmap
 from tools.h5_reader import H5Reader
 import numpy as np
 
-def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display):
+def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kwargs):
     nsteps = h5reader.get_num_steps()
     extent = h5reader.get_box_extent()
     origin = h5reader.get_box_origin()
@@ -15,6 +15,13 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display):
     right = origin[0] + extent[0]
     bottom = origin[1]
     top = origin[1] + extent[1]
+
+    # instantiating the figure object
+    fkwargs = {k: v for k, v in kwargs.items() if v is not None}
+    left = fkwargs.get('xmin', origin[0])
+    right = fkwargs.get('xmax', origin[0] + extent[0])
+    bottom = fkwargs.get('ymin', origin[1])
+    top = fkwargs.get('ymax', origin[1] + extent[1])
 
     font_size = '15pt'
 
