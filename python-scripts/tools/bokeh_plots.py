@@ -1,9 +1,12 @@
-#from bokeh.io.export import get_screenshot_as_png
-from bokeh.io import export_png, export_svg
-from bokeh.plotting import figure, show
-from bokeh.models import ColumnDataSource, ColorBar
-from bokeh.palettes import Viridis256
-from bokeh.transform import linear_cmap
+try:
+    from bokeh.io import export_png, export_svg
+    from bokeh.plotting import figure, show
+    from bokeh.models import ColumnDataSource, ColorBar
+    from bokeh.palettes import Viridis256
+    from bokeh.transform import linear_cmap
+except:
+    raise ImportError('Bokeh is not availabe.')
+
 from tools.h5_reader import H5Reader
 import numpy as np
 
