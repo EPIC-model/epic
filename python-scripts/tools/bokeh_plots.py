@@ -5,7 +5,7 @@ try:
     from bokeh.palettes import Viridis256
     from bokeh.transform import linear_cmap
 except:
-    raise ImportError('Bokeh is not available.')
+    print('Bokeh is not available.')
 
 from tools.h5_reader import H5Reader
 import numpy as np
