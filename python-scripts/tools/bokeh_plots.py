@@ -1,23 +1,12 @@
+from bokeh.io import export_png, export_svg
+from bokeh.plotting import figure, show
+from bokeh.models import ColumnDataSource, ColorBar
+from bokeh.palettes import Viridis256
+from bokeh.transform import linear_cmap
 from tools.h5_reader import H5Reader
 import numpy as np
 
-def load_bokeh():
-    bokeh_available = True
-    try:
-        from bokeh.io import export_png, export_svg
-        from bokeh.plotting import figure, show
-        from bokeh.models import ColumnDataSource, ColorBar
-        from bokeh.palettes import Viridis256
-        from bokeh.transform import linear_cmap
-    except:
-        bokeh_available = False
-    return bokeh_available
-
-
 def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display):
-    if not load_bokeh():
-        raise ImportError('Bokeh is not available.')
-
     nsteps = h5reader.get_num_steps()
     extent = h5reader.get_box_extent()
     origin = h5reader.get_box_origin()

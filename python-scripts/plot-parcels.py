@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 import argparse
 from tools.plots import plot_parcels
-from tools.bokeh_plots import bokeh_plot_parcels, load_bokeh
 import os
 import sys
 
-try:
-    is_bokeh_loaded = load_bokeh()
+has_bokeh = True
 
+try:
+    from tools.bokeh_plots import bokeh_plot_parcels
+except:
+    has_bokeh = False
+
+try:
     parser = argparse.ArgumentParser(
         description="Plot the parcels of several or individual time steps.")
 
@@ -46,17 +50,17 @@ try:
                         default="png",
                         help="save format (default: png)")
 
-    if is_bokeh_loaded:
+    if has_bokeh:
         parser.add_argument("--use-bokeh",
                             required=False,
                             action='store_true',
                             help="use Bokeh to plot")
 
-    parser.add_argument("--display",
-                        type=str,
-                        required=False,
-                        default='full HD',
-                        help="display (bokeh only)")
+        parser.add_argument("--display",
+                            type=str,
+                            required=False,
+                            default='full HD',
+                            help="display (bokeh only)")
 
     if not '--filename' in sys.argv:
         parser.print_help()
@@ -68,7 +72,7 @@ try:
         raise IOError("File '" + args.filename + "' does not exist.")
 
     for step in args.steps:
-        if is_bokeh_loaded and args.use_bokeh:
+        if has_bokeh and args.use_bokeh:
             bokeh_plot_parcels(fname=args.filename, step=step, shw=args.show,
                                fmt=args.fmt, coloring=args.coloring, display=args.display)
         else:
