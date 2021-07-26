@@ -170,23 +170,24 @@ class H5Reader:
         return 0.5 * (B11 + B22) + np.sqrt(0.25 * (B11 - B22) ** 2 + B12 ** 2)
 
 
-    def _get_eigenvector(self, a2, B11, B11, B22)
+    def _get_eigenvector(self, a2, B11, B12, B22):
         evec = np.array([a2 - B22, B12])
 
-        if abs(evec[0]) + abs(evec[1]) == zero:
-            if B11 > B22:
-                evec[0] = evec[0] + np.finfo(np.float64).eps
-            else:
-                evec[1] = evec[1] + np.finfo(np.float64).eps
+        for i in range(evec.shape[1]):
+            if abs(evec[0, i]) + abs(evec[1, i]) == 0.0:
+                if B11[i] > B22[i]:
+                    evec[0, i] = evec[0, i] + np.finfo(np.float64).eps
+                else:
+                    evec[1, i] = evec[1, i] + np.finfo(np.float64).eps
 
-        evec = evec / np.linalg.norm(evec, 2)
+        return evec / np.linalg.norm(evec, 2)
 
 
     def _get_angle(self, B11, B12, B22, a2=None):
         if a2 is None:
             a2 = self._get_eigenvalue(B11, B12, B22)
         evec = self._get_eigenvector(a2, B11, B12, B22)
-        return np.arctan2(evec[1], evec[0])
+        return np.arctan2(evec[1, :], evec[0, :])
 
 
     def _get_step_string(self, step):
