@@ -209,7 +209,7 @@ program epic
                 ! buoyancy gradient
 
                 ! db/dz (central difference)
-                dbdz(0:nz, 0:nx-1) = f12 * dxi(2) * (tbuoyg(-1:nz-1, 0:nx-1) - tbuoyg(1:nz+1, 0:nx-1))
+                dbdz(0:nz, 0:nx-1) = f12 * dxi(2) * (tbuoyg(1:nz+1, 0:nx-1) - tbuoyg(-1:nz-1, 0:nx-1))
 
                 bmax = dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
                 bmax = max(epsilon(bmax), bmax)
