@@ -21,6 +21,7 @@ class BokehAnimation:
         nsteps = self.h5reader.get_num_steps()
         os.mkdir("temp-movie")
 
+        bar = progressbar.ProgressBar(maxval=nsteps).start()
         for step in range(nsteps):
             if coloring == 'aspect-ratio':
                 vmin = 1.0
@@ -31,6 +32,8 @@ class BokehAnimation:
             graph = _bokeh_plot_parcels(self.h5reader, step, coloring, vmin, vmax, **kwargs)
 
             export_png(graph, filename = "temp-movie/movie.%05d.png"%step)
+            bar.update(step+1)
+        bar.finish()
 
     def save(self, fname):
         ffmpeg_cmd1 = ['ffmpeg','-f','image2','-framerate','5','-i',

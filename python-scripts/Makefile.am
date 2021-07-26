@@ -3,9 +3,6 @@ SUBDIRS = tools
 animate_parcels_PYTHON = animate-parcels.py
 animate_parcelsdir = $(bindir)
 
-bokeh_parcels_PYTHON = bokeh-parcels.py
-bokeh_parcelsdir = $(bindir)
-
 plot_parcels_PYTHON = plot-parcels.py
 plot_parcelsdir = $(bindir)
 
