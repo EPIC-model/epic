@@ -198,7 +198,7 @@ program epic
             use options, only : time
             double precision :: dt
             double precision :: gmax, bmax
-            double precision :: bz(0:nz, 0:nx-1)
+            double precision :: dbdz(0:nz, 0:nx-1)
 
             if (time%is_adaptive) then
                 ! velocity strain
@@ -209,12 +209,9 @@ program epic
                 ! buoyancy gradient
 
                 ! db/dz (central difference)
-                bz(1:nz-1, 0:nx-1) = f12 * dxi(2) * (tbuoyg(0:nz-2, 0:nx-1) - tbuoyg(2:nz, 0:nx-1))
-                ! assume extrapolation to halo grid points
-                bz(0,  0:nx-1) = dxi(2) * (tbuoyg(1,  0:nx-1) - tbuoyg(0,    0:nx-1))
-                bz(nz, 0:nx-1) = dxi(2) * (tbuoyg(nz, 0:nx-1) - tbuoyg(nz-1, 0:nx-1))
+                dbdz(0:nz, 0:nx-1) = f12 * dxi(2) * (tbuoyg(-1:nz-1, 0:nx-1) - tbuoyg(1:nz+1, 0:nx-1))
 
-                bmax = dsqrt(maxval(vtend(0:nz, :) ** 2 + bz ** 2))
+                bmax = dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
                 bmax = max(epsilon(bmax), bmax)
 
                 dt = min(time%alpha_s / gmax, time%alpha_b / bmax)

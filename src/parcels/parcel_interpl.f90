@@ -238,6 +238,12 @@ module parcel_interpl
             dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)
 #endif
             tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
+
+            ! extrapolate to halo grid points (needed to compute
+            ! z derivative used for the time step)
+            tbuoyg(-1,   :) = two * tbuoyg(0,  :) + tbuoyg(1, :)
+            tbuoyg(nz+1, :) = two * tbuoyg(nz, :) + tbuoyg(nz-1, :)
+
             ! sum halo contribution into internal cells
             ! (be aware that halo cell contribution at upper boundary
             ! are added to cell nz)
