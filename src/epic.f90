@@ -198,6 +198,7 @@ program epic
             use options, only : time
             double precision :: dt
             double precision :: gmax, bmax
+            double precision :: dbdz(0:nz, 0:nx-1)
 
             if (time%is_adaptive) then
                 ! velocity strain
@@ -206,7 +207,11 @@ program epic
                 gmax = max(epsilon(gmax), gmax)
 
                 ! buoyancy gradient
-                bmax = dsqrt(maxval(dabs(vtend(0:nz, :))))
+
+                ! db/dz (central difference)
+                dbdz(0:nz, :) = f12 * dxi(2) * (tbuoyg(1:nz+1, :) - tbuoyg(-1:nz-1, :))
+
+                bmax = dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
                 bmax = max(epsilon(bmax), bmax)
 
                 dt = min(time%alpha_s / gmax, time%alpha_b / bmax)
