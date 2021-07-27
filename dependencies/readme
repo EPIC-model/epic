@@ -10,3 +10,6 @@ NJOBS         -- the number of cores used in the "make" command.
 
 After installing the libraries, add the path of the bin directory to your $PATH
 environment variable (e.g. export PATH=$PREFIX/bin:$PATH).
+
+In the corresponding *.txt files we have a copy of their licenses. EPIC does not have a direct
+dependency on zlib, but HDF5 can be compiled with zlib support.

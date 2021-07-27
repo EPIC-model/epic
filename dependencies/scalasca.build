@@ -3,7 +3,7 @@
 # recipe for:
 P=scalasca
 V_MAJOR=2
-V_MINOR=5
+V_MINOR=6
 V=${V_MAJOR}.${V_MINOR}
 
 # download
