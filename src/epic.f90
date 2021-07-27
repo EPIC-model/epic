@@ -83,12 +83,6 @@ program epic
 
             call field_default
 
-            call par2grid
-
-            ! need to be called in order to set initial time step
-            call vor2vel(vortg, velog, velgradg)
-            call vorticity_tendency(tbuoyg, vtend)
-
             if (output%h5_write_fields) then
                 call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
             endif
@@ -114,8 +108,6 @@ program epic
 
             do while (t <= time%limit)
 
-                dt = get_time_step()
-
 #ifdef ENABLE_VERBOSE
                 if (verbose) then
                     print "(a15, f0.4)", "time:          ", t
@@ -123,15 +115,23 @@ program epic
                 endif
 #endif
 
+                call par2grid
+
+                if (iter == 1) then
+                    ! need to be called in order to set initial time step
+                    call vor2vel(vortg, velog, velgradg)
+                    call vorticity_tendency(tbuoyg, vtend)
+                endif
+
+                ! update the time step
+                dt = get_time_step()
+
                 ! make sure we always write initial setup
                 if (output%h5_write_fields .and. &
                     (mod(iter - 1, output%h5_field_freq) == 0)) then
 #ifndef NDEBUG
                     call vol2grid_symmetry_error
 #endif
-                    ! update fields for writing
-                    call par2grid
-
                     call write_h5_field_step(nfw, t, dt)
                 endif
 
@@ -198,6 +198,7 @@ program epic
             use options, only : time
             double precision :: dt
             double precision :: gmax, bmax
+            double precision :: dbdz(0:nz, 0:nx-1)
 
             if (time%is_adaptive) then
                 ! velocity strain
@@ -206,7 +207,11 @@ program epic
                 gmax = max(epsilon(gmax), gmax)
 
                 ! buoyancy gradient
-                bmax = dsqrt(maxval(dabs(vtend(0:nz, :))))
+
+                ! db/dz (central difference)
+                dbdz(0:nz, :) = f12 * dxi(2) * (tbuoyg(1:nz+1, :) - tbuoyg(-1:nz-1, :))
+
+                bmax = dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
                 bmax = max(epsilon(bmax), bmax)
 
                 dt = min(time%alpha_s / gmax, time%alpha_b / bmax)

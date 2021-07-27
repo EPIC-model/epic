@@ -234,10 +234,22 @@ module parcel_interpl
             tbuoyg(nz-1, :) = tbuoyg(nz-1, :) + tbuoyg(nz+1, :)
             ! exclude halo cells to avoid division by zero
             vortg(0:nz, :) = vortg(0:nz, :) / volg(0:nz, :)
+
+            ! extrapolate to halo grid points (since halo grid points
+            ! are used to get u_z = w_x - zeta)
+            vortg(-1,   :) = two * vortg(0,  :) - vortg(1,    :)
+            vortg(nz+1, :) = two * vortg(nz, :) - vortg(nz-1, :)
+
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)
 #endif
             tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
+
+            ! extrapolate to halo grid points (needed to compute
+            ! z derivative used for the time step)
+            tbuoyg(-1,   :) = two * tbuoyg(0,  :) - tbuoyg(1, :)
+            tbuoyg(nz+1, :) = two * tbuoyg(nz, :) - tbuoyg(nz-1, :)
+
             ! sum halo contribution into internal cells
             ! (be aware that halo cell contribution at upper boundary
             ! are added to cell nz)
