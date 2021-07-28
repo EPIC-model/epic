@@ -128,7 +128,7 @@ except Exception as err:
 
 ## How to write an EPIC configuration file
 To run an EPIC simulation, a configuration file must be provided that looks as follows.
-```Fortran
+```
 &EPIC
 
  field_file              = 'taylor_green.hdf5'  ! input field file
