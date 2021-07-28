@@ -152,7 +152,7 @@ To run an EPIC simulation, a configuration file must be provided that looks as f
  parcel%n_per_cell       = 9                    ! initial number of parcels per cell
  parcel%lambda_max       = 5.0                  ! maximum parcel aspect ratio
  parcel%split_freq       = 1                    ! after how many steps to call parcel split
- parcel%merge_type       = 'multi-geometric'    ! merge method ('bi-optimal', 'bi-geometric', 'multi-optimal')
+ parcel%merge_type       = 'multi-geometric'    ! '*-optimal' and '*-geometric' with * = bi or multi
  parcel%merge_freq       = 1                    ! after how many steps to call parcel merge
  parcel%vmin_fraction    = 36.0                 ! minimum parcel area fraction
  parcel%vmax_fraction    = 2.89                 ! maximum parcel area fraction
