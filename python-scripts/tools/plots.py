@@ -10,7 +10,7 @@ import pandas as pd
 import scipy.stats as stats
 import seaborn as sns
 
-def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
+def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kwargs):
 
     # 19 Feb 2021
     # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
@@ -19,6 +19,13 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
 
     origin = h5reader.get_box_origin()
     extent = h5reader.get_box_extent()
+
+    # instantiating the figure object
+    fkwargs = {k: v for k, v in kwargs.items() if v is not None}
+    left = fkwargs.get('xmin', origin[0])
+    right = fkwargs.get('xmax', origin[0] + extent[0])
+    bottom = fkwargs.get('ymin', origin[1])
+    top = fkwargs.get('ymax', origin[1] + extent[1])
 
     if coloring == 'aspect-ratio':
         data = h5reader.get_aspect_ratio(step=step)
@@ -32,11 +39,8 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
         e.set_alpha(0.75)
         e.set_facecolor(cmap(norm(data[j])))
 
-    ax.axvline(origin[0], color='black', linewidth=0.25)
-    ax.axvline(origin[0] + extent[0], color='black', linewidth=0.25)
-
-    ax.axhline(origin[1], color='black', linewidth=0.25)
-    ax.axhline(origin[1] + extent[1], color='black', linewidth=0.25)
+    ax.set_xlim([left, right])
+    ax.set_ylim([bottom, top])
 
     # 26 May 2021
     # https://matplotlib.org/stable/gallery/subplots_axes_and_figures/axis_equal_demo.html
@@ -71,7 +75,7 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
 
 
 def plot_parcels(fname, step, show=False, fmt="png",
-                  coloring='aspect-ratio'):
+                  coloring='aspect-ratio', **kwargs):
     h5reader = H5Reader()
 
     h5reader.open(fname)
@@ -95,7 +99,7 @@ def plot_parcels(fname, step, show=False, fmt="png",
 
     plt.figure(num=step)
 
-    _plot_parcels(plt.gca(), h5reader, step, coloring, vmin, vmax)
+    _plot_parcels(plt.gca(), h5reader, step, coloring, vmin, vmax, **kwargs)
 
     if show:
         plt.tight_layout()

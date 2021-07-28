@@ -50,6 +50,30 @@ try:
                         default="png",
                         help="save format (default: png)")
 
+    parser.add_argument("--xmin",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help=" float to determine x min")
+
+    parser.add_argument("--xmax",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help=" float to determine x max")
+
+    parser.add_argument("--ymin",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help="float to determine y min")
+
+    parser.add_argument("--ymax",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help="float to determine y max")
+
     if has_bokeh:
         parser.add_argument("--use-bokeh",
                             required=False,
@@ -73,11 +97,26 @@ try:
 
     for step in args.steps:
         if has_bokeh and args.use_bokeh:
-            bokeh_plot_parcels(fname=args.filename, step=step, shw=args.show,
-                               fmt=args.fmt, coloring=args.coloring, display=args.display)
+            bokeh_plot_parcels(fname=args.filename,
+                               step=step,
+                               shw=args.show,
+                               fmt=args.fmt,
+                               coloring=args.coloring,
+                               display=args.display,
+                               xmin=args.xmin,
+                               xmax=args.xmax,
+                               ymin=args.ymin,
+                               ymax=args.ymax)
         else:
-            plot_parcels(fname=args.filename, step=step, show=args.show,
-                         fmt=args.fmt, coloring=args.coloring)
+            plot_parcels(fname=args.filename,
+                         step=step,
+                         show=args.show,
+                         fmt=args.fmt,
+                         coloring=args.coloring,
+                         xmin=args.xmin,
+                         xmax=args.xmax,
+                         ymin=args.ymin,
+                         ymax=args.ymax)
 
 except Exception as ex:
     print(ex)

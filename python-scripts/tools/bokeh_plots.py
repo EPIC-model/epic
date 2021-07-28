@@ -95,7 +95,7 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
 
 
 def bokeh_plot_parcels(fname, step, shw=False, fmt='png',
-                       coloring='aspect-ratio', display='full HD'):
+                       coloring='aspect-ratio', display='full HD', **kwargs):
 
     h5reader = H5Reader()
 
@@ -118,7 +118,7 @@ def bokeh_plot_parcels(fname, step, shw=False, fmt='png',
     else:
         vmin, vmax = h5reader.get_dataset_min_max(coloring)
 
-    graph = _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display)
+    graph = _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display, **kwargs)
 
     if shw:
         show(graph)
