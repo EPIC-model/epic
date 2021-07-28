@@ -32,7 +32,7 @@ module parcel_ellipse
             evec(1) = a2 - B22
             evec(2) = B12
 
-            if (abs(evec(1)) + abs(evec(2)) == zero) then
+            if (dabs(evec(1)) + dabs(evec(2)) == zero) then
                 if (B11 > B22) then
                     evec(1) = evec(1) + epsilon(evec(1))
                 else
@@ -60,7 +60,7 @@ module parcel_ellipse
 
             evec = get_eigenvector(a2, B11, B12, B22)
 
-            angle = atan2(evec(2), evec(1))
+            angle = datan2(evec(2), evec(1))
 
         end function get_angle
 
@@ -100,21 +100,21 @@ module parcel_ellipse
             double precision             :: c
             double precision             :: a2
             double precision             :: evec(2)
-            double precision             :: dx(2)
+            double precision             :: h(2)
             double precision             :: points(2, 2)
 
             B22 = get_B22(B(1), B(2), volume)
 
             a2 = get_eigenvalue(B(1), B(2), B22)
 
-            c = dsqrt(abs(two * a2 - B(1) - B22))
+            c = dsqrt(dabs(two * a2 - B(1) - B22))
 
             evec = get_eigenvector(a2, B(1), B(2), B22)
 
-            dx = f12 * c * evec
+            h = f12 * c * evec
 
-            points(1, :) = position - dx
-            points(2, :) = position + dx
+            points(1, :) = position - h
+            points(2, :) = position + h
 
         end function get_ellipse_points
 end module parcel_ellipse
