@@ -1,0 +1,3 @@
+In this directory are some EPIC examples. Assuming you installed EPIC into $PREFIX,
+you first need to run $PREFIX/models to generate an input field file. Afterwards, you
+can run $PREFIX/epic with one of the configuration files.
