@@ -126,13 +126,11 @@ class H5Reader:
             raise IOError('Not a parcel output file.')
         position = self.get_dataset(step, 'position')
         V = self.get_dataset(step, 'volume')
-        s = self._get_step_string(step)
         B = self.get_dataset(step, 'B')
-
-        angle = self.get_dataset(step, 'orientation')
 
         B22 = self._get_B22(B[0, :], B[1, :], V)
         a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
+        angle = self._get_angle(B[0, :], B[1, :], B22, a2)
 
         b2 = (V / np.pi) ** 2 / a2
         return [Ellipse(xy=position[:, i],
@@ -146,30 +144,22 @@ class H5Reader:
             raise IOError('Not a parcel output file.')
         position = self.get_dataset(step, 'position')
         V = self.get_dataset(step, 'volume')
-        s = self._get_step_string(step)
-        if 'B' in self._h5file[s].keys():
-            B = self.get_dataset(step, 'B')
-            angle = self.get_dataset(step, 'orientation')
-            B22 = self._get_B22(B[0, :], B[1, :], V)
-            a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
-            b2 = (V / np.pi) ** 2 / a2
-            return position[0,:],position[1, :],2 * np.sqrt(a2[:]),2 * np.sqrt(b2[:]),angle[:]
-        else:
-            return position[0,:],position[1, :],2 * np.sqrt(V[:]/np.pi),2 * np.sqrt(V[:]/np.pi),0.*position[1, :]
+        B = self.get_dataset(step, 'B')
+        B22 = self._get_B22(B[0, :], B[1, :], V)
+        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
+        angle = self._get_angle(B[0, :], B[1, :], B22, a2)
+        b2 = (V / np.pi) ** 2 / a2
+        return position[0,:],position[1, :],2 * np.sqrt(a2[:]),2 * np.sqrt(b2[:]),angle[:]
 
 
     def get_aspect_ratio(self, step):
         if not self.is_parcel_file:
             raise IOError('Not a parcel output file.')
         V = self.get_dataset(step, 'volume')
-        s = self._get_step_string(step)
-        if 'B' in self._h5file[s].keys():
-            B = self.get_dataset(step, 'B')
-            B22 = self._get_B22(B[0, :], B[1, :], V)
-            a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
-            return a2 / V * np.pi
-        else:
-            return np.ones(len(V))
+        B = self.get_dataset(step, 'B')
+        B22 = self._get_B22(B[0, :], B[1, :], V)
+        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
+        return a2 / V * np.pi
 
 
     def _get_B22(self, B11, B12, V):
@@ -178,6 +168,27 @@ class H5Reader:
 
     def _get_eigenvalue(self, B11, B12, B22):
         return 0.5 * (B11 + B22) + np.sqrt(0.25 * (B11 - B22) ** 2 + B12 ** 2)
+
+
+    def _get_eigenvector(self, a2, B11, B12, B22):
+        evec = np.array([a2 - B22, B12])
+
+        for i in range(evec.shape[1]):
+            if abs(evec[0, i]) + abs(evec[1, i]) == 0.0:
+                if B11[i] > B22[i]:
+                    evec[0, i] = evec[0, i] + np.finfo(np.float64).eps
+                else:
+                    evec[1, i] = evec[1, i] + np.finfo(np.float64).eps
+
+        return evec / np.linalg.norm(evec, 2)
+
+
+    def _get_angle(self, B11, B12, B22, a2=None):
+        if a2 is None:
+            a2 = self._get_eigenvalue(B11, B12, B22)
+        evec = self._get_eigenvector(a2, B11, B12, B22)
+        return np.arctan2(evec[1, :], evec[0, :])
+
 
     def _get_step_string(self, step):
         return 'step#' + str(step).zfill(10)

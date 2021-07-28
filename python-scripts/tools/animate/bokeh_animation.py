@@ -1,14 +1,10 @@
 import numpy as np
 from tools.h5_reader import H5Reader
 import progressbar
-from bokeh.io import curdoc, show, export_png
-from bokeh.plotting import figure, show, output_file
-from bokeh.models import ColumnDataSource, Grid, LinearAxis, Plot, ColorBar, LinearColorMapper
-from bokeh.palettes import Viridis256
-from bokeh.transform import linear_cmap
+from bokeh.io import export_png
 import matplotlib.pyplot as plt
-from bokeh.io.export import get_screenshot_as_png
-import os,subprocess,shutil
+import os, subprocess, shutil
+from tools.bokeh_plots import _bokeh_plot_parcels
 
 class BokehAnimation:
     def __init__(self):
@@ -22,55 +18,22 @@ class BokehAnimation:
         if not self.h5reader.is_parcel_file:
             raise IOError('Not a parcel output file.')
 
-        self.nsteps = self.h5reader.get_num_steps()
-        self.extent = self.h5reader.get_box_extent()
-        self.origin = self.h5reader.get_box_origin()
-
+        nsteps = self.h5reader.get_num_steps()
         os.mkdir("temp-movie")
 
-        # instantiating the figure object
-        fkwargs={k: v for k, v in kwargs.items() if v is not None}
-        left=fkwargs.pop('xmin', self.origin[0])
-        right=fkwargs.pop('xmax', self.origin[0]+self.extent[0])
-        bottom=fkwargs.pop('ymin', self.origin[1])
-        top=fkwargs.pop('ymax', self.origin[1]+self.extent[1])
-        pw=np.nanmin([1920,int(1080*(right-left)/(top-bottom))])
-        ph=np.nanmin([1080,int(1920*(top-bottom)/(right-left))])
-        output_file("temp-movie/movie-template.html")
-        graph = figure(output_backend="webgl", title =coloring,plot_width=pw,
-        plot_height=ph,aspect_ratio=(right-left)/(top-bottom), x_range=(left, right), y_range=(bottom, top))
-        step=0
-        x,y,width,height,angle=self.h5reader.get_ellipses_for_bokeh(step)
-        if (coloring=='aspect-ratio'):
-            variable_of_interest=self.h5reader.get_aspect_ratio(step)
-            variable_of_interest_min=1
-            variable_of_interest_max=self.h5reader.get_parcel_option('lambda')
-        else:
-            variable_of_interest=self.h5reader.get_dataset(step, coloring)
-            variable_of_interest_min=np.nanmin(variable_of_interest)
-            variable_of_interest_max=np.nanmax(variable_of_interest)
-        source = ColumnDataSource(dict(x=x,y=y, width=width, height=height,
-        angle=angle,fill_color=variable_of_interest))
-        Viridis256_r = tuple(reversed(list(Viridis256)))
-        mapper=linear_cmap(field_name='fill_color', palette=Viridis256_r,
-        low=variable_of_interest_min, high=variable_of_interest_max)
-        graph.ellipse(x='x', y='y', width='width', height='height',angle='angle',
-        color=mapper,fill_alpha=0.75,line_color=None,source=source)
-        color_bar = ColorBar(color_mapper=mapper['transform'], label_standoff=12)
-        graph.add_layout(color_bar, 'right')
-        for step in range(self.nsteps):
-            x,y,width,height,angle=self.h5reader.get_ellipses_for_bokeh(step)
-            if (coloring=='aspect-ratio'):
-                variable_of_interest=self.h5reader.get_aspect_ratio(step)
+        bar = progressbar.ProgressBar(maxval=nsteps).start()
+        for step in range(nsteps):
+            if coloring == 'aspect-ratio':
+                vmin = 1.0
+                vmax = self.h5reader.get_parcel_option('lambda')
             else:
-                variable_of_interest=self.h5reader.get_dataset(step, coloring)
-            new_source = dict(x=x,y=y, width=width, height=height,angle=angle,fill_color=variable_of_interest)
-            source.data=new_source
-            nparcels= self.h5reader.get_num_parcels(step)
-            ttime=self.h5reader.get_step_attribute(step=step, name='t')
-            graph.title=coloring+'                              time=%15.3f'%ttime+\
-            '                              nparcels= %10d'%nparcels
+                vmin, vmax = self.h5reader.get_dataset_min_max(coloring)
+
+            graph = _bokeh_plot_parcels(self.h5reader, step, coloring, vmin, vmax, **kwargs)
+
             export_png(graph, filename = "temp-movie/movie.%05d.png"%step)
+            bar.update(step+1)
+        bar.finish()
 
     def save(self, fname):
         ffmpeg_cmd1 = ['ffmpeg','-f','image2','-framerate','5','-i',

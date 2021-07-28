@@ -4,6 +4,12 @@ from tools.animate import ParcelAnimation
 import os
 import sys
 
+has_bokeh = True
+try:
+    from tools.animate.bokeh_animation import BokehAnimation
+except:
+    has_bokeh = False
+
 try:
     parser = argparse.ArgumentParser(
         description="Save a mp4 animation of the evolving parcels.")
@@ -29,6 +35,37 @@ try:
                         default='aspect-ratio',
                         help="how to color the parcels")
 
+    parser.add_argument("--xmin",
+                    type=float,
+                    required=False,
+                    default=None,
+                    help=" float to determine x min")
+
+    parser.add_argument("--xmax",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help=" float to determine x max")
+
+    parser.add_argument("--ymin",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help="float to determine y min")
+
+    parser.add_argument("--ymax",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help="float to determine y max")
+
+    if has_bokeh:
+        parser.add_argument("--use-bokeh",
+                            required=False,
+                            action='store_true',
+                            help="use Bokeh to plot")
+
+
     if not '--filename' in sys.argv:
         parser.print_help()
         exit(0)
@@ -44,9 +81,17 @@ try:
     else:
         args.saveas = os.path.splitext(args.saveas)[0] + '.mp4'
 
-    anim = ParcelAnimation()
+    if has_bokeh and args.use_bokeh:
+        anim = BokehAnimation()
+    else:
+        anim = ParcelAnimation()
 
-    anim.create(args.filename, coloring=args.coloring)
+    anim.create(args.filename,
+                coloring=args.coloring,
+                xmin=args.xmin,
+                xmax=args.xmax,
+                ymin=args.ymin,
+                ymax=args.ymax)
 
     anim.save(args.saveas)
 

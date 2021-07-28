@@ -6,7 +6,9 @@ toolsdir = $(bindir)/tools
 # https://stackoverflow.com/questions/10721826/install-arbitrary-data-files-in-fixed-location-with-automake
 nobase_tools_DATA = 			\
 	h5_reader.py 			\
+	h5_fields.py			\
 	plots.py			\
+	bokeh_plots.py			\
 	plot_beautify.py 		\
 	plot_style.py			\
 	__init__.py

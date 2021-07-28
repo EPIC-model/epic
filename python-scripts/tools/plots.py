@@ -10,7 +10,7 @@ import pandas as pd
 import scipy.stats as stats
 import seaborn as sns
 
-def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
+def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kwargs):
 
     # 19 Feb 2021
     # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
@@ -19,6 +19,13 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
 
     origin = h5reader.get_box_origin()
     extent = h5reader.get_box_extent()
+
+    # instantiating the figure object
+    fkwargs = {k: v for k, v in kwargs.items() if v is not None}
+    left = fkwargs.get('xmin', origin[0])
+    right = fkwargs.get('xmax', origin[0] + extent[0])
+    bottom = fkwargs.get('ymin', origin[1])
+    top = fkwargs.get('ymax', origin[1] + extent[1])
 
     if coloring == 'aspect-ratio':
         data = h5reader.get_aspect_ratio(step=step)
@@ -32,11 +39,8 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
         e.set_alpha(0.75)
         e.set_facecolor(cmap(norm(data[j])))
 
-    ax.axvline(origin[0], color='black', linewidth=0.25)
-    ax.axvline(origin[0] + extent[0], color='black', linewidth=0.25)
-
-    ax.axhline(origin[1], color='black', linewidth=0.25)
-    ax.axhline(origin[1] + extent[1], color='black', linewidth=0.25)
+    ax.set_xlim([left, right])
+    ax.set_ylim([bottom, top])
 
     # 26 May 2021
     # https://matplotlib.org/stable/gallery/subplots_axes_and_figures/axis_equal_demo.html
@@ -61,7 +65,7 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
         cbar.solids.set_edgecolor("face")
         cbar.draw_all()
 
-        if coloring == 'aspect ratio':
+        if coloring == 'aspect-ratio':
             cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
         else:
             cbar.set_label(coloring)
@@ -70,42 +74,8 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True):
     ax.set_ylabel(r'$y$')
 
 
-def plot_parcels(fname, begin=0, end=-1, show=False, fmt="png",
-                  coloring='aspect-ratio'):
-    h5reader = H5Reader()
-
-    h5reader.open(fname)
-
-    if not h5reader.is_parcel_file:
-        raise IOError('Not a parcel output file.')
-
-    nsteps = h5reader.get_num_steps()
-
-    if end == -1:
-        end = nsteps + 1
-
-    if coloring == 'aspect-ratio':
-        vmin = 1.0
-        vmax = h5reader.get_parcel_option('lambda')
-    else:
-        vmin, vmax = h5reader.get_dataset_min_max(coloring)
-
-    for i in range(begin, end+1):
-        fig, ax = plt.subplots(figsize=(15, 14), dpi=300, num=i)
-
-        _plot_parcels(ax, h5reader, i, coloring, vmin, vmax)
-
-        if show:
-            plt.show()
-        else:
-            plt.savefig('parcels_'  + coloring + '_step_' + str(i).zfill(len(str(nsteps))) + '.' + fmt,
-                        bbox_inches='tight')
-        plt.close()
-    h5reader.close()
-
-
-
-def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
+def plot_parcels(fname, step, show=False, fmt="png",
+                  coloring='aspect-ratio', **kwargs):
     h5reader = H5Reader()
 
     h5reader.open(fname)
@@ -116,142 +86,100 @@ def plot_ellipse_orientation(fname, step=0, parcel=0, show=False, fmt="png"):
     nsteps = h5reader.get_num_steps()
 
     if step > nsteps - 1:
-        raise ValueError('Step ' + str(step) + ' > ' + str(nsteps - 1))
+        raise ValueError('Step number exceeds limit of ' + str(nsteps-1) + '.')
+
+    if step < 0:
+        raise ValueError('Step number cannot be negative.')
+
+    if coloring == 'aspect-ratio':
+        vmin = 1.0
+        vmax = h5reader.get_parcel_option('lambda')
+    else:
+        vmin, vmax = h5reader.get_dataset_min_max(coloring)
+
+    plt.figure(num=step)
+
+    _plot_parcels(plt.gca(), h5reader, step, coloring, vmin, vmax, **kwargs)
+
+    if show:
+        plt.tight_layout()
+        plt.show()
+    else:
+        plt.savefig('parcels_'  + coloring + '_step_' + str(step).zfill(len(str(nsteps))) + '.' + fmt,
+                    bbox_inches='tight')
+    plt.close()
+    h5reader.close()
 
 
-    num_parcels = h5reader.get_num_parcels(step)
-    if parcel > num_parcels - 1:
-        raise ValueError('Parcel index ' + str(parcel) + ' > ' + str(num_parcels - 1))
+def plot_volume_symmetry_error(fnames, show=False, fmt="png", **kwargs):
+    """
+    Plot the symmetry error of the gridded volume.
+    (The gridded symmetry volume is only written in debug mode.)
+    """
+    n = len(fnames)
 
-    lam = h5reader.get_parcel_option('lambda')
+    labels = kwargs.pop('labels', n * [None])
 
-    # 19 Feb 2021
-    # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
-    norm = cls.Normalize(vmin=1.0, vmax=lam)
-    cmap = plt.cm.viridis_r
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
 
-    origin = h5reader.get_box_origin()
-    extent = h5reader.get_box_extent()
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
 
-    ell = h5reader.get_ellipses(step=step)[parcel]
+    plt.figure()
+    for i, fname in enumerate(fnames):
+        h5reader = H5Reader()
+        h5reader.open(fname)
 
-    vol = h5reader.get_dataset(step=step, name='volume')[parcel]
-    ratio = h5reader.get_aspect_ratio(step=step)[parcel]
-    ab = vol / np.pi
-    a = 1.02 * np.sqrt(ab * ratio)
+        if h5reader.is_parcel_file:
+            raise IOError('Not a field output file.')
 
-    fig, ax = plt.subplots(figsize=(5, 4), dpi=300, num=step)
-    ax.axis('off')
-    ax.set_aspect('equal')
+        try:
+            h5reader.get_dataset(0, 'symmetry volume')
+        except:
+            raise IOError('This plot is only available in debug mode.')
 
-    angles = np.arange(0, 359, 15)
-    radii = np.linspace(0.0, a, 10)
-    r = 1.02 * radii[-1]
+        nsteps = h5reader.get_num_steps()
 
-    # 3 April 2021
-    # https://stackoverflow.com/questions/37246941/specifying-the-order-of-matplotlib-layers
-    for angle in angles:
-        rad = np.deg2rad(angle)
-        ax.plot([0, r * np.cos(rad)], [0, r * np.sin(rad)], color='gray',
-                linewidth=0.5, zorder=0)
-        # 5 April 2021
-        # https://stackoverflow.com/questions/19926246/inserting-a-degree-symbol-into-python-plot
-        ax.text(1.1 * r * np.cos(rad), 1.1 * r * np.sin(rad), str(angle) + r'$^\circ$',
-                horizontalalignment='center', verticalalignment='center')
+        vmax = np.zeros(nsteps)
+        t = np.zeros(nsteps)
+        for step in range(nsteps):
+            sym_volg = h5reader.get_dataset(step, 'symmetry volume')
+            min_err = abs(sym_volg.min())
+            max_err = abs(sym_volg.max())
+            vmax[step] = max(min_err, max_err)
+            t[step] = h5reader.get_step_attribute(step, 't')
 
-    angles = np.linspace(0, 2.0 * np.pi, 360)
-    for r in radii:
-        ax.plot(r * np.cos(angles), r * np.sin(angles), color='gray', linewidth=0.5, zorder=0)
+        h5reader.close()
 
-    ax.add_artist(ell)
-    ell.set_clip_box(ax.bbox)
-    ell.set_alpha(1.0)
-    ell.set_facecolor(cmap(norm(ratio)))
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = label.split('_fields')[0]
 
-    # always use center (0, 0)
-    ell.set_center(xy=(0, 0))
+        plt.fill_between(t, 0, vmax, color=colors[i], label=label,
+                        edgecolor=colors[i], linewidth=0.75)
 
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    cbar = fig.colorbar(sm, drawedges=False)
-    ## 19 Feb 2021
-    ## https://stackoverflow.com/questions/15003353/why-does-my-colorbar-have-lines-in-it
-    cbar.set_alpha(1.0)
-    cbar.solids.set_edgecolor("face")
-    cbar.draw_all()
-    cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
+    plt.grid(which='both', linestyle='dashed')
+    plt.xlabel(r'time (s)')
+    plt.ylabel(r'volume symmetry error')
+    plt.yscale('log')
+    #plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
 
-    phi = np.rad2deg(h5reader.get_dataset(step, 'orientation')[parcel])
-    add_box(plt, label=r'ellipse orientation', value=phi, unit=r'$^\circ$', fmt='%-3.1f')
 
-    plt.xlim([-1.2 * a, 1.2 * a])
-    plt.ylim([-1.2 * a, 1.2 * a])
+    if n > 1:
+        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     plt.tight_layout()
 
     if show:
         plt.show()
     else:
-        plt.savefig('ellipse_' + str(parcel).zfill(len(str(num_parcels))) + \
-                    '_orientation_step_' + str(step).zfill(len(str(nsteps))) + '.' + fmt,
+        prefix = os.path.splitext(fnames[0])[0] + '_'
+        if n > 1:
+            prefix = ''
+        plt.savefig(prefix + 'vol_sym_err.' + fmt,
                     bbox_inches='tight')
-    plt.close()
-
-    h5reader.close()
-
-
-def plot_volume_symmetry_error(fname, show=False, fmt="png"):
-    """
-    Plot the symmetry error of the gridded volume.
-    (The gridded symmetry volume is only written in debug mode.)
-    """
-    h5reader = H5Reader()
-    h5reader.open(fname)
-
-    if h5reader.is_parcel_file:
-        raise IOError('Not a field output file.')
-
-    try:
-        h5reader.get_dataset(0, 'symmetry volume')
-    except:
-        raise IOError('This plot is only available in debug mode.')
-
-    nsteps = h5reader.get_num_steps()
-
-    vmean = np.zeros(nsteps)
-    vmin = np.zeros(nsteps)
-    vmax = np.zeros(nsteps)
-    vstd = np.zeros(nsteps)
-    t = np.zeros(nsteps)
-    for i in range(nsteps):
-        sym_volg = h5reader.get_dataset(i, 'symmetry volume')
-        vmean[i] = sym_volg.mean()
-        vstd[i] = sym_volg.std()
-        vmin[i] = sym_volg.min()
-        vmax[i] = sym_volg.max()
-        t[i] = h5reader.get_step_attribute(i, 't')
-
-    h5reader.close()
-
-    plt.figure()
-    plt.grid(which='both', linestyle='dashed')
-    #plt.plot(iters, vmean, label='mean', color='darkorange', linewidth=1.5)
-    plt.fill_between(t, vmean - vstd, vmin, label='min-max', color='cornflowerblue',
-                     edgecolor='cornflowerblue', linewidth=0.75)
-    plt.fill_between(t, vmean + vstd, vmax, color='cornflowerblue',
-                     edgecolor='cornflowerblue', linewidth=0.75)
-    plt.fill_between(t, vmean - vstd, vmean + vstd, label='std', color='royalblue',
-                     edgecolor='royalblue', linewidth=0.75)
-
-    plt.xlabel(r'time (s)')
-    plt.ylabel(r'volume symmetry error')
-
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
-
-    if show:
-        plt.show()
-    else:
-        prefix = os.path.splitext(fname)[0]
-        plt.savefig(prefix + '_volsymerr.' + fmt, bbox_inches='tight')
     plt.close()
 
 
@@ -292,7 +220,8 @@ def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.ylabel(r'rms volume error')
     plt.grid(linestyle='dashed', zorder=-1)
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
+    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+               bbox_to_anchor=legend_dict['bbox_to_anchor'])
     plt.tight_layout()
 
     if show:
@@ -340,7 +269,8 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
     plt.xlabel(r'time (s)')
     plt.ylabel(r'max normalised volume error')
     plt.grid(linestyle='dashed', zorder=-1)
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
+    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+               bbox_to_anchor=legend_dict['bbox_to_anchor'])
     plt.tight_layout()
 
     if show:
@@ -350,83 +280,148 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
     plt.close()
 
 
-def plot_aspect_ratio(fname, show=False, fmt="png"):
+def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
     """
     Plot the mean and standard deviation of the parcel aspect ratio.
     """
+    n = len(fnames)
+
+    labels = kwargs.pop('labels', n * [None])
+    dset = kwargs.pop('dset', 'aspect-ratio')
+
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
+
     h5reader = H5Reader()
-    h5reader.open(fname)
-
-    if not h5reader.is_parcel_file:
-        raise IOError('Not a parcel output file.')
-
-    nsteps = h5reader.get_num_steps()
-
-    lam_mean = np.zeros(nsteps)
-    lam_std = np.zeros(nsteps)
-    t = np.zeros(nsteps)
-
-    for step in range(nsteps):
-        lam = h5reader.get_aspect_ratio(step)
-
-        lam_mean[step] = lam.mean()
-        lam_std[step] = lam.std()
-
-        t[step] = h5reader.get_step_attribute(step, 't')
-
-    lmax = h5reader.get_parcel_option('lambda')[0]
-
-    h5reader.close()
 
     plt.figure()
-    plt.plot(t, lam_mean, color='blue', label=r'mean')
-    plt.fill_between(t, lam_mean - lam_std, lam_mean + lam_std,
-                     alpha=0.5, label=r'std. dev.')
 
-    plt.axhline(lmax, linestyle='dashed', color='black',
-                label=r'$\lambda\le\lambda_{\max} = ' + str(lmax) + '$')
+    lmax = 0
 
-    plt.grid(linestyle='dashed', zorder=-1)
+    for i, fname in enumerate(fnames):
+
+        h5reader.open(fname)
+
+        if not h5reader.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+
+        nsteps = h5reader.get_num_steps()
+
+        data_mean = np.zeros(nsteps)
+        data_std = np.zeros(nsteps)
+        t = np.zeros(nsteps)
+
+        for step in range(nsteps):
+
+            data = None
+
+            if dset == 'aspect-ratio':
+                data = h5reader.get_aspect_ratio(step)
+            else:
+                data = h5reader.get_dataset(step, dset)
+
+
+            if dset == 'volume':
+                extent = h5reader.get_box_extent()
+                ncells = h5reader.get_box_ncells()
+                vcell = np.prod(extent / ncells)
+                data /= vcell
+
+
+            data_mean[step] = data.mean()
+            data_std[step] = data.std()
+
+            t[step] = h5reader.get_step_attribute(step, 't')
+
+        if dset == 'aspect-ratio':
+            lmax = max(lmax, h5reader.get_parcel_option('lambda'))
+
+        h5reader.close()
+
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = label.split('_parcels')[0]
+
+        plt.plot(t, data_mean, label=label, color=colors[i])
+        plt.fill_between(t, data_mean - data_std, data_mean + data_std,
+                         alpha=0.5, color=colors[i])
+
 
     plt.xlabel(r'time (s)')
-    plt.ylabel(r'aspect ratio $\lambda$')
+    plt.grid(linestyle='dashed', zorder=-1)
 
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
+    if dset == 'aspect-ratio':
+        plt.ylabel(r'aspect ratio $\lambda$')
+        plt.text(t[10], lmax - 0.5, r'$\lambda\le\lambda_{\max} = ' + str(lmax) + '$')
+        plt.axhline(lmax, linestyle='dashed', color='black')
+    elif dset == 'volume':
+        plt.ylabel(r'parcel volume / $V_{g}$')
+        #plt.axhline(1.0, linestyle='dashed', color='black',
+                #label=r'cell volume $V_{g}$')
+    else:
+        plt.ylabel(r'parcel ' + dset)
+
+    if n > 1:
+        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     plt.tight_layout()
 
     if show:
         plt.show()
     else:
-        prefix = os.path.splitext(fname)[0]
-        plt.savefig(prefix + '_aspect_ratio_profile.' + fmt, bbox_inches='tight')
+        prefix = os.path.splitext(fnames[0])[0] + '_'
+        if n > 1:
+            prefix = ''
+        plt.savefig(prefix + 'parcel_' + dset + '_profile.' + fmt,
+                    bbox_inches='tight')
     plt.close()
 
 
-def plot_parcel_number(fname, show=False, fmt="png"):
+def plot_parcel_number(fnames, show=False, fmt="png", **kwargs):
     """
     Plot the number of parcels in simulation.
     """
-    h5reader = H5Reader()
-    h5reader.open(fname)
+    labels = kwargs.pop('labels', None)
 
-    if not h5reader.is_parcel_file:
-        raise IOError('Not a parcel output file.')
-
-    nsteps = h5reader.get_num_steps()
-
-    nparcels = np.zeros(nsteps)
-    t = np.zeros(nsteps)
-
-    for step in range(nsteps):
-        nparcels[step] = h5reader.get_num_parcels(step)
-        t[step] = h5reader.get_step_attribute(step, 't')
-
-    h5reader.close()
+    if labels is None:
+        labels = [None] * len(fnames)
 
     plt.figure()
-    plt.plot(t, nparcels, color='blue')
+    for i, fname in enumerate(fnames):
+
+        h5reader = H5Reader()
+        h5reader.open(fname)
+
+        if not h5reader.is_parcel_file:
+            raise IOError('Not a parcel output file.')
+
+        nsteps = h5reader.get_num_steps()
+
+        nparcels = np.zeros(nsteps)
+        t = np.zeros(nsteps)
+
+        for step in range(nsteps):
+            nparcels[step] = h5reader.get_num_parcels(step)
+            t[step] = h5reader.get_step_attribute(step, 't')
+
+        h5reader.close()
+
+        label = None
+        if not labels[i] is None:
+            label = labels[i]
+
+        plt.plot(t, nparcels, label=label)
+
     plt.grid(linestyle='dashed', zorder=-1)
+
+    if not labels[0] is None:
+        plt.legend(loc=legend_dict['loc'],
+                   ncol=min(len(labels), legend_dict['ncol']),
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     plt.xlabel(r'time (s)')
     plt.ylabel(r'parcel count')
@@ -435,64 +430,7 @@ def plot_parcel_number(fname, show=False, fmt="png"):
     if show:
         plt.show()
     else:
-        prefix = os.path.splitext(fname)[0]
-        plt.savefig(prefix + '_parcel_number_profile.' + fmt, bbox_inches='tight')
-    plt.close()
-
-
-def plot_parcel_volume(fname, show=False, fmt="png"):
-    """
-    Plot the mean and standard deviation of the parcel volume
-    normalised with the cell volume.
-    """
-    h5reader = H5Reader()
-    h5reader.open(fname)
-
-    if not h5reader.is_parcel_file:
-        raise IOError('Not a parcel output file.')
-
-    nsteps = h5reader.get_num_steps()
-
-    vol_mean = np.zeros(nsteps)
-    vol_std = np.zeros(nsteps)
-    t = np.zeros(nsteps)
-
-    extent = h5reader.get_box_extent()
-    ncells = h5reader.get_box_ncells()
-    vcell = np.prod(extent / ncells)
-
-    for step in range(nsteps):
-        vol = h5reader.get_dataset(step, 'volume')
-
-        vol_mean[step] = vol.mean() / vcell
-        vol_std[step] = vol.std() / vcell
-
-        t[step] = h5reader.get_step_attribute(step, 't')
-
-    h5reader.close()
-
-    plt.figure()
-    plt.plot(t, vol_mean, color='blue', label=r'mean')
-    plt.fill_between(t, vol_mean - vol_std, vol_mean + vol_std,
-                     alpha=0.5, label=r'std. dev.')
-
-    plt.axhline(1.0, linestyle='dashed', color='black',
-                label=r'cell volume $V_{0}$')
-
-    plt.grid(linestyle='dashed', zorder=-1)
-
-    plt.xlabel(r'time (s)')
-    plt.ylabel(r'parcel volume / $V_{0}$')
-
-    plt.legend(loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
-
-    plt.tight_layout()
-
-    if show:
-        plt.show()
-    else:
-        prefix = os.path.splitext(fname)[0]
-        plt.savefig(prefix + '_parcel_volume_profile.' + fmt, bbox_inches='tight')
+        plt.savefig('parcel_number_profile.' + fmt, bbox_inches='tight')
     plt.close()
 
 
@@ -686,8 +624,8 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
     plt.grid(which='both', linestyle='dashed')
 
     if n > 1:
-        plt.legend(loc='upper center', ncol=min(4, n),
-                   bbox_to_anchor=(0.5, 1.15))
+        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     plt.tight_layout()
 
@@ -698,6 +636,71 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
         if n > 1:
             prefix = ''
         plt.savefig(prefix + 'parcel_cumulative_' + dset + '.' + fmt,
+                    bbox_inches='tight')
+    plt.close()
+
+
+def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
+    """
+    Plot the mean and standard deviation of the number of
+    parcels per cell
+    """
+    n = len(fnames)
+
+    labels = kwargs.pop('labels', n * [None])
+
+    if len(labels) < n:
+        raise ValueError('Not enough labels provided.')
+
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    for i, fname in enumerate(fnames):
+        h5reader = H5Reader()
+        h5reader.open(fname)
+
+        if h5reader.is_parcel_file:
+            raise IOError('Not a field output file.')
+
+        nsteps = h5reader.get_num_steps()
+
+        n_mean = np.zeros(nsteps)
+        n_std = np.zeros(nsteps)
+        t = np.zeros(nsteps)
+
+        for step in range(nsteps):
+            data = h5reader.get_dataset(step, 'num parcels per cell')
+
+            n_mean[step] = data.mean()
+            n_std[step] = data.std()
+            t[step] = h5reader.get_step_attribute(step, 't')
+
+        h5reader.close()
+
+        label = labels[i]
+        if label is None:
+            label = os.path.splitext(fname)[0]
+            label = label.split('_parcels')[0]
+
+        plt.plot(t, n_mean, color=colors[i], label=label)
+        plt.fill_between(t, n_mean - n_std, n_mean + n_std, color=colors[i], alpha=0.5)
+
+    plt.xlabel(r'time (s)')
+    plt.ylabel(r'number of parcels/cell')
+    plt.grid(which='both', linestyle='dashed')
+
+    if n > 1:
+        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
+
+    plt.tight_layout()
+
+    if show:
+        plt.show()
+    else:
+        prefix = os.path.splitext(fnames[0])[0] + '_'
+        if n > 1:
+            prefix = ''
+        plt.savefig(prefix + 'number_of_parcels_per_cell.' + fmt,
                     bbox_inches='tight')
     plt.close()
 

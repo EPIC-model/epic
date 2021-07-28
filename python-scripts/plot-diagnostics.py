@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 import argparse
-from tools.plots import     \
-    plot_rms_volume_error,  \
-    plot_max_volume_error,  \
-    plot_aspect_ratio,      \
-    plot_parcel_volume,     \
-    plot_parcel_number,     \
-    plot_center_of_mass,    \
-    plot_cumulative
+from tools.plots import         \
+    plot_rms_volume_error,      \
+    plot_max_volume_error,      \
+    plot_parcel_profile,        \
+    plot_parcel_number,         \
+    plot_center_of_mass,        \
+    plot_cumulative,            \
+    plot_parcels_per_cell,      \
+    plot_volume_symmetry_error
 import os
 import sys
 
@@ -21,11 +22,12 @@ try:
     kinds = [
         'rms-volume-error',
         'max-volume-error',
-        'aspect-ratio',
-        'parcel-volume',
+        'parcel-profile',
         'parcel-number',
         'center-of-mass',
-        'parcel-cumulative'
+        'parcel-cumulative',
+        'number-parcel-per-cell',
+        'volume-symmetry-error'
     ]
 
 
@@ -69,7 +71,7 @@ try:
                         type=str,
                         required=False,
                         default='volume',
-                        help="parcel attribute (cumulative plot only)")
+                        help="parcel attribute (cumulative and profile plots only)")
 
 
     if not '--filenames' in sys.argv:
@@ -89,21 +91,28 @@ try:
         plot_max_volume_error(args.filenames, show=args.show, fmt=args.fmt,
                               labels=args.labels)
     elif args.kind == kinds[2]:
-        for fname in args.filenames:
-            plot_aspect_ratio(fname, show=args.show, fmt=args.fmt)
+        plot_parcel_profile(args.filenames, show=args.show, fmt=args.fmt,
+                            dset=args.dataset, labels=args.labels)
     elif args.kind == kinds[3]:
-        for fname in args.filenames:
-            plot_parcel_volume(fname, show=args.show, fmt=args.fmt)
+        plot_parcel_number(args.filenames, show=args.show, fmt=args.fmt,
+                           labels=args.labels)
     elif args.kind == kinds[4]:
         for fname in args.filenames:
-            plot_parcel_number(fname, show=args.show, fmt=args.fmt)
-    elif args.kind == kinds[5]:
-        for fname in args.filenames:
             plot_center_of_mass(fname, show=args.show, fmt=args.fmt)
-    elif args.kind == kinds[6]:
+    elif args.kind == kinds[5]:
         plot_cumulative(args.filenames, step=args.step,
                         dset=args.dataset, show=args.show,
                         fmt=args.fmt, labels=args.labels)
+    elif args.kind == kinds[6]:
+        plot_parcels_per_cell(args.filenames,
+                              show=args.show,
+                              fmt=args.fmt,
+                              labels=args.labels)
+    elif args.kind == kinds[7]:
+        plot_volume_symmetry_error(fnames=args.filenames,
+                                   show=args.show,
+                                   fmt=args.fmt,
+                                   labels=args.labels)
     else:
         raise ValueError("Plot '" + args.kind + "' not supported!")
 

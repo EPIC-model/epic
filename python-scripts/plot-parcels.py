@@ -4,6 +4,13 @@ from tools.plots import plot_parcels
 import os
 import sys
 
+has_bokeh = True
+
+try:
+    from tools.bokeh_plots import bokeh_plot_parcels
+except:
+    has_bokeh = False
+
 try:
     parser = argparse.ArgumentParser(
         description="Plot the parcels of several or individual time steps.")
@@ -18,11 +25,12 @@ try:
                           help="hdf5 output file of EPIC")
 
     parser.add_argument("--steps",
-                        type=str,
+                        type=int,
+                        nargs='+',
                         required=False,
-                        default='-1',
-                        help="steps to plot, a range is specified with a colon, " \
-                            + "e.g. 0:10 plots step 0 to 10) (default: -1 [all])")
+                        default=0,
+                        help="steps to plot, " \
+                            + "e.g. 0 10  100")
 
     parser.add_argument("--show",
                         required=False,
@@ -42,34 +50,73 @@ try:
                         default="png",
                         help="save format (default: png)")
 
+    parser.add_argument("--xmin",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help=" float to determine x min")
+
+    parser.add_argument("--xmax",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help=" float to determine x max")
+
+    parser.add_argument("--ymin",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help="float to determine y min")
+
+    parser.add_argument("--ymax",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help="float to determine y max")
+
+    if has_bokeh:
+        parser.add_argument("--use-bokeh",
+                            required=False,
+                            action='store_true',
+                            help="use Bokeh to plot")
+
+        parser.add_argument("--display",
+                            type=str,
+                            required=False,
+                            default='full HD',
+                            help="display (bokeh only)")
+
     if not '--filename' in sys.argv:
         parser.print_help()
         exit(0)
 
     args = parser.parse_args()
 
-    steps = args.steps
-
-    if ':' in steps:
-        steps = steps.split(':')
-        begin=int(steps[0])
-        end=int(steps[1])
-    elif steps.isdigit():
-        end = int(steps)
-        begin = end
-        if end == -1:
-            begin = 0
-    else:
-        raise IOError("Invalid --steps argument format.")
-
-    if end > -1 and end < begin:
-        raise ValueError("Invalid plot range: (begin) " + str(begin) + " > " + str(end) + " (end).")
-
     if not os.path.exists(args.filename):
         raise IOError("File '" + args.filename + "' does not exist.")
 
-    plot_parcels(fname=args.filename, begin=begin, end=end, show=args.show,
-                  fmt=args.fmt, coloring=args.coloring)
+    for step in args.steps:
+        if has_bokeh and args.use_bokeh:
+            bokeh_plot_parcels(fname=args.filename,
+                               step=step,
+                               shw=args.show,
+                               fmt=args.fmt,
+                               coloring=args.coloring,
+                               display=args.display,
+                               xmin=args.xmin,
+                               xmax=args.xmax,
+                               ymin=args.ymin,
+                               ymax=args.ymax)
+        else:
+            plot_parcels(fname=args.filename,
+                         step=step,
+                         show=args.show,
+                         fmt=args.fmt,
+                         coloring=args.coloring,
+                         xmin=args.xmin,
+                         xmax=args.xmax,
+                         ymin=args.ymin,
+                         ymax=args.ymax)
 
 except Exception as ex:
     print(ex)

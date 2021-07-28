@@ -22,7 +22,7 @@ class ParcelAnimation:
     def __init__(self):
         self.ani = None
 
-    def create(self, fname, coloring='aspect-ratio'):
+    def create(self, fname, coloring='aspect-ratio', **kwargs):
         self.h5reader = H5Reader()
 
         self.h5reader.open(fname)
@@ -31,11 +31,11 @@ class ParcelAnimation:
             raise IOError('Not a parcel output file.')
 
         self.nsteps = self.h5reader.get_num_steps()
-        self.extent = self.h5reader.get_box_extent()
-        self.origin = self.h5reader.get_box_origin()
         self.coloring = coloring
 
-        fig = plt.figure(figsize=(12, 4), dpi=300)
+        self.fkwargs = kwargs
+
+        fig = plt.figure(figsize=(16, 9), dpi=200)
         self.ax = plt.gca()
 
         if coloring == 'aspect-ratio':
@@ -65,12 +65,6 @@ class ParcelAnimation:
     def _resize(self):
         # make plot domain 5 percent larger
         self.ax.set_aspect('equal', 'box')
-        #self.ax.set_xlim([self.origin[0] - 0.05 * self.extent[0],
-                          #self.origin[0] + 1.05 * self.extent[0]])
-
-        #self.ax.set_ylim([self.origin[1] - 0.05 * self.extent[0],
-                          #self.origin[0] + 1.05 * self.extent[1]])
-
 
     def _update(self, step):
 
@@ -84,7 +78,8 @@ class ParcelAnimation:
         self._resize()
 
         _plot_parcels(self.ax, self.h5reader, step, self.coloring,
-                       self.vmin, self.vmax, draw_cbar=(step == 0))
+                       self.vmin, self.vmax, draw_cbar=(step == 0),
+                       **self.fkwargs)
 
         if step == self.nsteps - 1:
             self.bar.finish()
