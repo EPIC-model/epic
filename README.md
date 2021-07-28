@@ -37,7 +37,8 @@ In order to run the model, execute
 ```
 $ epic --config filename
 ```
-where `filename` is the configuration file.
+where `filename` is the configuration file. An example of a configuration file is given
+[here](examples/taylor_green.config).
 
 ## Post-processing
 The directory `$PREFIX/bin` contains following scripts:
@@ -125,5 +126,3 @@ try:
 except Exception as err:
     print(err)
 ```
-
-

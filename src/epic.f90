@@ -147,7 +147,7 @@ program epic
                 endif
 
                 if (mod(iter, parcel%split_freq) == 0) then
-                    call split_ellipses(parcels, parcel%lambda, parcel%vmaxfraction)
+                    call split_ellipses(parcels, parcel%lambda_max, parcel%vmax_fraction)
                 endif
 
                 if (mod(iter, parcel%correction_freq) == 0) then

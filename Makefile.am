@@ -9,14 +9,14 @@ SUBDIRS =		\
 dist_doc_DATA = README.md
 
 dataroot_DATA = 				\
-	taylor_green.config			\
-	robert.config				\
-	straka.config				\
-	models/robert2d-one-gaussian.nml	\
-	models/robert2d-one-uniform.nml		\
-	models/robert2d-two-gaussians.nml	\
-	models/straka2d.nml			\
-	models/taylorgreen2d.nml
+	examples/taylor_green.config		\
+	examples/robert.config			\
+	examples/straka.config			\
+	examples/robert2d-one-gaussian.nml	\
+	examples/robert2d-one-uniform.nml	\
+	examples/robert2d-two-gaussians.nml	\
+	examples/straka2d.nml			\
+	examples/taylorgreen2d.nml
 
 
 # make python script an executable script

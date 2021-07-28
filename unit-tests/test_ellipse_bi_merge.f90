@@ -54,9 +54,9 @@ program test_ellipse_bi_merge
     parcels%humidity(2) = 1.2d0
 #endif
     ! geometric merge
-    parcel%lambda = five
+    parcel%lambda_max = five
     parcel%merge_type = 'bi-geometric'
-    parcel%vfraction = two
+    parcel%vmin_fraction = two
 
     call merge_ellipses(parcels)
 

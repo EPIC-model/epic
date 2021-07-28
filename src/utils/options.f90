@@ -42,18 +42,18 @@ module options
     !
     type parcel_type
         integer          :: n_per_cell   = 4              ! number of parcels per cell (need to be a square)
-        double precision :: lambda       = five           ! max. ellipse aspect ratio a/b
+        double precision :: lambda_max   = five           ! max. ellipse aspect ratio a/b
         integer          :: split_freq   = 1              ! split frequency, 1 = call split subroutine every step
         character(15)    :: merge_type   = 'bi-geometric' ! merge method in use (other option: 'optimal')
         integer          :: merge_freq   = 1              ! merge frequency, 1 = call merge subroutine every step
-        double precision :: vfraction    = 36.0d0         ! volume fraction in merge
+        double precision :: vmin_fraction   = 36.0d0      ! minimum parcel area fraction (in merge)
         integer          :: correction_freq = 1           ! parcel correction frequency, 1 = call module every step
         integer          :: correction_iters= 1           ! parcel correction iterations
         logical          :: apply_laplace = .true.        ! use Laplacian parcel correction
         logical          :: apply_gradient = .true.       ! use gradient descent to adjust parcel positions on small scale
         double precision :: gradient_pref= 1.8d0          ! prefactor for gradient descent
         double precision :: max_compression= 0.5d0        ! parameter for gradient descent (limits the shift in parcel position)
-        double precision :: vmaxfraction = 2.0
+        double precision :: vmax_fraction = 2.0           ! maximum parcel area fraction
 
     end type parcel_type
 
