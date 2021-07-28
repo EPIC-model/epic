@@ -56,7 +56,7 @@ program test_ellipse_bi_merge
     ! geometric merge
     parcel%lambda_max = five
     parcel%merge_type = 'bi-geometric'
-    parcel%vfraction = two
+    parcel%vmin_fraction = two
 
     call merge_ellipses(parcels)
 

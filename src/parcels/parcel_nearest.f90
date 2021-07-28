@@ -38,7 +38,7 @@ module parcel_nearest
                 allocate(kc2(ncell))
             endif
 
-            vmin = vcell / dble(parcel%vfraction)
+            vmin = vcell / dble(parcel%vmin_fraction)
 
             nmerge=0
 
