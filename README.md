@@ -137,7 +137,6 @@ To run an EPIC simulation, a configuration file must be provided that looks as f
  !
  ! h5 output info
  !
-
  output%h5_field_freq    = 1                    ! after how many steps to write to field HDF5 file
  output%h5_parcel_freq   = 1                    ! after how many steps to write to parcel HDF5 file
  output%h5_write_fields  = .true.               ! enable / disable field dump
@@ -148,7 +147,6 @@ To run an EPIC simulation, a configuration file must be provided that looks as f
  !
  ! parcel info
  !
-
  parcel%n_per_cell       = 9                    ! initial number of parcels per cell
  parcel%lambda_max       = 5.0                  ! maximum parcel aspect ratio
  parcel%split_freq       = 1                    ! after how many steps to call parcel split
