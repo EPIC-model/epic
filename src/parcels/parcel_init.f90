@@ -158,8 +158,8 @@ module parcel_init
             double precision                :: B22, a2
 
             ! do refining by splitting
-            do while (lam >= parcel%lambda)
-                call split_ellipses(parcels, parcel%lambda, parcel%vmaxfraction)
+            do while (lam >= parcel%lambda_max)
+                call split_ellipses(parcels, parcel%lambda_max, parcel%vmaxfraction)
                 B22 = get_B22(parcels%B(1, 1), zero, parcels%volume(1))
                 a2 = get_eigenvalue(parcels%B(1, 1), zero, B22)
                 lam = a2 / get_ab(parcels%volume(1))

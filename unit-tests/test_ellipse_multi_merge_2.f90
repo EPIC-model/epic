@@ -41,7 +41,7 @@ program test_ellipse_multi_merge_2
     call parcel_setup
 
     ! geometric merge
-    parcel%lambda = 5.0
+    parcel%lambda_max = 5.0
     parcel%merge_type = 'multi-geometric'
     parcel%vfraction = 3
 
@@ -59,7 +59,7 @@ program test_ellipse_multi_merge_2
     call parcel_setup
 
     ! optimal merge
-    parcel%lambda = 5.0
+    parcel%lambda_max = 5.0
     parcel%merge_type = 'multi-optimal'
     parcel%vfraction = 3
 
