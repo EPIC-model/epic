@@ -2,9 +2,9 @@
 
  model      = 'TaylorGreen'
 
- h5fname    = 'taylorgreen2d.hdf5'
+ h5fname    = 'taylor_green.hdf5'
 
- box%ncells = 10, 10
+ box%ncells = 16, 16
 
  ! the extent and origin are multiples of pi,
  ! i.e., extent = 1.0, results in pi and origin = -0.5

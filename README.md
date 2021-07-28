@@ -37,7 +37,8 @@ In order to run the model, execute
 ```
 $ epic --config filename
 ```
-where `filename` is the configuration file (see below).
+where `filename` is the configuration file. An example of a configuration file is given
+[here](examples/taylor_green.config).
 
 ## Post-processing
 The directory `$PREFIX/bin` contains following scripts:
@@ -124,50 +125,4 @@ try:
 
 except Exception as err:
     print(err)
-```
-
-## How to write an EPIC configuration file
-To run an EPIC simulation, a configuration file must be provided that looks as follows.
-```
-&EPIC
-
- field_file              = 'taylor_green.hdf5'  ! input field file
- field_tol               = 1.0e-9               ! tolerance for parcel generation
-
- !
- ! h5 output info
- !
- output%h5_field_freq    = 1                    ! after how many steps to write to field HDF5 file
- output%h5_parcel_freq   = 1                    ! after how many steps to write to parcel HDF5 file
- output%h5_write_fields  = .true.               ! enable / disable field dump
- output%h5_write_parcels = .true.               ! enable / disable parcel dump
- output%h5_overwrite     = .true.               ! replace existing HDF5 files
- output%h5_basename      = 'taylor_green'       ! HDF5 output base name
-
- !
- ! parcel info
- !
- parcel%n_per_cell       = 9                    ! initial number of parcels per cell
- parcel%lambda_max       = 5.0                  ! maximum parcel aspect ratio
- parcel%split_freq       = 1                    ! after how many steps to call parcel split
- parcel%merge_type       = 'multi-geometric'    ! *-optimal or *-geometric with * = bi or multi
- parcel%merge_freq       = 1                    ! after how many steps to call parcel merge
- parcel%vmin_fraction    = 36.0                 ! minimum parcel area fraction
- parcel%vmax_fraction    = 2.89                 ! maximum parcel area fraction
- parcel%correction_freq  = 1                    ! after how many steps to call parcel correction
- parcel%correction_iters = 2                    ! how many parcel correction iterations
- parcel%apply_laplace    = .true.               ! enable / disable divergent flow correction
- parcel%apply_gradient   = .true.               ! enable / disable gradient correction
- parcel%gradient_pref    = 1.8                  ! gradient correction prefactor
- parcel%max_compression  = 0.5                  ! gradient correction maximum compression
-
- !
- ! stepper info
- !
- time%limit              = 100.0                ! time limit (s)
- time%dt                 = 0.5                  ! time step (s) [if non-adaptive]
- time%is_adaptive        = .true.               ! enable / disable adaptive time stepping
- time%alpha_s            = 0.1                  ! time step stretching prefactor
- time%alpha_b            = 0.1                  ! time step buoyancy frequency prefactor
-/
 ```
