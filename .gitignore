@@ -10,4 +10,6 @@ config.h.in
 configure
 install-sh
 missing
+py-compile
+configure~
 src/Makefile.in
