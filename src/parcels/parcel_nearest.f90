@@ -2,7 +2,7 @@
 !               Finds the parcels nearest every "small" parcel
 !==============================================================================
 module parcel_nearest
-    use constants, only : pi, max_num_parcels
+    use constants, only : pi, f12, max_num_parcels
     use parcel_container, only : parcels, n_parcels, get_delx
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz
     use options, only : parcel
@@ -114,7 +114,7 @@ module parcel_nearest
                 ! with the values below
                 ! Might seem a bit radical to take a large vmergemin and small dsqmin
                 ! but computationally it is easy
-                dsqmin=0.5*parcel%lambda_max
+                dsqmin=f12*parcel%lambda_max
                 vmergemin=pi
                 imin=0
 
