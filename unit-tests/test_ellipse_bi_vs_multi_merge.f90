@@ -6,7 +6,7 @@
 ! =============================================================================
 program test_ellipse_bi_vs_multi_merge
     use unit_test
-    use constants, only : pi, one, two, four
+    use constants, only : pi, one, two, three, four, five
     use parcel_container
     use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
@@ -35,9 +35,9 @@ program test_ellipse_bi_vs_multi_merge
     call parcel_setup
 
     ! geometric merge
-    parcel%lambda_max = 5.0
+    parcel%lambda_max = five
     parcel%merge_type = 'multi-geometric'
-    parcel%vmin_fraction = 3
+    parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
@@ -66,9 +66,9 @@ program test_ellipse_bi_vs_multi_merge
     call parcel_setup
 
     ! optimal merge
-    parcel%lambda_max = 5.0
+    parcel%lambda_max = five
     parcel%merge_type = 'multi-optimal'
-    parcel%vmin_fraction = 3
+    parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
