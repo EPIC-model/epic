@@ -439,8 +439,10 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
     tag = None
     if dset == 'buoyancy':
         tag = 'b'
+        tag_name = 'b'
     elif dset == 'vorticity':
         tag = 'w'
+        tag_name = '\zeta'
     else:
         raise ValueError("Dataset must be 'buoyancy' or 'vorticity'.")
 
@@ -579,6 +581,10 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
 
     ax1.set_xlabel(r'time (s)')
     ax2.set_xlabel(r'time (s)')
+    ax1.set_ylabel(r'$\langle x\rangle_' + tag_name + \
+        r'\pm\sqrt{\langle x^2\rangle_' + tag_name + '}$')
+    ax2.set_ylabel(r'$\langle y\rangle_' + tag_name + \
+        r'\pm\sqrt{\langle y^2\rangle_' + tag_name + '}$')
     fig1.tight_layout()
     fig2.tight_layout()
 
@@ -588,10 +594,10 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
         prefix = os.path.splitext(fnames[0])[0] + '_'
         if n > 1:
             prefix = ''
-        ax1.savefig(prefix + '_x_center_of_mass_' + dset + '.' + fmt,
-                    bbox_inches='tight')
-        ax2.savefig(prefix + '_z_center_of_mass_' + dset + '.' + fmt,
-                    bbox_inches='tight')
+        fig1.savefig(prefix + 'x_center_of_mass_' + dset + '.' + fmt,
+                     bbox_inches='tight')
+        fig2.savefig(prefix + 'z_center_of_mass_' + dset + '.' + fmt,
+                     bbox_inches='tight')
     plt.close('all')
 
 
