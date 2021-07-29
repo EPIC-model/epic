@@ -434,13 +434,34 @@ def plot_parcel_number(fnames, show=False, fmt="png", **kwargs):
     plt.close()
 
 
-def plot_center_of_mass(fname, show=False, fmt="png"):
-    prefix, ext = os.path.splitext(fname)
+def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs):
 
-    if ext == '.hdf5':
-        print('Extract data, evaluate quantities, write CSV file and plot.')
+    tag = None
+    if dset == 'buoyancy':
+        tag = 'b'
+    elif dset == 'vorticity':
+        tag = 'w'
+    else:
+        raise ValueError("Dataset must be 'buoyancy' or 'vorticity'.")
 
-        h5reader = H5Reader()
+    labels = kwargs.pop('labels', None)
+
+    n = len(fnames)
+    if labels is None:
+        labels = [None] * n
+
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    h5reader = H5Reader()
+
+    fig1 = plt.figure(num=1)
+    ax1 = fig1.gca()
+
+    fig2 = plt.figure(num=2)
+    ax2 = fig2.gca()
+
+    for i, fname in enumerate(fnames):
+
         h5reader.open(fname)
 
         if not h5reader.is_parcel_file:
@@ -530,55 +551,48 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
 
         df = pd.DataFrame(data=data)
 
-        df.to_csv(prefix + '.csv', index=False)
-    elif ext == '.csv':
-        print('Read CSV file and plot.')
-        df = pd.read_csv(prefix + '.csv')
-    else:
-        raise IOError('Wrong file format. Requires parcel hdf5 or CSV file.')
+        label = None
+        if not labels[i] is None:
+            label = labels[i]
 
 
-    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(9, 6), dpi=200)
-    axes[0].plot(df['t'], df['xb_bar'], label=r'$\langle x\rangle_b$')
+        ax1.plot(df['t'], df['x' + tag + '_bar'], label=label, color=colors[i])
 
-    std = np.sqrt(df['x2b_bar'])
-    axes[0].fill_between(df['t'], df['xb_bar']-std, df['xb_bar']+std, alpha=0.5,
-                         label=r'$\pm\sqrt{\langle x^2\rangle_b}$')
+        std = np.sqrt(df['x2' + tag + '_bar'])
+        ax1.fill_between(df['t'], df['x' + tag + '_bar']-std, df['x' + tag + '_bar']+std, alpha=0.5,
+                         color=colors[i], edgecolor='None')
 
-    axes[0].plot(df['t'], df['zb_bar'], label=r'$\langle z\rangle_b$')
+        ax2.plot(df['t'], df['z' + tag + '_bar'], label=label, color=colors[i])
 
-    std = np.sqrt(df['z2b_bar'])
-    axes[0].fill_between(df['t'], df['zb_bar']-std, df['zb_bar']+std, alpha=0.5,
-                         label=r'$\pm\sqrt{\langle z^2\rangle_b}$')
+        std = np.sqrt(df['z2' + tag + '_bar'])
+        ax2.fill_between(df['t'], df['z' + tag + '_bar']-std, df['z' + tag + '_bar']+std, alpha=0.5,
+                         color=colors[i], edgecolor='None')
 
+    ax1.grid(which='both', linestyle='dashed')
+    ax2.grid(which='both', linestyle='dashed')
+    ax1.set_yscale('log')
+    ax2.set_yscale('log')
 
-    axes[1].plot(df['t'], df['xw_bar'], label=r'$\langle x\rangle_\zeta$')
+    if not label is None:
+        ax1.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.12))
+        ax2.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.12))
 
-    std = np.sqrt(df['x2w_bar'])
-    axes[1].fill_between(df['t'], df['xw_bar']-std, df['xw_bar']+std, alpha=0.5,
-                         label=r'$\pm\sqrt{\langle x^2\rangle_\zeta}$')
-
-    axes[1].plot(df['t'], df['zw_bar'], label=r'$\langle z\rangle_\zeta$')
-
-    std = np.sqrt(df['z2w_bar'])
-    axes[1].fill_between(df['t'], df['zw_bar']-std, df['zw_bar']+std, alpha=0.5,
-                         label=r'$\pm\sqrt{\langle z^2\rangle_\zeta}$')
-
-    axes[0].grid(which='both', linestyle='dashed')
-    axes[0].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.0))
-
-    axes[1].grid(which='both', linestyle='dashed')
-    axes[1].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.0))
-    axes[1].set_xlabel(r'time (s)')
-    plt.tight_layout()
+    ax1.set_xlabel(r'time (s)')
+    ax2.set_xlabel(r'time (s)')
+    fig1.tight_layout()
+    fig2.tight_layout()
 
     if show:
         plt.show()
     else:
-        plt.savefig(prefix + '_center_of_mass.' + fmt,
+        prefix = os.path.splitext(fnames[0])[0] + '_'
+        if n > 1:
+            prefix = ''
+        ax1.savefig(prefix + '_x_center_of_mass_' + dset + '.' + fmt,
                     bbox_inches='tight')
-    plt.close()
-
+        ax2.savefig(prefix + '_z_center_of_mass_' + dset + '.' + fmt,
+                    bbox_inches='tight')
+    plt.close('all')
 
 
 def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwargs):

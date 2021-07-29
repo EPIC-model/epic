@@ -97,8 +97,8 @@ try:
         plot_parcel_number(args.filenames, show=args.show, fmt=args.fmt,
                            labels=args.labels)
     elif args.kind == kinds[4]:
-        for fname in args.filenames:
-            plot_center_of_mass(fname, show=args.show, fmt=args.fmt)
+        plot_center_of_mass(args.filenames, show=args.show, fmt=args.fmt,
+                            dset=args.dataset, labels=args.labels)
     elif args.kind == kinds[5]:
         plot_cumulative(args.filenames, step=args.step,
                         dset=args.dataset, show=args.show,
