@@ -106,7 +106,7 @@ program epic
             integer          :: npw  = 0    ! number of parcel writes to h5
             integer          :: cor_iter    ! iterator for parcel correction
 
-            do while (t <= time%limit)
+            do while (t < time%limit)
 
 #ifdef ENABLE_VERBOSE
                 if (verbose) then
@@ -124,7 +124,7 @@ program epic
                 endif
 
                 ! update the time step
-                dt = get_time_step()
+                dt = get_time_step(t)
 
                 ! make sure we always write initial setup
                 if (output%h5_write_fields .and. &
@@ -161,7 +161,6 @@ program epic
                     enddo
                 endif
 
-
                 t = t + dt
                 iter = iter + 1
             end do
@@ -194,11 +193,12 @@ program epic
         end subroutine
 
 
-        function get_time_step() result(dt)
+        function get_time_step(t) result(dt)
             use options, only : time
-            double precision :: dt
-            double precision :: gmax, bmax
-            double precision :: dbdz(0:nz, 0:nx-1)
+            double precision, intent(in) :: t
+            double precision             :: dt
+            double precision             :: gmax, bmax
+            double precision             :: dbdz(0:nz, 0:nx-1)
 
             if (time%is_adaptive) then
                 ! velocity strain
@@ -217,6 +217,10 @@ program epic
                 dt = min(time%alpha_s / gmax, time%alpha_b / bmax)
             else
                 dt = time%dt
+            endif
+
+            if (t + dt > time%limit) then
+                dt = time%limit - t
             endif
 
             if (dt <= zero) then
