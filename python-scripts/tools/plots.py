@@ -668,7 +668,7 @@ def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
         t = np.zeros(nsteps)
 
         for step in range(nsteps):
-            data = h5reader.get_dataset(step, 'num parcels per cell')
+            data = h5reader.get_dataset(step, 'nparg')
 
             n_mean[step] = data.mean()
             n_std[step] = data.std()
