@@ -202,6 +202,23 @@ module parcel_diagnostics
             call write_h5_double_scalar_attrib(group, "kinetic energy", ke)
             call write_h5_double_scalar_attrib(group, "total energy", ke + pe)
 
+#ifdef ENABLE_DIAGNOSE
+            call write_h5_double_scalar_attrib(group, "avg aspect ratio", avg_lam)
+            call write_h5_double_scalar_attrib(group, "std aspect ratio", std_lam)
+            call write_h5_double_scalar_attrib(group, "avg volume", avg_vol)
+            call write_h5_double_scalar_attrib(group, "std volume", std_vol)
+
+            call write_h5_double_scalar_attrib(group, "xb_bar", xb_bar)
+            call write_h5_double_scalar_attrib(group, "x2b_bar", x2b_bar)
+            call write_h5_double_scalar_attrib(group, "zb_bar", zb_bar)
+            call write_h5_double_scalar_attrib(group, "z2b_bar", z2b_bar)
+
+            call write_h5_double_scalar_attrib(group, "xv_bar", xv_bar)
+            call write_h5_double_scalar_attrib(group, "x2v_bar", x2v_bar)
+            call write_h5_double_scalar_attrib(group, "zv_bar", zv_bar)
+            call write_h5_double_scalar_attrib(group, "z2v_bar", z2v_bar)
+#endif
+
             ! close all
             call close_h5_group(group)
         end subroutine write_h5_parcel_diagnostics
