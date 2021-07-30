@@ -37,6 +37,9 @@ module field_diagnostics
             double precision              :: rms_v, abserr_v
             integer                       :: max_npar, min_npar
             logical                       :: created
+#ifndef NDEBUG
+            double precision              :: vol_sym_err
+#endif
 
             name = trim(get_step_group_name(iter))
 
@@ -61,6 +64,12 @@ module field_diagnostics
 
             min_npar = minval(nparg)
             call write_h5_int_scalar_attrib(group, "min num parcels per cell", min_npar)
+
+#ifndef NDEBUG
+            vol_sym_err = sum(sym_volg(0:nz, :))
+            call write_h5_double_scalar_attrib(group, "total symmetry volume error", &
+                                               vol_sym_err)
+#endif
 
             call close_h5_group(group)
         end subroutine write_h5_field_diagnostics

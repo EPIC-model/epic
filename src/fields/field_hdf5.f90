@@ -1,9 +1,8 @@
 module field_hdf5
-    use options, only : verbose, output
+    use options, only : verbose
     use h5_utils
     use h5_writer
     use fields
-    use field_diagnostics
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -64,13 +63,7 @@ module field_hdf5
 
             call write_h5_double_scalar_step_attrib(h5file_id, nw, "dt", dt)
 
-            if (output%h5_write_fields) then
-                call write_h5_fields(nw)
-            endif
-
-            if (output%h5_write_field_stats) then
-                call write_h5_field_diagnostics(h5file_id, nw)
-            endif
+            call write_h5_fields(nw)
 
             ! increment counter
             nw = nw + 1

@@ -1,7 +1,6 @@
 module parcel_hdf5
     use parcel_container, only : parcels, n_parcels
-    use parcel_diagnostics, only : write_h5_parcel_diagnostics
-    use options, only : verbose, parcel, time, output
+    use options, only : verbose
     use hdf5
     use h5_utils
     use h5_writer
@@ -68,13 +67,7 @@ module parcel_hdf5
 
             call write_h5_int_scalar_step_attrib(h5file_id, nw, "num parcel", n_parcels)
 
-            if (output%h5_write_parcel_stats) then
-                call write_h5_parcel_diagnostics(h5file_id, nw)
-            endif
-
-            if (output%h5_write_parcels) then
-                call write_h5_parcels(nw)
-            endif
+            call write_h5_parcels(nw)
 
             ! increment counter
             nw = nw + 1
