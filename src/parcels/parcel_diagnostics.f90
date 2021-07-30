@@ -30,10 +30,12 @@ module parcel_diagnostics
     ! buoyancy weighted first and second moments
     double precision :: xb_bar, x2b_bar
     double precision :: zb_bar, z2b_bar
+    double precision :: xzb_bar
 
     ! vorticity weighted first and second moments
     double precision :: xv_bar, x2v_bar
     double precision :: zv_bar, z2v_bar
+    double precision :: xzv_bar
 #endif
 
     public :: init_parcel_diagnostics, &
@@ -70,8 +72,8 @@ module parcel_diagnostics
             double precision :: b, z, vel(2), vol, zmin
 #ifdef ENABLE_DIAGNOSE
             double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum
-            double precision :: xbv, x2bv, zbv, z2bv
-            double precision :: xvv, x2vv, zvv, z2vv
+            double precision :: xbv, x2bv, zbv, z2bv, xzbv
+            double precision :: xvv, x2vv, zvv, z2vv, xzvv
             double precision :: bvsum, vvsum, bv, vv
 #endif
             ! reset
@@ -99,7 +101,7 @@ module parcel_diagnostics
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, eval, lam, B22, bv, vv) &
             !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, bvsum, xbv, &
-            !$omp&              zbv, x2bv, z2bv, xvv, zvv, x2vv, z2vv)
+            !$omp&              zbv, x2bv, z2bv, xzbv, xvv, zvv, x2vv, z2vv, xzvv)
 #else
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z) reduction(+: ke, pe)
@@ -135,6 +137,7 @@ module parcel_diagnostics
 
                 x2bv = x2bv + bv * parcels%position(n, 1) ** 2
                 z2bv = z2bv + bv * parcels%position(n, 2) ** 2
+                xzbv = xzbv + bv * parcels%position(n, 2) * parcels%position(n, 2)
 
 
                 vv = parcels%vorticity(n) * vol
@@ -144,6 +147,7 @@ module parcel_diagnostics
 
                 x2vv = x2vv + vv * parcels%position(n, 1) ** 2
                 z2vv = z2vv + vv * parcels%position(n, 2) ** 2
+                xzvv = xzvv + vv * parcels%position(n, 2) * parcels%position(n, 2)
 #endif
             enddo
             !$omp end do
@@ -168,11 +172,15 @@ module parcel_diagnostics
             x2b_bar = x2bv * bvsum
             z2b_bar = z2bv * bvsum
 
+            xzb_bar = xzbv * bvsum - xb_bar * zb_bar
+
             xv_bar = xvv * vvsum
             zv_bar = zvv * vvsum
 
             x2v_bar = x2vv * vvsum
             z2v_bar = z2vv * vvsum
+
+            xzv_bar = xzvv * vvsum - xv_bar * zv_bar
 #endif
 
 
@@ -202,11 +210,13 @@ module parcel_diagnostics
             call write_h5_double_scalar_attrib(h5file_id, "x2b_bar", x2b_bar)
             call write_h5_double_scalar_attrib(h5file_id, "zb_bar", zb_bar)
             call write_h5_double_scalar_attrib(h5file_id, "z2b_bar", z2b_bar)
+            call write_h5_double_scalar_attrib(h5file_id, "xzb_bar", xzb_bar)
 
             call write_h5_double_scalar_attrib(h5file_id, "xv_bar", xv_bar)
             call write_h5_double_scalar_attrib(h5file_id, "x2v_bar", x2v_bar)
             call write_h5_double_scalar_attrib(h5file_id, "zv_bar", zv_bar)
             call write_h5_double_scalar_attrib(h5file_id, "z2v_bar", z2v_bar)
+            call write_h5_double_scalar_attrib(h5file_id, "xzv_bar", xzv_bar)
 #endif
         end subroutine write_h5_parcel_diagnostics
 end module parcel_diagnostics
