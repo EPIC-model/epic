@@ -54,11 +54,11 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
                        aspect_ratio = (right-left)/(top-bottom),
                        x_range = (left, right),
                        y_range = (bottom, top),
-                       x_axis_label='x',
-                       y_axis_label='y',
+                       x_axis_label='x (m)',
+                       y_axis_label='y (m)',
                        title = title + \
-                       '                              time = %15.3f'%ttime + \
-                       '                              #parcels = %10d'%nparcels)
+                       '\t\t\t\t time = %15.3f'%ttime + \
+                       '\t\t\t\t #parcels = %10d'%nparcels)
 
     # 20 July 2021
     # https://stackoverflow.com/questions/32158939/python-bokeh-remove-toolbar-from-chart
@@ -76,6 +76,15 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     graph.yaxis.major_label_text_font_size = font_size
     graph.yaxis.axis_label_text_font = text_font
     graph.yaxis.major_label_text_font = text_font
+
+    graph.yaxis.formatter.use_scientific = bokeh_style['formatter.use_scientific']
+    graph.xaxis.formatter.use_scientific = bokeh_style['formatter.use_scientific']
+    graph.yaxis.formatter.power_limit_low = bokeh_style['formatter.power_limit_low']
+    graph.xaxis.formatter.power_limit_low = bokeh_style['formatter.power_limit_low']
+    graph.yaxis.formatter.power_limit_high = bokeh_style['formatter.power_limit_high']
+    graph.xaxis.formatter.power_limit_high = bokeh_style['formatter.power_limit_high']
+    graph.yaxis.formatter.precision = bokeh_style['formatter.precision']
+    graph.xaxis.formatter.precision = bokeh_style['formatter.precision']
 
     graph.title.text_font_size = font_size
     graph.title.text_font = text_font

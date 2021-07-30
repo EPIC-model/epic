@@ -14,7 +14,11 @@ legend_dict = {
 }
 
 bokeh_style = {
-    'font.size'     : '25pt',
-    'font.style'    : 'normal',
-    'font.font'     : 'helvetica'
+    'font.size'                     : '25pt',
+    'font.style'                    : 'normal',
+    'font.font'                     : 'helvetica',
+    'formatter.use_scientific'      : False,
+    'formatter.power_limit_low'     : 0,
+    'formatter.power_limit_high'    : 0,
+    'formatter.precision'           : 'auto'
 }
