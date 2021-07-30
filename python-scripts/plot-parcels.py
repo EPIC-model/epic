@@ -99,7 +99,7 @@ try:
         if has_bokeh and args.use_bokeh:
             bokeh_plot_parcels(fname=args.filename,
                                step=step,
-                               shw=args.show,
+                               show=args.show,
                                fmt=args.fmt,
                                coloring=args.coloring,
                                display=args.display,

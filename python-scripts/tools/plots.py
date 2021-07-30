@@ -447,6 +447,7 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
         raise ValueError("Dataset must be 'buoyancy' or 'vorticity'.")
 
     labels = kwargs.pop('labels', None)
+    variance = kwargs.pop('variance', False)
 
     n = len(fnames)
     if labels is None:
@@ -560,31 +561,39 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
 
         ax1.plot(df['t'], df['x' + tag + '_bar'], label=label, color=colors[i])
 
-        std = np.sqrt(df['x2' + tag + '_bar'])
-        ax1.fill_between(df['t'], df['x' + tag + '_bar']-std, df['x' + tag + '_bar']+std, alpha=0.5,
-                         color=colors[i], edgecolor='None')
+        if variance:
+            std = np.sqrt(df['x2' + tag + '_bar'])
+            ax1.fill_between(df['t'], df['x' + tag + '_bar']-std, df['x' + tag + '_bar']+std, alpha=0.5,
+                             color=colors[i], edgecolor='None')
 
         ax2.plot(df['t'], df['z' + tag + '_bar'], label=label, color=colors[i])
 
-        std = np.sqrt(df['z2' + tag + '_bar'])
-        ax2.fill_between(df['t'], df['z' + tag + '_bar']-std, df['z' + tag + '_bar']+std, alpha=0.5,
-                         color=colors[i], edgecolor='None')
+        if variance:
+            std = np.sqrt(df['z2' + tag + '_bar'])
+            ax2.fill_between(df['t'], df['z' + tag + '_bar']-std, df['z' + tag + '_bar']+std, alpha=0.5,
+                             color=colors[i], edgecolor='None')
 
     ax1.grid(which='both', linestyle='dashed')
     ax2.grid(which='both', linestyle='dashed')
-    ax1.set_yscale('log')
-    ax2.set_yscale('log')
 
     if not label is None:
-        ax1.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.12))
-        ax2.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.12))
+        ax1.legend(loc=legend_dict['loc'],
+                   ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
+        ax2.legend(loc=legend_dict['loc'],
+                   ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
     ax1.set_xlabel(r'time (s)')
     ax2.set_xlabel(r'time (s)')
-    ax1.set_ylabel(r'$\langle x\rangle_' + tag_name + \
-        r'\pm\sqrt{\langle x^2\rangle_' + tag_name + '}$')
-    ax2.set_ylabel(r'$\langle y\rangle_' + tag_name + \
-        r'\pm\sqrt{\langle y^2\rangle_' + tag_name + '}$')
+    if variance:
+        ax1.set_ylabel(r'$\langle x\rangle_' + tag_name + \
+            r'\pm\sqrt{\langle x^2\rangle_' + tag_name + '}$')
+        ax2.set_ylabel(r'$\langle y\rangle_' + tag_name + \
+            r'\pm\sqrt{\langle y^2\rangle_' + tag_name + '}$')
+    else:
+        ax1.set_ylabel(r'$\langle x\rangle_' + tag_name + r'$')
+        ax2.set_ylabel(r'$\langle y\rangle_' + tag_name + r'$')
     fig1.tight_layout()
     fig2.tight_layout()
 

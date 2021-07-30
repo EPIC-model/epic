@@ -12,3 +12,9 @@ legend_dict = {
     'ncol':           4,
     'loc':            'upper center'
 }
+
+bokeh_style = {
+    'font.size'     : '25pt',
+    'font.style'    : 'normal',
+    'font.font'     : 'helvetica'
+}
