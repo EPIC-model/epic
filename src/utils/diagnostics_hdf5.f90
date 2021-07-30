@@ -52,49 +52,68 @@ module diagnostics_hdf5
             integer,          intent(inout) :: nw
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
-            integer(hid_t)                  :: group
+            integer(hid_t)                  :: group, pgroup, fgroup
+            character(:), allocatable       :: name
+            logical                         :: created
             character(len=6)                :: pname = 'parcel'
             character(len=5)                :: fname = 'field'
 
             call start_timer(hdf5_diagnostics_timer)
+
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
                 print "(a19)", "write diagnostics to h5"
             endif
 #endif
-
             call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
 
-            call write_h5_double_scalar_step_attrib(h5file_id, nw, "t", t)
+            name = trim(get_step_group_name(nw))
 
-            call write_h5_double_scalar_step_attrib(h5file_id, nw, "dt", dt)
+            call create_h5_group(h5file_id, name, group, created)
+
+            if (.not. created) then
+                call open_h5_group(h5file_id, name, group)
+            endif
+
+
+            call write_h5_double_scalar_attrib(group, "t", t)
+
+            call write_h5_double_scalar_attrib(group, "dt", dt)
 
             !
             ! write parcel diagnostics
             !
-            call create_h5_group(h5file_id, pname, group)
+            call create_h5_group(group, pname, pgroup, created)
 
-            call write_h5_int_scalar_step_attrib(group, nw, "num parcel", n_parcels)
+            if (.not. created) then
+                call open_h5_group(group, pname, pgroup)
+            endif
 
-            call write_h5_parcel_diagnostics(group, nw)
+            call write_h5_parcel_diagnostics(pgroup)
 
-            call close_h5_group(group)
+            call close_h5_group(pgroup)
 
             !
             ! write field diagnostics
             !
-            call create_h5_group(h5file_id, fname, group)
+            call create_h5_group(group, fname, fgroup, created)
 
-            call write_h5_field_diagnostics(group, nw)
+            if (.not. created) then
+                call open_h5_group(group, fname, fgroup)
+            endif
 
-            call close_h5_group(group)
+            call write_h5_field_diagnostics(fgroup)
+
+            call close_h5_group(fgroup)
 
             ! increment counter
             nw = nw + 1
 
             ! update number of iterations to h5 file
             call write_h5_num_steps(h5file_id, nw)
+
+            call close_h5_group(group)
 
             call close_h5_file(h5file_id)
 

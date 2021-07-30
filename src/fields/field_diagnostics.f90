@@ -29,49 +29,34 @@ module field_diagnostics
         end function get_rms_volume_error
 
 
-        subroutine write_h5_field_diagnostics(h5file_id, iter)
+        subroutine write_h5_field_diagnostics(h5file_id)
             integer(hid_t), intent(in)    :: h5file_id
-            integer,        intent(in)    :: iter ! iteration
-            integer(hid_t)                :: group
-            character(:), allocatable     :: name
             double precision              :: rms_v, abserr_v
             integer                       :: max_npar, min_npar
-            logical                       :: created
 #ifndef NDEBUG
             double precision              :: vol_sym_err
 #endif
 
-            name = trim(get_step_group_name(iter))
-
-            call create_h5_group(h5file_id, name, group, created)
-
-            if (.not. created) then
-                call open_h5_group(h5file_id, name, group)
-            endif
-
             !
             ! write diagnostics
             !
-
             rms_v = get_rms_volume_error()
-            call write_h5_double_scalar_attrib(group, "rms volume error", rms_v)
+            call write_h5_double_scalar_attrib(h5file_id, "rms volume error", rms_v)
 
             abserr_v = get_max_abs_normalised_volume_error()
-            call write_h5_double_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
+            call write_h5_double_scalar_attrib(h5file_id, "max absolute normalised volume error", abserr_v)
 
             max_npar = maxval(nparg)
-            call write_h5_int_scalar_attrib(group, "max num parcels per cell", max_npar)
+            call write_h5_int_scalar_attrib(h5file_id, "max num parcels per cell", max_npar)
 
             min_npar = minval(nparg)
-            call write_h5_int_scalar_attrib(group, "min num parcels per cell", min_npar)
+            call write_h5_int_scalar_attrib(h5file_id, "min num parcels per cell", min_npar)
 
 #ifndef NDEBUG
-            vol_sym_err = sum(sym_volg(0:nz, :))
-            call write_h5_double_scalar_attrib(group, "total symmetry volume error", &
+            vol_sym_err = maxval(dabs(sym_volg(0:nz, :)))
+            call write_h5_double_scalar_attrib(h5file_id, "max symmetry volume error", &
                                                vol_sym_err)
 #endif
-
-            call close_h5_group(group)
         end subroutine write_h5_field_diagnostics
 
 end module field_diagnostics
