@@ -68,9 +68,13 @@ module parcel_hdf5
 
             call write_h5_int_scalar_step_attrib(h5file_id, nw, "num parcel", n_parcels)
 
-            call write_h5_parcel_diagnostics(h5file_id, nw)
+            if (output%h5_write_parcel_stats) then
+                call write_h5_parcel_diagnostics(h5file_id, nw)
+            endif
 
-            call write_h5_parcels(nw)
+            if (output%h5_write_parcels) then
+                call write_h5_parcels(nw)
+            endif
 
             ! increment counter
             nw = nw + 1

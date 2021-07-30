@@ -22,12 +22,14 @@ module options
     ! output options
     !
     type h5_info
-        integer             :: h5_field_freq    = 1
-        logical             :: h5_write_fields  = .true.
-        integer             :: h5_parcel_freq   = 1
-        logical             :: h5_overwrite     = .false.
-        logical             :: h5_write_parcels = .true.
-        character(len=512)  :: h5_basename      = ''
+        integer             :: h5_field_freq         = 1
+        logical             :: h5_write_fields       = .true.
+        logical             :: h5_write_field_stats  = .true.
+        integer             :: h5_parcel_freq        = 1
+        logical             :: h5_overwrite          = .false.
+        logical             :: h5_write_parcels      = .true.
+        logical             :: h5_write_parcel_stats = .true.
+        character(len=512)  :: h5_basename           = ''
     end type h5_info
 
     type(h5_info) :: output

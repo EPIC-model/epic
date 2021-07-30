@@ -28,6 +28,8 @@ program epic
 
     integer :: epic_timer
 
+    logical :: h5_parcel, h5_field
+
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
 
@@ -79,15 +81,21 @@ program epic
 
             call init_parcel_correction
 
-            call init_parcel_diagnostics
+            if (output%h5_write_parcel_stats) then
+                call init_parcel_diagnostics
+            endif
 
             call field_default
 
-            if (output%h5_write_fields) then
+            h5_field = (output%h5_write_fields .or. output%h5_write_field_stats)
+
+            if (h5_field) then
                 call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
             endif
 
-            if (output%h5_write_parcels) then
+            h5_parcel = (output%h5_write_parcels .or. output%h5_write_parcel_stats)
+
+            if (h5_parcel) then
                 call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
             endif
 
@@ -127,7 +135,7 @@ program epic
                 dt = get_time_step(t)
 
                 ! make sure we always write initial setup
-                if (output%h5_write_fields .and. &
+                if (h5_field .and. &
                     (mod(iter - 1, output%h5_field_freq) == 0)) then
 #ifndef NDEBUG
                     call vol2grid_symmetry_error
@@ -135,7 +143,7 @@ program epic
                     call write_h5_field_step(nfw, t, dt)
                 endif
 
-                if (output%h5_write_parcels .and. &
+                if (h5_parcel .and. &
                     (mod(iter - 1, output%h5_parcel_freq) == 0)) then
                     call write_h5_parcel_step(npw, t, dt)
                 endif
@@ -168,14 +176,14 @@ program epic
             call par2grid
 
             ! write final step
-            if (output%h5_write_fields) then
+            if (h5_field) then
 #ifndef NDEBUG
                 call vol2grid_symmetry_error
 #endif
                 call write_h5_field_step(nfw, t, dt)
             endif
 
-            if (output%h5_write_parcels) then
+            if (h5_parcel) then
                 call write_h5_parcel_step(npw, t, dt)
             endif
 
