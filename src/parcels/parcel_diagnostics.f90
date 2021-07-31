@@ -130,24 +130,27 @@ module parcel_diagnostics
                 vsum = vsum + vol
                 v2sum = v2sum + vol ** 2
 
-                bv = parcels%buoyancy(n) * vol
-                bvsum = bvsum + bv
-                xbv = xbv + bv * parcels%position(n, 1)
-                zbv = zbv + bv * parcels%position(n, 2)
+                ! we only use the upper half in horizontal direction
+                if (parcels%position(n, 1) >= 0) then
+                    bv = parcels%buoyancy(n) * vol
+                    bvsum = bvsum + bv
+                    xbv = xbv + bv * parcels%position(n, 1)
+                    zbv = zbv + bv * parcels%position(n, 2)
 
-                x2bv = x2bv + bv * parcels%position(n, 1) ** 2
-                z2bv = z2bv + bv * parcels%position(n, 2) ** 2
-                xzbv = xzbv + bv * parcels%position(n, 2) * parcels%position(n, 2)
+                    x2bv = x2bv + bv * parcels%position(n, 1) ** 2
+                    z2bv = z2bv + bv * parcels%position(n, 2) ** 2
+                    xzbv = xzbv + bv * parcels%position(n, 2) * parcels%position(n, 2)
 
 
-                vv = parcels%vorticity(n) * vol
-                vvsum = vvsum + vv
-                xvv = xvv + vv * parcels%position(n, 1)
-                zvv = zvv + vv * parcels%position(n, 2)
+                    vv = parcels%vorticity(n) * vol
+                    vvsum = vvsum + vv
+                    xvv = xvv + vv * parcels%position(n, 1)
+                    zvv = zvv + vv * parcels%position(n, 2)
 
-                x2vv = x2vv + vv * parcels%position(n, 1) ** 2
-                z2vv = z2vv + vv * parcels%position(n, 2) ** 2
-                xzvv = xzvv + vv * parcels%position(n, 2) * parcels%position(n, 2)
+                    x2vv = x2vv + vv * parcels%position(n, 1) ** 2
+                    z2vv = z2vv + vv * parcels%position(n, 2) ** 2
+                    xzvv = xzvv + vv * parcels%position(n, 2) * parcels%position(n, 2)
+                endif
 #endif
             enddo
             !$omp end do
@@ -163,6 +166,10 @@ module parcel_diagnostics
             avg_vol = vsum / dble(n_parcels)
             std_vol = dsqrt(v2sum / dble(n_parcels) - avg_vol ** 2)
 
+            ! we do not need to divide by the number of of involved
+            ! parcels since whe divide by the sums "bvsum" or "vvsum"
+            ! what should also be averages (i.e. divided by the number of
+            ! involved parcels)
             bvsum = one / bvsum
             vvsum = one / vvsum
 
@@ -182,8 +189,6 @@ module parcel_diagnostics
 
             xzv_bar = xzvv * vvsum - xv_bar * zv_bar
 #endif
-
-
         end subroutine calculate_diagnostics
 
 
