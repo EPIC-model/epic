@@ -92,11 +92,13 @@ module parcel_diagnostics
             zb_bar = zero
             x2b_bar = zero
             z2b_bar = zero
+            xzb_bar = zero
 
             xv_bar = zero
             zv_bar = zero
             x2v_bar = zero
             z2v_bar = zero
+            xzv_bar = zero
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, eval, lam, B22, bv, vv) &
