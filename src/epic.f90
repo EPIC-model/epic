@@ -142,7 +142,7 @@ program epic
 
                 ! make sure we always write initial setup
                 if (output%h5_write_fields .and. &
-                    (mod(iter - 1, output%h5_field_freq) == 0)) then
+                    (t + epsilon(zero) >= dble(nfw) * output%h5_field_freq)) then
 #ifndef NDEBUG
                     call vol2grid_symmetry_error
                     do_vol2grid_sym_err = .false.
@@ -152,12 +152,12 @@ program epic
 
 
                 if (output%h5_write_parcels .and. &
-                    (mod(iter - 1, output%h5_parcel_freq) == 0)) then
+                    (t + epsilon(zero) >= dble(npw) * output%h5_parcel_freq)) then
                     call write_h5_parcel_step(npw, t, dt)
                 endif
 
                 if (output%h5_write_diagnostics .and. &
-                    (mod(iter - 1, output%h5_diagnostics_freq) == 0)) then
+                    (t + epsilon(zero) >= dble(ndw) * output%h5_diagnostics_freq)) then
 
 #ifndef NDEBUG
                     if (do_vol2grid_sym_err) then
