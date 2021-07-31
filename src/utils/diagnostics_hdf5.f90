@@ -22,27 +22,12 @@ module diagnostics_hdf5
         subroutine create_h5_diagnostics_file(basename, overwrite)
             character(*), intent(in) :: basename
             logical                  :: overwrite
-            logical                  :: exists = .true.
 
             h5fname =  basename // '_diagnostics.hdf5'
-
-            ! check whether file exists
-            inquire(file=h5fname, exist=exists)
-
-            if (exists .and. overwrite) then
-                call delete_h5_file(trim(h5fname))
-            else if (exists) then
-                print *, "File '" // trim(h5fname) // "' already exists. Exiting."
-                stop
-            endif
 
             call create_h5_file(h5fname, h5file_id)
 
             call write_h5_char_scalar_attrib(h5file_id, 'output_type', 'diagnostics')
-
-            call write_h5_timestamp(h5file_id)
-            call write_h5_options(h5file_id)
-            call write_h5_box(h5file_id)
 
             call close_h5_file(h5file_id)
 
