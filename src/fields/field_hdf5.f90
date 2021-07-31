@@ -3,7 +3,6 @@ module field_hdf5
     use h5_utils
     use h5_writer
     use fields
-    use field_diagnostics
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -65,8 +64,6 @@ module field_hdf5
             call write_h5_double_scalar_step_attrib(h5file_id, nw, "dt", dt)
 
             call write_h5_fields(nw)
-
-            call write_h5_field_diagnostics(h5file_id, nw)
 
             ! increment counter
             nw = nw + 1

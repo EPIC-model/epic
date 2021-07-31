@@ -552,6 +552,8 @@ module h5_writer
             call create_h5_group(gopts, "output", group)
                 call write_h5_double_scalar_attrib(group, "h5_parcel_freq", output%h5_parcel_freq)
                 call write_h5_double_scalar_attrib(group, "h5_field_freq", output%h5_field_freq)
+                call write_h5_double_scalar_attrib(group, "h5_diagnostics_freq", output%h5_diagnostics_freq)
+                call write_h5_logical_attrib(group, "h5_write_diagnostics", output%h5_write_diagnostics)
                 call write_h5_logical_attrib(group, "h5_write_fields", output%h5_write_fields)
                 call write_h5_logical_attrib(group, "h5_overwrite", output%h5_overwrite)
                 call write_h5_logical_attrib(group, "h5_write_parcels", output%h5_write_parcels)

@@ -16,6 +16,7 @@ program epic
                                   lapl_corr_timer,        &
                                   grad_corr_timer
     use parcel_diagnostics
+    use diagnostics_hdf5
     use parcel_hdf5
     use fields
     use field_hdf5
@@ -54,6 +55,7 @@ program epic
             call register_timer('gradient correction', grad_corr_timer)
             call register_timer('parcel init', init_timer)
             call register_timer('parcel hdf5', hdf5_parcel_timer)
+            call register_timer('diagnostics hdf5', hdf5_diagnostics_timer)
             call register_timer('field hdf5', hdf5_field_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
@@ -79,7 +81,11 @@ program epic
 
             call init_parcel_correction
 
-            call init_parcel_diagnostics
+            if (output%h5_write_diagnostics) then
+                call init_parcel_diagnostics
+                call create_h5_diagnostics_file(trim(output%h5_basename), &
+                                                output%h5_overwrite)
+            endif
 
             call field_default
 
@@ -104,7 +110,11 @@ program epic
             integer          :: iter = 1    ! simulation iteration
             integer          :: nfw  = 0    ! number of field writes to h5
             integer          :: npw  = 0    ! number of parcel writes to h5
+            integer          :: ndw  = 0    ! number of diagnostics writes to h5
             integer          :: cor_iter    ! iterator for parcel correction
+#ifndef NDEBUG
+            logical          :: do_vol2grid_sym_err
+#endif
 
             do while (t < time%limit)
 
@@ -113,6 +123,10 @@ program epic
                     print "(a15, f0.4)", "time:          ", t
                     print "(a15, i0)", "iteration:     ", iter
                 endif
+#endif
+
+#ifndef NDEBUG
+                do_vol2grid_sym_err = .true.
 #endif
 
                 call par2grid
@@ -131,13 +145,27 @@ program epic
                     (t + epsilon(zero) >= dble(nfw) * output%h5_field_freq)) then
 #ifndef NDEBUG
                     call vol2grid_symmetry_error
+                    do_vol2grid_sym_err = .false.
 #endif
                     call write_h5_field_step(nfw, t, dt)
                 endif
 
+
                 if (output%h5_write_parcels .and. &
                     (t + epsilon(zero) >= dble(npw) * output%h5_parcel_freq)) then
                     call write_h5_parcel_step(npw, t, dt)
+                endif
+
+                if (output%h5_write_diagnostics .and. &
+                    (t + epsilon(zero) >= dble(ndw) * output%h5_diagnostics_freq)) then
+
+#ifndef NDEBUG
+                    if (do_vol2grid_sym_err) then
+                        call vol2grid_symmetry_error
+                        do_vol2grid_sym_err = .false.
+                    endif
+#endif
+                    call write_h5_diagnostics_step(ndw, t, dt)
                 endif
 
                 call ls_rk4_step(dt)
@@ -171,12 +199,22 @@ program epic
             if (output%h5_write_fields) then
 #ifndef NDEBUG
                 call vol2grid_symmetry_error
+                do_vol2grid_sym_err = .false.
 #endif
                 call write_h5_field_step(nfw, t, dt)
             endif
 
             if (output%h5_write_parcels) then
                 call write_h5_parcel_step(npw, t, dt)
+            endif
+
+            if (output%h5_write_diagnostics) then
+#ifndef NDEBUG
+                if (do_vol2grid_sym_err) then
+                    call vol2grid_symmetry_error
+                endif
+#endif
+                call write_h5_diagnostics_step(ndw, t, dt)
             endif
 
         end subroutine run
