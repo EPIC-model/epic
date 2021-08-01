@@ -27,8 +27,10 @@ module options
         double precision    :: h5_parcel_freq        = one
         logical             :: h5_overwrite          = .false.
         logical             :: h5_write_parcels      = .true.
-        double precision    :: h5_diagnostics_freq   = one
-        logical             :: h5_write_diagnostics  = .true.
+        double precision    :: h5_parcel_stats_freq  = one
+        logical             :: h5_write_parcel_stats = .true.
+        double precision    :: h5_field_stats_freq   = one
+        logical             :: h5_write_field_stats  = .true.
         character(len=512)  :: h5_basename           = ''
     end type h5_info
 

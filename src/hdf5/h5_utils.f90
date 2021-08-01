@@ -35,12 +35,23 @@ module h5_utils
         end subroutine finalise_hdf5
 
 
-        subroutine create_h5_file(h5fname, h5file_id)
+        subroutine create_h5_file(h5fname, overwrite, h5file_id)
             character(*),   intent(in)  :: h5fname
+            logical,        intent(in)  :: overwrite
             integer(hid_t), intent(out) :: h5file_id
+            logical                     :: exists = .true.
+
+            ! check whether file exists
+            inquire(file=h5fname, exist=exists)
+
+            if (exists .and. overwrite) then
+                call delete_h5_file(trim(h5fname))
+            else if (exists) then
+                print *, "File '" // trim(h5fname) // "' already exists. Exiting."
+                stop
+            endif
 
             call h5fcreate_f(h5fname, H5F_ACC_TRUNC_F, h5file_id, h5err)
-
             call check_h5_error("Failed to create hdf5 file'" // trim(h5fname) // "'.")
         end subroutine create_h5_file
 
