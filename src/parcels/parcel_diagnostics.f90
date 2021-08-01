@@ -175,10 +175,26 @@ module parcel_diagnostics
             z2v_bar = zero
             xzv_bar = zero
 
+
+            xbv = zero
+            x2bv = zero
+            zbv = zero
+            z2bv = zero
+            xzbv = zero
+            xvv = zero
+            x2vv = zero
+            zvv = zero
+            z2vv = zero
+            xzvv = zero
+
+            bvsum = zero
+            vvsum = zero
+            bv = zero
+            vv = zero
+
             !$omp parallel default(shared)
             !$omp do private(n, bv, vv) &
-            !$omp& reduction(+: vvsum, bvsum, xbv, zbv, x2bv, z2bv, &
-            !$omp&              xzbv, xvv, zvv, x2vv, z2vv, xzvv)
+            !$omp& reduction(+: vvsum, bvsum, xbv, zbv, x2bv, z2bv, xzbv, xvv, zvv, x2vv, z2vv, xzvv)
             do n = 1, n_parcels
                 ! we only use the upper half in horizontal direction
                 if (parcels%position(n, 1) >= 0) then
@@ -205,13 +221,23 @@ module parcel_diagnostics
             !$omp end do
             !$omp end parallel
 
-
             ! we do not need to divide by the number of of involved
             ! parcels since whe divide by the sums "bvsum" or "vvsum"
             ! what should also be averages (i.e. divided by the number of
             ! involved parcels)
-            bvsum = one / bvsum
-            vvsum = one / vvsum
+
+            ! make sure we do not divide by zero
+            if (dabs(bvsum) < epsilon(zero)) then
+                bvsum = epsilon(zero)
+            else
+                bvsum = one / bvsum
+            endif
+
+            if (dabs(vvsum) < epsilon(zero)) then
+                vvsum = epsilon(zero)
+            else
+                vvsum = one / vvsum
+            endif
 
             xb_bar = xbv * bvsum
             zb_bar = zbv * bvsum
@@ -228,7 +254,6 @@ module parcel_diagnostics
             z2v_bar = z2vv * vvsum
 
             xzv_bar = xzvv * vvsum - xv_bar * zv_bar
-
         end subroutine straka_diagnostics
 
 
@@ -273,35 +298,37 @@ module parcel_diagnostics
             call write_h5_double_scalar_attrib(group, "total energy", ke + pe)
             call write_h5_int_scalar_attrib(group, "num parcel", n_parcels)
 
+
+            call write_h5_double_scalar_attrib(group, "avg aspect ratio", avg_lam)
+            call write_h5_double_scalar_attrib(group, "std aspect ratio", std_lam)
+            call write_h5_double_scalar_attrib(group, "avg volume", avg_vol)
+            call write_h5_double_scalar_attrib(group, "std volume", std_vol)
+
+#ifdef ENABLE_DIAGNOSE
+            call write_h5_double_scalar_attrib(group, "xb_bar", xb_bar)
+            call write_h5_double_scalar_attrib(group, "x2b_bar", x2b_bar)
+            call write_h5_double_scalar_attrib(group, "zb_bar", zb_bar)
+            call write_h5_double_scalar_attrib(group, "z2b_bar", z2b_bar)
+            call write_h5_double_scalar_attrib(group, "xzb_bar", xzb_bar)
+
+            call write_h5_double_scalar_attrib(group, "xv_bar", xv_bar)
+            call write_h5_double_scalar_attrib(group, "x2v_bar", x2v_bar)
+            call write_h5_double_scalar_attrib(group, "zv_bar", zv_bar)
+            call write_h5_double_scalar_attrib(group, "z2v_bar", z2v_bar)
+            call write_h5_double_scalar_attrib(group, "xzv_bar", xzv_bar)
+#endif
+            call close_h5_group(group)
+
             ! increment counter
             nw = nw + 1
 
             ! update number of iterations to h5 file
             call write_h5_num_steps(h5file_id, nw)
 
-            call close_h5_group(group)
 
             call close_h5_file(h5file_id)
 
             call stop_timer(hdf5_parcel_stat_timer)
 
-#ifdef ENABLE_DIAGNOSE
-            call write_h5_double_scalar_attrib(h5file_id, "avg aspect ratio", avg_lam)
-            call write_h5_double_scalar_attrib(h5file_id, "std aspect ratio", std_lam)
-            call write_h5_double_scalar_attrib(h5file_id, "avg volume", avg_vol)
-            call write_h5_double_scalar_attrib(h5file_id, "std volume", std_vol)
-
-            call write_h5_double_scalar_attrib(h5file_id, "xb_bar", xb_bar)
-            call write_h5_double_scalar_attrib(h5file_id, "x2b_bar", x2b_bar)
-            call write_h5_double_scalar_attrib(h5file_id, "zb_bar", zb_bar)
-            call write_h5_double_scalar_attrib(h5file_id, "z2b_bar", z2b_bar)
-            call write_h5_double_scalar_attrib(h5file_id, "xzb_bar", xzb_bar)
-
-            call write_h5_double_scalar_attrib(h5file_id, "xv_bar", xv_bar)
-            call write_h5_double_scalar_attrib(h5file_id, "x2v_bar", x2v_bar)
-            call write_h5_double_scalar_attrib(h5file_id, "zv_bar", zv_bar)
-            call write_h5_double_scalar_attrib(h5file_id, "z2v_bar", z2v_bar)
-            call write_h5_double_scalar_attrib(h5file_id, "xzv_bar", xzv_bar)
-#endif
         end subroutine write_h5_parcel_stats_step
 end module parcel_diagnostics
