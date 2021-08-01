@@ -61,6 +61,7 @@ program epic
             call register_timer('parcel hdf5', hdf5_parcel_timer)
             call register_timer('parcel diagnostics hdf5', hdf5_parcel_stat_timer)
             call register_timer('field hdf5', hdf5_field_timer)
+            call register_timer('field diagnostics hdf5', hdf5_field_stat_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
             call register_timer('parcel push', rk4_timer)
@@ -218,7 +219,7 @@ program epic
 
             if (output%h5_write_parcel_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nspw) * output%h5_parcel_stats_freq)) then
-                call write_h5_parcel_step(nspw, t, dt)
+                call write_h5_parcel_stats_step(nspw, t, dt)
             endif
 
             if (output%h5_write_field_stats .and. &

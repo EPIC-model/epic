@@ -29,7 +29,7 @@ module field_diagnostics
             character(*), intent(in) :: basename
             logical,      intent(in) :: overwrite
 
-            h5fname =  basename // '_field_diagnostics.hdf5'
+            h5fname =  basename // '_field_stats.hdf5'
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
@@ -75,6 +75,11 @@ module field_diagnostics
 
             call start_timer(hdf5_field_stat_timer)
 
+#ifdef ENABLE_VERBOSE
+            if (verbose) then
+                print "(a19)", "write field diagnostics to h5"
+            endif
+#endif
 
             call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
 
@@ -95,20 +100,20 @@ module field_diagnostics
             ! write diagnostics
             !
             rms_v = get_rms_volume_error()
-            call write_h5_double_scalar_attrib(h5file_id, "rms volume error", rms_v)
+            call write_h5_double_scalar_attrib(group, "rms volume error", rms_v)
 
             abserr_v = get_max_abs_normalised_volume_error()
-            call write_h5_double_scalar_attrib(h5file_id, "max absolute normalised volume error", abserr_v)
+            call write_h5_double_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
 
             max_npar = maxval(nparg)
-            call write_h5_int_scalar_attrib(h5file_id, "max num parcels per cell", max_npar)
+            call write_h5_int_scalar_attrib(group, "max num parcels per cell", max_npar)
 
             min_npar = minval(nparg)
-            call write_h5_int_scalar_attrib(h5file_id, "min num parcels per cell", min_npar)
+            call write_h5_int_scalar_attrib(group, "min num parcels per cell", min_npar)
 
 #ifndef NDEBUG
             vol_sym_err = maxval(dabs(sym_volg(0:nz, :)))
-            call write_h5_double_scalar_attrib(h5file_id, "max symmetry volume error", &
+            call write_h5_double_scalar_attrib(group, "max symmetry volume error", &
                                                vol_sym_err)
 #endif
 

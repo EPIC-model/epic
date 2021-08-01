@@ -37,7 +37,7 @@ module parcel_diagnostics
             character(*), intent(in) :: basename
             logical,      intent(in) :: overwrite
 
-            h5fname =  basename // '_parcel_diagnostics.hdf5'
+            h5fname =  basename // '_parcel_stats.hdf5'
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
