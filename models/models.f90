@@ -39,16 +39,8 @@ program models
     contains
 
         subroutine generate_fields
-            logical                  :: exists = .true.
 
-            ! check whether file exists
-            inquire(file=h5fname, exist=exists)
-            if (exists) then
-                print *, "File '" // trim(h5fname) // "'already exists."
-                stop
-            endif
-
-            call create_h5_file(h5fname, h5handle)
+            call create_h5_file(h5fname, .false., h5handle)
 
             dx = box%extent / dble(box%ncells)
             nx = box%ncells(1)

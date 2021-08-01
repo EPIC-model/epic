@@ -53,11 +53,6 @@ module h5_utils
 
             call h5fcreate_f(h5fname, H5F_ACC_TRUNC_F, h5file_id, h5err)
             call check_h5_error("Failed to create hdf5 file'" // trim(h5fname) // "'.")
-
-            call write_h5_timestamp(h5file_id)
-            call write_h5_options(h5file_id)
-            call write_h5_box(h5file_id)
-
         end subroutine create_h5_file
 
         subroutine delete_h5_file(h5fname)
