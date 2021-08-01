@@ -98,44 +98,22 @@ module parcel_diagnostics
         subroutine calculate_diagnostics
             integer          :: n
             double precision :: b, z, vel(2), vol, zmin
-#ifdef ENABLE_DIAGNOSE
             double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum
-            double precision :: xbv, x2bv, zbv, z2bv, xzbv
-            double precision :: xvv, x2vv, zvv, z2vv, xzvv
-            double precision :: bvsum, vvsum, bv, vv
-#endif
+
             ! reset
             ke = zero
             pe = zero
 
             zmin = lower(2)
 
-#ifdef ENABLE_DIAGNOSE
             avg_lam = zero
             avg_vol = zero
             std_lam = zero
             std_vol = zero
 
-            xb_bar = zero
-            zb_bar = zero
-            x2b_bar = zero
-            z2b_bar = zero
-            xzb_bar = zero
-
-            xv_bar = zero
-            zv_bar = zero
-            x2v_bar = zero
-            z2v_bar = zero
-            xzv_bar = zero
-
             !$omp parallel default(shared)
-            !$omp do private(n, vel, vol, b, z, eval, lam, B22, bv, vv) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, bvsum, xbv, &
-            !$omp&              zbv, x2bv, z2bv, xzbv, xvv, zvv, x2vv, z2vv, xzvv)
-#else
-            !$omp parallel default(shared)
-            !$omp do private(n, vel, vol, b, z) reduction(+: ke, pe)
-#endif
+            !$omp do private(n, vel, vol, b, z, eval, lam, B22) &
+            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum)
             do n = 1, n_parcels
 
                 vel = parcels%velocity(n, :)
@@ -149,7 +127,6 @@ module parcel_diagnostics
                 ! potential energy
                 pe = pe - b * z * vol
 
-#ifdef ENABLE_DIAGNOSE
                 B22 = get_B22(parcels%B(n, 1), parcels%B(n, 2), vol)
                 eval = get_eigenvalue(parcels%B(n, 1), parcels%B(n, 2), B22)
                 lam = get_aspect_ratio(eval, vol)
@@ -159,10 +136,53 @@ module parcel_diagnostics
 
                 vsum = vsum + vol
                 v2sum = v2sum + vol ** 2
+            enddo
+            !$omp end do
+            !$omp end parallel
 
+            ke = f12 * ke
+            pe = pe - peref
+
+            avg_lam = lsum / dble(n_parcels)
+            std_lam = dsqrt(l2sum / dble(n_parcels) - avg_vol ** 2)
+
+            avg_vol = vsum / dble(n_parcels)
+            std_vol = dsqrt(v2sum / dble(n_parcels) - avg_vol ** 2)
+
+#ifdef ENABLE_DIAGNOSE
+            call straka_diagnostics
+#endif
+        end subroutine calculate_diagnostics
+
+
+        ! Straka density current test case diagnostics
+        subroutine straka_diagnostics
+            integer          :: n
+            double precision :: xbv, x2bv, zbv, z2bv, xzbv
+            double precision :: xvv, x2vv, zvv, z2vv, xzvv
+            double precision :: bvsum, vvsum, bv, vv
+
+            ! reset
+            xb_bar = zero
+            zb_bar = zero
+            x2b_bar = zero
+            z2b_bar = zero
+            xzb_bar = zero
+
+            xv_bar = zero
+            zv_bar = zero
+            x2v_bar = zero
+            z2v_bar = zero
+            xzv_bar = zero
+
+            !$omp parallel default(shared)
+            !$omp do private(n, bv, vv) &
+            !$omp& reduction(+: vvsum, bvsum, xbv, zbv, x2bv, z2bv, &
+            !$omp&              xzbv, xvv, zvv, x2vv, z2vv, xzvv)
+            do n = 1, n_parcels
                 ! we only use the upper half in horizontal direction
                 if (parcels%position(n, 1) >= 0) then
-                    bv = parcels%buoyancy(n) * vol
+                    bv = parcels%buoyancy(n) * parcels%volume(n)
                     bvsum = bvsum + bv
                     xbv = xbv + bv * parcels%position(n, 1)
                     zbv = zbv + bv * parcels%position(n, 2)
@@ -172,7 +192,7 @@ module parcel_diagnostics
                     xzbv = xzbv + bv * parcels%position(n, 2) * parcels%position(n, 2)
 
 
-                    vv = parcels%vorticity(n) * vol
+                    vv = parcels%vorticity(n) * parcels%volume(n)
                     vvsum = vvsum + vv
                     xvv = xvv + vv * parcels%position(n, 1)
                     zvv = zvv + vv * parcels%position(n, 2)
@@ -181,20 +201,10 @@ module parcel_diagnostics
                     z2vv = z2vv + vv * parcels%position(n, 2) ** 2
                     xzvv = xzvv + vv * parcels%position(n, 2) * parcels%position(n, 2)
                 endif
-#endif
             enddo
             !$omp end do
             !$omp end parallel
 
-            ke = f12 * ke
-            pe = pe - peref
-
-#ifdef ENABLE_DIAGNOSE
-            avg_lam = lsum / dble(n_parcels)
-            std_lam = dsqrt(l2sum / dble(n_parcels) - avg_vol ** 2)
-
-            avg_vol = vsum / dble(n_parcels)
-            std_vol = dsqrt(v2sum / dble(n_parcels) - avg_vol ** 2)
 
             ! we do not need to divide by the number of of involved
             ! parcels since whe divide by the sums "bvsum" or "vvsum"
@@ -218,8 +228,8 @@ module parcel_diagnostics
             z2v_bar = z2vv * vvsum
 
             xzv_bar = xzvv * vvsum - xv_bar * zv_bar
-#endif
-        end subroutine calculate_diagnostics
+
+        end subroutine straka_diagnostics
 
 
         subroutine write_h5_parcel_stats_step(nw, t, dt)
