@@ -168,7 +168,7 @@ program epic
             call par2grid
 
             ! write final step
-            call write_step(t, dt)
+            call write_step(t, dt, .true.)
 
         end subroutine run
 
@@ -184,17 +184,25 @@ program epic
         end subroutine
 
 
-        subroutine write_step(t, dt)
+        subroutine write_step(t, dt, l_force)
             use options, only : output
-            double precision, intent(in) :: t
-            double precision, intent(in) :: dt
+            double precision,  intent(in)  :: t
+            double precision,  intent(in)  :: dt
+            logical, optional, intent(in)  :: l_force
+            double precision               :: neg = one
 #ifndef NDEBUG
             logical                      :: do_vol2grid_sym_err = .true.
 #endif
 
+            if (present(l_force)) then
+                if (l_force) then
+                    neg = -one
+                endif
+            endif
+
             ! make sure we always write initial setup
             if (output%h5_write_fields .and. &
-                (t + epsilon(zero) >= dble(nfw) * output%h5_field_freq)) then
+                (t + epsilon(zero) >= neg * dble(nfw) * output%h5_field_freq)) then
 #ifndef NDEBUG
                 call vol2grid_symmetry_error
                 do_vol2grid_sym_err = .false.
@@ -204,17 +212,17 @@ program epic
 
 
             if (output%h5_write_parcels .and. &
-                (t + epsilon(zero) >= dble(npw) * output%h5_parcel_freq)) then
+                (t + epsilon(zero) >= neg * dble(npw) * output%h5_parcel_freq)) then
                 call write_h5_parcel_step(npw, t, dt)
             endif
 
             if (output%h5_write_parcel_stats .and. &
-                (t + epsilon(zero) >= dble(nspw) * output%h5_parcel_stats_freq)) then
+                (t + epsilon(zero) >= neg * dble(nspw) * output%h5_parcel_stats_freq)) then
                 call write_h5_parcel_step(nspw, t, dt)
             endif
 
             if (output%h5_write_field_stats .and. &
-                (t + epsilon(zero) >= dble(nsfw) * output%h5_field_stats_freq)) then
+                (t + epsilon(zero) >= neg * dble(nsfw) * output%h5_field_stats_freq)) then
 
 #ifndef NDEBUG
                 if (do_vol2grid_sym_err) then
