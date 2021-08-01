@@ -25,7 +25,6 @@ module parcel_diagnostics
     ! ke    : kinetic energy
     double precision :: peref, pe, ke
 
-#ifdef ENABLE_DIAGNOSE
     ! avg_lam : mean aspect ratio over all parcels
     ! avg_vol : mean volume over all parcels
     ! std_lam : standard deviation of aspect ratio
@@ -33,6 +32,7 @@ module parcel_diagnostics
     double precision :: avg_lam, avg_vol
     double precision :: std_lam, std_vol
 
+#ifdef ENABLE_DIAGNOSE
     ! buoyancy weighted first and second moments
     double precision :: xb_bar, x2b_bar
     double precision :: zb_bar, z2b_bar
