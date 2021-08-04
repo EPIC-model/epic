@@ -104,12 +104,18 @@ module parcel_diagnostics
             ke = zero
             pe = zero
 
+            lsum = zero
+            l2sum = zero
+            vsum = zero
+            v2sum = zero
+
             zmin = lower(2)
 
             avg_lam = zero
             avg_vol = zero
             std_lam = zero
             std_vol = zero
+
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, eval, lam, B22) &
@@ -144,10 +150,10 @@ module parcel_diagnostics
             pe = pe - peref
 
             avg_lam = lsum / dble(n_parcels)
-            std_lam = dsqrt(l2sum / dble(n_parcels) - avg_vol ** 2)
+            std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
 
             avg_vol = vsum / dble(n_parcels)
-            std_vol = dsqrt(v2sum / dble(n_parcels) - avg_vol ** 2)
+            std_vol = dsqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))
 
 #ifdef ENABLE_DIAGNOSE
             call straka_diagnostics
@@ -155,6 +161,7 @@ module parcel_diagnostics
         end subroutine calculate_diagnostics
 
 
+#ifdef ENABLE_DIAGNOSE
         ! Straka density current test case diagnostics
         subroutine straka_diagnostics
             integer          :: n
@@ -255,7 +262,7 @@ module parcel_diagnostics
 
             xzv_bar = xzvv * vvsum - xv_bar * zv_bar
         end subroutine straka_diagnostics
-
+#endif
 
         subroutine write_h5_parcel_stats_step(nw, t, dt)
             integer,          intent(inout) :: nw
