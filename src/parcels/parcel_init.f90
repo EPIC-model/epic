@@ -24,8 +24,7 @@ module parcel_init
     private :: weights, apar, is, js
 
 
-    private :: init_regular_positions,      &
-               init_refine,                 &
+    private :: init_refine,                 &
                init_from_grids,             &
                fill_field_from_buffer_2d,   &
                alloc_and_precompute,        &
@@ -121,8 +120,8 @@ module parcel_init
 
 
         subroutine init_regular_positions
-            integer          :: i, ii, j, jj, k, n_per_dim
-            double precision :: del(2)
+            integer          :: ix, i, iz, j, k, n_per_dim
+            double precision :: im, corner(2)
 
             ! number of parcels per dimension
             n_per_dim = int(dsqrt(dble(parcel%n_per_cell)))
@@ -132,15 +131,16 @@ module parcel_init
                 stop
             endif
 
-            del = dx / dble(two * n_per_dim)
+            im = one / dble(n_per_dim)
 
             k = 1
-            do j = 0, nz-1
-                do i = 0, nx-1
-                    do jj = 1, 2 * n_per_dim, 2
-                        do ii = 1, 2 * n_per_dim, 2
-                            parcels%position(k, 1) = lower(1) + dble(i) * dx(1) + del(1) * dble(ii)
-                            parcels%position(k, 2) = lower(2) + dble(j) * dx(2) + del(2) * dble(jj)
+            do iz = 0, nz-1
+                do ix = 0, nx-1
+                    corner = lower + dble((/ix, iz/)) * dx
+                    do j = 1, n_per_dim
+                        do i = 1, n_per_dim
+                            parcels%position(k, 1) = corner(1) + dx(1) * (dble(i) - f12) * im
+                            parcels%position(k, 2) = corner(2) + dx(2) * (dble(j) - f12) * im
                             k = k + 1
                         enddo
                     enddo

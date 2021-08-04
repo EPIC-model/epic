@@ -6,12 +6,14 @@
 !         It then performs 500 relaxation steps.
 ! =============================================================================
 program test_parcel_correction
-   use unit_test
+    use unit_test
+    use options, only : parcel
     use constants, only : pi, one, zero, f14, f32
     use parcel_container
     use parcel_correction
     use parcel_interpl, only : vol2grid
     use parcel_ellipse, only : get_ab
+    use parcel_init, only : init_regular_positions
     use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz
     use fields, only : volg
     use timer
@@ -19,7 +21,7 @@ program test_parcel_correction
     implicit none
 
     double precision :: final_error, init_error, val, tmp
-    integer :: i, j, k, jj, ii, sk
+    integer :: i, n, sk
     integer, allocatable :: seed(:)
     double precision, parameter :: dev = 0.005d0
 
@@ -45,33 +47,28 @@ program test_parcel_correction
     n_parcels = 4*nx*nz
     call parcel_alloc(n_parcels)
 
-    k = 1
-    do j = 0, nz-1
-        do i = 0, nx-1
-            do jj = 1, 4, 2
-                do ii = 1, 4, 2
-                    parcels%position(k, 1) = lower(1) + i * dx(1) + f14 * dx(1) * ii
-                    parcels%position(k, 2) = lower(2) + j * dx(2) + f14 * dx(2) * jj
+    parcel%n_per_cell = 4
+    call init_regular_positions
 
-                    ! add some deviation
-                    tmp = dev
-                    call random_number(val)
-                    if (val < 0.5) then
-                        tmp = -dev
-                    endif
-                    parcels%position(k, 1) = parcels%position(k, 1) + tmp
+    ! add some deviation
+    do n = 1, n_parcels
+        tmp = dev
+        call random_number(val)
+        if (val < 0.5) then
+            tmp = -dev
+        endif
+        parcels%position(n, 1) = parcels%position(n, 1) + tmp
 
-                    tmp = dev
-                    call random_number(val)
-                    if (val < 0.5) then
-                        tmp = -dev
-                    endif
-                    parcels%position(k, 2) = parcels%position(k, 2) + tmp
-                    k = k + 1
-                enddo
-            enddo
-        enddo
+        tmp = dev
+        call random_number(val)
+        if (val < 0.5) then
+            tmp = -dev
+        endif
+        parcels%position(n, 2) = parcels%position(n, 2) + tmp
+
+        print *, parcels%position(n, 1), parcels%position(n, 2)
     enddo
+    stop
 
     volg = zero
 
