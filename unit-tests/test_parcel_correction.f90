@@ -65,10 +65,7 @@ program test_parcel_correction
             tmp = -dev
         endif
         parcels%position(n, 2) = parcels%position(n, 2) + tmp
-
-        print *, parcels%position(n, 1), parcels%position(n, 2)
     enddo
-    stop
 
     volg = zero
 
