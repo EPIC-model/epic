@@ -20,7 +20,6 @@ module parcel_nearest
     double precision:: vmin, delx,delz,dsq,dsqmin,vmerge,vmergemin,x_small,z_small
     integer :: i,ic,i0,imin,k,m,j
     integer :: ix,iz,ix0,iz0
-!     integer :: is, ib
 
     public :: find_nearest
 
