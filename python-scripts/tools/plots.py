@@ -29,6 +29,14 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
 
     if coloring == 'aspect-ratio':
         data = h5reader.get_aspect_ratio(step=step)
+    elif coloring == 'min-volume':
+        data = h5reader.get_dataset(step=step, name='volume')
+        # 5 August 2021
+        # https://stackoverflow.com/questions/14777066/matplotlib-discrete-colorbar
+        # https://stackoverflow.com/questions/40601997/setting-discrete-colormap-corresponding-to-specific-data-range-in-matplotlib
+        cmap = plt.cm.get_cmap('bwr', 2)
+        bounds = [0, vmin, vmax]
+        norm = cls.BoundaryNorm(bounds, cmap.N)
     else:
         data = h5reader.get_dataset(step=step, name=coloring)
 
@@ -66,7 +74,11 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
         cbar.draw_all()
 
         if coloring == 'aspect-ratio':
-            cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
+            cbar.set_label(r'$1 \leq \lambda \leq \lambda_{max}$')
+        elif coloring == 'min-volume':
+            # 5 August 2021
+            # https://matplotlib.org/stable/gallery/ticks_and_spines/colorbar_tick_labelling_demo.html
+            cbar.ax.set_yticklabels([r'0', r'$V_{min}$', r'$V_{max}$'])
         else:
             cbar.set_label(coloring)
 
@@ -94,6 +106,12 @@ def plot_parcels(fname, step, show=False, fmt="png",
     if coloring == 'aspect-ratio':
         vmin = 1.0
         vmax = h5reader.get_parcel_option('lambda')
+    elif coloring == 'min-volume':
+        extent = h5reader.get_box_extent()
+        ncells = h5reader.get_box_ncells()
+        vcell = np.prod(extent / ncells)
+        vmin = vcell / h5reader.get_parcel_option('vmin_fraction')
+        vmax = vcell / h5reader.get_parcel_option('vmax_fraction')
     else:
         vmin, vmax = h5reader.get_dataset_min_max(coloring)
 
@@ -355,7 +373,7 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
 
     if dset == 'aspect-ratio':
         plt.ylabel(r'aspect ratio $\lambda$')
-        plt.text(t[10], lmax - 0.5, r'$\lambda\le\lambda_{\max} = ' + str(lmax) + '$')
+        plt.text(t[10], lmax - 0.5, r'$\lambda\le\lambda_{max} = ' + str(lmax) + '$')
         plt.axhline(lmax, linestyle='dashed', color='black')
     elif dset == 'volume':
         plt.ylabel(r'parcel volume / $V_{g}$')
