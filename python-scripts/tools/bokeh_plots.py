@@ -1,6 +1,7 @@
 from bokeh.io import export_png, export_svg
 import bokeh.plotting as bpl
-from bokeh.models import ColumnDataSource, ColorBar
+from bokeh.models import ColumnDataSource, ColorBar, FixedTicker, FuncTickFormatter
+
 from bokeh.palettes import Viridis256
 from bokeh.transform import linear_cmap
 from tools.h5_reader import H5Reader
@@ -45,6 +46,8 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
 
     if coloring == 'aspect-ratio':
         title = 'aspect ratio'
+    elif coloring == 'vol-distr':
+        title = 'volume distribution'
     else:
         title = coloring
 
@@ -93,6 +96,10 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
 
     if coloring == 'aspect-ratio':
         data = h5reader.get_aspect_ratio(step=step)
+    elif coloring == 'vol-distr':
+        data = h5reader.get_dataset(step=step, name='volume')
+        data[data <= vmin] = 0.0
+        data[data > vmin] = 1.0
     else:
         data = h5reader.get_dataset(step=step, name=coloring)
 
@@ -100,16 +107,30 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     source = ColumnDataSource(dict(x=x,y=y, width=width, height=height,
                                    angle = angle, fill_color=data))
 
-    Viridis256_r = tuple(reversed(list(Viridis256)))
-    mapper = linear_cmap(field_name='fill_color', palette=Viridis256_r,
-                         low=vmin, high=vmax)
+    mapper = None
+    color_bar = None
+    if coloring == 'vol-distr':
+        mapper = linear_cmap(field_name='fill_color', palette=['blue', 'red'], low=0, high=1)
+        ticker = FixedTicker(ticks=[0, 0.5, 1])
+        color_bar = ColorBar(color_mapper=mapper['transform'], label_standoff=12,
+                             ticker=ticker,
+                            title_text_font_size=font_size,
+                            major_label_text_font=text_font,
+                            major_label_text_font_size=font_size)
+        # 5 August 2021
+        # https://stackoverflow.com/questions/37173230/how-do-i-use-custom-labels-for-ticks-in-bokeh
+        color_bar.major_label_overrides = {0: '0', 0.5: 'Vmin', 1: 'Vmax'}
+    else:
+        Viridis256_r = tuple(reversed(list(Viridis256)))
+        mapper = linear_cmap(field_name='fill_color', palette=Viridis256_r,
+                             low=vmin, high=vmax)
+        color_bar = ColorBar(color_mapper=mapper['transform'], label_standoff=12,
+                            title_text_font_size=font_size,
+                            major_label_text_font=text_font,
+                            major_label_text_font_size=font_size)
 
     graph.ellipse(x='x', y='y', width='width', height='height',angle='angle',
-    color = mapper,fill_alpha=0.75,line_color=None,source=source)
-    color_bar = ColorBar(color_mapper=mapper['transform'], label_standoff=12,
-                         title_text_font_size=font_size,
-                         major_label_text_font=text_font,
-                         major_label_text_font_size=font_size)
+                  color = mapper,fill_alpha=0.75,line_color=None,source=source)
     graph.add_layout(color_bar, 'right')
 
     return graph
@@ -136,6 +157,12 @@ def bokeh_plot_parcels(fname, step, show=False, fmt='png',
     if coloring == 'aspect-ratio':
         vmin = 1.0
         vmax = h5reader.get_parcel_option('lambda')
+    elif coloring == 'vol-distr':
+        extent = h5reader.get_box_extent()
+        ncells = h5reader.get_box_ncells()
+        vcell = np.prod(extent / ncells)
+        vmin = vcell / h5reader.get_parcel_option('vmin_fraction')
+        vmax = vcell / h5reader.get_parcel_option('vmax_fraction')
     else:
         vmin, vmax = h5reader.get_dataset_min_max(coloring)
 
