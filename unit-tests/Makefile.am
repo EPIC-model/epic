@@ -26,6 +26,7 @@ unittests_PROGRAMS = 				\
 	test_ellipse_multi_merge_1		\
 	test_ellipse_multi_merge_2		\
 	test_ellipse_multi_merge_3		\
+	test_ellipse_multi_merge_4		\
 	test_ellipse_bi_vs_multi_merge		\
 	test_tri_inversion			\
 	test_parcel_init
@@ -48,6 +49,7 @@ test_ellipse_bi_merge_SOURCES = test_ellipse_bi_merge.f90 unit_test.f90
 test_ellipse_multi_merge_1_SOURCES = test_ellipse_multi_merge_1.f90 unit_test.f90
 test_ellipse_multi_merge_2_SOURCES = test_ellipse_multi_merge_2.f90 unit_test.f90
 test_ellipse_multi_merge_3_SOURCES = test_ellipse_multi_merge_3.f90 unit_test.f90
+test_ellipse_multi_merge_4_SOURCES = test_ellipse_multi_merge_4.f90 unit_test.f90
 test_ellipse_bi_vs_multi_merge_SOURCES = test_ellipse_bi_vs_multi_merge.f90 unit_test.f90
 test_tri_inversion_SOURCES = test_tri_inversion.f90 unit_test.f90
 test_parcel_init_SOURCES = test_parcel_init.f90 unit_test.f90
