@@ -2,7 +2,7 @@
 !                       Test ellipse multi merge
 !
 !         This unit test checks the merging of five ellipses. The biggest
-!         ellipse is located ad the origin. The smaller ellipses are located
+!         ellipse is located at the origin. The smaller ellipses are located
 !         on all four sides. The final ellipse is a circle located at the
 !         origin.
 ! =============================================================================
