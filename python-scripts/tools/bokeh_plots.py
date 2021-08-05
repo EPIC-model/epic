@@ -1,6 +1,6 @@
 from bokeh.io import export_png, export_svg
 import bokeh.plotting as bpl
-from bokeh.models import ColumnDataSource, ColorBar, FixedTicker, FuncTickFormatter
+from bokeh.models import ColumnDataSource, ColorBar, FixedTicker
 
 from bokeh.palettes import Viridis256
 from bokeh.transform import linear_cmap
@@ -111,6 +111,8 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     color_bar = None
     if coloring == 'vol-distr':
         mapper = linear_cmap(field_name='fill_color', palette=['blue', 'red'], low=0, high=1)
+        # 5 August 2021
+        # https://stackoverflow.com/questions/63344015/how-do-i-get-a-bokeh-colorbar-to-show-the-min-and-max-value
         ticker = FixedTicker(ticks=[0, 0.5, 1])
         color_bar = ColorBar(color_mapper=mapper['transform'], label_standoff=12,
                              ticker=ticker,
