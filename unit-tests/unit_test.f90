@@ -31,15 +31,18 @@ module unit_test
         subroutine print_result_logical(test, failed)
             character(*),    intent(in) :: test
             logical,         intent(in) :: failed
-            character(len=6)            :: res
+            character(len=17)           :: res
 
-            res = 'PASSED'
+            ! 5 August 2021
+            ! https://stackoverflow.com/questions/6402700/coloured-terminal-output-from-fortran
+            ! https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
+            res = achar(27) // '[32;1mPASSED' // achar(27) // '[0m'
             if (failed) then
-                res = 'FAILED'
+                res = achar(27) // '[31;1mFAILED' // achar(27) // '[0m'
             endif
             ! 5 Mai 2021
             ! https://stackoverflow.com/questions/47761900/format-add-trailing-spaces-to-character-output-to-left-justify
-            print '(a60, a7)', ' '//test//':'//repeat(' ', 57), res
+            print '(a60, a18)', ' '//test//' '//repeat('.', 57), res
 
         end subroutine print_result_logical
 
