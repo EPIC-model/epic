@@ -88,6 +88,8 @@ module parcel_nearest
             !---------------------------------------------------------------------
             ! Now find the nearest grid point to each small parcel (to be merged)
             ! and search over the surrounding 8 grid cells for the closest parcel:
+            ! (if nmerge = 0, this is not executed (we expect the
+            ! compiler to act like this)
             j = 0
             ! j counts the actual number of mergers found
             do m=1, nmerge
@@ -160,6 +162,8 @@ module parcel_nearest
             nmerge = j
 
             ! Pack isma and ibig such that we only have valid mergers
+            ! (if nmerge = 0, this is not executed (we expect the
+            ! compiler to act like this)
             j = 0
             do m = 1, nmerge
                 if (avail(isma(m))) then
