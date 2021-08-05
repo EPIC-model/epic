@@ -169,7 +169,7 @@ module parcel_nearest
                 endif
             enddo
 
-            ! Total number of merged parcels:
+            ! Total number of merges:
             nmerge = j
         end subroutine find_nearest
 
