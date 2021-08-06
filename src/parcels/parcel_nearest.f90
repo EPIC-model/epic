@@ -31,6 +31,7 @@ module parcel_nearest
             integer, intent(out) :: ibig(n_parcels)
             integer, intent(out) :: nmerge
             logical              :: avail(n_parcels) ! indicates that parcel i is available for merger
+            logical              :: valid
 
             if (.not. allocated(nppc)) then
                 allocate(nppc(ncell))
@@ -131,7 +132,9 @@ module parcel_nearest
                             ! Search nearby parcels for closest bigger one:
                             do k=kc1(ic),kc2(ic)
                                 i=node(k)
-                                if (parcels%volume(i) >= parcels%volume(i0)) then
+                                ! we need to exclude self-merging due to v(i) >= v(i0)
+                                valid = ((i .ne. i0) .and. (parcels%volume(i) >= parcels%volume(i0)))
+                                if (valid) then
                                     delz=parcels%position(i,2)-z_small
                                     ! Avoid merger with another small parcel
                                     vmerge=parcels%volume(i)+parcels%volume(i0) ! Summed area fraction:
