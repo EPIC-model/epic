@@ -27,11 +27,11 @@ module parcel_nearest
 
         ! if ibig(n) is zero, no parcel found for isma(n)
         subroutine find_nearest(isma, ibig, nmerge)
-            integer, intent(out) :: isma(0:n_parcels)
-            integer, intent(out) :: ibig(n_parcels)
-            integer, intent(out) :: nmerge
-            logical              :: avail(n_parcels) ! indicates that parcel i is available for merger
-            logical              :: valid
+            integer, allocatable, intent(out) :: isma(:)
+            integer, allocatable, intent(out) :: ibig(:)
+            integer, intent(out)              :: nmerge
+            logical                           :: avail(n_parcels) ! indicates that parcel is available for merger
+            logical                           :: valid
 
             if (.not. allocated(nppc)) then
                 allocate(nppc(ncell))
@@ -42,6 +42,9 @@ module parcel_nearest
             !---------------------------------------------------------------------
             ! Initialise search:
             nppc=0 !nppc(ic) will contain the number of parcels in grid cell ic
+
+            vmin = vcell / dble(parcel%vmin_fraction)
+            nmerge = 0
 
             ! Bin parcels in cells:
             do i = 1, n_parcels
@@ -56,7 +59,18 @@ module parcel_nearest
 
                 ! Store grid cell that this parcel is in:
                 loca(i)=ic
+
+                avail(i) = .false.
+                if (parcels%volume(i) < vmin) then
+                    avail(i) = .true.
+                    nmerge = nmerge + 1
+                endif
             enddo
+
+            ! if no small parcels are found, exit the subroutine
+            if (nmerge == 0) then
+                return
+            endif
 
             ! Find arrays kc1(ic) & kc2(ic) which indicate the parcels in grid cell ic
             ! through i = node(k), for k = kc1(ic),kc2(ic):
@@ -65,31 +79,27 @@ module parcel_nearest
                 kc1(ic+1)=kc1(ic)+nppc(ic)
             enddo
 
+            !---------------------------------------------------------------------
+
+            ! allocate arrays
+            allocate(isma(0:nmerge + 1))
+            allocate(ibig(nmerge + 1))
+
+            nmerge = 0
+
             kc2=kc1-1
             do i=1,n_parcels
                 ic=loca(i)
                 k=kc2(ic)+1
                 node(k)=i
                 kc2(ic)=k
-            enddo
 
-            !---------------------------------------------------------------------
-            ! Form list of small parcels:
-            nmerge = 0
-            vmin = vcell / dble(parcel%vmin_fraction)
-
-            do i = 1, n_parcels
-                if (parcels%volume(i) < vmin) then
+                ! Form list of small parcels:
+                if (avail(i)) then
                     nmerge = nmerge + 1
                     isma(nmerge) = i
-                    avail(i) = .true.
                 endif
             enddo
-
-            ! if not small parcels are found, exit the subroutine
-            if (nmerge == 0) then
-                return
-            endif
 
             !---------------------------------------------------------------------
             ! Now find the nearest grid point to each small parcel (to be merged)
