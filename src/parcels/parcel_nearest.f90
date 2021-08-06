@@ -131,7 +131,7 @@ module parcel_nearest
                             ! Search nearby parcels for closest bigger one:
                             do k=kc1(ic),kc2(ic)
                                 i=node(k)
-                                if (parcels%volume(i) > parcels%volume(i0)) then
+                                if (parcels%volume(i) >= parcels%volume(i0)) then
                                     delz=parcels%position(i,2)-z_small
                                     ! Avoid merger with another small parcel
                                     vmerge=parcels%volume(i)+parcels%volume(i0) ! Summed area fraction:
