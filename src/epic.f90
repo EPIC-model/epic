@@ -24,6 +24,9 @@ program epic
     use parcel_init, only : init_parcels, init_timer
     use ls_rk4
     use h5_utils, only : initialise_hdf5, finalise_hdf5
+#ifndef NDEBUG
+    use merge_hdf5, only : create_h5_merger_file
+#endif
     implicit none
 
     integer :: epic_timer
@@ -105,6 +108,11 @@ program epic
             if (output%h5_write_parcels) then
                 call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
             endif
+
+#ifndef NDEBUG
+            call create_h5_merger_file(trim(output%h5_basename), &
+                                       output%h5_overwrite)
+#endif
 
         end subroutine
 

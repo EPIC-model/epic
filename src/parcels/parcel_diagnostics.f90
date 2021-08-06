@@ -80,7 +80,7 @@ module parcel_diagnostics
             b = parcels%buoyancy(1:n_parcels)
 
             ! sort buoyancy in ascending order
-            call msort(b, ii)
+            call dmsort(b, ii)
 
             gam = one / extent(1)
             zmean = lower(2) + f12 * gam * parcels%volume(ii(1))

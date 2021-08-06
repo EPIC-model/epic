@@ -85,6 +85,9 @@ module parcel_nearest
             allocate(isma(0:nmerge + 1))
             allocate(ibig(nmerge + 1))
 
+            isma = 0
+            ibig = 0
+
             nmerge = 0
 
             kc2=kc1-1
