@@ -25,7 +25,7 @@ program epic
     use ls_rk4
     use h5_utils, only : initialise_hdf5, finalise_hdf5
 #ifndef NDEBUG
-    use merge_hdf5, only : create_h5_merger_file
+    use merge_hdf5, only : create_h5_merger_files
 #endif
     implicit none
 
@@ -110,8 +110,8 @@ program epic
             endif
 
 #ifndef NDEBUG
-            call create_h5_merger_file(trim(output%h5_basename), &
-                                       output%h5_overwrite)
+            call create_h5_merger_files(trim(output%h5_basename), &
+                                        output%h5_overwrite)
 #endif
 
         end subroutine
