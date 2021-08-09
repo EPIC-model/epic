@@ -22,13 +22,10 @@ module parcel_merge
 
     integer :: merge_timer
 
-    private :: do_bimerge,           &
-               geometric_bimerge,    &
-               optimal_bimerge,      &
-               geometric_multimerge, &
-               optimal_multimerge,   &
-               do_multimerge,        &
-               solve_quartic,        &
+    private :: geometric_merge, &
+               optimal_merge,   &
+               do_group_merge,  &
+               solve_quartic,   &
                pack_parcels
 
     contains
@@ -56,14 +53,10 @@ module parcel_merge
                 call write_h5_mergees(isma, ibig, n_merge)
 #endif
                 ! merge small parcels into large parcels
-                if (parcel%merge_type == 'bi-geometric') then
-                    call geometric_bimerge(parcels, isma, ibig, n_merge)
-                else if (parcel%merge_type == 'bi-optimal') then
-                    call optimal_bimerge(parcels, isma, ibig, n_merge)
-                else if (parcel%merge_type == 'multi-geometric') then
-                    call geometric_multimerge(parcels, isma, ibig, n_merge)
-                else if (parcel%merge_type == 'multi-optimal') then
-                    call optimal_multimerge(parcels, isma, ibig, n_merge)
+                if (parcel%merge_type == 'geometric') then
+                    call geometric_merge(parcels, isma, ibig, n_merge)
+                else if (parcel%merge_type == 'optimal') then
+                    call optimal_merge(parcels, isma, ibig, n_merge)
                 else
                     print *, "Unknown merge type '", trim(parcel%merge_type), "'."
                     stop
@@ -145,62 +138,7 @@ module parcel_merge
         end subroutine do_bimerge
 
 
-        subroutine geometric_bimerge(parcels, isma, ibig, n_merge)
-            type(parcel_container_type), intent(inout) :: parcels
-            integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: ibig(:)
-            integer,                     intent(in)    :: n_merge
-            integer                                    :: m, is, ib
-            double precision                           :: B11, B12, B22, factor, ab
-
-            do m = 1, n_merge
-                is = isma(m)
-                ib = ibig(m)
-
-                ! merge small into big parcel --> return B11, B12, B22, ab
-                call do_bimerge(parcels, is, ib, B11, B12, B22, ab)
-
-                ! normalize such that determinant of the merger is (ab)**2
-                ! ab / sqrt(det(B))
-                factor = ab / dsqrt(B11 * B22 - B12 ** 2)
-
-                parcels%B(ib, 1) = B11 * factor
-                parcels%B(ib, 2) = B12 * factor
-
-                call apply_periodic_bc(parcels%position(ib, :))
-            enddo
-
-        end subroutine geometric_bimerge
-
-
-        subroutine optimal_bimerge(parcels, isma, ibig, n_merge)
-            type(parcel_container_type), intent(inout) :: parcels
-            integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: ibig(:)
-            integer,                     intent(in)    :: n_merge
-            integer                                    :: m, is, ib
-            double precision                           :: B11, B12, B22, ab, mu
-
-            do m = 1, n_merge
-                is = isma(m)
-                ib = ibig(m)
-
-                ! merge small into big parcel --> return B11, B12, B22, ab
-                call do_bimerge(parcels, is, ib, B11, B12, B22, ab)
-
-                mu = solve_quartic(B11, B12, B22, ab)
-
-                ! optimal B
-                parcels%B(ib, 1) = (B11 - mu * B22) / (one - mu ** 2)
-                parcels%B(ib, 2) = B12 / (one - mu)
-
-                call apply_periodic_bc(parcels%position(ib, :))
-            enddo
-
-        end subroutine optimal_bimerge
-
-
-        subroutine do_multimerge(parcels, isma, ibig, n_merge, B11m, B12m, B22m, vm)
+        subroutine do_group_merge(parcels, isma, ibig, n_merge, B11m, B12m, B22m, vm)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: ibig(:)
@@ -346,10 +284,10 @@ module parcel_merge
                 B22m(n) = B22m(n) + mu * (four * dely ** 2   + B22)
             enddo
 
-        end subroutine do_multimerge
+        end subroutine do_group_merge
 
 
-        subroutine geometric_multimerge(parcels, isma, ibig, n_merge)
+        subroutine geometric_merge(parcels, isma, ibig, n_merge)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: ibig(:)
@@ -362,7 +300,7 @@ module parcel_merge
                                                           B22(n_merge), &
                                                           V(n_merge)
 
-            call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
+            call do_group_merge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
 
 
             loca = zero
@@ -387,10 +325,10 @@ module parcel_merge
                 endif
             enddo
 
-        end subroutine geometric_multimerge
+        end subroutine geometric_merge
 
 
-        subroutine optimal_multimerge(parcels, isma, ibig, n_merge)
+        subroutine optimal_merge(parcels, isma, ibig, n_merge)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: ibig(:)
@@ -403,7 +341,7 @@ module parcel_merge
                                                           B22(n_merge), &
                                                           V(n_merge)
 
-            call do_multimerge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
+            call do_group_merge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
 
             loca = zero
 
@@ -426,7 +364,7 @@ module parcel_merge
                     call apply_periodic_bc(parcels%position(ib, :))
                 endif
             enddo
-        end subroutine optimal_multimerge
+        end subroutine optimal_merge
 
 
         function solve_quartic(B11, B12, B22, ab) result(mu)

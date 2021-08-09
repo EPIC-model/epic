@@ -35,7 +35,7 @@ program test_ellipse_multi_merge_5
 
     ! geometric merge
     parcel%lambda_max = five
-    parcel%merge_type = 'multi-geometric'
+    parcel%merge_type = 'geometric'
     parcel%vmin_fraction = three
 
     ! first merge
@@ -53,7 +53,7 @@ program test_ellipse_multi_merge_5
     ! check result
     error = max(error, dble(abs(n_parcels - 1)))
 
-    call print_result_dp('Test ellipse multi-merge 5', error)
+    call print_result_dp('Test ellipse merge 5', error)
 
     call parcel_dealloc
 

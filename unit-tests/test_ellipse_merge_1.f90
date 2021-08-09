@@ -42,7 +42,7 @@ program test_ellipse_multi_merge_1
 
     ! geometric merge
     parcel%lambda_max = five
-    parcel%merge_type = 'multi-geometric'
+    parcel%merge_type = 'geometric'
     parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
@@ -50,7 +50,7 @@ program test_ellipse_multi_merge_1
     ! check result
     error = eval_max_error()
 
-    call print_result_dp('Test ellipse multi-merge 1 (geometric)', error)
+    call print_result_dp('Test ellipse group-merge 1 (geometric)', error)
 
     !
     ! muti-optimal merging
@@ -60,7 +60,7 @@ program test_ellipse_multi_merge_1
 
     ! optimal merge
     parcel%lambda_max = five
-    parcel%merge_type = 'multi-optimal'
+    parcel%merge_type = 'optimal'
     parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
@@ -68,7 +68,7 @@ program test_ellipse_multi_merge_1
     ! check result
     error = eval_max_error()
 
-    call print_result_dp('Test ellipse multi-merge 1 (optimal)', error)
+    call print_result_dp('Test ellipse group-merge 1 (optimal)', error)
 
     call parcel_dealloc
 

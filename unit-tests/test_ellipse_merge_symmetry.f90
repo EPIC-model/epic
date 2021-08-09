@@ -2,7 +2,7 @@
 !                       Test ellipse multi merge
 !
 !         This unit test checks the symmetry by performing a mirrored
-!         multi-merge (mirror axis x).
+!         group-merge (mirror axis x).
 ! =============================================================================
 program test_ellipse_multi_merge_symmetry
     use unit_test
@@ -41,7 +41,7 @@ program test_ellipse_multi_merge_symmetry
 
     ! geometric merge
     parcel%lambda_max = five
-    parcel%merge_type = 'multi-geometric'
+    parcel%merge_type = 'geometric'
     parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
@@ -49,7 +49,7 @@ program test_ellipse_multi_merge_symmetry
     ! check result
     error = eval_max_error()
 
-    call print_result_dp('Test ellipse multi-merge symmetry (geometric)', error)
+    call print_result_dp('Test ellipse group-merge symmetry (geometric)', error)
 
     !
     ! muti-optimal merging
@@ -59,7 +59,7 @@ program test_ellipse_multi_merge_symmetry
 
     ! optimal merge
     parcel%lambda_max = five
-    parcel%merge_type = 'multi-optimal'
+    parcel%merge_type = 'optimal'
     parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
@@ -67,7 +67,7 @@ program test_ellipse_multi_merge_symmetry
     ! check result
     error = eval_max_error()
 
-    call print_result_dp('Test ellipse multi-merge symmetry (optimal)', error)
+    call print_result_dp('Test ellipse group-merge symmetry (optimal)', error)
 
     call parcel_dealloc
 
