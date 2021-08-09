@@ -1,16 +1,18 @@
 ! =============================================================================
 !                       Test ellipse multi merge
 !
-!         This unit test is like test_ellipse_multi_merge_2 but the ellipses
-!         are centred at (1.5, 0.2). Hence, this checks periodicity in x.
+!         This unit test checks the merging of three ellipses. The biggest
+!         ellipse is located ad the origin. The smaller ellipses are located
+!         tangentially at 45 and 225 degrees. The final ellipse is an ellipse
+!         located at the origin.
 ! =============================================================================
-program test_ellipse_multi_merge_3
+program test_ellipse_multi_merge_2
     use unit_test
     use constants, only : pi, one, two, three, four, five
     use parcel_container
     use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
-    use parameters, only : update_parameters, lower, extent, nx, nz
+    use parameters, only : update_parameters, nx, nz, lower, extent
     use parcel_ellipse
     use timer
     implicit none
@@ -40,15 +42,15 @@ program test_ellipse_multi_merge_3
 
     ! geometric merge
     parcel%lambda_max = five
-    parcel%merge_type = 'multi-geometric'
+    parcel%merge_type = 'geometric'
     parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
     ! check result
-    error = eval_max_error('multi-geometric')
+    error = eval_max_error('geometric')
 
-    call print_result_dp('Test ellipse multi-merge 3 (geometric)', error)
+    call print_result_dp('Test ellipse group-merge 2 (geometric)', error)
 
     !
     ! muti-optimal merging
@@ -58,15 +60,15 @@ program test_ellipse_multi_merge_3
 
     ! optimal merge
     parcel%lambda_max = five
-    parcel%merge_type = 'multi-optimal'
+    parcel%merge_type = 'optimal'
     parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
     ! check result
-    error = eval_max_error('multi-optimal')
+    error = eval_max_error('optimal')
 
-    call print_result_dp('Test ellipse multi-merge 3 (optimal)', error)
+    call print_result_dp('Test ellipse group-merge 2 (optimal)', error)
 
     call parcel_dealloc
 
@@ -78,43 +80,54 @@ program test_ellipse_multi_merge_3
             d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
 
             n_parcels = 3
-            parcels%position(1, 1) = 1.5d0
-            parcels%position(1, 2) = 0.2d0
+            parcels%position(1, :) = zero
             parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
             parcels%B(1, 2) = zero
-
+            parcels%buoyancy(1) = 1.5d0
+#ifndef ENABLE_DRY_MODE
+            parcels%humidity(1) = 1.3d0
+#endif
             ! small parcel left
-            parcels%position(2, 1) = 1.5d0 - d
-            parcels%position(2, 2) = 0.2d0 -d
+            parcels%position(2, 1) = -d
+            parcels%position(2, 2) = -d
             parcels%volume(2) = a2b2 * pi
             parcels%B(2, 1) = a2b2
             parcels%B(2, 2) = zero
-
+            parcels%buoyancy(2) = 1.8d0
+#ifndef ENABLE_DRY_MODE
+            parcels%humidity(2) = 1.2d0
+#endif
             ! small parcel right
-            parcels%position(3, 1) = -extent(1) + 1.5d0 + d
-            parcels%position(3, 2) = 0.2d0 + d
+            parcels%position(3, 1) = d
+            parcels%position(3, 2) = d
             parcels%volume(3) = a2b2 * pi
             parcels%B(3, 1) = a2b2
             parcels%B(3, 2) = zero
-
+            parcels%buoyancy(3) = 1.4d0
+#ifndef ENABLE_DRY_MODE
+            parcels%humidity(3) = 1.1d0
+#endif
         end subroutine parcel_setup
 
         function eval_max_error(method) result(max_err)
             character(*), intent(in) :: method
             double precision :: ab, B11, B12, B22, vol, d, factor, tmp, mu
-            double precision :: max_err
+            double precision :: max_err, hum, buoy
 
             ! reference solution
             d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
             ab = a1b1 + two * a2b2
             vol = ab * pi
 
+            buoy = (1.5d0 * a1b1 + (1.8d0 + 1.4d0) * a2b2) / ab
+            hum  = (1.3d0 * a1b1 + (1.2d0 + 1.1d0) * a2b2) / ab
+
             B11 = a1b1 ** 2 / ab + two * a2b2 / ab * (four * d ** 2 + a2b2)
             B12 = two * a2b2 / ab * (four * d ** 2)
             B22 = B11
 
-            if (method .eq. 'multi-geometric') then
+            if (method .eq. 'geometric') then
                 factor = ab / dsqrt(B11 * B22 - B12 ** 2)
                 B11 = B11 * factor
                 B12 = B12 * factor
@@ -134,8 +147,12 @@ program test_ellipse_multi_merge_3
             max_err = max(max_err, abs(get_B22(parcels%B(1, 1), &
                                                parcels%B(1, 2), &
                                                parcels%volume(1)) - B22))
-            max_err = max(max_err, sum(abs(parcels%position(1, :) - (/1.5d0, 0.2d0/))))
+            max_err = max(max_err, sum(abs(parcels%position(1, :))))
             max_err = max(max_err, abs(parcels%volume(1) - vol))
+            max_err = max(max_err, abs(parcels%buoyancy(1) - buoy))
+#ifndef ENABLE_DRY_MODE
+            max_err = max(max_err, abs(parcels%humidity(1) - hum))
+#endif
         end function eval_max_error
 
 
@@ -169,4 +186,4 @@ program test_ellipse_multi_merge_3
             enddo
         end function solve_quartic
 
-end program test_ellipse_multi_merge_3
+end program test_ellipse_multi_merge_2
