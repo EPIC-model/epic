@@ -65,7 +65,7 @@ module merge_hdf5
             character(len=64)             :: tag
             character(:), allocatable     :: name
             logical                       :: created
-            integer                       :: m, n, ib, nm, is, num
+            integer                       :: m, n, ib, nm, is, num, prev_m
             integer                       :: ibig_sorted(nmerge), ind(nmerge)
 
             ibig_sorted = ibig(1:nmerge)
@@ -87,14 +87,19 @@ module merge_hdf5
             ib = ibig_sorted(1)
             nm = 0  ! number of involved parcels
             num = 0 ! merger number
-            do m = 1, nmerge
+            prev_m = 1
+            m = 1
+            do while (m <= nmerge)
                 if (ib == ibig_sorted(m)) then
                     is = isma(ind(m))
                     parcels%position(n + nm, :) = parcels%position(is, :)
                     parcels%B(n + nm, :) = parcels%B(is, :)
                     parcels%volume(n + nm) = parcels%volume(is)
                     nm = nm + 1
-                else
+                    m = m + 1
+                endif
+
+                if (m == prev_m) then
                     ! found all small parcels, append big parcel
                     parcels%position(n + nm, :) = parcels%position(ib, :)
                     parcels%B(n + nm, :) = parcels%B(ib, :)
@@ -117,12 +122,16 @@ module merge_hdf5
                     call close_h5_group(mgroup)
 
                     ! new big parcel
-                    ib = ibig_sorted(m)
+                    if (m <= nmerge) then
+                        ib = ibig_sorted(m)
+                    endif
                     num = num + 1
 
                     ! reset number of involved parcels
                     nm = 0
                 endif
+
+                prev_m = m
             enddo
 
             call write_h5_int_scalar_step_attrib(h5file_id1, nw, "nmergers", num)
@@ -169,8 +178,6 @@ module merge_hdf5
                     parcels%position(n + nm, :) = parcels%position(ib, :)
                     parcels%B(n + nm, :) = parcels%B(ib, :)
                     parcels%volume(n + nm) = parcels%volume(ib)
-
-                    print *, nm
                 endif
             enddo
 
@@ -189,8 +196,8 @@ module merge_hdf5
 
             call close_h5_file(h5file_id2)
 
-            print *, "done", nm
-            stop
+!             print *, "done", nm
+!             stop
             ! increase step number
             nw = nw + 1
         end subroutine write_h5_mergers
