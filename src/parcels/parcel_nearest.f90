@@ -18,7 +18,7 @@ module parcel_nearest
 
     !Other variables:
     double precision:: vmin, delx,delz,dsq,dsqmin,vmerge,vmergemin,x_small,z_small
-    integer :: i,ic,i0,imin,k,m,j
+    integer :: i,ic,i0,imin,k,m,j, is, ib, n
     integer :: ix,iz,ix0,iz0
 
     public :: find_nearest
@@ -30,8 +30,7 @@ module parcel_nearest
             integer, allocatable, intent(out) :: isma(:)
             integer, allocatable, intent(out) :: ibig(:)
             integer, intent(out)              :: nmerge
-            logical                           :: avail(n_parcels) ! indicates that parcel is available for merger
-            logical                           :: valid
+            integer                           :: inlinks(n_parcels) ! number small parcels pointing to me
 
             if (.not. allocated(nppc)) then
                 allocate(nppc(ncell))
@@ -60,9 +59,7 @@ module parcel_nearest
                 ! Store grid cell that this parcel is in:
                 loca(i)=ic
 
-                avail(i) = .false.
                 if (parcels%volume(i) < vmin) then
-                    avail(i) = .true.
                     nmerge = nmerge + 1
                 endif
             enddo
@@ -98,7 +95,7 @@ module parcel_nearest
                 kc2(ic)=k
 
                 ! Form list of small parcels:
-                if (avail(i)) then
+                if (parcels%volume(i) < vmin) then
                     nmerge = nmerge + 1
                     isma(nmerge) = i
                 endif
@@ -112,42 +109,41 @@ module parcel_nearest
             do m=1, nmerge
                 i0 = isma(m)
                 ! Make sure parcel i0 is not already merging with a smaller one:
-                if (avail(i0)) then
-                    x_small=parcels%position(i0,1)
-                    z_small=parcels%position(i0,2)
-                    ! Parcel i0 is small and should be merged; find closest other:
-                    ix0=mod(nint(dxi(1)*(x_small-lower(1))),nx) ! ranges from 0 to nx-1
-                    iz0=nint(dxi(2)*(z_small-lower(2)))         ! ranges from 0 to nz
+                x_small=parcels%position(i0,1)
+                z_small=parcels%position(i0,2)
+                ! Parcel i0 is small and should be merged; find closest other:
+                ix0=mod(nint(dxi(1)*(x_small-lower(1))),nx) ! ranges from 0 to nx-1
+                iz0=nint(dxi(2)*(z_small-lower(2)))         ! ranges from 0 to nz
 
-                    ! Grid point (ix0,iz0) is closest to parcel i0
+                ! Grid point (ix0,iz0) is closest to parcel i0
 
-                    ! Initialise scaled squared distance between parcels and parcel index:
-                    ! In the loop below we want to minimise dsq/vmerge
-                    ! By storing dsqmin and vmergemin separately, we can avoid a division
-                    ! In the calculation we also want to ensure
-                    !   dsq/(a*b) < lambda_max/2
-                    ! This will ensure a merged parcel does not split again
-                    ! Since vmerge=pi*a*b, this implies
-                    !   dsq*pi < 0.5*parcel%lambda_max*vmerge
-                    ! This is ensured by initialising the minimisation
-                    ! with the values below
-                    ! Might seem a bit radical to take a large vmergemin and small dsqmin
-                    ! but computationally it is easy
-                    dsqmin=f12*parcel%lambda_max
-                    vmergemin=pi
-                    imin=0
+                ! Initialise scaled squared distance between parcels and parcel index:
+                ! In the loop below we want to minimise dsq/vmerge
+                ! By storing dsqmin and vmergemin separately, we can avoid a division
+                ! In the calculation we also want to ensure
+                !   dsq/(a*b) < lambda_max/2
+                ! This will ensure a merged parcel does not split again
+                ! Since vmerge=pi*a*b, this implies
+                !   dsq*pi < 0.5*parcel%lambda_max*vmerge
+                ! This is ensured by initialising the minimisation
+                ! with the values below
+                ! Might seem a bit radical to take a large vmergemin and small dsqmin
+                ! but computationally it is easy
+                dsqmin=f12*parcel%lambda_max
+                vmergemin=pi
+                imin=0
 
-                    ! Loop over 8 cells surrounding (ix0,iz0):
-                    do iz=max(0,iz0-1),min(nz-1,iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
-                        do ix=ix0-1,ix0
-                            ! Cell index (accounting for x periodicity):
-                            ic=1+mod(nx+ix,nx)+nx*iz
-                            ! Search nearby parcels for closest bigger one:
-                            do k=kc1(ic),kc2(ic)
-                                i=node(k)
+                ! Loop over 8 cells surrounding (ix0,iz0):
+                do iz=max(0,iz0-1),min(nz-1,iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
+                    do ix=ix0-1,ix0
+                        ! Cell index (accounting for x periodicity):
+                        ic=1+mod(nx+ix,nx)+nx*iz
+                        ! Search nearby parcels for closest bigger one:
+                        do k=kc1(ic),kc2(ic)
+                            i=node(k)
+                            if (parcels%volume(i) >= parcels%volume(i0)) then
                                 ! we need to exclude self-merging due to v(i) >= v(i0)
-                                valid = ((i .ne. i0) .and. (parcels%volume(i) >= parcels%volume(i0)))
-                                if (valid) then
+                                if (i .ne. i0) then
                                     delz=parcels%position(i,2)-z_small
                                     ! Avoid merger with another small parcel
                                     vmerge=parcels%volume(i)+parcels%volume(i0) ! Summed area fraction:
@@ -155,7 +151,8 @@ module parcel_nearest
                                     ! Prevent division in comparisons here by storing both
                                     ! vmergemin and dsqmin
                                     if (delz*delz*vmergemin < dsqmin*vmerge) then
-                                        delx = get_delx(parcels%position(i,1), x_small) ! works across periodic edge
+                                        ! works across periodic edge
+                                        delx = get_delx(parcels%position(i,1), x_small)
                                         dsq=delz*delz+delx*delx
                                         if (dsq*vmergemin < dsqmin*vmerge) then
                                             dsqmin=dsq
@@ -164,34 +161,68 @@ module parcel_nearest
                                         endif
                                     endif
                                 endif
-                            enddo
+                            endif
                         enddo
                     enddo
-                    if (imin .gt. 0) then
-                        ! Store the indices of the merging parcels:
-                        j = j + 1
-                        isma(j) = i0
-                        ibig(j) = imin
-                        ! Forbid the bigger parcel (imin) from merging:
-                        avail(imin) = .false.
-                    endif
-                endif
+                enddo
+                ! Store the index of the parcel found (or store 0 if none found):
+                ibig(m) = imin
             enddo
-            ! Actual total number of binary mergers:
-            nmerge = j
+
+            inlinks = 0
 
             ! Pack isma and ibig such that we only have valid mergers
             j = 0
             do m = 1, nmerge
-                if (avail(isma(m))) then
+                if (ibig(m) > 0) then
+                    j = j + 1
+                    isma(j) = isma(m)
+                    ibig(j) = ibig(m)
+
+                    ! Count the number of incoming links
+                    inlinks(ibig(j)) = inlinks(ibig(j)) + 1
+                endif
+            enddo
+
+            ! Actual total number of binary mergers:
+            nmerge = j
+
+            ! Check if we have parcels pointing to each other
+            j = 2
+            do m = 1, nmerge
+                is = isma(m)
+                ib = ibig(m)
+                do n = j, nmerge
+                    if (ib == isma(n)) then
+                        if (inlinks(ib) > inlinks(is)) then
+                            inlinks(is) = inlinks(is) - 1
+                        else
+                            inlinks(ib) = inlinks(ib) - 1
+                        endif
+                    endif
+                enddo
+                j = j + 1
+            enddo
+
+
+            ! Re-pack isma and ibig such that we only have valid mergers
+            j = 0
+            do m = 1, nmerge
+                if (inlinks(ibig(m)) > 0) then
                     j = j + 1
                     isma(j) = isma(m)
                     ibig(j) = ibig(m)
                 endif
             enddo
 
-            ! Total number of mergers:
             nmerge = j
+
+!             do m = 1, nmerge
+!                 print *, m, isma(m), ibig(m), inlinks(ibig(m))
+!             enddo
+
+!             stop
+
         end subroutine find_nearest
 
 end module parcel_nearest

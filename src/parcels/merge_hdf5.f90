@@ -65,7 +65,7 @@ module merge_hdf5
             character(len=64)             :: tag
             character(:), allocatable     :: name
             logical                       :: created
-            integer                       :: m, n, ib, nm, is, num, prev_m
+            integer                       :: m, n, l, ib, nm, is, num
             integer                       :: ibig_sorted(nmerge), ind(nmerge)
 
             ibig_sorted = ibig(1:nmerge)
@@ -84,54 +84,62 @@ module merge_hdf5
 
 
             n = n_parcels + 1 ! make a gap to real parcels
-            ib = ibig_sorted(1)
             nm = 0  ! number of involved parcels
             num = 0 ! merger number
-            prev_m = 1
             m = 1
-            do while (m <= nmerge)
-                if (ib == ibig_sorted(m)) then
-                    is = isma(ind(m))
-                    parcels%position(n + nm, :) = parcels%position(is, :)
-                    parcels%B(n + nm, :) = parcels%B(is, :)
-                    parcels%volume(n + nm) = parcels%volume(is)
-                    nm = nm + 1
-                    m = m + 1
+            do l = 1, nmerge
+                ib = ibig_sorted(l)
+
+!                 print *, "ib = ", ib
+
+                if (ib == 0) then
+                    cycle
                 endif
 
-                if (m == prev_m) then
-                    ! found all small parcels, append big parcel
-                    parcels%position(n + nm, :) = parcels%position(ib, :)
-                    parcels%B(n + nm, :) = parcels%B(ib, :)
-                    parcels%volume(n + nm) = parcels%volume(ib)
+                ! big parcel
+                parcels%position(n, :) = parcels%position(ib, :)
+                parcels%B(n, :) = parcels%B(ib, :)
+                parcels%volume(n) = parcels%volume(ib)
 
-                    tag = get_group_merge_number('merger', num)
+                nm = 1
 
-                    call create_h5_group(group, trim(tag), mgroup)
+                do m = l, nmerge
+                    if (ib == ibig_sorted(m)) then
+                        is = isma(ind(m))
+                        parcels%position(n + nm, :) = parcels%position(is, :)
+                        parcels%B(n + nm, :) = parcels%B(is, :)
+                        parcels%volume(n + nm) = parcels%volume(is)
+                        nm = nm + 1
 
-                    ! write all involved parcels
-                    call write_h5_dataset_2d(group, trim(tag), "position", &
-                                             parcels%position(n:n + nm, :))
+!                         print *, "  is = ", is
 
-                    call write_h5_dataset_2d(group, trim(tag), "B", &
-                                             parcels%B(n:n + nm, :))
-
-                    call write_h5_dataset_1d(group, trim(tag), "volume", &
-                                             parcels%volume(n:n+nm))
-
-                    call close_h5_group(mgroup)
-
-                    ! new big parcel
-                    if (m <= nmerge) then
-                        ib = ibig_sorted(m)
+                        ibig_sorted(m) = 0
                     endif
-                    num = num + 1
+                enddo
 
-                    ! reset number of involved parcels
-                    nm = 0
-                endif
+!                 print *, "write", nm
 
-                prev_m = m
+                tag = get_group_merge_number('merger', num)
+
+                call create_h5_group(group, trim(tag), mgroup)
+
+                ! write all involved parcels
+                call write_h5_dataset_2d(group, trim(tag), "position", &
+                                          parcels%position(n:n + nm-1, :))
+
+                call write_h5_dataset_2d(group, trim(tag), "B", &
+                                         parcels%B(n:n + nm-1, :))
+
+                call write_h5_dataset_1d(group, trim(tag), "volume", &
+                                         parcels%volume(n:n+nm-1))
+
+                call close_h5_group(mgroup)
+
+                ! new big parcel
+                num = num + 1
+
+                ! reset number of involved parcels
+                nm = 0
             enddo
 
             call write_h5_int_scalar_step_attrib(h5file_id1, nw, "nmergers", num)
@@ -196,7 +204,7 @@ module merge_hdf5
 
             call close_h5_file(h5file_id2)
 
-!             print *, "done", nm
+!             print *, "done"
 !             stop
             ! increase step number
             nw = nw + 1
