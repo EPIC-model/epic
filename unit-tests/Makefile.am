@@ -22,11 +22,9 @@ unittests_PROGRAMS = 				\
 	test_parcel_correction		  	\
 	test_ellipse_split			\
 	test_ellipse_reflection			\
-	test_ellipse_bi_merge			\
-	test_ellipse_multi_merge_1		\
-	test_ellipse_multi_merge_2		\
-	test_ellipse_multi_merge_3		\
-	test_ellipse_bi_vs_multi_merge		\
+	test_ellipse_merge_1			\
+	test_ellipse_merge_2			\
+	test_ellipse_merge_3			\
 	test_tri_inversion			\
 	test_parcel_init
 
@@ -44,19 +42,17 @@ test_gradient_correction_SOURCES = test_gradient_correction.f90 unit_test.f90
 test_parcel_correction_SOURCES = test_parcel_correction.f90 unit_test.f90
 test_ellipse_split_SOURCES = test_ellipse_split.f90 unit_test.f90
 test_ellipse_reflection_SOURCES = test_ellipse_reflection.f90 unit_test.f90
-test_ellipse_bi_merge_SOURCES = test_ellipse_bi_merge.f90 unit_test.f90
-test_ellipse_multi_merge_1_SOURCES = test_ellipse_multi_merge_1.f90 unit_test.f90
-test_ellipse_multi_merge_2_SOURCES = test_ellipse_multi_merge_2.f90 unit_test.f90
-test_ellipse_multi_merge_3_SOURCES = test_ellipse_multi_merge_3.f90 unit_test.f90
-test_ellipse_bi_vs_multi_merge_SOURCES = test_ellipse_bi_vs_multi_merge.f90 unit_test.f90
+test_ellipse_merge_1_SOURCES = test_ellipse_merge_1.f90 unit_test.f90
+test_ellipse_merge_2_SOURCES = test_ellipse_merge_2.f90 unit_test.f90
+test_ellipse_merge_3_SOURCES = test_ellipse_merge_3.f90 unit_test.f90
 test_tri_inversion_SOURCES = test_tri_inversion.f90 unit_test.f90
 test_parcel_init_SOURCES = test_parcel_init.f90 unit_test.f90
 
 
 
 if ENABLE_DEBUG
-unittests_PROGRAMS += test_ellipse_multi_merge_symmetry
-test_ellipse_multi_merge_symmetry_SOURCES = test_ellipse_multi_merge_symmetry.f90 unit_test.f90
+unittests_PROGRAMS += test_ellipse_merge_symmetry
+test_ellipse_merge_symmetry_SOURCES = test_ellipse_merge_symmetry.f90 unit_test.f90
 endif
 
 endif
