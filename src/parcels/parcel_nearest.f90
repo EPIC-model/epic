@@ -203,7 +203,7 @@ module parcel_nearest
                     ! Big parcel has multiple equal size incoming parcels
                     ! Exclude from merging as at least 1 won't point back
                     node(ib) = -1
-                else
+                else if (node(ib) == 0) then
                     ! Use node to identify identity of incoming parcel
                     ! IF THERE IS ONLY 1 SUCH PARCEL
                     node(ib) = is
