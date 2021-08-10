@@ -1,7 +1,7 @@
 ! =============================================================================
 !                       Test nearest algorithm
 !
-!           This unit test checks A <--> B (equal-sized parcels).
+!           This unit test checks A --> B <--> C <-- D.
 ! =============================================================================
 program test_nearest_1
     use unit_test
@@ -24,9 +24,10 @@ program test_nearest_1
 
     call update_parameters
 
-    call parcel_alloc(2)
+    call parcel_alloc(4)
+    n_parcels = 4
 
-    call parcel_setup
+    call parcel_setup((/1, 2, 3, 4/))
 
     ! geometric merge
     parcel%lambda_max = five
@@ -41,16 +42,24 @@ program test_nearest_1
 
     contains
 
-        subroutine parcel_setup
-            n_parcels = 2
-            parcels%position(1, 1) = -0.25d0
-            parcels%position(1, 2) = zero
-            parcels%volume(1) = 0.1d0 * pi
+        subroutine parcel_setup(ordering)
+            integer, intent(in) :: ordering(4)
 
-            parcels%position(2, 1) = 0.25d0
-            parcels%position(2, 2) = zero
-            parcels%volume(2) = 0.1d0 * pi
+            parcels%position(ordering(1), 1) = -0.3d0
+            parcels%position(ordering(1), 2) = zero
+            parcels%volume(ordering(1)) = 0.1d0 * pi
+
+            parcels%position(ordering(2), 1) = -0.1d0
+            parcels%position(ordering(2), 2) = zero
+            parcels%volume(ordering(2)) = 0.12d0 * pi
+
+            parcels%position(ordering(3), 1) = 0.1d0
+            parcels%position(ordering(3), 2) = zero
+            parcels%volume(ordering(3)) = 0.12d0 * pi
+
+            parcels%position(ordering(4), 1) = 0.3d0
+            parcels%position(ordering(4), 2) = zero
+            parcels%volume(ordering(4)) = 0.1d0 * pi
         end subroutine parcel_setup
-
 
 end program test_nearest_1
