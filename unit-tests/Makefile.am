@@ -1,6 +1,6 @@
 if ENABLE_UNIT_TESTS
 
-AM_FCFLAGS = -I $(top_builddir)/src/
+AM_FCFLAGS = -I $(top_builddir)/src/ -Wno-uninitialized
 
 AM_LDFLAGS =						\
 	$(top_builddir)/src/parcels/*.o 		\
