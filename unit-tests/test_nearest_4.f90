@@ -1,9 +1,10 @@
 ! =============================================================================
 !                       Test nearest algorithm
 !
-!           This unit test checks A --> B <--> C <-- D.
+!           This unit test checks A(1) --> B(2) <--> C(2) <-- D(1).
+!           [behaves like (2b) and (3c)
 ! =============================================================================
-program test_nearest_1
+program test_nearest_4c
     use unit_test
     use constants, only : pi, zero, two, three, five
     use parcel_container
@@ -16,7 +17,7 @@ program test_nearest_1
     integer, allocatable, dimension(:) :: isma
     integer, allocatable, dimension(:) :: ibig
     integer                            :: n_merge
-    integer                            :: permutation(24, 4), i
+    integer                            :: permutation(24, 4), i, order(4)
 
     nx = 1
     nz = 1
@@ -59,14 +60,22 @@ program test_nearest_1
     permutation(24, :) = (/4, 3, 2, 1/)
 
     do i = 1, 24
-        call parcel_setup(permutation(i, :))
+        order = permutation(i, :)
+        call parcel_setup(order)
         call find_nearest(isma, ibig, n_merge)
+
         failed = (failed .or. (n_merge .ne. 2))
-        print *, n_merge
-!         failed = (failed .or. ((isma(1) .ne. 1) .or. (ibig(1) .ne. 2)))
+
+        if (isma(1) == order(1)) then
+            failed = (failed .or. (ibig(1) .ne. order(2)))
+            failed = (failed .or. (ibig(2) .ne. order(3)))
+        else
+            failed = (failed .or. (ibig(2) .ne. order(2)))
+            failed = (failed .or. (ibig(1) .ne. order(3)))
+        endif
     enddo
 
-    call print_result_logical('Test nearest algorithm 2', failed)
+    call print_result_logical('Test nearest algorithm 4c', failed)
 
     contains
 
@@ -90,4 +99,4 @@ program test_nearest_1
             parcels%volume(ordering(4)) = 0.1d0 * pi
         end subroutine parcel_setup
 
-end program test_nearest_1
+end program test_nearest_4c
