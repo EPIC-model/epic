@@ -18,7 +18,7 @@ module parcel_nearest
 
     !Other variables:
     double precision:: vmin, delx,delz,dsq,dsqmin,vmerge,vmergemin,x_small,z_small
-    integer :: i,ic,i0,imin,k,m,j, is, ib, n
+    integer :: i,ic,i0,imin,k,m,j, is, ib
     integer :: ix,iz,ix0,iz0
 
     public :: find_nearest
@@ -30,7 +30,6 @@ module parcel_nearest
             integer, allocatable, intent(out) :: isma(:)
             integer, allocatable, intent(out) :: ibig(:)
             integer, intent(out)              :: nmerge
-            integer                           :: inlinks(n_parcels) ! number small parcels pointing to me
 
             if (.not. allocated(nppc)) then
                 allocate(nppc(ncell))
@@ -169,56 +168,78 @@ module parcel_nearest
                 ibig(m) = imin
             enddo
 
-            inlinks = 0
-
             ! Pack isma and ibig such that we only have valid mergers
             j = 0
             do m = 1, nmerge
                 if (ibig(m) > 0) then
+                    ! (isma(m),ibig(m)) = (is,ib) is a valid merging pair
                     j = j + 1
-                    isma(j) = isma(m)
+                    is = isma(m)
+                    isma(j) = is
                     ibig(j) = ibig(m)
-
-                    ! Count the number of incoming links
-                    inlinks(ibig(j)) = inlinks(ibig(j)) + 1
+                    ! Reuse the node array to identify incoming links
+                    ! Reset here
+                    node(is) = 0
                 endif
             enddo
 
-            ! Actual total number of binary mergers:
             nmerge = j
 
-            ! Check if we have parcels pointing to each other
-            j = 2
+            ! Identify number, type, identity of incoming mergers
+            ! node(ib)==0 -> no incoming merger
+            ! node(ib)==-1 -> smaller incoming merger, or multiple incoming mergers
+            ! node(ib)>0 -> 1 incoming merger of equal size, keep track of id
+            ! No re-packing here
             do m = 1, nmerge
                 is = isma(m)
                 ib = ibig(m)
-                do n = j, nmerge
-                    if (ib == isma(n)) then
-                        if (inlinks(ib) > inlinks(is)) then
-                            inlinks(is) = inlinks(is) - 1
-                        else
-                            inlinks(ib) = inlinks(ib) - 1
-                        endif
-                    endif
-                enddo
-                j = j + 1
+                ! Reuse the node array to identify incoming links
+                ! Keep  the number of incoming links
+                if (parcels%volume(ib) > parcels%volume(is)) then
+                    ! Big parcel has smaller incoming parcel
+                    ! Exclude from merging
+                    node(ib) = -1
+                else if (node(ib) > 0) then
+                    ! Big parcel has multiple equal size incoming parcels
+                    ! Exclude from merging as at least 1 won't point back
+                    node(ib) = -1
+                else
+                    ! Use node to identify identity of incoming parcel
+                    ! IF THERE IS ONLY 1 SUCH PARCEL
+                    node(ib) = is
+                endif
             enddo
-
 
             ! Re-pack isma and ibig such that we only have valid mergers
             j = 0
             do m = 1, nmerge
-                if (inlinks(ibig(m)) > 0) then
+                is = isma(m)
+                if (node(is) == 0) then
+                    ! No incoming mergers for is, keep merge
                     j = j + 1
-                    isma(j) = isma(m)
+                    isma(j) = is
                     ibig(j) = ibig(m)
+                else if (node(is) > 0) then
+                    ! Single incoming equal size mergers for this parcel
+                    ib = ibig(m)
+                    if (node(is) == ib) then
+                        ! identity of incoming parcel is the "big" parcel
+                        ! go ahead and merge
+                        j = j + 1
+                        isma(j) = is
+                        ibig(j) = ib
+                        ! but make sure the other parcel does not try to merge back
+                        ! in case no other parcels point at it
+                        node(ib) = -1
+                    endif
                 endif
+                ! OTHERWISE, DO NOTHING
             enddo
 
             nmerge = j
 
 !             do m = 1, nmerge
-!                 print *, m, isma(m), ibig(m), inlinks(ibig(m))
+!                 print *, m, isma(m), ibig(m), node(isma(m)), node(ibig(m))
 !             enddo
 
 !             stop
