@@ -35,7 +35,7 @@ program test_nearest_1
     call find_nearest(isma, ibig, n_merge)
 
     failed = (n_merge .ne. 1)
-    failed = ((isma(1) .ne. 1) .or. (ibig(1) .ne. 2))
+    failed = (failed .or. ((isma(1) .ne. 1) .or. (ibig(1) .ne. 2)))
 
     call print_result_logical('Test nearest algorithm 1', failed)
 
