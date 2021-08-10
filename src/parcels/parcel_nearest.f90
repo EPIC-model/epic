@@ -183,59 +183,65 @@ module parcel_nearest
                 endif
             enddo
 
-            nmerge = j
-
-            ! Identify number, type, identity of incoming mergers
-            ! node(ib)==0 -> no incoming merger
-            ! node(ib)==-1 -> smaller incoming merger, or multiple incoming mergers
-            ! node(ib)>0 -> 1 incoming merger of equal size, keep track of id
-            ! No re-packing here
+            !---------------------------------------------------------------------
+            ! Link merging parcels (isma(m),ibig(m)) = (is,ib) by node(is) = ib:
             do m = 1, nmerge
-                is = isma(m)
+                node(isma(m)) = ibig(m) ! if ibig(m) = 0, parcel isma(m) is isolated
+            enddo
+            ! This re-uses the node array above - no extra memory is required.
+
+            ! Forbid a strictly larger parcel "ib" from ever merging with another;
+            ! do this by setting node(ib) = 0:
+            do m = 1, nmerge
                 ib = ibig(m)
-                ! Reuse the node array to identify incoming links
-                ! Keep  the number of incoming links
-                if (parcels%volume(ib) > parcels%volume(is)) then
-                    ! Big parcel has smaller incoming parcel
-                    ! Exclude from merging
-                    node(ib) = -1
-                else if (node(ib) > 0) then
-                    ! Big parcel has multiple equal size incoming parcels
-                    ! Exclude from merging as at least 1 won't point back
-                    node(ib) = -1
-                else
-                    ! Use node to identify identity of incoming parcel
-                    ! IF THERE IS ONLY 1 SUCH PARCEL
-                    node(ib) = is
+                if (ib > 0) then
+                    ! If larger parcel in a pair; forbid from further mergers:
+                    if (parcels%volume(ib) > parcels%volume(isma(m))) then
+                        node(ib) = 0
+                    endif
                 endif
             enddo
+            ! The above two loops do not depend on the order parcels are found
+            ! in the list over m.  Any order eliminates bigger parcels in a chain
+            ! like A -> B -> C -> D ... (C & D etc are eliminated, leaving A -> B).
 
-            ! Re-pack isma and ibig such that we only have valid mergers
+            ! Next, eliminate mergers between equal-sized parcels when they do NOT
+            ! point to each other:
+            do m = 1, nmerge
+                is = isma(m)
+                ib = node(is)
+                if (ib > 0) then
+                    if (parcels%volume(is) == parcels%volume(ib)) then
+                        if (node(ib) .ne. is) then
+                            node(is) = 0
+                        endif
+                    endif
+                endif
+            enddo
+            ! An example here is A <-> B <- C, i.e. node(A) = B, node(B) = A and
+            ! node(C) = B.  The above eliminates C, retaining A <-> B.
+
+            ! Pack isma and ibig such that we only have valid mergers:
             j = 0
             do m = 1, nmerge
                 is = isma(m)
-                if (node(is) == 0) then
-                    ! No incoming mergers for is, keep merge
+                ib = node(is)
+                if (ib > 0) then
                     j = j + 1
                     isma(j) = is
-                    ibig(j) = ibig(m)
-                else if (node(is) > 0) then
-                    ! Single incoming equal size mergers for this parcel
-                    ib = ibig(m)
-                    if (node(is) == ib) then
-                        ! identity of incoming parcel is the "big" parcel
-                        ! go ahead and merge
-                        j = j + 1
-                        isma(j) = is
-                        ibig(j) = ib
-                        ! but make sure the other parcel does not try to merge back
-                        ! in case no other parcels point at it
-                        node(ib) = -1
+                    ibig(j) = ib
+                    if (node(ib) == is) then
+                        node(ib) = 0
                     endif
+                    ! This prevents the merger between equal-sized parcels from being
+                    ! counted twice; ONLY when v(is) = v(ib) would node(ib) = is;
+                    ! resetting node(ib) = 0 ensures this case is only counted once.
+                    ! That is, in A <-> B, one of the links is broken, leaving either
+                    ! A -> B or B -> A; but this symmetric as other parcel is involved.
                 endif
-                ! OTHERWISE, DO NOTHING
             enddo
 
+            ! Actual total number of valid binary mergers:
             nmerge = j
 
 !             do m = 1, nmerge
