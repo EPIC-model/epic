@@ -190,28 +190,13 @@ module parcel_nearest
             enddo
             ! This re-uses the node array above - no extra memory is required.
 
-            ! Forbid a strictly larger parcel "ib" from ever merging with another;
-            ! do this by setting node(ib) = 0:
-            do m = 1, nmerge
-                ib = ibig(m)
-                if (ib > 0) then
-                    ! If larger parcel in a pair; forbid from further mergers:
-                    if (parcels%volume(ib) > parcels%volume(isma(m))) then
-                        node(ib) = 0
-                    endif
-                endif
-            enddo
-            ! The above two loops do not depend on the order parcels are found
-            ! in the list over m.  Any order eliminates bigger parcels in a chain
-            ! like A -> B -> C -> D ... (C & D etc are eliminated, leaving A -> B).
-
-            ! Next, eliminate mergers between equal-sized parcels when they do NOT
-            ! point to each other:
+            ! First, eliminate mergers between equal-sized parcels when they
+            ! do NOT point to each other:
             do m = 1, nmerge
                 is = isma(m)
                 ib = node(is)
                 if (ib > 0) then
-                    if (parcels%volume(is) == parcels%volume(ib)) then
+                    if (v(is) == v(ib)) then
                         if (node(ib) .ne. is) then
                             node(is) = 0
                         endif
@@ -220,6 +205,21 @@ module parcel_nearest
             enddo
             ! An example here is A <-> B <- C, i.e. node(A) = B, node(B) = A and
             ! node(C) = B.  The above eliminates C, retaining A <-> B.
+
+            ! Next, forbid a strictly larger parcel "ib" from ever merging with
+            ! another of equal or larger size; do this by setting node(ib) = 0:
+            do m = 1, nmerge
+                ib = ibig(m)
+                if (ib > 0) then
+                    ! If larger parcel in a pair; forbid from further mergers:
+                    if (v(ib) > v(isma(m))) then
+                        node(ib) = 0
+                    endif
+                endif
+            enddo
+            ! The above two loops do not depend on the order parcels are found
+            ! in the list over m.  Any order eliminates bigger parcels in a chain
+            ! like A -> B -> C -> D ... (C & D etc are eliminated, leaving A -> B).
 
             ! Pack isma and ibig such that we only have valid mergers:
             j = 0
