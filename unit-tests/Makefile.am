@@ -27,6 +27,7 @@ unittests_PROGRAMS = 				\
 	test_ellipse_merge_3			\
 	test_nearest_1				\
 	test_nearest_2				\
+	test_nearest_4				\
 	test_tri_inversion			\
 	test_parcel_init
 
@@ -48,7 +49,8 @@ test_ellipse_merge_1_SOURCES = test_ellipse_merge_1.f90 unit_test.f90
 test_ellipse_merge_2_SOURCES = test_ellipse_merge_2.f90 unit_test.f90
 test_ellipse_merge_3_SOURCES = test_ellipse_merge_3.f90 unit_test.f90
 test_nearest_1_SOURCES = test_nearest_1.f90 unit_test.f90
-test_nearest_2_SOURCES = test_nearest_2.f90 unit_test.f90
+test_nearest_2_SOURCES = permute.f90 test_nearest_2.f90 unit_test.f90
+test_nearest_4_SOURCES = test_nearest_4.f90 unit_test.f90
 test_tri_inversion_SOURCES = test_tri_inversion.f90 unit_test.f90
 test_parcel_init_SOURCES = test_parcel_init.f90 unit_test.f90
 
