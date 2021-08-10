@@ -1,7 +1,9 @@
 ! =============================================================================
 !                       Test nearest algorithm
 !
-!           This unit test checks A <--> B (equal-sized parcels).
+!           This unit test checks:
+!               (2a) A(1) <--> B(1)
+!               (2b) A(1) --> B(2)
 ! =============================================================================
 program test_nearest_1
     use unit_test
@@ -26,22 +28,37 @@ program test_nearest_1
 
     call parcel_alloc(2)
 
-    call parcel_setup
-
     ! geometric merge
     parcel%lambda_max = five
     parcel%vmin_fraction = three
+
+    !
+    !   (2a)
+    !
+    call parcel_setup_2a
 
     call find_nearest(isma, ibig, n_merge)
 
     failed = (n_merge .ne. 1)
     failed = (failed .or. ((isma(1) .ne. 1) .or. (ibig(1) .ne. 2)))
+    call print_result_logical('Test nearest algorithm (setup 2a)', failed)
 
-    call print_result_logical('Test nearest algorithm 1', failed)
+    failed = .false.
+
+    !
+    !   (2b)
+    !
+    call parcel_setup_2b
+
+    call find_nearest(isma, ibig, n_merge)
+
+    failed = (n_merge .ne. 1)
+    failed = (failed .or. ((isma(1) .ne. 1) .or. (ibig(1) .ne. 2)))
+    call print_result_logical('Test nearest algorithm (setup 2b)', failed)
 
     contains
 
-        subroutine parcel_setup
+        subroutine parcel_setup_2a
             n_parcels = 2
             parcels%position(1, 1) = -0.25d0
             parcels%position(1, 2) = zero
@@ -50,7 +67,18 @@ program test_nearest_1
             parcels%position(2, 1) = 0.25d0
             parcels%position(2, 2) = zero
             parcels%volume(2) = 0.1d0 * pi
-        end subroutine parcel_setup
+        end subroutine parcel_setup_2a
+
+        subroutine parcel_setup_2b
+            n_parcels = 2
+            parcels%position(1, 1) = -0.25d0
+            parcels%position(1, 2) = zero
+            parcels%volume(1) = 0.1d0 * pi
+
+            parcels%position(2, 1) = 0.25d0
+            parcels%position(2, 2) = zero
+            parcels%volume(2) = 0.12d0 * pi
+        end subroutine parcel_setup_2b
 
 
 end program test_nearest_1
