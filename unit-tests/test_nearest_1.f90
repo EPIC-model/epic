@@ -3,7 +3,7 @@
 !
 !           This unit test checks:
 !               (2a) A(1) <--> B(1)
-!               (2b) A(1) --> B(2)
+!               (2b) A(1)  --> B(2)
 ! =============================================================================
 program test_nearest_1
     use unit_test
@@ -14,7 +14,7 @@ program test_nearest_1
     use parcel_nearest
     implicit none
 
-    logical                            :: failed = .false.
+    logical                            :: passed = .true.
     integer, allocatable, dimension(:) :: isma
     integer, allocatable, dimension(:) :: ibig
     integer                            :: n_merge
@@ -39,22 +39,22 @@ program test_nearest_1
 
     call find_nearest(isma, ibig, n_merge)
 
-    failed = (n_merge .ne. 1)
-    failed = (failed .or. ((isma(1) .ne. 1) .or. (ibig(1) .ne. 2)))
-    call print_result_logical('Test nearest algorithm (setup 2a)', failed)
-
-    failed = .false.
+    passed = (n_merge == 1)
+    passed = (passed .and. (isma(1) == 1) .and. (ibig(1) == 2))
+    call print_result_logical('Test nearest algorithm (setup 2a)', passed)
 
     !
     !   (2b)
     !
+    passed = .true.
+
     call parcel_setup_2b
 
     call find_nearest(isma, ibig, n_merge)
 
-    failed = (n_merge .ne. 1)
-    failed = (failed .or. ((isma(1) .ne. 1) .or. (ibig(1) .ne. 2)))
-    call print_result_logical('Test nearest algorithm (setup 2b)', failed)
+    passed = (n_merge == 1)
+    passed = (passed .and. (isma(1) == 1) .and. (ibig(1) == 2))
+    call print_result_logical('Test nearest algorithm (setup 2b)', passed)
 
     contains
 
