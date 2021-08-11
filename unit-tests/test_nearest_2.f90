@@ -11,7 +11,7 @@
 ! =============================================================================
 program test_nearest_2
     use unit_test
-    use permute
+    use permute, only : permute_generate, permute_dealloc, n_permutes, permutes
     use constants, only : pi, zero, two, three, five
     use parcel_container
     use options, only : parcel
@@ -22,8 +22,7 @@ program test_nearest_2
     logical              :: failed = .false.
     integer, allocatable :: isma(:)
     integer, allocatable :: ibig(:)
-    integer              :: n_merge, np, n
-    integer, allocatable :: permutes(:, :)
+    integer              :: n_merge, n
     integer              :: ordering(3)
 
     nx = 1
@@ -41,14 +40,12 @@ program test_nearest_2
     parcel%lambda_max = five
     parcel%vmin_fraction = three
 
-    call permute_generate(permutes, n_parcels)
-
-    np = size(permutes) / n_parcels
+    call permute_generate(n_parcels)
 
     !
     !   (3a)
     !
-    do n = 1, np
+    do n = 1, n_permutes
         ordering = permutes(n, :)
         call parcel_setup_3a(ordering)
 

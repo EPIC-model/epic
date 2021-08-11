@@ -6,14 +6,12 @@
 module permute
     implicit none
 
-    private
-
-    public :: permute_generate
+    integer, allocatable :: permutes(:, :)
+    integer :: n_permutes = 0
 
     contains
 
-        subroutine permute_alloc(permutes, n)
-            integer, allocatable, intent(inout) :: permutes(:, :)
+        subroutine permute_alloc(n)
             integer, intent(in) :: n
             integer             :: i, p
 
@@ -24,20 +22,26 @@ module permute
 
             allocate(permutes(p, n))
 
+            n_permutes = p
+
         end subroutine permute_alloc
+
+        subroutine permute_dealloc
+            if (allocated(permutes)) then
+                deallocate(permutes)
+            endif
+        end subroutine
 
         ! non-recursive Heap algorithm
         ! Implemented according to
         ! https://en.wikipedia.org/wiki/Heap%27s_algorithm
         ! (visited 10 August 2021)
-        subroutine permute_generate(permutes, n)
-            integer, allocatable, intent(inout) :: permutes(:, :)
-            integer                             :: array(0:n-1)
-            integer, intent(in)                 :: n
-            integer                             :: tmp, i, k
-            integer                             :: c(n)
+        subroutine permute_generate(n)
+            integer, intent(in) :: n
+            integer             :: array(0:n-1)
+            integer             :: tmp, i, k, c(n)
 
-            call permute_alloc(permutes, n)
+            call permute_alloc(n)
 
             do i = 0, n-1
                 array(i) = i + 1
