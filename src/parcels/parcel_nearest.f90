@@ -168,21 +168,6 @@ module parcel_nearest
                 ibig(m) = imin
             enddo
 
-            ! Pack isma and ibig such that we only have valid mergers
-            j = 0
-            do m = 1, nmerge
-                if (ibig(m) > 0) then
-                    ! (isma(m),ibig(m)) = (is,ib) is a valid merging pair
-                    j = j + 1
-                    is = isma(m)
-                    isma(j) = is
-                    ibig(j) = ibig(m)
-                    ! Reuse the node array to identify incoming links
-                    ! Reset here
-                    node(is) = 0
-                endif
-            enddo
-
             !---------------------------------------------------------------------
             ! Link merging parcels (isma(m),ibig(m)) = (is,ib) by node(is) = ib:
             do m = 1, nmerge
