@@ -17,7 +17,7 @@ program test_ellipse_orientation
     integer :: grid(2) = (/2, 2/)
     double precision :: angle, B11, B12, V, a2, b2
     double precision, parameter :: lam = three
-    logical :: failed = .false.
+    logical :: passed = .true.
 
     n_parcels = 1
     call parcel_alloc(1)
@@ -50,12 +50,12 @@ program test_ellipse_orientation
             angle = angle - two * pi
         endif
 
-        failed = (failed .or. abs(angle - get_angle(B11, B12, V)) > dble(1.0e-13))
+        passed = (passed .and. abs(angle - get_angle(B11, B12, V)) < dble(1.0e-13))
 
     enddo
 
     call parcel_dealloc()
 
-    call print_result_logical('Test ellipse orientation', failed)
+    call print_result_logical('Test ellipse orientation', passed)
 
 end program test_ellipse_orientation
