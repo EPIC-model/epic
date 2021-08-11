@@ -44,7 +44,7 @@ program test_nearest_2
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3a)
+    !   (3a) A(1) <--> B(1) <--  C(1)
     !
     do n = 1, n_permutes
         ordering = permutes(n, :)
@@ -52,27 +52,14 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        passed = (passed .and. (n_merge == 2))
-
-        ! B is in ibig since A --> B and C --> B
-        passed = (passed .and. &
-                    (ibig(1) == ordering(2)) .and. (ibig(2) == ordering(2)))
-
-        ! A and C are in isma
-        if (ordering(1) < ordering(3)) then
-            passed = (passed .and. &
-                        (isma(1) == ordering(1)) .and. (isma(2) == ordering(3)))
-        else
-            passed = (passed .and. &
-                        (isma(1) == ordering(3)) .and. (isma(2) == ordering(1)))
-        endif
+        call ACtoB
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1) <-> B(1) <-  C(1)', passed)
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3b)
+    !   (3b) A(1)  --> B(1)  --> C(2)
     !
     passed = .true.
 
@@ -93,7 +80,7 @@ program test_nearest_2
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3c)
+    !   (3c) A(1)  --> B(2) <--> C(2)
     !
     passed = .true.
 
@@ -103,28 +90,14 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        passed = (passed .and. (n_merge == 2))
-
-        ! B is in ibig since A --> B and C --> B
-        passed = (passed .and. &
-                    (ibig(1) == ordering(2)) .and. (ibig(2) == ordering(2)))
-
-        ! A and C are in isma
-        if (ordering(1) < ordering(3)) then
-            passed = (passed .and. &
-                        (isma(1) == ordering(1)) .and. (isma(2) == ordering(3)))
-        else
-            passed = (passed .and. &
-                        (isma(1) == ordering(3)) .and. (isma(2) == ordering(1)))
-        endif
-
+        call ACtoB
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(2) <-> C(2)', passed)
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3d)
+    !   (3d) A(1)  --> B(2) <--  C(1)
     !
     passed = .true.
 
@@ -134,28 +107,14 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        passed = (passed .and. (n_merge == 2))
-
-        ! B is in ibig since A --> B and C --> B
-        passed = (passed .and. &
-                    (ibig(1) == ordering(2)) .and. (ibig(2) == ordering(2)))
-
-        ! A and C are in isma
-        if (ordering(1) < ordering(3)) then
-            passed = (passed .and. &
-                        (isma(1) == ordering(1)) .and. (isma(2) == ordering(3)))
-        else
-            passed = (passed .and. &
-                        (isma(1) == ordering(3)) .and. (isma(2) == ordering(1)))
-        endif
-
+        call ACtoB
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(2) <-  C(1)', passed)
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3e)
+    !   (3e) A(1)  --> B(3) <--  C(2)
     !
     passed = .true.
 
@@ -165,28 +124,14 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        passed = (passed .and. (n_merge == 2))
-
-        ! B is in ibig since A --> B and C --> B
-        passed = (passed .and. &
-                    (ibig(1) == ordering(2)) .and. (ibig(2) == ordering(2)))
-
-        ! A and C are in isma
-        if (ordering(1) < ordering(3)) then
-            passed = (passed .and. &
-                        (isma(1) == ordering(1)) .and. (isma(2) == ordering(3)))
-        else
-            passed = (passed .and. &
-                        (isma(1) == ordering(3)) .and. (isma(2) == ordering(1)))
-        endif
-
+        call ACtoB
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(3) <-  C(2)', passed)
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3f)
+    !   (3f) A(1)  --> B(2)  --> C(3)
     !
     passed = .true.
 
@@ -212,6 +157,7 @@ program test_nearest_2
 
     contains
 
+        ! (3a) A(1) <--> B(1) <--  C(1)
         subroutine parcel_setup_3a(p)
             integer, intent(in) :: p(3)
             parcels%position(p(1), 1) = -0.1d0
@@ -227,6 +173,7 @@ program test_nearest_2
             parcels%volume(p(3)) = 0.1d0 * pi
         end subroutine parcel_setup_3a
 
+        ! (3b) A(1)  --> B(1)  --> C(2)
         subroutine parcel_setup_3b(p)
             integer, intent(in) :: p(3)
             parcels%position(p(1), 1) = -0.2d0
@@ -242,6 +189,7 @@ program test_nearest_2
             parcels%volume(p(3)) = 0.12d0 * pi
         end subroutine parcel_setup_3b
 
+        ! (3c) A(1)  --> B(2) <--> C(2)
         subroutine parcel_setup_3c(p)
             integer, intent(in) :: p(3)
             parcels%position(p(1), 1) = -0.2d0
@@ -257,6 +205,7 @@ program test_nearest_2
             parcels%volume(p(3)) = 0.12d0 * pi
         end subroutine parcel_setup_3c
 
+        ! (3d) A(1)  --> B(2) <--  C(1)
         subroutine parcel_setup_3d(p)
             integer, intent(in) :: p(3)
             parcels%position(p(1), 1) = -0.2d0
@@ -272,6 +221,7 @@ program test_nearest_2
             parcels%volume(p(3)) = 0.1d0 * pi
         end subroutine parcel_setup_3d
 
+        ! (3e) A(1)  --> B(3) <--  C(2)
         subroutine parcel_setup_3e(p)
             integer, intent(in) :: p(3)
             parcels%position(p(1), 1) = -0.2d0
@@ -287,6 +237,7 @@ program test_nearest_2
             parcels%volume(p(3)) = 0.12d0 * pi
         end subroutine parcel_setup_3e
 
+        ! (3f) A(1)  --> B(2)  --> C(3)
         subroutine parcel_setup_3f(p)
             integer, intent(in) :: p(3)
             parcels%position(p(1), 1) = -0.2d0
@@ -301,5 +252,22 @@ program test_nearest_2
             parcels%position(p(3), 2) = zero
             parcels%volume(p(3)) = 0.14d0 * pi
         end subroutine parcel_setup_3f
+
+        subroutine ACtoB
+            passed = (passed .and. (n_merge == 2))
+
+            ! B is in ibig since A --> B and C --> B
+            passed = (passed .and. &
+                        (ibig(1) == ordering(2)) .and. (ibig(2) == ordering(2)))
+
+            ! A and C are in isma
+            if (ordering(1) < ordering(3)) then
+                passed = (passed .and. &
+                            (isma(1) == ordering(1)) .and. (isma(2) == ordering(3)))
+            else
+                passed = (passed .and. &
+                            (isma(1) == ordering(3)) .and. (isma(2) == ordering(1)))
+            endif
+        end subroutine ACtoB
 
 end program test_nearest_2
