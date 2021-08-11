@@ -44,8 +44,8 @@ program test_ellipse_multi_merge_5
     ! check result
     error = dble(abs(n_parcels - 2))
 
-    ! check if the smaller parcels merged first
-    error = max(error, dabs(parcels%volume(1) - 0.27d0 * pi))
+    ! check if the small and big parcels merged first
+    error = max(error, dabs(parcels%volume(1) - 0.25d0 * pi))
 
     ! second merge
     call merge_ellipses(parcels)
