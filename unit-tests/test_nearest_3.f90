@@ -54,7 +54,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call AtoB_and_CtoD
+        call BtoC_or_CtoB
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(1) <-> C(1) <-  D(1)', passed)
@@ -71,7 +71,11 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call AtoB
+        passed = (passed .and. (n_merge == 1))
+
+        ! C --> D
+        passed = (passed .and. (isma(1) == ordering(3)))
+        passed = (passed .and. (ibig(1) == ordering(4)))
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(1)  -> C(1)  -> D(2)', passed)
@@ -88,7 +92,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call AtoB_and_CtoD
+        call BDtoC
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(1)  -> C(2) <-> D(2)', passed)
@@ -107,7 +111,7 @@ program test_nearest_2
 
         passed = (passed .and. (n_merge == 2))
 
-        call AtoB_and_CtoD
+        call AtoB_and_DtoC
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(2) <-> C(2) <-  D(1)', passed)
@@ -124,7 +128,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call AtoB_and_CtoD
+        call ACtoB
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(2) <-  C(1) <-  D(1)', passed)
@@ -141,7 +145,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call AtoB_and_CtoD
+        call AtoB_and_DtoC
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(3) <-  C(2) <-  D(1)', passed)
@@ -158,7 +162,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call AtoB_and_CtoD
+        call AtoB_and_DtoC
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(2)  -> C(3) <-> D(3)', passed)
@@ -175,7 +179,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call AtoB_and_CtoD
+        call AtoB_and_DtoC
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(2)  -> C(3) <-> D(3)', passed)
@@ -344,7 +348,21 @@ program test_nearest_2
             parcels%volume(p(4)) = 0.1d0 * pi
         end subroutine parcel_setup_4h
 
-        subroutine AtoB_and_CtoD
+        subroutine BtoC_or_CtoB
+            passed = (passed .and. (n_merge == 1))
+
+            if (ordering(2) < ordering(3)) then
+                ! B --> C
+                passed = (passed .and. (isma(1) == ordering(2)))
+                passed = (passed .and. (ibig(1) == ordering(3)))
+            else
+                ! C --> B
+                passed = (passed .and. (isma(1) == ordering(3)))
+                passed = (passed .and. (ibig(1) == ordering(2)))
+            endif
+        end subroutine BtoC_or_CtoB
+
+        subroutine AtoB_and_DtoC
             passed = (passed .and. (n_merge == 2))
 
             ! B and C are in ibig
@@ -368,16 +386,50 @@ program test_nearest_2
                 ! D
                 passed = (passed .and. (isma(1) == ordering(4)))
             endif
-        end subroutine AtoB_and_CtoD
+        end subroutine AtoB_and_DtoC
 
-        subroutine AtoB
-            passed = (passed .and. (n_merge == 1))
+        subroutine BDtoC
+            passed = (passed .and. (n_merge == 2))
 
-            ! A is in isma
-            passed = (passed .and. (isma(1) == ordering(1)))
+            ! C is in ibig since B --> C and D --> C
+            passed = (passed .and. &
+                        (ibig(1) == ordering(3)) .and. (ibig(2) == ordering(3)))
 
-            ! B is in ibig
-            passed = (passed .and. (ibig(1) == ordering(2)))
-        end subroutine AtoB
+            ! B and D are in isma
+            if (ordering(2) < ordering(4)) then
+                passed = (passed .and. &
+                            (isma(1) == ordering(2)) .and. (isma(2) == ordering(4)))
+            else
+                passed = (passed .and. &
+                            (isma(1) == ordering(4)) .and. (isma(2) == ordering(2)))
+            endif
+        end subroutine BDtoC
+
+        subroutine ACtoB
+            passed = (passed .and. (n_merge == 2))
+
+            ! B is in ibig since A --> B and C --> B
+            passed = (passed .and. &
+                        (ibig(1) == ordering(2)) .and. (ibig(2) == ordering(2)))
+
+            ! A and C are in isma
+            if (ordering(1) < ordering(3)) then
+                passed = (passed .and. &
+                            (isma(1) == ordering(1)) .and. (isma(2) == ordering(3)))
+            else
+                passed = (passed .and. &
+                            (isma(1) == ordering(3)) .and. (isma(2) == ordering(1)))
+            endif
+        end subroutine ACtoB
+
+!         subroutine AtoB
+!             passed = (passed .and. (n_merge == 1))
+!
+!             ! A is in isma
+!             passed = (passed .and. (isma(1) == ordering(1)))
+!
+!             ! B is in ibig
+!             passed = (passed .and. (ibig(1) == ordering(2)))
+!         end subroutine AtoB
 
 end program test_nearest_2

@@ -52,7 +52,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call ACtoB
+        call AtoB_or_BtoA
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1) <-> B(1) <-  C(1)', passed)
@@ -71,9 +71,9 @@ program test_nearest_2
 
         passed = (passed .and. (n_merge == 1))
 
-        ! A --> B
-        passed = (passed .and. (isma(1) == ordering(1)))
-        passed = (passed .and. (ibig(1) == ordering(2)))
+        ! B --> C
+        passed = (passed .and. (isma(1) == ordering(2)))
+        passed = (passed .and. (ibig(1) == ordering(3)))
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(1)  -> C(2)', passed)
@@ -252,6 +252,20 @@ program test_nearest_2
             parcels%position(p(3), 2) = zero
             parcels%volume(p(3)) = 0.14d0 * pi
         end subroutine parcel_setup_3f
+
+        subroutine AtoB_or_BtoA
+            passed = (passed .and. (n_merge == 1))
+
+            if (ordering(1) < ordering(2)) then
+                ! A --> B
+                passed = (passed .and. (isma(1) == ordering(1)))
+                passed = (passed .and. (ibig(1) == ordering(2)))
+            else
+                ! B --> A
+                passed = (passed .and. (isma(1) == ordering(2)))
+                passed = (passed .and. (ibig(1) == ordering(1)))
+            endif
+        end subroutine AtoB_or_BtoA
 
         subroutine ACtoB
             passed = (passed .and. (n_merge == 2))
