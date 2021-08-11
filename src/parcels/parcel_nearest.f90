@@ -196,7 +196,7 @@ module parcel_nearest
                 is = isma(m)
                 ib = node(is)
                 if (ib > 0) then
-                    if (v(is) == v(ib)) then
+                    if (parcels%volume(is) == parcels%volume(ib)) then
                         if (node(ib) .ne. is) then
                             node(is) = 0
                         endif
@@ -212,7 +212,7 @@ module parcel_nearest
                 ib = ibig(m)
                 if (ib > 0) then
                     ! If larger parcel in a pair; forbid from further mergers:
-                    if (v(ib) > v(isma(m))) then
+                    if (parcels%volume(ib) > parcels%volume(isma(m))) then
                         node(ib) = 0
                     endif
                 endif
