@@ -176,10 +176,12 @@ module parcel_nearest
                     j = j + 1
                     is = isma(m)
                     isma(j) = is
-                    ibig(j) = ibig(m)
+                    ib = ibig(m)
+                    ibig(j) = ib
                     ! Reuse the node array to identify incoming links
                     ! Reset here
                     node(is) = 0
+                    node(ib) = 0
                 endif
             enddo
 
