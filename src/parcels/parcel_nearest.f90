@@ -164,7 +164,7 @@ module parcel_nearest
                     ! remove link between "is" and "ib"
                     loca(ib) = loca(ib) - 1
                     loca(is) = loca(is) - 1
-                    print *, "remove link"
+!                     print *, "remove link"
 !                     stop
                 else
                     j = j + 1

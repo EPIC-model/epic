@@ -54,7 +54,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call BtoC_or_CtoB
+        call AtoB_and_DtoC
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(1) <-> C(1) <-  D(1)', passed)
@@ -71,11 +71,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        passed = (passed .and. (n_merge == 1))
-
-        ! C --> D
-        passed = (passed .and. (isma(1) == ordering(3)))
-        passed = (passed .and. (ibig(1) == ordering(4)))
+        call AtoB_and_CtoD
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(1)  -> C(1)  -> D(2)', passed)
@@ -92,10 +88,11 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call BDtoC
+        call AB_and_DC
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(1)  -> C(2) <-> D(2)', passed)
+
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
@@ -109,10 +106,14 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        passed = (passed .and. (n_merge == 2))
-
+!         print *, "--------------------"
+!         print *, ordering
+!         print *, n_merge
+!         print *, isma(1:n_merge)
+!         print *, ibig(1:n_merge)
         call AtoB_and_DtoC
     enddo
+!     stop
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(2) <-> C(2) <-  D(1)', passed)
 
@@ -128,7 +129,8 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call ACtoB
+        call AtoB_and_DtoC
+!         call ACtoB
     enddo
 
     call print_result_logical('Test nearest algorithm: A(1)  -> B(2) <-  C(1) <-  D(1)', passed)
@@ -348,79 +350,100 @@ program test_nearest_2
             parcels%volume(p(4)) = 0.1d0 * pi
         end subroutine parcel_setup_4h
 
-        subroutine BtoC_or_CtoB
-            passed = (passed .and. (n_merge == 1))
+!         subroutine BtoC_or_CtoB
+!             passed = (passed .and. (n_merge == 1))
+!
+!             if (ordering(2) < ordering(3)) then
+!                 ! B --> C
+!                 passed = (passed .and. (isma(1) == ordering(2)))
+!                 passed = (passed .and. (ibig(1) == ordering(3)))
+!             else
+!                 ! C --> B
+!                 passed = (passed .and. (isma(1) == ordering(3)))
+!                 passed = (passed .and. (ibig(1) == ordering(2)))
+!             endif
+!         end subroutine BtoC_or_CtoB
 
-            if (ordering(2) < ordering(3)) then
-                ! B --> C
-                passed = (passed .and. (isma(1) == ordering(2)))
-                passed = (passed .and. (ibig(1) == ordering(3)))
-            else
-                ! C --> B
-                passed = (passed .and. (isma(1) == ordering(3)))
-                passed = (passed .and. (ibig(1) == ordering(2)))
-            endif
-        end subroutine BtoC_or_CtoB
+        subroutine AB_and_DC
+            passed = (passed .and. (n_merge == 2))
+
+            ! A and B
+            passed = (passed .and.                                                       &
+                        (((isma(1) == ordering(1)) .and. (ibig(1) == ordering(2)))  .or. &
+                         ((ibig(1) == ordering(1)) .and. (isma(1) == ordering(2))))      &
+                    )
+            ! C and D
+            passed = (passed .and.                                                       &
+                        (((isma(2) == ordering(3)) .and. (ibig(2) == ordering(4)))  .or. &
+                         ((ibig(2) == ordering(3)) .and. (isma(2) == ordering(4))))      &
+                    )
+
+            print *, passed
+        end subroutine AB_and_DC
 
         subroutine AtoB_and_DtoC
             passed = (passed .and. (n_merge == 2))
 
-            ! B and C are in ibig
             ! A and D are in isma
-            if (ordering(1) < ordering(4)) then
-                ! A
-                passed = (passed .and. (isma(1) == ordering(1)))
-                ! B
-                passed = (passed .and. (ibig(1) == ordering(2)))
-                ! C
-                passed = (passed .and. (ibig(2) == ordering(3)))
-                ! D
-                passed = (passed .and. (isma(2) == ordering(4)))
-            else
-                ! A
-                passed = (passed .and. (isma(2) == ordering(1)))
-                ! B
-                passed = (passed .and. (ibig(2) == ordering(2)))
-                ! C
-                passed = (passed .and. (ibig(1) == ordering(3)))
-                ! D
-                passed = (passed .and. (isma(1) == ordering(4)))
-            endif
+            passed = (passed .and.                                                       &
+                        (((isma(1) == ordering(1)) .and. (isma(2) == ordering(4)))  .or. &
+                         ((isma(2) == ordering(1)) .and. (isma(1) == ordering(4))))      &
+                    )
+            ! B and C are in ibig
+            passed = (passed .and.                                                       &
+                        (((ibig(1) == ordering(2)) .and. (ibig(2) == ordering(3)))  .or. &
+                         ((ibig(2) == ordering(2)) .and. (ibig(1) == ordering(3))))      &
+                    )
         end subroutine AtoB_and_DtoC
 
-        subroutine BDtoC
+        subroutine AtoB_and_CtoD
             passed = (passed .and. (n_merge == 2))
-
-            ! C is in ibig since B --> C and D --> C
-            passed = (passed .and. &
-                        (ibig(1) == ordering(3)) .and. (ibig(2) == ordering(3)))
-
-            ! B and D are in isma
-            if (ordering(2) < ordering(4)) then
-                passed = (passed .and. &
-                            (isma(1) == ordering(2)) .and. (isma(2) == ordering(4)))
-            else
-                passed = (passed .and. &
-                            (isma(1) == ordering(4)) .and. (isma(2) == ordering(2)))
-            endif
-        end subroutine BDtoC
-
-        subroutine ACtoB
-            passed = (passed .and. (n_merge == 2))
-
-            ! B is in ibig since A --> B and C --> B
-            passed = (passed .and. &
-                        (ibig(1) == ordering(2)) .and. (ibig(2) == ordering(2)))
 
             ! A and C are in isma
-            if (ordering(1) < ordering(3)) then
-                passed = (passed .and. &
-                            (isma(1) == ordering(1)) .and. (isma(2) == ordering(3)))
-            else
-                passed = (passed .and. &
-                            (isma(1) == ordering(3)) .and. (isma(2) == ordering(1)))
-            endif
-        end subroutine ACtoB
+            passed = (passed .and.                                                       &
+                        (((isma(1) == ordering(1)) .and. (isma(2) == ordering(3)))  .or. &
+                         ((isma(2) == ordering(1)) .and. (isma(1) == ordering(3))))      &
+                    )
+            ! B and D are in ibig
+            passed = (passed .and.                                                       &
+                        (((ibig(1) == ordering(2)) .and. (ibig(2) == ordering(4)))  .or. &
+                         ((ibig(2) == ordering(2)) .and. (ibig(1) == ordering(4))))      &
+                    )
+        end subroutine AtoB_and_CtoD
+
+!         subroutine BDtoC
+!             passed = (passed .and. (n_merge == 2))
+!
+!             ! C is in ibig since B --> C and D --> C
+!             passed = (passed .and. &
+!                         (ibig(1) == ordering(3)) .and. (ibig(2) == ordering(3)))
+!
+!             ! B and D are in isma
+!             if (ordering(2) < ordering(4)) then
+!                 passed = (passed .and. &
+!                             (isma(1) == ordering(2)) .and. (isma(2) == ordering(4)))
+!             else
+!                 passed = (passed .and. &
+!                             (isma(1) == ordering(4)) .and. (isma(2) == ordering(2)))
+!             endif
+!         end subroutine BDtoC
+
+!         subroutine ACtoB
+!             passed = (passed .and. (n_merge == 2))
+!
+!             ! B is in ibig since A --> B and C --> B
+!             passed = (passed .and. &
+!                         (ibig(1) == ordering(2)) .and. (ibig(2) == ordering(2)))
+!
+!             ! A and C are in isma
+!             if (ordering(1) < ordering(3)) then
+!                 passed = (passed .and. &
+!                             (isma(1) == ordering(1)) .and. (isma(2) == ordering(3)))
+!             else
+!                 passed = (passed .and. &
+!                             (isma(1) == ordering(3)) .and. (isma(2) == ordering(1)))
+!             endif
+!         end subroutine ACtoB
 
 !         subroutine AtoB
 !             passed = (passed .and. (n_merge == 1))
