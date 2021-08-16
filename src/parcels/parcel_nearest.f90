@@ -17,7 +17,7 @@ module parcel_nearest
     integer :: node(max_num_parcels)
 
     !Other variables:
-    double precision:: vmin, delx,delz,dsq,dsqmin,vmerge,vmergemin,x_small,z_small
+    double precision:: vmin, delx,delz,dsq,dsqmin,x_small,z_small ! ,vmerge,vmergemin
     integer :: i,ic,i0,imin,k,m,j, is, ib
     integer :: ix,iz,ix0,iz0
 
@@ -128,8 +128,8 @@ module parcel_nearest
                 ! with the values below
                 ! Might seem a bit radical to take a large vmergemin and small dsqmin
                 ! but computationally it is easy
-                dsqmin=f12*parcel%lambda_max
-                vmergemin=pi
+                dsqmin = product(extent) !f12*parcel%lambda_max
+!                 vmergemin=pi
                 imin=0
 
                 ! Loop over 8 cells surrounding (ix0,iz0):
@@ -144,21 +144,21 @@ module parcel_nearest
                                 ! we need to exclude self-merging due to v(i) >= v(i0)
                                 if (i .ne. i0) then
                                     delz=parcels%position(i,2)-z_small
-                                    ! Avoid merger with another small parcel
-                                    vmerge=parcels%volume(i)+parcels%volume(i0) ! Summed area fraction:
-                                    ! Minimise dsq/vmerge
-                                    ! Prevent division in comparisons here by storing both
-                                    ! vmergemin and dsqmin
-                                    if (delz*delz*vmergemin < dsqmin*vmerge) then
+!                                     ! Avoid merger with another small parcel
+!                                     vmerge=parcels%volume(i)+parcels%volume(i0) ! Summed area fraction:
+!                                     ! Minimise dsq/vmerge
+!                                     ! Prevent division in comparisons here by storing both
+!                                     ! vmergemin and dsqmin
+!                                     if (delz*delz < dsqmin) then
                                         ! works across periodic edge
                                         delx = get_delx(parcels%position(i,1), x_small)
                                         dsq=delz*delz+delx*delx
-                                        if (dsq*vmergemin < dsqmin*vmerge) then
+                                        if (dsq < dsqmin) then
                                             dsqmin=dsq
-                                            vmergemin=vmerge
+!                                             vmergemin=vmerge
                                             imin=i
                                         endif
-                                    endif
+!                                     endif
                                 endif
                             endif
                         enddo
