@@ -3,16 +3,17 @@ module merge_hdf5
     use hdf5
     use h5_utils
     use h5_writer
+    use fields, only : get_index
     use merge_sort
     implicit none
 
     integer :: nw
 
     ! h5 file handles
-    integer(hid_t)     :: h5file_id1, h5file_id2
-    character(len=512) :: h5fname1, h5fname2
+    integer(hid_t)     :: h5file_id1, h5file_id2, h5file_id3
+    character(len=512) :: h5fname1, h5fname2, h5fname3
 
-    private :: h5file_id1, h5file_id2, h5fname1, h5fname2, nw
+    private :: h5file_id1, h5file_id2, h5fname1, h5fname2, h5fname3, nw
 
     contains
 
@@ -22,6 +23,7 @@ module merge_hdf5
 
             call create_h5_merger_file(h5file_id1, h5fname1, 'mergee', basename, overwrite)
             call create_h5_merger_file(h5file_id2, h5fname2, 'merger', basename, overwrite)
+            call create_h5_merger_file(h5file_id3, h5fname3, 'neighbours', basename, overwrite)
 
         end subroutine create_h5_merger_files
 
@@ -55,6 +57,84 @@ module merge_hdf5
             write(name, fmt='(I10.10)') i
             name = trim(tag) // '#' // trim(name)
         end function get_group_merge_number
+
+        subroutine write_h5_parcels_in_cell(ibig, nmerge)
+            integer, intent(in)           :: ibig(:)
+            integer, intent(in)           :: nmerge
+            integer(hid_t)                :: group, mgroup
+            character(len=64)             :: tag
+            character(:), allocatable     :: name
+            logical                       :: created
+            integer                       :: m, ib, n, nm, k, i, j, ii, jj, ilo, ihi, num
+            integer                       :: ibig_sorted(nmerge), ind(nmerge)
+
+            ibig_sorted = ibig(1:nmerge)
+
+            ! inefficient to sort again, but it works
+            call imsort(ibig_sorted, ind)
+
+            call open_h5_file(h5fname3, H5F_ACC_RDWR_F, h5file_id3)
+
+            name = trim(get_step_group_name(nw))
+
+            call create_h5_group(h5file_id3, name, group, created)
+
+            if (.not. created) then
+                call open_h5_group(h5file_id3, name, group)
+            endif
+
+            n = n_parcels + 1 ! make a gap to real parcels
+            ib = -1
+            nm = -1
+            num = 0 ! merger number
+            do m = 1, nmerge
+                if (ib .ne. ibig_sorted(m)) then
+                    ib = ibig_sorted(m)
+
+                    call get_index(parcels%position(ib, :), i, j)
+                    i = mod(i + nx, nx)
+                    ilo = mod(i - 1 + nx, nx)
+                    ihi = mod(i + 1 + nx, nx)
+
+                    tag = get_group_merge_number('merger', num)
+
+                    do k = 1, n_parcels
+                        call get_index(parcels%position(k, :), ii, jj)
+                        ii = mod(ii + nx, nx)
+
+                        if ((j - 1 <= jj) .and. (jj < j + 2)) then
+                            if ((ilo == ii) .or. (ii == i) .or. (ii == ihi)) then
+                                    nm = nm + 1
+                                    parcels%position(n + nm, :) = parcels%position(k, :)
+                                    parcels%B(n + nm, :) = parcels%B(k, :)
+                                    parcels%volume(n + nm) = parcels%volume(k)
+                            endif
+                        endif
+                    enddo
+
+                    call create_h5_group(group, trim(tag), mgroup)
+                    ! write all involved parcels
+                    call write_h5_dataset_2d(group, trim(tag), "position", &
+                                             parcels%position(n:n + nm, :))
+
+                    call write_h5_dataset_2d(group, trim(tag), "B", &
+                                             parcels%B(n:n + nm, :))
+
+                    call write_h5_dataset_1d(group, trim(tag), "volume", &
+                                             parcels%volume(n:n + nm))
+
+                    nm = -1
+                    num = num + 1
+
+                    call close_h5_group(mgroup)
+                endif
+            enddo
+
+            call close_h5_group(group)
+
+            call close_h5_file(h5file_id3)
+
+        end subroutine write_h5_parcels_in_cell
 
 
         subroutine write_h5_mergees(isma, ibig, nmerge)

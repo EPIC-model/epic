@@ -16,7 +16,7 @@ module parcel_merge
     use parcel_bc
     use timer, only : start_timer, stop_timer
 #ifndef NDEBUG
-    use merge_hdf5, only : write_h5_mergees, write_h5_mergers
+    use merge_hdf5, only : write_h5_mergees, write_h5_mergers, write_h5_parcels_in_cell
 #endif
     implicit none
 
@@ -50,7 +50,8 @@ module parcel_merge
 
             if (n_merge > 0) then
 #ifndef NDEBUG
-                call write_h5_mergees(isma, ibig, n_merge)
+!                 call write_h5_mergees(isma, ibig, n_merge)
+!                 call write_h5_parcels_in_cell(ibig, n_merge)
 #endif
                 ! merge small parcels into large parcels
                 if (parcel%merge_type == 'geometric') then
@@ -63,7 +64,7 @@ module parcel_merge
                 endif
 
 #ifndef NDEBUG
-                call write_h5_mergers(ibig, n_merge)
+!                 call write_h5_mergers(ibig, n_merge)
 #endif
 
                 ! overwrite invalid parcels
