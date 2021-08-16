@@ -18,8 +18,8 @@ module parcel_nearest
     logical :: l_merge(max_num_parcels)
 
     !Other variables:
-    double precision:: vmin, delx,delz,dsq,dsqmin,vmerge,vmergemin,x_small,z_small
-    integer:: i,ic,i0,imin,k,m,j
+    double precision:: vmin, delx,delz,dsq,dsqmin,x_small,z_small
+    integer:: i,ic,i0, ib,k,m,j, is
     integer:: ix,iz,ix0,iz0
 
     public :: find_nearest
@@ -70,6 +70,10 @@ module parcel_nearest
                 endif
             enddo
 
+            if (nmerge == 0) then
+                return
+            endif
+
             ! Find arrays kc1(ic) & kc2(ic) which indicate the parcels in grid cell ic
             ! through i = node(k), for k = kc1(ic),kc2(ic):
             kc1(1)=1
@@ -85,6 +89,8 @@ module parcel_nearest
                     node(k)=i
                     kc2(ic)=k
                 end if
+                ! reset loca (for use later)
+                loca(i) = 0
             enddo
 
             !---------------------------------------------------------------------
@@ -102,21 +108,8 @@ module parcel_nearest
 
                 ! Grid point (ix0,iz0) is closest to parcel i0
 
-                ! Initialise scaled squared distance between parcels and parcel index:
-                ! In the loop below we want to minimise dsq/vmerge
-                ! By storing dsqmin and vmergemin separately, we can avoid a division
-                ! In the calculation we also want to ensure
-                !   dsq/(a*b) < lambda_max/2
-                ! This will ensure a merged parcel does not split again
-                ! Since vmerge=pi*a*b, this implies
-                !   dsq*pi < 0.5*parcel%lambda_max*vmerge
-                ! This is ensured by initialising the minimisation
-                ! with the values below
-                ! Might seem a bit radical to take a large vmergemin and small dsqmin
-                ! but computationally it is easy
-                dsqmin=f12*parcel%lambda_max
-                vmergemin=pi
-                imin=0
+                dsqmin = product(extent)
+                ib = 0
 
                 ! Loop over 8 cells surrounding (ix0,iz0):
                 do iz=max(0,iz0-1),min(nz-1,iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
@@ -125,34 +118,50 @@ module parcel_nearest
                         ic=1+mod(nx+ix,nx)+nx*iz
                         ! Search parcels for closest:
                         do k=kc1(ic),kc2(ic)
-                            i=node(k)
-                            delz=parcels%position(i,2)-z_small
-                            ! Avoid merger with another small parcel
-                            vmerge=parcels%volume(i)+parcels%volume(i0) ! Summed area fraction:
-                            ! Minimise dsq/vmerge
-                            ! Prevent division in comparisons here by storing both
-                            ! vmergemin and dsqmin
-                            if (delz*delz*vmergemin < dsqmin*vmerge) then
-                                delx = get_delx(parcels%position(i,1), x_small) ! works across periodic edge
-                                dsq=delz*delz+delx*delx
-                                if (dsq*vmergemin < dsqmin*vmerge) then
-                                    dsqmin=dsq
-                                    vmergemin=vmerge
-                                    imin=i
-                                endif
+                            i = node(k)
+                            delz = parcels%position(i,2) - z_small
+                            delx = get_delx(parcels%position(i,1), x_small) ! works across periodic edge
+                            ! Minimise dsqmin
+                            dsq= delz * delz + delx * delx
+                            if (dsq < dsqmin) then
+                                dsqmin = dsq
+                                ib = i
                             endif
                         enddo
                     enddo
                 enddo
-                if (imin .gt. 0) then
-                    ! Store the index of the parcel to be merged with:
-                    j = j + 1
-                    isma(j) = isma(m)
-                    ibig(j) = imin
-                endif
+                ! Store the index of the parcel to be merged with:
+                j = j + 1
+                is = isma(m)
+                isma(j) = is
+                ibig(j) = ib
+                loca(is) = loca(is) + 1
+                loca(ib) = loca(ib) + 1
             enddo
             ! Actual total number of mergers:
             nmerge = j
+
+            j = 0
+            do m = 1, nmerge
+                ib = ibig(m)
+                is = isma(m)
+                if ((loca(ib) > 1) .and. (loca(is) > 1)) then
+                    ! remove link between "is" and "ib"
+                    loca(ib) = loca(ib) - 1
+                    loca(is) = loca(is) - 1
+                    stop
+                else
+                    j = j + 1
+                    isma(j) = isma(m)
+                    ibig(j) = ibig(m)
+                endif
+            enddo
+            nmerge = j
+
+            do m = 1, nmerge
+                print *, m, isma(m), ibig(m)
+            enddo
+
         end subroutine find_nearest
 
 end module parcel_nearest
