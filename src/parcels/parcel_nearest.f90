@@ -149,7 +149,6 @@ module parcel_nearest
                     ! remove link between "is" and "ib"
                     loca(ib) = loca(ib) - 1
                     loca(is) = loca(is) - 1
-                    stop
                 else
                     j = j + 1
                     isma(j) = isma(m)
@@ -158,9 +157,9 @@ module parcel_nearest
             enddo
             nmerge = j
 
-            do m = 1, nmerge
-                print *, m, isma(m), ibig(m)
-            enddo
+!             do m = 1, nmerge
+!                 print *, m, isma(m), ibig(m)
+!             enddo
 
         end subroutine find_nearest
 
