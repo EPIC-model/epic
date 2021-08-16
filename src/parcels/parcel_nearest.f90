@@ -111,8 +111,10 @@ module parcel_nearest
                 dsqmin = product(extent)
                 ib = 0
 
+!                 print *, max(0,iz0-1), min(nz,iz0+1), z_small, lower(2), dxi(2)
+
                 ! Loop over 8 cells surrounding (ix0,iz0):
-                do iz=max(0,iz0-1),min(nz-1,iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
+                do iz=max(0,iz0-1),min(nz-1,iz0+1) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
                     do ix=ix0-1,ix0
                         ! Cell index (accounting for x periodicity):
                         ic=1+mod(nx+ix,nx)+nx*iz
@@ -124,6 +126,7 @@ module parcel_nearest
                             ! Minimise dsqmin
                             dsq= delz * delz + delx * delx
                             if (dsq < dsqmin) then
+!                                 print *, "i = ", i
                                 dsqmin = dsq
                                 ib = i
                             endif
@@ -132,10 +135,10 @@ module parcel_nearest
                 enddo
                 ! Store the index of the parcel to be merged with:
                 j = j + 1
-                is = isma(m)
-                isma(j) = is
+                isma(j) = i0
                 ibig(j) = ib
-                loca(is) = loca(is) + 1
+                loca(i0) = loca(i0) + 1
+!                 print *, "ib = ", ib
                 loca(ib) = loca(ib) + 1
             enddo
             ! Actual total number of mergers:
@@ -149,6 +152,8 @@ module parcel_nearest
                     ! remove link between "is" and "ib"
                     loca(ib) = loca(ib) - 1
                     loca(is) = loca(is) - 1
+                    print *, "remove link"
+                    stop
                 else
                     j = j + 1
                     isma(j) = isma(m)
