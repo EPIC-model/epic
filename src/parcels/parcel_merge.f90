@@ -29,8 +29,8 @@ module parcel_merge
     contains
         subroutine merge_ellipses(parcels)
             type(parcel_container_type), intent(inout) :: parcels
-            integer                                    :: isma(0:max_num_parcels / 8)
-            integer                                    :: ibig(max_num_parcels / 8)
+            integer, allocatable, dimension(:)         :: isma
+            integer, allocatable, dimension(:)         :: ibig
             integer                                    :: n_merge ! number of merges
 
             call start_timer(merge_timer)
@@ -60,6 +60,9 @@ module parcel_merge
                 ! overwrite invalid parcels
                 call pack_parcels(isma, n_merge)
             endif
+
+            deallocate(isma)
+            deallocate(ibig)
 
             call stop_timer(merge_timer)
 
