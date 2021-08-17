@@ -2,12 +2,13 @@
 !                       Test nearest algorithm
 !
 !           This unit test checks:
-!               (2a) A(1) <--> B(1)
-!               (2b) A(1)  --> B(2)
+!               (2a) a -- b
+!               (2b) a -- B
 ! =============================================================================
 program test_nearest_1
     use unit_test
-    use constants, only : pi, zero, two, three, five
+    use permute, only : permute_generate, permute_dealloc, n_permutes, permutes
+    use constants, only : pi, zero, two, five, ten
     use parcel_container
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, nz
@@ -17,7 +18,7 @@ program test_nearest_1
     logical                            :: passed = .true.
     integer, allocatable, dimension(:) :: isma
     integer, allocatable, dimension(:) :: ibig
-    integer                            :: n_merge
+    integer                            :: n_merge, n, ordering(2)
 
     nx = 1
     nz = 1
@@ -27,58 +28,87 @@ program test_nearest_1
     call update_parameters
 
     call parcel_alloc(2)
+    n_parcels = 2
 
     ! geometric merge
     parcel%lambda_max = five
-    parcel%vmin_fraction = three
+    parcel%vmin_fraction = ten
+
+    call permute_generate(n_parcels)
 
     !
-    !   (2a)
+    !   (2a) a -- b
     !
-    call parcel_setup_2a
+    do n = 1, n_permutes
+        ordering = permutes(n, :)
+        call parcel_setup_2a(ordering)
 
-    call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, ibig, n_merge)
 
-    passed = (n_merge == 1)
-    passed = (passed .and. (isma(1) == 2) .and. (ibig(1) == 1))
+        call AtoB_or_BtoA
+    enddo
+
     call print_result_logical('Test nearest algorithm (setup 2a)', passed)
 
     !
-    !   (2b)
+    !   (2b) a -- B
     !
     passed = .true.
 
-    call parcel_setup_2b
+    do n = 1, n_permutes
+        ordering = permutes(n, :)
+        call parcel_setup_2b(ordering)
 
-    call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, ibig, n_merge)
 
-    passed = (n_merge == 1)
-    passed = (passed .and. (isma(1) == 1) .and. (ibig(1) == 2))
+        call AtoB
+    enddo
+
     call print_result_logical('Test nearest algorithm (setup 2b)', passed)
 
     contains
 
-        subroutine parcel_setup_2a
-            n_parcels = 2
-            parcels%position(1, 1) = -0.25d0
-            parcels%position(1, 2) = zero
-            parcels%volume(1) = 0.1d0 * pi
+        subroutine parcel_setup_2a(p)
+            integer, intent(in) :: p(2)
 
-            parcels%position(2, 1) = 0.25d0
-            parcels%position(2, 2) = zero
-            parcels%volume(2) = 0.1d0 * pi
+            parcels%position(p(1), 1) = -0.25d0
+            parcels%position(p(1), 2) = zero
+            parcels%volume(p(1)) = 0.1d0 * pi
+
+            parcels%position(p(2), 1) = 0.25d0
+            parcels%position(p(2), 2) = zero
+            parcels%volume(p(2)) = 0.2d0 * pi
         end subroutine parcel_setup_2a
 
-        subroutine parcel_setup_2b
-            n_parcels = 2
-            parcels%position(1, 1) = -0.25d0
-            parcels%position(1, 2) = zero
-            parcels%volume(1) = 0.1d0 * pi
+        subroutine parcel_setup_2b(p)
+            integer, intent(in) :: p(2)
 
-            parcels%position(2, 1) = 0.25d0
-            parcels%position(2, 2) = zero
-            parcels%volume(2) = 0.12d0 * pi
+            parcels%position(p(1), 1) = -0.25d0
+            parcels%position(p(1), 2) = zero
+            parcels%volume(p(1)) = 0.1d0 * pi
+
+            parcels%position(p(2), 1) = 0.25d0
+            parcels%position(p(2), 2) = zero
+            parcels%volume(p(2)) = 0.4d0 * pi
         end subroutine parcel_setup_2b
+
+        subroutine AtoB_or_BtoA
+            logical :: a_to_b, b_to_a
+
+            passed = (passed .and. (n_merge == 1))
+
+            a_to_b = ((isma(1) == ordering(1)) .and. (ibig(1) == ordering(2)))
+            b_to_a = ((ibig(1) == ordering(1)) .and. (isma(1) == ordering(2)))
+            passed = (passed .and. (a_to_b .or. b_to_a))
+        end subroutine AtoB_or_BtoA
+
+        subroutine AtoB
+            logical :: a_to_b
+            passed = (passed .and. (n_merge == 1))
+
+            a_to_b = ((isma(1) == ordering(1)) .and. (ibig(1) == ordering(2)))
+            passed = (passed .and. a_to_b)
+        end subroutine AtoB
 
 
 end program test_nearest_1
