@@ -61,8 +61,10 @@ module parcel_merge
                 call pack_parcels(isma, n_merge)
             endif
 
-            deallocate(isma)
-            deallocate(ibig)
+            if (allocated(isma)) then
+                deallocate(isma)
+                deallocate(ibig)
+            endif
 
             call stop_timer(merge_timer)
 
