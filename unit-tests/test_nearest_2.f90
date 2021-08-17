@@ -2,17 +2,15 @@
 !                       Test nearest algorithm
 !
 !           This unit test checks:
-!               (3a) A(1) <--> B(1) <--  C(1)
-!               (3b) A(1)  --> B(1)  --> C(2)
-!               (3c) A(1)  --> B(2) <--> C(2)
-!               (3d) A(1)  --> B(2) <--  C(1)
-!               (3e) A(1)  --> B(3) <--  C(2)
-!               (3f) A(1)  --> B(2)  --> C(3)
+!               (3a) a = b - c
+!               (3b) a   b - C
+!               (3c) a = b   C
+!               (3d) a - B - c
 ! =============================================================================
 program test_nearest_2
     use unit_test
     use permute, only : permute_generate, permute_dealloc, n_permutes, permutes
-    use constants, only : pi, zero, two, three, five
+    use constants, only : pi, zero, two, five, ten
     use parcel_container
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, nz
@@ -38,13 +36,13 @@ program test_nearest_2
 
     ! geometric merge
     parcel%lambda_max = five
-    parcel%vmin_fraction = three
+    parcel%vmin_fraction = ten
 
     call permute_generate(n_parcels)
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3a) A(1) <--> B(1) <--  C(1)
+    !   (3a) a = b - c
     !
     do n = 1, n_permutes
         ordering = permutes(n, :)
@@ -52,14 +50,15 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call ACtoB
+        call AtoB_or_BtoA
     enddo
 
-    call print_result_logical('Test nearest algorithm: A(1) <-> B(1) <-  C(1)', passed)
+    call print_result_logical('Test nearest algorithm: a = b - c', passed)
+
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3b) A(1)  --> B(1)  --> C(2)
+    !   (3b) a   b - c
     !
     passed = .true.
 
@@ -69,14 +68,14 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call ACtoB
+        call BtoC
     enddo
 
-    call print_result_logical('Test nearest algorithm: A(1)  -> B(1)  -> C(2)', passed)
+    call print_result_logical('Test nearest algorithm: a   b - C', passed)
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3c) A(1)  --> B(2) <--> C(2)
+    !   (3c) a = b   C
     !
     passed = .true.
 
@@ -86,14 +85,14 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call ACtoB
+        call AtoB_or_BtoA
     enddo
 
-    call print_result_logical('Test nearest algorithm: A(1)  -> B(2) <-> C(2)', passed)
+    call print_result_logical('Test nearest algorithm: a = b   C', passed)
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3d) A(1)  --> B(2) <--  C(1)
+    !   (3d) a - B - c
     !
     passed = .true.
 
@@ -106,48 +105,13 @@ program test_nearest_2
         call ACtoB
     enddo
 
-
-    call print_result_logical('Test nearest algorithm: A(1)  -> B(2) <-  C(1)', passed)
-
-    ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    !
-    !   (3e) A(1)  --> B(3) <--  C(2)
-    !
-    passed = .true.
-
-    do n = 1, n_permutes
-        ordering = permutes(n, :)
-        call parcel_setup_3e(ordering)
-
-        call find_nearest(isma, ibig, n_merge)
-
-        call ACtoB
-    enddo
-
-    call print_result_logical('Test nearest algorithm: A(1)  -> B(3) <-  C(2)', passed)
-
-    ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    !
-    !   (3f) A(1)  --> B(2)  --> C(3)
-    !
-    passed = .true.
-
-    do n = 1, n_permutes
-        ordering = permutes(n, :)
-        call parcel_setup_3f(ordering)
-
-        call find_nearest(isma, ibig, n_merge)
-
-        call ACtoB
-    enddo
-
-    call print_result_logical('Test nearest algorithm: A(1)  -> B(2)  -> C(3)', passed)
+    call print_result_logical('Test nearest algorithm: a - B - c', passed)
 
     call permute_dealloc
 
     contains
 
-        ! (3a) A(1) <--> B(1) <--  C(1)
+        ! (3a) a = b - c
         subroutine parcel_setup_3a(p)
             integer, intent(in) :: p(3)
             parcels%position(p(1), 1) = -0.1d0
@@ -163,7 +127,7 @@ program test_nearest_2
             parcels%volume(p(3)) = 0.1d0 * pi
         end subroutine parcel_setup_3a
 
-        ! (3b) A(1)  --> B(1)  --> C(2)
+        ! (3b) a  b - C
         subroutine parcel_setup_3b(p)
             integer, intent(in) :: p(3)
             parcels%position(p(1), 1) = -0.2d0
@@ -176,86 +140,62 @@ program test_nearest_2
 
             parcels%position(p(3), 1) = 0.1d0
             parcels%position(p(3), 2) = zero
-            parcels%volume(p(3)) = 0.12d0 * pi
+            parcels%volume(p(3)) = 0.4d0 * pi
         end subroutine parcel_setup_3b
 
-        ! (3c) A(1)  --> B(2) <--> C(2)
+        ! (3c) a = b   C
         subroutine parcel_setup_3c(p)
             integer, intent(in) :: p(3)
-            parcels%position(p(1), 1) = -0.2d0
+            parcels%position(p(1), 1) = -0.1d0
             parcels%position(p(1), 2) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
             parcels%position(p(2), 1) = 0.0d0
             parcels%position(p(2), 2) = zero
-            parcels%volume(p(2)) = 0.12d0 * pi
+            parcels%volume(p(2)) = 0.1d0 * pi
 
-            parcels%position(p(3), 1) = 0.1d0
+            parcels%position(p(3), 1) = 0.11d0
             parcels%position(p(3), 2) = zero
-            parcels%volume(p(3)) = 0.12d0 * pi
+            parcels%volume(p(3)) = 0.4d0 * pi
         end subroutine parcel_setup_3c
 
-        ! (3d) A(1)  --> B(2) <--  C(1)
+        ! (3d) a - B - c
         subroutine parcel_setup_3d(p)
             integer, intent(in) :: p(3)
-            parcels%position(p(1), 1) = -0.2d0
+            parcels%position(p(1), 1) = -0.1d0
             parcels%position(p(1), 2) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
             parcels%position(p(2), 1) = 0.0d0
             parcels%position(p(2), 2) = zero
-            parcels%volume(p(2)) = 0.12d0 * pi
+            parcels%volume(p(2)) = 0.4d0 * pi
 
-            parcels%position(p(3), 1) = 0.2d0
+            parcels%position(p(3), 1) = 0.1d0
             parcels%position(p(3), 2) = zero
             parcels%volume(p(3)) = 0.1d0 * pi
         end subroutine parcel_setup_3d
 
-        ! (3e) A(1)  --> B(3) <--  C(2)
-        subroutine parcel_setup_3e(p)
-            integer, intent(in) :: p(3)
-            parcels%position(p(1), 1) = -0.2d0
-            parcels%position(p(1), 2) = zero
-            parcels%volume(p(1)) = 0.1d0 * pi
+        subroutine AtoB_or_BtoA
+            passed = (passed .and. (n_merge == 1))
 
-            parcels%position(p(2), 1) = 0.0d0
-            parcels%position(p(2), 2) = zero
-            parcels%volume(p(2)) = 0.14d0 * pi
+            if (ordering(1) < ordering(2)) then
+                ! A --> B
+                passed = (passed .and. (isma(1) == ordering(1)))
+                passed = (passed .and. (ibig(1) == ordering(2)))
+            else
+                ! B --> A
+                passed = (passed .and. (isma(1) == ordering(2)))
+                passed = (passed .and. (ibig(1) == ordering(1)))
+            endif
+        end subroutine AtoB_or_BtoA
 
-            parcels%position(p(3), 1) = 0.2d0
-            parcels%position(p(3), 2) = zero
-            parcels%volume(p(3)) = 0.12d0 * pi
-        end subroutine parcel_setup_3e
+        subroutine BtoC
+            passed = (passed .and. (n_merge == 1))
 
-        ! (3f) A(1)  --> B(2)  --> C(3)
-        subroutine parcel_setup_3f(p)
-            integer, intent(in) :: p(3)
-            parcels%position(p(1), 1) = -0.2d0
-            parcels%position(p(1), 2) = zero
-            parcels%volume(p(1)) = 0.1d0 * pi
-
-            parcels%position(p(2), 1) = 0.0d0
-            parcels%position(p(2), 2) = zero
-            parcels%volume(p(2)) = 0.12d0 * pi
-
-            parcels%position(p(3), 1) = 0.2d0
-            parcels%position(p(3), 2) = zero
-            parcels%volume(p(3)) = 0.14d0 * pi
-        end subroutine parcel_setup_3f
-
-!         subroutine AtoB_or_BtoA
-!             passed = (passed .and. (n_merge == 1))
-!
-!             if (ordering(1) < ordering(2)) then
-!                 ! A --> B
-!                 passed = (passed .and. (isma(1) == ordering(1)))
-!                 passed = (passed .and. (ibig(1) == ordering(2)))
-!             else
-!                 ! B --> A
-!                 passed = (passed .and. (isma(1) == ordering(2)))
-!                 passed = (passed .and. (ibig(1) == ordering(1)))
-!             endif
-!         end subroutine AtoB_or_BtoA
+            ! B --> C
+            passed = (passed .and. (isma(1) == ordering(2)))
+            passed = (passed .and. (ibig(1) == ordering(3)))
+        end subroutine BtoC
 
         subroutine ACtoB
             passed = (passed .and. (n_merge == 2))

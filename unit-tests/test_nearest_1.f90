@@ -2,8 +2,8 @@
 !                       Test nearest algorithm
 !
 !           This unit test checks:
-!               (2a) a -- b
-!               (2b) a -- B
+!               (2a) a = b
+!               (2b) a - B
 ! =============================================================================
 program test_nearest_1
     use unit_test
@@ -37,7 +37,7 @@ program test_nearest_1
     call permute_generate(n_parcels)
 
     !
-    !   (2a) a -- b
+    !   (2a) a = b
     !
     do n = 1, n_permutes
         ordering = permutes(n, :)
@@ -48,10 +48,10 @@ program test_nearest_1
         call AtoB_or_BtoA
     enddo
 
-    call print_result_logical('Test nearest algorithm (setup 2a)', passed)
+    call print_result_logical('Test nearest algorithm: a = b', passed)
 
     !
-    !   (2b) a -- B
+    !   (2b) a - B
     !
     passed = .true.
 
@@ -64,10 +64,11 @@ program test_nearest_1
         call AtoB
     enddo
 
-    call print_result_logical('Test nearest algorithm (setup 2b)', passed)
+    call print_result_logical('Test nearest algorithm: a - B', passed)
 
     contains
 
+        ! (2a) a = b
         subroutine parcel_setup_2a(p)
             integer, intent(in) :: p(2)
 
@@ -80,6 +81,7 @@ program test_nearest_1
             parcels%volume(p(2)) = 0.2d0 * pi
         end subroutine parcel_setup_2a
 
+        ! (2b) a - B
         subroutine parcel_setup_2b(p)
             integer, intent(in) :: p(2)
 
