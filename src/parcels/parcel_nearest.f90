@@ -18,7 +18,7 @@ module parcel_nearest
 
     !Other variables:
     double precision:: vmin, delx,delz,dsq,dsqmin,x_small,z_small
-    integer:: i,ic,i0, ib,k,m,j, is
+    integer:: i,ic,is,ib,k,m,j
     integer:: ix,iz,ix0,iz0
 
     public :: find_nearest
@@ -70,8 +70,10 @@ module parcel_nearest
             endif
 
             ! allocate arrays
-            allocate(isma(0:nmerge))
-            allocate(ibig(nmerge))
+            allocate(isma(0:nmerge+1))
+            allocate(ibig(nmerge+1))
+
+            print *, "n_merge = ", nmerge
 
             isma = 0
             ibig = 0
@@ -96,7 +98,7 @@ module parcel_nearest
                     isma(nmerge) = i
                 endif
                 ! reset loca (for use later)
-                loca(i) = 0
+                loca(i) = -1
             enddo
 
             !---------------------------------------------------------------------
@@ -105,19 +107,17 @@ module parcel_nearest
             j = 0
             ! j counts the actual number of mergers found
             do m=1,nmerge
-                i0=isma(m)
-                x_small=parcels%position(i0,1)
-                z_small=parcels%position(i0,2)
-                ! Parcel i0 is small and should be merged; find closest other:
+                is=isma(m)
+                x_small=parcels%position(is,1)
+                z_small=parcels%position(is,2)
+                ! Parcel "is" is small and should be merged; find closest other:
                 ix0=mod(nint(dxi(1)*(x_small-lower(1))),nx) ! ranges from 0 to nx-1
                 iz0=nint(dxi(2)*(z_small-lower(2)))         ! ranges from 0 to nz
 
-                ! Grid point (ix0,iz0) is closest to parcel i0
+                ! Grid point (ix0,iz0) is closest to parcel "is"
 
                 dsqmin = product(extent)
                 ib = 0
-
-!                 print *, max(0,iz0-1), min(nz,iz0+1), z_small, lower(2), dxi(2)
 
                 ! Loop over 8 cells surrounding (ix0,iz0):
                 do iz=max(0,iz0-1),min(nz-1,iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
@@ -127,17 +127,14 @@ module parcel_nearest
                         ! Search parcels for closest:
                         do k=kc1(ic),kc2(ic)
                             i = node(k)
-                            if (parcels%volume(i) >= parcels%volume(i0)) then
-                                if (i .ne. i0) then
-                                    delz = parcels%position(i,2) - z_small
-                                    delx = get_delx(parcels%position(i,1), x_small) ! works across periodic edge
-                                    ! Minimise dsqmin
-                                    dsq= delz * delz + delx * delx
-                                    if (dsq < dsqmin) then
-        !                                 print *, "i = ", i
-                                        dsqmin = dsq
-                                        ib = i
-                                    endif
+                            if (i .ne. is) then
+                                delz = parcels%position(i,2) - z_small
+                                delx = get_delx(parcels%position(i,1), x_small) ! works across periodic edge
+                                ! Minimise dsqmin
+                                dsq= delz * delz + delx * delx
+                                if (dsq < dsqmin) then
+                                    dsqmin = dsq
+                                    ib = i
                                 endif
                             endif
                         enddo
@@ -146,11 +143,9 @@ module parcel_nearest
                 if (ib > 0) then
                     ! Store the index of the parcel to be merged with:
                     j = j + 1
-                    isma(j) = i0
+                    isma(j) = is
                     ibig(j) = ib
-                    loca(i0) = loca(i0) + 1
-!                     print *, "ib = ", ib
-                    loca(ib) = loca(ib) + 1
+                    loca(is) = ib
                 endif
             enddo
             ! Actual total number of mergers:
@@ -160,34 +155,26 @@ module parcel_nearest
             do m = 1, nmerge
                 ib = ibig(m)
                 is = isma(m)
-                if ((loca(ib) > 1) .and. (loca(is) > 1)) then
-                    ! remove link between "is" and "ib"
-                    loca(ib) = loca(ib) - 1
-                    loca(is) = loca(is) - 1
-!                     print *, "remove link"
-!                     stop
-                else
+
+                if (loca(ib) == -1) then
+                    ! ib is only big
                     j = j + 1
-                    isma(j) = isma(m)
-                    ibig(j) = ibig(m)
+                    isma(j) = is
+                    ibig(j) = ib
+                else if (loca(ib) == is) then
+                    ! dual link
+                    j = j + 1
+                    isma(j) = is
+                    ibig(j) = ib
+
+                    loca(is) = -2
+                    loca(ib) = -2
+                ! else
+                    ! "ib" is small but not a dual link
                 endif
+
             enddo
             nmerge = j
-
-
-            do m = 1, nmerge
-                ib = ibig(m)
-                is = isma(m)
-                if (loca(ib) < loca(is)) then
-                    isma(m) = ib
-                    ibig(m) = is
-                endif
-            enddo
-
-!             print *, isma(1:nmerge)
-!             print *, ibig(1:nmerge)
-!             stop
-
         end subroutine find_nearest
 
 end module parcel_nearest
