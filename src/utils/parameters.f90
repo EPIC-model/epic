@@ -3,7 +3,7 @@
 ! simulation.
 ! =============================================================================
 module parameters
-    use options, only : allow_larger_anisotropy
+    use options, only : allow_larger_anisotropy, parcel
     use constants
     implicit none
 
@@ -42,6 +42,12 @@ module parameters
     ! domain upper boundary
     double precision :: upper(2)
 
+    ! minimum volume
+    double precision :: vmin
+
+    ! maximum volume
+    double precision :: vmax
+
     contains
 
     ! Update all parameters according to the
@@ -76,6 +82,9 @@ module parameters
         center = f12 * (lower + upper)
         hl = extent / two
         hli = one / hl
+
+        vmin = vcell / dble(parcel%vmin_fraction)
+        vmax = vcell / dble(parcel%vmax_fraction)
 
     end subroutine update_parameters
 end module parameters

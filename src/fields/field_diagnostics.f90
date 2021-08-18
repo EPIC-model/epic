@@ -3,7 +3,7 @@
 ! =============================================================================
 module field_diagnostics
     use constants, only : zero
-    use parameters, only : vcell, nx, nz, ngrid
+    use parameters, only : vcell, nx, nz, ngrid, ncell
     use fields
     use h5_utils
     use h5_writer
@@ -67,7 +67,7 @@ module field_diagnostics
             integer(hid_t)                  :: group
             character(:), allocatable       :: name
             logical                         :: created
-            double precision                :: rms_v, abserr_v
+            double precision                :: rms_v, abserr_v, res
             integer                         :: max_npar, min_npar
 #ifndef NDEBUG
             double precision                :: vol_sym_err
@@ -110,6 +110,12 @@ module field_diagnostics
 
             min_npar = minval(nparg)
             call write_h5_int_scalar_attrib(group, "min num parcels per cell", min_npar)
+
+            res = sum(nparg(0:nz-1, :)) / dble(ncell)
+            call write_h5_double_scalar_attrib(group, "average num parcels per cell", res)
+
+            res = sum(nsparg(0:nz-1, :)) / dble(ncell)
+            call write_h5_double_scalar_attrib(group, "average num small parcels per cell", res)
 
 #ifndef NDEBUG
             vol_sym_err = maxval(dabs(sym_volg(0:nz, :)))
