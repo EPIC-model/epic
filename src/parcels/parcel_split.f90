@@ -4,7 +4,7 @@
 module parcel_split
     use options, only : verbose
     use constants, only : pi, three, f12, f14, f34
-    use parameters, only : vcell
+    use parameters, only : vmax
     use parcel_container, only : parcel_container_type, n_parcels
     use parcel_bc, only : apply_reflective_bc
     use parcel_ellipse, only : get_eigenvalue      &
@@ -19,10 +19,9 @@ module parcel_split
 
     contains
 
-        subroutine split_ellipses(parcels, threshold, vthreshold)
+        subroutine split_ellipses(parcels, threshold)
             type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: threshold
-            double precision,            intent(in)    :: vthreshold
             double precision                           :: B11
             double precision                           :: B12
             double precision                           :: B22
@@ -49,7 +48,7 @@ module parcel_split
                 ! a/b
                 lam = get_aspect_ratio(a2, V)
 
-                if (lam <= threshold .and. V <= vcell/vthreshold) then
+                if (lam <= threshold .and. V <= vmax) then
                     cycle
                 endif
 

@@ -29,7 +29,8 @@ module fields
         volg           ! volume scalar field
 
     integer, allocatable, dimension(:, :) :: &
-        nparg          ! number of parcels per grid box
+        nparg,     &   ! number of parcels per grid box
+        nsparg         ! number of small parcels per grid box
 
     contains
 
@@ -63,6 +64,7 @@ module fields
 !             allocate(humlig(-1:nz+1, 0:nx-1))
 
             allocate(nparg(-1:nz, 0:nx-1))
+            allocate(nsparg(-1:nz, 0:nx-1))
 
         end subroutine field_alloc
 
@@ -81,6 +83,7 @@ module fields
 !             humg     = zero
 !             humlig   = zero
             nparg    = zero
+            nsparg   = zero
         end subroutine
 
         ! get the lower index of the cell the parcel is in
