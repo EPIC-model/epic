@@ -24,6 +24,9 @@ program test_ellipse_multi_merge_3
 
     call register_timer('parcel merge', merge_timer)
 
+    parcel%lambda_max = five
+    parcel%vmin_fraction = three
+
     call update_parameters
 
     call parcel_alloc(3)
@@ -39,9 +42,7 @@ program test_ellipse_multi_merge_3
     call parcel_setup
 
     ! geometric merge
-    parcel%lambda_max = five
     parcel%merge_type = 'geometric'
-    parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
@@ -57,9 +58,7 @@ program test_ellipse_multi_merge_3
     call parcel_setup
 
     ! optimal merge
-    parcel%lambda_max = five
     parcel%merge_type = 'optimal'
-    parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
@@ -122,9 +121,9 @@ program test_ellipse_multi_merge_3
             else
                 tmp = B11
                 mu = solve_quartic(tmp, B12, B22, ab)
-                B11 = (tmp - mu * B22) / (one - mu ** 2)
-                B12 = B12 / (one - mu)
-                B22 = (B22 - mu * tmp) / (one - mu ** 2)
+                B11 = (tmp - mu * B22) / dabs(one - mu ** 2)
+                B12 = B12 / dabs(one - mu)
+                B22 = (B22 - mu * tmp) / dabs(one - mu ** 2)
             endif
 
             max_err = zero

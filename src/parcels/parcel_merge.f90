@@ -359,8 +359,8 @@ module parcel_merge
                     mu = solve_quartic(B11(l), B12(l), B22(l), ab)
 
                     ! optimal B
-                    parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / (one - mu ** 2)
-                    parcels%B(ib, 2) = B12(l) / (one - mu)
+                    parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / dabs(one - mu ** 2)
+                    parcels%B(ib, 2) = B12(l) / dabs(one - mu)
 
                     call apply_periodic_bc(parcels%position(ib, :))
                 endif

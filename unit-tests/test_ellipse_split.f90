@@ -9,7 +9,7 @@ program test_ellipse_split
     use constants, only : pi, zero, one, three, four, five, ten, f12, f14
     use parcel_container
     use parcel_split, only : split_ellipses, split_timer
-    use parameters, only : update_parameters, nx, nz, extent, lower
+    use parameters, only : update_parameters, nx, nz, extent, lower, vmin
     use timer
     implicit none
 
@@ -23,6 +23,7 @@ program test_ellipse_split
     extent = (/ten, ten/)
     lower = (/-five, -five/)
     call update_parameters
+    vmin = one
 
     call register_timer('parcel split', split_timer)
 
@@ -55,7 +56,7 @@ program test_ellipse_split
     pos(2, :) = parcels%position(1, :) - h * evec
 
     ! numerical split
-    call split_ellipses(parcels, threshold=four, vthreshold=one)
+    call split_ellipses(parcels, threshold=four)
 
     !
     ! check result
