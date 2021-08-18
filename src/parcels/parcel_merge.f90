@@ -50,7 +50,7 @@ module parcel_merge
 
             if (n_merge > 0) then
 #ifndef NDEBUG
-                call write_h5_mergees(isma, ibig, n_merge)
+!                 call write_h5_mergees(isma, ibig, n_merge)
 #endif
                 ! merge small parcels into large parcels
                 if (parcel%merge_type == 'geometric') then
@@ -63,7 +63,7 @@ module parcel_merge
                 endif
 
 #ifndef NDEBUG
-                call write_h5_mergers(ibig, n_merge)
+!                 call write_h5_mergers(ibig, n_merge)
 #endif
 
                 ! overwrite invalid parcels
@@ -358,8 +358,8 @@ module parcel_merge
                     mu = solve_quartic(B11(l), B12(l), B22(l), ab)
 
                     ! optimal B
-                    parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / (one - mu ** 2)
-                    parcels%B(ib, 2) = B12(l) / (one - mu)
+                    parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / dabs(one - mu ** 2)
+                    parcels%B(ib, 2) = B12(l) / dabs(one - mu)
 
                     call apply_periodic_bc(parcels%position(ib, :))
                 endif
