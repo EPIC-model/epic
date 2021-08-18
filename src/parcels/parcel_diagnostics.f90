@@ -4,7 +4,7 @@
 module parcel_diagnostics
     use constants, only : zero, one, f12
     use merge_sort
-    use parameters, only : extent, lower
+    use parameters, only : extent, lower, vcell, vmin
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse
     use h5_utils
@@ -24,6 +24,8 @@ module parcel_diagnostics
     ! pe    : potential energy
     ! ke    : kinetic energy
     double precision :: peref, pe, ke
+
+    integer :: n_small
 
     ! avg_lam : mean aspect ratio over all parcels
     ! avg_vol : mean volume over all parcels
@@ -109,6 +111,8 @@ module parcel_diagnostics
             vsum = zero
             v2sum = zero
 
+            n_small = zero
+
             zmin = lower(2)
 
             avg_lam = zero
@@ -116,10 +120,9 @@ module parcel_diagnostics
             std_lam = zero
             std_vol = zero
 
-
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, eval, lam, B22) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum)
+            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small)
             do n = 1, n_parcels
 
                 vel = parcels%velocity(n, :)
@@ -142,6 +145,10 @@ module parcel_diagnostics
 
                 vsum = vsum + vol
                 v2sum = v2sum + vol ** 2
+
+                if (vol < vmin) then
+                    n_small = n_small + 1
+                endif
             enddo
             !$omp end do
             !$omp end parallel
@@ -304,6 +311,7 @@ module parcel_diagnostics
             call write_h5_double_scalar_attrib(group, "kinetic energy", ke)
             call write_h5_double_scalar_attrib(group, "total energy", ke + pe)
             call write_h5_int_scalar_attrib(group, "num parcel", n_parcels)
+            call write_h5_int_scalar_attrib(group, "num small parcels", n_small)
 
 
             call write_h5_double_scalar_attrib(group, "avg aspect ratio", avg_lam)

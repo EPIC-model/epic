@@ -5,7 +5,7 @@
 module parcel_interpl
     use constants, only : zero, one, two
     use timer, only : start_timer, stop_timer
-    use parameters, only : nx, nz
+    use parameters, only : nx, nz, vmin
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
@@ -143,6 +143,7 @@ module parcel_interpl
             vortg = zero
             volg = zero
             nparg = zero
+            nsparg = zero
 #ifndef ENABLE_DRY_MODE
             dbuoyg = zero
 #endif
@@ -150,10 +151,10 @@ module parcel_interpl
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
             !$omp do private(n, p, l, i, j, points, pvol, weight, btot, h_c, is, js, weights) &
-            !$omp& reduction(+:nparg, vortg, dbuoyg, tbuoyg, volg)
+            !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, tbuoyg, volg)
 #else
             !$omp do private(n, p, l, i, j, points, pvol, weight, btot, is, js, weights) &
-            !$omp& reduction(+:nparg, vortg, tbuoyg, volg)
+            !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -175,6 +176,9 @@ module parcel_interpl
                 call get_index(parcels%position(n, :), i, j)
                 i = mod(i + nx, nx)
                 nparg(j, i) = nparg(j, i) + 1
+                if (parcels%volume(n) < vmin) then
+                    nsparg(j, i) = nsparg(j, i) + 1
+                endif
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -255,6 +259,9 @@ module parcel_interpl
             ! are added to cell nz)
             nparg(0,    :) = nparg(0,    :) + nparg(-1, :)
             nparg(nz-1, :) = nparg(nz-1, :) + nparg(nz, :)
+
+            nsparg(0,    :) = nsparg(0,    :) + nsparg(-1, :)
+            nsparg(nz-1, :) = nsparg(nz-1, :) + nsparg(nz, :)
 
             ! sanity check
             if (sum(nparg(0:nz-1, :)) /= n_parcels) then
