@@ -4,7 +4,7 @@
 module parcel_nearest
     use constants, only : pi, f12, max_num_parcels
     use parcel_container, only : parcels, n_parcels, get_delx
-    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz
+    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin
     use options, only : parcel
 
     implicit none
@@ -17,7 +17,7 @@ module parcel_nearest
     integer :: node(max_num_parcels)
 
     !Other variables:
-    double precision:: vmin, delx,delz,dsq,dsqmin,x_small,z_small
+    double precision:: delx,delz,dsq,dsqmin,x_small,z_small
     integer:: i,ic,is,ib,k,m,j
     integer:: ix,iz,ix0,iz0
 
@@ -36,8 +36,6 @@ module parcel_nearest
                 allocate(kc1(ncell))
                 allocate(kc2(ncell))
             endif
-
-            vmin = vcell / dble(parcel%vmin_fraction)
 
             nmerge=0
 
