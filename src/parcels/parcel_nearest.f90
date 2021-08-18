@@ -70,8 +70,8 @@ module parcel_nearest
             endif
 
             ! allocate arrays
-            allocate(isma(0:nmerge+1))
-            allocate(ibig(nmerge+1))
+            allocate(isma(0:nmerge))
+            allocate(ibig(nmerge))
 
             isma = 0
             ibig = 0
@@ -173,6 +173,7 @@ module parcel_nearest
 
             enddo
             nmerge = j
+
         end subroutine find_nearest
 
 end module parcel_nearest

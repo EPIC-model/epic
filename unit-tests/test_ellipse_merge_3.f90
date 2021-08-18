@@ -86,7 +86,7 @@ program test_ellipse_multi_merge_3
 
             ! small parcel left
             parcels%position(2, 1) = 1.5d0 - d
-            parcels%position(2, 2) = 0.2d0 -d
+            parcels%position(2, 2) = 0.2d0 - d
             parcels%volume(2) = a2b2 * pi
             parcels%B(2, 1) = a2b2
             parcels%B(2, 2) = zero
