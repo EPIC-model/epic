@@ -2,13 +2,13 @@
 !                       Test ellipse multi merge
 !
 !         This unit test checks the merging of three ellipses. The biggest
-!         ellipse is located ad the origin. The smaller ellipses are located
+!         ellipse is located at the origin. The smaller ellipses are located
 !         tangentially at 45 and 225 degrees. The final ellipse is an ellipse
 !         located at the origin.
 ! =============================================================================
 program test_ellipse_multi_merge_2
     use unit_test
-    use constants, only : pi, one, two, three, four, five
+    use constants, only : pi, one, two, four, five, ten
     use parcel_container
     use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
@@ -43,7 +43,7 @@ program test_ellipse_multi_merge_2
     ! geometric merge
     parcel%lambda_max = five
     parcel%merge_type = 'geometric'
-    parcel%vmin_fraction = three
+    parcel%vmin_fraction = ten
 
     call merge_ellipses(parcels)
 
@@ -61,7 +61,7 @@ program test_ellipse_multi_merge_2
     ! optimal merge
     parcel%lambda_max = five
     parcel%merge_type = 'optimal'
-    parcel%vmin_fraction = three
+    parcel%vmin_fraction = ten
 
     call merge_ellipses(parcels)
 
@@ -135,9 +135,9 @@ program test_ellipse_multi_merge_2
             else
                 tmp = B11
                 mu = solve_quartic(tmp, B12, B22, ab)
-                B11 = (tmp - mu * B22) / (one - mu ** 2)
-                B12 = B12 / (one - mu)
-                B22 = (B22 - mu * tmp) / (one - mu ** 2)
+                B11 = (tmp - mu * B22) / dabs(one - mu ** 2)
+                B12 = B12 / dabs(one - mu)
+                B22 = (B22 - mu * tmp) / dabs(one - mu ** 2)
             endif
 
             max_err = zero

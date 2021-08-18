@@ -2,10 +2,9 @@
 !                       Test ellipse multi merge
 !
 !       This unit test checks group merging. It places three parcels
-!       in a row where the first two parcels are of equal size. In each call
-!       to the merging routine
+!       in a row with a - b = c. In each call to the merging routine
 !       only two parcels should merge. After two calls, only one big parcel
-!       exists.
+!       exists. The first call merges b = c.
 ! =============================================================================
 program test_ellipse_multi_merge_5
     use unit_test
@@ -44,8 +43,8 @@ program test_ellipse_multi_merge_5
     ! check result
     error = dble(abs(n_parcels - 2))
 
-    ! check if the small and big parcels merged first
-    error = max(error, dabs(parcels%volume(1) - 0.25d0 * pi))
+    ! check if the double bond merges first
+    error = max(error, dabs(parcels%volume(1) - 0.26d0 * pi))
 
     ! second merge
     call merge_ellipses(parcels)
@@ -61,9 +60,9 @@ program test_ellipse_multi_merge_5
 
         subroutine parcel_setup
             n_parcels = 3
-            parcels%position(1, 1) = -0.5d0
+            parcels%position(1, 1) = -0.1d0
             parcels%position(1, 2) = zero
-            parcels%volume(1) = 0.25d0 * pi
+            parcels%volume(1) = 0.26d0 * pi
             parcels%B(1, 1) = 0.25d0
             parcels%B(1, 2) = zero
 
@@ -73,10 +72,10 @@ program test_ellipse_multi_merge_5
             parcels%B(2, 1) = 0.25d0
             parcels%B(2, 2) = zero
 
-            parcels%position(3, 1) = 0.5d0
+            parcels%position(3, 1) = 0.05d0
             parcels%position(3, 2) = zero
-            parcels%volume(3) = 0.27d0 * pi
-            parcels%B(3, 1) = 0.27d0
+            parcels%volume(3) = 0.25d0 * pi
+            parcels%B(3, 1) = 0.25d0
             parcels%B(3, 2) = zero
 
         end subroutine parcel_setup
