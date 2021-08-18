@@ -26,16 +26,16 @@ program test_ellipse_multi_merge_5
 
     call register_timer('parcel merge', merge_timer)
 
+    ! geometric merge
+    parcel%merge_type = 'geometric'
+    parcel%lambda_max = five
+    parcel%vmin_fraction = three
+
     call update_parameters
 
     call parcel_alloc(3)
 
     call parcel_setup
-
-    ! geometric merge
-    parcel%lambda_max = five
-    parcel%merge_type = 'geometric'
-    parcel%vmin_fraction = three
 
     ! first merge
     call merge_ellipses(parcels)

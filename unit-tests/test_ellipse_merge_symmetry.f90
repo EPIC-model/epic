@@ -27,6 +27,9 @@ program test_ellipse_multi_merge_symmetry
     call register_timer('parcel merge', merge_timer)
     call register_timer('symmetric vol2grid', sym_vol2grid_timer)
 
+    parcel%lambda_max = five
+    parcel%vmin_fraction = three
+
     call update_parameters
 
     allocate(sym_volg(-1:nz+1, 0:nx-1))
@@ -40,9 +43,7 @@ program test_ellipse_multi_merge_symmetry
     call parcel_setup
 
     ! geometric merge
-    parcel%lambda_max = five
     parcel%merge_type = 'geometric'
-    parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
@@ -58,9 +59,7 @@ program test_ellipse_multi_merge_symmetry
     call parcel_setup
 
     ! optimal merge
-    parcel%lambda_max = five
     parcel%merge_type = 'optimal'
-    parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 

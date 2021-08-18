@@ -26,15 +26,14 @@ program test_nearest_3
     lower  = (/-pi / two, -pi /two/)
     extent = (/pi, pi/)
 
-    call update_parameters
-
-
-    call parcel_alloc(5)
-    n_parcels = 5
-
     ! geometric merge
     parcel%lambda_max = five
     parcel%vmin_fraction = ten
+
+    call update_parameters
+
+    call parcel_alloc(5)
+    n_parcels = 5
 
     call permute_generate(n_parcels)
 

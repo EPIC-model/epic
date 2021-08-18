@@ -25,14 +25,14 @@ program test_nearest_1
     lower  = (/-pi / two, -pi /two/)
     extent = (/pi, pi/)
 
+    ! geometric merge
+    parcel%lambda_max = five
+    parcel%vmin_fraction = ten
+
     call update_parameters
 
     call parcel_alloc(2)
     n_parcels = 2
-
-    ! geometric merge
-    parcel%lambda_max = five
-    parcel%vmin_fraction = ten
 
     call permute_generate(n_parcels)
 
