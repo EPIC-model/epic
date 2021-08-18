@@ -73,8 +73,6 @@ module parcel_nearest
             allocate(isma(0:nmerge+1))
             allocate(ibig(nmerge+1))
 
-            print *, "n_merge = ", nmerge
-
             isma = 0
             ibig = 0
             nmerge = 0
