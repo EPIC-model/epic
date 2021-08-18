@@ -9,7 +9,7 @@
 ! =============================================================================
 program test_ellipse_multi_merge_5
     use unit_test
-    use constants, only : pi, one, two, three, four, five
+    use constants, only : pi, one, two, four, five, ten
     use parcel_container
     use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
@@ -27,16 +27,16 @@ program test_ellipse_multi_merge_5
 
     call register_timer('parcel merge', merge_timer)
 
+    ! geometric merge
+    parcel%lambda_max = five
+    parcel%merge_type = 'geometric'
+    parcel%vmin_fraction = ten
+
     call update_parameters
 
     call parcel_alloc(3)
 
     call parcel_setup
-
-    ! geometric merge
-    parcel%lambda_max = five
-    parcel%merge_type = 'geometric'
-    parcel%vmin_fraction = three
 
     ! first merge
     call merge_ellipses(parcels)
@@ -61,7 +61,7 @@ program test_ellipse_multi_merge_5
 
         subroutine parcel_setup
             n_parcels = 3
-            parcels%position(1, 1) = -0.5d0
+            parcels%position(1, 1) = -0.2d0
             parcels%position(1, 2) = zero
             parcels%volume(1) = 0.25d0 * pi
             parcels%B(1, 1) = 0.25d0
@@ -73,10 +73,10 @@ program test_ellipse_multi_merge_5
             parcels%B(2, 1) = 0.25d0
             parcels%B(2, 2) = zero
 
-            parcels%position(3, 1) = 0.5d0
+            parcels%position(3, 1) = 0.1d0
             parcels%position(3, 2) = zero
-            parcels%volume(3) = 0.27d0 * pi
-            parcels%B(3, 1) = 0.27d0
+            parcels%volume(3) = 0.4d0 * pi
+            parcels%B(3, 1) = 0.4d0
             parcels%B(3, 2) = zero
 
         end subroutine parcel_setup

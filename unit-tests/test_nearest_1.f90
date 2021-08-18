@@ -24,13 +24,13 @@ program test_nearest_1
     lower  = (/-pi / two, -pi /two/)
     extent = (/pi, pi/)
 
-    call update_parameters
-
-    call parcel_alloc(2)
-
     ! geometric merge
     parcel%lambda_max = five
     parcel%vmin_fraction = three
+
+    call update_parameters
+
+    call parcel_alloc(2)
 
     !
     !   (2a)

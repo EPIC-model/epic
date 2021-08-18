@@ -4,7 +4,7 @@
 module parcel_nearest
     use constants, only : pi, f12, max_num_parcels
     use parcel_container, only : parcels, n_parcels, get_delx
-    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz
+    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin
     use options, only : parcel
 
     implicit none
@@ -17,7 +17,7 @@ module parcel_nearest
     integer :: node(max_num_parcels)
 
     !Other variables:
-    double precision:: vmin, delx,delz,dsq,dsqmin,vmerge,vmergemin,x_small,z_small
+    double precision:: delx,delz,dsq,dsqmin,x_small,z_small
     integer :: i,ic,i0,imin,k,m,j, is, ib
     integer :: ix,iz,ix0,iz0
 
@@ -41,7 +41,6 @@ module parcel_nearest
             ! Initialise search:
             nppc=0 !nppc(ic) will contain the number of parcels in grid cell ic
 
-            vmin = vcell / dble(parcel%vmin_fraction)
             nmerge = 0
 
             ! Bin parcels in cells:
@@ -78,8 +77,8 @@ module parcel_nearest
             !---------------------------------------------------------------------
 
             ! allocate arrays
-            allocate(isma(0:nmerge + 1))
-            allocate(ibig(nmerge + 1))
+            allocate(isma(0:nmerge))
+            allocate(ibig(nmerge))
 
             isma = 0
             ibig = 0
@@ -116,20 +115,7 @@ module parcel_nearest
 
                 ! Grid point (ix0,iz0) is closest to parcel i0
 
-                ! Initialise scaled squared distance between parcels and parcel index:
-                ! In the loop below we want to minimise dsq/vmerge
-                ! By storing dsqmin and vmergemin separately, we can avoid a division
-                ! In the calculation we also want to ensure
-                !   dsq/(a*b) < lambda_max/2
-                ! This will ensure a merged parcel does not split again
-                ! Since vmerge=pi*a*b, this implies
-                !   dsq*pi < 0.5*parcel%lambda_max*vmerge
-                ! This is ensured by initialising the minimisation
-                ! with the values below
-                ! Might seem a bit radical to take a large vmergemin and small dsqmin
-                ! but computationally it is easy
-                dsqmin=f12*parcel%lambda_max
-                vmergemin=pi
+                dsqmin= product(extent)
                 imin=0
 
                 ! Loop over 8 cells surrounding (ix0,iz0):
@@ -140,24 +126,17 @@ module parcel_nearest
                         ! Search nearby parcels for closest bigger one:
                         do k=kc1(ic),kc2(ic)
                             i=node(k)
+                            ! we need to exclude self-merging due to v(i) >= v(i0)
                             if (parcels%volume(i) >= parcels%volume(i0)) then
-                                ! we need to exclude self-merging due to v(i) >= v(i0)
                                 if (i .ne. i0) then
                                     delz=parcels%position(i,2)-z_small
-                                    ! Avoid merger with another small parcel
-                                    vmerge=parcels%volume(i)+parcels%volume(i0) ! Summed area fraction:
-                                    ! Minimise dsq/vmerge
-                                    ! Prevent division in comparisons here by storing both
-                                    ! vmergemin and dsqmin
-                                    if (delz*delz*vmergemin < dsqmin*vmerge) then
-                                        ! works across periodic edge
-                                        delx = get_delx(parcels%position(i,1), x_small)
-                                        dsq=delz*delz+delx*delx
-                                        if (dsq*vmergemin < dsqmin*vmerge) then
-                                            dsqmin=dsq
-                                            vmergemin=vmerge
-                                            imin=i
-                                        endif
+                                    ! works across periodic edge
+                                    delx = get_delx(parcels%position(i,1), x_small)
+                                    dsq=delz*delz+delx*delx
+                                    ! Minimise dsq
+                                    if (dsq < dsqmin) then
+                                        dsqmin=dsq
+                                        imin=i
                                     endif
                                 endif
                             endif
