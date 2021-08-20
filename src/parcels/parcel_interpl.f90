@@ -176,7 +176,7 @@ module parcel_interpl
                 call get_index(parcels%position(n, :), i, j)
                 i = mod(i + nx, nx)
                 nparg(j, i) = nparg(j, i) + 1
-                if (parcels%volume(n) < vmin) then
+                if (parcels%volume(n) <= vmin) then
                     nsparg(j, i) = nsparg(j, i) + 1
                 endif
 
