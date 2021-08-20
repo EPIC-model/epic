@@ -12,7 +12,6 @@ module parcel_container
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
             position,   &
-            velocity,   &
             B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12
 
         double precision, allocatable, dimension(:) :: &
@@ -52,9 +51,6 @@ module parcel_container
             parcels%position(n, 1) = parcels%position(m, 1)
             parcels%position(n, 2) = parcels%position(m, 2)
 
-            parcels%velocity(n, 1) = parcels%velocity(m, 1)
-            parcels%velocity(n, 2) = parcels%velocity(m, 2)
-
             parcels%vorticity(n) = parcels%vorticity(m)
 
             parcels%volume(n)  = parcels%volume(m)
@@ -72,7 +68,6 @@ module parcel_container
             integer, intent(in) :: num
 
             allocate(parcels%position(num, 2))
-            allocate(parcels%velocity(num, 2))
             allocate(parcels%vorticity(num))
             allocate(parcels%B(num, 2))
             allocate(parcels%volume(num))
@@ -85,7 +80,6 @@ module parcel_container
 
         subroutine parcel_dealloc
             deallocate(parcels%position)
-            deallocate(parcels%velocity)
             deallocate(parcels%vorticity)
             deallocate(parcels%B)
             deallocate(parcels%volume)

@@ -49,8 +49,9 @@ module parcel_diagnostics
     integer :: hdf5_parcel_stat_timer
 
     public :: create_h5_parcel_stat_file,   &
-              init_parcel_diagnostics,     &
-              write_h5_parcel_stats_step,  &
+              init_parcel_diagnostics,      &
+              calc_parcel_diagnostics,      &
+              write_h5_parcel_stats_step,   &
               hdf5_parcel_stat_timer
 
     contains
@@ -85,7 +86,7 @@ module parcel_diagnostics
             call msort(b, ii)
 
             gam = one / extent(1)
-            zmean = lower(2) + f12 * gam * parcels%volume(ii(1))
+            zmean = f12 * gam * parcels%volume(ii(1))
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
             do n = 2, n_parcels
@@ -97,7 +98,8 @@ module parcel_diagnostics
         end subroutine init_parcel_diagnostics
 
 
-        subroutine calculate_diagnostics
+        subroutine calc_parcel_diagnostics(velocity)
+            double precision :: velocity(:, :)
             integer          :: n
             double precision :: b, z, vel(2), vol, zmin
             double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum
@@ -125,7 +127,7 @@ module parcel_diagnostics
             !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small)
             do n = 1, n_parcels
 
-                vel = parcels%velocity(n, :)
+                vel = velocity(n, :)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
                 z   = parcels%position(n, 2) - zmin
@@ -146,7 +148,7 @@ module parcel_diagnostics
                 vsum = vsum + vol
                 v2sum = v2sum + vol ** 2
 
-                if (vol < vmin) then
+                if (vol <= vmin) then
                     n_small = n_small + 1
                 endif
             enddo
@@ -165,7 +167,7 @@ module parcel_diagnostics
 #ifdef ENABLE_DIAGNOSE
             call straka_diagnostics
 #endif
-        end subroutine calculate_diagnostics
+        end subroutine calc_parcel_diagnostics
 
 
 #ifdef ENABLE_DIAGNOSE
@@ -286,8 +288,6 @@ module parcel_diagnostics
                 print "(a19)", "write parcel diagnostics to h5"
             endif
 #endif
-
-            call calculate_diagnostics
 
             call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
 
