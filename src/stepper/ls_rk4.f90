@@ -6,7 +6,8 @@ module ls_rk4
     use options, only : parcel
     use parcel_container
     use parcel_bc
-    use rk4_utils, only: get_B
+    use rk4_utils, only: get_B, get_time_step
+    use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
@@ -64,10 +65,27 @@ module ls_rk4
 
         ! Precondition: this routine assumes that the fields are
         ! up-to-date for the first sub-step
-        subroutine ls_rk4_step(dt)
-            double precision, intent(in) :: dt
+        subroutine ls_rk4_step(t)
+            double precision, intent(inout) :: t
+            double precision                :: dt
 
-            ! no need to call par2grid (fields are up-to-date)
+            call par2grid
+
+            ! need to be called in order to set initial time step;
+            ! this is also needed for the first ls-rk4 substep
+            call vor2vel(vortg, velog, velgradg)
+
+            call vorticity_tendency(tbuoyg, vtend)
+
+            ! update the time step
+            dt = get_time_step(t)
+
+            call grid2par(delta_pos, delta_vor, strain)
+
+            call calc_parcel_diagnostics(delta_pos)
+
+            call write_step(t, dt)
+
             call ls_rk4_substep(ca1, cb1, dt, 1)
 
             call par2grid
@@ -90,6 +108,7 @@ module ls_rk4
             ! the timer multiple times which increments n_calls
             timings(rk4_timer)%n_calls =  timings(rk4_timer)%n_calls - 14
 
+            t = t + dt
         end subroutine ls_rk4_step
 
 
@@ -100,14 +119,8 @@ module ls_rk4
             integer,          intent(in) :: step
             integer                      :: n
 
-            call vor2vel(vortg, velog, velgradg)
-            call vorticity_tendency(tbuoyg, vtend)
 
             if (step == 1) then
-                call grid2par(delta_pos, delta_vor, strain)
-
-                call calc_parcel_diagnostics(delta_pos)
-
                 call start_timer(rk4_timer)
 
                 !$omp parallel do default(shared) private(n)
@@ -118,6 +131,10 @@ module ls_rk4
 
                 call stop_timer(rk4_timer)
             else
+                call vor2vel(vortg, velog, velgradg)
+
+                call vorticity_tendency(tbuoyg, vtend)
+
                 call grid2par_add(delta_pos, delta_vor, strain)
 
                 call start_timer(rk4_timer)

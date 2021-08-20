@@ -15,23 +15,24 @@ program epic
                                   apply_gradient,         &
                                   lapl_corr_timer,        &
                                   grad_corr_timer
-    use parcel_diagnostics
+    use parcel_diagnostics, only : init_parcel_diagnostics,    &
+                                   create_h5_parcel_stat_file, &
+                                   hdf5_parcel_stat_timer
     use parcel_hdf5
     use fields
-    use field_hdf5
+    use field_hdf5, only : hdf5_field_timer, create_h5_field_file
     use tri_inversion, only : init_inversion, vor2vel_timer, vtend_timer
-    use parcel_interpl
+    use parcel_interpl, only : grid2par_timer, par2grid_timer
+#ifndef NDEBUG
+    use parcel_interpl, only : sym_vol2grid_timer
+#endif
     use parcel_init, only : init_parcels, init_timer
-    use ls_rk4
+    use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
     use h5_utils, only : initialise_hdf5, finalise_hdf5
+    use utils, only : write_last_step
     implicit none
 
     integer :: epic_timer
-
-    integer :: nfw  = 0    ! number of field writes to h5
-    integer :: npw  = 0    ! number of parcel writes to h5
-    integer :: nspw = 0    ! number of parcel diagnostics writes to h5
-    integer :: nsfw = 0    ! number of field diagnostics writes to h5
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -115,7 +116,6 @@ program epic
             use options, only : verbose
 #endif
             double precision :: t    = zero ! current time
-            double precision :: dt   = zero ! time step
             integer          :: iter = 1    ! simulation iteration
             integer          :: cor_iter    ! iterator for parcel correction
 
@@ -127,21 +127,7 @@ program epic
                     print "(a15, i0)", "iteration:     ", iter
                 endif
 #endif
-
-                call par2grid
-
-                if (iter == 1) then
-                    ! need to be called in order to set initial time step
-                    call vor2vel(vortg, velog, velgradg)
-                    call vorticity_tendency(tbuoyg, vtend)
-                endif
-
-                ! update the time step
-                dt = get_time_step(t)
-
-                call write_step(t, dt)
-
-                call ls_rk4_step(dt)
+                call ls_rk4_step(t)
 
                 if (mod(iter, parcel%merge_freq) == 0) then
                     call merge_ellipses(parcels)
@@ -162,14 +148,11 @@ program epic
                     enddo
                 endif
 
-                t = t + dt
                 iter = iter + 1
             end do
 
-            call par2grid
-
             ! write final step
-            call write_step(t, dt, .true.)
+            call write_last_step(t)
 
         end subroutine run
 
@@ -183,93 +166,6 @@ program epic
             call write_time_to_csv(output%h5_basename)
             call print_timer
         end subroutine
-
-
-        subroutine write_step(t, dt, l_force)
-            use options, only : output
-            double precision,  intent(in)  :: t
-            double precision,  intent(in)  :: dt
-            logical, optional, intent(in)  :: l_force
-            double precision               :: neg = one
-#ifndef NDEBUG
-            logical                      :: do_vol2grid_sym_err = .true.
-#endif
-
-            if (present(l_force)) then
-                if (l_force) then
-                    neg = -one
-                endif
-            endif
-
-            ! make sure we always write initial setup
-            if (output%h5_write_fields .and. &
-                (t + epsilon(zero) >= neg * dble(nfw) * output%h5_field_freq)) then
-#ifndef NDEBUG
-                call vol2grid_symmetry_error
-                do_vol2grid_sym_err = .false.
-#endif
-                call write_h5_field_step(nfw, t, dt)
-            endif
-
-
-            if (output%h5_write_parcels .and. &
-                (t + epsilon(zero) >= neg * dble(npw) * output%h5_parcel_freq)) then
-                call write_h5_parcel_step(npw, t, dt)
-            endif
-
-            if (output%h5_write_parcel_stats .and. &
-                (t + epsilon(zero) >= neg * dble(nspw) * output%h5_parcel_stats_freq)) then
-                call write_h5_parcel_stats_step(nspw, t, dt)
-            endif
-
-            if (output%h5_write_field_stats .and. &
-                (t + epsilon(zero) >= neg * dble(nsfw) * output%h5_field_stats_freq)) then
-
-#ifndef NDEBUG
-                if (do_vol2grid_sym_err) then
-                    call vol2grid_symmetry_error
-                endif
-#endif
-                call write_h5_field_stats_step(nsfw, t, dt)
-            endif
-        end subroutine write_step
-
-
-        function get_time_step(t) result(dt)
-            use options, only : time
-            double precision, intent(in) :: t
-            double precision             :: dt
-            double precision             :: gmax, bmax
-            double precision             :: dbdz(0:nz, 0:nx-1)
-
-            if (time%is_adaptive) then
-                ! velocity strain
-                gmax = f12 * dsqrt(maxval((velgradg(0:nz, :, 1) - velgradg(0:nz, :, 4)) ** 2 + &
-                                          (velgradg(0:nz, :, 2) + velgradg(0:nz, :, 3)) ** 2))
-                gmax = max(epsilon(gmax), gmax)
-
-                ! buoyancy gradient
-
-                ! db/dz (central difference)
-                dbdz(0:nz, :) = f12 * dxi(2) * (tbuoyg(1:nz+1, :) - tbuoyg(-1:nz-1, :))
-
-                bmax = dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
-                bmax = max(epsilon(bmax), bmax)
-
-                dt = min(time%alpha_s / gmax, time%alpha_b / bmax)
-            else
-                dt = time%dt
-            endif
-
-            if (t + dt > time%limit) then
-                dt = time%limit - t
-            endif
-
-            if (dt <= zero) then
-                print "(a10, f0.2, a6)", "Time step ", dt, " <= 0!"
-                stop
-            endif
-        end function get_time_step
 
 
     ! Get the file name provided via the command line
