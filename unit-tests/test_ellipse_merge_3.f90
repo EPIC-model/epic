@@ -24,6 +24,9 @@ program test_ellipse_multi_merge_3
 
     call register_timer('parcel merge', merge_timer)
 
+    parcel%lambda_max = five
+    parcel%vmin_fraction = three
+
     call update_parameters
 
     call parcel_alloc(3)
@@ -39,9 +42,7 @@ program test_ellipse_multi_merge_3
     call parcel_setup
 
     ! geometric merge
-    parcel%lambda_max = five
     parcel%merge_type = 'geometric'
-    parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
@@ -57,9 +58,7 @@ program test_ellipse_multi_merge_3
     call parcel_setup
 
     ! optimal merge
-    parcel%lambda_max = five
     parcel%merge_type = 'optimal'
-    parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
@@ -86,7 +85,7 @@ program test_ellipse_multi_merge_3
 
             ! small parcel left
             parcels%position(2, 1) = 1.5d0 - d
-            parcels%position(2, 2) = 0.2d0 -d
+            parcels%position(2, 2) = 0.2d0 - d
             parcels%volume(2) = a2b2 * pi
             parcels%B(2, 1) = a2b2
             parcels%B(2, 2) = zero

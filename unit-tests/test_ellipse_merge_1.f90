@@ -2,13 +2,13 @@
 !                       Test ellipse multi merge
 !
 !         This unit test checks the merging of five ellipses. The biggest
-!         ellipse is located ad the origin. The smaller ellipses are located
+!         ellipse is located at the origin. The smaller ellipses are located
 !         on all four sides. The final ellipse is a circle located at the
 !         origin.
 ! =============================================================================
 program test_ellipse_multi_merge_1
     use unit_test
-    use constants, only : pi, three, four, five
+    use constants, only : pi, four, five, ten
     use parcel_container
     use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
@@ -26,13 +26,15 @@ program test_ellipse_multi_merge_1
 
     call register_timer('parcel merge', merge_timer)
 
+    parcel%lambda_max = five
+    parcel%vmin_fraction = ten
+
     call update_parameters
 
     call parcel_alloc(5)
 
-    a1b1 = 1.44d0
+    a1b1 = 0.49d0
     a2b2 = 0.25d0
-
 
     !
     ! muti-geometric merging
@@ -41,9 +43,7 @@ program test_ellipse_multi_merge_1
     call parcel_setup
 
     ! geometric merge
-    parcel%lambda_max = five
     parcel%merge_type = 'geometric'
-    parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
@@ -59,9 +59,7 @@ program test_ellipse_multi_merge_1
     call parcel_setup
 
     ! optimal merge
-    parcel%lambda_max = five
     parcel%merge_type = 'optimal'
-    parcel%vmin_fraction = three
 
     call merge_ellipses(parcels)
 
@@ -85,7 +83,7 @@ program test_ellipse_multi_merge_1
             parcels%humidity(1) = 1.3d0
 #endif
             ! small parcel left
-            parcels%position(2, 1) = -1.2d0
+            parcels%position(2, 1) = -0.6d0
             parcels%position(2, 2) = zero
             parcels%volume(2) = a2b2 * pi
             parcels%B(2, 1) = a2b2
@@ -95,7 +93,7 @@ program test_ellipse_multi_merge_1
             parcels%humidity(2) = 1.2d0
 #endif
             ! small parcel right
-            parcels%position(3, 1) = 1.2d0
+            parcels%position(3, 1) = 0.6d0
             parcels%position(3, 2) = zero
             parcels%volume(3) = a2b2 * pi
             parcels%B(3, 1) = a2b2
@@ -106,7 +104,7 @@ program test_ellipse_multi_merge_1
 #endif
             ! small parcel below
             parcels%position(4, 1) = zero
-            parcels%position(4, 2) = -1.2d0
+            parcels%position(4, 2) = -0.6d0
             parcels%volume(4) = a2b2 * pi
             parcels%B(4, 1) = a2b2
             parcels%B(4, 2) = zero
@@ -116,7 +114,7 @@ program test_ellipse_multi_merge_1
 #endif
             ! small parcel above
             parcels%position(5, 1) = zero
-            parcels%position(5, 2) = 1.2d0
+            parcels%position(5, 2) = 0.6d0
             parcels%volume(5) = a2b2 * pi
             parcels%B(5, 1) = a2b2
             parcels%B(5, 2) = zero

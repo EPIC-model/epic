@@ -14,7 +14,7 @@ program test_parcel_correction
     use parcel_interpl, only : vol2grid
     use parcel_ellipse, only : get_ab
     use parcel_init, only : init_regular_positions
-    use parameters, only : lower, extent, update_parameters, vcell, dx, nx, nz
+    use parameters, only : lower, extent, update_parameters, vcell, nx, nz
     use fields, only : volg
     use timer
 

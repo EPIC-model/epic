@@ -4,7 +4,7 @@
 module parcel_diagnostics
     use constants, only : zero, one, f12
     use merge_sort
-    use parameters, only : extent, lower
+    use parameters, only : extent, lower, vcell, vmin
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse
     use h5_utils
@@ -24,6 +24,8 @@ module parcel_diagnostics
     ! pe    : potential energy
     ! ke    : kinetic energy
     double precision :: peref, pe, ke
+
+    integer :: n_small
 
     ! avg_lam : mean aspect ratio over all parcels
     ! avg_vol : mean volume over all parcels
@@ -47,8 +49,9 @@ module parcel_diagnostics
     integer :: hdf5_parcel_stat_timer
 
     public :: create_h5_parcel_stat_file,   &
-              init_parcel_diagnostics,     &
-              write_h5_parcel_stats_step,  &
+              init_parcel_diagnostics,      &
+              calc_parcel_diagnostics,      &
+              write_h5_parcel_stats_step,   &
               hdf5_parcel_stat_timer
 
     contains
@@ -83,7 +86,7 @@ module parcel_diagnostics
             call msort(b, ii)
 
             gam = one / extent(1)
-            zmean = lower(2) + f12 * gam * parcels%volume(ii(1))
+            zmean = f12 * gam * parcels%volume(ii(1))
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
             do n = 2, n_parcels
@@ -95,7 +98,8 @@ module parcel_diagnostics
         end subroutine init_parcel_diagnostics
 
 
-        subroutine calculate_diagnostics
+        subroutine calc_parcel_diagnostics(velocity)
+            double precision :: velocity(:, :)
             integer          :: n
             double precision :: b, z, vel(2), vol, zmin
             double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum
@@ -109,6 +113,8 @@ module parcel_diagnostics
             vsum = zero
             v2sum = zero
 
+            n_small = zero
+
             zmin = lower(2)
 
             avg_lam = zero
@@ -116,13 +122,12 @@ module parcel_diagnostics
             std_lam = zero
             std_vol = zero
 
-
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, eval, lam, B22) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum)
+            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small)
             do n = 1, n_parcels
 
-                vel = parcels%velocity(n, :)
+                vel = velocity(n, :)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
                 z   = parcels%position(n, 2) - zmin
@@ -142,6 +147,10 @@ module parcel_diagnostics
 
                 vsum = vsum + vol
                 v2sum = v2sum + vol ** 2
+
+                if (vol <= vmin) then
+                    n_small = n_small + 1
+                endif
             enddo
             !$omp end do
             !$omp end parallel
@@ -158,7 +167,7 @@ module parcel_diagnostics
 #ifdef ENABLE_DIAGNOSE
             call straka_diagnostics
 #endif
-        end subroutine calculate_diagnostics
+        end subroutine calc_parcel_diagnostics
 
 
 #ifdef ENABLE_DIAGNOSE
@@ -280,8 +289,6 @@ module parcel_diagnostics
             endif
 #endif
 
-            call calculate_diagnostics
-
             call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
 
             name = trim(get_step_group_name(nw))
@@ -304,6 +311,7 @@ module parcel_diagnostics
             call write_h5_double_scalar_attrib(group, "kinetic energy", ke)
             call write_h5_double_scalar_attrib(group, "total energy", ke + pe)
             call write_h5_int_scalar_attrib(group, "num parcel", n_parcels)
+            call write_h5_int_scalar_attrib(group, "num small parcels", n_small)
 
 
             call write_h5_double_scalar_attrib(group, "avg aspect ratio", avg_lam)

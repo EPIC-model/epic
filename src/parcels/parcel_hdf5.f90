@@ -107,11 +107,6 @@ module parcel_hdf5
             call write_h5_dataset_1d(h5file_id, name, "humidity", &
                                      parcels%humidity(1:n_parcels))
 #endif
-
-#if !defined(NDEBUG) || defined(ENABLE_DIAGNOSE)
-            call write_h5_dataset_2d(h5file_id, name, "velocity", &
-                                     parcels%velocity(1:n_parcels, :))
-#endif
             call close_h5_group(group)
 
         end subroutine write_h5_parcels

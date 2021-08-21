@@ -29,8 +29,8 @@ module parcel_merge
     contains
         subroutine merge_ellipses(parcels)
             type(parcel_container_type), intent(inout) :: parcels
-            integer                                    :: isma(0:max_num_parcels / 8)
-            integer                                    :: ibig(max_num_parcels / 8)
+            integer, allocatable, dimension(:)         :: isma
+            integer, allocatable, dimension(:)         :: ibig
             integer                                    :: n_merge ! number of merges
 
             call start_timer(merge_timer)
@@ -59,6 +59,11 @@ module parcel_merge
 
                 ! overwrite invalid parcels
                 call pack_parcels(isma, n_merge)
+            endif
+
+            if (allocated(isma)) then
+                deallocate(isma)
+                deallocate(ibig)
             endif
 
             call stop_timer(merge_timer)
@@ -349,8 +354,8 @@ module parcel_merge
                     mu = solve_quartic(B11(l), B12(l), B22(l), ab)
 
                     ! optimal B
-                    parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / (one - mu ** 2)
-                    parcels%B(ib, 2) = B12(l) / (one - mu)
+                    parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / dabs(one - mu ** 2)
+                    parcels%B(ib, 2) = B12(l) / dabs(one - mu)
 
                     call apply_periodic_bc(parcels%position(ib, :))
                 endif
