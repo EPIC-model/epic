@@ -49,7 +49,7 @@ module rk4_utils
                 dt = time%dt
             endif
 
-            if (t + dt > time%limit) then
+            if (time%precise_stop .and. (t + dt > time%limit)) then
                 dt = time%limit - t
             endif
 
