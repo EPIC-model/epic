@@ -28,7 +28,7 @@ program test_ellipse_multi_merge_symmetry
     call register_timer('symmetric vol2grid', sym_vol2grid_timer)
 
     parcel%lambda_max = five
-    parcel%vmin_fraction = three
+    parcel%min_vratio = three
 
     call update_parameters
 
