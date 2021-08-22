@@ -68,8 +68,8 @@ module options
         double precision :: limit       = zero       ! time limit
         double precision :: dt          = zero       ! time step
         logical          :: is_adaptive = .false.
-        double precision :: alpha_s     = 0.1d0      ! factor for adaptive time stepping with strain
-        double precision :: alpha_b     = 0.1d0      ! factor for adaptive time stepping with buoyancy gradient
+        double precision :: alpha       = 0.1d0      ! factor for adaptive time stepping with strain and buoyancy
+                                                     ! gradient
     end type time_info_type
 
     type(time_info_type) :: time
