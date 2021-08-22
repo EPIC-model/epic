@@ -83,8 +83,8 @@ module parameters
         hl = extent / two
         hli = one / hl
 
-        vmin = vcell / dble(parcel%vmin_fraction)
-        vmax = vcell / dble(parcel%vmax_fraction)
+        vmin = vcell / parcel%min_vratio
+        vmax = vcell / parcel%max_vratio
 
     end subroutine update_parameters
 end module parameters
