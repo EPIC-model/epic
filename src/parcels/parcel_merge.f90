@@ -51,7 +51,7 @@ module parcel_merge
 !                 call write_h5_mergees(isma, iclo, n_merge)
 !                 call write_h5_parcels_in_cell(iclo, n_merge)
 
-                ! merge small parcels into large parcels
+                ! merge small parcels into other parcels
                 if (parcel%merge_type == 'geometric') then
                     call geometric_merge(parcels, isma, iclo, n_merge)
                 else if (parcel%merge_type == 'optimal') then
@@ -97,7 +97,7 @@ module parcel_merge
 
             l = 0
             do m = 1, n_merge
-                ic = iclo(m) ! Index of large parcel
+                ic = iclo(m) ! Index of closest other parcel
 
                 if (loca(ic) == 0) then
                     ! Start a new merged parcel, indexed l:
@@ -107,7 +107,7 @@ module parcel_merge
                     ! vm will contain the total volume of the merged parcel
                     vm(l) = parcels%volume(ic)
 
-                    !x0 stores the x centre of the large parcel
+                    !x0 stores the x centre of the other parcel
                     x0(l) = parcels%position(ic, 1)
 
                     ! xm will sum v(is)*(x(is)-x(ic)) modulo periodicity
@@ -128,7 +128,7 @@ module parcel_merge
                     B22m(l) = zero
                 endif
 
-                ! Sum up all the small parcels merging with a common larger one:
+                ! Sum up all the small parcels merging with a common other one:
                 ! "is" refers to the small parcel index
                 is = isma(m) !Small parcel
                 n = loca(ic)  !Index of merged parcel
