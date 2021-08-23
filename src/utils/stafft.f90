@@ -470,7 +470,7 @@ module stafft
     end subroutine
 
 
-    ! This routine computes multiple fourier sine transforms of ==ences
+    ! This routine computes multiple fourier sine transforms of sequences
     ! of doubles using the forfft routine to compute the FFT,
     ! along with pre- and post-processing steps to extract the dst.
     subroutine dst(m, n, x, trig, factors)
