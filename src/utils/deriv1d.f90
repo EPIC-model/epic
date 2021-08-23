@@ -25,7 +25,7 @@ module deriv1d
                 ! catastrophic end to run if wave number definition fails:
                 write(*,*) '**********************************************'
                 write(*,*) ' Wavenumber array definition not possible.'
-                write(*,*) ' Domain length==al to zero not allowed.'
+                write(*,*) ' Domain length equal to zero not allowed.'
                 write(*,*) ' STOPPING...'
                 write(*,*) '**********************************************'
                 stop
