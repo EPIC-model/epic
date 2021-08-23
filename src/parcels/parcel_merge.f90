@@ -12,11 +12,14 @@ module parcel_merge
                                , parcel_replace         &
                                , get_delx
     use parcel_ellipse, only : get_B22, get_ab
-!     use merge_hdf5, only : write_h5_mergees, write_h5_mergers, write_h5_parcels_in_cell
     use options, only : parcel, verbose
     use parcel_bc
     use timer, only : start_timer, stop_timer
-
+#ifdef ENABLE_VERBOSE
+    use merge_hdf5, only : write_h5_mergees,            &
+                           write_h5_mergers,            &
+                           write_h5_parcels_in_cell
+#endif
     implicit none
 
     integer :: merge_timer
@@ -48,9 +51,10 @@ module parcel_merge
 #endif
 
             if (n_merge > 0) then
-!                 call write_h5_mergees(isma, iclo, n_merge)
-!                 call write_h5_parcels_in_cell(iclo, n_merge)
-
+#ifdef ENABLE_VERBOSE
+                call write_h5_mergees(isma, ibig, n_merge)
+                call write_h5_parcels_in_cell(ibig, n_merge)
+#endif
                 ! merge small parcels into other parcels
                 if (parcel%merge_type == 'geometric') then
                     call geometric_merge(parcels, isma, iclo, n_merge)
@@ -61,7 +65,9 @@ module parcel_merge
                     stop
                 endif
 
-!                 call write_h5_mergers(iclo, n_merge)
+#ifdef ENABLE_VERBOSE
+                call write_h5_mergers(ibig, n_merge)
+#endif
 
                 ! overwrite invalid parcels
                 call pack_parcels(isma, n_merge)
