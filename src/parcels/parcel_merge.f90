@@ -247,7 +247,6 @@ module parcel_merge
 
             call do_group_merge(parcels, isma, iclo, n_merge, B11, B12, B22, V)
 
-
             loca = zero
 
             l = 0
