@@ -25,7 +25,7 @@ module deriv1d
                 ! catastrophic end to run if wave number definition fails:
                 write(*,*) '**********************************************'
                 write(*,*) ' Wavenumber array definition not possible.'
-                write(*,*) ' Domain length equal to zero not allowed.'
+                write(*,*) ' Domain length==al to zero not allowed.'
                 write(*,*) ' STOPPING...'
                 write(*,*) '**********************************************'
                 stop
@@ -61,7 +61,7 @@ module deriv1d
                 enddo
             enddo
 
-            if (mod(n,2) .eq. 0) then
+            if (mod(n,2) == 0) then
                 ic=nw+1
                 do j = 1, m
                     der(j,ic) = zero

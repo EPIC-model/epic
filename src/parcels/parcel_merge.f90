@@ -99,7 +99,7 @@ module parcel_merge
             do m = 1, n_merge
                 ic = iclo(m) ! Index of large parcel
 
-                if (loca(ic) .eq. 0) then
+                if (loca(ic) == 0) then
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
                     loca(ic) = l
@@ -177,7 +177,7 @@ module parcel_merge
             do m = 1, n_merge
                 ic = iclo(m)
 
-                if (loca(ic) .eq. 0) then
+                if (loca(ic) == 0) then
                     l = l + 1
                     loca(ic) = l
 
@@ -248,7 +248,7 @@ module parcel_merge
             do m = 1, n_merge
                 ic = iclo(m)
 
-                if (loca(ic) .eq. 0) then
+                if (loca(ic) == 0) then
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
                     loca(ic) = l
@@ -288,7 +288,7 @@ module parcel_merge
             do m = 1, n_merge
                 ic = iclo(m)
 
-                if (loca(ic) .eq. 0) then
+                if (loca(ic) == 0) then
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
                     loca(ic) = l

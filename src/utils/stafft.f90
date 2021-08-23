@@ -84,7 +84,7 @@ module stafft
             call factorisen(n, factors, ierr)
 
             ! Return if factorisation unsuccessful:
-            if (ierr .eq. 1) then
+            if (ierr == 1) then
                 ! Catastrophic end to run if factorisation fails:
                 write(*,*) '****************************'
                 write(*,*) ' Factorisation not possible.'
@@ -138,46 +138,46 @@ module stafft
 
             rem=n
             ! Find factors of 6:
-            do while (mod(rem, 6) .eq. 0)
+            do while (mod(rem, 6) == 0)
                 factors(1) = factors(1) + 1
                 rem = rem / 6
-                if (rem .eq. 1) then
+                if (rem == 1) then
                     return
                 endif
             enddo
 
             ! Find factors of 4:
-            do while (mod(rem, 4) .eq. 0)
+            do while (mod(rem, 4) == 0)
                 factors(2) = factors(2) + 1
                 rem = rem / 4
-                if (rem .eq. 1) then
+                if (rem == 1) then
                     return
                 endif
             enddo
 
             ! Find factors of 2:
-            do while (mod(rem,2) .eq. 0)
+            do while (mod(rem,2) == 0)
                 factors(3) = factors(3) + 1
                 rem = rem / 2
-                if (rem .eq. 1) then
+                if (rem == 1) then
                     return
                 endif
             enddo
 
             ! Find factors of 3:
-            do while (mod(rem,3) .eq. 0)
+            do while (mod(rem,3) == 0)
                 factors(4) = factors(4) + 1
                 rem = rem / 3
-                if (rem .eq. 1) then
+                if (rem == 1) then
                     return
                 endif
             enddo
 
             ! Find factors of 5:
-            do while (mod(rem,5) .eq. 0)
+            do while (mod(rem,5) == 0)
                 factors(5) = factors(5) + 1
                 rem = rem / 5
-                if (rem .eq. 1) then
+                if (rem == 1) then
                     return
                 endif
             enddo
@@ -289,7 +289,7 @@ module stafft
     ! Performs m reverse transforms of length n in the array x which is dimensioned x(m, n).
     ! The arrays trig and factors are filled by the init routine and
     ! should be kept from call to call.
-    ! Backend consists of mixed-radix routines, with 'decimation in frequency'.
+    ! Backend consists of mixed-radix routines, with 'decimation in f==ency'.
     ! Reverse transform starts in Hermitian form.
     subroutine revfft(m, n, x, trig, factors)
         double precision, intent(inout) :: x(0:m*n-1), trig(0:2*n-1)
@@ -303,11 +303,11 @@ module stafft
             x(i) = -x(i)
         enddo
 
-        !Scale 0 and Nyquist frequencies:
+        !Scale 0 and Nyquist f==encies:
         do i= 0, m-1
             x(i) = f12 * x(i)
         enddo
-        if (mod(n, 2) .eq. 0) then
+        if (mod(n, 2) == 0) then
             k = m * n / 2
             do i = 0, m-1
                 x(k+i) = f12 * x(k+i)
@@ -400,7 +400,7 @@ module stafft
 
 
 
-    ! This routine computes multiple fourier cosine transforms of sequences
+    ! This routine computes multiple fourier cosine transforms of ==ences
     ! of doubles using the forfft routine to compute the FFT,
     ! along with pre- and post-processing steps to extract the dst.
     subroutine dct(m, n, x, trig, factors)
@@ -448,7 +448,7 @@ module stafft
             x(i, 1) = x(i, n)
         enddo
 
-        if (mod(n, 2) .eq. 0) then
+        if (mod(n, 2) == 0) then
             nd2 = n / 2
             do j = 1, nd2 - 1
                 do i = 1, m
@@ -459,7 +459,7 @@ module stafft
             do i = 1, m
                 x(i, n) = rt2 * wk(i, nd2)
             enddo
-        else if (mod(n, 2) .eq. 1) then
+        else if (mod(n, 2) == 1) then
             do j = 1, (n - 1) / 2
                 do i = 1, m
                     x(i, 2 * j) = rt2 * wk(i, j)
@@ -470,7 +470,7 @@ module stafft
     end subroutine
 
 
-    ! This routine computes multiple fourier sine transforms of sequences
+    ! This routine computes multiple fourier sine transforms of ==ences
     ! of doubles using the forfft routine to compute the FFT,
     ! along with pre- and post-processing steps to extract the dst.
     subroutine dst(m, n, x, trig, factors)
@@ -482,7 +482,7 @@ module stafft
         fpin = pi / dble(n)
 
         !Pre-process the array and store it in wk:
-        !First set 0 frequency element to zero:
+        !First set 0 f==ency element to zero:
         do i = 1, m
             wk(i, 0) = zero
         enddo
@@ -502,7 +502,7 @@ module stafft
         do i = 1, m
             x(i, 1) = wk(i, 0) / rt2
         enddo
-        if (mod(n, 2) .eq. 0) then
+        if (mod(n, 2) == 0) then
             do j = 1, n / 2 - 1
                 do i = 1, m
                     x(i, 2 * j) = - rt2 * wk(i, n - j)
@@ -511,7 +511,7 @@ module stafft
                     x(i, 2 * j + 1) = rt2 * wk(i, j) + x(i, 2 * j - 1)
                 enddo
             enddo
-        else if (mod(n, 2) .eq. 1) then
+        else if (mod(n, 2) == 1) then
             do j = 1, (n - 1) / 2 - 1
                 do i = 1, m
                     x(i, 2 * j) = - rt2 * wk(i, n - j)
@@ -523,7 +523,7 @@ module stafft
             enddo
         endif
 
-        !  Set the Nyquist frequency element to zero:
+        !  Set the Nyquist f==ency element to zero:
         do i = 1, m
             x(i, n) = zero
         enddo
@@ -689,7 +689,7 @@ module stafft
         endif
 
         !Catch the case k = lv / 2 when lv even:
-        if (mod(lv, 2) .eq. 0) then
+        if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
             do i = 0, nv - 1
                 q1 = a(i, 2, lvd2) - a(i, 4, lvd2)
@@ -930,7 +930,7 @@ module stafft
         endif
 
         !Catch the case k = lv / 2 when lv even:
-        if (mod(lv, 2) .eq. 0) then
+        if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
             do i = 0, nv - 1
                 q1 = rtf12 * (a(i, 1, lvd2) - a(i, 3, lvd2))
@@ -1066,7 +1066,7 @@ module stafft
     ! Spectral to physical (reverse) routines:
     !====================================================
 
-    !Radix six Hermitian to physical FFT with 'decimation in frequency'.
+    !Radix six Hermitian to physical FFT with 'decimation in f==ency'.
     subroutine revrdx6(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
         double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:5) &
@@ -1220,7 +1220,7 @@ module stafft
         endif
 
         !Catch the case k = lv / 2 when lv even:
-        if (mod(lv, 2) .eq. 0) then
+        if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
             do i = 0, nv - 1
                 q1 = a(i, lvd2, 0) + a(i, lvd2, 2)
@@ -1240,7 +1240,7 @@ module stafft
     end subroutine
 
 
-    ! Radix five Hermitian to physical FFT with 'decimation in frequency'.
+    ! Radix five Hermitian to physical FFT with 'decimation in f==ency'.
     subroutine revrdx5(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
         double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:4) &
@@ -1375,7 +1375,7 @@ module stafft
     end subroutine
 
 
-    !Radix four Hermitian to physical FFT with 'decimation in frequency'.
+    !Radix four Hermitian to physical FFT with 'decimation in f==ency'.
     subroutine revrdx4(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
         double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:3) &
@@ -1464,7 +1464,7 @@ module stafft
         endif
 
         !Catch the case k = lv / 2 when lv even:
-        if (mod(lv, 2) .eq. 0) then
+        if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
             do i = 0, nv - 1
                 b(i, 0, lvd2) = a(i, lvd2, 0) + a(i, lvd2, 1)
@@ -1478,7 +1478,7 @@ module stafft
     end subroutine
 
 
-    !Radix three Hermitian to physical FFT with 'decimation in frequency'.
+    !Radix three Hermitian to physical FFT with 'decimation in f==ency'.
     subroutine revrdx3(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
         double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:2) &
@@ -1552,7 +1552,7 @@ module stafft
     end subroutine
 
 
-    !Radix two Hermitian to physical FFT with 'decimation in frequency'.
+    !Radix two Hermitian to physical FFT with 'decimation in f==ency'.
     subroutine revrdx2(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
         double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:1) &
