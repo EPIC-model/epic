@@ -52,8 +52,8 @@ module parcel_merge
 
             if (n_merge > 0) then
 #ifdef ENABLE_VERBOSE
-                call write_h5_mergees(isma, ibig, n_merge)
-                call write_h5_parcels_in_cell(ibig, n_merge)
+                call write_h5_mergees(isma, iclo, n_merge)
+                call write_h5_parcels_in_cell(iclo, n_merge)
 #endif
                 ! merge small parcels into other parcels
                 if (parcel%merge_type == 'geometric') then
@@ -66,7 +66,7 @@ module parcel_merge
                 endif
 
 #ifdef ENABLE_VERBOSE
-                call write_h5_mergers(ibig, n_merge)
+                call write_h5_mergers(iclo, n_merge)
 #endif
 
                 ! overwrite invalid parcels
