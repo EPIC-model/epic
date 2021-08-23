@@ -27,7 +27,7 @@ program test_ellipse_multi_merge_1
     call register_timer('parcel merge', merge_timer)
 
     parcel%lambda_max = five
-    parcel%vmin_fraction = ten
+    parcel%min_vratio = ten
 
     call update_parameters
 

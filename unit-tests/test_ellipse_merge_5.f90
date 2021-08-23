@@ -29,7 +29,7 @@ program test_ellipse_multi_merge_5
     ! geometric merge
     parcel%merge_type = 'geometric'
     parcel%lambda_max = five
-    parcel%vmin_fraction = three
+    parcel%min_vratio = three
 
     call update_parameters
 

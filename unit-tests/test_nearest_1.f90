@@ -27,7 +27,7 @@ program test_nearest_1
 
     ! geometric merge
     parcel%lambda_max = five
-    parcel%vmin_fraction = ten
+    parcel%min_vratio = ten
 
     call update_parameters
 
