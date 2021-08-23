@@ -18,17 +18,17 @@ module parcel_nearest
 
     !Other variables:
     double precision:: delx,delz,dsq,dsqmin,x_small,z_small
-    integer:: i,ic,is,ib,k,m,j
+    integer:: ic,is,ij,k,m,j, n
     integer:: ix,iz,ix0,iz0
 
     public :: find_nearest
 
     contains
 
-        ! if ibig(n) is zero, no parcel found for isma(n)
-        subroutine find_nearest(isma, ibig, nmerge)
+        ! if iclo(n) is zero, no parcel found for isma(n)
+        subroutine find_nearest(isma, iclo, nmerge)
             integer, allocatable, intent(out) :: isma(:)
-            integer, allocatable, intent(out) :: ibig(:)
+            integer, allocatable, intent(out) :: iclo(:)
             integer, intent(out) :: nmerge
 
             if (.not. allocated(nppc)) then
@@ -37,28 +37,28 @@ module parcel_nearest
                 allocate(kc2(ncell))
             endif
 
-            nmerge=0
+            nmerge = 0
 
             !---------------------------------------------------------------------
             ! Initialise search:
-            nppc=0 !nppc(ic) will contain the number of parcels in grid cell ic
+            nppc = 0 !nppc(ij) will contain the number of parcels in grid cell ij
 
             ! Bin parcels in cells:
             ! Form list of small parcels:
-            do i = 1, n_parcels
-                ix=int(dxi(1)*(parcels%position(i,1)-lower(1)))
-                iz=int(dxi(2)*(parcels%position(i,2)-lower(2)))
+            do n = 1, n_parcels
+                ix = int(dxi(1) * (parcels%position(n,1) - lower(1)))
+                iz = int(dxi(2) * (parcels%position(n,2) - lower(2)))
 
                 ! Cell index of parcel:
-                ic=1+ix+nx*iz !This runs from 1 to ncell
+                ij = 1 + ix + nx * iz !This runs from 1 to ncell
 
                 ! Accumulate number of parcels in this grid cell:
-                nppc(ic)=nppc(ic)+1
+                nppc(ij) = nppc(ij) + 1
 
                 ! Store grid cell that this parcel is in:
-                loca(i)=ic
+                loca(n) = ij
 
-                if (parcels%volume(i) < vmin) then
+                if (parcels%volume(n) < vmin) then
                     nmerge = nmerge + 1
                 endif
             enddo
@@ -69,32 +69,32 @@ module parcel_nearest
 
             ! allocate arrays
             allocate(isma(0:nmerge))
-            allocate(ibig(nmerge))
+            allocate(iclo(nmerge))
 
             isma = 0
-            ibig = 0
+            iclo = 0
             nmerge = 0
 
-            ! Find arrays kc1(ic) & kc2(ic) which indicate the parcels in grid cell ic
-            ! through i = node(k), for k = kc1(ic),kc2(ic):
-            kc1(1)=1
-            do ic=1,ncell-1
-                kc1(ic+1)=kc1(ic)+nppc(ic)
+            ! Find arrays kc1(ij) & kc2(ij) which indicate the parcels in grid cell ij
+            ! through n = node(k), for k = kc1(ij),kc2(ij):
+            kc1(1) = 1
+            do ij = 1, ncell-1
+                kc1(ij+1) = kc1(ij) + nppc(ij)
             enddo
 
-            kc2=kc1-1
-            do i=1,n_parcels
-                ic=loca(i)
-                k=kc2(ic)+1
-                node(k)=i
-                kc2(ic)=k
+            kc2 = kc1 - 1
+            do n = 1, n_parcels
+                ij = loca(n)
+                k = kc2(ij) + 1
+                node(k) = n
+                kc2(ij) = k
 
-                if (parcels%volume(i) < vmin) then
+                if (parcels%volume(n) < vmin) then
                     nmerge = nmerge + 1
-                    isma(nmerge) = i
+                    isma(nmerge) = n
                 endif
                 ! reset loca (for use later)
-                loca(i) = -1
+                loca(n) = -1
             enddo
 
             !---------------------------------------------------------------------
@@ -102,71 +102,70 @@ module parcel_nearest
             ! and search over the surrounding 8 grid cells for the closest parcel:
             j = 0
             ! j counts the actual number of mergers found
-            do m=1,nmerge
-                is=isma(m)
-                x_small=parcels%position(is,1)
-                z_small=parcels%position(is,2)
+            do m = 1, nmerge
+                is = isma(m)
+                x_small = parcels%position(is, 1)
+                z_small = parcels%position(is, 2)
                 ! Parcel "is" is small and should be merged; find closest other:
-                ix0=mod(nint(dxi(1)*(x_small-lower(1))),nx) ! ranges from 0 to nx-1
-                iz0=nint(dxi(2)*(z_small-lower(2)))         ! ranges from 0 to nz
+                ix0 = mod(nint(dxi(1) * (x_small - lower(1))), nx) ! ranges from 0 to nx-1
+                iz0 = nint(dxi(2) * (z_small - lower(2)))          ! ranges from 0 to nz
 
                 ! Grid point (ix0,iz0) is closest to parcel "is"
 
                 dsqmin = product(extent)
-                ib = 0
+                ic = 0
 
                 ! Loop over 8 cells surrounding (ix0,iz0):
-                do iz=max(0,iz0-1),min(nz-1,iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
-                    do ix=ix0-1,ix0
+                do iz = max(0, iz0-1), min(nz-1, iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
+                    do ix = ix0-1, ix0
                         ! Cell index (accounting for x periodicity):
-                        ic=1+mod(nx+ix,nx)+nx*iz
+                        ij = 1 + mod(nx + ix, nx) + nx * iz
                         ! Search parcels for closest:
-                        do k=kc1(ic),kc2(ic)
-                            i = node(k)
-                            if (i .ne. is) then
-                                delz = parcels%position(i,2) - z_small
-                                delx = get_delx(parcels%position(i,1), x_small) ! works across periodic edge
+                        do k = kc1(ij), kc2(ij)
+                            n = node(k)
+                            if (n .ne. is) then
+                                delz = parcels%position(n,2) - z_small
+                                delx = get_delx(parcels%position(n,1), x_small) ! works across periodic edge
                                 ! Minimise dsqmin
-                                dsq= delz * delz + delx * delx
+                                dsq = delz * delz + delx * delx
                                 if (dsq < dsqmin) then
                                     dsqmin = dsq
-                                    ib = i
+                                    ic = n
                                 endif
                             endif
                         enddo
                     enddo
                 enddo
-                if (ib > 0) then
-                    ! Store the index of the parcel to be merged with:
-                    j = j + 1
-                    isma(j) = is
-                    ibig(j) = ib
-                    loca(is) = ib
-                endif
+
+                ! Store the index of the parcel to be merged with:
+                j = j + 1
+                isma(j) = is
+                iclo(j) = ic
+                loca(is) = ic
             enddo
             ! Actual total number of mergers:
             nmerge = j
 
             j = 0
             do m = 1, nmerge
-                ib = ibig(m)
+                ic = iclo(m)
                 is = isma(m)
 
-                if (loca(ib) == -1) then
-                    ! ib is only big
+                if (loca(ic) == -1) then
+                    ! ic is only big
                     j = j + 1
                     isma(j) = is
-                    ibig(j) = ib
-                else if (loca(ib) == is) then
+                    iclo(j) = ic
+                else if (loca(ic) == is) then
                     ! dual link
                     j = j + 1
                     isma(j) = is
-                    ibig(j) = ib
+                    iclo(j) = ic
 
                     loca(is) = -2
-                    loca(ib) = -2
+                    loca(ic) = -2
                 ! else
-                    ! "ib" is small but not a dual link
+                    ! "ic" is small but not a dual link
                 endif
 
             enddo

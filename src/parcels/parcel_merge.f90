@@ -12,6 +12,7 @@ module parcel_merge
                                , parcel_replace         &
                                , get_delx
     use parcel_ellipse, only : get_B22, get_ab
+!     use merge_hdf5, only : write_h5_mergees, write_h5_mergers, write_h5_parcels_in_cell
     use options, only : parcel, verbose
     use parcel_bc
     use timer, only : start_timer, stop_timer
@@ -30,13 +31,13 @@ module parcel_merge
         subroutine merge_ellipses(parcels)
             type(parcel_container_type), intent(inout) :: parcels
             integer, allocatable, dimension(:)         :: isma
-            integer, allocatable, dimension(:)         :: ibig
+            integer, allocatable, dimension(:)         :: iclo
             integer                                    :: n_merge ! number of merges
 
             call start_timer(merge_timer)
 
             ! find parcels to merge
-            call find_nearest(isma, ibig, n_merge)
+            call find_nearest(isma, iclo, n_merge)
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
@@ -47,15 +48,20 @@ module parcel_merge
 #endif
 
             if (n_merge > 0) then
+!                 call write_h5_mergees(isma, iclo, n_merge)
+!                 call write_h5_parcels_in_cell(iclo, n_merge)
+
                 ! merge small parcels into large parcels
                 if (parcel%merge_type == 'geometric') then
-                    call geometric_merge(parcels, isma, ibig, n_merge)
+                    call geometric_merge(parcels, isma, iclo, n_merge)
                 else if (parcel%merge_type == 'optimal') then
-                    call optimal_merge(parcels, isma, ibig, n_merge)
+                    call optimal_merge(parcels, isma, iclo, n_merge)
                 else
                     print *, "Unknown merge type '", trim(parcel%merge_type), "'."
                     stop
                 endif
+
+!                 call write_h5_mergers(iclo, n_merge)
 
                 ! overwrite invalid parcels
                 call pack_parcels(isma, n_merge)
@@ -63,83 +69,20 @@ module parcel_merge
 
             if (allocated(isma)) then
                 deallocate(isma)
-                deallocate(ibig)
+                deallocate(iclo)
             endif
 
             call stop_timer(merge_timer)
 
         end subroutine merge_ellipses
 
-        ! merge is-th parcel into ib-th parcel (without B matrix scaling)
-        subroutine do_bimerge(parcels, is, ib, B11, B12, B22, ab)
-            type(parcel_container_type), intent(inout)  :: parcels
-            integer,                     intent(in)     :: is, ib
-            double precision,            intent(out)    :: B11, B12, B22, ab
-            double precision                            :: B11_1, B11_2
-            double precision                            :: B12_1, B12_2
-            double precision                            :: B22_1, B22_2
-            double precision                            :: a1b1, a2b2, abi
-            double precision                            :: mu1, mu2, zet, eta, mu12
-            double precision                            :: delx
 
-            B11_1 = parcels%B(is, 1)
-            B11_2 = parcels%B(ib, 1)
-
-            B12_1 = parcels%B(is, 2)
-            B12_2 = parcels%B(ib, 2)
-
-            B22_1 = get_B22(B11_1, B12_1, parcels%volume(is))
-            B22_2 = get_B22(B11_2, B12_2, parcels%volume(ib))
-
-            a1b1 = get_ab(parcels%volume(is))
-            a2b2 = get_ab(parcels%volume(ib))
-
-            ab = a1b1 + a2b2
-            abi = one / ab
-            mu1 = a1b1 * abi
-            mu2 = a2b2 * abi
-
-            ! works across periodic edge
-            delx = get_delx(parcels%position(ib, 1), parcels%position(is, 1))
-
-            zet = two * delx
-
-            eta = two * (parcels%position(ib, 2) - parcels%position(is, 2))
-
-            mu12 = mu1 * mu2
-
-            B11 = mu12 * zet ** 2  + mu1 * B11_1 + mu2 * B11_2
-            B12 = mu12 * zet * eta + mu1 * B12_1 + mu2 * B12_2
-            B22 = mu12 * eta ** 2  + mu1 * B22_1 + mu2 * B22_2
-
-            ! update center of mass
-            parcels%position(ib, 1) = - mu1 * delx &
-                                    + parcels%position(ib, 1)
-
-            parcels%position(ib, 2) = mu1 * parcels%position(is, 2) &
-                                    + mu2 * parcels%position(ib, 2)
-
-            ! update buoyancy, humidity and vorticity
-            parcels%buoyancy(ib) = mu1 * parcels%buoyancy(is) &
-                                 + mu2 * parcels%buoyancy(ib)
-#ifndef ENABLE_DRY_MODE
-            parcels%humidity(ib) = mu1 * parcels%humidity(is) &
-                                 + mu2 * parcels%humidity(ib)
-#endif
-            parcels%vorticity(ib) = mu1 * parcels%vorticity(is) &
-                                  + mu2 * parcels%vorticity(ib)
-
-            ! update volume
-            parcels%volume(ib) = ab * pi
-        end subroutine do_bimerge
-
-
-        subroutine do_group_merge(parcels, isma, ibig, n_merge, B11m, B12m, B22m, vm)
+        subroutine do_group_merge(parcels, isma, iclo, n_merge, B11m, B12m, B22m, vm)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: ibig(:)
+            integer,                     intent(in)    :: iclo(:)
             integer,                     intent(in)    :: n_merge
-            integer                                    :: m, ib, is, l, n
+            integer                                    :: m, ic, is, l, n
             integer                                    :: loca(n_parcels)
             double precision                           :: x0(n_merge), xm(n_merge)
             double precision                           :: zm(n_merge), delx, vmerge, dely, B22, mu
@@ -154,31 +97,31 @@ module parcel_merge
 
             l = 0
             do m = 1, n_merge
-                ib = ibig(m) ! Index of large parcel
+                ic = iclo(m) ! Index of large parcel
 
-                if (loca(ib) .eq. 0) then
+                if (loca(ic) .eq. 0) then
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
-                    loca(ib) = l
+                    loca(ic) = l
 
                     ! vm will contain the total volume of the merged parcel
-                    vm(l) = parcels%volume(ib)
+                    vm(l) = parcels%volume(ic)
 
                     !x0 stores the x centre of the large parcel
-                    x0(l) = parcels%position(ib, 1)
+                    x0(l) = parcels%position(ic, 1)
 
-                    ! xm will sum v(is)*(x(is)-x(ib)) modulo periodicity
+                    ! xm will sum v(is)*(x(is)-x(ic)) modulo periodicity
                     xm(l) = zero
 
-                    ! zm will contain v(ib)*z(ib)+sum{v(is)*z(is)}
-                    zm(l) = parcels%volume(ib) * parcels%position(ib, 2)
+                    ! zm will contain v(ic)*z(ic)+sum{v(is)*z(is)}
+                    zm(l) = parcels%volume(ic) * parcels%position(ic, 2)
 
                     ! buoyancy and humidity
-                    buoym(l) = parcels%volume(ib) * parcels%buoyancy(ib)
+                    buoym(l) = parcels%volume(ic) * parcels%buoyancy(ic)
 #ifndef ENABLE_DRY_MODE
-                    hum(l) = parcels%volume(ib) * parcels%humidity(ib)
+                    hum(l) = parcels%volume(ic) * parcels%humidity(ic)
 #endif
-                    vortm(l) = parcels%volume(ib) * parcels%vorticity(ib)
+                    vortm(l) = parcels%volume(ic) * parcels%vorticity(ic)
 
                     B11m(l) = zero
                     B12m(l) = zero
@@ -188,16 +131,16 @@ module parcel_merge
                 ! Sum up all the small parcels merging with a common larger one:
                 ! "is" refers to the small parcel index
                 is = isma(m) !Small parcel
-                n = loca(ib)  !Index of merged parcel
+                n = loca(ic)  !Index of merged parcel
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
 
                 ! works across periodic edge
                 delx = get_delx(parcels%position(is, 1), x0(n))
 
-                ! Accumulate sum of v(is)*(x(is)-x(ib))
+                ! Accumulate sum of v(is)*(x(is)-x(ic))
                 xm(n) = xm(n) + parcels%volume(is) * delx
 
-                ! Accumulate v(ib)*z(ib)+sum{v(is)*z(is)}
+                ! Accumulate v(ic)*z(ic)+sum{v(is)*z(is)}
                 zm(n) = zm(n) + parcels%volume(is) * parcels%position(is, 2)
 
                 ! Accumulate buoyancy and humidity
@@ -232,38 +175,38 @@ module parcel_merge
             l = 0
 
             do m = 1, n_merge
-                ib = ibig(m)
+                ic = iclo(m)
 
-                if (loca(ib) .eq. 0) then
+                if (loca(ic) .eq. 0) then
                     l = l + 1
-                    loca(ib) = l
+                    loca(ic) = l
 
                     vmerge = one / vm(l)
 
-                    B22 = get_B22(parcels%B(ib, 1), parcels%B(ib, 2), parcels%volume(ib))
+                    B22 = get_B22(parcels%B(ic, 1), parcels%B(ic, 2), parcels%volume(ic))
 
-                    delx = get_delx(parcels%position(ib, 1), xm(l))
-                    dely = parcels%position(ib, 2) - zm(l)
+                    delx = get_delx(parcels%position(ic, 1), xm(l))
+                    dely = parcels%position(ic, 2) - zm(l)
 
-                    mu = parcels%volume(ib) * vmerge
-                    B11m(l) = mu * (four * delx ** 2 + parcels%B(ib, 1))
-                    B12m(l) = mu * (four * delx * dely + parcels%B(ib, 2))
+                    mu = parcels%volume(ic) * vmerge
+                    B11m(l) = mu * (four * delx ** 2 + parcels%B(ic, 1))
+                    B12m(l) = mu * (four * delx * dely + parcels%B(ic, 2))
                     B22m(l) = mu * (four * dely ** 2 + B22)
 
-                    parcels%volume(ib)  = vm(l)
-                    parcels%position(ib, 1) = xm(l)
-                    parcels%position(ib, 2) = zm(l)
+                    parcels%volume(ic)  = vm(l)
+                    parcels%position(ic, 1) = xm(l)
+                    parcels%position(ic, 2) = zm(l)
 
-                    parcels%buoyancy(ib) = buoym(l)
+                    parcels%buoyancy(ic) = buoym(l)
 #ifndef ENABLE_DRY_MODE
-                    parcels%humidity(ib) = hum(l)
+                    parcels%humidity(ic) = hum(l)
 #endif
-                    parcels%vorticity(ib) = vortm(l)
+                    parcels%vorticity(ic) = vortm(l)
 
                 endif
 
                 is = isma(m)
-                n = loca(ib)
+                n = loca(ic)
 
                 vmerge = one / vm(n)
 
@@ -283,12 +226,12 @@ module parcel_merge
         end subroutine do_group_merge
 
 
-        subroutine geometric_merge(parcels, isma, ibig, n_merge)
+        subroutine geometric_merge(parcels, isma, iclo, n_merge)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: ibig(:)
+            integer,                     intent(in)    :: iclo(:)
             integer,                     intent(in)    :: n_merge
-            integer                                    :: m, ib, l
+            integer                                    :: m, ic, l
             integer                                    :: loca(n_parcels)
             double precision                           :: factor
             double precision                           :: B11(n_merge), &
@@ -296,40 +239,40 @@ module parcel_merge
                                                           B22(n_merge), &
                                                           V(n_merge)
 
-            call do_group_merge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
+            call do_group_merge(parcels, isma, iclo, n_merge, B11, B12, B22, V)
 
 
             loca = zero
 
             l = 0
             do m = 1, n_merge
-                ib = ibig(m)
+                ic = iclo(m)
 
-                if (loca(ib) .eq. 0) then
+                if (loca(ic) .eq. 0) then
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
-                    loca(ib) = l
+                    loca(ic) = l
 
                     ! normalize such that determinant of the merger is (ab)**2
                     ! ab / sqrt(det(B))
                     factor = get_ab(V(l)) / dsqrt(B11(l) * B22(l) - B12(l) ** 2)
 
-                    parcels%B(ib, 1) = B11(l) * factor
-                    parcels%B(ib, 2) = B12(l) * factor
+                    parcels%B(ic, 1) = B11(l) * factor
+                    parcels%B(ic, 2) = B12(l) * factor
 
-                    call apply_periodic_bc(parcels%position(ib, :))
+                    call apply_periodic_bc(parcels%position(ic, :))
                 endif
             enddo
 
         end subroutine geometric_merge
 
 
-        subroutine optimal_merge(parcels, isma, ibig, n_merge)
+        subroutine optimal_merge(parcels, isma, iclo, n_merge)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: ibig(:)
+            integer,                     intent(in)    :: iclo(:)
             integer,                     intent(in)    :: n_merge
-            integer                                    :: m, ib, l
+            integer                                    :: m, ic, l
             integer                                    :: loca(n_parcels)
             double precision                           :: mu, ab
             double precision                           :: B11(n_merge), &
@@ -337,27 +280,27 @@ module parcel_merge
                                                           B22(n_merge), &
                                                           V(n_merge)
 
-            call do_group_merge(parcels, isma, ibig, n_merge, B11, B12, B22, V)
+            call do_group_merge(parcels, isma, iclo, n_merge, B11, B12, B22, V)
 
             loca = zero
 
             l = 0
             do m = 1, n_merge
-                ib = ibig(m)
+                ic = iclo(m)
 
-                if (loca(ib) .eq. 0) then
+                if (loca(ic) .eq. 0) then
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
-                    loca(ib) = l
+                    loca(ic) = l
 
                     ab = get_ab(V(l))
                     mu = solve_quartic(B11(l), B12(l), B22(l), ab)
 
                     ! optimal B
-                    parcels%B(ib, 1) = (B11(l) - mu * B22(l)) / dabs(one - mu ** 2)
-                    parcels%B(ib, 2) = B12(l) / dabs(one - mu)
+                    parcels%B(ic, 1) = (B11(l) - mu * B22(l)) / dabs(one - mu ** 2)
+                    parcels%B(ic, 2) = B12(l) / dabs(one - mu)
 
-                    call apply_periodic_bc(parcels%position(ib, :))
+                    call apply_periodic_bc(parcels%position(ic, :))
                 endif
             enddo
         end subroutine optimal_merge
