@@ -61,7 +61,7 @@ module deriv1d
                 enddo
             enddo
 
-            if (mod(n,2) .eq. 0) then
+            if (mod(n,2) == 0) then
                 ic=nw+1
                 do j = 1, m
                     der(j,ic) = zero
