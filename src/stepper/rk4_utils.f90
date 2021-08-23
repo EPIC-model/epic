@@ -3,6 +3,9 @@ module rk4_utils
     use fields, only : velgradg, tbuoyg, vtend
     use constants, only : zero, one, two, f12
     use parameters, only : nx, nz, dxi
+#ifdef ENABLE_VERBOSE
+    use options, only : output
+#endif
 
     implicit none
 
@@ -29,6 +32,10 @@ module rk4_utils
             double precision             :: dt
             double precision             :: gmax, bmax
             double precision             :: dbdz(0:nz, 0:nx-1)
+#if ENABLE_VERBOSE
+            logical                      :: exists = .false.
+            character(:), allocatable    :: fname
+#endif
 
             if (time%is_adaptive) then
                 ! velocity strain
@@ -45,6 +52,23 @@ module rk4_utils
                 bmax = max(epsilon(bmax), bmax)
 
                 dt = min(time%alpha_s / gmax, time%alpha_b / bmax)
+#ifdef ENABLE_VERBOSE
+                fname = trim(output%h5_basename) // '_alpha_time_step.asc'
+                inquire(file=fname, exist=exists)
+                ! 23 August
+                ! https://stackoverflow.com/questions/15526203/single-command-to-open-a-file-or-create-it-and-the-append-data
+                if ((t /= zero) .and. exists) then
+                    open(unit=1235, file=fname, status='old', position='append')
+                else
+                    open(unit=1235, file=fname, status='replace')
+                    write(1235, *) '  # time (s)                \alpha_s/\gamma_{max}     \alpha_b/N_{max}'
+                endif
+
+                write(1235, *) t, time%alpha_s / gmax, time%alpha_b / bmax
+
+                close(1235)
+#endif
+
             else
                 dt = time%dt
             endif
