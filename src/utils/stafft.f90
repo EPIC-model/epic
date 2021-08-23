@@ -400,7 +400,7 @@ module stafft
 
 
 
-    ! This routine computes multiple fourier cosine transforms of ==ences
+    ! This routine computes multiple fourier cosine transforms of sequences
     ! of doubles using the forfft routine to compute the FFT,
     ! along with pre- and post-processing steps to extract the dst.
     subroutine dct(m, n, x, trig, factors)
