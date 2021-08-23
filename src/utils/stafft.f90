@@ -289,7 +289,7 @@ module stafft
     ! Performs m reverse transforms of length n in the array x which is dimensioned x(m, n).
     ! The arrays trig and factors are filled by the init routine and
     ! should be kept from call to call.
-    ! Backend consists of mixed-radix routines, with 'decimation in f==ency'.
+    ! Backend consists of mixed-radix routines, with 'decimation in frequency'.
     ! Reverse transform starts in Hermitian form.
     subroutine revfft(m, n, x, trig, factors)
         double precision, intent(inout) :: x(0:m*n-1), trig(0:2*n-1)
@@ -303,7 +303,7 @@ module stafft
             x(i) = -x(i)
         enddo
 
-        !Scale 0 and Nyquist f==encies:
+        !Scale 0 and Nyquist frequencies:
         do i= 0, m-1
             x(i) = f12 * x(i)
         enddo
@@ -482,7 +482,7 @@ module stafft
         fpin = pi / dble(n)
 
         !Pre-process the array and store it in wk:
-        !First set 0 f==ency element to zero:
+        !First set 0 frequency element to zero:
         do i = 1, m
             wk(i, 0) = zero
         enddo
@@ -523,7 +523,7 @@ module stafft
             enddo
         endif
 
-        !  Set the Nyquist f==ency element to zero:
+        !  Set the Nyquist frequency element to zero:
         do i = 1, m
             x(i, n) = zero
         enddo
@@ -1066,7 +1066,7 @@ module stafft
     ! Spectral to physical (reverse) routines:
     !====================================================
 
-    !Radix six Hermitian to physical FFT with 'decimation in f==ency'.
+    !Radix six Hermitian to physical FFT with 'decimation in frequency'.
     subroutine revrdx6(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
         double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:5) &
@@ -1240,7 +1240,7 @@ module stafft
     end subroutine
 
 
-    ! Radix five Hermitian to physical FFT with 'decimation in f==ency'.
+    ! Radix five Hermitian to physical FFT with 'decimation in frequency'.
     subroutine revrdx5(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
         double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:4) &
@@ -1375,7 +1375,7 @@ module stafft
     end subroutine
 
 
-    !Radix four Hermitian to physical FFT with 'decimation in f==ency'.
+    !Radix four Hermitian to physical FFT with 'decimation in frequency'.
     subroutine revrdx4(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
         double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:3) &
@@ -1478,7 +1478,7 @@ module stafft
     end subroutine
 
 
-    !Radix three Hermitian to physical FFT with 'decimation in f==ency'.
+    !Radix three Hermitian to physical FFT with 'decimation in frequency'.
     subroutine revrdx3(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
         double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:2) &
@@ -1552,7 +1552,7 @@ module stafft
     end subroutine
 
 
-    !Radix two Hermitian to physical FFT with 'decimation in f==ency'.
+    !Radix two Hermitian to physical FFT with 'decimation in frequency'.
     subroutine revrdx2(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
         double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:1) &
