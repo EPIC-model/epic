@@ -44,7 +44,7 @@ module rk4_utils
                 bmax = dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
                 bmax = max(epsilon(bmax), bmax)
 
-                dt = min(time%alpha / gmax, time%alpha / bmax)
+                dt = min(time%alpha / gmax, f12 * time%alpha / bmax)
             else
                 dt = time%dt
             endif
