@@ -25,7 +25,6 @@ module parcel_nearest
 
     contains
 
-        ! if iclo(n) is zero, no parcel found for isma(n)
         subroutine find_nearest(isma, iclo, nmerge)
             integer, allocatable, intent(out) :: isma(:)
             integer, allocatable, intent(out) :: iclo(:)
@@ -120,7 +119,7 @@ module parcel_nearest
                     do ix = ix0-1, ix0
                         ! Cell index (accounting for x periodicity):
                         ij = 1 + mod(nx + ix, nx) + nx * iz
-                        ! Search parcels for closest:
+                        ! Search small parcels for closest other:
                         do k = kc1(ij), kc2(ij)
                             n = node(k)
                             if (n .ne. is) then
@@ -137,7 +136,7 @@ module parcel_nearest
                     enddo
                 enddo
 
-                ! Store the index of the parcel to be merged with:
+                ! Store the index of the parcel to be potentially merged with:
                 j = j + 1
                 isma(j) = is
                 iclo(j) = ic
@@ -157,7 +156,7 @@ module parcel_nearest
                     isma(j) = is
                     iclo(j) = ic
                 else if (loca(ic) == is) then
-                    ! dual link
+                    ! dual link or double bond
                     j = j + 1
                     isma(j) = is
                     iclo(j) = ic
@@ -165,7 +164,7 @@ module parcel_nearest
                     loca(is) = -2
                     loca(ic) = -2
                 ! else
-                    ! "ic" is small but not a dual link
+                    ! "ic" is small but not a dual link; "is" is not merged
                 endif
 
             enddo
