@@ -1,6 +1,7 @@
 from tools.h5_reader import H5Reader
 from tools.plot_beautify import *
 from tools.plot_style import *
+from tools.units import *
 import matplotlib.colors as cls
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -152,7 +153,7 @@ def plot_volume_symmetry_error(fnames, show=False, fmt="png", **kwargs):
             raise IOError('Not a field output file.')
 
         try:
-            h5reader.get_dataset(0, 'symmetry volume')
+            h5reader.get_step_attribute(0, 'max symmetry volume error')
         except:
             raise IOError('This plot is only available in debug mode.')
 
@@ -161,10 +162,7 @@ def plot_volume_symmetry_error(fnames, show=False, fmt="png", **kwargs):
         vmax = np.zeros(nsteps)
         t = np.zeros(nsteps)
         for step in range(nsteps):
-            sym_volg = h5reader.get_dataset(step, 'symmetry volume')
-            min_err = abs(sym_volg.min())
-            max_err = abs(sym_volg.max())
-            vmax[step] = max(min_err, max_err)
+            vmax[step] = h5reader.get_step_attribute(step, 'max symmetry volume error')
             t[step] = h5reader.get_step_attribute(step, 't')
 
         h5reader.close()
@@ -178,7 +176,7 @@ def plot_volume_symmetry_error(fnames, show=False, fmt="png", **kwargs):
                         edgecolor=colors[i], linewidth=0.75)
 
     plt.grid(which='both', linestyle='dashed')
-    plt.xlabel(r'time (s)')
+    plt.xlabel(get_label('time', units['time']))
     plt.ylabel(r'volume symmetry error')
     plt.yscale('log')
     #plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
@@ -234,7 +232,7 @@ def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
 
         plt.plot(t, vrms, label=label, linewidth=2, color=colors[i])
 
-    plt.xlabel(r'time (s)')
+    plt.xlabel(get_label('time', units['time']))
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.ylabel(r'rms volume error')
     plt.grid(linestyle='dashed', zorder=-1)
@@ -284,7 +282,7 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
         plt.plot(t, vmax, label=label, linewidth=2, color=colors[i])
 
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
-    plt.xlabel(r'time (s)')
+    plt.xlabel(get_label('time', units['time']))
     plt.ylabel(r'max normalised volume error')
     plt.grid(linestyle='dashed', zorder=-1)
     plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
@@ -368,12 +366,12 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
                          alpha=0.5, color=colors[i])
 
 
-    plt.xlabel(r'time (s)')
+    plt.xlabel(get_label('time', units['time']))
     plt.grid(linestyle='dashed', zorder=-1)
 
     if dset == 'aspect-ratio':
         plt.ylabel(r'aspect ratio $\lambda$')
-        plt.text(t[10], lmax - 0.5, r'$\lambda\le\lambda_{max} = ' + str(lmax) + '$')
+        plt.text(t[10], 0.95 * lmax, r'$\lambda\le\lambda_{max} = ' + str(lmax) + '$')
         plt.axhline(lmax, linestyle='dashed', color='black')
     elif dset == 'volume':
         plt.ylabel(r'parcel volume / $V_{g}$')
@@ -441,7 +439,7 @@ def plot_parcel_number(fnames, show=False, fmt="png", **kwargs):
                    ncol=min(len(labels), legend_dict['ncol']),
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
-    plt.xlabel(r'time (s)')
+    plt.xlabel(get_label('time', units['time']))
     plt.ylabel(r'parcel count')
     plt.tight_layout()
 
@@ -705,20 +703,20 @@ def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
         h5reader = H5Reader()
         h5reader.open(fname)
 
-        if h5reader.is_parcel_file:
-            raise IOError('Not a field output file.')
+        if not h5reader.is_field_stats_file:
+            raise IOError('Not a field diagnostic output file.')
 
         nsteps = h5reader.get_num_steps()
 
-        n_mean = np.zeros(nsteps)
-        n_std = np.zeros(nsteps)
+        n_avg = np.zeros(nsteps)
+        n_min = np.zeros(nsteps)
+        n_max = np.zeros(nsteps)
         t = np.zeros(nsteps)
 
         for step in range(nsteps):
-            data = h5reader.get_dataset(step, 'nparg')
-
-            n_mean[step] = data.mean()
-            n_std[step] = data.std()
+            n_avg[step] = h5reader.get_step_attribute(step, 'average num parcels per cell')
+            n_min[step] = h5reader.get_step_attribute(step, 'min num parcels per cell')
+            n_max[step] = h5reader.get_step_attribute(step, 'max num parcels per cell')
             t[step] = h5reader.get_step_attribute(step, 't')
 
         h5reader.close()
@@ -726,12 +724,12 @@ def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
         label = labels[i]
         if label is None:
             label = os.path.splitext(fname)[0]
-            label = label.split('_parcels')[0]
+            label = label.split('_field_stats')[0]
 
-        plt.plot(t, n_mean, color=colors[i], label=label)
-        plt.fill_between(t, n_mean - n_std, n_mean + n_std, color=colors[i], alpha=0.5)
+        plt.plot(t, n_avg, color=colors[i], label=label)
+        plt.fill_between(t, n_min, n_max, color=colors[i], alpha=0.5, edgecolor=None)
 
-    plt.xlabel(r'time (s)')
+    plt.xlabel(get_label('time', units['time']))
     plt.ylabel(r'number of parcels/cell')
     plt.grid(which='both', linestyle='dashed')
 
