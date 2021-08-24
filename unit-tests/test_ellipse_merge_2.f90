@@ -36,38 +36,14 @@ program test_ellipse_multi_merge_2
     a1b1 = 1.44d0
     a2b2 = 0.25d0
 
-
-    !
-    ! muti-geometric merging
-    !
-
     call parcel_setup
-
-    ! geometric merge
-    parcel%merge_type = 'geometric'
 
     call merge_ellipses(parcels)
 
     ! check result
-    error = eval_max_error('geometric')
+    call eval_max_error
 
-    call print_result_dp('Test ellipse group-merge 2 (geometric)', error)
-
-    !
-    ! muti-optimal merging
-    !
-
-    call parcel_setup
-
-    ! optimal merge
-    parcel%merge_type = 'optimal'
-
-    call merge_ellipses(parcels)
-
-    ! check result
-    error = eval_max_error('optimal')
-
-    call print_result_dp('Test ellipse group-merge 2 (optimal)', error)
+    call print_result_dp('Test ellipse group-merge 2', error)
 
     call parcel_dealloc
 
@@ -109,10 +85,9 @@ program test_ellipse_multi_merge_2
 #endif
         end subroutine parcel_setup
 
-        function eval_max_error(method) result(max_err)
-            character(*), intent(in) :: method
-            double precision :: ab, B11, B12, B22, vol, d, factor, tmp, mu
-            double precision :: max_err, hum, buoy
+        subroutine eval_max_error
+            double precision :: ab, B11, B12, B22, vol, d, factor
+            double precision :: hum, buoy
 
             ! reference solution
             d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
@@ -126,63 +101,23 @@ program test_ellipse_multi_merge_2
             B12 = two * a2b2 / ab * (four * d ** 2)
             B22 = B11
 
-            if (method .eq. 'geometric') then
-                factor = ab / dsqrt(B11 * B22 - B12 ** 2)
-                B11 = B11 * factor
-                B12 = B12 * factor
-                B22 = B22 * factor
-            else
-                tmp = B11
-                mu = solve_quartic(tmp, B12, B22, ab)
-                B11 = (tmp - mu * B22) / dabs(one - mu ** 2)
-                B12 = B12 / dabs(one - mu)
-                B22 = (B22 - mu * tmp) / dabs(one - mu ** 2)
-            endif
+            factor = ab / dsqrt(B11 * B22 - B12 ** 2)
+            B11 = B11 * factor
+            B12 = B12 * factor
+            B22 = B22 * factor
 
-            max_err = zero
-            max_err = max(max_err, abs(dble(n_parcels - 1)))
-            max_err = max(max_err, abs(parcels%B(1, 1) - B11))
-            max_err = max(max_err, abs(parcels%B(1, 2) - B12))
-            max_err = max(max_err, abs(get_B22(parcels%B(1, 1), &
-                                               parcels%B(1, 2), &
-                                               parcels%volume(1)) - B22))
-            max_err = max(max_err, sum(abs(parcels%position(1, :))))
-            max_err = max(max_err, abs(parcels%volume(1) - vol))
-            max_err = max(max_err, abs(parcels%buoyancy(1) - buoy))
+            error = zero
+            error = max(error, abs(dble(n_parcels - 1)))
+            error = max(error, abs(parcels%B(1, 1) - B11))
+            error = max(error, abs(parcels%B(1, 2) - B12))
+            error = max(error, abs(get_B22(parcels%B(1, 1), &
+                                           parcels%B(1, 2), &
+                                           parcels%volume(1)) - B22))
+            error = max(error, sum(abs(parcels%position(1, :))))
+            error = max(error, abs(parcels%volume(1) - vol))
+            error = max(error, abs(parcels%buoyancy(1) - buoy))
 #ifndef ENABLE_DRY_MODE
-            max_err = max(max_err, abs(parcels%humidity(1) - hum))
+            error = max(error, abs(parcels%humidity(1) - hum))
 #endif
-        end function eval_max_error
-
-
-        function solve_quartic(B11, B12, B22, ab) result(mu)
-            double precision, intent(in) :: B11, B12, B22, ab
-            double precision             :: mu, detB, merr, mup
-            double precision             :: a, b ,c, a2b2i
-            ! Solve the quartic to find best fit ellipse:
-            !
-            !
-            !   Newton-Raphson to get smallest root:
-            !      mu_{n+1} = mu_{n} - f(mu_{n}) / f'(mu_{n})
-            !
-            !      where
-            !          f(mu_{n})  = mu_{n} ** 4 + b * mu_{n} ** 2 + a * mu_{n} + c
-            !          f'(mu_{n}) = 4 * mu_{n} ** 3 + b * 2 * mu_{n} + a
-            a2b2i = one / ab ** 2
-            detB = (B11 * B22 - B12 * B12) * a2b2i
-            a = (B11 ** 2 + B22 ** 2 + two * B12 ** 2) * a2b2i
-            b = -two - detB
-            c = one - detB
-
-            ! initial guess
-            mu = - c / a
-
-            merr = 1.0
-            do while (merr > 1.e-12)
-                mup = (c + mu * (a + mu * (b + mu * mu))) / (a + mu * (two * b + four * mu * mu))
-                mu = mu - mup
-                merr = abs(mup)
-            enddo
-        end function solve_quartic
-
+        end subroutine eval_max_error
 end program test_ellipse_multi_merge_2

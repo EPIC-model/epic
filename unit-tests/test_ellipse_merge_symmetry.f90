@@ -36,37 +36,14 @@ program test_ellipse_multi_merge_symmetry
 
     call parcel_alloc(6)
 
-    !
-    ! muti-geometric merging
-    !
-
     call parcel_setup
-
-    ! geometric merge
-    parcel%merge_type = 'geometric'
 
     call merge_ellipses(parcels)
 
     ! check result
     error = eval_max_error()
 
-    call print_result_dp('Test ellipse group-merge symmetry (geometric)', error)
-
-    !
-    ! muti-optimal merging
-    !
-
-    call parcel_setup
-
-    ! optimal merge
-    parcel%merge_type = 'optimal'
-
-    call merge_ellipses(parcels)
-
-    ! check result
-    error = eval_max_error()
-
-    call print_result_dp('Test ellipse group-merge symmetry (optimal)', error)
+    call print_result_dp('Test ellipse group-merge symmetry', error)
 
     call parcel_dealloc
 

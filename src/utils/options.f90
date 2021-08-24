@@ -48,7 +48,6 @@ module options
         integer          :: n_per_cell   = 4              ! number of parcels per cell (need to be a square)
         double precision :: lambda_max   = five           ! max. ellipse aspect ratio a/b
         integer          :: split_freq   = 1              ! split frequency, 1 = call split subroutine every step
-        character(15)    :: merge_type   = 'geometric'    ! merge method in use (other option: 'optimal')
         integer          :: merge_freq   = 1              ! merge frequency, 1 = call merge subroutine every step
         double precision :: min_vratio   = 36.0d0         ! minimum ratio of grid cell volume / parcel volume
         integer          :: correction_freq = 1           ! parcel correction frequency, 1 = call module every step

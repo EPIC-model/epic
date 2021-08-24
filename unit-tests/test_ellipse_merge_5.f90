@@ -26,8 +26,6 @@ program test_ellipse_multi_merge_5
 
     call register_timer('parcel merge', merge_timer)
 
-    ! geometric merge
-    parcel%merge_type = 'geometric'
     parcel%lambda_max = five
     parcel%min_vratio = three
 
