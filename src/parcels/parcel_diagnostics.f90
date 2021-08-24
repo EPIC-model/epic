@@ -329,6 +329,8 @@ module parcel_diagnostics
             call write_h5_double_scalar_attrib(group, "avg volume", avg_vol)
             call write_h5_double_scalar_attrib(group, "std volume", std_vol)
 
+            call write_h5_double_scalar_attrib(group, "rms vorticity", rms_zeta)
+
 #ifdef ENABLE_DIAGNOSE
             call write_h5_double_scalar_attrib(group, "xb_bar", xb_bar)
             call write_h5_double_scalar_attrib(group, "x2b_bar", x2b_bar)
