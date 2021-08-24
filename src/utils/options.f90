@@ -65,12 +65,12 @@ module options
 
     ! time limit
     type time_info_type
-        double precision :: limit        = zero       ! time limit
-        double precision :: dt           = zero       ! time step
-        logical          :: is_adaptive  = .false.    ! adaptive time stepping
-        double precision :: alpha_s      = 0.1d0      ! factor for adaptive time stepping with strain
-        double precision :: alpha_b      = 0.1d0      ! factor for adaptive time stepping with buoyancy gradient
-        logical          :: precise_stop = .false.    ! stop at the exact limit
+        double precision :: limit       = zero       ! time limit
+        double precision :: dt          = zero       ! time step
+        logical          :: is_adaptive = .false.
+        double precision :: alpha       = 0.1d0      ! factor for adaptive time stepping with strain and buoyancy
+                                                     ! gradient
+        logical          :: precise_stop = .false.   ! stop at the exact limit
     end type time_info_type
 
     type(time_info_type) :: time

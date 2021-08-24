@@ -51,7 +51,7 @@ module rk4_utils
                 bmax = dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
                 bmax = max(epsilon(bmax), bmax)
 
-                dt = min(time%alpha_s / gmax, time%alpha_b / bmax)
+                dt = min(time%alpha / gmax, time%alpha / bmax)
 #ifdef ENABLE_VERBOSE
                 fname = trim(output%h5_basename) // '_alpha_time_step.asc'
                 inquire(file=fname, exist=exists)
@@ -64,11 +64,10 @@ module rk4_utils
                     write(1235, *) '  # time (s)                \alpha_s/\gamma_{max}     \alpha_b/N_{max}'
                 endif
 
-                write(1235, *) t, time%alpha_s / gmax, time%alpha_b / bmax
+                write(1235, *) t, time%alpha / gmax, time%alpha / bmax
 
                 close(1235)
 #endif
-
             else
                 dt = time%dt
             endif

@@ -37,9 +37,8 @@ def reset_parameters():
         'LIMIT'                 : None,
         'DT'                    : None,
         "IS_ADAPTIVE"           : None,
-        'ALPHA_S'               : None,
-        'ALPHA_B'               : None,
-        'PRECISE_STOP'          : None,
+        'ALPHA'                 : None,
+        'PRECISE_STOP'          : None
     }
 
 
