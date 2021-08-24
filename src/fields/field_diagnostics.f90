@@ -45,7 +45,7 @@ module field_diagnostics
 
         function get_max_abs_normalised_volume_error() result(err)
             double precision :: err
-            err = maxval(abs(volg(0:nz, 0:nx-1)  - vcell)) / vcell
+            err = maxval(abs(volg(0:nz, :)  - vcell)) / vcell
         end function get_max_abs_normalised_volume_error
 
         function get_rms_volume_error() result(rms)
@@ -53,8 +53,7 @@ module field_diagnostics
             double precision :: sqerrsum
 
             ! do not take halo cells into account
-            ! x indices run from 0 to nx-1
-            sqerrsum = sum((volg(0:nz, 0:nx-1) - vcell) ** 2)
+            sqerrsum = sum((volg(0:nz, :) - vcell) ** 2)
 
             rms = dsqrt(sqerrsum / dble(ngrid)) / vcell
         end function get_rms_volume_error
@@ -105,10 +104,10 @@ module field_diagnostics
             abserr_v = get_max_abs_normalised_volume_error()
             call write_h5_double_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
 
-            max_npar = maxval(nparg)
+            max_npar = maxval(nparg(0:nz-1, :))
             call write_h5_int_scalar_attrib(group, "max num parcels per cell", max_npar)
 
-            min_npar = minval(nparg)
+            min_npar = minval(nparg(0:nz-1, :))
             call write_h5_int_scalar_attrib(group, "min num parcels per cell", min_npar)
 
             res = sum(nparg(0:nz-1, :)) / dble(ncell)
