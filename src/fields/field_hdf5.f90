@@ -116,15 +116,6 @@ module field_hdf5
                                      vtend(0:nz, 0:nx-1))
 #endif
 
-!             call write_h5_dataset_2d(h5file_id, name, "humidity", &
-!                                      humg(0:nz, 0:nx-1))
-
-
-!             call write_h5_dataset_2d(h5file_id, name, "liquid humidity", &
-!                                      humlig(0:nz, 0:nx-1))
-
-
-
             call close_h5_group(group)
         end subroutine write_h5_fields
 

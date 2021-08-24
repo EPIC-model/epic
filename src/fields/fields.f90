@@ -21,8 +21,6 @@ module fields
         dbuoyg,    &   ! dry buoyancy (or liquid-water buoyancy)
 #endif
         tbuoyg,    &   ! buoyancy
-!         humg,      &   ! specific humidity
-!         humlig,    &   ! condensed humidity
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
@@ -59,10 +57,6 @@ module fields
             allocate(dbuoyg(-1:nz+1, 0:nx-1))
 #endif
 
-!             allocate(humg(-1:nz+1, 0:nx-1))
-
-!             allocate(humlig(-1:nz+1, 0:nx-1))
-
             allocate(nparg(-1:nz, 0:nx-1))
             allocate(nsparg(-1:nz, 0:nx-1))
 
@@ -80,8 +74,6 @@ module fields
 #ifndef ENABLE_DRY_MODE
             dbuoyg   = zero
 #endif
-!             humg     = zero
-!             humlig   = zero
             nparg    = zero
             nsparg   = zero
         end subroutine

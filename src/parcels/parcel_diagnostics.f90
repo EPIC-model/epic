@@ -34,6 +34,9 @@ module parcel_diagnostics
     double precision :: avg_lam, avg_vol
     double precision :: std_lam, std_vol
 
+    ! rms vorticity
+    double precision :: rms_zeta
+
 #ifdef ENABLE_DIAGNOSE
     ! buoyancy weighted first and second moments
     double precision :: xb_bar, x2b_bar
@@ -113,6 +116,8 @@ module parcel_diagnostics
             vsum = zero
             v2sum = zero
 
+            rms_zeta = zero
+
             n_small = zero
 
             zmin = lower(2)
@@ -124,7 +129,7 @@ module parcel_diagnostics
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, eval, lam, B22) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small)
+            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
             do n = 1, n_parcels
 
                 vel = velocity(n, :)
@@ -151,6 +156,9 @@ module parcel_diagnostics
                 if (vol <= vmin) then
                     n_small = n_small + 1
                 endif
+
+                rms_zeta = rms_zeta + parcels%vorticity(n) ** 2
+
             enddo
             !$omp end do
             !$omp end parallel
@@ -163,6 +171,8 @@ module parcel_diagnostics
 
             avg_vol = vsum / dble(n_parcels)
             std_vol = dsqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))
+
+            rms_zeta = dsqrt(rms_zeta / dble(n_parcels))
 
 #ifdef ENABLE_DIAGNOSE
             call straka_diagnostics
@@ -318,6 +328,8 @@ module parcel_diagnostics
             call write_h5_double_scalar_attrib(group, "std aspect ratio", std_lam)
             call write_h5_double_scalar_attrib(group, "avg volume", avg_vol)
             call write_h5_double_scalar_attrib(group, "std volume", std_vol)
+
+            call write_h5_double_scalar_attrib(group, "rms vorticity", rms_zeta)
 
 #ifdef ENABLE_DIAGNOSE
             call write_h5_double_scalar_attrib(group, "xb_bar", xb_bar)
