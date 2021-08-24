@@ -12,8 +12,9 @@ module merge_hdf5
     ! h5 file handles
     integer(hid_t)     :: h5file_id1, h5file_id2, h5file_id3
     character(len=512) :: h5fname1, h5fname2, h5fname3
+    logical            :: l_created = .false.
 
-    private :: h5file_id1, h5file_id2, h5fname1, h5fname2, h5fname3, nw
+    private :: h5file_id1, h5file_id2, h5fname1, h5fname2, h5fname3, nw, l_created
 
     contains
 
@@ -24,6 +25,8 @@ module merge_hdf5
             call create_h5_merger_file(h5file_id1, h5fname1, 'mergee', basename, overwrite)
             call create_h5_merger_file(h5file_id2, h5fname2, 'merger', basename, overwrite)
             call create_h5_merger_file(h5file_id3, h5fname3, 'neighbours', basename, overwrite)
+
+            l_created = .true.
 
         end subroutine create_h5_merger_files
 
@@ -67,6 +70,10 @@ module merge_hdf5
             logical                       :: created
             integer                       :: m, ib, n, nm, k, i, j, ii, jj, ilo, ihi, num
             integer                       :: ibig_sorted(nmerge), ind(nmerge)
+
+            if (.not. l_created) then
+                return
+            endif
 
             ibig_sorted = ibig(1:nmerge)
 
@@ -148,6 +155,10 @@ module merge_hdf5
             integer                       :: m, n, l, ib, nm, is, num
             integer                       :: ibig_sorted(nmerge), ind(nmerge)
 
+            if (.not. l_created) then
+                return
+            endif
+
             ibig_sorted = ibig(1:nmerge)
 
             call msort(ibig_sorted, ind)
@@ -170,8 +181,6 @@ module merge_hdf5
             do l = 1, nmerge
                 ib = ibig_sorted(l)
 
-!                 print *, "ib = ", ib
-
                 if (ib == 0) then
                     cycle
                 endif
@@ -191,13 +200,9 @@ module merge_hdf5
                         parcels%volume(n + nm) = parcels%volume(is)
                         nm = nm + 1
 
-!                         print *, "  is = ", is
-
                         ibig_sorted(m) = 0
                     endif
                 enddo
-
-!                 print *, "write", nm
 
                 tag = get_group_merge_number('merger', num)
 
@@ -239,6 +244,10 @@ module merge_hdf5
             logical                       :: created
             integer                       :: m, ib, n, nm
             integer                       :: ibig_sorted(nmerge), ind(nmerge)
+
+            if (.not. l_created) then
+                return
+            endif
 
             ibig_sorted = ibig(1:nmerge)
 
@@ -284,8 +293,6 @@ module merge_hdf5
 
             call close_h5_file(h5file_id2)
 
-!             print *, "done"
-!             stop
             ! increase step number
             nw = nw + 1
         end subroutine write_h5_mergers
