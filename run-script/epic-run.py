@@ -24,7 +24,6 @@ def reset_parameters():
         'N_PER_CELL'            : None,
         'LAMBDA_MAX'            : None,
         'SPLIT_FREQ'            : None,
-        'MERGE_TYPE'            : None,
         'MERGE_FREQ'            : None,
         'MIN_VRATIO'            : None,
         'MAX_VRATIO'            : None,

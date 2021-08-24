@@ -36,37 +36,14 @@ program test_ellipse_multi_merge_1
     a1b1 = 0.49d0
     a2b2 = 0.25d0
 
-    !
-    ! muti-geometric merging
-    !
-
     call parcel_setup
-
-    ! geometric merge
-    parcel%merge_type = 'geometric'
 
     call merge_ellipses(parcels)
 
     ! check result
     error = eval_max_error()
 
-    call print_result_dp('Test ellipse group-merge 1 (geometric)', error)
-
-    !
-    ! muti-optimal merging
-    !
-
-    call parcel_setup
-
-    ! optimal merge
-    parcel%merge_type = 'optimal'
-
-    call merge_ellipses(parcels)
-
-    ! check result
-    error = eval_max_error()
-
-    call print_result_dp('Test ellipse group-merge 1 (optimal)', error)
+    call print_result_dp('Test ellipse group-merge 1', error)
 
     call parcel_dealloc
 

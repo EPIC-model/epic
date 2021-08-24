@@ -29,7 +29,6 @@ program test_nearest_2
     lower  = (/-pi / two, -pi /two/)
     extent = (/pi, pi/)
 
-    ! geometric merge
     parcel%lambda_max = five
     parcel%min_vratio = ten
 

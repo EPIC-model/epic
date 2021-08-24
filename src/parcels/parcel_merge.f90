@@ -1,7 +1,6 @@
 ! =============================================================================
 !                       Module to merge ellipses
-! The module provides a 'geometric' and 'optimal' merge procedure which can be
-! selected by the user at runtime.
+!           The module implements the geometric merge procedure.
 ! =============================================================================
 module parcel_merge
     use parcel_nearest
@@ -25,9 +24,7 @@ module parcel_merge
     integer :: merge_timer
 
     private :: geometric_merge, &
-               optimal_merge,   &
                do_group_merge,  &
-               solve_quartic,   &
                pack_parcels
 
     contains
@@ -56,14 +53,7 @@ module parcel_merge
                 call write_h5_parcels_in_cell(iclo, n_merge)
 #endif
                 ! merge small parcels into other parcels
-                if (parcel%merge_type == 'geometric') then
-                    call geometric_merge(parcels, isma, iclo, n_merge)
-                else if (parcel%merge_type == 'optimal') then
-                    call optimal_merge(parcels, isma, iclo, n_merge)
-                else
-                    print *, "Unknown merge type '", trim(parcel%merge_type), "'."
-                    stop
-                endif
+                call geometric_merge(parcels, isma, iclo, n_merge)
 
 #ifdef ENABLE_VERBOSE
                 call write_h5_mergers(iclo, n_merge)
@@ -270,77 +260,6 @@ module parcel_merge
             enddo
 
         end subroutine geometric_merge
-
-
-        subroutine optimal_merge(parcels, isma, iclo, n_merge)
-            type(parcel_container_type), intent(inout) :: parcels
-            integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: iclo(:)
-            integer,                     intent(in)    :: n_merge
-            integer                                    :: m, ic, l
-            integer                                    :: loca(n_parcels)
-            double precision                           :: mu, ab
-            double precision                           :: B11(n_merge), &
-                                                          B12(n_merge), &
-                                                          B22(n_merge), &
-                                                          V(n_merge)
-
-            call do_group_merge(parcels, isma, iclo, n_merge, B11, B12, B22, V)
-
-            loca = zero
-
-            l = 0
-            do m = 1, n_merge
-                ic = iclo(m)
-
-                if (loca(ic) == 0) then
-                    ! Start a new merged parcel, indexed l:
-                    l = l + 1
-                    loca(ic) = l
-
-                    ab = get_ab(V(l))
-                    mu = solve_quartic(B11(l), B12(l), B22(l), ab)
-
-                    ! optimal B
-                    parcels%B(ic, 1) = (B11(l) - mu * B22(l)) / dabs(one - mu ** 2)
-                    parcels%B(ic, 2) = B12(l) / dabs(one - mu)
-
-                    call apply_periodic_bc(parcels%position(ic, :))
-                endif
-            enddo
-        end subroutine optimal_merge
-
-
-        function solve_quartic(B11, B12, B22, ab) result(mu)
-            double precision, intent(in) :: B11, B12, B22, ab
-            double precision             :: mu, detB, merr, mup
-            double precision             :: a, b ,c, a2b2i
-            ! Solve the quartic to find best fit ellipse:
-            !
-            !
-            !   Newton-Raphson to get smallest root:
-            !      mu_{n+1} = mu_{n} - f(mu_{n}) / f'(mu_{n})
-            !
-            !      where
-            !          f(mu_{n})  = mu_{n} ** 4 + b * mu_{n} ** 2 + a * mu_{n} + c
-            !          f'(mu_{n}) = 4 * mu_{n} ** 3 + b * 2 * mu_{n} + a
-            a2b2i = one / ab ** 2
-            detB = (B11 * B22 - B12 * B12) * a2b2i
-            a = (B11 ** 2 + B22 ** 2 + two * B12 ** 2) * a2b2i
-            b = -two - detB
-            c = one - detB
-
-            ! initial guess
-            mu = - c / a
-
-            merr = 1.0
-            do while (merr > 1.e-12)
-                mup = (c + mu * (a + mu * (b + mu * mu))) / (a + mu * (two * b + four * mu * mu))
-                mu = mu - mup
-                merr = abs(mup)
-            enddo
-
-        end function solve_quartic
 
 
         ! this algorithm replaces invalid parcels with valid parcels
