@@ -27,9 +27,10 @@ $ make
 $ make install
 ```
 
-**Note:** You can add the bin directory `$PREFIX/bin` to your `$PATH` environment variable with
+**Note:** You can add the bin directory `$PREFIX/bin` to your `$PATH` and `PYTHONPATH` environment variables with
 ```
 export PATH=$PREFIX/bin:$PATH
+export PYTHONPATH=$PREFIX/bin:$PYTHONPATH
 ```
 
 ## Running

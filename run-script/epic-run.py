@@ -56,10 +56,10 @@ def dump_json(data, fname):
         json.dump(data, f, indent=4)
 
 
-def create_config_file(params, tmpl_dir, fname):
+def create_config_file(params, tconfig, fname):
     # 24 June 2021
     # https://stackoverflow.com/questions/123198/how-can-a-file-be-copied
-    shutil.copyfile(src=os.path.join(tmpl_dir, 'template.config'), dst=fname)
+    shutil.copyfile(src=tconfig, dst=fname)
 
     # 24 June 2021
     # https://stackoverflow.com/questions/43139174/replacing-words-in-text-file-using-a-dictionary
@@ -114,22 +114,27 @@ try:
                         default=os.getcwd(),
                         help="running directory (absolute path) (default: current working directory)")
 
-    required.add_argument("--tmpl_dir",
+    required.add_argument("--tconfig",
                           type=str,
                           required=True,
-                          help="absolute path to template directory")
+                          help="template configuration file")
+
+    parser.add_argument("--sequential",
+                        required=False,
+                        action='store_true',
+                        help="run simulations after each other (sequential scan)")
 
 
 
-    if (not '--filenames' in sys.argv) or (not '--tmpl_dir' in sys.argv):
+    if (not '--filenames' in sys.argv) or (not '--tconfig' in sys.argv):
         parser.print_help()
         exit(0)
 
     args = parser.parse_args()
 
 
-    if not os.path.isabs(args.tmpl_dir):
-        raise RuntimeError('Relative path to template directory provided.')
+    if not os.path.isfile(args.tconfig):
+        raise RuntimeError('Template file not found.')
 
     if not os.path.isabs(args.run_dir):
         raise RuntimeError('Relative path of running directory.')
@@ -181,7 +186,7 @@ try:
                 basename = name.lower() + '_' + key.lower() + '_' + str(num)
                 params['H5_BASENAME'] = "'" + basename + "'"
                 config = basename + '.config'
-                create_config_file(params, os.path.abspath(args.tmpl_dir), config)
+                create_config_file(params, args.tconfig, config)
 
                 # add to database
                 output[basename] = params.copy()
@@ -191,6 +196,9 @@ try:
 
                 # add to process list
                 processes.append(proc)
+
+                if args.sequential:
+                    wait_running_processes(processes)
 
                 num += 1
 

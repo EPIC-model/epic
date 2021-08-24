@@ -29,6 +29,14 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
 
     if coloring == 'aspect-ratio':
         data = h5reader.get_aspect_ratio(step=step)
+    elif coloring == 'vol-distr':
+        data = h5reader.get_dataset(step=step, name='volume')
+        # 5 August 2021
+        # https://stackoverflow.com/questions/14777066/matplotlib-discrete-colorbar
+        # https://stackoverflow.com/questions/40601997/setting-discrete-colormap-corresponding-to-specific-data-range-in-matplotlib
+        cmap = plt.cm.get_cmap('bwr', 2)
+        bounds = [0, vmin, vmax]
+        norm = cls.BoundaryNorm(bounds, cmap.N)
     else:
         data = h5reader.get_dataset(step=step, name=coloring)
 
@@ -66,7 +74,11 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
         cbar.draw_all()
 
         if coloring == 'aspect-ratio':
-            cbar.set_label(r'$1 \leq \lambda \leq \lambda_{\max}$')
+            cbar.set_label(r'$1 \leq \lambda \leq \lambda_{max}$')
+        elif coloring == 'vol-distr':
+            # 5 August 2021
+            # https://matplotlib.org/stable/gallery/ticks_and_spines/colorbar_tick_labelling_demo.html
+            cbar.ax.set_yticklabels([r'0', r'$V_{min}$', r'$V_{max}$'])
         else:
             cbar.set_label(coloring)
 
@@ -94,6 +106,12 @@ def plot_parcels(fname, step, show=False, fmt="png",
     if coloring == 'aspect-ratio':
         vmin = 1.0
         vmax = h5reader.get_parcel_option('lambda')
+    elif coloring == 'vol-distr':
+        extent = h5reader.get_box_extent()
+        ncells = h5reader.get_box_ncells()
+        vcell = np.prod(extent / ncells)
+        vmin = vcell / h5reader.get_parcel_option('vmin_fraction')
+        vmax = vcell / h5reader.get_parcel_option('vmax_fraction')
     else:
         vmin, vmax = h5reader.get_dataset_min_max(coloring)
 
@@ -355,7 +373,7 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
 
     if dset == 'aspect-ratio':
         plt.ylabel(r'aspect ratio $\lambda$')
-        plt.text(t[10], lmax - 0.5, r'$\lambda\le\lambda_{\max} = ' + str(lmax) + '$')
+        plt.text(t[10], lmax - 0.5, r'$\lambda\le\lambda_{max} = ' + str(lmax) + '$')
         plt.axhline(lmax, linestyle='dashed', color='black')
     elif dset == 'volume':
         plt.ylabel(r'parcel volume / $V_{g}$')
@@ -434,13 +452,37 @@ def plot_parcel_number(fnames, show=False, fmt="png", **kwargs):
     plt.close()
 
 
-def plot_center_of_mass(fname, show=False, fmt="png"):
-    prefix, ext = os.path.splitext(fname)
+def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs):
 
-    if ext == '.hdf5':
-        print('Extract data, evaluate quantities, write CSV file and plot.')
+    tag = None
+    if dset == 'buoyancy':
+        tag = 'b'
+        tag_name = 'b'
+    elif dset == 'vorticity':
+        tag = 'w'
+        tag_name = '\zeta'
+    else:
+        raise ValueError("Dataset must be 'buoyancy' or 'vorticity'.")
 
-        h5reader = H5Reader()
+    labels = kwargs.pop('labels', None)
+    variance = kwargs.pop('variance', False)
+
+    n = len(fnames)
+    if labels is None:
+        labels = [None] * n
+
+    colors =  plt.cm.tab10(np.arange(n).astype(int))
+
+    h5reader = H5Reader()
+
+    fig1 = plt.figure(num=1)
+    ax1 = fig1.gca()
+
+    fig2 = plt.figure(num=2)
+    ax2 = fig2.gca()
+
+    for i, fname in enumerate(fnames):
+
         h5reader.open(fname)
 
         if not h5reader.is_parcel_file:
@@ -530,55 +572,60 @@ def plot_center_of_mass(fname, show=False, fmt="png"):
 
         df = pd.DataFrame(data=data)
 
-        df.to_csv(prefix + '.csv', index=False)
-    elif ext == '.csv':
-        print('Read CSV file and plot.')
-        df = pd.read_csv(prefix + '.csv')
+        label = None
+        if not labels[i] is None:
+            label = labels[i]
+
+
+        ax1.plot(df['t'], df['x' + tag + '_bar'], label=label, color=colors[i])
+
+        if variance:
+            std = np.sqrt(df['x2' + tag + '_bar'])
+            ax1.fill_between(df['t'], df['x' + tag + '_bar']-std, df['x' + tag + '_bar']+std, alpha=0.5,
+                             color=colors[i], edgecolor='None')
+
+        ax2.plot(df['t'], df['z' + tag + '_bar'], label=label, color=colors[i])
+
+        if variance:
+            std = np.sqrt(df['z2' + tag + '_bar'])
+            ax2.fill_between(df['t'], df['z' + tag + '_bar']-std, df['z' + tag + '_bar']+std, alpha=0.5,
+                             color=colors[i], edgecolor='None')
+
+    ax1.grid(which='both', linestyle='dashed')
+    ax2.grid(which='both', linestyle='dashed')
+
+    if not label is None:
+        ax1.legend(loc=legend_dict['loc'],
+                   ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
+        ax2.legend(loc=legend_dict['loc'],
+                   ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
+
+    ax1.set_xlabel(r'time (s)')
+    ax2.set_xlabel(r'time (s)')
+    if variance:
+        ax1.set_ylabel(r'$\langle x\rangle_' + tag_name + \
+            r'\pm\sqrt{\langle x^2\rangle_' + tag_name + '}$')
+        ax2.set_ylabel(r'$\langle y\rangle_' + tag_name + \
+            r'\pm\sqrt{\langle y^2\rangle_' + tag_name + '}$')
     else:
-        raise IOError('Wrong file format. Requires parcel hdf5 or CSV file.')
-
-
-    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(9, 6), dpi=200)
-    axes[0].plot(df['t'], df['xb_bar'], label=r'$\langle x\rangle_b$')
-
-    std = np.sqrt(df['x2b_bar'])
-    axes[0].fill_between(df['t'], df['xb_bar']-std, df['xb_bar']+std, alpha=0.5,
-                         label=r'$\pm\sqrt{\langle x^2\rangle_b}$')
-
-    axes[0].plot(df['t'], df['zb_bar'], label=r'$\langle z\rangle_b$')
-
-    std = np.sqrt(df['z2b_bar'])
-    axes[0].fill_between(df['t'], df['zb_bar']-std, df['zb_bar']+std, alpha=0.5,
-                         label=r'$\pm\sqrt{\langle z^2\rangle_b}$')
-
-
-    axes[1].plot(df['t'], df['xw_bar'], label=r'$\langle x\rangle_\zeta$')
-
-    std = np.sqrt(df['x2w_bar'])
-    axes[1].fill_between(df['t'], df['xw_bar']-std, df['xw_bar']+std, alpha=0.5,
-                         label=r'$\pm\sqrt{\langle x^2\rangle_\zeta}$')
-
-    axes[1].plot(df['t'], df['zw_bar'], label=r'$\langle z\rangle_\zeta$')
-
-    std = np.sqrt(df['z2w_bar'])
-    axes[1].fill_between(df['t'], df['zw_bar']-std, df['zw_bar']+std, alpha=0.5,
-                         label=r'$\pm\sqrt{\langle z^2\rangle_\zeta}$')
-
-    axes[0].grid(which='both', linestyle='dashed')
-    axes[0].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.0))
-
-    axes[1].grid(which='both', linestyle='dashed')
-    axes[1].legend(loc='upper right', ncol=1, bbox_to_anchor=(1.25, 1.0))
-    axes[1].set_xlabel(r'time (s)')
-    plt.tight_layout()
+        ax1.set_ylabel(r'$\langle x\rangle_' + tag_name + r'$')
+        ax2.set_ylabel(r'$\langle y\rangle_' + tag_name + r'$')
+    fig1.tight_layout()
+    fig2.tight_layout()
 
     if show:
         plt.show()
     else:
-        plt.savefig(prefix + '_center_of_mass.' + fmt,
-                    bbox_inches='tight')
-    plt.close()
-
+        prefix = os.path.splitext(fnames[0])[0] + '_'
+        if n > 1:
+            prefix = ''
+        fig1.savefig(prefix + 'x_center_of_mass_' + dset + '.' + fmt,
+                     bbox_inches='tight')
+        fig2.savefig(prefix + 'z_center_of_mass_' + dset + '.' + fmt,
+                     bbox_inches='tight')
+    plt.close('all')
 
 
 def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwargs):
