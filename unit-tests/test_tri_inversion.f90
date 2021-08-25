@@ -77,7 +77,7 @@ program test_tri_inversion
     max_err = max(max_err, abs(xx - 0.0009190338250263d0))
     max_err = max(max_err, abs(zz - 0.0000181041574751d0))
 
-    call print_result_dp('Test tri-inversion', max_err)
+    call print_result_dp('Test tri-inversion', max_err, atol=2.0e-15)
 
     deallocate(ue)
     deallocate(we)
