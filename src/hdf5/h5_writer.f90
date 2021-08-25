@@ -563,9 +563,8 @@ module h5_writer
 
             call create_h5_group(gopts, "time", group)
                 call write_h5_double_scalar_attrib(group, "limit", time%limit)
-                call write_h5_logical_attrib(group, "is_adaptive", time%is_adaptive)
+                call write_h5_logical_attrib(group, "precise_stop", time%precise_stop)
                 call write_h5_double_scalar_attrib(group, "alpha", time%alpha)
-                call write_h5_double_scalar_attrib(group, "dt", time%dt)
             call close_h5_group(group)
 
             call close_h5_group(gopts)

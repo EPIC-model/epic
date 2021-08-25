@@ -34,8 +34,6 @@ def reset_parameters():
         'GRADIENT_PREF'         : None,
         'MAX_COMPRESSION'       : None,
         'LIMIT'                 : None,
-        'DT'                    : None,
-        "IS_ADAPTIVE"           : None,
         'ALPHA'                 : None,
         'PRECISE_STOP'          : None
     }
