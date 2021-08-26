@@ -37,41 +37,36 @@ module rk4_utils
             character(:), allocatable    :: fname
 #endif
 
-            if (time%is_adaptive) then
-                ! velocity strain
-                gmax = f12 * dsqrt(maxval((velgradg(0:nz, :, 1) - velgradg(0:nz, :, 4)) ** 2 + &
-                                          (velgradg(0:nz, :, 2) + velgradg(0:nz, :, 3)) ** 2))
-                gmax = max(epsilon(gmax), gmax)
+            ! velocity strain
+            gmax = f12 * dsqrt(maxval((velgradg(0:nz, :, 1) - velgradg(0:nz, :, 4)) ** 2 + &
+                                        (velgradg(0:nz, :, 2) + velgradg(0:nz, :, 3)) ** 2))
+            gmax = max(epsilon(gmax), gmax)
 
-                ! buoyancy gradient
+            ! buoyancy gradient
 
-                ! db/dz (central difference)
-                dbdz(0:nz, :) = f12 * dxi(2) * (tbuoyg(1:nz+1, :) - tbuoyg(-1:nz-1, :))
+            ! db/dz (central difference)
+            dbdz(0:nz, :) = f12 * dxi(2) * (tbuoyg(1:nz+1, :) - tbuoyg(-1:nz-1, :))
 
-                bmax = dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
-                bmax = max(epsilon(bmax), bmax)
+            bmax = dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
+            bmax = max(epsilon(bmax), bmax)
 
-                dt = min(time%alpha / gmax, time%alpha / bmax)
+            dt = min(time%alpha / gmax, time%alpha / bmax)
 #ifdef ENABLE_VERBOSE
-                fname = trim(output%h5_basename) // '_alpha_time_step.asc'
-                inquire(file=fname, exist=exists)
-                ! 23 August
-                ! https://stackoverflow.com/questions/15526203/single-command-to-open-a-file-or-create-it-and-the-append-data
-                if ((t /= zero) .and. exists) then
-                    open(unit=1235, file=fname, status='old', position='append')
-                else
-                    open(unit=1235, file=fname, status='replace')
-                    write(1235, *) '  # time (s)                \alpha_s/\gamma_{max}     \alpha_b/N_{max}'
-                endif
-
-                write(1235, *) t, time%alpha / gmax, time%alpha / bmax
-
-                close(1235)
-#endif
+            fname = trim(output%h5_basename) // '_alpha_time_step.asc'
+            inquire(file=fname, exist=exists)
+            ! 23 August
+            ! https://stackoverflow.com/questions/15526203/single-command-to-open-a-file-or-create-it-and-the-append-data
+            if ((t /= zero) .and. exists) then
+                open(unit=1235, file=fname, status='old', position='append')
             else
-                dt = time%dt
+                open(unit=1235, file=fname, status='replace')
+                write(1235, *) '  # time (s)                \alpha_s/\gamma_{max}     \alpha_b/N_{max}'
             endif
 
+            write(1235, *) t, time%alpha / gmax, time%alpha / bmax
+
+            close(1235)
+#endif
             if (time%precise_stop .and. (t + dt > time%limit)) then
                 dt = time%limit - t
             endif
