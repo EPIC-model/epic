@@ -122,7 +122,6 @@ program epic
             use options, only : verbose
 #endif
             double precision :: t    = zero ! current time
-            integer          :: iter = 1    ! simulation iteration
             integer          :: cor_iter    ! iterator for parcel correction
 
             do while (t < time%limit)
@@ -130,7 +129,6 @@ program epic
 #ifdef ENABLE_VERBOSE
                 if (verbose) then
                     print "(a15, f0.4)", "time:          ", t
-                    print "(a15, i0)", "iteration:     ", iter
                 endif
 #endif
                 call ls_rk4_step(t)
@@ -144,8 +142,7 @@ program epic
                     call apply_gradient(parcel%gradient_pref, parcel%max_compression)
                 enddo
 
-                iter = iter + 1
-            end do
+            enddo
 
             ! write final step
             call write_last_step(t)
