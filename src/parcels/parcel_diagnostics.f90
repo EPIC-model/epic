@@ -157,7 +157,7 @@ module parcel_diagnostics
                     n_small = n_small + 1
                 endif
 
-                rms_zeta = rms_zeta + parcels%vorticity(n) ** 2
+                rms_zeta = rms_zeta + vol * parcels%vorticity(n) ** 2
 
             enddo
             !$omp end do
@@ -169,10 +169,11 @@ module parcel_diagnostics
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
 
+            rms_zeta = dsqrt(rms_zeta / vsum)
+
             avg_vol = vsum / dble(n_parcels)
             std_vol = dsqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))
 
-            rms_zeta = dsqrt(rms_zeta / dble(n_parcels))
 
 #ifdef ENABLE_DIAGNOSE
             call straka_diagnostics
