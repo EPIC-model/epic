@@ -14,3 +14,6 @@ plot_timingsdir = $(bindir)
 
 merge_ellipses_PYTHON = merge-ellipses.py
 merge_ellipsesdir = $(bindir)
+
+plot_mergers_PYTHON = plot-mergers.py
+plot_mergersdir = $(bindir)

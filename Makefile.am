@@ -27,3 +27,4 @@ install-exec-hook:
 	chmod 755 $(bindir)/plot-timings.py
 	chmod 755 $(bindir)/merge-ellipses.py
 	chmod 755 $(bindir)/epic-run.py
+	chmod 755 $(bindir)/plot-mergers.py
