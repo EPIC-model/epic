@@ -99,9 +99,11 @@ module merge_hdf5
                     ib = ibig_sorted(m)
 
                     call get_index(parcels%position(ib, :), i, j)
+                    ilo = i - 2
+                    ihi = i + 2
                     i = mod(i + nx, nx)
-                    ilo = mod(i - 1 + nx, nx)
-                    ihi = mod(i + 1 + nx, nx)
+                    ilo = mod(ilo + nx, nx)
+                    ihi = mod(ihi + nx, nx)
 
                     tag = get_group_merge_number('merger', num)
 
@@ -109,8 +111,8 @@ module merge_hdf5
                         call get_index(parcels%position(k, :), ii, jj)
                         ii = mod(ii + nx, nx)
 
-                        if ((j - 1 <= jj) .and. (jj < j + 2)) then
-                            if ((ilo == ii) .or. (ii == i) .or. (ii == ihi)) then
+                        if ((j - 2 <= jj) .and. (jj < j + 3)) then
+                            if ((ilo >= ii) .or. (ii == i) .or. (ii <= ihi)) then
                                     nm = nm + 1
                                     parcels%position(n + nm, :) = parcels%position(k, :)
                                     parcels%B(n + nm, :) = parcels%B(k, :)
