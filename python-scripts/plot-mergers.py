@@ -7,8 +7,8 @@ import argparse, os
 from tools.plot_style import *
 import matplotlib as mpl
 
-mpl.rcParams['figure.figsize'] = 6, 6
-mpl.rcParams['font.size'] = 16
+mpl.rcParams['figure.figsize'] = 6, 9
+mpl.rcParams['font.size'] = 12
 
 def get_step_string(step):
     return 'step#' + str(step).zfill(10)
@@ -163,10 +163,6 @@ def show_frames(h5merger, h5mergee, h5neighbours):
             e.set_alpha(0.75)
             e.set_facecolor('red')
 
-        # 7 August 2021
-        # https://stackoverflow.com/questions/32630818/label-plotted-ellipses
-        ax.legend([ell_merger[0], ell_mergee[0]], [r'mergers', r'mergees'],
-                loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.2))
 
         # neighbours
         Bm = np.array(h5neighbours[s][sn]['B'])
@@ -211,10 +207,10 @@ def show_frames(h5merger, h5mergee, h5neighbours):
                     else:
                         posm[0, i] += extent[0]
 
-            ell_mergee = None
-            ell_mergee = get_ellipses(posm, Vm, Bm[0, :], Bm[1, :])
+            ell_mergees = None
+            ell_mergees = get_ellipses(posm, Vm, Bm[0, :], Bm[1, :])
 
-            for j, e in enumerate(ell_mergee):
+            for j, e in enumerate(ell_mergees):
                 ax.add_artist(e)
                 e.set_alpha(0.5)
                 e.set_facecolor('gray')
@@ -233,6 +229,11 @@ def show_frames(h5merger, h5mergee, h5neighbours):
                     xy=(0.8, 1.05),
                     xycoords='axes fraction',
                     bbox=bbox)
+
+        # 7 August 2021
+        # https://stackoverflow.com/questions/32630818/label-plotted-ellipses
+        ax.legend([ell_merger[0], ell_mergee[0], ell_mergees[0]], [r'merger', r'mergees', r'others'],
+                loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.15))
 
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
@@ -431,7 +432,7 @@ def show_frames(h5merger, h5mergee, h5neighbours):
 
     keys=set()
 
-    fig = plt.figure(num=1, figsize=(6, 6), dpi=200)
+    fig = plt.figure(num=1, figsize=(6, 9), dpi=200)
     ax = plt.gca()
 
     draw(ax)
