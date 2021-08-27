@@ -1,9 +1,11 @@
+#!/usr/bin/env python
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import argparse, os
 from tools.plot_style import *
+import matplotlib as mpl
 
 mpl.rcParams['figure.figsize'] = 6, 6
 mpl.rcParams['font.size'] = 16
@@ -247,13 +249,13 @@ def show_frames(h5merger, h5mergee, h5neighbours):
     def draw_frame(event, lam=None, save=False):
         ax = event.canvas.figure.get_axes()[0]
         draw(ax, lam)
-        if save:
-            fname = '/home/matthias/Documents/projects/papers/epic2d/data/Straka/lambda_mergee/'
-            fname = fname + 'step_' + str(step) + '_merge_' + str(nmerge) + '.png'
-            fig.canvas.print_png(fname)
+        #if save:
+            #fname = '/home/matthias/Documents/projects/papers/epic2d/data/Straka/lambda_mergee/'
+            #fname = fname + 'step_' + str(step) + '_merge_' + str(nmerge) + '.png'
+            #fig.canvas.print_png(fname)
             #exit()
-        else:
-            fig.canvas.draw()
+        #else:
+        fig.canvas.draw()
         return
 
     def on_press(event):
@@ -299,67 +301,67 @@ def show_frames(h5merger, h5mergee, h5neighbours):
 
             draw_frame(event)
 
-        if len(keys) == 1 and 'l' in keys:
-            found = False
-            nmerge = nmerge + 1
-            while found == False:
-                s = get_step_string(step)
-                nmergers = h5mergee[s].attrs['nmergers'][0]
-                for nnn in range(nmerge, nmergers):
-                    print("Merge", nnn)
-                    Bm = np.array(h5merger[s]['B'])[:, nnn]
-                    Vm = np.array(h5merger[s]['volume'])[nnn]
+        #if len(keys) == 1 and 'l' in keys:
+            #found = False
+            #nmerge = nmerge + 1
+            #while found == False:
+                #s = get_step_string(step)
+                #nmergers = h5mergee[s].attrs['nmergers'][0]
+                #for nnn in range(nmerge, nmergers):
+                    #print("Merge", nnn)
+                    #Bm = np.array(h5merger[s]['B'])[:, nnn]
+                    #Vm = np.array(h5merger[s]['volume'])[nnn]
 
-                    B11 = Bm[0]
-                    B12 = Bm[1]
-                    B22 = ((Vm / np.pi) ** 2 + B12 ** 2) / B11
-                    a2 = 0.5 * (B11 + B22) + np.sqrt(0.25 * (B11 - B22) ** 2 + B12 ** 2)
-                    ab = Vm / np.pi
-                    lam = a2 / ab
+                    #B11 = Bm[0]
+                    #B12 = Bm[1]
+                    #B22 = ((Vm / np.pi) ** 2 + B12 ** 2) / B11
+                    #a2 = 0.5 * (B11 + B22) + np.sqrt(0.25 * (B11 - B22) ** 2 + B12 ** 2)
+                    #ab = Vm / np.pi
+                    #lam = a2 / ab
 
-                    if lam > 4:
-                        print(nnn, lam)
-                        found = True
-                        nmerge = nnn
-                        break
-                if found == False:
-                    step = step + 1
-                    nmerge = 0
-                    print("Step", step)
-            print("Found", step, nmerge, lam)
-            draw_frame(event, lam)
+                    #if lam > 4:
+                        #print(nnn, lam)
+                        #found = True
+                        #nmerge = nnn
+                        #break
+                #if found == False:
+                    #step = step + 1
+                    #nmerge = 0
+                    #print("Step", step)
+            #print("Found", step, nmerge, lam)
+            #draw_frame(event, lam)
 
-        if len(keys) == 1 and 'm' in keys:
-            found = False
-            nmerge = nmerge + 1
-            while found == False:
-                s = get_step_string(step)
-                nmergers = h5mergee[s].attrs['nmergers'][0]
-                for nnn in range(nmerge, nmergers):
-                    print("Merge", nnn)
-                    sn = get_merger_string(nnn)
-                    Bm = np.array(h5mergee[s][sn]['B'])
-                    Vm = np.array(h5mergee[s][sn]['volume'])
-                    lam = 0
-                    for ii in range(Vm.shape[0]):
-                        B11 = Bm[0, ii]
-                        B12 = Bm[1, ii]
-                        B22 = ((Vm[ii] / np.pi) ** 2 + B12 ** 2) / B11
-                        a2 = 0.5 * (B11 + B22) + np.sqrt(0.25 * (B11 - B22) ** 2 + B12 ** 2)
-                        ab = Vm[ii] / np.pi
-                        lam = max(lam, a2 / ab)
+        #if len(keys) == 1 and 'm' in keys:
+            #found = False
+            #nmerge = nmerge + 1
+            #while found == False:
+                #s = get_step_string(step)
+                #nmergers = h5mergee[s].attrs['nmergers'][0]
+                #for nnn in range(nmerge, nmergers):
+                    #print("Merge", nnn)
+                    #sn = get_merger_string(nnn)
+                    #Bm = np.array(h5mergee[s][sn]['B'])
+                    #Vm = np.array(h5mergee[s][sn]['volume'])
+                    #lam = 0
+                    #for ii in range(Vm.shape[0]):
+                        #B11 = Bm[0, ii]
+                        #B12 = Bm[1, ii]
+                        #B22 = ((Vm[ii] / np.pi) ** 2 + B12 ** 2) / B11
+                        #a2 = 0.5 * (B11 + B22) + np.sqrt(0.25 * (B11 - B22) ** 2 + B12 ** 2)
+                        #ab = Vm[ii] / np.pi
+                        #lam = max(lam, a2 / ab)
 
-                    if lam > 4:
-                        print(nnn, lam)
-                        found = True
-                        nmerge = nnn
-                        break
-                if found == False:
-                    step = step + 1
-                    nmerge = 0
-                    print("Step", step)
-            print("Found", step, nmerge, lam)
-            draw_frame(event, lam, save=True)
+                    #if lam > 4:
+                        #print(nnn, lam)
+                        #found = True
+                        #nmerge = nnn
+                        #break
+                #if found == False:
+                    #step = step + 1
+                    #nmerge = 0
+                    #print("Step", step)
+            #print("Found", step, nmerge, lam)
+            #draw_frame(event, lam, save=True)
 
         if len(keys) == 1 and 'n' in keys:
             nmerge = nmerge + 1
@@ -444,7 +446,8 @@ def show_frames(h5merger, h5mergee, h5neighbours):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
-        description="Plot individual mergers and their mergees.")
+        description="Plot individual mergers and their mergees. " + \
+            "EPIC must be compiled with '--enable-merger-dump'.")
 
     parser.add_argument("--mergers",
                           type=str,

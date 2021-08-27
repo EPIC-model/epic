@@ -47,6 +47,7 @@ The directory `$PREFIX/bin` contains following scripts:
 * plot-parcels.py
 * plot-diagnostics.py
 * merge-ellipses.py
+* plot-mergers.py
 
 Please append the argument `--help` when calling the scripts to get further information. We recommend to install
 a separate Python virtual environment using [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) for EPIC. After installing conda, all necessary Python packages can be installed via
