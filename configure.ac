@@ -197,6 +197,21 @@ AC_MSG_RESULT([$hdf5_found])
 ## "--enable" flags
 ##
 
+ENABLE_MERGER_DUMP='no'
+AC_ARG_ENABLE([merger-dump],
+              [AS_HELP_STRING([--enable-merger-dump], [enable merger dump (default=no)])],
+              [ENABLE_MERGER_DUMP=$enableval])
+
+AM_CONDITIONAL([ENABLE_MERGER_DUMP], [test "ENABLE_MERGER_DUMP" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling with merger dump])
+if test "x$ENABLE_MERGER_DUMP" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_MERGER_DUMP"
+else
+    AC_MSG_RESULT([no])
+fi
+
 ENABLE_DRY_MODE='yes'
 AC_ARG_ENABLE([dry-mode],
               [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=no)])],

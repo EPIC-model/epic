@@ -48,14 +48,14 @@ module parcel_merge
 #endif
 
             if (n_merge > 0) then
-#ifdef ENABLE_VERBOSE
+#ifdef ENABLE_MERGER_DUMP
                 call write_h5_mergees(isma, iclo, n_merge)
                 call write_h5_parcels_in_cell(iclo, n_merge)
 #endif
                 ! merge small parcels into other parcels
                 call geometric_merge(parcels, isma, iclo, n_merge)
 
-#ifdef ENABLE_VERBOSE
+#ifdef ENABLE_MERGER_DUMP
                 call write_h5_mergers(iclo, n_merge)
 #endif
 
