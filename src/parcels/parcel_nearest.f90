@@ -16,6 +16,18 @@ module parcel_nearest
     integer :: loca(max_num_parcels)
     integer :: node(max_num_parcels)
 
+    ! Logicals used to determine which mergers are executed
+    ! Integers above could be reused for this, but this would
+    ! make the algorithm less readable
+    logical :: l_is_leaf(max_num_parcels)
+    logical :: l_is_available(max_num_parcels)
+    logical :: l_is_merged(max_num_parcels)
+    logical :: l_continue_iteration
+
+    ! Logicals that are only needed for sanity checks
+    logical :: l_is_small(max_num_parcels) ! SANITY CHECK ONLY
+    logical :: l_is_close(max_num_parcels) ! SANITY CHECK ONLY
+
     !Other variables:
     double precision:: delx,delz,dsq,dsqmin,x_small,z_small
     integer:: ic,is,ij,k,m,j, n
@@ -92,8 +104,9 @@ module parcel_nearest
                     nmerge = nmerge + 1
                     isma(nmerge) = n
                 endif
-                ! reset loca (for use later)
-                loca(n) = -1
+                l_is_close(n)=.false. ! SANITY CHECK ONLY
+                l_is_small(n)=.false. ! SANITY CHECK ONLY
+                l_is_merged(n)=.false.! SANITY CHECK ONLY (OTHERWISE COULD BE SET IN LOOP BELOW)
             enddo
 
             !---------------------------------------------------------------------
@@ -140,35 +153,167 @@ module parcel_nearest
                 j = j + 1
                 isma(j) = is
                 iclo(j) = ic
-                loca(is) = ic
+                l_is_merged(is)=.false.
+                l_is_merged(ic)=.false.
             enddo
+
+            write(*,*) 'start'
+
             ! Actual total number of mergers:
             nmerge = j
+            write(*,*) nmerge
 
-            j = 0
-            do m = 1, nmerge
-                ic = iclo(m)
+            ! First implementation of iterative algorithm
+
+            ! Could be improved by keeping track of "finalised mergers"
+            ! But going for more readable implementation here first.
+
+            ! First, iterative, stage
+            l_continue_iteration=.true.
+            do while(l_continue_iteration)
+              l_continue_iteration=.false.
+              ! reset relevant properties for candidate mergers
+              do m = 1, nmerge
                 is = isma(m)
-
-                if (loca(ic) == -1) then
-                    ! ic is only big
+                ! only consider links that need merging
+                ! reset relevant properties
+                if(.not. l_is_merged(is)) then
+                  ic = iclo(m)
+                  l_is_leaf(is)=.true.
+                  l_is_available(ic)=.true.
+                end if
+              end do
+              ! determine leaf parcels
+              do m = 1, nmerge
+                is = isma(m)
+                if(.not. l_is_merged(is)) then
+                  ic = iclo(m)
+                  l_is_leaf(ic)=.false.
+                end if
+              end do
+              ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
+              ! filter out for big parcels with height>1
+              do m = 1, nmerge
+                is = isma(m)
+                if(.not. l_is_merged(is)) then
+                   if(.not. l_is_leaf(is)) then
+                     ic = iclo(m)
+                     l_is_available(ic)=.false.
+                   end if
+                end if
+              end do
+              ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
+              ! identify mergers in this iteration
+              do m = 1, nmerge
+                is = isma(m)
+                if(.not. l_is_merged(is)) then
+                  ic = iclo(m)
+                  if(l_is_leaf(is) .and. l_is_available(ic)) then
+                    l_continue_iteration=.true. ! merger means continue iteration
+                    l_is_merged(is)=.true.
+                    l_is_merged(ic)=.true. ! note multiple parcels can merge into ic
+                    l_is_small(is)=.true. !SANITY CHECK ONLY
+                    l_is_close(ic)=.true. !SANITY CHECK ONLY
+                  end if
+                end if
+              end do
+              ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
+              ! remove eliminated links
+              j = 0
+              do m = 1, nmerge
+                is = isma(m)
+                ic = iclo(m)
+                ! keep the link, unless small parcel merges but close one does not
+                if(.not.(l_is_merged(is) .and. (.not. l_is_merged(ic)))) then
                     j = j + 1
                     isma(j) = is
                     iclo(j) = ic
-                else if (loca(ic) == is) then
-                    ! dual link or double bond
-                    j = j + 1
-                    isma(j) = is
-                    iclo(j) = ic
-
-                    loca(is) = -2
-                    loca(ic) = -2
-                ! else
-                    ! "ic" is small but not a dual link; "is" is not merged
                 endif
+              enddo
+              nmerge = j
+              write(*,*) nmerge
+            end do
 
-            enddo
+            write(*,*) 'second stage'
+
+            ! Second stage, related to dual links
+            do m = 1, nmerge
+              is = isma(m)
+              ! use availabily field to denote incoming leafs here
+              if(.not. l_is_merged(is)) then
+                if(l_is_leaf(is)) then
+                  ic = iclo(m)
+                  l_is_available(ic)=.true.
+                end if
+              end if
+            end do
+
+            ! PARALLEL: COMMUNICATION WILL BE NEEDED HERE
+
+            j=0
+            do m = 1, nmerge
+              is = isma(m)
+              ic = iclo(m)
+              if(l_is_merged(is) .and. l_is_merged(ic)) then
+                 ! previously identified mergers: keep
+                 j = j + 1
+                 isma(j) = is
+                 iclo(j) = ic
+              elseif(l_is_leaf(is)) then
+                 ! links from leafs
+                 j = j + 1
+                 isma(j) = is
+                 iclo(j) = ic
+                 l_is_merged(is)=.true.
+                 l_is_merged(ic)=.true.
+                 l_is_small(is)=.true. !SANITY CHECK ONLY
+                 l_is_close(ic)=.true. !SANITY CHECK ONLY
+              elseif(.not. l_is_available(is)) then
+                 if(l_is_available(ic)) then
+                   ! merge this parcel into ic along with the leaf parcels
+                   j = j + 1
+                   isma(j) = is
+                   iclo(j) = ic
+                   l_is_merged(is)=.true.
+                   l_is_merged(ic)=.true.
+                   l_is_small(is)=.true. !SANITY CHECK ONLY
+                   l_is_close(ic)=.true. !SANITY CHECK ONLY
+                 else
+                   ! isolated dual link
+                   ! Don't keep current link
+                   ! But make small parcel available so other parcel can merge with it
+                   ! THIS NEEDS THINKING ABOUT A PARALLEL IMPLEMENTATION
+                   ! This could be based on the other parcel being outside the domain
+                   ! And a "processor order"
+                   l_is_available(is)=.true.
+                 endif
+              endif
+              ! This means parcels that have been made 'available' do not keep outgoing links
+            end do
             nmerge = j
+            write(*,*) nmerge
+
+            write(*,*) 'finished'
+
+            ! MORE SANITY CHECKS
+
+            ! 1. CHECK RESULTING MERGERS
+            do m = 1, nmerge
+              if(.not. l_is_merged(isma(m))) write(*,*) 'merge_error: isma(m) not merged'
+              if(.not. l_is_merged(iclo(m))) write(*,*) 'merge_error: iclo(m) not merged'
+            end do
+
+            ! 2. CHECK MERGING PARCELS
+            do n = 1, n_parcels
+              if (parcels%volume(n) < vmin) then
+                if(.not. l_is_merged(n)) write(*,*) 'merge_error: parcel n not merged (should be)'
+                if(.not. (l_is_small(n) .or. l_is_close(n))) write(*,*) 'merge_error: parcel n not small or close (should be)'
+                if(l_is_small(n) .and. l_is_close(n)) write(*,*) 'merge_error: parcel n both small and close'
+              else
+                if(l_is_small(n)) write(*,*) 'merge_error: parcel n not small or close (should not be)'
+                if(l_is_merged(n) .and. (.not. l_is_close(n))) write(*,*) 'merge_error: parcel n merged (should not be)'
+              end if
+            enddo
 
         end subroutine find_nearest
 
