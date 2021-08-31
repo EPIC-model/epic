@@ -7,7 +7,6 @@ module parcel_nearest
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin
     use options, only : parcel
     use timer, only : start_timer, stop_timer
-    use merge_sort
 
     implicit none
 
