@@ -9,8 +9,8 @@ program epic
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses, split_timer
-    use parcel_merge, only : merge_ellipses
-    use parcel_nearest, only : merge_timer, merge_tree_resolve_timer
+    use parcel_merge, only : merge_ellipses, merge_timer
+    use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
     use parcel_correction, only : init_parcel_correction, &
                                   apply_laplace,          &
                                   apply_gradient,         &
@@ -70,6 +70,7 @@ program epic
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
             call register_timer('parcel push', rk4_timer)
+            call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
 #ifndef NDEBUG
             call register_timer('symmetric vol2grid', sym_vol2grid_timer)

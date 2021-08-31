@@ -10,7 +10,7 @@ module parcel_nearest
 
     implicit none
 
-    integer:: merge_timer, merge_tree_resolve_timer
+    integer:: merge_nearest_timer, merge_tree_resolve_timer
 
     private
 
@@ -41,7 +41,7 @@ module parcel_nearest
     integer:: ic,is,ij,k,m,j, n
     integer:: ix,iz,ix0,iz0
 
-    public :: find_nearest, merge_timer, merge_tree_resolve_timer
+    public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer
 
     contains
 
@@ -49,6 +49,8 @@ module parcel_nearest
             integer, allocatable, intent(out) :: isma(:)
             integer, allocatable, intent(out) :: iclo(:)
             integer, intent(out) :: nmerge
+
+            call start_timer(merge_nearest_timer)
 
             if (.not. allocated(nppc)) then
                 allocate(nppc(ncell))
@@ -179,7 +181,7 @@ module parcel_nearest
             write(*,*) nmerge
 #endif
 
-            call stop_timer(merge_timer)
+            call stop_timer(merge_nearest_timer)
             call start_timer(merge_tree_resolve_timer)
 
             ! First implementation of iterative algorithm
@@ -338,7 +340,6 @@ module parcel_nearest
 #endif
 
             call stop_timer(merge_tree_resolve_timer)
-            call start_timer(merge_timer)
 
         end subroutine find_nearest
 

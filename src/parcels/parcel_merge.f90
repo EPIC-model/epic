@@ -22,6 +22,8 @@ module parcel_merge
 #endif
     implicit none
 
+    integer:: merge_timer
+
     private :: geometric_merge, &
                do_group_merge,  &
                pack_parcels
@@ -33,10 +35,10 @@ module parcel_merge
             integer, allocatable, dimension(:)         :: iclo
             integer                                    :: n_merge ! number of merges
 
-            call start_timer(merge_timer)
-
             ! find parcels to merge
             call find_nearest(isma, iclo, n_merge)
+
+            call start_timer(merge_timer)
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
