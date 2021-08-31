@@ -24,8 +24,8 @@ module parcel_nearest
     ! make the algorithm less readable
     logical :: l_leaf(max_num_parcels)
     logical :: l_available(max_num_parcels)
-    logical :: l_first_merged(max_num_parcels)
-    logical :: l_first_is(max_num_parcels)
+    logical :: l_first_merged(max_num_parcels) ! indicates parcels merged in first stage
+    logical :: l_first_is(max_num_parcels) ! indicates parcels that are intitiator in first stage
 
 #ifndef NDEBUG
     logical :: l_merged(max_num_parcels)! SANITY CHECK ONLY
@@ -212,7 +212,7 @@ module parcel_nearest
                 end if
               end do
               ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
-              ! filter out for big parcels with height>1
+              ! filter out parcels that are "unavailable" for merging
               do m = 1, nmerge
                 is = isma(m)
                 if(.not. l_first_merged(is)) then
@@ -232,7 +232,7 @@ module parcel_nearest
                     l_continue_iteration=.true. ! merger means continue iteration
                     l_first_merged(is)=.true.
                     l_first_merged(ic)=.true.
-                    l_first_is(is)=.true.
+                    l_first_is(is)=.true. ! keep track of which parcels are initiators
                   end if
                 end if
               end do
@@ -243,7 +243,7 @@ module parcel_nearest
             do m = 1, nmerge
               is = isma(m)
               if(.not. l_first_merged(is)) then
-                if(l_leaf(is)) then
+                if(l_leaf(is)) then ! set in last iteration of stage 1
                   ic = iclo(m)
                   l_available(ic)=.true.
                 end if
@@ -252,7 +252,7 @@ module parcel_nearest
 
             ! PARALLEL: COMMUNICATION WILL BE NEEDED HERE
 
-            ! Second stage: harder to parallelise with openmp
+            ! Second stage (hard to parallelise with openmp?)
             j=0
             do m = 1, nmerge
               is = isma(m)
@@ -263,6 +263,7 @@ module parcel_nearest
                 l_do_merge=.true.
 #ifndef NDEBUG
                 ! sanity check on first stage mergers
+                ! parcel cannot be both initiator and receiver in stage 1
                 if(l_first_is(ic)) then
                   write(*,*) 'first stage error'
                 endif
