@@ -6,9 +6,12 @@ module parcel_nearest
     use parcel_container, only : parcels, n_parcels, get_delx
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin
     use options, only : parcel
+    use timer, only : start_timer, stop_timer
     use merge_sort
 
     implicit none
+
+    integer:: merge_timer, merge_tree_resolve_timer
 
     private
 
@@ -22,7 +25,8 @@ module parcel_nearest
     ! make the algorithm less readable
     logical :: l_leaf(max_num_parcels)
     logical :: l_available(max_num_parcels)
-    logical :: l_first_stage(max_num_parcels)
+    logical :: l_first_merged(max_num_parcels)
+    logical :: l_first_is(max_num_parcels)
 
 #ifndef NDEBUG
     logical :: l_merged(max_num_parcels)! SANITY CHECK ONLY
@@ -39,7 +43,7 @@ module parcel_nearest
     integer:: ic,is,ij,k,m,j, n
     integer:: ix,iz,ix0,iz0
 
-    public :: find_nearest
+    public :: find_nearest, merge_timer, merge_tree_resolve_timer
 
     contains
 
@@ -120,7 +124,9 @@ module parcel_nearest
             !---------------------------------------------------------------------
             ! Now find the nearest grid point to each small parcel (to be merged)
             ! and search over the surrounding 8 grid cells for the closest parcel:
-            j=0
+
+            ! SB: do not use temporary (j) index here, so we will be able to parallelise.
+            ! Rather, stop if no nearest parcel found  in surrounding grid boxes
             do m = 1, nmerge
                 is = isma(m)
                 x_small = parcels%position(is, 1)
@@ -156,25 +162,27 @@ module parcel_nearest
                     enddo
                 enddo
 
-                ! Store the index of the parcel to be potentially merged with:
-                if (ic>0) then
-                  j=j+1
-                  isma(j) = is
-                  iclo(j) = ic
-                  l_first_stage(ic)=.false.
-                  l_first_stage(is)=.false.
-                endif
+                if (ic==0) then
+                  print *, 'Merge error: no near neighbour found.'
+                  stop
+                end if
 
+                ! Store the index of the parcel to be potentially merged with:
+                isma(m) = is
+                iclo(m) = ic
+                l_first_merged(is)=.false.
+                l_first_is(is)=.false.
+                l_first_merged(ic)=.false.
+                l_first_is(ic)=.false.
             enddo
 
-
-            ! Actual total number of mergers:
-            nmerge = j
 #ifndef NDEBUG
             write(*,*) 'start merging, nmerge='
             write(*,*) nmerge
-            write(*,*) 'first stage, nmerge='
 #endif
+
+            call stop_timer(merge_timer)
+            call start_timer(merge_tree_resolve_timer)
 
             ! First implementation of iterative algorithm
 
@@ -188,9 +196,9 @@ module parcel_nearest
               ! reset relevant properties for candidate mergers
               do m = 1, nmerge
                 is = isma(m)
-                ! only consider links that need merging
+                ! only consider links that still may be merging
                 ! reset relevant properties
-                if(.not. l_first_stage(is)) then
+                if(.not. l_first_merged(is)) then
                   ic = iclo(m)
                   l_leaf(is)=.true.
                   l_available(ic)=.true.
@@ -199,7 +207,7 @@ module parcel_nearest
               ! determine leaf parcels
               do m = 1, nmerge
                 is = isma(m)
-                if(.not. l_first_stage(is)) then
+                if(.not. l_first_merged(is)) then
                   ic = iclo(m)
                   l_leaf(ic)=.false.
                 end if
@@ -208,7 +216,7 @@ module parcel_nearest
               ! filter out for big parcels with height>1
               do m = 1, nmerge
                 is = isma(m)
-                if(.not. l_first_stage(is)) then
+                if(.not. l_first_merged(is)) then
                    if(.not. l_leaf(is)) then
                      ic = iclo(m)
                      l_available(ic)=.false.
@@ -219,38 +227,23 @@ module parcel_nearest
               ! identify mergers in this iteration
               do m = 1, nmerge
                 is = isma(m)
-                if(.not. l_first_stage(is)) then
+                if(.not. l_first_merged(is)) then
                   ic = iclo(m)
                   if(l_leaf(is) .and. l_available(ic)) then
                     l_continue_iteration=.true. ! merger means continue iteration
-                    l_first_stage(ic)=.true.
-                    l_first_stage(is)=.true.
+                    l_first_merged(is)=.true.
+                    l_first_merged(ic)=.true.
+                    l_first_is(is)=.true.
                   end if
                 end if
               end do
               ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
-              ! remove eliminated links
-              j = 0
-              do m = 1, nmerge
-                is = isma(m)
-                ic = iclo(m)
-                ! keep the link, unless small parcel merges but close one does not
-                if(.not.(l_first_stage(is) .and. (.not. l_first_stage(ic)))) then
-                    j = j + 1
-                    isma(j) = is
-                    iclo(j) = ic
-                endif
-              enddo
-              nmerge = j
-#ifndef NDEBUG
-              write(*,*) nmerge
-#endif
             end do
 
             ! Second stage, related to dual links
             do m = 1, nmerge
               is = isma(m)
-              if(.not. l_first_stage(is)) then
+              if(.not. l_first_merged(is)) then
                 if(l_leaf(is)) then
                   ic = iclo(m)
                   l_available(ic)=.true.
@@ -260,37 +253,40 @@ module parcel_nearest
 
             ! PARALLEL: COMMUNICATION WILL BE NEEDED HERE
 
+            ! Second stage: harder to parallelise with openmp
             j=0
             do m = 1, nmerge
               is = isma(m)
               ic = iclo(m)
               l_do_merge=.false.
-              if(l_first_stage(is) .and. l_first_stage(ic)) then
-                 ! previously identified mergers: keep
-                 l_do_merge=.true.
-              elseif(l_leaf(is)) then
-                 ! links from leafs
-                 l_do_merge=.true.
-              elseif(.not. l_available(is)) then
-                 ! Above means parcels that have been made 'available' do not keep outgoing links
-                 if(l_available(ic)) then
-                   ! merge this parcel into ic along with the leaf parcels
-                   l_do_merge=.true.
-                 else
-                   ! isolated dual link
-                   ! Don't keep current link
-                   ! But make small parcel available so other parcel can merge with it
-                   ! THIS NEEDS THINKING ABOUT A PARALLEL IMPLEMENTATION
-                   ! This could be based on the other parcel being outside the domain
-                   ! And a "processor order"
-                   l_available(is)=.true.
-                 endif
+              if(l_first_is(is)) then
+                ! previously identified mergers: keep
+                l_do_merge=.true.
 #ifndef NDEBUG
-              elseif(l_first_stage(is)) then
-                 write(*,*) 'first stage error'
-              elseif(l_first_stage(ic)) then
-                 write(*,*) 'second stage error'
+                ! sanity check on first stage mergers
+                if(l_first_is(ic)) then
+                  write(*,*) 'first stage error'
+                endif
 #endif
+              elseif(.not. l_first_merged(is)) then
+                if(l_leaf(is)) then
+                  ! links from leafs
+                  l_do_merge=.true.
+                elseif(.not. l_available(is)) then
+                  ! Above means parcels that have been made 'available' do not keep outgoing links
+                  if(l_available(ic)) then
+                    ! merge this parcel into ic along with the leaf parcels
+                    l_do_merge=.true.
+                  else
+                    ! isolated dual link
+                    ! Don't keep current link
+                    ! But make small parcel available so other parcel can merge with it
+                    ! THIS NEEDS THINKING ABOUT A PARALLEL IMPLEMENTATION
+                    ! This could be based on the other parcel being outside the domain
+                    ! And a "processor order"
+                    l_available(is)=.true.
+                  endif
+                endif
               endif
 
               if(l_do_merge) then
@@ -308,7 +304,7 @@ module parcel_nearest
             nmerge = j
 
 #ifndef NDEBUG
-            write(*,*) 'second stage'
+            write(*,*) 'after second stage, nmerge='
             write(*,*) nmerge
             write(*,*) 'finished'
 
@@ -342,6 +338,9 @@ module parcel_nearest
               end if
             enddo
 #endif
+
+            call stop_timer(merge_tree_resolve_timer)
+            call start_timer(merge_timer)
 
         end subroutine find_nearest
 

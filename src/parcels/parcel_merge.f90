@@ -14,14 +14,13 @@ module parcel_merge
     use options, only : parcel, verbose
     use parcel_bc
     use timer, only : start_timer, stop_timer
+
 #ifdef ENABLE_VERBOSE
     use merge_hdf5, only : write_h5_mergees,            &
                            write_h5_mergers,            &
                            write_h5_parcels_in_cell
 #endif
     implicit none
-
-    integer :: merge_timer
 
     private :: geometric_merge, &
                do_group_merge,  &
