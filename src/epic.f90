@@ -133,11 +133,7 @@ program epic
 #endif
                 call ls_rk4_step(t)
 
-                write(*,*) 'merging 1'
                 call merge_ellipses(parcels)
-                write(*,*) 'merging 2'
-                call merge_ellipses(parcels)
-                write(*,*) 'merging done'
 
                 call split_ellipses(parcels, parcel%lambda_max)
 
