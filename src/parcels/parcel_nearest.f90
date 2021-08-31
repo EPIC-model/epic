@@ -25,7 +25,6 @@ module parcel_nearest
     logical :: l_leaf(max_num_parcels)
     logical :: l_available(max_num_parcels)
     logical :: l_first_merged(max_num_parcels) ! indicates parcels merged in first stage
-    logical :: l_first_is(max_num_parcels) ! indicates parcels that are intitiator in first stage
 
 #ifndef NDEBUG
     logical :: l_merged(max_num_parcels)! SANITY CHECK ONLY
@@ -172,9 +171,7 @@ module parcel_nearest
                 isma(m) = is
                 iclo(m) = ic
                 l_first_merged(is)=.false.
-                l_first_is(is)=.false.
                 l_first_merged(ic)=.false.
-                l_first_is(ic)=.false.
             enddo
 
 #ifndef NDEBUG
@@ -234,7 +231,6 @@ module parcel_nearest
                     l_continue_iteration=.true. ! merger means continue iteration
                     l_first_merged(is)=.true.
                     l_first_merged(ic)=.true.
-                    l_first_is(is)=.true. ! keep track of which parcels are initiators
                   end if
                 end if
               end do
@@ -260,13 +256,13 @@ module parcel_nearest
               is = isma(m)
               ic = iclo(m)
               l_do_merge=.false.
-              if(l_first_is(is)) then
+              if(l_first_merged(is) .and. l_leaf(is)) then
                 ! previously identified mergers: keep
                 l_do_merge=.true.
 #ifndef NDEBUG
                 ! sanity check on first stage mergers
                 ! parcel cannot be both initiator and receiver in stage 1
-                if(l_first_is(ic)) then
+                if(l_leaf(ic)) then
                   write(*,*) 'first stage error'
                 endif
 #endif
