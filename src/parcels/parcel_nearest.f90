@@ -149,12 +149,14 @@ module parcel_nearest
                             n = node(k)
                             if (n .ne. is) then
                                 delz = parcels%position(n,2) - z_small
-                                delx = get_delx(parcels%position(n,1), x_small) ! works across periodic edge
-                                ! Minimise dsqmin
-                                dsq = delz * delz + delx * delx
-                                if (dsq < dsqmin) then
-                                    dsqmin = dsq
-                                    ic = n
+                                if (delz*delz < dsqmin) then
+                                    delx = get_delx(parcels%position(n,1), x_small) ! works across periodic edge
+                                    ! Minimise dsqmin
+                                    dsq = delz * delz + delx * delx
+                                    if (dsq < dsqmin) then
+                                        dsqmin = dsq
+                                        ic = n
+                                    endif
                                 endif
                             endif
                         enddo
