@@ -27,14 +27,13 @@ module parcel_nearest
     logical :: l_first_merged(max_num_parcels) ! indicates parcels merged in first stage
 
 #ifndef NDEBUG
+    ! Logicals that are only needed for sanity checks
     logical :: l_merged(max_num_parcels)! SANITY CHECK ONLY
     logical :: l_small(max_num_parcels) ! SANITY CHECK ONLY
     logical :: l_close(max_num_parcels) ! SANITY CHECK ONLY
 #endif
 
     logical :: l_continue_iteration, l_do_merge
-
-    ! Logicals that are only needed for sanity checks
 
     !Other variables:
     double precision:: delx,delz,dsq,dsqmin,x_small,z_small
