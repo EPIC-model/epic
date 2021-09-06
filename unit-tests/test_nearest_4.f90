@@ -5,7 +5,7 @@
 !               (5a) (a, b) - c - d = e
 !               (5b) (a, b) - C - (d, e)
 ! =============================================================================
-program test_nearest_3
+program test_nearest_4
     use unit_test
     use permute, only : permute_generate, permute_dealloc, n_permutes, permutes
     use constants, only : pi, zero, two, five, ten
@@ -46,7 +46,7 @@ program test_nearest_3
 
         call find_nearest(isma, ibig, n_merge)
 
-        call DtoE_or_EtoD
+        call ABtoC_and_DE
     enddo
 
     call print_result_logical('Test nearest algorithm: (a, b) - c - d = e', passed)
@@ -120,19 +120,38 @@ program test_nearest_3
             parcels%volume(p(5)) = 0.1d0 * pi
         end subroutine parcel_setup_5b
 
-        subroutine DtoE_or_EtoD
-            passed = (passed .and. (n_merge == 1))
+        subroutine ABtoC_and_DE
+            integer :: ia,ib,ide,ii
 
-            if (ordering(4) < ordering(5)) then
-                ! D --> E
-                passed = (passed .and. (isma(1) == ordering(4)))
-                passed = (passed .and. (ibig(1) == ordering(5)))
-            else
-                ! E --> D
-                passed = (passed .and. (isma(1) == ordering(5)))
-                passed = (passed .and. (ibig(1) == ordering(4)))
-            endif
-        end subroutine DtoE_or_EtoD
+            passed = (passed .and. (n_merge == 3))
+
+            do ii=1,3
+              if(isma(ii)==ordering(1)) then
+                ia=ii
+              elseif(isma(ii)==ordering(2)) then
+                ib=ii
+              elseif(isma(ii)==ordering(4) .or. (isma(ii)==ordering(5) )) then
+                ide=ii
+              endif
+            enddo
+
+            ! A to C
+            passed = (passed .and.                                                         &
+                        ((isma(ia) == ordering(1)) .and. (ibig(ia) == ordering(3)))        &
+                    )
+
+            ! B to C
+            passed = (passed .and.                                                         &
+                        ((isma(ib) == ordering(2)) .and. (ibig(ib) == ordering(3)))        &
+                    )
+
+            ! D and E
+            passed = (passed .and.                                                         &
+                        (((isma(ide) == ordering(4)) .and. (ibig(ide) == ordering(5)))  .or. &
+                         ((ibig(ide) == ordering(4)) .and. (isma(ide) == ordering(5))))      &
+                    )
+
+        end subroutine ABtoC_and_DE
 
         subroutine ABDEtoC
             integer :: i
@@ -144,4 +163,4 @@ program test_nearest_3
             enddo
         end subroutine ABDEtoC
 
-end program test_nearest_3
+end program test_nearest_4

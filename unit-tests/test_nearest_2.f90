@@ -49,7 +49,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call AtoB_or_BtoA
+        call ACtoB
     enddo
 
     call print_result_logical('Test nearest algorithm: a = b - c', passed)
@@ -57,7 +57,7 @@ program test_nearest_2
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
-    !   (3b) a   b - c
+    !   (3b) a - b - C
     !
     passed = .true.
 
@@ -67,10 +67,10 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call BtoC
+        call AtoB
     enddo
 
-    call print_result_logical('Test nearest algorithm: a   b - C', passed)
+    call print_result_logical('Test nearest algorithm: a - b - C', passed)
 
     ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     !
@@ -126,7 +126,7 @@ program test_nearest_2
             parcels%volume(p(3)) = 0.1d0 * pi
         end subroutine parcel_setup_3a
 
-        ! (3b) a  b - C
+        ! (3b) a - b - C
         subroutine parcel_setup_3b(p)
             integer, intent(in) :: p(3)
             parcels%position(p(1), 1) = -0.2d0
@@ -174,18 +174,23 @@ program test_nearest_2
             parcels%volume(p(3)) = 0.1d0 * pi
         end subroutine parcel_setup_3d
 
-        subroutine AtoB_or_BtoA
+        subroutine AtoB
             passed = (passed .and. (n_merge == 1))
 
-            if (ordering(1) < ordering(2)) then
-                ! A --> B
-                passed = (passed .and. (isma(1) == ordering(1)))
-                passed = (passed .and. (ibig(1) == ordering(2)))
-            else
-                ! B --> A
-                passed = (passed .and. (isma(1) == ordering(2)))
-                passed = (passed .and. (ibig(1) == ordering(1)))
-            endif
+           ! A --> B
+           passed = (passed .and. (isma(1) == ordering(1)))
+           passed = (passed .and. (ibig(1) == ordering(2)))
+
+        end subroutine AtoB
+
+        subroutine AtoB_or_BtoA
+            logical :: a_to_b, b_to_a
+
+            passed = (passed .and. (n_merge == 1))
+
+            a_to_b = ((isma(1) == ordering(1)) .and. (ibig(1) == ordering(2)))
+            b_to_a = ((ibig(1) == ordering(1)) .and. (isma(1) == ordering(2)))
+            passed = (passed .and. (a_to_b .or. b_to_a))
         end subroutine AtoB_or_BtoA
 
         subroutine BtoC

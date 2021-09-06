@@ -2,9 +2,7 @@
 !                       Test ellipse multi merge
 !
 !       This unit test checks group merging. It places three parcels
-!       in a row with increasing size. In each call to the merging routine
-!       only two parcels should merge. After two calls, only one big parcel
-!       exists.
+!       in a row with increasing size.
 ! =============================================================================
 program test_ellipse_multi_merge_4
     use unit_test
@@ -35,17 +33,12 @@ program test_ellipse_multi_merge_4
 
     call parcel_setup
 
-    ! first merge
+    ! first merge is only merge
     call merge_ellipses(parcels)
 
     ! check result
-    error = dble(abs(n_parcels - 2))
-
-    ! second merge
-    call merge_ellipses(parcels)
-
-    ! check result
-    error = max(error, dble(abs(n_parcels - 1)))
+    write(*,*) n_parcels
+    error = dble(abs(n_parcels-1))
 
     call print_result_dp('Test ellipse merge 4', error)
 
