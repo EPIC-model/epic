@@ -42,7 +42,9 @@ module ls_rk4
 
     contains
 
-        ! allocate memory of temporaries
+        ! Allocate memory of low-storage RK-4 temporaries.
+        ! They are deallocated at the end of the simulation.
+        ! @param[in] num is the size to allocate
         subroutine ls_rk4_alloc(num)
             integer, intent(in) :: num
 
@@ -53,7 +55,7 @@ module ls_rk4
 
         end subroutine ls_rk4_alloc
 
-        ! deallocate memory of temporaries
+        ! Deallocate memory of temporaries
         subroutine ls_rk4_dealloc
 
             deallocate(delta_pos)
@@ -63,6 +65,10 @@ module ls_rk4
 
         end subroutine ls_rk4_dealloc
 
+        ! Advances the parcels by a single ls-RK-4 step. It calls a
+        ! function to obtain the current time step based on the velocity
+        ! strain and the buoyancy gradient.
+        ! @param[in] t is the time
         ! Precondition: this routine assumes that the fields are
         ! up-to-date for the first sub-step
         subroutine ls_rk4_step(t)
@@ -112,6 +118,11 @@ module ls_rk4
         end subroutine ls_rk4_step
 
 
+        ! Do a ls-RK-4 substep.
+        ! @param[in] ca is a numerical coefficient
+        ! @param[in] cb is a numerical coefficient
+        ! @param[in] dt is the time step
+        ! @param[in] step is the number of the substep (1 to 5)
         subroutine ls_rk4_substep(ca, cb, dt, step)
             double precision, intent(in) :: ca
             double precision, intent(in) :: cb
