@@ -119,6 +119,7 @@ module parcel_init
         end subroutine init_parcels
 
 
+        ! Position parcels regularly in the domain.
         subroutine init_regular_positions
             integer          :: ix, i, iz, j, k, n_per_dim
             double precision :: im, corner(2)
@@ -217,6 +218,9 @@ module parcel_init
         end subroutine dealloc
 
 
+        ! Initialise parcel attributes from gridded quantities.
+        ! Attention: This subroutine currently only supports
+        !            vorticity and buoyancy fields.
         subroutine init_from_grids(h5fname, tol)
             character(*),     intent(in)  :: h5fname
             double precision, intent(in)  :: tol
@@ -249,6 +253,9 @@ module parcel_init
 
         end subroutine init_from_grids
 
+        ! After reading the H5 dataset into the buffer, copy
+        ! the data to a field container
+        ! @pre field and buffer must be of rank 2
         subroutine fill_field_from_buffer_2d(buffer, field)
             double precision, allocatable :: buffer(:, :)
             double precision              :: field(-1:nz+1, 0:nx-1)

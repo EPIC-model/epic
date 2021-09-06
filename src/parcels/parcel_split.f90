@@ -19,6 +19,10 @@ module parcel_split
 
     contains
 
+        ! Split large parcels (volumes larger than vmax) or
+        ! parcels with aspect ratios larger than the threshold.
+        ! @param[inout] parcels
+        ! @param[in] threshold is the largest allowed aspect ratio
         subroutine split_ellipses(parcels, threshold)
             type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: threshold

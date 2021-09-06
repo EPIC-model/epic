@@ -77,7 +77,7 @@ module parcel_diagnostics
 
         end subroutine create_h5_parcel_stat_file
 
-        ! compute the reference potential energy
+        ! Compute the reference potential energy
         subroutine init_parcel_diagnostics
             integer          :: ii(n_parcels), n
             double precision :: b(n_parcels)
@@ -101,6 +101,7 @@ module parcel_diagnostics
         end subroutine init_parcel_diagnostics
 
 
+        ! Calculate all parcel related diagnostics
         subroutine calc_parcel_diagnostics(velocity)
             double precision :: velocity(:, :)
             integer          :: n

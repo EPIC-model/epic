@@ -12,7 +12,11 @@ module parcel_ellipse
 
     contains
 
-        ! the eigenvalue is the semi-major axis squared (a**2)
+        ! Obtain the largest eigenvalue (i.e. the semi-major axis squared [a**2])
+        ! @param[in] B11 is the B matrix (1, 1) element
+        ! @param[in] B12 is the B matrix (1, 2) element
+        ! @param[in] B22 is the B matrix (2, 2) element
+        ! @returns the largest eigenvalue
         function get_eigenvalue(B11, B12, B22) result(a2)
             double precision, intent(in) :: B11
             double precision, intent(in) :: B12
@@ -22,6 +26,12 @@ module parcel_ellipse
             a2 = f12 * (B11 + B22) + dsqrt(f14 * (B11 - B22) ** 2 + B12 ** 2)
         end function get_eigenvalue
 
+        ! Obtain the eigenvector of the largest eigenvalue
+        ! @param[in] a2 is the largest eigenvalue
+        ! @param[in] B11 is the B matrix (1, 1) element
+        ! @param[in] B12 is the B matrix (1, 2) element
+        ! @param[in] B22 is the B matrix (2, 2) element
+        ! @returns the eigenvector
         function get_eigenvector(a2, B11, B12, B22) result(evec)
             double precision, intent(in) :: a2
             double precision, intent(in) :: B11
@@ -64,6 +74,11 @@ module parcel_ellipse
 
         end function get_angle
 
+        ! Obtain the B22 matrix element
+        ! @param[in] B11 is the B matrix (1, 1) element
+        ! @param[in] B12 is the B matrix (1, 2) element
+        ! @param[in] volume of the parcel
+        ! @returns B22
         elemental function get_B22(B11, B12, volume) result(B22)
             double precision, intent(in) :: B11
             double precision, intent(in) :: B12
@@ -77,6 +92,9 @@ module parcel_ellipse
 
         end function get_B22
 
+        ! Obtain the product of the semi-minor and semi-major axis.
+        ! @param[in] volume of the parcel
+        ! @returns ab = volume / pi
         elemental function get_ab(volume) result(ab)
             double precision, intent(in) :: volume
             double precision             :: ab
@@ -84,6 +102,10 @@ module parcel_ellipse
             ab = volume * fpi
         end function
 
+        ! Obtain the aspect ratio of the parcel(s).
+        ! @param[in] a2 is the largest eigenvalue
+        ! @param[in] volume of the parcel(s)
+        ! @returns lam = a/b
         elemental function get_aspect_ratio(a2, volume) result(lam)
             double precision, intent(in) :: a2
             double precision, intent(in) :: volume
@@ -92,6 +114,11 @@ module parcel_ellipse
             lam = (a2 / volume) * pi
         end function
 
+        ! Obtain the ellipse support points for par2grid and grid2par
+        ! @param[in] position vector of the parcel
+        ! @param[in] volume of the parcel
+        ! @param[in] B matrix elements of the parcel
+        ! @returns the parcel support points
         function get_ellipse_points(position, volume, B) result(points)
             double precision, intent(in) :: position(2)
             double precision, intent(in) :: volume

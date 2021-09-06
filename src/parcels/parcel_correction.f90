@@ -54,7 +54,8 @@ module parcel_correction
 
     contains
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        ! Initialise parcel correction module. It allocates memory and does
+        ! some precomputations.
         subroutine init_parcel_correction
             double precision :: a0(0:nx-1), a0b(0:nx-1), ksq(0:nx-1)
             double precision :: dzisq
