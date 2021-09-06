@@ -20,7 +20,7 @@ program test_nearest_3
 
     logical              :: passed = .true.
     integer, allocatable :: isma(:)
-    integer, allocatable :: ibig(:)
+    integer, allocatable :: iclo(:)
     integer              :: n_merge, n
     integer              :: ordering(4)
 
@@ -47,7 +47,7 @@ program test_nearest_3
         ordering = permutes(n, :)
         call parcel_setup_4a(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call AB_and_DC
     enddo
@@ -64,7 +64,7 @@ program test_nearest_3
         ordering = permutes(n, :)
         call parcel_setup_4b(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call AB_and_DC
     enddo
@@ -81,7 +81,7 @@ program test_nearest_3
         ordering = permutes(n, :)
         call parcel_setup_4c(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call AB_and_DC
     enddo
@@ -98,7 +98,7 @@ program test_nearest_3
         ordering = permutes(n, :)
         call parcel_setup_4d(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call AB_and_DC
     enddo
@@ -115,7 +115,7 @@ program test_nearest_3
         ordering = permutes(n, :)
         call parcel_setup_4e(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call AB_and_DC
     enddo
@@ -232,11 +232,11 @@ program test_nearest_3
             if (ordering(2) < ordering(3)) then
                 ! B --> C
                 passed = (passed .and. (isma(1) == ordering(2)))
-                passed = (passed .and. (ibig(1) == ordering(3)))
+                passed = (passed .and. (iclo(1) == ordering(3)))
             else
                 ! C --> B
                 passed = (passed .and. (isma(1) == ordering(3)))
-                passed = (passed .and. (ibig(1) == ordering(2)))
+                passed = (passed .and. (iclo(1) == ordering(2)))
             endif
         end subroutine BtoC_or_CtoB
 
@@ -246,11 +246,11 @@ program test_nearest_3
             if (ordering(3) < ordering(4)) then
                 ! C --> D
                 passed = (passed .and. (isma(1) == ordering(3)))
-                passed = (passed .and. (ibig(1) == ordering(4)))
+                passed = (passed .and. (iclo(1) == ordering(4)))
             else
                 ! D --> C
                 passed = (passed .and. (isma(1) == ordering(4)))
-                passed = (passed .and. (ibig(1) == ordering(3)))
+                passed = (passed .and. (iclo(1) == ordering(3)))
             endif
         end subroutine CtoD_or_DtoC
 
@@ -262,20 +262,20 @@ program test_nearest_3
             ia = 1
             ic = 2
 
-            if ((isma(2) == ordering(1)) .or. (ibig(2) == ordering(1))) then
+            if ((isma(2) == ordering(1)) .or. (iclo(2) == ordering(1))) then
                 ia = 2
                 ic = 1
             endif
 
             ! A and B
             passed = (passed .and.                                                         &
-                        (((isma(ia) == ordering(1)) .and. (ibig(ia) == ordering(2)))  .or. &
-                         ((ibig(ia) == ordering(1)) .and. (isma(ia) == ordering(2))))      &
+                        (((isma(ia) == ordering(1)) .and. (iclo(ia) == ordering(2)))  .or. &
+                         ((iclo(ia) == ordering(1)) .and. (isma(ia) == ordering(2))))      &
                     )
             ! C and D
             passed = (passed .and.                                                         &
-                        (((isma(ic) == ordering(3)) .and. (ibig(ic) == ordering(4)))  .or. &
-                         ((ibig(ic) == ordering(3)) .and. (isma(ic) == ordering(4))))      &
+                        (((isma(ic) == ordering(3)) .and. (iclo(ic) == ordering(4)))  .or. &
+                         ((iclo(ic) == ordering(3)) .and. (isma(ic) == ordering(4))))      &
                     )
 
         end subroutine AB_and_DC
@@ -285,15 +285,15 @@ program test_nearest_3
 
             ! C --> D
             passed = (passed .and. (isma(1) == ordering(3)))
-            passed = (passed .and. (ibig(1) == ordering(4)))
+            passed = (passed .and. (iclo(1) == ordering(4)))
         end subroutine CtoD
 
         subroutine ACtoB
             passed = (passed .and. (n_merge == 2))
 
-            ! B is in ibig since A --> B and C --> B
+            ! B is in iclo since A --> B and C --> B
             passed = (passed .and. &
-                        (ibig(1) == ordering(2)) .and. (ibig(2) == ordering(2)))
+                        (iclo(1) == ordering(2)) .and. (iclo(2) == ordering(2)))
 
             ! A and C are in isma
             if (ordering(1) < ordering(3)) then

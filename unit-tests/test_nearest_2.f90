@@ -19,7 +19,7 @@ program test_nearest_2
 
     logical              :: passed = .true.
     integer, allocatable :: isma(:)
-    integer, allocatable :: ibig(:)
+    integer, allocatable :: iclo(:)
     integer              :: n_merge, n
     integer              :: ordering(3)
 
@@ -47,7 +47,7 @@ program test_nearest_2
         ordering = permutes(n, :)
         call parcel_setup_3a(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call ACtoB
     enddo
@@ -65,7 +65,7 @@ program test_nearest_2
         ordering = permutes(n, :)
         call parcel_setup_3b(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call AtoB
     enddo
@@ -82,7 +82,7 @@ program test_nearest_2
         ordering = permutes(n, :)
         call parcel_setup_3c(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call AtoB_or_BtoA
     enddo
@@ -99,7 +99,7 @@ program test_nearest_2
         ordering = permutes(n, :)
         call parcel_setup_3d(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call ACtoB
     enddo
@@ -179,7 +179,7 @@ program test_nearest_2
 
            ! A --> B
            passed = (passed .and. (isma(1) == ordering(1)))
-           passed = (passed .and. (ibig(1) == ordering(2)))
+           passed = (passed .and. (iclo(1) == ordering(2)))
 
         end subroutine AtoB
 
@@ -188,8 +188,8 @@ program test_nearest_2
 
             passed = (passed .and. (n_merge == 1))
 
-            a_to_b = ((isma(1) == ordering(1)) .and. (ibig(1) == ordering(2)))
-            b_to_a = ((ibig(1) == ordering(1)) .and. (isma(1) == ordering(2)))
+            a_to_b = ((isma(1) == ordering(1)) .and. (iclo(1) == ordering(2)))
+            b_to_a = ((iclo(1) == ordering(1)) .and. (isma(1) == ordering(2)))
             passed = (passed .and. (a_to_b .or. b_to_a))
         end subroutine AtoB_or_BtoA
 
@@ -198,15 +198,15 @@ program test_nearest_2
 
             ! B --> C
             passed = (passed .and. (isma(1) == ordering(2)))
-            passed = (passed .and. (ibig(1) == ordering(3)))
+            passed = (passed .and. (iclo(1) == ordering(3)))
         end subroutine BtoC
 
         subroutine ACtoB
             passed = (passed .and. (n_merge == 2))
 
-            ! B is in ibig since A --> B and C --> B
+            ! B is in iclo since A --> B and C --> B
             passed = (passed .and. &
-                        (ibig(1) == ordering(2)) .and. (ibig(2) == ordering(2)))
+                        (iclo(1) == ordering(2)) .and. (iclo(2) == ordering(2)))
 
 
             ! A and C are in isma

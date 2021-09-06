@@ -61,24 +61,24 @@ module merge_hdf5
             name = trim(tag) // '#' // trim(name)
         end function get_group_merge_number
 
-        subroutine write_h5_parcels_in_cell(ibig, nmerge)
-            integer, intent(in)           :: ibig(:)
+        subroutine write_h5_parcels_in_cell(iclo, nmerge)
+            integer, intent(in)           :: iclo(:)
             integer, intent(in)           :: nmerge
             integer(hid_t)                :: group, mgroup
             character(len=64)             :: tag
             character(:), allocatable     :: name
             logical                       :: created
             integer                       :: m, ib, n, nm, k, i, j, ii, jj, ilo, ihi, num
-            integer                       :: ibig_sorted(nmerge), ind(nmerge)
+            integer                       :: iclo_sorted(nmerge), ind(nmerge)
 
             if (.not. l_created) then
                 return
             endif
 
-            ibig_sorted = ibig(1:nmerge)
+            iclo_sorted = iclo(1:nmerge)
 
             ! inefficient to sort again, but it works
-            call msort(ibig_sorted, ind)
+            call msort(iclo_sorted, ind)
 
             call open_h5_file(h5fname3, H5F_ACC_RDWR_F, h5file_id3)
 
@@ -95,8 +95,8 @@ module merge_hdf5
             nm = -1
             num = 0 ! merger number
             do m = 1, nmerge
-                if (ib .ne. ibig_sorted(m)) then
-                    ib = ibig_sorted(m)
+                if (ib .ne. iclo_sorted(m)) then
+                    ib = iclo_sorted(m)
 
                     call get_index(parcels%position(ib, :), i, j)
                     ilo = i - 2
@@ -146,24 +146,24 @@ module merge_hdf5
         end subroutine write_h5_parcels_in_cell
 
 
-        subroutine write_h5_mergees(isma, ibig, nmerge)
+        subroutine write_h5_mergees(isma, iclo, nmerge)
             integer, intent(in)           :: isma(0:)
-            integer, intent(in)           :: ibig(:)
+            integer, intent(in)           :: iclo(:)
             integer, intent(in)           :: nmerge
             integer(hid_t)                :: group, mgroup
             character(len=64)             :: tag
             character(:), allocatable     :: name
             logical                       :: created
             integer                       :: m, n, l, ib, nm, is, num
-            integer                       :: ibig_sorted(nmerge), ind(nmerge)
+            integer                       :: iclo_sorted(nmerge), ind(nmerge)
 
             if (.not. l_created) then
                 return
             endif
 
-            ibig_sorted = ibig(1:nmerge)
+            iclo_sorted = iclo(1:nmerge)
 
-            call msort(ibig_sorted, ind)
+            call msort(iclo_sorted, ind)
 
             call open_h5_file(h5fname1, H5F_ACC_RDWR_F, h5file_id1)
 
@@ -181,7 +181,7 @@ module merge_hdf5
             num = 0 ! merger number
             m = 1
             do l = 1, nmerge
-                ib = ibig_sorted(l)
+                ib = iclo_sorted(l)
 
                 if (ib == 0) then
                     cycle
@@ -195,14 +195,14 @@ module merge_hdf5
                 nm = 1
 
                 do m = l, nmerge
-                    if (ib == ibig_sorted(m)) then
+                    if (ib == iclo_sorted(m)) then
                         is = isma(ind(m))
                         parcels%position(n + nm, :) = parcels%position(is, :)
                         parcels%B(n + nm, :) = parcels%B(is, :)
                         parcels%volume(n + nm) = parcels%volume(is)
                         nm = nm + 1
 
-                        ibig_sorted(m) = 0
+                        iclo_sorted(m) = 0
                     endif
                 enddo
 
@@ -238,23 +238,23 @@ module merge_hdf5
         end subroutine write_h5_mergees
 
 
-        subroutine write_h5_mergers(ibig, nmerge)
-            integer, intent(in)           :: ibig(:)
+        subroutine write_h5_mergers(iclo, nmerge)
+            integer, intent(in)           :: iclo(:)
             integer, intent(in)           :: nmerge
             integer(hid_t)                :: group
             character(:), allocatable     :: name
             logical                       :: created
             integer                       :: m, ib, n, nm
-            integer                       :: ibig_sorted(nmerge), ind(nmerge)
+            integer                       :: iclo_sorted(nmerge), ind(nmerge)
 
             if (.not. l_created) then
                 return
             endif
 
-            ibig_sorted = ibig(1:nmerge)
+            iclo_sorted = iclo(1:nmerge)
 
             ! inefficient to sort again, but it works
-            call msort(ibig_sorted, ind)
+            call msort(iclo_sorted, ind)
 
             call open_h5_file(h5fname2, H5F_ACC_RDWR_F, h5file_id2)
 
@@ -270,9 +270,9 @@ module merge_hdf5
             ib = -1
             nm = -1
             do m = 1, nmerge
-                if (ib .ne. ibig_sorted(m)) then
+                if (ib .ne. iclo_sorted(m)) then
                     nm = nm + 1
-                    ib = ibig_sorted(m)
+                    ib = iclo_sorted(m)
 
                     parcels%position(n + nm, :) = parcels%position(ib, :)
                     parcels%B(n + nm, :) = parcels%B(ib, :)

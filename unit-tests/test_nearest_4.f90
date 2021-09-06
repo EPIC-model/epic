@@ -17,7 +17,7 @@ program test_nearest_4
 
     logical              :: passed = .true.
     integer, allocatable :: isma(:)
-    integer, allocatable :: ibig(:)
+    integer, allocatable :: iclo(:)
     integer              :: n_merge, n
     integer              :: ordering(5)
 
@@ -44,7 +44,7 @@ program test_nearest_4
         ordering = permutes(n, :)
         call parcel_setup_5a(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call ABtoC_and_DE
     enddo
@@ -61,7 +61,7 @@ program test_nearest_4
         ordering = permutes(n, :)
         call parcel_setup_5b(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call ABDEtoC
     enddo
@@ -137,18 +137,18 @@ program test_nearest_4
 
             ! A to C
             passed = (passed .and.                                                         &
-                        ((isma(ia) == ordering(1)) .and. (ibig(ia) == ordering(3)))        &
+                        ((isma(ia) == ordering(1)) .and. (iclo(ia) == ordering(3)))        &
                     )
 
             ! B to C
             passed = (passed .and.                                                         &
-                        ((isma(ib) == ordering(2)) .and. (ibig(ib) == ordering(3)))        &
+                        ((isma(ib) == ordering(2)) .and. (iclo(ib) == ordering(3)))        &
                     )
 
             ! D and E
             passed = (passed .and.                                                         &
-                        (((isma(ide) == ordering(4)) .and. (ibig(ide) == ordering(5)))  .or. &
-                         ((ibig(ide) == ordering(4)) .and. (isma(ide) == ordering(5))))      &
+                        (((isma(ide) == ordering(4)) .and. (iclo(ide) == ordering(5)))  .or. &
+                         ((iclo(ide) == ordering(4)) .and. (isma(ide) == ordering(5))))      &
                     )
 
         end subroutine ABtoC_and_DE
@@ -159,7 +159,7 @@ program test_nearest_4
 
             ! C is the only big parcel
             do i = 1, 4
-                passed = (passed .and. (ibig(i) == ordering(3)))
+                passed = (passed .and. (iclo(i) == ordering(3)))
             enddo
         end subroutine ABDEtoC
 

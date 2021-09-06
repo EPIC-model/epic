@@ -17,7 +17,7 @@ program test_nearest_1
 
     logical                            :: passed = .true.
     integer, allocatable, dimension(:) :: isma
-    integer, allocatable, dimension(:) :: ibig
+    integer, allocatable, dimension(:) :: iclo
     integer                            :: n_merge, n, ordering(2)
 
     nx = 1
@@ -42,7 +42,7 @@ program test_nearest_1
         ordering = permutes(n, :)
         call parcel_setup_2a(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call AtoB_or_BtoA
     enddo
@@ -58,7 +58,7 @@ program test_nearest_1
         ordering = permutes(n, :)
         call parcel_setup_2b(ordering)
 
-        call find_nearest(isma, ibig, n_merge)
+        call find_nearest(isma, iclo, n_merge)
 
         call AtoB
     enddo
@@ -98,8 +98,8 @@ program test_nearest_1
 
             passed = (passed .and. (n_merge == 1))
 
-            a_to_b = ((isma(1) == ordering(1)) .and. (ibig(1) == ordering(2)))
-            b_to_a = ((ibig(1) == ordering(1)) .and. (isma(1) == ordering(2)))
+            a_to_b = ((isma(1) == ordering(1)) .and. (iclo(1) == ordering(2)))
+            b_to_a = ((iclo(1) == ordering(1)) .and. (isma(1) == ordering(2)))
             passed = (passed .and. (a_to_b .or. b_to_a))
         end subroutine AtoB_or_BtoA
 
@@ -107,7 +107,7 @@ program test_nearest_1
             logical :: a_to_b
             passed = (passed .and. (n_merge == 1))
 
-            a_to_b = ((isma(1) == ordering(1)) .and. (ibig(1) == ordering(2)))
+            a_to_b = ((isma(1) == ordering(1)) .and. (iclo(1) == ordering(2)))
             passed = (passed .and. a_to_b)
         end subroutine AtoB
 
