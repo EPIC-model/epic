@@ -15,6 +15,7 @@ program test_nearest_2
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, nz
     use parcel_nearest
+    use timer
     implicit none
 
     logical              :: passed = .true.
@@ -27,6 +28,9 @@ program test_nearest_2
     nz = 1
     lower  = (/-pi / two, -pi /two/)
     extent = (/pi, pi/)
+
+    call register_timer('merge nearest', merge_nearest_timer)
+    call register_timer('merge tree resolve', merge_tree_resolve_timer)
 
     parcel%lambda_max = five
     parcel%min_vratio = ten
