@@ -14,6 +14,7 @@ module parcel_merge
     use options, only : parcel, verbose
     use parcel_bc
     use timer, only : start_timer, stop_timer
+
 #ifdef ENABLE_VERBOSE
     use merge_hdf5, only : write_h5_mergees,            &
                            write_h5_mergers,            &
@@ -21,7 +22,7 @@ module parcel_merge
 #endif
     implicit none
 
-    integer :: merge_timer
+    integer:: merge_timer
 
     private :: geometric_merge, &
                do_group_merge,  &
@@ -34,10 +35,10 @@ module parcel_merge
             integer, allocatable, dimension(:)         :: iclo
             integer                                    :: n_merge ! number of merges
 
-            call start_timer(merge_timer)
-
             ! find parcels to merge
             call find_nearest(isma, iclo, n_merge)
+
+            call start_timer(merge_timer)
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then

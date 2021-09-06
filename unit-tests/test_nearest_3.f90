@@ -8,7 +8,7 @@
 !               (4d) a = b   c = d
 !               (4e) a - b - c - D
 ! =============================================================================
-program test_nearest_2
+program test_nearest_3
     use unit_test
     use permute, only : permute_generate, permute_dealloc, n_permutes, permutes
     use constants, only : pi, zero, two, five, ten
@@ -49,7 +49,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call BtoC_or_CtoB
+        call AB_and_DC
     enddo
 
     call print_result_logical('Test nearest algorithm: a - b = c - d', passed)
@@ -66,7 +66,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call CtoD_or_DtoC
+        call AB_and_DC
     enddo
 
     call print_result_logical('Test nearest algorithm: a - b - c = d', passed)
@@ -83,7 +83,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call ACtoB
+        call AB_and_DC
     enddo
 
     call print_result_logical('Test nearest algorithm: a - B - c - d', passed)
@@ -117,7 +117,7 @@ program test_nearest_2
 
         call find_nearest(isma, ibig, n_merge)
 
-        call CtoD
+        call AB_and_DC
     enddo
 
     call print_result_logical('Test nearest algorithm: a - b - c - D', passed)
@@ -305,4 +305,4 @@ program test_nearest_2
             endif
         end subroutine ACtoB
 
-end program test_nearest_2
+end program test_nearest_3

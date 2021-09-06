@@ -10,6 +10,7 @@ program test_ellipse_multi_merge_5
     use unit_test
     use constants, only : pi, one, two, three, four, five
     use parcel_container
+    use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
     use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, nz
@@ -25,6 +26,8 @@ program test_ellipse_multi_merge_5
     extent = (/pi, pi/)
 
     call register_timer('parcel merge', merge_timer)
+    call register_timer('merge nearest', merge_nearest_timer)
+    call register_timer('merge tree resolve', merge_tree_resolve_timer)
 
     parcel%lambda_max = five
     parcel%min_vratio = three
