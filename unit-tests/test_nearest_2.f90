@@ -193,14 +193,6 @@ program test_nearest_2
             passed = (passed .and. (a_to_b .or. b_to_a))
         end subroutine AtoB_or_BtoA
 
-        subroutine BtoC
-            passed = (passed .and. (n_merge == 1))
-
-            ! B --> C
-            passed = (passed .and. (isma(1) == ordering(2)))
-            passed = (passed .and. (iclo(1) == ordering(3)))
-        end subroutine BtoC
-
         subroutine ACtoB
             passed = (passed .and. (n_merge == 2))
 
