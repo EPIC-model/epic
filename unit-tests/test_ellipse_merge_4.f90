@@ -37,7 +37,6 @@ program test_ellipse_multi_merge_4
     call merge_ellipses(parcels)
 
     ! check result
-    write(*,*) n_parcels
     error = dble(abs(n_parcels-1))
 
     call print_result_dp('Test ellipse merge 4', error)
