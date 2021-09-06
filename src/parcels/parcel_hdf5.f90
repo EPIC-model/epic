@@ -17,6 +17,9 @@ module parcel_hdf5
 
     contains
 
+        ! Create the parcel file.
+        ! @param[in] basename of the file
+        ! @param[in] overwrite the file
         subroutine create_h5_parcel_file(basename, overwrite)
             character(*), intent(in) :: basename
             logical,      intent(in) :: overwrite
