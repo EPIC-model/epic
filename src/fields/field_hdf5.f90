@@ -15,6 +15,9 @@ module field_hdf5
 
     contains
 
+        ! Create the field file.
+        ! @param[in] basename of the file
+        ! @param[in] overwrite the file
         subroutine create_h5_field_file(basename, overwrite)
             character(*), intent(in) :: basename
             logical,      intent(in) :: overwrite
@@ -33,6 +36,10 @@ module field_hdf5
 
         end subroutine create_h5_field_file
 
+        ! Write a step in the field file.
+        ! @param[inout] nw counts the number of writes
+        ! @param[in] t is the time
+        ! @param[in] dt is the time step
         subroutine write_h5_field_step(nw, t, dt)
             integer,          intent(inout) :: nw
             double precision, intent(in)    :: t
@@ -67,6 +74,8 @@ module field_hdf5
         end subroutine write_h5_field_step
 
 
+        ! Write field datasets (called from write_h5_field_step).
+        ! @param[in] iter is the number of the write
         subroutine write_h5_fields(iter)
             integer, intent(in)        :: iter ! iteration
             integer(hid_t)             :: group
