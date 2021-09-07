@@ -287,7 +287,8 @@ module parcel_interpl
         ! @param[inout] vel is the parcel velocity
         ! @param[inout] vor is the parcel vorticity
         ! @param[inout] vgrad is the parcel strain
-        ! @param[in] add contributions, i.e. do not reset parcel quantities (optional)
+        ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
+        !            (optional)
         subroutine grid2par(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
             logical, optional, intent(in)       :: add
@@ -371,7 +372,7 @@ module parcel_interpl
 
 
         ! Interpolate the gridded quantities to the parcels without resetting
-        ! their values.
+        ! their values to zero before doing grid2par.
         ! @param[inout] vel is the parcel velocity
         ! @param[inout] vor is the parcel vorticity
         ! @param[inout] vgrad is the parcel strain

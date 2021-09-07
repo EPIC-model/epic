@@ -30,7 +30,7 @@ module parcel_merge
 
     contains
 
-        ! Merge small parcels into neighbouring equa-sized parcels or bigger
+        ! Merge small parcels into neighbouring equal-sized parcels or bigger
         ! parcels which are close by.
         ! @param[inout] parcels is the parcel container
         subroutine merge_ellipses(parcels)
@@ -288,6 +288,8 @@ module parcel_merge
         ! @pre
         !   - isma must be sorted in ascending order
         !   - isma must be contiguously filled
+        !   Above preconditions must be fulfilled such that the
+        !   parcel pack algorithm works correctly.
         subroutine pack_parcels(isma, n_merge)
             integer, intent(in) :: isma(0:)
             integer, intent(in) :: n_merge
