@@ -288,7 +288,7 @@ module parcel_merge
         ! @pre
         !   - isma must be sorted in ascending order
         !   - isma must be contiguously filled
-        !   Above preconditions must be fulfilled such that the
+        !   The above preconditions must be fulfilled so that the
         !   parcel pack algorithm works correctly.
         subroutine pack_parcels(isma, n_merge)
             integer, intent(in) :: isma(0:)
