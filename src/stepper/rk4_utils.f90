@@ -15,7 +15,7 @@ module rk4_utils
         ! @param[in] Bin are the B matrix components of the parcel
         ! @param[in] S is the local velocity strain
         ! @param[in] volume is the parcel volume
-        ! @returns the updated B matrix components (B11 and B12)
+        ! @returns the updated B matrix components (B11 and B12) in Bout
         function get_B(Bin, S, volume) result(Bout)
             double precision, intent(in) :: Bin(2)
             double precision, intent(in) :: S(4)
@@ -30,7 +30,7 @@ module rk4_utils
 
         end function get_B
 
-        ! Estimate a proper time step based on the velocity strain
+        ! Estimate a suitable time step based on the velocity strain
         ! and buoyancy gradient.
         ! @param[in] t is the time
         ! @returns the time step

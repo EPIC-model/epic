@@ -79,8 +79,8 @@ module fields
             nsparg   = zero
         end subroutine
 
-        ! Get the lower index of the cell the parcel is in
-        ! this subroutine does not take x periodicity into account.
+        ! Get the lower index of the cell the parcel is in.
+        ! This subroutine does not take x periodicity into account.
         ! @param[in] pos position of the parcel
         ! @param[out] i lower, horizontal cell index
         ! @param[out] j lower, vertical cell index
@@ -112,7 +112,7 @@ module fields
         end subroutine periodic_index_shift
 
 
-        ! Get a position given a field index
+        ! Get the coordinate of a grid point (i, j).
         ! @param[in] i horizontal cell index
         ! @param[in] j vertical cell index
         ! @param[out] pos position of (i, j) in the domain

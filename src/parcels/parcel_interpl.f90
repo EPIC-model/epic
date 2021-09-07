@@ -132,7 +132,7 @@ module parcel_interpl
         end subroutine vol2grid_symmetry_error
 #endif
 
-        ! Interpolate parcel quantities to the grid, these are the parcel
+        ! Interpolate parcel quantities to the grid, these consist of the parcel
         !   - vorticity
         !   - buoyancy
         !   - volume

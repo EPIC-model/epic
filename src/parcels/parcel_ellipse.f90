@@ -102,7 +102,7 @@ module parcel_ellipse
             ab = volume * fpi
         end function
 
-        ! Obtain the aspect ratio of the parcel(s).
+        ! Obtain the aspect ratio a/b of the parcel(s).
         ! @param[in] a2 is the largest eigenvalue
         ! @param[in] volume of the parcel(s)
         ! @returns lam = a/b

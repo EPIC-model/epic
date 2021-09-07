@@ -38,7 +38,7 @@ module parcel_hdf5
 
         end subroutine create_h5_parcel_file
 
-        ! Write a step in the parcel file.
+        ! Write diagnostics for the current time step in the parcel file.
         ! @param[inout] nw counts the number of writes
         ! @param[in] t is the time
         ! @param[in] dt is the time step

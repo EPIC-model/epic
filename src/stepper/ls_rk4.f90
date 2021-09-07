@@ -43,7 +43,7 @@ module ls_rk4
     contains
 
         ! Allocate memory of low-storage RK-4 temporaries.
-        ! They are deallocated at the end of the simulation.
+        ! This memory is deallocated at the end of the simulation.
         ! @param[in] num is the size to allocate
         subroutine ls_rk4_alloc(num)
             integer, intent(in) :: num
