@@ -29,6 +29,10 @@ module parcel_merge
                pack_parcels
 
     contains
+
+        ! Merge small parcels into neighbouring equal-sized parcels or bigger
+        ! parcels which are close by.
+        ! @param[inout] parcels is the parcel container
         subroutine merge_ellipses(parcels)
             type(parcel_container_type), intent(inout) :: parcels
             integer, allocatable, dimension(:)         :: isma
@@ -74,6 +78,15 @@ module parcel_merge
         end subroutine merge_ellipses
 
 
+        ! Actual merge.
+        ! @param[inout] parcels is the parcel container
+        ! @param[in] isma are the indices of the small parcels
+        ! @param[in] iclo are the indices of the close parcels
+        ! @param[in] n_merge is the array size of isma and iclo
+        ! @param[out] B11m are the B11 matrix entries of the mergers
+        ! @param[out] B12m are the B12 matrix entries of the mergers
+        ! @param[out] B22m are the B22 matrix entries of the mergers
+        ! @param[out] vm are the volumes of the mergers
         subroutine do_group_merge(parcels, isma, iclo, n_merge, B11m, B12m, B22m, vm)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
@@ -223,6 +236,11 @@ module parcel_merge
         end subroutine do_group_merge
 
 
+        ! Geometric merging -- called by subroutine merge_ellipses.
+        ! @param[inout] parcels is the parcel container
+        ! @param[in] isma are the indices of the small parcels
+        ! @param[in] iclo are the indices of the close parcels
+        ! @param[in] n_merge is the array size of isma and iclo
         subroutine geometric_merge(parcels, isma, iclo, n_merge)
             type(parcel_container_type), intent(inout) :: parcels
             integer,                     intent(in)    :: isma(0:)
@@ -263,8 +281,15 @@ module parcel_merge
         end subroutine geometric_merge
 
 
-        ! this algorithm replaces invalid parcels with valid parcels
+        ! This algorithm replaces invalid parcels with valid parcels
         ! from the end of the container
+        ! @param[in] isma are the indices of the small parcels
+        ! @param[in] n_merge is the array size of isma and iclo
+        ! @pre
+        !   - isma must be sorted in ascending order
+        !   - isma must be contiguously filled
+        !   The above preconditions must be fulfilled so that the
+        !   parcel pack algorithm works correctly.
         subroutine pack_parcels(isma, n_merge)
             integer, intent(in) :: isma(0:)
             integer, intent(in) :: n_merge

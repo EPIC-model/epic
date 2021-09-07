@@ -32,7 +32,7 @@ module fields
 
     contains
 
-        ! allocate all fields
+        ! Allocate all fields
         subroutine field_alloc
             if (allocated(velog)) then
                 return
@@ -62,6 +62,7 @@ module fields
 
         end subroutine field_alloc
 
+        ! Reset fields to zero
         subroutine field_default
             call field_alloc
 
@@ -78,8 +79,11 @@ module fields
             nsparg   = zero
         end subroutine
 
-        ! get the lower index of the cell the parcel is in
-        ! this subroutine does not take x periodicity into account
+        ! Get the lower index of the cell the parcel is in.
+        ! This subroutine does not take x periodicity into account.
+        ! @param[in] pos position of the parcel
+        ! @param[out] i lower, horizontal cell index
+        ! @param[out] j lower, vertical cell index
         subroutine get_index(pos, i, j)
             double precision, intent(in)  :: pos(2)
             integer,          intent(out) :: i, j
@@ -92,7 +96,8 @@ module fields
         end subroutine get_index
 
 
-        ! do periodic shift of the index
+        ! Do periodic shift of the index
+        ! @param[inout] ii horizontal grid point indices
         subroutine periodic_index_shift(ii)
             integer, intent(inout) :: ii(:)
 
@@ -107,7 +112,10 @@ module fields
         end subroutine periodic_index_shift
 
 
-        ! get a position given a field index
+        ! Get the coordinate of a grid point (i, j).
+        ! @param[in] i horizontal cell index
+        ! @param[in] j vertical cell index
+        ! @param[out] pos position of (i, j) in the domain
         subroutine get_position(i, j, pos)
             integer,          intent(in)  :: i, j
             double precision, intent(out) :: pos(2)

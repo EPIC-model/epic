@@ -22,6 +22,9 @@ module utils
 
     contains
 
+        ! Write last step to the H5 files. For the time step dt, it
+        ! writes zero.
+        ! @param[in] t is the time
         subroutine write_last_step(t)
             double precision,  intent(in) :: t
             double precision              :: velocity(n_parcels, 2)
@@ -43,6 +46,10 @@ module utils
             call write_step(t, zero, .true.)
         end subroutine write_last_step
 
+        ! Write step to the H5 files.
+        ! @param[in] t is the time
+        ! @param[in] dt is the time step
+        ! @param[in] l_force a logical to force a write (optional)
         subroutine write_step(t, dt, l_force)
             use options, only : output
             double precision,  intent(in) :: t

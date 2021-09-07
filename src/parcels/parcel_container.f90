@@ -28,6 +28,11 @@ module parcel_container
 
     contains
 
+        ! Obtain the difference between two horizontal coordinates
+        ! across periodic edges
+        ! @param[in] x1 first horizontal position
+        ! @param[in] x2 second horizontal position
+        ! @returns delx = x1 - x2
         elemental function get_delx(x1, x2) result (delx)
             double precision, intent(in) :: x1, x2
             double precision             :: delx
@@ -38,7 +43,10 @@ module parcel_container
         end function get_delx
 
 
-        ! overwrite parcel n with parcel m
+        ! Overwrite parcel n with parcel m
+        ! @param[in] n index of parcel to be replaced
+        ! @param[in] m index of parcel used to replace parcel at index n
+        ! @pre n and m must be valid parcel indices
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
 
@@ -63,7 +71,8 @@ module parcel_container
 
         end subroutine parcel_replace
 
-
+        ! Allocate parcel memory
+        ! @param[in] num number of parcels
         subroutine parcel_alloc(num)
             integer, intent(in) :: num
 
@@ -77,7 +86,7 @@ module parcel_container
 #endif
         end subroutine parcel_alloc
 
-
+        ! Deallocate parcel memory
         subroutine parcel_dealloc
             deallocate(parcels%position)
             deallocate(parcels%vorticity)

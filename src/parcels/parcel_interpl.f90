@@ -36,6 +36,7 @@ module parcel_interpl
 
     contains
 
+        ! Interpolate the parcel volume to the grid
         subroutine vol2grid
             double precision  :: points(2, 2)
             integer           :: n, p, l
@@ -83,6 +84,7 @@ module parcel_interpl
         end subroutine vol2grid
 
 #ifndef NDEBUG
+        ! Interpolate the parcel volume to the grid to check symmetry
         subroutine vol2grid_symmetry_error
             double precision :: points(2, 2), V, B(2), pos(2)
             integer          :: n, p, l, m
@@ -130,6 +132,13 @@ module parcel_interpl
         end subroutine vol2grid_symmetry_error
 #endif
 
+        ! Interpolate parcel quantities to the grid, these consist of the parcel
+        !   - vorticity
+        !   - buoyancy
+        !   - volume
+        ! It also updates the scalar fields:
+        !   - nparg, that is the number of parcels per grid cell
+        !   - nsparg, that is the number of small parcels per grid cell
         subroutine par2grid
             double precision :: points(2, 2)
             integer          :: n, p, l, i, j
@@ -274,6 +283,12 @@ module parcel_interpl
         end subroutine par2grid
 
 
+        ! Interpolate the gridded quantities to the parcels
+        ! @param[inout] vel is the parcel velocity
+        ! @param[inout] vor is the parcel vorticity
+        ! @param[inout] vgrad is the parcel strain
+        ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
+        !            (optional)
         subroutine grid2par(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
             logical, optional, intent(in)       :: add
@@ -356,6 +371,11 @@ module parcel_interpl
         end subroutine grid2par
 
 
+        ! Interpolate the gridded quantities to the parcels without resetting
+        ! their values to zero before doing grid2par.
+        ! @param[inout] vel is the parcel velocity
+        ! @param[inout] vor is the parcel vorticity
+        ! @param[inout] vgrad is the parcel strain
         subroutine grid2par_add(vel, vor, vgrad)
             double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
 
@@ -364,9 +384,11 @@ module parcel_interpl
         end subroutine grid2par_add
 
 
-        !
-        ! tri-linear interpolation
-        !
+        ! Tri-linear interpolation
+        ! @param[in] pos position of the parcel
+        ! @param[out] ii horizontal grid points for interoplation
+        ! @param[out] jj vertical grid points for interpolation
+        ! @param[out] ww interpolation weights
         subroutine trilinear(pos, ii, jj, ww)
             double precision, intent(in)  :: pos(2)
             integer,          intent(out) :: ii(4), jj(4)

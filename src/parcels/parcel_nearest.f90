@@ -44,6 +44,14 @@ module parcel_nearest
 
     contains
 
+        ! @param[out] isma indices of small parcels
+        ! @param[out] iclo indices of close parcels
+        ! @param[out] nmerge the array size of isma and iclo
+        ! @post
+        !   - isma must be sorted in ascending order
+        !   - isma and iclo must be filled contiguously
+        !   - parcel indices in isma cannot be in iclo, and vice-versa
+        !   - the m-th entry in isma relates to the m-th entry in iclo
         subroutine find_nearest(isma, iclo, nmerge)
             integer, allocatable, intent(out) :: isma(:)
             integer, allocatable, intent(out) :: iclo(:)

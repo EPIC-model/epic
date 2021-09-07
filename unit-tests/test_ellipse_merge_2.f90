@@ -14,6 +14,7 @@ program test_ellipse_multi_merge_2
     use options, only : parcel
     use parameters, only : update_parameters, nx, nz, lower, extent
     use parcel_ellipse
+    use parcel_nearest
     use timer
     implicit none
 
@@ -25,6 +26,8 @@ program test_ellipse_multi_merge_2
     extent = (/pi, pi/)
 
     call register_timer('parcel merge', merge_timer)
+    call register_timer('merge nearest', merge_nearest_timer)
+    call register_timer('merge tree resolve', merge_tree_resolve_timer)
 
     parcel%lambda_max = five
     parcel%min_vratio = ten

@@ -17,6 +17,9 @@ module parcel_hdf5
 
     contains
 
+        ! Create the parcel file.
+        ! @param[in] basename of the file
+        ! @param[in] overwrite the file
         subroutine create_h5_parcel_file(basename, overwrite)
             character(*), intent(in) :: basename
             logical,      intent(in) :: overwrite
@@ -35,6 +38,10 @@ module parcel_hdf5
 
         end subroutine create_h5_parcel_file
 
+        ! Write diagnostics for the current time step in the parcel file.
+        ! @param[inout] nw counts the number of writes
+        ! @param[in] t is the time
+        ! @param[in] dt is the time step
         subroutine write_h5_parcel_step(nw, t, dt)
             integer,          intent(inout) :: nw
             double precision, intent(in)    :: t
@@ -71,6 +78,8 @@ module parcel_hdf5
         end subroutine write_h5_parcel_step
 
 
+        ! Write parcel datasets (called from write_h5_parcel_step).
+        ! @param[in] iter is the number of the write
         subroutine write_h5_parcels(iter)
             integer, intent(in)           :: iter ! iteration
             integer(hid_t)                :: group

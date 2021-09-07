@@ -59,6 +59,9 @@ module parcel_diagnostics
 
     contains
 
+        ! Create the parcel diagnostic file.
+        ! @param[in] basename of the file
+        ! @param[in] overwrite the file
         subroutine create_h5_parcel_stat_file(basename, overwrite)
             character(*), intent(in) :: basename
             logical,      intent(in) :: overwrite
@@ -77,7 +80,7 @@ module parcel_diagnostics
 
         end subroutine create_h5_parcel_stat_file
 
-        ! compute the reference potential energy
+        ! Compute the reference potential energy
         subroutine init_parcel_diagnostics
             integer          :: ii(n_parcels), n
             double precision :: b(n_parcels)
@@ -101,6 +104,7 @@ module parcel_diagnostics
         end subroutine init_parcel_diagnostics
 
 
+        ! Calculate all parcel related diagnostics
         subroutine calc_parcel_diagnostics(velocity)
             double precision :: velocity(:, :)
             integer          :: n
@@ -284,6 +288,10 @@ module parcel_diagnostics
         end subroutine straka_diagnostics
 #endif
 
+        ! Write a step in the parcel diagnostic file.
+        ! @param[inout] nw counts the number of writes
+        ! @param[in] t is the time
+        ! @param[in] dt is the time step
         subroutine write_h5_parcel_stats_step(nw, t, dt)
             integer,          intent(inout) :: nw
             double precision, intent(in)    :: t
