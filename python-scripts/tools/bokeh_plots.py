@@ -163,8 +163,8 @@ def bokeh_plot_parcels(fname, step, show=False, fmt='png',
         extent = h5reader.get_box_extent()
         ncells = h5reader.get_box_ncells()
         vcell = np.prod(extent / ncells)
-        vmin = vcell / h5reader.get_parcel_option('vmin_fraction')
-        vmax = vcell / h5reader.get_parcel_option('vmax_fraction')
+        vmin = vcell / h5reader.get_parcel_option('min_vratio')
+        vmax = vcell / h5reader.get_parcel_option('max_vratio')
     else:
         vmin, vmax = h5reader.get_dataset_min_max(coloring)
 

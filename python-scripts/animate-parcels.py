@@ -59,6 +59,18 @@ try:
                         default=None,
                         help="float to determine y max")
 
+    parser.add_argument("--tmin",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help="float to determine time min")
+
+    parser.add_argument("--tmax",
+                        type=float,
+                        required=False,
+                        default=None,
+                        help="float to determine time max")
+
     if has_bokeh:
         parser.add_argument("--use-bokeh",
                             required=False,
@@ -91,7 +103,9 @@ try:
                 xmin=args.xmin,
                 xmax=args.xmax,
                 ymin=args.ymin,
-                ymax=args.ymax)
+                ymax=args.ymax,
+                tmin=args.tmin,
+                tmax=args.tmax)
 
     anim.save(args.saveas)
 

@@ -40,6 +40,7 @@ try:
     parser.add_argument("--labels",
                         type=str,
                         nargs='+',
+                        default=None,
                         required=False,
                         help="special labels for the files")
 
@@ -83,6 +84,9 @@ try:
     for fname in args.filenames:
         if not os.path.exists(fname):
             raise IOError("File '" + fname + "' does not exist.")
+
+    if args.labels is None:
+        args.labels = len(args.filenames) * [None]
 
     if args.kind == kinds[0]:
         plot_rms_volume_error(args.filenames, show=args.show, fmt=args.fmt,

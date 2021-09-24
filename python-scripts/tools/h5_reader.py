@@ -26,6 +26,18 @@ class H5Reader:
     def is_parcel_file(self):
         return self._h5type == 'parcels'
 
+    @property
+    def is_parcel_stats_file(self):
+        return self._h5type == 'parcel diagnostics'
+
+    @property
+    def is_field_stats_file(self):
+        return self._h5type == 'field diagnostics'
+
+    @property
+    def is_field_file(self):
+        return self._h5type == 'fields'
+
     def get_num_steps(self):
         return self._h5file.attrs['nsteps'][0]
 

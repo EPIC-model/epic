@@ -11,4 +11,5 @@ nobase_tools_DATA = 			\
 	bokeh_plots.py			\
 	plot_beautify.py 		\
 	plot_style.py			\
+	units.py			\
 	__init__.py
