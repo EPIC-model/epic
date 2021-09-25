@@ -92,6 +92,7 @@ module parcel_nearest
             enddo
 
             if (nmerge == 0) then
+                call stop_timer(merge_nearest_timer)
                 return
             endif
 
