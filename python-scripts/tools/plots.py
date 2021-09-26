@@ -375,7 +375,7 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
 
     if dset == 'aspect-ratio':
         plt.ylabel(r'aspect ratio $\lambda$')
-        plt.text(t[10], 0.95 * lmax, r'$\lambda\le\lambda_{max} = ' + str(lmax) + '$')
+        plt.text(t[10], 0.92 * lmax, r'$\lambda\le\lambda_{max} = ' + str(lmax) + '$')
         plt.axhline(lmax, linestyle='dashed', color='black')
     elif dset == 'volume':
         plt.ylabel(r'parcel volume / $V_{g}$')
@@ -634,22 +634,6 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
 
         nsteps = h5reader.get_num_steps()
 
-        #bi_vi = np.zeros(nsteps-1)
-        #bi_vi_xi = np.zeros(nsteps-1)
-        #bi_vi_zi = np.zeros(nsteps-1)
-
-        #bi_vi_x2i = np.zeros(nsteps-1)
-        #bi_vi_z2i = np.zeros(nsteps-1)
-
-        #wi_vi = np.zeros(nsteps-1)
-        #wi_vi_xi = np.zeros(nsteps-1)
-        #wi_vi_zi = np.zeros(nsteps-1)
-
-        #wi_vi_x2i = np.zeros(nsteps-1)
-        #wi_vi_z2i = np.zeros(nsteps-1)
-
-        #xi_zi = np.zeros(nsteps-1)
-
         t = np.zeros(nsteps)
 
         xb_bar = np.zeros(nsteps)
@@ -680,63 +664,20 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
             xzw_bar[j] = h5reader.get_step_attribute(j, 'xzv_bar')
 
 
-            #pos = h5reader.get_dataset(j, 'position')
-            #vol = h5reader.get_dataset(j, 'volume')
-            #vor = h5reader.get_dataset(j, 'vorticity')
-            #buo = h5reader.get_dataset(j, 'buoyancy')
-            #t[j-1] = h5reader.get_step_attribute(j, 't')
-
-            ## we only want parcels with x > 0
-            #ind = (pos[0, :] > 0.0)
-
-            #pos = pos[:, ind]
-            #vol = vol[ind]
-            #vor = vor[ind]
-            #buo = buo[ind]
-
-            #bv = buo * vol
-            #vv = vor * vol
-
-            ## first moment
-            #bi_vi[j-1] = bv.mean()
-            #bi_vi_xi[j-1] = (bv * pos[0, :]).mean()
-            #bi_vi_zi[j-1] = (bv * pos[1, :]).mean()
-
-            ## second moment
-            #bi_vi_x2i[j-1] = (bv * pos[0, :] ** 2).mean()
-            #bi_vi_z2i[j-1] = (bv * pos[1, :] ** 2).mean()
-
-            ## first moment
-            #wi_vi[j-1] = vv.mean()
-            #wi_vi_xi[j-1] = (vv * pos[0, :]).mean()
-            #wi_vi_zi[j-1] = (vv * pos[1, :]).mean()
-
-            ## second moment
-            #wi_vi_x2i[j-1] = (vv * pos[0, :] ** 2).mean()
-            #wi_vi_z2i[j-1] = (vv * pos[1, :] ** 2).mean()
-
-            #bi_vi_xi_zi = (bv * pos[0, :] * pos[1, :]).mean()
-            #wi_vi_xi_zi = (vv * pos[0, :] * pos[1, :]).mean()
-
         h5reader.close()
-
-        #xb_bar = bi_vi_xi / bi_vi
-        #zb_bar = bi_vi_zi / bi_vi
-        #xw_bar = wi_vi_xi / wi_vi
-        #zw_bar = wi_vi_zi / wi_vi
 
         data = {
             't':        t,
             'xb_bar':   xb_bar,
             'zb_bar':   zb_bar,
-            'x2b_bar':  x2b_bar, #bi_vi_x2i / bi_vi - xb_bar ** 2,
-            'z2b_bar':  z2b_bar, #bi_vi_z2i / bi_vi - zb_bar ** 2,
-            'xzb_bar':  xzb_bar, #bi_vi_xi_zi / bi_vi - xb_bar * zb_bar,
+            'x2b_bar':  x2b_bar,
+            'z2b_bar':  z2b_bar,
+            'xzb_bar':  xzb_bar,
             'xw_bar':   xw_bar,
             'zw_bar':   zw_bar,
-            'x2w_bar':  x2w_bar, #wi_vi_x2i / wi_vi - xw_bar ** 2,
-            'z2w_bar':  z2w_bar, #wi_vi_z2i / wi_vi - zw_bar ** 2,
-            'xzw_bar':  xzw_bar, #wi_vi_xi_zi / wi_vi - xw_bar * zw_bar
+            'x2w_bar':  x2w_bar,
+            'z2w_bar':  z2w_bar,
+            'xzw_bar':  xzw_bar,
         }
 
         df = pd.DataFrame(data=data)
