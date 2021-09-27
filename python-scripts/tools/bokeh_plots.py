@@ -9,6 +9,12 @@ from tools.plot_style import *
 import numpy as np
 
 def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kwargs):
+    no_title = kwargs.pop('no_title', False)
+    no_xaxis = kwargs.pop('no_xaxis', False)
+    no_yaxis = kwargs.pop('no_yaxis', False)
+    no_xlabel = kwargs.pop('no_xlabel', False)
+    no_ylabel = kwargs.pop('no_ylabel', False)
+
     nsteps = h5reader.get_num_steps()
     extent = h5reader.get_box_extent()
     origin = h5reader.get_box_origin()
@@ -17,6 +23,7 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     right = origin[0] + extent[0]
     bottom = origin[1]
     top = origin[1] + extent[1]
+
 
     # instantiating the figure object
     fkwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -51,17 +58,30 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     else:
         title = coloring
 
+    title = title + \
+                    '\t\t\t\t time = %15.3f'%ttime + \
+                    '\t\t\t\t #parcels = %10d'%nparcels
+    if no_title:
+        title = None
+
+    x_axis_label = 'x (m)'
+    y_axis_label = 'y (m)'
+
+    if no_xlabel:
+        x_axis_label = ' '
+
+    if no_ylabel:
+        y_axis_label = ' '
+
     graph = bpl.figure(output_backend="webgl",
                        plot_width=pw,
                        plot_height = ph,
                        aspect_ratio = (right-left)/(top-bottom),
                        x_range = (left, right),
                        y_range = (bottom, top),
-                       x_axis_label='x (m)',
-                       y_axis_label='y (m)',
-                       title = title + \
-                       '\t\t\t\t time = %15.3f'%ttime + \
-                       '\t\t\t\t #parcels = %10d'%nparcels)
+                       x_axis_label = x_axis_label,
+                       y_axis_label = y_axis_label,
+                       title = title)
 
     # 20 July 2021
     # https://stackoverflow.com/questions/32158939/python-bokeh-remove-toolbar-from-chart
@@ -80,6 +100,14 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     graph.yaxis.axis_label_text_font = text_font
     graph.yaxis.major_label_text_font = text_font
 
+    if no_xaxis:
+        # 27 Sept. 2021
+        # https://stackoverflow.com/questions/30545372/hide-axis-in-bokeh
+        graph.xaxis.visible = False
+
+    if no_yaxis:
+        graph.xaxis.visible = False
+
     graph.yaxis.formatter.use_scientific = bokeh_style['formatter.use_scientific']
     graph.xaxis.formatter.use_scientific = bokeh_style['formatter.use_scientific']
     graph.yaxis.formatter.power_limit_low = bokeh_style['formatter.power_limit_low']
@@ -89,8 +117,9 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     graph.yaxis.formatter.precision = bokeh_style['formatter.precision']
     graph.xaxis.formatter.precision = bokeh_style['formatter.precision']
 
-    graph.title.text_font_size = font_size
-    graph.title.text_font = text_font
+    if not no_title:
+        graph.title.text_font_size = font_size
+        graph.title.text_font = text_font
 
     x, y, width, height, angle = h5reader.get_ellipses_for_bokeh(step)
 

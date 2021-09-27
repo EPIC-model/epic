@@ -167,12 +167,7 @@ def plot_volume_symmetry_error(fnames, show=False, fmt="png", **kwargs):
 
         h5reader.close()
 
-        label = labels[i]
-        if label is None:
-            label = os.path.splitext(fname)[0]
-            label = label.split('_fields')[0]
-
-        plt.fill_between(t, 0, vmax, color=colors[i], label=label,
+        plt.fill_between(t, 0, vmax, color=colors[i], label=labels[i],
                         edgecolor=colors[i], linewidth=0.75)
 
     plt.grid(which='both', linestyle='dashed')
@@ -182,7 +177,7 @@ def plot_volume_symmetry_error(fnames, show=False, fmt="png", **kwargs):
     #plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
 
 
-    if n > 1:
+    if not labels[0] is None:
         plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
@@ -227,19 +222,16 @@ def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
         t = h5reader.get_diagnostic('t')
         h5reader.close()
 
-        label = labels[i]
-        if label is None:
-            label = os.path.splitext(fname)[0]
-            label = label.split('_fields')[0]
-
-        plt.plot(t, vrms, label=label, linewidth=2, color=colors[i])
+        plt.plot(t, vrms, label=labels[i], linewidth=2, color=colors[i])
 
     plt.xlabel(get_label('time', units['time']))
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
-    plt.ylabel(r'rms volume error')
+    plt.ylabel(r'rms area error')
     plt.grid(which='both', linestyle='dashed', zorder=-1)
-    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
-               bbox_to_anchor=legend_dict['bbox_to_anchor'])
+
+    if not labels[0] is None:
+        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
     plt.yscale(yscale)
     plt.ylim(ylim)
     plt.tight_layout()
@@ -278,19 +270,16 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
         t = h5reader.get_diagnostic('t')
         h5reader.close()
 
-        label = labels[i]
-        if label is None:
-            label = os.path.splitext(fname)[0]
-            label = label.split('_fields')[0]
-
-        plt.plot(t, vmax, label=label, linewidth=2, color=colors[i])
+        plt.plot(t, vmax, label=labels[i], linewidth=2, color=colors[i])
 
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.xlabel(get_label('time', units['time']))
     plt.ylabel(r'max normalised volume error')
     plt.grid(linestyle='dashed', zorder=-1)
-    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
-               bbox_to_anchor=legend_dict['bbox_to_anchor'])
+
+    if not labels[0] is None:
+        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
     plt.tight_layout()
 
     if show:
@@ -360,12 +349,7 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
 
         h5reader.close()
 
-        label = labels[i]
-        if label is None:
-            label = os.path.splitext(fname)[0]
-            label = label.split('_parcels')[0]
-
-        plt.plot(t, data_mean, label=label, color=colors[i])
+        plt.plot(t, data_mean, label=labels[i], color=colors[i])
         plt.fill_between(t, data_mean - data_std, data_mean + data_std,
                          alpha=0.5, color=colors[i])
 
@@ -384,7 +368,7 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
     else:
         plt.ylabel(r'parcel ' + dset)
 
-    if n > 1:
+    if not labels[0] is None:
         plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
@@ -447,12 +431,7 @@ def plot_parcel_stats_profile(fnames, show=False, fmt="png", **kwargs):
 
         h5reader.close()
 
-        label = labels[i]
-        if label is None:
-            label = os.path.splitext(fname)[0]
-            label = label.split('_parcel_stats')[0]
-
-        plt.plot(t, data_mean, label=label, color=colors[i])
+        plt.plot(t, data_mean, label=labels[i], color=colors[i])
         plt.fill_between(t, data_mean - data_std, data_mean + data_std,
                          alpha=0.5, color=colors[i])
 
@@ -471,7 +450,7 @@ def plot_parcel_stats_profile(fnames, show=False, fmt="png", **kwargs):
     else:
         plt.ylabel(r'parcel ' + dset)
 
-    if n > 1:
+    if not labels[0] is None:
         plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
@@ -518,11 +497,7 @@ def plot_parcel_number(fnames, show=False, fmt="png", **kwargs):
 
         h5reader.close()
 
-        label = None
-        if not labels[i] is None:
-            label = labels[i]
-
-        plt.plot(t, nparcels, label=label)
+        plt.plot(t, nparcels, label=labels[i])
 
     plt.grid(linestyle='dashed', zorder=-1)
 
@@ -573,11 +548,7 @@ def plot_small_parcel_number(fnames, show=False, fmt="png", **kwargs):
 
         h5reader.close()
 
-        label = None
-        if not labels[i] is None:
-            label = labels[i]
-
-        plt.plot(t, nsmall / nparcels * 100.0, label=label)
+        plt.plot(t, nsmall / nparcels * 100.0, label=labels[i])
 
     plt.grid(linestyle='dashed', zorder=-1)
 
@@ -682,19 +653,14 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
 
         df = pd.DataFrame(data=data)
 
-        label = None
-        if not labels[i] is None:
-            label = labels[i]
-
-
-        ax1.plot(df['t'], df['x' + tag + '_bar'], label=label, color=colors[i])
+        ax1.plot(df['t'], df['x' + tag + '_bar'], label=labels[i], color=colors[i])
 
         if variance:
             std = np.sqrt(df['x2' + tag + '_bar'])
             ax1.fill_between(df['t'], df['x' + tag + '_bar']-std, df['x' + tag + '_bar']+std, alpha=0.5,
                              color=colors[i], edgecolor='None')
 
-        ax2.plot(df['t'], df['z' + tag + '_bar'], label=label, color=colors[i])
+        ax2.plot(df['t'], df['z' + tag + '_bar'], label=labels[i], color=colors[i])
 
         if variance:
             std = np.sqrt(df['z2' + tag + '_bar'])
@@ -704,7 +670,7 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
     ax1.grid(which='both', linestyle='dashed')
     ax2.grid(which='both', linestyle='dashed')
 
-    if not label is None:
+    if not labels[0] is None:
         ax1.legend(loc=legend_dict['loc'],
                    ncol=legend_dict['ncol'],
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
@@ -769,18 +735,13 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
 
         h5reader.close()
 
-        label = labels[i]
-        if label is None:
-            label = os.path.splitext(fname)[0]
-            label = label.split('_parcels')[0]
-
         sns.ecdfplot(data=data, x=dset, stat='proportion',
-                     color=colors[i], label=label)
+                     color=colors[i], label=labels[i])
 
     plt.ylabel('proportion')
     plt.grid(which='both', linestyle='dashed')
 
-    if n > 1:
+    if not labels[0] is None:
         plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
@@ -833,19 +794,14 @@ def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
 
         h5reader.close()
 
-        label = labels[i]
-        if label is None:
-            label = os.path.splitext(fname)[0]
-            label = label.split('_field_stats')[0]
-
-        plt.plot(t, n_avg, color=colors[i], label=label)
+        plt.plot(t, n_avg, color=colors[i], label=labels[i])
         plt.fill_between(t, n_min, n_max, color=colors[i], alpha=0.5, edgecolor=None)
 
     plt.xlabel(get_label('time', units['time']))
     plt.ylabel(r'number of parcels/cell')
     plt.grid(which='both', linestyle='dashed')
 
-    if n > 1:
+    if not labels[0] is None:
         plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
