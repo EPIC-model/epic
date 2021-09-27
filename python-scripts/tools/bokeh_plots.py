@@ -103,10 +103,13 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     if no_xaxis:
         # 27 Sept. 2021
         # https://stackoverflow.com/questions/30545372/hide-axis-in-bokeh
-        graph.xaxis.visible = False
+        # https://stackoverflow.com/questions/36112404/bokeh-gridplot-tighten-layout-and-outer-sidelabels
+        #graph.xaxis.visible = False
+        graph.xaxis.major_label_text_font_size ='0pt'
 
     if no_yaxis:
-        graph.xaxis.visible = False
+        graph.yaxis.major_label_text_font_size ='0pt'
+        #graph.xaxis.visible = False
 
     graph.yaxis.formatter.use_scientific = bokeh_style['formatter.use_scientific']
     graph.xaxis.formatter.use_scientific = bokeh_style['formatter.use_scientific']
