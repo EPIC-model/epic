@@ -766,6 +766,7 @@ def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
     n = len(fnames)
 
     labels = kwargs.pop('labels', n * [None])
+    add_minmax = kwargs.pop('add_minmax', True)
 
     if len(labels) < n:
         raise ValueError('Not enough labels provided.')
@@ -782,20 +783,27 @@ def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
         nsteps = h5reader.get_num_steps()
 
         n_avg = np.zeros(nsteps)
-        n_min = np.zeros(nsteps)
-        n_max = np.zeros(nsteps)
+
+        if add_minmax:
+            n_min = np.zeros(nsteps)
+            n_max = np.zeros(nsteps)
+
         t = np.zeros(nsteps)
 
         for step in range(nsteps):
             n_avg[step] = h5reader.get_step_attribute(step, 'average num parcels per cell')
-            n_min[step] = h5reader.get_step_attribute(step, 'min num parcels per cell')
-            n_max[step] = h5reader.get_step_attribute(step, 'max num parcels per cell')
             t[step] = h5reader.get_step_attribute(step, 't')
+
+            if add_minmax:
+                n_min[step] = h5reader.get_step_attribute(step, 'min num parcels per cell')
+                n_max[step] = h5reader.get_step_attribute(step, 'max num parcels per cell')
 
         h5reader.close()
 
         plt.plot(t, n_avg, color=colors[i], label=labels[i])
-        plt.fill_between(t, n_min, n_max, color=colors[i], alpha=0.5, edgecolor=None)
+
+        if add_minmax:
+            plt.fill_between(t, n_min, n_max, color=colors[i], alpha=0.5, edgecolor=None)
 
     plt.xlabel(get_label('time', units['time']))
     plt.ylabel(r'number of parcels/cell')
