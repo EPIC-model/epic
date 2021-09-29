@@ -173,6 +173,8 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
 def bokeh_plot_parcels(fname, step, show=False, fmt='png',
                        coloring='aspect-ratio', display='full HD', **kwargs):
 
+    jpg_quality = kwargs.pop('jpg_quality', 60)
+
     h5reader = H5Reader()
 
     h5reader.open(fname)
@@ -221,7 +223,7 @@ def bokeh_plot_parcels(fname, step, show=False, fmt='png',
         im = Image.open('bokeh_tmp_figure.png')
         rgb_im = im.convert('RGB')
         rgb_im.save('parcels_'  + coloring + '_step_' + \
-            str(step).zfill(len(str(nsteps))) + '.jpg', quality=60)
+            str(step).zfill(len(str(nsteps))) + '.jpg', quality=jpg_quality)
 
         # delete temporary PNG
         import os
