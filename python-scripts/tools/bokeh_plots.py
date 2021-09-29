@@ -210,6 +210,23 @@ def bokeh_plot_parcels(fname, step, show=False, fmt='png',
     elif fmt == 'svg':
         export_svg(graph, filename = 'parcels_'  + coloring + '_step_' + \
             str(step).zfill(len(str(nsteps))) + '.svg')
+    elif fmt == 'jpg':
+        # save a temporary PNG
+        export_png(graph, filename = 'bokeh_tmp_figure.png')
+
+        # 29 Sept. 2021
+        # https://stackoverflow.com/questions/4353019/in-pythons-pil-how-do-i-change-the-quality-of-an-image
+        # https://stackoverflow.com/questions/43258461/convert-png-to-jpeg-using-pillow
+        from PIL import Image
+        im = Image.open('bokeh_tmp_figure.png')
+        rgb_im = im.convert('RGB')
+        rgb_im.save('parcels_'  + coloring + '_step_' + \
+            str(step).zfill(len(str(nsteps))) + '.jpg', quality=60)
+
+        # delete temporary PNG
+        import os
+        os.remove('bokeh_tmp_figure.png')
+
     else:
         raise IOError("Bokeh plot does not support '" + fmt + "' format.")
 
