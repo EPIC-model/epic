@@ -14,6 +14,7 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     no_yaxis = kwargs.pop('no_yaxis', False)
     no_xlabel = kwargs.pop('no_xlabel', False)
     no_ylabel = kwargs.pop('no_ylabel', False)
+    no_colorbar = kwargs.pop('no_colorbar', False)
 
     nsteps = h5reader.get_num_steps()
     extent = h5reader.get_box_extent()
@@ -165,7 +166,9 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
 
     graph.ellipse(x='x', y='y', width='width', height='height',angle='angle',
                   color = mapper,fill_alpha=0.75,line_color=None,source=source)
-    graph.add_layout(color_bar, 'right')
+
+    if not no_colorbar:
+        graph.add_layout(color_bar, 'right')
 
     return graph
 
