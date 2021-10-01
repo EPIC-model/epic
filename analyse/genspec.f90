@@ -21,19 +21,19 @@ program genspec
     ! The spectrum:
     double precision, allocatable :: spec(:)
 
-    ! x and y wavenumbers:
-    double precision, allocatable :: rkx(:), hrkx(:), rky(:)
+    ! x and z wavenumbers:
+    double precision, allocatable :: rkx(:), hrkx(:), rkz(:)
 
     ! Generic arrays needed for the FFTs:
-    double precision, allocatable :: xtrig(:), ytrig(:)
-    integer :: xfactors(5), yfactors(5)
+    double precision, allocatable :: xtrig(:), ztrig(:)
+    integer :: xfactors(5), zfactors(5)
 
     ! Wavenumber magnitude used for the spectrum:
     integer, allocatable :: kmag(:, :)
 
     ! Other work variables:
-    double precision :: scx, rkxmax, scy, rkymax, delki
-    integer :: kxc, kmax, kx, ky, k
+    double precision :: scx, rkxmax, scz, rkzmax, delki
+    integer :: kxc, kmax, kx, kz, k
 
     character(len=512) :: filename
     character(len=64)  :: dset
@@ -55,7 +55,7 @@ program genspec
 
     !---------------------------------------------------------------------
     ! Set up FFTs:
-    call init2dfft(nx, nz, extent(1), extent(2), xfactors, yfactors, xtrig, ytrig, hrkx, rky)
+    call init2dfft(nx, nz, extent(1), extent(2), xfactors, zfactors, xtrig, ztrig, hrkx, rkz)
 
     !Define x wavenumbers:
     rkx(0) = zero
@@ -69,13 +69,13 @@ program genspec
     !Initialise arrays for computing the spectrum:
     scx = twopi / extent(1)
     rkxmax = scx * dble(nx / 2)
-    scy = pi / extent(2)
-    rkymax = scy * dble(nz)
-    delki = one / dsqrt(scx ** 2 + scy ** 2)
-    kmax = nint(dsqrt(rkxmax ** 2 + rkymax ** 2) * delki)
-    do ky = 1, nz
+    scz = pi / extent(2)
+    rkzmax = scz * dble(nz)
+    delki = one / dsqrt(scx ** 2 + scz ** 2)
+    kmax = nint(dsqrt(rkxmax ** 2 + rkzmax ** 2) * delki)
+    do kz = 1, nz
         do kx = 0, nx - 1
-            kmag(kx, ky) = nint(dsqrt(rkx(kx) ** 2 + rky(ky) ** 2) * delki)
+            kmag(kx, kz) = nint(dsqrt(rkx(kx) ** 2 + rkz(kz) ** 2) * delki)
         enddo
     enddo
     do kx = 0, nx - 1
@@ -86,7 +86,7 @@ program genspec
     !Compute spectrum:
 
     !Transform data in pp to spectral space:
-    call ptospc_fc(nx, nz, pp, ss, xfactors, yfactors, xtrig, ytrig)
+    call ptospc_fc(nx, nz, pp, ss, xfactors, zfactors, xtrig, ztrig)
 
     do k = 0, kmax
         spec(k) = zero
@@ -103,16 +103,16 @@ program genspec
     enddo
 
     !x-independent mode:
-    do ky = 1, nz
-        k = kmag(0, ky)
-        spec(k) = spec(k) + f12 * ss(0, ky) ** 2
+    do kz = 1, nz
+        k = kmag(0, kz)
+        spec(k) = spec(k) + f12 * ss(0, kz) ** 2
     enddo
 
     !All other modes:
-    do ky = 1, nz
+    do kz = 1, nz
         do kx = 1, nx - 1
-            k = kmag(kx, ky)
-            spec(k) = spec(k) + ss(kx, ky) ** 2
+            k = kmag(kx, kz)
+            spec(k) = spec(k) + ss(kx, kz) ** 2
         enddo
     enddo
 
@@ -141,9 +141,9 @@ program genspec
             allocate(spec(0:max(nx, nz)))
             allocate(rkx(0:nx - 1))
             allocate(hrkx(nx))
-            allocate(rky(nz))
+            allocate(rkz(nz))
             allocate(xtrig(2 * nx))
-            allocate(ytrig(2 * nz))
+            allocate(ztrig(2 * nz))
             allocate(kmag(0:nx - 1, 0:nz))
         end subroutine alloc_arrays
 
@@ -153,9 +153,9 @@ program genspec
             deallocate(spec)
             deallocate(rkx)
             deallocate(hrkx)
-            deallocate(rky)
+            deallocate(rkz)
             deallocate(xtrig)
-            deallocate(ytrig)
+            deallocate(ztrig)
             deallocate(kmag)
         end subroutine dealloc_arrays
 
@@ -211,7 +211,7 @@ program genspec
         subroutine write_spectrum
             logical                   :: exists = .false.
             character(:), allocatable :: fname
-            integer                   :: pos, kx, ky
+            integer                   :: pos, kx, kz
 
             ! 1 October 2021
             ! https://stackoverflow.com/questions/36731707/fortran-how-to-remove-file-extension-from-character
@@ -234,10 +234,10 @@ program genspec
                 write(1235, *) '#         k   P(k)'
             endif
 
-            do ky = 1, nz
-                do kx = 1, nx - 1
-                    k = kmag(kx, ky)
-                    write(1235, *) k, spec(k)
+            do kz = 0, nz
+                do kx = 0, nx - 1
+                    k = kmag(kx, kz)
+                    write(1235, *) k, spec(k) / dble(nx * nz)
                 enddo
             enddo
 
