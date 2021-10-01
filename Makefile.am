@@ -3,6 +3,7 @@ SUBDIRS =		\
 	unit-tests	\
 	python-scripts	\
 	models		\
+	analyse		\
 	run-script
 
 

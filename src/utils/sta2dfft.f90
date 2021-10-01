@@ -29,6 +29,7 @@ module sta2dfft
     !            computing the derviatives.**
 
 
+    use constants, only : pi, zero
     use stafft
 
     implicit none
@@ -49,7 +50,6 @@ module sta2dfft
             double precision:: lx, ly, kx(nx), ky(ny)
 
             !Local declarations:
-            double precision, parameter:: pi = 3.141592653589793238462643383279502884197169399375105820974944592307816d0
             double precision:: sc
             integer:: k
 

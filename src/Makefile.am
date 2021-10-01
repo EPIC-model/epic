@@ -5,6 +5,7 @@ epic_SOURCES = 					\
 	utils/phys_constants.f90		\
 	utils/phys_parameters.f90		\
 	utils/stafft.f90			\
+	utils/sta2dfft.f90			\
 	utils/deriv1d.f90			\
 	utils/options.f90			\
 	utils/merge_sort.f90			\
