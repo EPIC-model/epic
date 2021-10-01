@@ -1,108 +1,261 @@
 program genspec
+    use sta2dfft
+    use constants, only : pi, twopi, f14, f12, zero, one
+    use h5_reader
+    use h5_writer, only : get_step_group_name
+    implicit none
 
-use sta2dfft
-use constants, only : pi, twopi
+    ! Grid dimensions:
+    integer :: nx, nz
 
- !Declarations:
-implicit none
+    ! Width and height of the domain:
+    double precision :: extent(2)
 
- !Grid dimensions:
-integer,parameter:: nx=64, ny=32
+    ! Array to contain data:
+    double precision, allocatable :: pp(:, :)
 
- !Width and height of the domain:
-double precision,parameter:: ellx=1.d0, elly=1.d0
+    ! Its Fourier transform:
 
- !Array to contain data:
-double precision:: pp(0:ny,0:nx-1)
- !Its Fourier transform:
-double precision:: ss(0:nx-1,0:ny)
- !The spectrum:
-double precision:: spec(0:max(nx,ny))
+    double precision, allocatable :: ss(:, :)
 
-!x and y wavenumbers:
-double precision:: rkx(0:nx-1),hrkx(nx),rky(ny)
- !Generic arrays needed for the FFTs:
-double precision:: xtrig(2*nx),ytrig(2*ny)
-integer:: xfactors(5),yfactors(5)
- !Wavenumber magnitude used for the spectrum:
-integer:: kmag(0:nx-1,0:ny)
+    ! The spectrum:
+    double precision, allocatable :: spec(:)
 
- !Other work variables:
-double precision:: scx,rkxmax,scy,rkymax,delki
-integer:: kxc,kmax,kx,ky,k
+    ! x and y wavenumbers:
+    double precision, allocatable :: rkx(:), hrkx(:), rky(:)
 
-!---------------------------------------------------------------------
- !Set up FFTs:
-call init2dfft(nx,ny,ellx,elly,xfactors,yfactors,xtrig,ytrig,hrkx,rky)
+    ! Generic arrays needed for the FFTs:
+    double precision, allocatable :: xtrig(:), ytrig(:)
+    integer :: xfactors(5), yfactors(5)
 
- !Define x wavenumbers:
-rkx(0)=0.d0
-do kx=1,nx/2-1
-  kxc=nx-kx
-  rkx(kx )=hrkx(2*kx)
-  rkx(kxc)=hrkx(2*kx)
-enddo
-rkx(nx/2)=hrkx(nx)
+    ! Wavenumber magnitude used for the spectrum:
+    integer, allocatable :: kmag(:, :)
 
- !Initialise arrays for computing the spectrum:
-scx=twopi/ellx
-rkxmax=scx*dble(nx/2)
-scy=pi/elly
-rkymax=scy*dble(ny)
-delki=1.d0/sqrt(scx**2+scy**2)
-kmax=nint(sqrt(rkxmax**2+rkymax**2)*delki)
-do ky=1,ny
-  do kx=0,nx-1
-    kmag(kx,ky)=nint(sqrt(rkx(kx)**2+rky(ky)**2)*delki)
-  enddo
-enddo
-do kx=0,nx-1
-  kmag(kx,0)=nint(rkx(kx)*delki)
-enddo
+    ! Other work variables:
+    double precision:: scx, rkxmax, scy, rkymax, delki
+    integer :: kxc, kmax, kx, ky, k
 
-!---------------------------------------------------------------------
- !Read data into array pp:
+    character(len=512) :: filename
+    character(len=64)  :: dset
+    integer            :: step
+
+    call initialise_hdf5
+
+    call parse_command_line
+
+    call get_domain
+
+    print *, 'Grid dimensions: nx = ', nx, ' nz = ', nz
+
+    call alloc_arrays
+
+    ! read data into array pp:
+    call read_data
+
+    !---------------------------------------------------------------------
+    ! Set up FFTs:
+    call init2dfft(nx, nz, extent(1), extent(2), xfactors, yfactors, xtrig, ytrig, hrkx, rky)
+
+    !Define x wavenumbers:
+    rkx(0) = zero
+    do kx = 1, nx / 2 - 1
+        kxc = nx - kx
+        rkx(kx ) = hrkx(2 * kx)
+        rkx(kxc) = hrkx(2 * kx)
+    enddo
+    rkx(nx / 2) = hrkx(nx)
+
+    !Initialise arrays for computing the spectrum:
+    scx = twopi / extent(1)
+    rkxmax = scx * dble(nx / 2)
+    scy = pi / extent(2)
+    rkymax = scy * dble(nz)
+    delki = one / dsqrt(scx ** 2 + scy ** 2)
+    kmax = nint(dsqrt(rkxmax ** 2 + rkymax ** 2) * delki)
+    do ky = 1, nz
+        do kx = 0, nx - 1
+            kmag(kx, ky) = nint(dsqrt(rkx(kx) ** 2 + rky(ky) ** 2) * delki)
+        enddo
+    enddo
+    do kx = 0, nx - 1
+        kmag(kx, 0) = nint(rkx(kx) * delki)
+    enddo
+
+    !---------------------------------------------------------------------
+    !Compute spectrum:
+
+    !Transform data in pp to spectral space:
+    call ptospc_fc(nx, nz, pp, ss, xfactors, yfactors, xtrig, ytrig)
+
+    do k = 0, kmax
+        spec(k) = zero
+    enddo
+
+    !x and y-independent mode:
+    k = kmag(0, 0)
+    spec(k) = spec(k) + f14 * ss(0, 0) ** 2
+
+    !y-independent mode:
+    do kx = 1, nx - 1
+        k = kmag(kx, 0)
+        spec(k) = spec(k) + f12 * ss(kx, 0) ** 2
+    enddo
+
+    !x-independent mode:
+    do ky = 1, nz
+        k = kmag(0, ky)
+        spec(k) = spec(k) + f12 * ss(0, ky) ** 2
+    enddo
+
+    !All other modes:
+    do ky = 1, nz
+        do kx = 1, nx - 1
+            k = kmag(kx, ky)
+            spec(k) = spec(k) + ss(kx, ky) ** 2
+        enddo
+    enddo
+
+    !---------------------------------------------------------------------
+    !Write spectrum contained in spec(k):
 
 
 
-!---------------------------------------------------------------------
- !Compute spectrum:
+    call dealloc_arrays
 
- !Transform data in pp to spectral space:
-call ptospc_fc(nx,ny,pp,ss,xfactors,yfactors,xtrig,ytrig)
+    call finalise_hdf5
 
-do k=0,kmax
-  spec(k)=0.d0
-enddo
+    contains
 
- !x and y-independent mode:
-k=kmag(0,0)
-spec(k)=spec(k)+0.25d0*ss(0,0)**2
+        subroutine get_domain
+            integer(hid_t)   :: h5handle
+            double precision :: lower(2)
+            ! read domain dimensions
+            call open_h5_file(trim(filename), H5F_ACC_RDONLY_F, h5handle)
+            call read_h5_box(h5handle, nx, nz, extent, lower)
+            call close_h5_file(h5handle)
+        end subroutine get_domain
 
- !y-independent mode:
-do kx=1,nx-1
-  k=kmag(kx,0)
-  spec(k)=spec(k)+0.5d0*ss(kx,0)**2
-enddo
+        subroutine alloc_arrays
+            allocate(pp(0:nz, 0:nx - 1))
+            allocate(ss(0:nx - 1, 0:nz))
+            allocate(spec(0:max(nx, nz)))
+            allocate(rkx(0:nx - 1))
+            allocate(hrkx(nx))
+            allocate(rky(nz))
+            allocate(xtrig(2 * nx))
+            allocate(ytrig(2 * nz))
+            allocate(kmag(0:nx - 1, 0:nz))
+        end subroutine alloc_arrays
 
- !x-independent mode:
-do ky=1,ny
-  k=kmag(0,ky)
-  spec(k)=spec(k)+0.5d0*ss(0,ky)**2
-enddo
+        subroutine dealloc_arrays
+            deallocate(pp)
+            deallocate(ss)
+            deallocate(spec)
+            deallocate(rkx)
+            deallocate(hrkx)
+            deallocate(rky)
+            deallocate(xtrig)
+            deallocate(ytrig)
+            deallocate(kmag)
+        end subroutine dealloc_arrays
 
- !All other modes:
-do ky=1,ny
-  do kx=1,nx-1
-    k=kmag(kx,ky)
-    spec(k)=spec(k)+ss(kx,ky)**2
-  enddo
-enddo
+        subroutine read_data
+            double precision, allocatable :: buffer_2d(:, :)
+            integer(hid_t)                :: h5handle, group
+            character(:), allocatable     :: grn
 
-!---------------------------------------------------------------------
- !Write spectrum contained in spec(k):
+            call open_h5_file(trim(filename), H5F_ACC_RDONLY_F, h5handle)
+
+            grn = trim(get_step_group_name(step))
+
+            call open_h5_group(h5handle, grn, group)
+
+            if (has_dataset(group, trim(dset))) then
+                call read_h5_dataset_2d(group, trim(dset), buffer_2d)
+                call fill_field_from_buffer_2d(buffer_2d, pp)
+                deallocate(buffer_2d)
+            else
+                print *, "Error: No dataset '" // trim(dset) // "' in the file."
+                stop
+            endif
+
+            call close_h5_group(group)
+            call close_h5_file(h5handle)
+        end subroutine read_data
+
+        ! After reading the H5 dataset into the buffer, copy
+        ! the data to a field container
+        ! @pre field and buffer must be of rank 2
+        subroutine fill_field_from_buffer_2d(buffer, field)
+            double precision, allocatable :: buffer(:, :)
+            double precision              :: field(0:nz, 0:nx-1)
+            integer                       :: dims(2), bdims(2), i, j
+
+            dims = (/nz+1, nx/)
+
+            bdims = shape(buffer)
+            if (.not. sum(dims - bdims) == 0) then
+                print "(a32, i4, a1, i4, a6, i4, a1, i4, a1)", &
+                      "Field dimensions do not agree: (", dims(1), ",", &
+                      dims(2), ") != (", bdims(1), ",", bdims(2), ")"
+                stop
+            endif
+
+            do j = 0, nz
+                do i = 0, nx-1
+                    field(j, i) = buffer(j, i)
+                enddo
+            enddo
+        end subroutine fill_field_from_buffer_2d
 
 
+        ! Get the file name provided via the command line
+        subroutine parse_command_line
+            integer            :: i, stat
+            character(len=512) :: arg
 
+            step = -1
+            filename = ''
+            dset = 'total buoyancy'
+            i = 0
+            do
+                call get_command_argument(i, arg)
+                if (len_trim(arg) == 0) then
+                    exit
+                endif
+
+                if (arg == '--filename') then
+                    i = i + 1
+                    call get_command_argument(i, arg)
+                    filename = trim(arg)
+                else if (arg == '--dset') then
+                    i = i + 1
+                    call get_command_argument(i, arg)
+                    dset = trim(arg)
+                else if (arg == '--step') then
+                    i = i + 1
+                    call get_command_argument(i, arg)
+
+                    ! 1 October 2021
+                    ! https://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90
+                    read(arg, *, iostat=stat)  step
+                    if (stat .ne. 0) then
+                        print *, 'Error conversion failed.'
+                        stop
+                    endif
+                else if (arg == '--help') then
+                    print *, 'This program computes the power spectrum and writes that to file.'
+                    print *, 'An EPIC field output must be provided and the step number to analyse.'
+                    print *, 'Run code with "genspec --filename [field file]" --step [step number] --dset [dataset]'
+                    stop
+                endif
+                i = i+1
+            enddo
+
+            if ((filename == '') .or. (step == -1) ) then
+                print *, 'No file or step provided. Run code with "genspec --help"'
+                stop
+            endif
+        end subroutine parse_command_line
 
 end program genspec
