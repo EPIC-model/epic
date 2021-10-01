@@ -42,12 +42,11 @@ module sta2dfft
         ! transforms in both x and y directions.
         ! The routine then defines the two wavenumber arrays, one in each direction.
         subroutine init2dfft(nx, ny, lx, ly, xfactors, yfactors, xtrig, ytrig, kx, ky)
-
-
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: lx, ly, kx(nx), ky(ny)
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: lx, ly
+            integer,          intent(out) :: xfactors(5), yfactors(5)
+            double precision, intent(out) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(out) :: kx(nx), ky(ny)
 
             !Local declarations:
             double precision:: sc
@@ -99,10 +98,9 @@ module sta2dfft
         ! (transposed) in svar(nx, ny).
         ! *** Note rvar is destroyed on return. ***
         subroutine ptospc(nx, ny, rvar, svar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(ny, nx), svar(nx, ny)
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(ny, nx), svar(nx, ny)
             !Local declarations:
             integer:: kx, iy
 
@@ -128,9 +126,9 @@ module sta2dfft
         ! *** Note svar is destroyed on return. ***
         subroutine spctop(nx, ny, svar, rvar, xfactors, yfactors, xtrig, ytrig)
             !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(ny, nx), svar(nx, ny)
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(ny, nx), svar(nx, ny)
             !Local declarations:
             integer:: kx, iy
 
@@ -154,11 +152,10 @@ module sta2dfft
         ! var(nx, ny) periodic in x and y.
         ! *** both var and der are spectral ***
         subroutine xderiv(nx, ny, rkx, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rkx(nx), var(nx, ny), der(nx, ny)
-            !Local declarations:
-            integer:: nwx, nxp2, kx, ky, dkx, kxc
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rkx(nx), var(nx, ny)
+            double precision, intent(out) :: der(nx, ny)
+            integer                       :: nwx, nxp2, kx, ky, dkx, kxc
 
             nwx = nx / 2
             nxp2 = nx + 2
@@ -187,12 +184,11 @@ module sta2dfft
         ! var(nx, ny) periodic in x and y.
         ! *** both var and der are spectral ***
         subroutine yderiv(nx, ny, rky, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rky(ny), var(nx, ny), der(nx, ny)
-            !Local declarations:
-            integer:: nwy, nyp2, kx, ky, kyc
-            double precision:: fac
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rky(ny), var(nx, ny)
+            double precision, intent(out) :: der(nx, ny)
+            integer                       :: nwy, nyp2, kx, ky, kyc
+            double precision              :: fac
 
             nwy = ny / 2
             nyp2 = ny + 2
@@ -228,10 +224,10 @@ module sta2dfft
         ! svar(nx, 0:ny).
         ! *** Note rvar is destroyed on return. ***
         subroutine ptospc_fc(nx, ny, rvar, svar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(0:ny, nx), svar(nx, 0:ny)
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(0:ny, nx)
+            double precision, intent(out)   :: svar(nx, 0:ny)
             !Local declarations:
             integer:: kx, iy
 
@@ -256,12 +252,11 @@ module sta2dfft
         ! and returns the result (transposed) in svar(nx, ny).
         ! *** Note rvar is destroyed on return. ***
         subroutine ptospc_fs(nx, ny, rvar, svar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(ny, nx), svar(nx, ny)
-            !Local declarations:
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(ny, nx)
+            double precision, intent(out)   :: svar(nx, ny)
+            integer                         :: kx, iy
 
             !Carry out a full x transform first:
             call forfft(ny, nx, rvar, xtrig, xfactors)
@@ -286,12 +281,10 @@ module sta2dfft
         ! rvar(0:ny, nx)
         ! *** Note svar is destroyed on return. ***
         subroutine spctop_fc(nx, ny, svar, rvar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(0:ny, nx), svar(nx, 0:ny)
-            !Local declarations:
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(0:ny, nx), svar(nx, 0:ny)
+            integer                         :: kx, iy
 
             !Carry out y cosine transform first:
             call dct(nx, ny, svar, ytrig, yfactors)
@@ -314,12 +307,10 @@ module sta2dfft
         ! in y and returns the result (transposed) in rvar(ny, nx).
         ! *** Note svar is destroyed on return. ***
         subroutine spctop_fs(nx, ny, svar, rvar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(ny, 0:nx - 1), svar(0:nx - 1, ny)
-            !Local declarations:
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(ny, 0:nx - 1), svar(0:nx - 1, ny)
+            integer                         :: kx, iy
 
             !Carry out y sine transform first:
             call dst(nx, ny, svar, ytrig, yfactors)
@@ -343,11 +334,10 @@ module sta2dfft
         ! series in y.
         ! *** both var and der are spectral ***
         subroutine xderiv_fs(nx, ny, rkx, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rkx(nx), var(nx, ny), der(nx, ny)
-            !Local declarations:
-            integer:: nwx, nxp2, kx, ky, dkx, kxc
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rkx(nx), var(nx, ny)
+            double precision, intent(out) :: der(nx, ny)
+            integer                       :: nwx, nxp2, kx, ky, dkx, kxc
 
             nwx = nx / 2
             nxp2 = nx + 2
@@ -377,11 +367,10 @@ module sta2dfft
         ! series in y.
         ! *** both var and der are spectral ***
         subroutine xderiv_fc(nx, ny, rkx, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rkx(nx), var(nx, 0:ny), der(nx, 0:ny)
-            !Local declarations:
-            integer:: nwx, nxp2, kx, ky, dkx, kxc
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rkx(nx), var(nx, 0:ny)
+            double precision, intent(out) :: der(nx, 0:ny)
+            integer                       :: nwx, nxp2, kx, ky, dkx, kxc
 
             nwx = nx / 2
             nxp2 = nx + 2
@@ -412,11 +401,10 @@ module sta2dfft
         ! *** both var and der are spectral ***
         ! ==> der(nx, 0:ny) changes to a cosine series in y
         subroutine yderiv_fs(nx, ny, rky, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rky(ny), var(nx, ny), der(nx, 0:ny)
-            !Local declarations:
-            integer:: kx, ky
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rky(ny), var(nx, ny)
+            double precision, intent(out) :: der(nx, 0:ny)
+            integer                       :: kx, ky
 
             !Carry out differentiation by wavenumber multiplication:
             do kx = 1, nx
@@ -440,11 +428,10 @@ module sta2dfft
         ! *** both var and der are spectral ***
         ! ==> der(nx, ny) changes to a sine series in y
         subroutine yderiv_fc(nx, ny, rky, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rky(ny), var(nx, 0:ny), der(nx, ny)
-            !Local declarations:
-            integer:: kx, ky
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rky(ny), var(nx, 0:ny)
+            double precision, intent(out) :: der(nx, ny)
+            integer                       :: kx, ky
 
             !Carry out differentiation by wavenumber multiplication:
             do kx = 1, nx
@@ -466,12 +453,10 @@ module sta2dfft
         ! and returns the result (transposed) in svar(0:nx, 0:ny).
         ! *** Note rvar is destroyed on return. ***
         subroutine ptospc_cc(nx, ny, rvar, svar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(0:ny, 0:nx), svar(0:nx, 0:ny)
-            !Local declarations:
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(0:ny, 0:nx), svar(0:nx, 0:ny)
+            integer                         :: kx, iy
 
             !Carry out x cosine transform first:
             call dct(ny + 1, nx, rvar, xtrig, xfactors)
@@ -494,12 +479,10 @@ module sta2dfft
         ! and returns the result (transposed) in svar(0:nx, ny)
         ! *** Note rvar is destroyed on return. ***
         subroutine ptospc_cs(nx, ny, rvar, svar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(ny, 0:nx), svar(0:nx, ny)
-            !Local declarations:
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(ny, 0:nx), svar(0:nx, ny)
+            integer                         :: kx, iy
 
             !Carry out x cosine transform first:
             call dct(ny, nx, rvar, xtrig, xfactors)
@@ -523,12 +506,10 @@ module sta2dfft
         ! and returns the result (transposed) in svar(nx, 0:ny)
         ! *** Note rvar is destroyed on return. ***
         subroutine ptospc_sc(nx, ny, rvar, svar, xfactors, yfactors, xtrig, ytrig)
-            !Argument declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(0:ny, nx), svar(nx, 0:ny)
-            !Local declarations
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(0:ny, nx), svar(nx, 0:ny)
+            integer                         :: kx, iy
 
             !Carry out x sine transform first:
             call dst(ny + 1, nx, rvar, xtrig, xfactors)
@@ -554,12 +535,10 @@ module sta2dfft
         ! and returns the result (transposed) in svar(nx, ny).
         ! *** Note rvar is destroyed on return. ***
         subroutine ptospc_ss(nx, ny, rvar, svar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(ny, nx), svar(nx, ny)
-            !Local declarations:
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(ny, nx), svar(nx, ny)
+            integer                         :: kx, iy
 
             !Carry out x sine transform first:
             call dst(ny, nx, rvar, xtrig, xfactors)
@@ -586,12 +565,10 @@ module sta2dfft
         ! and returns the result (transposed) in rvar(0:ny, 0:nx)
         ! *** Note svar is destroyed on return. ***
         subroutine spctop_cc(nx, ny, svar, rvar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(0:ny, 0:nx), svar(0:nx, 0:ny)
-            !Local declarations:
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(0:ny, 0:nx), svar(0:nx, 0:ny)
+            integer                         :: kx, iy
 
             !Carry out y cosine transform first:
             call dct(nx + 1, ny, svar, ytrig, yfactors)
@@ -614,12 +591,10 @@ module sta2dfft
         ! and returns the result (transposed) in rvar(ny, 0:nx)
         ! *** Note svar is destroyed on return. ***
         subroutine spctop_cs(nx, ny, svar, rvar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(ny, 0:nx), svar(0:nx, ny)
-            !Local declarations:
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(ny, 0:nx), svar(0:nx, ny)
+            integer                         :: kx, iy
 
             !Carry out y sine transform first:
             call dst(nx + 1, ny, svar, ytrig, yfactors)
@@ -643,12 +618,10 @@ module sta2dfft
         ! and returns the result (transposed) in rvar(0:ny, nx)
         ! *** Note svar is destroyed on return. ***
         subroutine spctop_sc(nx, ny, svar, rvar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(0:ny, nx), svar(nx, 0:ny)
-            !Local declarations:
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(0:ny, nx), svar(nx, 0:ny)
+            integer                         :: kx, iy
 
             !Carry out y cosine transform first:
             call dct(nx, ny, svar, ytrig, yfactors)
@@ -674,12 +647,10 @@ module sta2dfft
         ! and returns the result (transposed) in rvar(ny, nx)
         ! *** Note svar is destroyed on return. ***
         subroutine spctop_ss(nx, ny, svar, rvar, xfactors, yfactors, xtrig, ytrig)
-            !Arguments declarations:
-            integer:: nx, ny, xfactors(5), yfactors(5)
-            double precision:: xtrig(2 * nx), ytrig(2 * ny)
-            double precision:: rvar(ny, nx), svar(nx, ny)
-            !Local declarations:
-            integer:: kx, iy
+            integer,          intent(in)    :: nx, ny, xfactors(5), yfactors(5)
+            double precision, intent(inout) :: xtrig(2 * nx), ytrig(2 * ny)
+            double precision, intent(inout) :: rvar(ny, nx), svar(nx, ny)
+            integer                         :: kx, iy
 
             !Carry out y sine transform first:
             call dst(nx, ny, svar, ytrig, yfactors)
@@ -708,11 +679,10 @@ module sta2dfft
         ! ==> der(0:nx, ny) changes to a cosine series in x
         ! @@@ the mean value of der (0 wavenumber) is assumed to be 0
         subroutine xderiv_ss(nx, ny, rkx, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rkx(nx), var(nx, ny), der(0:nx, ny)
-            !Local declarations:
-            integer:: kx, ky
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rkx(nx), var(nx, ny)
+            double precision, intent(out) :: der(0:nx, ny)
+            integer                       :: kx, ky
 
             !Carry out differentiation by wavenumber multiplication:
             do ky = 1, ny - 1
@@ -735,11 +705,10 @@ module sta2dfft
         ! ==> der(nx, 0:ny) changes to a cosine series in y
         ! @@@ the mean value of der (0 wavenumber) is assumed to be 0
         subroutine yderiv_ss(nx, ny, rky, var, der)
-            !Argument declarations:
-            integer:: nx, ny
-            double precision:: rky(ny), var(nx, ny), der(nx, 0:ny)
-            !Local declarations:
-            integer:: kx, ky
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rky(ny), var(nx, ny)
+            double precision, intent(out) :: der(nx, 0:ny)
+            integer                       :: kx, ky
 
             !Carry out differentiation by wavenumber multiplication:
             do kx = 1, nx - 1
@@ -763,11 +732,10 @@ module sta2dfft
         ! *** both var and der are spectral ***
         ! ==> der(nx, ny) changes to a sine series in x
         subroutine xderiv_cs(nx, ny, rkx, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rkx(nx), var(0:nx, ny), der(nx, ny)
-            !Local declarations:
-            integer:: kx, ky
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rkx(nx), var(0:nx, ny)
+            double precision, intent(out) :: der(nx, ny)
+            integer                       :: kx, ky
 
             !Carry out differentiation by wavenumber multiplication:
             do ky = 1, ny - 1
@@ -787,11 +755,10 @@ module sta2dfft
         ! ==> der(0:nx, 0:ny) changes to a cosine series in y
         ! @@@ the mean value of der (0 wavenumber) is assumed to be 0
         subroutine yderiv_cs(nx, ny, rky, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rky(ny), var(0:nx, ny), der(0:nx, 0:ny)
-            !Local declarations:
-            integer:: kx, ky
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rky(ny), var(0:nx, ny)
+            double precision, intent(out) :: der(0:nx, 0:ny)
+            integer                       :: kx, ky
 
             !Carry out differentiation by wavenumber multiplication:
             do kx = 0, nx
@@ -816,11 +783,10 @@ module sta2dfft
         ! ==> der(0:nx, 0:ny) changes to a cosine series in x
         ! @@@ the mean value of der (0 wavenumber) is assumed to be 0
         subroutine xderiv_sc(nx, ny, rkx, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rkx(nx), var(nx, 0:ny), der(0:nx, 0:ny)
-            !Local declarations:
-            integer:: kx, ky
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rkx(nx), var(nx, 0:ny)
+            double precision, intent(out) :: der(0:nx, 0:ny)
+            integer                       :: kx, ky
 
             !Carry out differentiation by wavenumber multiplication:
             do ky = 0, ny
@@ -842,11 +808,10 @@ module sta2dfft
         ! *** both var and der are spectral ***
         ! ==> der(nx, ny) changes to a sine series in y
         subroutine yderiv_sc(nx, ny, rky, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rky(ny), var(nx, 0:ny), der(nx, ny)
-            !Local declarations:
-            integer:: kx, ky
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rky(ny), var(nx, 0:ny)
+            double precision, intent(out) :: der(nx, ny)
+            integer                       :: kx, ky
 
             !Carry out differentiation by wavenumber multiplication:
             do kx = 1, nx - 1
@@ -867,11 +832,10 @@ module sta2dfft
         ! *** both var and der are spectral ***
         ! ==> der(nx, 0:ny) changes to a sine series in x
         subroutine xderiv_cc(nx, ny, rkx, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rkx(nx), var(0:nx, 0:ny), der(nx, 0:ny)
-            !Local declarations:
-            integer:: kx, ky
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rkx(nx), var(0:nx, 0:ny)
+            double precision, intent(out) :: der(nx, 0:ny)
+            integer                       :: kx, ky
 
             !Carry out differentiation by wavenumber multiplication:
             do ky = 0, ny
@@ -890,11 +854,10 @@ module sta2dfft
         ! *** both var and der are spectral ***
         ! ==> der(0:nx, ny) changes to a sine series in y
         subroutine yderiv_cc(nx, ny, rky, var, der)
-            !Arguments declarations:
-            integer:: nx, ny
-            double precision:: rky(ny), var(0:nx, 0:ny), der(0:nx, ny)
-            !Local declarations:
-            integer:: kx, ky
+            integer,          intent(in)  :: nx, ny
+            double precision, intent(in)  :: rky(ny), var(0:nx, 0:ny)
+            double precision, intent(out) :: der(0:nx, ny)
+            integer                       :: kx, ky
 
             !Carry out differentiation by wavenumber multiplication:
             do kx = 0, nx
