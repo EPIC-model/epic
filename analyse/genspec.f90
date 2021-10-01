@@ -249,6 +249,7 @@ program genspec
         subroutine parse_command_line
             integer            :: i, stat
             character(len=512) :: arg
+            logical            :: exists
 
             step = -1
             filename = ''
@@ -288,6 +289,11 @@ program genspec
                 i = i+1
             enddo
 
+            if ((filename == '') .or. (step == -1) ) then
+                print *, 'No file or step provided. Run code with "genspec --help"'
+                stop
+            endif
+
             ! check if correct file is passed
             stat = index(trim(filename), '_fields.hdf5', back=.true.)
             if (stat == 0) then
@@ -295,8 +301,10 @@ program genspec
                 stop
             endif
 
-            if ((filename == '') .or. (step == -1) ) then
-                print *, 'No file or step provided. Run code with "genspec --help"'
+            ! check if file exsits
+            inquire(file=trim(filename), exist=exists)
+            if (.not. exists) then
+                print *, "Error: File '" // trim(filename) // "' does not exist."
                 stop
             endif
         end subroutine parse_command_line
