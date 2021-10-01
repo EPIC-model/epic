@@ -38,6 +38,11 @@ module h5_reader
             call h5sget_simple_extent_ndims_f(dataspace_id, rank, h5err)
             call check_h5_error("Failed to get data extent.")
 
+            if (rank .ne. 2) then
+                print *, "Dataset not 2-dimensional."
+                stop
+            endif
+
             ! h5err: Dataspace rank on success and -1 on failure
             call h5sget_simple_extent_dims_f(dataspace_id, dims, maxdims, h5err)
 #ifndef NDEBUG
