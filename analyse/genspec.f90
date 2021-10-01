@@ -229,7 +229,9 @@ program genspec
                 stop
             else
                 open(unit=1235, file=fname, status='replace')
-                write(1235, *) '  # kx, ky, power spectrum'
+                write(1235, *) '# The power spectrum of the ' // trim(dset) // ' field.'
+                write(1235, *) '# The first column is the wavenumber, the second column the spectrum.'
+                write(1235, *) '#         k   P(k)'
             endif
 
             do ky = 1, nz
@@ -285,6 +287,13 @@ program genspec
                 endif
                 i = i+1
             enddo
+
+            ! check if correct file is passed
+            stat = index(trim(filename), '_fields.hdf5', back=.true.)
+            if (stat == 0) then
+                print *, "Error: No EPIC field output file provided."
+                stop
+            endif
 
             if ((filename == '') .or. (step == -1) ) then
                 print *, 'No file or step provided. Run code with "genspec --help"'
