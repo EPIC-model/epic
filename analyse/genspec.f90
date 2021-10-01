@@ -45,7 +45,8 @@ program genspec
 
     call get_domain
 
-    print *, 'Grid dimensions: nx = ', nx, ' nz = ', nz
+    print *, 'Field: ' // trim(dset)
+    print '(a23, i5, a6, i5)', 'Grid dimensions: nx = ', nx, ' nz = ', nz
 
     call alloc_arrays
 
@@ -117,8 +118,7 @@ program genspec
 
     !---------------------------------------------------------------------
     !Write spectrum contained in spec(k):
-
-
+    call write_spectrum
 
     call dealloc_arrays
 
@@ -207,6 +207,40 @@ program genspec
                 enddo
             enddo
         end subroutine fill_field_from_buffer_2d
+
+        subroutine write_spectrum
+            logical                   :: exists = .false.
+            character(:), allocatable :: fname
+            integer                   :: pos, kx, ky
+
+            ! 1 October 2021
+            ! https://stackoverflow.com/questions/36731707/fortran-how-to-remove-file-extension-from-character
+            pos = scan(trim(filename), '.', back=.true.)
+
+            if (pos > 0) then
+                fname = filename(1:pos-1) // '_spectrum.asc'
+            else
+                print *, "Error in reading the filename. File extension not found."
+            endif
+
+            inquire(file=fname, exist=exists)
+            if (exists) then
+                print *, "Error: File '" // trim(fname) // "' already exists."
+                stop
+            else
+                open(unit=1235, file=fname, status='replace')
+                write(1235, *) '  # kx, ky, power spectrum'
+            endif
+
+            do ky = 1, nz
+                do kx = 1, nx - 1
+                    k = kmag(kx, ky)
+                    write(1235, *) k, spec(k)
+                enddo
+            enddo
+
+            close(1235)
+        end subroutine write_spectrum
 
 
         ! Get the file name provided via the command line
