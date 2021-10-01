@@ -32,7 +32,7 @@ program genspec
     integer, allocatable :: kmag(:, :)
 
     ! Other work variables:
-    double precision:: scx, rkxmax, scy, rkymax, delki
+    double precision :: scx, rkxmax, scy, rkymax, delki
     integer :: kxc, kmax, kx, ky, k
 
     character(len=512) :: filename
