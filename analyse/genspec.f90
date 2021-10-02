@@ -15,7 +15,6 @@ program genspec
     double precision, allocatable :: pp(:, :)
 
     ! Its Fourier transform:
-
     double precision, allocatable :: ss(:, :)
 
     ! The spectrum:
@@ -281,8 +280,8 @@ program genspec
                         stop
                     endif
                 else if (arg == '--help') then
-                    print *, 'This program computes the power spectrum and writes that to file.'
-                    print *, 'An EPIC field output must be provided and the step number to analyse.'
+                    print *, 'This program computes the power spectrum and writes it to file.'
+                    print *, 'An EPIC field output must be provided with the step number to analyse.'
                     print *, 'Run code with "genspec --filename [field file]" --step [step number] --dset [dataset]'
                     stop
                 endif
