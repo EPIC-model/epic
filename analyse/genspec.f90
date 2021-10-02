@@ -211,6 +211,7 @@ program genspec
             logical                   :: exists = .false.
             character(:), allocatable :: fname
             integer                   :: pos, kx, kz
+            double precision          :: fscale
 
             ! 1 October 2021
             ! https://stackoverflow.com/questions/36731707/fortran-how-to-remove-file-extension-from-character
@@ -233,10 +234,12 @@ program genspec
                 write(1235, *) '#         k   P(k)'
             endif
 
+            fscale = one / dble(nx * (nz + 1))
+
             do kz = 0, nz
                 do kx = 0, nx - 1
                     k = kmag(kx, kz)
-                    write(1235, *) k, spec(k) / dble(nx * nz)
+                    write(1235, *) k, spec(k) * fscale
                 enddo
             enddo
 

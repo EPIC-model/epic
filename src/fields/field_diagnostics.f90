@@ -3,7 +3,7 @@
 ! =============================================================================
 module field_diagnostics
     use constants, only : zero
-    use parameters, only : vcell, nx, nz, ngrid, ncell
+    use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
     use fields
     use h5_utils
     use h5_writer
@@ -48,7 +48,7 @@ module field_diagnostics
 
         function get_max_abs_normalised_volume_error() result(err)
             double precision :: err
-            err = maxval(abs(volg(0:nz, :)  - vcell)) / vcell
+            err = maxval(abs(volg(0:nz, :)  - vcell)) * vcelli
         end function get_max_abs_normalised_volume_error
 
         function get_rms_volume_error() result(rms)
@@ -58,7 +58,7 @@ module field_diagnostics
             ! do not take halo cells into account
             sqerrsum = sum((volg(0:nz, :) - vcell) ** 2)
 
-            rms = dsqrt(sqerrsum / dble(ngrid)) / vcell
+            rms = dsqrt(sqerrsum * ngridi) * vcelli
         end function get_rms_volume_error
 
 
@@ -117,10 +117,10 @@ module field_diagnostics
             min_npar = minval(nparg(0:nz-1, :))
             call write_h5_int_scalar_attrib(group, "min num parcels per cell", min_npar)
 
-            res = sum(nparg(0:nz-1, :)) / dble(ncell)
+            res = sum(nparg(0:nz-1, :)) * ncelli
             call write_h5_double_scalar_attrib(group, "average num parcels per cell", res)
 
-            res = sum(nsparg(0:nz-1, :)) / dble(ncell)
+            res = sum(nsparg(0:nz-1, :)) * ncelli
             call write_h5_double_scalar_attrib(group, "average num small parcels per cell", res)
 
 #ifndef NDEBUG
