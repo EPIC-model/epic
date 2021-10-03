@@ -4,7 +4,7 @@ from matplotlib import animation
 from tools.h5_reader import H5Reader
 import matplotlib.colors as cls
 from tools.plots import _plot_parcels
-from tools.plot_beautify import *
+from tools.mpl_beautify import *
 import progressbar
 
 class ParcelAnimation:
