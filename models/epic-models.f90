@@ -1,7 +1,7 @@
 ! =============================================================================
 !               This program writes fields to HDF5 in EPIC format.
 ! =============================================================================
-program models
+program epic_models
     use options, only : filename, verbose
     use taylorgreen
     use straka
@@ -129,15 +129,15 @@ program models
                 else if (arg == '--verbose') then
                     verbose = .true.
                 else if (arg == '--help') then
-                    print *, 'Run code with "./models --config [config file]"'
+                    print *, 'Run code with "epic-models --config [config file]"'
                     stop
                 endif
                 i = i+1
             end do
 
             if (filename == '') then
-                print *, 'No configuration file provided. Run code with "./models --config [config file]"'
+                print *, 'No configuration file provided. Run code with "epic-models --config [config file]"'
                 stop
             endif
         end subroutine parse_command_line
-end program models
+end program epic_models
