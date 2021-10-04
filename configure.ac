@@ -14,6 +14,7 @@ AC_CONFIG_FILES([
     Makefile
     src/Makefile
     models/Makefile
+    analyse/Makefile
     unit-tests/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile

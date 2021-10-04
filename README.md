@@ -42,7 +42,7 @@ where `filename` is the configuration file. An example of a configuration file i
 [here](examples/taylor_green.config).
 
 ## Post-processing
-The directory `$PREFIX/bin` contains following scripts:
+The directory `$PREFIX/bin` contains following Python scripts:
 * animate-parcels.py
 * plot-parcels.py
 * plot-diagnostics.py
@@ -56,6 +56,9 @@ $ conda config --add channels conda-forge
 $ conda create --name <env> python=3.9.5 --file requirements.txt
 ```
 where `<env>` is the name of the environment. The file `requirements.txt` is contained in the root directory of EPIC.
+
+We further provide Fortran analysis scripts. These are:
+* genspec (power spectrum analysis)
 
 ## Performance analysis
 When configuring EPIC with `--enable-scalasca`, it is built with the performance tool [Scalasca](https://www.scalasca.org/) and [Score-P](https://www.vi-hps.org/projects/score-p/). Scripts to install Scalasca and Score-P are found in the directory `dependencies`.

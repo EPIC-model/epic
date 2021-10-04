@@ -16,14 +16,23 @@ module parameters
     ! grid cell volume, really area in 2D:
     double precision :: vcell
 
+    ! inverse grid cell volume
+    double precision :: vcelli
+
     ! number of grid cells in each dimension
     integer :: nx, nz
 
     ! total number of grid cells
     integer :: ncell
 
+    ! inverse of total number of grid cells
+    double precision :: ncelli
+
     ! total number of grid points
     integer :: ngrid
+
+    ! inverse of total number of grid points
+    double precision :: ngridi
 
     ! domain size
     double precision :: extent(2)
@@ -72,11 +81,14 @@ module parameters
         endif
 
         vcell = product(dx)
+        vcelli = one / vcell
 
         ncell = nx * nz
+        ncelli = one / dble(ncell)
 
         ! due to x periodicity it is only nx
         ngrid = nx * (nz + 1)
+        ngridi = one / dble(ngrid)
 
         ! domain
         center = f12 * (lower + upper)
