@@ -1,30 +1,20 @@
 from bokeh.io import export_png, export_svg
 import bokeh.plotting as bpl
-from bokeh.models import ColumnDataSource, ColorBar, FixedTicker
-
-from bokeh.palettes import Viridis256
+from bokeh.models import ColumnDataSource, \
+                         ColorBar,         \
+                         FixedTicker,      \
+                         LinearColorMapper
 from bokeh.transform import linear_cmap
 from tools.h5_reader import H5Reader
-from tools.plot_style import *
+from tools.bokeh_style import *
 import numpy as np
 
-def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kwargs):
-    no_title = kwargs.pop('no_title', False)
+
+def _get_bokeh_basic_graph(origin, extent, display=None, title=None, **kwargs):
     no_xaxis = kwargs.pop('no_xaxis', False)
     no_yaxis = kwargs.pop('no_yaxis', False)
     no_xlabel = kwargs.pop('no_xlabel', False)
     no_ylabel = kwargs.pop('no_ylabel', False)
-    no_colorbar = kwargs.pop('no_colorbar', False)
-
-    nsteps = h5reader.get_num_steps()
-    extent = h5reader.get_box_extent()
-    origin = h5reader.get_box_origin()
-
-    left = origin[0]
-    right = origin[0] + extent[0]
-    bottom = origin[1]
-    top = origin[1] + extent[1]
-
 
     # instantiating the figure object
     fkwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -48,22 +38,6 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     else:
         pw = np.nanmin([1920,int(1080*(right-left)/(top-bottom))])
         ph = np.nanmin([1080,int(1920*(top-bottom)/(right-left))])
-
-    nparcels= h5reader.get_num_parcels(step)
-    ttime = h5reader.get_step_attribute(step=step, name='t')
-
-    if coloring == 'aspect-ratio':
-        title = 'aspect ratio'
-    elif coloring == 'vol-distr':
-        title = 'volume distribution'
-    else:
-        title = coloring
-
-    title = title + \
-                    '\t\t\t\t time = %15.3f'%ttime + \
-                    '\t\t\t\t #parcels = %10d'%nparcels
-    if no_title:
-        title = None
 
     x_axis_label = 'x (m)'
     y_axis_label = 'y (m)'
@@ -121,24 +95,105 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     graph.yaxis.formatter.precision = bokeh_style['formatter.precision']
     graph.xaxis.formatter.precision = bokeh_style['formatter.precision']
 
-    if not no_title:
+    if not title is None:
         graph.title.text_font_size = font_size
         graph.title.text_font = text_font
 
-    x, y, width, height, angle = h5reader.get_ellipses_for_bokeh(step)
+    return graph
+
+
+def _bokeh_plot_field(h5reader, step, field, vmin, vmax, display=None, **kwargs):
+    no_title = kwargs.pop('no_title', False)
+    no_colorbar = kwargs.pop('no_colorbar', False)
+
+    cmap = kwargs.pop('cmap', 'inferno')
+    if not cmap in bokeh_palettes.keys():
+        raise ValueError("Colormap '" + cmap + "' not available.")
+    palette = bokeh_palettes[cmap]
+
+    nsteps = h5reader.get_num_steps()
+    extent = h5reader.get_box_extent()
+    origin = h5reader.get_box_origin()
+
+    ttime = h5reader.get_step_attribute(step=step, name='t')
+    title = field + '\t\t\t\t time = %15.3f'%ttime
+
+    if no_title:
+        title = None
+
+    graph = _get_bokeh_basic_graph(origin = origin,
+                                   extent = extent,
+                                   display = display,
+                                   title = title,
+                                   **kwargs)
+
+    data = np.transpose(h5reader.get_dataset(step=step, name=field))
+
+    font_size = bokeh_style['font.size']
+    text_font = bokeh_style['font.font']
+
+    mapper = LinearColorMapper(palette=palette, low=vmin, high=vmax)
+    color_bar = ColorBar(color_mapper=mapper, label_standoff=12,
+                        title_text_font_size=font_size,
+                        major_label_text_font=text_font,
+                        major_label_text_font_size=font_size)
+
+    graph.image(image=[data], x=origin[0], y=origin[1], dw=extent[0], dh=extent[1],
+                color_mapper = mapper)
+
+    if not no_colorbar:
+        graph.add_layout(color_bar, 'right')
+
+    return graph
+
+
+def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kwargs):
+    no_title = kwargs.pop('no_title', False)
+    no_colorbar = kwargs.pop('no_colorbar', False)
+
+    cmap = kwargs.pop('cmap', 'viridis_r')
+    if not cmap in bokeh_palettes.keys():
+        raise ValueError("Colormap '" + cmap + "' not available.")
+    palette = bokeh_palettes[cmap]
+
+    nsteps = h5reader.get_num_steps()
+    extent = h5reader.get_box_extent()
+    origin = h5reader.get_box_origin()
+
+    nparcels= h5reader.get_num_parcels(step)
+    ttime = h5reader.get_step_attribute(step=step, name='t')
 
     if coloring == 'aspect-ratio':
+        title = 'aspect ratio'
         data = h5reader.get_aspect_ratio(step=step)
     elif coloring == 'vol-distr':
+        title = 'volume distribution'
         data = h5reader.get_dataset(step=step, name='volume')
         data[data <= vmin] = 0.0
         data[data > vmin] = 1.0
     else:
+        title = coloring
         data = h5reader.get_dataset(step=step, name=coloring)
 
+    title = title + \
+                    '\t\t\t\t time = %15.3f'%ttime + \
+                    '\t\t\t\t #parcels = %10d'%nparcels
+    if no_title:
+        title = None
+
+    graph = _get_bokeh_basic_graph(origin = origin,
+                                   extent = extent,
+                                   display = display,
+                                   title = title,
+                                   **kwargs)
+
+    x, y, width, height, angle = h5reader.get_ellipses_for_bokeh(step)
 
     source = ColumnDataSource(dict(x=x,y=y, width=width, height=height,
                                    angle = angle, fill_color=data))
+
+    font_size = bokeh_style['font.size']
+    text_font = bokeh_style['font.font']
 
     mapper = None
     color_bar = None
@@ -156,8 +211,7 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
         # https://stackoverflow.com/questions/37173230/how-do-i-use-custom-labels-for-ticks-in-bokeh
         color_bar.major_label_overrides = {0: '0', 0.5: 'Vmin', 1: 'Vmax'}
     else:
-        Viridis256_r = tuple(reversed(list(Viridis256)))
-        mapper = linear_cmap(field_name='fill_color', palette=Viridis256_r,
+        mapper = linear_cmap(field_name='fill_color', palette=palette,
                              low=vmin, high=vmax)
         color_bar = ColorBar(color_mapper=mapper['transform'], label_standoff=12,
                             title_text_font_size=font_size,

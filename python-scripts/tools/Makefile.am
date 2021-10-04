@@ -8,8 +8,9 @@ nobase_tools_DATA = 			\
 	h5_reader.py 			\
 	h5_fields.py			\
 	plots.py			\
+	bokeh_style.py			\
 	bokeh_plots.py			\
-	plot_beautify.py 		\
-	plot_style.py			\
+	mpl_beautify.py 		\
+	mpl_style.py			\
 	units.py			\
 	__init__.py
