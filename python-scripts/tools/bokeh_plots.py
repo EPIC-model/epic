@@ -310,8 +310,11 @@ def bokeh_plot(fname, step, show=False, fmt='png',
 
     elif h5reader.is_field_file:
         saveas = 'field_' + saveas
-        vmin, vmax = h5reader.get_dataset_min_max(coloring)
-        graph = _bokeh_plot_field(h5reader, step, coloring, vmin, vmax,
+        col = coloring
+        if col == 'buoyancy':
+            col = 'total ' + col
+        vmin, vmax = h5reader.get_dataset_min_max(col)
+        graph = _bokeh_plot_field(h5reader, step, col, vmin, vmax,
                                   hybrid = hybrid,
                                   **kwargs)
 
