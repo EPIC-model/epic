@@ -138,7 +138,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
     no_colorbar = kwargs.pop('no_colorbar', False)
     zoom = kwargs.pop('zoom', 10)
 
-    cmap = kwargs.pop('cmap', 'inferno')
+    cmap = kwargs.get('cmap', 'inferno')
     if not cmap in bokeh_palettes.keys():
         raise ValueError("Colormap '" + cmap + "' not available.")
     palette = bokeh_palettes[cmap]
@@ -187,7 +187,7 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
     graph = kwargs.pop('graph', None)
     fill_alpha = kwargs.pop('fill_alpha', 0.75)
 
-    cmap = kwargs.pop('cmap', 'viridis_r')
+    cmap = kwargs.get('cmap', 'viridis_r')
     if not cmap in bokeh_palettes.keys():
         raise ValueError("Colormap '" + cmap + "' not available.")
     palette = bokeh_palettes[cmap]
