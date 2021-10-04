@@ -1100,8 +1100,11 @@ def plot_time_bar(fnames, figure = 'save', fmt="png", **kwargs):
 
         # 4 October 2021
         # https://stackoverflow.com/questions/16476924/how-to-iterate-over-rows-in-a-dataframe-in-pandas
+        # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.replace.html
         for i, row in df.iterrows():
-            row['function name'] = r'\tt{' + row['function name'] + r'}'
+            df.replace(to_replace = row['function name'],
+                       value = r'\tt{' + row['function name'] + r'}',
+                       inplace = True)
 
     df.plot.bar(x='function name')
 
