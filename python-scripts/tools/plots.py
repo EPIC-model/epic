@@ -86,7 +86,7 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     ax.set_ylabel(r'$y$')
 
 
-def plot_parcels(fname, step, show=False, fmt="png",
+def plot_parcels(fname, step, figure = 'save', fmt="png",
                   coloring='aspect-ratio', **kwargs):
     h5reader = H5Reader()
 
@@ -119,17 +119,20 @@ def plot_parcels(fname, step, show=False, fmt="png",
 
     _plot_parcels(plt.gca(), h5reader, step, coloring, vmin, vmax, **kwargs)
 
-    if show:
-        plt.tight_layout()
-        plt.show()
-    else:
-        plt.savefig('parcels_'  + coloring + '_step_' + str(step).zfill(len(str(nsteps))) + '.' + fmt,
-                    bbox_inches='tight')
-    plt.close()
     h5reader.close()
 
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
+        plt.savefig('parcels_'  + coloring + '_step_' + str(step).zfill(len(str(nsteps))) + '.' + fmt,
+                    bbox_inches='tight')
+    else:
+        plt.tight_layout()
+        plt.show()
+    plt.close()
 
-def plot_volume_symmetry_error(fnames, show=False, fmt="png", **kwargs):
+
+def plot_volume_symmetry_error(fnames, figure = 'save', fmt="png", **kwargs):
     """
     Plot the symmetry error of the gridded volume.
     (The gridded symmetry volume is only written in debug mode.)
@@ -143,7 +146,6 @@ def plot_volume_symmetry_error(fnames, show=False, fmt="png", **kwargs):
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
 
-    plt.figure()
     for i, fname in enumerate(fnames):
         h5reader = H5Reader()
         h5reader.open(fname)
@@ -182,33 +184,34 @@ def plot_volume_symmetry_error(fnames, show=False, fmt="png", **kwargs):
 
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         prefix = os.path.splitext(fnames[0])[0] + '_'
         if n > 1:
             prefix = ''
         plt.savefig(prefix + 'vol_sym_err.' + fmt,
                     bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
 
-def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
+def plot_rms_volume_error(fnames, figure = 'save', fmt="png", **kwargs):
     """
-    Plot the gridded rms volume error.
+    Plot the gridded r.m.s. volume error.
     """
     n = len(fnames)
 
     labels = kwargs.pop('labels', n * [None])
     yscale = kwargs.pop('yscale', 'linear')
     ylim = kwargs.pop('ylim', (None, None))
+    no_xlabel = kwargs.pop('no_xlabel', False)
 
     if len(labels) < n:
         raise ValueError('Not enough labels provided.')
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
-
-    plt.figure()
 
     h5reader = H5Reader()
     for i, fname in enumerate(fnames):
@@ -223,9 +226,10 @@ def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
 
         plt.plot(t, vrms, label=labels[i], linewidth=2, color=colors[i])
 
-    plt.xlabel(get_label('time', units['time']))
+    if not no_xlabel:
+        plt.xlabel(get_label('time', units['time']))
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
-    plt.ylabel(r'rms area error')
+    plt.ylabel(r'r.m.s. area error')
     plt.grid(which='both', linestyle='dashed', zorder=-1)
 
     if not labels[0] is None:
@@ -235,14 +239,16 @@ def plot_rms_volume_error(fnames, show=False, fmt="png", **kwargs):
     plt.ylim(ylim)
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         plt.savefig('rms_vol_err.' + fmt, bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
 
-def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
+def plot_max_volume_error(fnames, figure = 'save', fmt="png", **kwargs):
     """
     Plot the gridded absolute volume error (normalised with
     cell volume).
@@ -250,13 +256,12 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
     n = len(fnames)
 
     labels = kwargs.pop('labels', n * [None])
+    no_xlabel = kwargs.pop('no_xlabel', False)
 
     if len(labels) < n:
         raise ValueError('Not enough labels provided.')
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
-
-    plt.figure()
 
     h5reader = H5Reader()
     for i, fname in enumerate(fnames):
@@ -272,7 +277,9 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
         plt.plot(t, vmax, label=labels[i], linewidth=2, color=colors[i])
 
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
-    plt.xlabel(get_label('time', units['time']))
+
+    if not no_xlabel:
+        plt.xlabel(get_label('time', units['time']))
     plt.ylabel(r'max normalised volume error')
     plt.grid(linestyle='dashed', zorder=-1)
 
@@ -281,14 +288,16 @@ def plot_max_volume_error(fnames, show=False, fmt="png", **kwargs):
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         plt.savefig('max_normalised_vol_err.' + fmt, bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
 
-def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
+def plot_parcel_profile(fnames, figure = 'save', fmt="png", **kwargs):
     """
     Plot the mean and standard deviation of the parcel aspect ratio.
     """
@@ -296,6 +305,7 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
 
     labels = kwargs.pop('labels', n * [None])
     dset = kwargs.pop('dset', 'aspect-ratio')
+    no_xlabel = kwargs.pop('no_xlabel', False)
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
 
@@ -303,8 +313,6 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
         raise ValueError('Not enough labels provided.')
 
     h5reader = H5Reader()
-
-    plt.figure()
 
     lmax = 0
 
@@ -355,7 +363,8 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
         print( fname, data_mean.mean(), data_std.mean())
 
 
-    plt.xlabel(get_label('time', units['time']))
+    if not no_xlabel:
+        plt.xlabel(get_label('time', units['time']))
     plt.grid(linestyle='dashed', zorder=-1)
 
     if dset == 'aspect-ratio':
@@ -375,18 +384,21 @@ def plot_parcel_profile(fnames, show=False, fmt="png", **kwargs):
 
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         prefix = os.path.splitext(fnames[0])[0] + '_'
         if n > 1:
             prefix = ''
         plt.savefig(prefix + 'parcel_' + dset + '_profile.' + fmt,
                     bbox_inches='tight')
+    else:
+        plt.show()
+
     plt.close()
 
 
-def plot_parcel_stats_profile(fnames, show=False, fmt="png", **kwargs):
+def plot_parcel_stats_profile(fnames, figure = 'save', fmt="png", **kwargs):
     """
     Plot parcel statistics
     """
@@ -394,6 +406,7 @@ def plot_parcel_stats_profile(fnames, show=False, fmt="png", **kwargs):
 
     labels = kwargs.pop('labels', n * [None])
     dset = kwargs.pop('dset', 'aspect-ratio')
+    no_xlabel = kwargs.pop('no_xlabel', False)
 
     if dset == 'aspect-ratio':
         dset = 'aspect ratio'
@@ -404,8 +417,6 @@ def plot_parcel_stats_profile(fnames, show=False, fmt="png", **kwargs):
         raise ValueError('Not enough labels provided.')
 
     h5reader = H5Reader()
-
-    plt.figure()
 
     lmax = 0
 
@@ -436,8 +447,8 @@ def plot_parcel_stats_profile(fnames, show=False, fmt="png", **kwargs):
         plt.fill_between(t, data_mean - data_std, data_mean + data_std,
                          alpha=0.5, color=colors[i])
 
-
-    plt.xlabel(get_label('time', units['time']))
+    if not no_xlabel:
+        plt.xlabel(get_label('time', units['time']))
     plt.grid(linestyle='dashed', zorder=-1)
 
     if dset == 'aspect-ratio':
@@ -457,28 +468,30 @@ def plot_parcel_stats_profile(fnames, show=False, fmt="png", **kwargs):
 
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         prefix = os.path.splitext(fnames[0])[0] + '_'
         if n > 1:
             prefix = ''
         dset = dset.replace(' ', '_')
         plt.savefig(prefix + 'parcel_' + dset + '_profile.' + fmt,
                     bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
 
-def plot_parcel_number(fnames, show=False, fmt="png", **kwargs):
+def plot_parcel_number(fnames, figure = 'save', fmt="png", **kwargs):
     """
     Plot the number of parcels in simulation.
     """
     labels = kwargs.pop('labels', None)
+    no_xlabel = kwargs.pop('no_xlabel', False)
 
     if labels is None:
         labels = [None] * len(fnames)
 
-    plt.figure()
     for i, fname in enumerate(fnames):
 
         h5reader = H5Reader()
@@ -507,27 +520,30 @@ def plot_parcel_number(fnames, show=False, fmt="png", **kwargs):
                    ncol=min(len(labels), legend_dict['ncol']),
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
-    plt.xlabel(get_label('time', units['time']))
+    if not no_xlabel:
+        plt.xlabel(get_label('time', units['time']))
     plt.ylabel(r'parcel count')
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         plt.savefig('parcel_number_profile.' + fmt, bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
 
-def plot_small_parcel_number(fnames, show=False, fmt="png", **kwargs):
+def plot_small_parcel_number(fnames, figure = 'save', fmt="png", **kwargs):
     """
     Plot the number of small parcels in simulation.
     """
     labels = kwargs.pop('labels', None)
+    no_xlabel = kwargs.pop('no_xlabel', False)
 
     if labels is None:
         labels = [None] * len(fnames)
 
-    plt.figure()
     for i, fname in enumerate(fnames):
 
         h5reader = H5Reader()
@@ -558,17 +574,20 @@ def plot_small_parcel_number(fnames, show=False, fmt="png", **kwargs):
                    ncol=min(len(labels), legend_dict['ncol']),
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
-    plt.xlabel(get_label('time', units['time']))
-    plt.ylabel(r'percentage of small parcels (\%)')
+    if not no_xlabel:
+        plt.xlabel(get_label('time', units['time']))
+    plt.ylabel(r'small parcel fraction (\%)')
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         plt.savefig('parcel_small_number_profile.' + fmt, bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
-def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs):
+def plot_center_of_mass(fnames, figure = 'save', fmt="png", dset='buoyancy', **kwargs):
 
     tag = None
     if dset == 'buoyancy':
@@ -692,9 +711,9 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
     fig1.tight_layout()
     fig2.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         prefix = os.path.splitext(fnames[0])[0] + '_'
         if n > 1:
             prefix = ''
@@ -702,10 +721,13 @@ def plot_center_of_mass(fnames, show=False, fmt="png", dset='buoyancy', **kwargs
                      bbox_inches='tight')
         fig2.savefig(prefix + 'z_center_of_mass_' + dset + '.' + fmt,
                      bbox_inches='tight')
+    else:
+        plt.show()
+
     plt.close('all')
 
 
-def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwargs):
+def plot_cumulative(fnames, step=0, dset='volume', figure = 'save', fmt="png", **kwargs):
     """
     Plot the mean and standard deviation of the parcel volume
     normalised with the cell volume.
@@ -750,18 +772,20 @@ def plot_cumulative(fnames, step=0, dset='volume', show=False, fmt="png", **kwar
 
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         prefix = os.path.splitext(fnames[0])[0] + '_'
         if n > 1:
             prefix = ''
         plt.savefig(prefix + 'parcel_cumulative_' + dset + '.' + fmt,
                     bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
 
-def plot_power_spectrum(fnames, show=False, fmt="png", **kwargs):
+def plot_power_spectrum(fnames, figure = 'save', fmt="png", **kwargs):
     """
     Reads in a power spectrum file generated by the standalone
     program genspec.
@@ -770,6 +794,7 @@ def plot_power_spectrum(fnames, show=False, fmt="png", **kwargs):
 
     labels = kwargs.pop('labels', n * [None])
     yscale = kwargs.pop('yscale', 'linear')
+    no_xlabel = kwargs.pop('no_xlabel', False)
 
     if len(labels) < n:
         raise ValueError('Not enough labels provided.')
@@ -785,7 +810,9 @@ def plot_power_spectrum(fnames, show=False, fmt="png", **kwargs):
         plt.loglog(k, spec, label=labels[i])
 
     plt.grid(which='both', linestyle='dashed')
-    plt.xlabel(r'$k$')
+
+    if not no_xlabel:
+        plt.xlabel(r'$k$')
     plt.ylabel(r'$P(k)$')
 
     if not labels[0] is None:
@@ -794,18 +821,20 @@ def plot_power_spectrum(fnames, show=False, fmt="png", **kwargs):
 
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         prefix = os.path.splitext(fnames[0])[0] + '_'
         if n > 1:
             prefix = ''
         plt.savefig(prefix + 'power_spectrum.' + fmt,
                     bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
 
-def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
+def plot_parcels_per_cell(fnames, figure = 'save', fmt="png", **kwargs):
     """
     Plot the mean and standard deviation of the number of
     parcels per cell
@@ -814,6 +843,7 @@ def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
 
     labels = kwargs.pop('labels', n * [None])
     add_minmax = kwargs.pop('add_minmax', True)
+    no_xlabel = kwargs.pop('no_xlabel', False)
 
     if len(labels) < n:
         raise ValueError('Not enough labels provided.')
@@ -852,7 +882,8 @@ def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
         if add_minmax:
             plt.fill_between(t, n_min, n_max, color=colors[i], alpha=0.5, edgecolor=None)
 
-    plt.xlabel(get_label('time', units['time']))
+    if not no_xlabel:
+        plt.xlabel(get_label('time', units['time']))
     plt.ylabel(r'number of parcels/cell')
     plt.grid(which='both', linestyle='dashed')
 
@@ -862,71 +893,72 @@ def plot_parcels_per_cell(fnames, show=False, fmt="png", **kwargs):
 
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         prefix = os.path.splitext(fnames[0])[0] + '_'
         if n > 1:
             prefix = ''
         plt.savefig(prefix + 'number_of_parcels_per_cell.' + fmt,
                     bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
 
-def plot_energy(fnames, show=False, fmt="png", **kwargs):
+def plot_energy(fname, figure = 'save', fmt="png", **kwargs):
     """
     Plot the kinetic, potential and total energy.
     """
-    n = len(fnames)
+    no_xlabel = kwargs.pop('no_xlabel', False)
+    h5reader = H5Reader()
+    h5reader.open(fname)
 
-    for i, fname in enumerate(fnames):
+    if not h5reader.is_parcel_stats_file:
+        raise IOError('Not a parcel diagnostic output file.')
 
-        plt.figure(num=i)
+    nsteps = h5reader.get_num_steps()
 
-        h5reader = H5Reader()
-        h5reader.open(fname)
+    pe = np.zeros(nsteps)
+    ke = np.zeros(nsteps)
+    te = np.zeros(nsteps)
+    t = np.zeros(nsteps)
 
-        if not h5reader.is_parcel_stats_file:
-            raise IOError('Not a parcel diagnostic output file.')
+    for step in range(nsteps):
+        pe[step] = h5reader.get_step_attribute(step, 'potential energy')
+        ke[step] = h5reader.get_step_attribute(step, 'kinetic energy')
+        te[step] = h5reader.get_step_attribute(step, 'total energy')
+        t[step] = h5reader.get_step_attribute(step, 't')
 
-        nsteps = h5reader.get_num_steps()
+    h5reader.close()
 
-        pe = np.zeros(nsteps)
-        ke = np.zeros(nsteps)
-        te = np.zeros(nsteps)
-        t = np.zeros(nsteps)
+    plt.plot(t, pe, label=r'$\mathcal{P}$')
+    plt.plot(t, ke, label=r'$\mathcal{K}$')
+    plt.plot(t, te, label=r'$\mathcal{P}+\mathcal{K}$')
 
-        for step in range(nsteps):
-            pe[step] = h5reader.get_step_attribute(step, 'potential energy')
-            ke[step] = h5reader.get_step_attribute(step, 'kinetic energy')
-            te[step] = h5reader.get_step_attribute(step, 'total energy')
-            t[step] = h5reader.get_step_attribute(step, 't')
-
-        h5reader.close()
-
-        plt.plot(t, pe, label=r'$\mathcal{P}$')
-        plt.plot(t, ke, label=r'$\mathcal{K}$')
-        plt.plot(t, te, label=r'$\mathcal{P}+\mathcal{K}$')
+    if not no_xlabel:
         plt.xlabel(get_label('time', units['time']))
-        plt.ylabel(r'energy')
-        plt.grid(which='both', linestyle='dashed')
+    plt.ylabel(r'energy')
+    plt.grid(which='both', linestyle='dashed')
 
-        plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
-                   bbox_to_anchor=legend_dict['bbox_to_anchor'])
+    plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
+                bbox_to_anchor=legend_dict['bbox_to_anchor'])
 
-        plt.tight_layout()
+    plt.tight_layout()
 
-        if show:
-            plt.show()
-        else:
-            prefix = os.path.splitext(fname)[0]
-            prefix = prefix.split('parcel_stats')[0]
-            plt.savefig(prefix + 'energy.' + fmt,
-                        bbox_inches='tight')
-        plt.close()
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
+        prefix = os.path.splitext(fname)[0]
+        prefix = prefix.split('parcel_stats')[0]
+        plt.savefig(prefix + 'energy.' + fmt,
+                    bbox_inches='tight')
+    else:
+        plt.show()
+    plt.close()
 
 
-def plot_time_pie_chart(fname, show=False, fmt="png", **kwargs):
+def plot_time_pie_chart(fname, figure = 'save', fmt="png", **kwargs):
     df = pd.read_csv(fname)
 
     # remove epic
@@ -976,21 +1008,23 @@ def plot_time_pie_chart(fname, show=False, fmt="png", **kwargs):
         horizontalalignment = {-1: "right", 1: "left"}[int(np.sign(x))]
         connectionstyle = "angle,angleA=0,angleB={}".format(ang)
         kw["arrowprops"].update({"connectionstyle": connectionstyle})
-        ax.annotate(labels[i], xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
+        ax.annotate(r'\tt{' + labels[i] + r'}', xy=(x, y), xytext=(1.35*np.sign(x), 1.4*y),
                     horizontalalignment=horizontalalignment, **kw)
 
     plt.setp(autotexts, size=8, weight="bold")
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         prefix = os.path.splitext(fname)[0]
         plt.savefig(prefix + '_timing_pie_chart.' + fmt,
                     bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
-def plot_time_bar(fnames, show=False, fmt="png", **kwargs):
+def plot_time_bar(fnames, figure = 'save', fmt="png", **kwargs):
 
     labels = kwargs.pop('labels', len(fnames) * [None])
     skip = kwargs.pop('skip', 1.0)
@@ -1064,6 +1098,10 @@ def plot_time_bar(fnames, show=False, fmt="png", **kwargs):
         # append to df
         df = pd.concat([df, df2], axis=1)
 
+        # 4 October 2021
+        # https://stackoverflow.com/questions/16476924/how-to-iterate-over-rows-in-a-dataframe-in-pandas
+        for i, row in df.iterrows():
+            row['function name'] = r'\tt{' + row['function name'] + r'}'
 
     df.plot.bar(x='function name')
 
@@ -1076,14 +1114,16 @@ def plot_time_bar(fnames, show=False, fmt="png", **kwargs):
     plt.grid(which='both', linestyle='dashed')
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         plt.savefig('timing_bar_plot.' + fmt, bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
 
 
-def plot_time_speedup(fnames, nthreads, show=False, fmt="png"):
+def plot_time_speedup(fnames, nthreads, figure = 'save', fmt="png"):
 
     if len(fnames) < 2:
         raise ValueError('Not enough files provided.')
@@ -1172,29 +1212,10 @@ def plot_time_speedup(fnames, nthreads, show=False, fmt="png"):
     plt.legend(loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.4))
     plt.tight_layout()
 
-    if show:
-        plt.show()
-    else:
+    if figure == 'return':
+        return plt
+    elif figure == 'save':
         plt.savefig('timing_speedup_plot.' + fmt, bbox_inches='tight')
+    else:
+        plt.show()
     plt.close()
-
-#def plot_field(fname, show=False, fmt="png", ax=None):
-
-    #h5reader = H5Reader()
-    #h5reader.open(fname)
-
-    #extent = h5reader.get_box_extent()
-    #origin = h5reader.get_box_origin()
-    #ncells = h5reader.get_box_ncells()
-
-    #xx = np.linspace(origin[0], origin[0] + extent[0], ncells[0], endpoint=False)
-    #yy = np.linspace(origin[1], origin[1] + extent[1], ncells[1], endpoint=False)
-    #yy, xx = np.boxgrid(yy, xx)
-
-#sc = axes.pcolorbox(xx, yy, npc, shading='nearest')
-#plt.colorbar(sc, ax=axes)
-#plt.xlabel('x')
-#plt.ylabel('y')
-#plt.tight_layout()
-#plt.show()
-#plt.close()
