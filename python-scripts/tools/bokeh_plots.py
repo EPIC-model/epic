@@ -1,4 +1,5 @@
 from bokeh.io import export_png, export_svg
+from bokeh.io.export import get_screenshot_as_png
 import bokeh.plotting as bpl
 from bokeh.models import ColumnDataSource, \
                          ColorBar,         \
@@ -110,25 +111,18 @@ def _bokeh_save(graph, fname, fmt, show, **kwargs):
     if show:
         bpl.show(graph)
     elif fmt == 'png':
-        export_png(graph, filename = fname + '.png')
+        export_png(graph, filename = fname + '.png', timeout = 120)
     elif fmt == 'svg':
-        export_svg(graph, filename = fname + '.svg')
+        export_svg(graph, filename = fname + '.svg', timeout = 120)
     elif fmt == 'jpg':
-        # save a temporary PNG
-        export_png(graph, filename = 'bokeh_tmp_figure.png')
-
+        # 4 October 2021
+        # https://docs.bokeh.org/en/latest/docs/reference/io.html#bokeh.io.export.get_screenshot_as_png
+        im = get_screenshot_as_png(graph, timeout = 120)
         # 29 Sept. 2021
         # https://stackoverflow.com/questions/4353019/in-pythons-pil-how-do-i-change-the-quality-of-an-image
         # https://stackoverflow.com/questions/43258461/convert-png-to-jpeg-using-pillow
-        from PIL import Image
-        im = Image.open('bokeh_tmp_figure.png')
         rgb_im = im.convert('RGB')
         rgb_im.save(fname + '.jpg', quality=jpg_quality)
-
-        # delete temporary PNG
-        import os
-        os.remove('bokeh_tmp_figure.png')
-
     else:
         raise IOError("Bokeh plot does not support '" + fmt + "' format.")
 
