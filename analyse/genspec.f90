@@ -234,7 +234,7 @@ program genspec
                 write(1235, *) '#         k   P(k)'
             endif
 
-            fscale = one / dble(nx * (nz + 1))
+            fscale = one / dble(nx * nz)
 
             do kz = 0, nz
                 do kx = 0, nx - 1
