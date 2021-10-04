@@ -230,7 +230,6 @@ def plot_rms_volume_error(fnames, figure = 'save', fmt="png", **kwargs):
 
     if not no_xlabel:
         plt.xlabel(get_label('time', units['time']))
-    plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.ylabel(r'r.m.s. area error')
     plt.grid(which='both', linestyle='dashed', zorder=-1)
 
@@ -238,6 +237,9 @@ def plot_rms_volume_error(fnames, figure = 'save', fmt="png", **kwargs):
         plt.legend(loc=legend_dict['loc'], ncol=legend_dict['ncol'],
                    bbox_to_anchor=legend_dict['bbox_to_anchor'])
     plt.yscale(yscale)
+
+    if yscale == 'linear':
+        plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
     plt.ylim(ylim)
     plt.tight_layout()
 
