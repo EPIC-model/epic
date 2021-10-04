@@ -101,7 +101,7 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
         graph.title.text_font_size = font_size
         graph.title.text_font = text_font
 
-    return graph
+    return graph, (pw, ph)
 
 
 def _bokeh_save(graph, fname, fmt, show, **kwargs):
@@ -136,7 +136,7 @@ def _bokeh_save(graph, fname, fmt, show, **kwargs):
 def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs):
     no_title = kwargs.pop('no_title', False)
     no_colorbar = kwargs.pop('no_colorbar', False)
-    zoom = kwargs.pop('zoom', 10)
+    zoom_factor = kwargs.pop('zoom_factor', 1.0)
 
     cmap = kwargs.get('cmap', 'inferno')
     if not cmap in bokeh_palettes.keys():
@@ -153,10 +153,10 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
     if no_title:
         title = None
 
-    graph = _get_bokeh_basic_graph(origin = origin,
-                                   extent = extent,
-                                   title = title,
-                                   **kwargs)
+    graph, (pw, ph) = _get_bokeh_basic_graph(origin = origin,
+                                             extent = extent,
+                                             title = title,
+                                             **kwargs)
 
     data = np.transpose(h5reader.get_dataset(step=step, name=field))
 
@@ -170,6 +170,9 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
                         major_label_text_font_size=font_size)
 
     if hybrid:
+        ncells = ncells = h5reader.get_box_ncells()
+        zoom = max(int(zoom_factor * pw / ncells[0]),
+                   int(zoom_factor * ph / ncells[1])) + 1
         data = ndimage.zoom(np.transpose(data), zoom=zoom, order=1)
 
     graph.image(image=[data], x=origin[0], y=origin[1], dw=extent[0], dh=extent[1],
@@ -218,10 +221,10 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
         title = None
 
     if graph is None:
-        graph = _get_bokeh_basic_graph(origin = origin,
-                                       extent = extent,
-                                       title = title,
-                                       **kwargs)
+        graph, _ = _get_bokeh_basic_graph(origin = origin,
+                                          extent = extent,
+                                          title = title,
+                                          **kwargs)
 
     x, y, width, height, angle = h5reader.get_ellipses_for_bokeh(step)
 
