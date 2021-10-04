@@ -7,7 +7,7 @@ import sys
 has_bokeh = True
 
 try:
-    from tools.bokeh_plots import bokeh_plot_parcels
+    from tools.bokeh_plots import bokeh_plot
 except:
     has_bokeh = False
 
@@ -97,16 +97,16 @@ try:
 
     for step in args.steps:
         if has_bokeh and args.use_bokeh:
-            bokeh_plot_parcels(fname=args.filename,
-                               step=step,
-                               show=args.show,
-                               fmt=args.fmt,
-                               coloring=args.coloring,
-                               display=args.display,
-                               xmin=args.xmin,
-                               xmax=args.xmax,
-                               ymin=args.ymin,
-                               ymax=args.ymax)
+            bokeh_plot(fname=args.filename,
+                       step=step,
+                       show=args.show,
+                       fmt=args.fmt,
+                       coloring=args.coloring,
+                       display=args.display,
+                       xmin=args.xmin,
+                       xmax=args.xmax,
+                       ymin=args.ymin,
+                       ymax=args.ymax)
         else:
             plot_parcels(fname=args.filename,
                          step=step,

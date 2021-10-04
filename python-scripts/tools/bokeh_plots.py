@@ -8,13 +8,15 @@ from bokeh.transform import linear_cmap
 from tools.h5_reader import H5Reader
 from tools.bokeh_style import *
 import numpy as np
+from scipy import ndimage
 
 
-def _get_bokeh_basic_graph(origin, extent, display=None, title=None, **kwargs):
+def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
     no_xaxis = kwargs.pop('no_xaxis', False)
     no_yaxis = kwargs.pop('no_yaxis', False)
     no_xlabel = kwargs.pop('no_xlabel', False)
     no_ylabel = kwargs.pop('no_ylabel', False)
+    display = kwargs.pop('display', 'full HD')
 
     # instantiating the figure object
     fkwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -102,9 +104,39 @@ def _get_bokeh_basic_graph(origin, extent, display=None, title=None, **kwargs):
     return graph
 
 
-def _bokeh_plot_field(h5reader, step, field, vmin, vmax, display=None, **kwargs):
+def _bokeh_save(graph, fname, fmt, show, **kwargs):
+    jpg_quality = kwargs.pop('jpg_quality', 60)
+
+    if show:
+        bpl.show(graph)
+    elif fmt == 'png':
+        export_png(graph, filename = fname + '.png')
+    elif fmt == 'svg':
+        export_svg(graph, filename = fname + '.svg')
+    elif fmt == 'jpg':
+        # save a temporary PNG
+        export_png(graph, filename = 'bokeh_tmp_figure.png')
+
+        # 29 Sept. 2021
+        # https://stackoverflow.com/questions/4353019/in-pythons-pil-how-do-i-change-the-quality-of-an-image
+        # https://stackoverflow.com/questions/43258461/convert-png-to-jpeg-using-pillow
+        from PIL import Image
+        im = Image.open('bokeh_tmp_figure.png')
+        rgb_im = im.convert('RGB')
+        rgb_im.save(fname + '.jpg', quality=jpg_quality)
+
+        # delete temporary PNG
+        import os
+        os.remove('bokeh_tmp_figure.png')
+
+    else:
+        raise IOError("Bokeh plot does not support '" + fmt + "' format.")
+
+
+def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs):
     no_title = kwargs.pop('no_title', False)
     no_colorbar = kwargs.pop('no_colorbar', False)
+    zoom = kwargs.pop('zoom', 10)
 
     cmap = kwargs.pop('cmap', 'inferno')
     if not cmap in bokeh_palettes.keys():
@@ -123,7 +155,6 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, display=None, **kwargs)
 
     graph = _get_bokeh_basic_graph(origin = origin,
                                    extent = extent,
-                                   display = display,
                                    title = title,
                                    **kwargs)
 
@@ -138,6 +169,9 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, display=None, **kwargs)
                         major_label_text_font=text_font,
                         major_label_text_font_size=font_size)
 
+    if hybrid:
+        data = ndimage.zoom(np.transpose(data), zoom=zoom, order=1)
+
     graph.image(image=[data], x=origin[0], y=origin[1], dw=extent[0], dh=extent[1],
                 color_mapper = mapper)
 
@@ -147,9 +181,11 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, display=None, **kwargs)
     return graph
 
 
-def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kwargs):
+def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
     no_title = kwargs.pop('no_title', False)
     no_colorbar = kwargs.pop('no_colorbar', False)
+    graph = kwargs.pop('graph', None)
+    fill_alpha = kwargs.pop('fill_alpha', 0.75)
 
     cmap = kwargs.pop('cmap', 'viridis_r')
     if not cmap in bokeh_palettes.keys():
@@ -181,11 +217,11 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     if no_title:
         title = None
 
-    graph = _get_bokeh_basic_graph(origin = origin,
-                                   extent = extent,
-                                   display = display,
-                                   title = title,
-                                   **kwargs)
+    if graph is None:
+        graph = _get_bokeh_basic_graph(origin = origin,
+                                       extent = extent,
+                                       title = title,
+                                       **kwargs)
 
     x, y, width, height, angle = h5reader.get_ellipses_for_bokeh(step)
 
@@ -219,7 +255,10 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
                             major_label_text_font_size=font_size)
 
     graph.ellipse(x='x', y='y', width='width', height='height',angle='angle',
-                  color = mapper,fill_alpha=0.75,line_color=None,source=source)
+                  color = mapper,
+                  fill_alpha = fill_alpha,
+                  line_color = None,
+                  source = source)
 
     if not no_colorbar:
         graph.add_layout(color_bar, 'right')
@@ -227,17 +266,21 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display=None, **kw
     return graph
 
 
-def bokeh_plot_parcels(fname, step, show=False, fmt='png',
-                       coloring='aspect-ratio', display='full HD', **kwargs):
+def bokeh_plot(fname, step, show=False, fmt='png',
+               coloring='vorticity', **kwargs):
 
-    jpg_quality = kwargs.pop('jpg_quality', 60)
+    hybrid = kwargs.pop('hybrid', False)
 
     h5reader = H5Reader()
 
     h5reader.open(fname)
 
-    if not h5reader.is_parcel_file:
-        raise IOError('Not a parcel output file.')
+    if hybrid and not h5reader.is_field_file:
+        if not h5reader.is_parcel_file:
+            raise RuntimeError('Neither a field nor parcel file.')
+        h5reader.close()
+        fname = fname.replace('_parcels.hdf5', '_fields.hdf5')
+        h5reader.open(fname)
 
     nsteps = h5reader.get_num_steps()
 
@@ -247,46 +290,55 @@ def bokeh_plot_parcels(fname, step, show=False, fmt='png',
     if step < 0:
         raise ValueError('Step number cannot be negative.')
 
-    if coloring == 'aspect-ratio':
-        vmin = 1.0
-        vmax = h5reader.get_parcel_option('lambda')
-    elif coloring == 'vol-distr':
-        extent = h5reader.get_box_extent()
-        ncells = h5reader.get_box_ncells()
-        vcell = np.prod(extent / ncells)
-        vmin = vcell / h5reader.get_parcel_option('min_vratio')
-        vmax = vcell / h5reader.get_parcel_option('max_vratio')
-    else:
+    saveas = coloring + '_step_' + str(step).zfill(len(str(nsteps)))
+
+    if h5reader.is_parcel_file:
+        if coloring == 'aspect-ratio':
+            vmin = 1.0
+            vmax = h5reader.get_parcel_option('lambda')
+        elif coloring == 'vol-distr':
+            extent = h5reader.get_box_extent()
+            ncells = h5reader.get_box_ncells()
+            vcell = np.prod(extent / ncells)
+            vmin = vcell / h5reader.get_parcel_option('min_vratio')
+            vmax = vcell / h5reader.get_parcel_option('max_vratio')
+        else:
+            vmin, vmax = h5reader.get_dataset_min_max(coloring)
+
+        saveas = 'parcels_'  + saveas
+        graph = _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs)
+
+    elif h5reader.is_field_file:
+        saveas = 'field_' + saveas
         vmin, vmax = h5reader.get_dataset_min_max(coloring)
+        graph = _bokeh_plot_field(h5reader, step, coloring, vmin, vmax,
+                                  hybrid = hybrid,
+                                  **kwargs)
 
-    graph = _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, display, **kwargs)
+        if hybrid:
+            fname = fname.replace('_fields.hdf5', '_parcels.hdf5')
+            h5reader.close()
+            h5reader.open(fname)
 
-    if show:
-        bpl.show(graph)
-    elif fmt == 'png':
-        export_png(graph, filename = 'parcels_'  + coloring + '_step_' + \
-            str(step).zfill(len(str(nsteps))) + '.png')
-    elif fmt == 'svg':
-        export_svg(graph, filename = 'parcels_'  + coloring + '_step_' + \
-            str(step).zfill(len(str(nsteps))) + '.svg')
-    elif fmt == 'jpg':
-        # save a temporary PNG
-        export_png(graph, filename = 'bokeh_tmp_figure.png')
+            if not (nsteps == h5reader.get_num_steps()):
+                raise RuntimeError('Field and parcel file do not have the same step count')
 
-        # 29 Sept. 2021
-        # https://stackoverflow.com/questions/4353019/in-pythons-pil-how-do-i-change-the-quality-of-an-image
-        # https://stackoverflow.com/questions/43258461/convert-png-to-jpeg-using-pillow
-        from PIL import Image
-        im = Image.open('bokeh_tmp_figure.png')
-        rgb_im = im.convert('RGB')
-        rgb_im.save('parcels_'  + coloring + '_step_' + \
-            str(step).zfill(len(str(nsteps))) + '.jpg', quality=jpg_quality)
-
-        # delete temporary PNG
-        import os
-        os.remove('bokeh_tmp_figure.png')
-
+            graph = _bokeh_plot_parcels(h5reader,
+                                        step,
+                                        coloring,
+                                        vmin,
+                                        vmax,
+                                        graph = graph,
+                                        no_colorbar = True,
+                                        fill_alpha = 1.0,
+                                        **kwargs)
     else:
-        raise IOError("Bokeh plot does not support '" + fmt + "' format.")
+        raise RuntimeError('Neither a field nor parcel file.')
 
     h5reader.close()
+
+    _bokeh_save(graph = graph,
+                fname = saveas
+                fmt = fmt,
+                show = show,
+                **kwargs)
