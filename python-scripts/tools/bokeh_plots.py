@@ -173,7 +173,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
         ncells = ncells = h5reader.get_box_ncells()
         zoom = max(int(zoom_factor * pw / ncells[0]),
                    int(zoom_factor * ph / ncells[1])) + 1
-        data = ndimage.zoom(np.transpose(data), zoom=zoom, order=1)
+        data = ndimage.zoom(data, zoom=zoom, order=1)
 
     graph.image(image=[data], x=origin[0], y=origin[1], dw=extent[0], dh=extent[1],
                 color_mapper = mapper)
