@@ -338,7 +338,7 @@ def bokeh_plot(fname, step, show=False, fmt='png',
     h5reader.close()
 
     _bokeh_save(graph = graph,
-                fname = saveas
+                fname = saveas,
                 fmt = fmt,
                 show = show,
                 **kwargs)
