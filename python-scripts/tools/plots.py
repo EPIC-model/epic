@@ -207,6 +207,8 @@ def plot_rms_volume_error(fnames, figure = 'save', fmt="png", **kwargs):
     yscale = kwargs.pop('yscale', 'linear')
     ylim = kwargs.pop('ylim', (None, None))
     no_xlabel = kwargs.pop('no_xlabel', False)
+    beg = kwargs.pop('begin', None)
+    end = kwargs.pop('end', None)
 
     if len(labels) < n:
         raise ValueError('Not enough labels provided.')
@@ -224,7 +226,7 @@ def plot_rms_volume_error(fnames, figure = 'save', fmt="png", **kwargs):
         t = h5reader.get_diagnostic('t')
         h5reader.close()
 
-        plt.plot(t, vrms, label=labels[i], linewidth=2, color=colors[i])
+        plt.plot(t[beg:end], vrms[beg:end], label=labels[i], linewidth=2, color=colors[i])
 
     if not no_xlabel:
         plt.xlabel(get_label('time', units['time']))
@@ -257,6 +259,8 @@ def plot_max_volume_error(fnames, figure = 'save', fmt="png", **kwargs):
 
     labels = kwargs.pop('labels', n * [None])
     no_xlabel = kwargs.pop('no_xlabel', False)
+    beg = kwargs.pop('begin', None)
+    end = kwargs.pop('end', None)
 
     if len(labels) < n:
         raise ValueError('Not enough labels provided.')
@@ -274,7 +278,7 @@ def plot_max_volume_error(fnames, figure = 'save', fmt="png", **kwargs):
         t = h5reader.get_diagnostic('t')
         h5reader.close()
 
-        plt.plot(t, vmax, label=labels[i], linewidth=2, color=colors[i])
+        plt.plot(t[beg:end], vmax[beg:end], label=labels[i], linewidth=2, color=colors[i])
 
     plt.ticklabel_format(axis='y', style='scientific', scilimits=(0, 0))
 
@@ -306,6 +310,8 @@ def plot_parcel_profile(fnames, figure = 'save', fmt="png", **kwargs):
     labels = kwargs.pop('labels', n * [None])
     dset = kwargs.pop('dset', 'aspect-ratio')
     no_xlabel = kwargs.pop('no_xlabel', False)
+    beg = kwargs.pop('begin', None)
+    end = kwargs.pop('end', None)
 
     colors =  plt.cm.tab10(np.arange(n).astype(int))
 
@@ -356,9 +362,9 @@ def plot_parcel_profile(fnames, figure = 'save', fmt="png", **kwargs):
 
         h5reader.close()
 
-        plt.plot(t, data_mean, label=labels[i], color=colors[i])
-        plt.fill_between(t, data_mean - data_std, data_mean + data_std,
-                         alpha=0.5, color=colors[i])
+        plt.plot(t[beg:end], data_mean[beg:end], label=labels[i], color=colors[i])
+        plt.fill_between(t[beg:end], data_mean[beg:end] - data_std[beg:end],
+                         data_mean[beg:end] + data_std[beg:end], alpha=0.5, color=colors[i])
 
         print( fname, data_mean.mean(), data_std.mean())
 
@@ -407,6 +413,8 @@ def plot_parcel_stats_profile(fnames, figure = 'save', fmt="png", **kwargs):
     labels = kwargs.pop('labels', n * [None])
     dset = kwargs.pop('dset', 'aspect-ratio')
     no_xlabel = kwargs.pop('no_xlabel', False)
+    beg = kwargs.pop('begin', None)
+    end = kwargs.pop('end', None)
 
     if dset == 'aspect-ratio':
         dset = 'aspect ratio'
@@ -443,9 +451,9 @@ def plot_parcel_stats_profile(fnames, figure = 'save', fmt="png", **kwargs):
 
         h5reader.close()
 
-        plt.plot(t, data_mean, label=labels[i], color=colors[i])
-        plt.fill_between(t, data_mean - data_std, data_mean + data_std,
-                         alpha=0.5, color=colors[i])
+        plt.plot(t[beg:end], data_mean[beg:end], label=labels[i], color=colors[i])
+        plt.fill_between(t[beg:end], data_mean[beg:end] - data_std[beg:end],
+                         data_mean[beg:end] + data_std[beg:end], alpha=0.5, color=colors[i])
 
     if not no_xlabel:
         plt.xlabel(get_label('time', units['time']))
@@ -488,6 +496,8 @@ def plot_parcel_number(fnames, figure = 'save', fmt="png", **kwargs):
     """
     labels = kwargs.pop('labels', None)
     no_xlabel = kwargs.pop('no_xlabel', False)
+    beg = kwargs.pop('begin', None)
+    end = kwargs.pop('end', None)
 
     if labels is None:
         labels = [None] * len(fnames)
@@ -511,7 +521,7 @@ def plot_parcel_number(fnames, figure = 'save', fmt="png", **kwargs):
 
         h5reader.close()
 
-        plt.plot(t, nparcels, label=labels[i])
+        plt.plot(t[beg:end], nparcels[beg:end], label=labels[i])
 
     plt.grid(linestyle='dashed', zorder=-1)
 
@@ -540,6 +550,8 @@ def plot_small_parcel_number(fnames, figure = 'save', fmt="png", **kwargs):
     """
     labels = kwargs.pop('labels', None)
     no_xlabel = kwargs.pop('no_xlabel', False)
+    beg = kwargs.pop('begin', None)
+    end = kwargs.pop('end', None)
 
     if labels is None:
         labels = [None] * len(fnames)
@@ -565,7 +577,7 @@ def plot_small_parcel_number(fnames, figure = 'save', fmt="png", **kwargs):
 
         h5reader.close()
 
-        plt.plot(t, nsmall / nparcels * 100.0, label=labels[i])
+        plt.plot(t[beg:end], nsmall[beg:end] / nparcels[beg:end] * 100.0, label=labels[i])
 
     plt.grid(linestyle='dashed', zorder=-1)
 
@@ -601,6 +613,8 @@ def plot_center_of_mass(fnames, figure = 'save', fmt="png", dset='buoyancy', **k
 
     labels = kwargs.pop('labels', None)
     variance = kwargs.pop('variance', False)
+    beg = kwargs.pop('begin', None)
+    end = kwargs.pop('end', None)
 
     n = len(fnames)
     if labels is None:
@@ -658,17 +672,17 @@ def plot_center_of_mass(fnames, figure = 'save', fmt="png", dset='buoyancy', **k
         h5reader.close()
 
         data = {
-            't':        t,
-            'xb_bar':   xb_bar,
-            'zb_bar':   zb_bar,
-            'x2b_bar':  x2b_bar,
-            'z2b_bar':  z2b_bar,
-            'xzb_bar':  xzb_bar,
-            'xw_bar':   xw_bar,
-            'zw_bar':   zw_bar,
-            'x2w_bar':  x2w_bar,
-            'z2w_bar':  z2w_bar,
-            'xzw_bar':  xzw_bar,
+            't':        t[beg:end],
+            'xb_bar':   xb_bar[beg:end],
+            'zb_bar':   zb_bar[beg:end],
+            'x2b_bar':  x2b_bar[beg:end],
+            'z2b_bar':  z2b_bar[beg:end],
+            'xzb_bar':  xzb_bar[beg:end],
+            'xw_bar':   xw_bar[beg:end],
+            'zw_bar':   zw_bar[beg:end],
+            'x2w_bar':  x2w_bar[beg:end],
+            'z2w_bar':  z2w_bar[beg:end],
+            'xzw_bar':  xzw_bar[beg:end],
         }
 
         df = pd.DataFrame(data=data)
@@ -844,6 +858,8 @@ def plot_parcels_per_cell(fnames, figure = 'save', fmt="png", **kwargs):
     labels = kwargs.pop('labels', n * [None])
     add_minmax = kwargs.pop('add_minmax', True)
     no_xlabel = kwargs.pop('no_xlabel', False)
+    beg = kwargs.pop('begin', None)
+    end = kwargs.pop('end', None)
 
     if len(labels) < n:
         raise ValueError('Not enough labels provided.')
@@ -877,10 +893,11 @@ def plot_parcels_per_cell(fnames, figure = 'save', fmt="png", **kwargs):
 
         h5reader.close()
 
-        plt.plot(t, n_avg, color=colors[i], label=labels[i])
+        plt.plot(t[beg:end], n_avg[beg:end], color=colors[i], label=labels[i])
 
         if add_minmax:
-            plt.fill_between(t, n_min, n_max, color=colors[i], alpha=0.5, edgecolor=None)
+            plt.fill_between(t[beg:end], n_min[beg:end], n_max[beg:end],
+                             color=colors[i], alpha=0.5, edgecolor=None)
 
     if not no_xlabel:
         plt.xlabel(get_label('time', units['time']))
@@ -911,6 +928,9 @@ def plot_energy(fname, figure = 'save', fmt="png", **kwargs):
     Plot the kinetic, potential and total energy.
     """
     no_xlabel = kwargs.pop('no_xlabel', False)
+    beg = kwargs.pop('begin', None)
+    end = kwargs.pop('end', None)
+
     h5reader = H5Reader()
     h5reader.open(fname)
 
@@ -932,9 +952,9 @@ def plot_energy(fname, figure = 'save', fmt="png", **kwargs):
 
     h5reader.close()
 
-    plt.plot(t, pe, label=r'$\mathcal{P}$')
-    plt.plot(t, ke, label=r'$\mathcal{K}$')
-    plt.plot(t, te, label=r'$\mathcal{P}+\mathcal{K}$')
+    plt.plot(t[beg:end], pe[beg:end], label=r'$\mathcal{P}$')
+    plt.plot(t[beg:end], ke[beg:end], label=r'$\mathcal{K}$')
+    plt.plot(t[beg:end], te[beg:end], label=r'$\mathcal{P}+\mathcal{K}$')
 
     if not no_xlabel:
         plt.xlabel(get_label('time', units['time']))
