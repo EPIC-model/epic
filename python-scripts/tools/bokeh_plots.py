@@ -183,6 +183,7 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
     no_colorbar = kwargs.pop('no_colorbar', False)
     graph = kwargs.pop('graph', None)
     fill_alpha = kwargs.pop('fill_alpha', 0.75)
+    title = kwargs.pop('title', None)
 
     cmap = kwargs.get('cmap', 'viridis_r')
     if not cmap in bokeh_palettes.keys():
@@ -196,21 +197,24 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
     nparcels= h5reader.get_num_parcels(step)
     ttime = h5reader.get_step_attribute(step=step, name='t')
 
+    label = ''
     if coloring == 'aspect-ratio':
-        title = 'aspect ratio'
+        label = 'aspect ratio'
         data = h5reader.get_aspect_ratio(step=step)
     elif coloring == 'vol-distr':
-        title = 'volume distribution'
+        label = 'volume distribution'
         data = h5reader.get_dataset(step=step, name='volume')
         data[data <= vmin] = 0.0
         data[data > vmin] = 1.0
     else:
-        title = coloring
+        label = coloring
         data = h5reader.get_dataset(step=step, name=coloring)
 
-    title = title + \
-                    '\t\t\t\t time = %15.3f'%ttime + \
-                    '\t\t\t\t #parcels = %10d'%nparcels
+    if title is None:
+        title = label + \
+            '\t\t\t\t time = %15.3f'%ttime + \
+                '\t\t\t\t #parcels = %10d'%nparcels
+
     if no_title:
         title = None
 
