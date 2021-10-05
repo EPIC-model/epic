@@ -8,6 +8,7 @@ from bokeh.models import ColumnDataSource, \
 from bokeh.transform import linear_cmap
 from tools.h5_reader import H5Reader
 from tools.bokeh_style import *
+from toosl.units import *
 import numpy as np
 from scipy import ndimage
 
@@ -42,8 +43,8 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
         pw = np.nanmin([1920,int(1080*(right-left)/(top-bottom))])
         ph = np.nanmin([1080,int(1920*(top-bottom)/(right-left))])
 
-    x_axis_label = 'x (m)'
-    y_axis_label = 'y (m)'
+    x_axis_label = get_label('x', units['position'])
+    y_axis_label = get_label('y', units['position'])
 
     if no_xlabel:
         x_axis_label = ' '
