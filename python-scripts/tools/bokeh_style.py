@@ -34,6 +34,33 @@ bokeh_palettes = {
     'viridis_r'         : Viridis256_r
 }
 
+# matplotlib colormaps
+# 5 October 2021
+# https://stackoverflow.com/questions/35315259/using-colormap-with-bokeh-scatter
+# https://stackoverflow.com/questions/25408393/getting-individual-colors-from-a-color-map-in-matplotlib
+# https://matplotlib.org/stable/api/colors_api.html
+# https://stackoverflow.com/questions/17873384/how-to-deep-copy-a-list
+from matplotlib import cm, colors
+import copy
+import numpy as np
+c = np.linspace(0, 1, 256)
+for key in ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds',
+            'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
+            'GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']:
+    hex_list = [None] * 256
+    cmap = cm.get_cmap(key)
+    for i in range(256):
+        hex_list[i] = colors.to_hex(cmap(c[i]))
+    bokeh_palettes['mpl_' + key] = copy.deepcopy(hex_list)
+
+for key in ['PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu',
+            'RdYlBu', 'RdYlGn', 'Spectral', 'coolwarm', 'bwr', 'seismic']:
+    hex_list = [None] * 256
+    cmap = cm.get_cmap(key)
+    for i in range(256):
+        hex_list[i] = colors.to_hex(cmap(c[i]))
+    bokeh_palettes['mpl_' + key] = copy.deepcopy(hex_list)
+
 
 try:
     import colorcet as cc
