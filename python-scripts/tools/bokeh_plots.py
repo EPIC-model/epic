@@ -188,11 +188,16 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
         y_zoom = np.linspace(
             origin[1], origin[1] + extent[1], zoom * (ny_input - 1) + 1
         )
-        interp_f = interpolate.interp2d(x_input, y_input, data_periodic, kind="cubic")
+        interp_f = interpolate.RegularGridInterpolator(
+            (x_input, y_input), data_periodic.T
+        )
         # Replace the fields
         dx = x_zoom[1] - x_zoom[0]
         dy = y_zoom[1] - y_zoom[0]
-        data_periodic = interp_f(x_zoom, y_zoom)
+        meshgrid_points = np.meshgrid(x_zoom, y_zoom)
+        flat_grid = np.array([m.flatten() for m in meshgrid_points])
+        out_array = interp_f(flat_grid.T)
+        data_periodic = out_array.reshape(meshgrid_points[0].shape)
 
     graph.image(
         image=[data_periodic],
@@ -243,7 +248,9 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
 
     if title is None:
         title = (
-          label + "\t\t\t\t time = %15.3f" % ttime + "\t\t\t\t #parcels = %10d" % nparcels
+            label
+            + "\t\t\t\t time = %15.3f" % ttime
+            + "\t\t\t\t #parcels = %10d" % nparcels
         )
 
     if no_title:
