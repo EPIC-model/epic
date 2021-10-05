@@ -106,7 +106,8 @@ try:
                        xmin=args.xmin,
                        xmax=args.xmax,
                        ymin=args.ymin,
-                       ymax=args.ymax)
+                       ymax=args.ymax,
+                       hybrid=True)
         else:
             plot_parcels(fname=args.filename,
                          step=step,

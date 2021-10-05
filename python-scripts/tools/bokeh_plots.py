@@ -4,13 +4,13 @@ import bokeh.plotting as bpl
 from bokeh.models import ColumnDataSource, \
                          ColorBar,         \
                          FixedTicker,      \
-                         LinearColorMapper
+                         LinearColorMapper,\
+                         Range1d
 from bokeh.transform import linear_cmap
 from tools.h5_reader import H5Reader
 from tools.bokeh_style import *
 import numpy as np
-from scipy import ndimage
-
+from scipy import interpolate
 
 def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
     no_xaxis = kwargs.pop('no_xaxis', False)
@@ -132,7 +132,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
     no_colorbar = kwargs.pop('no_colorbar', False)
     zoom_factor = kwargs.pop('zoom_factor', 1.0)
 
-    cmap = kwargs.get('cmap', 'inferno')
+    cmap = kwargs.get('cmap', 'viridis_r')
     if not cmap in bokeh_palettes.keys():
         raise ValueError("Colormap '" + cmap + "' not available.")
     palette = bokeh_palettes[cmap]
@@ -163,13 +163,31 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
                         major_label_text_font=text_font,
                         major_label_text_font_size=font_size)
 
+    # Shift the data to the correct position
+    ny_input=np.shape(data)[0]
+    nx_input=np.shape(data)[1]
+    dx=nx_input/extent[0]
+    dy=(ny_input-1)/extent[1]
+    data_periodic=np.zeros((ny_input,nx_input+1))
+    data_periodic[:,:nx_input]=data
+    data_periodic[:,nx_input]=data[:,0]
+
+    # Zoom in on the data
     if hybrid:
         ncells = ncells = h5reader.get_box_ncells()
         zoom = max(int(zoom_factor * pw / ncells[0]),
                    int(zoom_factor * ph / ncells[1])) + 1
-        data = ndimage.zoom(data, zoom=zoom, order=1)
+        x_input=np.linspace(origin[0],origin[0]+extent[0], nx_input+1) # Include boundary
+        y_input=np.linspace(origin[1],origin[1]+extent[1], ny_input)
+        x_zoom=np.linspace(origin[0],origin[0]+extent[0], zoom*nx_input+1)
+        y_zoom=np.linspace(origin[1],origin[1]+extent[1], zoom*(ny_input-1)+1)
+        interp_f = interpolate.interp2d(x_input, y_input, data_periodic, kind='cubic')
+        # Replace the fields
+        dx=x_zoom[1]-x_zoom[0]
+        dy=y_zoom[1]-y_zoom[0]
+        data_periodic=interp_f(x_zoom, y_zoom)
 
-    graph.image(image=[data], x=origin[0], y=origin[1], dw=extent[0], dh=extent[1],
+    graph.image(image=[data_periodic], x=origin[0]-0.5*dx, y=origin[1]-0.5*dy, dw=extent[0]+dx, dh=extent[1]+dy,
                 color_mapper = mapper)
 
     if not no_colorbar:
