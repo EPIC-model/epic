@@ -4,8 +4,7 @@ import bokeh.plotting as bpl
 from bokeh.models import ColumnDataSource, \
                          ColorBar,         \
                          FixedTicker,      \
-                         LinearColorMapper,\
-                         Range1d
+                         LinearColorMapper
 from bokeh.transform import linear_cmap
 from tools.h5_reader import H5Reader
 from tools.bokeh_style import *
