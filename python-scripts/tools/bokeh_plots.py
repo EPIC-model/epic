@@ -8,7 +8,7 @@ from bokeh.models import ColumnDataSource, \
 from bokeh.transform import linear_cmap
 from tools.h5_reader import H5Reader
 from tools.bokeh_style import *
-from toosl.units import *
+from tools.units import *
 import numpy as np
 from scipy import ndimage
 
