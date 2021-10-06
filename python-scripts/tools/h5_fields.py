@@ -2,11 +2,10 @@ import h5py
 import os
 import numpy as np
 
-class h5fields:
 
+class h5fields:
     def __init__(self):
         self._h5file = None
-
 
     def open(self, fname):
         """
@@ -17,8 +16,7 @@ class h5fields:
         fname : str
             Filename with extension.
         """
-        self._h5file = h5py.File(fname, 'w')
-
+        self._h5file = h5py.File(fname, "w")
 
     def add_fields(self, origin, extent, fields):
         """
@@ -35,7 +33,7 @@ class h5fields:
             names and the values are the data (horizontal, vertical).
         """
         if not isinstance(fields, dict):
-            TypeError('Argument not a dictionary.')
+            TypeError("Argument not a dictionary.")
 
         shape = None
 
@@ -47,9 +45,8 @@ class h5fields:
 
             self._add_dataset(name=key, data=values)
 
-        ncells = (shape[0], shape[1]-1)
+        ncells = (shape[0], shape[1] - 1)
         self._add_box(origin, extent, ncells)
-
 
     def close(self):
         self._h5file.close()
@@ -80,13 +77,12 @@ class h5fields:
         if not len(ncells) == 2:
             raise RuntimeError("Tuple 'ncells' must have length 2.")
 
-        group = self._h5file.create_group('box')
-        group.attrs.create(name='origin', data=origin, dtype='f8')
-        group.attrs.create(name='extent', data=extent, dtype='f8')
-        group.attrs.create(name='ncells', data=ncells, dtype='i4')
+        group = self._h5file.create_group("box")
+        group.attrs.create(name="origin", data=origin, dtype="f8")
+        group.attrs.create(name="extent", data=extent, dtype="f8")
+        group.attrs.create(name="ncells", data=ncells, dtype="i4")
 
-
-    def _add_dataset(self, name, data, dtype='f8'):
+    def _add_dataset(self, name, data, dtype="f8"):
         """
         Add a field dataset. The horizontal dimension is the
         leading dimension (horizontal x vertical).
