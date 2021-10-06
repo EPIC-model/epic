@@ -105,7 +105,7 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
 
 
 def _bokeh_save(graph, fname, fmt, show, **kwargs):
-    jpg_quality = kwargs.pop("jpg_quality", 60)
+    jpg_quality = kwargs.pop("jpg_quality", 90)
 
     if show:
         bpl.show(graph)
@@ -195,8 +195,8 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
 
     ticker = None
 
-    dmax = data_periodic.max()
-    dmin = data_periodic.min()
+    dmax = max(vmax, data_periodic.max())
+    dmin = min(vmin, data_periodic.min())
     if norm:
         data_periodic[data_periodic > 0] = data_periodic[data_periodic > 0] / dmax
         data_periodic[data_periodic < 0] = data_periodic[data_periodic < 0] / (-dmin)
