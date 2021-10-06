@@ -7,6 +7,7 @@ from tools.plots import _plot_parcels
 from tools.mpl_beautify import *
 import progressbar
 
+
 class ParcelAnimation:
     """
         22 March 2021
@@ -22,13 +23,13 @@ class ParcelAnimation:
     def __init__(self):
         self.ani = None
 
-    def create(self, fname, coloring='aspect-ratio', **kwargs):
+    def create(self, fname, coloring="aspect-ratio", **kwargs):
         self.h5reader = H5Reader()
 
         self.h5reader.open(fname)
 
         if not self.h5reader.is_parcel_file:
-            raise IOError('Not a parcel output file.')
+            raise IOError("Not a parcel output file.")
 
         self.nsteps = self.h5reader.get_num_steps()
         self.coloring = coloring
@@ -38,48 +39,55 @@ class ParcelAnimation:
         fig = plt.figure(figsize=(16, 9), dpi=200)
         self.ax = plt.gca()
 
-        if coloring == 'aspect-ratio':
+        if coloring == "aspect-ratio":
             self.vmin = 1.0
-            self.vmax = self.h5reader.get_parcel_option('lambda')
+            self.vmax = self.h5reader.get_parcel_option("lambda")
         else:
             self.vmin, self.vmax = self.h5reader.get_dataset_min_max(coloring)
 
         self.norm = cls.Normalize(vmin=self.vmin, vmax=self.vmax)
         self.cmap = plt.cm.viridis_r
 
-        self.ani = animation.FuncAnimation(fig       = fig,
-                                           func      = self._update,
-                                           init_func = self._init,
-                                           frames    = self.nsteps,
-                                           interval  = 200,                # Delay between frames in milliseconds
-                                           blit      = True,
-                                           repeat    = True)
+        self.ani = animation.FuncAnimation(
+            fig=fig,
+            func=self._update,
+            init_func=self._init,
+            frames=self.nsteps,
+            interval=200,  # Delay between frames in milliseconds
+            blit=True,
+            repeat=True,
+        )
 
-
-    def save(self, fname, fps=3, dpi=200, extra_args=['-vcodec', 'libx264']):
+    def save(self, fname, fps=3, dpi=200, extra_args=["-vcodec", "libx264"]):
         self.ani.save(fname, fps=fps, dpi=dpi, extra_args=extra_args)
         print("Save animation in", fname)
         self.h5reader.close()
 
-
     def _resize(self):
         # make plot domain 5 percent larger
-        self.ax.set_aspect('equal', 'box')
+        self.ax.set_aspect("equal", "box")
 
     def _update(self, step):
 
-        if (step == 0):
+        if step == 0:
             print("Start processing ...")
             self.bar = progressbar.ProgressBar(maxval=self.nsteps).start()
 
-        self.bar.update(step+1)
+        self.bar.update(step + 1)
 
         self.ax.clear()
         self._resize()
 
-        _plot_parcels(self.ax, self.h5reader, step, self.coloring,
-                       self.vmin, self.vmax, draw_cbar=(step == 0),
-                       **self.fkwargs)
+        _plot_parcels(
+            self.ax,
+            self.h5reader,
+            step,
+            self.coloring,
+            self.vmin,
+            self.vmax,
+            draw_cbar=(step == 0),
+            **self.fkwargs
+        )
 
         if step == self.nsteps - 1:
             self.bar.finish()

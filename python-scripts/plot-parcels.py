@@ -101,7 +101,12 @@ try:
             help="display (bokeh only)",
         )
 
-        parser.add_argument("--hybrid", required=False, action="store_true", help="hybrid plot (bokeh only)",)
+        parser.add_argument(
+            "--hybrid",
+            required=False,
+            action="store_true",
+            help="hybrid plot (bokeh only)",
+        )
 
     if not "--filename" in sys.argv:
         parser.print_help()
