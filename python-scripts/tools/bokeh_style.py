@@ -92,6 +92,17 @@ for key in [
     bokeh_palettes["mpl_" + key] = copy.deepcopy(hex_list)
 
 
+# add own colormaps
+from tools.colors import epic_cmaps
+
+for key in epic_cmaps.keys():
+    hex_list = [None] * 256
+    cmap = epic_cmaps[key]
+    for i in range(256):
+        hex_list[i] = colors.to_hex(cmap(c[i]))
+    bokeh_palettes[key] = copy.deepcopy(hex_list)
+
+
 try:
     import colorcet as cc
 

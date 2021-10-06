@@ -130,6 +130,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
     no_title = kwargs.pop("no_title", False)
     no_colorbar = kwargs.pop("no_colorbar", False)
     zoom_factor = kwargs.pop("zoom_factor", 1.0)
+    norm = kwargs.pop("norm", False)
 
     cmap = kwargs.get("cmap", "viridis_r")
     if not cmap in bokeh_palettes.keys():
@@ -155,14 +156,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
     font_size = bokeh_style["font.size"]
     text_font = bokeh_style["font.font"]
 
-    mapper = LinearColorMapper(palette=palette, low=vmin, high=vmax)
-    color_bar = ColorBar(
-        color_mapper=mapper,
-        label_standoff=12,
-        title_text_font_size=font_size,
-        major_label_text_font=text_font,
-        major_label_text_font_size=font_size,
-    )
+
 
     # Shift the data to the correct position
     ny_input = np.shape(data)[0]
@@ -199,6 +193,42 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
         out_array = interp_f(flat_grid.T)
         data_periodic = out_array.reshape(meshgrid_points[0].shape)
 
+    ticker = None
+
+    dmax = data_periodic.max()
+    dmin = data_periodic.min()
+    if norm:
+        data_periodic[data_periodic > 0] = data_periodic[data_periodic > 0] / dmax
+        data_periodic[data_periodic < 0] = data_periodic[data_periodic < 0] / (-dmin)
+
+        vmin = -1.0
+        vmax = 1.0
+
+        ticker = FixedTicker(ticks=[-1, -0.5, 0, 0.5, 1])
+
+
+    mapper = LinearColorMapper(palette=palette, low=vmin, high=vmax)
+
+    color_bar = ColorBar(
+        color_mapper=mapper,
+        label_standoff=12,
+        title_text_font_size=font_size,
+        major_label_text_font=text_font,
+        major_label_text_font_size=font_size,
+    )
+
+    if not ticker is None:
+        color_bar.ticker = ticker
+
+    if norm:
+        color_bar.major_label_overrides = {
+            -1: str(round(dmin, 4)),
+            -0.5: str(round(dmin/2, 4)),
+            0: "0",
+            0.5: str(round(dmax/2, 4)),
+            1: str(round(dmax, 4))
+        }
+
     graph.image(
         image=[data_periodic],
         x=origin[0] - 0.5 * dx,
@@ -220,6 +250,7 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
     graph = kwargs.pop("graph", None)
     fill_alpha = kwargs.pop("fill_alpha", 0.75)
     title = kwargs.pop("title", None)
+    norm = kwargs.pop("norm", False)
 
     cmap = kwargs.get("cmap", "viridis_r")
     if not cmap in bokeh_palettes.keys():
@@ -262,6 +293,18 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
         )
 
     x, y, width, height, angle = h5reader.get_ellipses_for_bokeh(step)
+
+
+    if norm:
+        vmin = -1.0
+        vmax = 1.0
+
+        dmax = data.max()
+        dmin = data.min()
+
+        data[data > 0] = data[data > 0] / dmax
+        data[data < 0] = data[data < 0] / (-dmin)
+
 
     source = ColumnDataSource(
         dict(x=x, y=y, width=width, height=height, angle=angle, fill_color=data)

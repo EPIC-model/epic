@@ -902,7 +902,7 @@ def plot_power_spectrum(fnames, figure="save", fmt="png", **kwargs):
     plt.grid(which="both", linestyle="dashed")
 
     if not no_xlabel:
-        plt.xlabel(r"$k$")
+        plt.xlabel(r"$k$ $m^{-1}$")
     plt.ylabel(r"$P(k)$")
 
     if not labels[0] is None:
