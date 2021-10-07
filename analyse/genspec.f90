@@ -1,6 +1,6 @@
 program genspec
     use sta2dfft
-    use constants, only : pi, twopi, f14, f12, zero, one
+    use constants, only : pi, twopi, f14, f12, zero, one, two
     use h5_reader
     use h5_writer, only : get_step_group_name
     implicit none
@@ -10,6 +10,8 @@ program genspec
 
     ! Width and height of the domain:
     double precision :: extent(2)
+
+    double precision :: dx, dz
 
     ! Array to contain data:
     double precision, allocatable :: pp(:, :)
@@ -31,7 +33,8 @@ program genspec
     integer, allocatable :: kmag(:, :)
 
     ! Other work variables:
-    double precision :: scx, rkxmax, scz, rkzmax, delki
+    double precision :: scx, rkxmax, scz, rkzmax, delk, delki, snorm
+    double precision :: pnorm, pnorms
     integer :: kxc, kmax, kx, kz, k
 
     character(len=512) :: filename
@@ -44,6 +47,9 @@ program genspec
 
     call get_domain
 
+    dx = extent(1) / dble(nx)
+    dz = extent(2) / dble(nz)
+
     print *, 'Field: ' // trim(dset)
     print '(a23, i5, a6, i5)', 'Grid dimensions: nx = ', nx, ' nz = ', nz
 
@@ -51,6 +57,9 @@ program genspec
 
     ! read data into array pp:
     call read_data
+
+    pnorm = dx * dz * (f12 * (sum(pp(0, :) ** 2 + pp(nz, :) ** 2)) + sum(pp(1:nz-1, :) ** 2))
+    write(*,*) ' Integral of b^2 dx dy = ', pnorm
 
     !---------------------------------------------------------------------
     ! Set up FFTs:
@@ -70,7 +79,8 @@ program genspec
     rkxmax = scx * dble(nx / 2)
     scz = pi / extent(2)
     rkzmax = scz * dble(nz)
-    delki = one / dsqrt(scx ** 2 + scz ** 2)
+    delk = sqrt(scx ** 2 + scz **2)
+    delki = one / delk
     kmax = nint(dsqrt(rkxmax ** 2 + rkzmax ** 2) * delki)
     do kz = 1, nz
         do kx = 0, nx - 1
@@ -80,6 +90,10 @@ program genspec
     do kx = 0, nx - 1
         kmag(kx, 0) = nint(rkx(kx) * delki)
     enddo
+
+    !Compute spectrum multiplication factor (snorm) so that the sum
+    !of the spectrum is equal to the L2 norm of the original field:
+    snorm = two * dx * dz * delki
 
     !---------------------------------------------------------------------
     !Compute spectrum:
@@ -113,6 +127,11 @@ program genspec
             k = kmag(kx, kz)
             spec(k) = spec(k) + ss(kx, kz) ** 2
         enddo
+    enddo
+
+     !Normalise:
+    do k = 0, kmax
+        spec(k) = snorm * spec(k)
     enddo
 
     !---------------------------------------------------------------------
@@ -211,7 +230,6 @@ program genspec
             logical                   :: exists = .false.
             character(:), allocatable :: fname
             integer                   :: pos, kx, kz
-            double precision          :: vcell, delk
 
             ! 1 October 2021
             ! https://stackoverflow.com/questions/36731707/fortran-how-to-remove-file-extension-from-character
@@ -234,18 +252,25 @@ program genspec
                 write(1235, *) '#         k   P(k)'
             endif
 
-
-            vcell = product(extent) / dble(nx * nz)
-            delk = one / delki
-
             do kz = 0, nz
                 do kx = 0, nx - 1
                     k = kmag(kx, kz)
-                    write(1235, *) k * delk, spec(k) * vcell
+                    write(1235, *) k * delk, spec(k)
                 enddo
             enddo
 
             close(1235)
+
+
+            !*** For testing (delete after):
+            !Compute P(k)*dk:
+            pnorms = delk * sum(spec(0:kmax))
+            write(*,*) ' Integral of P(k) dk = ', pnorms
+            write(*,*)
+            write(*,*) ' Ratio of spectral/physical integrals = ', pnorms / pnorm
+            write(*,*)
+            write(*,*) ' delk = ', delk
+
         end subroutine write_spectrum
 
 
