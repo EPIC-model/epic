@@ -125,10 +125,8 @@ program genspec
         enddo
     enddo
 
-     !Normalise:
-    do k = 0, kmax
-        spec(k) = snorm * spec(k)
-    enddo
+    !Normalise:
+    spec(0:kmax) = snorm * spec(0:kmax)
 
     !---------------------------------------------------------------------
     !Write spectrum contained in spec(k):
