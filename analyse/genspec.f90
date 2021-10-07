@@ -34,7 +34,6 @@ program genspec
 
     ! Other work variables:
     double precision :: scx, rkxmax, scz, rkzmax, delk, delki, snorm
-    double precision :: pnorm, pnorms
     integer :: kxc, kmax, kx, kz, k
 
     character(len=512) :: filename
@@ -57,9 +56,6 @@ program genspec
 
     ! read data into array pp:
     call read_data
-
-    pnorm = dx * dz * (f12 * (sum(pp(0, :) ** 2 + pp(nz, :) ** 2)) + sum(pp(1:nz-1, :) ** 2))
-    write(*,*) ' Integral of b^2 dx dy = ', pnorm
 
     !---------------------------------------------------------------------
     ! Set up FFTs:
@@ -260,16 +256,6 @@ program genspec
             enddo
 
             close(1235)
-
-
-            !*** For testing (delete after):
-            !Compute P(k)*dk:
-            pnorms = delk * sum(spec(0:kmax))
-            write(*,*) ' Integral of P(k) dk = ', pnorms
-            write(*,*)
-            write(*,*) ' Ratio of spectral/physical integrals = ', pnorms / pnorm
-            write(*,*)
-            write(*,*) ' delk = ', delk
 
         end subroutine write_spectrum
 
