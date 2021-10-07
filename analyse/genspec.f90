@@ -211,7 +211,7 @@ program genspec
             logical                   :: exists = .false.
             character(:), allocatable :: fname
             integer                   :: pos, kx, kz
-            double precision          :: vcell
+            double precision          :: vcell, delk
 
             ! 1 October 2021
             ! https://stackoverflow.com/questions/36731707/fortran-how-to-remove-file-extension-from-character
@@ -236,11 +236,12 @@ program genspec
 
 
             vcell = product(extent) / dble(nx * nz)
+            delk = one / delki
 
             do kz = 0, nz
                 do kx = 0, nx - 1
                     k = kmag(kx, kz)
-                    write(1235, *) k, spec(k) * vcell
+                    write(1235, *) k * delk, spec(k) * vcell
                 enddo
             enddo
 
