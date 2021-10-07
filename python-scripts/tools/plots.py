@@ -1050,7 +1050,7 @@ def plot_energy(fname, figure="save", fmt="png", **kwargs):
 
     if not no_xlabel:
         plt.xlabel(get_label("time", units["time"]))
-    plt.ylabel(r"energy")
+    plt.ylabel(get_label("energy", units["energy"]))
     plt.grid(which="both", linestyle="dashed")
 
     plt.legend(

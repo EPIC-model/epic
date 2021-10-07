@@ -16,6 +16,8 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     no_ylabel = kwargs.pop("no_ylabel", False)
     display = kwargs.pop("display", "full HD")
+    plot_width = kwargs.pop('plot_width', None)
+    plot_height = kwargs.pop('plot_height', None)
 
     # instantiating the figure object
     fkwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -27,18 +29,19 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
     font_size = bokeh_style["font.size"]
     text_font = bokeh_style["font.font"]
 
-    if display == "full HD":
-        pw = 1920
-        ph = 1080
-    elif display == "UHD":
-        pw = 3840
-        ph = 2160
-    elif display == "4K":
-        pw = 4096
-        ph = 2160
-    else:
-        pw = np.nanmin([1920, int(1080 * (right - left) / (top - bottom))])
-        ph = np.nanmin([1080, int(1920 * (top - bottom) / (right - left))])
+    if plot_width is None and plot_height is None:
+        if display == "full HD":
+            plot_width = 1920
+            plot_height = 1080
+        elif display == "UHD":
+            plot_width = 3840
+            plot_height = 2160
+        elif display == "4K":
+            plot_width = 4096
+            plot_height = 2160
+        else:
+            plot_width = np.nanmin([1920, int(1080 * (right - left) / (top - bottom))])
+            plot_height = np.nanmin([1080, int(1920 * (top - bottom) / (right - left))])
 
     x_axis_label = get_label("x", units["position"])
     y_axis_label = get_label("y", units["position"])
@@ -51,8 +54,8 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
 
     graph = bpl.figure(
         output_backend="webgl",
-        plot_width=pw,
-        plot_height=ph,
+        plot_width=plot_width,
+        plot_height=plot_height,
         aspect_ratio=(right - left) / (top - bottom),
         x_range=(left, right),
         y_range=(bottom, top),
@@ -101,7 +104,7 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
         graph.title.text_font_size = font_size
         graph.title.text_font = text_font
 
-    return graph, (pw, ph)
+    return graph, (plot_width, plot_height)
 
 
 def _bokeh_save(graph, fname, fmt, show, **kwargs):
@@ -131,6 +134,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
     no_colorbar = kwargs.pop("no_colorbar", False)
     zoom_factor = kwargs.pop("zoom_factor", 1.0)
     norm = kwargs.pop("norm", False)
+    color_bar_width = kwargs.pop('color_bar_width', 'auto')
 
     cmap = kwargs.get("cmap", "viridis_r")
     if not cmap in bokeh_palettes.keys():
@@ -239,6 +243,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
     )
 
     if not no_colorbar:
+        color_bar.width = color_bar_width
         graph.add_layout(color_bar, "right")
 
     return graph
@@ -251,6 +256,7 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
     fill_alpha = kwargs.pop("fill_alpha", 0.75)
     title = kwargs.pop("title", None)
     norm = kwargs.pop("norm", False)
+    color_bar_width = kwargs.pop('color_bar_width', 'auto')
 
     cmap = kwargs.get("cmap", "viridis_r")
     if not cmap in bokeh_palettes.keys():
@@ -358,6 +364,7 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
     )
 
     if not no_colorbar:
+        color_bar.width = color_bar_width
         graph.add_layout(color_bar, "right")
 
     return graph
