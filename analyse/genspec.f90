@@ -1,6 +1,6 @@
 program genspec
     use sta2dfft
-    use constants, only : pi, twopi, f14, f12, zero, one
+    use constants, only : pi, twopi, f14, f12, zero, one, two
     use h5_reader
     use h5_writer, only : get_step_group_name
     implicit none
@@ -10,6 +10,8 @@ program genspec
 
     ! Width and height of the domain:
     double precision :: extent(2)
+
+    double precision :: dx, dz
 
     ! Array to contain data:
     double precision, allocatable :: pp(:, :)
@@ -31,7 +33,7 @@ program genspec
     integer, allocatable :: kmag(:, :)
 
     ! Other work variables:
-    double precision :: scx, rkxmax, scz, rkzmax, delki
+    double precision :: scx, rkxmax, scz, rkzmax, delk, delki, snorm
     integer :: kxc, kmax, kx, kz, k
 
     character(len=512) :: filename
@@ -43,6 +45,9 @@ program genspec
     call parse_command_line
 
     call get_domain
+
+    dx = extent(1) / dble(nx)
+    dz = extent(2) / dble(nz)
 
     print *, 'Field: ' // trim(dset)
     print '(a23, i5, a6, i5)', 'Grid dimensions: nx = ', nx, ' nz = ', nz
@@ -70,7 +75,8 @@ program genspec
     rkxmax = scx * dble(nx / 2)
     scz = pi / extent(2)
     rkzmax = scz * dble(nz)
-    delki = one / dsqrt(scx ** 2 + scz ** 2)
+    delk = sqrt(scx ** 2 + scz **2)
+    delki = one / delk
     kmax = nint(dsqrt(rkxmax ** 2 + rkzmax ** 2) * delki)
     do kz = 1, nz
         do kx = 0, nx - 1
@@ -80,6 +86,10 @@ program genspec
     do kx = 0, nx - 1
         kmag(kx, 0) = nint(rkx(kx) * delki)
     enddo
+
+    !Compute spectrum multiplication factor (snorm) so that the sum
+    !of the spectrum is equal to the L2 norm of the original field:
+    snorm = two * dx * dz * delki
 
     !---------------------------------------------------------------------
     !Compute spectrum:
@@ -114,6 +124,9 @@ program genspec
             spec(k) = spec(k) + ss(kx, kz) ** 2
         enddo
     enddo
+
+    !Normalise:
+    spec(0:kmax) = snorm * spec(0:kmax)
 
     !---------------------------------------------------------------------
     !Write spectrum contained in spec(k):
@@ -211,7 +224,6 @@ program genspec
             logical                   :: exists = .false.
             character(:), allocatable :: fname
             integer                   :: pos, kx, kz
-            double precision          :: vcell, delk
 
             ! 1 October 2021
             ! https://stackoverflow.com/questions/36731707/fortran-how-to-remove-file-extension-from-character
@@ -234,18 +246,15 @@ program genspec
                 write(1235, *) '#         k   P(k)'
             endif
 
-
-            vcell = product(extent) / dble(nx * nz)
-            delk = one / delki
-
             do kz = 0, nz
                 do kx = 0, nx - 1
                     k = kmag(kx, kz)
-                    write(1235, *) k * delk, spec(k) * vcell
+                    write(1235, *) k * delk, spec(k)
                 enddo
             enddo
 
             close(1235)
+
         end subroutine write_spectrum
 
 
