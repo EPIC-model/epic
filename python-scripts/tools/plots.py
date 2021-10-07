@@ -902,8 +902,8 @@ def plot_power_spectrum(fnames, figure="save", fmt="png", **kwargs):
     plt.grid(which="both", linestyle="dashed")
 
     if not no_xlabel:
-        plt.xlabel(r"$k$ (1/m)")
-    plt.ylabel(r"$P(k)$ (W/m)")
+        plt.xlabel(r"$k$ $(1/m)$")
+    plt.ylabel(r"$P(k)$ $(m^5/s^4)$")
 
     if not labels[0] is None:
         plt.legend(
