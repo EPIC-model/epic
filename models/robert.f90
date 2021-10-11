@@ -85,7 +85,7 @@ module robert
             integer,           intent(in) :: nx, nz
             double precision,  intent(in) :: origin(2), dx(2)
             type(bubble_type), intent(in) :: bubble
-            double precision              :: xc, zc, r2, dtheta, pos(2)
+            double precision              :: xc, zc, r2, r2_out, dtheta, pos(2)
             integer                       :: i, j
 
             ! in metres
