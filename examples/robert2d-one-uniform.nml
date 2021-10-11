@@ -12,6 +12,6 @@
  robert_flow%bubbles(1)%distr = 'uniform'
  robert_flow%bubbles(1)%dtheta_max = 0.5
  robert_flow%bubbles(1)%center = 0.0, 260.0
- robert_flow%bubbles(1)%outer_radius = 250.0
+ robert_flow%bubbles(1)%radius = 250.0
 
 /

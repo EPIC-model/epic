@@ -21,12 +21,14 @@ module robert
 
     double precision, allocatable :: buoyg(:, :)
 
+    double precision :: ref_theta = 303.15d0    ![K] reference potential temperature
+
     type bubble_type
         character(len=8) :: distr           ! distribution ('gaussian' or 'uniform')
         double precision :: center(2)       ![m] bubble center (x, z)
         double precision :: dtheta_max      ![K] max. pot. temp. perturbation
-        double precision :: outer_radius    ![m] bubble outer radius
-        double precision :: inner_radius    ![m] bubble inner radius (if 'gaussian')
+        double precision :: radius          ![m] bubble outer radius ('uniform')
+                                            ! or plateau radius ('gaussian')
         double precision :: width           ![m] standard deviation of Gaussian
     end type bubble_type
 
@@ -83,13 +85,13 @@ module robert
             integer,           intent(in) :: nx, nz
             double precision,  intent(in) :: origin(2), dx(2)
             type(bubble_type), intent(in) :: bubble
-            double precision              :: xc, zc, r2, r2_out, dtheta, pos(2)
+            double precision              :: xc, zc, r2, dtheta, pos(2)
             integer                       :: i, j
 
             ! in metres
             xc = bubble%center(1)
             zc = bubble%center(2)
-            r2_out = bubble%outer_radius ** 2
+            r2_out = bubble%radius ** 2
 
             do j = 0, nz
                 do i = 0, nx-1
@@ -106,10 +108,10 @@ module robert
                     endif
 
                     ! MPIC paper:
-                    ! liquid-water buoyancy is defined by b = g * (theta − theta_l0) / theta_l0
-                    ! (dtheta = theta - theta_l0)
+                    ! liquid-water buoyancy is defined by b = g * (theta − ref_theta) / ref_theta
+                    ! (dtheta = theta - ref_theta)
                     buoyg(j, i) = buoyg(j, i) &
-                                + gravity * dtheta / theta_l0
+                                + gravity * dtheta / ref_theta
                 enddo
             enddo
         end subroutine robert_uniform_init
@@ -120,14 +122,13 @@ module robert
             double precision,  intent(in) :: origin(2), dx(2)
             type(bubble_type), intent(in) :: bubble
             integer                       :: i, j
-            double precision              :: xc, zc, r, r_out, r_in, dtheta
+            double precision              :: xc, zc, r, r_in, dtheta
             double precision              :: dtheta_max, pos(2), s, fs2
 
             ! in metres
             xc = bubble%center(1)
             zc = bubble%center(2)
-            r_out = bubble%outer_radius
-            r_in = bubble%inner_radius
+            r_in = bubble%radius
             s = bubble%width
             fs2 = (one / s) ** 2
 
@@ -146,19 +147,17 @@ module robert
                     ! potential temperature perturbation
                     dtheta = zero
 
-                    if (r <= r_out) then
-                        if (r <= r_in) then
-                            dtheta = dtheta_max
-                        else
-                            dtheta = dtheta_max * dexp(-(r - r_in) ** 2 * fs2)
-                        endif
+                    if (r <= r_in) then
+                        dtheta = dtheta_max
+                    else
+                        dtheta = dtheta_max * dexp(-(r - r_in) ** 2 * fs2)
                     endif
 
                     ! MPIC paper:
-                    ! liquid-water buoyancy is defined by b = g * (theta − theta_l0) / theta_l0
-                    ! (dtheta = theta - theta_l0)
+                    ! liquid-water buoyancy is defined by b = g * (theta − ref_theta) / ref_theta
+                    ! (dtheta = theta - ref_theta)
                     buoyg(j, i) = buoyg(j, i) &
-                                + gravity * dtheta / theta_l0
+                                + gravity * dtheta / ref_theta
                 enddo
             enddo
         end subroutine robert_gaussian_init
