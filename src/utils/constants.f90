@@ -36,4 +36,10 @@ module constants
     ! maximum number of allowed parcels
     integer, parameter :: max_num_parcels = 2.2e6
 
+#ifdef ENABLE_3D
+    integer, parameter :: ndim = 3
+#else
+    integer, parameter :: ndim = 2
+#endif
+
 end module
