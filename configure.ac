@@ -198,6 +198,21 @@ AC_MSG_RESULT([$hdf5_found])
 ## "--enable" flags
 ##
 
+ENABLE_3D='no'
+AC_ARG_ENABLE([enable-3d],
+              [AS_HELP_STRING([--enable-3d], [enable 3D model (default=no)])],
+              [ENABLE_3D=$enableval])
+
+AM_CONDITIONAL([ENABLE_3D], [test "ENABLE_3D" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling the 3D model])
+if test "x$ENABLE_3D" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_3D"
+else
+    AC_MSG_RESULT([no])
+fi
+
 ENABLE_MERGER_DUMP='no'
 AC_ARG_ENABLE([merger-dump],
               [AS_HELP_STRING([--enable-merger-dump], [enable merger dump (default=no)])],
