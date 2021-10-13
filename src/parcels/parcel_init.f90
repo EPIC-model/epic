@@ -103,7 +103,7 @@ module parcel_init
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
-                parcels%vorticity(n) = zero
+                parcels%vorticity(n, :) = zero
                 parcels%buoyancy(n) = zero
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n) = zero

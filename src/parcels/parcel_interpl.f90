@@ -204,8 +204,8 @@ module parcel_interpl
 
                         weight = f12 * weights(l) * pvol
 
-                        vortg(js(l), is(l)) = vortg(js(l), is(l)) &
-                                            + weight * parcels%vorticity(n)
+                        vortg(js(l), is(l), :) = vortg(js(l), is(l), :) &
+                                               + weight * parcels%vorticity(n, :)
 
 #ifndef ENABLE_DRY_MODE
                         dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
@@ -230,10 +230,10 @@ module parcel_interpl
             volg(1,    :) = volg(1,    :) + volg(-1,   :)
             volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
 
-            vortg(0,  :) = two * vortg(0,  :)
-            vortg(nz, :) = two * vortg(nz, :)
-            vortg(1,    :) = vortg(1,    :) + vortg(-1,   :)
-            vortg(nz-1, :) = vortg(nz-1, :) + vortg(nz+1, :)
+            vortg(0,  :, :) = two * vortg(0,  :, :)
+            vortg(nz, :, :) = two * vortg(nz, :, :)
+            vortg(1,    :, :) = vortg(1,    :, :) + vortg(-1,   :, :)
+            vortg(nz-1, :, :) = vortg(nz-1, :, :) + vortg(nz+1, :, :)
 
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0,  :) = two * dbuoyg(0,  :)
@@ -246,12 +246,12 @@ module parcel_interpl
             tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
             tbuoyg(nz-1, :) = tbuoyg(nz-1, :) + tbuoyg(nz+1, :)
             ! exclude halo cells to avoid division by zero
-            vortg(0:nz, :) = vortg(0:nz, :) / volg(0:nz, :)
+            vortg(0:nz, :, :) = vortg(0:nz, :, :) / volg(0:nz, :)
 
             ! extrapolate to halo grid points (since halo grid points
             ! are used to get u_z = w_x - zeta)
-            vortg(-1,   :) = two * vortg(0,  :) - vortg(1,    :)
-            vortg(nz+1, :) = two * vortg(nz, :) - vortg(nz-1, :)
+            vortg(-1,   :, :) = two * vortg(0,  :, :) - vortg(1,    :, :)
+            vortg(nz+1, :, :) = two * vortg(nz, :, :) - vortg(nz-1, :, :)
 
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)

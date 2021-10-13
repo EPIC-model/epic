@@ -4,15 +4,28 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
+    use constants, only : ndim
     use parameters, only : extent, hli, center
     implicit none
 
     integer :: n_parcels
 
+    ! dimension of the shape matrix
+    ! in 2D: bdim = 2
+    ! in 3D: bdim = 5
+    integer, parameter :: bdim = int((ndim ** 2 - 1) / 2) + 1
+
+    ! dimension of the vorticity
+    ! in 2D: vdim = 1
+    ! in 3D: vdim = 3
+    integer, parameter :: vdim = bdim + 1 - ndim
+
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
             position,   &
             B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12
+                            ! The 3D model has additionally:
+                            ! B(:, 3) = B22, B(:, 4) = B13, B(:, 4) = B23
 
         double precision, allocatable, dimension(:) :: &
             volume,     &
@@ -49,6 +62,7 @@ module parcel_container
         ! @pre n and m must be valid parcel indices
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
+            integer             :: i
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
@@ -56,18 +70,15 @@ module parcel_container
             endif
 #endif
 
-            parcels%position(n, 1) = parcels%position(m, 1)
-            parcels%position(n, 2) = parcels%position(m, 2)
-
-            parcels%vorticity(n) = parcels%vorticity(m)
+            parcels%position(n, :) = parcels%position(m, :)
+            parcels%vorticity(n, :) = parcels%vorticity(m, :)
 
             parcels%volume(n)  = parcels%volume(m)
             parcels%buoyancy(n) = parcels%buoyancy(m)
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n) = parcels%humidity(m)
 #endif
-            parcels%B(n, 1) = parcels%B(m, 1)
-            parcels%B(n, 2) = parcels%B(m, 2)
+            parcels%B(n, :) = parcels%B(m, :)
 
         end subroutine parcel_replace
 
@@ -75,10 +86,13 @@ module parcel_container
         ! @param[in] num number of parcels
         subroutine parcel_alloc(num)
             integer, intent(in) :: num
+            integer, parameter  :: n
 
-            allocate(parcels%position(num, 2))
-            allocate(parcels%vorticity(num))
-            allocate(parcels%B(num, 2))
+            allocate(parcels%position(num, ndim))
+            allocate(parcels%vorticity(num, vdim))
+
+            allocate(parcels%B(num, bdim))
+
             allocate(parcels%volume(num))
             allocate(parcels%buoyancy(num))
 #ifndef ENABLE_DRY_MODE

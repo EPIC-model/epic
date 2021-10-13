@@ -98,23 +98,23 @@ module parcel_hdf5
             ! write parcel data
             !
 
-            call write_h5_dataset_2d(h5file_id, name, "position", &
-                                     parcels%position(1:n_parcels, :))
+            call write_h5_dataset(h5file_id, name, "position", &
+                                  parcels%position(1:n_parcels, :))
 
-            call write_h5_dataset_2d(h5file_id, name, "B", &
-                                     parcels%B(1:n_parcels, :))
+            call write_h5_dataset(h5file_id, name, "B", &
+                                  parcels%B(1:n_parcels, :))
 
-            call write_h5_dataset_1d(h5file_id, name, "volume", &
-                                     parcels%volume(1:n_parcels))
+            call write_h5_dataset(h5file_id, name, "volume", &
+                                  parcels%volume(1:n_parcels))
 
-            call write_h5_dataset_1d(h5file_id, name, "vorticity", &
-                                     parcels%vorticity(1:n_parcels))
+            call write_h5_dataset(h5file_id, name, "vorticity", &
+                                  parcels%vorticity(1:n_parcels))
 
-            call write_h5_dataset_1d(h5file_id, name, "buoyancy", &
-                                     parcels%buoyancy(1:n_parcels))
+            call write_h5_dataset(h5file_id, name, "buoyancy", &
+                                  parcels%buoyancy(1:n_parcels))
 #ifndef ENABLE_DRY_MODE
-            call write_h5_dataset_1d(h5file_id, name, "humidity", &
-                                     parcels%humidity(1:n_parcels))
+            call write_h5_dataset(h5file_id, name, "humidity", &
+                                  parcels%humidity(1:n_parcels))
 #endif
             call close_h5_group(group)
 

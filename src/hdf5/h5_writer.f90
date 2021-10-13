@@ -14,6 +14,12 @@ module h5_writer
     use h5_utils
     implicit none
 
+    interface write_h5_dataset
+        module procedure :: write_h5_dataset_1d
+        module procedure :: write_h5_dataset_2d
+        module procedure :: write_h5_dataset_3d
+    end interface write_h5_dataset
+
     contains
 
         subroutine write_h5_dataset_1d(h5file_id, group, name, data)

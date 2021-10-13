@@ -161,7 +161,7 @@ module parcel_diagnostics
                     n_small = n_small + 1
                 endif
 
-                rms_zeta = rms_zeta + vol * parcels%vorticity(n) ** 2
+                rms_zeta = rms_zeta + vol * parcels%vorticity(n, 1) ** 2
 
             enddo
             !$omp end do
@@ -239,7 +239,7 @@ module parcel_diagnostics
                     xzbv = xzbv + bv * parcels%position(n, 2) * parcels%position(n, 2)
 
 
-                    vv = parcels%vorticity(n) * parcels%volume(n)
+                    vv = parcels%vorticity(n, 1) * parcels%volume(n)
                     vvsum = vvsum + vv
                     xvv = xvv + vv * parcels%position(n, 1)
                     zvv = zvv + vv * parcels%position(n, 2)
