@@ -48,6 +48,8 @@ module jacobi
             double precision                :: g, h
 
             ! compute the rotation angle theta
+            ! Reference:    Rutishauser, H. The Jacobi method for real symmetric matrices.
+            !               Numer. Math. 9, 1-10 (1966). https://doi.org/10.1007/BF02165223
             g = hundred * dabs(A(i, j))
             h = A(j, j) - A(i, i)
             if (dabs(h) + g == dabs(h)) then
