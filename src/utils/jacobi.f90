@@ -138,8 +138,7 @@ module jacobi
 
             ! sum of off-diagonal entries
             ! sm should convergence to zero
-            sm = dabs(A(1, 2)) + dabs(A(1, 3)) &
-               + dabs(A(2, 1)) + dabs(A(2, 3))
+            sm = dabs(A(1, 2)) + dabs(A(1, 3)) + dabs(A(2, 3))
 
             do while (sm > atol)
                 ! first row
@@ -151,8 +150,7 @@ module jacobi
                 call apply_rotation(A, V, 2, j)
 
                 ! update sum of off-diagonals
-                sm = dabs(A(1, 2)) + dabs(A(1, 3)) &
-                   + dabs(A(2, 1)) + dabs(A(2, 3))
+                sm = dabs(A(1, 2)) + dabs(A(1, 3)) + dabs(A(2, 3))
             enddo
 
             call sort_descending(A, V)
