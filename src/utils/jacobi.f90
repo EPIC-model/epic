@@ -45,7 +45,7 @@ module jacobi
             integer,          intent(in)    :: i, j
             double precision                :: theta, c, s, t, tau
             integer                         :: k, l
-            double precision                :: g, h
+            double precision                :: g, h, aij
 
             ! compute the rotation angle theta
             ! Reference:    Rutishauser, H. The Jacobi method for real symmetric matrices.
@@ -82,9 +82,7 @@ module jacobi
             ! Apply Givens rotation to matrix
             !
 
-            ! update diagonal entries
-            A(i, i) = A(i, i) - t * A(i, j)
-            A(j, j) = A(j, j) + t * A(i, j)
+            aij = A(i, j)
 
             ! update off-diagonal entries
             do k = 1, n
@@ -100,6 +98,10 @@ module jacobi
                     A(j, k) = A(k, j)
                 endif
             enddo
+
+            ! update diagonal entries
+            A(i, i) = A(i, i) - t * aij
+            A(j, j) = A(j, j) + t * aij
 
             ! set A(i, j) = A(j, i) explicitly to zero
             A(i, j) = zero
@@ -146,7 +148,7 @@ module jacobi
 
                 ! second row
                 j = get_pivot(A, 2, 1, 3)
-                call apply_rotation(A, V, i, j)
+                call apply_rotation(A, V, 2, j)
 
                 ! update sum of off-diagonals
                 sm = dabs(A(1, 2)) + dabs(A(1, 3)) &

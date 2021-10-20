@@ -26,7 +26,7 @@ program test_jacobi
     error = zero
 
     n = 1
-    do while (n <= 1)
+    do while (n <= 100000)
 
         call create_symmetric_matrix
 
@@ -39,8 +39,6 @@ program test_jacobi
             error = max(error, dabs(EV(1) - B(1, 1)) &
                              + dabs(EV(2) - B(2, 2)) &
                              + dabs(EV(3) - B(3, 3)))
-            print *, EV
-            print *, B(1, 1), B(2, 2), B(3, 3)
 
             ! check eigenvectors
             do k = 1, 3
@@ -51,11 +49,9 @@ program test_jacobi
                 error = max(error, sum(dabs(Q(:, k) - V(:, k))))
             enddo
         endif
-
     enddo
 
-
-    call print_result_dp('Test Jacobi', error, atol=dble(1.0e-14))
+    call print_result_dp('Test Jacobi', error, atol=dble(1.0e-9))
 
     contains
 
