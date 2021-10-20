@@ -33,7 +33,15 @@ unittests_PROGRAMS = 				\
 	test_nearest_4				\
 	test_tri_inversion			\
 	test_parcel_init			\
-	test_jacobi
+	test_jacobi_1				\
+	test_jacobi_2				\
+	test_jacobi_3
+
+dataroot_DATA =		\
+	numpy_eigh.py 	\
+	V.asc	   	\
+	D.asc	   	\
+	B.asc
 
 # 7 April 2021
 # https://www.gnu.org/software/automake/manual/html_node/Scripts.html
@@ -60,7 +68,9 @@ test_nearest_3_SOURCES = test_nearest_3.f90 unit_test.f90 permute.f90
 test_nearest_4_SOURCES = test_nearest_4.f90 unit_test.f90 permute.f90
 test_tri_inversion_SOURCES = test_tri_inversion.f90 unit_test.f90
 test_parcel_init_SOURCES = test_parcel_init.f90 unit_test.f90
-test_jacobi_SOURCES = test_jacobi.f90 unit_test.f90
+test_jacobi_1_SOURCES = test_jacobi_1.f90 unit_test.f90
+test_jacobi_2_SOURCES = test_jacobi_2.f90 unit_test.f90
+test_jacobi_3_SOURCES = test_jacobi_3.f90 unit_test.f90
 
 
 if ENABLE_DEBUG

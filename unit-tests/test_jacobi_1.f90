@@ -3,7 +3,7 @@
 !
 !               This unit test checks the eigenvalue solver.
 ! =============================================================================
-program test_jacobi
+program test_jacobi_1
     use unit_test
     use constants, only : zero
     use jacobi
@@ -51,7 +51,7 @@ program test_jacobi
         endif
     enddo
 
-    call print_result_dp('Test Jacobi', error, atol=dble(1.0e-9))
+    call print_result_dp('Test Jacobi 1', error, atol=dble(1.0e-9))
 
     contains
 
@@ -128,4 +128,4 @@ program test_jacobi
             enddo
         end subroutine create_symmetric_matrix
 
-end program test_jacobi
+end program test_jacobi_1
