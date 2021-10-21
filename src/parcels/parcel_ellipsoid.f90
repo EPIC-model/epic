@@ -1,5 +1,10 @@
 ! =============================================================================
 !     This module is the 3D version and contains all ellipsoid operations.
+!     Reference:
+!       Dritschel, D., Reinaud, J., & McKiver, W. (2004).
+!       The quasi-geostrophic ellipsoidal vortex model.
+!       Journal of Fluid Mechanics, 505, 201-223.
+!       doi:10.1017/S0022112004008377
 ! =============================================================================
 module parcel_ellipsoid
     use constants, only : fpi   &
