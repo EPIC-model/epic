@@ -81,6 +81,30 @@ module parcel_ellipsoid
 
         end function get_eigenvectors
 
+        ! Compute the eigenvalue decomposition B = V^T * D * V
+        ! where D has the eigenvalues on its diagonal
+        ! and V contains the eigenvectors in its columns.
+        ! The eigenvector V(:, j) belongs to the j-th
+        ! eigenvalue.
+        ! @param[in] B = (B11, B12, B13, B22, B23)
+        ! @param[in] volume of the parcel
+        ! @returns the eigenvectors
+        subroutine diagonalise(B, volume, a2, b2, c2, V)
+            double precision, intent(in)  :: B(3, 3)
+            double precision, intent(in)  :: volume
+            double precision, intent(out) :: a2, b2, c2, V(3, 3)
+            double precision              :: D(3, 3)
+
+            D = get_symmetric_matrix(B, volume)
+
+            call jacobi_diagonalise(D, V)
+
+            a2 = D(1, 1)
+            b2 = D(2, 2)
+            c2 = D(3, 3)
+
+        end subroutine diagonalise
+
         ! Obtain the B33 matrix element
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
@@ -112,7 +136,7 @@ module parcel_ellipsoid
         ! @param[in] a2 is the largest eigenvalue
         ! @param[in] b2 is the middle eigenvalue
         ! @param[in] volume of the parcel(s)
-        ! @returns (a/b, a/c)
+        ! @returns a/b
         elemental function get_aspect_ratio(a2, b2) result(lam)
             double precision, intent(in) :: a2, b2
             double precision             :: lam
