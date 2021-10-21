@@ -14,14 +14,14 @@ program test_parcel_correction
     use parcel_interpl, only : vol2grid
     use parcel_ellipse, only : get_ab
     use parcel_init, only : init_regular_positions
-    use parameters, only : lower, extent, update_parameters, vcell, nx, nz
+    use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz
     use fields, only : volg
     use timer
 
     implicit none
 
     double precision :: final_error, init_error, val, tmp
-    integer :: i, n, sk
+    integer :: i, n, sk, d
     integer, allocatable :: seed(:)
     double precision, parameter :: dev = 0.005d0
 
@@ -34,14 +34,22 @@ program test_parcel_correction
 
     call register_timer('gradient correction', grad_corr_timer)
 
-    nx = 32
+    nx = 1
+    ny = 32
     nz = 32
+#ifdef ENABLE_3D
+    nx = 32
+    lower  = (/zero, zero, zero/)
+    extent = (/one, one, one/)
+#else
     lower  = (/zero, zero/)
     extent = (/one, one/)
+#endif
+
 
     call update_parameters
 
-    allocate(volg(-1:nz+1, 0:nx-1))
+    allocate(volg(-1:nz+1, 0:ny-1, 0:nx-1))
 
     n_parcels = 4*nx*nz
     call parcel_alloc(n_parcels)
@@ -51,39 +59,38 @@ program test_parcel_correction
 
     ! add some deviation
     do n = 1, n_parcels
-        tmp = dev
-        call random_number(val)
-        if (val < 0.5) then
-            tmp = -dev
-        endif
-        parcels%position(n, 1) = parcels%position(n, 1) + tmp
-
-        tmp = dev
-        call random_number(val)
-        if (val < 0.5) then
-            tmp = -dev
-        endif
-        parcels%position(n, 2) = parcels%position(n, 2) + tmp
+        do d = 1, ndim
+            tmp = dev
+            call random_number(val)
+            if (val < 0.5) then
+                tmp = -dev
+            endif
+            parcels%position(n, d) = parcels%position(n, d) + tmp
+        enddo
     enddo
 
     volg = zero
 
     parcels%volume = f14 * vcell
 
+#ifdef ENABLE_3D
+    !FIXME
+#else
     ! b11
     parcels%B(:, 1) = get_ab(parcels%volume(1:n_parcels))
 
     ! b12
     parcels%B(:, 2) = zero
+#endif
 
     call vol2grid
 
-    init_error = sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1))
+    init_error = sum(abs(volg(0:nz, 0:ny-1, 0:nx-1) / vcell - one)) / (nx * ny * (nz+1))
 
     if (verbose) then
         write(*,*) 'Test gradient correction'
         write(*,*) 'iteration, average error, max absolute error'
-        write(*,*) 0, init_error, maxval(abs(volg(0:nz, 0:nx-1) / vcell - one))
+        write(*,*) 0, init_error, maxval(abs(volg(0:nz, 0:ny-1, 0:nx-1) / vcell - one))
     endif
 
     call init_parcel_correction
@@ -92,14 +99,14 @@ program test_parcel_correction
         call apply_gradient(1.80d0,0.5d0)
         if (verbose) then
             call vol2grid
-            write(*,*) i, sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1)), &
-                          maxval(abs(volg(0:nz, 0:nx-1) / vcell - one))
+            write(*,*) i, sum(abs(volg(0:nz, 0:ny-1, 0:nx-1) / vcell - one)) / (nx * ny * (nz+1)), &
+                          maxval(abs(volg(0:nz, 0:ny-1, 0:nx-1) / vcell - one))
         endif
     enddo
 
     call vol2grid
 
-    final_error = sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1))
+    final_error = sum(abs(volg(0:nz, 0:ny-1, 0:nx-1) / vcell - one)) / (nx * ny * (nz+1))
 
     call print_result_dp('Test gradient correction', final_error, init_error)
 

@@ -13,7 +13,7 @@ program test_ellipse_multi_merge_5
     use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
     use parcel_merge, only : merge_ellipses, merge_timer
     use options, only : parcel
-    use parameters, only : update_parameters, lower, extent, nx, nz
+    use parameters, only : update_parameters, lower, extent, nx, ny, nz
     use parcel_ellipse
     use timer
     implicit none
@@ -21,9 +21,15 @@ program test_ellipse_multi_merge_5
     double precision :: error
 
     nx = 1
+    ny = 1
     nz = 1
+#ifdef ENABLE_3D
+    lower  = (/-pi / two, -pi / two, -pi / two/)
+    extent = (/pi, pi, pi/)
+#else
     lower  = (/-pi / two, -pi /two/)
     extent = (/pi, pi/)
+#endif
 
     call register_timer('parcel merge', merge_timer)
     call register_timer('merge nearest', merge_nearest_timer)
