@@ -8,10 +8,10 @@ module parameters
     implicit none
 
     ! mesh spacing
-    double precision :: dx(2)
+    double precision :: dx(ndim)
 
     ! inverse mesh spacing
-    double precision :: dxi(2)
+    double precision :: dxi(ndim)
 
     ! grid cell volume, really area in 2D:
     double precision :: vcell
@@ -20,7 +20,7 @@ module parameters
     double precision :: vcelli
 
     ! number of grid cells in each dimension
-    integer :: nx, nz
+    integer :: nx, ny, nz
 
     ! total number of grid cells
     integer :: ncell
@@ -35,21 +35,21 @@ module parameters
     double precision :: ngridi
 
     ! domain size
-    double precision :: extent(2)
+    double precision :: extent(ndim)
 
     ! domain centre
-    double precision :: center(2)
+    double precision :: center(ndim)
 
     ! domain half widths values
-    double precision :: hl(2)
+    double precision :: hl(ndim)
 
-    double precision :: hli(2)
+    double precision :: hli(ndim)
 
     ! domain origin
-    double precision :: lower(2)
+    double precision :: lower(ndim)
 
     ! domain upper boundary
-    double precision :: upper(2)
+    double precision :: upper(ndim)
 
     ! minimum volume
     double precision :: vmin
@@ -62,13 +62,26 @@ module parameters
     ! Update all parameters according to the
     ! user-defined global options.
     subroutine update_parameters
+        double precision :: msr ! mesh spacing ratio
 
         upper = lower + extent
 
+#ifdef ENABLE_3D
+        dx = extent / dble/(nx, ny, nz/)
+#else
         dx = extent / dble((/nx, nz/))
+#endif
         dxi = one / dx;
 
-        if (max(dxi(1) * dx(2), dxi(2) * dx(1)) > two) then
+#ifdef ENABLE_3D
+        msr = maxval((/dxi(1) * dx(2), dxi(2) * dx(1),   &
+                       dxi(1) * dx(3), dxi(3) * dx(1),   &
+                       dxi(2) * dx(3), dxi(3) * dx(2)/))
+#else
+        msr = max(dxi(1) * dx(2), dxi(2) * dx(1))
+#endif
+
+        if (msr > two) then
             print *, '**********************************************************************'
             print *, '*                                                                    *'
             print *, '*   Warning: A mesh spacing ratio of more than 2 is not advisable!   *'
@@ -83,11 +96,11 @@ module parameters
         vcell = product(dx)
         vcelli = one / vcell
 
-        ncell = nx * nz
+        ncell = nx * ny * nz
         ncelli = one / dble(ncell)
 
-        ! due to x periodicity it is only nx
-        ngrid = nx * (nz + 1)
+        ! due to x periodicity it is only nx (and also ny in 3D)
+        ngrid = nx * ny * (nz + 1)
         ngridi = one / dble(ngrid)
 
         ! domain

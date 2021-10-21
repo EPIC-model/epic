@@ -1,5 +1,5 @@
 module utils
-    use constants, only : one
+    use constants, only : one, ndim
     use field_hdf5
     use parcel_hdf5
     use parcel_diagnostics
@@ -27,8 +27,8 @@ module utils
         ! @param[in] t is the time
         subroutine write_last_step(t)
             double precision,  intent(in) :: t
-            double precision              :: velocity(n_parcels, 2)
-            double precision              :: strain(n_parcels, 4)
+            double precision              :: velocity(n_parcels, ndim)
+            double precision              :: strain(n_parcels, 4) !FIXME
             double precision              :: vorticity(n_parcels)
 
             call par2grid
