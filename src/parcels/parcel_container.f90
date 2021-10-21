@@ -4,32 +4,22 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use constants, only : ndim
+    use constants, only : ndim, bdim, vdim
     use parameters, only : extent, hli, center
     implicit none
 
     integer :: n_parcels
 
-    ! dimension of the shape matrix
-    ! in 2D: bdim = 2
-    ! in 3D: bdim = 5
-    integer, parameter :: bdim = int((ndim ** 2 - 1) / 2) + 1
-
-    ! dimension of the vorticity
-    ! in 2D: vdim = 1
-    ! in 3D: vdim = 3
-    integer, parameter :: vdim = bdim + 1 - ndim
-
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
             position,   &
+            vorticity,  &
             B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12
                             ! The 3D model has additionally:
                             ! B(:, 3) = B22, B(:, 4) = B13, B(:, 4) = B23
 
         double precision, allocatable, dimension(:) :: &
             volume,     &
-            vorticity,  &
 #ifndef ENABLE_DRY_MODE
             humidity,   &
 #endif
@@ -86,7 +76,6 @@ module parcel_container
         ! @param[in] num number of parcels
         subroutine parcel_alloc(num)
             integer, intent(in) :: num
-            integer, parameter  :: n
 
             allocate(parcels%position(num, ndim))
             allocate(parcels%vorticity(num, vdim))

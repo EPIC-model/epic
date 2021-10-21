@@ -12,7 +12,6 @@ module ls_rk4
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calc_parcel_diagnostics
-    use parameters, only : nx, nz
     use timer, only : start_timer, stop_timer, timings
     implicit none
 
@@ -23,7 +22,7 @@ module ls_rk4
     double precision, allocatable, dimension(:, :) :: &
         delta_pos, &
         strain,    &   ! strain at parcel location
-        delta_b        ! B matrix integration
+        delta_b,   &   ! B matrix integration
         delta_vor      ! vorticity integration
 
     double precision, parameter :: &

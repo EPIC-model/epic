@@ -7,10 +7,10 @@ module parcel_init
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
-    use parcel_interpl, only : trilinear, ngp
+    use parcel_interpl, only : linterp, ngp
     use parameters, only : update_parameters,   &
                            dx, vcell, ncell,    &
-                           extent, lower, nx, nz
+                           extent, lower, nx, ny, nz
     use h5_reader
     use timer, only : start_timer, stop_timer
     use omp_lib
@@ -19,9 +19,9 @@ module parcel_init
     integer :: init_timer
 
     double precision, allocatable :: weights(:, :), apar(:)
-    integer, allocatable :: is(:, :), js(:, :)
+    integer, allocatable :: is(:, :), js(:, :), ks(:, :)
 
-    private :: weights, apar, is, js
+    private :: weights, apar, is, js, ks
 
 
     private :: init_refine,                 &
@@ -168,16 +168,17 @@ module parcel_init
         end subroutine init_refine
 
 
-        ! Precompute weights, indices of trilinear
+        ! Precompute weights, indices of bi- or tri-linear
         ! interpolation and "apar"
         subroutine alloc_and_precompute
-            double precision :: resi(0:nz, 0:nx-1), rsum
+            double precision :: resi(0:nz, 0:ny-1, 0:nx-1), rsum
             integer          :: n, l
 
             allocate(apar(n_parcels))
             allocate(weights(n_parcels, ngp))
             allocate(is(n_parcels, ngp))
             allocate(js(n_parcels, ngp))
+            allocate(ks(n_parcels, ngp))
 
             ! Compute mean parcel density:
             resi = zero
@@ -185,24 +186,25 @@ module parcel_init
             !$omp parallel do default(shared) private(n, l) reduction(+:resi)
             do n = 1, n_parcels
                 ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(n, :), is(n, :), js(n, :), weights(n, :))
+                call linterp(parcels%position(n, :), weights(n, :), is(n, :), js(n, :), ks(n, :))
 
                 do l = 1, ngp
-                    resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) + weights(n, l)
+                    resi(ks(n, l), js(n, l), is(n, l)) = resi(ks(n, l), js(n, l), is(n, l)) &
+                                                       + weights(n, l)
                 enddo
             enddo
             !$omp end parallel do
 
             !Double edge values at iz = 0 and nz:
-            resi(0, :) = two * resi(0, :)
-            resi(nz,:) = two * resi(nz,:)
+            resi(0, :, :) = two * resi(0, :, :)
+            resi(nz,:, :) = two * resi(nz,:, :)
 
             ! Determine local inverse density of parcels (apar)
             !$omp parallel do default(shared) private(n, l, rsum)
             do n = 1, n_parcels
                 rsum = zero
                 do l = 1, ngp
-                    rsum = rsum + resi(js(n, l), is(n, l)) * weights(n, l)
+                    rsum = rsum + resi(ks(n, l), js(n, l), is(n, l)) * weights(n, l)
                 enddo
                 apar(n) = one / rsum
             enddo
@@ -215,6 +217,7 @@ module parcel_init
             deallocate(weights)
             deallocate(is)
             deallocate(js)
+            deallocate(ks)
         end subroutine dealloc
 
 
@@ -236,7 +239,7 @@ module parcel_init
                 call read_h5_dataset_2d(h5handle, 'vorticity', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
-                call gen_parcel_scalar_attr(field_2d, tol, parcels%vorticity)
+!                 call gen_parcel_scalar_attr(field_2d, tol, parcels%vorticity)   !FIXME
             endif
 
 
@@ -282,10 +285,10 @@ module parcel_init
         ! Generates the parcel attribute "par" from the field values provided
         ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)
         subroutine gen_parcel_scalar_attr(field, tol, par)
-            double precision, intent(in)  :: field(-1:nz+1, 0:nx-1)
+            double precision, intent(in)  :: field(-1:nz+1, 0:ny-1, 0:nx-1)
             double precision, intent(in)  :: tol
             double precision, intent(out) :: par(:)
-            double precision :: resi(0:nz, 0:nx-1)
+            double precision :: resi(0:nz, 0:ny-1, 0:nx-1)
             double precision :: rms, rtol, rerr, rsum, fsum, avg_field
             integer          :: n, l
 
@@ -297,13 +300,13 @@ module parcel_init
 
             ! Compute mean field value:
             ! (divide by ncell since lower and upper edge weights are halved)
-            avg_field = (f12 * sum(field(0, :) + field(nz, :)) &
-                             + sum(field(1:nz-1,:))) / dble(ncell)
+            avg_field = (f12 * sum(field(0, :, :) + field(nz, :, :)) &
+                             + sum(field(1:nz-1, :, :))) / dble(ncell)
 
-            resi(0:nz,:) = (field(0:nz,:) - avg_field) ** 2
+            resi(0:nz, :, :) = (field(0:nz, :, :) - avg_field) ** 2
 
-            rms = dsqrt((f12 * sum(resi(0, :) + resi(nz, :)) &
-                             + sum(resi(1:nz-1,:))) / dble(ncell))
+            rms = dsqrt((f12 * sum(resi(0, :, :) + resi(nz, :, :)) &
+                             + sum(resi(1:nz-1, :, :))) / dble(ncell))
 
 
             if (rms == zero) then
@@ -326,7 +329,7 @@ module parcel_init
             do n = 1, n_parcels
                 fsum = zero
                 do l = 1, ngp
-                    fsum = fsum + field(js(n, l), is(n, l)) * weights(n, l)
+                    fsum = fsum + field(ks(n, l), js(n, l), is(n, l)) * weights(n, l)
                 enddo
                 par(n) = apar(n) * fsum
             enddo
@@ -340,21 +343,21 @@ module parcel_init
                 resi = zero
                 do n = 1, n_parcels
                     do l = 1, ngp
-                        resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) &
-                                                 + weights(n, l) * par(n)
+                        resi(ks(n, l), js(n, l), is(n, l)) = resi(ks(n, l), js(n, l), is(n, l)) &
+                                                           + weights(n, l) * par(n)
                     enddo
                 enddo
 
-                resi(0, :)    = two * resi(0, :)
-                resi(nz, :)   = two * resi(nz, :)
-                resi(0:nz, :) = field(0:nz, :) - resi(0:nz, :)
+                resi(0, :, :)    = two * resi(0, :, :)
+                resi(nz, :, :)   = two * resi(nz, :, :)
+                resi(0:nz, :, :) = field(0:nz, :, :) - resi(0:nz, :, :)
 
                 !Update (volume-weighted) attribute:
                 !$omp parallel do default(shared) private(n, rsum, l)
                 do n = 1, n_parcels
                     rsum = zero
                     do l = 1, ngp
-                        rsum = rsum + resi(js(n, l), is(n, l)) * weights(n, l)
+                        rsum = rsum + resi(ks(n, l), js(n, l), is(n, l)) * weights(n, l)
                     enddo
                     par(n) = par(n) + apar(n) * rsum
                 enddo

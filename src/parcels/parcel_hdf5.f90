@@ -108,7 +108,7 @@ module parcel_hdf5
                                   parcels%volume(1:n_parcels))
 
             call write_h5_dataset(h5file_id, name, "vorticity", &
-                                  parcels%vorticity(1:n_parcels))
+                                  parcels%vorticity(1:n_parcels, :))
 
             call write_h5_dataset(h5file_id, name, "buoyancy", &
                                   parcels%buoyancy(1:n_parcels))

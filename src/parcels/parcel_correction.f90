@@ -13,12 +13,12 @@ module parcel_correction
     use stafft
     use deriv1d
 
-    use parcel_interpl, only : trilinear, ngp, vol2grid
+    use parcel_interpl, only : linterp, ngp, vol2grid
     use parcel_bc
     use omp_lib
 
     use constants
-    use parameters, only : vcelli, nx, nz, dx, dxi
+    use parameters, only : vcelli, nx, ny, nz, dx, dxi
 
     use parcel_container
 
@@ -139,109 +139,115 @@ module parcel_correction
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine apply_laplace
-        double precision :: phi(0:nz,0:nx-1), ud(-1:nz+1,0:nx-1), wd(-1:nz+1,0:nx-1)
+        double precision :: phi(0:nz, 0:ny-1, 0:nx-1),   &
+                            ud(-1:nz+1, 0:ny-1, 0:nx-1), &
+                            wd(-1:nz+1, 0:ny-1, 0:nx-1)
         double precision :: wbar(0:nz)
         double precision :: weights(ngp)
-        integer          :: n, l, is(ngp), js(ngp)
+        integer          :: n, l, is(ngp), js(ngp), ks(ngp)
 
-        call start_timer(lapl_corr_timer)
+        !FIXME
 
-        call vol2grid
-
-        ! form divergence field * dt and store in phi temporarily:
-        phi = volg(0:nz, :) * vcelli - one
-
-        !-----------------------------------------
-        ! Forward x FFT:
-        call forfft(nz+1,nx,phi,xtrig,xfactors)
-
-        ! Compute the x-independent part of wd by integration:
-        call vertint(phi(0,0),wbar)
-
-        ! Invert Laplace's operator semi-spectrally with compact differences:
-        call lapinv1(phi)
-
-        ! Compute x derivative spectrally:
-        call deriv(nz+1,nx,hrkx,phi,ud(0:nz, :))
-
-        ! Reverse x FFT to define x velocity component ud:
-        call revfft(nz+1,nx,ud(0:nz, :),xtrig,xfactors)
-
-        ! Compute z derivative by compact differences:
-        call diffz1(phi,wd(0:nz, :))
-
-        ! Add on the x-independent part of wd:
-        wd(0:nz,0) = wd(0:nz,0) + wbar
-
-        ! Reverse x FFT:
-        call revfft(nz+1,nx,wd(0:nz,:),xtrig,xfactors)
-
-        ! Use symmetry to fill z grid lines outside domain:
-        ud(-1,:)   =  ud(1,:)
-        wd(-1,:)   = -wd(1,:)
-        ud(nz+1,:) =  ud(nz-1,:)
-        wd(nz+1,:) = -wd(nz-1,:)
-
-        !------------------------------------------------------------------
-        ! Increment parcel positions usind (ud,wd) field:
-        !$omp parallel default(shared)
-        !$omp do private(n, l, is, js, weights)
-        do n = 1, n_parcels
-            call trilinear(parcels%position(n, :), is, js, weights)
-
-            do l = 1, ngp
-                parcels%position(n, 1) = parcels%position(n, 1)             &
-                                       + weights(l) * ud(js(l), is(l))
-
-                parcels%position(n, 2) = parcels%position(n, 2)             &
-                                       + weights(l) * wd(js(l), is(l))
-            enddo
-
-            call apply_periodic_bc(parcels%position(n, :))
-        enddo
-        !$omp end do
-        !$omp end parallel
-
-
-        call stop_timer(lapl_corr_timer)
+!         call start_timer(lapl_corr_timer)
+!
+!         call vol2grid
+!
+!         ! form divergence field * dt and store in phi temporarily:
+!         phi = volg(0:nz, :, :) * vcelli - one
+!
+!         !-----------------------------------------
+!         ! Forward x FFT:
+!         call forfft(nz+1,nx,phi,xtrig,xfactors)
+!
+!         ! Compute the x-independent part of wd by integration:
+!         call vertint(phi(0,0),wbar)
+!
+!         ! Invert Laplace's operator semi-spectrally with compact differences:
+!         call lapinv1(phi)
+!
+!         ! Compute x derivative spectrally:
+!         call deriv(nz+1,nx,hrkx,phi,ud(0:nz, :))
+!
+!         ! Reverse x FFT to define x velocity component ud:
+!         call revfft(nz+1,nx,ud(0:nz, :),xtrig,xfactors)
+!
+!         ! Compute z derivative by compact differences:
+!         call diffz1(phi,wd(0:nz, :))
+!
+!         ! Add on the x-independent part of wd:
+!         wd(0:nz,0) = wd(0:nz,0) + wbar
+!
+!         ! Reverse x FFT:
+!         call revfft(nz+1,nx,wd(0:nz,:),xtrig,xfactors)
+!
+!         ! Use symmetry to fill z grid lines outside domain:
+!         ud(-1,:)   =  ud(1,:)
+!         wd(-1,:)   = -wd(1,:)
+!         ud(nz+1,:) =  ud(nz-1,:)
+!         wd(nz+1,:) = -wd(nz-1,:)
+!
+!         !------------------------------------------------------------------
+!         ! Increment parcel positions usind (ud,wd) field:
+!         !$omp parallel default(shared)
+!         !$omp do private(n, l, is, js, weights)
+!         do n = 1, n_parcels
+!             call linterp(parcels%position(n, :), weights, is, js, ks)
+!
+!             do l = 1, ngp
+!                 parcels%position(n, 1) = parcels%position(n, 1)             &
+!                                        + weights(l) * ud(js(l), is(l))
+!
+!                 parcels%position(n, 2) = parcels%position(n, 2)             &
+!                                        + weights(l) * wd(js(l), is(l))
+!             enddo
+!
+!             call apply_periodic_bc(parcels%position(n, :))
+!         enddo
+!         !$omp end do
+!         !$omp end parallel
+!
+!
+!         call stop_timer(lapl_corr_timer)
 
     end subroutine apply_laplace
 
     subroutine apply_gradient(prefactor, max_compression)
         double precision, intent(in) :: prefactor
         double precision, intent(in) :: max_compression
-        double precision             :: phi(0:nz,0:nx-1)
+        double precision             :: phi(0:nz, 0:ny-1, 0:nx-1)
         double precision             :: weights(ngp)
         double precision             :: shift_x1, shift_x2, x1_fpos, x2_fpos, lim_x1, lim_x2
-        integer                      :: n, is(ngp), js(ngp)
+        integer                      :: n, is(ngp), js(ngp), ks(ngp)
+
+        !FIXME
 
         call start_timer(grad_corr_timer)
 
         call vol2grid
 
         ! form divergence field * dt and store in phi temporarily:
-        phi = volg(0:nz, :) * vcelli - one
+        phi = volg(0:nz, :, :) * vcelli - one
 
         !$omp parallel default(shared)
         !$omp do private(n, is, js, weights, x1_fpos, x2_fpos, shift_x1, shift_x2, lim_x1, lim_x2)
         do n = 1, n_parcels
 
-            call trilinear(parcels%position(n, :), is, js, weights)
+            call linterp(parcels%position(n, :), weights, is, js, ks)
 
             x1_fpos=weights(2)+weights(4) ! fractional position along x1
             x2_fpos=weights(3)+weights(4) ! fractional position along x2
 
             shift_x1= - prefactor*dx(1)*x1_fpos*(one-x1_fpos)*(&
-                        (one-x2_fpos)*(phi(js(2), is(2))-phi(js(1), is(1)))  &
-                      +     (x2_fpos)*(phi(js(4), is(4))-phi(js(3), is(3))))
+                        (one-x2_fpos)*(phi(ks(2), js(2), is(2))-phi(ks(1), js(1), is(1)))  &
+                      +     (x2_fpos)*(phi(ks(4), js(4), is(4))-phi(ks(3), js(3), is(3))))
 
             lim_x1=max_compression*dx(1)*x1_fpos*(one-x1_fpos)
 
             shift_x1= max(-lim_x1,min(shift_x1,lim_x1))
 
             shift_x2= - prefactor*dx(2)*x2_fpos*(one-x2_fpos)*(&
-                        (one-x1_fpos)*(phi(js(3), is(3))-phi(js(1), is(1))) &
-                      +     (x1_fpos)*(phi(js(4), is(4))-phi(js(2), is(2))))
+                        (one-x1_fpos)*(phi(ks(4), js(3), is(3))-phi(ks(1), js(1), is(1))) &
+                      +     (x1_fpos)*(phi(ks(4), js(4), is(4))-phi(ks(1), js(2), is(2))))
 
             lim_x2=max_compression*dx(2)*x2_fpos*(one-x2_fpos)
 

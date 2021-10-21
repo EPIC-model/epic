@@ -42,4 +42,14 @@ module constants
     integer, parameter :: ndim = 2
 #endif
 
+    ! dimension of the shape matrix
+    ! in 2D: bdim = 2
+    ! in 3D: bdim = 5
+    integer, parameter :: bdim = int((ndim ** 2 - 1) / 2) + 1
+
+    ! dimension of the vorticity
+    ! in 2D: vdim = 1
+    ! in 3D: vdim = 3
+    integer, parameter :: vdim = bdim + 1 - ndim
+
 end module

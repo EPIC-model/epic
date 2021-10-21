@@ -9,7 +9,8 @@ module parcel_merge
     use parcel_container, only : parcel_container_type  &
                                , n_parcels              &
                                , parcel_replace         &
-                               , get_delx
+                               , get_delx               &
+                               , vdim
     use parcel_ellipse, only : get_B22, get_ab
     use options, only : parcel, verbose
     use parcel_bc
@@ -96,7 +97,7 @@ module parcel_merge
             integer                                    :: loca(n_parcels)
             double precision                           :: x0(n_merge), xm(n_merge)
             double precision                           :: zm(n_merge), delx, vmerge, dely, B22, mu
-            double precision                           :: buoym(n_merge), vortm(n_merge, :)
+            double precision                           :: buoym(n_merge), vortm(n_merge, vdim)
 #ifndef ENABLE_DRY_MODE
             double precision                           :: hum(n_merge)
 #endif
