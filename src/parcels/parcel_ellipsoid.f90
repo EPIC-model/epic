@@ -20,7 +20,7 @@ module parcel_ellipsoid
     double precision, parameter :: costheta(4) = dcos((/fpi4, f3pi4, f5pi4, f7pi4/))
     double precision, parameter :: sintheta(4) = dsin((/fpi4, f3pi4, f5pi4, f7pi4/))
 
-    private :: rho
+    private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_symmetric_matrix
 
     contains
 
