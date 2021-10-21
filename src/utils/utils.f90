@@ -1,5 +1,5 @@
 module utils
-    use constants, only : one, ndim
+    use constants, only : one, ndim, vdim
     use field_hdf5
     use parcel_hdf5
     use parcel_diagnostics
@@ -29,7 +29,7 @@ module utils
             double precision,  intent(in) :: t
             double precision              :: velocity(n_parcels, ndim)
             double precision              :: strain(n_parcels, 4) !FIXME
-            double precision              :: vorticity(n_parcels)
+            double precision              :: vorticity(n_parcels, vdim)
 
             call par2grid
 
