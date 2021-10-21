@@ -17,7 +17,10 @@ module parcel_interpl
     implicit none
 
     ! number of indices and weights
-    integer, parameter :: ngp = 4
+    integer, parameter :: ngp = ndim ** 2
+
+    ! number of ellipse / ellispoid support points
+    integer, parameter :: nsup = 2 ** (ndim - 1)
 
     ! interpolation indices
     ! (first dimension x, y; second dimension k-th index)
@@ -32,13 +35,20 @@ module parcel_interpl
 #endif
                grid2par_timer
 
-    private :: is, js, weights
+
+    interface linterp
+        module procedure :: bilinear
+        module procedure :: trilinear
+    end interface linterp
+
+
+    private :: is, js, weights, nsup
 
     contains
 
         ! Interpolate the parcel volume to the grid
         subroutine vol2grid
-            double precision  :: points(2, 2)
+            double precision  :: points(nsup, ndim)
             integer           :: n, p, l
             double precision  :: pvol
 
@@ -54,8 +64,8 @@ module parcel_interpl
                                             pvol, parcels%B(n, :))
 
 
-                ! we have 2 points per ellipse
-                do p = 1, 2
+                ! iterate over support points (2D --> 2, 3D --> 4)
+                do p = 1, nsup
 
                     ! ensure point is within the domain
                     call apply_periodic_bc(points(p, :))
@@ -83,10 +93,11 @@ module parcel_interpl
 
         end subroutine vol2grid
 
+        !FIXME
 #ifndef NDEBUG
         ! Interpolate the parcel volume to the grid to check symmetry
         subroutine vol2grid_symmetry_error
-            double precision :: points(2, 2), V, B(2), pos(2)
+            double precision :: points(nsup, ndim), V, B(2), pos(2)
             integer          :: n, p, l, m
             double precision :: pvol
 
@@ -140,7 +151,7 @@ module parcel_interpl
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
         subroutine par2grid
-            double precision :: points(2, 2)
+            double precision :: points(nsup, ndim)
             integer          :: n, p, l, i, j
             double precision :: pvol, weight, btot
 #ifndef ENABLE_DRY_MODE
@@ -169,6 +180,7 @@ module parcel_interpl
                 pvol = parcels%volume(n)
 
 #ifndef ENABLE_DRY_MODE
+                !FIXME
                 ! liquid water content
                 h_c = parcels%humidity(n) &
                     - h_0 * dexp(lam_c * (lower(2) - parcels%position(n, 2)))
@@ -189,8 +201,8 @@ module parcel_interpl
                     nsparg(j, i) = nsparg(j, i) + 1
                 endif
 
-                ! we have 2 points per ellipse
-                do p = 1, 2
+                ! iterate over support points (2D --> 2, 3D --> 4)
+                do p = 1, nsup
 
                     ! ensure point is within the domain
                     call apply_periodic_bc(points(p, :))
@@ -292,14 +304,10 @@ module parcel_interpl
         subroutine grid2par(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
             logical, optional, intent(in)       :: add
-            integer                             :: ncomp
-            double precision                    :: points(2, 2), weight
+            double precision                    :: points(nsup, ndim), weight
             integer                             :: n, p, c, l
 
             call start_timer(grid2par_timer)
-
-            ! number of field components
-            ncomp = 2
 
             ! clear old data efficiently
             if(present(add)) then
@@ -334,8 +342,8 @@ module parcel_interpl
                                             parcels%volume(n),      &
                                             parcels%B(n, :))
 
-                ! we have 2 points per ellipse
-                do p = 1, 2
+                ! iterate over support points (2D --> 2, 3D --> 4)
+                do p = 1, nsup
 
                     ! ensure point is within the domain
                     call apply_periodic_bc(points(p, :))
@@ -348,13 +356,13 @@ module parcel_interpl
                         weight = f12 * weights(l)
 
                         ! loop over field components
-                        do c = 1, ncomp
+                        do c = 1, ndim
                             ! the weight is halved due to 2 points per ellipse
                             vel(n, c) = vel(n, c) &
                                       + weight * velog(js(l), is(l), c)
                         enddo
 
-                        do c = 1, 4
+                        do c = 1, 4 !FIXME
                             vgrad(n, c) = vgrad(n, c) &
                                         + weight * velgradg(js(l), is(l), c)
                         enddo
@@ -384,13 +392,13 @@ module parcel_interpl
         end subroutine grid2par_add
 
 
-        ! Tri-linear interpolation
+        ! Bi-linear interpolation
         ! @param[in] pos position of the parcel
         ! @param[out] ii horizontal grid points for interoplation
         ! @param[out] jj vertical grid points for interpolation
         ! @param[out] ww interpolation weights
-        subroutine trilinear(pos, ii, jj, ww)
-            double precision, intent(in)  :: pos(2)
+        subroutine bilinear(pos, ii, jj, ww)
+            double precision, intent(in)  :: pos(ndim)
             integer,          intent(out) :: ii(4), jj(4)
             double precision, intent(out) :: ww(4)
             double precision              :: xy(2)
@@ -420,6 +428,60 @@ module parcel_interpl
 
             ! account for x periodicity
             call periodic_index_shift(ii)
+
+        end subroutine bilinear
+
+
+        ! Tri-linear interpolation
+        ! @param[in] pos position of the parcel
+        ! @param[out] ii horizontal grid points for interoplation
+        ! @param[out] jj vertical grid points for interpolation
+        ! @param[out] ww interpolation weights
+        subroutine trilinear(pos, ii, jj, kk, ww)
+            double precision, intent(in)  :: pos(ndim)
+            integer,          intent(out) :: ii(8), jj(8), kk(8)
+            double precision, intent(out) :: ww(8)
+            double precision              :: xyz(3)
+            integer                       :: k, j
+
+            ! (i, j, k)
+            call get_index(pos, ii(1), jj(1), kk(1))
+
+            kk(5) = k(1) + 1
+
+            do k = 0, 1
+                j = 4 * k
+                ! (i, j, k) and (i, j, k+1)
+                call get_position(ii(1 + j), jj(1 + j), kk(1 + j), xyz)
+                ww(1 + j) = product(one - abs(pos - xyz) * dxi)
+
+                ! (i+1, j, k) and (i+1, j, k+1)
+                ii(2 + j) = ii(1 + j) + 1
+                jj(2 + j) = jj(1 + j)
+                kk(2 + j) = kk(1 + j)
+                call get_position(ii(2 + j), jj(2 + j), kk(2 + j), xyz)
+                ww(2 + j) = product(one - abs(pos - xyz) * dxi)
+
+                ! (i, j+1, k) and (i, j+1, k+1)
+                ii(3 + j) = ii(1 + j)
+                jj(3 + j) = jj(1 + j) + 1
+                kk(3 + j) = kk(1 + j)
+                call get_position(ii(3 + j), jj(3 + j), kk(3 + j), xyz)
+                ww(3 + j) = product(one - abs(pos - xyz) * dxi)
+
+                ! (i+1, j+1, k) and (i+1, j+1, k+1)
+                ii(4 + j) = ii(2 + j)
+                jj(4 + j) = jj(3 + j)
+                kk(4 + j) = kk(1 + j)
+                call get_position(ii(4 + j), jj(4 + j), kk(4 + j), xyz)
+                ww(4 + j) = product(one - abs(pos - xyz) * dxi)
+            enddo
+
+            ! account for x periodicity
+            call periodic_index_shift(ii)
+
+            ! account for y periodicity
+            call periodic_index_shift(jj)
 
         end subroutine trilinear
 
