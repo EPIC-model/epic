@@ -1,7 +1,7 @@
 ! =============================================================================
 !                           Module to split ellipses
 ! =============================================================================
-module parcel_split
+module parcel_split_mod
     use options, only : verbose
     use constants, only : pi, three, f12, f14, f34
     use parameters, only : vmax
@@ -23,7 +23,7 @@ module parcel_split
         ! parcels with aspect ratios larger than the threshold.
         ! @param[inout] parcels
         ! @param[in] threshold is the largest allowed aspect ratio
-        subroutine split_ellipses(parcels, threshold)
+        subroutine parcel_split(parcels, threshold)
             type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: threshold
             double precision                           :: B11
@@ -107,6 +107,6 @@ module parcel_split
 
             call stop_timer(split_timer)
 
-        end subroutine split_ellipses
+        end subroutine parcel_split
 
-end module parcel_split
+end module parcel_split_mod

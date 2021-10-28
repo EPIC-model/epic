@@ -8,7 +8,7 @@ program test_ellipse_split
     use unit_test
     use constants, only : pi, zero, one, three, four, five, ten, f12, f14
     use parcel_container
-    use parcel_split, only : split_ellipses, split_timer
+    use parcel_split_mod, only : parcel_split, split_timer
     use parameters, only : update_parameters, nx, nz, extent, lower, vmax
     use timer
     implicit none
@@ -57,7 +57,7 @@ program test_ellipse_split
     pos(2, :) = parcels%position(1, :) - h * evec
 
     ! numerical split
-    call split_ellipses(parcels, threshold=four)
+    call parcel_split(parcels, threshold=four)
 
     !
     ! check result
