@@ -1044,9 +1044,9 @@ def plot_energy(fname, figure="save", fmt="png", **kwargs):
 
     h5reader.close()
 
-    plt.plot(t[beg:end], pe[beg:end], label=r"$\mathcal{P}$")
-    plt.plot(t[beg:end], ke[beg:end], label=r"$\mathcal{K}$")
-    plt.plot(t[beg:end], te[beg:end], label=r"$\mathcal{P}+\mathcal{K}$")
+    plt.plot(t[beg:end], pe[beg:end], label=r"$P$")
+    plt.plot(t[beg:end], ke[beg:end], label=r"$K$")
+    plt.plot(t[beg:end], te[beg:end], label=r"$P+K$")
 
     if not no_xlabel:
         plt.xlabel(get_label("time", units["time"]))
