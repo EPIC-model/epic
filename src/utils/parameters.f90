@@ -3,6 +3,7 @@
 ! simulation.
 ! =============================================================================
 module parameters
+    use macros, only : EPIC_VECTOR
     use options, only : allow_larger_anisotropy, parcel
     use constants
     implicit none
@@ -66,11 +67,7 @@ module parameters
 
         upper = lower + extent
 
-#ifdef ENABLE_3D
-        dx = extent / dble/(nx, ny, nz/)
-#else
-        dx = extent / dble((/nx, nz/))
-#endif
+        dx = extent / dble(EPIC_VECTOR(nx, ny, nz))
         dxi = one / dx;
 
 #ifdef ENABLE_3D

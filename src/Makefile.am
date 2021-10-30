@@ -1,5 +1,6 @@
 bin_PROGRAMS = epic
 epic_SOURCES = 					\
+	utils/macros.f90			\
 	utils/constants.f90 			\
 	utils/timer.f90				\
 	utils/phys_constants.f90		\

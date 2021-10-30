@@ -3,6 +3,7 @@
 ! never change throughout a simulation.
 ! =============================================================================
 module constants
+    use macros, only : EPIC_DIM
     implicit none
 
     double precision, parameter :: zero     = 0.0d0
@@ -36,11 +37,7 @@ module constants
     ! maximum number of allowed parcels
     integer, parameter :: max_num_parcels = 2.2e6
 
-#ifdef ENABLE_3D
-    integer, parameter :: ndim = 3
-#else
-    integer, parameter :: ndim = 2
-#endif
+    integer, parameter :: ndim = EPIC_DIM
 
     ! dimension of the shape matrix
     ! in 2D: bdim = 2

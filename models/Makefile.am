@@ -1,6 +1,7 @@
 AM_FCFLAGS = -I $(top_builddir)/src/
 
 AM_LDFLAGS =                                            \
+	$(top_builddir)/src/utils/macros.o		\
         $(top_builddir)/src/utils/constants.o		\
         $(top_builddir)/src/utils/phys_constants.o	\
         $(top_builddir)/src/utils/options.o		\
