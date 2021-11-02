@@ -1,13 +1,10 @@
 if ENABLE_UNIT_TESTS
 
-AM_FCFLAGS = -I $(top_builddir)/src/
+AM_FCFLAGS = -I $(top_builddir)/src/2d
 
-AM_LDFLAGS =						\
-	$(top_builddir)/src/parcels/*.o 		\
-	$(top_builddir)/src/utils/*.o			\
-	$(top_builddir)/src/hdf5/*.o			\
-	$(top_builddir)/src/fields/*.o			\
-	$(top_builddir)/src/tri_inversion.o
+AM_LDFLAGS =                                            \
+        $(top_builddir)/src/2d/utils/*.o
+
 
 unittestsdir = $(prefix)/unit-tests
 
