@@ -1,5 +1,4 @@
 AM_FCFLAGS =                            	\
-        -I $(top_builddir)/src/2d/utils/	\
         -I $(top_builddir)/src/utils
 
 

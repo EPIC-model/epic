@@ -1,3 +1,4 @@
+if ENABLE_3D
 AM_FCFLAGS =				\
 	-I $(top_builddir)/src/utils	\
 	-I $(top_builddir)/src/hdf5
@@ -34,3 +35,4 @@ epic3d_LDADD = 					\
 
 clean-local:
 	rm -f *.mod
+endif

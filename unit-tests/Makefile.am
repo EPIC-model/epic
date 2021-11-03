@@ -1,7 +1,10 @@
 SUBDIRS = 	\
 	.	\
-	2d	\
-	3d
+	2d
+
+if ENABLE_3D
+SUBDIRS += 3d
+endif
 
 AM_FCFLAGS =				\
 	-I $(top_builddir)/src/2d 	\
