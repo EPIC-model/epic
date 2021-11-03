@@ -19,6 +19,7 @@ AC_CONFIG_FILES([
     src/utils/Makefile
     src/hdf5/Makefile
     src/2d/Makefile
+    src/3d/Makefile
     models/Makefile
     analyse/Makefile
     unit-tests/Makefile
