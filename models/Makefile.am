@@ -1,10 +1,9 @@
-AM_FCFLAGS = -I $(top_builddir)/src/2d/
+AM_FCFLAGS = 				\
+	-I $(top_builddir)/src/2d/	\
+	-I $(top_builddir)/src/utils
 
 AM_LDFLAGS =                                            \
-        $(top_builddir)/src/2d/utils/constants.o	\
-        $(top_builddir)/src/2d/utils/phys_constants.o	\
-        $(top_builddir)/src/2d/utils/options.o		\
-        $(top_builddir)/src/2d/utils/parameters.o	\
+	$(top_builddir)/src/2d/utils/parameters.o	\
         $(top_builddir)/src/2d/hdf5/h5_utils.o		\
         $(top_builddir)/src/2d/hdf5/h5_writer.o
 
@@ -17,6 +16,8 @@ epic2d_models_SOURCES =		\
 	straka.f90		\
 	robert.f90		\
 	epic2d-models.f90
+
+epic2d_models_LDADD = $(top_builddir)/src/utils/libutils.la
 
 clean-local:
 	rm -f *.mod
