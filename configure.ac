@@ -212,7 +212,7 @@ AC_ARG_ENABLE([3d],
               [AS_HELP_STRING([--enable-3d], [enable 3D model (default=no)])],
               [ENABLE_3D=$enableval])
 
-AM_CONDITIONAL([ENABLE_3D], [test "ENABLE_3D" = "yes"])
+AM_CONDITIONAL([ENABLE_3D], [test "$ENABLE_3D" = "yes"])
 
 AC_MSG_CHECKING([whether we are compiling the 3D model])
 if test "x$ENABLE_3D" = "xyes"; then
@@ -226,7 +226,7 @@ AC_ARG_ENABLE([merger-dump],
               [AS_HELP_STRING([--enable-merger-dump], [enable merger dump (default=no)])],
               [ENABLE_MERGER_DUMP=$enableval])
 
-AM_CONDITIONAL([ENABLE_MERGER_DUMP], [test "ENABLE_MERGER_DUMP" = "yes"])
+AM_CONDITIONAL([ENABLE_MERGER_DUMP], [test "$ENABLE_MERGER_DUMP" = "yes"])
 
 AC_MSG_CHECKING([whether we are compiling with merger dump])
 if test "x$ENABLE_MERGER_DUMP" = "xyes"; then
