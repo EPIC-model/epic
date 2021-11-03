@@ -1,16 +1,12 @@
-AM_FCFLAGS = -I $(top_builddir)/src/utils
+AM_FCFLAGS =				\
+	-I $(top_builddir)/src/utils	\
+	-I $(top_builddir)/src/hdf5
 
 bin_PROGRAMS = epic2d
 epic2d_SOURCES = 				\
-	utils/phys_parameters.f90		\
 	utils/stafft.f90			\
 	utils/sta2dfft.f90			\
 	utils/deriv1d.f90			\
-	utils/merge_sort.f90			\
-	utils/parameters.f90 			\
-	hdf5/h5_utils.f90			\
-	hdf5/h5_writer.f90			\
-	hdf5/h5_reader.f90			\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_hdf5.f90			\
@@ -32,7 +28,9 @@ epic2d_SOURCES = 				\
 	stepper/ls_rk4.f90			\
 	epic2d.f90
 
-epic2d_LDADD = $(top_builddir)/src/utils/libutils.la
+epic2d_LDADD = 					\
+	$(top_builddir)/src/utils/libutils.la 	\
+	$(top_builddir)/src/hdf5/libhdf5.la
 
 clean-local:
 	rm -f *.mod
