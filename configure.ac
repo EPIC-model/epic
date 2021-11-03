@@ -16,6 +16,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    src/utils/Makefile
     src/2d/Makefile
     models/Makefile
     analyse/Makefile

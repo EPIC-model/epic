@@ -3,9 +3,11 @@ SUBDIRS = 	\
 	2d	\
 	3d
 
-AM_FCFLAGS = -I $(top_builddir)/src/2d
+AM_FCFLAGS =				\
+	-I $(top_builddir)/src/2d 	\
+	-I $(top_builddir)/src/utils
 
-AM_LDFLAGS =                                            \
+# AM_LDFLAGS =                                            \
         $(top_builddir)/src/2d/utils/*.o
 
 

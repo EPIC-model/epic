@@ -1,1 +1,1 @@
-SUBDIRS = 2d
+SUBDIRS = utils 2d
