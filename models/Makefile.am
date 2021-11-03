@@ -1,11 +1,7 @@
 AM_FCFLAGS = 				\
 	-I $(top_builddir)/src/2d/	\
-	-I $(top_builddir)/src/utils
-
-AM_LDFLAGS =                                            \
-	$(top_builddir)/src/2d/utils/parameters.o	\
-        $(top_builddir)/src/2d/hdf5/h5_utils.o		\
-        $(top_builddir)/src/2d/hdf5/h5_writer.o
+	-I $(top_builddir)/src/utils	\
+	-I $(top_builddir)/src/hdf5
 
 epic2d_modelsdir = $(prefix)/bin
 
@@ -17,7 +13,9 @@ epic2d_models_SOURCES =		\
 	robert.f90		\
 	epic2d-models.f90
 
-epic2d_models_LDADD = $(top_builddir)/src/utils/libutils.la
+epic2d_models_LDADD = 				\
+	$(top_builddir)/src/utils/libutils.la	\
+	$(top_builddir)/src/hdf5/libhdf5.la
 
 clean-local:
 	rm -f *.mod

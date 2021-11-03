@@ -17,6 +17,7 @@ AC_CONFIG_FILES([
     Makefile
     src/Makefile
     src/utils/Makefile
+    src/hdf5/Makefile
     src/2d/Makefile
     models/Makefile
     analyse/Makefile

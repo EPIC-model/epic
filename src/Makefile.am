@@ -1,1 +1,1 @@
-SUBDIRS = utils 2d
+SUBDIRS = utils hdf5 2d
