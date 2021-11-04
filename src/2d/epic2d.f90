@@ -5,7 +5,6 @@ program epic
     use constants, only : max_num_parcels, zero
     use timer
     use field_diagnostics
-    use parser, only : read_config_file
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses, split_timer
@@ -53,7 +52,7 @@ program epic
     contains
 
         subroutine pre_run
-            use options, only : field_file, field_tol, output
+            use options, only : field_file, field_tol, output, read_config_file
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
@@ -153,6 +152,7 @@ program epic
         end subroutine run
 
         subroutine post_run
+            use options, only : output
             call parcel_dealloc
             call ls_rk4_dealloc
             call finalise_hdf5

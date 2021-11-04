@@ -1,5 +1,5 @@
 module field_hdf5
-    use options, only : verbose
+    use options, only : verbose, write_h5_options
     use h5_utils
     use h5_writer
     use fields
@@ -30,7 +30,7 @@ module field_hdf5
 
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
-            call write_h5_box(h5file_id)
+            call write_h5_box(h5file_id, lower, extent, (/nx, nz/))
 
             call close_h5_file(h5file_id)
 

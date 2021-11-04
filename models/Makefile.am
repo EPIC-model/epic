@@ -3,6 +3,11 @@ AM_FCFLAGS = 				\
 	-I $(top_builddir)/src/utils	\
 	-I $(top_builddir)/src/hdf5
 
+AM_LDFLAGS = 						\
+	$(top_builddir)/src/2d/utils/options.o		\
+	$(top_builddir)/src/2d/utils/parameters.o
+
+
 epic2d_modelsdir = $(prefix)/bin
 
 epic2d_models_PROGRAMS = epic2d-models

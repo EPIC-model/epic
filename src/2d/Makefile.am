@@ -7,6 +7,9 @@ epic2d_SOURCES = 				\
 	utils/stafft.f90			\
 	utils/sta2dfft.f90			\
 	utils/deriv1d.f90			\
+	utils/options.f90			\
+	utils/parameters.f90			\
+	utils/phys_parameters.f90		\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_hdf5.f90			\

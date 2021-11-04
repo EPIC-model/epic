@@ -4,7 +4,8 @@
 module parcel_diagnostics
     use constants, only : zero, one, f12
     use merge_sort
-    use parameters, only : extent, lower, vcell, vmin
+    use parameters, only : extent, lower, vcell, vmin, nx, nz
+    use options, only : verbose, write_h5_options
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse
     use h5_utils
@@ -74,7 +75,7 @@ module parcel_diagnostics
 
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
-            call write_h5_box(h5file_id)
+            call write_h5_box(h5file_id, lower, extent, (/nx, nz/))
 
             call close_h5_file(h5file_id)
 

@@ -4,6 +4,7 @@
 module field_diagnostics
     use constants, only : zero
     use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
+    use options, only : verbose, write_h5_options
     use fields
     use h5_utils
     use h5_writer
@@ -40,7 +41,7 @@ module field_diagnostics
 
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
-            call write_h5_box(h5file_id)
+            call write_h5_box(h5file_id, lower, extent, (/nx, nz/))
 
             call close_h5_file(h5file_id)
 

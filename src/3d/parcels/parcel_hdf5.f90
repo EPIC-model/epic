@@ -1,6 +1,7 @@
 module parcel_hdf5
     use parcel_container, only : parcels, n_parcels
-    use options, only : verbose
+    use options, only : verbose, write_h5_options
+    use parameters, only : nx, nz, extent, lower
     use hdf5
     use h5_utils
     use h5_writer
@@ -32,7 +33,7 @@ module parcel_hdf5
 
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
-            call write_h5_box(h5file_id)
+            call write_h5_box(h5file_id, lower, extent, (/nx, nz/))
 
             call close_h5_file(h5file_id)
 
