@@ -14,6 +14,43 @@ module h5_writer
     use h5_utils
     implicit none
 
+    private :: write_h5_dataset_1d,                 &
+               write_h5_dataset_2d,                 &
+               write_h5_dataset_3d,                 &
+               write_h5_int_dataset_2d,             &
+               write_h5_char_scalar_attrib,         &
+               write_h5_double_scalar_attrib,       &
+               write_h5_int_scalar_attrib,          &
+               write_h5_logical_attrib,             &
+               write_h5_double_scalar_step_attrib,  &
+               write_h5_int_scalar_step_attrib
+
+
+    interface write_h5_dataset
+        module procedure :: write_h5_dataset_1d
+        module procedure :: write_h5_dataset_2d
+        module procedure :: write_h5_dataset_3d
+        module procedure :: write_h5_int_dataset_2d
+    end interface write_h5_dataset
+
+    interface write_h5_scalar_attrib
+        module procedure :: write_h5_char_scalar_attrib
+        module procedure :: write_h5_double_scalar_attrib
+        module procedure :: write_h5_int_scalar_attrib
+        module procedure :: write_h5_logical_attrib
+    end interface write_h5_scalar_attrib
+
+    interface write_h5_scalar_step_attrib
+        module procedure :: write_h5_double_scalar_step_attrib
+        module procedure :: write_h5_int_scalar_step_attrib
+    end interface write_h5_scalar_step_attrib
+
+    interface write_h5_vector_attrib
+        module procedure :: write_h5_char_vector_attrib
+        module procedure :: write_h5_double_vector_attrib
+        module procedure :: write_h5_int_vector_attrib
+    end interface write_h5_vector_attrib
+
     contains
 
         subroutine write_h5_dataset_1d(h5file_id, group, name, data)

@@ -70,7 +70,7 @@ module parcel_diagnostics
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
-            call write_h5_char_scalar_attrib(h5file_id, 'output_type', 'parcel diagnostics')
+            call write_h5_scalar_attrib(h5file_id, 'output_type', 'parcel diagnostics')
 
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
@@ -319,39 +319,39 @@ module parcel_diagnostics
             endif
 
 
-            call write_h5_double_scalar_attrib(group, "t", t)
+            call write_h5_scalar_attrib(group, "t", t)
 
-            call write_h5_double_scalar_attrib(group, "dt", dt)
+            call write_h5_scalar_attrib(group, "dt", dt)
 
             !
             ! write diagnostics
             !
-            call write_h5_double_scalar_attrib(group, "potential energy", pe)
-            call write_h5_double_scalar_attrib(group, "kinetic energy", ke)
-            call write_h5_double_scalar_attrib(group, "total energy", ke + pe)
-            call write_h5_int_scalar_attrib(group, "num parcel", n_parcels)
-            call write_h5_int_scalar_attrib(group, "num small parcels", n_small)
+            call write_h5_scalar_attrib(group, "potential energy", pe)
+            call write_h5_scalar_attrib(group, "kinetic energy", ke)
+            call write_h5_scalar_attrib(group, "total energy", ke + pe)
+            call write_h5_scalar_attrib(group, "num parcel", n_parcels)
+            call write_h5_scalar_attrib(group, "num small parcels", n_small)
 
 
-            call write_h5_double_scalar_attrib(group, "avg aspect ratio", avg_lam)
-            call write_h5_double_scalar_attrib(group, "std aspect ratio", std_lam)
-            call write_h5_double_scalar_attrib(group, "avg volume", avg_vol)
-            call write_h5_double_scalar_attrib(group, "std volume", std_vol)
+            call write_h5_scalar_attrib(group, "avg aspect ratio", avg_lam)
+            call write_h5_scalar_attrib(group, "std aspect ratio", std_lam)
+            call write_h5_scalar_attrib(group, "avg volume", avg_vol)
+            call write_h5_scalar_attrib(group, "std volume", std_vol)
 
-            call write_h5_double_scalar_attrib(group, "rms vorticity", rms_zeta)
+            call write_h5_scalar_attrib(group, "rms vorticity", rms_zeta)
 
 #ifdef ENABLE_DIAGNOSE
-            call write_h5_double_scalar_attrib(group, "xb_bar", xb_bar)
-            call write_h5_double_scalar_attrib(group, "x2b_bar", x2b_bar)
-            call write_h5_double_scalar_attrib(group, "zb_bar", zb_bar)
-            call write_h5_double_scalar_attrib(group, "z2b_bar", z2b_bar)
-            call write_h5_double_scalar_attrib(group, "xzb_bar", xzb_bar)
+            call write_h5_scalar_attrib(group, "xb_bar", xb_bar)
+            call write_h5_scalar_attrib(group, "x2b_bar", x2b_bar)
+            call write_h5_scalar_attrib(group, "zb_bar", zb_bar)
+            call write_h5_scalar_attrib(group, "z2b_bar", z2b_bar)
+            call write_h5_scalar_attrib(group, "xzb_bar", xzb_bar)
 
-            call write_h5_double_scalar_attrib(group, "xv_bar", xv_bar)
-            call write_h5_double_scalar_attrib(group, "x2v_bar", x2v_bar)
-            call write_h5_double_scalar_attrib(group, "zv_bar", zv_bar)
-            call write_h5_double_scalar_attrib(group, "z2v_bar", z2v_bar)
-            call write_h5_double_scalar_attrib(group, "xzv_bar", xzv_bar)
+            call write_h5_scalar_attrib(group, "xv_bar", xv_bar)
+            call write_h5_scalar_attrib(group, "x2v_bar", x2v_bar)
+            call write_h5_scalar_attrib(group, "zv_bar", zv_bar)
+            call write_h5_scalar_attrib(group, "z2v_bar", z2v_bar)
+            call write_h5_scalar_attrib(group, "xzv_bar", xzv_bar)
 #endif
             call close_h5_group(group)
 

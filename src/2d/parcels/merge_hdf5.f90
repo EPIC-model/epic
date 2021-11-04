@@ -41,7 +41,7 @@ module merge_hdf5
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
-            call write_h5_char_scalar_attrib(h5file_id, 'output_type', name)
+            call write_h5_scalar_attrib(h5file_id, 'output_type', name)
 
             call write_h5_timestamp(h5file_id)
             call write_h5_box(h5file_id)
@@ -123,14 +123,14 @@ module merge_hdf5
 
                     call create_h5_group(group, trim(tag), mgroup)
                     ! write all involved parcels
-                    call write_h5_dataset_2d(group, trim(tag), "position", &
-                                             parcels%position(n:n + nm, :))
+                    call write_h5_dataset(group, trim(tag), "position", &
+                                          parcels%position(n:n + nm, :))
 
-                    call write_h5_dataset_2d(group, trim(tag), "B", &
-                                             parcels%B(n:n + nm, :))
+                    call write_h5_dataset(group, trim(tag), "B", &
+                                          parcels%B(n:n + nm, :))
 
-                    call write_h5_dataset_1d(group, trim(tag), "volume", &
-                                             parcels%volume(n:n + nm))
+                    call write_h5_dataset(group, trim(tag), "volume", &
+                                          parcels%volume(n:n + nm))
 
                     nm = -1
                     num = num + 1
@@ -211,14 +211,14 @@ module merge_hdf5
                 call create_h5_group(group, trim(tag), mgroup)
 
                 ! write all involved parcels
-                call write_h5_dataset_2d(group, trim(tag), "position", &
-                                          parcels%position(n:n + nm-1, :))
+                call write_h5_dataset(group, trim(tag), "position", &
+                                      parcels%position(n:n + nm-1, :))
 
-                call write_h5_dataset_2d(group, trim(tag), "B", &
-                                         parcels%B(n:n + nm-1, :))
+                call write_h5_dataset(group, trim(tag), "B", &
+                                      parcels%B(n:n + nm-1, :))
 
-                call write_h5_dataset_1d(group, trim(tag), "volume", &
-                                         parcels%volume(n:n+nm-1))
+                call write_h5_dataset(group, trim(tag), "volume", &
+                                      parcels%volume(n:n+nm-1))
 
                 call close_h5_group(mgroup)
 
@@ -229,7 +229,7 @@ module merge_hdf5
                 nm = 0
             enddo
 
-            call write_h5_int_scalar_step_attrib(h5file_id1, nw, "nmergers", num)
+            call write_h5_scalar_step_attrib(h5file_id1, nw, "nmergers", num)
 
             call close_h5_group(group)
 
@@ -282,14 +282,14 @@ module merge_hdf5
 
 
             ! write all involved parcels
-            call write_h5_dataset_2d(h5file_id2, name, "position", &
-                                     parcels%position(n:n + nm, :))
+            call write_h5_dataset(h5file_id2, name, "position", &
+                                 parcels%position(n:n + nm, :))
 
-            call write_h5_dataset_2d(h5file_id2, name, "B", &
-                                     parcels%B(n:n + nm, :))
+            call write_h5_dataset(h5file_id2, name, "B", &
+                                  parcels%B(n:n + nm, :))
 
-            call write_h5_dataset_1d(h5file_id2, name, "volume", &
-                                     parcels%volume(n:n + nm))
+            call write_h5_dataset(h5file_id2, name, "volume", &
+                                  parcels%volume(n:n + nm))
 
             call close_h5_group(group)
 

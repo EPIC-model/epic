@@ -28,7 +28,7 @@ module parcel_hdf5
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
-            call write_h5_char_scalar_attrib(h5file_id, 'output_type', 'parcels')
+            call write_h5_scalar_attrib(h5file_id, 'output_type', 'parcels')
 
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
@@ -57,11 +57,11 @@ module parcel_hdf5
 
             call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
 
-            call write_h5_double_scalar_step_attrib(h5file_id, nw, "t", t)
+            call write_h5_scalar_step_attrib(h5file_id, nw, "t", t)
 
-            call write_h5_double_scalar_step_attrib(h5file_id, nw, "dt", dt)
+            call write_h5_scalar_step_attrib(h5file_id, nw, "dt", dt)
 
-            call write_h5_int_scalar_step_attrib(h5file_id, nw, "num parcel", n_parcels)
+            call write_h5_scalar_step_attrib(h5file_id, nw, "num parcel", n_parcels)
 
             call write_h5_parcels(nw)
 
@@ -98,23 +98,23 @@ module parcel_hdf5
             ! write parcel data
             !
 
-            call write_h5_dataset_2d(h5file_id, name, "position", &
-                                     parcels%position(1:n_parcels, :))
+            call write_h5_dataset(h5file_id, name, "position", &
+                                  parcels%position(1:n_parcels, :))
 
-            call write_h5_dataset_2d(h5file_id, name, "B", &
-                                     parcels%B(1:n_parcels, :))
+            call write_h5_dataset(h5file_id, name, "B", &
+                                  parcels%B(1:n_parcels, :))
 
-            call write_h5_dataset_1d(h5file_id, name, "volume", &
-                                     parcels%volume(1:n_parcels))
+            call write_h5_dataset(h5file_id, name, "volume", &
+                                  parcels%volume(1:n_parcels))
 
-            call write_h5_dataset_1d(h5file_id, name, "vorticity", &
-                                     parcels%vorticity(1:n_parcels))
+            call write_h5_dataset(h5file_id, name, "vorticity", &
+                                  parcels%vorticity(1:n_parcels))
 
-            call write_h5_dataset_1d(h5file_id, name, "buoyancy", &
-                                     parcels%buoyancy(1:n_parcels))
+            call write_h5_dataset(h5file_id, name, "buoyancy", &
+                                  parcels%buoyancy(1:n_parcels))
 #ifndef ENABLE_DRY_MODE
-            call write_h5_dataset_1d(h5file_id, name, "humidity", &
-                                     parcels%humidity(1:n_parcels))
+            call write_h5_dataset(h5file_id, name, "humidity", &
+                                  parcels%humidity(1:n_parcels))
 #endif
             call close_h5_group(group)
 
