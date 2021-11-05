@@ -2,20 +2,29 @@ AC_INIT([epic], [1.0.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
+AM_PROG_AR
+LT_INIT
 
 # change file extension from *.f to *.f90
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
 
-FCFLAGS="-fdefault-real-8 -fdefault-double-8 -cpp"
+FCFLAGS="-fdefault-real-8 -fdefault-double-8 -cpp -fPIC"
 
+AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    src/utils/Makefile
+    src/hdf5/Makefile
+    src/2d/Makefile
+    src/3d/Makefile
     models/Makefile
     analyse/Makefile
     unit-tests/Makefile
+    unit-tests/2d/Makefile
+    unit-tests/3d/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
@@ -198,12 +207,26 @@ AC_MSG_RESULT([$hdf5_found])
 ## "--enable" flags
 ##
 
+ENABLE_3D='no'
+AC_ARG_ENABLE([3d],
+              [AS_HELP_STRING([--enable-3d], [enable 3D model (default=no)])],
+              [ENABLE_3D=$enableval])
+
+AM_CONDITIONAL([ENABLE_3D], [test "$ENABLE_3D" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling the 3D model])
+if test "x$ENABLE_3D" = "xyes"; then
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+fi
+
 ENABLE_MERGER_DUMP='no'
 AC_ARG_ENABLE([merger-dump],
               [AS_HELP_STRING([--enable-merger-dump], [enable merger dump (default=no)])],
               [ENABLE_MERGER_DUMP=$enableval])
 
-AM_CONDITIONAL([ENABLE_MERGER_DUMP], [test "ENABLE_MERGER_DUMP" = "yes"])
+AM_CONDITIONAL([ENABLE_MERGER_DUMP], [test "$ENABLE_MERGER_DUMP" = "yes"])
 
 AC_MSG_CHECKING([whether we are compiling with merger dump])
 if test "x$ENABLE_MERGER_DUMP" = "xyes"; then

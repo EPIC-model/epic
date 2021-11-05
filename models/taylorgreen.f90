@@ -50,7 +50,7 @@ module taylorgreen
                 enddo
             enddo
 
-            call write_h5_dataset_2d(h5handle, '/', 'vorticity', vortg)
+            call write_h5_dataset(h5handle, '/', 'vorticity', vortg)
 
         end subroutine taylorgreen_init
 
