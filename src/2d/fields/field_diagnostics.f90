@@ -4,6 +4,7 @@
 module field_diagnostics
     use constants, only : zero
     use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
+    use options, only : verbose, write_h5_options
     use fields
     use h5_utils
     use h5_writer
@@ -36,11 +37,11 @@ module field_diagnostics
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
-            call write_h5_char_scalar_attrib(h5file_id, 'output_type', 'field diagnostics')
+            call write_h5_scalar_attrib(h5file_id, 'output_type', 'field diagnostics')
 
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
-            call write_h5_box(h5file_id)
+            call write_h5_box(h5file_id, lower, extent, (/nx, nz/))
 
             call close_h5_file(h5file_id)
 
@@ -98,35 +99,34 @@ module field_diagnostics
             endif
 
 
-            call write_h5_double_scalar_attrib(group, "t", t)
+            call write_h5_scalar_attrib(group, "t", t)
 
-            call write_h5_double_scalar_attrib(group, "dt", dt)
+            call write_h5_scalar_attrib(group, "dt", dt)
 
             !
             ! write diagnostics
             !
             rms_v = get_rms_volume_error()
-            call write_h5_double_scalar_attrib(group, "rms volume error", rms_v)
+            call write_h5_scalar_attrib(group, "rms volume error", rms_v)
 
             abserr_v = get_max_abs_normalised_volume_error()
-            call write_h5_double_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
+            call write_h5_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
 
             max_npar = maxval(nparg(0:nz-1, :))
-            call write_h5_int_scalar_attrib(group, "max num parcels per cell", max_npar)
+            call write_h5_scalar_attrib(group, "max num parcels per cell", max_npar)
 
             min_npar = minval(nparg(0:nz-1, :))
-            call write_h5_int_scalar_attrib(group, "min num parcels per cell", min_npar)
+            call write_h5_scalar_attrib(group, "min num parcels per cell", min_npar)
 
             res = sum(nparg(0:nz-1, :)) * ncelli
-            call write_h5_double_scalar_attrib(group, "average num parcels per cell", res)
+            call write_h5_scalar_attrib(group, "average num parcels per cell", res)
 
             res = sum(nsparg(0:nz-1, :)) * ncelli
-            call write_h5_double_scalar_attrib(group, "average num small parcels per cell", res)
+            call write_h5_scalar_attrib(group, "average num small parcels per cell", res)
 
 #ifndef NDEBUG
             vol_sym_err = maxval(dabs(sym_volg(0:nz, :)))
-            call write_h5_double_scalar_attrib(group, "max symmetry volume error", &
-                                               vol_sym_err)
+            call write_h5_scalar_attrib(group, "max symmetry volume error", vol_sym_err)
 #endif
 
             ! increment counter

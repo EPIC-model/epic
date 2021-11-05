@@ -66,7 +66,7 @@ program epic_models
             ! write box
             lower = box%origin
             extent = box%extent
-            call write_h5_box(h5handle)
+            call write_h5_box(h5handle, lower, extent, (/nx, nz/))
             call close_h5_file(h5handle)
         end subroutine generate_fields
 

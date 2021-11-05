@@ -75,7 +75,7 @@ module robert
                 end select
             enddo
 
-            call write_h5_dataset_2d(h5handle, '/', 'buoyancy', buoyg)
+            call write_h5_dataset(h5handle, '/', 'buoyancy', buoyg)
 
             deallocate(buoyg)
 

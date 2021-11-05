@@ -72,7 +72,7 @@ module straka
                 enddo
             enddo
 
-            call write_h5_dataset_2d(h5handle, '/', 'buoyancy', buoyg)
+            call write_h5_dataset(h5handle, '/', 'buoyancy', buoyg)
 
         end subroutine straka_init
 end module

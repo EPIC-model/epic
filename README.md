@@ -70,7 +70,7 @@ EPIC parses a HDF5 file containing all fields to initialise the parcels. You can
 #
 # Example of writing a field file that can be parsed by EPIC.
 #
-from h5_fields import h5fields
+from tools.h5_fields import h5fields
 import numpy as np
 
 try:
