@@ -8,10 +8,10 @@ module parameters
     implicit none
 
     ! mesh spacing
-    double precision :: dx(2)
+    double precision :: dx(3)
 
     ! inverse mesh spacing
-    double precision :: dxi(2)
+    double precision :: dxi(3)
 
     ! grid cell volume, really area in 2D:
     double precision :: vcell
@@ -20,7 +20,7 @@ module parameters
     double precision :: vcelli
 
     ! number of grid cells in each dimension
-    integer :: nx, nz
+    integer :: nx, ny, nz
 
     ! total number of grid cells
     integer :: ncell
@@ -35,21 +35,21 @@ module parameters
     double precision :: ngridi
 
     ! domain size
-    double precision :: extent(2)
+    double precision :: extent(3)
 
     ! domain centre
-    double precision :: center(2)
+    double precision :: center(3)
 
     ! domain half widths values
-    double precision :: hl(2)
+    double precision :: hl(3)
 
-    double precision :: hli(2)
+    double precision :: hli(3)
 
     ! domain origin
-    double precision :: lower(2)
+    double precision :: lower(3)
 
     ! domain upper boundary
-    double precision :: upper(2)
+    double precision :: upper(3)
 
     ! minimum volume
     double precision :: vmin
@@ -62,13 +62,18 @@ module parameters
     ! Update all parameters according to the
     ! user-defined global options.
     subroutine update_parameters
+        double precision :: msr
 
         upper = lower + extent
 
-        dx = extent / dble((/nx, nz/))
+        dx = extent / dble((/nx, ny, nz/))
         dxi = one / dx;
 
-        if (max(dxi(1) * dx(2), dxi(2) * dx(1)) > two) then
+        msr = maxval((/dxi(1) * dx(2), dxi(2) * dx(1),   &
+                       dxi(1) * dx(3), dxi(3) * dx(1),   &
+                       dxi(2) * dx(3), dxi(3) * dx(2)/))
+
+        if (msr > two) then
             print *, '**********************************************************************'
             print *, '*                                                                    *'
             print *, '*   Warning: A mesh spacing ratio of more than 2 is not advisable!   *'
@@ -83,11 +88,11 @@ module parameters
         vcell = product(dx)
         vcelli = one / vcell
 
-        ncell = nx * nz
+        ncell = nx * ny * nz
         ncelli = one / dble(ncell)
 
         ! due to x periodicity it is only nx
-        ngrid = nx * (nz + 1)
+        ngrid = nx * ny * (nz + 1)
         ngridi = one / dble(ngrid)
 
         ! domain

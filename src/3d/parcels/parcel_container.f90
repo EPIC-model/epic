@@ -12,11 +12,13 @@ module parcel_container
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
             position,   &
-            B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12
+            vorticity,  &
+            B               ! B matrix entries; ordering:
+                            ! B(:, 1) = B11, B(:, 2) = B12, B(:, 3) = B13
+                            ! B(:, 4) = B22, B(:, 5) = B23
 
         double precision, allocatable, dimension(:) :: &
             volume,     &
-            vorticity,  &
 #ifndef ENABLE_DRY_MODE
             humidity,   &
 #endif
@@ -28,10 +30,10 @@ module parcel_container
 
     contains
 
-        ! Obtain the difference between two horizontal coordinates
+        ! Obtain the difference between two zonal coordinates
         ! across periodic edges
-        ! @param[in] x1 first horizontal position
-        ! @param[in] x2 second horizontal position
+        ! @param[in] x1 first zonal position
+        ! @param[in] x2 second zonal position
         ! @returns delx = x1 - x2
         elemental function get_delx(x1, x2) result (delx)
             double precision, intent(in) :: x1, x2
@@ -41,6 +43,20 @@ module parcel_container
             ! works across periodic edge
             delx = delx - extent(1) * dble(int((delx - center(1)) * hli(1)))
         end function get_delx
+
+        ! Obtain the difference between two meridional coordinates
+        ! across periodic edges
+        ! @param[in] y1 first meridional position
+        ! @param[in] y2 second meridional position
+        ! @returns dely = y1 - y2
+        elemental function get_dely(y1, y2) result (dely)
+            double precision, intent(in) :: y1, y2
+            double precision             :: dely
+
+            dely = y1 - y2
+            ! works across periodic edge
+            dely = dely - extent(2) * dble(int((dely - center(2)) * hli(2)))
+        end function get_dely
 
 
         ! Overwrite parcel n with parcel m
@@ -56,18 +72,16 @@ module parcel_container
             endif
 #endif
 
-            parcels%position(n, 1) = parcels%position(m, 1)
-            parcels%position(n, 2) = parcels%position(m, 2)
+            parcels%position(n, :) = parcels%position(m, :)
 
-            parcels%vorticity(n) = parcels%vorticity(m)
+            parcels%vorticity(n, :) = parcels%vorticity(m, :)
 
             parcels%volume(n)  = parcels%volume(m)
             parcels%buoyancy(n) = parcels%buoyancy(m)
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n) = parcels%humidity(m)
 #endif
-            parcels%B(n, 1) = parcels%B(m, 1)
-            parcels%B(n, 2) = parcels%B(m, 2)
+            parcels%B(n, :) = parcels%B(m, :)
 
         end subroutine parcel_replace
 
@@ -76,9 +90,9 @@ module parcel_container
         subroutine parcel_alloc(num)
             integer, intent(in) :: num
 
-            allocate(parcels%position(num, 2))
-            allocate(parcels%vorticity(num))
-            allocate(parcels%B(num, 2))
+            allocate(parcels%position(num, 3))
+            allocate(parcels%vorticity(num, 3))
+            allocate(parcels%B(num, 5))
             allocate(parcels%volume(num))
             allocate(parcels%buoyancy(num))
 #ifndef ENABLE_DRY_MODE

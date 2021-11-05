@@ -1,7 +1,7 @@
 ! =============================================================================
-!                       EPIC - Elliptical Parcel-in-Cell
+!                       EPIC2D - Elliptical Parcel-in-Cell
 ! =============================================================================
-program epic
+program epic2d
     use constants, only : max_num_parcels, zero
     use timer
     use field_diagnostics
@@ -186,7 +186,7 @@ program epic
                 call get_command_argument(i, arg)
                 filename = trim(arg)
             else if (arg == '--help') then
-                print *, 'Run code with "./epic --config [config file]"'
+                print *, 'Run code with "./epic2d --config [config file]"'
                 stop
 #ifdef ENABLE_VERBOSE
             else if (arg == '--verbose') then
@@ -197,15 +197,15 @@ program epic
         end do
 
         if (filename == '') then
-            print *, 'No configuration file provided. Run code with "./epic --config [config file]"'
+            print *, 'No configuration file provided. Run code with "./epic2d --config [config file]"'
             stop
         endif
 
 #ifdef ENABLE_VERBOSE
         ! This is the main application of EPIC
         if (verbose) then
-            print *, 'Running EPIC with "', trim(filename), '"'
+            print *, 'Running EPIC2D with "', trim(filename), '"'
         endif
 #endif
     end subroutine parse_command_line
-end program epic
+end program epic2d

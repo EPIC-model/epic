@@ -15,11 +15,6 @@ module parcel_merge
     use parcel_bc
     use timer, only : start_timer, stop_timer
 
-#ifdef ENABLE_VERBOSE
-    use merge_hdf5, only : write_h5_mergees,            &
-                           write_h5_mergers,            &
-                           write_h5_parcels_in_cell
-#endif
     implicit none
 
     integer:: merge_timer
@@ -53,16 +48,8 @@ module parcel_merge
 #endif
 
             if (n_merge > 0) then
-#ifdef ENABLE_MERGER_DUMP
-                call write_h5_mergees(isma, iclo, n_merge)
-                call write_h5_parcels_in_cell(iclo, n_merge)
-#endif
                 ! merge small parcels into other parcels
                 call geometric_merge(parcels, isma, iclo, n_merge)
-
-#ifdef ENABLE_MERGER_DUMP
-                call write_h5_mergers(iclo, n_merge)
-#endif
 
                 ! overwrite invalid parcels
                 call pack_parcels(isma, n_merge)
@@ -96,7 +83,7 @@ module parcel_merge
             integer                                    :: loca(n_parcels)
             double precision                           :: x0(n_merge), xm(n_merge)
             double precision                           :: zm(n_merge), delx, vmerge, dely, B22, mu
-            double precision                           :: buoym(n_merge), vortm(n_merge)
+            double precision                           :: buoym(n_merge), vortm(n_merge, 3)
 #ifndef ENABLE_DRY_MODE
             double precision                           :: hum(n_merge)
 #endif
@@ -131,7 +118,7 @@ module parcel_merge
 #ifndef ENABLE_DRY_MODE
                     hum(l) = parcels%volume(ic) * parcels%humidity(ic)
 #endif
-                    vortm(l) = parcels%volume(ic) * parcels%vorticity(ic)
+                    vortm(l, :) = parcels%volume(ic) * parcels%vorticity(ic, :)
 
                     B11m(l) = zero
                     B12m(l) = zero
@@ -158,7 +145,7 @@ module parcel_merge
 #ifndef ENABLE_DRY_MODE
                 hum(n) = hum(n) + parcels%volume(is) * parcels%humidity(is)
 #endif
-                vortm(n) = vortm(n) + parcels%volume(is) * parcels%vorticity(is)
+                vortm(n, :) = vortm(n, :) + parcels%volume(is) * parcels%vorticity(is, :)
             enddo
 
             ! Obtain the merged parcel centres
@@ -178,7 +165,7 @@ module parcel_merge
 #ifndef ENABLE_DRY_MODE
                 hum(m) = vmerge * hum(m)
 #endif
-                vortm(m) = vmerge * vortm(m)
+                vortm(m, :) = vmerge * vortm(m, :)
             enddo
 
             loca = zero
@@ -211,7 +198,7 @@ module parcel_merge
 #ifndef ENABLE_DRY_MODE
                     parcels%humidity(ic) = hum(l)
 #endif
-                    parcels%vorticity(ic) = vortm(l)
+                    parcels%vorticity(ic, :) = vortm(l, :)
 
                 endif
 

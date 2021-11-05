@@ -1,6 +1,6 @@
 ! =============================================================================
 !                       Parcel boundary conditions
-!                       periodic in x (horizontal)
+!                       periodic in x (zonal)
 !                       reflective in z (vertical)
 ! =============================================================================
 module parcel_bc
@@ -12,7 +12,7 @@ module parcel_bc
 
     contains
 
-        ! Apply periodic bc on n-th parcel (horizontally)
+        ! Apply periodic bc on n-th parcel (zonally)
         ! @param[inout] position vector of parcel
         subroutine apply_periodic_bc(position)
             double precision, intent(inout) :: position(2)
@@ -44,7 +44,7 @@ module parcel_bc
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
-                ! horizontal direction
+                ! zonal direction
                 call apply_periodic_bc(position(n, :))
 
                 ! vertical direction

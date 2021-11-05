@@ -30,7 +30,7 @@ module field_hdf5
 
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
-            call write_h5_box(h5file_id, lower, extent, (/nx, nz/))
+            call write_h5_box(h5file_id, lower, extent, (/nx, ny, nz/))
 
             call close_h5_file(h5file_id)
 
@@ -94,35 +94,35 @@ module field_hdf5
             ! write fields (do not write halo cells)
             !
             call write_h5_dataset(h5file_id, name, "velocity", &
-                                  velog(0:nz, 0:nx-1, :))
+                                  velog(0:nz, 0:ny-1, 0:nx-1, :))
 
             call write_h5_dataset(h5file_id, name, "vorticity", &
-                                  vortg(0:nz, 0:nx-1))
+                                  vortg(0:nz, 0:ny-1, 0:nx-1, :))
 
             call write_h5_dataset(h5file_id, name, "total buoyancy", &
-                                  tbuoyg(0:nz, 0:nx-1))
+                                  tbuoyg(0:nz, 0:ny-1, 0:nx-1))
 
 #ifdef ENABLE_DIAGNOSE
 #ifndef ENABLE_DRY_MODE
             call write_h5_dataset(h5file_id, name, "dry buoyancy", &
-                                  dbuoyg(0:nz, 0:nx-1))
+                                  dbuoyg(0:nz, 0:ny-1, 0:nx-1))
 #endif
             call write_h5_dataset(h5file_id, name, "volume", &
-                                  volg(0:nz, 0:nx-1))
+                                  volg(0:nz, 0:ny-1, 0:nx-1))
 
             call write_h5_dataset(h5file_id, name, "nparg", &
-                                  nparg(0:nz-1, :))
+                                  nparg(0:nz-1, :, :))
 #endif
 
 #ifndef NDEBUG
             call write_h5_dataset(h5file_id, name, "symmetry volume", &
-                                  sym_volg(0:nz, 0:nx-1))
+                                  sym_volg(0:nz, 0:ny-1, 0:nx-1))
 
             call write_h5_dataset(h5file_id, name, "velocity gradient tensor", &
-                                  velgradg(0:nz, 0:nx-1, :))
+                                  velgradg(0:nz, 0:ny-1, 0:nx-1, :))
 
             call write_h5_dataset(h5file_id, name, "vorticity tendency", &
-                                  vtend(0:nz, 0:nx-1))
+                                  vtend(0:nz, 0:ny-1, 0:nx-1, :))
 #endif
 
             call close_h5_group(group)

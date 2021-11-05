@@ -25,7 +25,9 @@ module h5_writer
         module procedure :: write_h5_dataset_1d
         module procedure :: write_h5_dataset_2d
         module procedure :: write_h5_dataset_3d
+        module procedure :: write_h5_dataset_4d
         module procedure :: write_h5_int_dataset_2d
+        module procedure :: write_h5_int_dataset_3d
     end interface write_h5_dataset
 
     interface write_h5_scalar_attrib
@@ -163,6 +165,45 @@ module h5_writer
             call check_h5_error("Failed to close data space.")
         end subroutine write_h5_int_dataset_2d
 
+        subroutine write_h5_int_dataset_3d(h5file_id, group, name, data)
+            integer(hid_t),   intent(in)     :: h5file_id
+            ! 12 March 2021
+            ! https://stackoverflow.com/questions/48816383/passing-character-strings-of-different-lengths-to-functions-in-fortran
+            character(*),     intent(in)     :: group
+            character(*),     intent(in)     :: name
+            integer,          intent(in)     :: data(:, :, :)
+            integer(hid_t)                   :: dset, dataspace
+            integer(hsize_t), dimension(1:3) :: dims
+
+            if (size(data) == 0) then
+                print *, "Error in 'write_h5_int_dataset_3d': ", &
+                         "No memory for '", name, "' allocated!"
+                stop
+            endif
+
+            dims = shape(data)
+
+            ! create space for data
+            call h5screate_simple_f(3, dims, dataspace, h5err)
+            call check_h5_error("Failed to create data space.")
+
+            ! create the dataset
+            call h5dcreate_f(h5file_id, group // "/" // name,            &
+                             H5T_NATIVE_INTEGER, dataspace, dset, h5err)
+            call check_h5_error("Failed to create dataset.")
+
+            ! write dataset
+            call h5dwrite_f(dset, H5T_NATIVE_INTEGER, data, dims, h5err)
+            call check_h5_error("Failed to write dataset.")
+
+            ! close all
+            call h5dclose_f(dset , h5err)
+            call check_h5_error("Failed to close dataset.")
+
+            call h5sclose_f(dataspace, h5err)
+            call check_h5_error("Failed to close data space.")
+        end subroutine write_h5_int_dataset_3d
+
         subroutine write_h5_dataset_3d(h5file_id, group, name, data)
             integer(hid_t),   intent(in)     :: h5file_id
             character(*),     intent(in)     :: group
@@ -199,6 +240,43 @@ module h5_writer
             call h5sclose_f(dataspace, h5err)
             call check_h5_error("Failed to close data space.")
         end subroutine write_h5_dataset_3d
+
+        subroutine write_h5_dataset_4d(h5file_id, group, name, data)
+            integer(hid_t),   intent(in)     :: h5file_id
+            character(*),     intent(in)     :: group
+            character(*),     intent(in)     :: name
+            double precision, intent(in)     :: data(:, :, :, :)
+            integer(hid_t)                   :: dset, dataspace
+            integer(hsize_t), dimension(1:4) :: dims
+
+            if (size(data) == 0) then
+                print *, "Error in 'write_h5_dataset_4d': ", &
+                         "No memory for '", name, "' allocated!"
+                stop
+            endif
+
+            dims = shape(data)
+
+            ! create space for data
+            call h5screate_simple_f(4, dims, dataspace, h5err)
+            call check_h5_error("Failed to create data space.")
+
+            ! create the dataset
+            call h5dcreate_f(h5file_id, group // "/" // name,              &
+                             H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
+            call check_h5_error("Failed to create dataset.")
+
+            ! write dataset
+            call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
+            call check_h5_error("Failed to write dataset.")
+
+            ! close all
+            call h5dclose_f(dset , h5err)
+            call check_h5_error("Failed to close dataset.")
+
+            call h5sclose_f(dataspace, h5err)
+            call check_h5_error("Failed to close data space.")
+        end subroutine write_h5_dataset_4d
 
 
         subroutine write_h5_double_scalar_step_attrib(h5file_id, iter, name, val)
