@@ -1,6 +1,6 @@
 ! =============================================================================
 !                       Parcel boundary conditions
-!                       periodic in x (zonal)
+!                       periodic in x (zonal) and in y (meridional)
 !                       reflective in z (vertical)
 ! =============================================================================
 module parcel_bc
@@ -12,25 +12,30 @@ module parcel_bc
 
     contains
 
-        ! Apply periodic bc on n-th parcel (zonally)
+        ! Apply periodic bc on n-th parcel (zonally and meridionally)
         ! @param[inout] position vector of parcel
         subroutine apply_periodic_bc(position)
-            double precision, intent(inout) :: position(2)
+            double precision, intent(inout) :: position(3)
             position(1) = position(1) - extent(1) * dble(int((position(1) - center(1)) * hli(1)))
+            position(2) = position(2) - extent(2) * dble(int((position(2) - center(2)) * hli(2)))
         end subroutine apply_periodic_bc
 
         ! Apply mirroring bc on n-th parcel (vertically)
         ! @param[inout] position vector of parcel
         ! @param[inout] B matrix of parcel
         subroutine apply_reflective_bc(position, B)
-            double precision, intent(inout) :: position(2), B(2)
+            double precision, intent(inout) :: position(3), B(5)
 
-            if (position(2) > upper(2)) then
-                position(2) = two * upper(2) - position(2)
-                B(2) = -B(2)
-            else if (position(2) < lower(2)) then
-                position(2) = two * lower(2) - position(2)
-                B(2) = -B(2)
+            if (position(3) > upper(3)) then
+                position(3) = two * upper(3) - position(3)
+                ! flip sign of B13 and B23
+                B(3) = -B(3)
+                B(5) = -B(5)
+            else if (position(3) < lower(3)) then
+                position(3) = two * lower(3) - position(3)
+                ! flip sign of B13 and B23
+                B(3) = -B(3)
+                B(5) = -B(5)
             endif
         end subroutine apply_reflective_bc
 
