@@ -14,7 +14,7 @@ epic3d_SOURCES = 				\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_hdf5.f90			\
-	parcels/parcel_ellipse.f90		\
+	parcels/parcel_ellipsoid.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
 	parcels/parcel_nearest.f90		\
