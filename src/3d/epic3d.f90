@@ -30,9 +30,6 @@ program epic3d
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
     use h5_utils, only : initialise_hdf5, finalise_hdf5
     use utils, only : write_last_step
-#ifdef ENABLE_VERBOSE
-    use merge_hdf5, only : create_h5_merger_files
-#endif
     implicit none
 
     integer :: epic_timer

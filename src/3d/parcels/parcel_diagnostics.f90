@@ -7,7 +7,7 @@ module parcel_diagnostics
     use parameters, only : extent, lower, vcell, vmin, nx, nz
     use options, only : verbose, write_h5_options
     use parcel_container, only : parcels, n_parcels
-    use parcel_ellipse
+    use parcel_ellipsoid
     use h5_utils
     use h5_writer
     use omp_lib
@@ -148,9 +148,9 @@ module parcel_diagnostics
                 ! potential energy
                 pe = pe - b * z * vol
 
-                B22 = get_B22(parcels%B(n, 1), parcels%B(n, 2), vol)
-                eval = get_eigenvalue(parcels%B(n, 1), parcels%B(n, 2), B22)
-                lam = get_aspect_ratio(eval, vol)
+                B22 = 1.0 !FIXME get_B22(parcels%B(n, 1), parcels%B(n, 2), vol)
+                eval = 1.0 !FIXME get_eigenvalue(parcels%B(n, 1), parcels%B(n, 2), B22)
+                lam = 1.0 !FIXME get_aspect_ratio(eval, vol)
 
                 lsum = lsum + lam
                 l2sum = l2sum + lam ** 2

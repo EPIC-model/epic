@@ -3,7 +3,7 @@
 ! interpolation.
 ! =============================================================================
 module parcel_interpl
-    use constants, only : zero, one, two
+    use constants, only : zero, one, two, f14
     use timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin
     use options, only : parcel
@@ -86,7 +86,7 @@ module parcel_interpl
 #ifndef NDEBUG
         ! Interpolate the parcel volume to the grid to check symmetry
         subroutine vol2grid_symmetry_error
-            double precision :: points(2, 2), V, B(2), pos(2)
+            double precision :: points(4, 3), V, B(5), pos(3)
             integer          :: n, p, l, m
             double precision :: pvol
 
@@ -203,7 +203,7 @@ module parcel_interpl
                     ! the weight is halved due to 2 points per ellipse
                     do l = 1, ngp
 
-                        weight = f12 * weights(l) * pvol
+                        weight = f14 * weights(l) * pvol
 
                         vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
                                                       + weight * parcels%vorticity(n, :)
@@ -349,7 +349,7 @@ module parcel_interpl
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp
-                        weight = f12 * weights(l)
+                        weight = f14 * weights(l)
 
                         ! loop over field components
                         do c = 1, ncomp

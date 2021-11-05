@@ -183,7 +183,7 @@ program genspec
             call open_h5_group(h5handle, grn, group)
 
             if (has_dataset(group, trim(dset))) then
-                call read_h5_dataset_2d(group, trim(dset), buffer_2d)
+                call read_h5_dataset(group, trim(dset), buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, pp)
                 deallocate(buffer_2d)
             else

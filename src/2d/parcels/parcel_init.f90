@@ -233,7 +233,7 @@ module parcel_init
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
 
             if (has_dataset(h5handle, 'vorticity')) then
-                call read_h5_dataset_2d(h5handle, 'vorticity', buffer_2d)
+                call read_h5_dataset(h5handle, 'vorticity', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
                 call gen_parcel_scalar_attr(field_2d, tol, parcels%vorticity)
@@ -241,7 +241,7 @@ module parcel_init
 
 
             if (has_dataset(h5handle, 'buoyancy')) then
-                call read_h5_dataset_2d(h5handle, 'buoyancy', buffer_2d)
+                call read_h5_dataset(h5handle, 'buoyancy', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
                 call gen_parcel_scalar_attr(field_2d, tol, parcels%buoyancy)

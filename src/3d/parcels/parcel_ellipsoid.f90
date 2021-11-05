@@ -158,7 +158,6 @@ module parcel_ellipsoid
             double precision, intent(in) :: position(3)
             double precision, intent(in) :: volume
             double precision, intent(in) :: B(5)        ! B11, B12, B13, B22, B23
-            double precision             :: B33
             double precision             :: eta, tau, evals(3)
             integer                      :: j
             double precision             :: points(4, 3)
@@ -173,7 +172,7 @@ module parcel_ellipsoid
                 ! theta = j * pi / 2 - pi / 4 (j = 1, 2, 3, 4)
                 ! x_j = eta * rho * cos(theta_j)
                 ! y_j = tau * rho * sin(theta_j)
-                points(4, :) = (/eta * costheta(1), tau * sintheta(1), zero/)
+                points(4, :) = position(3) + (/eta * costheta(1), tau * sintheta(1), zero/)
             enddo
 
         end function get_ellipsoid_points

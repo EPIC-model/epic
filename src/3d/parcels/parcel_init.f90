@@ -3,14 +3,14 @@
 ! =============================================================================
 module parcel_init
     use options, only : parcel, output, verbose, field_tol
-    use constants, only : zero, two, one, f12, max_num_parcels
+    use constants, only : zero, two, one, f12, f13, max_num_parcels
     use parcel_container, only : parcels, n_parcels
-    use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
+!     use parcel_ellipsoid, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : trilinear, ngp
     use parameters, only : update_parameters,   &
                            dx, vcell, ncell,    &
-                           extent, lower, nx, nz
+                           extent, lower, nx, ny, nz
     use h5_reader
     use timer, only : start_timer, stop_timer
     use omp_lib
@@ -19,9 +19,9 @@ module parcel_init
     integer :: init_timer
 
     double precision, allocatable :: weights(:, :), apar(:)
-    integer, allocatable :: is(:, :), js(:, :)
+    integer, allocatable :: is(:, :), js(:, :), ks(:, :)
 
-    private :: weights, apar, is, js
+    private :: weights, apar, is, js, ks
 
 
     private :: init_refine,                 &
@@ -90,7 +90,7 @@ module parcel_init
             !$omp do private(n)
             do n = 1, n_parcels
                 ! B11
-                parcels%B(n, 1) = ratio * get_ab(parcels%volume(n))
+                parcels%B(n, 1) = ratio !FIXME * get_ab(parcels%volume(n))
 
                 ! B12
                 parcels%B(n, 2) = zero
@@ -103,7 +103,7 @@ module parcel_init
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
-                parcels%vorticity(n) = zero
+                parcels%vorticity(n, :) = zero
                 parcels%buoyancy(n) = zero
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n) = zero
@@ -121,11 +121,11 @@ module parcel_init
 
         ! Position parcels regularly in the domain.
         subroutine init_regular_positions
-            integer          :: ix, i, iz, j, k, n_per_dim
-            double precision :: im, corner(2)
+            integer          :: ix, i, iz, j, iy, k, n_per_dim
+            double precision :: im, corner(3)
 
             ! number of parcels per dimension
-            n_per_dim = int(dsqrt(dble(parcel%n_per_cell)))
+            n_per_dim = int(dble(parcel%n_per_cell) ** f13)
             if (n_per_dim ** 2 .ne. parcel%n_per_cell) then
                 print *, "Number of parcels per cell (", &
                          parcel%n_per_cell, ") not a square."
@@ -136,13 +136,16 @@ module parcel_init
 
             k = 1
             do iz = 0, nz-1
-                do ix = 0, nx-1
-                    corner = lower + dble((/ix, iz/)) * dx
-                    do j = 1, n_per_dim
-                        do i = 1, n_per_dim
-                            parcels%position(k, 1) = corner(1) + dx(1) * (dble(i) - f12) * im
-                            parcels%position(k, 2) = corner(2) + dx(2) * (dble(j) - f12) * im
-                            k = k + 1
+                do iy = 0, ny-1
+                    do ix = 0, nx-1
+                        corner = lower + dble((/ix, iy, iz/)) * dx
+                        do j = 1, n_per_dim
+                            do i = 1, n_per_dim
+                                parcels%position(k, 1) = corner(1) + dx(1) * (dble(i) - f12) * im
+                                parcels%position(k, 2) = corner(2) + dx(2) * (dble(j) - f12) * im
+                                parcels%position(k, 3) = corner(3) + dx(3) * (dble(k) - f12) * im
+                                k = k + 1
+                            enddo
                         enddo
                     enddo
                 enddo
@@ -160,10 +163,10 @@ module parcel_init
 
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
-                call split_ellipses(parcels, parcel%lambda_max)
-                B22 = get_B22(parcels%B(1, 1), zero, parcels%volume(1))
-                a2 = get_eigenvalue(parcels%B(1, 1), zero, B22)
-                lam = a2 / get_ab(parcels%volume(1))
+                !FIXME call split_ellipses(parcels, parcel%lambda_max)
+                B22 = 1.0 !FIXME get_B22(parcels%B(1, 1), zero, parcels%volume(1))
+                a2 = 1.0 !FIXME get_eigenvalue(parcels%B(1, 1), zero, B22)
+                lam = a2 !FIXME / get_ab(parcels%volume(1))
             end do
         end subroutine init_refine
 
@@ -171,13 +174,14 @@ module parcel_init
         ! Precompute weights, indices of trilinear
         ! interpolation and "apar"
         subroutine alloc_and_precompute
-            double precision :: resi(0:nz, 0:nx-1), rsum
+            double precision :: resi(0:nz, 0:ny-1, 0:nx-1), rsum
             integer          :: n, l
 
             allocate(apar(n_parcels))
             allocate(weights(n_parcels, ngp))
             allocate(is(n_parcels, ngp))
             allocate(js(n_parcels, ngp))
+            allocate(ks(n_parcels, ngp))
 
             ! Compute mean parcel density:
             resi = zero
@@ -185,24 +189,24 @@ module parcel_init
             !$omp parallel do default(shared) private(n, l) reduction(+:resi)
             do n = 1, n_parcels
                 ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(n, :), is(n, :), js(n, :), weights(n, :))
+                call trilinear(parcels%position(n, :), is(n, :), js(n, :), ks(n, :), weights(n, :))
 
                 do l = 1, ngp
-                    resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) + weights(n, l)
+                    resi(ks(n, :), js(n, l), is(n, l)) = resi(ks(n, :), js(n, l), is(n, l)) + weights(n, l)
                 enddo
             enddo
             !$omp end parallel do
 
             !Double edge values at iz = 0 and nz:
-            resi(0, :) = two * resi(0, :)
-            resi(nz,:) = two * resi(nz,:)
+            resi(0,  :, :) = two * resi(0,  :, :)
+            resi(nz, :, :) = two * resi(nz, :, :)
 
             ! Determine local inverse density of parcels (apar)
             !$omp parallel do default(shared) private(n, l, rsum)
             do n = 1, n_parcels
                 rsum = zero
                 do l = 1, ngp
-                    rsum = rsum + resi(js(n, l), is(n, l)) * weights(n, l)
+                    rsum = rsum + resi(ks(n, l), js(n, l), is(n, l)) * weights(n, l)
                 enddo
                 apar(n) = one / rsum
             enddo
@@ -215,6 +219,7 @@ module parcel_init
             deallocate(weights)
             deallocate(is)
             deallocate(js)
+            deallocate(ks)
         end subroutine dealloc
 
 
@@ -224,27 +229,28 @@ module parcel_init
         subroutine init_from_grids(h5fname, tol)
             character(*),     intent(in)  :: h5fname
             double precision, intent(in)  :: tol
-            double precision, allocatable :: buffer_2d(:, :)
-            double precision              :: field_2d(-1:nz+1, 0:nx-1)
+            double precision, allocatable :: buffer_3d(:, :, :)
+            double precision              :: field_3d(-1:nz+1, 0:ny-1, 0:nx-1)
             integer(hid_t)                :: h5handle
 
             call alloc_and_precompute
 
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
 
-            if (has_dataset(h5handle, 'vorticity')) then
-                call read_h5_dataset_2d(h5handle, 'vorticity', buffer_2d)
-                call fill_field_from_buffer_2d(buffer_2d, field_2d)
-                deallocate(buffer_2d)
-                call gen_parcel_scalar_attr(field_2d, tol, parcels%vorticity)
-            endif
+            !FIXME
+!             if (has_dataset(h5handle, 'vorticity')) then
+!                 call read_h5_dataset(h5handle, 'vorticity', buffer_3d)
+!                 call fill_field_from_buffer_2d(buffer_3d, buffer_3d)
+!                 deallocate(buffer_3d)
+!                 call gen_parcel_scalar_attr(buffer_3d, tol, parcels%vorticity)
+!             endif
 
 
             if (has_dataset(h5handle, 'buoyancy')) then
-                call read_h5_dataset_2d(h5handle, 'buoyancy', buffer_2d)
-                call fill_field_from_buffer_2d(buffer_2d, field_2d)
-                deallocate(buffer_2d)
-                call gen_parcel_scalar_attr(field_2d, tol, parcels%buoyancy)
+                call read_h5_dataset(h5handle, 'buoyancy', buffer_3d)
+                call fill_field_from_buffer_2d(buffer_3d, field_3d)
+                deallocate(buffer_3d)
+                call gen_parcel_scalar_attr(field_3d, tol, parcels%buoyancy)
             endif
 
             call close_h5_file(h5handle)
@@ -257,23 +263,25 @@ module parcel_init
         ! the data to a field container
         ! @pre field and buffer must be of rank 2
         subroutine fill_field_from_buffer_2d(buffer, field)
-            double precision, allocatable :: buffer(:, :)
-            double precision              :: field(-1:nz+1, 0:nx-1)
-            integer                       :: dims(2), bdims(2), i, j
+            double precision, allocatable :: buffer(:, :, :)
+            double precision              :: field(-1:nz+1, 0:ny-1, 0:nx-1)
+            integer                       :: dims(3), bdims(3), i, j, k
 
-            dims = (/nz+1, nx/)
+            dims = (/nz+1, ny, nx/)
 
             bdims = shape(buffer)
             if (.not. sum(dims - bdims) == 0) then
-                print "(a32, i4, a1, i4, a6, i4, a1, i4, a1)", &
+                print "(a32, i4, a1, i4, a1, i4, a6, i4, a1, i4, a1, i4, a1)", &
                       "Field dimensions do not agree: (", dims(1), ",", &
-                      dims(2), ") != (", bdims(1), ",", bdims(2), ")"
+                      dims(2), ",", dims(3), ") != (", bdims(1), ",", bdims(2), ",", bdims(3), ")"
                 stop
             endif
 
-            do j = 0, nz
-                do i = 0, nx-1
-                    field(j, i) = buffer(j, i)
+            do i = 0, nx-1
+                do j = 0, ny-1
+                    do k = 0, nz
+                        field(k, j, i) = buffer(k, j, i)
+                    enddo
                 enddo
             enddo
         end subroutine fill_field_from_buffer_2d
@@ -282,10 +290,10 @@ module parcel_init
         ! Generates the parcel attribute "par" from the field values provided
         ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)
         subroutine gen_parcel_scalar_attr(field, tol, par)
-            double precision, intent(in)  :: field(-1:nz+1, 0:nx-1)
+            double precision, intent(in)  :: field(-1:nz+1, 0:ny-1, 0:nx-1)
             double precision, intent(in)  :: tol
             double precision, intent(out) :: par(:)
-            double precision :: resi(0:nz, 0:nx-1)
+            double precision :: resi(0:nz, 0:ny-1, 0:nx-1)
             double precision :: rms, rtol, rerr, rsum, fsum, avg_field
             integer          :: n, l
 
@@ -297,13 +305,13 @@ module parcel_init
 
             ! Compute mean field value:
             ! (divide by ncell since lower and upper edge weights are halved)
-            avg_field = (f12 * sum(field(0, :) + field(nz, :)) &
-                             + sum(field(1:nz-1,:))) / dble(ncell)
+            avg_field = (f12 * sum(field(0, :, :) + field(nz, :, :)) &
+                             + sum(field(1:nz-1, :, :))) / dble(ncell)
 
-            resi(0:nz,:) = (field(0:nz,:) - avg_field) ** 2
+            resi(0:nz, :, :) = (field(0:nz, :, :) - avg_field) ** 2
 
-            rms = dsqrt((f12 * sum(resi(0, :) + resi(nz, :)) &
-                             + sum(resi(1:nz-1,:))) / dble(ncell))
+            rms = dsqrt((f12 * sum(resi(0, :, :) + resi(nz, :, :)) &
+                             + sum(resi(1:nz-1, :, :))) / dble(ncell))
 
 
             if (rms == zero) then
@@ -326,7 +334,7 @@ module parcel_init
             do n = 1, n_parcels
                 fsum = zero
                 do l = 1, ngp
-                    fsum = fsum + field(js(n, l), is(n, l)) * weights(n, l)
+                    fsum = fsum + field(ks(n, l), js(n, l), is(n, l)) * weights(n, l)
                 enddo
                 par(n) = apar(n) * fsum
             enddo
@@ -340,21 +348,21 @@ module parcel_init
                 resi = zero
                 do n = 1, n_parcels
                     do l = 1, ngp
-                        resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) &
-                                                 + weights(n, l) * par(n)
+                        resi(ks(n, :), js(n, l), is(n, l)) = resi(ks(n, :), js(n, l), is(n, l)) &
+                                                           + weights(n, l) * par(n)
                     enddo
                 enddo
 
-                resi(0, :)    = two * resi(0, :)
-                resi(nz, :)   = two * resi(nz, :)
-                resi(0:nz, :) = field(0:nz, :) - resi(0:nz, :)
+                resi(0, :, :)    = two * resi(0, :, :)
+                resi(nz, :, :)   = two * resi(nz, :, :)
+                resi(0:nz, :, :) = field(0:nz, :, :) - resi(0:nz, :, :)
 
                 !Update (volume-weighted) attribute:
                 !$omp parallel do default(shared) private(n, rsum, l)
                 do n = 1, n_parcels
                     rsum = zero
                     do l = 1, ngp
-                        rsum = rsum + resi(js(n, l), is(n, l)) * weights(n, l)
+                        rsum = rsum + resi(ks(n, l), js(n, l), is(n, l)) * weights(n, l)
                     enddo
                     par(n) = par(n) + apar(n) * rsum
                 enddo

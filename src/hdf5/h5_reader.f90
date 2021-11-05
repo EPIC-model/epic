@@ -9,6 +9,14 @@ module h5_reader
     use h5_utils
     implicit none
 
+    private :: read_h5_dataset_2d, &
+               read_h5_dataset_3d
+
+    interface read_h5_dataset
+        module procedure :: read_h5_dataset_2d
+        module procedure :: read_h5_dataset_3d
+    end interface read_h5_dataset
+
     contains
 
         function has_dataset(h5file_id, name) result(link_exists)
@@ -65,6 +73,52 @@ module h5_reader
             call h5dclose_f(dset_id, h5err)
             call check_h5_error("Failed to close dataset.")
         end subroutine read_h5_dataset_2d
+
+        subroutine read_h5_dataset_3d(h5file_id, name, buffer)
+            integer(hid_t),                intent(in)  :: h5file_id
+            character(*),                  intent(in)  :: name
+            double precision, allocatable, intent(out) :: buffer(:, :, :)
+            integer(hid_t)                             :: dataspace_id   ! Dataspace identifier
+            integer(hid_t)                             :: dset_id
+            integer                                    :: rank
+            integer(hsize_t)                           :: dims(3), maxdims(3)
+
+            call h5dopen_f(h5file_id, name, dset_id, h5err)
+            call check_h5_error("Failed to open dataset.")
+
+            call h5dget_space_f(dset_id, dataspace_id, h5err)
+            call check_h5_error("Failed to get data space.")
+
+            call h5sget_simple_extent_ndims_f(dataspace_id, rank, h5err)
+            call check_h5_error("Failed to get data extent.")
+
+            if (rank .ne. 3) then
+                print *, "Dataset not 3-dimensional."
+                stop
+            endif
+
+            ! h5err: Dataspace rank on success and -1 on failure
+            call h5sget_simple_extent_dims_f(dataspace_id, dims, maxdims, h5err)
+#ifndef NDEBUG
+            if (h5err >= 0) then
+                h5err = 0
+            endif
+#endif
+            call check_h5_error("Failed to get dimensions.")
+
+            if (.not. sum(dims -  maxdims) == 0) then
+                print *, "Dimensions do not agree."
+                stop
+            endif
+
+            allocate(buffer(0:dims(1)-1, 0:dims(2)-1, 0:dims(3)-1))
+
+            call h5dread_f(dset_id, H5T_NATIVE_DOUBLE, buffer, dims, h5err)
+            call check_h5_error("Failed to read dataset.")
+
+            call h5dclose_f(dset_id, h5err)
+            call check_h5_error("Failed to close dataset.")
+        end subroutine read_h5_dataset_3d
 
         subroutine read_h5_vector_int_attrib(group, name, buf)
             integer(hid_t), intent(in)       :: group

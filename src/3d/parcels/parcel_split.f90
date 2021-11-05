@@ -7,10 +7,10 @@ module parcel_split
     use parameters, only : vmax
     use parcel_container, only : parcel_container_type, n_parcels
     use parcel_bc, only : apply_reflective_bc
-    use parcel_ellipse, only : get_eigenvalue      &
-                             , get_eigenvector     &
-                             , get_B22             &
-                             , get_aspect_ratio
+!     use parcel_ellipsoid, only : get_eigenvalue      &
+!                              , get_eigenvector     &
+!                              , get_B22             &
+!                              , get_aspect_ratio
     use timer, only : start_timer, stop_timer
     use omp_lib
     implicit none
@@ -45,28 +45,29 @@ module parcel_split
                 B11 = parcels%B(n, 1)
                 B12 = parcels%B(n, 2)
                 V = parcels%volume(n)
-                B22 = get_B22(B11, B12, V)
+                B22 = 1.0 !FIXME get_B22(B11, B12, V)
 
-                a2 = get_eigenvalue(B11, B12, B22)
+                a2 = 1.0 !FIXME get_eigenvalue(B11, B12, B22)
 
                 ! a/b
-                lam = get_aspect_ratio(a2, V)
+                lam = 1.0 !FIXME get_aspect_ratio(a2, V)
 
                 if (lam <= threshold .and. V <= vmax) then
                     cycle
                 endif
 
                 !
-                ! this ellipse is split, i.e., add a new parcel
+                ! this ellipsoid is split, i.e., add a new parcel
                 !
 
-                evec = get_eigenvector(a2, B11, B12, B22)
-
-                parcels%B(n, 1) = B11 - f34 * a2 * evec(1) ** 2
-                parcels%B(n, 2) = B12 - f34 * a2 * (evec(1) * evec(2))
-
-                h = f14 * dsqrt(three * a2)
-                parcels%volume(n) = f12 * V
+!FIXME
+!                 evec = get_eigenvector(a2, B11, B12, B22)
+!
+!                 parcels%B(n, 1) = B11 - f34 * a2 * evec(1) ** 2
+!                 parcels%B(n, 2) = B12 - f34 * a2 * (evec(1) * evec(2))
+!
+!                 h = f14 * dsqrt(three * a2)
+!                 parcels%volume(n) = f12 * V
 
                 !$omp critical
                 n_thread_loc = n_parcels + 1

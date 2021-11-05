@@ -1,5 +1,5 @@
 module rk4_utils
-    use parcel_ellipse, only : get_B22
+!     use parcel_ellipse, only : get_B22
     use fields, only : velgradg, tbuoyg, vtend
     use constants, only : zero, one, two, f12
     use parameters, only : nx, nz, dxi
@@ -26,7 +26,7 @@ module rk4_utils
             Bout(1) = two * (S(1) * Bin(1) + S(2) * Bin(2))
 
             ! B12 = dvdx * B11 + dudy * B22
-            Bout(2) = S(3) * Bin(1) + S(2) * get_B22(Bin(1), Bin(2), volume)
+            Bout(2) = S(3) * Bin(1) + S(2) !FIXME * get_B22(Bin(1), Bin(2), volume)
 
         end function get_B
 
@@ -46,16 +46,16 @@ module rk4_utils
 #endif
 
             ! velocity strain
-            gmax = f12 * dsqrt(maxval((velgradg(0:nz, :, 1) - velgradg(0:nz, :, 4)) ** 2 + &
-                                        (velgradg(0:nz, :, 2) + velgradg(0:nz, :, 3)) ** 2))
+            gmax = 1.0 !FIXME f12 * dsqrt(maxval((velgradg(0:nz, :, 1) - velgradg(0:nz, :, 4)) ** 2 + &
+!                                         (velgradg(0:nz, :, 2) + velgradg(0:nz, :, 3)) ** 2))
             gmax = max(epsilon(gmax), gmax)
 
             ! buoyancy gradient
 
             ! db/dz (central difference)
-            dbdz(0:nz, :) = f12 * dxi(2) * (tbuoyg(1:nz+1, :) - tbuoyg(-1:nz-1, :))
+            dbdz(0:nz, :) = 1.0 !FIXME f12 * dxi(2) * (tbuoyg(1:nz+1, :) - tbuoyg(-1:nz-1, :))
 
-            bmax = dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
+            bmax = 1.0 !FIXME dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
             dt = min(time%alpha / gmax, time%alpha / bmax)

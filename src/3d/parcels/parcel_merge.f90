@@ -10,7 +10,7 @@ module parcel_merge
                                , n_parcels              &
                                , parcel_replace         &
                                , get_delx
-    use parcel_ellipse, only : get_B22, get_ab
+    use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
     use parcel_bc
     use timer, only : start_timer, stop_timer
@@ -180,7 +180,8 @@ module parcel_merge
 
                     vmerge = one / vm(l)
 
-                    B22 = get_B22(parcels%B(ic, 1), parcels%B(ic, 2), parcels%volume(ic))
+                    !FIXME
+                    B22 = 1.0 !get_B22(parcels%B(ic, 1), parcels%B(ic, 2), parcels%volume(ic))
 
                     delx = get_delx(parcels%position(ic, 1), xm(l))
                     dely = parcels%position(ic, 2) - zm(l)
@@ -210,7 +211,8 @@ module parcel_merge
                 delx = get_delx(parcels%position(is, 1), xm(n))
                 dely = parcels%position(is, 2) - zm(n)
 
-                B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is))
+                !FIXME
+                B22 = 1.0 !get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is))
 
                 ! volume fraction A_{is} / A
                 mu = vmerge * parcels%volume(is)
@@ -254,9 +256,10 @@ module parcel_merge
                     l = l + 1
                     loca(ic) = l
 
+                    ! FIXME
                     ! normalize such that determinant of the merger is (ab)**2
                     ! ab / sqrt(det(B))
-                    factor = get_ab(V(l)) / dsqrt(B11(l) * B22(l) - B12(l) ** 2)
+                    factor = 1.0 !get_ab(V(l)) / dsqrt(B11(l) * B22(l) - B12(l) ** 2)
 
                     parcels%B(ic, 1) = B11(l) * factor
                     parcels%B(ic, 2) = B12(l) * factor

@@ -29,7 +29,7 @@ module utils
             double precision,  intent(in) :: t
             double precision              :: velocity(n_parcels, 2)
             double precision              :: strain(n_parcels, 4)
-            double precision              :: vorticity(n_parcels)
+            double precision              :: vorticity(n_parcels, 3)
 
             call par2grid
 
