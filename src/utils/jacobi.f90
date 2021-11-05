@@ -10,6 +10,7 @@ module jacobi
     private
         integer, parameter :: n = 3 ! we have 3x3 matrices
         double precision, parameter :: atol = 1.0e-15
+        logical :: do_evec
 
     public :: jacobi_diagonalise
 
@@ -41,11 +42,12 @@ module jacobi
         ! @param[in] j first column with i .ne. j
         ! @param[in] k second column with i .ne. k
         subroutine apply_rotation(A, V, i, j)
-            double precision, intent(inout) :: A(n, n), V(n, n)
-            integer,          intent(in)    :: i, j
-            double precision                :: theta, c, s, t, tau
-            integer                         :: k
-            double precision                :: g, h, aij
+            double precision, intent(inout)           :: A(n, n)
+            double precision, intent(inout), optional :: V(n, n)
+            integer,          intent(in)              :: i, j
+            double precision                          :: theta, c, s, t, tau
+            integer                                   :: k
+            double precision                          :: g, h, aij
 
             ! compute the rotation angle theta
             ! Reference:    Rutishauser, H. The Jacobi method for real symmetric matrices.
@@ -71,12 +73,14 @@ module jacobi
             tau = s / (one + c)
 
             ! accumulate eigenvector
-            do k = 1, n
-                g = V(i, k)
-                h = V(j, k)
-                V(i, k) = c * g - s * h
-                V(j, k) = s * g + c * h
-            enddo
+            if (do_evec) then
+                do k = 1, n
+                    g = V(i, k)
+                    h = V(j, k)
+                    V(i, k) = c * g - s * h
+                    V(j, k) = s * g + c * h
+                enddo
+            endif
 
             !
             ! Apply Givens rotation to matrix
@@ -118,22 +122,26 @@ module jacobi
         ! matrix storing the eigenvalues, V contains the eigenvectors.
         ! The eigenvector V(:, i) belongs to eigenvalue A(i, i).
         ! @param[inout] A real symmetric 3x3 matrix
-        ! @param[out] V eigenvector matrix
+        ! @param[out] V eigenvector matrix (optional)
         subroutine jacobi_diagonalise(A, V)
-            double precision, intent(inout) :: A(n, n)
-            double precision, intent(out)   :: V(n, n)
-            integer                         :: i, j
-            double precision                :: sm
+            double precision, intent(inout)           :: A(n, n)
+            double precision, intent(out), optional   :: V(n, n)
+            integer                                   :: i, j
+            double precision                          :: sm
+
+            do_evec = present(V)
 
             ! initialise eigenvector matrix to identity matrix
-            do j = 1, n
-                do i = 1, n
-                    V(i, j) = zero
-                    if (i == j) then
-                        V(i, j) = one
-                    endif
+            if (do_evec) then
+                do j = 1, n
+                    do i = 1, n
+                        V(i, j) = zero
+                        if (i == j) then
+                            V(i, j) = one
+                        endif
+                    enddo
                 enddo
-            enddo
+            endif
 
 
             ! sum of off-diagonal entries
@@ -155,9 +163,12 @@ module jacobi
 
             call sort_descending(A, V)
 
-            ! eigenvector of i-th eigenvalue
-            ! is given by V(:, i)
-            V = transpose(V)
+
+            if (do_evec) then
+                ! eigenvector of i-th eigenvalue
+                ! is given by V(:, i)
+                V = transpose(V)
+            endif
 
         end subroutine jacobi_diagonalise
 
@@ -168,35 +179,41 @@ module jacobi
         ! @param[inout] D diagonal matrix with eigenvalues
         ! @param[inout] V eigenvector matrix
         subroutine sort_descending(D, V)
-            double precision, intent(inout) :: D(n, n)
-            double precision, intent(inout) :: V(n, n)
-            double precision                :: teval, tevec(n)
+            double precision, intent(inout)           :: D(n, n)
+            double precision, intent(inout), optional :: V(n, n)
+            double precision                          :: teval, tevec(n)
 
             if (D(2, 2) > D(1, 1)) then
                 teval = D(1, 1)
-                tevec = V(1, :)
                 D(1, 1) = D(2, 2)
-                V(1, :) = V(2, :)
                 D(2, 2) = teval
-                V(2, :) = tevec
+                if (do_evec) then
+                    tevec = V(1, :)
+                    V(1, :) = V(2, :)
+                    V(2, :) = tevec
+                endif
             endif
 
             if (D(3, 3) > D(2, 2)) then
                 teval = D(2, 2)
-                tevec = V(2, :)
                 D(2, 2) = D(3, 3)
-                V(2, :) = V(3, :)
                 D(3, 3) = teval
-                V(3, :) = tevec
+                if (do_evec) then
+                    tevec = V(2, :)
+                    V(2, :) = V(3, :)
+                    V(3, :) = tevec
+                endif
             endif
 
             if (D(2, 2) > D(1, 1)) then
                 teval = D(1, 1)
-                tevec = V(1, :)
                 D(1, 1) = D(2, 2)
-                V(1, :) = V(2, :)
                 D(2, 2) = teval
-                V(2, :) = tevec
+                if (do_evec) then
+                    tevec = V(1, :)
+                    V(1, :) = V(2, :)
+                    V(2, :) = tevec
+                endif
             endif
         end subroutine sort_descending
 

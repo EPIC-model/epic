@@ -12,13 +12,16 @@ module constants
     double precision, parameter :: four     = 4.0d0
     double precision, parameter :: five     = 5.0d0
     double precision, parameter :: six      = 6.0d0
+    double precision, parameter :: seven    = 7.0d0
     double precision, parameter :: ten      = 10.0d0
     double precision, parameter :: hundred  = ten ** 2
     double precision, parameter :: thousand = ten ** 3
 
-    double precision, parameter :: pi    = dacos(-one)
-    double precision, parameter :: twopi = two * pi
-    double precision, parameter :: fpi   = one / pi
+    double precision, parameter :: pi     = dacos(-one)
+    double precision, parameter :: twopi  = two * pi
+    double precision, parameter :: fpi    = one / pi
+    double precision, parameter :: fpi2   = pi / two
+    double precision, parameter :: fpi4   = pi / four
 
     double precision, parameter :: f32   = three / two
     double precision, parameter :: f34   = three / four
