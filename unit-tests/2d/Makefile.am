@@ -30,7 +30,6 @@ unittests_PROGRAMS = 				\
 	test_ellipse_merge_2			\
 	test_ellipse_merge_3			\
 	test_ellipse_merge_4			\
-	test_ellipse_merge_5			\
 	test_nearest_1				\
 	test_nearest_2				\
 	test_nearest_3				\
@@ -118,12 +117,6 @@ test_ellipse_merge_3_LDADD = 				\
 
 test_ellipse_merge_4_SOURCES = test_ellipse_merge_4.f90
 test_ellipse_merge_4_LDADD = 				\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la
-
-test_ellipse_merge_5_SOURCES = test_ellipse_merge_5.f90
-test_ellipse_merge_5_LDADD = 				\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la
