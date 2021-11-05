@@ -18,9 +18,9 @@ epic2d_models_SOURCES =		\
 	robert.f90		\
 	epic2d-models.f90
 
-epic2d_models_LDADD = 				\
-	$(top_builddir)/src/utils/libutils.la	\
-	$(top_builddir)/src/hdf5/libhdf5.la
+epic2d_models_LDADD = 					\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
 clean-local:
 	rm -f *.mod

@@ -32,9 +32,9 @@ epic3d_SOURCES = 				\
 	stepper/ls_rk4.f90			\
 	epic3d.f90
 
-epic3d_LDADD = 					\
-	$(top_builddir)/src/utils/libutils.la 	\
-	$(top_builddir)/src/hdf5/libhdf5.la
+epic3d_LDADD = 						\
+	$(top_builddir)/src/utils/libepic_utils.la 	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
 clean-local:
 	rm -f *.mod

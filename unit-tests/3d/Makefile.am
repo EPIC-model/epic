@@ -28,20 +28,20 @@ dataroot_DATA =		\
 test_jacobi_1_SOURCES = test_jacobi_1.f90
 test_jacobi_1_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libutils.la		\
-	$(top_builddir)/src/hdf5/libhdf5.la
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
 test_jacobi_2_SOURCES = test_jacobi_2.f90
 test_jacobi_2_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libutils.la		\
-	$(top_builddir)/src/hdf5/libhdf5.la
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
 test_jacobi_3_SOURCES = test_jacobi_3.f90
 test_jacobi_3_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libutils.la		\
-	$(top_builddir)/src/hdf5/libhdf5.la
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
 
 endif
