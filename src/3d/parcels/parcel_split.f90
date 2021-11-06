@@ -1,19 +1,20 @@
 ! =============================================================================
-!                           Module to split ellipses
+!                           Module to split ellipsoids
 ! =============================================================================
-module parcel_split
+module parcel_split_mod
     use options, only : verbose
-    use constants, only : pi, three, f12, f14, f34
+    use constants, only : pi, three, five, f12, f34
     use parameters, only : vmax
     use parcel_container, only : parcel_container_type, n_parcels
     use parcel_bc, only : apply_reflective_bc
-!     use parcel_ellipsoid, only : get_eigenvalue      &
-!                              , get_eigenvector     &
-!                              , get_B22             &
-!                              , get_aspect_ratio
+    use parcel_ellipsoid, only : diagonalise
     use timer, only : start_timer, stop_timer
     use omp_lib
     implicit none
+
+    double precision, parameter :: dh = f12 * dsqrt(three / five)
+
+    private :: dh
 
     integer :: split_timer
 
@@ -23,15 +24,12 @@ module parcel_split
         ! parcels with aspect ratios larger than the threshold.
         ! @param[inout] parcels
         ! @param[in] threshold is the largest allowed aspect ratio
-        subroutine split_ellipses(parcels, threshold)
+        subroutine parcel_split(parcels, threshold)
             type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: threshold
-            double precision                           :: B11
-            double precision                           :: B12
-            double precision                           :: B22
-            double precision                           :: a2, lam, V
-            double precision                           :: evec(2)
-            double precision                           :: h
+            double precision                           :: B(5)
+            double precision                           :: a2, b2, c2, vol, lam
+            double precision                           :: V(3, 3)
             integer                                    :: last_index
             integer                                    :: n, n_thread_loc
 
@@ -40,19 +38,17 @@ module parcel_split
             last_index = n_parcels
 
             !$omp parallel default(shared)
-            !$omp do private(n, B11, B12, B22, a2, lam, V, evec, h, n_thread_loc)
+            !$omp do private(n, B, vol, lam, a2, b2, c2, V, n_thread_loc)
             do n = 1, last_index
-                B11 = parcels%B(n, 1)
-                B12 = parcels%B(n, 2)
-                V = parcels%volume(n)
-                B22 = 1.0 !FIXME get_B22(B11, B12, V)
+                B = parcels%B(n, :)
+                vol = parcels%volume(n)
 
-                a2 = 1.0 !FIXME get_eigenvalue(B11, B12, B22)
+                call diagonalise(B, vol, a2, b2, c2, V)
 
-                ! a/b
-                lam = 1.0 !FIXME get_aspect_ratio(a2, V)
+                ! evaluate maximum aspect ratio
+                lam = max(dsqrt(a2 / b2), dsqrt(a2 / c2))
 
-                if (lam <= threshold .and. V <= vmax) then
+                if (lam <= threshold .and. vol <= vmax) then
                     cycle
                 endif
 
@@ -60,14 +56,14 @@ module parcel_split
                 ! this ellipsoid is split, i.e., add a new parcel
                 !
 
-!FIXME
-!                 evec = get_eigenvector(a2, B11, B12, B22)
-!
-!                 parcels%B(n, 1) = B11 - f34 * a2 * evec(1) ** 2
-!                 parcels%B(n, 2) = B12 - f34 * a2 * (evec(1) * evec(2))
-!
-!                 h = f14 * dsqrt(three * a2)
-!                 parcels%volume(n) = f12 * V
+                parcels%B(n, 1) = B(1) - f34 * a2 * V(1, 1) ** 2
+                parcels%B(n, 2) = B(2) - f34 * a2 * V(1, 1) * V(2, 1)
+                parcels%B(n, 3) = B(3) - f34 * a2 * V(1, 1) * V(3, 1)
+                parcels%B(n, 4) = B(4) - f34 * a2 * V(2, 1) ** 2
+                parcels%B(n, 5) = B(5) - f34 * a2 * V(2, 1) * V(3, 1)
+
+
+                parcels%volume(n) = f12 * vol
 
                 !$omp critical
                 n_thread_loc = n_parcels + 1
@@ -85,8 +81,9 @@ module parcel_split
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n_thread_loc) = parcels%humidity(n)
 #endif
-                parcels%position(n_thread_loc, :) = parcels%position(n, :) - h * evec
-                parcels%position(n, :) = parcels%position(n, :)  + h * evec
+                V(:, 1) = V(:, 1) * dh * dsqrt(a2)
+                parcels%position(n_thread_loc, :) = parcels%position(n, :) - V(:, 1)
+                parcels%position(n, :) = parcels%position(n, :) + V(:, 1)
 
                 ! child parcels need to be reflected into domain, if their center
                 ! is inside the halo region
@@ -108,6 +105,6 @@ module parcel_split
 
             call stop_timer(split_timer)
 
-        end subroutine split_ellipses
+        end subroutine parcel_split
 
-end module parcel_split
+end module parcel_split_mod

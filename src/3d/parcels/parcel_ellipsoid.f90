@@ -95,7 +95,7 @@ module parcel_ellipsoid
         ! @param[in] volume of the parcel
         ! @returns the eigenvectors
         subroutine diagonalise(B, volume, a2, b2, c2, V)
-            double precision, intent(in)  :: B(3, 3)
+            double precision, intent(in)  :: B(5)
             double precision, intent(in)  :: volume
             double precision, intent(out) :: a2, b2, c2, V(3, 3)
             double precision              :: D(3, 3)
