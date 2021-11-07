@@ -2,36 +2,35 @@
 !                       Test ellipsoid split
 !
 !         This unit test checks the splitting of an ellipsoid. The ellipsoid
-!         is centred at the origin with an orientation of 45 degrees.
+!         is centred at the origin and the orientation is varied.
 ! =============================================================================
 program test_ellipsoid_split
     use unit_test
-    use constants, only : pi, zero, one, three, four, five, ten, f12, f14, f34, two
+    use constants, only : pi, zero, one, three, four, five, ten, f12, f14, f34
     use parcel_container
+    use parcel_ellipsoid, only : get_B33
     use parcel_split_mod, only : parcel_split, split_timer
     use parameters, only : update_parameters, nx, ny, nz, extent, lower, vmax
     use timer
     implicit none
 
     double precision, parameter :: lam = five
-    double precision, parameter :: theta = f14 * pi, phi = f12 * pi
-    double precision, parameter :: st = dsin(theta), ct = dcos(theta)
-    double precision, parameter :: sp = dsin(phi), cp = dcos(phi)
+    double precision :: theta, phi, st, ct, sp, cp
     double precision :: B11, B12, B13, B22, B23, B33, abc, ab, evec(3)
     double precision :: h, pos(2, 3), error, a2, b2, c2
+    integer :: i, j
 
-    nx = 20
-    ny = 20
-    nz = 20
-    extent = (/ten*two, ten*two, ten*two/)
-    lower = (/-five*two, -five*two, -five*two/)
+    nx = 10
+    ny = 10
+    nz = 10
+    extent = (/ten, ten, ten/)
+    lower = (/-five, -five, -five/)
     call update_parameters
 
     vmax = one
 
     call register_timer('parcel split', split_timer)
 
-    n_parcels = 1
     call parcel_alloc(2)
 
     abc = one
@@ -41,100 +40,114 @@ program test_ellipsoid_split
     b2 = ab / lam
     c2 = (abc / ab) ** 2
 
-    print *, "exact:", a2, b2, c2
-
-    print *, "abc:", abc
-
-    parcels%position(1, :) = zero
-    parcels%volume(1) = four / three * abc * pi
-    parcels%buoyancy(1) = one
-#ifndef ENABLE_DRY_MODE
-    parcels%humidity(1) = one
-#endif
-    ! 7 Nov 2021
-    ! https://mathworld.wolfram.com/SphericalCoordinates.html
-    B11 = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
-    B12 = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
-    B13 = (a2 - c2) * ct * sp * cp
-    B22 = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
-    B23 = (a2 - c2) * st * sp * cp
-    B33 = a2 * cp ** 2 + c2 * sp ** 2
-
-    print *, "B11:", B11
-    print *, "B12:", B12
-    print *, "B13:", B13
-    print *, "B22:", B22
-    print *, "B23:", B23
-    print *, "B33:", B33
-
-
-    parcels%B(1, 1) = B11
-    parcels%B(1, 2) = B12
-    parcels%B(1, 3) = B13
-    parcels%B(1, 4) = B22
-    parcels%B(1, 5) = B23
-
-    ! analytic split
-    h = f12 * dsqrt(three / five * a2)
-    B11 = B11 - f34 * a2 * ct ** 2 * sp ** 2
-    B12 = B12 - f34 * a2 * st * ct * sp ** 2
-    B13 = B13 - f34 * a2 * ct * sp * cp
-    B22 = B22 - f34 * a2 * st ** 2 * sp ** 2
-    B23 = B23 - f34 * a2 * st * sp * cp
-
     error = zero
 
-    if ((a2 > b2) .and. (a2 > c2)) then
-        evec = (/ct * sp, st * sp, cp/)
-    else if ((b2 > a2) .and. (b2 > c2)) then
-        evec = (/-st, ct, zero/)
-    else if ((c2 > a2) .and. (c2 > b2)) then
-        evec = (/ct * cp, st * cp, -sp/)
-    else
-        error = one
-    endif
+    do i = 0, 7
+        theta = dble(i) * f14 * pi
+        st = dsin(theta)
+        ct = dcos(theta)
+        do j = 0, 7
+            phi = dble(j) * f14 * pi
+            sp = dsin(phi)
+            cp = dcos(phi)
 
-    pos(1, :) = parcels%position(1, :) + h * evec
-    pos(2, :) = parcels%position(1, :) - h * evec
+            call setup_parcels
 
-    ! numerical split
-    call parcel_split(parcels, threshold=four)
+            ! numerical split
+            call parcel_split(parcels, threshold=four)
 
-    !
-    ! check result
-    !
+            call check_result
+        enddo
+    enddo
 
-
-    ! first parcel
-    error = max(error, abs(parcels%B(1, 1) - B11))
-    print *, "error", parcels%B(1, 1), B11
-    error = max(error, abs(parcels%B(1, 2) - B12))
-    error = max(error, abs(parcels%B(1, 3) - B13))
-    error = max(error, abs(parcels%B(1, 4) - B22))
-    error = max(error, abs(parcels%B(1, 5) - B23))
-    error = max(error, sum(abs(pos(1, :) - parcels%position(1, :))))
-    print *, "error", error
-    error = max(error, abs(f12 * four / three * abc * pi - parcels%volume(1)))
-    error = max(error, abs(parcels%buoyancy(1) - one))
-#ifndef ENABLE_DRY_MODE
-    error = max(error, abs(parcels%humidity(1) - one))
-#endif
-
-    ! second parcel
-    error = max(error, abs(parcels%B(2, 1) - B11))
-    error = max(error, abs(parcels%B(2, 2) - B12))
-    error = max(error, abs(parcels%B(2, 3) - B13))
-    error = max(error, abs(parcels%B(2, 4) - B22))
-    error = max(error, abs(parcels%B(2, 5) - B23))
-    error = max(error, sum(abs(pos(2, :) - parcels%position(2, :))))
-    error = max(error, abs(f12 * four / three * abc * pi - parcels%volume(2)))
-    error = max(error, dble(abs(n_parcels - 2)))
-    error = max(error, abs(parcels%buoyancy(2) - one))
-#ifndef ENABLE_DRY_MODE
-    error = max(error, abs(parcels%humidity(2) - one))
-#endif
-    call print_result_dp('Test ellipsoid split', error)
+    call print_result_dp('Test ellipsoid split', error, atol=1.0e-14)
 
     call parcel_dealloc
+
+
+    contains
+
+        subroutine setup_parcels
+            n_parcels = 1
+
+            parcels%position(1, :) = zero
+            parcels%volume(1) = four / three * abc * pi
+            parcels%buoyancy(1) = one
+#ifndef ENABLE_DRY_MODE
+            parcels%humidity(1) = one
+#endif
+            ! 7 Nov 2021
+            ! https://mathworld.wolfram.com/SphericalCoordinates.html
+            B11 = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
+            B12 = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
+            B13 = (a2 - c2) * ct * sp * cp
+            B22 = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
+            B23 = (a2 - c2) * st * sp * cp
+            B33 = a2 * cp ** 2 + c2 * sp ** 2
+
+            parcels%B(1, 1) = B11
+            parcels%B(1, 2) = B12
+            parcels%B(1, 3) = B13
+            parcels%B(1, 4) = B22
+            parcels%B(1, 5) = B23
+        end subroutine setup_parcels
+
+        subroutine check_result
+            ! analytic split
+            h = f12 * dsqrt(three / five * a2)
+            B11 = B11 - f34 * a2 * ct ** 2 * sp ** 2
+            B12 = B12 - f34 * a2 * st * ct * sp ** 2
+            B13 = B13 - f34 * a2 * ct * sp * cp
+            B22 = B22 - f34 * a2 * st ** 2 * sp ** 2
+            B23 = B23 - f34 * a2 * st * sp * cp
+            B33 = B33 - f34 * a2 * cp ** 2
+
+            if ((a2 > b2) .and. (a2 > c2)) then
+                evec = (/ct * sp, st * sp, cp/)
+            else if ((b2 > a2) .and. (b2 > c2)) then
+                evec = (/-st, ct, zero/)
+            else if ((c2 > a2) .and. (c2 > b2)) then
+                evec = (/ct * cp, st * cp, -sp/)
+            else
+                error = one
+            endif
+
+            pos(1, :) = h * evec
+            pos(2, :) = - h * evec
+
+            ! exchange position
+            if (sum(abs(pos(1, :) - parcels%position(1, :))) > 1.0e-13) then
+                pos = -pos
+            endif
+
+            ! first parcel
+            error = max(error, abs(parcels%B(1, 1) - B11))
+            error = max(error, abs(parcels%B(1, 2) - B12))
+            error = max(error, abs(parcels%B(1, 3) - B13))
+            error = max(error, abs(parcels%B(1, 4) - B22))
+            error = max(error, abs(parcels%B(1, 5) - B23))
+            error = max(error, abs(get_B33(parcels%B(1, :), parcels%volume(1)) - B33))
+            error = max(error, sum(abs(pos(1, :) - parcels%position(1, :))))
+            error = max(error, abs(f12 * four / three * abc * pi - parcels%volume(1)))
+            error = max(error, abs(parcels%buoyancy(1) - one))
+#ifndef ENABLE_DRY_MODE
+            error = max(error, abs(parcels%humidity(1) - one))
+#endif
+
+            ! second parcel
+            error = max(error, abs(parcels%B(2, 1) - B11))
+            error = max(error, abs(parcels%B(2, 2) - B12))
+            error = max(error, abs(parcels%B(2, 3) - B13))
+            error = max(error, abs(parcels%B(2, 4) - B22))
+            error = max(error, abs(parcels%B(2, 5) - B23))
+            error = max(error, abs(get_B33(parcels%B(2, :), parcels%volume(2)) - B33))
+            error = max(error, sum(abs(pos(2, :) - parcels%position(2, :))))
+            error = max(error, abs(f12 * four / three * abc * pi - parcels%volume(2)))
+            error = max(error, dble(abs(n_parcels - 2)))
+            error = max(error, abs(parcels%buoyancy(2) - one))
+#ifndef ENABLE_DRY_MODE
+            error = max(error, abs(parcels%humidity(2) - one))
+#endif
+        end subroutine check_result
 
 end program test_ellipsoid_split

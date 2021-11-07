@@ -52,8 +52,6 @@ module parcel_split_mod
                     cycle
                 endif
 
-                print *, "a2 = ", a2, "b2 = ", b2, "c2 = ", c2
-
                 !
                 ! this ellipsoid is split, i.e., add a new parcel
                 !
