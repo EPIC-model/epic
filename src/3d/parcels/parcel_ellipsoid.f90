@@ -122,11 +122,14 @@ module parcel_ellipsoid
 
             abc = get_abc(volume)
 
-            if (B(1) * B(4) - B(2) ** 2 <= epsilon(abc)) then
-                print *, "HI"
+            if (dabs(B(1) * B(4) - B(2) ** 2) <= epsilon(abc)) then
+                print *, "Error in get_B33: Division by small number!"
+                stop
             endif
 
-            B33 = (abc ** 2 - B(3) * (B(2) * B(5) - B(3) * B(4)) + B(1) * B(5) ** 2 - B(2) * B(3) * B(5)) &
+            B33 = (abc ** 2 - B(3) * (B(2) * B(5) - B(3) * B(4)) &
+                            + B(1) * B(5) ** 2                   &
+                            - B(2) * B(3) * B(5))                &
                 / (B(1) * B(4) - B(2) ** 2)
 
         end function get_B33
