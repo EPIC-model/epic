@@ -165,15 +165,14 @@ module parcel_ellipsoid
             ! (/a2, b2, c2/)
             evals = get_eigenvalues(B, volume)
 
-            eta = dsqrt(evals(2) - evals(1)) * rho
-            tau = dsqrt(evals(3) - evals(1)) * rho
+            eta = dsqrt(dabs(evals(2) - evals(1))) * rho
+            tau = dsqrt(dabs(evals(3) - evals(1))) * rho
 
             do j = 1, 4
                 ! theta = j * pi / 2 - pi / 4 (j = 1, 2, 3, 4)
                 ! x_j = eta * rho * cos(theta_j)
                 ! y_j = tau * rho * sin(theta_j)
-                points(4, :) = position(3) + (/eta * costheta(1), tau * sintheta(1), zero/)
+                points(j, :) = position + (/eta * costheta(j), tau * sintheta(j), zero/)
             enddo
-
         end function get_ellipsoid_points
 end module parcel_ellipsoid

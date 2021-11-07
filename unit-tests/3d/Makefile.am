@@ -1,23 +1,24 @@
 if ENABLE_UNIT_TESTS
 
 AM_FCFLAGS =				\
-	-I $(top_builddir)/src/2d/ 	\
+	-I $(top_builddir)/src/3d/ 	\
 	-I $(top_builddir)/unit-tests	\
 	-I $(top_builddir)/src/utils	\
 	-I $(top_builddir)/src/hdf5
 
 AM_LDFLAGS =						\
-	$(top_builddir)/src/2d/parcels/*.o 		\
-	$(top_builddir)/src/2d/utils/*.o		\
-	$(top_builddir)/src/2d/fields/*.o		\
-	$(top_builddir)/src/2d/tri_inversion.o
+	$(top_builddir)/src/3d/parcels/*.o 		\
+	$(top_builddir)/src/3d/utils/*.o		\
+	$(top_builddir)/src/3d/fields/*.o		\
+	$(top_builddir)/src/3d/tri_inversion.o
 
 unittestsdir = $(prefix)/unit-tests
 
 unittests_PROGRAMS = 				\
 	test_jacobi_1				\
 	test_jacobi_2				\
-	test_jacobi_3
+	test_jacobi_3				\
+	test_parcel_init_3d
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -43,5 +44,10 @@ test_jacobi_3_LDADD = 					\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
+test_parcel_init_3d_SOURCES = test_parcel_init_3d.f90
+test_parcel_init_3d_LDADD = 				\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
 endif

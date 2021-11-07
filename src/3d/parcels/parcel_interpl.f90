@@ -54,7 +54,7 @@ module parcel_interpl
                                               pvol, parcels%B(n, :))
 
 
-                ! we have 4 points per ellipse
+                ! we have 4 points per ellipsoid
                 do p = 1, 4
 
                     ! ensure point is within the domain
@@ -110,8 +110,8 @@ module parcel_interpl
 
                     points = get_ellipsoid_points(pos, V, B)
 
-                    ! we have 2 points per ellipse
-                    do p = 1, 2
+                    ! we have 4 points per ellipsoid
+                    do p = 1, 4
 
                         ! ensure point is within the domain
                         call apply_periodic_bc(points(p, :))
@@ -190,17 +190,18 @@ module parcel_interpl
                     nsparg(k, j, i) = nsparg(k, j, i) + 1
                 endif
 
-                ! we have 4 points per ellipse
+                ! we have 4 points per ellipsoid
                 do p = 1, 4
 
                     ! ensure point is within the domain
                     call apply_periodic_bc(points(p, :))
 
+
                     ! get interpolation weights and mesh indices
                     call trilinear(points(p, :), is, js, ks, weights)
 
                     ! loop over grid points which are part of the interpolation
-                    ! the weight is halved due to 2 points per ellipse
+                    ! the weight is a quarter due to 4 points per ellipsoid
                     do l = 1, ngp
 
                         weight = f14 * weights(l) * pvol
@@ -338,8 +339,8 @@ module parcel_interpl
                                               parcels%volume(n),      &
                                               parcels%B(n, :))
 
-                ! we have 2 points per ellipse
-                do p = 1, 2
+                ! we have 4 points per ellipsoid
+                do p = 1, 4
 
                     ! ensure point is within the domain
                     call apply_periodic_bc(points(p, :))
@@ -353,7 +354,7 @@ module parcel_interpl
 
                         ! loop over field components
                         do c = 1, ncomp
-                            ! the weight is halved due to 2 points per ellipse
+                            ! the weight is a quarter due to 4 points per ellipsoid
                             vel(n, c) = vel(n, c) &
                                       + weight * velog(ks(l), js(l), is(l), c)
                         enddo
