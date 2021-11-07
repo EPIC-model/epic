@@ -6,7 +6,7 @@
 ! =============================================================================
 program test_ellipsoid_split
     use unit_test
-    use constants, only : pi, zero, one, three, four, five, ten, f12, f14, f34
+    use constants, only : pi, zero, one, three, four, five, ten, f12, f14, f34, two
     use parcel_container
     use parcel_split_mod, only : parcel_split, split_timer
     use parameters, only : update_parameters, nx, ny, nz, extent, lower, vmax
@@ -14,17 +14,17 @@ program test_ellipsoid_split
     implicit none
 
     double precision, parameter :: lam = five
-    double precision, parameter :: theta = f14 * pi, phi = pi / three !f14 * pi, phi = f14 * pi
+    double precision, parameter :: theta = f14 * pi, phi = f12 * pi
     double precision, parameter :: st = dsin(theta), ct = dcos(theta)
     double precision, parameter :: sp = dsin(phi), cp = dcos(phi)
     double precision :: B11, B12, B13, B22, B23, B33, abc, ab, evec(3)
     double precision :: h, pos(2, 3), error, a2, b2, c2
 
-    nx = 10
-    ny = 10
-    nz = 10
-    extent = (/ten, ten, ten/)
-    lower = (/-five, -five, -five/)
+    nx = 20
+    ny = 20
+    nz = 20
+    extent = (/ten*two, ten*two, ten*two/)
+    lower = (/-five*two, -five*two, -five*two/)
     call update_parameters
 
     vmax = one
@@ -51,13 +51,14 @@ program test_ellipsoid_split
 #ifndef ENABLE_DRY_MODE
     parcels%humidity(1) = one
 #endif
-
-    B11 = a2 * st ** 2 * cp ** 2 + b2 * ct ** 2 * cp ** 2 + c2 * sp ** 2
-    B12 = a2 * st ** 2 * sp * cp + b2 * ct ** 2 * sp * cp + c2 * sp * cp
-    B13 = a2 * st * ct * cp - b2 * st * ct * cp
-    B22 = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 * sp ** 2 + c2 * cp ** 2
-    B23 = a2 * st * ct * sp - b2 * st * ct * sp
-    B33 = a2 * ct ** 2 + b2 * st ** 2
+    ! 7 Nov 2021
+    ! https://mathworld.wolfram.com/SphericalCoordinates.html
+    B11 = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
+    B12 = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
+    B13 = (a2 - c2) * ct * sp * cp
+    B22 = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
+    B23 = (a2 - c2) * st * sp * cp
+    B33 = a2 * cp ** 2 + c2 * sp ** 2
 
     print *, "B11:", B11
     print *, "B12:", B12
@@ -75,20 +76,20 @@ program test_ellipsoid_split
 
     ! analytic split
     h = f12 * dsqrt(three / five * a2)
-    B11 = B11 - f34 * a2 * st ** 2 * cp ** 2
-    B12 = B12 - f34 * a2 * st ** 2 * sp * cp
-    B13 = B13 - f34 * a2 * st * ct * cp
+    B11 = B11 - f34 * a2 * ct ** 2 * sp ** 2
+    B12 = B12 - f34 * a2 * st * ct * sp ** 2
+    B13 = B13 - f34 * a2 * ct * sp * cp
     B22 = B22 - f34 * a2 * st ** 2 * sp ** 2
-    B23 = B23 - f34 * a2 * st * ct * sp
+    B23 = B23 - f34 * a2 * st * sp * cp
 
     error = zero
 
     if ((a2 > b2) .and. (a2 > c2)) then
-        evec = (/st * cp, st * sp, ct/)
+        evec = (/ct * sp, st * sp, cp/)
     else if ((b2 > a2) .and. (b2 > c2)) then
-        evec = (/ct * cp, ct * sp, -st/)
+        evec = (/-st, ct, zero/)
     else if ((c2 > a2) .and. (c2 > b2)) then
-        evec = (/-sp, cp, zero/)
+        evec = (/ct * cp, st * cp, -sp/)
     else
         error = one
     endif

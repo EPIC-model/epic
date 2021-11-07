@@ -45,12 +45,14 @@ module parcel_split_mod
 
                 call diagonalise(B, vol, a2, b2, c2, V)
 
-                ! evaluate maximum aspect ratio
-                lam = max(dsqrt(a2 / b2), dsqrt(a2 / c2))
+                ! evaluate maximum aspect ratio (a2 >= b2 >= c2)
+                lam = dsqrt(a2 / c2)
 
                 if (lam <= threshold .and. vol <= vmax) then
                     cycle
                 endif
+
+                print *, "a2 = ", a2, "b2 = ", b2, "c2 = ", c2
 
                 !
                 ! this ellipsoid is split, i.e., add a new parcel

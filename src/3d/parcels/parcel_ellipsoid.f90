@@ -125,6 +125,13 @@ module parcel_ellipsoid
             B33 = (abc ** 2 + B(2) * B(5) * (B(5) - two * B(3)) + B(3) ** 2 * B(4)) &
                 / (B(1) * B(4) - B(2) ** 2)
 
+            print *, "B33 = ", B33
+
+            B33 = (abc ** 2 - B(3) * (B(2) * B(5) - B(3) * B(4)) + B(1) * B(5) ** 2 - B(2) * B(3) * B(5)) &
+                / (B(1) * B(4) - B(2) ** 2)
+
+            print *, "B33 = ", B33
+
         end function get_B33
 
         ! Obtain the product of the semi-minor and semi-major axis.
