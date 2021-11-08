@@ -134,7 +134,7 @@ program test_parcel_init_3d
     ! Maximum error
     error = max(error, maxval(dabs(workg(0:nz, :, :))))
 
-    call print_result_dp('Test parcel initialisation', error, atol=two * tol)
+    call print_result_dp('Test parcel initialisation 3D', error, atol=two * tol)
 
     call parcel_dealloc
 
