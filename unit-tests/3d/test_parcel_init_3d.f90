@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_parcel_init_3d
     use unit_test
-    use constants, only : pi, zero, one, two, four, f12, f13, f32
+    use constants, only : pi, zero, one, two, four, f12, f13, f23, f32
     use parcel_container
     use parcel_init, only : gen_parcel_scalar_attr, unit_test_parcel_init_alloc, init_timer
     use parcel_interpl, only : par2grid, par2grid_timer
@@ -32,9 +32,8 @@ program test_parcel_init_3d
     nx = 64
     ny = 64
     nz = 32
-    lower  = (/-f32, -f32, -f32/)
-    extent = (/8.0d0, 8.0d0, four/)
     lower = (/-four, -four, -two/)
+    extent = (/8.0d0, 8.0d0, four/)
 
     call register_timer('parcel init', init_timer)
     call register_timer('par2grid', par2grid_timer)
@@ -72,7 +71,7 @@ program test_parcel_init_3d
 
     !---------------------------------------------------------
     !Initialise parcel volume positions and volume fractions:
-    v0 = dxf * dzf * vcell
+    v0 = dxf * dyf * dzf * vcell
     i = 0
     do iz = 0, nz-1
         do iy = 0, ny-1
@@ -86,8 +85,8 @@ program test_parcel_init_3d
                             parcels%position(i, 3) = lower(3) + dx(3) * (dble(iz) + dzf * (dble(mz) - f12))
                             parcels%volume(i) = v0
                             parcels%B(i, :) = zero
-                            parcels%B(i, 1) = get_abc(v0) * f13
-                            parcels%B(i, 4) = get_abc(v0) * f13
+                            parcels%B(i, 1) = get_abc(v0) ** f23
+                            parcels%B(i, 4) = parcels%B(i, 1)
                         enddo
                     enddo
                 enddo

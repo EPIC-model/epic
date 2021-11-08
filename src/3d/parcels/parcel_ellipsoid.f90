@@ -137,16 +137,16 @@ module parcel_ellipsoid
             abc = f34 * volume * fpi
         end function get_abc
 
-        ! Obtain the aspect ratios a/b of the parcel(s).
+        ! Obtain the aspect ratio a/c of the parcel(s).
         ! @param[in] a2 is the largest eigenvalue
-        ! @param[in] b2 is the middle eigenvalue
+        ! @param[in] c2 is the smallest eigenvalue
         ! @param[in] volume of the parcel(s)
-        ! @returns a/b
-        elemental function get_aspect_ratio(a2, b2) result(lam)
-            double precision, intent(in) :: a2, b2
+        ! @returns a/c
+        elemental function get_aspect_ratio(a2, c2) result(lam)
+            double precision, intent(in) :: a2, c2
             double precision             :: lam
 
-            lam = dsqrt(a2 / b2)
+            lam = dsqrt(a2 / c2)
         end function get_aspect_ratio
 
         ! Obtain the ellipse support points for par2grid and grid2par

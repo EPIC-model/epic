@@ -3,7 +3,7 @@
 ! =============================================================================
 module parcel_init
     use options, only : parcel, output, verbose, field_tol
-    use constants, only : zero, two, one, f12, f13, max_num_parcels
+    use constants, only : zero, two, one, f12, f13, f23, max_num_parcels
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipsoid, only : get_abc, get_eigenvalues
 !     use parcel_split_mod, only : parcel_split
@@ -46,7 +46,7 @@ module parcel_init
         subroutine init_parcels(h5fname, tol)
             character(*),     intent(in) :: h5fname
             double precision, intent(in) :: tol
-            double precision             :: lam, l13
+            double precision             :: lam, l23
             integer(hid_t)               :: h5handle
             integer                      :: n
 
@@ -88,18 +88,18 @@ module parcel_init
                            dx(2) / dx(3), dx(3) / dx(2)/))
 
             !$omp parallel default(shared)
-            !$omp do private(n, l13)
+            !$omp do private(n, l23)
             do n = 1, n_parcels
                 ! set all to zero
                 parcels%B(n, :) = zero
 
-                l13 = f13 * lam * get_abc(parcels%volume(n))
+                l23 = (lam * get_abc(parcels%volume(n))) ** f23
 
                 ! B11
-                parcels%B(n, 1) = l13
+                parcels%B(n, 1) = l23
 
                 ! B22
-                parcels%B(n, 1) = l13
+                parcels%B(n, 4) = l23
             enddo
             !$omp end do
             !$omp end parallel

@@ -196,7 +196,6 @@ module parcel_interpl
                     ! ensure point is within the domain
                     call apply_periodic_bc(points(p, :))
 
-
                     ! get interpolation weights and mesh indices
                     call trilinear(points(p, :), is, js, ks, weights)
 
