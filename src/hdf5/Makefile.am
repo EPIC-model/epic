@@ -1,7 +1,3 @@
-AM_FCFLAGS =                            	\
-        -I $(top_builddir)/src/utils
-
-
 lib_LTLIBRARIES = libepic_hdf5.la
 libepic_hdf5_la_SOURCES = 	\
 	h5_utils.f90		\
