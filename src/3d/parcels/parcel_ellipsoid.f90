@@ -95,7 +95,7 @@ module parcel_ellipsoid
         ! @param[in] volume of the parcel
         ! @returns the eigenvectors
         subroutine diagonalise(B, volume, a2, b2, c2, V)
-            double precision, intent(in)  :: B(3, 3)
+            double precision, intent(in)  :: B(5)
             double precision, intent(in)  :: volume
             double precision, intent(out) :: a2, b2, c2, V(3, 3)
             double precision              :: D(3, 3)
@@ -158,21 +158,30 @@ module parcel_ellipsoid
             double precision, intent(in) :: position(3)
             double precision, intent(in) :: volume
             double precision, intent(in) :: B(5)        ! B11, B12, B13, B22, B23
-            double precision             :: eta, tau, evals(3)
-            integer                      :: j
+            double precision             :: eta, tau, a2, b2, c2, V(3, 3)
+            integer                      :: j, k
             double precision             :: points(4, 3)
 
-            ! (/a2, b2, c2/) with c <= b <= a
-            evals = get_eigenvalues(B, volume)
+            ! (/a2, b2, c2/) with a >= b >= c
+            call diagonalise(B, volume, a2, b2, c2, V)
 
-            eta = dsqrt(dabs(evals(2) - evals(3))) * rho
-            tau = dsqrt(dabs(evals(1) - evals(3))) * rho
+            eta = dsqrt(dabs(a2 - c2)) * rho
+            tau = dsqrt(dabs(b2 - c2)) * rho
 
             do j = 1, 4
+                ! support point in the reference frame of the ellipsoid
                 ! theta = j * pi / 2 - pi / 4 (j = 1, 2, 3, 4)
                 ! x_j = eta * rho * cos(theta_j)
                 ! y_j = tau * rho * sin(theta_j)
-                points(j, :) = position + (/eta * costheta(j), tau * sintheta(j), zero/)
+                points(j, :) = (/eta * costheta(j), tau * sintheta(j), zero/)
+
+                ! suppport point in the global reference frame
+                do k = 1, 3
+                    points(j, k) = position(k)            &
+                                 + points(j, 1) * V(k, 1) &
+                                 + points(j, 2) * V(k, 2) &
+                                 + points(j, 3) * V(k, 3)
+                enddo
             enddo
         end function get_ellipsoid_points
 end module parcel_ellipsoid
