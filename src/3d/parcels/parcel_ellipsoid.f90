@@ -162,11 +162,11 @@ module parcel_ellipsoid
             integer                      :: j
             double precision             :: points(4, 3)
 
-            ! (/a2, b2, c2/)
+            ! (/a2, b2, c2/) with c <= b <= a
             evals = get_eigenvalues(B, volume)
 
-            eta = dsqrt(dabs(evals(2) - evals(1))) * rho
-            tau = dsqrt(dabs(evals(3) - evals(1))) * rho
+            eta = dsqrt(dabs(evals(2) - evals(3))) * rho
+            tau = dsqrt(dabs(evals(1) - evals(3))) * rho
 
             do j = 1, 4
                 ! theta = j * pi / 2 - pi / 4 (j = 1, 2, 3, 4)
