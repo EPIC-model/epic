@@ -6,7 +6,7 @@ module parcel_init
     use constants, only : zero, two, one, f12, f13, f23, max_num_parcels
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipsoid, only : get_abc, get_eigenvalues
-!     use parcel_split_mod, only : parcel_split
+    use parcel_split_mod, only : parcel_split
     use parcel_interpl, only : trilinear, ngp
     use parameters, only : update_parameters,   &
                            dx, vcell, ncell,    &
@@ -169,9 +169,9 @@ module parcel_init
 
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
-!                 call parcel_split(parcels, parcel%lambda_max)
+                call parcel_split(parcels, parcel%lambda_max)
                 evals = get_eigenvalues(parcels%B(1, :), parcels%volume(1))
-                lam = dsqrt(evals(1) / evals(2))
+                lam = dsqrt(evals(1) / evals(3))
             end do
         end subroutine init_refine
 

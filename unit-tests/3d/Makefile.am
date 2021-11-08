@@ -18,6 +18,7 @@ unittests_PROGRAMS = 				\
 	test_jacobi_1				\
 	test_jacobi_2				\
 	test_jacobi_3				\
+	test_ellipsoid_split \
 	test_parcel_init_3d
 
 dataroot_DATA =		\
@@ -40,6 +41,12 @@ test_jacobi_2_LDADD = 					\
 
 test_jacobi_3_SOURCES = test_jacobi_3.f90
 test_jacobi_3_LDADD = 					\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
+
+test_ellipsoid_split_SOURCES = test_ellipsoid_split.f90
+test_ellipsoid_split_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la
