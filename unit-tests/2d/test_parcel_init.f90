@@ -30,9 +30,8 @@ program test_parcel_init
 
     nx = 64
     nz = 32
-    lower  = (/-f32, -f32/)
-    extent = (/8.0d0, four/)
     lower = (/-four, -two/)
+    extent = (/8.0d0, four/)
 
     call register_timer('parcel init', init_timer)
     call register_timer('par2grid', par2grid_timer)
