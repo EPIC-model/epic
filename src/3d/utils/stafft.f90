@@ -412,20 +412,26 @@ module stafft
         fpin = pi / dble(n)
         rtn = dsqrt(dble(n))
 
+        !$omp parallel
         !Pre-process the array and store it in wk:
+        !$omp do
         do i = 1, m
             wk(i, 0) = f12 * (x(i, 0) + x(i, n))
         enddo
+        !$omp enddo
 
+        !$omp do
         do j = 1, n - 1
             do i = 1, m
                 wk(i, j) = f12 * (x(i, j) + x(i, n - j)) - dsin(dble(j) * fpin) * (x(i, j) - x(i, n - j))
             enddo
         enddo
+        !$omp enddo
 
         !Get the first element of the transform x(i, 1) and store
         !in x(i, n), as this is not overwritten when x is used
         !as a work array in the forfft routine called next:
+        !$omp do private(rowsum)
         do i = 1, m
             rowsum = zero
             rowsum = rowsum + f12 * x(i, 0)
@@ -435,6 +441,8 @@ module stafft
             rowsum = rowsum - f12 * x(i, n)
             x(i, n) = rt2 * rowsum / rtn
         enddo
+        !$omp enddo
+        !$omp end parallel
 
         !Transform the wk array by use of the general FFT routine:
         call forfft(m, n, wk, trig, factors)
@@ -481,18 +489,24 @@ module stafft
 
         fpin = pi / dble(n)
 
+        !$omp parallel
         !Pre-process the array and store it in wk:
         !First set 0 frequency element to zero:
+        !$omp do
         do i = 1, m
             wk(i, 0) = zero
         enddo
+        !$omp enddo
 
         !Next set up the rest of the array:
+        !$omp do
         do j = 1, n - 1
             do i = 1, m
                 wk(i, j) = f12 * (x(i, j) - x(i, n - j)) + dsin(dble(j) * fpin) * (x(i, j) + x(i, n - j))
             enddo
         enddo
+        !$omp enddo
+        !$omp end parallel
 
         !Transform the wk array by use of the general FFT routine:
         call forfft(m, n, wk, trig, factors)
@@ -554,7 +568,9 @@ module stafft
         double precision                :: q1, q2, q3, q4, q5, q6
         integer                         :: i, k, kc, lvd2
 
+        !$omp parallel
         !Do k = 0 first:
+        !$omp do private(t1r, t2r, t3r, u0r, t1i, t2i, t3i, v0r)
         do i = 0, nv - 1
             t1r = a(i, 2, 0) + a(i, 4, 0)
             t2r = a(i, 0, 0) - f12 * t1r
@@ -571,8 +587,15 @@ module stafft
             b(i, 0, 4) = t3i - t3r
             b(i, 0, 5) = t3r + t3i
         enddo
+        !$omp enddo
+
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
+            !$omp do private(kc,x1p,x2p,x3p,x4p,x5p,     &
+            !$omp               y1p,y2p,y3p,y4p,y5p,     &
+            !$omp               t1i,t1r,t2i,t2r,t3i,t3r, &
+            !$omp               u0i,u0r,u1i,u1r,u2i,u2r, &
+            !$omp               v0i,v0r,v1i,v1r,v2i,v2r )
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -624,7 +647,15 @@ module stafft
                     b(i, kc, 5) = u0i + v0i
                 enddo
             enddo
+            !$omp enddo
         else
+            !$omp do private(kc,x1p,x2p,x3p,x4p,x5p,     &
+            !$omp               y1p,y2p,y3p,y4p,y5p,     &
+            !$omp               s1k,s2k,s3k,s4k,s5k,     &
+            !$omp               c1k,c2k,c3k,c4k,c5k,     &
+            !$omp               t1i,t1r,t2i,t2r,t3i,t3r, &
+            !$omp               u0i,u0r,u1i,u1r,u2i,u2r, &
+            !$omp               v0i,v0r,v1i,v1r,v2i,v2r )
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -686,11 +717,13 @@ module stafft
                     b(i, kc, 5) = u0i + v0i
                 enddo
             enddo
+            !$omp enddo
         endif
 
         !Catch the case k = lv / 2 when lv even:
         if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
+            !$omp do private(q1, q2, q3, q4, q5, q6)
             do i = 0, nv - 1
                 q1 = a(i, 2, lvd2) - a(i, 4, lvd2)
                 q2 = a(i, 0, lvd2) + f12 * q1
@@ -705,7 +738,9 @@ module stafft
                 b(i, lvd2, 4) = a(i, 3, lvd2) - q4
                 b(i, lvd2, 5) = q5 - q3
             enddo
+            !$omp enddo
         endif
+        !$omp end parallel
     end subroutine
 
 
@@ -722,7 +757,9 @@ module stafft
         double precision                :: t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r
         integer                         :: i, k, kc
 
+        !$omp parallel
         !Do k = 0 first:
+        !$omp do private(t1r, t2r, t3r, t4r, t5r, t6r, t7r)
         do i = 0, nv - 1
             t1r = a(i, 1, 0) + a(i, 4, 0)
             t2r = a(i, 2, 0) + a(i, 3, 0)
@@ -737,8 +774,12 @@ module stafft
             b(i, 0, 3) = t4r + sinrat * t3r
             b(i, 0, 4) = t3r - sinrat * t4r
         enddo
+        !$omp enddo
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
+            !$omp do private(kc, x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
+            !$omp                t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -784,7 +825,12 @@ module stafft
                     b(i, kc, 4) = a(i, 0, kc) + t5i
                 enddo
             enddo
+            !$omp enddo
         else
+            !$omp do private(kc, s1k, s2k, s3k, s4k, c1k, c2k, c3k, c4k,                     &
+            !$omp                x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
+            !$omp                t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -838,7 +884,9 @@ module stafft
                     b(i, kc, 4) = a(i, 0, kc) + t5i
                 enddo
             enddo
+            !$omp enddo
         endif
+        !$omp end parallel
     end subroutine
 
 
@@ -855,7 +903,9 @@ module stafft
         double precision                :: q1,q2
         integer                         :: i,k,kc,lvd2
 
+        !$omp parallel
         !Do k = 0 first:
+        !$omp do private(t1r, t2r)
         do i = 0,nv - 1
             t1r = a(i,0,0) + a(i,2,0)
             t2r = a(i, 1, 0) + a(i, 3, 0)
@@ -864,8 +914,11 @@ module stafft
             b(i, 0, 2) = t1r - t2r
             b(i, 0, 3) = a(i, 3, 0) - a(i, 1, 0)
         enddo
+        !$omp enddo
         !Next do remaining k:
         if (nv .lt. (lv - 1) / 2) then
+            !$omp do private(kc, x1p, x2p, x3p, y1p, y2p, y3p,           &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -893,7 +946,11 @@ module stafft
                     b(i, kc, 3) = t1i + t2i
                 enddo
             enddo
+            !$omp enddo
         else
+            !$omp do private(kc, x1p, x2p, x3p, y1p, y2p, y3p,          &
+            !$omp                s1k, s2k, s3k, c1k, c2k, c3k,          &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -927,11 +984,13 @@ module stafft
                     b(i, kc, 3) = t1i + t2i
                 enddo
             enddo
+            !$omp enddo
         endif
 
         !Catch the case k = lv / 2 when lv even:
         if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
+            !$omp do private(q1, q2)
             do i = 0, nv - 1
                 q1 = rtf12 * (a(i, 1, lvd2) - a(i, 3, lvd2))
                 q2 = rtf12 * (a(i, 1, lvd2) + a(i, 3, lvd2))
@@ -940,7 +999,9 @@ module stafft
                 b(i, lvd2, 2) = a(i, 2, lvd2) - q2
                 b(i, lvd2, 3) = - a(i, 2, lvd2) - q2
             enddo
+            !$omp enddo
         endif
+        !$omp end parallel
     end subroutine
 
 
@@ -956,15 +1017,20 @@ module stafft
         double precision                :: t1i, t1r, t2i, t2r, t3i, t3r
         integer                         :: i, k, kc
 
+        !$omp parallel
         !Do k = 0 first:
+        !$omp do private(t1r)
         do i = 0, nv - 1
             t1r = a(i, 1, 0) + a(i, 2, 0)
             b(i, 0, 0) = a(i, 0, 0) + t1r
             b(i, 0, 1) = a(i, 0, 0) - f12 * t1r
             b(i, 0, 2) = sinfpi3 * (a(i, 2, 0) - a(i, 1, 0))
         enddo
+        !$omp enddo
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
+            !$omp do private(kc, x1p, x2p, y1p, y2p,          &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -986,7 +1052,11 @@ module stafft
                     b(i, kc, 2) = a(i, 0, kc) + t1i
                 enddo
             enddo
+            !$omp enddo
         else
+            !$omp do private(kc, x1p, x2p, y1p, y2p,           &
+            !$omp                s1k, s2k, c1k, c2k,           &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -1012,7 +1082,9 @@ module stafft
                     b(i, kc, 2) = a(i, 0, kc) + t1i
                 enddo
             enddo
+            !$omp enddo
         endif
+        !$omp end parallel
     end subroutine
 
 
@@ -1026,13 +1098,16 @@ module stafft
         double precision                :: x1, y1, c1k, s1k
         integer                         :: i, k, kc
 
+        !$omp parallel
         !Do k = 0 first:
         do i = 0, nv - 1
             b(i, 0, 0) = a(i, 0, 0) + a(i, 1, 0)
             b(i, 0, 1) = a(i, 0, 0) - a(i, 1, 0)
         enddo
+        !$omp do
         !Next do remaining k:
         if (nv .lt. (lv - 1) / 2) then
+            !$omp do private(kc, x1, y1)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1044,7 +1119,9 @@ module stafft
                     b(i, kc, 1) = a(i, 0, kc) + y1
                 enddo
             enddo
+            !$omp enddo
         else
+            !$omp do private(kc, c1k, s1k, x1, y1)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k)
@@ -1058,7 +1135,9 @@ module stafft
                     b(i, kc, 1) = a(i, 0, kc) + y1
                 enddo
             enddo
+            !$omp enddo
         endif
+        !$omp end parallel
     end subroutine
 
 
@@ -1083,7 +1162,9 @@ module stafft
         double precision                :: q1, q2, q3, q4, q5, q6
         integer                         :: i, k, kc, lvd2
 
+        !$omp parallel
         !Do k = 0 first:
+        !$omp do private(t2r, t3r, u0r, u1r, u2r, t2i, t3i, v0r, v1r, v2r)
         do i = 0, nv - 1
             t2r = a(i, 0, 0) - f12 * a(i, 0, 2)
             t3r = sinfpi3 * a(i, 0, 4)
@@ -1102,8 +1183,14 @@ module stafft
             b(i, 4, 0) = u1r + v1r
             b(i, 5, 0) = u2r - v2r
         enddo
+        !$omp enddo
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
+            !$omp do private(kc, t1i, t1r, t2i, t2r, t3i, t3r, &
+            !$omp                u0i, u0r, u1i, u1r, u2i, u2r, &
+            !$omp                v0i, v0r, v1i, v1r, v2i, v2r, &
+            !$omp                     x1p, x2p, x3p, x4p, x5p, &
+            !$omp                     y1p, y2p, y3p, y4p, y5p)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1155,7 +1242,15 @@ module stafft
                     b(i, 5, kc) = cosine(k, 5) * y5p + sine(k, 5) * x5p
                 enddo
             enddo
+            !$omp enddo
         else
+            !$omp do private(kc, t1i, t1r, t2i, t2r, t3i, t3r, &
+            !$omp                u0i, u0r, u1i, u1r, u2i, u2r, &
+            !$omp                v0i, v0r, v1i, v1r, v2i, v2r, &
+            !$omp                     x1p, x2p, x3p, x4p, x5p, &
+            !$omp                     y1p, y2p, y3p, y4p, y5p, &
+            !$omp                     s1k, s2k, s3k, s4k, s5k, &
+            !$omp                     c1k, c2k, c3k, c4k, c5k)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -1217,11 +1312,13 @@ module stafft
                     b(i, 5, kc) = c5k * y5p + s5k * x5p
                 enddo
             enddo
+            !$omp enddo
         endif
 
         !Catch the case k = lv / 2 when lv even:
         if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
+            !$omp do private(q1, q2, q3, q4, q5, q6)
             do i = 0, nv - 1
                 q1 = a(i, lvd2, 0) + a(i, lvd2, 2)
                 q2 = a(i, lvd2, 5) + a(i, lvd2, 3)
@@ -1236,7 +1333,9 @@ module stafft
                 b(i, 4, lvd2) = q3 + q6
                 b(i, 5, lvd2) = q4 - q5
             enddo
+            !$omp enddo
         endif
+        !$omp end parallel
     end subroutine
 
 
@@ -1253,7 +1352,9 @@ module stafft
         double precision                :: t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r
         integer                         :: i, k, kc
 
+        !$omp parallel
         !Do k = 0 first:
+        !$omp do private(t3r, t4r, t5r, t6r, t7r, t8r, t9r, t10r, t11r)
         do i = 0, nv - 1
             t3r = sinf2pi5 * a(i, 0, 4)
             t4r = sinf2pi5 * a(i, 0, 3)
@@ -1270,8 +1371,12 @@ module stafft
             b(i, 3, 0) = t9r - t11r
             b(i, 4, 0) = t8r - t10r
         enddo
+        !$omp enddo
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
+            !$omp do private(kc, x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
+            !$omp                t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1317,7 +1422,12 @@ module stafft
                     b(i, 4, kc) = cosine(k, 4) * y4p + sine(k, 4) * x4p
                 enddo
             enddo
+            !$omp enddo
         else
+            !$omp do private(kc, x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
+            !$omp                s1k, s2k, s3k, s4k, c1k, c2k, c3k, c4k,                     &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
+            !$omp                t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -1371,7 +1481,9 @@ module stafft
                     b(i, 4, kc) = c4k * y4p + s4k * x4p
                 enddo
             enddo
+            !$omp enddo
         endif
+        !$omp end parallel
     end subroutine
 
 
@@ -1387,7 +1499,9 @@ module stafft
         double precision                :: t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r
         integer                         :: i, k, kc, lvd2
 
+        !$omp parallel
         !Do k = 0 first:
+        !$omp do private(t1r, t2r, t3r, t4r)
         do i = 0, nv - 1
             t1r = a(i, 0, 0) + a(i, 0, 2)
             t2r = a(i, 0, 1)
@@ -1398,8 +1512,11 @@ module stafft
             b(i, 2, 0) = t1r - t2r
             b(i, 3, 0) = t3r - t4r
         enddo
+        !$omp enddo
         !Next do remaining k:
         if (nv .lt. (lv - 1) / 2) then
+            !$omp do private(kc, x1p, x2p, x3p, y1p, y2p, y3p,          &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1427,7 +1544,11 @@ module stafft
                     b(i, 3, kc) = cosine(k, 3) * y3p + sine(k, 3) * x3p
                 enddo
             enddo
+            !$omp enddo
         else
+            !$omp do private(kc, x1p, x2p, x3p, y1p, y2p, y3p,           &
+            !$omp                s1k, s2k, s3k, c1k, c2k, c3k,           &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -1461,11 +1582,13 @@ module stafft
                     b(i, 3, kc) = c3k * y3p + s3k * x3p
                 enddo
             enddo
+            !$omp enddo
         endif
 
         !Catch the case k = lv / 2 when lv even:
         if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
+            !$omp do private(t3r, t4r)
             do i = 0, nv - 1
                 b(i, 0, lvd2) = a(i, lvd2, 0) + a(i, lvd2, 1)
                 b(i, 2, lvd2) = a(i, lvd2, 3) - a(i, lvd2, 2)
@@ -1474,7 +1597,9 @@ module stafft
                 b(i, 1, lvd2) = rtf12 * (t3r + t4r)
                 b(i, 3, lvd2) = rtf12 * (t4r - t3r)
             enddo
+            !$omp enddo
         endif
+        !$omp end parallel
     end subroutine
 
 
@@ -1490,7 +1615,9 @@ module stafft
         double precision                :: t1i, t1r, t2i, t2r, t3i, t3r
         integer                         :: i, k, kc
 
+        !$omp parallel
         !Do k = 0 first:
+        !$omp do private(t1r, t2r, t3r)
         do i = 0, nv - 1
             t1r = a(i, 0, 1)
             t2r = a(i, 0, 0) - f12 * t1r
@@ -1499,8 +1626,11 @@ module stafft
             b(i, 1, 0) = t2r + t3r
             b(i, 2, 0) = t2r - t3r
         enddo
+        !$omp enddo
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
+            !$omp do private(kc, x1p, x2p, y1p, y2p,            &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1522,7 +1652,11 @@ module stafft
                     b(i, 2, kc) = sine(k, 2) * x2p + cosine(k, 2) * y2p
                 enddo
             enddo
+            !$omp enddo
         else
+            !$omp do private(kc, x1p, x2p, y1p, y2p,            &
+            !$omp                c1k, c2k, s1k, s2k,            &
+            !$omp                t1i, t1r, t2i, t2r, t3i, t3r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -1548,7 +1682,9 @@ module stafft
                     b(i, 2, kc) = s2k * x2p + c2k * y2p
                 enddo
             enddo
+            !$omp enddo
         endif
+        !$omp end parallel
     end subroutine
 
 
@@ -1562,13 +1698,17 @@ module stafft
         double precision                :: x1p, y1p, c1k, s1k
         integer                         :: i, k, kc
 
+        !$omp parallel
         !Do k = 0 first:
+        !$omp do
         do i = 0, nv - 1
             b(i, 0, 0) = a(i, 0, 0) + a(i, 0, 1)
             b(i, 1, 0) = a(i, 0, 0) - a(i, 0, 1)
         enddo
+        !$omp enddo
         !Next do remaining k:
         if (nv .lt. (lv - 1) / 2) then
+            !$omp do private(kc, x1p, y1p)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1580,7 +1720,9 @@ module stafft
                     b(i, 1, kc) = cosine(k) * y1p + sine(k) * x1p
                 enddo
             enddo
+            !$omp enddo
         else
+            !$omp do private(kc, c1k, s1k, x1p, y1p)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k)
@@ -1594,6 +1736,8 @@ module stafft
                     b(i, 1, kc) = c1k * y1p + s1k * x1p
                 enddo
             enddo
+            !$omp enddo
         endif
+        !$omp end parallel
     end subroutine
 end module

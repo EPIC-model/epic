@@ -18,7 +18,8 @@ unittests_PROGRAMS = 				\
 	test_jacobi_1				\
 	test_jacobi_2				\
 	test_jacobi_3				\
-	test_ellipsoid_split
+	test_ellipsoid_split \
+	test_parcel_init_3d
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -50,5 +51,10 @@ test_ellipsoid_split_LDADD = 					\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
+test_parcel_init_3d_SOURCES = test_parcel_init_3d.f90
+test_parcel_init_3d_LDADD = 				\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
 endif

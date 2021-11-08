@@ -144,16 +144,16 @@ module parcel_ellipsoid
             abc = f34 * volume * fpi
         end function get_abc
 
-        ! Obtain the aspect ratios a/b of the parcel(s).
+        ! Obtain the aspect ratio a/c of the parcel(s).
         ! @param[in] a2 is the largest eigenvalue
-        ! @param[in] b2 is the middle eigenvalue
+        ! @param[in] c2 is the smallest eigenvalue
         ! @param[in] volume of the parcel(s)
-        ! @returns a/b
-        elemental function get_aspect_ratio(a2, b2) result(lam)
-            double precision, intent(in) :: a2, b2
+        ! @returns a/c
+        elemental function get_aspect_ratio(a2, c2) result(lam)
+            double precision, intent(in) :: a2, c2
             double precision             :: lam
 
-            lam = dsqrt(a2 / b2)
+            lam = dsqrt(a2 / c2)
         end function get_aspect_ratio
 
         ! Obtain the ellipse support points for par2grid and grid2par
@@ -165,22 +165,30 @@ module parcel_ellipsoid
             double precision, intent(in) :: position(3)
             double precision, intent(in) :: volume
             double precision, intent(in) :: B(5)        ! B11, B12, B13, B22, B23
-            double precision             :: eta, tau, evals(3)
-            integer                      :: j
+            double precision             :: eta, tau, a2, b2, c2, V(3, 3)
+            integer                      :: j, k
             double precision             :: points(4, 3)
 
-            ! (/a2, b2, c2/)
-            evals = get_eigenvalues(B, volume)
+            ! (/a2, b2, c2/) with a >= b >= c
+            call diagonalise(B, volume, a2, b2, c2, V)
 
-            eta = dsqrt(evals(2) - evals(1)) * rho
-            tau = dsqrt(evals(3) - evals(1)) * rho
+            eta = dsqrt(dabs(a2 - c2)) * rho
+            tau = dsqrt(dabs(b2 - c2)) * rho
 
             do j = 1, 4
+                ! support point in the reference frame of the ellipsoid
                 ! theta = j * pi / 2 - pi / 4 (j = 1, 2, 3, 4)
                 ! x_j = eta * rho * cos(theta_j)
                 ! y_j = tau * rho * sin(theta_j)
-                points(4, :) = position(3) + (/eta * costheta(1), tau * sintheta(1), zero/)
-            enddo
+                points(j, :) = (/eta * costheta(j), tau * sintheta(j), zero/)
 
+                ! suppport point in the global reference frame
+                do k = 1, 3
+                    points(j, k) = position(k)            &
+                                 + points(j, 1) * V(k, 1) &
+                                 + points(j, 2) * V(k, 2) &
+                                 + points(j, 3) * V(k, 3)
+                enddo
+            enddo
         end function get_ellipsoid_points
 end module parcel_ellipsoid
