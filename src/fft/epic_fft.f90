@@ -6,10 +6,10 @@ module fft
     implicit none
 
     ! Tridiagonal arrays for the horizontal vorticity components:
-    double precision :: etdh(nx, ny, nz-1), htdh(nx, ny, nz-1), ap(nx, ny), apb(nx, ny)
+    double precision :: etdh(nz-1, ny, nx), htdh(nz-1, ny, nx), ap(ny, nx), apb(ny, nx)
 
     ! Tridiagonal arrays for the vertical vorticity component:
-    double precision :: etdv(nx, ny, 0:nz), htdv(nx, ny, 0:nz)
+    double precision :: etdv(0:nz, ny, nx), htdv(0:nz, ny, nx)
 
     ! Tridiagonal arrays for the compact difference calculation of d/dz:
     double precision :: etd0(0:nz), htd0(0:nz)
@@ -37,7 +37,7 @@ module fft
         !Initialises this module (FFTs, x & y wavenumbers, tri-diagonal
         !coefficients, etc).
         subroutine init_fft
-            double precision   :: a0(nx, ny), a0b(nx, ny), ksq(nx, ny)
+            double precision   :: a0(ny, nx), a0b(ny, nx), ksq(ny, nx)
             double precision   :: rkxmax, rkymax
             double precision   :: rksqmax, rkfsq
             integer, parameter :: nwx = nx / 2,nwy = ny / 2
@@ -69,9 +69,9 @@ module fft
             rksqmax = rkxmax ** 2 + rkymax ** 2
 
             !Squared wavenumber array (used in tridiagonal solve):
-            do ky = 1, ny
-                do kx = 1, nx
-                    ksq(kx, ky) = rkx(kx) ** 2 + rky(ky) ** 2
+            do kx = 1, nx
+                do ky = 1, ny
+                    ksq(ky, kx) = rkx(kx) ** 2 + rky(ky) ** 2
                 enddo
             enddo
 
@@ -79,12 +79,12 @@ module fft
             ! Define de-aliasing filter:
             rkfsq = two * rksqmax / nine
             ! rkfsq: the square of the filter wavenumber (generic 2/3 rule)
-            do ky = 1, ny
-                do kx = 1, nx
-                    if (ksq(kx, ky) .gt. rkfsq) then
-                    filt(kx, ky) = zero
+            do kx = 1, nx
+                do ky = 1, ny
+                    if (ksq(ky, kx) .gt. rkfsq) then
+                        filt(ky, kx) = zero
                     else
-                    filt(kx, ky) = one
+                        filt(ky, kx) = one
                     endif
                 enddo
             enddo
@@ -98,48 +98,48 @@ module fft
 
             !-----------------------------------------------------------------------
             ! Tridiagonal arrays for the horizontal vorticity components:
-            htdh(:, :, 1) = one / a0
-            etdh(:, :, 1) = -ap * htdh(:, :, 1)
+            htdh(1, :, :) = one / a0
+            etdh(1, :, :) = -ap * htdh(1, :, :)
             !$omp parallel shared(a0, ap, etdh, htdh) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
             do isub = 0, nsubs_tri-1
                 ib_sub = isub * nxsub + 1
                 ie_sub = (isub + 1) * nxsub
                 do iz = 2, nz-2
-                    htdh(ib_sub:ie_sub, :, iz) = one / (a0(ib_sub:ie_sub, :) + &
-                    ap(ib_sub:ie_sub, :) * etdh(ib_sub:ie_sub, :, iz-1))
-                    etdh(ib_sub:ie_sub, :, iz) = -ap(ib_sub:ie_sub, :) * &
-                    htdh(ib_sub:ie_sub, :, iz)
+                    htdh(iz, :, ib_sub:ie_sub) = one / (a0(:, ib_sub:ie_sub) &
+                                               + ap(:, ib_sub:ie_sub) * etdh(iz-1, :, ib_sub:ie_sub))
+                    etdh(iz, :, ib_sub:ie_sub) = -ap(:, ib_sub:ie_sub) * htdh(iz, :, ib_sub:ie_sub)
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
-            htdh(:, :, nz-1) = one / (a0 + ap * etdh(:, :, nz-2))
+
+            htdh(nz-1, :, :) = one / (a0 + ap * etdh(nz-2, :, :))
             ! Remove horizontally-averaged part (done separately):
-            htdh(1, 1, :) = zero
-            etdh(1, 1, :) = zero
+            htdh(:, 1, 1) = zero
+            etdh(:, 1, 1) = zero
 
             ! Tridiagonal arrays for the vertical vorticity component:
-            htdv(:, :, 0) = one / a0b
-            etdv(:, :, 0) = -apb * htdv(:, :, 0)
+            htdv(0, :, :) = one / a0b
+            etdv(0, :, :) = -apb * htdv(0, :, :)
             !$omp parallel shared(a0, ap, etdv, htdv) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
             do isub = 0, nsubs_tri-1
                 ib_sub = isub * nxsub + 1
                 ie_sub = (isub + 1) * nxsub
                 do iz = 1, nz-1
-                    htdv(ib_sub:ie_sub, :, iz) = one / (a0(ib_sub:ie_sub, :) + ap&
-                (ib_sub:ie_sub, :) * etdv(ib_sub:ie_sub, :, iz-1))
-                    etdv(ib_sub:ie_sub, :, iz) = -ap(ib_sub:ie_sub, :) * &
-                    htdv(ib_sub:ie_sub, :, iz)
+                    htdv(iz, :, ib_sub:ie_sub) = one / (a0(:, ib_sub:ie_sub) &
+                                               + ap(:, ib_sub:ie_sub) * etdv(iz-1, :, ib_sub:ie_sub))
+                    etdv(iz, :, ib_sub:ie_sub) = -ap(:, ib_sub:ie_sub) * htdv(iz, :, ib_sub:ie_sub)
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
-            htdv(:, :, nz) = one / (a0b + apb * etdv(:, :, nz-1))
+
+            htdv(nz, :, :) = one / (a0b + apb * etdv(nz-1, :, :))
             ! Remove horizontally-averaged part (done separately):
-            htdv(1, 1, :) = zero
-            etdv(1, 1, :) = zero
+            htdv(:, 1, 1) = zero
+            etdv(:, 1, 1) = zero
 
             ! Tridiagonal arrays for the compact difference calculation of d/dz
             ! for fields f for which f  =  0 at the boundaries:
@@ -177,14 +177,14 @@ module fft
         !(partial derivative).  The result is returned in ds, again
         !spectral.  Uses exact form of the derivative in spectral space.
         subroutine diffx(fs, ds)
-            double precision, intent(in)  :: fs(nx, ny, 0:nz)
-            double precision, intent(out) :: ds(nx, ny, 0:nz)
+            double precision, intent(in)  :: fs(0:nz, ny, nx)
+            double precision, intent(out) :: ds(0:nz, ny, nx)
             integer                       :: iz
 
             !$omp parallel shared(ds,fs) private(iz) firstprivate(hrkx) default(none)
             !$omp do
             do iz = 0, nz
-                call xderiv(nx, ny, hrkx, fs(1, 1, iz), ds(1, 1, iz))
+                call xderiv(nx, ny, hrkx, fs(iz, 1, 1), ds(iz, 1, 1))
             enddo
             !$omp end do
             !$omp end parallel
@@ -196,14 +196,14 @@ module fft
         !(partial derivative).  The result is returned in ds, again
         !spectral.  Uses exact form of the derivative in spectral space.
         subroutine diffy(fs, ds)
-            double precision, intent(in)  :: fs(nx, ny, 0:nz)
-            double precision, intent(out) :: ds(nx, ny, 0:nz)
+            double precision, intent(in)  :: fs(0:nz, ny, nx)
+            double precision, intent(out) :: ds(0:nz, ny, nx)
             integer                       :: iz
 
             !$omp parallel shared(ds,fs) private(iz) firstprivate(hrky) default(none)
             !$omp do
             do iz = 0, nz
-                call yderiv(nx, ny, hrky, fs(1, 1, iz), ds(1, 1, iz))
+                call yderiv(nx, ny, hrky, fs(iz, 1, 1), ds(iz, 1, 1))
             enddo
             !$omp end do
             !$omp end parallel
@@ -216,27 +216,27 @@ module fft
         !lapfsbot = Laplace(f) at z_min and lapfstop = Laplace(f) at z_max,
         !both given.  *** All quantities must be in semi-spectral space ***
         subroutine diffz0(fs, ds, lapfsbot, lapfstop)
-            double precision, intent(in)  :: fs(nx, ny, 0:nz), &
-                                            lapfsbot(nx, ny), &
-                                            lapfstop(nx, ny)
-            double precision, intent(out) :: ds(nx, ny, 0:nz)
+            double precision, intent(in)  :: fs(0:nz, ny, nx), &
+                                             lapfsbot(ny, nx), &
+                                             lapfstop(ny, nx)
+            double precision, intent(out) :: ds(0:nz, ny, nx)
             integer                       :: iz, isub, ib_sub, ie_sub
 
-            ds(:, :, 0) = fs(:, :, 1) * dzi - dz6 * lapfsbot
-            ds(:, :, 1) = fs(:, :, 2) * hdzi
+            ds(0, :, :) = fs(1, :, :) * dzi - dz6 * lapfsbot
+            ds(1, :, :) = fs(2, :, :) * hdzi
 
             !$omp parallel shared(ds,fs) private(iz) default(none)
             !$omp do
             do iz = 2, nz-2
-                ds(:, :, iz)=(fs(:, :, iz+1) - fs(:, :, iz-1)) * hdzi
+                ds(iz, :, :) = (fs(iz+1, :, :) - fs(iz-1, :, :)) * hdzi
             enddo
             !$omp end do
             !$omp end parallel
 
-            ds(:, :, nz-1) =  - fs(:, :, nz-2) * hdzi
-            ds(:, :, nz) = f16 * dz * lapfstop - fs(:, :, nz-1) * dzi
+            ds(nz-1, :, :) =  -fs(nz-2:, :) * hdzi
+            ds(nz, :, :) = f16 * dz * lapfstop - fs(nz-1, :, :) * dzi
 
-            ds(:, :, 0) = ds(:, :, 0) * htd0(0)
+            ds(0, :, :) = ds(0, :, :) * htd0(0)
 
             !$omp parallel shared(ds,htd0) private(isub,ib_sub,ie_sub,iz) default(none)
             !$omp do
@@ -244,14 +244,14 @@ module fft
                 ib_sub = isub * nxsub+1
                 ie_sub = (isub + 1) * nxsub
                 do iz = 1, nz-1
-                    ds(ib_sub:ie_sub, :, iz) = (ds(ib_sub:ie_sub, : ,iz) &
-                                            - f16 * ds(ib_sub:ie_sub, : , iz-1)) * htd0(iz)
+                    ds(iz, :, ib_sub:ie_sub) = (ds(iz, :, ib_sub:ie_sub) &
+                                             - f16 * ds(iz-1, :, ib_sub:ie_sub)) * htd0(iz)
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
 
-            ds(:, :, nz) = (ds(:, :, nz) - f13 * ds(:, :, nz-1)) * htd0(nz)
+            ds(nz, :, :) = (ds(nz, :, :) - f13 * ds(nz-1, :, :)) * htd0(nz)
 
             !$omp parallel shared(ds,etd0) private(isub,ib_sub,ie_sub,iz) default(none)
             !$omp do
@@ -259,8 +259,8 @@ module fft
                 ib_sub = isub * nxsub + 1
                 ie_sub = (isub + 1) * nxsub
                 do iz = nz-1, 0, -1
-                    ds(ib_sub:ie_sub, :, iz) = etd0(iz) * ds(ib_sub:ie_sub, :, iz+1) &
-                                            + ds(ib_sub:ie_sub, :, iz)
+                    ds(iz, :, ib_sub:ie_sub) = etd0(iz) * ds(iz+1, :, ib_sub:ie_sub) &
+                                             + ds(iz, :, ib_sub:ie_sub)
                 enddo
             enddo
             !$omp end do
@@ -272,20 +272,20 @@ module fft
         !Calculates df/dz for a field f which has df/dz = 0 at the boundaries
         !using 4th-order compact differencing.  Here fs = f and ds = df/dz.
         subroutine diffz1(fs, ds)
-            double precision, intent(in)  :: fs(nx, ny, 0:nz)
-            double precision, intent(out) :: ds(nx, ny, 0:nz)
+            double precision, intent(in)  :: fs(0:nz, ny, nx)
+            double precision, intent(out) :: ds(0:nz, ny, nx)
             integer                       :: iz, isub, ib_sub, ie_sub
 
             !$omp parallel shared(ds, fs) private(iz) default(none)
             !$omp do
             do iz = 1, nz-1
-                ds(:, :, iz) = (fs(:, :, iz+1) - fs(:, :, iz-1)) * hdzi
+                ds(iz, :, :) = (fs(iz+1, :, :) - fs(iz-1, :, :)) * hdzi
             enddo
             !$omp end do
             !$omp end parallel
 
-            ds(:, :, 0) = zero
-            ds(:, :, 1) = ds(:, :, 1) * htd1(1)
+            ds(0, :, :) = zero
+            ds(1, :, :) = ds(1, :, :) * htd1(1)
 
             !$omp parallel shared(ds, htd1) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
@@ -293,14 +293,14 @@ module fft
                 ib_sub = isub * nxsub + 1
                 ie_sub = (isub + 1) * nxsub
                 do iz = 2, nz-1
-                    ds(ib_sub:ie_sub, :, iz) = (ds(ib_sub:ie_sub, :, iz)
-                                            - f16 * ds(ib_sub:ie_sub, :, iz-1)) * htd1(iz)
+                    ds(iz, :, ib_sub:ie_sub) = (ds(iz, :, ib_sub:ie_sub)
+                                             - f16 * ds(iz-1, :, ib_sub:ie_sub)) * htd1(iz)
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
 
-            ds(:, :, nz) = zero
+            ds(nz, :, :) = zero
 
             !$omp parallel shared(ds, etd1) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
@@ -308,8 +308,8 @@ module fft
                 ib_sub = isub * nxsub + 1
                 ie_sub = (isub + 1) * nxsub
                 do iz = nz-2, 1, -1
-                    ds(ib_sub:ie_sub, :, iz) = etd1(iz) * ds(ib_sub:ie_sub, :, iz+1) &
-                                            + ds(ib_sub:ie_sub, :, iz)
+                    ds(iz, :, ib_sub:ie_sub) = etd1(iz) * ds(iz+1, :, ib_sub:ie_sub) &
+                                             + ds(iz, :, ib_sub:ie_sub)
                 enddo
             end do
             !$omp end do
@@ -323,20 +323,20 @@ module fft
         !Uses 4th-order compact differencing
         !*** Overwrites fs ***
         subroutine lapinv0(fs)
-            double precision, intent(inout) :: fs(nx, ny, 0:nz)
-            double precision                :: rs(nx, ny, nz-1)
+            double precision, intent(inout) :: fs(0:nz, ny, nx)
+            double precision                :: rs(nz-1, ny, nx)
             integer                         :: iz, isub, ib_sub, ie_sub
 
             !$omp parallel shared(rs, fs) private(iz) default(none)
             !$omp do
             do iz = 1, nz-1
-                rs(:, :, iz) = f112 * (fs(:, :, iz-1) + fs(:, :, iz+1)) + f56 * fs(:, :, iz)
+                rs(iz, :, :) = f112 * (fs(iz-1, :, :) + fs(iz+1, :, :)) + f56 * fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
 
-            fs(:, :, 0) = zero
-            fs(:, :, 1) = rs(:, :, 1) * htdh(:, :, 1)
+            fs(0, :, :) = zero
+            fs(1, :, :) = rs(1, :, :) * htdh(1, :, :)
 
             !$omp parallel shared(rs, fs, ap, htdh) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
@@ -344,14 +344,15 @@ module fft
                 ib_sub = isub * nxsub + 1
                 ie_sub = (isub + 1) * nxsub
                 do iz = 2, nz-1
-                    fs(ib_sub:ie_sub, :, iz) = (rs(ib_sub:ie_sub, :, iz) - &
-                    ap(ib_sub:ie_sub, :) * fs(ib_sub:ie_sub, :, iz-1)) * htdh(ib_sub:ie_sub, :, iz)
+                    fs(iz, :, ib_sub:ie_sub) = (rs(iz, :, ib_sub:ie_sub) &
+                                             - ap(:, ib_sub:ie_sub) * fs(iz-1, :, ib_sub:ie_sub)) &
+                                             * htdh(iz, :, ib_sub:ie_sub)
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
 
-            fs(:, :, nz) = zero
+            fs(nz, :, :) = zero
 
             !$omp parallel shared(fs, etdh) private(isub, ib_sub, ie_sub, iz)  default(none)
             !$omp do
@@ -359,8 +360,8 @@ module fft
                 ib_sub = isub * nxsub + 1
                 ie_sub = (isub + 1) * nxsub
                 do iz = nz-2, 1, -1
-                    fs(ib_sub:ie_sub, :, iz) = etdh(ib_sub:ie_sub, :, iz) * &
-                    fs(ib_sub:ie_sub, :, iz+1) + fs(ib_sub:ie_sub, :, iz)
+                    fs(iz, :, ib_sub:ie_sub) = etdh(iz, :, ib_sub:ie_sub) &
+                                             * fs(iz+1, :, ib_sub:ie_sub) + fs(iz, :, ib_sub:ie_sub)
                 enddo
             enddo
             !$omp end do
@@ -374,21 +375,21 @@ module fft
         !Uses 4th-order compact differencing
         !*** Overwrites fs ***
         subroutine lapinv1(fs)
-            double precision, intent(inout) :: fs(nx, ny, 0:nz)
-            double precision                :: rs(nx, ny, 0:nz)
+            double precision, intent(inout) :: fs(0:nz, ny, nx)
+            double precision                :: rs(0:nz, ny, nx)
             integer                         :: iz, isub, ib_sub, ie_sub
 
-            rs(:, :, 0) = f13 * fs(:, :, 0) + f16 * fs(:, :, 1)
+            rs(0, :, :) = f13 * fs(0, :, :) + f16 * fs(1, :, :)
             !$omp parallel shared(rs, fs) private(iz)
             !$omp do
             do iz = 1, nz-1
-                rs(:, :, iz) = f112 * (fs(:, :, iz-1) + fs(:, :, iz+1)) + f56 * fs(:, :, iz)
+                rs(iz, :, :) = f112 * (fs(iz-1, :, :) + fs(iz+1, :, :)) + f56 * fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
-            rs(:, :, nz) = f13 * fs(:, :, nz) + f16 * fs(:, :, nz-1)
+            rs(nz, :, :) = f13 * fs(nz, :, :) + f16 * fs(nz-1, :, :)
 
-            fs(:, :, 0) = rs(:, :, 0) * htdv(:, :, 0)
+            fs(0, :, :) = rs(0, :, :) * htdv(0, :, :)
 
             !$omp parallel shared(rs, fs, ap, htdv) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
@@ -396,15 +397,15 @@ module fft
                 ib_sub = isub * nxsub + 1
                 ie_sub = (isub + 1) * nxsub
                 do iz = 1, nz-1
-                    fs(ib_sub:ie_sub, :, iz) = (rs(ib_sub:ie_sub, :, iz) - &
-                    ap(ib_sub:ie_sub, :) * fs(ib_sub:ie_sub, :, iz-1)) * &
-                    htdv(ib_sub:ie_sub, :, iz)
+                    fs(iz, :, ib_sub:ie_sub) = (rs(iz, :, ib_sub:ie_sub) &
+                                             - ap(:, ib_sub:ie_sub) * fs(iz-1, :, ib_sub:ie_sub)) &
+                                             * htdv(iz, :, ib_sub:ie_sub)
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
 
-            fs(:, :, nz) = (rs(:, :, nz) - apb * fs(:, :, nz-1)) * htdv(:, :, nz)
+            fs(nz, :, :) = (rs(nz, :, :) - apb * fs(nz-1, :, :)) * htdv(nz, :, :)
 
             !$omp parallel shared(fs, etdv) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
@@ -412,8 +413,8 @@ module fft
                 ib_sub = isub * nxsub + 1
                 ie_sub = (isub + 1) * nxsub
                 do iz = nz-1, 0, -1
-                    fs(ib_sub:ie_sub, :, iz) = etdv(ib_sub:ie_sub, :, iz) * &
-                    fs(ib_sub:ie_sub, :, iz+1) + fs(ib_sub:ie_sub, :, iz)
+                    fs(iz, :, ib_sub:ie_sub) = etdv(iz, :, ib_sub:ie_sub) * fs(iz+1, :, ib_sub:ie_sub) &
+                                             + fs(iz, :, ib_sub:ie_sub)
                 enddo
             enddo
             !$omp end do
@@ -452,9 +453,9 @@ module fft
 
             !Integrate:
             fs(0) = zero
-            fs(1) = dz24 * (23._DEFP * es(1) + es(2))
+            fs(1) = dz24 * (23.0d0 * es(1) + es(2))
             do iz = 2, nz-1
-                fs(iz) = fs(iz-1) + dz24 * (es(iz-1) + 22.d0 * es(iz) + es(iz+1))
+                fs(iz) = fs(iz-1) + dz24 * (es(iz-1) + 22.0d0 * es(iz) + es(iz+1))
             enddo
             fs(nz) = zero
         end subroutine
@@ -465,8 +466,8 @@ module fft
         !and returns the result as fs in spectral space (in x & y).
         !Only FFTs over the x and y directions are performed.
         subroutine fftxyp2s(fp, fs)
-            double precision, intent(in)  :: fp(ny, nx, 0:nz)  !Physical
-            double precision, intent(out) :: fs(nx, ny, 0:nz)  !Spectral
+            double precision, intent(in)  :: fp(0:nz, ny, nx)  !Physical
+            double precision, intent(out) :: fs(0:nz, nx, ny)  !Spectral
             double precision              :: fpz(ny, nx)  !Physical
             double precision              :: fsz(nx, ny)  !Spectral
             integer                       :: iz
@@ -475,9 +476,9 @@ module fft
             !$omp& firstprivate(xfactors, yfactors, xtrig, ytrig) default(none)
             !$omp do
             do iz = 0, nz
-                fpz = fp(:, :, iz)
+                fpz = fp(iz, :, :)
                 call ptospc(nx, ny, fpz, fsz, xfactors, yfactors, xtrig, ytrig)
-                fs(:, :, iz) = fsz
+                fs(iz, :, :) = fsz
             enddo
             !$omp end do
             !$omp end parallel
@@ -489,19 +490,19 @@ module fft
         !space and returns the result as fp in physical space (in x & y).
         !Only inverse FFTs over the x and y directions are performed.
         subroutine fftxys2p(fs, fp)
-            double precision, intent(in)  :: fs(nx, ny, 0:nz)  !Spectral
-            double precision, intent(out) :: fp(ny, nx, 0:nz)  !Physical
-            double precision              :: fsz(nx, ny)  !Spectral
+            double precision, intent(out) :: fp(0:nz, ny, nx)  !Physical
+            double precision, intent(in)  :: fs(0:nz, nx, ny)  !Spectral
             double precision              :: fpz(ny, nx)  !Physical
+            double precision              :: fsz(nx, ny)  !Spectral
             integer                       :: iz
 
             !$omp parallel shared(fp, fs) private(iz, fpz, fsz) &
             !$omp& firstprivate(xfactors, yfactors, xtrig, ytrig) default(none)
             !$omp do
             do iz = 0, nz
-                fsz = fs(:, :, iz)
+                fsz = fs(iz, :, :)
                 call spctop(nx, ny, fsz, fpz, xfactors, yfactors, xtrig, ytrig)
-                fp(:, :, iz) = fpz
+                fp(iz, :, :) = fpz
             enddo
             !$omp end do
             !$omp end parallel
@@ -514,13 +515,13 @@ module fft
         !copy (us, vs, ws),  which is additionally filtered.  Note: the
         !vorticity is modified to be solenoidal and spectrally filtered.
         subroutine vor2vel(ox, oy, oz,  uu, vv, ww,  us, vs, ws)
-            double precision, intent(in)  :: ox(ny, nx, 0:nz), oy(ny, nx, 0:nz), oz(ny, nx, 0:nz)
-            double precision, intent(out) :: uu(ny, nx, 0:nz), vv(ny, nx, 0:nz), ww(ny, nx, 0:nz)
-            double precision, intent(out) :: us(nx, ny, 0:nz), vs(nx, ny, 0:nz), ws(nx, ny, 0:nz)
-            double precision              :: as(nx, ny, 0:nz), bs(nx, ny, 0:nz), cs(nx, ny, 0:nz)
-            double precision              :: ds(nx, ny, 0:nz), es(nx, ny, 0:nz), fs(nx, ny, 0:nz)
-            double precision              :: astop(nx, ny), bstop(nx, ny)
-            double precision              :: asbot(nx, ny), bsbot(nx, ny)
+            double precision, intent(in)  :: ox(0:nz, ny, nx), oy(0:nz, ny, nx), oz(0:nz, ny, nx)
+            double precision, intent(out) :: uu(0:nz, ny, nx), vv(0:nz, ny, nx), ww(0:nz, ny, nx)
+            double precision, intent(out) :: us(0:nz, ny, nx), vs(0:nz, ny, nx), ws(0:nz, ny, nx)
+            double precision              :: as(0:nz, ny, nx), bs(0:nz, ny, nx), cs(0:nz, ny, nx)
+            double precision              :: ds(0:nz, ny, nx), es(0:nz, ny, nx), fs(0:nz, ny, nx)
+            double precision              :: astop(ny, nx), bstop(ny, nx)
+            double precision              :: asbot(ny, nx), bsbot(ny, nx)
             double precision              :: ubar(0:nz), vbar(0:nz)
             integer                       :: iz
 
@@ -540,13 +541,13 @@ module fft
             !$omp parallel shared(fs, cs) private(iz)
             !$omp do
             do iz = 1, nz-1
-                fs(:, :, iz) = hdzi * (cs(:, :, iz+1) - cs(:, :, iz-1))
+                fs(iz, :, :) = hdzi * (cs(iz+1, :, :) - cs(iz-1, :, :))
             enddo
             !$omp end do
             !$omp end parallel
 
-            fs(:, :, 0) = hdzi * (four * cs(:, :, 1) - cs(:, :, 2) - three * cs(:, :, 0))
-            fs(:, :, nz) = hdzi * (cs(:, :, nz-2) + three * cs(:, :, nz) - four * cs(:, :, nz-1))
+            fs(0, :, :) = hdzi * (four * cs(1, :, :) - cs(2, :, :) - three * cs(0, :, :))
+            fs(nz, :, :) = hdzi * (cs(nz-2, :, :) + three * cs(nz, :, :) - four * cs(nz-1, :, :))
 
             !Form div(ox, oy, oz):
             !$omp parallel
@@ -556,7 +557,7 @@ module fft
             !$omp end parallel
 
             !Remove horizontally-averaged part (plays no role):
-            fs(1, 1, :) = zero
+            fs(:, 1, 1) = zero
 
             !Invert Lap(lambda) = div(ox, oy, oz) assuming dlambda/dz = 0 at the
             !boundaries (store solution lambda in fs):
@@ -566,7 +567,7 @@ module fft
             !$omp parallel shared(fs, filt) private(iz)  default(none)
             !$omp do
             do iz = 0, nz
-                fs(:, :, iz) = filt * fs(:, :, iz)
+                fs(iz, :, :) = filt * fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
@@ -593,24 +594,24 @@ module fft
             !$omp end workshare
             !$omp end parallel
             !Ensure horizontal average of vertical vorticity is zero:
-            cs(1, 1, :) = zero
+            cs(:, 1, 1) = zero
 
             !Compute spectrally filtered vorticity in physical space:
             !$omp parallel shared(ds, es, fs, as, bs, cs, filt) private(iz) default(none)
             !$omp do
             do iz = 0, nz
-                ds(:, :, iz) = filt * as(:, :, iz)
-                es(:, :, iz) = filt * bs(:, :, iz)
-                fs(:, :, iz) = filt * cs(:, :, iz)
+                ds(iz, :, :) = filt * as(iz, :, :)
+                es(iz, :, :) = filt * bs(iz, :, :)
+                fs(iz, :, :) = filt * cs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
 
             !Save boundary values of x and y vorticity for z derivatives of A & B:
-            asbot = as(:, :, 0)
-            bsbot = bs(:, :, 0)
-            astop = as(:, :, nz)
-            bstop = bs(:, :, nz)
+            asbot = as(0, :, :)
+            bsbot = bs(0, :, :)
+            astop = as(nz, :, :)
+            bstop = bs(nz, :, :)
 
             !Return corrected vorticity to physical space in (ox, oy, oz):
             call fftxys2p(ds, ox)
@@ -621,8 +622,8 @@ module fft
             ubar(0) = zero
             vbar(0) = zero
             do iz = 0, nz-1
-                ubar(iz+1) = ubar(iz) + dz2 * (es(1, 1, iz) + es(1, 1, iz+1))
-                vbar(iz+1) = vbar(iz) - dz2 * (ds(1, 1, iz) + ds(1, 1, iz+1))
+                ubar(iz+1) = ubar(iz) + dz2 * (es(iz, 1, 1) + es(iz+1, 1, 1))
+                vbar(iz+1) = vbar(iz) - dz2 * (ds(iz, 1, 1) + ds(iz+1, 1, 1))
             enddo
 
             !-----------------------------------------------------------------
@@ -642,11 +643,11 @@ module fft
             !$omp end workshare
             !$omp end parallel
             !Add horizontally-averaged flow:
-            fs(1, 1, :) = ubar
+            fs(:, 1, 1) = ubar
             !$omp parallel shared(us, fs, filt) private(iz) default(none)
             !$omp do
             do iz = 0, nz
-                us(:, :, iz) = filt * fs(:, :, iz)
+                us(iz, :, :) = filt * fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
@@ -665,11 +666,11 @@ module fft
             !$omp end workshare
             !$omp end parallel
             !Add horizontally-averaged flow:
-            fs(1, 1, :) = vbar
+            fs(:, 1, 1) = vbar
             !$omp parallel shared(vs, fs, filt) private(iz) default(none)
             !$omp do
             do iz = 0, nz
-                vs(:, :, iz) = filt * fs(:, :, iz)
+                vs(iz, :, :) = filt * fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
@@ -690,7 +691,7 @@ module fft
             !$omp parallel shared(ws, fs, filt) private(iz) default(none)
             !$omp do
             do iz = 0, nz
-                ws(:, :, iz) = filt * fs(:, :, iz)
+                ws(iz, :, :) = filt * fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
@@ -704,10 +705,10 @@ module fft
         !Computes a divergent flow field (ud, vd, wd) = grad(phi) where
         !Lap(phi) = div (given).
         subroutine diverge(div,  ud, vd, wd)
-            double precision, intent(in)  :: div(ny, nx, 0:nz)
-            double precision, intent(out) :: ud(ny, nx, 0:nz), vd(ny, nx, 0:nz), wd(ny, nx, 0:nz)
-            double precision              :: ds(nx, ny, 0:nz)
-            double precision              :: us(nx, ny, 0:nz), vs(nx, ny, 0:nz), ws(nx, ny, 0:nz)
+            double precision, intent(in)  :: div(0:nz, ny, nx)
+            double precision, intent(out) :: ud(0:nz, ny, nx), vd(0:nz, ny, nx), wd(0:nz, ny, nx)
+            double precision              :: ds(0:nz, ny, nx)
+            double precision              :: us(0:nz, ny, nx), vs(0:nz, ny, nx), ws(0:nz, ny, nx)
             double precision              :: ads(0:nz), wbar(0:nz)
             integer                       :: iz
 
@@ -717,7 +718,7 @@ module fft
 
             ! Compute the x & y-independent part of ds by integration:
             do iz = 0, nz
-                ads(iz) = ds(1, 1, iz)
+                ads(iz) = ds(iz, 1, 1)
             enddo
             call vertint(ads, wbar)
 
@@ -741,7 +742,7 @@ module fft
 
             ! Add on the x and y-independent part of wd:
             do iz = 0, nz
-                ws(1, 1, iz) = ws(1, 1, iz) + wbar(iz)
+                ws(iz, 1, 1) = ws(iz, 1, 1) + wbar(iz)
             enddo
 
             ! Reverse FFT to define z velocity component wd:
