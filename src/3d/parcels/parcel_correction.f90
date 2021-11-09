@@ -138,72 +138,48 @@ module parcel_correction
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    subroutine apply_laplace !FIXME
-!         double precision :: phi(0:nz,0:nx-1), ud(-1:nz+1,0:nx-1), wd(-1:nz+1,0:nx-1)
-!         double precision :: wbar(0:nz)
-!         double precision :: weights(ngp)
-!         integer          :: n, l, is(ngp), js(ngp), ks(ngp)
-!
-!         call start_timer(lapl_corr_timer)
-!
-!         call vol2grid
-!
-!         ! form divergence field * dt and store in phi temporarily:
-!         phi = volg(0:nz, :) * vcelli - one
-!
-!         !-----------------------------------------
-!         ! Forward x FFT:
-!         call forfft(nz+1,nx,phi,xtrig,xfactors)
-!
-!         ! Compute the x-independent part of wd by integration:
-!         call vertint(phi(0,0),wbar)
-!
-!         ! Invert Laplace's operator semi-spectrally with compact differences:
-!         call lapinv1(phi)
-!
-!         ! Compute x derivative spectrally:
-!         call deriv(nz+1,nx,hrkx,phi,ud(0:nz, :))
-!
-!         ! Reverse x FFT to define x velocity component ud:
-!         call revfft(nz+1,nx,ud(0:nz, :),xtrig,xfactors)
-!
-!         ! Compute z derivative by compact differences:
-!         call diffz1(phi,wd(0:nz, :))
-!
-!         ! Add on the x-independent part of wd:
-!         wd(0:nz,0) = wd(0:nz,0) + wbar
-!
-!         ! Reverse x FFT:
-!         call revfft(nz+1,nx,wd(0:nz,:),xtrig,xfactors)
-!
-!         ! Use symmetry to fill z grid lines outside domain:
-!         ud(-1,:)   =  ud(1,:)
-!         wd(-1,:)   = -wd(1,:)
-!         ud(nz+1,:) =  ud(nz-1,:)
-!         wd(nz+1,:) = -wd(nz-1,:)
-!
-!         !------------------------------------------------------------------
-!         ! Increment parcel positions usind (ud,wd) field:
-!         !$omp parallel default(shared)
-!         !$omp do private(n, l, is, js, weights)
-!         do n = 1, n_parcels
-!             call trilinear(parcels%position(n, :), is, js, ks, weights)
-!
-!             do l = 1, ngp
-!                 parcels%position(n, 1) = parcels%position(n, 1)             &
-!                                        + weights(l) * ud(js(l), is(l))
-!
-!                 parcels%position(n, 2) = parcels%position(n, 2)             &
-!                                        + weights(l) * wd(js(l), is(l))
-!             enddo
-!
-!             call apply_periodic_bc(parcels%position(n, :))
-!         enddo
-!         !$omp end do
-!         !$omp end parallel
-!
-!
-!         call stop_timer(lapl_corr_timer)
+    subroutine apply_laplace
+        double precision :: phi(0:nz, 0:ny-1, 0:nx-1),   &
+                            ud(-1:nz+1, 0:ny-1, 0:nx-1), &
+                            vd(-1:nz+1, 0:ny-1, 0:nx-1), &
+                            wd(-1:nz+1, 0:ny-1, 0:nx-1)
+        double precision :: wbar(0:nz)
+        double precision :: weights(ngp)
+        integer          :: n, l, is(ngp), js(ngp), ks(ngp)
+
+        call start_timer(lapl_corr_timer)
+
+        call vol2grid
+
+        ! form divergence field * dt and store in phi temporarily:
+        phi = volg(0:nz, :, :) * vcelli - one
+
+        call diverge(phi, ud, vd, wd)
+
+        !------------------------------------------------------------------
+        ! Increment parcel positions usind (ud, vd, wd) field:
+        !$omp parallel default(shared)
+        !$omp do private(n, l, is, js, ks, weights)
+        do n = 1, n_parcels
+            call trilinear(parcels%position(n, :), is, js, ks, weights)
+
+            do l = 1, ngp
+                parcels%position(n, 1) = parcels%position(n, 1)               &
+                                       + weights(l) * ud(ks(l), js(l), is(l))
+
+                parcels%position(n, 2) = parcels%position(n, 2)               &
+                                       + weights(l) * vd(ks(l), js(l), is(l))
+
+                parcels%position(n, 3) = parcels%position(n, 3)               &
+                                       + weights(l) * wd(ks(l), js(l), is(l))
+            enddo
+
+            call apply_periodic_bc(parcels%position(n, :))
+        enddo
+        !$omp end do
+        !$omp end parallel
+
+        call stop_timer(lapl_corr_timer)
 
     end subroutine apply_laplace
 
