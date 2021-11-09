@@ -1100,11 +1100,12 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
+        !$omp do
         do i = 0, nv - 1
             b(i, 0, 0) = a(i, 0, 0) + a(i, 1, 0)
             b(i, 0, 1) = a(i, 0, 0) - a(i, 1, 0)
         enddo
-        !$omp do
+        !$omp enddo
         !Next do remaining k:
         if (nv .lt. (lv - 1) / 2) then
             !$omp do private(kc, x1, y1)

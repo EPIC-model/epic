@@ -1,12 +1,11 @@
 if ENABLE_3D
 AM_FCFLAGS =				\
 	-I $(top_builddir)/src/utils	\
-	-I $(top_builddir)/src/hdf5
+	-I $(top_builddir)/src/hdf5	\
+	-I $(top_builddir)/src/fft
 
 bin_PROGRAMS = epic3d
 epic3d_SOURCES = 				\
-	utils/stafft.f90			\
-	utils/sta2dfft.f90			\
 	utils/deriv1d.f90			\
 	utils/options.f90			\
 	utils/parameters.f90			\
@@ -29,11 +28,13 @@ epic3d_SOURCES = 				\
 	utils/utils.f90				\
 	stepper/rk4_utils.f90			\
 	stepper/ls_rk4.f90			\
+	epic_fft.f90				\
 	epic3d.f90
 
 epic3d_LDADD = 						\
 	$(top_builddir)/src/utils/libepic_utils.la 	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
 
 clean-local:
 	rm -f *.mod
