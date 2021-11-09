@@ -4,7 +4,8 @@ AM_FCFLAGS =				\
 	-I $(top_builddir)/src/3d/ 	\
 	-I $(top_builddir)/unit-tests	\
 	-I $(top_builddir)/src/utils	\
-	-I $(top_builddir)/src/hdf5
+	-I $(top_builddir)/src/hdf5	\
+	-I $(top_builddir)/src/fft
 
 AM_LDFLAGS =						\
 	$(top_builddir)/src/3d/parcels/*.o 		\
@@ -18,7 +19,7 @@ unittests_PROGRAMS = 				\
 	test_jacobi_1				\
 	test_jacobi_2				\
 	test_jacobi_3				\
-	test_ellipsoid_split \
+	test_ellipsoid_split 			\
 	test_parcel_init_3d
 
 dataroot_DATA =		\
@@ -31,30 +32,35 @@ test_jacobi_1_SOURCES = test_jacobi_1.f90
 test_jacobi_1_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
 
 test_jacobi_2_SOURCES = test_jacobi_2.f90
 test_jacobi_2_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
 
 test_jacobi_3_SOURCES = test_jacobi_3.f90
 test_jacobi_3_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
 
 test_ellipsoid_split_SOURCES = test_ellipsoid_split.f90
-test_ellipsoid_split_LDADD = 					\
+test_ellipsoid_split_LDADD = 				\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
 
 test_parcel_init_3d_SOURCES = test_parcel_init_3d.f90
 test_parcel_init_3d_LDADD = 				\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
 
 endif
