@@ -186,50 +186,61 @@ module parcel_correction
     subroutine apply_gradient(prefactor, max_compression) !FIXME
         double precision, intent(in) :: prefactor
         double precision, intent(in) :: max_compression
-!         double precision             :: phi(0:nz,0:nx-1)
-!         double precision             :: weights(ngp)
-!         double precision             :: shift_x1, shift_x2, x1_fpos, x2_fpos, lim_x1, lim_x2
-!         integer                      :: n, is(ngp), js(ngp)
+        double precision             :: phi(0:nz, 0:ny-1, 0:nx-1)
+        double precision             :: weights(ngp)
+        double precision             :: xs, ys, zs, xf, yf, lim_x, lim_y, lim_z
+        integer                      :: n, is(ngp), js(ngp), ks(ngp)
 !
-!         call start_timer(grad_corr_timer)
+        call start_timer(grad_corr_timer)
+
+        call vol2grid
+
+        ! form divergence field * dt and store in phi temporarily:
+        phi = volg(0:nz, :, :) * vcelli - one
+
+        !$omp parallel default(shared)
+        !$omp do private(n, is, js, ks, weights, xf, yf, zf, xs, ys, zs, lim_x, lim_y, lim_z)
+        do n = 1, n_parcels
+
+            call trilinear(parcels%position(n, :), is, js, ks, weights)
+
+            xf = weights(2) + weights(4) ! fractional position along x
+            yf = weights(3) + weights(4) ! fractional position along y
+
+! FIXME
+!             xs= - prefactor * dx(1) * xf * (one - xf) * (&
+!                         (one - yf) * (phi(js(2), is(2)) - phi(js(1), is(1)))  &
+!                       +       (yf) * (phi(js(4), is(4)) - phi(js(3), is(3))))
 !
-!         call vol2grid
+!             lim_x = max_compression * dx(1) * xf * (one - xf)
 !
-!         ! form divergence field * dt and store in phi temporarily:
-!         phi = volg(0:nz, :) * vcelli - one
+!             xs = max(-lim_x, min(xs, lim_x))
 !
-!         !$omp parallel default(shared)
-!         !$omp do private(n, is, js, weights, x1_fpos, x2_fpos, shift_x1, shift_x2, lim_x1, lim_x2)
-!         do n = 1, n_parcels
+!             ys = - prefactor * dx(2) * yf * (one - yf) * (&
+!                          (one-xf) * (phi(js(3), is(3)) - phi(js(1), is(1))) &
+!                        +     (xf) * (phi(js(4), is(4)) - phi(js(2), is(2))))
 !
-!             call trilinear(parcels%position(n, :), is, js, weights)
+!             lim_y = max_compression * dx(2) * yf * (one - yf)
 !
-!             x1_fpos=weights(2)+weights(4) ! fractional position along x1
-!             x2_fpos=weights(3)+weights(4) ! fractional position along x2
+!             ys = max(-lim_y, min(ys, lim_y))
 !
-!             shift_x1= - prefactor*dx(1)*x1_fpos*(one-x1_fpos)*(&
-!                         (one-x2_fpos)*(phi(js(2), is(2))-phi(js(1), is(1)))  &
-!                       +     (x2_fpos)*(phi(js(4), is(4))-phi(js(3), is(3))))
 !
-!             lim_x1=max_compression*dx(1)*x1_fpos*(one-x1_fpos)
+!             zs = - prefactor * dx(3) * zf * (one - zf) * (&
+!                          (one-xf) * (phi(js(3), is(3)) - phi(js(1), is(1))) &
+!                        +     (xf) * (phi(js(4), is(4)) - phi(js(2), is(2))))
 !
-!             shift_x1= max(-lim_x1,min(shift_x1,lim_x1))
+!             lim_z = max_compression * dx(3) * zf * (one - zf)
 !
-!             shift_x2= - prefactor*dx(2)*x2_fpos*(one-x2_fpos)*(&
-!                         (one-x1_fpos)*(phi(js(3), is(3))-phi(js(1), is(1))) &
-!                       +     (x1_fpos)*(phi(js(4), is(4))-phi(js(2), is(2))))
-!
-!             lim_x2=max_compression*dx(2)*x2_fpos*(one-x2_fpos)
-!
-!             shift_x2= max(-lim_x2,min(shift_x2,lim_x2))
-!
-!             parcels%position(n, 1) = parcels%position(n, 1) + shift_x1
-!             parcels%position(n, 2) = parcels%position(n, 2) + shift_x2
-!         enddo
-!         !$omp end do
-!         !$omp end parallel
-!
-!         call stop_timer(grad_corr_timer)
+!             zs = max(-lim_z, min(zs, lim_z))
+
+            parcels%position(n, 1) = parcels%position(n, 1) + xs
+            parcels%position(n, 2) = parcels%position(n, 2) + ys
+            parcels%position(n, 3) = parcels%position(n, 3) + zs
+        enddo
+        !$omp end do
+        !$omp end parallel
+
+        call stop_timer(grad_corr_timer)
 
     end subroutine apply_gradient
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
