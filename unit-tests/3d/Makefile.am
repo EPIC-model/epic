@@ -11,7 +11,8 @@ AM_LDFLAGS =						\
 	$(top_builddir)/src/3d/parcels/*.o 		\
 	$(top_builddir)/src/3d/utils/*.o		\
 	$(top_builddir)/src/3d/fields/*.o		\
-	$(top_builddir)/src/3d/tri_inversion.o
+	$(top_builddir)/src/3d/tri_inversion.o		\
+	$(top_builddir)/src/3d/epic_fft.o
 
 unittestsdir = $(prefix)/unit-tests
 
@@ -20,7 +21,8 @@ unittests_PROGRAMS = 				\
 	test_jacobi_2				\
 	test_jacobi_3				\
 	test_ellipsoid_split 			\
-	test_parcel_init_3d
+	test_parcel_init_3d			\
+	test_fft_3d
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -58,6 +60,13 @@ test_ellipsoid_split_LDADD = 				\
 
 test_parcel_init_3d_SOURCES = test_parcel_init_3d.f90
 test_parcel_init_3d_LDADD = 				\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
+
+test_fft_3d_SOURCES = test_fft_3d.f90
+test_fft_3d_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la	\

@@ -28,6 +28,7 @@ epic3d_SOURCES = 				\
 	utils/utils.f90				\
 	stepper/rk4_utils.f90			\
 	stepper/ls_rk4.f90			\
+	epic_fft.f90				\
 	epic3d.f90
 
 epic3d_LDADD = 						\
