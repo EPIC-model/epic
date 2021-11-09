@@ -511,14 +511,17 @@ module fft
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Given the vorticity vector (ox, oy, oz) in physical space, this
-        !returns the associated velocity field (uu, vv, ww) and a spectral
-        !copy (us, vs, ws),  which is additionally filtered.  Note: the
+        !Given the vorticity vector field (vortg) in physical space, this
+        !returns the associated velocity field (velog) and a spectral
+        !copy (svelog),  which is additionally filtered.  Note: the
         !vorticity is modified to be solenoidal and spectrally filtered.
-        subroutine vor2vel(ox, oy, oz,  uu, vv, ww,  us, vs, ws)
-            double precision, intent(in)  :: ox(0:nz, ny, nx), oy(0:nz, ny, nx), oz(0:nz, ny, nx)
-            double precision, intent(out) :: uu(0:nz, ny, nx), vv(0:nz, ny, nx), ww(0:nz, ny, nx)
-            double precision, intent(out) :: us(0:nz, nx, ny), vs(0:nz, nx, ny), ws(0:nz, nx, ny)
+        subroutine vor2vel(vortg,  velog,  svelog)
+            double precision, intent(in)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+!             ox(0:nz, ny, nx), oy(0:nz, ny, nx), oz(0:nz, ny, nx)
+            double precision, intent(out) :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+!             uu(0:nz, ny, nx), vv(0:nz, ny, nx), ww(0:nz, ny, nx)
+            double precision, intent(out) :: svelog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+!             us(0:nz, nx, ny), vs(0:nz, nx, ny), ws(0:nz, nx, ny)
             double precision              :: as(0:nz, nx, ny), bs(0:nz, nx, ny), cs(0:nz, nx, ny)
             double precision              :: ds(0:nz, nx, ny), es(0:nz, nx, ny), fs(0:nz, nx, ny)
             double precision              :: astop(nx, ny), bstop(nx, ny)
@@ -528,11 +531,11 @@ module fft
 
             !------------------------------------------------------------------
             !Convert vorticity to spectral space as (as, bs, cs):
-            call fftxyp2s(ox, as)
-            call fftxyp2s(oy, bs)
-            call fftxyp2s(oz, cs)
+            call fftxyp2s(vortg(0:nz, :, :, 1), as)
+            call fftxyp2s(vortg(0:nz, :, :, 2), bs)
+            call fftxyp2s(vortg(0:nz, :, :, 3), cs)
 
-            !Add -grad(lambda) where Laplace(lambda) = div(ox, oy, oz) to
+            !Add -grad(lambda) where Laplace(lambda) = div(vortg) to
             !enforce the solenoidal condition on the vorticity field:
             call diffx(as, ds)
             call diffy(bs, es)
@@ -550,7 +553,7 @@ module fft
             fs(0, :, :) = hdzi * (four * cs(1, :, :) - cs(2, :, :) - three * cs(0, :, :))
             fs(nz, :, :) = hdzi * (cs(nz-2, :, :) + three * cs(nz, :, :) - four * cs(nz-1, :, :))
 
-            !Form div(ox, oy, oz):
+            !Form div(vortg):
             !$omp parallel
             !$omp workshare
             fs = ds + es + fs
@@ -560,7 +563,7 @@ module fft
             !Remove horizontally-averaged part (plays no role):
             fs(:, 1, 1) = zero
 
-            !Invert Lap(lambda) = div(ox, oy, oz) assuming dlambda/dz = 0 at the
+            !Invert Lap(lambda) = div(vortg) assuming dlambda/dz = 0 at the
             !boundaries (store solution lambda in fs):
             call lapinv1(fs)
 
@@ -573,7 +576,7 @@ module fft
             !$omp end do
             !$omp end parallel
 
-            !Subtract grad(lambda) to enforce div(ox, oy, oz) = 0:
+            !Subtract grad(lambda) to enforce div(vortg) = 0:
             call diffx(fs, ds)
             !$omp parallel
             !$omp workshare
@@ -614,10 +617,10 @@ module fft
             astop = as(nz, :, :)
             bstop = bs(nz, :, :)
 
-            !Return corrected vorticity to physical space in (ox, oy, oz):
-            call fftxys2p(ds, ox)
-            call fftxys2p(es, oy)
-            call fftxys2p(fs, oz)
+            !Return corrected vorticity to physical space:
+            call fftxys2p(ds, vortg(0:nz, :, :, 1))
+            call fftxys2p(es, vortg(0:nz, :, :, 2))
+            call fftxys2p(fs, vortg(0:nz, :, :, 3))
 
             !Define horizontally-averaged flow by integrating horizontal vorticity:
             ubar(0) = zero
@@ -645,16 +648,16 @@ module fft
             !$omp end parallel
             !Add horizontally-averaged flow:
             fs(:, 1, 1) = ubar
-            !$omp parallel shared(us, fs, filt) private(iz) default(none)
+            !$omp parallel shared(svelog, fs, filt) private(iz) default(none)
             !$omp do
             do iz = 0, nz
-                us(iz, :, :) = filt * fs(iz, :, :)
+                svelog(iz, :, :, 1) = filt * fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
 
             !Get u in physical space:
-            call fftxys2p(fs, uu)
+            call fftxys2p(fs, velog(0:nz, :, :, 1))
 
             !------------------------------------------------------------
             !Compute y velocity component, v = C_x - A_z:
@@ -668,16 +671,16 @@ module fft
             !$omp end parallel
             !Add horizontally-averaged flow:
             fs(:, 1, 1) = vbar
-            !$omp parallel shared(vs, fs, filt) private(iz) default(none)
+            !$omp parallel shared(svelog, fs, filt) private(iz) default(none)
             !$omp do
             do iz = 0, nz
-                vs(iz, :, :) = filt * fs(iz, :, :)
+                svelog(iz, :, :, 2) = filt * fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
 
             !Get v in physical space:
-            call fftxys2p(fs, vv)
+            call fftxys2p(fs, velog(0:nz, :, :, 2))
 
             !------------------------------------------------------------
             !Compute z velocity component, w = A_y - B_x:
@@ -689,16 +692,16 @@ module fft
             !$omp end workshare
             !$omp end parallel
 
-            !$omp parallel shared(ws, fs, filt) private(iz) default(none)
+            !$omp parallel shared(svelog, fs, filt) private(iz) default(none)
             !$omp do
             do iz = 0, nz
-                ws(iz, :, :) = filt * fs(iz, :, :)
+                svelog(iz, :, :, 3) = filt * fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
 
             !Get w in physical space:
-            call fftxys2p(fs, ww)
+            call fftxys2p(fs, velog(0:nz, :, :, 3))
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
