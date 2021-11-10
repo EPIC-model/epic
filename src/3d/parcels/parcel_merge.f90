@@ -1,15 +1,16 @@
 ! =============================================================================
-!                       Module to merge ellipses
+!                       Module to merge ellipsoids
 !           The module implements the geometric merge procedure.
 ! =============================================================================
 module parcel_merge
     use parcel_nearest
-    use constants, only : pi, zero, one, two, four    &
+    use constants, only : pi, zero, one, two, five, f13 &
                         , max_num_parcels
     use parcel_container, only : parcel_container_type  &
                                , n_parcels              &
                                , parcel_replace         &
-                               , get_delx
+                               , get_delx               &
+                               , get_dely
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
     use parcel_bc
@@ -81,14 +82,13 @@ module parcel_merge
             integer                                    :: loca(n_parcels)
             double precision                           :: x0(n_merge), y0(n_merge)
             double precision                           :: xm(n_merge), ym(n_merge), zm(n_merge)
-            double precision                           :: delx, vmerge, dely, delz, B22, mu
+            double precision                           :: delx, vmerge, dely, delz, B33, mu
             double precision                           :: buoym(n_merge), vortm(n_merge, 3)
 #ifndef ENABLE_DRY_MODE
             double precision                           :: hum(n_merge)
 #endif
-            double precision,            intent(out)   :: Bm(n_merge, 6), vm(n_merge)
-!             , B12m(n_merge), B22m(n_merge), &
-
+            double precision,            intent(out)   :: Bm(n_merge, 6) ! B11, B12, B13, B22, B23, B33
+            double precision,            intent(out)   :: vm(n_merge)
 
             loca = zero
 
@@ -126,9 +126,7 @@ module parcel_merge
 #endif
                     vortm(l, :) = parcels%volume(ic) * parcels%vorticity(ic, :)
 
-                    Bm(l, 1) = zero
-                    Bm(l, 2) = zero
-                    Bm(l, 4) = zero
+                    Bm(l, :) = zero
                 endif
 
                 ! Sum up all the small parcels merging with a common other one:
@@ -189,18 +187,20 @@ module parcel_merge
 
                     vmerge = one / vm(l)
 
-                    !FIXME
-                    B22 = 1.0 !get_B22(parcels%B(ic, 1), parcels%B(ic, 2), parcels%volume(ic))
+                    B33 = get_B33(parcels%B(ic, 1), parcels%volume(ic))
 
                     delx = get_delx(parcels%position(ic, 1), xm(l))
                     dely = get_delx(parcels%position(ic, 2), ym(l))
                     delz = parcels%position(ic, 3) - zm(l)
 
                     mu = parcels%volume(ic) * vmerge
-                    !FIXME
-!                     Bm(l, 1) = mu * (four * delx ** 2 + parcels%B(ic, 1))
-!                     Bm(l, 2) = mu * (four * delx * dely + parcels%B(ic, 2))
-!                     Bm(l, 4) = mu * (four * dely ** 2 + B22)
+
+                    Bm(l, 1) = mu * (five * delx ** 2   + parcels%B(ic, 1))
+                    Bm(l, 2) = mu * (five * delx * dely + parcels%B(ic, 2))
+                    Bm(l, 3) = mu * (five * delx * delz + parcels%B(ic, 3))
+                    Bm(l, 4) = mu * (five * dely ** 2   + parcels%B(ic, 4))
+                    Bm(l, 5) = mu * (five * dely * delz + parcels%B(ic, 5))
+                    Bm(l, 6) = mu * (five * delz ** 2   + B33)
 
                     parcels%volume(ic)  = vm(l)
                     parcels%position(ic, 1) = xm(l)
@@ -224,16 +224,17 @@ module parcel_merge
                 dely = get_dely(parcels%position(is, 2), ym(n))
                 delz = parcels%position(is, 3) - zm(n)
 
-                !FIXME
-                B22 = 1.0 !get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is))
+                B33 = get_B33(parcels%B(is, :), parcels%volume(is))
 
                 ! volume fraction A_{is} / A
                 mu = vmerge * parcels%volume(is)
 
-                !FIXME
-!                 Bm(n, 1) = Bm(n, 1) + mu * (four * delx ** 2   + parcels%B(is, 1))
-!                 Bm(n, 2) = Bm(n, 2) + mu * (four * delx * dely + parcels%B(is, 2))
-!                 Bm(n, 4) = Bm(n, 4) + mu * (four * dely ** 2   + B22)
+                Bm(n, 1) = Bm(n, 1) + mu * (five * delx ** 2   + parcels%B(is, 1))
+                Bm(n, 2) = Bm(n, 2) + mu * (five * delx * dely + parcels%B(is, 2))
+                Bm(n, 3) = Bm(n, 3) + mu * (five * delx * delz + parcels%B(is, 3))
+                Bm(n, 4) = Bm(n, 4) + mu * (five * dely ** 2   + parcels%B(is, 4))
+                Bm(n, 5) = Bm(n, 5) + mu * (five * dely * delz + parcels%B(is, 5))
+                Bm(n, 6) = Bm(n, 6) + mu * (five * delz ** 2   + B33)
             enddo
 
         end subroutine do_group_merge
@@ -251,7 +252,7 @@ module parcel_merge
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ic, l
             integer                                    :: loca(n_parcels)
-            double precision                           :: factor
+            double precision                           :: factor, detB
             double precision                           :: B(n_merge, 6), &
                                                           V(n_merge)
 
@@ -268,10 +269,13 @@ module parcel_merge
                     l = l + 1
                     loca(ic) = l
 
-                    ! FIXME
-                    ! normalize such that determinant of the merger is (ab)**2
-                    ! ab / sqrt(det(B))
-                    factor = 1.0 !get_ab(V(l)) / dsqrt(B(l, 1) * B(l, 4) - B(l, 2) ** 2)
+                    ! normalize such that determinant of the merger is (abc)**2
+                    ! ((abc)**2 / det(B))^(1/3)
+                    detB = B(l, 1) * (B(l, 2) * B(l, 6) - B(l, 5) ** 2) &
+                         - B(l, 2) * (B(l, 2) * B(l, 6) - B(l, 3) * B(l, 5)) &
+                         + B(l, 3) * (B(l, 2) * B(l, 5) - B(l, 3) * B(l, 4))
+
+                    factor = (get_abc(V(l)) ** 2 / detB) ** f13
 
                     parcels%B(ic, :) = B(l, 1:5) * factor
 
