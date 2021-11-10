@@ -1,14 +1,14 @@
 ! =============================================================================
 !                       Test ellipsoid multi merge
 !
-!         This unit test checks the merging of five ellipsoids. The biggest
+!         This unit test checks the merging of 9 ellipsoids. The biggest
 !         ellipsoid is located at the origin. The smaller ellipsoids are located
-!         on all four sides. The final ellipsoid is a circle located at the
+!         on all sides. The final ellipsoid is a circle located at the
 !         origin.
 ! =============================================================================
 program test_ellipsoid_multi_merge_1
     use unit_test
-    use constants, only : pi, three, four, five, ten, f23
+    use constants, only : pi, three, four, five, eight, ten, f23
     use parcel_container
     use parcel_merge, only : merge_parcels, merge_timer
     use options, only : parcel
@@ -35,7 +35,7 @@ program test_ellipsoid_multi_merge_1
 
     call update_parameters
 
-    call parcel_alloc(5)
+    call parcel_alloc(9)
 
     a1b1c1 = 0.49d0
     a2b2c2 = 0.25d0
@@ -47,14 +47,16 @@ program test_ellipsoid_multi_merge_1
     ! check result
     error = eval_max_error()
 
-    call print_result_dp('Test ellipsoid group-merge 1', error)
+    call print_result_dp('Test ellipsoid group-merge 1', error, atol=dble(2.0e-15))
 
     call parcel_dealloc
 
     contains
 
         subroutine parcel_setup
-            n_parcels = 5
+            integer :: i
+
+            n_parcels = 9
             parcels%position(1, :) = zero
             parcels%volume(1) = a1b1c1 * four * pi / three
             parcels%B(1, :) = zero
@@ -64,54 +66,57 @@ program test_ellipsoid_multi_merge_1
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(1) = 1.3d0
 #endif
-            ! small parcel left
-            parcels%position(2, 1) = -0.6d0
-            parcels%position(2, 2) = zero
-            parcels%position(2, 3) = zero
-            parcels%volume(2) = a2b2c2 * four * pi / three
-            parcels%B(2, :) = zero
-            parcels%B(2, 1) = a2b2c2 ** f23
-            parcels%B(2, 4) = a2b2c2 ** f23
-            parcels%buoyancy(2) = 1.8d0
+
+            do i = 0, 1
+                ! small parcel below front/back left
+                parcels%position(2+4*i, 1) = -0.6d0
+                parcels%position(2+4*i, 2) = -0.6d0 + 1.2d0 * dble(i)
+                parcels%position(2+4*i, 3) = -0.6d0
+                parcels%volume(2+4*i) = a2b2c2 * four * pi / three
+                parcels%B(2+4*i, :) = zero
+                parcels%B(2+4*i, 1) = a2b2c2 ** f23
+                parcels%B(2+4*i, 4) = a2b2c2 ** f23
+                parcels%buoyancy(2+4*i) = 1.8d0
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(2) = 1.2d0
+                parcels%humidity(2+4*i) = 1.2d0
 #endif
-            ! small parcel right
-            parcels%position(3, 1) = 0.6d0
-            parcels%position(3, 2) = zero
-            parcels%position(3, 3) = zero
-            parcels%volume(3) = a2b2c2 * four * pi / three
-            parcels%B(3, :) = zero
-            parcels%B(3, 1) = a2b2c2 ** f23
-            parcels%B(3, 4) = a2b2c2 ** f23
-            parcels%buoyancy(3) = 1.4d0
+                ! small parcel below front/back right
+                parcels%position(3+4*i, 1) =  0.6d0
+                parcels%position(3+4*i, 2) = -0.6d0 + 1.2d0 * dble(i)
+                parcels%position(3+4*i, 3) = -0.6d0
+                parcels%volume(3+4*i) = a2b2c2 * four * pi / three
+                parcels%B(3+4*i, :) = zero
+                parcels%B(3+4*i, 1) = a2b2c2 ** f23
+                parcels%B(3+4*i, 4) = a2b2c2 ** f23
+                parcels%buoyancy(3+4*i) = 1.4d0
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(3) = 1.1d0
+                parcels%humidity(3+4*i) = 1.1d0
 #endif
-            ! small parcel below
-            parcels%position(4, 1) = zero
-            parcels%position(4, 2) = -0.6d0
-            parcels%position(4, 3) = zero
-            parcels%volume(4) = a2b2c2 * four * pi / three
-            parcels%B(4, :) = zero
-            parcels%B(4, 1) = a2b2c2 ** f23
-            parcels%B(4, 4) = a2b2c2 ** f23
-            parcels%buoyancy(4) = 1.7d0
+                ! small parcel above front/back left
+                parcels%position(4+4*i, 1) = -0.6d0
+                parcels%position(4+4*i, 2) = -0.6d0 + 1.2d0 * dble(i)
+                parcels%position(4+4*i, 3) =  0.6d0
+                parcels%volume(4+4*i) = a2b2c2 * four * pi / three
+                parcels%B(4+4*i, :) = zero
+                parcels%B(4+4*i, 1) = a2b2c2 ** f23
+                parcels%B(4+4*i, 4) = a2b2c2 ** f23
+                parcels%buoyancy(4+4*i) = 1.7d0
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(4) = 1.0d0
+                parcels%humidity(4+4*i) = 1.0d0
 #endif
-            ! small parcel above
-            parcels%position(5, 1) = zero
-            parcels%position(5, 2) = 0.6d0
-            parcels%position(5, 3) = zero
-            parcels%volume(5) = a2b2c2 * four * pi / three
-            parcels%B(5, :) = zero
-            parcels%B(5, 1) = a2b2c2 ** f23
-            parcels%B(5, 4) = a2b2c2 ** f23
-            parcels%buoyancy(5) = 1.5d0
+                ! small parcel above front/back right
+                parcels%position(5+4*i, 1) =  0.6d0
+                parcels%position(5+4*i, 2) = -0.6d0 + 1.2d0 * dble(i)
+                parcels%position(5+4*i, 3) =  0.6d0
+                parcels%volume(5+4*i) = a2b2c2 * four * pi / three
+                parcels%B(5+4*i, :) = zero
+                parcels%B(5+4*i, 1) = a2b2c2 ** f23
+                parcels%B(5+4*i, 4) = a2b2c2 ** f23
+                parcels%buoyancy(5+4*i) = 1.5d0
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(5) = 1.4d0
+                parcels%humidity(5+4*i) = 1.4d0
 #endif
+            enddo
         end subroutine parcel_setup
 
         function eval_max_error() result(max_err)
@@ -122,7 +127,7 @@ program test_ellipsoid_multi_merge_1
             double precision :: max_err
 
             ! reference solution
-            abc = a1b1c1 + four * a2b2c2  ! a == b == c since it is a sphere
+            abc = a1b1c1 + eight * a2b2c2  ! a == b == c since it is a sphere
             B11 = abc ** f23
             B12 = zero
             B13 = zero
@@ -131,9 +136,9 @@ program test_ellipsoid_multi_merge_1
             B33 = abc ** f23
             vol = abc * four * pi / three
 
-            buoy = (1.5d0 * a1b1c1 + (1.8d0 + 1.4d0 + 1.7d0 + 1.5d0) * a2b2c2) / abc
+            buoy = (1.5d0 * a1b1c1 + two * (1.8d0 + 1.4d0 + 1.7d0 + 1.5d0) * a2b2c2) / abc
 #ifndef ENABLE_DRY_MODE
-            hum  = (1.3d0 * a1b1c1 + (1.2d0 + 1.1d0 + 1.0d0 + 1.4d0) * a2b2c2) / abc
+            hum  = (1.3d0 * a1b1c1 + two * (1.2d0 + 1.1d0 + 1.0d0 + 1.4d0) * a2b2c2) / abc
 #endif
             max_err = zero
 
