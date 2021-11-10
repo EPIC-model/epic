@@ -6,7 +6,7 @@
 program test_fft_3d
     use unit_test
     use constants, only : pi, twopi, f12, zero, four, two
-    use fft, only : init_fft, fftxyp2s, fftxys2p
+    use inversion_utils_mod, only : init_fft, fftxyp2s, fftxys2p
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent
     implicit none
 
