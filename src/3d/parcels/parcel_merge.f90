@@ -29,7 +29,7 @@ module parcel_merge
         ! Merge small parcels into neighbouring equal-sized parcels or bigger
         ! parcels which are close by.
         ! @param[inout] parcels is the parcel container
-        subroutine merge_ellipses(parcels)
+        subroutine merge_parcels(parcels)
             type(parcel_container_type), intent(inout) :: parcels
             integer, allocatable, dimension(:)         :: isma
             integer, allocatable, dimension(:)         :: iclo
@@ -63,7 +63,7 @@ module parcel_merge
 
             call stop_timer(merge_timer)
 
-        end subroutine merge_ellipses
+        end subroutine merge_parcels
 
 
         ! Actual merge.
@@ -108,7 +108,7 @@ module parcel_merge
                     x0(l) = parcels%position(ic, 1)
 
                     !y0 stores the y centre of the other parcel
-                    y0(l) = parcels%position(ic, 1)
+                    y0(l) = parcels%position(ic, 2)
 
                     ! xm will sum v(is)*(x(is)-x(ic)) modulo periodicity
                     xm(l) = zero
@@ -187,13 +187,14 @@ module parcel_merge
 
                     vmerge = one / vm(l)
 
-                    B33 = get_B33(parcels%B(ic, 1), parcels%volume(ic))
+                    B33 = get_B33(parcels%B(ic, :), parcels%volume(ic))
 
                     delx = get_delx(parcels%position(ic, 1), xm(l))
-                    dely = get_delx(parcels%position(ic, 2), ym(l))
+                    dely = get_dely(parcels%position(ic, 2), ym(l))
                     delz = parcels%position(ic, 3) - zm(l)
 
                     mu = parcels%volume(ic) * vmerge
+
 
                     Bm(l, 1) = mu * (five * delx ** 2   + parcels%B(ic, 1))
                     Bm(l, 2) = mu * (five * delx * dely + parcels%B(ic, 2))
@@ -226,7 +227,7 @@ module parcel_merge
 
                 B33 = get_B33(parcels%B(is, :), parcels%volume(is))
 
-                ! volume fraction A_{is} / A
+                ! volume fraction V_{is} / V
                 mu = vmerge * parcels%volume(is)
 
                 Bm(n, 1) = Bm(n, 1) + mu * (five * delx ** 2   + parcels%B(is, 1))
@@ -240,7 +241,7 @@ module parcel_merge
         end subroutine do_group_merge
 
 
-        ! Geometric merging -- called by subroutine merge_ellipses.
+        ! Geometric merging -- called by subroutine merge_parcels.
         ! @param[inout] parcels is the parcel container
         ! @param[in] isma are the indices of the small parcels
         ! @param[in] iclo are the indices of the close parcels
@@ -271,7 +272,7 @@ module parcel_merge
 
                     ! normalize such that determinant of the merger is (abc)**2
                     ! ((abc)**2 / det(B))^(1/3)
-                    detB = B(l, 1) * (B(l, 2) * B(l, 6) - B(l, 5) ** 2) &
+                    detB = B(l, 1) * (B(l, 4) * B(l, 6) - B(l, 5) ** 2) &
                          - B(l, 2) * (B(l, 2) * B(l, 6) - B(l, 3) * B(l, 5)) &
                          + B(l, 3) * (B(l, 2) * B(l, 5) - B(l, 3) * B(l, 4))
 

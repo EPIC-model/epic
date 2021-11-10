@@ -8,7 +8,7 @@ program epic3d
     use parcel_container
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
-    use parcel_merge, only : merge_ellipses, merge_timer
+    use parcel_merge, only : merge_parcels, merge_timer
     use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
     use parcel_correction, only : init_parcel_correction, &
                                   apply_laplace,          &
@@ -132,7 +132,7 @@ program epic3d
 #endif
                 call ls_rk4_step(t)
 
-                call merge_ellipses(parcels)
+                call merge_parcels(parcels)
 
                 call parcel_split(parcels, parcel%lambda_max)
 
