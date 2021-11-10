@@ -3,8 +3,8 @@
 !==============================================================================
 module parcel_nearest
     use constants, only : pi, f12, max_num_parcels
-    use parcel_container, only : parcels, n_parcels, get_delx
-    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin
+    use parcel_container, only : parcels, n_parcels, get_delx, get_dely
+    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, ny, nz, vmin
     use options, only : parcel
     use timer, only : start_timer, stop_timer
 
@@ -15,7 +15,7 @@ module parcel_nearest
     private
 
     !Used for searching for possible parcel merger:
-    integer, allocatable :: nppc(:), kc1(:),kc2(:)
+    integer, allocatable :: nppc(:), kc1(:), kc2(:)
     integer :: loca(max_num_parcels)
     integer :: node(max_num_parcels)
 
@@ -36,9 +36,9 @@ module parcel_nearest
     logical :: l_continue_iteration, l_do_merge
 
     !Other variables:
-    double precision:: delx,delz,dsq,dsqmin,x_small,z_small
-    integer:: ic,is,ij,k,m,j, n
-    integer:: ix,iz,ix0,iz0
+    double precision:: delx, dely, delz, dsq, dsqmin, x_small, y_small, z_small
+    integer :: ic, is, ijk, k, m, j, n
+    integer :: ix, iy, iz, ix0, iy0, iz0
 
     public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer
 
@@ -69,22 +69,23 @@ module parcel_nearest
 
             !---------------------------------------------------------------------
             ! Initialise search:
-            nppc = 0 !nppc(ij) will contain the number of parcels in grid cell ij
+            nppc = 0 !nppc(ijk) will contain the number of parcels in grid cell ijk
 
             ! Bin parcels in cells:
             ! Form list of small parcels:
             do n = 1, n_parcels
-                ix = int(dxi(1) * (parcels%position(n,1) - lower(1)))
-                iz = int(dxi(2) * (parcels%position(n,2) - lower(2)))
+                ix = int(dxi(1) * (parcels%position(n, 1) - lower(1)))
+                iy = int(dxi(2) * (parcels%position(n, 2) - lower(2)))
+                iz = int(dxi(3) * (parcels%position(n, 3) - lower(3)))
 
                 ! Cell index of parcel:
-                ij = 1 + ix + nx * iz !This runs from 1 to ncell
+                ijk = 1 + ix + nx * iy + nx * ny * iz !This runs from 1 to ncell
 
                 ! Accumulate number of parcels in this grid cell:
-                nppc(ij) = nppc(ij) + 1
+                nppc(ijk) = nppc(ijk) + 1
 
                 ! Store grid cell that this parcel is in:
-                loca(n) = ij
+                loca(n) = ijk
 
                 if (parcels%volume(n) < vmin) then
                     nmerge = nmerge + 1
@@ -103,20 +104,21 @@ module parcel_nearest
             isma = 0
             iclo = 0
 
-            ! Find arrays kc1(ij) & kc2(ij) which indicate the parcels in grid cell ij
-            ! through n = node(k), for k = kc1(ij),kc2(ij):
+            ! Find arrays kc1(ijk) & kc2(ijk) which indicate the parcels in grid cell ijk
+            ! through n = node(k), for k = kc1(ijk), kc2(ijk):
             kc1(1) = 1
-            do ij = 1, ncell-1
-                kc1(ij+1) = kc1(ij) + nppc(ij)
+            do ijk = 1, ncell-1
+                kc1(ijk+1) = kc1(ijk) + nppc(ijk)
             enddo
 
+            !FIXME
             kc2 = kc1 - 1
             j = 0
             do n = 1, n_parcels
-                ij = loca(n)
-                k = kc2(ij) + 1
+                ijk = loca(n)
+                k = kc2(ijk) + 1
                 node(k) = n
-                kc2(ij) = k
+                kc2(ijk) = k
 
                 if (parcels%volume(n) < vmin) then
                     j = j + 1
@@ -138,41 +140,47 @@ module parcel_nearest
             do m = 1, nmerge
                 is = isma(m)
                 x_small = parcels%position(is, 1)
-                z_small = parcels%position(is, 2)
+                y_small = parcels%position(is, 2)
+                z_small = parcels%position(is, 3)
                 ! Parcel "is" is small and should be merged; find closest other:
                 ix0 = mod(nint(dxi(1) * (x_small - lower(1))), nx) ! ranges from 0 to nx-1
-                iz0 = nint(dxi(2) * (z_small - lower(2)))          ! ranges from 0 to nz
+                iy0 = mod(nint(dxi(2) * (y_small - lower(2))), ny)
+                iz0 = nint(dxi(3) * (z_small - lower(3)))          ! ranges from 0 to nz
 
-                ! Grid point (ix0,iz0) is closest to parcel "is"
+                ! Grid point (ix0, iy0, iz0) is closest to parcel "is"
 
                 dsqmin = product(extent)
                 ic = 0
 
-                ! Loop over 8 cells surrounding (ix0,iz0):
+                ! Loop over 8 cells surrounding (ix0, iy0, iz0):
                 do iz = max(0, iz0-1), min(nz-1, iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
-                    do ix = ix0-1, ix0
-                        ! Cell index (accounting for x periodicity):
-                        ij = 1 + mod(nx + ix, nx) + nx * iz
-                        ! Search small parcels for closest other:
-                        do k = kc1(ij), kc2(ij)
-                            n = node(k)
-                            if (n .ne. is) then
-                                delz = parcels%position(n,2) - z_small
-                                if (delz*delz < dsqmin) then
-                                    delx = get_delx(parcels%position(n,1), x_small) ! works across periodic edge
-                                    ! Minimise dsqmin
-                                    dsq = delz * delz + delx * delx
-                                    if (dsq < dsqmin) then
-                                        dsqmin = dsq
-                                        ic = n
+                    do iy = iy0-1, iy0
+                        do ix = ix0-1, ix0
+                            ! Cell index (accounting for x and y periodicity):
+                            ijk = 1 + mod(nx + ix, nx) + nx * mod(ny + iy, ny) + nx * ny * iz
+                            ! Search small parcels for closest other:
+                            do k = kc1(ijk), kc2(ijk)
+                                n = node(k)
+                                if (n .ne. is) then
+                                    delz = parcels%position(n, 3) - z_small
+                                    if (delz*delz < dsqmin) then
+                                        ! works across periodic edge
+                                        delx = get_delx(parcels%position(n, 1), x_small)
+                                        dely = get_dely(parcels%position(n, 2), y_small)
+                                        ! Minimise dsqmin
+                                        dsq = delx ** 2 + dely ** 2 + delz ** 2
+                                        if (dsq < dsqmin) then
+                                            dsqmin = dsq
+                                            ic = n
+                                        endif
                                     endif
                                 endif
-                            endif
+                            enddo
                         enddo
                     enddo
                 enddo
 
-                if (ic==0) then
+                if (ic == 0) then
                   print *, 'Merge error: no near neighbour found.'
                   stop
                 end if
