@@ -20,7 +20,7 @@ unittests_PROGRAMS = 				\
 	test_free_slip				\
 	test_fft_1				\
 	test_fft_2				\
-	test_trilinear				\
+	test_bilinear				\
 	test_laplace_correction			\
 	test_gradient_correction		\
 	test_parcel_correction		  	\
@@ -61,8 +61,8 @@ test_fft_2_LDADD = 					\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
-test_trilinear_SOURCES = test_trilinear.f90
-test_trilinear_LDADD = 					\
+test_bilinear_SOURCES = test_bilinear.f90
+test_bilinear_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la

@@ -1,9 +1,9 @@
 ! =============================================================================
-!                       Test trilinear interpolation
+!                       Test bilinear interpolation
 !
-!         This unit test checks the trilinear interpolation par2grid
+!         This unit test checks the bilinear interpolation par2grid
 ! =============================================================================
-program test_trilinear
+program test_bilinear
     use unit_test
     use constants, only : pi, zero, one, f14, f32
     use parcel_container
@@ -56,6 +56,6 @@ program test_trilinear
 
     error = abs(sum(volg(0:nz, 0:nx-1)) - dble(ngrid) * vcell)
 
-    call print_result_dp('Test trilinear (par2grid)', error, atol=dble(1.0e-14))
+    call print_result_dp('Test bilinear (par2grid)', error, atol=dble(1.0e-14))
 
-end program test_trilinear
+end program test_bilinear
