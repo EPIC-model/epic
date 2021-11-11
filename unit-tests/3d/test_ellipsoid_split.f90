@@ -34,7 +34,7 @@ program test_ellipsoid_split
     call parcel_alloc(2)
 
     abc = one
-    ab = f34 * one
+    ab = f34
 
     a2 = ab * lam
     b2 = ab / lam

@@ -23,7 +23,9 @@ unittests_PROGRAMS = 				\
 	test_ellipsoid_split 			\
 	test_parcel_init_3d			\
 	test_fft_3d				\
-	test_trilinear
+	test_trilinear				\
+	test_ellipsoid_merge_1			\
+	test_ellipsoid_merge_2
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -75,6 +77,20 @@ test_fft_3d_LDADD = 					\
 
 test_trilinear_SOURCES = test_trilinear.f90
 test_trilinear_LDADD = 					\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
+
+test_ellipsoid_merge_1_SOURCES = test_ellipsoid_merge_1.f90
+test_ellipsoid_merge_1_LDADD = 				\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
+
+test_ellipsoid_merge_2_SOURCES = test_ellipsoid_merge_2.f90
+test_ellipsoid_merge_2_LDADD = 				\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
