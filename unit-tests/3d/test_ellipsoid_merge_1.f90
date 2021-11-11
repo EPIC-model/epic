@@ -1,5 +1,5 @@
 ! =============================================================================
-!                       Test ellipsoid multi merge
+!                       Test ellipsoid merge
 !
 !         This unit test checks the merging of 9 ellipsoids. The biggest
 !         ellipsoid is located at the origin. The smaller ellipsoids are located

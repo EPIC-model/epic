@@ -1,5 +1,5 @@
 ! =============================================================================
-!                       Test ellipsoid multi merge
+!                       Test ellipsoid merge
 !
 !         This unit test checks the merging of two ellipsoids. It is the
 !         reverse test of test_ellipsoid_split.f90.
