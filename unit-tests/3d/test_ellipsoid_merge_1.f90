@@ -6,7 +6,7 @@
 !         on all sides. The final ellipsoid is a circle located at the
 !         origin.
 ! =============================================================================
-program test_ellipsoid_multi_merge_1
+program test_ellipsoid_merge_1
     use unit_test
     use constants, only : pi, three, four, five, eight, ten, f23
     use parcel_container
@@ -47,7 +47,7 @@ program test_ellipsoid_multi_merge_1
     ! check result
     error = eval_max_error()
 
-    call print_result_dp('Test ellipsoid group-merge 1', error, atol=dble(2.0e-15))
+    call print_result_dp('Test ellipsoid merge 1', error, atol=dble(2.0e-15))
 
     call parcel_dealloc
 
@@ -160,4 +160,4 @@ program test_ellipsoid_multi_merge_1
 
 
 
-end program test_ellipsoid_multi_merge_1
+end program test_ellipsoid_merge_1
