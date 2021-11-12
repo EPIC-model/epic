@@ -19,6 +19,9 @@ module fields
         vortg,     &   ! vorticity vector field
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
+                       ! ordering: du/dx, du/dy, du/dz,
+                       !           dv/dx, dv/dy, dv/dz,
+                       !           dw/dx, dw/dy, dw/dz
 
     double precision, allocatable, dimension(:, :, :) :: &
 #ifndef ENABLE_DRY_MODE

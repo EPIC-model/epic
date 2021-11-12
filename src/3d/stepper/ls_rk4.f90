@@ -6,7 +6,7 @@ module ls_rk4
     use options, only : parcel
     use parcel_container
     use parcel_bc
-    use rk4_utils, only: get_B, get_time_step
+    use rk4_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
@@ -134,7 +134,7 @@ module ls_rk4
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
-                    delta_b(n, :) = get_B(parcels%B(n, :), strain(n, :), parcels%volume(n))
+                    delta_b(n, :) = get_dBdt(parcels%B(n, :), strain(n, :), parcels%volume(n))
                 enddo
                 !$omp end parallel do
 
@@ -151,7 +151,7 @@ module ls_rk4
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
                     delta_b(n, :) = delta_b(n, :) &
-                                  + get_B(parcels%B(n, :), strain(n, :), parcels%volume(n))
+                                  + get_dBdt(parcels%B(n, :), strain(n, :), parcels%volume(n))
                 enddo
                 !$omp end parallel do
 

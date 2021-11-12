@@ -15,8 +15,8 @@ module rk4_utils
         ! @param[in] Bin are the B matrix components of the parcel
         ! @param[in] S is the local velocity strain
         ! @param[in] volume is the parcel volume
-        ! @returns the updated B matrix components (B11 and B12) in Bout
-        function get_B(Bin, S, volume) result(Bout)
+        ! @returns dB/dt in Bout
+        function get_dBdt(Bin, S, volume) result(Bout)
             double precision, intent(in) :: Bin(5)
             double precision, intent(in) :: S(9)
             double precision, intent(in) :: volume
@@ -60,7 +60,7 @@ module rk4_utils
                     + S(8) * Bin(4) & ! + dw/dy * B22
                     - S(1) * Bin(5) & ! - du/dx * B23
                     + S(6) * B33      ! + dv/dz * B33
-        end function get_B
+        end function get_dBdt
 
         ! Estimate a suitable time step based on the velocity strain
         ! and buoyancy gradient.
