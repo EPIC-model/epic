@@ -7,11 +7,11 @@
 program test_ft_2_3d
     use unit_test
     use constants, only : pi, twopi, f12, zero, four, two
-    use inversion_utils_mod, only : init_fft &
-                                  , xfactors &
-                                  , yfactors &
-                                  , xtrig    &
-                                  , ytrig
+    use inversion_utils, only : init_fft &
+                              , xfactors &
+                              , yfactors &
+                              , xtrig    &
+                              , ytrig
     use sta2dfft
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent
     implicit none
@@ -80,30 +80,30 @@ program test_ft_2_3d
 
     contains
         subroutine combined_forward_fft(fp, fs)
-            double precision, intent(in)  :: fp(0:nz,ny,nx)  !Physical
-            double precision, intent(out) :: fs(0:nz,nx,ny)  !Spectral
+            double precision, intent(in)  :: fp(0:nz, ny, nx)  !Physical
+            double precision, intent(out) :: fs(0:nz, nx, ny)  !Spectral
             double precision              :: fp_copy(0:nz, ny, nx)
             integer:: kx, iy
 
             fp_copy = fp
 
              !Carry out a full x transform first:
-            call forfft((nz+1)*ny,nx,fp_copy,xtrig,xfactors)
+            call forfft((nz+1) * ny, nx, fp_copy, xtrig, xfactors)
 
             !Transpose array:
-            do kx=1,nx
-                do iy=1,ny
-                    fs(:,kx,iy)=fp_copy(:,iy,kx)
+            do kx = 1, nx
+                do iy = 1, ny
+                    fs(:, kx, iy) = fp_copy(:, iy, kx)
                 enddo
             enddo
 
             !Carry out a full y transform on transposed array:
-            call forfft((nz+1)*nx,ny,fs,ytrig,yfactors)
+            call forfft((nz+1)*nx, ny, fs, ytrig, yfactors)
         end subroutine combined_forward_fft
 
         subroutine not_combined_forward_fft(fp, fs)
-            double precision, intent(in)  :: fp(0:nz,ny,nx)  !Physical
-            double precision, intent(out) :: fs(0:nz,nx,ny)  !Spectral
+            double precision, intent(in)  :: fp(0:nz, ny, nx)  !Physical
+            double precision, intent(out) :: fs(0:nz, nx, ny)  !Spectral
             double precision              :: fp_copy(0:nz, ny, nx)
             integer                       :: kx, iy, iz
 
@@ -111,69 +111,69 @@ program test_ft_2_3d
 
             !Carry out a full x transform first:
             do iz = 0, nz
-                call forfft(ny,nx,fp_copy(iz, :, :),xtrig,xfactors)
+                call forfft(ny, nx, fp_copy(iz,  :,  :), xtrig, xfactors)
             enddo
 
             !Transpose array:
-            do kx=1,nx
-                do iy=1,ny
-                    fs(:,kx,iy)=fp_copy(:,iy,kx)
+            do kx = 1, nx
+                do iy = 1, ny
+                    fs(:, kx, iy) = fp_copy(:, iy, kx)
                 enddo
             enddo
 
             !Carry out a full y transform on transposed array:
             do iz = 0, nz
-                call forfft(nx,ny,fs(iz, :, :),ytrig,yfactors)
+                call forfft(nx, ny, fs(iz,  :,  :), ytrig, yfactors)
             enddo
         end subroutine not_combined_forward_fft
 
 
-        subroutine combined_backward_fft(fs,fp)
-            double precision, intent(in)  :: fs(0:nz,nx,ny)  !Spectral
-            double precision, intent(out) :: fp(0:nz,ny,nx)  !Physical
+        subroutine combined_backward_fft(fs, fp)
+            double precision, intent(in)  :: fs(0:nz, nx, ny)  !Spectral
+            double precision, intent(out) :: fp(0:nz, ny, nx)  !Physical
             double precision              :: fs_copy(0:nz, nx, ny)
-            integer                       :: kx,iy
+            integer                       :: kx, iy
 
             fs_copy = fs
 
             !Carry out a full inverse y transform first:
-            call revfft((nz+1)*nx,ny,fs_copy,ytrig,yfactors)
+            call revfft((nz+1) * nx, ny, fs_copy, ytrig, yfactors)
 
             !Transpose array:
-            do kx=1,nx
-                do iy=1,ny
-                    fp(:,iy,kx) = fs_copy(:,kx,iy)
+            do kx = 1, nx
+                do iy = 1, ny
+                    fp(:, iy, kx) = fs_copy(:, kx, iy)
                 enddo
             enddo
 
             !Carry out a full inverse x transform:
-            call revfft((nz+1)*ny,nx,fp,xtrig,xfactors)
+            call revfft((nz+1) * ny, nx, fp, xtrig, xfactors)
         end subroutine combined_backward_fft
 
 
-        subroutine not_combined_backward_fft(fs,fp)
-            double precision, intent(in)  :: fs(0:nz,nx,ny)  !Spectral
-            double precision, intent(out) :: fp(0:nz,ny,nx)  !Physical
+        subroutine not_combined_backward_fft(fs, fp)
+            double precision, intent(in)  :: fs(0:nz, nx, ny)  !Spectral
+            double precision, intent(out) :: fp(0:nz, ny, nx)  !Physical
             double precision              :: fs_copy(0:nz, nx, ny)
-            integer                       :: kx,iy, iz
+            integer                       :: kx, iy, iz
 
             fs_copy = fs
 
             !Carry out a full inverse y transform first:
             do iz = 0, nz
-                call revfft(nx,ny,fs_copy(iz, :, :),ytrig,yfactors)
+                call revfft(nx, ny, fs_copy(iz, :, :), ytrig, yfactors)
             enddo
 
             !Transpose array:
-            do kx=1,nx
-                do iy=1,ny
-                    fp(:,iy,kx) = fs_copy(:,kx,iy)
+            do kx = 1, nx
+                do iy = 1, ny
+                    fp(:, iy, kx) = fs_copy(:, kx, iy)
                 enddo
             enddo
 
             !Carry out a full inverse x transform:
             do iz = 0, nz
-                call revfft(ny,nx,fp(iz, :, :),xtrig,xfactors)
+                call revfft(ny, nx, fp(iz,  :,  :), xtrig, xfactors)
             enddo
         end subroutine not_combined_backward_fft
 

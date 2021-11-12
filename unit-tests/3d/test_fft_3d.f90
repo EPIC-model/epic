@@ -6,13 +6,14 @@
 program test_fft_3d
     use unit_test
     use constants, only : pi, twopi, f12, zero, four, two
-    use inversion_utils_mod, only : init_fft, fftxyp2s, fftxys2p
+    use inversion_utils, only : init_fft, fftxyp2s, fftxys2p
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent
     implicit none
 
     double precision              :: error = zero
     double precision, allocatable :: fp1(:, :, :), &
                                      fp2(:, :, :), &
+                                     fp(:, :, :),  &
                                      fs(:, :, :)
     integer                       :: i, j, k
     double precision              :: x, y, z
@@ -47,8 +48,11 @@ program test_fft_3d
 
     fs = zero
 
+    ! we need to copy since fftxyp2s overwrites *fp*.
+    fp = fp1
+
     ! forward FFT
-    call fftxyp2s(fp1, fs)
+    call fftxyp2s(fp, fs)
 
     ! inverse FFT
     call fftxys2p(fs, fp2)

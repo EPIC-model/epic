@@ -1,15 +1,17 @@
 module inversion_mod
-    use inversion_utils_mod
+    use inversion_utils
+    use parameters, only : nx, ny, nz
+    use constants, only : zero, three, four
     implicit none
 
     contains
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Given the vorticity vector field (vortg) in physical space, this
-        !returns the associated velocity field (velog) and a spectral
-        !copy (svelog),  which is additionally filtered.  Note: the
-        !vorticity is modified to be solenoidal and spectrally filtered.
+        ! Given the vorticity vector field (vortg) in physical space, this
+        ! returns the associated velocity field (velog) and a spectral
+        ! copy (svelog),  which is additionally filtered.  Note: the
+        ! vorticity is modified to be solenoidal and spectrally filtered.
         subroutine vor2vel(vortg,  velog,  svelog)
             double precision, intent(inout)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
 !             ox(0:nz, ny, nx), oy(0:nz, ny, nx), oz(0:nz, ny, nx)
@@ -201,25 +203,21 @@ module inversion_mod
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Computes a divergent flow field (ud, vd, wd) = grad(phi) where
-        !Lap(phi) = div (given).
+        ! Computes a divergent flow field (ud, vd, wd) = grad(phi) where
+        ! Lap(phi) = div (given).
         subroutine diverge(div,  ud, vd, wd)
-            double precision, intent(in)  :: div(0:nz, ny, nx)
-            double precision, intent(out) :: ud(-1:nz+1, ny, nx), vd(-1:nz+1, ny, nx), wd(-1:nz+1, ny, nx)
-            double precision              :: ds(-1:nz+1, nx, ny)
-            double precision              :: us(-1:nz+1, nx, ny), vs(-1:nz+1, nx, ny), ws(-1:nz+1, nx, ny)
-            double precision              :: ads(0:nz), wbar(0:nz)
-            integer                       :: iz
+            double precision, intent(inout)  :: div(0:nz, ny, nx)
+            double precision, intent(out)    :: ud(0:nz, ny, nx), vd(0:nz, ny, nx), wd(0:nz, ny, nx)
+            double precision                 :: ds(0:nz, nx, ny)
+            double precision                 :: us(0:nz, nx, ny), vs(0:nz, nx, ny), ws(0:nz, nx, ny)
+            double precision                 :: wbar(0:nz)
 
             !------------------------------------------------------------------
-            !Convert div to spectral space (in x & y) as ds:
+            ! Convert phi to spectral space (in x & y) as ds:
             call fftxyp2s(div, ds)
 
             ! Compute the x & y-independent part of ds by integration:
-            do iz = 0, nz
-                ads(iz) = ds(iz, 1, 1)
-            enddo
-            call vertint(ads, wbar)
+            call vertint(ds(:, 1, 1), wbar)
 
             ! Invert Laplace's operator semi-spectrally with compact differences:
             call lapinv1(ds)
@@ -240,12 +238,11 @@ module inversion_mod
             call diffz1(ds, ws)
 
             ! Add on the x and y-independent part of wd:
-            do iz = 0, nz
-                ws(iz, 1, 1) = ws(iz, 1, 1) + wbar(iz)
-            enddo
+            ws(:, 1, 1) = ws(:, 1, 1) + wbar
 
             ! Reverse FFT to define z velocity component wd:
             call fftxys2p(ws, wd)
+
         end subroutine
 
 end module inversion_mod

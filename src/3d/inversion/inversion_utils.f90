@@ -1,9 +1,11 @@
-module inversion_utils_mod
+module inversion_utils
     use constants
     use parameters, only : nx, ny, nz, dx, dxi, extent
     use stafft
     use sta2dfft
     implicit none
+
+    private
 
     ! Ordering in physical space: z, y, x
     ! Ordering in spectral space: z, x, y
@@ -33,8 +35,27 @@ module inversion_utils_mod
     !De-aliasing filter:
     double precision, allocatable :: filt(:, :)
 
+    double precision :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq
 
-    double precision              :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq
+    logical :: is_initialised = .false.
+
+    public :: init_fft  &
+            , diffx     &
+            , diffy     &
+            , diffz0    &
+            , diffz1    &
+            , lapinv0   &
+            , lapinv1   &
+            , vertint   &
+            , fftxyp2s  &
+            , fftxys2p  &
+            , dz2       &
+            , filt      &
+            , hdzi      &
+            , xfactors  &
+            , yfactors  &
+            , xtrig     &
+            , ytrig
 
     contains
 
@@ -49,8 +70,12 @@ module inversion_utils_mod
             integer            :: nwx, nwy
             integer            :: kx, ky, iz, isub, ib_sub, ie_sub
 
+            if (is_initialised) then
+                return
+            endif
 
-            !!!!!!!
+            is_initialised = .true.
+
             dz = dx(3)
             dzi = dxi(3)
             dz6  = f16 * dx(3)
@@ -58,8 +83,6 @@ module inversion_utils_mod
             dz24 = f124 * dx(3)
             dzisq = dxi(3) ** 2
             hdzi = f12 * dxi(3)
-
-
             nwx = nx / 2
             nwy = ny / 2
 
@@ -84,9 +107,6 @@ module inversion_utils_mod
             allocate(filt(nx, ny))
 
             nxsub = nx / nsubs_tri
-            !!!!!!!
-
-
 
             !----------------------------------------------------------------------
             ! Initialise FFTs and wavenumber arrays:
@@ -179,6 +199,9 @@ module inversion_utils_mod
             enddo
             !$omp end do
             !$omp end parallel
+
+            etdv(nz-1, 1, 1) = zero
+
             htdv(nz, :, :) = one / (a0b + apb * etdv(nz-1, :, :))
             ! Remove horizontally-averaged part (done separately):
             htdv(:, 1, 1) = zero
@@ -214,42 +237,64 @@ module inversion_utils_mod
             htda(nz) = one / (one + f16 + f16 * etda(nz-2))
         end subroutine
 
+
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Given fs in spectral space (at least in x & y), this returns dfs/dx
-        !(partial derivative).  The result is returned in ds, again
-        !spectral.  Uses exact form of the derivative in spectral space.
-        subroutine diffx(fs, ds)
+        ! Given fs in spectral space (at least in x & y), this returns dfs/dx
+        ! (partial derivative).  The result is returned in ds, again
+        ! spectral.  Uses exact form of the derivative in spectral space.
+        subroutine diffx(fs,ds)
             double precision, intent(in)  :: fs(0:nz, nx, ny)
             double precision, intent(out) :: ds(0:nz, nx, ny)
-            integer                       :: iz
+            integer                       :: nwx, nxp2, kx, dkx, kxc
 
-            !$omp parallel shared(ds, fs, nx, ny, nz) private(iz) firstprivate(hrkx) default(none)
-            !$omp do
-            do iz = 0, nz
-                call xderiv(nx, ny, hrkx, fs(iz, 1, 1), ds(iz, 1, 1))
+            nwx = nx / 2
+            nxp2 = nx + 2
+
+            !Carry out differentiation by wavenumber multiplication:
+            ds(:, 1, :) = zero
+            do kx = 2, nx - nwx
+                dkx = 2 * (kx - 1)
+                kxc = nxp2 - kx
+                ds(:, kx,  :) = -hrkx(dkx) * fs(:,kxc,:)
+                ds(:, kxc, :) =  hrkx(dkx) * fs(:,kx ,:)
             enddo
-            !$omp end do
-            !$omp end parallel
+
+            if (mod(nx, 2) .eq. 0) then
+                kxc = nwx + 1
+                ds(:, kxc, :) = zero
+            endif
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Given fs in spectral space (at least in x & y), this returns dfs/dy
-        !(partial derivative).  The result is returned in ds, again
-        !spectral.  Uses exact form of the derivative in spectral space.
-        subroutine diffy(fs, ds)
+        ! Given fs in spectral space (at least in x & y), this returns dfs/dy
+        ! (partial derivative).  The result is returned in ds, again
+        ! spectral.  Uses exact form of the derivative in spectral space.
+        subroutine diffy(fs,ds)
             double precision, intent(in)  :: fs(0:nz, nx, ny)
             double precision, intent(out) :: ds(0:nz, nx, ny)
-            integer                       :: iz
+            double precision              :: fac
+            integer                       :: nwy, nyp2, ky, kyc
 
-            !$omp parallel shared(ds, fs, nx, ny, nz) private(iz) firstprivate(hrky) default(none)
-            !$omp do
-            do iz = 0, nz
-                call yderiv(nx, ny, hrky, fs(iz, 1, 1), ds(iz, 1, 1))
+            !Could be pre-defined constants:
+            nwy = ny / 2
+            nyp2 = ny + 2
+
+            !Carry out differentiation by wavenumber multiplication:
+            ds(:, :, 1) = zero
+
+            do ky = 2, ny - nwy
+                kyc = nyp2 - ky
+                fac = hrky(2 * (ky - 1))
+                ds(:, :, ky) = -fac * fs(:, :, kyc)
+                ds(:, :, kyc) = fac * fs(:, : , ky)
             enddo
-            !$omp end do
-            !$omp end parallel
+
+            if (mod(ny, 2) .eq. 0) then
+                kyc = nwy + 1
+                ds(:, :, kyc) = zero
+            endif
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -462,6 +507,9 @@ module inversion_utils_mod
             enddo
             !$omp end do
             !$omp end parallel
+
+             !Zero horizontal wavenumber in x & y treated separately:
+             fs(:, 1, 1) = zero
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -505,49 +553,56 @@ module inversion_utils_mod
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Computes a 2D FFT (in x & y) of a 3D array fp in physical space
-        !and returns the result as fs in spectral space (in x & y).
-        !Only FFTs over the x and y directions are performed.
+        ! Computes a 2D FFT (in x & y) of a 3D array fp in physical space
+        ! and returns the result as fs in spectral space (in x & y).
+        ! Only FFTs over the x and y directions are performed.
+        ! *** fp is destroyed upon exit ***
         subroutine fftxyp2s(fp, fs)
-            double precision, intent(in)  :: fp(0:nz, ny, nx)  !Physical
-            double precision, intent(out) :: fs(0:nz, nx, ny)  !Spectral
-            double precision              :: fpz(ny, nx)  !Physical
-            double precision              :: fsz(nx, ny)  !Spectral
-            integer                       :: iz
+            double precision, intent(inout) :: fp(0:nz, ny, nx)  !Physical
+            double precision, intent(out)   :: fs(0:nz, nx, ny)  !Spectral
+            integer                         :: kx, iy
 
-            !$omp parallel shared(fp, fs, nx, ny, nz) private(iz, fpz, fsz) &
-            !$omp& firstprivate(xfactors, yfactors, xtrig, ytrig) default(none)
-            !$omp do
-            do iz = 0, nz
-                fpz = fp(iz, :, :)
-                call ptospc(nx, ny, fpz, fsz, xfactors, yfactors, xtrig, ytrig)
-                fs(iz, :, :) = fsz
+            ! Carry out a full x transform first:
+            call forfft((nz+1) * ny, nx, fp, xtrig, xfactors)
+
+            ! Transpose array:
+            !$omp parallel do
+            do kx = 1, nx
+                do iy = 1, ny
+                    fs(:, kx, iy) = fp(:, iy, kx)
+                enddo
             enddo
-            !$omp end do
-            !$omp end parallel
+            !$omp end parallel do
+
+            ! Carry out a full y transform on transposed array:
+            call forfft((nz+1) * nx, ny, fs, ytrig, yfactors)
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Computes an *inverse* 2D FFT (in x & y) of a 3D array fs in spectral
-        !space and returns the result as fp in physical space (in x & y).
-        !Only inverse FFTs over the x and y directions are performed.
-        subroutine fftxys2p(fs, fp)
-            double precision, intent(in)  :: fs(0:nz, nx, ny)  !Spectral
-            double precision, intent(out) :: fp(0:nz, ny, nx)  !Physical
-            double precision              :: fsz(nx, ny)  !Spectral
-            double precision              :: fpz(ny, nx)  !Physical
-            integer                       :: iz
+        ! Computes an *inverse* 2D FFT (in x & y) of a 3D array fs in spectral
+        ! space and returns the result as fp in physical space (in x & y).
+        ! Only inverse FFTs over the x and y directions are performed.
+        ! *** fs is destroyed upon exit ***
+        subroutine fftxys2p(fs,fp)
+            double precision, intent(inout):: fs(0:nz, nx, ny)  !Spectral
+            double precision, intent(out)  :: fp(0:nz, ny, nx)  !Physical
+            integer                        :: kx, iy
 
-            !$omp parallel shared(fp, fs, nx, ny, nz) private(iz, fpz, fsz) &
-            !$omp& firstprivate(xfactors, yfactors, xtrig, ytrig) default(none)
-            !$omp do
-            do iz = 0, nz
-                fsz = fs(iz, :, :)
-                call spctop(nx, ny, fsz, fpz, xfactors, yfactors, xtrig, ytrig)
-                fp(iz, :, :) = fpz
+            ! Carry out a full inverse y transform first:
+            call revfft((nz+1) * nx, ny, fs, ytrig, yfactors)
+
+            ! Transpose array:
+            !$omp parallel do
+            do kx = 1, nx
+                do iy = 1, ny
+                    fp(:, iy, kx) = fs(:, kx, iy)
+                enddo
             enddo
-            !$omp end do
-            !$omp end parallel
+            !$omp end parallel do
+
+            ! Carry out a full inverse x transform:
+            call revfft((nz+1) * ny, nx, fp, xtrig, xfactors)
         end subroutine
-end module inversion_utils_mod
+
+end module inversion_utils

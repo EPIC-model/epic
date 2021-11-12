@@ -3,18 +3,18 @@
 !
 !         This unit test checks the correction module by initializing
 !         the parcels with a small deviation from the optimal position.
-!         It then performs 500 relaxation steps.
+!         It then performs 20 relaxation steps.
 ! =============================================================================
 program test_laplace_correction_3d
     use unit_test
     use options, only : parcel
-    use constants, only : pi, one, zero, f14, f23, f32
+    use constants, only : pi, one, zero, f14, f23, f32, two, four, f12
     use parcel_container
     use parcel_correction
     use parcel_interpl, only : vol2grid
     use parcel_ellipsoid, only : get_abc
     use parcel_init, only : init_regular_positions
-    use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz
+    use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz, ncell
     use fields, only : volg
     use timer
     implicit none
@@ -22,14 +22,14 @@ program test_laplace_correction_3d
     double precision :: final_error, init_error, val, tmp
     integer :: i, n, sk
     integer, allocatable :: seed(:)
-    double precision, parameter :: dev = 0.005d0
+    double precision, parameter :: dev = 0.001d0
 
     call random_seed(size=sk)
     allocate(seed(1:sk))
     seed(:) = 42
     call random_seed(put=seed)
 
-    call  parse_command_line
+    call parse_command_line
 
     call register_timer('laplace correction', lapl_corr_timer)
 
@@ -37,6 +37,7 @@ program test_laplace_correction_3d
     nx = 32
     ny = 32
     nz = 32
+
     lower  = (/zero, zero, zero/)
     extent = (/one, one, one/)
 
@@ -62,27 +63,19 @@ program test_laplace_correction_3d
         enddo
     enddo
 
-    print *, "hi 1"
-
     volg = zero
 
-    parcels%volume = f14 * vcell
-
-    print *, "hi 2"
+    parcels%volume = vcell / 27.0d0
 
     parcels%B(:, :) = zero
 
     ! b11
-    parcels%B(:, 1) = get_abc(parcels%volume(1:n_parcels)) ** f23
+    parcels%B(1:n_parcels, 1) = get_abc(parcels%volume(1:n_parcels)) ** f23
 
     ! b22
     parcels%B(:, 4) = parcels%B(:, 1)
 
-    print *, "hi 3"
-
     call vol2grid
-
-    print *, "hi 4"
 
     init_error = sum(abs(volg(0:nz, :, :) / vcell - one)) / (nx * ny * (nz+1))
 
@@ -92,22 +85,16 @@ program test_laplace_correction_3d
         write(*,*) 0, init_error, maxval(abs(volg(0:nz, :, :) / vcell - one))
     endif
 
-    print *, "hi 5"
-
     call init_parcel_correction
-
-    print *, "hi 6"
 
     do i = 1, 20
         call apply_laplace
-!         if (verbose) then
+        if (verbose) then
             call vol2grid
             write(*,*) i, sum(abs(volg(0:nz, :, :) / vcell - one)) / (nx * ny * (nz+1)), &
                           maxval(abs(volg(0:nz, :, :) / vcell - one))
-!         endif
+        endif
     enddo
-
-    print *, "hi 7"
 
     call vol2grid
 
