@@ -36,6 +36,7 @@ module inversion_utils
     double precision, allocatable :: filt(:, :)
 
     double precision :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq
+    integer :: nwx, nwy, nxp2, nyp2
 
     logical :: is_initialised = .false.
 
@@ -67,7 +68,6 @@ module inversion_utils
             double precision   :: a0(nx, ny), a0b(nx, ny), ksq(nx, ny)
             double precision   :: rkxmax, rkymax
             double precision   :: rksqmax, rkfsq
-            integer            :: nwx, nwy
             integer            :: kx, ky, iz, isub, ib_sub, ie_sub
 
             if (is_initialised) then
@@ -85,6 +85,8 @@ module inversion_utils
             hdzi = f12 * dxi(3)
             nwx = nx / 2
             nwy = ny / 2
+            nyp2 = ny + 2
+            nxp2 = nx + 2
 
             allocate(etdh(nz-1, nx, ny))
             allocate(htdh(nz-1, nx, ny))
@@ -246,10 +248,7 @@ module inversion_utils
         subroutine diffx(fs,ds)
             double precision, intent(in)  :: fs(0:nz, nx, ny)
             double precision, intent(out) :: ds(0:nz, nx, ny)
-            integer                       :: nwx, nxp2, kx, dkx, kxc
-
-            nwx = nx / 2
-            nxp2 = nx + 2
+            integer                       :: kx, dkx, kxc
 
             !Carry out differentiation by wavenumber multiplication:
             ds(:, 1, :) = zero
@@ -275,11 +274,7 @@ module inversion_utils
             double precision, intent(in)  :: fs(0:nz, nx, ny)
             double precision, intent(out) :: ds(0:nz, nx, ny)
             double precision              :: fac
-            integer                       :: nwy, nyp2, ky, kyc
-
-            !Could be pre-defined constants:
-            nwy = ny / 2
-            nyp2 = ny + 2
+            integer                       :: ky, kyc
 
             !Carry out differentiation by wavenumber multiplication:
             ds(:, :, 1) = zero
