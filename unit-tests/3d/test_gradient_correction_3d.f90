@@ -1,11 +1,11 @@
 ! =============================================================================
-!                       Test 3D parcel laplace correction module
+!                       Test 3D parcel gradient correction module
 !
 !         This unit test checks the correction module by initializing
 !         the parcels with a small deviation from the optimal position.
 !         It then performs 20 relaxation steps.
 ! =============================================================================
-program test_laplace_correction_3d
+program test_gradient_correction_3d
     use unit_test
     use options, only : parcel
     use constants, only : pi, one, zero, f14, f23, f32, two, four, f12
@@ -31,7 +31,7 @@ program test_laplace_correction_3d
 
     call parse_command_line
 
-    call register_timer('laplace correction', lapl_corr_timer)
+    call register_timer('gradient correction', lapl_corr_timer)
 
 
     nx = 32
@@ -80,7 +80,7 @@ program test_laplace_correction_3d
     init_error = sum(abs(volg(0:nz, :, :) / vcell - one)) / (nx * ny * (nz+1))
 
     if (verbose) then
-        write(*,*) 'test laplace correction'
+        write(*,*) 'test gradient correction'
         write(*,*) 'iteration, average error, max absolute error'
         write(*,*) 0, init_error, maxval(abs(volg(0:nz, :, :) / vcell - one))
     endif
@@ -88,7 +88,7 @@ program test_laplace_correction_3d
     call init_parcel_correction
 
     do i = 1, 20
-        call apply_laplace
+        call apply_gradient(1.80d0,0.5d0)
         if (verbose) then
             call vol2grid
             write(*,*) i, sum(abs(volg(0:nz, :, :) / vcell - one)) / (nx * ny * (nz+1)), &
@@ -100,9 +100,9 @@ program test_laplace_correction_3d
 
     final_error = sum(abs(volg(0:nz, :, :) / vcell - one)) / (nx * ny * (nz+1))
 
-    call print_result_dp('Test laplace correction 3D', final_error, init_error)
+    call print_result_dp('Test gradient correction 3D', final_error, init_error)
 
     deallocate(volg)
 
-end program test_laplace_correction_3d
+end program test_gradient_correction_3d
 
