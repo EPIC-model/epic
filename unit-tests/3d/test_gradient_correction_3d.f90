@@ -34,12 +34,12 @@ program test_gradient_correction_3d
     call register_timer('gradient correction', lapl_corr_timer)
 
 
-    nx = 32
+    nx = 16
     ny = 32
-    nz = 32
+    nz = 64
 
     lower  = (/zero, zero, zero/)
-    extent = (/one, one, one/)
+    extent = (/one, two, four/)
 
     call update_parameters
 
