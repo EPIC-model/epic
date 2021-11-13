@@ -26,7 +26,7 @@ module rk4_utils
             Bout(1) = two * (S(1) * Bin(1) + S(2) * Bin(2))
 
             ! B12 = dvdx * B11 + dudy * B22
-            Bout(2) = S(3) * Bin(1) + S(2) !FIXME * get_B22(Bin(1), Bin(2), volume)
+            Bout(2) = S(3) * Bin(1) + S(2) * volume !FIXME * get_B22(Bin(1), Bin(2), volume)
 
         end function get_B
 

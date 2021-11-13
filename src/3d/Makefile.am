@@ -22,13 +22,14 @@ epic3d_SOURCES = 				\
 	parcels/parcel_diagnostics.f90		\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_init.f90			\
+	inversion/inversion_utils.f90		\
+	inversion/inversion.f90			\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_hdf5.f90			\
 	tri_inversion.f90			\
 	utils/utils.f90				\
 	stepper/rk4_utils.f90			\
 	stepper/ls_rk4.f90			\
-	epic_fft.f90				\
 	epic3d.f90
 
 epic3d_LDADD = 						\
