@@ -127,37 +127,39 @@ module parcel_init
 
         ! Position parcels regularly in the domain.
         subroutine init_regular_positions
-            integer          :: ix, i, iz, j, iy, k, n_per_dim
+            integer          :: ix, i, iz, j, iy, k, l, n_per_dim
             double precision :: im, corner(3)
 
             ! number of parcels per dimension
             n_per_dim = int(dble(parcel%n_per_cell) ** f13)
-            if (n_per_dim ** 2 .ne. parcel%n_per_cell) then
+            if (n_per_dim ** 3 .ne. parcel%n_per_cell) then
                 print *, "Number of parcels per cell (", &
-                         parcel%n_per_cell, ") not a square."
+                         parcel%n_per_cell, ") not a cubic."
                 stop
             endif
 
             im = one / dble(n_per_dim)
 
-            k = 1
+            l = 1
             do iz = 0, nz-1
                 do iy = 0, ny-1
                     do ix = 0, nx-1
                         corner = lower + dble((/ix, iy, iz/)) * dx
-                        do j = 1, n_per_dim
-                            do i = 1, n_per_dim
-                                parcels%position(k, 1) = corner(1) + dx(1) * (dble(i) - f12) * im
-                                parcels%position(k, 2) = corner(2) + dx(2) * (dble(j) - f12) * im
-                                parcels%position(k, 3) = corner(3) + dx(3) * (dble(k) - f12) * im
-                                k = k + 1
+                        do k = 1, n_per_dim
+                            do j = 1, n_per_dim
+                                do i = 1, n_per_dim
+                                    parcels%position(l, 1) = corner(1) + dx(1) * (dble(i) - f12) * im
+                                    parcels%position(l, 2) = corner(2) + dx(2) * (dble(j) - f12) * im
+                                    parcels%position(l, 3) = corner(3) + dx(3) * (dble(k) - f12) * im
+                                    l = l + 1
+                                enddo
                             enddo
                         enddo
                     enddo
                 enddo
             enddo
 
-            if (.not. n_parcels == k - 1) then
+            if (.not. n_parcels == l - 1) then
                 print *, "Number of parcels disagree!"
                 stop
             endif

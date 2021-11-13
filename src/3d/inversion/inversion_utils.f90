@@ -1,9 +1,11 @@
-module fft
+module inversion_utils
     use constants
     use parameters, only : nx, ny, nz, dx, dxi, extent
     use stafft
     use sta2dfft
     implicit none
+
+    private
 
     ! Ordering in physical space: z, y, x
     ! Ordering in spectral space: z, x, y
@@ -33,8 +35,28 @@ module fft
     !De-aliasing filter:
     double precision, allocatable :: filt(:, :)
 
+    double precision :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq
+    integer :: nwx, nwy, nxp2, nyp2
 
-    double precision              :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq
+    logical :: is_initialised = .false.
+
+    public :: init_fft  &
+            , diffx     &
+            , diffy     &
+            , diffz0    &
+            , diffz1    &
+            , lapinv0   &
+            , lapinv1   &
+            , vertint   &
+            , fftxyp2s  &
+            , fftxys2p  &
+            , dz2       &
+            , filt      &
+            , hdzi      &
+            , xfactors  &
+            , yfactors  &
+            , xtrig     &
+            , ytrig
 
     contains
 
@@ -46,11 +68,14 @@ module fft
             double precision   :: a0(nx, ny), a0b(nx, ny), ksq(nx, ny)
             double precision   :: rkxmax, rkymax
             double precision   :: rksqmax, rkfsq
-            integer            :: nwx, nwy
             integer            :: kx, ky, iz, isub, ib_sub, ie_sub
 
+            if (is_initialised) then
+                return
+            endif
 
-            !!!!!!!
+            is_initialised = .true.
+
             dz = dx(3)
             dzi = dxi(3)
             dz6  = f16 * dx(3)
@@ -58,10 +83,10 @@ module fft
             dz24 = f124 * dx(3)
             dzisq = dxi(3) ** 2
             hdzi = f12 * dxi(3)
-
-
             nwx = nx / 2
             nwy = ny / 2
+            nyp2 = ny + 2
+            nxp2 = nx + 2
 
             allocate(etdh(nz-1, nx, ny))
             allocate(htdh(nz-1, nx, ny))
@@ -84,9 +109,6 @@ module fft
             allocate(filt(nx, ny))
 
             nxsub = nx / nsubs_tri
-            !!!!!!!
-
-
 
             !----------------------------------------------------------------------
             ! Initialise FFTs and wavenumber arrays:
@@ -179,6 +201,9 @@ module fft
             enddo
             !$omp end do
             !$omp end parallel
+
+            etdv(nz-1, 1, 1) = zero
+
             htdv(nz, :, :) = one / (a0b + apb * etdv(nz-1, :, :))
             ! Remove horizontally-averaged part (done separately):
             htdv(:, 1, 1) = zero
@@ -214,42 +239,57 @@ module fft
             htda(nz) = one / (one + f16 + f16 * etda(nz-2))
         end subroutine
 
+
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Given fs in spectral space (at least in x & y), this returns dfs/dx
-        !(partial derivative).  The result is returned in ds, again
-        !spectral.  Uses exact form of the derivative in spectral space.
-        subroutine diffx(fs, ds)
+        ! Given fs in spectral space (at least in x & y), this returns dfs/dx
+        ! (partial derivative).  The result is returned in ds, again
+        ! spectral.  Uses exact form of the derivative in spectral space.
+        subroutine diffx(fs,ds)
             double precision, intent(in)  :: fs(0:nz, nx, ny)
             double precision, intent(out) :: ds(0:nz, nx, ny)
-            integer                       :: iz
+            integer                       :: kx, dkx, kxc
 
-            !$omp parallel shared(ds, fs, nx, ny, nz) private(iz) firstprivate(hrkx) default(none)
-            !$omp do
-            do iz = 0, nz
-                call xderiv(nx, ny, hrkx, fs(iz, 1, 1), ds(iz, 1, 1))
+            !Carry out differentiation by wavenumber multiplication:
+            ds(:, 1, :) = zero
+            do kx = 2, nx - nwx
+                dkx = 2 * (kx - 1)
+                kxc = nxp2 - kx
+                ds(:, kx,  :) = -hrkx(dkx) * fs(:,kxc,:)
+                ds(:, kxc, :) =  hrkx(dkx) * fs(:,kx ,:)
             enddo
-            !$omp end do
-            !$omp end parallel
+
+            if (mod(nx, 2) .eq. 0) then
+                kxc = nwx + 1
+                ds(:, kxc, :) = zero
+            endif
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Given fs in spectral space (at least in x & y), this returns dfs/dy
-        !(partial derivative).  The result is returned in ds, again
-        !spectral.  Uses exact form of the derivative in spectral space.
-        subroutine diffy(fs, ds)
+        ! Given fs in spectral space (at least in x & y), this returns dfs/dy
+        ! (partial derivative).  The result is returned in ds, again
+        ! spectral.  Uses exact form of the derivative in spectral space.
+        subroutine diffy(fs,ds)
             double precision, intent(in)  :: fs(0:nz, nx, ny)
             double precision, intent(out) :: ds(0:nz, nx, ny)
-            integer                       :: iz
+            double precision              :: fac
+            integer                       :: ky, kyc
 
-            !$omp parallel shared(ds, fs, nx, ny, nz) private(iz) firstprivate(hrky) default(none)
-            !$omp do
-            do iz = 0, nz
-                call yderiv(nx, ny, hrky, fs(iz, 1, 1), ds(iz, 1, 1))
+            !Carry out differentiation by wavenumber multiplication:
+            ds(:, :, 1) = zero
+
+            do ky = 2, ny - nwy
+                kyc = nyp2 - ky
+                fac = hrky(2 * (ky - 1))
+                ds(:, :, ky) = -fac * fs(:, :, kyc)
+                ds(:, :, kyc) = fac * fs(:, : , ky)
             enddo
-            !$omp end do
-            !$omp end parallel
+
+            if (mod(ny, 2) .eq. 0) then
+                kyc = nwy + 1
+                ds(:, :, kyc) = zero
+            endif
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -462,6 +502,9 @@ module fft
             enddo
             !$omp end do
             !$omp end parallel
+
+             !Zero horizontal wavenumber in x & y treated separately:
+             fs(:, 1, 1) = zero
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -505,293 +548,56 @@ module fft
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Computes a 2D FFT (in x & y) of a 3D array fp in physical space
-        !and returns the result as fs in spectral space (in x & y).
-        !Only FFTs over the x and y directions are performed.
+        ! Computes a 2D FFT (in x & y) of a 3D array fp in physical space
+        ! and returns the result as fs in spectral space (in x & y).
+        ! Only FFTs over the x and y directions are performed.
+        ! *** fp is destroyed upon exit ***
         subroutine fftxyp2s(fp, fs)
-            double precision, intent(in)  :: fp(0:nz, ny, nx)  !Physical
-            double precision, intent(out) :: fs(0:nz, nx, ny)  !Spectral
-            double precision              :: fpz(ny, nx)  !Physical
-            double precision              :: fsz(nx, ny)  !Spectral
-            integer                       :: iz
+            double precision, intent(inout) :: fp(0:nz, ny, nx)  !Physical
+            double precision, intent(out)   :: fs(0:nz, nx, ny)  !Spectral
+            integer                         :: kx, iy
 
-            !$omp parallel shared(fp, fs, nx, ny, nz) private(iz, fpz, fsz) &
-            !$omp& firstprivate(xfactors, yfactors, xtrig, ytrig) default(none)
-            !$omp do
-            do iz = 0, nz
-                fpz = fp(iz, :, :)
-                call ptospc(nx, ny, fpz, fsz, xfactors, yfactors, xtrig, ytrig)
-                fs(iz, :, :) = fsz
+            ! Carry out a full x transform first:
+            call forfft((nz+1) * ny, nx, fp, xtrig, xfactors)
+
+            ! Transpose array:
+            !$omp parallel do
+            do kx = 1, nx
+                do iy = 1, ny
+                    fs(:, kx, iy) = fp(:, iy, kx)
+                enddo
             enddo
-            !$omp end do
-            !$omp end parallel
+            !$omp end parallel do
+
+            ! Carry out a full y transform on transposed array:
+            call forfft((nz+1) * nx, ny, fs, ytrig, yfactors)
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Computes an *inverse* 2D FFT (in x & y) of a 3D array fs in spectral
-        !space and returns the result as fp in physical space (in x & y).
-        !Only inverse FFTs over the x and y directions are performed.
-        subroutine fftxys2p(fs, fp)
-            double precision, intent(in)  :: fs(0:nz, nx, ny)  !Spectral
-            double precision, intent(out) :: fp(0:nz, ny, nx)  !Physical
-            double precision              :: fsz(nx, ny)  !Spectral
-            double precision              :: fpz(ny, nx)  !Physical
-            integer                       :: iz
+        ! Computes an *inverse* 2D FFT (in x & y) of a 3D array fs in spectral
+        ! space and returns the result as fp in physical space (in x & y).
+        ! Only inverse FFTs over the x and y directions are performed.
+        ! *** fs is destroyed upon exit ***
+        subroutine fftxys2p(fs,fp)
+            double precision, intent(inout):: fs(0:nz, nx, ny)  !Spectral
+            double precision, intent(out)  :: fp(0:nz, ny, nx)  !Physical
+            integer                        :: kx, iy
 
-            !$omp parallel shared(fp, fs, nx, ny, nz) private(iz, fpz, fsz) &
-            !$omp& firstprivate(xfactors, yfactors, xtrig, ytrig) default(none)
-            !$omp do
-            do iz = 0, nz
-                fsz = fs(iz, :, :)
-                call spctop(nx, ny, fsz, fpz, xfactors, yfactors, xtrig, ytrig)
-                fp(iz, :, :) = fpz
+            ! Carry out a full inverse y transform first:
+            call revfft((nz+1) * nx, ny, fs, ytrig, yfactors)
+
+            ! Transpose array:
+            !$omp parallel do
+            do kx = 1, nx
+                do iy = 1, ny
+                    fp(:, iy, kx) = fs(:, kx, iy)
+                enddo
             enddo
-            !$omp end do
-            !$omp end parallel
+            !$omp end parallel do
+
+            ! Carry out a full inverse x transform:
+            call revfft((nz+1) * ny, nx, fp, xtrig, xfactors)
         end subroutine
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        !Given the vorticity vector field (vortg) in physical space, this
-        !returns the associated velocity field (velog) and a spectral
-        !copy (svelog),  which is additionally filtered.  Note: the
-        !vorticity is modified to be solenoidal and spectrally filtered.
-        subroutine vor2vel(vortg,  velog,  svelog)
-            double precision, intent(inout)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
-!             ox(0:nz, ny, nx), oy(0:nz, ny, nx), oz(0:nz, ny, nx)
-            double precision, intent(out) :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
-!             uu(0:nz, ny, nx), vv(0:nz, ny, nx), ww(0:nz, ny, nx)
-            double precision, intent(out) :: svelog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
-!             us(0:nz, nx, ny), vs(0:nz, nx, ny), ws(0:nz, nx, ny)
-            double precision              :: as(0:nz, nx, ny), bs(0:nz, nx, ny), cs(0:nz, nx, ny)
-            double precision              :: ds(0:nz, nx, ny), es(0:nz, nx, ny), fs(0:nz, nx, ny)
-            double precision              :: astop(nx, ny), bstop(nx, ny)
-            double precision              :: asbot(nx, ny), bsbot(nx, ny)
-            double precision              :: ubar(0:nz), vbar(0:nz)
-            integer                       :: iz
-
-            !------------------------------------------------------------------
-            !Convert vorticity to spectral space as (as, bs, cs):
-            call fftxyp2s(vortg(0:nz, :, :, 1), as)
-            call fftxyp2s(vortg(0:nz, :, :, 2), bs)
-            call fftxyp2s(vortg(0:nz, :, :, 3), cs)
-
-            !Add -grad(lambda) where Laplace(lambda) = div(vortg) to
-            !enforce the solenoidal condition on the vorticity field:
-            call diffx(as, ds)
-            call diffy(bs, es)
-
-            !For the vertical parcel vorticity, use 2nd-order accurate
-            !differencing with extrapolation at the boundaries:
-            !$omp parallel shared(fs, cs) private(iz)
-            !$omp do
-            do iz = 1, nz-1
-                fs(iz, :, :) = hdzi * (cs(iz+1, :, :) - cs(iz-1, :, :))
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            fs(0, :, :) = hdzi * (four * cs(1, :, :) - cs(2, :, :) - three * cs(0, :, :))
-            fs(nz, :, :) = hdzi * (cs(nz-2, :, :) + three * cs(nz, :, :) - four * cs(nz-1, :, :))
-
-            !Form div(vortg):
-            !$omp parallel
-            !$omp workshare
-            fs = ds + es + fs
-            !$omp end workshare
-            !$omp end parallel
-
-            !Remove horizontally-averaged part (plays no role):
-            fs(:, 1, 1) = zero
-
-            !Invert Lap(lambda) = div(vortg) assuming dlambda/dz = 0 at the
-            !boundaries (store solution lambda in fs):
-            call lapinv1(fs)
-
-            !Filter lambda:
-            !$omp parallel shared(fs, filt, nz) private(iz)  default(none)
-            !$omp do
-            do iz = 0, nz
-                fs(iz, :, :) = filt * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            !Subtract grad(lambda) to enforce div(vortg) = 0:
-            call diffx(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            as = as - ds
-            !$omp end workshare
-            !$omp end parallel
-
-            call diffy(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            bs = bs - ds
-            !$omp end workshare
-            !$omp end parallel
-
-            call diffz1(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            cs = cs - ds
-            !$omp end workshare
-            !$omp end parallel
-            !Ensure horizontal average of vertical vorticity is zero:
-            cs(:, 1, 1) = zero
-
-            !Compute spectrally filtered vorticity in physical space:
-            !$omp parallel shared(ds, es, fs, as, bs, cs, filt, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                ds(iz, :, :) = filt * as(iz, :, :)
-                es(iz, :, :) = filt * bs(iz, :, :)
-                fs(iz, :, :) = filt * cs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            !Save boundary values of x and y vorticity for z derivatives of A & B:
-            asbot = as(0, :, :)
-            bsbot = bs(0, :, :)
-            astop = as(nz, :, :)
-            bstop = bs(nz, :, :)
-
-            !Return corrected vorticity to physical space:
-            call fftxys2p(ds, vortg(0:nz, :, :, 1))
-            call fftxys2p(es, vortg(0:nz, :, :, 2))
-            call fftxys2p(fs, vortg(0:nz, :, :, 3))
-
-            !Define horizontally-averaged flow by integrating horizontal vorticity:
-            ubar(0) = zero
-            vbar(0) = zero
-            do iz = 0, nz-1
-                ubar(iz+1) = ubar(iz) + dz2 * (es(iz, 1, 1) + es(iz+1, 1, 1))
-                vbar(iz+1) = vbar(iz) - dz2 * (ds(iz, 1, 1) + ds(iz+1, 1, 1))
-            enddo
-
-            !-----------------------------------------------------------------
-            !Invert vorticity to find vector potential (A, B, C) -> (as, bs, cs):
-            call lapinv0(as)
-            call lapinv0(bs)
-            call lapinv1(cs)
-
-            !------------------------------------------------------------
-            !Compute x velocity component, u = B_z - C_y:
-            call diffy(cs, ds)
-            call diffz0(bs, es, bsbot, bstop)
-            !bsbot & bstop contain spectral y vorticity component at z_min and z_max
-            !$omp parallel
-            !$omp workshare
-            fs = es - ds
-            !$omp end workshare
-            !$omp end parallel
-            !Add horizontally-averaged flow:
-            fs(:, 1, 1) = ubar
-            !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                svelog(iz, :, :, 1) = filt * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            !Get u in physical space:
-            call fftxys2p(fs, velog(0:nz, :, :, 1))
-
-            !------------------------------------------------------------
-            !Compute y velocity component, v = C_x - A_z:
-            call diffx(cs, ds)
-            call diffz0(as, es, asbot, astop)
-            !asbot & astop contain spectral x vorticity component at z_min and z_max
-            !$omp parallel
-            !$omp workshare
-            fs = ds - es
-            !$omp end workshare
-            !$omp end parallel
-            !Add horizontally-averaged flow:
-            fs(:, 1, 1) = vbar
-            !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                svelog(iz, :, :, 2) = filt * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            !Get v in physical space:
-            call fftxys2p(fs, velog(0:nz, :, :, 2))
-
-            !------------------------------------------------------------
-            !Compute z velocity component, w = A_y - B_x:
-            call diffx(bs, ds)
-            call diffy(as, es)
-            !$omp parallel
-            !$omp workshare
-            fs = es - ds
-            !$omp end workshare
-            !$omp end parallel
-
-            !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                svelog(iz, :, :, 3) = filt * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            !Get w in physical space:
-            call fftxys2p(fs, velog(0:nz, :, :, 3))
-        end subroutine
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        !Computes a divergent flow field (ud, vd, wd) = grad(phi) where
-        !Lap(phi) = div (given).
-        subroutine diverge(div,  ud, vd, wd)
-            double precision, intent(in)  :: div(0:nz, ny, nx)
-            double precision, intent(out) :: ud(0:nz, ny, nx), vd(0:nz, ny, nx), wd(0:nz, ny, nx)
-            double precision              :: ds(0:nz, nx, ny)
-            double precision              :: us(0:nz, nx, ny), vs(0:nz, nx, ny), ws(0:nz, nx, ny)
-            double precision              :: ads(0:nz), wbar(0:nz)
-            integer                       :: iz
-
-            !------------------------------------------------------------------
-            !Convert div to spectral space (in x & y) as ds:
-            call fftxyp2s(div, ds)
-
-            ! Compute the x & y-independent part of ds by integration:
-            do iz = 0, nz
-                ads(iz) = ds(iz, 1, 1)
-            enddo
-            call vertint(ads, wbar)
-
-            ! Invert Laplace's operator semi-spectrally with compact differences:
-            call lapinv1(ds)
-
-            ! Compute x derivative spectrally:
-            call diffx(ds, us)
-
-            ! Reverse FFT to define x velocity component ud:
-            call fftxys2p(us, ud)
-
-            ! Compute y derivative spectrally:
-            call diffy(ds, vs)
-
-            ! Reverse FFT to define y velocity component vd:
-            call fftxys2p(vs, vd)
-
-            ! Compute z derivative by compact differences:
-            call diffz1(ds, ws)
-
-            ! Add on the x and y-independent part of wd:
-            do iz = 0, nz
-                ws(iz, 1, 1) = ws(iz, 1, 1) + wbar(iz)
-            enddo
-
-            ! Reverse FFT to define z velocity component wd:
-            call fftxys2p(ws, wd)
-        end subroutine
-end module fft
+end module inversion_utils

@@ -45,7 +45,7 @@ module parcel_interpl
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pvol, is, js, weights) &
+            !$omp do private(n, p, l, points, pvol, is, js, ks, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -96,7 +96,7 @@ module parcel_interpl
 
             do m = -1, 1, 2
                 !$omp parallel default(shared)
-                !$omp do private(n, p, l, points, pos, pvol, V, B, is, js, weights) &
+                !$omp do private(n, p, l, points, pos, pvol, V, B, is, js, ks, weights) &
                 !$omp& reduction(+: sym_volg)
                 do n = 1, n_parcels
 
@@ -159,10 +159,10 @@ module parcel_interpl
             tbuoyg = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, h_c, is, js, weights) &
+            !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot, h_c, is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, tbuoyg, volg)
 #else
-            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, is, js, weights) &
+            !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot, is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
             do n = 1, n_parcels
@@ -325,7 +325,7 @@ module parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, c, points, weight, is, js, weights)
+            !$omp do private(n, p, l, c, points, weight, is, js, ks, weights)
             do n = 1, n_parcels
 
                 vgrad(n, :) = zero
