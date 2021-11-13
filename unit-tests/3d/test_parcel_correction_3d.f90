@@ -14,7 +14,7 @@ program test_parcel_correction_3d
     use parcel_interpl, only : vol2grid
     use parcel_ellipsoid, only : get_abc
     use parcel_init, only : init_regular_positions
-    use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz, ncell
+    use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz
     use fields, only : volg
     use timer
     implicit none
