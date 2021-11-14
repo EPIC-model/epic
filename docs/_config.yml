@@ -1,6 +1,5 @@
 theme: jekyll-theme-cayman
 title: [EPIC]
-
 github:
   zip_url: https://github.com/matt-frey/epic/archive/refs/tags/0.10.2.zip
   tar_url: https://github.com/matt-frey/epic/archive/refs/tags/0.10.2.tar.gz
