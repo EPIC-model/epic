@@ -108,8 +108,8 @@ a {
 .page-header {
   color: $header-heading-color;
   text-align: center;
-  background-color: #FF0000;
-  background-image: url("../straka_graphical_abstract.pdf");
+  background-color: url("../straka_graphical_abstract.pdf");
+  background-size: cover
 
   @include large {
     padding: 5rem 6rem;
