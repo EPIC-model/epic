@@ -109,7 +109,7 @@ a {
   color: $header-heading-color;
   text-align: center;
   background-color: #FF0000;
-  background-image: linear-gradient(120deg, $header-bg-color-secondary, #FF0000);
+  background-image: url("../straka_graphical_abstract.pdf");
 
   @include large {
     padding: 5rem 6rem;
