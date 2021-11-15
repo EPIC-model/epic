@@ -203,6 +203,78 @@ module inversion_mod
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+
+        ! Compute the gridded vorticity tendency:
+        subroutine vorticity_tendency(tbuoyg, svelog, vtend)
+            double precision, intent(in)  :: tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1)
+            double precision, intent(in)  :: svelog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+            double precision, intent(out) :: vtend(-1:nz+1, 0:ny-1, 0:nx-1)
+            double precision              :: bs(0:nz, 0:ny-1, 0:nx-1) ! spectral buoyancy
+            double precision              :: ds(0:nz, 0:ny-1, 0:nx-1) ! spectral derivatives
+
+            call start_timer(vtend_timer)
+
+            ! Compute spectral buoyancy (fs):
+            call fftxyp2s(tbuoyg, bs)
+
+            ! x component:
+            call diffx(svelog(0:nz, :, :, 1), ds)   ! u_x = du/dx in spectral space
+
+            call fftxys2p(ds, doz) !doz = u_x
+            call diffy(us,ds)
+            call fftxys2p(ds,doy) !doy = u_y
+            call diffx(ws,ds)
+            call fftxys2p(ds,wx)  !wx  = w_x
+            call diffy(bs,ds)
+            call fftxys2p(ds,dox) !dox = b_y
+            !$omp parallel
+            !$omp workshare
+            vtend(:, :, :, 1) = ox * doz                 &
+                              + (oy + ft_cor) * doy      &
+                              + (oz + f_cor) * (oy + wx) &
+                              + dox
+            !$omp end workshare
+            !$omp end parallel
+
+            ! y & z components:
+            call diffx(vs,ds)
+            call fftxys2p(ds,gg)  !gg  = v_x
+            call diffy(vs,ds)
+            call fftxys2p(ds,ff)  !ff  = v_y
+            call diffy(ws,ds)
+            call fftxys2p(ds,wy)  !wy  = w_y
+            call diffx(bs,ds)
+            call fftxys2p(ds,doy) !doy = b_x
+            !$omp parallel
+            !$omp workshare
+            doy=ox*gg+(oy+ft_cor)*ff+(oz+f_cor)*(wy-ox)-doy
+            doz=ox*wx+(oy+ft_cor)*wy-(oz+f_cor)*(doz+ff)
+            !$omp end workshare
+            !$omp end parallel
+
+            call stop_timer(vtend_timer)
+
+
+!             psig = tbuoyg(0:nz, 0:nx-1)
+!
+!             ! Forward x FFT:
+!             call forfft(nz+1, nx, psig, xtrig, xfactors)
+!
+!             ! Compute x derivative spectrally of psig:
+!             call deriv(nz+1, nx, hrkx, psig, vtend(0:nz, :))
+!
+!             ! Reverse x FFT
+!             call revfft(nz+1, nx, vtend(0:nz, :), xtrig, xfactors)
+!
+!             ! Fill z grid lines outside domain:
+!             vtend(-1,   :) = two * vtend(0,  :) - vtend(1,    :)
+!             vtend(nz+1, :) = two * vtend(nz, :) - vtend(nz-1, :)
+
+
+        end subroutine vorticity_tendency
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Computes a divergent flow field (ud, vd, wd) = grad(phi) where
         ! Lap(phi) = div (given).
         subroutine diverge(div,  ud, vd, wd)
