@@ -296,14 +296,10 @@ module parcel_interpl
         subroutine grid2par(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
-            integer                             :: ncomp
             double precision                    :: points(4, 3), weight
             integer                             :: n, p, c, l
 
             call start_timer(grid2par_timer)
-
-            ! number of field components
-            ncomp = 2
 
             ! clear old data efficiently
             if(present(add)) then
@@ -352,13 +348,13 @@ module parcel_interpl
                         weight = f14 * weights(l)
 
                         ! loop over field components
-                        do c = 1, ncomp
+                        do c = 1, 3
                             ! the weight is a quarter due to 4 points per ellipsoid
                             vel(n, c) = vel(n, c) &
                                       + weight * velog(ks(l), js(l), is(l), c)
                         enddo
 
-                        do c = 1, 4
+                        do c = 1, 9
                             vgrad(n, c) = vgrad(n, c) &
                                         + weight * velgradg(ks(l), js(l), is(l), c)
                         enddo
