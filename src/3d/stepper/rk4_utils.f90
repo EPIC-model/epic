@@ -52,7 +52,7 @@ module rk4_utils
                     + S(3) * B33      ! + du/dz * B33
 
             ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
-            Bout(4) = two * (S(4) * Bin(3) + S(5) * Bin(4) + S(6) * Bin(5))
+            Bout(4) = two * (S(4) * Bin(2) + S(5) * Bin(4) + S(6) * Bin(5))
 
             ! dB23/dt =
             Bout(5) = S(7) * Bin(2) & !   dw/dx * B12
