@@ -30,7 +30,8 @@ unittests_PROGRAMS = 				\
 	test_parcel_correction_3d		\
 	test_ellipsoid_merge_1			\
 	test_ellipsoid_merge_2			\
-	test_grid2par
+	test_grid2par				\
+	test_ellipsoid_reflection
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -136,5 +137,11 @@ test_grid2par_LDADD = 					\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
 	$(top_builddir)/src/fft/libepic_fft.la
 
+test_ellipsoid_reflection_SOURCES = test_ellipsoid_reflection.f90
+test_ellipsoid_reflection_LDADD = 			\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
 
 endif

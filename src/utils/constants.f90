@@ -30,6 +30,7 @@ module constants
     double precision, parameter :: f12   = one / two
     double precision, parameter :: f13   = one / three
     double precision, parameter :: f14   = one / four
+    double precision, parameter :: f18   = one / eight
     double precision, parameter :: f23   = two / three
     double precision, parameter :: f112  = one / 12.d0
     double precision, parameter :: f16   = one / six
