@@ -13,18 +13,19 @@ program test_vor2vel
     implicit none
 
     double precision              :: error = zero
-    double precision, parameter   :: k = one          &
-                                   , l = two          &
-                                   , alpha = -one     &
-                                   , beta = two       &
-                                   , lz = twopi       &
-                                   , p1 = 0.2d0 * lz  &
-                                   , p2 = 0.7d0 * lz  &
-                                   , q1 = 0.3d0 * lz  &
+    double precision, parameter   :: k = one                 &
+                                   , l = two                 &
+                                   , kmag2 = k ** 2 + l ** 2 &
+                                   , alpha = -one            &
+                                   , beta = two              &
+                                   , lz = twopi              &
+                                   , p1 = 0.2d0 * lz         &
+                                   , p2 = 0.7d0 * lz         &
+                                   , q1 = 0.3d0 * lz         &
                                    , q2 = 0.8d0 * lz
     double precision, allocatable :: svelog(:, :, :, :), svelog_ref(:, :, :, :)
     integer                       :: ix, iy, iz
-    double precision              :: Ahat, Bhat, xi, eta, zeta, Kbig, pp, qq, ps, qs
+    double precision              :: Ahat, Bhat, xi, eta, zeta, pp, qq, ps, qs
     double precision              :: z, z2, z3, dz, gam, C, zq1, zq2, zq3, zp1, zp2, zp3
 
     nx = 32
@@ -71,12 +72,12 @@ program test_vor2vel
                 C = gam - k * alpha * z2 * (f15 * z3 - f14 * ps * z2 + f13 * pp * z - f12 * ppp) &
                         - l * beta  * z2 * (f15 * z3 - f14 * qs * z2 + f13 * qq * z - f12 * qqq)
 
-                xi  = two * alpha * (six * z2 - three * ps * z + pp) - Kbig ** 2 * Ahat
-                eta = two * beta  * (six * z2 - three * qs * z + qq) - Kbig ** 2 * Bhat
+                xi  = two * alpha * (six * z2 - three * ps * z + pp) - kmag2 * Ahat
+                eta = two * beta  * (six * z2 - three * qs * z + qq) - kmag2 * Bhat
 
                 zeta = - k * alpha * (four * z3 - three * ps * z2 + two * pp * z - ppp) &
                        - l * beta  * (four * z3 - three * qs * z2 + two * qq * z - qqq) &
-                       - Kbig ** 2 * C
+                       - kmag2 * C
 
                 vortg(iz, iy, ix, 1) = xi
                 vortg(iz, iy, ix, 2) = eta
