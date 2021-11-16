@@ -2,7 +2,7 @@
 ! This module contains global options that can be set at runtime by the user.
 ! =============================================================================
 module options
-    use constants, only : zero, one, two, pi, four
+    use constants, only : zero, one, two, pi, four, twopi
     use h5_writer
     implicit none
     !
@@ -50,7 +50,7 @@ module options
     !non-dimensional ang_vel of earth = t_scale*Omega
     !t_scale = 142.8571428571 Omega = 7.2921159e-5
     logical          :: l_coriolis  = .false.
-    double precision :: ang_vel     = 0.0104173d0       ![m/s] angular velocity
+    double precision :: ang_vel     = twopi / 86400.0d0 ![m/s] angular velocity
     double precision :: lat_degrees = 45.0d0
 
 
