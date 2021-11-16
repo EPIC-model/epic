@@ -262,7 +262,7 @@ module inversion_mod
         subroutine vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
             double precision, intent(in)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(in)  :: tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1)
-            double precision              :: b(-1:nz+1, 0:ny-1, 0:nx-1)
+            double precision              :: b(0:nz, 0:ny-1, 0:nx-1)
             double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 9)
             double precision, intent(out) :: vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision              :: bs(0:nz, 0:nx-1, 0:ny-1) ! spectral buoyancy
@@ -272,7 +272,7 @@ module inversion_mod
             call start_timer(vtend_timer)
 
             ! copy buoyancy
-            b = tbuoyg
+            b = tbuoyg(0:nz, :, :)
 
             ! Compute spectral buoyancy (bs):
             call fftxyp2s(b, bs)
@@ -282,10 +282,10 @@ module inversion_mod
 
             !$omp parallel
             !$omp workshare
-            vtend(:, :, :, 1) =  vortg(:, :, :, 1)           * velgradg(:, :, :, 1) & ! \omegax * du/dx
-                              + (vortg(:, :, :, 2) + ft_cor) * velgradg(:, :, :, 2) & ! \omegay * du/dy
-                              + (vortg(:, :, :, 3) +  f_cor) * velgradg(:, :, :, 3) & ! \omegaz * du/dz
-                              + db                                                    ! db/dy
+            vtend(0:nz, :, :, 1) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 1) & ! \omegax * du/dx
+                                 + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 2) & ! \omegay * du/dy
+                                 + (vortg(0:nz, :, :, 3) +  f_cor) * velgradg(0:nz, :, :, 3) & ! \omegaz * du/dz
+                                 + db                                                          ! db/dy
             !$omp end workshare
             !$omp end parallel
 
@@ -294,14 +294,14 @@ module inversion_mod
 
             !$omp parallel
             !$omp workshare
-            vtend(:, :, :, 2) =  vortg(:, :, :, 1)           * velgradg(:, :, :, 4) & ! \omegax * dv/dx
-                              + (vortg(:, :, :, 2) + ft_cor) * velgradg(:, :, :, 5) & ! \omegay * dv/dy
-                              + (vortg(:, :, :, 3) + f_cor)  * velgradg(:, :, :, 6) & ! \omegaz * dv/dz
-                              - db                                                    ! dbdx
+            vtend(0:nz, :, :, 2) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 4) & ! \omegax * dv/dx
+                                 + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 5) & ! \omegay * dv/dy
+                                 + (vortg(0:nz, :, :, 3) + f_cor)  * velgradg(0:nz, :, :, 6) & ! \omegaz * dv/dz
+                                 - db                                                          ! dbdx
 
-            vtend(:, :, :, 3) =  vortg(:, :, :, 1)           * velgradg(:, :, :, 7) & ! \omegax * dw/dx
-                              + (vortg(:, :, :, 2) + ft_cor) * velgradg(:, :, :, 8) & ! \omegay * dw/dy
-                              - (vortg(:, :, :, 3) + f_cor)  * velgradg(:, :, :, 9)   ! \omegaz * dw/dz
+            vtend(0:nz, :, :, 3) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 7) & ! \omegax * dw/dx
+                                 + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 8) & ! \omegay * dw/dy
+                                 - (vortg(0:nz, :, :, 3) + f_cor)  * velgradg(0:nz, :, :, 9)   ! \omegaz * dw/dz
 
             !$omp end workshare
             !$omp end parallel

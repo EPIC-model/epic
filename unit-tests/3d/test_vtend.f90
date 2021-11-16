@@ -31,14 +31,16 @@ program test_vtend
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use fields, only : vortg, velgradg, vtend, tbuoyg, field_alloc
     use inversion_utils, only : init_fft
-    use inversion_mod, only : vorticity_tendency
+    use inversion_mod, only : vorticity_tendency, vtend_timer
     use timer
     implicit none
 
-    double precision              :: error = zero
+    double precision              :: error
     double precision, allocatable :: S(:, :, :, :)
     integer                       :: ix, iy, iz
     double precision              :: x, y, z, A, B, C
+
+    call register_timer('vorticity tendency', vtend_timer)
 
 
     nx = 32
@@ -100,9 +102,7 @@ program test_vtend
 
     error = maxval(dabs(vtend(0:nz, :, :, :) - S))
 
-    print *, error
-
-    call print_result_dp('Test inversion (vorticity tendency)', error)
+    call print_result_dp('Test inversion (vorticity tendency)', error, atol=2.0e-14)
 
     deallocate(S)
 
