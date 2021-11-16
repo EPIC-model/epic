@@ -17,7 +17,7 @@ module inversion_mod
 !             ox(0:nz, ny, nx), oy(0:nz, ny, nx), oz(0:nz, ny, nx)
             double precision, intent(out) :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
 !             uu(0:nz, ny, nx), vv(0:nz, ny, nx), ww(0:nz, ny, nx)
-            double precision, intent(out) :: svelog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+            double precision, intent(out) :: svelog(-1:nz+1, 0:nx-1, 0:ny-1, 3)
 !             us(0:nz, nx, ny), vs(0:nz, nx, ny), ws(0:nz, nx, ny)
             double precision              :: as(0:nz, nx, ny), bs(0:nz, nx, ny), cs(0:nz, nx, ny)
             double precision              :: ds(0:nz, nx, ny), es(0:nz, nx, ny), fs(0:nz, nx, ny)

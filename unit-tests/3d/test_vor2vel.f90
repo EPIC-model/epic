@@ -26,7 +26,8 @@ program test_vor2vel
                                    , q1 = 0.3d0 * lz         &
                                    , q2 = 0.8d0 * lz         &
                                    , q3 = lz
-    double precision, allocatable :: svelog(:, :, :, :), svelog_ref(:, :, :, :), svortg(:, :, :, :)
+    double precision, allocatable :: svelog(:, :, :, :), svelog_ref(:, :, :, :), svortg(:, :, :, :), &
+                                     vor_copy(:, :, :, :)
     integer                       :: ix, iy, iz
     double precision              :: Ahat, Bhat, xi, eta, zeta, pp, qq, ps, qs
     double precision              :: z, z2, z3, gam, C, zq1, zq2, zq3, zp1, zp2, zp3
@@ -38,9 +39,10 @@ program test_vor2vel
     lower  = (/-pi, -pi, zero/)
     extent =  (/lz, lz, lz/)
 
-    allocate(svelog(-1:nz+1, 0:ny-1, 0:nx-1, 3))
-    allocate(svelog_ref(-1:nz+1, 0:ny-1, 0:nx-1, 3))
-    allocate(svortg(0:nz, 0:ny-1, 0:nx-1, 3))
+    allocate(svelog(-1:nz+1, 0:nx-1, 0:ny-1, 3))
+    allocate(svelog_ref(-1:nz+1, 0:nx-1, 0:ny-1, 3))
+    allocate(svortg(0:nz, 0:nx-1, 0:ny-1, 3))
+    allocate(vor_copy(0:nz, 0:nx-1, 0:ny-1, 3))
 
     call update_parameters
 
@@ -57,9 +59,9 @@ program test_vor2vel
     gam = 0
 
     do ix = 0, nx-1
-        x = ix * dx(1)
+        x = lower(1) + ix * dx(1)
         do iy = 0, ny-1
-            y = iy * dx(2)
+            y = lower(2) + iy * dx(2)
             gam = zero
             do iz = 0, nz
                 z = iz * dx(3)
@@ -97,22 +99,24 @@ program test_vor2vel
                        - l * beta  * (four * z3 - three * qs * z2 + two * qq * z - qqq) &
                        - kmag2 * C
 
-                svortg(iz, iy, ix, 1) = xi
-                svortg(iz, iy, ix, 2) = eta
-                svortg(iz, iy, ix, 3) = zeta
+                svortg(iz, ix, iy, 1) = xi
+                svortg(iz, ix, iy, 2) = eta
+                svortg(iz, ix, iy, 3) = zeta
 
                 us =    beta * (z * zq1 * zq2 + z * zq3 * zq2 + zq1 * zq3 * zq2 + z * zq1 * zq3) + l * C
                 vs = - alpha * (z * zp1 * zp2 + z * zp3 * zp2 + zp1 * zp3 * zp2 + z * zp1 * zp3) - k * C
                 ws = l * Ahat - k * Bhat ! imaginary
 
-                svelog_ref(iz, iy, ix, 1) = us
-                svelog_ref(iz, iy, ix, 2) = vs
-                svelog_ref(iz, iy, ix, 3) = ws
+                svelog_ref(iz, ix, iy, 1) = us
+                svelog_ref(iz, ix, iy, 2) = vs
+                svelog_ref(iz, ix, iy, 3) = ws
             enddo
         enddo
     enddo
 
     call init_fft
+
+    vor_copy = svortg
 
     ! convert vortg to physical space
     call fftxys2p(svortg(0:nz, :, :, 1), vortg(0:nz, :, :, 1))
@@ -122,15 +126,15 @@ program test_vor2vel
     call vor2vel(vortg, velog, svelog)
 
 
-    error = maxval(dabs(svelog - svelog_ref))
+    error = maxval(dabs(svelog(0:nz, :, :, :) - svelog_ref(0:nz, :, :, :)))
 
-!     do iz = 0, nz
-!         z = iz * dx(3)
-!         print *, z, svortg(iz, 7, 4, :), svelog_ref(iz, 7, 4, :), svelog(iz, 7, 4, :)
-!     enddo
+    do iz = 0, nz
+        z = iz * dx(3)
+        print *, z, vor_copy(iz, 15, 15, :), svelog_ref(iz, 15, 15, :), svelog(iz, 15, 15, :)
+    enddo
 !     print *, error
 
-    call print_result_dp('Test inversion (vor2vel)', error)
+!     call print_result_dp('Test inversion (vor2vel)', error)
 
     deallocate(svelog)
 
