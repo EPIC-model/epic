@@ -21,7 +21,7 @@ program epic3d
     use parcel_hdf5
     use fields
     use field_hdf5, only : hdf5_field_timer, create_h5_field_file
-    use tri_inversion, only : init_inversion, vor2vel_timer, vtend_timer
+    use inversion_mod, only : vor2vel_timer, vtend_timer
     use parcel_interpl, only : grid2par_timer, par2grid_timer
 #ifndef NDEBUG
     use parcel_interpl, only : sym_vol2grid_timer
