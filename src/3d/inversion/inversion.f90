@@ -1,6 +1,7 @@
 module inversion_mod
     use inversion_utils
     use parameters, only : nx, ny, nz
+    use phys_parameters, only : ft_cor, f_cor
     use constants, only : zero, two, three, four
     use timer, only : start_timer, stop_timer
     implicit none
