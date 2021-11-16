@@ -219,40 +219,40 @@ module inversion_mod
 
         ! Compute the gridded velocity gradient tensor
         subroutine vel2vgrad(vortg, svelog, velgradg)
-            double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1, 0:ny-1, 3)
+            double precision, intent(in)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(in)  :: svelog(-1:nz+1, 0:nx-1, 0:ny-1, 3)
             double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 9)
             double precision              :: ds(0:nz, 0:nx-1, 0:ny-1) ! spectral derivatives
 
             ! x component:
-            call diffx(svelog(0:nz, :, :, 1), ds)   ! u_x = du/dx in spectral space
-            call fftxys2p(ds, velgradg(:, :, :, 1)) ! u_x in physical space
+            call diffx(svelog(0:nz, :, :, 1), ds)      ! u_x = du/dx in spectral space
+            call fftxys2p(ds, velgradg(0:nz, :, :, 1)) ! u_x in physical space
 
-            call diffy(svelog(0:nz, :, :, 1), ds)   ! u_y = du/dy in spectral space
-            call fftxys2p(ds, velgradg(:, :, :, 2)) ! u_y in physical space
+            call diffy(svelog(0:nz, :, :, 1), ds)      ! u_y = du/dy in spectral space
+            call fftxys2p(ds, velgradg(0:nz, :, :, 2)) ! u_y in physical space
 
-            call diffx(svelog(0:nz, :, :, 3), ds)   ! w_x = dw/dx in spectral space
-            call fftxys2p(ds, velgradg(:, :, :, 7)) ! w_x in physical space
+            call diffx(svelog(0:nz, :, :, 3), ds)      ! w_x = dw/dx in spectral space
+            call fftxys2p(ds, velgradg(0:nz, :, :, 7)) ! w_x in physical space
 
             ! du/dz = \omegay + dw/dx
             velgradg(:, :, :, 3) = vortg(:, :, :, 2) + velgradg(:, :, :, 7)
 
             ! y & z components:
 
-            ! dv/dx = \omegaz - du/dy
-            velgradg(:, :, :, 4) = vortg(:, :, :, 3) - velgradg(:, :, :, 2)
+            ! dv/dx = \omegaz + du/dy
+            velgradg(:, :, :, 4) = vortg(:, :, :, 3) + velgradg(:, :, :, 2)
 
-            call diffy(svelog(0:nz, :, :, 2), ds)   ! v_y = dv/dy in spectral space
-            call fftxys2p(ds, velgradg(:, :, :, 5)) ! v_y in physical space
+            call diffy(svelog(0:nz, :, :, 2), ds)      ! v_y = dv/dy in spectral space
+            call fftxys2p(ds, velgradg(0:nz, :, :, 5)) ! v_y in physical space
 
-            call diffy(svelog(0:nz, :, :, 3), ds)   ! w_y = dw/dy in spectral space
-            call fftxys2p(ds, velgradg(:, :, :, 8)) ! w_y in physical space
+            call diffy(svelog(0:nz, :, :, 3), ds)      ! w_y = dw/dy in spectral space
+            call fftxys2p(ds, velgradg(0:nz, :, :, 8)) ! w_y in physical space
 
             ! dv/dz = dw/dy - \omegax
             velgradg(:, :, :, 6) = velgradg(:, :, :, 8) - vortg(:, :, :, 1)
 
-            ! - dw/dz = du/dx + dv/dy (use incompressibility)
-            velgradg(:, :, :, 9) = velgradg(:, :, :, 1) + velgradg(:, :, :, 5)
+            ! dw/dz = - (du/dx + dv/dy) (use incompressibility)
+            velgradg(:, :, :, 9) = - (velgradg(:, :, :, 1) + velgradg(:, :, :, 5))
 
         end subroutine vel2vgrad
 
@@ -301,7 +301,7 @@ module inversion_mod
 
             vtend(0:nz, :, :, 3) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 7) & ! \omegax * dw/dx
                                  + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 8) & ! \omegay * dw/dy
-                                 - (vortg(0:nz, :, :, 3) + f_cor)  * velgradg(0:nz, :, :, 9)   ! \omegaz * dw/dz
+                                 + (vortg(0:nz, :, :, 3) + f_cor)  * velgradg(0:nz, :, :, 9)   ! \omegaz * dw/dz
 
             !$omp end workshare
             !$omp end parallel
