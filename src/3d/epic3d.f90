@@ -90,8 +90,6 @@ program epic3d
 
             call init_fft
 
-!             call init_parcel_correction
-
             if (output%h5_write_parcel_stats) then
                 call init_parcel_diagnostics
                 call create_h5_parcel_stat_file(trim(output%h5_basename), &
