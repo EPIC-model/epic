@@ -238,8 +238,9 @@ module inversion_mod
             velgradg(:, :, :, 3) = vortg(:, :, :, 2) + velgradg(:, :, :, 7)
 
             ! y & z components:
-            call diffx(svelog(0:nz, :, :, 2), ds)   ! v_x = dv/dx in spectral space
-            call fftxys2p(ds, velgradg(:, :, :, 4)) ! v_x in physical space
+
+            ! dv/dx = \omegaz - du/dy
+            velgradg(:, :, :, 4) = vortg(:, :, :, 3) - velgradg(:, :, :, 2)
 
             call diffy(svelog(0:nz, :, :, 2), ds)   ! v_y = dv/dy in spectral space
             call fftxys2p(ds, velgradg(:, :, :, 5)) ! v_y in physical space
