@@ -22,7 +22,7 @@ module inversion_mod
 !             ox(0:nz, ny, nx), oy(0:nz, ny, nx), oz(0:nz, ny, nx)
             double precision, intent(out) :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
 !             uu(0:nz, ny, nx), vv(0:nz, ny, nx), ww(0:nz, ny, nx)
-            double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 9)
+            double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
 !             us(0:nz, nx, ny), vs(0:nz, nx, ny), ws(0:nz, nx, ny)
             double precision              :: svelog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision              :: as(0:nz, nx, ny), bs(0:nz, nx, ny), cs(0:nz, nx, ny)
@@ -221,7 +221,7 @@ module inversion_mod
         subroutine vel2vgrad(vortg, svelog, velgradg)
             double precision, intent(in)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(in)  :: svelog(-1:nz+1, 0:nx-1, 0:ny-1, 3)
-            double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 9)
+            double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
             double precision              :: ds(0:nz, 0:nx-1, 0:ny-1) ! spectral derivatives
 
             ! x component:
@@ -232,7 +232,7 @@ module inversion_mod
             call fftxys2p(ds, velgradg(0:nz, :, :, 2)) ! u_y in physical space
 
             call diffx(svelog(0:nz, :, :, 3), ds)      ! w_x = dw/dx in spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, 7)) ! w_x in physical space
+            call fftxys2p(ds, velgradg(0:nz, :, :, 4)) ! w_x in physical space
 
             ! use symmetry to fill z grid points outside domain:
             ! u_x(-1) =  u_x(1) and u_x(nz+1) =  u_x(nz-1)
@@ -242,37 +242,25 @@ module inversion_mod
             velgradg(nz+1, :, :, 1) = velgradg(nz-1, :, :, 1) ! upper boundary du/dx
             velgradg(  -1, :, :, 2) = velgradg(   1, :, :, 2) ! lower boundary du/dy
             velgradg(nz+1, :, :, 2) = velgradg(nz-1, :, :, 2) ! upper boundary du/dy
-            velgradg(  -1, :, :, 7) = velgradg(   1, :, :, 7) ! lower boundary dw/dx
-            velgradg(nz+1, :, :, 7) = velgradg(nz-1, :, :, 7) ! upper boundary dw/dx
+            velgradg(  -1, :, :, 4) = velgradg(   1, :, :, 4) ! lower boundary dw/dx
+            velgradg(nz+1, :, :, 4) = velgradg(nz-1, :, :, 4) ! upper boundary dw/dx
 
-
-            ! du/dz = \omegay + dw/dx
-            velgradg(:, :, :, 3) = vortg(:, :, :, 2) + velgradg(:, :, :, 7)
 
             ! y & z components:
 
-            ! dv/dx = \omegaz + du/dy
-            velgradg(:, :, :, 4) = vortg(:, :, :, 3) + velgradg(:, :, :, 2)
-
             call diffy(svelog(0:nz, :, :, 2), ds)      ! v_y = dv/dy in spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, 5)) ! v_y in physical space
+            call fftxys2p(ds, velgradg(0:nz, :, :, 3)) ! v_y in physical space
 
             call diffy(svelog(0:nz, :, :, 3), ds)      ! w_y = dw/dy in spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, 8)) ! w_y in physical space
+            call fftxys2p(ds, velgradg(0:nz, :, :, 5)) ! w_y in physical space
 
             ! use symmetry to fill z grid points outside domain:
             ! v_y(-1) =  v_y(1) and v_y(nz+1) =  v_y(nz-1)
             ! w_y(-1) = -w_y(1) and w_y(nz+1) = -w_y(nz-1)
-            velgradg(  -1, :, :, 5) = velgradg(   1, :, :, 5) ! lower boundary dv/dy
-            velgradg(nz+1, :, :, 5) = velgradg(nz-1, :, :, 5) ! upper boundary dv/dy
-            velgradg(  -1, :, :, 8) = velgradg(   1, :, :, 8) ! lower boundary dw/dy
-            velgradg(nz+1, :, :, 8) = velgradg(nz-1, :, :, 8) ! upper boundary dw/dy
-
-            ! dv/dz = dw/dy - \omegax
-            velgradg(:, :, :, 6) = velgradg(:, :, :, 8) - vortg(:, :, :, 1)
-
-            ! dw/dz = - (du/dx + dv/dy) (use incompressibility)
-            velgradg(:, :, :, 9) = - (velgradg(:, :, :, 1) + velgradg(:, :, :, 5))
+            velgradg(  -1, :, :, 3) = velgradg(   1, :, :, 3) ! lower boundary dv/dy
+            velgradg(nz+1, :, :, 3) = velgradg(nz-1, :, :, 3) ! upper boundary dv/dy
+            velgradg(  -1, :, :, 5) = velgradg(   1, :, :, 5) ! lower boundary dw/dy
+            velgradg(nz+1, :, :, 5) = velgradg(nz-1, :, :, 5) ! upper boundary dw/dy
 
         end subroutine vel2vgrad
 
@@ -283,7 +271,7 @@ module inversion_mod
             double precision, intent(in)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(in)  :: tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1)
             double precision              :: b(0:nz, 0:ny-1, 0:nx-1)
-            double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 9)
+            double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
             double precision, intent(out) :: vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision              :: bs(0:nz, 0:nx-1, 0:ny-1) ! spectral buoyancy
             double precision              :: ds(0:nz, 0:nx-1, 0:ny-1) ! spectral derivatives
@@ -304,7 +292,8 @@ module inversion_mod
             !$omp workshare
             vtend(0:nz, :, :, 1) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 1) & ! \omegax * du/dx
                                  + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 2) & ! \omegay * du/dy
-                                 + (vortg(0:nz, :, :, 3) +  f_cor) * velgradg(0:nz, :, :, 3) & ! \omegaz * du/dz
+                                 + (vortg(0:nz, :, :, 3) +  f_cor) *                         &
+                                            (vortg(0:nz, :, :, 2) + velgradg(0:nz, :, :, 4)) & ! \omegaz * du/dz
                                  + db                                                          ! db/dy
             !$omp end workshare
             !$omp end parallel
@@ -314,14 +303,17 @@ module inversion_mod
 
             !$omp parallel
             !$omp workshare
-            vtend(0:nz, :, :, 2) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 4) & ! \omegax * dv/dx
-                                 + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 5) & ! \omegay * dv/dy
-                                 + (vortg(0:nz, :, :, 3) + f_cor)  * velgradg(0:nz, :, :, 6) & ! \omegaz * dv/dz
+            vtend(0:nz, :, :, 2) =  vortg(0:nz, :, :, 1)           *                         &
+                                            (vortg(0:nz, :, :, 3) + velgradg(0:nz, :, :, 2)) & ! \omegax * dv/dx
+                                 + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 3) & ! \omegay * dv/dy
+                                 + (vortg(0:nz, :, :, 3) + f_cor)  *                         &
+                                            (velgradg(0:nz, :, :, 5) - vortg(0:nz, :, :, 1)) & ! \omegaz * dv/dz
                                  - db                                                          ! dbdx
 
-            vtend(0:nz, :, :, 3) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 7) & ! \omegax * dw/dx
-                                 + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 8) & ! \omegay * dw/dy
-                                 + (vortg(0:nz, :, :, 3) + f_cor)  * velgradg(0:nz, :, :, 9)   ! \omegaz * dw/dz
+            vtend(0:nz, :, :, 3) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 4) & ! \omegax * dw/dx
+                                 + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 5) & ! \omegay * dw/dy
+                                 - (vortg(0:nz, :, :, 3) + f_cor)  *                         &
+                                         (velgradg(0:nz, :, :, 1) + velgradg(0:nz, :, :, 3))   ! \omegaz * dw/dz
 
             !$omp end workshare
             !$omp end parallel
