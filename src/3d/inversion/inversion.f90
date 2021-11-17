@@ -234,6 +234,18 @@ module inversion_mod
             call diffx(svelog(0:nz, :, :, 3), ds)      ! w_x = dw/dx in spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, 7)) ! w_x in physical space
 
+            ! use symmetry to fill z grid points outside domain:
+            ! u_x(-1) =  u_x(1) and u_x(nz+1) =  u_x(nz-1)
+            ! u_y(-1) =  u_y(1) and u_y(nz+1) =  u_y(nz-1)
+            ! w_x(-1) = -w_x(1) and w_x(nz+1) = -w_x(nz-1)
+            velgradg(  -1, :, :, 1) = velgradg(   1, :, :, 1) ! lower boundary du/dx
+            velgradg(nz+1, :, :, 1) = velgradg(nz-1, :, :, 1) ! upper boundary du/dx
+            velgradg(  -1, :, :, 2) = velgradg(   1, :, :, 2) ! lower boundary du/dy
+            velgradg(nz+1, :, :, 2) = velgradg(nz-1, :, :, 2) ! upper boundary du/dy
+            velgradg(  -1, :, :, 7) = velgradg(   1, :, :, 7) ! lower boundary dw/dx
+            velgradg(nz+1, :, :, 7) = velgradg(nz-1, :, :, 7) ! upper boundary dw/dx
+
+
             ! du/dz = \omegay + dw/dx
             velgradg(:, :, :, 3) = vortg(:, :, :, 2) + velgradg(:, :, :, 7)
 
@@ -247,6 +259,14 @@ module inversion_mod
 
             call diffy(svelog(0:nz, :, :, 3), ds)      ! w_y = dw/dy in spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, 8)) ! w_y in physical space
+
+            ! use symmetry to fill z grid points outside domain:
+            ! v_y(-1) =  v_y(1) and v_y(nz+1) =  v_y(nz-1)
+            ! w_y(-1) = -w_y(1) and w_y(nz+1) = -w_y(nz-1)
+            velgradg(  -1, :, :, 5) = velgradg(   1, :, :, 5) ! lower boundary dv/dy
+            velgradg(nz+1, :, :, 5) = velgradg(nz-1, :, :, 5) ! upper boundary dv/dy
+            velgradg(  -1, :, :, 8) = velgradg(   1, :, :, 8) ! lower boundary dw/dy
+            velgradg(nz+1, :, :, 8) = velgradg(nz-1, :, :, 8) ! upper boundary dw/dy
 
             ! dv/dz = dw/dy - \omegax
             velgradg(:, :, :, 6) = velgradg(:, :, :, 8) - vortg(:, :, :, 1)
