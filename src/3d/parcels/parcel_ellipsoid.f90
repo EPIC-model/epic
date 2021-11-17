@@ -192,33 +192,20 @@ module parcel_ellipsoid
             enddo
         end function get_ellipsoid_points
 
-        function get_azimuthal_angle(B, volume) result(angle)
+        function get_angles(B, volume) result(angles)
             double precision, intent(in) :: B(5)
             double precision, intent(in) :: volume
             double precision             :: evec(3, 3)
-            double precision             :: angle
-
-            evec = get_eigenvectors(B, volume)
-!             print *, "eigs:", get_eigenvalues(B, volume)
-
-            print *, evec(:, 1)
-            print *, evec(:, 2)
-            print *, evec(:, 3)
-
-            angle = datan2(evec(2, 1), evec(1, 1))
-
-        end function get_azimuthal_angle
-
-        function get_polar_angle(B, volume) result(angle)
-            double precision, intent(in) :: B(5)
-            double precision, intent(in) :: volume
-            double precision             :: evec(3, 3)
-            double precision             :: angle
+            double precision             :: angles(2) ! (/azimuth, polar/)
 
             evec = get_eigenvectors(B, volume)
 
-            angle = dasin(-evec(3, 3))
+            ! azimuthal angle
+            angles(1) = datan2(evec(2, 1), evec(1, 1))
 
-        end function get_polar_angle
+            ! polar angle
+            angles(2) = dasin(evec(3, 3))
+
+        end function get_angles
 
 end module parcel_ellipsoid

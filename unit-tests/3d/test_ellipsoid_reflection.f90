@@ -7,15 +7,16 @@
 ! =============================================================================
 program test_ellipsoid_reflection
     use unit_test
-    use constants, only : pi, zero, one, two, three, six, f12, f13, f18, f23
+    use options, only : verbose
+    use constants, only : pi, zero, one, two, three, six, f12, f13, f14, f18, f23, twopi
     use parcel_container, only : parcel_alloc   &
                                , parcel_dealloc &
                                , n_parcels      &
                                , parcels
     use parcel_bc, only : apply_reflective_bc
-    use parcel_ellipsoid, only : get_abc             &
-                               , get_azimuthal_angle &
-                               , get_polar_angle
+    use parcel_ellipsoid, only : get_abc        &
+                               , get_angles     &
+                               , get_B33
     use parameters, only : update_parameters, lower, dx, vcell, extent, nx, ny, nz
     implicit none
 
@@ -23,9 +24,11 @@ program test_ellipsoid_reflection
     double precision :: abc, abc23, B11, B12, B13, B22, B23, error, a2, b2, c2
     double precision :: st, sp, ct, cp, theta, phi, angle
 
-    nx = 10
-    ny = 10
-    nz = 10
+    call parse_command_line
+
+    nx = 2
+    ny = 2
+    nz = 2
     lower  = (/zero, zero, zero/)
     extent = (/one, one, one/)
 
@@ -44,8 +47,13 @@ program test_ellipsoid_reflection
     b2 = f12 * abc23
     c2 = f13 * abc23
 
-    do iter_t = 0, 360
-        do iter_p = 0, 180
+    if (verbose) then
+        open(80, file='original_position_and_Bmatrix.asc')
+        open(81, file='reflected_position_and_Bmatrix.asc')
+    endif
+
+    do iter_t = 0, 359
+        do iter_p = 0, 179
             theta = dble(iter_t) * pi / 180.0d0     ! azimuthal angle, [0, 2pi[
             phi = dble(iter_p) * pi / 180.0d0       ! polar angle, [0, pi]
 
@@ -72,31 +80,42 @@ program test_ellipsoid_reflection
             parcels%B(1, 4) = B22
             parcels%B(1, 5) = B23
 
-            angle = get_azimuthal_angle(parcels%B(1, :), parcels%volume(1))
-            print *, "before", angle
-!             stop
+            if (verbose) then
+                write(80, *) parcels%position(1, :), parcels%B(1, :), &
+                             get_B33(parcels%B(1, :), parcels%volume(1))
+            endif
 
             call apply_reflective_bc(parcels%position(1, :), parcels%B(1, :))
 
+            if (verbose) then
+                write(81, *) parcels%position(1, :), parcels%B(1, :), &
+                             get_B33(parcels%B(1, :), parcels%volume(1))
+            endif
+
             call check_result('lower')
 
-!             !
-!             ! upper boundary check
-!             !
-!             parcels%position(1, :) = (/f12, f12, one + f12 * dx(3)/)
-!             parcels%B(1, 1) = B11
-!             parcels%B(1, 2) = B12
-!             parcels%B(1, 3) = B13
-!             parcels%B(1, 4) = B22
-!             parcels%B(1, 5) = B23
-!
-!             call apply_reflective_bc(parcels%position(1, :), parcels%B(1, :))
-!
-!             call check_result('upper')
+            !
+            ! upper boundary check
+            !
+            parcels%position(1, :) = (/f12, f12, one + f12 * dx(3)/)
+            parcels%B(1, 1) = B11
+            parcels%B(1, 2) = B12
+            parcels%B(1, 3) = B13
+            parcels%B(1, 4) = B22
+            parcels%B(1, 5) = B23
+
+            call apply_reflective_bc(parcels%position(1, :), parcels%B(1, :))
+
+            call check_result('upper')
         enddo
     enddo
 
-    call print_result_dp('Test ellipsoid reflection', error, atol=1.0e-14)
+    if (verbose) then
+        close(80)
+        close(81)
+    endif
+
+    call print_result_dp('Test ellipsoid reflection', error, atol=3.0e-13)
 
     call parcel_dealloc
 
@@ -105,58 +124,44 @@ program test_ellipsoid_reflection
 
         subroutine check_result(bc)
             character(*), intent(in) :: bc
-            double precision         :: azimuth, polar
+            double precision         :: angles(2)
 
-            ! get_angle computes the angle in the first and fourth quadrant, i.e.,
-            ! -pi/2 <= get_angle <= pi/2
-!             if (theta > pi / two .and. theta <= three * pi / two) then
-!                 theta = theta - pi
-!             else if (theta > three * pi / two) then
-!                 theta = pi - theta
-!             endif
             error = max(error, abs(parcels%B(1, 1) - B11))
             error = max(error, abs(parcels%B(1, 2) - B12))
             error = max(error, abs(parcels%B(1, 3) + B13))
             error = max(error, abs(parcels%B(1, 4) - B22))
             error = max(error, abs(parcels%B(1, 5) + B23))
 
-            azimuth = get_azimuthal_angle(parcels%B(1, :), parcels%volume(1))
-            polar = get_polar_angle(parcels%B(1, :), parcels%volume(1))
+            ! (/azimuth, polar/)
+            angles = get_angles(parcels%B(1, :), parcels%volume(1))
 
-            if (azimuth < zero) then
-                azimuth = pi + azimuth
+            ! -pi <= theta <= pi
+            if (angles(1) < 0) then
+                angles(1) = twopi + angles(1)
             endif
 
-            if (dabs(dabs(theta - azimuth) - pi) <= 10.0d0 * epsilon(pi)) then
-                azimuth = pi - azimuth
-                print *, "HI"
+            ! rotated by pi/2
+            if (dabs(dabs(theta - angles(1)) - pi) < 10000.0d0 * epsilon(pi)) then
+                if (theta > angles(1)) then
+                    angles(1) = pi + angles(1)
+                else
+                    angles(1) = angles(1) - pi
+                endif
             endif
 
-            error = max(error, abs(theta - azimuth))
 
-            print *, theta, azimuth, phi
-            if (error > 1.0e-14) then
-                print *, "azimuth", azimuth
-                print *, "polar", polar
-                print *, "theta", theta
-                print *, "phi", phi
-                print *, "B11", B11
-                print *, "B12", B12
-                print *, "B13", B13
-                print *, "B22", B22
-                print *, "B23", B23
-                print *, "B33", a2 * cp ** 2 + c2 * sp ** 2
-                print *, "a2", a2
-                print *, "b2", b2
-                print *, "c2", c2
-                print *, "st", st
-                print *, "ct", ct
-                print *, "sp", sp
-                print *, "cp", cp
-                stop
+            ! 0 <= angles(2) <= pi/2
+            if (phi > pi/2) then
+                angles(2) = pi - dabs(angles(2))
             endif
-!             error = max(error, abs(phi + get_polar_angle(parcels%B(1, :), &
-!                                                          parcels%volume(1))))
+
+            ! Neglect if phi = 0, pi/2 and pi, since then theta does not matter
+            if ((iter_p .ne. 0) .and. (iter_p .ne. 90) .and. (iter_p .ne. 180)) then
+                error = max(error, abs(theta - angles(1)))
+            endif
+
+            error = max(error, dabs(dabs(phi) - dabs(angles(2))))
+
             error = max(error, abs(f12 - parcels%position(1, 1)))
             error = max(error, abs(f12 - parcels%position(1, 2)))
 
