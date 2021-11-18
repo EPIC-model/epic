@@ -71,7 +71,9 @@ module rk4_utils
             double precision, intent(in) :: t
             double precision             :: dt
             double precision             :: gmax, bmax
-            double precision             :: dbdz(0:nz, 0:nx-1)
+            double precision             :: dbdx(0:nz, 0:ny-1, 0:nx-1)
+            double precision             :: dbdy(0:nz, 0:ny-1, 0:nx-1)
+            double precision             :: dbdz(0:nz, 0:ny-1, 0:nx-1)
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
             character(:), allocatable    :: fname
@@ -84,10 +86,26 @@ module rk4_utils
 
             ! buoyancy gradient
 
-            ! db/dz (central difference)
-            dbdz(0:nz, :) = 1.0 !FIXME f12 * dxi(2) * (tbuoyg(1:nz+1, :) - tbuoyg(-1:nz-1, :))
+            ! db/dx (central difference)
+            ! inner part:
+            dbdx(:, :, 1:nx-2) = f12 * dxi(1) * (tbuoyg(0:nz, :, 2:nx-1) - tbuoyg(0:nz, :, 0:nx-3))
 
-            bmax = 1.0 !FIXME dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
+            ! boundary grid points (make use of periodicity)
+            dbdx(:, :, 0)    = f12 * dxi(1) * (tbuoyg(0:nz, :, 1) - tbuoyg(0:nz, :, nx-1))
+            dbdx(:, :, nx-1) = f12 * dxi(1) * (tbuoyg(0:nz, :, 0) - tbuoyg(0:nz, :, nx-2))
+
+            ! db/dy (central difference)
+            dbdy(:, 1:nx-2, :) = f12 * dxi(2) * (tbuoyg(0:nz, 2:ny-1, :) - tbuoyg(0:nz, 0:ny-3, :))
+            ! boundary grid points (make use of periodicity)
+            dbdy(:, 0, :)    = f12 * dxi(2) * (tbuoyg(0:nz, 1, :) - tbuoyg(0:nz, ny-1, :))
+            dbdy(:, ny-1, :) = f12 * dxi(2) * (tbuoyg(0:nz, 0, :) - tbuoyg(0:nz, ny-2, :))
+
+
+            ! db/dz (central difference)
+            dbdz = f12 * dxi(3) * (tbuoyg(1:nz+1, :, :) - tbuoyg(-1:nz-1, :, :))
+
+
+            bmax = dsqrt(dsqrt(maxval(dbdx ** 2 + dbdy ** 2 + dbdz ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
             dt = min(time%alpha / gmax, time%alpha / bmax)
