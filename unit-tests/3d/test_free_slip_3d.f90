@@ -13,7 +13,7 @@ program test_free_slip_3d
     use unit_test
     use constants, only : pi                      &
                         , zero , one, two, three  &
-                        , f12, f14, f18, f23
+                        , f12, f14, f18, f23, ten
     use parcel_container
     use parcel_ellipsoid, only : get_abc, get_B33
     use parcel_interpl, only : vol2grid
@@ -62,32 +62,19 @@ program test_free_slip_3d
 
     abc = get_abc(parcels%volume(1))
     abc23 = abc ** f23
-    a2 = 1.5d0 * abc23
-    b2 = abc23 / dsqrt(1.5d0)
-    c2 = abc23 / dsqrt(1.5d0)
+    a2 = ten * abc23
+    b2 = abc23 / dsqrt(ten)
+    c2 = abc23 / dsqrt(ten)
 
     parcels%B(:, 1) = c2
     parcels%B(:, 2) = zero
     parcels%B(:, 3) = zero
     parcels%B(:, 4) = b2
     parcels%B(:, 5) = zero
-!     print *, get_B33(parcels%B(1, :), parcels%volume(1))
-!     stop
-
-
-!     do l = 1, n_parcels
-!         print *, parcels%position(l, :), parcels%B(l, :), get_B33(parcels%B(l, :), parcels%volume(l))
-!     enddo
-
-!     stop
 
     call vol2grid
 
-    print *, nx * ny * nz, ngrid, vcell * nx * ny * nz, sum(volg(0:nz, 0:ny-1, 0:nx-1))
-
     error = abs(sum(volg(0:nz, 0:ny-1, 0:nx-1)) - ngrid * vcell)
-
-    print *, error
 
     call print_result_dp('Test free slip', error)
 
