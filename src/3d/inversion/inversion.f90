@@ -238,12 +238,12 @@ module inversion_mod
             ! u_x(-1) =  u_x(1) and u_x(nz+1) =  u_x(nz-1)
             ! u_y(-1) =  u_y(1) and u_y(nz+1) =  u_y(nz-1)
             ! w_x(-1) = -w_x(1) and w_x(nz+1) = -w_x(nz-1)
-            velgradg(  -1, :, :, 1) = velgradg(   1, :, :, 1) ! lower boundary du/dx
-            velgradg(nz+1, :, :, 1) = velgradg(nz-1, :, :, 1) ! upper boundary du/dx
-            velgradg(  -1, :, :, 2) = velgradg(   1, :, :, 2) ! lower boundary du/dy
-            velgradg(nz+1, :, :, 2) = velgradg(nz-1, :, :, 2) ! upper boundary du/dy
-            velgradg(  -1, :, :, 4) = velgradg(   1, :, :, 4) ! lower boundary dw/dx
-            velgradg(nz+1, :, :, 4) = velgradg(nz-1, :, :, 4) ! upper boundary dw/dx
+            velgradg(  -1, :, :, 1) =  velgradg(   1, :, :, 1) ! lower boundary du/dx
+            velgradg(nz+1, :, :, 1) =  velgradg(nz-1, :, :, 1) ! upper boundary du/dx
+            velgradg(  -1, :, :, 2) =  velgradg(   1, :, :, 2) ! lower boundary du/dy
+            velgradg(nz+1, :, :, 2) =  velgradg(nz-1, :, :, 2) ! upper boundary du/dy
+            velgradg(  -1, :, :, 4) = -velgradg(   1, :, :, 4) ! lower boundary dw/dx
+            velgradg(nz+1, :, :, 4) = -velgradg(nz-1, :, :, 4) ! upper boundary dw/dx
 
 
             ! y & z components:
@@ -257,10 +257,10 @@ module inversion_mod
             ! use symmetry to fill z grid points outside domain:
             ! v_y(-1) =  v_y(1) and v_y(nz+1) =  v_y(nz-1)
             ! w_y(-1) = -w_y(1) and w_y(nz+1) = -w_y(nz-1)
-            velgradg(  -1, :, :, 3) = velgradg(   1, :, :, 3) ! lower boundary dv/dy
-            velgradg(nz+1, :, :, 3) = velgradg(nz-1, :, :, 3) ! upper boundary dv/dy
-            velgradg(  -1, :, :, 5) = velgradg(   1, :, :, 5) ! lower boundary dw/dy
-            velgradg(nz+1, :, :, 5) = velgradg(nz-1, :, :, 5) ! upper boundary dw/dy
+            velgradg(  -1, :, :, 3) =  velgradg(   1, :, :, 3) ! lower boundary dv/dy
+            velgradg(nz+1, :, :, 3) =  velgradg(nz-1, :, :, 3) ! upper boundary dv/dy
+            velgradg(  -1, :, :, 5) = -velgradg(   1, :, :, 5) ! lower boundary dw/dy
+            velgradg(nz+1, :, :, 5) = -velgradg(nz-1, :, :, 5) ! upper boundary dw/dy
 
         end subroutine vel2vgrad
 
