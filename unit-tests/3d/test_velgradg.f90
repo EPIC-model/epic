@@ -56,7 +56,7 @@ program test_velgradg
     CC =  one
     c  = -one
 
-    allocate(strain(-1:nz+1, 0:ny-1, 0:nx-1, 9))
+    allocate(strain(-1:nz+1, 0:ny-1, 0:nx-1, 5))
     allocate(svelog(-1:nz+1, 0:nx-1, 0:ny-1, 3))
 
     call update_parameters
@@ -83,16 +83,9 @@ program test_velgradg
                 ! velocity gradient tensor (reference solution)
                 strain(iz, iy, ix, 1) = - a * AA * dsin(a * x) * dsin(b * y) * dsin(c * z) ! du/dx
                 strain(iz, iy, ix, 2) =   b * AA * dcos(a * x) * dcos(b * y) * dsin(c * z) ! du/dy
-                strain(iz, iy, ix, 3) =   c * AA * dcos(a * x) * dsin(b * y) * dcos(c * z) ! du/dz
-
-                strain(iz, iy, ix, 4) =   a * BB * dcos(a * x) * dcos(b * y) * dsin(c * z) ! dv/dx
-                strain(iz, iy, ix, 5) = - b * BB * dsin(a * x) * dsin(b * y) * dsin(c * z) ! dv/dy
-                strain(iz, iy, ix, 6) =   c * BB * dsin(a * x) * dcos(b * y) * dcos(c * z) ! dv/dz
-
-                strain(iz, iy, ix, 7) =   a * CC * dcos(a * x) * dsin(b * y) * dcos(c * z) ! dw/dx
-                strain(iz, iy, ix, 8) =   b * CC * dsin(a * x) * dcos(b * y) * dcos(c * z) ! dw/dy
-                strain(iz, iy, ix, 9) = - c * CC * dsin(a * x) * dsin(b * y) * dsin(c * z) ! dw/dz
-
+                strain(iz, iy, ix, 3) = - b * BB * dsin(a * x) * dsin(b * y) * dsin(c * z) ! dv/dy
+                strain(iz, iy, ix, 4) =   a * CC * dcos(a * x) * dsin(b * y) * dcos(c * z) ! dw/dx
+                strain(iz, iy, ix, 5) =   b * CC * dsin(a * x) * dcos(b * y) * dcos(c * z) ! dw/dy
             enddo
         enddo
     enddo

@@ -77,15 +77,9 @@ program test_vtend
                 ! velocity gradient tensor
                 velgradg(iz, iy, ix, 1) = zero          ! du/dx
                 velgradg(iz, iy, ix, 2) = - C * dsin(y) ! du/dy
-                velgradg(iz, iy, ix, 3) =   A * dcos(z) ! du/dz
-
-                velgradg(iz, iy, ix, 4) =   B * dcos(x) ! dv/dx
-                velgradg(iz, iy, ix, 5) = zero          ! dv/dy
-                velgradg(iz, iy, ix, 6) = - A * dsin(z) ! dv/dz
-
-                velgradg(iz, iy, ix, 7) = - B * dsin(x) ! dw/dx
-                velgradg(iz, iy, ix, 8) =   C * dcos(y) ! dw/dy
-                velgradg(iz, iy, ix, 9) = zero          ! dw/dz
+                velgradg(iz, iy, ix, 3) = zero          ! dv/dy
+                velgradg(iz, iy, ix, 4) = - B * dsin(x) ! dw/dx
+                velgradg(iz, iy, ix, 5) =   C * dcos(y) ! dw/dy
 
                 ! vorticity tendency (reference solution)
                 S(iz, iy, ix, 1) = A * B * dcos(x) * dcos(z) - B * C * dsin(x) * dsin(y) + dcos(y)
