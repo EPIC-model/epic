@@ -43,7 +43,7 @@ module fields
             endif
 
             allocate(velog(-1:nz+1, 0:ny-1, 0:nx-1, 3))
-            allocate(velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 9))
+            allocate(velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5))
 
             allocate(volg(-1:nz+1, 0:ny-1, 0:nx-1))
 
