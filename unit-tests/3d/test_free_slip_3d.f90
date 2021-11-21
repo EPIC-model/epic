@@ -2,12 +2,12 @@
 !                       Test free slip boundary condition
 !
 !       This unit test checks the free slip boundary condition which is
-!       implied in vertical direction. Ellipses with aspect ratio 3.5
-!       are placed such that the parcels at the bottom and at the top have
-!       two ellipsoid points reaching out the physical domain. We use 4
-!       parcels per cell. After interpolating the parcel volume
-!       (volume = 0.25 * vcell per parcel), the gridded volume is
-!       ngrid * vcell where ngrid is the number of grid points.
+!       implied in vertical direction. Ellipsoids are placed such that
+!       the parcels at the bottom and at the top have two ellipsoid points
+!       reaching out the physical domain. We use 4 parcels per cell. After
+!       interpolating the parcel volume (volume = 0.125 * vcell per parcel),
+!       the gridded volume is ngrid * vcell where ngrid is the number of
+!       grid points.
 ! =============================================================================
 program test_free_slip_3d
     use unit_test
