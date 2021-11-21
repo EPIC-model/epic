@@ -38,7 +38,7 @@ program test_trilinear
 
     allocate(vel(n_parcels, 3))
     allocate(vor(n_parcels, 3))
-    allocate(vgrad(n_parcels, 9))
+    allocate(vgrad(n_parcels, 5))
 
 
     im = one / dble(n_per_dim)
