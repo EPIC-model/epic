@@ -6,11 +6,11 @@ module ls_rk4
     use options, only : parcel
     use parcel_container
     use parcel_bc
-    use rk4_utils, only: get_B, get_time_step
+    use rk4_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
-    use tri_inversion, only : vor2vel, vorticity_tendency
+    use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calc_parcel_diagnostics
     use parameters, only : nx, nz
     use timer, only : start_timer, stop_timer, timings
@@ -48,7 +48,7 @@ module ls_rk4
 
             allocate(delta_pos(num, 3))
             allocate(delta_vor(num, 3))
-            allocate(strain(num, 4))
+            allocate(strain(num, 9))
             allocate(delta_b(num, 5))
 
         end subroutine ls_rk4_alloc
@@ -79,7 +79,7 @@ module ls_rk4
             ! this is also needed for the first ls-rk4 substep
             call vor2vel(vortg, velog, velgradg)
 
-            call vorticity_tendency(tbuoyg, vtend)
+            call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
 
             ! update the time step
             dt = get_time_step(t)
@@ -134,7 +134,7 @@ module ls_rk4
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
-                    delta_b(n, :) = get_B(parcels%B(n, :), strain(n, :), parcels%volume(n))
+                    delta_b(n, :) = get_dBdt(parcels%B(n, :), strain(n, :), parcels%volume(n))
                 enddo
                 !$omp end parallel do
 
@@ -142,7 +142,7 @@ module ls_rk4
             else
                 call vor2vel(vortg, velog, velgradg)
 
-                call vorticity_tendency(tbuoyg, vtend)
+                call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
 
                 call grid2par_add(delta_pos, delta_vor, strain)
 
@@ -151,7 +151,7 @@ module ls_rk4
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
                     delta_b(n, :) = delta_b(n, :) &
-                                  + get_B(parcels%B(n, :), strain(n, :), parcels%volume(n))
+                                  + get_dBdt(parcels%B(n, :), strain(n, :), parcels%volume(n))
                 enddo
                 !$omp end parallel do
 

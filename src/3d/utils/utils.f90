@@ -4,7 +4,7 @@ module utils
     use parcel_hdf5
     use parcel_diagnostics
     use parcel_container, only : n_parcels
-    use tri_inversion, only : vor2vel, vorticity_tendency
+    use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
 #ifndef NDEBUG
     use parcel_interpl, only : vol2grid_symmetry_error
@@ -28,7 +28,7 @@ module utils
         subroutine write_last_step(t)
             double precision,  intent(in) :: t
             double precision              :: velocity(n_parcels, 2)
-            double precision              :: strain(n_parcels, 4)
+            double precision              :: strain(n_parcels, 9)
             double precision              :: vorticity(n_parcels, 3)
 
             call par2grid
@@ -37,7 +37,7 @@ module utils
             ! this is also needed for the first ls-rk4 substep
             call vor2vel(vortg, velog, velgradg)
 
-            call vorticity_tendency(tbuoyg, vtend)
+            call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
 
             call grid2par(velocity, vorticity, strain)
 
