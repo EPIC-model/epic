@@ -3,8 +3,8 @@
 !
 !       This unit test checks the free slip boundary condition which is
 !       implied in vertical direction. Ellipses with aspect ratio 3.5
-!       are place such that the parcels at the bottom and ad the top have
-!       one ellipse point reaching out the physical domain. We use 4
+!       are placed such that the parcels at the bottom and at the top have
+!       two ellipsoid points reaching out the physical domain. We use 4
 !       parcels per cell. After interpolating the parcel volume
 !       (volume = 0.25 * vcell per parcel), the gridded volume is
 !       ngrid * vcell where ngrid is the number of grid points.
