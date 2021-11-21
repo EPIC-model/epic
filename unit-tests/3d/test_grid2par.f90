@@ -80,7 +80,7 @@ program test_trilinear
     velog(:, :, :, 2) = two
     velog(:, :, :, 3) = three
 
-    do l = 1, 9
+    do l = 1, 5
         velgradg(:, :, :, l) = dble(l)
     enddo
 

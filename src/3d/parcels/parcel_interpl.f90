@@ -354,7 +354,7 @@ module parcel_interpl
                                       + weight * velog(ks(l), js(l), is(l), c)
                         enddo
 
-                        do c = 1, 9
+                        do c = 1, 5
                             vgrad(n, c) = vgrad(n, c) &
                                         + weight * velgradg(ks(l), js(l), is(l), c)
                         enddo
