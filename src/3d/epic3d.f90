@@ -10,8 +10,7 @@ program epic3d
     use parcel_split_mod, only : parcel_split, split_timer
     use parcel_merge, only : merge_parcels, merge_timer
     use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
-    use parcel_correction, only : init_parcel_correction, &
-                                  apply_laplace,          &
+    use parcel_correction, only : apply_laplace,          &
                                   apply_gradient,         &
                                   lapl_corr_timer,        &
                                   grad_corr_timer
@@ -21,7 +20,8 @@ program epic3d
     use parcel_hdf5
     use fields
     use field_hdf5, only : hdf5_field_timer, create_h5_field_file
-    use tri_inversion, only : init_inversion, vor2vel_timer, vtend_timer
+    use inversion_mod, only : vor2vel_timer, vtend_timer
+    use inversion_utils, only : init_fft
     use parcel_interpl, only : grid2par_timer, par2grid_timer
 #ifndef NDEBUG
     use parcel_interpl, only : sym_vol2grid_timer
@@ -30,6 +30,7 @@ program epic3d
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
     use h5_utils, only : initialise_hdf5, finalise_hdf5
     use utils, only : write_last_step
+    use phys_parameters, only : update_phys_parameters
     implicit none
 
     integer :: epic_timer
@@ -79,15 +80,15 @@ program epic3d
             ! parse the config file
             call read_config_file
 
+            call update_phys_parameters
+
             call parcel_alloc(max_num_parcels)
 
             call init_parcels(field_file, field_tol)
 
             call ls_rk4_alloc(max_num_parcels)
 
-            call init_inversion
-
-            call init_parcel_correction
+            call init_fft
 
             if (output%h5_write_parcel_stats) then
                 call init_parcel_diagnostics

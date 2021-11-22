@@ -10,7 +10,7 @@ module ls_rk4
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
-    use tri_inversion, only : vor2vel, vorticity_tendency
+    use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calc_parcel_diagnostics
     use parameters, only : nx, nz
     use timer, only : start_timer, stop_timer, timings
@@ -79,7 +79,7 @@ module ls_rk4
             ! this is also needed for the first ls-rk4 substep
             call vor2vel(vortg, velog, velgradg)
 
-            call vorticity_tendency(tbuoyg, vtend)
+            call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
 
             ! update the time step
             dt = get_time_step(t)
@@ -142,7 +142,7 @@ module ls_rk4
             else
                 call vor2vel(vortg, velog, velgradg)
 
-                call vorticity_tendency(tbuoyg, vtend)
+                call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
 
                 call grid2par_add(delta_pos, delta_vor, strain)
 
