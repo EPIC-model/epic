@@ -7,7 +7,7 @@ program test_vor2vel
     use unit_test
     use constants, only : pi, zero, one, two, twopi, six, three, four, f12, f13, f14, f15
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use fields, only : vortg, velog, field_alloc
+    use fields, only : vortg, velog, velgradg, field_alloc
     use inversion_utils, only : init_fft, fftxys2p
     use inversion_mod, only : vor2vel
     use timer
@@ -26,7 +26,7 @@ program test_vor2vel
                                    , q1 = 0.3d0 * lz         &
                                    , q2 = 0.8d0 * lz         &
                                    , q3 = lz
-    double precision, allocatable :: svelog(:, :, :, :), svelog_ref(:, :, :, :), svortg(:, :, :, :), &
+    double precision, allocatable :: svelog_ref(:, :, :, :), svortg(:, :, :, :), &
                                      vor_copy(:, :, :, :)
     integer                       :: ix, iy, iz
     double precision              :: Ahat, Bhat, xi, eta, zeta, pp, qq, ps, qs
@@ -39,7 +39,7 @@ program test_vor2vel
     lower  = (/-pi, -pi, zero/)
     extent =  (/lz, lz, lz/)
 
-    allocate(svelog(-1:nz+1, 0:nx-1, 0:ny-1, 3))
+!     allocate(svelog(-1:nz+1, 0:nx-1, 0:ny-1, 3))
     allocate(svelog_ref(-1:nz+1, 0:nx-1, 0:ny-1, 3))
     allocate(svortg(0:nz, 0:nx-1, 0:ny-1, 3))
     allocate(vor_copy(0:nz, 0:nx-1, 0:ny-1, 3))
@@ -123,19 +123,19 @@ program test_vor2vel
     call fftxys2p(svortg(0:nz, :, :, 2), vortg(0:nz, :, :, 2))
     call fftxys2p(svortg(0:nz, :, :, 3), vortg(0:nz, :, :, 3))
 
-    call vor2vel(vortg, velog, svelog)
+    call vor2vel(vortg, velog, velgradg)
 
 
-    error = maxval(dabs(svelog(0:nz, :, :, :) - svelog_ref(0:nz, :, :, :)))
+!     error = maxval(dabs(svelog(0:nz, :, :, :) - svelog_ref(0:nz, :, :, :)))
 
-    do iz = 0, nz
-        z = iz * dx(3)
-        print *, z, vor_copy(iz, 15, 15, :), svelog_ref(iz, 15, 15, :), svelog(iz, 15, 15, :)
-    enddo
+!     do iz = 0, nz
+!         z = iz * dx(3)
+!         print *, z, vor_copy(iz, 15, 15, :), svelog_ref(iz, 15, 15, :), svelog(iz, 15, 15, :)
+!     enddo
 !     print *, error
 
 !     call print_result_dp('Test inversion (vor2vel)', error)
 
-    deallocate(svelog)
+!     deallocate(svelog)
 
 end program test_vor2vel
