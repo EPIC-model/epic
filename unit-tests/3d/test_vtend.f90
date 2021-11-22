@@ -30,13 +30,14 @@ program test_vtend
     use constants, only : zero, two, four, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use fields, only : vortg, velgradg, vtend, tbuoyg, field_alloc
+    use field_utils, only : gradient
     use inversion_utils, only : init_fft
     use inversion_mod, only : vorticity_tendency, vtend_timer
     use timer
     implicit none
 
     double precision              :: error
-    double precision, allocatable :: S(:, :, :, :)
+    double precision, allocatable :: S(:, :, :, :), buoygradg(:, :, :, :)
     integer                       :: ix, iy, iz
     double precision              :: x, y, z, A, B, C
 
@@ -54,6 +55,7 @@ program test_vtend
     C = 0.9d0
 
     allocate(S(0:nz, 0:ny-1, 0:nx-1, 3))
+    allocate(buoygradg(0:nz, 0:ny-1, 0:nx-1, 3))
 
     call update_parameters
 
@@ -92,12 +94,15 @@ program test_vtend
 
     call init_fft
 
-    call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
+    call gradient(tbuoyg, buoygradg)
+
+    call vorticity_tendency(vortg, buoygradg, velgradg, vtend)
 
     error = maxval(dabs(vtend(0:nz, :, :, :) - S))
 
     call print_result_dp('Test inversion (vorticity tendency)', error, atol=2.0e-14)
 
     deallocate(S)
+    deallocate(buoygradg)
 
 end program test_vtend

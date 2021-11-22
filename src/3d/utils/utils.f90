@@ -1,6 +1,7 @@
 module utils
     use constants, only : one
     use field_hdf5
+    use field_utils, only : gradient
     use parcel_hdf5
     use parcel_diagnostics
     use parcel_container, only : n_parcels
@@ -30,6 +31,7 @@ module utils
             double precision              :: velocity(n_parcels, 2)
             double precision              :: strain(n_parcels, 9)
             double precision              :: vorticity(n_parcels, 3)
+            double precision              :: buoygradg(0:nz, 0:ny-1, 0:nx-1, 3)
 
             call par2grid
 
@@ -37,7 +39,9 @@ module utils
             ! this is also needed for the first ls-rk4 substep
             call vor2vel(vortg, velog, velgradg)
 
-            call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
+            call gradient(tbuoyg, buoygradg)
+
+            call vorticity_tendency(vortg, buoygradg, velgradg, vtend)
 
             call grid2par(velocity, vorticity, strain)
 
