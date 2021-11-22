@@ -39,6 +39,9 @@ module constants
     double precision, parameter :: f124  = one / 24.d0
     double precision, parameter :: f1112 = 11.d0 / 12.d0
 
+    double precision, parameter :: rad2deg = 180.0d0 * fpi
+    double precision, parameter :: deg2rad = one / rad2deg
+
     ! maximum number of allowed parcels
     integer, parameter :: max_num_parcels = 2.2e6
 

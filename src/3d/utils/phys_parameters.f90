@@ -3,6 +3,7 @@
 ! =============================================================================
 module phys_parameters
     use constants
+    use options, only : l_coriolis, lat_degrees, ang_vel
     use phys_constants
     implicit none
 
@@ -11,5 +12,27 @@ module phys_parameters
 
     ![] see equation (5) of MPIC paper
     double precision, parameter :: glat = gravity * L_c / (c_p * theta_l0)
+
+    !FIXME comment
+    double precision :: lat_ref
+
+    ! Coriolis frequency
+    double precision :: f_cor
+
+    ! component of the planetary vorticity in the y direction
+    double precision :: ft_cor
+
+    contains
+
+        subroutine update_phys_parameters
+            if (l_coriolis) then
+                lat_ref = lat_degrees * deg2rad
+                f_cor  = two * ang_vel * dsin(lat_ref)
+                ft_cor = two * ang_vel * dcos(lat_ref)
+            else
+                f_cor  = zero
+                ft_cor = zero
+            endif
+        end subroutine update_phys_parameters
 
 end module phys_parameters

@@ -11,7 +11,6 @@ AM_LDFLAGS =						\
 	$(top_builddir)/src/3d/parcels/*.o 		\
 	$(top_builddir)/src/3d/utils/*.o		\
 	$(top_builddir)/src/3d/fields/*.o		\
-	$(top_builddir)/src/3d/tri_inversion.o		\
 	$(top_builddir)/src/3d/inversion/*.o
 
 unittestsdir = $(prefix)/unit-tests
@@ -30,7 +29,9 @@ unittests_PROGRAMS = 				\
 	test_parcel_correction_3d		\
 	test_ellipsoid_merge_1			\
 	test_ellipsoid_merge_2			\
-	test_vor2vel
+	test_vor2vel				\
+	test_vtend				\
+	test_velgradg
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -130,7 +131,21 @@ test_ellipsoid_merge_2_LDADD = 				\
 	$(top_builddir)/src/fft/libepic_fft.la
 
 test_vor2vel_SOURCES = test_vor2vel.f90
-test_vor2vel_LDADD = 				\
+test_vor2vel_LDADD = 					\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
+
+test_vtend_SOURCES = test_vtend.f90
+test_vtend_LDADD = 					\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
+
+test_velgradg_SOURCES = test_velgradg.f90
+test_velgradg_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la	\

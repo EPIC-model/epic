@@ -110,7 +110,7 @@ module parcel_diagnostics
             double precision :: velocity(:, :)
             integer          :: n
             double precision :: b, z, vel(2), vol, zmin
-            double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum
+            double precision :: evals(3), lam, lsum, l2sum, vsum, v2sum
 
             ! reset
             ke = zero
@@ -133,7 +133,7 @@ module parcel_diagnostics
             std_vol = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, vel, vol, b, z, eval, lam, B22) &
+            !$omp do private(n, vel, vol, b, z, evals, lam) &
             !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
             do n = 1, n_parcels
 
@@ -148,9 +148,8 @@ module parcel_diagnostics
                 ! potential energy
                 pe = pe - b * z * vol
 
-                B22 = 1.0 !FIXME get_B22(parcels%B(n, 1), parcels%B(n, 2), vol)
-                eval = 1.0 !FIXME get_eigenvalue(parcels%B(n, 1), parcels%B(n, 2), B22)
-                lam = 1.0 !FIXME get_aspect_ratio(eval, vol)
+                evals = get_eigenvalues(parcels%B(n, :), parcels%volume(n))
+                lam = get_aspect_ratio(evals(1), evals(3))
 
                 lsum = lsum + lam
                 l2sum = l2sum + lam ** 2

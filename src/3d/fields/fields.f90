@@ -19,6 +19,16 @@ module fields
         vortg,     &   ! vorticity vector field
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
+                       ! ordering: du/dx, du/dy,
+                       !                  dv/dy,
+                       !           dw/dx, dw/dy
+                       ! the derivatives dv/dx, du/dz, dv/dz and dw/dz
+                       ! are calculated on the fly with vorticity
+                       ! or the assumption of incompressibility (du/dx + dv/dy + dw/dz = 0):
+                       !    dv/dx = \omegaz + du/dy
+                       !    du/dz = \omegay + dw/dx
+                       !    dv/dz = dw/dy - \omegax
+                       !    dw/dz = - (du/dx + dv/dy)
 
     double precision, allocatable, dimension(:, :, :) :: &
 #ifndef ENABLE_DRY_MODE
@@ -43,7 +53,7 @@ module fields
             endif
 
             allocate(velog(-1:nz+1, 0:ny-1, 0:nx-1, 3))
-            allocate(velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 9))
+            allocate(velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5))
 
             allocate(volg(-1:nz+1, 0:ny-1, 0:nx-1))
 
