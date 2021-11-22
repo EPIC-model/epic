@@ -72,9 +72,8 @@ module rk4_utils
             double precision, intent(in) :: t
             double precision             :: dt
             double precision             :: gmax, bmax, strain(3, 3)
-            double precision             :: dbdx(0:nz, 0:ny-1, 0:nx-1)
-            double precision             :: dbdy(0:nz, 0:ny-1, 0:nx-1)
-            double precision             :: dbdz(0:nz, 0:ny-1, 0:nx-1)
+            double precision             :: gradb(0:nz, 0:ny-1, 0:nx-1)
+            double precision             :: db2(0:nz, 0:ny-1, 0:nx-1)
             integer                      :: ix, iy, iz
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
@@ -129,24 +128,27 @@ module rk4_utils
             !
 
             ! db/dx inner part
-            dbdx(:, :, 1:nx-2) = f12 * dxi(1) * (tbuoyg(0:nz, :, 2:nx-1) - tbuoyg(0:nz, :, 0:nx-3))
+            gradb(:, :, 1:nx-2) = f12 * dxi(1) * (tbuoyg(0:nz, :, 2:nx-1) - tbuoyg(0:nz, :, 0:nx-3))
 
             ! db/dx boundary grid points (make use of periodicity)
-            dbdx(:, :, 0)    = f12 * dxi(1) * (tbuoyg(0:nz, :, 1) - tbuoyg(0:nz, :, nx-1))
-            dbdx(:, :, nx-1) = f12 * dxi(1) * (tbuoyg(0:nz, :, 0) - tbuoyg(0:nz, :, nx-2))
+            gradb(:, :, 0)    = f12 * dxi(1) * (tbuoyg(0:nz, :, 1) - tbuoyg(0:nz, :, nx-1))
+            gradb(:, :, nx-1) = f12 * dxi(1) * (tbuoyg(0:nz, :, 0) - tbuoyg(0:nz, :, nx-2))
+
+            db2 = gradb ** 2
 
             ! db/dy inner part
-            dbdy(:, 1:ny-2, :) = f12 * dxi(2) * (tbuoyg(0:nz, 2:ny-1, :) - tbuoyg(0:nz, 0:ny-3, :))
+            gradb(:, 1:ny-2, :) = f12 * dxi(2) * (tbuoyg(0:nz, 2:ny-1, :) - tbuoyg(0:nz, 0:ny-3, :))
 
             ! db/dy boundary grid points (make use of periodicity)
-            dbdy(:, 0, :)    = f12 * dxi(2) * (tbuoyg(0:nz, 1, :) - tbuoyg(0:nz, ny-1, :))
-            dbdy(:, ny-1, :) = f12 * dxi(2) * (tbuoyg(0:nz, 0, :) - tbuoyg(0:nz, ny-2, :))
+            gradb(:, 0, :)    = f12 * dxi(2) * (tbuoyg(0:nz, 1, :) - tbuoyg(0:nz, ny-1, :))
+            gradb(:, ny-1, :) = f12 * dxi(2) * (tbuoyg(0:nz, 0, :) - tbuoyg(0:nz, ny-2, :))
+
+            db2 = db2 + gradb ** 2
 
             ! db/dz
-            dbdz = f12 * dxi(3) * (tbuoyg(1:nz+1, :, :) - tbuoyg(-1:nz-1, :, :))
+            gradb = f12 * dxi(3) * (tbuoyg(1:nz+1, :, :) - tbuoyg(-1:nz-1, :, :))
 
-
-            bmax = dsqrt(dsqrt(maxval(dbdx ** 2 + dbdy ** 2 + dbdz ** 2)))
+            bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
             dt = min(time%alpha / gmax, time%alpha / bmax)
