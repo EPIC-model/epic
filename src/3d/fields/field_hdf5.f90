@@ -1,5 +1,6 @@
 module field_hdf5
     use options, only : verbose, write_h5_options
+    use parameters, only : lower, extent, nx, ny, nz
     use h5_utils
     use h5_writer
     use fields

@@ -267,26 +267,13 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Compute the gridded vorticity tendency:
-        subroutine vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
+        subroutine vorticity_tendency(vortg, buoygradg, velgradg, vtend)
             double precision, intent(in)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
-            double precision, intent(in)  :: tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1)
-            double precision              :: b(0:nz, 0:ny-1, 0:nx-1)
+            double precision, intent(in)  :: buoygradg(0:nz, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
             double precision, intent(out) :: vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3)
-            double precision              :: bs(0:nz, 0:nx-1, 0:ny-1) ! spectral buoyancy
-            double precision              :: ds(0:nz, 0:nx-1, 0:ny-1) ! spectral derivatives
-            double precision              :: db(0:nz, 0:ny-1, 0:nx-1) ! buoyancy derivatives
 
             call start_timer(vtend_timer)
-
-            ! copy buoyancy
-            b = tbuoyg(0:nz, :, :)
-
-            ! Compute spectral buoyancy (bs):
-            call fftxyp2s(b, bs)
-
-            call diffy(bs, ds)                      ! b_y = db/dy in spectral space
-            call fftxys2p(ds, db)                   ! db = b_y in physical space
 
             !$omp parallel
             !$omp workshare
@@ -294,21 +281,14 @@ module inversion_mod
                                  + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 2) & ! \omegay * du/dy
                                  + (vortg(0:nz, :, :, 3) +  f_cor) *                         &
                                             (vortg(0:nz, :, :, 2) + velgradg(0:nz, :, :, 4)) & ! \omegaz * du/dz
-                                 + db                                                          ! db/dy
-            !$omp end workshare
-            !$omp end parallel
+                                 + buoygradg(:, :, :, 2)                                       ! db/dy
 
-            call diffx(bs, ds)                      ! b_x = db/dx in spectral space
-            call fftxys2p(ds, db)                   ! db = b_x in physical space
-
-            !$omp parallel
-            !$omp workshare
             vtend(0:nz, :, :, 2) =  vortg(0:nz, :, :, 1)           *                         &
                                             (vortg(0:nz, :, :, 3) + velgradg(0:nz, :, :, 2)) & ! \omegax * dv/dx
                                  + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 3) & ! \omegay * dv/dy
                                  + (vortg(0:nz, :, :, 3) + f_cor)  *                         &
                                             (velgradg(0:nz, :, :, 5) - vortg(0:nz, :, :, 1)) & ! \omegaz * dv/dz
-                                 - db                                                          ! dbdx
+                                 - buoygradg(:, :, :, 1)                                       ! dbdx
 
             vtend(0:nz, :, :, 3) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 4) & ! \omegax * dw/dx
                                  + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 5) & ! \omegay * dw/dy

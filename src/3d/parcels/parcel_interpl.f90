@@ -5,12 +5,13 @@
 module parcel_interpl
     use constants, only : zero, one, two, f14
     use timer, only : start_timer, stop_timer
-    use parameters, only : nx, nz, vmin
+    use parameters, only : nx, nz, vmin, dxi
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use fields
+    use field_utils, only : get_position, periodic_index_shift, get_index
     use phys_constants, only : h_0
     use phys_parameters, only : glat, lam_c
     use omp_lib

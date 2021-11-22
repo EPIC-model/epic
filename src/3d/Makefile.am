@@ -10,9 +10,11 @@ epic3d_SOURCES = 				\
 	utils/options.f90			\
 	utils/parameters.f90			\
 	utils/phys_parameters.f90		\
+	inversion/inversion_utils.f90		\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_hdf5.f90			\
+	fields/field_utils.f90			\
 	parcels/parcel_ellipsoid.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
@@ -22,7 +24,6 @@ epic3d_SOURCES = 				\
 	parcels/parcel_diagnostics.f90		\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_init.f90			\
-	inversion/inversion_utils.f90		\
 	inversion/inversion.f90			\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_hdf5.f90			\

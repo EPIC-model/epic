@@ -1,6 +1,6 @@
 module rk4_utils
     use parcel_ellipsoid, only : get_B33
-    use fields, only : velgradg, tbuoyg, vortg
+    use fields, only : velgradg, vortg
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi
     use jacobi, only : jacobi_diagonalise
@@ -67,9 +67,10 @@ module rk4_utils
         ! and buoyancy gradient.
         ! @param[in] t is the time
         ! @returns the time step
-        function get_time_step(t) result(dt)
+        function get_time_step(t, buoygradg) result(dt)
             use options, only : time
             double precision, intent(in) :: t
+            double precision, intent(in) :: buoygradg(0:nz, 0:ny-1, 0:nx-1, 3)
             double precision             :: dt
             double precision             :: gmax, bmax, strain(3, 3)
             double precision             :: gradb(0:nz, 0:ny-1, 0:nx-1)
@@ -124,31 +125,11 @@ module rk4_utils
             enddo
 
             !
-            ! buoyancy gradient (central difference)
+            ! buoyancy gradient
             !
-
-            ! db/dx inner part
-            gradb(:, :, 1:nx-2) = f12 * dxi(1) * (tbuoyg(0:nz, :, 2:nx-1) - tbuoyg(0:nz, :, 0:nx-3))
-
-            ! db/dx boundary grid points (make use of periodicity)
-            gradb(:, :, 0)    = f12 * dxi(1) * (tbuoyg(0:nz, :, 1) - tbuoyg(0:nz, :, nx-1))
-            gradb(:, :, nx-1) = f12 * dxi(1) * (tbuoyg(0:nz, :, 0) - tbuoyg(0:nz, :, nx-2))
-
-            db2 = gradb ** 2
-
-            ! db/dy inner part
-            gradb(:, 1:ny-2, :) = f12 * dxi(2) * (tbuoyg(0:nz, 2:ny-1, :) - tbuoyg(0:nz, 0:ny-3, :))
-
-            ! db/dy boundary grid points (make use of periodicity)
-            gradb(:, 0, :)    = f12 * dxi(2) * (tbuoyg(0:nz, 1, :) - tbuoyg(0:nz, ny-1, :))
-            gradb(:, ny-1, :) = f12 * dxi(2) * (tbuoyg(0:nz, 0, :) - tbuoyg(0:nz, ny-2, :))
-
-            db2 = db2 + gradb ** 2
-
-            ! db/dz
-            gradb = f12 * dxi(3) * (tbuoyg(1:nz+1, :, :) - tbuoyg(-1:nz-1, :, :))
-
-            bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
+            bmax = dsqrt(dsqrt(maxval(buoygradg(:, :, :, 1) ** 2 &
+                                    + buoygradg(:, :, :, 2) ** 2 &
+                                    + buoygradg(:, :, :, 3) ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
             dt = min(time%alpha / gmax, time%alpha / bmax)

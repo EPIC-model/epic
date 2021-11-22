@@ -10,9 +10,10 @@ module ls_rk4
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
+    use field_utils, only : gradient
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calc_parcel_diagnostics
-    use parameters, only : nx, nz
+    use parameters, only : nx, ny, nz
     use timer, only : start_timer, stop_timer, timings
     implicit none
 
@@ -72,6 +73,7 @@ module ls_rk4
         subroutine ls_rk4_step(t)
             double precision, intent(inout) :: t
             double precision                :: dt
+            double precision                :: buoygradg(0:nz, 0:ny-1, 0:nx-1, 3)
 
             call par2grid
 
@@ -79,10 +81,12 @@ module ls_rk4
             ! this is also needed for the first ls-rk4 substep
             call vor2vel(vortg, velog, velgradg)
 
-            call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
+            call gradient(tbuoyg, buoygradg)
+
+            call vorticity_tendency(vortg, buoygradg, velgradg, vtend)
 
             ! update the time step
-            dt = get_time_step(t)
+            dt = get_time_step(t, buoygradg)
 
             call grid2par(delta_pos, delta_vor, strain)
 

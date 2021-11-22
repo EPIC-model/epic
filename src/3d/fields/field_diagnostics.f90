@@ -3,7 +3,7 @@
 ! =============================================================================
 module field_diagnostics
     use constants, only : zero
-    use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
+    use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli, lower, extent
     use options, only : verbose, write_h5_options
     use fields
     use h5_utils

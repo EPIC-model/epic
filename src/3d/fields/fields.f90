@@ -3,7 +3,7 @@
 !     and functions.
 ! =============================================================================
 module fields
-    use parameters, only : dx, dxi, extent, lower, nx, ny, nz
+    use parameters, only : nx, ny, nz
     use constants, only : zero
     implicit none
 
@@ -92,54 +92,5 @@ module fields
             nparg    = zero
             nsparg   = zero
         end subroutine
-
-        ! Get the lower index of the cell the parcel is in.
-        ! This subroutine does not take x periodicity into account.
-        ! @param[in] pos position of the parcel
-        ! @param[out] i lower, zonal cell index
-        ! @param[out] j lower, vertical cell index
-        subroutine get_index(pos, i, j, k)
-            double precision, intent(in)  :: pos(3)
-            integer,          intent(out) :: i, j, k
-            integer                       :: idx(3)
-
-            idx = floor((pos - lower) * dxi)
-
-            i = idx(1)
-            j = idx(2)
-            k = idx(3)
-        end subroutine get_index
-
-
-        ! Do periodic shift of the index
-        ! @param[inout] ii zonal grid point indices
-        ! @param[inout] jj meridional grid point indices
-        subroutine periodic_index_shift(ii, jj)
-            integer, intent(inout) :: ii(:), jj(:)
-
-            ! account for x / y periodicity:
-            ! -1          --> nx-1 / ny-1
-            !  0          --> 0
-            ! nx+1 / ny+1 --> 1
-            ! nx / ny     --> 0
-            ! nx-1 / ny-1 --> nx-1 / ny-1
-            ii = mod(ii + nx, nx)
-            jj = mod(jj + ny, ny)
-
-        end subroutine periodic_index_shift
-
-
-        ! Get the coordinate of a grid point (i, j, k).
-        ! @param[in] i zonal cell index
-        ! @param[in] j meridional cell index
-        ! @param[in] k vertical cell index
-        ! @param[out] pos position of (i, j, k) in the domain
-        subroutine get_position(i, j, k, pos)
-            integer,          intent(in)  :: i, j, k
-            double precision, intent(out) :: pos(3)
-
-            pos = lower + dble((/i, j, k/)) * dx
-
-        end subroutine get_position
 
 end module fields
