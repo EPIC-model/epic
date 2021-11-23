@@ -35,69 +35,72 @@ module mpi_utils
         !
         ! non-blocking send/receive
         !
+        ! Uses 'asynchronous', see e.g. https://www.open-mpi.org/doc/current/man3/MPI_Isend.3.php
+        ! and https://stackoverflow.com/questions/19455051/using-mpi-send-recv-to-handle-chunk-of-multi-dim-array-in-fortran-90 (23 November 2021)
+        !
         subroutine mpi_dscalar_isend(data, dest, tag)
-            double precision, intent(in) :: data
-            integer,          intent(in) :: dest
-            integer,          intent(in) :: tag
-            type(MPI_Request)            :: request
+            double precision, intent(in), asynchronous :: data
+            integer,          intent(in)               :: dest
+            integer,          intent(in)               :: tag
+            type(MPI_Request)                          :: request
             call MPI_Isend(data, 1, MPI_DOUBLE, dest, tag, comm, request, mpi_err)
         end subroutine mpi_dscalar_isend
 
         subroutine mpi_iscalar_isend(data, dest, tag)
-            integer, intent(in) :: data
-            integer, intent(in) :: dest
-            integer, intent(in) :: tag
-            type(MPI_Request)   :: request
+            integer, intent(in), asynchronous :: data
+            integer, intent(in)               :: dest
+            integer, intent(in)               :: tag
+            type(MPI_Request)                 :: request
             call MPI_Isend(data, 1, MPI_INT, dest, tag, comm, request, mpi_err)
         end subroutine mpi_iscalar_isend
 
         subroutine mpi_darray_isend(data, dest, tag)
-            double precision, intent(in) :: data(:)
-            integer,          intent(in) :: dest
-            integer,          intent(in) :: tag
-            type(MPI_Request)            :: request
+            double precision, intent(in), asynchronous :: data(:)
+            integer,          intent(in)               :: dest
+            integer,          intent(in)               :: tag
+            type(MPI_Request)                          :: request
             call MPI_Isend(data, size(data), MPI_DOUBLE, dest, tag, comm, request, mpi_err)
         end subroutine mpi_darray_isend
 
         subroutine mpi_iarray_isend(data, dest, tag)
-            integer, intent(in) :: data(:)
-            integer, intent(in) :: dest
-            integer, intent(in) :: tag
-            type(MPI_Request)   :: request
+            integer, intent(in), asynchronous :: data(:)
+            integer, intent(in)               :: dest
+            integer, intent(in)               :: tag
+            type(MPI_Request)                 :: request
             call MPI_Isend(data, size(data), MPI_INT, dest, tag, comm, request, mpi_err)
         end subroutine mpi_iarray_isend
 
 
 
         subroutine mpi_dscalar_irecv(data, source, tag)
-            double precision, intent(out) :: data
-            integer,          intent(in)  :: source
-            integer,          intent(in)  :: tag
-            type(MPI_Request)             :: request
+            double precision, intent(out), asynchronous :: data
+            integer,          intent(in)                :: source
+            integer,          intent(in)                :: tag
+            type(MPI_Request)                           :: request
             call MPI_Irecv(data, 1, MPI_DOUBLE, source, tag, comm, request, mpi_err)
         end subroutine mpi_dscalar_irecv
 
         subroutine mpi_iscalar_irecv(data, source, tag)
-            integer, intent(out) :: data
-            integer, intent(in)  :: source
-            integer, intent(in)  :: tag
-            type(MPI_Request)    :: request
+            integer, intent(out), asynchronous :: data
+            integer, intent(in)                :: source
+            integer, intent(in)                :: tag
+            type(MPI_Request)                  :: request
             call MPI_Irecv(data, 1, MPI_INT, source, tag, comm, request, mpi_err)
         end subroutine mpi_iscalar_irecv
 
         subroutine mpi_darray_irecv(data, source, tag)
-            double precision, intent(out) :: data(:)
-            integer,          intent(in)  :: source
-            integer,          intent(in)  :: tag
-            type(MPI_Request)             :: request
+            double precision, intent(out), asynchronous :: data(:)
+            integer,          intent(in)                :: source
+            integer,          intent(in)                :: tag
+            type(MPI_Request)                           :: request
             call MPI_Irecv(data, size(data), MPI_DOUBLE, source, tag, comm, request, mpi_err)
         end subroutine mpi_darray_irecv
 
         subroutine mpi_iarray_irecv(data, source, tag)
-            integer, intent(out) :: data(:)
-            integer, intent(in)  :: source
-            integer, intent(in)  :: tag
-            type(MPI_Request)    :: request
+            integer, intent(out), asynchronous :: data(:)
+            integer, intent(in)                :: source
+            integer, intent(in)                :: tag
+            type(MPI_Request)                  :: request
             call MPI_Irecv(data, size(data), MPI_INT, source, tag, comm, request, mpi_err)
         end subroutine mpi_iarray_irecv
 
