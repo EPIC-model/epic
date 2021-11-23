@@ -18,6 +18,7 @@ AC_CONFIG_FILES([
     src/Makefile
     src/utils/Makefile
     src/hdf5/Makefile
+    src/mpi/Makefile
     src/fft/Makefile
     src/2d/Makefile
     src/3d/Makefile
@@ -202,6 +203,30 @@ AC_LINK_IFELSE(
   [hdf5_found=yes],
   [hdf5_found=no AC_MSG_ERROR([Cannot find hdf5 Fortran library])])
 AC_MSG_RESULT([$hdf5_found])
+
+
+AC_ARG_WITH([mpi],
+            [AS_HELP_STRING([--with-mpi=<path>], [path to mpi library @<:@default=$MPI_DIR@:>@])],
+            [MPI_DIR=$withval],
+            [])
+
+if test -n "${MPI_DIR}"; then
+    FCFLAGS="$FCFLAGS -I$MPI_DIR/include -I$MPI_DIR/lib"
+    LDFLAGS="$LDFLAGS -L$MPI_DIR/lib"
+    LIBS="$LIBS -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
+fi
+
+AC_MSG_CHECKING([for mpi Fortran library])
+AC_LINK_IFELSE(
+  [AC_LANG_PROGRAM([], [
+      use mpi
+      implicit none
+      integer :: ierr
+      call MPI_INIT(ierr)
+      call MPI_FINALIZE(ierr)])],
+  [mpi_found=yes],
+  [mpi_found=no AC_MSG_ERROR([Cannot find mpi Fortran library])])
+AC_MSG_RESULT([$mpi_found])
 
 #######################################################################################
 ##
