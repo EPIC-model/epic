@@ -9,7 +9,7 @@
 !  The subroutine lapinv0 should return the same function multiplied by
 !  -1/(k^2 + l^2 + m^2).
 ! =============================================================================
-program test_lapinv0
+program test_lapinv0_1
     use unit_test
     use constants, only : zero, one, two, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
@@ -70,4 +70,4 @@ program test_lapinv0
     deallocate(fp)
     deallocate(ref_sol)
 
-end program test_lapinv0
+end program test_lapinv0_1
