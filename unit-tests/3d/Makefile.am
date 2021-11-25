@@ -33,7 +33,8 @@ unittests_PROGRAMS = 				\
 	test_vor2vel_2				\
 	test_vtend				\
 	test_velgradg				\
-	test_lapinv0				\
+	test_lapinv0_1				\
+	test_lapinv0_2				\
 	test_diffz0
 
 dataroot_DATA =		\
@@ -161,8 +162,15 @@ test_velgradg_LDADD = 					\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
 	$(top_builddir)/src/fft/libepic_fft.la
 
-test_lapinv0_SOURCES = test_lapinv0.f90
-test_lapinv0_LDADD = 					\
+test_lapinv0_1_SOURCES = test_lapinv0_1.f90
+test_lapinv0_1_LDADD = 					\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
+
+test_lapinv0_2_SOURCES = test_lapinv0_2.f90
+test_lapinv0_2_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
