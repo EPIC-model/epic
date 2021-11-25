@@ -11,7 +11,7 @@ Development of the 3D model (see [#230](https://github.com/matt-frey/epic/issues
 * add 3D vor2vel (see [#247](https://github.com/matt-frey/epic/pull/247))
 * add 3D vorticity tendency calculation (see [#248](https://github.com/matt-frey/epic/pull/248) and [#249](https://github.com/matt-frey/epic/pull/249))
 * add 3D adaptive time step estimate (see [#250](https://github.com/matt-frey/epic/pull/250))
-* add unit tests (see [#242](https://github.com/matt-frey/epic/pull/242)), [#246](https://github.com/matt-frey/epic/pull/246))
+* add unit tests (see [#242](https://github.com/matt-frey/epic/pull/242), [#246](https://github.com/matt-frey/epic/pull/246))
 
 ## EPIC version 0.10.2
 * [fix import in README](https://github.com/matt-frey/epic/commit/fa36d763f9ee9d16c60b9bca58a5bc60e5464105)
