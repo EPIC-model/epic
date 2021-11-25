@@ -13,12 +13,12 @@ program test_lapinv0
     use unit_test
     use constants, only : zero, one, two, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use inversion_utils, only : init_fft
+    use inversion_utils, only : init_fft, fftxyp2s, fftxys2p
     use inversion_mod, only : lapinv0
     implicit none
 
     double precision              :: error
-    double precision, allocatable :: fs(:, :, :), ref_sol(:, :, :)
+    double precision, allocatable :: fp(:, :, :), fs(:, :, :), ref_sol(:, :, :)
     integer                       :: ix, iy, iz
     double precision              :: x, y, z, k, l, m, prefactor
 
@@ -29,7 +29,8 @@ program test_lapinv0
     extent =  (/pi, twopi, two * twopi/)
 
     allocate(fs(0:nz, nx, ny))
-    allocate(ref_sol(0:nz, nx, ny))
+    allocate(fp(0:nz, ny, nx))
+    allocate(ref_sol(0:nz, ny, nx))
 
     call update_parameters
 
@@ -46,22 +47,27 @@ program test_lapinv0
             do iz = 0, nz
                 z = lower(3) + iz * dx(3)
 
-                fs(iz, ix, iy) = dcos(k * x) * dsin(l * y) * dsin(m * z)
-                ref_sol(iz, ix, iy) = prefactor * fs(iz, ix, iy)
+                fp(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dsin(m * z)
 
+                ref_sol(iz, iy, ix) = prefactor * fp(iz, iy, ix)
             enddo
         enddo
     enddo
 
     call init_fft
 
+    call fftxyp2s(fp, fs)
+
     call lapinv0(fs)
 
-    error = maxval(dabs(fs - ref_sol))
+    call fftxys2p(fs, fp)
 
-    call print_result_dp('Test inversion (lapinv0)', error, atol=2.0e-14)
+    error = maxval(dabs(fp - ref_sol))
+
+    call print_result_dp('Test inversion (lapinv0)', error, atol=4.0e-12)
 
     deallocate(fs)
+    deallocate(fp)
     deallocate(ref_sol)
 
 end program test_lapinv0
