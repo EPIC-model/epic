@@ -32,7 +32,8 @@ unittests_PROGRAMS = 				\
 	test_vor2vel				\
 	test_vor2vel_2				\
 	test_vtend				\
-	test_velgradg
+	test_velgradg				\
+	test_lapinv0
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -154,6 +155,13 @@ test_vtend_LDADD = 					\
 
 test_velgradg_SOURCES = test_velgradg.f90
 test_velgradg_LDADD = 					\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
+
+test_lapinv0_SOURCES = test_lapinv0.f90
+test_lapinv0_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
