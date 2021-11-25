@@ -131,8 +131,8 @@ module inversion_mod
             enddo
 
             ! remove the mean value to have zero net momentum
-            uavg = sum(ubar(1:nz-1) + f12 * ubar(nz)) / dble(nz + 1)
-            vavg = sum(vbar(1:nz-1) + f12 * vbar(nz)) / dble(nz + 1)
+            uavg = sum(ubar(1:nz-1) + f12 * ubar(nz)) / dble(nz)
+            vavg = sum(vbar(1:nz-1) + f12 * vbar(nz)) / dble(nz)
             do iz = 0, nz
                 ubar(iz) = ubar(iz) - uavg
                 vbar(iz) = vbar(iz) - vavg
