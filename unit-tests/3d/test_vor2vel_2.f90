@@ -38,7 +38,7 @@ program test_vor2vel_2
     nx = 32
     ny = 32
     nz = 32
-    lower  = (/-pi, -pi, -pi/)
+    lower  = (/-pi, -pi, -f12 * pi/)
     extent =  (/twopi, twopi, twopi/)
 
     AA =  one
@@ -92,7 +92,9 @@ program test_vor2vel_2
 
     call vor2vel(vortg, velog, velgradg)
 
-!     velog(0:nz, :, :, :) = dabs(velog(0:nz, :, :, :) - velog_ref)
+    error = maxval(dabs(velog(0:nz, :, :, :) - velog_ref))
+
+    velog(0:nz, :, :, :) = dabs(velog(0:nz, :, :, :) - velog_ref)
 !
 !     do ix = 0, nx-1
 !         x = lower(1) + ix * dx(1)
@@ -107,9 +109,8 @@ program test_vor2vel_2
 !     stop
 
 
-    error = maxval(dabs(velog(0:nz, :, :, :) - velog_ref))
 
-    print *, error
+    print *, error, maxval(velog(0:nz, :, :, 1)), maxval(velog(0:nz, :, :, 2)), maxval(velog(0:nz, :, :, 3))
 
     call print_result_dp('Test inversion (vorticity)', error, atol=2.0e-14)
 
