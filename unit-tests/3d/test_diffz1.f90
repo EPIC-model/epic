@@ -61,7 +61,7 @@ program test_diffz1
 
     error = maxval(dabs(ds - ref_sol))
 
-    call print_result_dp('Test inversion (diffz1)', error, atol=6.0e-7)
+    call print_result_dp('Test inversion (diffz1)', error, atol=1.0e-7)
 
     deallocate(fs)
     deallocate(ds)
