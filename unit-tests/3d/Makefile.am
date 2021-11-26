@@ -35,7 +35,8 @@ unittests_PROGRAMS = 				\
 	test_velgradg				\
 	test_lapinv0_1				\
 	test_lapinv0_2				\
-	test_diffz0
+	test_diffz0				\
+	test_diffz1
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -178,6 +179,13 @@ test_lapinv0_2_LDADD = 					\
 
 test_diffz0_SOURCES = test_diffz0.f90
 test_diffz0_LDADD = 					\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
+
+test_diffz1_SOURCES = test_diffz1.f90
+test_diffz1_LDADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
