@@ -117,10 +117,6 @@ module inversion_mod
             astop = as(nz, :, :)
             bstop = bs(nz, :, :)
 
-            !Return corrected vorticity to physical space:
-            call fftxys2p(ds, vortg(0:nz, :, :, 1))
-            call fftxys2p(es, vortg(0:nz, :, :, 2))
-            call fftxys2p(fs, vortg(0:nz, :, :, 3))
 
             !Define horizontally-averaged flow by integrating horizontal vorticity:
             ubar(0) = zero
@@ -129,6 +125,11 @@ module inversion_mod
                 ubar(iz+1) = ubar(iz) + dz2 * (es(iz, 1, 1) + es(iz+1, 1, 1))
                 vbar(iz+1) = vbar(iz) - dz2 * (ds(iz, 1, 1) + ds(iz+1, 1, 1))
             enddo
+
+            !Return corrected vorticity to physical space:
+            call fftxys2p(ds, vortg(0:nz, :, :, 1))
+            call fftxys2p(es, vortg(0:nz, :, :, 2))
+            call fftxys2p(fs, vortg(0:nz, :, :, 3))
 
             ! remove the mean value to have zero net momentum
             uavg = sum(ubar(1:nz-1) + f12 * ubar(nz)) / dble(nz)
@@ -165,7 +166,7 @@ module inversion_mod
             !$omp end parallel
 
             !Get u in physical space:
-            call fftxys2p(fs, velog(0:nz, :, :, 1))
+            call fftxys2p(svelog(0:nz, :, :, 1), velog(0:nz, :, :, 1))
 
             !------------------------------------------------------------
             !Compute y velocity component, v = C_x - A_z:
@@ -188,7 +189,7 @@ module inversion_mod
             !$omp end parallel
 
             !Get v in physical space:
-            call fftxys2p(fs, velog(0:nz, :, :, 2))
+            call fftxys2p(svelog(0:nz, :, :, 2), velog(0:nz, :, :, 2))
 
             !------------------------------------------------------------
             !Compute z velocity component, w = A_y - B_x:
@@ -209,7 +210,7 @@ module inversion_mod
             !$omp end parallel
 
             !Get w in physical space:
-            call fftxys2p(fs, velog(0:nz, :, :, 3))
+            call fftxys2p(svelog(0:nz, :, :, 3), velog(0:nz, :, :, 3))
 
             ! compute the velocity gradient tensor
             call vel2vgrad(vortg, svelog, velgradg)
