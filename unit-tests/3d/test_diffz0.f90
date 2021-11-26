@@ -1,7 +1,7 @@
 ! =============================================================================
 !                       Test subroutine diffz0
 !
-!  This unit test checks the subroutine diffz0 using the the
+!  This unit test checks the subroutine diffz0 using the
 !  function:
 !               cos(k * x) * sin(l * y) * sin(m * z)
 !  where k = 2pi/L_x, l = 2pi/L_y and m = pi/L_z and where x, y and z all start
