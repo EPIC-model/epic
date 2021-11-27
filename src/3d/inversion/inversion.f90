@@ -1,6 +1,6 @@
 module inversion_mod
     use inversion_utils
-    use parameters, only : nx, ny, nz
+    use parameters, only : nx, ny, nz, dx, lower
     use phys_parameters, only : ft_cor, f_cor
     use constants, only : zero, two, f12
     use timer, only : start_timer, stop_timer
@@ -22,13 +22,17 @@ module inversion_mod
             double precision, intent(out)   :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out)   :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
             double precision                :: svelog(0:nz, 0:nx-1, 0:ny-1, 3)
-            double precision                :: as(0:nz, nx, ny), bs(0:nz, nx, ny), cs(-1:nz+1, nx, ny)
-            double precision                :: ds(0:nz, nx, ny), es(0:nz, nx, ny), fs(0:nz, nx, ny)
-            double precision                :: astop(nx, ny), bstop(nx, ny)
-            double precision                :: asbot(nx, ny), bsbot(nx, ny)
+            double precision                :: as(0:nz, 0:nx-1, 0:ny-1) &
+                                             , bs(0:nz, 0:nx-1, 0:ny-1) &
+                                             , cs(0:nz, 0:nx-1, 0:ny-1)
+            double precision                :: ds(0:nz, 0:nx-1, 0:ny-1) &
+                                             , es(0:nz, 0:nx-1, 0:ny-1) &
+                                             , fs(0:nz, 0:nx-1, 0:ny-1)
+            double precision                :: astop(0:nx-1, 0:ny-1), bstop(0:nx-1, 0:ny-1)
+            double precision                :: asbot(0:nx-1, 0:ny-1), bsbot(0:nx-1, 0:ny-1)
             double precision                :: ubar(0:nz), vbar(0:nz)
-            double precision                :: uavg, vavg
-            integer                         :: iz
+            double precision                :: uavg, vavg, x, y, z
+            integer                         :: iz, ix, iy
 
             call start_timer(vor2vel_timer)
 
@@ -36,22 +40,16 @@ module inversion_mod
             !Convert vorticity to spectral space as (as, bs, cs):
             call fftxyp2s(vortg(0:nz, :, :, 1), as)
             call fftxyp2s(vortg(0:nz, :, :, 2), bs)
-            call fftxyp2s(vortg(-1:nz+1, :, :, 3), cs)
+            call fftxyp2s(vortg(0:nz, :, :, 3), cs)
 
             !Add -grad(lambda) where Laplace(lambda) = div(vortg) to
             !enforce the solenoidal condition on the vorticity field:
             call diffx(as, ds)
             call diffy(bs, es)
 
-            !For the vertical parcel vorticity, use 2nd-order accurate
-            !differencing with extrapolation at the boundaries:
-            !$omp parallel shared(fs, cs) private(iz)
-            !$omp do
-            do iz = 0, nz
-                fs(iz, :, :) = hdzi * (cs(iz+1, :, :) - cs(iz-1, :, :))
-            enddo
-            !$omp end do
-            !$omp end parallel
+            !For the vertical parcel vorticity, use 4th-order compact
+            !differencing:
+            call diffz1(cs, fs)
 
             !Form div(vortg):
             !$omp parallel
@@ -61,7 +59,7 @@ module inversion_mod
             !$omp end parallel
 
             !Remove horizontally-averaged part (plays no role):
-            fs(:, 1, 1) = zero
+            fs(:, 0, 0) = zero
 
             !Invert Lap(lambda) = div(vortg) assuming dlambda/dz = 0 at the
             !boundaries (store solution lambda in fs):
@@ -94,11 +92,12 @@ module inversion_mod
             call diffz1(fs, ds)
             !$omp parallel
             !$omp workshare
-            cs(0:nz, :, :) = cs(0:nz, :, :) - ds
+            cs = cs - ds
             !$omp end workshare
             !$omp end parallel
             !Ensure horizontal average of vertical vorticity is zero:
-            cs(0:nz, 1, 1) = zero
+            cs(:, 0, 0) = zero
+
 
             !Compute spectrally filtered vorticity in physical space:
             !$omp parallel shared(ds, es, fs, as, bs, cs, filt, nz) private(iz) default(none)
@@ -117,19 +116,14 @@ module inversion_mod
             astop = as(nz, :, :)
             bstop = bs(nz, :, :)
 
-
             !Define horizontally-averaged flow by integrating horizontal vorticity:
             ubar(0) = zero
             vbar(0) = zero
             do iz = 0, nz-1
-                ubar(iz+1) = ubar(iz) + dz2 * (es(iz, 1, 1) + es(iz+1, 1, 1))
-                vbar(iz+1) = vbar(iz) - dz2 * (ds(iz, 1, 1) + ds(iz+1, 1, 1))
+                ubar(iz+1) = ubar(iz) + dz2 * (es(iz, 0, 0) + es(iz+1, 0, 0))
+                vbar(iz+1) = vbar(iz) - dz2 * (ds(iz, 0, 0) + ds(iz+1, 0, 0))
             enddo
 
-            !Return corrected vorticity to physical space:
-            call fftxys2p(ds, vortg(0:nz, :, :, 1))
-            call fftxys2p(es, vortg(0:nz, :, :, 2))
-            call fftxys2p(fs, vortg(0:nz, :, :, 3))
 
             ! remove the mean value to have zero net momentum
             uavg = sum(ubar(1:nz-1) + f12 * ubar(nz)) / dble(nz)
@@ -139,15 +133,20 @@ module inversion_mod
                 vbar(iz) = vbar(iz) - vavg
             enddo
 
+            !Return corrected vorticity to physical space:
+            call fftxys2p(ds, vortg(0:nz, :, :, 1))
+            call fftxys2p(es, vortg(0:nz, :, :, 2))
+            call fftxys2p(fs, vortg(0:nz, :, :, 3))
+
             !-----------------------------------------------------------------
             !Invert vorticity to find vector potential (A, B, C) -> (as, bs, cs):
             call lapinv0(as)
             call lapinv0(bs)
-            call lapinv1(cs(0:nz, :, :))
+            call lapinv1(cs)
 
             !------------------------------------------------------------
             !Compute x velocity component, u = B_z - C_y:
-            call diffy(cs(0:nz, :, :), ds)
+            call diffy(cs, ds)
             call diffz0(bs, es, bsbot, bstop)
             !bsbot & bstop contain spectral y vorticity component at z_min and z_max
             !$omp parallel
@@ -156,7 +155,7 @@ module inversion_mod
             !$omp end workshare
             !$omp end parallel
             !Add horizontally-averaged flow:
-            fs(:, 1, 1) = ubar
+            fs(:, 0, 0) = ubar
             !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
             !$omp do
             do iz = 0, nz
@@ -165,12 +164,9 @@ module inversion_mod
             !$omp end do
             !$omp end parallel
 
-            !Get u in physical space:
-            call fftxys2p(svelog(0:nz, :, :, 1), velog(0:nz, :, :, 1))
-
             !------------------------------------------------------------
             !Compute y velocity component, v = C_x - A_z:
-            call diffx(cs(0:nz, :, :), ds)
+            call diffx(cs, ds)
             call diffz0(as, es, asbot, astop)
             !asbot & astop contain spectral x vorticity component at z_min and z_max
             !$omp parallel
@@ -179,7 +175,7 @@ module inversion_mod
             !$omp end workshare
             !$omp end parallel
             !Add horizontally-averaged flow:
-            fs(:, 1, 1) = vbar
+            fs(:, 0, 0) = vbar
             !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
             !$omp do
             do iz = 0, nz
@@ -188,8 +184,6 @@ module inversion_mod
             !$omp end do
             !$omp end parallel
 
-            !Get v in physical space:
-            call fftxys2p(svelog(0:nz, :, :, 2), velog(0:nz, :, :, 2))
 
             !------------------------------------------------------------
             !Compute z velocity component, w = A_y - B_x:
@@ -209,11 +203,17 @@ module inversion_mod
             !$omp end do
             !$omp end parallel
 
-            !Get w in physical space:
-            call fftxys2p(svelog(0:nz, :, :, 3), velog(0:nz, :, :, 3))
-
             ! compute the velocity gradient tensor
             call vel2vgrad(vortg, svelog, velgradg)
+
+            !Get u in physical space:
+            call fftxys2p(svelog(0:nz, :, :, 1), velog(0:nz, :, :, 1))
+
+            !Get v in physical space:
+            call fftxys2p(svelog(0:nz, :, :, 2), velog(0:nz, :, :, 2))
+
+            !Get w in physical space:
+            call fftxys2p(svelog(0:nz, :, :, 3), velog(0:nz, :, :, 3))
 
             call stop_timer(vor2vel_timer)
 

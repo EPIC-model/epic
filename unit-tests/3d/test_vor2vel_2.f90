@@ -28,16 +28,16 @@ program test_vor2vel_2
     implicit none
 
     double precision              :: error
-    double precision, allocatable :: velog_ref(:, :, :, :), ozm(:, :), svelog(:, :, :, :)
+    double precision, allocatable :: velog_ref(:, :, :, :)
     integer                       :: ix, iy, iz
     double precision              :: x, y, z, AA, BB, CC, a, b, c
 
     call register_timer('vorticity', vor2vel_timer)
 
-
     nx = 32
     ny = 32
     nz = 32
+
     lower  = (/-pi, -pi, -f12 * pi/)
     extent =  (/twopi, twopi, twopi/)
 
@@ -47,12 +47,20 @@ program test_vor2vel_2
     b  =  one
     CC =  one
     c  = -one
+!
+!     AA=1
+!     BB=1
+!     CC=-2
+!     a=1
+!     b=1
+!     c=1
 
-    allocate(velog_ref(0:nz, 0:ny-1, 0:nx-1, 3))
-    allocate(ozm(0:ny-1, 0:nx-1))
-!     allocate(svelog(0:nz, 0:nx-1, 0:ny-1, 3))
+    allocate(velog_ref(-1:nz+1, 0:ny-1, 0:nx-1, 3))
 
     call update_parameters
+
+!     print *, dx(3)
+!     stop
 
     call field_alloc
 
@@ -60,7 +68,7 @@ program test_vor2vel_2
         x = lower(1) + ix * dx(1)
         do iy = 0, ny-1
             y = lower(2) + iy * dx(2)
-            do iz = 0, nz
+            do iz = -1, nz+1
                 z = lower(3) + iz * dx(3)
 
                 ! vorticity
@@ -73,48 +81,22 @@ program test_vor2vel_2
                 velog_ref(iz, iy, ix, 2) = BB * dsin(a * x) * dcos(b * y) * dsin(c * z)
                 velog_ref(iz, iy, ix, 3) = CC * dsin(a * x) * dsin(b * y) * dcos(c * z)
 
-!                 print *, x, y, z, vortg(iz, iy, ix, 1), vortg(iz, iy, ix, 2), vortg(iz, iy, ix, 3)
-!                 print *, x, y, z, velog_ref(iz, iy, ix, 1), velog_ref(iz, iy, ix, 2), velog_ref(iz, iy, ix, 3)
             enddo
         enddo
     enddo
 
-!     stop
-
     call init_fft
-
-!     ozm = (f12 * (vortg(-1, :, :, 3) + vortg(nz+1, :, :, 3)) &
-!         + sum(vortg(1:nz, :, :, 3))) / dble(nz+1)
-!
-!     do iz = -1, nz+1
-!         vortg(iz, :, :, 3) = vortg(iz, :, :, 3) - ozm
-!     enddo
 
     call vor2vel(vortg, velog, velgradg)
 
-    error = maxval(dabs(velog(0:nz, :, :, :) - velog_ref))
+    velog_ref(0:nz, :, :, :) = dabs(velog_ref(0:nz, :, :, :) - velog(0:nz, :, :, :))
 
-    velog(0:nz, :, :, :) = dabs(velog(0:nz, :, :, :) - velog_ref)
-!
-!     do ix = 0, nx-1
-!         x = lower(1) + ix * dx(1)
-!         do iy = 0, ny-1
-!             y = lower(2) + iy * dx(2)
-!             do iz = 0, nz
-!                 z = lower(3) + iz * dx(3)
-!                 print *, x, y, z, velog(iz, iy, ix, 1), velog(iz, iy, ix, 2), velog(iz, iy, ix, 3)
-!             enddo
-!         enddo
-!     enddo
-!     stop
-
-
-
-    print *, error, maxval(velog(0:nz, :, :, 1)), maxval(velog(0:nz, :, :, 2)), maxval(velog(0:nz, :, :, 3))
+    print *, maxval(velog_ref(0:nz, :, :, 1)), &
+             maxval(velog_ref(0:nz, :, :, 2)), &
+             maxval(velog_ref(0:nz, :, :, 3))
 
     call print_result_dp('Test inversion (vorticity)', error, atol=2.0e-14)
 
     deallocate(velog_ref)
-    deallocate(ozm)
 
 end program test_vor2vel_2
