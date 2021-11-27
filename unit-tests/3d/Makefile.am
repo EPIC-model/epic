@@ -13,6 +13,16 @@ AM_LDFLAGS =						\
 	$(top_builddir)/src/3d/fields/*.o		\
 	$(top_builddir)/src/3d/inversion/*.o
 
+# 21 November 2021
+# gnu.org/software/automake/manual/html_node/Libtool-Convenience-Libraries.html
+noinst_LTLIBRARIES = libcombi.la
+libcombi_la_SOURCES =
+libcombi_la_LIBADD = 					\
+	$(top_builddir)/unit-tests/libunit_test.la	\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
+	$(top_builddir)/src/fft/libepic_fft.la
+
 unittestsdir = $(prefix)/unit-tests
 
 unittests_PROGRAMS = 				\
@@ -29,6 +39,9 @@ unittests_PROGRAMS = 				\
 	test_parcel_correction_3d		\
 	test_ellipsoid_merge_1			\
 	test_ellipsoid_merge_2			\
+	test_grid2par				\
+	test_ellipsoid_reflection		\
+	test_free_slip_3d			\
 	test_vor2vel				\
 	test_vtend				\
 	test_velgradg				\
@@ -44,142 +57,72 @@ dataroot_DATA =		\
 	B.asc
 
 test_jacobi_1_SOURCES = test_jacobi_1.f90
-test_jacobi_1_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_jacobi_1_LDADD = libcombi.la
 
 test_jacobi_2_SOURCES = test_jacobi_2.f90
-test_jacobi_2_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_jacobi_2_LDADD = libcombi.la
 
 test_jacobi_3_SOURCES = test_jacobi_3.f90
-test_jacobi_3_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_jacobi_3_LDADD = libcombi.la
 
 test_ellipsoid_split_SOURCES = test_ellipsoid_split.f90
-test_ellipsoid_split_LDADD = 				\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_ellipsoid_split_LDADD = libcombi.la
 
 test_parcel_init_3d_SOURCES = test_parcel_init_3d.f90
-test_parcel_init_3d_LDADD = 				\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_parcel_init_3d_LDADD = libcombi.la
 
 test_fft_3d_SOURCES = test_fft_3d.f90
-test_fft_3d_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_fft_3d_LDADD = libcombi.la
 
 test_fft_2_3d_SOURCES = test_fft_2_3d.f90
-test_fft_2_3d_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_fft_2_3d_LDADD = libcombi.la
 
 test_trilinear_SOURCES = test_trilinear.f90
-test_trilinear_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_trilinear_LDADD = libcombi.la
 
 test_laplace_correction_3d_SOURCES = test_laplace_correction_3d.f90
-test_laplace_correction_3d_LDADD = 			\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_laplace_correction_3d_LDADD = libcombi.la
 
 test_gradient_correction_3d_SOURCES = test_gradient_correction_3d.f90
-test_gradient_correction_3d_LDADD = 			\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_gradient_correction_3d_LDADD = libcombi.la
 
 test_parcel_correction_3d_SOURCES = test_parcel_correction_3d.f90
-test_parcel_correction_3d_LDADD = 			\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_parcel_correction_3d_LDADD = libcombi.la
 
 test_ellipsoid_merge_1_SOURCES = test_ellipsoid_merge_1.f90
-test_ellipsoid_merge_1_LDADD = 				\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_ellipsoid_merge_1_LDADD = libcombi.la
 
 test_ellipsoid_merge_2_SOURCES = test_ellipsoid_merge_2.f90
-test_ellipsoid_merge_2_LDADD = 				\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_ellipsoid_merge_2_LDADD = libcombi.la
+
+test_ellipsoid_reflection_SOURCES = test_ellipsoid_reflection.f90
+test_ellipsoid_reflection_LDADD = libcombi.la
+
+test_grid2par_SOURCES = test_grid2par.f90
+test_grid2par_LDADD = libcombi.la
+
+test_free_slip_3d_SOURCES = test_free_slip_3d.f90
+test_free_slip_3d_LDADD = libcombi.la
 
 test_vor2vel_SOURCES = test_vor2vel.f90
-test_vor2vel_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_vor2vel_LDADD = libcombi.la
 
 test_vtend_SOURCES = test_vtend.f90
-test_vtend_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_vtend_LDADD = libcombi.la
 
 test_velgradg_SOURCES = test_velgradg.f90
-test_velgradg_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_velgradg_LDADD = libcombi.la
 
 test_lapinv0_1_SOURCES = test_lapinv0_1.f90
-test_lapinv0_1_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_lapinv0_1_LDADD = libcombi.la
 
 test_lapinv0_2_SOURCES = test_lapinv0_2.f90
-test_lapinv0_2_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_lapinv0_2_LDADD = libcombi.la
 
 test_diffz0_SOURCES = test_diffz0.f90
-test_diffz0_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_diffz0_LDADD = libcombi.la
 
 test_diffz1_SOURCES = test_diffz1.f90
-test_diffz1_LDADD = 					\
-	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
-	$(top_builddir)/src/fft/libepic_fft.la
+test_diffz1_LDADD = libcombi.la
+
 endif
