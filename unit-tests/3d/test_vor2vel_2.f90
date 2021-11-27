@@ -1,21 +1,15 @@
 ! =============================================================================
-!                       Test the vorticity inversion !FIXME This test is now the TG flow
+!                       Test the vorticity inversion
 !
 !  This unit test checks the calculation of the velocity using the
-!  ABC flow:
-!               u = A * sin(z) + C * cos(y)
-!               v = B * sin(x) + A * cos(z)
-!               w = C * sin(y) + B * cos(x)
+!  Taylor-Green flow:
+!               u = A * cos(a * x) * sin(b * y) * sin(c * z)
+!               v = B * sin(a * x) * cos(b * y) * sin(c * z)
+!               w = C * sin(a * x) * sin(b * y) * cos(c * z)
 !  The vorticity of this flow is
-!               xi = A * sin(z) + C * cos(y)
-!              eta = B * sin(x) + A * cos(z)
-!             zeta = C * sin(y) + B * cos(x)
-!  hence, the cross-product of vorticity and velocity (i.e. Lamb vector)
-!  is zero.
-!
-!  Reference:
-!  16 November 2021
-!  https://en.wikipedia.org/wiki/Arnold%E2%80%93Beltrami%E2%80%93Childress_flow
+!               xi = (b * C - c * B) * sin(a * x) * cos(b * y) * cos(c * z)
+!              eta = (c * A - a * C) * cos(a * x) * sin(b * y) * cos(c * z)
+!             zeta = (a * B - b * A) * cos(a * x) * cos(b * y) * sin(c * z)
 ! =============================================================================
 program test_vor2vel_2
     use unit_test
@@ -34,33 +28,23 @@ program test_vor2vel_2
 
     call register_timer('vorticity', vor2vel_timer)
 
-    nx = 32
-    ny = 32
-    nz = 32
+    nx = 64
+    ny = 64
+    nz = 64
 
     lower  = (/-pi, -pi, -f12 * pi/)
     extent =  (/twopi, twopi, twopi/)
 
-    AA =  one
-    a  =  two
-    BB = -one
-    b  =  one
-    CC =  one
-    c  = -one
-!
-!     AA=1
-!     BB=1
-!     CC=-2
-!     a=1
-!     b=1
-!     c=1
+    AA = one
+    BB = one
+    CC = -two
+    a = one
+    b = one
+    c = one
 
     allocate(velog_ref(-1:nz+1, 0:ny-1, 0:nx-1, 3))
 
     call update_parameters
-
-!     print *, dx(3)
-!     stop
 
     call field_alloc
 
@@ -89,13 +73,9 @@ program test_vor2vel_2
 
     call vor2vel(vortg, velog, velgradg)
 
-    velog_ref(0:nz, :, :, :) = dabs(velog_ref(0:nz, :, :, :) - velog(0:nz, :, :, :))
+    error = maxval(dabs(velog_ref(0:nz, :, :, :) - velog(0:nz, :, :, :)))
 
-    print *, maxval(velog_ref(0:nz, :, :, 1)), &
-             maxval(velog_ref(0:nz, :, :, 2)), &
-             maxval(velog_ref(0:nz, :, :, 3))
-
-    call print_result_dp('Test inversion (vorticity)', error, atol=2.0e-14)
+    call print_result_dp('Test inversion (vorticity)', error, atol=4.0e-7)
 
     deallocate(velog_ref)
 
