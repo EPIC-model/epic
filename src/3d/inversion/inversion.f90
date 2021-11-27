@@ -98,7 +98,6 @@ module inversion_mod
             !Ensure horizontal average of vertical vorticity is zero:
             cs(:, 0, 0) = zero
 
-
             !Compute spectrally filtered vorticity in physical space:
             !$omp parallel shared(ds, es, fs, as, bs, cs, filt, nz) private(iz) default(none)
             !$omp do
@@ -123,7 +122,6 @@ module inversion_mod
                 ubar(iz+1) = ubar(iz) + dz2 * (es(iz, 0, 0) + es(iz+1, 0, 0))
                 vbar(iz+1) = vbar(iz) - dz2 * (ds(iz, 0, 0) + ds(iz+1, 0, 0))
             enddo
-
 
             ! remove the mean value to have zero net momentum
             uavg = sum(ubar(1:nz-1) + f12 * ubar(nz)) / dble(nz)
@@ -183,7 +181,6 @@ module inversion_mod
             enddo
             !$omp end do
             !$omp end parallel
-
 
             !------------------------------------------------------------
             !Compute z velocity component, w = A_y - B_x:
