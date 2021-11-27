@@ -73,7 +73,6 @@ module parcel_init
                 stop
             endif
 
-
             call init_regular_positions
 
             ! initialize the volume of each parcel
@@ -239,8 +238,10 @@ module parcel_init
         subroutine init_from_grids(h5fname, tol)
             character(*),     intent(in)  :: h5fname
             double precision, intent(in)  :: tol
-            double precision, allocatable :: buffer_3d(:, :, :), buffer_4d(:, :, :, :)
-            double precision              :: field_3d(-1:nz+1, 0:ny-1, 0:nx-1)
+            double precision, allocatable :: buffer_3d(:, :, :), &
+                                             buffer_4d(:, :, :, :)
+            double precision              :: field_3d(-1:nz+1, 0:ny-1, 0:nx-1), &
+                                             field_4d(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             integer(hid_t)                :: h5handle
             integer                       :: l
 
@@ -250,13 +251,12 @@ module parcel_init
 
             if (has_dataset(h5handle, 'vorticity')) then
                 call read_h5_dataset(h5handle, 'vorticity', buffer_4d)
-                call fill_field_from_buffer_4d(buffer_4d, buffer_4d)
+                call fill_field_from_buffer_4d(buffer_4d, field_4d)
                 deallocate(buffer_4d)
                 do l = 1, 3
-                    call gen_parcel_scalar_attr(buffer_4d(:, :, :, l), tol, parcels%vorticity(:, l))
+                    call gen_parcel_scalar_attr(field_4d(:, :, :, l), tol, parcels%vorticity(:, l))
                 enddo
             endif
-
 
             if (has_dataset(h5handle, 'buoyancy')) then
                 call read_h5_dataset(h5handle, 'buoyancy', buffer_3d)
