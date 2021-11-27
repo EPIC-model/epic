@@ -253,9 +253,7 @@ module inversion_mod
             velgradg(  -1, :, :, 4) = -velgradg(   1, :, :, 4) ! lower boundary dw/dx
             velgradg(nz+1, :, :, 4) = -velgradg(nz-1, :, :, 4) ! upper boundary dw/dx
 
-
             ! y & z components:
-
             call diffy(svelog(:, :, :, 2), ds)         ! v_y = dv/dy in spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, 3)) ! v_y in physical space
 
