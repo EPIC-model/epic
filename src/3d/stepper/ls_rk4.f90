@@ -48,7 +48,7 @@ module ls_rk4
 
             allocate(delta_pos(num, 3))
             allocate(delta_vor(num, 3))
-            allocate(strain(num, 9))
+            allocate(strain(num, 5))
             allocate(delta_b(num, 5))
 
         end subroutine ls_rk4_alloc
