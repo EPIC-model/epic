@@ -252,11 +252,6 @@ module parcel_interpl
                 vortg(0:nz, :, :, p) = vortg(0:nz, :, :, p) / volg(0:nz, :, :)
             enddo
 
-            ! extrapolate to halo grid points (since halo grid points
-            ! are used to get u_z = w_x - zeta)
-            vortg(-1,   :, :, :) = two * vortg(0,  :, :, :) - vortg(1,    :, :, :)
-            vortg(nz+1, :, :, :) = two * vortg(nz, :, :, :) - vortg(nz-1, :, :, :)
-
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0:nz, :, :) = dbuoyg(0:nz, :, :) / volg(0:nz, :, :)
 #endif

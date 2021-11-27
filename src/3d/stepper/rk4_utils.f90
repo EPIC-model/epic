@@ -1,8 +1,9 @@
 module rk4_utils
     use parcel_ellipsoid, only : get_B33
-    use fields, only : velgradg, tbuoyg, vtend
+    use fields, only : velgradg, tbuoyg, vortg
     use constants, only : zero, one, two, f12
-    use parameters, only : nx, nz, dxi
+    use parameters, only : nx, ny, nz, dxi
+    use jacobi, only : jacobi_diagonalise
 #ifdef ENABLE_VERBOSE
     use options, only : output
 #endif
@@ -70,24 +71,84 @@ module rk4_utils
             use options, only : time
             double precision, intent(in) :: t
             double precision             :: dt
-            double precision             :: gmax, bmax
-            double precision             :: dbdz(0:nz, 0:nx-1)
+            double precision             :: gmax, bmax, strain(3, 3)
+            double precision             :: gradb(0:nz, 0:ny-1, 0:nx-1)
+            double precision             :: db2(0:nz, 0:ny-1, 0:nx-1)
+            integer                      :: ix, iy, iz
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
             character(:), allocatable    :: fname
 #endif
 
+            !
             ! velocity strain
-            gmax = 1.0 !FIXME f12 * dsqrt(maxval((velgradg(0:nz, :, 1) - velgradg(0:nz, :, 4)) ** 2 + &
-!                                         (velgradg(0:nz, :, 2) + velgradg(0:nz, :, 3)) ** 2))
-            gmax = max(epsilon(gmax), gmax)
+            !
+            ! find largest stretch -- this corresponds to largest
+            ! eigenvalue over all local symmetrised strain matrices.
+            gmax = epsilon(gmax)
+            do ix = 0, nx-1
+                do iy = 0, ny-1
+                    do iz = 0, nz
+                        ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
+                        ! where
+                        !     /u_x u_y u_z\
+                        ! S = |v_x v_y v_z|
+                        !     \w_x w_y w_z/
+                        ! with u_* = du/d* (also derivatives of v and w).
+                        ! The derivatives dv/dx, du/dz, dv/dz and dw/dz are calculated
+                        ! with vorticity or the assumption of incompressibility
+                        ! (du/dx + dv/dy + dw/dz = 0):
+                        !    dv/dx = \omegaz + du/dy
+                        !    du/dz = \omegay + dw/dx
+                        !    dv/dz = dw/dy - \omegax
+                        !    dw/dz = - (du/dx + dv/dy)
+                        strain(1, 1) = velgradg(iz, iy, ix, 1)                              ! du/dx
+                        strain(1, 2) = two * velgradg(iz, iy, ix, 2) + vortg(iz, iy, ix, 3) ! du/dy + dv/dx
+                        strain(1, 3) = two * velgradg(iz, iy, ix, 4) + vortg(iz, iy, ix, 2) ! du/dz + dw/dx
+                        strain(2, 2) = velgradg(iz, iy, ix, 3)                              ! dv/dy
+                        strain(2, 3) = two * velgradg(iz, iy, ix, 5) - vortg(iz, iy, ix, 1) ! dv/dz + dw/dy
+                        strain(3, 3) = -(velgradg(iz, iy, ix, 1) + velgradg(iz, iy, ix, 3)) ! dw/dz
 
-            ! buoyancy gradient
+                        strain(2, 1) = strain(1, 2)
+                        strain(3, 1) = strain(1, 3)
+                        strain(3, 2) = strain(2, 3)
 
-            ! db/dz (central difference)
-            dbdz(0:nz, :) = 1.0 !FIXME f12 * dxi(2) * (tbuoyg(1:nz+1, :) - tbuoyg(-1:nz-1, :))
+                        ! calculate its eigenvalues (strain is overwritten and will be
+                        ! the diagonal matrix with the eigenvalues sorted in descending order), i.e.
+                        ! the largest eigenvalue is in strain(1, 1).
+                        call jacobi_diagonalise(strain)
 
-            bmax = 1.0 !FIXME dsqrt(dsqrt(maxval(vtend(0:nz, :) ** 2 + dbdz ** 2)))
+                        gmax = max(gmax, strain(1, 1))
+                    enddo
+                enddo
+            enddo
+
+            !
+            ! buoyancy gradient (central difference)
+            !
+
+            ! db/dx inner part
+            gradb(:, :, 1:nx-2) = f12 * dxi(1) * (tbuoyg(0:nz, :, 2:nx-1) - tbuoyg(0:nz, :, 0:nx-3))
+
+            ! db/dx boundary grid points (make use of periodicity)
+            gradb(:, :, 0)    = f12 * dxi(1) * (tbuoyg(0:nz, :, 1) - tbuoyg(0:nz, :, nx-1))
+            gradb(:, :, nx-1) = f12 * dxi(1) * (tbuoyg(0:nz, :, 0) - tbuoyg(0:nz, :, nx-2))
+
+            db2 = gradb ** 2
+
+            ! db/dy inner part
+            gradb(:, 1:ny-2, :) = f12 * dxi(2) * (tbuoyg(0:nz, 2:ny-1, :) - tbuoyg(0:nz, 0:ny-3, :))
+
+            ! db/dy boundary grid points (make use of periodicity)
+            gradb(:, 0, :)    = f12 * dxi(2) * (tbuoyg(0:nz, 1, :) - tbuoyg(0:nz, ny-1, :))
+            gradb(:, ny-1, :) = f12 * dxi(2) * (tbuoyg(0:nz, 0, :) - tbuoyg(0:nz, ny-2, :))
+
+            db2 = db2 + gradb ** 2
+
+            ! db/dz
+            gradb = f12 * dxi(3) * (tbuoyg(1:nz+1, :, :) - tbuoyg(-1:nz-1, :, :))
+
+            bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
             dt = min(time%alpha / gmax, time%alpha / bmax)

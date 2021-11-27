@@ -42,8 +42,13 @@ unittests_PROGRAMS = 				\
 	test_grid2par				\
 	test_ellipsoid_reflection		\
 	test_free_slip_3d			\
+	test_vor2vel				\
 	test_vtend				\
-	test_velgradg
+	test_velgradg				\
+	test_lapinv0_1				\
+	test_lapinv0_2				\
+	test_diffz0				\
+	test_diffz1
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -99,10 +104,25 @@ test_grid2par_LDADD = libcombi.la
 test_free_slip_3d_SOURCES = test_free_slip_3d.f90
 test_free_slip_3d_LDADD = libcombi.la
 
+test_vor2vel_SOURCES = test_vor2vel.f90
+test_vor2vel_LDADD = libcombi.la
+
 test_vtend_SOURCES = test_vtend.f90
 test_vtend_LDADD = libcombi.la
 
 test_velgradg_SOURCES = test_velgradg.f90
 test_velgradg_LDADD = libcombi.la
+
+test_lapinv0_1_SOURCES = test_lapinv0_1.f90
+test_lapinv0_1_LDADD = libcombi.la
+
+test_lapinv0_2_SOURCES = test_lapinv0_2.f90
+test_lapinv0_2_LDADD = libcombi.la
+
+test_diffz0_SOURCES = test_diffz0.f90
+test_diffz0_LDADD = libcombi.la
+
+test_diffz1_SOURCES = test_diffz1.f90
+test_diffz1_LDADD = libcombi.la
 
 endif

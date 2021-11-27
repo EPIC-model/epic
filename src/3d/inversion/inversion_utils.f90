@@ -553,24 +553,28 @@ module inversion_utils
         ! Only FFTs over the x and y directions are performed.
         ! *** fp is destroyed upon exit ***
         subroutine fftxyp2s(fp, fs)
-            double precision, intent(inout) :: fp(0:nz, ny, nx)  !Physical
-            double precision, intent(out)   :: fs(0:nz, nx, ny)  !Spectral
-            integer                         :: kx, iy
+            double precision, intent(inout) :: fp(:, :, :)       !Physical
+            double precision, intent(out)   :: fs(:, :, :)       !Spectral
+            integer                         :: kx, iy, nzval, nxval, nyval
+
+            nzval = size(fp, 1)
+            nyval = size(fp, 2)
+            nxval = size(fp, 3)
 
             ! Carry out a full x transform first:
-            call forfft((nz+1) * ny, nx, fp, xtrig, xfactors)
+            call forfft(nzval * nyval, nxval, fp, xtrig, xfactors)
 
             ! Transpose array:
             !$omp parallel do
-            do kx = 1, nx
-                do iy = 1, ny
+            do kx = 1, nxval
+                do iy = 1, nyval
                     fs(:, kx, iy) = fp(:, iy, kx)
                 enddo
             enddo
             !$omp end parallel do
 
             ! Carry out a full y transform on transposed array:
-            call forfft((nz+1) * nx, ny, fs, ytrig, yfactors)
+            call forfft(nzval * nxval, nyval, fs, ytrig, yfactors)
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -580,24 +584,28 @@ module inversion_utils
         ! Only inverse FFTs over the x and y directions are performed.
         ! *** fs is destroyed upon exit ***
         subroutine fftxys2p(fs,fp)
-            double precision, intent(inout):: fs(0:nz, nx, ny)  !Spectral
-            double precision, intent(out)  :: fp(0:nz, ny, nx)  !Physical
-            integer                        :: kx, iy
+            double precision, intent(inout):: fs(:, :, :)  !Spectral
+            double precision, intent(out)  :: fp(:, :, :)  !Physical
+            integer                        :: kx, iy, nzval, nxval, nyval
+
+            nzval = size(fs, 1)
+            nxval = size(fs, 2)
+            nyval = size(fs, 3)
 
             ! Carry out a full inverse y transform first:
-            call revfft((nz+1) * nx, ny, fs, ytrig, yfactors)
+            call revfft(nzval * nxval, nyval, fs, ytrig, yfactors)
 
             ! Transpose array:
             !$omp parallel do
-            do kx = 1, nx
-                do iy = 1, ny
+            do kx = 1, nxval
+                do iy = 1, nyval
                     fp(:, iy, kx) = fs(:, kx, iy)
                 enddo
             enddo
             !$omp end parallel do
 
             ! Carry out a full inverse x transform:
-            call revfft((nz+1) * ny, nx, fp, xtrig, xfactors)
+            call revfft(nzval * nyval, nxval, fp, xtrig, xfactors)
         end subroutine
 
 end module inversion_utils
