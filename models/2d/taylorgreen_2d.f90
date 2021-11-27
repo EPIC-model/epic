@@ -9,7 +9,7 @@
 !                       tg_flow%amp   = (/A, B/)
 !                       tg_flow%phase = (/d, e/)
 ! =============================================================================
-module taylorgreen
+module taylorgreen_2d
     use h5_writer
     use constants, only : pi, f12, zero, one, two
     implicit none
@@ -109,4 +109,4 @@ module taylorgreen
 
         end subroutine get_flow_pos
 
-end module taylorgreen
+end module taylorgreen_2d

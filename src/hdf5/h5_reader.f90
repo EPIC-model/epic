@@ -207,21 +207,22 @@ module h5_reader
             call check_h5_error("Failed to close attribute.")
         end subroutine read_h5_vector_double_attrib
 
-        subroutine read_h5_box(h5file_id, nx, nz, extent, origin)
+        subroutine read_h5_box(h5file_id, ncells, extent, origin)
             integer(hid_t),   intent(in)     :: h5file_id
-            integer,          intent(out)    :: nx, nz
-            double precision, intent(out)    :: extent(2), origin(2)
+            integer,          intent(out)    :: ncells(:)
+            double precision, intent(out)    :: extent(:), origin(:)
             integer(hid_t)                   :: group
-            integer                          :: ncells(2)
+
+            if ((size(ncells) > 3) .or. (size(extent) > 3) .or. (size(extent) > 3)) then
+                print *, "Cannot read more than 3 dimensions!"
+                stop
+            endif
 
             call open_h5_group(h5file_id, "box", group)
 
             call read_h5_vector_int_attrib(group, 'ncells', ncells)
             call read_h5_vector_double_attrib(group, 'extent', extent)
             call read_h5_vector_double_attrib(group, 'origin', origin)
-
-            nx = ncells(1)
-            nz = ncells(2)
 
             ! close all
             call close_h5_group(group)

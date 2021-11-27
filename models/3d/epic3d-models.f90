@@ -1,13 +1,11 @@
 ! =============================================================================
 !               This program writes fields to HDF5 in EPIC format.
 ! =============================================================================
-program epic_models
+program epic3d_models
     use options, only : filename, verbose
-    use taylorgreen
-    use straka
-    use robert
+    use taylorgreen_3d
     use constants, only : pi
-    use parameters, only : nx, nz, dx, lower, extent
+    use parameters, only : nx, ny, nz, dx, lower, extent
     use h5_utils
     use h5_writer
     implicit none
@@ -17,9 +15,9 @@ program epic_models
     integer(hid_t)     :: h5handle
 
     type box_type
-        integer          :: ncells(2)   ! number of cells
-        double precision :: extent(2)   ! size of domain
-        double precision :: origin(2)   ! origin of domain (lower left corner)
+        integer          :: ncells(3)   ! number of cells
+        double precision :: extent(3)   ! size of domain
+        double precision :: origin(3)   ! origin of domain (lower left corner)
     end type box_type
 
     type(box_type) :: box
@@ -44,7 +42,8 @@ program epic_models
 
             dx = box%extent / dble(box%ncells)
             nx = box%ncells(1)
-            nz = box%ncells(2)
+            ny = box%ncells(2)
+            nz = box%ncells(3)
 
             select case (trim(model))
                 case ('TaylorGreen')
@@ -53,11 +52,7 @@ program epic_models
                     box%extent = pi * box%extent
                     dx = dx * pi
 
-                    call taylorgreen_init(h5handle, nx, nz, box%origin, dx)
-                case ('Straka')
-                    call straka_init(h5handle, nx, nz, box%origin, dx)
-                case ('Robert')
-                    call robert_init(h5handle, nx, nz, box%origin, dx)
+                    call taylorgreen_init(h5handle, nx, ny, nz, box%origin, dx)
                 case default
                     print *, "Unknown model: '", trim(model), "'."
                     stop
@@ -66,7 +61,7 @@ program epic_models
             ! write box
             lower = box%origin
             extent = box%extent
-            call write_h5_box(h5handle, lower, extent, (/nx, nz/))
+            call write_h5_box(h5handle, lower, extent, (/nx, ny, nz/))
             call close_h5_file(h5handle)
         end subroutine generate_fields
 
@@ -79,7 +74,7 @@ program epic_models
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODELS/ model, h5fname, box, tg_flow, straka_flow, robert_flow
+            namelist /MODELS/ model, h5fname, box, tg_flow
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -129,15 +124,15 @@ program epic_models
                 else if (arg == '--verbose') then
                     verbose = .true.
                 else if (arg == '--help') then
-                    print *, 'Run code with "epic-models --config [config file]"'
+                    print *, 'Run code with "epic3d-models --config [config file]"'
                     stop
                 endif
                 i = i+1
             end do
 
             if (filename == '') then
-                print *, 'No configuration file provided. Run code with "epic-models --config [config file]"'
+                print *, 'No configuration file provided. Run code with "epic3d-models --config [config file]"'
                 stop
             endif
         end subroutine parse_command_line
-end program epic_models
+end program epic3d_models

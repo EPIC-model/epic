@@ -47,13 +47,15 @@ module parcel_init
             double precision, intent(in) :: tol
             double precision             :: lam, ratio
             integer(hid_t)               :: h5handle
-            integer                      :: n
+            integer                      :: n, ncells(2)
 
             call start_timer(init_timer)
 
             ! read domain dimensions
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
-            call read_h5_box(h5handle, nx, nz, extent, lower)
+            call read_h5_box(h5handle, ncells, extent, lower)
+            nx = ncells(1)
+            nz = ncells(2)
             call close_h5_file(h5handle)
 
             ! update global parameters

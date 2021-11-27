@@ -11,7 +11,7 @@
 !
 ! =============================================================================
 
-module robert
+module robert_2d
     use phys_constants
     use constants
     use h5_writer
