@@ -201,7 +201,7 @@ module inversion_mod
             !$omp end parallel
 
             ! compute the velocity gradient tensor
-            call vel2vgrad(vortg, svelog, velgradg)
+            call vel2vgrad(svelog, velgradg)
 
             !Get u in physical space:
             call fftxys2p(svelog(0:nz, :, :, 1), velog(0:nz, :, :, 1))
@@ -227,8 +227,7 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Compute the gridded velocity gradient tensor
-        subroutine vel2vgrad(vortg, svelog, velgradg)
-            double precision, intent(in)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+        subroutine vel2vgrad(svelog, velgradg)
             double precision, intent(in)  :: svelog(0:nz, 0:nx-1, 0:ny-1, 3)
             double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
             double precision              :: ds(0:nz, 0:nx-1, 0:ny-1) ! spectral derivatives

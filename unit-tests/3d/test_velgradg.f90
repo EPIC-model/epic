@@ -57,7 +57,7 @@ program test_velgradg
     c  = -one
 
     allocate(strain(-1:nz+1, 0:ny-1, 0:nx-1, 5))
-    allocate(svelog(-1:nz+1, 0:nx-1, 0:ny-1, 3))
+    allocate(svelog(0:nz, 0:nx-1, 0:ny-1, 3))
 
     call update_parameters
 
@@ -92,11 +92,11 @@ program test_velgradg
 
     call init_fft
 
-    call fftxyp2s(velog(0:nz, :, :, 1), svelog(0:nz, :, :, 1))
-    call fftxyp2s(velog(0:nz, :, :, 2), svelog(0:nz, :, :, 2))
-    call fftxyp2s(velog(0:nz, :, :, 3), svelog(0:nz, :, :, 3))
+    call fftxyp2s(velog(0:nz, :, :, 1), svelog(:, :, :, 1))
+    call fftxyp2s(velog(0:nz, :, :, 2), svelog(:, :, :, 2))
+    call fftxyp2s(velog(0:nz, :, :, 3), svelog(:, :, :, 3))
 
-    call vel2vgrad(vortg, svelog, velgradg)
+    call vel2vgrad(svelog, velgradg)
 
     error = maxval(dabs(velgradg(0:nz, :, :, :) - strain(0:nz, :, :, :)))
 
