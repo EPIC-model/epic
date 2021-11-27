@@ -215,6 +215,14 @@ module inversion_mod
             !Get w in physical space:
             call fftxys2p(svelog(0:nz, :, :, 3), velog(0:nz, :, :, 3))
 
+            ! use symmetry to fill z grid points outside domain:
+            velog(-1, :, :, 1) =  velog(1, :, :, 1) ! u
+            velog(-1, :, :, 2) =  velog(1, :, :, 2) ! v
+            velog(-1, :, :, 3) = -velog(1, :, :, 3) ! w
+            velog(nz+1, :, :, 1) =  velog(nz-1, :, :, 1) ! u
+            velog(nz+1, :, :, 2) =  velog(nz-1, :, :, 2) ! v
+            velog(nz+1, :, :, 3) = -velog(nz-1, :, :, 3) ! w
+
             call stop_timer(vor2vel_timer)
 
         end subroutine
