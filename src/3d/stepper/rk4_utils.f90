@@ -15,52 +15,65 @@ module rk4_utils
         ! Advance the B matrix.
         ! @param[in] Bin are the B matrix components of the parcel
         ! @param[in] S is the local velocity strain
+        ! @param[in] vorticity of parcel
         ! @param[in] volume is the parcel volume
         ! @returns dB/dt in Bout
-        function get_dBdt(Bin, S, volume) result(Bout)
+        function get_dBdt(Bin, S, vorticity, volume) result(Bout)
             double precision, intent(in) :: Bin(5)
-            double precision, intent(in) :: S(9)
+            double precision, intent(in) :: S(5)
+            double precision, intent(in) :: vorticity(3)
             double precision, intent(in) :: volume
             double precision             :: Bout(5), B33
+            double precision             :: dudx, dudy, dudz, &
+                                            dvdx, dvdy, dvdz, &
+                                            dwdx, dwdy, dwdz
 
-            ! du/dx = S(1)
-            ! du/dy = S(2)
-            ! du/dz = S(3)
-            ! dv/dx = S(4)
-            ! dv/dy = S(5)
-            ! dv/dz = S(6)
-            ! dw/dx = S(7)
-            ! dw/dy = S(8)
-            ! dw/dz = S(9)
+            dudx = S(1)
+            dudy = S(2)
+            dvdy = S(3)
+            dwdx = S(4)
+            dwdy = S(5)
+
+            ! du/dz = \omegay + dw/dx
+            dudz = vorticity(2) + dwdx
+
+            ! dv/dx \omegaz + du/dy
+            dvdx = vorticity(3) + dudy
+
+            ! dv/dz = dw/dy - \omegax
+            dvdz = dvdy - vorticity(1)
+
+            ! dw/dz = - (du/dx + dv/dy)
+            dwdz = - (dudx + dvdy)
 
             B33 = get_B33(Bin, volume)
 
             ! dB11/dt = 2 * (du/dx * B11 + du/dy * B12 + du/dz * B13)
-            Bout(1) = two * (S(1) * Bin(1) + S(2) * Bin(2) + S(3) * Bin(3))
+            Bout(1) = two * (dudx * Bin(1) + dudy * Bin(2) + dudz * Bin(3))
 
             ! dB12/dt =
-            Bout(2) = S(4) * Bin(1) & !   dv/dx * B11
-                    - S(9) * Bin(2) & ! - dw/dz * B12
-                    + S(6) * Bin(3) & ! + dv/dz * B13
-                    + S(2) * Bin(4) & ! + du/dy * B22
-                    + S(3) * Bin(5)   ! + du/dz * B23
+            Bout(2) = dvdx * Bin(1) & !   dv/dx * B11
+                    - dwdz * Bin(2) & ! - dw/dz * B12
+                    + dvdz * Bin(3) & ! + dv/dz * B13
+                    + dudy * Bin(4) & ! + du/dy * B22
+                    + dudz * Bin(5)   ! + du/dz * B23
 
             ! dB13/dt =
-            Bout(3) = S(7) * Bin(1) & !   dw/dx * B11
-                    + S(8) * Bin(2) & ! + dw/dy * B12
-                    - S(5) * Bin(3) & ! - dv/dy * B13
-                    + S(2) * Bin(5) & ! + du/dy * B23
-                    + S(3) * B33      ! + du/dz * B33
+            Bout(3) = dwdx * Bin(1) & !   dw/dx * B11
+                    + dwdy * Bin(2) & ! + dw/dy * B12
+                    - dvdy * Bin(3) & ! - dv/dy * B13
+                    + dudy * Bin(5) & ! + du/dy * B23
+                    + dudz * B33      ! + du/dz * B33
 
             ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
-            Bout(4) = two * (S(4) * Bin(2) + S(5) * Bin(4) + S(6) * Bin(5))
+            Bout(4) = two * (dvdx * Bin(2) + dvdy * Bin(4) + dvdz * Bin(5))
 
             ! dB23/dt =
-            Bout(5) = S(7) * Bin(2) & !   dw/dx * B12
-                    + S(4) * Bin(3) & ! + dv/dx * B13
-                    + S(8) * Bin(4) & ! + dw/dy * B22
-                    - S(1) * Bin(5) & ! - du/dx * B23
-                    + S(6) * B33      ! + dv/dz * B33
+            Bout(5) = dwdx * Bin(2) & !   dw/dx * B12
+                    + dvdx * Bin(3) & ! + dv/dx * B13
+                    + dwdy * Bin(4) & ! + dw/dy * B22
+                    - dudx * Bin(5) & ! - du/dx * B23
+                    + dvdz * B33      ! + dv/dz * B33
         end function get_dBdt
 
         ! Estimate a suitable time step based on the velocity strain
