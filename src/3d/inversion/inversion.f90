@@ -1,6 +1,6 @@
 module inversion_mod
     use inversion_utils
-    use parameters, only : nx, ny, nz, dx, lower
+    use parameters, only : nx, ny, nz
     use phys_parameters, only : ft_cor, f_cor
     use constants, only : zero, two, f12
     use timer, only : start_timer, stop_timer
@@ -31,8 +31,8 @@ module inversion_mod
             double precision                :: astop(0:nx-1, 0:ny-1), bstop(0:nx-1, 0:ny-1)
             double precision                :: asbot(0:nx-1, 0:ny-1), bsbot(0:nx-1, 0:ny-1)
             double precision                :: ubar(0:nz), vbar(0:nz)
-            double precision                :: uavg, vavg, x, y, z
-            integer                         :: iz, ix, iy
+            double precision                :: uavg, vavg
+            integer                         :: iz
 
             call start_timer(vor2vel_timer)
 

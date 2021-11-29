@@ -22,7 +22,7 @@ program test_ellipsoid_reflection
 
     integer :: iter_t, iter_p
     double precision :: abc, abc23, B11, B12, B13, B22, B23, error, a2, b2, c2
-    double precision :: st, sp, ct, cp, theta, phi, angle
+    double precision :: st, sp, ct, cp, theta, phi
 
     call parse_command_line
 

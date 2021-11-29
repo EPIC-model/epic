@@ -109,7 +109,7 @@ module parcel_diagnostics
         subroutine calc_parcel_diagnostics(velocity)
             double precision :: velocity(:, :)
             integer          :: n
-            double precision :: b, z, vel(2), vol, zmin
+            double precision :: b, z, vel(3), vol, zmin
             double precision :: evals(3), lam, lsum, l2sum, vsum, v2sum
 
             ! reset
@@ -140,10 +140,10 @@ module parcel_diagnostics
                 vel = velocity(n, :)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
-                z   = parcels%position(n, 2) - zmin
+                z   = parcels%position(n, 3) - zmin
 
                 ! kinetic energy
-                ke = ke + (vel(1) ** 2 + vel(2) ** 2) * vol
+                ke = ke + (vel(1) ** 2 + vel(2) ** 2 + vel(3)) * vol
 
                 ! potential energy
                 pe = pe - b * z * vol

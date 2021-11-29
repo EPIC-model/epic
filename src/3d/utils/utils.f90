@@ -27,8 +27,8 @@ module utils
         ! @param[in] t is the time
         subroutine write_last_step(t)
             double precision,  intent(in) :: t
-            double precision              :: velocity(n_parcels, 2)
-            double precision              :: strain(n_parcels, 9)
+            double precision              :: velocity(n_parcels, 3)
+            double precision              :: strain(n_parcels, 5)
             double precision              :: vorticity(n_parcels, 3)
 
             call par2grid

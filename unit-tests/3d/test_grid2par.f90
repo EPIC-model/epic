@@ -9,7 +9,7 @@ program test_trilinear
     use parcel_container
     use parcel_interpl, only : grid2par, grid2par_timer
     use parcel_ellipsoid, only : get_abc
-    use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz, ngrid
+    use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz
     use fields, only : velog, velgradg, vtend, field_alloc
     use timer
     implicit none

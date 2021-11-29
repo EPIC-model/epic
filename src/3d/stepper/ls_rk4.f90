@@ -48,7 +48,7 @@ module ls_rk4
 
             allocate(delta_pos(num, 3))
             allocate(delta_vor(num, 3))
-            allocate(strain(num, 9))
+            allocate(strain(num, 5))
             allocate(delta_b(num, 5))
 
         end subroutine ls_rk4_alloc
@@ -134,7 +134,8 @@ module ls_rk4
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
-                    delta_b(n, :) = get_dBdt(parcels%B(n, :), strain(n, :), parcels%volume(n))
+                    delta_b(n, :) = get_dBdt(parcels%B(n, :), strain(n, :), &
+                                             parcels%vorticity(n, :), parcels%volume(n))
                 enddo
                 !$omp end parallel do
 
@@ -151,7 +152,8 @@ module ls_rk4
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
                     delta_b(n, :) = delta_b(n, :) &
-                                  + get_dBdt(parcels%B(n, :), strain(n, :), parcels%volume(n))
+                                  + get_dBdt(parcels%B(n, :), strain(n, :), &
+                                             parcels%vorticity(n, :), parcels%volume(n))
                 enddo
                 !$omp end parallel do
 

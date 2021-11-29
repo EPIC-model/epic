@@ -48,13 +48,16 @@ module parcel_init
             double precision, intent(in) :: tol
             double precision             :: lam, l23
             integer(hid_t)               :: h5handle
-            integer                      :: n
+            integer                      :: n, ncells(3)
 
             call start_timer(init_timer)
 
             ! read domain dimensions
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
-            call read_h5_box(h5handle, nx, nz, extent, lower)
+            call read_h5_box(h5handle, ncells, extent, lower)
+            nx = ncells(1)
+            ny = ncells(2)
+            nz = ncells(3)
             call close_h5_file(h5handle)
 
             ! update global parameters
@@ -69,7 +72,6 @@ module parcel_init
                           max_num_parcels, ". Exiting."
                 stop
             endif
-
 
             call init_regular_positions
 
@@ -236,8 +238,10 @@ module parcel_init
         subroutine init_from_grids(h5fname, tol)
             character(*),     intent(in)  :: h5fname
             double precision, intent(in)  :: tol
-            double precision, allocatable :: buffer_3d(:, :, :), buffer_4d(:, :, :, :)
-            double precision              :: field_3d(-1:nz+1, 0:ny-1, 0:nx-1)
+            double precision, allocatable :: buffer_3d(:, :, :), &
+                                             buffer_4d(:, :, :, :)
+            double precision              :: field_3d(-1:nz+1, 0:ny-1, 0:nx-1), &
+                                             field_4d(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             integer(hid_t)                :: h5handle
             integer                       :: l
 
@@ -247,13 +251,12 @@ module parcel_init
 
             if (has_dataset(h5handle, 'vorticity')) then
                 call read_h5_dataset(h5handle, 'vorticity', buffer_4d)
-                call fill_field_from_buffer_4d(buffer_4d, buffer_4d)
+                call fill_field_from_buffer_4d(buffer_4d, field_4d)
                 deallocate(buffer_4d)
                 do l = 1, 3
-                    call gen_parcel_scalar_attr(buffer_4d(:, :, :, l), tol, parcels%vorticity(:, l))
+                    call gen_parcel_scalar_attr(field_4d(:, :, :, l), tol, parcels%vorticity(:, l))
                 enddo
             endif
-
 
             if (has_dataset(h5handle, 'buoyancy')) then
                 call read_h5_dataset(h5handle, 'buoyancy', buffer_3d)

@@ -9,7 +9,7 @@
 !                       tg_flow%amp   = (/A, B/)
 !                       tg_flow%phase = (/d, e/)
 ! =============================================================================
-module taylorgreen
+module taylor_green_2d
     use h5_writer
     use constants, only : pi, f12, zero, one, two
     implicit none
@@ -29,12 +29,12 @@ module taylorgreen
     public :: get_flow_velocity,    &
               get_flow_gradient,    &
               get_flow_vorticity,   &
-              taylorgreen_init,     &
+              taylor_green_init,    &
               tg_flow
 
 
     contains
-        subroutine taylorgreen_init(h5handle, nx, nz, origin, dx)
+        subroutine taylor_green_init(h5handle, nx, nz, origin, dx)
             integer(hid_t),   intent(inout) :: h5handle
             integer,          intent(in)    :: nx, nz
             double precision, intent(in)    :: origin(2)
@@ -52,7 +52,7 @@ module taylorgreen
 
             call write_h5_dataset(h5handle, '/', 'vorticity', vortg)
 
-        end subroutine taylorgreen_init
+        end subroutine taylor_green_init
 
 
         function get_flow_velocity(pos) result(vel)
@@ -109,4 +109,4 @@ module taylorgreen
 
         end subroutine get_flow_pos
 
-end module taylorgreen
+end module taylor_green_2d
