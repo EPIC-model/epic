@@ -3,7 +3,7 @@
 ! =============================================================================
 program epic3d_models
     use options, only : filename, verbose
-    use taylorgreen_3d
+    use taylor_green_3d
     use constants, only : pi
     use parameters, only : nx, ny, nz, dx, lower, extent
     use h5_utils
@@ -52,7 +52,7 @@ program epic3d_models
                     box%extent = pi * box%extent
                     dx = dx * pi
 
-                    call taylorgreen_init(h5handle, nx, ny, nz, box%origin, dx)
+                    call taylor_green_init(h5handle, nx, ny, nz, box%origin, dx)
                 case default
                     print *, "Unknown model: '", trim(model), "'."
                     stop

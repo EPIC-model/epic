@@ -15,7 +15,7 @@
 !                       tg_flow%amp   = (/A, B, C/)
 !                       tg_flow%phase = (/d, e, f/)
 ! ====================================================================================
-module taylorgreen_3d
+module taylor_green_3d
     use h5_writer
     use constants, only : pi, f12, zero, one, two
     implicit none
@@ -33,12 +33,12 @@ module taylorgreen_3d
         double precision, parameter :: hpi = f12 * pi
 
     public :: get_flow_vorticity,   &
-              taylorgreen_init,     &
+              taylor_green_init,    &
               tg_flow
 
 
     contains
-        subroutine taylorgreen_init(h5handle, nx, ny, nz, origin, dx)
+        subroutine taylor_green_init(h5handle, nx, ny, nz, origin, dx)
             integer(hid_t),   intent(inout) :: h5handle
             integer,          intent(in)    :: nx, ny, nz
             double precision, intent(in)    :: origin(3)
@@ -58,7 +58,7 @@ module taylorgreen_3d
 
             call write_h5_dataset(h5handle, '/', 'vorticity', vortg)
 
-        end subroutine taylorgreen_init
+        end subroutine taylor_green_init
 
         function get_flow_vorticity(pos) result(omega)
             double precision, intent(in) :: pos(3)
@@ -93,4 +93,4 @@ module taylorgreen_3d
 
         end subroutine get_flow_pos
 
-end module taylorgreen_3d
+end module taylor_green_3d

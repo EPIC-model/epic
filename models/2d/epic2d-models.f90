@@ -3,7 +3,7 @@
 ! =============================================================================
 program epic2d_models
     use options, only : filename, verbose
-    use taylorgreen_2d
+    use taylor_green_2d
     use straka_2d
     use robert_2d
     use constants, only : pi
@@ -53,7 +53,7 @@ program epic2d_models
                     box%extent = pi * box%extent
                     dx = dx * pi
 
-                    call taylorgreen_init(h5handle, nx, nz, box%origin, dx)
+                    call taylor_green_init(h5handle, nx, nz, box%origin, dx)
                 case ('Straka')
                     call straka_init(h5handle, nx, nz, box%origin, dx)
                 case ('Robert')

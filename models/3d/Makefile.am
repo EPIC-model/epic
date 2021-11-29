@@ -13,7 +13,7 @@ epic3d_modelsdir = $(prefix)/bin
 epic3d_models_PROGRAMS = epic3d-models
 
 epic3d_models_SOURCES =		\
-	taylorgreen_3d.f90	\
+	taylor_green_3d.f90	\
 	epic3d-models.f90
 
 epic3d_models_LDADD = 					\

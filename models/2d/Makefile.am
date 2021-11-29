@@ -13,7 +13,7 @@ epic2d_modelsdir = $(prefix)/bin
 epic2d_models_PROGRAMS = epic2d-models
 
 epic2d_models_SOURCES =		\
-	taylorgreen_2d.f90	\
+	taylor_green_2d.f90	\
 	straka_2d.f90		\
 	robert_2d.f90		\
 	epic2d-models.f90
