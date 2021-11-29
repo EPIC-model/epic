@@ -11,8 +11,8 @@
 ! =============================================================================
 program test_free_slip_3d
     use unit_test
-    use constants, only : pi                      &
-                        , zero , one, two, three  &
+    use constants, only : pi, zero                &
+                        , one, two, three, five   &
                         , f12, f14, f18, f23, ten
     use parcel_container
     use parcel_ellipsoid, only : get_abc, get_B33
@@ -63,8 +63,8 @@ program test_free_slip_3d
     abc = get_abc(parcels%volume(1))
     abc23 = abc ** f23
     a2 = ten * abc23
-    b2 = abc23 / dsqrt(ten)
-    c2 = abc23 / dsqrt(ten)
+    b2 = abc23 / dsqrt(two)
+    c2 = abc23 / dsqrt(five)
 
     parcels%B(:, 1) = c2
     parcels%B(:, 2) = zero
