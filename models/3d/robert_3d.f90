@@ -1,7 +1,8 @@
 ! =============================================================================
 !                       Robert ("Rising bubble") test case
 !
-!   This module sets up three bubbles Gaussian buoyancy profile.
+!   This module sets up to ten bubbles with a flat-top ("plateau") beyond
+!   which the buoyancy follows a Gaussian profile.
 ! =============================================================================
 
 module robert_3d
