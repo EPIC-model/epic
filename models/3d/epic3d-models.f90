@@ -77,7 +77,7 @@ program epic3d_models
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODELS/ model, h5fname, box, tg_flow
+            namelist /MODELS/ model, h5fname, box, tg_flow, robert_flow
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
