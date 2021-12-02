@@ -166,8 +166,8 @@ module parcel_ellipsoid
             double precision, intent(in) :: volume
             double precision, intent(in) :: B(5)        ! B11, B12, B13, B22, B23
             double precision             :: eta, tau, a2, b2, c2, V(3, 3)
-            integer                      :: j, k
-            double precision             :: points(4, 3), xy(2)
+            integer                      :: j
+            double precision             :: points(3, 4), xy(2)
 
             ! (/a2, b2, c2/) with a >= b >= c
             call diagonalise(B, volume, a2, b2, c2, V)
@@ -183,11 +183,9 @@ module parcel_ellipsoid
                 xy = (/eta * costheta(j), tau * sintheta(j)/)
 
                 ! suppport point in the global reference frame
-                do k = 1, 3
-                    points(j, k) = position(k)     &
-                                 + xy(1) * V(k, 1) &
-                                 + xy(2) * V(k, 2)
-                enddo
+                points(:, j) = position        &
+                             + xy(1) * V(:, 1) &
+                             + xy(2) * V(:, 2)
             enddo
         end function get_ellipsoid_points
 

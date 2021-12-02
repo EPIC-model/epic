@@ -63,20 +63,20 @@ module parcel_correction
         !$omp parallel default(shared)
         !$omp do private(n, l, is, js, ks, weights)
         do n = 1, n_parcels
-            call trilinear(parcels%position(n, :), is, js, ks, weights)
+            call trilinear(parcels%position(:, n), is, js, ks, weights)
 
             do l = 1, ngp
-                parcels%position(n, 1) = parcels%position(n, 1)               &
+                parcels%position(1, n) = parcels%position(1, n)               &
                                        + weights(l) * ud(ks(l), js(l), is(l))
 
-                parcels%position(n, 2) = parcels%position(n, 2)               &
+                parcels%position(2, n) = parcels%position(2, n)               &
                                        + weights(l) * vd(ks(l), js(l), is(l))
 
-                parcels%position(n, 3) = parcels%position(n, 3)               &
+                parcels%position(3, n) = parcels%position(3, n)               &
                                        + weights(l) * wd(ks(l), js(l), is(l))
             enddo
 
-            call apply_periodic_bc(parcels%position(n, :))
+            call apply_periodic_bc(parcels%position(:, n))
         enddo
         !$omp end do
         !$omp end parallel
@@ -104,7 +104,7 @@ module parcel_correction
         !$omp do private(n, is, js, ks, weights, xf, yf, zf, xs, ys, zs, lim_x, lim_y, lim_z)
         do n = 1, n_parcels
 
-            call trilinear(parcels%position(n, :), is, js, ks, weights)
+            call trilinear(parcels%position(:, n), is, js, ks, weights)
 
             xf = weights(2) + weights(4) + weights(6) + weights(8) ! fractional position along x
             yf = weights(3) + weights(4) + weights(7) + weights(8) ! fractional position along y
@@ -155,9 +155,9 @@ module parcel_correction
             lim_z = lim_z * max_compression
             zs = max(-lim_z, min(zs, lim_z))
 
-            parcels%position(n, 1) = parcels%position(n, 1) + xs
-            parcels%position(n, 2) = parcels%position(n, 2) + ys
-            parcels%position(n, 3) = parcels%position(n, 3) + zs
+            parcels%position(1, n) = parcels%position(1, n) + xs
+            parcels%position(2, n) = parcels%position(2, n) + ys
+            parcels%position(3, n) = parcels%position(3, n) + zs
         enddo
         !$omp end do
         !$omp end parallel

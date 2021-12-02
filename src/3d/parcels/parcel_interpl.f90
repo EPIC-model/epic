@@ -38,7 +38,7 @@ module parcel_interpl
 
         ! Interpolate the parcel volume to the grid
         subroutine vol2grid
-            double precision  :: points(4, 3)
+            double precision  :: points(3, 4)
             integer           :: n, p, l
             double precision  :: pvol
 
@@ -50,18 +50,18 @@ module parcel_interpl
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
-                points = get_ellipsoid_points(parcels%position(n, :), &
-                                              pvol, parcels%B(n, :))
+                points = get_ellipsoid_points(parcels%position(:, n), &
+                                              pvol, parcels%B(:, n))
 
 
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
 
                     ! ensure point is within the domain
-                    call apply_periodic_bc(points(p, :))
+                    call apply_periodic_bc(points(:, p))
 
                     ! get interpolation weights and mesh indices
-                    call trilinear(points(p, :), is, js, ks, weights)
+                    call trilinear(points(:, p), is, js, ks, weights)
 
                     do l = 1, ngp
                         volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
@@ -86,7 +86,7 @@ module parcel_interpl
 #ifndef NDEBUG
         ! Interpolate the parcel volume to the grid to check symmetry
         subroutine vol2grid_symmetry_error
-            double precision :: points(4, 3), V, B(5), pos(3)
+            double precision :: points(3, 4), V, B(5), pos(3)
             integer          :: n, p, l, m
             double precision :: pvol
 
@@ -100,11 +100,11 @@ module parcel_interpl
                 !$omp& reduction(+: sym_volg)
                 do n = 1, n_parcels
 
-                    pos = parcels%position(n, :)
+                    pos = parcels%position(:, n)
                     pvol = parcels%volume(n)
                     pos(1) = dble(m) * pos(1)
                     V = dble(m) * pvol
-                    B = parcels%B(n, :)
+                    B = parcels%B(:, n)
 
                     B(2) = dble(m) * B(2)
 
@@ -114,10 +114,10 @@ module parcel_interpl
                     do p = 1, 4
 
                         ! ensure point is within the domain
-                        call apply_periodic_bc(points(p, :))
+                        call apply_periodic_bc(points(:, p))
 
                         ! get interpolation weights and mesh indices
-                        call trilinear(points(p, :), is, js, ks, weights)
+                        call trilinear(points(:, p), is, js, ks, weights)
 
                         do l = 1, ngp
                             sym_volg(ks(l), js(l), is(l)) = sym_volg(ks(l), js(l), is(l)) &
@@ -140,7 +140,7 @@ module parcel_interpl
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
         subroutine par2grid
-            double precision :: points(4, 3)
+            double precision :: points(3, 4)
             integer          :: n, p, l, i, j, k
             double precision :: pvol, weight, btot
 #ifndef ENABLE_DRY_MODE
@@ -171,7 +171,7 @@ module parcel_interpl
 #ifndef ENABLE_DRY_MODE
                 ! liquid water content
                 h_c = parcels%humidity(n) &
-                    - h_0 * dexp(lam_c * (lower(3) - parcels%position(n, 3)))
+                    - h_0 * dexp(lam_c * (lower(3) - parcels%position(3, n)))
                 h_c = max(zero, h_c)
 
                 ! total buoyancy (including effects of latent heating)
@@ -179,10 +179,10 @@ module parcel_interpl
 #else
                 btot = parcels%buoyancy(n)
 #endif
-                points = get_ellipsoid_points(parcels%position(n, :), &
-                                              pvol, parcels%B(n, :))
+                points = get_ellipsoid_points(parcels%position(:, n), &
+                                              pvol, parcels%B(:, n))
 
-                call get_index(parcels%position(n, :), i, j, k)
+                call get_index(parcels%position(:, n), i, j, k)
                 i = mod(i + nx, nx)
                 j = mod(j + ny, ny)
                 nparg(k, j, i) = nparg(k, j, i) + 1
@@ -194,10 +194,10 @@ module parcel_interpl
                 do p = 1, 4
 
                     ! ensure point is within the domain
-                    call apply_periodic_bc(points(p, :))
+                    call apply_periodic_bc(points(:, p))
 
                     ! get interpolation weights and mesh indices
-                    call trilinear(points(p, :), is, js, ks, weights)
+                    call trilinear(points(:, p), is, js, ks, weights)
 
                     ! loop over grid points which are part of the interpolation
                     ! the weight is a quarter due to 4 points per ellipsoid
@@ -206,7 +206,7 @@ module parcel_interpl
                         weight = f14 * weights(l) * pvol
 
                         vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
-                                                      + weight * parcels%vorticity(n, :)
+                                                      + weight * parcels%vorticity(:, n)
 
 #ifndef ENABLE_DRY_MODE
                         dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
@@ -291,7 +291,7 @@ module parcel_interpl
         subroutine grid2par(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
-            double precision                    :: points(4, 3), weight
+            double precision                    :: points(3, 4), weight
             integer                             :: n, p, c, l
 
             call start_timer(grid2par_timer)
@@ -325,18 +325,18 @@ module parcel_interpl
 
                 vgrad(n, :) = zero
 
-                points = get_ellipsoid_points(parcels%position(n, :), &
+                points = get_ellipsoid_points(parcels%position(:, n), &
                                               parcels%volume(n),      &
-                                              parcels%B(n, :))
+                                              parcels%B(:, n))
 
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
 
                     ! ensure point is within the domain
-                    call apply_periodic_bc(points(p, :))
+                    call apply_periodic_bc(points(:, p))
 
                     ! get interpolation weights and mesh indices
-                    call trilinear(points(p, :), is, js, ks, weights)
+                    call trilinear(points(:, p), is, js, ks, weights)
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp
