@@ -137,7 +137,7 @@ module parcel_diagnostics
             !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
             do n = 1, n_parcels
 
-                vel = velocity(n, :)
+                vel = velocity(:, n)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
                 z   = parcels%position(3, n) - zmin
