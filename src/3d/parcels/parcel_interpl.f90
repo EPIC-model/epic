@@ -302,8 +302,8 @@ module parcel_interpl
                     !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, n_parcels
-                        vel(n, :) = zero
-                        vor(n, :) = zero
+                        vel(:, n) = zero
+                        vor(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -312,8 +312,8 @@ module parcel_interpl
                 !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_parcels
-                    vel(n, :) = zero
-                    vor(n, :) = zero
+                    vel(:, n) = zero
+                    vor(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -323,7 +323,7 @@ module parcel_interpl
             !$omp do private(n, p, l, c, points, weight, is, js, ks, weights)
             do n = 1, n_parcels
 
-                vgrad(n, :) = zero
+                vgrad(:, n) = zero
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               parcels%volume(n),      &
@@ -345,16 +345,16 @@ module parcel_interpl
                         ! loop over field components
                         do c = 1, 3
                             ! the weight is a quarter due to 4 points per ellipsoid
-                            vel(n, c) = vel(n, c) &
+                            vel(c, n) = vel(c, n) &
                                       + weight * velog(ks(l), js(l), is(l), c)
                         enddo
 
                         do c = 1, 5
-                            vgrad(n, c) = vgrad(n, c) &
+                            vgrad(c, n) = vgrad(c, n) &
                                         + weight * velgradg(ks(l), js(l), is(l), c)
                         enddo
 
-                        vor(n, :) = vor(n, :) + weight * vtend(ks(l), js(l), is(l), :)
+                        vor(:, n) = vor(:, n) + weight * vtend(ks(l), js(l), is(l), :)
                     enddo
                 enddo
             enddo
