@@ -340,19 +340,12 @@ module parcel_interpl
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp
+                        ! the weight is a quarter due to 4 points per ellipsoid
                         weight = f14 * weights(l)
 
-                        ! loop over field components
-                        do c = 1, 3
-                            ! the weight is a quarter due to 4 points per ellipsoid
-                            vel(c, n) = vel(c, n) &
-                                      + weight * velog(ks(l), js(l), is(l), c)
-                        enddo
+                        vel(:, n) = vel(:, n) + weight * velog(ks(l), js(l), is(l), :)
 
-                        do c = 1, 5
-                            vgrad(c, n) = vgrad(c, n) &
-                                        + weight * velgradg(ks(l), js(l), is(l), c)
-                        enddo
+                        vgrad(:, n) = vgrad(:, n) + weight * velgradg(ks(l), js(l), is(l), :)
 
                         vor(:, n) = vor(:, n) + weight * vtend(ks(l), js(l), is(l), :)
                     enddo
@@ -385,47 +378,67 @@ module parcel_interpl
         ! @param[out] jj meridional grid points for interpolation
         ! @param[out] kk vertical grid points for interpolation
         ! @param[out] ww interpolation weights
-        subroutine trilinear(pos, ii, jj, kk, ww)
+        pure subroutine trilinear(pos, ii, jj, kk, ww)
             double precision, intent(in)  :: pos(3)
             integer,          intent(out) :: ii(ngp), jj(ngp), kk(ngp)
             double precision, intent(out) :: ww(ngp)
             double precision              :: xyz(3)
-            integer                       :: i, l
 
             ! (i, j, k)
             call get_index(pos, ii(1), jj(1), kk(1))
+
+
+            call get_position(ii(1), jj(1), kk(1), xyz)
+            ww(1) = product(one - abs(pos - xyz) * dxi)
+
+            ! (i+1, j, k)
+            ii(2) = ii(1) + 1
+            jj(2) = jj(1)
+            kk(2) = kk(1)
+            call get_position(ii(2), jj(2), kk(2), xyz)
+            ww(2) = product(one - abs(pos - xyz) * dxi)
+
+            ! (i, j+1, k)
+            ii(3) = ii(1)
+            jj(3) = jj(1) + 1
+            kk(3) = kk(1)
+            call get_position(ii(3), jj(3), kk(3), xyz)
+            ww(3) = product(one - abs(pos - xyz) * dxi)
+
+            ! (i+1, j+1, k)
+            ii(4) = ii(2)
+            jj(4) = jj(3)
+            kk(4) = kk(1)
+            call get_position(ii(4), jj(4), kk(4), xyz)
+            ww(4) = product(one - abs(pos - xyz) * dxi)
 
             ! (i, j, k+1)
             ii(5) = ii(1)
             jj(5) = jj(1)
             kk(5) = kk(1) + 1
+            call get_position(ii(5), jj(5), kk(5), xyz)
+            ww(5) = product(one - abs(pos - xyz) * dxi)
 
-            do i = 0, 1
-                l = 4 * i
-                call get_position(ii(1+l), jj(1+l), kk(1+l), xyz)
-                ww(1+l) = product(one - abs(pos - xyz) * dxi)
+            ! (i+1, j, k+1)
+            ii(6) = ii(5) + 1
+            jj(6) = jj(5)
+            kk(6) = kk(5)
+            call get_position(ii(6), jj(6), kk(6), xyz)
+            ww(6) = product(one - abs(pos - xyz) * dxi)
 
-                ! (i+1, j, k) and (i+1, j, k+1)
-                ii(2+l) = ii(1+l) + 1
-                jj(2+l) = jj(1+l)
-                kk(2+l) = kk(1+l)
-                call get_position(ii(2+l), jj(2+l), kk(2+l), xyz)
-                ww(2+l) = product(one - abs(pos - xyz) * dxi)
+            ! (i, j+1, k+1)
+            ii(7) = ii(5)
+            jj(7) = jj(5) + 1
+            kk(7) = kk(5)
+            call get_position(ii(7), jj(7), kk(7), xyz)
+            ww(7) = product(one - abs(pos - xyz) * dxi)
 
-                ! (i, j+1, k) and (i, j+1, k+1)
-                ii(3+l) = ii(1+l)
-                jj(3+l) = jj(1+l) + 1
-                kk(3+l) = kk(1+l)
-                call get_position(ii(3+l), jj(3+l), kk(3+l), xyz)
-                ww(3+l) = product(one - abs(pos - xyz) * dxi)
-
-                ! (i+1, j+1, k) an (i+1, j+1, k+1)
-                ii(4+l) = ii(2+l)
-                jj(4+l) = jj(3+l)
-                kk(4+l) = kk(1+l)
-                call get_position(ii(4+l), jj(4+l), kk(4+l), xyz)
-                ww(4+l) = product(one - abs(pos - xyz) * dxi)
-            enddo
+            ! (i+1, j+1, k+1)
+            ii(8) = ii(6)
+            jj(8) = jj(7)
+            kk(8) = kk(5)
+            call get_position(ii(8), jj(8), kk(8), xyz)
+            ww(8) = product(one - abs(pos - xyz) * dxi)
 
             ! account for x and y periodicity
             call periodic_index_shift(ii, jj)
