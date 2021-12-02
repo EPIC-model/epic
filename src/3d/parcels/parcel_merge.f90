@@ -225,7 +225,7 @@ module parcel_merge
                 dely = get_dely(parcels%position(2, is), ym(n))
                 delz = parcels%position(3, is) - zm(n)
 
-                B33 = get_B33(parcels%B(is, :), parcels%volume(is))
+                B33 = get_B33(parcels%B(:, is), parcels%volume(is))
 
                 ! volume fraction V_{is} / V
                 mu = vmerge * parcels%volume(is)
