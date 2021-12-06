@@ -403,14 +403,14 @@ module parcel_interpl
             kk(1) = floor(xyz(3))
 
 
-            pxc = xyz(1) - dble(ii(1))
-            px = one - pxc
+            px = xyz(1) - dble(ii(1))
+            pxc = one - px
 
-            pyc = xyz(2) - dble(jj(1))
-            py = one - pyc
+            py = xyz(2) - dble(jj(1))
+            pyc = one - py
 
-            pzc = xyz(3) - dble(kk(1))
-            pz = one - pzc
+            pz = xyz(3) - dble(kk(1))
+            pzc = one - pz
 
             w00 = pyc * pxc
             w10 = pyc * px
