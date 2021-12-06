@@ -378,7 +378,7 @@ module parcel_interpl
         ! @param[out] jj meridional grid points for interpolation
         ! @param[out] kk vertical grid points for interpolation
         ! @param[out] ww interpolation weights
-        subroutine trilinear(pos, ii, jj, kk, ww)
+        pure subroutine trilinear(pos, ii, jj, kk, ww)
             double precision, intent(in)  :: pos(3)
             integer,          intent(out) :: ii(ngp), jj(ngp), kk(ngp)
             double precision, intent(out) :: ww(ngp)
