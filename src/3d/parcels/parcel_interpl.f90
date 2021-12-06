@@ -388,7 +388,7 @@ module parcel_interpl
         ! @param[out] jj meridional grid points for interpolation
         ! @param[out] kk vertical grid points for interpolation
         ! @param[out] ww interpolation weights
-        pure subroutine trilinear(pos, ii, jj, kk, ww)
+        subroutine trilinear(pos, ii, jj, kk, ww)
             double precision, intent(in)  :: pos(3)
             integer,          intent(out) :: ii(ngp), jj(ngp), kk(ngp)
             double precision, intent(out) :: ww(ngp)
@@ -402,13 +402,14 @@ module parcel_interpl
             jj(1) = floor(xyz(2))
             kk(1) = floor(xyz(3))
 
-            pxc = dble(ii(1)) - xyz(1)
+
+            pxc = xyz(1) - dble(ii(1))
             px = one - pxc
 
-            pyc = dble(jj(1)) - xyz(2)
+            pyc = xyz(2) - dble(jj(1))
             py = one - pyc
 
-            pzc = dble(kk(1)) - xyz(3)
+            pzc = xyz(3) - dble(kk(1))
             pz = one - pzc
 
             w00 = pyc * pxc
