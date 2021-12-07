@@ -111,8 +111,8 @@ module fields
         ! Do periodic shift of the index
         ! @param[inout] ii zonal grid point indices
         ! @param[inout] jj meridional grid point indices
-        pure subroutine periodic_index_shift(ii, jj)
-            integer, intent(inout) :: ii(:), jj(:)
+        elemental pure subroutine periodic_index_shift(ii, jj)
+            integer, intent(inout) :: ii, jj
 
             ! account for x / y periodicity:
             ! -1          --> nx-1 / ny-1
