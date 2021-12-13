@@ -291,8 +291,7 @@ module parcel_interpl
         subroutine grid2par(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
-            double precision                    :: points(3, 4), weight
-            integer                             :: n, p, c, l
+            integer                             :: n, c, l
 
             call start_timer(grid2par_timer)
 
@@ -320,35 +319,24 @@ module parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, c, points, weight, is, js, ks, weights)
+            !$omp do private(n, l, c, is, js, ks, weights) ! p, points
             do n = 1, n_parcels
 
                 vgrad(:, n) = zero
 
-                points = get_ellipsoid_points(parcels%position(:, n), &
-                                              parcels%volume(n),      &
-                                              parcels%B(:, n))
+                ! ensure point is within the domain
+                call apply_periodic_bc(parcels%position(:, n))
 
-                ! we have 4 points per ellipsoid
-                do p = 1, 4
+                ! get interpolation weights and mesh indices
+                call trilinear(parcels%position(:, n), is, js, ks, weights)
 
-                    ! ensure point is within the domain
-                    call apply_periodic_bc(points(:, p))
+                ! loop over grid points which are part of the interpolation
+                do l = 1, ngp
+                    vel(:, n) = vel(:, n) + weights(l) * velog(ks(l), js(l), is(l), :)
 
-                    ! get interpolation weights and mesh indices
-                    call trilinear(points(:, p), is, js, ks, weights)
+                    vgrad(:, n) = vgrad(:, n) + weights(l) * velgradg(ks(l), js(l), is(l), :)
 
-                    ! loop over grid points which are part of the interpolation
-                    do l = 1, ngp
-                        ! the weight is a quarter due to 4 points per ellipsoid
-                        weight = f14 * weights(l)
-
-                        vel(:, n) = vel(:, n) + weight * velog(ks(l), js(l), is(l), :)
-
-                        vgrad(:, n) = vgrad(:, n) + weight * velgradg(ks(l), js(l), is(l), :)
-
-                        vor(:, n) = vor(:, n) + weight * vtend(ks(l), js(l), is(l), :)
-                    enddo
+                    vor(:, n) = vor(:, n) + weights(l) * vtend(ks(l), js(l), is(l), :)
                 enddo
             enddo
             !$omp end do

@@ -61,7 +61,7 @@ module parcel_ellipsoid
 
             D = get_symmetric_matrix(B, volume)
 
-            call jacobi_diagonalise(D)
+            call jacobi_eigenvalues(D)
 
             evals(1) = D(1, 1)
             evals(2) = D(2, 2)

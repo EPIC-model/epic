@@ -11,7 +11,7 @@ module jacobi
         integer, parameter :: n = 3 ! we have 3x3 matrices
         double precision, parameter :: atol = 1.0e-15
 
-    public :: jacobi_diagonalise
+    public :: jacobi_diagonalise, jacobi_eigenvalues
 
     contains
 
@@ -133,7 +133,7 @@ module jacobi
         ! The eigenvector V(:, i) belongs to eigenvalue A(i, i).
         ! @param[inout] A real symmetric 3x3 matrix
         ! @param[out] V eigenvector matrix
-        subroutine jacobi_diagonalise(A, V)
+        pure subroutine jacobi_diagonalise(A, V)
             double precision, intent(inout) :: A(n, n)
             double precision, intent(out)   :: V(n, n)
             integer                         :: i, j
@@ -275,7 +275,7 @@ module jacobi
         ! The input matrix is overwritten and will be the diagonal
         ! matrix storing the eigenvalues
         ! @param[inout] A real symmetric 3x3 matrix
-        subroutine jacobi_eigenvalues(A)
+        pure subroutine jacobi_eigenvalues(A)
             double precision, intent(inout)           :: A(n, n)
             integer                                   :: i, j
             double precision                          :: sm

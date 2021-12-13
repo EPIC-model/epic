@@ -3,7 +3,7 @@ module rk4_utils
     use fields, only : velgradg, tbuoyg, vortg
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi
-    use jacobi, only : jacobi_diagonalise
+    use jacobi, only : jacobi_eigenvalues
 #ifdef ENABLE_VERBOSE
     use options, only : output
 #endif
@@ -129,7 +129,7 @@ module rk4_utils
                         ! calculate its eigenvalues (strain is overwritten and will be
                         ! the diagonal matrix with the eigenvalues sorted in descending order), i.e.
                         ! the largest eigenvalue is in strain(1, 1).
-                        call jacobi_diagonalise(strain)
+                        call jacobi_eigenvalues(strain)
 
                         gmax = max(gmax, strain(1, 1))
                     enddo
