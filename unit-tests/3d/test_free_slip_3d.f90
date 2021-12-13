@@ -44,9 +44,9 @@ program test_free_slip_3d
                 do kk = 1, 4, 2
                     do jj = 1, 4, 2
                         do ii = 1, 4, 2
-                            parcels%position(l, 1) = lower(1) + i * dx(1) + f14 * dx(1) * ii
-                            parcels%position(l, 2) = lower(2) + j * dx(2) + f14 * dx(2) * jj
-                            parcels%position(l, 3) = lower(3) + k * dx(3) + f14 * dx(3) * kk
+                            parcels%position(1, l) = lower(1) + i * dx(1) + f14 * dx(1) * ii
+                            parcels%position(2, l) = lower(2) + j * dx(2) + f14 * dx(2) * jj
+                            parcels%position(3, l) = lower(3) + k * dx(3) + f14 * dx(3) * kk
                             l = l + 1
                         enddo
                     enddo
@@ -66,11 +66,11 @@ program test_free_slip_3d
     b2 = abc23 / dsqrt(two)
     c2 = abc23 / dsqrt(five)
 
-    parcels%B(:, 1) = c2
-    parcels%B(:, 2) = zero
-    parcels%B(:, 3) = zero
-    parcels%B(:, 4) = b2
-    parcels%B(:, 5) = zero
+    parcels%B(1, :) = c2
+    parcels%B(2, :) = zero
+    parcels%B(3, :) = zero
+    parcels%B(4, :) = b2
+    parcels%B(5, :) = zero
 
     call vol2grid
 

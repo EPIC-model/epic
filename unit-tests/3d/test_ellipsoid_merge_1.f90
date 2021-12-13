@@ -57,11 +57,11 @@ program test_ellipsoid_merge_1
             integer :: i
 
             n_parcels = 9
-            parcels%position(1, :) = zero
+            parcels%position(:, 1) = zero
             parcels%volume(1) = a1b1c1 * four * pi / three
-            parcels%B(1, :) = zero
+            parcels%B(:, 1) = zero
             parcels%B(1, 1) = a1b1c1 ** f23
-            parcels%B(1, 4) = a1b1c1 ** f23
+            parcels%B(4, 1) = a1b1c1 ** f23
             parcels%buoyancy(1) = 1.5d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(1) = 1.3d0
@@ -69,49 +69,49 @@ program test_ellipsoid_merge_1
 
             do i = 0, 1
                 ! small parcel below front/back left
-                parcels%position(2+4*i, 1) = -0.6d0
-                parcels%position(2+4*i, 2) = -0.6d0 + 1.2d0 * dble(i)
-                parcels%position(2+4*i, 3) = -0.6d0
+                parcels%position(1, 2+4*i) = -0.6d0
+                parcels%position(2, 2+4*i) = -0.6d0 + 1.2d0 * dble(i)
+                parcels%position(3, 2+4*i) = -0.6d0
                 parcels%volume(2+4*i) = a2b2c2 * four * pi / three
-                parcels%B(2+4*i, :) = zero
-                parcels%B(2+4*i, 1) = a2b2c2 ** f23
-                parcels%B(2+4*i, 4) = a2b2c2 ** f23
+                parcels%B(:, 2+4*i) = zero
+                parcels%B(1, 2+4*i) = a2b2c2 ** f23
+                parcels%B(4, 2+4*i) = a2b2c2 ** f23
                 parcels%buoyancy(2+4*i) = 1.8d0
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(2+4*i) = 1.2d0
 #endif
                 ! small parcel below front/back right
-                parcels%position(3+4*i, 1) =  0.6d0
-                parcels%position(3+4*i, 2) = -0.6d0 + 1.2d0 * dble(i)
-                parcels%position(3+4*i, 3) = -0.6d0
+                parcels%position(1, 3+4*i) =  0.6d0
+                parcels%position(2, 3+4*i) = -0.6d0 + 1.2d0 * dble(i)
+                parcels%position(3, 3+4*i) = -0.6d0
                 parcels%volume(3+4*i) = a2b2c2 * four * pi / three
-                parcels%B(3+4*i, :) = zero
-                parcels%B(3+4*i, 1) = a2b2c2 ** f23
-                parcels%B(3+4*i, 4) = a2b2c2 ** f23
+                parcels%B(:, 3+4*i) = zero
+                parcels%B(1, 3+4*i) = a2b2c2 ** f23
+                parcels%B(4, 3+4*i) = a2b2c2 ** f23
                 parcels%buoyancy(3+4*i) = 1.4d0
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(3+4*i) = 1.1d0
 #endif
                 ! small parcel above front/back left
-                parcels%position(4+4*i, 1) = -0.6d0
-                parcels%position(4+4*i, 2) = -0.6d0 + 1.2d0 * dble(i)
-                parcels%position(4+4*i, 3) =  0.6d0
+                parcels%position(1, 4+4*i) = -0.6d0
+                parcels%position(2, 4+4*i) = -0.6d0 + 1.2d0 * dble(i)
+                parcels%position(3, 4+4*i) =  0.6d0
                 parcels%volume(4+4*i) = a2b2c2 * four * pi / three
-                parcels%B(4+4*i, :) = zero
-                parcels%B(4+4*i, 1) = a2b2c2 ** f23
-                parcels%B(4+4*i, 4) = a2b2c2 ** f23
+                parcels%B(:, 4+4*i) = zero
+                parcels%B(1, 4+4*i) = a2b2c2 ** f23
+                parcels%B(4, 4+4*i) = a2b2c2 ** f23
                 parcels%buoyancy(4+4*i) = 1.7d0
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(4+4*i) = 1.0d0
 #endif
                 ! small parcel above front/back right
-                parcels%position(5+4*i, 1) =  0.6d0
-                parcels%position(5+4*i, 2) = -0.6d0 + 1.2d0 * dble(i)
-                parcels%position(5+4*i, 3) =  0.6d0
+                parcels%position(1, 5+4*i) =  0.6d0
+                parcels%position(2, 5+4*i) = -0.6d0 + 1.2d0 * dble(i)
+                parcels%position(3, 5+4*i) =  0.6d0
                 parcels%volume(5+4*i) = a2b2c2 * four * pi / three
-                parcels%B(5+4*i, :) = zero
-                parcels%B(5+4*i, 1) = a2b2c2 ** f23
-                parcels%B(5+4*i, 4) = a2b2c2 ** f23
+                parcels%B(:, 5+4*i) = zero
+                parcels%B(1, 5+4*i) = a2b2c2 ** f23
+                parcels%B(4, 5+4*i) = a2b2c2 ** f23
                 parcels%buoyancy(5+4*i) = 1.5d0
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(5+4*i) = 1.4d0
@@ -144,13 +144,13 @@ program test_ellipsoid_merge_1
 
             max_err = max(max_err, abs(dble(n_parcels - 1)))
             max_err = max(max_err, abs(parcels%B(1, 1) - B11))
-            max_err = max(max_err, abs(parcels%B(1, 2) - B12))
-            max_err = max(max_err, abs(parcels%B(1, 3) - B13))
-            max_err = max(max_err, abs(parcels%B(1, 4) - B22))
-            max_err = max(max_err, abs(parcels%B(1, 5) - B23))
-            max_err = max(max_err, abs(get_B33(parcels%B(1, :), &
+            max_err = max(max_err, abs(parcels%B(2, 1) - B12))
+            max_err = max(max_err, abs(parcels%B(3, 1) - B13))
+            max_err = max(max_err, abs(parcels%B(4, 1) - B22))
+            max_err = max(max_err, abs(parcels%B(5, 1) - B23))
+            max_err = max(max_err, abs(get_B33(parcels%B(:, 1), &
                                                parcels%volume(1)) - B33))
-            max_err = max(max_err, sum(abs(parcels%position(1, :))))
+            max_err = max(max_err, sum(abs(parcels%position(:, 1))))
             max_err = max(max_err, abs(parcels%volume(1) - vol))
             max_err = max(max_err, abs(parcels%buoyancy(1) - buoy))
 #ifndef ENABLE_DRY_MODE

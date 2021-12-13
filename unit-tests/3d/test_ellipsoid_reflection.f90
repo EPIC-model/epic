@@ -73,23 +73,23 @@ program test_ellipsoid_reflection
             !
             ! lower boundary check
             !
-            parcels%position(1, :) = (/f12, f12, - f12 * dx(3)/)
+            parcels%position(:, 1) = (/f12, f12, - f12 * dx(3)/)
             parcels%B(1, 1) = B11
-            parcels%B(1, 2) = B12
-            parcels%B(1, 3) = B13
-            parcels%B(1, 4) = B22
-            parcels%B(1, 5) = B23
+            parcels%B(2, 1) = B12
+            parcels%B(3, 1) = B13
+            parcels%B(4, 1) = B22
+            parcels%B(5, 1) = B23
 
             if (verbose) then
-                write(80, *) parcels%position(1, :), parcels%B(1, :), &
-                             get_B33(parcels%B(1, :), parcels%volume(1))
+                write(80, *) parcels%position(:, 1), parcels%B(:, 1), &
+                             get_B33(parcels%B(:, 1), parcels%volume(1))
             endif
 
-            call apply_reflective_bc(parcels%position(1, :), parcels%B(1, :))
+            call apply_reflective_bc(parcels%position(:, 1), parcels%B(:, 1))
 
             if (verbose) then
-                write(81, *) parcels%position(1, :), parcels%B(1, :), &
-                             get_B33(parcels%B(1, :), parcels%volume(1))
+                write(81, *) parcels%position(:, 1), parcels%B(:, 1), &
+                             get_B33(parcels%B(:, 1), parcels%volume(1))
             endif
 
             call check_result('lower')
@@ -97,14 +97,14 @@ program test_ellipsoid_reflection
             !
             ! upper boundary check
             !
-            parcels%position(1, :) = (/f12, f12, one + f12 * dx(3)/)
+            parcels%position(:, 1) = (/f12, f12, one + f12 * dx(3)/)
             parcels%B(1, 1) = B11
-            parcels%B(1, 2) = B12
-            parcels%B(1, 3) = B13
-            parcels%B(1, 4) = B22
-            parcels%B(1, 5) = B23
+            parcels%B(2, 1) = B12
+            parcels%B(3, 1) = B13
+            parcels%B(4, 1) = B22
+            parcels%B(5, 1) = B23
 
-            call apply_reflective_bc(parcels%position(1, :), parcels%B(1, :))
+            call apply_reflective_bc(parcels%position(:, 1), parcels%B(:, 1))
 
             call check_result('upper')
         enddo
@@ -127,13 +127,13 @@ program test_ellipsoid_reflection
             double precision         :: angles(2)
 
             error = max(error, abs(parcels%B(1, 1) - B11))
-            error = max(error, abs(parcels%B(1, 2) - B12))
-            error = max(error, abs(parcels%B(1, 3) + B13))
-            error = max(error, abs(parcels%B(1, 4) - B22))
-            error = max(error, abs(parcels%B(1, 5) + B23))
+            error = max(error, abs(parcels%B(2, 1) - B12))
+            error = max(error, abs(parcels%B(3, 1) + B13))
+            error = max(error, abs(parcels%B(4, 1) - B22))
+            error = max(error, abs(parcels%B(5, 1) + B23))
 
             ! (/azimuth, polar/)
-            angles = get_angles(parcels%B(1, :), parcels%volume(1))
+            angles = get_angles(parcels%B(:, 1), parcels%volume(1))
 
             ! -pi <= theta <= pi
             if (angles(1) < 0) then
@@ -163,12 +163,12 @@ program test_ellipsoid_reflection
             error = max(error, dabs(dabs(phi) - dabs(angles(2))))
 
             error = max(error, abs(f12 - parcels%position(1, 1)))
-            error = max(error, abs(f12 - parcels%position(1, 2)))
+            error = max(error, abs(f12 - parcels%position(2, 1)))
 
             if (bc == 'lower') then
-                error = max(error, abs(f12 * dx(3) - parcels%position(1, 3)))
+                error = max(error, abs(f12 * dx(3) - parcels%position(3, 1)))
             else
-                error = max(error, abs(one - f12 * dx(3) - parcels%position(1, 3)))
+                error = max(error, abs(one - f12 * dx(3) - parcels%position(3, 1)))
             endif
         end subroutine check_result
 
