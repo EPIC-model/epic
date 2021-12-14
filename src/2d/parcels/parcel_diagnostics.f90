@@ -237,7 +237,7 @@ module parcel_diagnostics
 
                     x2bv = x2bv + bv * parcels%position(n, 1) ** 2
                     z2bv = z2bv + bv * parcels%position(n, 2) ** 2
-                    xzbv = xzbv + bv * parcels%position(n, 2) * parcels%position(n, 2)
+                    xzbv = xzbv + bv * parcels%position(n, 1) * parcels%position(n, 2)
 
 
                     vv = parcels%vorticity(n) * parcels%volume(n)
@@ -247,7 +247,7 @@ module parcel_diagnostics
 
                     x2vv = x2vv + vv * parcels%position(n, 1) ** 2
                     z2vv = z2vv + vv * parcels%position(n, 2) ** 2
-                    xzvv = xzvv + vv * parcels%position(n, 2) * parcels%position(n, 2)
+                    xzvv = xzvv + vv * parcels%position(n, 1) * parcels%position(n, 2)
                 endif
             enddo
             !$omp end do
