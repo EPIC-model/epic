@@ -72,16 +72,16 @@ module parcel_container
             endif
 #endif
 
-            parcels%position(n, :) = parcels%position(m, :)
+            parcels%position(:, n) = parcels%position(:, m)
 
-            parcels%vorticity(n, :) = parcels%vorticity(m, :)
+            parcels%vorticity(:, n) = parcels%vorticity(:, m)
 
             parcels%volume(n)  = parcels%volume(m)
             parcels%buoyancy(n) = parcels%buoyancy(m)
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n) = parcels%humidity(m)
 #endif
-            parcels%B(n, :) = parcels%B(m, :)
+            parcels%B(:, n) = parcels%B(:, m)
 
         end subroutine parcel_replace
 
@@ -90,9 +90,9 @@ module parcel_container
         subroutine parcel_alloc(num)
             integer, intent(in) :: num
 
-            allocate(parcels%position(num, 3))
-            allocate(parcels%vorticity(num, 3))
-            allocate(parcels%B(num, 5))
+            allocate(parcels%position(3, num))
+            allocate(parcels%vorticity(3, num))
+            allocate(parcels%B(5, num))
             allocate(parcels%volume(num))
             allocate(parcels%buoyancy(num))
 #ifndef ENABLE_DRY_MODE

@@ -137,7 +137,7 @@ module parcel_ellipsoid
         ! Obtain the product of the semi-minor and semi-major axis.
         ! @param[in] volume of the parcel
         ! @returns abc = 3 * volume / (4 * pi)
-        elemental function get_abc(volume) result(abc)
+        pure elemental function get_abc(volume) result(abc)
             double precision, intent(in) :: volume
             double precision             :: abc
 
@@ -149,7 +149,7 @@ module parcel_ellipsoid
         ! @param[in] c2 is the smallest eigenvalue
         ! @param[in] volume of the parcel(s)
         ! @returns a/c
-        elemental function get_aspect_ratio(a2, c2) result(lam)
+        pure elemental function get_aspect_ratio(a2, c2) result(lam)
             double precision, intent(in) :: a2, c2
             double precision             :: lam
 
@@ -166,8 +166,8 @@ module parcel_ellipsoid
             double precision, intent(in) :: volume
             double precision, intent(in) :: B(5)        ! B11, B12, B13, B22, B23
             double precision             :: eta, tau, a2, b2, c2, V(3, 3)
-            integer                      :: j, k
-            double precision             :: points(4, 3), xy(2)
+            integer                      :: j
+            double precision             :: points(3, 4), xy(2)
 
             ! (/a2, b2, c2/) with a >= b >= c
             call diagonalise(B, volume, a2, b2, c2, V)
@@ -183,11 +183,9 @@ module parcel_ellipsoid
                 xy = (/eta * costheta(j), tau * sintheta(j)/)
 
                 ! suppport point in the global reference frame
-                do k = 1, 3
-                    points(j, k) = position(k)     &
-                                 + xy(1) * V(k, 1) &
-                                 + xy(2) * V(k, 2)
-                enddo
+                points(:, j) = position        &
+                             + xy(1) * V(:, 1) &
+                             + xy(2) * V(:, 2)
             enddo
         end function get_ellipsoid_points
 

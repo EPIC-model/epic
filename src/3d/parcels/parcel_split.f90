@@ -40,7 +40,7 @@ module parcel_split_mod
             !$omp parallel default(shared)
             !$omp do private(n, B, vol, lam, a2, b2, c2, V, n_thread_loc)
             do n = 1, last_index
-                B = parcels%B(n, :)
+                B = parcels%B(:, n)
                 vol = parcels%volume(n)
 
                 call diagonalise(B, vol, a2, b2, c2, V)
@@ -56,11 +56,11 @@ module parcel_split_mod
                 ! this ellipsoid is split, i.e., add a new parcel
                 !
 
-                parcels%B(n, 1) = B(1) - f34 * a2 * V(1, 1) ** 2
-                parcels%B(n, 2) = B(2) - f34 * a2 * V(1, 1) * V(2, 1)
-                parcels%B(n, 3) = B(3) - f34 * a2 * V(1, 1) * V(3, 1)
-                parcels%B(n, 4) = B(4) - f34 * a2 * V(2, 1) ** 2
-                parcels%B(n, 5) = B(5) - f34 * a2 * V(2, 1) * V(3, 1)
+                parcels%B(1, n) = B(1) - f34 * a2 * V(1, 1) ** 2
+                parcels%B(2, n) = B(2) - f34 * a2 * V(1, 1) * V(2, 1)
+                parcels%B(3, n) = B(3) - f34 * a2 * V(1, 1) * V(3, 1)
+                parcels%B(4, n) = B(4) - f34 * a2 * V(2, 1) ** 2
+                parcels%B(5, n) = B(5) - f34 * a2 * V(2, 1) * V(3, 1)
 
 
                 parcels%volume(n) = f12 * vol
@@ -73,24 +73,24 @@ module parcel_split_mod
                 !$omp end critical
 
 
-                parcels%B(n_thread_loc, :) = parcels%B(n, :)
+                parcels%B(:, n_thread_loc) = parcels%B(:, n)
 
-                parcels%vorticity(n_thread_loc, :) = parcels%vorticity(n, :)
+                parcels%vorticity(:, n_thread_loc) = parcels%vorticity(:, n)
                 parcels%volume(n_thread_loc) = parcels%volume(n)
                 parcels%buoyancy(n_thread_loc) = parcels%buoyancy(n)
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n_thread_loc) = parcels%humidity(n)
 #endif
                 V(:, 1) = V(:, 1) * dh * dsqrt(a2)
-                parcels%position(n_thread_loc, :) = parcels%position(n, :) - V(:, 1)
-                parcels%position(n, :) = parcels%position(n, :) + V(:, 1)
+                parcels%position(:, n_thread_loc) = parcels%position(:, n) - V(:, 1)
+                parcels%position(:, n) = parcels%position(:, n) + V(:, 1)
 
                 ! child parcels need to be reflected into domain, if their center
                 ! is inside the halo region
-                call apply_reflective_bc(parcels%position(n_thread_loc, :), &
-                                         parcels%B(n_thread_loc, :))
+                call apply_reflective_bc(parcels%position(:, n_thread_loc), &
+                                         parcels%B(:, n_thread_loc))
 
-                call apply_reflective_bc(parcels%position(n, :), parcels%B(n, :))
+                call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
 
             enddo
             !$omp end do

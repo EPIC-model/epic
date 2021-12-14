@@ -50,10 +50,10 @@ module parcel_bc
             !$omp do private(n)
             do n = 1, n_parcels
                 ! zonal direction
-                call apply_periodic_bc(position(n, :))
+                call apply_periodic_bc(position(:, n))
 
                 ! vertical direction
-                call apply_reflective_bc(position(n, :), B(n, :))
+                call apply_reflective_bc(position(:, n), B(:, n))
             enddo
             !$omp end do
             !$omp end parallel

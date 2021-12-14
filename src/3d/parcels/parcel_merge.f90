@@ -83,11 +83,11 @@ module parcel_merge
             double precision                           :: x0(n_merge), y0(n_merge)
             double precision                           :: xm(n_merge), ym(n_merge), zm(n_merge)
             double precision                           :: delx, vmerge, dely, delz, B33, mu
-            double precision                           :: buoym(n_merge), vortm(n_merge, 3)
+            double precision                           :: buoym(n_merge), vortm(3, n_merge)
 #ifndef ENABLE_DRY_MODE
             double precision                           :: hum(n_merge)
 #endif
-            double precision,            intent(out)   :: Bm(n_merge, 6) ! B11, B12, B13, B22, B23, B33
+            double precision,            intent(out)   :: Bm(6, n_merge) ! B11, B12, B13, B22, B23, B33
             double precision,            intent(out)   :: vm(n_merge)
 
             loca = zero
@@ -105,10 +105,10 @@ module parcel_merge
                     vm(l) = parcels%volume(ic)
 
                     !x0 stores the x centre of the other parcel
-                    x0(l) = parcels%position(ic, 1)
+                    x0(l) = parcels%position(1, ic)
 
                     !y0 stores the y centre of the other parcel
-                    y0(l) = parcels%position(ic, 2)
+                    y0(l) = parcels%position(2, ic)
 
                     ! xm will sum v(is)*(x(is)-x(ic)) modulo periodicity
                     xm(l) = zero
@@ -117,16 +117,16 @@ module parcel_merge
                     ym(l) = zero
 
                     ! zm will contain v(ic)*z(ic)+sum{v(is)*z(is)}
-                    zm(l) = parcels%volume(ic) * parcels%position(ic, 3)
+                    zm(l) = parcels%volume(ic) * parcels%position(3, ic)
 
                     ! buoyancy and humidity
                     buoym(l) = parcels%volume(ic) * parcels%buoyancy(ic)
 #ifndef ENABLE_DRY_MODE
                     hum(l) = parcels%volume(ic) * parcels%humidity(ic)
 #endif
-                    vortm(l, :) = parcels%volume(ic) * parcels%vorticity(ic, :)
+                    vortm(:, l) = parcels%volume(ic) * parcels%vorticity(:, ic)
 
-                    Bm(l, :) = zero
+                    Bm(:, l) = zero
                 endif
 
                 ! Sum up all the small parcels merging with a common other one:
@@ -136,22 +136,22 @@ module parcel_merge
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
 
                 ! works across periodic edge
-                delx = get_delx(parcels%position(is, 1), x0(n))
-                dely = get_dely(parcels%position(is, 2), y0(n))
+                delx = get_delx(parcels%position(1, is), x0(n))
+                dely = get_dely(parcels%position(2, is), y0(n))
 
                 ! Accumulate sum of v(is)*(x(is)-x(ic)) and v(is)*(y(is)-y(ic))
                 xm(n) = xm(n) + parcels%volume(is) * delx
                 ym(n) = ym(n) + parcels%volume(is) * dely
 
                 ! Accumulate v(ic)*z(ic)+sum{v(is)*z(is)}
-                zm(n) = zm(n) + parcels%volume(is) * parcels%position(is, 3)
+                zm(n) = zm(n) + parcels%volume(is) * parcels%position(3, is)
 
                 ! Accumulate buoyancy and humidity
                 buoym(n) = buoym(n) + parcels%volume(is) * parcels%buoyancy(is)
 #ifndef ENABLE_DRY_MODE
                 hum(n) = hum(n) + parcels%volume(is) * parcels%humidity(is)
 #endif
-                vortm(n, :) = vortm(n, :) + parcels%volume(is) * parcels%vorticity(is, :)
+                vortm(:, n) = vortm(:, n) + parcels%volume(is) * parcels%vorticity(:, is)
             enddo
 
             ! Obtain the merged parcel centres
@@ -172,7 +172,7 @@ module parcel_merge
 #ifndef ENABLE_DRY_MODE
                 hum(m) = vmerge * hum(m)
 #endif
-                vortm(m, :) = vmerge * vortm(m, :)
+                vortm(:, m) = vmerge * vortm(:, m)
             enddo
 
             loca = zero
@@ -187,32 +187,32 @@ module parcel_merge
 
                     vmerge = one / vm(l)
 
-                    B33 = get_B33(parcels%B(ic, :), parcels%volume(ic))
+                    B33 = get_B33(parcels%B(:, ic), parcels%volume(ic))
 
-                    delx = get_delx(parcels%position(ic, 1), xm(l))
-                    dely = get_dely(parcels%position(ic, 2), ym(l))
-                    delz = parcels%position(ic, 3) - zm(l)
+                    delx = get_delx(parcels%position(1, ic), xm(l))
+                    dely = get_dely(parcels%position(2, ic), ym(l))
+                    delz = parcels%position(3, ic) - zm(l)
 
                     mu = parcels%volume(ic) * vmerge
 
 
-                    Bm(l, 1) = mu * (five * delx ** 2   + parcels%B(ic, 1))
-                    Bm(l, 2) = mu * (five * delx * dely + parcels%B(ic, 2))
-                    Bm(l, 3) = mu * (five * delx * delz + parcels%B(ic, 3))
-                    Bm(l, 4) = mu * (five * dely ** 2   + parcels%B(ic, 4))
-                    Bm(l, 5) = mu * (five * dely * delz + parcels%B(ic, 5))
-                    Bm(l, 6) = mu * (five * delz ** 2   + B33)
+                    Bm(1, l) = mu * (five * delx ** 2   + parcels%B(1, ic))
+                    Bm(2, l) = mu * (five * delx * dely + parcels%B(2, ic))
+                    Bm(3, l) = mu * (five * delx * delz + parcels%B(3, ic))
+                    Bm(4, l) = mu * (five * dely ** 2   + parcels%B(4, ic))
+                    Bm(5, l) = mu * (five * dely * delz + parcels%B(5, ic))
+                    Bm(6, l) = mu * (five * delz ** 2   + B33)
 
                     parcels%volume(ic)  = vm(l)
-                    parcels%position(ic, 1) = xm(l)
-                    parcels%position(ic, 2) = ym(l)
-                    parcels%position(ic, 3) = zm(l)
+                    parcels%position(1, ic) = xm(l)
+                    parcels%position(2, ic) = ym(l)
+                    parcels%position(3, ic) = zm(l)
 
                     parcels%buoyancy(ic) = buoym(l)
 #ifndef ENABLE_DRY_MODE
                     parcels%humidity(ic) = hum(l)
 #endif
-                    parcels%vorticity(ic, :) = vortm(l, :)
+                    parcels%vorticity(:, ic) = vortm(:, l)
 
                 endif
 
@@ -221,21 +221,21 @@ module parcel_merge
 
                 vmerge = one / vm(n)
 
-                delx = get_delx(parcels%position(is, 1), xm(n))
-                dely = get_dely(parcels%position(is, 2), ym(n))
-                delz = parcels%position(is, 3) - zm(n)
+                delx = get_delx(parcels%position(1, is), xm(n))
+                dely = get_dely(parcels%position(2, is), ym(n))
+                delz = parcels%position(3, is) - zm(n)
 
-                B33 = get_B33(parcels%B(is, :), parcels%volume(is))
+                B33 = get_B33(parcels%B(:, is), parcels%volume(is))
 
                 ! volume fraction V_{is} / V
                 mu = vmerge * parcels%volume(is)
 
-                Bm(n, 1) = Bm(n, 1) + mu * (five * delx ** 2   + parcels%B(is, 1))
-                Bm(n, 2) = Bm(n, 2) + mu * (five * delx * dely + parcels%B(is, 2))
-                Bm(n, 3) = Bm(n, 3) + mu * (five * delx * delz + parcels%B(is, 3))
-                Bm(n, 4) = Bm(n, 4) + mu * (five * dely ** 2   + parcels%B(is, 4))
-                Bm(n, 5) = Bm(n, 5) + mu * (five * dely * delz + parcels%B(is, 5))
-                Bm(n, 6) = Bm(n, 6) + mu * (five * delz ** 2   + B33)
+                Bm(1, n) = Bm(1, n) + mu * (five * delx ** 2   + parcels%B(1, is))
+                Bm(2, n) = Bm(2, n) + mu * (five * delx * dely + parcels%B(2, is))
+                Bm(3, n) = Bm(3, n) + mu * (five * delx * delz + parcels%B(3, is))
+                Bm(4, n) = Bm(4, n) + mu * (five * dely ** 2   + parcels%B(4, is))
+                Bm(5, n) = Bm(5, n) + mu * (five * dely * delz + parcels%B(5, is))
+                Bm(6, n) = Bm(6, n) + mu * (five * delz ** 2   + B33)
             enddo
 
         end subroutine do_group_merge
@@ -254,7 +254,7 @@ module parcel_merge
             integer                                    :: m, ic, l
             integer                                    :: loca(n_parcels)
             double precision                           :: factor, detB
-            double precision                           :: B(n_merge, 6), &
+            double precision                           :: B(6, n_merge), &
                                                           V(n_merge)
 
             call do_group_merge(parcels, isma, iclo, n_merge, B, V)
@@ -272,15 +272,15 @@ module parcel_merge
 
                     ! normalize such that determinant of the merger is (abc)**2
                     ! ((abc)**2 / det(B))^(1/3)
-                    detB = B(l, 1) * (B(l, 4) * B(l, 6) - B(l, 5) ** 2) &
-                         - B(l, 2) * (B(l, 2) * B(l, 6) - B(l, 3) * B(l, 5)) &
-                         + B(l, 3) * (B(l, 2) * B(l, 5) - B(l, 3) * B(l, 4))
+                    detB = B(1, l) * (B(4, l) * B(6, l) - B(5, l) ** 2) &
+                         - B(2, l) * (B(2, l) * B(6, l) - B(3, l) * B(5, l)) &
+                         + B(3, l) * (B(2, l) * B(5, l) - B(3, l) * B(4, l))
 
                     factor = (get_abc(V(l)) ** 2 / detB) ** f13
 
-                    parcels%B(ic, :) = B(l, 1:5) * factor
+                    parcels%B(:, ic) = B(1:5, l) * factor
 
-                    call apply_periodic_bc(parcels%position(ic, :))
+                    call apply_periodic_bc(parcels%position(:, ic))
                 endif
             enddo
 

@@ -23,7 +23,7 @@ module jacobi
         ! @param j[in] first column with i .ne. j
         ! @param k[in] second column with i .ne. k
         ! @param l[out] the index of the pivot
-        function get_pivot(A, i, j, k) result (l)
+        pure function get_pivot(A, i, j, k) result (l)
             double precision, intent(in) :: A(n, n)
             integer,          intent(in) :: i, j, k
             integer                      :: l

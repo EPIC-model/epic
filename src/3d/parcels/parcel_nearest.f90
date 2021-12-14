@@ -74,9 +74,9 @@ module parcel_nearest
             ! Bin parcels in cells:
             ! Form list of small parcels:
             do n = 1, n_parcels
-                ix = int(dxi(1) * (parcels%position(n, 1) - lower(1)))
-                iy = int(dxi(2) * (parcels%position(n, 2) - lower(2)))
-                iz = int(dxi(3) * (parcels%position(n, 3) - lower(3)))
+                ix = int(dxi(1) * (parcels%position(1, n) - lower(1)))
+                iy = int(dxi(2) * (parcels%position(2, n) - lower(2)))
+                iz = int(dxi(3) * (parcels%position(3, n) - lower(3)))
 
                 ! Cell index of parcel:
                 ijk = 1 + ix + nx * iy + nx * ny * iz !This runs from 1 to ncell
@@ -139,9 +139,9 @@ module parcel_nearest
             ! Rather, stop if no nearest parcel found  in surrounding grid boxes
             do m = 1, nmerge
                 is = isma(m)
-                x_small = parcels%position(is, 1)
-                y_small = parcels%position(is, 2)
-                z_small = parcels%position(is, 3)
+                x_small = parcels%position(1, is)
+                y_small = parcels%position(2, is)
+                z_small = parcels%position(3, is)
                 ! Parcel "is" is small and should be merged; find closest other:
                 ix0 = mod(nint(dxi(1) * (x_small - lower(1))), nx) ! ranges from 0 to nx-1
                 iy0 = mod(nint(dxi(2) * (y_small - lower(2))), ny)
@@ -162,11 +162,11 @@ module parcel_nearest
                             do k = kc1(ijk), kc2(ijk)
                                 n = node(k)
                                 if (n .ne. is) then
-                                    delz = parcels%position(n, 3) - z_small
+                                    delz = parcels%position(3, n) - z_small
                                     if (delz*delz < dsqmin) then
                                         ! works across periodic edge
-                                        delx = get_delx(parcels%position(n, 1), x_small)
-                                        dely = get_dely(parcels%position(n, 2), y_small)
+                                        delx = get_delx(parcels%position(1, n), x_small)
+                                        dely = get_dely(parcels%position(2, n), y_small)
                                         ! Minimise dsqmin
                                         dsq = delx ** 2 + dely ** 2 + delz ** 2
                                         if (dsq < dsqmin) then
