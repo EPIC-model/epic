@@ -17,6 +17,6 @@
  moist%r_plume    = 800
  moist%e_values   = 0.3, -0.4, 0.5
  moist%l_condense = 1000.0
- moist%q0         = 0.0015
+ moist%q0         = 0.015
  moist%theta_l0   = 288.0
 /
