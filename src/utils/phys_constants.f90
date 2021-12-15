@@ -9,7 +9,7 @@ module phys_constants
     double precision, parameter :: gravity = 9.81d0
 
     ![J/kg] latent heat of condensation
-    double precision, parameter :: L_c = 2.501e6
+    double precision, parameter :: L_v = 2.501e6
 
     ![J/(kg*K)] specific heat at constant pressure
     double precision, parameter :: c_p = 1005.0d0

@@ -45,7 +45,7 @@ module moist_3d
             double precision, intent(in)    :: origin(3)
             double precision, intent(in)    :: dx(3)
             integer                         :: i, j, k
-            double precision                :: r2, pos(3)
+            double precision                :: r2, pos(3), centre(3), extent(3)
             double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
 
             if (moist%H .gt. one) then
@@ -70,7 +70,7 @@ module moist_3d
 
             write(*,"('Base of mixed layer is ',f6.3)") z_b
 
-            dbdz = (gravity * L_c / (c_p * moist%theta_l0)) &
+            dbdz = (gravity * L_v / (c_p * moist%theta_l0)) &
                  * (h_pl - moist%q0 * dexp(-moist%z_m / moist%l_condense)) / (moist%z_m - moist%z_d)
 
             write(*,"('The buoyancy frequency in the stratified zone is ',f12.3)") dsqrt(dbdz)
@@ -90,8 +90,15 @@ module moist_3d
 
             moist%e_values = moist%e_values / radsq
 
+            if (origin(3) > zero) then
+                write(*, *) "The vertical origin must be zero."
+                stop
+            endif
+
+            extent = dx * dble((/nx, ny, nz/))
+
             write(*,*) "Box layout:"
-            write(*,*) "z_max           =", origin(3) + dx(3) * nz
+            write(*,*) "z_max           =", extent(3)
             write(*,*) "z_m             =", moist%z_m
             write(*,*) "z_d             =", moist%z_d
             write(*,*) "z_c             =", moist%z_c
@@ -106,15 +113,17 @@ module moist_3d
             buoyg = zero
             humg = zero
 
+            centre = f12 * (origin + extent)
+
             do i = 0, nx-1
                 do j = 0, ny-1
                     do k = 0, nz
 
                         pos = origin + dx * dble((/i, j, k/))
 
-                        r2 = pos(1) ** 2 &
-                           + pos(2) ** 2 &
-                           + pos(3) ** 2
+                        r2 = (pos(1) - centre(1)) ** 2 &
+                           + (pos(2) - centre(2)) ** 2 &
+                           + (pos(3) - centre(3)) ** 2
 
                         if (r2 <= radsq) then
                             buoyg(k, j, i) = b_pl * (one + moist%e_values(1) * pos(1) * pos(2)  &
