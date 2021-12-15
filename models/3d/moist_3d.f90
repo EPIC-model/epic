@@ -17,18 +17,19 @@ module moist_3d
     double precision, allocatable :: buoyg(:, :, :), humg(:, :, :)
 
     type plume_type
-        double precision :: rhb   ! Relative humidity H (as a fraction < 1) at z_b
-        double precision :: zc    ! Lifting condensation level
-        double precision :: mu    ! q_bg/q_pl where q_bg is the specific humidity fraction
-                                  ! in the mixed layer outside of the plume (note, this should be
-                                  ! between H and 1; a value < H would put z_c below z_b)
-        double precision :: zd    ! Level of dry neutral stratification z_n
-        double precision :: zm    ! Level of moist neutral stratification (cloud top) z_t
-        double precision :: rad   ! Radius of the plume, R (must be < z_b/2)
-        double precision :: e(3)  ! To create asymmetry, we vary the buoyancy in the plume
-                                  ! according to  b = bpl*[1 + (e1*x*y+e2*x*z+e3*yz)/R^2].
-        double precision :: shear ! The initial flow is (u,v,w) = (S*z,0,0); enter the shear S
-        double precision :: zmin
+        double precision :: H           ! Relative humidity H (as a fraction < 1) at z_b
+        double precision :: z_c         ! Lifting condensation level
+        double precision :: mu          ! q_bg/q_pl where q_bg is the specific humidity fraction
+                                        ! in the mixed layer outside of the plume (note, this should be
+                                        ! between H and 1; a value < H would put z_c below z_b)
+        double precision :: z_d         ! Level of dry neutral stratification z_n
+        double precision :: z_m         ! Level of moist neutral stratification (cloud top) z_t
+        double precision :: r_plume     ! Radius of the plume, R (must be < z_b/2)
+        double precision :: e_values(3) ! To create asymmetry, we vary the buoyancy in the plume
+                                        ! according to  b = b_pl*[1 + (e1*x*y+e2*x*z+e3*yz)/R^2].
+        double precision :: l_condense
+        double precision :: q0
+        double precision :: theta_l0
     end type plume_type
 
     type(plume_type) :: moist
@@ -44,65 +45,66 @@ module moist_3d
             double precision, intent(in)    :: origin(3)
             double precision, intent(in)    :: dx(3)
             integer                         :: i, j, k
-            double precision                :: r2, pos(3), zbot
-            double precision                :: rhb, bpl, dbdz, zb, hen, hpl, radsq
+            double precision                :: r2, pos(3)
+            double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
 
-            if (moist%rhb .gt. one) then
-                write(*,*) ' The relative humidity (as a fraction) must be < 1.'
-                write(*,*)  '*** stopping ***'
+            if (moist%H .gt. one) then
+                write(*,*) 'Error: Relative humidity fraction must be < 1.'
                 stop
             endif
 
+            h_pl = moist%q0 * dexp(- moist%z_c / moist%l_condense)
 
+            write(*,"('Humidity inside the plume is ',f6.3)") h_pl
 
-            ! the specific humidity fraction in the plume:
-            hpl = dexp(- moist%zc)
+            if ((moist%mu > one) .or. (moist%mu <= moist%H)) then
+                write(*,'("Error: mu must be between H and 1. The selected value is ", f6.3)') moist%mu
+                stop
+            endif
 
-            write(*,'(a,f7.5)') &
-                '  The specific humidity fraction inside the plume q_pl = ', hpl
+            h_bg = moist%mu * h_pl
 
-            ! the specific humidity fraction outside the plume q_bg
-            hen = moist%mu * hpl
+            write(*,"('Background humidity is ',f6.3)") h_bg
 
-            write(*,'(a,f7.5)') &
-                '  The specific humidity fraction outside the plume q_bg = ', hen
+            z_b = moist%l_condense * dlog(moist%q0 * moist%H / h_bg)
 
-            !From H and q_bg, obtain the height of the top of the mixed layer z_b:'
-            zb = dlog(rhb / hen)
+            write(*,"('Base of mixed layer is ',f6.3)") z_b
 
-            write(*,'(a,f7.5)') &
-                '  The height of the top of the mixed layer z_b = ln(H/q_bg) = ', zb
+            dbdz = (gravity * L_c / (c_p * moist%theta_l0)) &
+                 * (h_pl - moist%q0 * dexp(-moist%z_m / moist%l_condense)) / (moist%z_m - moist%z_d)
 
-            ! From z_c, z_d & z_m, obtain the squared buoyancy frequency above z = z_b:
-            dbdz = glat * (hpl - dexp(-moist%zm)) / (moist%zm - moist%zd)
-
-            write(*,'(a,f7.5)') &
-                '  The buoyancy frequency in the stratified zone is ', dsqrt(dbdz)
+            write(*,"('The buoyancy frequency in the stratified zone is ',f12.3)") dsqrt(dbdz)
 
             !Also obtain the plume liquid-water buoyancy (using also z_b):
-            bpl = dbdz * (moist%zd - zb)
-            write(*,'(a,f7.5)') '  The plume liquid water buoyancy b_pl = ', bpl
-            write(*,'(a,f7.5)') &
-                '  corresponding to (theta_l-theta_l0)/theta_l0 = ', bpl / gravity
+            b_pl = dbdz * (moist%z_d - z_b)
+            write(*,'(a,f7.5)') '  The plume liquid water buoyancy b_pl = ', b_pl
+            write(*,'(a,f7.5)') '  corresponding to (theta_l-theta_l0)/theta_l0 = ', b_pl * gravity
 
 
-            if (two * moist%rad .gt. zb) then
-                write(*,'(a,f7.3)') '  The radius must be less than z_b/2 = ', zb / two
-                write(*,*)  '*** stopping ***'
+            if (two * moist%r_plume > z_b) then
+                write(*,"('Error: Plume radius is too big. At most it can be ',f7.5)") f12 * z_b
                 stop
             endif
-            radsq = moist%rad ** 2
 
-            ! Scale by radsq for use below:
-            moist%e = moist%e / radsq
+            radsq = moist%r_plume ** 2
+
+            moist%e_values = moist%e_values / radsq
+
+            write(*,*) "Box layout:"
+            write(*,*) "z_max           =", origin(3) + dx(3) * nz
+            write(*,*) "z_m             =", moist%z_m
+            write(*,*) "z_d             =", moist%z_d
+            write(*,*) "z_c             =", moist%z_c
+            write(*,*) "z_b             =", z_b
+            write(*,*) "zmin            =", origin(3)
+            write(*,*) "top of plume    =", two * moist%r_plume
+            write(*,*) "bottom of plume =", zero
 
             allocate(buoyg(0:nz, 0:ny-1, 0:nx-1))
             allocate(humg(0:nz, 0:ny-1, 0:nx-1))
 
             buoyg = zero
             humg = zero
-
-            zbot = moist%zmin + zb
 
             do i = 0, nx-1
                 do j = 0, ny-1
@@ -115,19 +117,19 @@ module moist_3d
                            + pos(3) ** 2
 
                         if (r2 <= radsq) then
-                            buoyg(k, j, i) = bpl * (one + moist%e(1) * pos(1) * pos(2)  &
-                                                        + moist%e(2) * pos(1) * pos(3)  &
-                                                        + moist%e(3) * pos(2) * pos(3))
-                            humg(k, j, i) = hpl
+                            buoyg(k, j, i) = b_pl * (one + moist%e_values(1) * pos(1) * pos(2)  &
+                                                         + moist%e_values(2) * pos(1) * pos(3)  &
+                                                         + moist%e_values(3) * pos(2) * pos(3))
+                            humg(k, j, i) = h_pl
                         else
-                            if (pos(3) < zb) then
+                            if (pos(3) < z_b) then
                                 ! Mixed layer:
                                 buoyg(k, j, i) = zero
-                                humg(k, j, i) = hen
+                                humg(k, j, i) = h_bg
                             else
                                 ! Stratified layer
-                                buoyg(k, j, i)= dbdz * (pos(3) - zbot)
-                                humg(k, j, i) = rhb * dexp(moist%zmin - pos(3))
+                                buoyg(k, j, i)= dbdz * (pos(3) - z_b)
+                                humg(k, j, i) = moist%q0 * moist%H * dexp(- pos(3) / moist%l_condense)
                             endif
                         endif
                     enddo
