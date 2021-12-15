@@ -5,6 +5,7 @@ program epic3d_models
     use options, only : filename, verbose
     use taylor_green_3d
     use robert_3d
+    use moist_3d
     use constants, only : pi
     use parameters, only : nx, ny, nz, dx, lower, extent
     use h5_utils
@@ -56,6 +57,8 @@ program epic3d_models
                     call taylor_green_init(h5handle, nx, ny, nz, box%origin, dx)
                 case ('Robert')
                     call robert_init(h5handle, nx, ny, nz, box%origin, dx)
+                case ('MoistPlume')
+                    call moist_init(h5handle, nx, ny, nz, box%origin, dx)
                 case default
                     print *, "Unknown model: '", trim(model), "'."
                     stop
@@ -77,7 +80,7 @@ program epic3d_models
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODELS/ model, h5fname, box, tg_flow, robert_flow
+            namelist /MODELS/ model, h5fname, box, tg_flow, robert_flow, moist
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
