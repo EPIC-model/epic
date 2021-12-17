@@ -138,7 +138,7 @@ module parcel_ellipsoid
         ! @param[in] D eigenvalues sorted in descending order
         ! @param[in] volume of the parcel(s)
         ! @returns a/c
-        pure elemental function get_aspect_ratio(D) result(lam)
+        pure function get_aspect_ratio(D) result(lam)
             double precision, intent(in) :: D(3)
             double precision             :: lam
 

@@ -7,7 +7,7 @@ module parcel_split_mod
     use parameters, only : vmax
     use parcel_container, only : parcel_container_type, n_parcels
     use parcel_bc, only : apply_reflective_bc
-    use parcel_ellipsoid, only : diagonalise
+    use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
     use timer, only : start_timer, stop_timer
     use omp_lib
     implicit none
