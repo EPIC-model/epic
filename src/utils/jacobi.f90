@@ -276,7 +276,7 @@ module jacobi
 
                 do i = 1, n-1
                     do j = i+1, n
-                        call apply_rotation(A, D, B, z, i, j)
+                        call apply_rotation(A, D, B, Z, i, j)
                     enddo
                 enddo
 
@@ -288,10 +288,6 @@ module jacobi
             enddo
 
             call sort_eigenvalues(D)
-
-            A(1, 1) = D(1)
-            A(2, 2) = D(2)
-            A(3, 3) = D(3)
 
         end subroutine jacobi_eigenvalues
 
