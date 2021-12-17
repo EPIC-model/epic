@@ -296,7 +296,7 @@ module jacobi
         end subroutine jacobi_eigenvalues
 
         ! Sort the eigenvalues in descending order.
-        ! @param[inout] D diagonal matrix with eigenvalues
+        ! @param[inout] D eigenvalues
         pure subroutine sort_eigenvalues(D)
             double precision, intent(inout) :: D(n)
             double precision                :: teval
@@ -319,7 +319,5 @@ module jacobi
                 D(2) = teval
             endif
         end subroutine sort_eigenvalues
-
-
 
 end module jacobi
