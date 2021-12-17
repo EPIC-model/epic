@@ -118,11 +118,13 @@ module jacobi
         ! matrix storing the eigenvalues, V contains the eigenvectors.
         ! The eigenvector V(:, i) belongs to eigenvalue A(i, i).
         ! @param[inout] A real symmetric 3x3 matrix
+        ! @param[out] D eigenvalues in descending order
         ! @param[out] V eigenvector matrix
-        pure subroutine jacobi_diagonalise(A, V)
+        pure subroutine jacobi_diagonalise(A, D, V)
             double precision, intent(inout) :: A(n, n)
+            double precision, intent(out)   :: D(n)
             double precision, intent(out)   :: V(n, n)
-            double precision                :: D(n), B(n), Z(n)
+            double precision                :: B(n), Z(n)
             integer                         :: i, j
             double precision                :: sm
 
@@ -161,16 +163,11 @@ module jacobi
 
             call sort_descending(D, V)
 
-            A(1, 1) = D(1)
-            A(2, 2) = D(2)
-            A(3, 3) = D(3)
-
         end subroutine jacobi_diagonalise
 
-        ! sort eigenvalues and eigenvectors
         ! Sort the eigenvalues in descending order.
         ! It sorts the eigenvector matrix accordingly.
-        ! @param[inout] D diagonal matrix with eigenvalues
+        ! @param[inout] D eigenvalues
         ! @param[inout] V eigenvector matrix
         pure subroutine sort_descending(D, V)
             double precision, intent(inout) :: D(n)
@@ -263,9 +260,11 @@ module jacobi
         ! The input matrix is overwritten, the diagonal
         ! entries will be storing the eigenvalues
         ! @param[inout] A real symmetric 3x3 matrix
-        pure subroutine jacobi_eigenvalues(A)
+        ! @param[out] D eigenvalues in descending order
+        pure subroutine jacobi_eigenvalues(A, D)
             double precision, intent(inout) :: A(n, n)
-            double precision                :: D(n), B(n), Z(n)
+            double precision, intent(out)   :: D(n)
+            double precision                :: B(n), Z(n)
             integer                         :: i, j
             double precision                :: sm
 

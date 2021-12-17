@@ -84,7 +84,7 @@ module rk4_utils
             use options, only : time
             double precision, intent(in) :: t
             double precision             :: dt
-            double precision             :: gmax, bmax, strain(3, 3)
+            double precision             :: gmax, bmax, strain(3, 3), D(3)
             double precision             :: gradb(0:nz, 0:ny-1, 0:nx-1)
             double precision             :: db2(0:nz, 0:ny-1, 0:nx-1)
             integer                      :: ix, iy, iz
@@ -124,11 +124,11 @@ module rk4_utils
 
                         ! calculate its eigenvalues (strain is overwritten and diagonal entries
                         ! will be the eigenvalues sorted in descending order), i.e.
-                        ! the largest eigenvalue is in strain(1, 1). The Jacobi solver
+                        ! the largest eigenvalue is in D(1). The Jacobi solver
                         ! requires the upper triangular matrix only.
-                        call jacobi_eigenvalues(strain)
+                        call jacobi_eigenvalues(strain, D)
 
-                        gmax = max(gmax, strain(1, 1))
+                        gmax = max(gmax, D(1))
                     enddo
                 enddo
             enddo
