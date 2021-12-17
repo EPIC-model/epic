@@ -11,7 +11,7 @@ module phys_parameters
     double precision, parameter :: lam_c = 0.001d0
 
     ![] see equation (5) of MPIC paper
-    double precision, parameter :: glat = gravity * L_c / (c_p * theta_l0)
+    double precision, parameter :: glat = gravity * L_v / (c_p * theta_l0)
 
     !FIXME comment
     double precision :: lat_ref
