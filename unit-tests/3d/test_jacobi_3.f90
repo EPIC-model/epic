@@ -15,7 +15,7 @@ program test_jacobi_3
     double precision     :: error
     integer              :: n, k, sk
     double precision     :: V(3, 3)
-    double precision     :: B(3, 3)
+    double precision     :: B(3, 3), D(3)
     double precision     :: A(3, 3), eval ! reference
     integer, allocatable :: seed(:)
 
@@ -31,12 +31,12 @@ program test_jacobi_3
 
         call create_symmetric_matrix
 
-        call jacobi_diagonalise(B, V)
+        call jacobi_diagonalise(B, D, V)
 
         ! check eigenvalues
-        error = max(error, dabs(eval - B(1, 1)) &
-                         + dabs(eval - B(2, 2)) &
-                         + dabs(eval - B(3, 3)))
+        error = max(error, dabs(eval - D(1)) &
+                         + dabs(eval - D(2)) &
+                         + dabs(eval - D(3)))
 
         ! check eigenvectors
         B = matmul(matmul(transpose(V), B), V)

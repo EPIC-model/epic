@@ -137,7 +137,7 @@ module parcel_diagnostics
                 pe = pe - b * z * vol
 
                 evals = get_eigenvalues(parcels%B(:, n), parcels%volume(n))
-                lam = get_aspect_ratio(evals(1), evals(3))
+                lam = get_aspect_ratio(evals)
 
                 lsum = lsum + lam
                 l2sum = l2sum + lam ** 2

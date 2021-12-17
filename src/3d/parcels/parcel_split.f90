@@ -7,7 +7,7 @@ module parcel_split_mod
     use parameters, only : vmax
     use parcel_container, only : parcel_container_type, n_parcels
     use parcel_bc, only : apply_reflective_bc
-    use parcel_ellipsoid, only : diagonalise
+    use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
     use timer, only : start_timer, stop_timer
     use omp_lib
     implicit none
@@ -28,8 +28,8 @@ module parcel_split_mod
             type(parcel_container_type), intent(inout) :: parcels
             double precision,            intent(in)    :: threshold
             double precision                           :: B(5)
-            double precision                           :: a2, b2, c2, vol, lam
-            double precision                           :: V(3, 3)
+            double precision                           :: vol, lam
+            double precision                           :: D(3), V(3, 3)
             integer                                    :: last_index
             integer                                    :: n, n_thread_loc
 
@@ -38,15 +38,15 @@ module parcel_split_mod
             last_index = n_parcels
 
             !$omp parallel default(shared)
-            !$omp do private(n, B, vol, lam, a2, b2, c2, V, n_thread_loc)
+            !$omp do private(n, B, vol, lam, D, V, n_thread_loc)
             do n = 1, last_index
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
 
-                call diagonalise(B, vol, a2, b2, c2, V)
+                call diagonalise(B, vol, D, V)
 
                 ! evaluate maximum aspect ratio (a2 >= b2 >= c2)
-                lam = dsqrt(a2 / c2)
+                lam = get_aspect_ratio(D)
 
                 if (lam <= threshold .and. vol <= vmax) then
                     cycle
@@ -55,12 +55,11 @@ module parcel_split_mod
                 !
                 ! this ellipsoid is split, i.e., add a new parcel
                 !
-
-                parcels%B(1, n) = B(1) - f34 * a2 * V(1, 1) ** 2
-                parcels%B(2, n) = B(2) - f34 * a2 * V(1, 1) * V(2, 1)
-                parcels%B(3, n) = B(3) - f34 * a2 * V(1, 1) * V(3, 1)
-                parcels%B(4, n) = B(4) - f34 * a2 * V(2, 1) ** 2
-                parcels%B(5, n) = B(5) - f34 * a2 * V(2, 1) * V(3, 1)
+                parcels%B(1, n) = B(1) - f34 * D(1) * V(1, 1) ** 2
+                parcels%B(2, n) = B(2) - f34 * D(1) * V(1, 1) * V(2, 1)
+                parcels%B(3, n) = B(3) - f34 * D(1) * V(1, 1) * V(3, 1)
+                parcels%B(4, n) = B(4) - f34 * D(1) * V(2, 1) ** 2
+                parcels%B(5, n) = B(5) - f34 * D(1) * V(2, 1) * V(3, 1)
 
 
                 parcels%volume(n) = f12 * vol
@@ -81,7 +80,7 @@ module parcel_split_mod
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n_thread_loc) = parcels%humidity(n)
 #endif
-                V(:, 1) = V(:, 1) * dh * dsqrt(a2)
+                V(:, 1) = V(:, 1) * dh * dsqrt(D(1))
                 parcels%position(:, n_thread_loc) = parcels%position(:, n) - V(:, 1)
                 parcels%position(:, n) = parcels%position(:, n) + V(:, 1)
 

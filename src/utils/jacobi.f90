@@ -1,7 +1,8 @@
 ! =============================================================================
 ! Module to compute the eigenvalues and eigenvectors of 3x3 real symmetric
-! matrices. It uses the Jacobi algorithm, see for example
-! https://en.wikipedia.org/wiki/Jacobi_eigenvalue_algorithm
+! matrices. It uses the Jacobi algorithm according to
+!       Rutishauser, H. The Jacobi method for real symmetric matrices.
+!       Numer. Math. 9, 1-10 (1966). https://doi.org/10.1007/BF02165223
 ! =============================================================================
 module jacobi
     use constants, only : hundred, one, zero, f12
@@ -15,33 +16,15 @@ module jacobi
 
     contains
 
-        ! Get the index of the maximum absolute
-        ! off-diagonal matrix element.
-        ! @param A[in] current state of 3x3 matrix
-        ! @param i[in] the row
-        ! @param j[in] first column with i .ne. j
-        ! @param k[in] second column with i .ne. k
-        ! @param l[out] the index of the pivot
-        pure function get_pivot(A, i, j, k) result (l)
-            double precision, intent(in) :: A(n, n)
-            integer,          intent(in) :: i, j, k
-            integer                      :: l
-
-            l = k
-            if (dabs(A(i, j)) > dabs(A(i, k))) then
-                l = j
-            endif
-        end function get_pivot
-
-        pure subroutine givens(A, i, j, c, s, t, tau)
-            double precision, intent(in)  :: A(n, n)
+        pure subroutine givens(A, D, i, j, c, s, t, tau)
+            double precision, intent(in)  :: A(n, n), D(n)
             integer,          intent(in)  :: i, j
             double precision, intent(out) :: c, s, t, tau
             double precision              :: theta, g, h, aij
 
             aij = A(i, j)
             g = hundred * dabs(aij)
-            h = A(j, j) - A(i, i)
+            h = D(j) - D(i)
             if (dabs(h) + g == dabs(h)) then
                 t = aij / h
             else
@@ -72,25 +55,51 @@ module jacobi
         ! @param[in] i the row
         ! @param[in] j first column with i .ne. j
         ! @param[in] k second column with i .ne. k
-        pure subroutine apply_rotation_AV(A, i, j, V)
-            double precision, intent(inout) :: A(n, n)
+        pure subroutine apply_rotation_AV(A, D, B, Z, i, j, V)
+            double precision, intent(inout) :: A(n, n), D(n), B(n), Z(n)
             integer,          intent(in)    :: i, j
             double precision, intent(inout) :: V(n, n)
             double precision                :: c, s, t, tau
-            integer                         :: k
-            double precision                :: g, h, aij
+            integer                         :: k, l
+            double precision                :: g, h
 
             ! compute the rotation angle theta
             ! Reference:    Rutishauser, H. The Jacobi method for real symmetric matrices.
             !               Numer. Math. 9, 1-10 (1966). https://doi.org/10.1007/BF02165223
 
-            aij = A(i, j)
-
-            call givens(A, i, j, c, s, t, tau)
+            call givens(A, d, i, j, c, s, t, tau)
 
             !
             ! Apply Givens rotation to matrix
             !
+
+            h = t * A(i, j)
+            Z(i) = Z(i) - h
+            Z(j) = Z(j) + h
+            D(i) = D(i) - h
+            D(j) = D(j) + h
+            A(i, j) = zero
+
+            do k = 1, i-1
+                g = A(k, i)
+                h = A(k, j)
+                A(k, i) = g - s * (h + g * tau)
+                A(k, j) = h + s * (g - h * tau)
+            enddo
+
+            do k = i+1, j-1
+                g = A(i, k)
+                h = A(k, j)
+                A(i, k) = g - s * (h + g * tau)
+                A(k, j) = h + s * (g - h * tau)
+            enddo
+
+            do k = j+1, n
+                g = A(i, k)
+                h = A(j, k)
+                A(i, k) = g - s * (h + g * tau)
+                A(j, k) = h + s * (g - h * tau)
+            enddo
 
             do k = 1, n
                 ! accumulate eigenvector
@@ -98,31 +107,8 @@ module jacobi
                 h = V(k, j)
                 V(k, i) = c * g - s * h
                 V(k, j) = s * g + c * h
-
-                ! update off-diagonal entries
-                g = A(k, i)
-                h = A(k, j)
-                if (.not. (k == i)) then
-                    A(k, i) = g - s * (h + tau * g)
-                    A(i, k) = A(k, i)
-                endif
-
-                if (.not. (k == j)) then
-                    A(k, j) = h + s * (g - tau * h)
-                    A(j, k) = A(k, j)
-                endif
             enddo
-
-            ! update diagonal entries
-            A(i, i) = A(i, i) - t * aij
-            A(j, j) = A(j, j) + t * aij
-
-            ! set A(i, j) = A(j, i) explicitly to zero
-            A(i, j) = zero
-            A(j, i) = zero
-
         end subroutine apply_rotation_AV
-
 
         ! Diagonalise a real symmetric 3x3 matrix A = V^T * D * V
         ! where D is a diagonal matrix with the eigenvalues and
@@ -132,15 +118,21 @@ module jacobi
         ! matrix storing the eigenvalues, V contains the eigenvectors.
         ! The eigenvector V(:, i) belongs to eigenvalue A(i, i).
         ! @param[inout] A real symmetric 3x3 matrix
+        ! @param[out] D eigenvalues in descending order
         ! @param[out] V eigenvector matrix
-        pure subroutine jacobi_diagonalise(A, V)
+        pure subroutine jacobi_diagonalise(A, D, V)
             double precision, intent(inout) :: A(n, n)
+            double precision, intent(out)   :: D(n)
             double precision, intent(out)   :: V(n, n)
+            double precision                :: B(n), Z(n)
             integer                         :: i, j
             double precision                :: sm
 
             ! initialise eigenvector matrix to identity matrix
             do j = 1, n
+                D(j) = A(j, j)
+                B(j) = D(j)
+                Z(j) = zero
                 do i = 1, n
                     V(i, j) = zero
                     if (i == j) then
@@ -149,42 +141,38 @@ module jacobi
                 enddo
             enddo
 
+
             ! sum of off-diagonal entries
             ! sm should convergence to zero
-            sm = dabs(A(2, 1)) + dabs(A(3, 1)) + dabs(A(3, 2))
+            sm = dabs(A(1, 2)) + dabs(A(1, 3)) + dabs(A(2, 3))
 
             do while (sm > atol)
-                ! first row
-                j = get_pivot(A, 1, 2, 3)
-                call apply_rotation_AV(A, 1, j, V)
 
-                ! second row
-                j = get_pivot(A, 2, 1, 3)
-                call apply_rotation_AV(A, 2, j, V)
+                do i = 1, n-1
+                    do j = i+1, n
+                        call apply_rotation_AV(A, D, B, z, i, j, V)
+                    enddo
+                enddo
 
+                B = B + Z
+                D = B
+                Z = zero
                 ! update sum of off-diagonals
-                sm = dabs(A(2, 1)) + dabs(A(3, 1)) + dabs(A(3, 2))
-
+                sm = dabs(A(1, 2)) + dabs(A(1, 3)) + dabs(A(2, 3))
             enddo
 
-
-            call sort_descending(A, V)
+            call sort_descending(D, V)
 
         end subroutine jacobi_diagonalise
 
-        ! sort eigenvalues and eigenvectors
         ! Sort the eigenvalues in descending order.
         ! It sorts the eigenvector matrix accordingly.
-        ! @param[inout] D diagonal matrix with eigenvalues
+        ! @param[inout] D eigenvalues
         ! @param[inout] V eigenvector matrix
-        pure subroutine sort_descending(A, V)
-            double precision, intent(inout) :: A(n, n)
+        pure subroutine sort_descending(D, V)
+            double precision, intent(inout) :: D(n)
             double precision, intent(inout) :: V(n, n)
-            double precision                :: teval, tevec(n), D(n)
-
-            D(1) = A(1, 1)
-            D(2) = A(2, 2)
-            D(3) = A(3, 3)
+            double precision                :: teval, tevec(n)
 
             if (D(2) > D(1)) then
                 teval = D(1)
@@ -212,59 +200,56 @@ module jacobi
                 V(:, 1) = V(:, 2)
                 V(:, 2) = tevec
             endif
-
-            A(1, 1) = D(1)
-            A(2, 2) = D(2)
-            A(3, 3) = D(3)
-
         end subroutine sort_descending
 
         !
         ! Jacobi algorithm -- eigenvalues only
         !
 
-        pure subroutine apply_rotation(A, i, j)
-            double precision, intent(inout)           :: A(n, n)
-            integer,          intent(in)              :: i, j
-            double precision                          :: theta, c, s, t, tau
-            integer                                   :: k
-            double precision                          :: g, h, aij
+        pure subroutine apply_rotation(A, D, B, Z, i, j)
+            double precision, intent(inout) :: A(n, n), D(n), B(n), Z(n)
+            integer,          intent(in)    :: i, j
+            double precision                :: c, s, t, tau
+            integer                         :: k, l
+            double precision                :: g, h
 
             ! compute the rotation angle theta
             ! Reference:    Rutishauser, H. The Jacobi method for real symmetric matrices.
             !               Numer. Math. 9, 1-10 (1966). https://doi.org/10.1007/BF02165223
 
-            aij = A(i, j)
-
-            call givens(A, i, j, c, s, t, tau)
+            call givens(A, d, i, j, c, s, t, tau)
 
             !
             ! Apply Givens rotation to matrix
             !
 
-            ! update off-diagonal entries
-            do k = 1, n
+            h = t * A(i, j)
+            Z(i) = Z(i) - h
+            Z(j) = Z(j) + h
+            D(i) = D(i) - h
+            D(j) = D(j) + h
+            A(i, j) = zero
+
+            do k = 1, i-1
                 g = A(k, i)
                 h = A(k, j)
-                if (.not. (k == i)) then
-                    A(k, i) = g - s * (h + tau * g)
-                    A(i, k) = A(k, i)
-                endif
-
-                if (.not. (k == j)) then
-                    A(k, j) = h + s * (g - tau * h)
-                    A(j, k) = A(k, j)
-                endif
+                A(k, i) = g - s * (h + g * tau)
+                A(k, j) = h + s * (g - h * tau)
             enddo
 
-            ! update diagonal entries
-            A(i, i) = A(i, i) - t * aij
-            A(j, j) = A(j, j) + t * aij
+            do k = i+1, j-1
+                g = A(i, k)
+                h = A(k, j)
+                A(i, k) = g - s * (h + g * tau)
+                A(k, j) = h + s * (g - h * tau)
+            enddo
 
-            ! set A(i, j) = A(j, i) explicitly to zero
-            A(i, j) = zero
-            A(j, i) = zero
-
+            do k = j+1, n
+                g = A(i, k)
+                h = A(j, k)
+                A(i, k) = g - s * (h + g * tau)
+                A(j, k) = h + s * (g - h * tau)
+            enddo
         end subroutine apply_rotation
 
 
@@ -272,48 +257,49 @@ module jacobi
         ! where D is a diagonal matrix with the eigenvalues and
         ! V is the eigenvector matrix. The eigenvalues are in
         ! descending order.
-        ! The input matrix is overwritten and will be the diagonal
-        ! matrix storing the eigenvalues
+        ! The input matrix is overwritten, the diagonal
+        ! entries will be storing the eigenvalues
         ! @param[inout] A real symmetric 3x3 matrix
-        pure subroutine jacobi_eigenvalues(A)
-            double precision, intent(inout)           :: A(n, n)
-            integer                                   :: i, j
-            double precision                          :: sm
+        ! @param[out] D eigenvalues in descending order
+        pure subroutine jacobi_eigenvalues(A, D)
+            double precision, intent(inout) :: A(n, n)
+            double precision, intent(out)   :: D(n)
+            double precision                :: B(n), Z(n)
+            integer                         :: i, j
+            double precision                :: sm
 
             ! sum of off-diagonal entries
             ! sm should convergence to zero
-            sm = dabs(A(2, 1)) + dabs(A(3, 1)) + dabs(A(3, 2))
+            sm = dabs(A(1, 2)) + dabs(A(1, 3)) + dabs(A(2, 3))
 
             do while (sm > atol)
-                ! first row
-                j = get_pivot(A, 1, 2, 3)
-                call apply_rotation(A, 1, j)
 
-                ! second row
-                j = get_pivot(A, 2, 1, 3)
-                call apply_rotation(A, 2, j)
+                do i = 1, n-1
+                    do j = i+1, n
+                        call apply_rotation(A, D, B, z, i, j)
+                    enddo
+                enddo
 
+                B = B + Z
+                D = B
+                Z = zero
                 ! update sum of off-diagonals
-                sm = dabs(A(2, 1)) + dabs(A(3, 1)) + dabs(A(3, 2))
+                sm = dabs(A(1, 2)) + dabs(A(1, 3)) + dabs(A(2, 3))
             enddo
 
+            call sort_eigenvalues(D)
 
-            call sort_eigenvalues(A)
+            A(1, 1) = D(1)
+            A(2, 2) = D(2)
+            A(3, 3) = D(3)
 
         end subroutine jacobi_eigenvalues
 
-        ! sort eigenvalues and eigenvectors
         ! Sort the eigenvalues in descending order.
-        ! It sorts the eigenvector matrix accordingly.
-        ! @param[inout] D diagonal matrix with eigenvalues
-        ! @param[inout] V eigenvector matrix
-        pure subroutine sort_eigenvalues(A)
-            double precision, intent(inout) :: A(n, n)
-            double precision                :: teval, D(n)
-
-            D(1) = A(1, 1)
-            D(2) = A(2, 2)
-            D(3) = A(3, 3)
+        ! @param[inout] D eigenvalues
+        pure subroutine sort_eigenvalues(D)
+            double precision, intent(inout) :: D(n)
+            double precision                :: teval
 
             if (D(2) > D(1)) then
                 teval = D(1)
@@ -332,13 +318,6 @@ module jacobi
                 D(1) = D(2)
                 D(2) = teval
             endif
-
-            A(1, 1) = D(1)
-            A(2, 2) = D(2)
-            A(3, 3) = D(3)
-
         end subroutine sort_eigenvalues
-
-
 
 end module jacobi
