@@ -25,29 +25,26 @@ module parcel_ellipsoid
     double precision, parameter :: costheta(4) = dcos((/fpi4, f3pi4, f5pi4, f7pi4/))
     double precision, parameter :: sintheta(4) = dsin((/fpi4, f3pi4, f5pi4, f7pi4/))
 
-    private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_symmetric_matrix
+    private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_upper_triangular
 
     contains
 
         ! Obtain the parcel shape matrix.
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
-        ! @returns the symmetric 3x3 shape matrix
-        function get_symmetric_matrix(B, volume) result(D)
+        ! @returns the upper trinagular matrix
+        function get_upper_triangular(B, volume) result(D)
             double precision, intent(in) :: B(5)
             double precision, intent(in) :: volume
             double precision             :: D(3, 3)
 
             D(1, 1) = B(1)
             D(1, 2) = B(2)
-            D(2, 1) = B(2)
             D(1, 3) = B(3)
-            D(3, 1) = B(3)
             D(2, 2) = B(4)
             D(2, 3) = B(5)
-            D(3, 2) = B(5)
             D(3, 3) = get_B33(B, volume)
-        end function get_symmetric_matrix
+        end function get_upper_triangular
 
         ! Obtain all eigenvalues sorted in descending order
         ! @param[in] B = (B11, B12, B13, B22, B23)
@@ -59,7 +56,7 @@ module parcel_ellipsoid
             double precision             :: D(3, 3)
             double precision             :: evals(3)
 
-            D = get_symmetric_matrix(B, volume)
+            D = get_upper_triangular(B, volume)
 
             call jacobi_eigenvalues(D)
 
@@ -80,7 +77,7 @@ module parcel_ellipsoid
             double precision, intent(in) :: volume
             double precision             :: D(3, 3), V(3, 3)
 
-            D = get_symmetric_matrix(B, volume)
+            D = get_upper_triangular(B, volume)
 
             call jacobi_diagonalise(D, V)
 
@@ -100,7 +97,7 @@ module parcel_ellipsoid
             double precision, intent(out) :: a2, b2, c2, V(3, 3)
             double precision              :: D(3, 3)
 
-            D = get_symmetric_matrix(B, volume)
+            D = get_upper_triangular(B, volume)
 
             call jacobi_diagonalise(D, V)
 

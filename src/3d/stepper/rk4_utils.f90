@@ -122,13 +122,10 @@ module rk4_utils
                         strain(2, 3) = two * velgradg(iz, iy, ix, 5) - vortg(iz, iy, ix, 1) ! dv/dz + dw/dy
                         strain(3, 3) = -(velgradg(iz, iy, ix, 1) + velgradg(iz, iy, ix, 3)) ! dw/dz
 
-                        strain(2, 1) = strain(1, 2)
-                        strain(3, 1) = strain(1, 3)
-                        strain(3, 2) = strain(2, 3)
-
-                        ! calculate its eigenvalues (strain is overwritten and will be
-                        ! the diagonal matrix with the eigenvalues sorted in descending order), i.e.
-                        ! the largest eigenvalue is in strain(1, 1).
+                        ! calculate its eigenvalues (strain is overwritten and diagonal entries
+                        ! will be the eigenvalues sorted in descending order), i.e.
+                        ! the largest eigenvalue is in strain(1, 1). The Jacobi solver
+                        ! requires the upper triangular matrix only.
                         call jacobi_eigenvalues(strain)
 
                         gmax = max(gmax, strain(1, 1))
