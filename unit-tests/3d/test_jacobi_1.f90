@@ -13,7 +13,7 @@ program test_jacobi_1
     integer              :: n, k, sk
     logical              :: valid
     double precision     :: V(3, 3)
-    double precision     :: B(3, 3)
+    double precision     :: B(3, 3), D(3)
     double precision     :: Q(3, 3), EV(3) ! reference
     integer, allocatable :: seed(:)
 
@@ -33,12 +33,12 @@ program test_jacobi_1
         if (valid) then
             n = n + 1
 
-            call jacobi_diagonalise(B, V)
+            call jacobi_diagonalise(B, D, V)
 
             ! check eigenvalues
-            error = max(error, dabs(EV(1) - B(1, 1)) &
-                             + dabs(EV(2) - B(2, 2)) &
-                             + dabs(EV(3) - B(3, 3)))
+            error = max(error, dabs(EV(1) - D(1)) &
+                             + dabs(EV(2) - D(2)) &
+                             + dabs(EV(3) - D(3)))
 
             ! check eigenvectors
             do k = 1, 3
