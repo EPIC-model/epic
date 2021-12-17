@@ -60,14 +60,14 @@ module jacobi
             integer,          intent(in)    :: i, j
             double precision, intent(inout) :: V(n, n)
             double precision                :: c, s, t, tau
-            integer                         :: k, l
+            integer                         :: k
             double precision                :: g, h
 
             ! compute the rotation angle theta
             ! Reference:    Rutishauser, H. The Jacobi method for real symmetric matrices.
             !               Numer. Math. 9, 1-10 (1966). https://doi.org/10.1007/BF02165223
 
-            call givens(A, d, i, j, c, s, t, tau)
+            call givens(A, D, i, j, c, s, t, tau)
 
             !
             ! Apply Givens rotation to matrix
@@ -150,7 +150,7 @@ module jacobi
 
                 do i = 1, n-1
                     do j = i+1, n
-                        call apply_rotation_AV(A, D, B, z, i, j, V)
+                        call apply_rotation_AV(A, D, B, Z, i, j, V)
                     enddo
                 enddo
 
@@ -210,14 +210,14 @@ module jacobi
             double precision, intent(inout) :: A(n, n), D(n), B(n), Z(n)
             integer,          intent(in)    :: i, j
             double precision                :: c, s, t, tau
-            integer                         :: k, l
+            integer                         :: k
             double precision                :: g, h
 
             ! compute the rotation angle theta
             ! Reference:    Rutishauser, H. The Jacobi method for real symmetric matrices.
             !               Numer. Math. 9, 1-10 (1966). https://doi.org/10.1007/BF02165223
 
-            call givens(A, d, i, j, c, s, t, tau)
+            call givens(A, D, i, j, c, s, t, tau)
 
             !
             ! Apply Givens rotation to matrix
@@ -267,6 +267,13 @@ module jacobi
             double precision                :: B(n), Z(n)
             integer                         :: i, j
             double precision                :: sm
+
+            ! initialise
+            do j = 1, n
+                D(j) = A(j, j)
+                B(j) = D(j)
+                Z(j) = zero
+            enddo
 
             ! sum of off-diagonal entries
             ! sm should convergence to zero
