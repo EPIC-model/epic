@@ -33,17 +33,18 @@ module parcel_correction
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    subroutine apply_laplace
-        double precision :: phi(0:nz, 0:ny-1, 0:nx-1),   &
-                            ud(-1:nz+1, 0:ny-1, 0:nx-1), &
-                            vd(-1:nz+1, 0:ny-1, 0:nx-1), &
-                            wd(-1:nz+1, 0:ny-1, 0:nx-1)
-        double precision :: weights(ngp)
-        integer          :: n, l, is(ngp), js(ngp), ks(ngp)
+    subroutine apply_laplace(l_reuse)
+        logical, optional, intent(in) :: l_reuse
+        double precision              :: phi(0:nz, 0:ny-1, 0:nx-1),   &
+                                         ud(-1:nz+1, 0:ny-1, 0:nx-1), &
+                                         vd(-1:nz+1, 0:ny-1, 0:nx-1), &
+                                         wd(-1:nz+1, 0:ny-1, 0:nx-1)
+        double precision              :: weights(ngp)
+        integer                       :: n, l, is(ngp), js(ngp), ks(ngp)
 
         call start_timer(lapl_corr_timer)
 
-        call vol2grid
+        call vol2grid(l_reuse)
 
         ! form divergence field
         phi = volg(0:nz, :, :) * vcelli - one
@@ -85,17 +86,18 @@ module parcel_correction
 
     end subroutine apply_laplace
 
-    subroutine apply_gradient(prefactor, max_compression)
-        double precision, intent(in) :: prefactor
-        double precision, intent(in) :: max_compression
-        double precision             :: phi(0:nz, 0:ny-1, 0:nx-1)
-        double precision             :: weights(ngp)
-        double precision             :: xs, ys, zs, xf, yf, zf, lim_x, lim_y, lim_z
-        integer                      :: n, is(ngp), js(ngp), ks(ngp)
+    subroutine apply_gradient(prefactor, max_compression, l_reuse)
+        double precision,  intent(in) :: prefactor
+        double precision,  intent(in) :: max_compression
+        logical, optional, intent(in) :: l_reuse
+        double precision              :: phi(0:nz, 0:ny-1, 0:nx-1)
+        double precision              :: weights(ngp)
+        double precision              :: xs, ys, zs, xf, yf, zf, lim_x, lim_y, lim_z
+        integer                       :: n, is(ngp), js(ngp), ks(ngp)
 
         call start_timer(grad_corr_timer)
 
-        call vol2grid
+        call vol2grid(l_reuse)
 
         ! form divergence field * dt and store in phi temporarily:
         phi = volg(0:nz, :, :) * vcelli - one

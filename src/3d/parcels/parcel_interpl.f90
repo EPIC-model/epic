@@ -34,10 +34,11 @@ module parcel_interpl
     contains
 
         ! Interpolate the parcel volume to the grid
-        subroutine vol2grid
-            double precision  :: points(3, 4)
-            integer           :: n, p, l
-            double precision  :: pvol
+        subroutine vol2grid(l_reuse)
+            logical, optional, intent(in) :: l_reuse
+            double precision              :: points(3, 4)
+            integer                       :: n, p, l
+            double precision              :: pvol
 
             volg = zero
 
@@ -48,7 +49,8 @@ module parcel_interpl
                 pvol = parcels%volume(n)
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n))
+                                              pvol, parcels%B(:, n),  &
+                                              n, l_reuse)
 
 
                 ! we have 4 points per ellipsoid
@@ -129,7 +131,7 @@ module parcel_interpl
                 btot = parcels%buoyancy(n)
 #endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n))
+                                              pvol, parcels%B(:, n), n)
 
                 call get_index(parcels%position(:, n), i, j, k)
                 i = mod(i + nx, nx)
