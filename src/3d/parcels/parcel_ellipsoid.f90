@@ -27,7 +27,9 @@ module parcel_ellipsoid
     double precision, parameter :: sintheta(4) = dsin((/fpi4, f3pi4, f5pi4, f7pi4/))
 
     double precision :: etas(max_num_parcels), &
-                        taus(max_num_parcels)
+                        taus(max_num_parcels), &
+                        V1s(3, max_num_parcels), &
+                        V2s(3, max_num_parcels)
 
     private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_upper_triangular
 
@@ -169,6 +171,8 @@ module parcel_ellipsoid
                 if (l_reuse) then
                     eta = etas(n)
                     tau = taus(n)
+                    V(:, 1) = V1s(:, n)
+                    V(:, 2) = V2s(:, n)
                 else
                     call diagonalise(B, volume, D, V)
                     eta = dsqrt(dabs(D(1) - D(3))) * rho
@@ -176,6 +180,8 @@ module parcel_ellipsoid
 
                     etas(n) = eta
                     taus(n) = tau
+                    V1s(:, n) = V(:, 1)
+                    V2s(:, n) = V(:, 2)
                 endif
             else
                 ! (/a2, b2, c2/) with a >= b >= c
@@ -187,6 +193,8 @@ module parcel_ellipsoid
 
                 etas(n) = eta
                 taus(n) = tau
+                V1s(:, n) = V(:, 1)
+                V2s(:, n) = V(:, 2)
             endif
 
             do j = 1, 4
