@@ -1,0 +1,22 @@
+&MODELS
+
+ model      = 'MoistPlume'
+
+ h5fname    = 'moist.hdf5'
+
+ box%ncells = 32, 32, 32
+
+ box%extent = 6280, 6280, 6280
+ box%origin = 0, 0, 0
+
+ moist%H          = 0.8
+ moist%z_c        = 2500
+ moist%mu         = 0.9
+ moist%z_d        = 4000
+ moist%z_m        = 5000
+ moist%r_plume    = 800
+ moist%e_values   = 0.3, -0.4, 0.5
+ moist%l_condense = 1000.0
+ moist%q0         = 0.015
+ moist%theta_l0   = 288.0
+/
