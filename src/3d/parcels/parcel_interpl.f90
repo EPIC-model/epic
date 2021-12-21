@@ -45,7 +45,7 @@ module parcel_interpl
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pvol, is, js, ks, weights) &
+            !$omp do private(n, p, l, points, pvol, is, js, ks, istemp, jstemp, kstemp, weights, weightstemp) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -62,12 +62,28 @@ module parcel_interpl
                     call apply_periodic_bc(points(:, p))
 
                     ! get interpolation weights and mesh indices
-                    call trilinear(points(:, p), is, js, ks, weights)
+                    call trilinear(points(:, p), istemp, jstemp, kstemp, weightstemp)
 
-                    do l = 1, ngp
-                        volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
+                    if(p>1 .and. ( (is(1).ne.istemp(1)) .or. (js(1).ne.jstemp(1)) .or. (ks(1).ne.kstemp(1)) )) then
+                      do l = 1, ngp
+                          volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
                                                   + f14 * weights(l) * pvol
-                    enddo
+                      enddo
+                      weights=0.
+                      is=istemp
+                      js=jstemp
+                      ks=kstemp
+                    elseif(p==1) then
+                      weights=0.
+                      is=istemp
+                      js=jstemp
+                      ks=kstemp
+                    endif
+                    weights=weights+weightstemp
+                enddo
+                do l = 1, ngp
+                    volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
+                                            + f14 * weights(l) * pvol
                 enddo
             enddo
             !$omp end do
@@ -152,7 +168,7 @@ module parcel_interpl
 
                     call trilinear(points(:, p), istemp, jstemp, kstemp, weightstemp)
 
-                    if(p>1 .and. ( (is(1).ne.istemp(1)) .or. (js(1).ne.jstemp(1)) .or. (ks(1).ne.kstemp(1)) )) then   
+                    if(p>1 .and. ( (is(1).ne.istemp(1)) .or. (js(1).ne.jstemp(1)) .or. (ks(1).ne.kstemp(1)) )) then
                       ! loop over grid points which are part of the interpolation
                       ! the weight is a quarter due to 4 points per ellipsoid
                       do l = 1, ngp
@@ -180,28 +196,25 @@ module parcel_interpl
                       is=istemp
                       js=jstemp
                       ks=kstemp
-                    endif 
+                    endif
                     ! get interpolation weights and mesh indices
                     weights=weights+weightstemp
+                enddo
+                do l = 1, ngp
 
-                    if(p==4) then
-                      do l = 1, ngp
+                  weight = f14 * weights(l) * pvol
 
-                        weight = f14 * weights(l) * pvol
-
-                        vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
-                                                      + weight * parcels%vorticity(:, n)
+                  vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
+                                                + weight * parcels%vorticity(:, n)
 
 #ifndef ENABLE_DRY_MODE
-                        dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
-                                                    + weight * parcels%buoyancy(n)
+                  dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
+                                              + weight * parcels%buoyancy(n)
 #endif
-                        tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
-                                                    + weight * btot
-                        volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                                  + weight
-                      enddo
-                    endif
+                  tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
+                                              + weight * btot
+                  volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
+                                            + weight
                 enddo
             enddo
             !$omp end do
