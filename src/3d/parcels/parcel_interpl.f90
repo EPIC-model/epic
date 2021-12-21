@@ -22,9 +22,11 @@ module parcel_interpl
     ! interpolation indices
     ! (first dimension x, y, z; second dimension l-th index)
     integer :: is(ngp), js(ngp), ks(ngp)
+    integer :: istemp(ngp), jstemp(ngp), kstemp(ngp)
 
     ! interpolation weights
     double precision :: weights(ngp)
+    double precision :: weightstemp(ngp)
 
     integer :: par2grid_timer, &
                grid2par_timer
@@ -111,10 +113,10 @@ module parcel_interpl
             tbuoyg = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot, h_c, is, js, ks, weights) &
+            !$omp do private(n, p, l, i, j, k, istemp, jstemp, kstemp, points, pvol, weight, btot, h_c, is, js, ks, weights, weightstemp) &
             !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, tbuoyg, volg)
 #else
-            !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot, is, js, ks, weights) &
+            !$omp do private(n, p, l, i, j, k, istemp, jstemp, kstemp, points, pvol, weight, btot, is, js, ks, weights, weightstemp) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
             do n = 1, n_parcels
@@ -148,12 +150,12 @@ module parcel_interpl
                     ! ensure point is within the domain
                     call apply_periodic_bc(points(:, p))
 
-                    ! get interpolation weights and mesh indices
-                    call trilinear(points(:, p), is, js, ks, weights)
+                    call trilinear(points(:, p), istemp, jstemp, kstemp, weightstemp)
 
-                    ! loop over grid points which are part of the interpolation
-                    ! the weight is a quarter due to 4 points per ellipsoid
-                    do l = 1, ngp
+                    if(p>1 .and. ( (is(1).ne.istemp(1)) .or. (js(1).ne.jstemp(1)) .or. (ks(1).ne.kstemp(1)) )) then   
+                      ! loop over grid points which are part of the interpolation
+                      ! the weight is a quarter due to 4 points per ellipsoid
+                      do l = 1, ngp
 
                         weight = f14 * weights(l) * pvol
 
@@ -168,7 +170,38 @@ module parcel_interpl
                                                     + weight * btot
                         volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
                                                   + weight
-                    enddo
+                      enddo
+                      weights=0.
+                      is=istemp
+                      js=jstemp
+                      ks=kstemp
+                    elseif(p==1) then
+                      weights=0.
+                      is=istemp
+                      js=jstemp
+                      ks=kstemp
+                    endif 
+                    ! get interpolation weights and mesh indices
+                    weights=weights+weightstemp
+
+                    if(p==4) then
+                      do l = 1, ngp
+
+                        weight = f14 * weights(l) * pvol
+
+                        vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
+                                                      + weight * parcels%vorticity(:, n)
+
+#ifndef ENABLE_DRY_MODE
+                        dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
+                                                    + weight * parcels%buoyancy(n)
+#endif
+                        tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
+                                                    + weight * btot
+                        volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
+                                                  + weight
+                      enddo
+                    endif
                 enddo
             enddo
             !$omp end do
