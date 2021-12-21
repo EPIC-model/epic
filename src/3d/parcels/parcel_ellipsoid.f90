@@ -154,12 +154,12 @@ module parcel_ellipsoid
         ! @param[in] volume of the parcel
         ! @param[in] B matrix elements of the parcel
         ! @returns the parcel support points
-        function get_ellipsoid_points(position, volume, B, n, l_reuse) result(points)
+        function get_ellipsoid_points(position, volume, B, n, l_reuse, l_store) result(points)
             double precision,  intent(in) :: position(3)
             double precision,  intent(in) :: volume
             double precision,  intent(in) :: B(5)        ! B11, B12, B13, B22, B23
             integer, optional, intent(in) :: n
-            logical, optional, intent(in) :: l_reuse
+            logical, optional, intent(in) :: l_reuse, l_store
             double precision              :: Veta(3), Vtau(3), D(3), V(3, 3)
             integer                       :: j
             double precision              :: points(3, 4), xy(2)
@@ -174,8 +174,12 @@ module parcel_ellipsoid
                     Veta = dsqrt(dabs(D(1) - D(3))) * rho * V(:, 1)
                     Vtau = dsqrt(dabs(D(2) - D(3))) * rho * V(:, 2)
 
-                    Vetas(:, n) = Veta
-                    Vtaus(:, n) = Vtau
+                    if (present(l_store)) then
+                        if(l_store) then
+                            Vetas(:, n) = Veta
+                            Vtaus(:, n) = Vtau
+                        endif
+                    endif
                 endif
             else
                 ! (/a2, b2, c2/) with a >= b >= c
