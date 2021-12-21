@@ -111,7 +111,6 @@ module parcel_nearest
                 kc1(ijk+1) = kc1(ijk) + nppc(ijk)
             enddo
 
-            !FIXME
             kc2 = kc1 - 1
             j = 0
             do n = 1, n_parcels
