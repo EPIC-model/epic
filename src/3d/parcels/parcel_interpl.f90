@@ -64,7 +64,12 @@ module parcel_interpl
                     ! get interpolation weights and mesh indices
                     call trilinear(points(:, p), istemp, jstemp, kstemp, weightstemp)
 
-                    if(p>1 .and. ( (is(1).ne.istemp(1)) .or. (js(1).ne.jstemp(1)) .or. (ks(1).ne.kstemp(1)) )) then
+                    if(p==1) then
+                      weights=0.
+                      is=istemp
+                      js=jstemp
+                      ks=kstemp
+                    elseif( (is(1).ne.istemp(1)) .or. (js(1).ne.jstemp(1)) .or. (ks(1).ne.kstemp(1)) ) then
                       do l = 1, ngp
                           volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
                                                   + f14 * weights(l) * pvol
@@ -73,12 +78,7 @@ module parcel_interpl
                       is=istemp
                       js=jstemp
                       ks=kstemp
-                    elseif(p==1) then
-                      weights=0.
-                      is=istemp
-                      js=jstemp
-                      ks=kstemp
-                    endif
+                   endif
                     weights=weights+weightstemp
                 enddo
                 do l = 1, ngp
@@ -168,7 +168,12 @@ module parcel_interpl
 
                     call trilinear(points(:, p), istemp, jstemp, kstemp, weightstemp)
 
-                    if(p>1 .and. ( (is(1).ne.istemp(1)) .or. (js(1).ne.jstemp(1)) .or. (ks(1).ne.kstemp(1)) )) then
+                    if(p==1) then
+                      weights=0.
+                      is=istemp
+                      js=jstemp
+                      ks=kstemp
+                    elseif( (is(1).ne.istemp(1)) .or. (js(1).ne.jstemp(1)) .or. (ks(1).ne.kstemp(1)) ) then
                       ! loop over grid points which are part of the interpolation
                       ! the weight is a quarter due to 4 points per ellipsoid
                       do l = 1, ngp
@@ -191,12 +196,7 @@ module parcel_interpl
                       is=istemp
                       js=jstemp
                       ks=kstemp
-                    elseif(p==1) then
-                      weights=0.
-                      is=istemp
-                      js=jstemp
-                      ks=kstemp
-                    endif
+                   endif
                     ! get interpolation weights and mesh indices
                     weights=weights+weightstemp
                 enddo
