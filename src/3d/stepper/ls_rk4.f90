@@ -73,7 +73,7 @@ module ls_rk4
             double precision, intent(inout) :: t
             double precision                :: dt
 
-            call par2grid
+            call par2grid((t > zero))
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep

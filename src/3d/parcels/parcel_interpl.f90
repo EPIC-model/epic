@@ -90,12 +90,13 @@ module parcel_interpl
         ! It also updates the scalar fields:
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
-        subroutine par2grid
-            double precision :: points(3, 4)
-            integer          :: n, p, l, i, j, k
-            double precision :: pvol, weight, btot
+        subroutine par2grid(l_reuse)
+            logical, optional :: l_reuse
+            double precision  :: points(3, 4)
+            integer           :: n, p, l, i, j, k
+            double precision  :: pvol, weight, btot
 #ifndef ENABLE_DRY_MODE
-            double precision :: h_c
+            double precision  :: h_c
 #endif
 
             call start_timer(par2grid_timer)
@@ -131,7 +132,7 @@ module parcel_interpl
                 btot = parcels%buoyancy(n)
 #endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n)
+                                              pvol, parcels%B(:, n), n, l_reuse)
 
                 call get_index(parcels%position(:, n), i, j, k)
                 i = mod(i + nx, nx)
