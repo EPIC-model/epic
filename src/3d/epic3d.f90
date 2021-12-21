@@ -110,9 +110,6 @@ program epic3d
                 call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
             endif
 
-#ifdef ENABLE_MERGER_DUMP
-            call create_h5_merger_files(trim(output%h5_basename), output%h5_overwrite)
-#endif
         end subroutine
 
 

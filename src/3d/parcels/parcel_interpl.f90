@@ -27,9 +27,6 @@ module parcel_interpl
     double precision :: weights(ngp)
 
     integer :: par2grid_timer, &
-#ifndef NDBEBUG
-               sym_vol2grid_timer, &
-#endif
                grid2par_timer
 
     private :: is, js, ks, weights
@@ -83,54 +80,6 @@ module parcel_interpl
 
         end subroutine vol2grid
 
-#ifndef NDEBUG
-        ! Interpolate the parcel volume to the grid to check symmetry
-        subroutine vol2grid_symmetry_error
-            double precision :: points(3, 4), V, B(5), pos(3)
-            integer          :: n, p, l, m
-            double precision :: pvol
-
-            call start_timer(sym_vol2grid_timer)
-
-            sym_volg = zero
-
-            do m = -1, 1, 2
-                !$omp parallel default(shared)
-                !$omp do private(n, p, l, points, pos, pvol, V, B, is, js, ks, weights) &
-                !$omp& reduction(+: sym_volg)
-                do n = 1, n_parcels
-
-                    pos = parcels%position(:, n)
-                    pvol = parcels%volume(n)
-                    pos(1) = dble(m) * pos(1)
-                    V = dble(m) * pvol
-                    B = parcels%B(:, n)
-
-                    B(2) = dble(m) * B(2)
-
-                    points = get_ellipsoid_points(pos, V, B)
-
-                    ! we have 4 points per ellipsoid
-                    do p = 1, 4
-
-                        ! ensure point is within the domain
-                        call apply_periodic_bc(points(:, p))
-
-                        ! get interpolation weights and mesh indices
-                        call trilinear(points(:, p), is, js, ks, weights)
-
-                        do l = 1, ngp
-                            sym_volg(ks(l), js(l), is(l)) = sym_volg(ks(l), js(l), is(l)) &
-                                                          + dble(m) * f14 * weights(l) * pvol
-                        enddo
-                    enddo
-                enddo
-                !$omp end do
-                !$omp end parallel
-            enddo
-            call stop_timer(sym_vol2grid_timer)
-        end subroutine vol2grid_symmetry_error
-#endif
 
         ! Interpolate parcel quantities to the grid, these consist of the parcel
         !   - vorticity
