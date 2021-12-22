@@ -22,11 +22,9 @@ module parcel_interpl
     ! interpolation indices
     ! (first dimension x, y, z; second dimension l-th index)
     integer :: is(ngp), js(ngp), ks(ngp)
-    integer :: istemp(ngp), jstemp(ngp), kstemp(ngp)
 
     ! interpolation weights
     double precision :: weights(ngp)
-    double precision :: weightstemp(ngp)
 
     integer :: par2grid_timer, &
                grid2par_timer
@@ -41,11 +39,12 @@ module parcel_interpl
             double precision              :: points(3, 4)
             integer                       :: n, p, l
             double precision              :: pvol
+            integer :: i, j, k, i_stored, j_stored, k_stored
 
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pvol, is, js, ks, istemp, jstemp, kstemp, weights, weightstemp) &
+            !$omp do private(n, p, l, points, pvol, is, js, ks, i, j, k, i_stored, j_stored, k_stored, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -60,27 +59,33 @@ module parcel_interpl
 
                     ! ensure point is within the domain
                     call apply_periodic_bc(points(:, p))
-
-                    ! get interpolation weights and mesh indices
-                    call trilinear(points(:, p), istemp, jstemp, kstemp, weightstemp)
+                    call get_index(points(:, p), i, j, k)
 
                     if(p==1) then
-                      weights=0.
-                      is=istemp
-                      js=jstemp
-                      ks=kstemp
-                    elseif( (is(1).ne.istemp(1)) .or. (js(1).ne.jstemp(1)) .or. (ks(1).ne.kstemp(1)) ) then
+                      ! first parcel point, reset weights
+                      i_stored=i
+                      j_stored=j
+                      k_stored=k
+                      call trilinear(points(:, p), is, js, ks, weights)
+                    elseif( (i==i_stored) .and. (j==j_stored) .and. (k==k_stored) )then
+                      ! if point is in same grid cell, just add to weights
+                      call trilinear_weights_add(points(:, p), weights)
+                    else
+                      ! if point is in different grid cell, save previously stored
+                      ! weights first
+                      ! loop over grid points which are part of the interpolation
+                      ! the weight is a quarter due to 4 points per ellipsoid
                       do l = 1, ngp
                           volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
                                                   + f14 * weights(l) * pvol
                       enddo
-                      weights=0.
-                      is=istemp
-                      js=jstemp
-                      ks=kstemp
+                      i_stored=i
+                      j_stored=j
+                      k_stored=k
+                      call trilinear(points(:, p), is, js, ks, weights)
                    endif
-                    weights=weights+weightstemp
                 enddo
+                ! save contibutions at end of points loop
                 do l = 1, ngp
                     volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
                                             + f14 * weights(l) * pvol
@@ -111,7 +116,7 @@ module parcel_interpl
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
             double precision  :: points(3, 4)
-            integer           :: n, p, l, i, j, k
+            integer           :: n, p, l, i, j, k, i_stored, j_stored, k_stored
             double precision  :: pvol, weight, btot
 #ifndef ENABLE_DRY_MODE
             double precision  :: h_c
@@ -129,12 +134,12 @@ module parcel_interpl
             tbuoyg = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, j, k, istemp, jstemp, kstemp, points, pvol, weight, btot, h_c) &
-            !$omp& private( is, js, ks, weights, weightstemp) &
+            !$omp do private(n, p, l, i, j, k, i_stored, j_stored, k_stored, points, pvol, weight, btot, h_c) &
+            !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, tbuoyg, volg)
 #else
-            !$omp do private(n, p, l, i, j, k, istemp, jstemp, kstemp, points, pvol, weight, btot) &
-            !$omp& private( is, js, ks, weights, weightstemp) &
+            !$omp do private(n, p, l, i, j, k, i_stored, j_stored, k_stored, points, pvol, weight, btot) &
+            !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
             do n = 1, n_parcels
@@ -164,18 +169,22 @@ module parcel_interpl
 
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
-
                     ! ensure point is within the domain
                     call apply_periodic_bc(points(:, p))
-
-                    call trilinear(points(:, p), istemp, jstemp, kstemp, weightstemp)
+                    call get_index(points(:, p), i, j, k)
 
                     if(p==1) then
-                      weights=0.
-                      is=istemp
-                      js=jstemp
-                      ks=kstemp
-                    elseif( (is(1).ne.istemp(1)) .or. (js(1).ne.jstemp(1)) .or. (ks(1).ne.kstemp(1)) ) then
+                      ! first parcel point, reset weights
+                      i_stored=i
+                      j_stored=j
+                      k_stored=k
+                      call trilinear(points(:, p), is, js, ks, weights)
+                    elseif( (i==i_stored) .and. (j==j_stored) .and. (k==k_stored) ) then
+                      ! if point is in same grid cell, just add to weights
+                      call trilinear_weights_add(points(:, p), weights)
+                    else
+                      ! if point is in different grid cell, save previously stored
+                      ! weights first
                       ! loop over grid points which are part of the interpolation
                       ! the weight is a quarter due to 4 points per ellipsoid
                       do l = 1, ngp
@@ -194,14 +203,13 @@ module parcel_interpl
                         volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
                                                   + weight
                       enddo
-                      weights=0.
-                      is=istemp
-                      js=jstemp
-                      ks=kstemp
+                      i_stored=i
+                      j_stored=j
+                      k_stored=k
+                      call trilinear(points(:, p), is, js, ks, weights)
                    endif
-                    ! get interpolation weights and mesh indices
-                    weights=weights+weightstemp
                 enddo
+                ! save contibutions at end of points loop
                 do l = 1, ngp
 
                   weight = f14 * weights(l) * pvol
@@ -443,5 +451,45 @@ module parcel_interpl
             ww(8) = pz * w11
 
         end subroutine trilinear
+
+        pure subroutine trilinear_weights_add(pos, ww)
+            double precision, intent(in)     :: pos(3)
+            double precision, intent(inout)  :: ww(ngp)
+            integer                          :: ii,jj,kk
+            double precision                 :: xyz(3)
+            double precision                 :: px, py, pz, pxc, pyc, pzc
+            double precision                 :: w00, w10, w01, w11
+
+            ! (i, j, k)
+            xyz = (pos - lower) * dxi
+            ii = floor(xyz(1))
+            jj = floor(xyz(2))
+            kk = floor(xyz(3))
+
+
+            px = xyz(1) - dble(ii)
+            pxc = one - px
+
+            py = xyz(2) - dble(jj)
+            pyc = one - py
+
+            pz = xyz(3) - dble(kk)
+            pzc = one - pz
+
+            w00 = pyc * pxc
+            w10 = pyc * px
+            w01 = py * pxc
+            w11 = py * px
+
+            ww(1) = ww(1)+pzc * w00
+            ww(2) = ww(2)+pzc * w10
+            ww(3) = ww(3)+pzc * w01
+            ww(4) = ww(4)+pzc * w11
+            ww(5) = ww(5)+pz * w00
+            ww(6) = ww(6)+pz * w10
+            ww(7) = ww(7)+pz * w01
+            ww(8) = ww(8)+pz * w11
+
+        end subroutine trilinear_weights_add
 
 end module parcel_interpl
