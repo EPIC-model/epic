@@ -62,12 +62,8 @@ module parcel_interpl
                     call get_index(points(:, p), i, j, k)
 
                     if(p==1) then
-                      ! first parcel point, reset weights
-                      i_stored=i
-                      j_stored=j
-                      k_stored=k
                       call trilinear(points(:, p), is, js, ks, weights)
-                    elseif( (i==i_stored) .and. (j==j_stored) .and. (k==k_stored) )then
+                    elseif( (i==i_stored) .and. (j==j_stored) .and. (k==k_stored) ) then
                       ! if point is in same grid cell, just add to weights
                       call trilinear_weights_add(points(:, p), weights)
                     else
@@ -79,11 +75,11 @@ module parcel_interpl
                           volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
                                                   + f14 * weights(l) * pvol
                       enddo
-                      i_stored=i
-                      j_stored=j
-                      k_stored=k
                       call trilinear(points(:, p), is, js, ks, weights)
-                   endif
+                    endif
+                    i_stored=i
+                    j_stored=j
+                    k_stored=k
                 enddo
                 ! save contibutions at end of points loop
                 do l = 1, ngp
@@ -175,9 +171,6 @@ module parcel_interpl
 
                     if(p==1) then
                       ! first parcel point, reset weights
-                      i_stored=i
-                      j_stored=j
-                      k_stored=k
                       call trilinear(points(:, p), is, js, ks, weights)
                     elseif( (i==i_stored) .and. (j==j_stored) .and. (k==k_stored) ) then
                       ! if point is in same grid cell, just add to weights
@@ -203,11 +196,11 @@ module parcel_interpl
                         volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
                                                   + weight
                       enddo
-                      i_stored=i
-                      j_stored=j
-                      k_stored=k
                       call trilinear(points(:, p), is, js, ks, weights)
                    endif
+                   i_stored=i
+                   j_stored=j
+                   k_stored=k
                 enddo
                 ! save contibutions at end of points loop
                 do l = 1, ngp
