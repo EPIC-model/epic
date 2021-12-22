@@ -33,8 +33,8 @@ module parcel_correction
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    subroutine apply_laplace(l_reuse,l_store)
-        logical, optional, intent(in) :: l_reuse,l_store
+    subroutine apply_laplace(l_reuse)
+        logical, optional, intent(in) :: l_reuse
         double precision              :: phi(0:nz, 0:ny-1, 0:nx-1),   &
                                          ud(-1:nz+1, 0:ny-1, 0:nx-1), &
                                          vd(-1:nz+1, 0:ny-1, 0:nx-1), &
@@ -44,7 +44,7 @@ module parcel_correction
 
         call start_timer(lapl_corr_timer)
 
-        call vol2grid(l_reuse,l_store)
+        call vol2grid(l_reuse)
 
         ! form divergence field
         phi = volg(0:nz, :, :) * vcelli - one
