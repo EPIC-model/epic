@@ -129,10 +129,12 @@ module parcel_interpl
             tbuoyg = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, j, k, istemp, jstemp, kstemp, points, pvol, weight, btot, h_c, is, js, ks, weights, weightstemp) &
+            !$omp do private(n, p, l, i, j, k, istemp, jstemp, kstemp, points, pvol, weight, btot, h_c) &
+            !$omp& private( is, js, ks, weights, weightstemp) &
             !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, tbuoyg, volg)
 #else
-            !$omp do private(n, p, l, i, j, k, istemp, jstemp, kstemp, points, pvol, weight, btot, is, js, ks, weights, weightstemp) &
+            !$omp do private(n, p, l, i, j, k, istemp, jstemp, kstemp, points, pvol, weight, btot) &
+            !$omp& private( is, js, ks, weights, weightstemp) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
             do n = 1, n_parcels
