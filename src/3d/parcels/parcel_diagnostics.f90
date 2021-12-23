@@ -80,7 +80,7 @@ module parcel_diagnostics
             ! sort buoyancy in ascending order
             call msort(b, ii)
 
-            gam = one / extent(1)
+            gam = one / (extent(1)*extent(2))
             zmean = f12 * gam * parcels%volume(ii(1))
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
@@ -131,7 +131,7 @@ module parcel_diagnostics
                 z   = parcels%position(3, n) - zmin
 
                 ! kinetic energy
-                ke = ke + (vel(1) ** 2 + vel(2) ** 2 + vel(3)) * vol
+                ke = ke + (vel(1) ** 2 + vel(2) ** 2 + vel(3) ** 2) * vol
 
                 ! potential energy
                 pe = pe - b * z * vol
