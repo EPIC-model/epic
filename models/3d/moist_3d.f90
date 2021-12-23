@@ -45,7 +45,7 @@ module moist_3d
             double precision, intent(in)    :: origin(3)
             double precision, intent(in)    :: dx(3)
             integer                         :: i, j, k
-            double precision                :: r2, pos(3), centre(3), extent(3)
+            double precision                :: rpos1, rpos2, rpos3, r2, pos(3), centre(3), extent(3)
             double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
 
             if (moist%H .gt. one) then
@@ -68,7 +68,7 @@ module moist_3d
 
             z_b = moist%l_condense * dlog(moist%q0 * moist%H / h_bg)
 
-            write(*,"('Base of mixed layer is ',f6.3)") z_b
+            write(*,"('Base of mixed layer is ',f12.3)") z_b
 
             dbdz = (gravity * L_v / (c_p * moist%theta_l0)) &
                  * (h_pl - moist%q0 * dexp(-moist%z_m / moist%l_condense)) / (moist%z_m - moist%z_d)
@@ -121,14 +121,15 @@ module moist_3d
 
                         pos = origin + dx * dble((/i, j, k/))
 
-                        r2 = (pos(1) - centre(1)) ** 2 &
-                           + (pos(2) - centre(2)) ** 2 &
-                           + (pos(3) - centre(3)) ** 2
+                        rpos1 = (pos(1) - centre(1)) 
+                        rpos2 = (pos(2) - centre(2))
+                        rpos3 = (pos(3) - moist%r_plume)
+                        r2 = rpos1**2+rpos2**2+rpos3**2
 
                         if (r2 <= radsq) then
-                            buoyg(k, j, i) = b_pl * (one + moist%e_values(1) * pos(1) * pos(2)  &
-                                                         + moist%e_values(2) * pos(1) * pos(3)  &
-                                                         + moist%e_values(3) * pos(2) * pos(3))
+                            buoyg(k, j, i) = b_pl * (one + moist%e_values(1) * rpos1 * rpos2  &
+                                                         + moist%e_values(2) * rpos1 * rpos3  &
+                                                         + moist%e_values(3) * rpos2 * rpos3)
                             humg(k, j, i) = h_pl
                         else
                             if (pos(3) < z_b) then
