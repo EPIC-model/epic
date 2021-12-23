@@ -162,7 +162,7 @@ module parcel_ellipsoid
             logical, optional, intent(in) :: l_reuse
             double precision              :: Veta(3), Vtau(3), D(3), V(3, 3)
             integer                       :: j
-            double precision              :: points(3, 4), xy(2)
+            double precision              :: points(3, 4)
 
 
             if (present(l_reuse)) then

@@ -23,9 +23,9 @@ program epic3d
     use inversion_mod, only : vor2vel_timer, vtend_timer
     use inversion_utils, only : init_fft
     use parcel_interpl, only : grid2par_timer, par2grid_timer
-#ifndef NDEBUG
-    use parcel_interpl, only : sym_vol2grid_timer
-#endif
+!#ifndef NDEBUG
+!    use parcel_interpl, only : sym_vol2grid_timer
+!#endif
     use parcel_init, only : init_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
     use h5_utils, only : initialise_hdf5, finalise_hdf5
@@ -69,9 +69,9 @@ program epic3d
             call register_timer('parcel push', rk4_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
-#ifndef NDEBUG
-            call register_timer('symmetric vol2grid', sym_vol2grid_timer)
-#endif
+!#ifndef NDEBUG
+!            call register_timer('symmetric vol2grid', sym_vol2grid_timer)
+!#endif
 
             call start_timer(epic_timer)
 

@@ -292,7 +292,7 @@ module parcel_interpl
         subroutine grid2par(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
-            integer                             :: n, c, l
+            integer                             :: n, l
 
             call start_timer(grid2par_timer)
 
@@ -320,7 +320,7 @@ module parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, l, c, is, js, ks, weights) ! p, points
+            !$omp do private(n, l, is, js, ks, weights) ! p, points
             do n = 1, n_parcels
 
                 vgrad(:, n) = zero
