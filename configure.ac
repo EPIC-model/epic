@@ -29,6 +29,7 @@ AC_CONFIG_FILES([
     unit-tests/Makefile
     unit-tests/2d/Makefile
     unit-tests/3d/Makefile
+    unit-tests/netcdf/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
