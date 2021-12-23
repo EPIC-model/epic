@@ -42,15 +42,16 @@ module netcdf_writer
             endif
         end subroutine define_netcdf_dimensions
 
-        subroutine define_netcdf_dataset(ncid, name, unit, dimids, varid)
+        subroutine define_netcdf_dataset(ncid, name, unit, dtype, dimids, varid)
             integer,      intent(in)  :: ncid
             character(*), intent(in)  :: name
             character(*), intent(in)  :: unit
+            integer,      intent(in)  :: dtype ! NF90_DOUBLE or NF90_INT
             integer,      intent(in)  :: dimids(:)
             integer,      intent(out) :: varid
 
             ! define the variable
-            ncerr = nf90_def_var(ncid, name, NF90_DOUBLE, dimids, varid)
+            ncerr = nf90_def_var(ncid, name, dtype, dimids, varid)
 
             call check_netcdf_error("Failed to define the dataset.")
 

@@ -9,8 +9,8 @@ program test_netcdf_dataset_3d
     implicit none
 
     integer, parameter :: nx = 5, ny = 10, nz = 2
-    integer            :: ix, iy, iz, ncid
-    integer            :: var_id1 = -1, var_id2 = -1, dimids(3)
+    integer            :: ix, iy, iz, ncid, dimids(3)
+    integer            :: var_id1 = -1, var_id2 = -1, var_id3
     double precision   :: dset(nz, ny, nx)
     logical            :: passed
 
@@ -32,16 +32,19 @@ program test_netcdf_dataset_3d
 
     call define_netcdf_dimensions(ncid, (/nx, ny, nz/), dimids)
 
-    call define_netcdf_dataset(ncid, 'x_velocity', 'm/s', dimids, var_id1)
-    call define_netcdf_dataset(ncid, 'y_velocity', 'm/s', dimids, var_id2)
+    call define_netcdf_dataset(ncid, 'x_velocity', 'm/s', NF90_DOUBLE, dimids, var_id1)
+    call define_netcdf_dataset(ncid, 'y_velocity', 'm/s', NF90_DOUBLE, dimids, var_id2)
+    call define_netcdf_dataset(ncid, 'nparg', '-', NF90_INT, dimids, var_id3)
 
     call close_definition(ncid)
 
     call write_netcdf_dataset(ncid, var_id1, dset)
 
-    dset = 10 + dset
+    dset = 1.5d0 + dset
 
     call write_netcdf_dataset(ncid, var_id2, dset)
+
+    call write_netcdf_dataset(ncid, var_id3, dset)
 
     call close_netcdf_file(ncid)
 
