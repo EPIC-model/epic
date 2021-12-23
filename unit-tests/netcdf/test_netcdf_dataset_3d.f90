@@ -47,7 +47,7 @@ program test_netcdf_dataset_3d
 
     passed = (ncerr == 0)
 
-!     call delete_netcdf_file(ncfname='nctest.nc')
+    call delete_netcdf_file(ncfname='nctest.nc')
 
     call print_result_logical('Test netCDF write 3D datasets', passed)
 
