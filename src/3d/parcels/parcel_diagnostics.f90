@@ -113,7 +113,7 @@ module parcel_diagnostics
 
             n_small = zero
 
-            zmin = lower(2)
+            zmin = lower(3)
 
             avg_lam = zero
             avg_vol = zero
