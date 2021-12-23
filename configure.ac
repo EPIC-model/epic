@@ -18,6 +18,7 @@ AC_CONFIG_FILES([
     src/Makefile
     src/utils/Makefile
     src/hdf5/Makefile
+    src/netcdf/Makefile
     src/fft/Makefile
     src/2d/Makefile
     src/3d/Makefile
@@ -205,10 +206,49 @@ AC_LINK_IFELSE(
   [hdf5_found=no AC_MSG_ERROR([Cannot find hdf5 Fortran library])])
 AC_MSG_RESULT([$hdf5_found])
 
+
+AC_ARG_WITH([netcdf],
+            [AS_HELP_STRING([--with-netcdf=<path>], [path to netcdf library @<:@default=$NETCDF_DIR@:>@])],
+            [NETCDF_DIR=$withval],
+            [])
+
 #######################################################################################
 ##
 ## "--enable" flags
 ##
+
+ENABLE_NETCDF='no'
+AC_ARG_ENABLE([netcdf],
+              [AS_HELP_STRING([--enable-netcdf], [enable netcdf support (default=no)])],
+              [ENABLE_NETCDF=$enableval])
+
+AM_CONDITIONAL([ENABLE_NETCDF], [test "$ENABLE_NETCDF" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling with netcdf support])
+if test "x$ENABLE_NETCDF" = "xyes"; then
+    AC_MSG_RESULT([yes])
+
+    if test -n "${NETCDF_DIR}"; then
+        FCFLAGS="$FCFLAGS -I$NETCDF_DIR/include"
+        LDFLAGS="$LDFLAGS -L$NETCDF_DIR/lib"
+        LIBS="$LIBS -lnetcdff -lnetcdf"
+    else
+        AC_MSG_ERROR([Variable 'NETCDF_DIR' not set])]
+    fi
+
+    AC_MSG_CHECKING([for netcdf library])
+    AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([], [
+        use netcdf
+        implicit none])],
+    [netcdf_found=yes],
+    [netcdf_found=no AC_MSG_ERROR([Cannot find netcdf library])])
+    AC_MSG_RESULT([$netcdf_found])
+
+
+else
+    AC_MSG_RESULT([no])
+fi
 
 ENABLE_3D='no'
 AC_ARG_ENABLE([3d],
