@@ -265,6 +265,15 @@ module parcel_init
                 call gen_parcel_scalar_attr(field_3d, tol, parcels%buoyancy)
             endif
 
+#ifndef ENABLE_DRY_MODE
+            if (has_dataset(h5handle, 'humidity')) then
+                call read_h5_dataset(h5handle, 'humidity', buffer_3d)
+                call fill_field_from_buffer_3d(buffer_3d, field_3d)
+                deallocate(buffer_3d)
+                call gen_parcel_scalar_attr(field_3d, tol, parcels%humidity)
+            endif
+#endif
+
             call close_h5_file(h5handle)
 
             call dealloc
