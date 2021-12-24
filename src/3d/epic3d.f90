@@ -20,6 +20,9 @@ program epic3d
     use parcel_hdf5
     use fields
     use field_hdf5, only : hdf5_field_timer, create_h5_field_file
+#ifdef ENABLE_NETCDF
+    use field_netcdf, only : netcdf_field_timer, create_netcdf_field_file
+#endif
     use inversion_mod, only : vor2vel_timer, vtend_timer
     use inversion_utils, only : init_fft
     use parcel_interpl, only : grid2par_timer, par2grid_timer
@@ -63,6 +66,9 @@ program epic3d
             call register_timer('parcel hdf5', hdf5_parcel_timer)
             call register_timer('parcel diagnostics hdf5', hdf5_parcel_stat_timer)
             call register_timer('field hdf5', hdf5_field_timer)
+#ifdef ENABLE_NETCDF
+            call register_timer('field netcdf', netcdf_field_timer)
+#endif
             call register_timer('field diagnostics hdf5', hdf5_field_stat_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
@@ -100,6 +106,9 @@ program epic3d
 
             if (output%h5_write_fields) then
                 call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
+#ifdef ENABLE_NETCDF
+                call create_netcdf_field_file(trim(output%h5_basename), output%h5_overwrite)
+#endif
             endif
 
             if (output%h5_write_field_stats) then

@@ -4,6 +4,11 @@ AM_FCFLAGS =				\
 	-I $(top_builddir)/src/hdf5	\
 	-I $(top_builddir)/src/fft
 
+if ENABLE_NETCDF
+AM_FCFLAGS +=				\
+	-I $(top_builddir)/src/netcdf
+endif
+
 bin_PROGRAMS = epic3d
 epic3d_SOURCES = 				\
 	utils/deriv1d.f90			\
@@ -11,7 +16,13 @@ epic3d_SOURCES = 				\
 	utils/parameters.f90			\
 	utils/phys_parameters.f90		\
 	fields/fields.f90			\
-	fields/field_diagnostics.f90		\
+	fields/field_diagnostics.f90
+
+if ENABLE_NETCDF
+epic3d_SOURCES += fields/field_netcdf.f90
+endif
+
+epic3d_SOURCES +=				\
 	fields/field_hdf5.f90			\
 	parcels/parcel_ellipsoid.f90		\
 	parcels/parcel_container.f90 		\
@@ -35,6 +46,11 @@ epic3d_LDADD = 						\
 	$(top_builddir)/src/utils/libepic_utils.la 	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
 	$(top_builddir)/src/fft/libepic_fft.la
+
+if ENABLE_NETCDF
+epic3d_LDADD +=						\
+	$(top_builddir)/src/netcdf/libepic_netcdf.la
+endif
 
 clean-local:
 	rm -f *.mod

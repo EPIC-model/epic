@@ -10,15 +10,18 @@ module utils
     use parcel_interpl, only : vol2grid_symmetry_error
 #endif
     use field_diagnostics, only : write_h5_field_stats_step
-
+#ifdef ENABLE_NETCDF
+    use field_netcdf
+#endif
     implicit none
 
     integer :: nfw  = 0    ! number of field writes to h5
+    integer :: nnfw = 1
     integer :: npw  = 0    ! number of parcel writes to h5
     integer :: nspw = 0    ! number of parcel diagnostics writes to h5
     integer :: nsfw = 0    ! number of field diagnostics writes to h5
 
-    private :: nfw, npw, nspw, nsfw
+    private :: nfw, npw, nspw, nsfw, nnfw
 
     contains
 
@@ -74,6 +77,7 @@ module utils
                 do_vol2grid_sym_err = .false.
 #endif
                 call write_h5_field_step(nfw, t, dt)
+                call write_netcdf_field_step(nnfw, t, dt)
             endif
 
 

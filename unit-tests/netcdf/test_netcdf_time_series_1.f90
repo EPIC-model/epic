@@ -1,16 +1,16 @@
 ! =============================================================================
-!                       Test netCDF 2D dataset
+!                       Test netCDF time series
 !
-!               This unit test checks to write 2D datasets to netCDF.
+!               This unit test checks to write multiple time steps.
 ! =============================================================================
-program test_netcdf_dataset_2d
+program test_netcdf_time_series
     use unit_test
     use netcdf_writer
     implicit none
 
     integer, parameter :: nx = 5, ny = 10
-    integer            :: ix, iy, ncid, dimids(2)
-    integer            :: var_id1 = -1, var_id2 = -1, var_id3 = -1
+    integer            :: ix, iy, ncid, dimids(3)
+    integer            :: var_id = -1, cnt(3), start(3)
     double precision   :: dset(ny, nx)
     logical            :: passed
 
@@ -28,22 +28,25 @@ program test_netcdf_dataset_2d
                           access_flag=NF90_WRITE, &
                           ncid=ncid)
 
-    call define_netcdf_dimension(ncid, "x", nx, dimids(2))
     call define_netcdf_dimension(ncid, "y", ny, dimids(1))
+    call define_netcdf_dimension(ncid, "x", nx, dimids(2))
+    call define_netcdf_dimension(ncid, "t", NF90_UNLIMITED, dimids(3))
 
-    call define_netcdf_dataset(ncid, 'x_velocity', 'm/s', NF90_DOUBLE, dimids, var_id1)
-    call define_netcdf_dataset(ncid, 'y_velocity', 'm/s', NF90_DOUBLE, dimids, var_id2)
-    call define_netcdf_dataset(ncid, 'nparg', '-', NF90_INT, dimids, var_id3)
+    call define_netcdf_dataset(ncid, 'x_velocity', 'm/s', NF90_DOUBLE, dimids, var_id)
 
     call close_definition(ncid)
 
-    call write_netcdf_dataset(ncid, var_id1, dset)
+    cnt   = (/ ny, nx, 1 /)
+    start = (/ 1,  1,  1 /)
+
+    call write_netcdf_dataset(ncid, var_id, dset, start, cnt)
 
     dset = 1.5d0 + dset
 
-    call write_netcdf_dataset(ncid, var_id2, dset)
+    cnt   = (/ ny, nx, 1 /)
+    start = (/ 1,  1,  2 /)
 
-    call write_netcdf_dataset(ncid, var_id3, dset)
+    call write_netcdf_dataset(ncid, var_id, dset, start, cnt)
 
     call close_netcdf_file(ncid)
 
@@ -51,6 +54,6 @@ program test_netcdf_dataset_2d
 
     call delete_netcdf_file(ncfname='nctest.nc')
 
-    call print_result_logical('Test netCDF write 2D datasets', passed)
+    call print_result_logical('Test netCDF write time series', passed)
 
-end program test_netcdf_dataset_2d
+end program test_netcdf_time_series

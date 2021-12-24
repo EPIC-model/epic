@@ -12,35 +12,15 @@ module netcdf_writer
 
     contains
 
-        subroutine define_netcdf_dimensions(ncid, dims, dimids)
-            integer, intent(in)  :: ncid
-            integer, intent(in)  :: dims(:)
-            integer, intent(out) :: dimids(:)
+        subroutine define_netcdf_dimension(ncid, name, dimsize, dimid)
+            integer,      intent(in)  :: ncid
+            character(*), intent(in)  :: name
+            integer,      intent(in)  :: dimsize
+            integer,      intent(out) :: dimid
 
-            ! the fields have ordering: z, y, x; hence we need to
-            ! change dimids access
-
-            if (size(dims) == 2) then
-                ncerr = nf90_def_dim(ncid, "x", dims(1), dimids(2))
-                call check_netcdf_error("Failed to define x dimension.")
-
-                ncerr = nf90_def_dim(ncid, "z", dims(2), dimids(1))
-                call check_netcdf_error("Failed to define z dimension.")
-
-            else if (size(dims) == 3) then
-                ncerr = nf90_def_dim(ncid, "x", dims(1), dimids(3))
-                call check_netcdf_error("Failed to define x dimension.")
-
-                ncerr = nf90_def_dim(ncid, "y", dims(2), dimids(2))
-                call check_netcdf_error("Failed to define y dimension.")
-
-                ncerr = nf90_def_dim(ncid, "z", dims(3), dimids(1))
-                call check_netcdf_error("Failed to define z dimension.")
-            else
-                print *, 'Can only define 2D and 3D.'
-                stop
-            endif
-        end subroutine define_netcdf_dimensions
+            ncerr = nf90_def_dim(ncid, name, dimsize, dimid)
+            call check_netcdf_error("Failed to define" // name // "dimension.")
+        end subroutine define_netcdf_dimension
 
         subroutine define_netcdf_dataset(ncid, name, unit, dtype, dimids, varid)
             integer,      intent(in)  :: ncid
@@ -70,22 +50,27 @@ module netcdf_writer
             call check_netcdf_error("Failed to define metadata.")
         end subroutine close_definition
 
-        subroutine write_netcdf_dataset_2d(ncid, varid, data)
-            integer, intent(in)          :: ncid
-            integer, intent(in)          :: varid
-            double precision, intent(in) :: data(:, :)
+        subroutine write_netcdf_dataset_2d(ncid, varid, data, start, cnt)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            double precision,  intent(in) :: data(:, :)
+            integer, optional, intent(in) :: start(:)
+            integer, optional, intent(in) :: cnt(:)
 
             ! write data
-            ncerr = nf90_put_var(ncid, varid, data)
+            ncerr = nf90_put_var(ncid, varid, data, &
+                                 start=start, count = cnt)
 
             call check_netcdf_error("Failed to write dataset.")
 
         end subroutine write_netcdf_dataset_2d
 
-        subroutine write_netcdf_dataset_3d(ncid, varid, data)
-            integer, intent(in)          :: ncid
-            integer, intent(in)          :: varid
-            double precision, intent(in) :: data(:, :, :)
+        subroutine write_netcdf_dataset_3d(ncid, varid, data, start, cnt)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            double precision,  intent(in) :: data(:, :, :)
+            integer, optional, intent(in) :: start(:)
+            integer, optional, intent(in) :: cnt(:)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, data)

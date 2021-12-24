@@ -246,6 +246,7 @@ if test "x$ENABLE_NETCDF" = "xyes"; then
     [netcdf_found=no AC_MSG_ERROR([Cannot find netcdf library])])
     AC_MSG_RESULT([$netcdf_found])
 
+    FCFLAGS="$FCFLAGS -DENABLE_NETCDF"
 
 else
     AC_MSG_RESULT([no])
