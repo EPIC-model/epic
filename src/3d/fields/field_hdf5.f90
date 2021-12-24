@@ -102,11 +102,11 @@ module field_hdf5
             call write_h5_dataset(h5file_id, name, "total buoyancy", &
                                   tbuoyg(0:nz, 0:ny-1, 0:nx-1))
 
-#ifdef ENABLE_DIAGNOSE
 #ifndef ENABLE_DRY_MODE
             call write_h5_dataset(h5file_id, name, "dry buoyancy", &
                                   dbuoyg(0:nz, 0:ny-1, 0:nx-1))
 #endif
+#ifdef ENABLE_DIAGNOSE
             call write_h5_dataset(h5file_id, name, "volume", &
                                   volg(0:nz, 0:ny-1, 0:nx-1))
 
