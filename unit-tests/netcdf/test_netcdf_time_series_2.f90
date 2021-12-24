@@ -51,7 +51,7 @@ program test_netcdf_time_series_2
 
     passed = (ncerr == 0)
 
-!     call delete_netcdf_file(ncfname='nctest.nc')
+    call delete_netcdf_file(ncfname='nctest.nc')
 
     call print_result_logical('Test netCDF write time series 2', passed)
 
