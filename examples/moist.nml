@@ -7,7 +7,7 @@
  box%ncells = 32, 32, 32
 
  box%extent = 6280, 6280, 6280
- box%origin = 0, 0, 0
+ box%origin = -3140, -3140, 0
 
  moist%H          = 0.8
  moist%z_c        = 2500
