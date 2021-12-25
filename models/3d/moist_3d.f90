@@ -113,7 +113,9 @@ module moist_3d
             buoyg = zero
             humg = zero
 
-            centre = f12 * (origin + extent)
+            centre = f12 * (2.0*origin + extent)
+
+            write(*,*) centre
 
             do i = 0, nx-1
                 do j = 0, ny-1
