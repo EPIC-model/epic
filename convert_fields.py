@@ -56,7 +56,8 @@ ds_xr['diffB'] = xr.DataArray(coords=[time_array, z_array, y_array, x_array], di
 for i_time in range(tlen):
    this_step=ds_nc.groups[tstep_keys[i_time]]
    for variable in this_step.variables:
-        ds_xr[variable][i_time]=np.transpose(this_step[variable][:])
-   ds_xr['diffB'][i_time]=np.transpose(this_step['total buoyancy'][:])-np.transpose(this_step['dry buoyancy'][:])
+       ds_xr[variable][i_time]=np.transpose(this_step[variable][:])
+   if 'dry buoyancy' in this_step.variables:
+       ds_xr['diffB'][i_time]=np.transpose(this_step['total buoyancy'][:])-np.transpose(this_step['dry buoyancy'][:])
 
 ds_xr.to_netcdf(file_root + ".nc")
