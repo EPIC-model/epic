@@ -141,6 +141,17 @@ module h5_utils
             call check_h5_error("Failed to close hdf5 group.")
         end subroutine close_h5_group
 
+        ! convert iteration number to string
+        function get_step_group_name(iter) result(name)
+            integer, intent(in) :: iter
+            ! 12 March 2021
+            ! https://stackoverflow.com/questions/1262695/convert-integers-to-strings-to-create-output-filenames-at-run-time
+            character(len=32) :: name
+
+            write(name, fmt='(I10.10)') iter
+            name = 'step#' // trim(name)
+        end function get_step_group_name
+
 
         subroutine check_h5_error(msg)
             character(*), intent(in) :: msg

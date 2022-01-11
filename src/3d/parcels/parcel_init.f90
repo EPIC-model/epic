@@ -39,6 +39,82 @@ module parcel_init
             call alloc_and_precompute
         end subroutine unit_test_parcel_init_alloc
 
+        ! This subroutine reads parcels from an EPIC output file
+        subroutine read_parcels(h5fname, step)
+            character(*),     intent(in)  :: h5fname
+            integer,          intent(in)  :: step
+            integer(hid_t)                :: h5handle, group
+            integer                       :: n, ncells(3)
+            character(:), allocatable     :: grn
+            double precision, allocatable :: buffer_1d(:),   &
+                                             buffer_2d(:, :)
+
+
+            call start_timer(init_timer)
+
+            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
+
+            ! read domain dimensions
+            call read_h5_box(h5handle, ncells, extent, lower)
+            nx = ncells(1)
+            ny = ncells(2)
+            nz = ncells(3)
+
+            ! update global parameters
+            call update_parameters
+
+            grn = trim(get_step_group_name(step))
+            call open_h5_group(h5handle, grn, group)
+            call get_num_parcels(group, n_parcels)
+
+            if (n_parcels > max_num_parcels) then
+                print *, "Number of parcels exceeds limit of", &
+                          max_num_parcels, ". Exiting."
+                stop
+            endif
+
+            if (has_dataset(group, 'B')) then
+                call read_h5_dataset(group, 'B', buffer_2d)
+                parcels%B(:, 1:n_parcels) = buffer_2d(:, 1:n_parcels)
+                deallocate(buffer_2d)
+            endif
+
+            if (has_dataset(group, 'position')) then
+                call read_h5_dataset(group, 'position', buffer_2d)
+                parcels%position(:, 1:n_parcels) = buffer_2d(:, 1:n_parcels)
+                deallocate(buffer_2d)
+            endif
+
+            if (has_dataset(group, 'volume')) then
+                call read_h5_dataset(group, 'volume', buffer_1d)
+                parcels%volume(1:n_parcels) = buffer_1d(1:n_parcels)
+                deallocate(buffer_1d)
+            endif
+
+            if (has_dataset(group, 'vorticity')) then
+                call read_h5_dataset(group, 'vorticity', buffer_2d)
+                parcels%vorticity(:, 1:n_parcels) = buffer_2d(:, 1:n_parcels)
+                deallocate(buffer_2d)
+            endif
+
+            if (has_dataset(group, 'buoyancy')) then
+                call read_h5_dataset(group, 'buoyancy', buffer_1d)
+                parcels%buoyancy(1:n_parcels) = buffer_1d(1:n_parcels)
+                deallocate(buffer_1d)
+            endif
+
+
+            call close_h5_group(group)
+            call close_h5_file(h5handle)
+
+            call stop_timer(init_timer)
+
+            print *, parcels%position(:, 10)
+
+            stop
+
+        end subroutine read_parcels
+
 
         ! Set default values for parcel attributes
         ! Attention: This subroutine assumes that the parcel
@@ -242,15 +318,26 @@ module parcel_init
                                              buffer_4d(:, :, :, :)
             double precision              :: field_3d(-1:nz+1, 0:ny-1, 0:nx-1), &
                                              field_4d(-1:nz+1, 0:ny-1, 0:nx-1, 3)
-            integer(hid_t)                :: h5handle
-            integer                       :: l
+            integer(hid_t)                :: h5handle, group
+            integer                       :: l, n_steps
+            character(:), allocatable     :: grn
 
             call alloc_and_precompute
 
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
 
-            if (has_dataset(h5handle, 'vorticity')) then
-                call read_h5_dataset(h5handle, 'vorticity', buffer_4d)
+            call get_num_steps(h5handle, n_steps)
+
+            group = h5handle
+            if (n_steps > 0) then
+                ! we need to subtract 1 since it starts with 0
+                grn = trim(get_step_group_name(n_steps - 1))
+                call open_h5_group(h5handle, grn, group)
+            endif
+
+
+            if (has_dataset(group, 'vorticity')) then
+                call read_h5_dataset(group, 'vorticity', buffer_4d)
                 call fill_field_from_buffer_4d(buffer_4d, field_4d)
                 deallocate(buffer_4d)
                 do l = 1, 3
@@ -258,13 +345,16 @@ module parcel_init
                 enddo
             endif
 
-            if (has_dataset(h5handle, 'buoyancy')) then
-                call read_h5_dataset(h5handle, 'buoyancy', buffer_3d)
+            if (has_dataset(group, 'buoyancy')) then
+                call read_h5_dataset(group, 'buoyancy', buffer_3d)
                 call fill_field_from_buffer_3d(buffer_3d, field_3d)
                 deallocate(buffer_3d)
                 call gen_parcel_scalar_attr(field_3d, tol, parcels%buoyancy)
             endif
 
+            if (n_steps > 0) then
+                call close_h5_group(group)
+            endif
             call close_h5_file(h5handle)
 
             call dealloc
