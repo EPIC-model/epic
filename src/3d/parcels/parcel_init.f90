@@ -109,10 +109,6 @@ module parcel_init
 
             call stop_timer(init_timer)
 
-            print *, parcels%position(:, 10)
-
-            stop
-
         end subroutine read_parcels
 
 
