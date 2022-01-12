@@ -4,7 +4,7 @@
 program epic2d
     use constants, only : max_num_parcels, zero
     use timer
-    use field_diagnostics
+    use field_diagnostics, only : hdf5_field_stat_timer
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses, split_timer
@@ -16,11 +16,10 @@ program epic2d
                                   lapl_corr_timer,        &
                                   grad_corr_timer
     use parcel_diagnostics, only : init_parcel_diagnostics,    &
-                                   create_h5_parcel_stat_file, &
                                    hdf5_parcel_stat_timer
     use parcel_hdf5
     use fields
-    use field_hdf5, only : hdf5_field_timer, create_h5_field_file
+    use field_hdf5, only : hdf5_field_timer
     use tri_inversion, only : init_inversion, vor2vel_timer, vtend_timer
     use parcel_interpl, only : grid2par_timer, par2grid_timer
 #ifndef NDEBUG
@@ -29,14 +28,15 @@ program epic2d
     use parcel_init, only : init_parcels, read_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
     use h5_utils, only : initialise_hdf5, finalise_hdf5, open_h5_file, close_h5_file
-    use h5_reader, only : get_file_type, get_num_steps
-    use utils, only : write_last_step
+    use h5_reader, only : get_file_type, get_num_steps, get_time
+    use utils, only : write_last_step, setup_output_files
 #ifdef ENABLE_VERBOSE
     use merge_hdf5, only : create_h5_merger_files
 #endif
     implicit none
 
-    integer :: epic_timer
+    integer          :: epic_timer
+    double precision :: t = zero ! current time
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -97,6 +97,7 @@ program epic2d
                 call open_h5_file(restart_file, H5F_ACC_RDONLY_F, h5handle)
                 call get_file_type(h5handle, file_type)
                 call get_num_steps(h5handle, n_steps)
+                call get_time(h5handle, n_steps - 1, t)
                 call close_h5_file(h5handle)
 
                 if (file_type == 'fields') then
@@ -119,23 +120,11 @@ program epic2d
 
             if (output%h5_write_parcel_stats) then
                 call init_parcel_diagnostics
-                call create_h5_parcel_stat_file(trim(output%h5_basename), &
-                                                output%h5_overwrite)
             endif
 
             call field_default
 
-            if (output%h5_write_fields) then
-                call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
-            endif
-
-            if (output%h5_write_field_stats) then
-                call create_h5_field_stats_file(trim(output%h5_basename), output%h5_overwrite)
-            endif
-
-            if (output%h5_write_parcels) then
-                call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
-            endif
+            call setup_output_files
 
 #ifdef ENABLE_MERGER_DUMP
             call create_h5_merger_files(trim(output%h5_basename), output%h5_overwrite)
@@ -148,7 +137,6 @@ program epic2d
 #ifdef ENABLE_VERBOSE
             use options, only : verbose
 #endif
-            double precision :: t    = zero ! current time
             integer          :: cor_iter    ! iterator for parcel correction
 
             do while (t < time%limit)

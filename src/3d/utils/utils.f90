@@ -3,6 +3,7 @@ module utils
     use field_hdf5
     use parcel_hdf5
     use parcel_diagnostics
+    use field_diagnostics
     use parcel_container, only : n_parcels
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
@@ -21,6 +22,36 @@ module utils
     private :: nfw, npw, nspw, nsfw
 
     contains
+
+        ! Create H5 files and set the step number
+        subroutine setup_output_files
+            use options, only : output, l_restart
+
+            if (output%h5_write_parcel_stats) then
+                call create_h5_parcel_stat_file(trim(output%h5_basename), &
+                                                output%h5_overwrite,      &
+                                                l_restart, nspw)
+            endif
+
+            if (output%h5_write_fields) then
+                call create_h5_field_file(trim(output%h5_basename), &
+                                          output%h5_overwrite,      &
+                                          l_restart, nfw)
+            endif
+
+            if (output%h5_write_field_stats) then
+                call create_h5_field_stats_file(trim(output%h5_basename),   &
+                                                output%h5_overwrite,        &
+                                                l_restart, nsfw)
+            endif
+
+            if (output%h5_write_parcels) then
+                call create_h5_parcel_file(trim(output%h5_basename),    &
+                                           output%h5_overwrite,         &
+                                           l_restart, npw)
+            endif
+
+        end subroutine setup_output_files
 
         ! Write last step to the H5 files. For the time step dt, it
         ! writes zero.

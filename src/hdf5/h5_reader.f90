@@ -21,55 +21,61 @@ module h5_reader
         module procedure :: read_h5_dataset_4d
     end interface read_h5_dataset
 
+    interface read_h5_attribute
+        module procedure :: read_h5_int_attrib
+        module procedure :: read_h5_double_attrib
+    end interface read_h5_attribute
+
     contains
 
         ! @returns -1 if H5 file does not contain the attribute 'num parcel'
         subroutine get_num_parcels(h5file_id, n_parcels)
-            integer(hid_t),   intent(in)     :: h5file_id
-            integer,          intent(out)    :: n_parcels
-            integer(hid_t)                   :: attr_id, space_id, type_id
-            integer(hsize_t), dimension(1:1) :: dims = 1
+            integer(hid_t),   intent(in)  :: h5file_id
+            integer,          intent(out) :: n_parcels
 
             if (.not. has_attribute(h5file_id, 'num parcel')) then
                 n_parcels = -1
                 return
             endif
 
-            call h5aopen_name_f(h5file_id, 'num parcel', attr_id, h5err)
-            call check_h5_error("Failed to open attribute.")
-            call h5aget_space_f(attr_id, space_id, h5err)
-            call check_h5_error("Failed to get attribute space.")
-            call h5aget_type_f(attr_id, type_id, h5err)
-            call check_h5_error("Failed to retrieve attribute type.")
-            call h5aread_f(attr_id, type_id, n_parcels, dims, h5err)
-            call check_h5_error("Failed to read attribute.")
-            call h5aclose_f(attr_id, h5err)
-            call check_h5_error("Failed to close attribute.")
+            call read_h5_int_attrib(h5file_id, 'num parcel', n_parcels)
         end subroutine get_num_parcels
 
         ! @returns -1 if H5 file does not contain the attribute 'nsteps'
         subroutine get_num_steps(h5file_id, n_steps)
-            integer(hid_t),   intent(in)     :: h5file_id
-            integer,          intent(out)    :: n_steps
-            integer(hid_t)                   :: attr_id, space_id, type_id
-            integer(hsize_t), dimension(1:1) :: dims = 1
+            integer(hid_t),   intent(in)  :: h5file_id
+            integer,          intent(out) :: n_steps
 
             if (.not. has_attribute(h5file_id, 'nsteps')) then
                 n_steps = -1
                 return
             endif
 
-            call h5aopen_name_f(h5file_id, 'nsteps', attr_id, h5err)
-            call check_h5_error("Failed to open attribute.")
-            call h5aget_space_f(attr_id, space_id, h5err)
-            call check_h5_error("Failed to get attribute space.")
-            call h5aget_type_f(attr_id, type_id, h5err)
-            call check_h5_error("Failed to retrieve attribute type.")
-            call h5aread_f(attr_id, type_id, n_steps, dims, h5err)
-            call check_h5_error("Failed to read attribute.")
-            call h5aclose_f(attr_id, h5err)
-            call check_h5_error("Failed to close attribute.")
+            call read_h5_int_attrib(h5file_id, 'nsteps', n_steps)
         end subroutine get_num_steps
+
+        ! @returns -1 if H5 file does not contain the attribute 't'
+        subroutine get_time(h5file_id, step, t)
+            integer(hid_t),   intent(in)  :: h5file_id
+            integer,          intent(in)  :: step
+            double precision, intent(out) :: t
+            integer(hid_t)                :: group
+            character(:), allocatable     :: grn
+
+            grn = trim(get_step_group_name(step))
+
+            call open_h5_group(h5file_id, grn, group)
+
+            if (.not. has_attribute(group, 't')) then
+                t = -1.0d0
+                call close_h5_group(group)
+                return
+            endif
+
+            call read_h5_double_attrib(group, 't', t)
+
+            call close_h5_group(group)
+        end subroutine get_time
 
         ! 11 Jan 2022
         ! https://support.hdfgroup.org/ftp/HDF5/examples/examples-by-api/hdf5-examples/1_8/FORTRAN/H5T/h5ex_t_stringCatt_F03.f90
@@ -315,14 +321,52 @@ module h5_reader
             call check_h5_error("Failed to close dataset.")
         end subroutine read_h5_dataset_4d
 
-        subroutine read_h5_vector_int_attrib(group, name, buf)
-            integer(hid_t), intent(in)       :: group
+        subroutine read_h5_int_attrib(h5file_id, name, val)
+            integer(hid_t),   intent(in)     :: h5file_id
+            character(*),     intent(in)     :: name
+            integer,          intent(out)    :: val
+            integer(hid_t)                   :: attr_id, space_id, type_id
+            integer(hsize_t), dimension(1:1) :: dims = 1
+
+            call h5aopen_name_f(h5file_id, 'nsteps', attr_id, h5err)
+            call check_h5_error("Failed to open attribute.")
+            call h5aget_space_f(attr_id, space_id, h5err)
+            call check_h5_error("Failed to get attribute space.")
+            call h5aget_type_f(attr_id, type_id, h5err)
+            call check_h5_error("Failed to retrieve attribute type.")
+            call h5aread_f(attr_id, type_id, val, dims, h5err)
+            call check_h5_error("Failed to read attribute.")
+            call h5aclose_f(attr_id, h5err)
+            call check_h5_error("Failed to close attribute.")
+        end subroutine read_h5_int_attrib
+
+        subroutine read_h5_double_attrib(h5file_id, name, val)
+            integer(hid_t),   intent(in)     :: h5file_id
+            character(*),     intent(in)     :: name
+            double precision, intent(out)    :: val
+            integer(hid_t)                   :: attr_id, space_id, type_id
+            integer(hsize_t), dimension(1:1) :: dims = 1
+
+            call h5aopen_name_f(h5file_id, 'nsteps', attr_id, h5err)
+            call check_h5_error("Failed to open attribute.")
+            call h5aget_space_f(attr_id, space_id, h5err)
+            call check_h5_error("Failed to get attribute space.")
+            call h5aget_type_f(attr_id, type_id, h5err)
+            call check_h5_error("Failed to retrieve attribute type.")
+            call h5aread_f(attr_id, type_id, val, dims, h5err)
+            call check_h5_error("Failed to read attribute.")
+            call h5aclose_f(attr_id, h5err)
+            call check_h5_error("Failed to close attribute.")
+        end subroutine read_h5_double_attrib
+
+        subroutine read_h5_vector_int_attrib(h5file_id, name, buf)
+            integer(hid_t), intent(in)       :: h5file_id
             character(*),   intent(in)       :: name
             integer,        intent(out)      :: buf(2)
             integer(hid_t)                   :: attr_id, space_id, type_id
             integer(hsize_t), dimension(1:1) :: dims = 2
 
-            call h5aopen_name_f(group, name, attr_id, h5err)
+            call h5aopen_name_f(h5file_id, name, attr_id, h5err)
             call check_h5_error("Failed to open attribute.")
             call h5aget_space_f(attr_id, space_id, h5err)
             call check_h5_error("Failed to get attribute space.")
@@ -335,14 +379,14 @@ module h5_reader
         end subroutine read_h5_vector_int_attrib
 
 
-        subroutine read_h5_vector_double_attrib(group, name, buf)
-            integer(hid_t),   intent(in)       :: group
+        subroutine read_h5_vector_double_attrib(h5file_id, name, buf)
+            integer(hid_t),   intent(in)       :: h5file_id
             character(*),     intent(in)       :: name
             double precision, intent(out)      :: buf(2)
             integer(hid_t)                     :: attr_id, space_id, type_id
             integer(hsize_t), dimension(1:1)   :: dims = 2
 
-            call h5aopen_name_f(group, name, attr_id, h5err)
+            call h5aopen_name_f(h5file_id, name, attr_id, h5err)
             call check_h5_error("Failed to open attribute.")
             call h5aget_space_f(attr_id, space_id, h5err)
             call check_h5_error("Failed to get attribute space.")
