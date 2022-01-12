@@ -39,8 +39,6 @@ module field_diagnostics
 
             h5fname =  basename // '_field_stats.hdf5'
 
-            call create_h5_file(h5fname, overwrite, h5file_id)
-
             call exist_h5_file(h5fname, l_exist)
 
             if (l_restart .and. l_exist) then
@@ -51,6 +49,8 @@ module field_diagnostics
             endif
 
             step = 0
+
+            call create_h5_file(h5fname, overwrite, h5file_id)
 
             call write_h5_scalar_attrib(h5file_id, 'output_type', 'field diagnostics')
 
