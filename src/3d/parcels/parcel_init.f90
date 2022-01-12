@@ -73,33 +73,37 @@ module parcel_init
                 stop
             endif
 
+            ! Be aware that the starting index of buffer_1d and buffer_2d
+            ! is 0; hence, the range is 0:n_parcels-1 in contrast to the
+            ! parcel container where it is 1:n_parcels.
+
             if (has_dataset(group, 'B')) then
                 call read_h5_dataset(group, 'B', buffer_2d)
-                parcels%B(:, 1:n_parcels) = buffer_2d(:, 1:n_parcels)
+                parcels%B(:, 1:n_parcels) = buffer_2d
                 deallocate(buffer_2d)
             endif
 
             if (has_dataset(group, 'position')) then
                 call read_h5_dataset(group, 'position', buffer_2d)
-                parcels%position(:, 1:n_parcels) = buffer_2d(:, 1:n_parcels)
+                parcels%position(:, 1:n_parcels) = buffer_2d
                 deallocate(buffer_2d)
             endif
 
             if (has_dataset(group, 'volume')) then
                 call read_h5_dataset(group, 'volume', buffer_1d)
-                parcels%volume(1:n_parcels) = buffer_1d(1:n_parcels)
+                parcels%volume(1:n_parcels) = buffer_1d
                 deallocate(buffer_1d)
             endif
 
             if (has_dataset(group, 'vorticity')) then
                 call read_h5_dataset(group, 'vorticity', buffer_2d)
-                parcels%vorticity(:, 1:n_parcels) = buffer_2d(:, 1:n_parcels)
+                parcels%vorticity(:, 1:n_parcels) = buffer_2d
                 deallocate(buffer_2d)
             endif
 
             if (has_dataset(group, 'buoyancy')) then
                 call read_h5_dataset(group, 'buoyancy', buffer_1d)
-                parcels%buoyancy(1:n_parcels) = buffer_1d(1:n_parcels)
+                parcels%buoyancy(1:n_parcels) = buffer_1d
                 deallocate(buffer_1d)
             endif
 
