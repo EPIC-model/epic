@@ -103,7 +103,6 @@ module parcel_init
                 deallocate(buffer_1d)
             endif
 
-
             call close_h5_group(group)
             call close_h5_file(h5handle)
 
