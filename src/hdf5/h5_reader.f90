@@ -328,7 +328,7 @@ module h5_reader
             integer(hid_t)                   :: attr_id, space_id, type_id
             integer(hsize_t), dimension(1:1) :: dims = 1
 
-            call h5aopen_name_f(h5file_id, 'nsteps', attr_id, h5err)
+            call h5aopen_name_f(h5file_id, name, attr_id, h5err)
             call check_h5_error("Failed to open attribute.")
             call h5aget_space_f(attr_id, space_id, h5err)
             call check_h5_error("Failed to get attribute space.")
@@ -347,7 +347,7 @@ module h5_reader
             integer(hid_t)                   :: attr_id, space_id, type_id
             integer(hsize_t), dimension(1:1) :: dims = 1
 
-            call h5aopen_name_f(h5file_id, 'nsteps', attr_id, h5err)
+            call h5aopen_name_f(h5file_id, name, attr_id, h5err)
             call check_h5_error("Failed to open attribute.")
             call h5aget_space_f(attr_id, space_id, h5err)
             call check_h5_error("Failed to get attribute space.")

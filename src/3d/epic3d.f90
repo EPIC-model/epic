@@ -132,7 +132,10 @@ program epic3d
 #ifdef ENABLE_VERBOSE
             use options, only : verbose
 #endif
-            integer :: cor_iter    ! iterator for parcel correction
+            double precision :: tinit       ! initial time
+            integer          :: cor_iter    ! iterator for parcel correction
+
+            tinit = t
 
             do while (t < time%limit)
 
@@ -154,8 +157,10 @@ program epic3d
 
             enddo
 
-            ! write final step
-            call write_last_step(t)
+            ! write final step (we only write if we really advanced in time)
+            if (t > tinit) then
+                call write_last_step(t)
+            endif
 
         end subroutine run
 
