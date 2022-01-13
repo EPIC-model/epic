@@ -48,6 +48,7 @@ module parcel_init
             character(:), allocatable     :: grn
             double precision, allocatable :: buffer_1d(:),   &
                                              buffer_2d(:, :)
+            logical                       :: l_valid = .false.
 
 
             call start_timer(init_timer)
@@ -81,30 +82,46 @@ module parcel_init
                 call read_h5_dataset(group, 'B', buffer_2d)
                 parcels%B(:, 1:n_parcels) = buffer_2d
                 deallocate(buffer_2d)
+            else
+                print *, "The parcel shape must be present! Exiting."
+                stop
             endif
 
             if (has_dataset(group, 'position')) then
                 call read_h5_dataset(group, 'position', buffer_2d)
                 parcels%position(:, 1:n_parcels) = buffer_2d
                 deallocate(buffer_2d)
+            else
+                print *, "The parcel position must be present! Exiting."
+                stop
             endif
 
             if (has_dataset(group, 'volume')) then
                 call read_h5_dataset(group, 'volume', buffer_1d)
                 parcels%volume(1:n_parcels) = buffer_1d
                 deallocate(buffer_1d)
+            else
+                print *, "The parcel volume must be present! Exiting."
+                stop
             endif
 
             if (has_dataset(group, 'vorticity')) then
+                l_valid = .true.
                 call read_h5_dataset(group, 'vorticity', buffer_2d)
                 parcels%vorticity(:, 1:n_parcels) = buffer_2d
                 deallocate(buffer_2d)
             endif
 
             if (has_dataset(group, 'buoyancy')) then
+                l_valid = .true.
                 call read_h5_dataset(group, 'buoyancy', buffer_1d)
                 parcels%buoyancy(1:n_parcels) = buffer_1d
                 deallocate(buffer_1d)
+            endif
+
+            if (.not. l_valid) then
+                print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
+                stop
             endif
 
             call close_h5_group(group)
