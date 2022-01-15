@@ -5,14 +5,15 @@ from glob import glob
 from math import erf
 import argparse
 import os
+
 # Note: check division by zero errors.
 
-projfac =8  # Subgrid zoom factor
+projfac = 4  # Subgrid zoom factor
 r_limit_fac = 3.0
-#r_limit_fac = 1.0 # Alternative: individual ellipsoid visualisation
+#r_limit_fac = 1.0  # Alternative: individual ellipsoid visualisation
 len_condense = 1000.0
 q_scale = 0.015
-nthreads = 4
+nthreads = 1
 set_num_threads(nthreads)
 
 parser = argparse.ArgumentParser()
@@ -155,10 +156,7 @@ def add_data(
                             xarr[1, 0] = ydist
                             xarr[2, 0] = zdist
                             r_act = np.sqrt(
-                                np.dot(
-                                    np.dot(xarr.transpose(), bbinv),
-                                    xarr,
-                                )[0, 0]
+                                np.dot(np.dot(xarr.transpose(), bbinv), xarr,)[0, 0]
                             )
                             # r_act = np.sqrt(dist2)/r_now
                             if r_act < r_limit_fac:
@@ -167,7 +165,9 @@ def add_data(
                                 ii_corr = ii - xlowerfile
                                 jj_corr = jj - ylowerfile
                                 r_act3 = r_act * r_act * r_act
-                                #r_fact = (r_act<1.0) # Alternative: individual ellipsoid visulatisation.
+                                #r_fact = (
+                                #    r_act < 1.0
+                                #)  # Alternative: individual ellipsoid visulatisation.
                                 r_fact = np.exp(-r_act3)
                                 xyz_field_thread[i_thread, ii_corr, jj_corr, kk] += (
                                     norm_fact * r_fact * scalar_now
@@ -264,7 +264,7 @@ add_fields(
 with open("tracker.txt", "a") as f:
     print("added fields", file=f)
 
-#del xyz_field_thread_file, xyz_volg_thread_file
+del xyz_field_thread_file, xyz_volg_thread_file
 
 # Final calculation of liquid water field
 # Normalize h field, and convert to LWC
@@ -275,11 +275,16 @@ def final_calc(field, volg, zp):
     for ii in range(np.shape(field)[0]):
         for jj in range(np.shape(field)[1]):
             for kk in range(np.shape(field)[2]):
-                field_temp = field[ii, jj, kk] / volg[ii, jj, kk]
-                volg_temp = max(
-                    field_temp - q_scale * np.exp((origin[2] - zp[kk]) / len_condense),
-                0.0,
-                )
+                if volg[ii, jj, kk] > 0.0:
+                    field_temp = field[ii, jj, kk] / volg[ii, jj, kk]
+                    volg_temp = max(
+                        field_temp
+                        - q_scale * np.exp((origin[2] - zp[kk]) / len_condense),
+                        0.0,
+                    )
+                else:
+                    field_temp = np.nan
+                    volg_temp = np.nan
                 field[ii, jj, kk] = field_temp
                 volg[ii, jj, kk] = volg_temp
 
@@ -294,23 +299,34 @@ with open("tracker.txt", "a") as f:
 # Write to netcdf file
 def write_field(field, field_name, out_file, mode):
     ncfile = nc.Dataset(out_file, mode, format="NETCDF4")
-    if mode=="w":
-        ncfile.createDimension("xp", nxproj)
-        ncfile.createDimension("yp", nyproj)
-        ncfile.createDimension("zp", nzproj)
-        nc_xp = ncfile.createVariable("xp", "f8", ("xp",))
-        nc_yp = ncfile.createVariable("yp", "f8", ("yp",))
-        nc_zp = ncfile.createVariable("zp", "f8", ("zp",))
-        nc_xp.units = "-"
-        nc_yp.units = "-"
-        nc_zp.units = "-"
+    if mode == "w":
+        ncfile.createDimension("X", nxproj)
+        ncfile.createDimension("Y", nyproj)
+        ncfile.createDimension("Z", nzproj)
+        nc_xp = ncfile.createVariable("X", "f8", ("X",))
+        nc_yp = ncfile.createVariable("Y", "f8", ("Y",))
+        nc_zp = ncfile.createVariable("Z", "f8", ("Z",))
+        nc_xp.units = "m"
+        nc_yp.units = "m"
+        nc_zp.units = "m"
+        nc_xp.axis = 'X' # Optional
+        nc_xp.standard_name = 'projection_x_coordinate'
+        nc_xp.long_name = 'x-coordinate in projected coordinate system'
+        nc_yp.axis = 'Y' # Optional
+        nc_yp.standard_name = 'projection_y_coordinate'
+        nc_yp.long_name = 'y-coordinate in projected coordinate system'
+        nc_zp.axis = 'Z' # Optional
+        nc_zp.standard_name = 'height'
+        nc_zp.long_name = 'height coordinate in projected coordinate system'
         nc_xp[:] = xp
         nc_yp[:] = yp
         nc_zp[:] = zp
-    nc_hl = ncfile.createVariable(field_name, np.dtype("f4").char, ("xp", "yp", "zp"))
-    nc_hl.units = "-"
-    nc_hl[:, :, :] = field[:, :, :]
+    nc_hl = ncfile.createVariable(field_name, np.dtype("f4").char, ("Z", "Y", "X"))
+    nc_hl.units = "1"
+    nc_hl[:, :, :] = np.transpose(field[:, :, :])
+    nc_hl.long_name = field_name
     ncfile.close()
 
-write_field(xyz_field, "hh", file_root + "_s3_" + str(time_step) + ".nc","w")
-write_field(xyz_volg, "hl", file_root + "_s3_" + str(time_step) + ".nc","a")
+
+write_field(xyz_field, "hh", file_root + "_g3_" + str(time_step) + ".nc", "w")
+write_field(xyz_volg, "hl", file_root + "_g3_" + str(time_step) + ".nc", "a")
