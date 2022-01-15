@@ -325,18 +325,6 @@ module h5_writer
         end subroutine write_h5_int_scalar_step_attrib
 
 
-        ! convert iteration number to string
-        function get_step_group_name(iter) result(name)
-            integer, intent(in) :: iter
-            ! 12 March 2021
-            ! https://stackoverflow.com/questions/1262695/convert-integers-to-strings-to-create-output-filenames-at-run-time
-            character(len=32) :: name
-
-            write(name, fmt='(I10.10)') iter
-            name = 'step#' // trim(name)
-        end function get_step_group_name
-
-
         subroutine write_h5_double_vector_attrib(group, name, val)
             integer(hid_t),   intent(in)     :: group
             character(*),     intent(in)     :: name

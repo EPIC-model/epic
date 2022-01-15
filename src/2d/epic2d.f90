@@ -4,7 +4,7 @@
 program epic2d
     use constants, only : max_num_parcels, zero
     use timer
-    use field_diagnostics
+    use field_diagnostics, only : hdf5_field_stat_timer
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses, split_timer
@@ -16,26 +16,27 @@ program epic2d
                                   lapl_corr_timer,        &
                                   grad_corr_timer
     use parcel_diagnostics, only : init_parcel_diagnostics,    &
-                                   create_h5_parcel_stat_file, &
                                    hdf5_parcel_stat_timer
     use parcel_hdf5
     use fields
-    use field_hdf5, only : hdf5_field_timer, create_h5_field_file
+    use field_hdf5, only : hdf5_field_timer
     use tri_inversion, only : init_inversion, vor2vel_timer, vtend_timer
     use parcel_interpl, only : grid2par_timer, par2grid_timer
 #ifndef NDEBUG
     use parcel_interpl, only : sym_vol2grid_timer
 #endif
-    use parcel_init, only : init_parcels, init_timer
+    use parcel_init, only : init_parcels, read_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
-    use h5_utils, only : initialise_hdf5, finalise_hdf5
-    use utils, only : write_last_step
+    use h5_utils, only : initialise_hdf5, finalise_hdf5, open_h5_file, close_h5_file
+    use h5_reader, only : get_file_type, get_num_steps, get_time
+    use utils, only : write_last_step, setup_output_files
 #ifdef ENABLE_VERBOSE
     use merge_hdf5, only : create_h5_merger_files
 #endif
     implicit none
 
-    integer :: epic_timer
+    integer          :: epic_timer
+    double precision :: t = zero ! current time
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -52,7 +53,15 @@ program epic2d
     contains
 
         subroutine pre_run
-            use options, only : field_file, field_tol, output, read_config_file
+            use options, only : field_file          &
+                              , field_tol           &
+                              , output              &
+                              , read_config_file    &
+                              , l_restart           &
+                              , restart_file
+            integer(hid_t)            :: h5handle
+            character(:), allocatable :: file_type
+            integer                   :: n_steps
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
@@ -84,7 +93,24 @@ program epic2d
 
             call parcel_alloc(max_num_parcels)
 
-            call init_parcels(field_file, field_tol)
+            if (l_restart) then
+                call open_h5_file(restart_file, H5F_ACC_RDONLY_F, h5handle)
+                call get_file_type(h5handle, file_type)
+                call get_num_steps(h5handle, n_steps)
+                call get_time(h5handle, n_steps - 1, t)
+                call close_h5_file(h5handle)
+
+                if (file_type == 'fields') then
+                    call init_parcels(restart_file, field_tol)
+                else if (file_type == 'parcels') then
+                    call read_parcels(restart_file, n_steps - 1)
+                else
+                    print *, 'Restart file must be of type "fields" or "parcels".'
+                    stop
+                endif
+            else
+                call init_parcels(field_file, field_tol)
+            endif
 
             call ls_rk4_alloc(max_num_parcels)
 
@@ -94,23 +120,11 @@ program epic2d
 
             if (output%h5_write_parcel_stats) then
                 call init_parcel_diagnostics
-                call create_h5_parcel_stat_file(trim(output%h5_basename), &
-                                                output%h5_overwrite)
             endif
 
             call field_default
 
-            if (output%h5_write_fields) then
-                call create_h5_field_file(trim(output%h5_basename), output%h5_overwrite)
-            endif
-
-            if (output%h5_write_field_stats) then
-                call create_h5_field_stats_file(trim(output%h5_basename), output%h5_overwrite)
-            endif
-
-            if (output%h5_write_parcels) then
-                call create_h5_parcel_file(trim(output%h5_basename), output%h5_overwrite)
-            endif
+            call setup_output_files
 
 #ifdef ENABLE_MERGER_DUMP
             call create_h5_merger_files(trim(output%h5_basename), output%h5_overwrite)
@@ -123,8 +137,10 @@ program epic2d
 #ifdef ENABLE_VERBOSE
             use options, only : verbose
 #endif
-            double precision :: t    = zero ! current time
+            double precision :: tinit       ! initial time
             integer          :: cor_iter    ! iterator for parcel correction
+
+            tinit = t
 
             do while (t < time%limit)
 
@@ -146,8 +162,10 @@ program epic2d
 
             enddo
 
-            ! write final step
-            call write_last_step(t)
+            ! write final step (we only write if we really advanced in time)
+            if (t > tinit) then
+                call write_last_step(t)
+            endif
 
         end subroutine run
 
@@ -166,7 +184,7 @@ program epic2d
 
     ! Get the file name provided via the command line
     subroutine parse_command_line
-        use options, only : filename
+        use options, only : filename, l_restart, restart_file
 #ifdef ENABLE_VERBOSE
         use options, only : verbose
 #endif
@@ -188,6 +206,11 @@ program epic2d
             else if (arg == '--help') then
                 print *, 'Run code with "./epic2d --config [config file]"'
                 stop
+            else if (arg == '--restart') then
+                l_restart = .true.
+                i = i + 1
+                call get_command_argument(i, arg)
+                restart_file = trim(arg)
 #ifdef ENABLE_VERBOSE
             else if (arg == '--verbose') then
                 verbose = .true.
@@ -201,10 +224,20 @@ program epic2d
             stop
         endif
 
+        if (l_restart .and. (restart_file == '')) then
+            print *, 'No restart file provided. Run code with "./epic2d --config [config file]' // &
+                     ' --restart [restart file]"'
+            stop
+        endif
+
 #ifdef ENABLE_VERBOSE
         ! This is the main application of EPIC
         if (verbose) then
-            print *, 'Running EPIC2D with "', trim(filename), '"'
+            if (l_restart) then
+                print *, 'Restarting EPIC2D with "', trim(filename), '" and "', trim(restart_file), "'"
+            else
+                print *, 'Running EPIC2D with "', trim(filename), '"'
+            endif
         endif
 #endif
     end subroutine parse_command_line

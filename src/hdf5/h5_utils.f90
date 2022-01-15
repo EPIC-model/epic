@@ -39,14 +39,14 @@ module h5_utils
             character(*),   intent(in)  :: h5fname
             logical,        intent(in)  :: overwrite
             integer(hid_t), intent(out) :: h5file_id
-            logical                     :: exists = .true.
+            logical                     :: l_exist = .true.
 
             ! check whether file exists
-            inquire(file=h5fname, exist=exists)
+            inquire(file=h5fname, exist=l_exist)
 
-            if (exists .and. overwrite) then
+            if (l_exist .and. overwrite) then
                 call delete_h5_file(trim(h5fname))
-            else if (exists) then
+            else if (l_exist) then
                 print *, "File '" // trim(h5fname) // "' already exists. Exiting."
                 stop
             endif
@@ -54,6 +54,14 @@ module h5_utils
             call h5fcreate_f(h5fname, H5F_ACC_TRUNC_F, h5file_id, h5err)
             call check_h5_error("Failed to create hdf5 file'" // trim(h5fname) // "'.")
         end subroutine create_h5_file
+
+        subroutine exist_h5_file(h5fname, l_exist)
+            character(*), intent(in)  :: h5fname
+            logical,      intent(out) :: l_exist
+
+            ! check whether file exists
+            inquire(file=h5fname, exist=l_exist)
+        end subroutine exist_h5_file
 
         subroutine delete_h5_file(h5fname)
             character(*), intent(in) :: h5fname
@@ -140,6 +148,17 @@ module h5_utils
             call h5gclose_f(group, h5err)
             call check_h5_error("Failed to close hdf5 group.")
         end subroutine close_h5_group
+
+        ! convert iteration number to string
+        function get_step_group_name(iter) result(name)
+            integer, intent(in) :: iter
+            ! 12 March 2021
+            ! https://stackoverflow.com/questions/1262695/convert-integers-to-strings-to-create-output-filenames-at-run-time
+            character(len=32) :: name
+
+            write(name, fmt='(I10.10)') iter
+            name = 'step#' // trim(name)
+        end function get_step_group_name
 
 
         subroutine check_h5_error(msg)
