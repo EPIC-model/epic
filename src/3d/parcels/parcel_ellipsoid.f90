@@ -14,7 +14,8 @@ module parcel_ellipsoid
                         , two   &
                         , three &
                         , five  &
-                        , seven
+                        , seven &
+                        , max_num_parcels
     use jacobi
     implicit none
 
@@ -24,6 +25,9 @@ module parcel_ellipsoid
     double precision, parameter :: f7pi4 = seven * fpi4
     double precision, parameter :: costheta(4) = dcos((/fpi4, f3pi4, f5pi4, f7pi4/))
     double precision, parameter :: sintheta(4) = dsin((/fpi4, f3pi4, f5pi4, f7pi4/))
+
+    double precision :: Vetas(3, max_num_parcels), &
+                        Vtaus(3, max_num_parcels)
 
     private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_upper_triangular
 
@@ -150,32 +154,51 @@ module parcel_ellipsoid
         ! @param[in] volume of the parcel
         ! @param[in] B matrix elements of the parcel
         ! @returns the parcel support points
-        function get_ellipsoid_points(position, volume, B) result(points)
-            double precision, intent(in) :: position(3)
-            double precision, intent(in) :: volume
-            double precision, intent(in) :: B(5)        ! B11, B12, B13, B22, B23
-            double precision             :: eta, tau, D(3), V(3, 3)
-            integer                      :: j
-            double precision             :: points(3, 4), xy(2)
+        function get_ellipsoid_points(position, volume, B, n, l_reuse) result(points)
+            double precision,  intent(in) :: position(3)
+            double precision,  intent(in) :: volume
+            double precision,  intent(in) :: B(5)        ! B11, B12, B13, B22, B23
+            integer, optional, intent(in) :: n
+            logical, optional, intent(in) :: l_reuse
+            double precision              :: Veta(3), Vtau(3), D(3), V(3, 3)
+            integer                       :: j
+            double precision              :: points(3, 4), xy(2)
 
-            ! (/a2, b2, c2/) with a >= b >= c
-            ! D = (/a2, b2, c2/)
-            call diagonalise(B, volume, D, V)
 
-            eta = dsqrt(dabs(D(1) - D(3))) * rho
-            tau = dsqrt(dabs(D(2) - D(3))) * rho
+            if (present(l_reuse)) then
+                if (l_reuse) then
+                    Veta = Vetas(:, n)
+                    Vtau = Vtaus(:, n)
+                else
+                    call diagonalise(B, volume, D, V)
+                    Veta = dsqrt(dabs(D(1) - D(3))) * rho * V(:, 1)
+                    Vtau = dsqrt(dabs(D(2) - D(3))) * rho * V(:, 2)
+
+                    Vetas(:, n) = Veta
+                    Vtaus(:, n) = Vtau
+                endif
+            else
+                ! (/a2, b2, c2/) with a >= b >= c
+                ! D = (/a2, b2, c2/)
+                call diagonalise(B, volume, D, V)
+
+                Veta = dsqrt(dabs(D(1) - D(3))) * rho * V(:, 1)
+                Vtau = dsqrt(dabs(D(2) - D(3))) * rho * V(:, 2)
+
+                Vetas(:, n) = Veta
+                Vtaus(:, n) = Vtau
+            endif
 
             do j = 1, 4
                 ! support point in the reference frame of the ellipsoid
                 ! theta = j * pi / 2 - pi / 4 (j = 1, 2, 3, 4)
                 ! x_j = eta * rho * cos(theta_j)
                 ! y_j = tau * rho * sin(theta_j)
-                xy = (/eta * costheta(j), tau * sintheta(j)/)
 
                 ! suppport point in the global reference frame
-                points(:, j) = position        &
-                             + xy(1) * V(:, 1) &
-                             + xy(2) * V(:, 2)
+                points(:, j) = position           &
+                             + Veta * costheta(j) &
+                             + Vtau * sintheta(j)
             enddo
         end function get_ellipsoid_points
 
