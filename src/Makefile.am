@@ -17,6 +17,7 @@ epic_SOURCES = 					\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_hdf5.f90			\
+	tri_inversion.f90			\
 	parcels/parcel_ellipse.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
@@ -29,7 +30,6 @@ epic_SOURCES = 					\
 	parcels/parcel_init.f90			\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_hdf5.f90			\
-	tri_inversion.f90			\
 	utils/utils.f90				\
 	stepper/rk4_utils.f90			\
 	stepper/ls_rk4.f90			\

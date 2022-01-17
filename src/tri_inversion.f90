@@ -105,13 +105,14 @@ module tri_inversion
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine calc_field_ekin(vortg, ke)
+        subroutine calc_field_ekin(vortg, ke, ket, psig)
             double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1)
             double precision, intent(out) :: ke
+            double precision, intent(out) :: ket
             double precision              :: ubar(0:nz)
             integer                       :: iz
             double precision              :: dz2, ubaravg
-            double precision              :: psig(0:nz, 0:nx-1) ! stream function
+            double precision, intent(out) :: psig(0:nz, 0:nx-1) ! stream function
 
             ! copy vorticity
             psig = vortg(0:nz, 0:nx-1)
@@ -147,6 +148,8 @@ module tri_inversion
 
             ke = f12 * dx(2) * extent(1) * (f12 * (ubar(0) + ubar(nz)) + sum(ubar(1:nz-1))) &
                - f12 * vcell * sum(psig * vortg(0:nz, :))
+
+            ket = f12 * dx(2) * extent(1) * (f12 * (ubar(0) + ubar(nz)) + sum(ubar(1:nz-1)))
 
         end subroutine calc_field_ekin
 

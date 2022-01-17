@@ -10,7 +10,10 @@ module parcel_diagnostics
     use h5_utils
     use h5_writer
     use omp_lib
+    use tri_inversion, only : calc_field_ekin
+    use fields, only : vortg
     use timer, only : start_timer, stop_timer
+    use parcel_interpl, only : trilinear, ngp
     implicit none
 
 
@@ -107,9 +110,10 @@ module parcel_diagnostics
         ! Calculate all parcel related diagnostics
         subroutine calc_parcel_diagnostics(velocity)
             double precision :: velocity(:, :)
-            integer          :: n
+            integer          :: n, is(ngp), js(ngp), l
             double precision :: b, z, vel(2), vol, zmin
-            double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum
+            double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum, ke2, ke3, k4
+            double precision :: psig(0:nz, 0:nx-1), weights(ngp), psi
 
             ! reset
             ke = zero
@@ -131,10 +135,21 @@ module parcel_diagnostics
             std_lam = zero
             std_vol = zero
 
+            k4 = zero
+
+            call calc_field_ekin(vortg, ke2, ke3, psig)
+
             !$omp parallel default(shared)
-            !$omp do private(n, vel, vol, b, z, eval, lam, B22) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
+            !$omp do private(n, vel, vol, b, z, eval, lam, B22, is, js, weights, psi, l) &
+            !$omp& reduction(+: k4, ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
             do n = 1, n_parcels
+
+                call trilinear(parcels%position(n, :), is, js, weights)
+
+                psi = zero
+                do l = 1, ngp
+                    psi = psi + weights(l) * psig(js(l), is(l))
+                enddo
 
                 vel = velocity(n, :)
                 vol = parcels%volume(n)
@@ -163,11 +178,17 @@ module parcel_diagnostics
 
                 rms_zeta = rms_zeta + vol * parcels%vorticity(n) ** 2
 
+                k4 = k4 + psi * parcels%vorticity(n) * parcels%volume(n)
+
             enddo
             !$omp end do
             !$omp end parallel
 
             ke = f12 * ke
+
+            print *, ke, ke2, ke3 - f12 * k4
+
+
             pe = pe - peref
 
             avg_lam = lsum / dble(n_parcels)
