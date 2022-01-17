@@ -12,8 +12,14 @@ module options
     ! print more info if true
     logical :: verbose = .false.
 
+    ! if a restarted simulation
+    logical :: l_restart = .false.
+
     ! configuration file
     character(len=512) :: filename = ''
+
+    ! restart file
+    character(len=512) :: restart_file = ''
 
     ! field input file
     character(len=512)  :: field_file = ''
