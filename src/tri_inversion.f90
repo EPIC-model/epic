@@ -151,6 +151,8 @@ module tri_inversion
 
             ket = f12 * dx(2) * extent(1) * (f12 * (ubar(0) + ubar(nz)) + sum(ubar(1:nz-1)))
 
+!             print *, "psig:", sum(psig(0, :) ** 2), sum(psig(nz, :) ** 2)
+
         end subroutine calc_field_ekin
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

@@ -186,10 +186,10 @@ module parcel_diagnostics
 
             ke = f12 * ke
 
-            print *, ke, ke2, ke3 - f12 * k4
-
-
             pe = pe - peref
+
+            print *, ke, ke2, ke3 - f12 * k4, pe
+
 
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
