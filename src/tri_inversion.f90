@@ -9,7 +9,7 @@ module tri_inversion
     use stafft
     use deriv1d
     use constants
-    use parameters, only : nx, nz, dx, dxi, extent
+    use parameters, only : nx, nz, dx, dxi, extent, vcell
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -33,7 +33,8 @@ module tri_inversion
               vor2vel,              &
               vorticity_tendency,   &
               vor2vel_timer,        &
-              vtend_timer
+              vtend_timer,          &
+              calc_field_ekin
 
     contains
 
@@ -101,6 +102,53 @@ module tri_inversion
             enddo
             htd0(nz) = one / (f23 + f13 * etd0(nz-1))
         end subroutine init_inversion
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine calc_field_ekin(vortg, ke)
+            double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1)
+            double precision, intent(out) :: ke
+            double precision              :: ubar(0:nz)
+            integer                       :: iz
+            double precision              :: dz2, ubaravg
+            double precision              :: psig(0:nz, 0:nx-1) ! stream function
+
+            ! copy vorticity
+            psig = vortg(0:nz, 0:nx-1)
+
+            dz2  = f12 * dx(2)
+
+            !-----------------------------------------
+            ! Forward x FFT:
+            call forfft(nz+1, nx, psig, xtrig, xfactors)
+
+            ! Compute the x-independent part of velog(:, :, 1) by integration:
+            ubar(0) = zero
+            do iz = 1, nz
+                ubar(iz) = ubar(iz-1) + dz2 * (psig(iz-1,0) + psig(iz,0))
+            enddo
+
+            ! Ensure that the x momentum is zero
+            ubaravg = (sum(ubar(1:nz-1)) + f12 * ubar(nz)) / dble(nz)
+            ubar = ubar - ubaravg
+
+            ! Remove x independent mode (already dealt with):
+            psig(:,0) = zero
+
+            ! Invert Laplace's operator semi-spectrally with compact differences:
+            ! Laplacian(psig) = vortg --> psig
+            call lapinv0(psig)
+
+            ! Backward FFT --> psig in physical space
+            call revfft(nz+1, nx, psig, xtrig, xfactors)
+
+            ! Compute energy as (1/2)*L_x*int{u_bar^2*dz} - (1/2)*int{int{psi*zeta*dx}*dz}:
+            ubar = ubar ** 2
+
+            ke = f12 * dx(2) * extent(1) * (f12 * (ubar(0) + ubar(nz)) + sum(ubar(1:nz-1))) &
+               - f12 * vcell * sum(psig * vortg(0:nz, :))
+
+        end subroutine calc_field_ekin
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
