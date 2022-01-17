@@ -34,7 +34,6 @@ program epic3d
     implicit none
 
     integer          :: epic_timer
-    double precision :: t = zero ! current time
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -56,7 +55,8 @@ program epic3d
                               , output              &
                               , read_config_file    &
                               , l_restart           &
-                              , restart_file
+                              , restart_file        &
+                              , time
             integer(hid_t)            :: h5handle
             character(:), allocatable :: file_type
             integer                   :: n_steps
@@ -97,7 +97,7 @@ program epic3d
                 call open_h5_file(restart_file, H5F_ACC_RDONLY_F, h5handle)
                 call get_file_type(h5handle, file_type)
                 call get_num_steps(h5handle, n_steps)
-                call get_time(h5handle, n_steps - 1, t)
+                call get_time(h5handle, n_steps - 1, time%initial)
                 call close_h5_file(h5handle)
 
                 if (file_type == 'fields') then
@@ -109,6 +109,8 @@ program epic3d
                     stop
                 endif
             else
+                time%initial = zero ! make sure user cannot start at arbirtrary time
+
                 call init_parcels(field_file, field_tol)
             endif
 
@@ -132,10 +134,10 @@ program epic3d
 #ifdef ENABLE_VERBOSE
             use options, only : verbose
 #endif
-            double precision :: tinit       ! initial time
+            double precision :: t = zero    ! current time
             integer          :: cor_iter    ! iterator for parcel correction
 
-            tinit = t
+            t = time%initial
 
             do while (t < time%limit)
 
@@ -158,7 +160,7 @@ program epic3d
             enddo
 
             ! write final step (we only write if we really advanced in time)
-            if (t > tinit) then
+            if (t > time%initial) then
                 call write_last_step(t)
             endif
 
