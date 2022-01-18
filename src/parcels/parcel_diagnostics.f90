@@ -113,7 +113,7 @@ module parcel_diagnostics
             integer          :: n, is(ngp), js(ngp), l
             double precision :: b, z, vel(2), vol, zmin
             double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum, ke2, ke3, k4
-            double precision :: psig(0:nz, 0:nx-1), weights(ngp), psi
+            double precision :: psig(0:nz, 0:nx-1), weights(ngp), psi, b2var, z2var
 
             ! reset
             ke = zero
@@ -137,11 +137,14 @@ module parcel_diagnostics
 
             k4 = zero
 
+            b2var = zero
+            z2var = zero
+
             call calc_field_ekin(vortg, ke2, ke3, psig)
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, eval, lam, B22, is, js, weights, psi, l) &
-            !$omp& reduction(+: k4, ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
+            !$omp& reduction(+: k4, b2var, z2var, ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
             do n = 1, n_parcels
 
                 call trilinear(parcels%position(n, :), is, js, weights)
@@ -180,6 +183,9 @@ module parcel_diagnostics
 
                 k4 = k4 + psi * parcels%vorticity(n) * parcels%volume(n)
 
+                b2var = b2var + parcels%buoyancy(n) ** 2 * parcels%volume(n)
+                z2var = z2var + parcels%vorticity(n) ** 2 * parcels%volume(n)
+
             enddo
             !$omp end do
             !$omp end parallel
@@ -188,7 +194,10 @@ module parcel_diagnostics
 
             pe = pe - peref
 
-            print *, ke, ke2, ke3 - f12 * k4, pe
+!             b2var = b2var / vsum
+!             z2var = z2var / vsum
+
+            print *, ke, ke2, ke3 - f12 * k4, pe, b2var, z2var
 
 
             avg_lam = lsum / dble(n_parcels)
