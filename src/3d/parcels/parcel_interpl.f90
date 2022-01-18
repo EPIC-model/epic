@@ -383,7 +383,7 @@ module parcel_interpl
             jj(1) = floor(xyz(2))
             kk(1) = floor(xyz(3))
 
-            call trilinear_weights_inner(xyz, ii(1), jj(1), kk(1), ww)
+            call get_weights(xyz, ii(1), jj(1), kk(1), ww)
 
             ii(1) = mod(ii(1) + nx, nx)
             jj(1) = mod(jj(1) + ny, ny)
@@ -425,32 +425,32 @@ module parcel_interpl
 
         end subroutine trilinear
 
-        pure subroutine trilinear_weights_add(pos, i_lower, j_lower, k_lower, ww)
+        pure subroutine trilinear_weights_add(pos, i, j, k, ww)
             double precision, intent(in)     :: pos(3)
             double precision, intent(inout)  :: ww(ngp)
-            integer, intent(in)              :: i_lower, j_lower, k_lower
+            integer, intent(in)              :: i, j, k
             double precision                 :: xyz(3)
             xyz = (pos - lower) * dxi
-            call trilinear_weights_inner(xyz, i_lower, j_lower, k_lower, ww)
+            call get_weights(xyz, i, j, k, ww)
 
         end subroutine trilinear_weights_add
 
 
-        pure subroutine trilinear_weights_inner(xyz, i_lower, j_lower, k_lower, ww)
+        pure subroutine get_weights(xyz, i, j, k, ww)
             double precision, intent(in)     :: xyz(3)
             double precision, intent(inout)  :: ww(ngp)
-            integer, intent(in)              :: i_lower, j_lower, k_lower
+            integer, intent(in)              :: i, j, k
             double precision                 :: px, py, pz, pxc, pyc, pzc
             double precision                 :: w00, w10, w01, w11
 
             ! (i, j, k)
-            px = xyz(1) - dble(i_lower)
+            px = xyz(1) - dble(i)
             pxc = one - px
 
-            py = xyz(2) - dble(j_lower)
+            py = xyz(2) - dble(j)
             pyc = one - py
 
-            pz = xyz(3) - dble(k_lower)
+            pz = xyz(3) - dble(k)
             pzc = one - pz
 
             w00 = pyc * pxc
@@ -458,15 +458,15 @@ module parcel_interpl
             w01 = py * pxc
             w11 = py * px
 
-            ww(1) = ww(1)+pzc * w00
-            ww(2) = ww(2)+pzc * w10
-            ww(3) = ww(3)+pzc * w01
-            ww(4) = ww(4)+pzc * w11
-            ww(5) = ww(5)+pz * w00
-            ww(6) = ww(6)+pz * w10
-            ww(7) = ww(7)+pz * w01
-            ww(8) = ww(8)+pz * w11
+            ww(1) = ww(1) + pzc * w00
+            ww(2) = ww(2) + pzc * w10
+            ww(3) = ww(3) + pzc * w01
+            ww(4) = ww(4) + pzc * w11
+            ww(5) = ww(5) + pz * w00
+            ww(6) = ww(6) + pz * w10
+            ww(7) = ww(7) + pz * w01
+            ww(8) = ww(8) + pz * w11
 
-        end subroutine trilinear_weights_inner
+        end subroutine get_weights
 
 end module parcel_interpl
