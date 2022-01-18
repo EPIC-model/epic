@@ -61,9 +61,9 @@ module parcel_interpl
                     call apply_periodic_bc(points(:, p))
                     call get_index(points(:, p), i, j, k)
 
-                    if(p==1) then
+                    if (p == 1) then
                       call trilinear(points(:, p), is, js, ks, weights)
-                    elseif( (i==i_stored) .and. (j==j_stored) .and. (k==k_stored) ) then
+                    elseif( (i == i_stored) .and. (j == j_stored) .and. (k == k_stored) ) then
                       ! if point is in same grid cell, just add to weights
                       call trilinear_weights_add(points(:, p), i, j, k, weights)
                     else
@@ -73,18 +73,18 @@ module parcel_interpl
                       ! the weight is a quarter due to 4 points per ellipsoid
                       do l = 1, ngp
                           volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                                  + f14 * weights(l) * pvol
+                                                    + f14 * weights(l) * pvol
                       enddo
                       call trilinear(points(:, p), is, js, ks, weights)
                     endif
-                    i_stored=i
-                    j_stored=j
-                    k_stored=k
+                    i_stored = i
+                    j_stored = j
+                    k_stored = k
                 enddo
                 ! save contibutions at end of points loop
                 do l = 1, ngp
                     volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                            + f14 * weights(l) * pvol
+                                              + f14 * weights(l) * pvol
                 enddo
             enddo
             !$omp end do
@@ -169,10 +169,10 @@ module parcel_interpl
                     call apply_periodic_bc(points(:, p))
                     call get_index(points(:, p), i, j, k)
 
-                    if(p==1) then
+                    if(p == 1) then
                       ! first parcel point, reset weights
                       call trilinear(points(:, p), is, js, ks, weights)
-                    elseif( (i==i_stored) .and. (j==j_stored) .and. (k==k_stored) ) then
+                    elseif( (i == i_stored) .and. (j == j_stored) .and. (k == k_stored) ) then
                       ! if point is in same grid cell, just add to weights
                       call trilinear_weights_add(points(:, p), i, j, k, weights)
                     else
@@ -198,9 +198,9 @@ module parcel_interpl
                       enddo
                       call trilinear(points(:, p), is, js, ks, weights)
                    endif
-                   i_stored=i
-                   j_stored=j
-                   k_stored=k
+                   i_stored = i
+                   j_stored = j
+                   k_stored = k
                 enddo
                 ! save contibutions at end of points loop
                 do l = 1, ngp
