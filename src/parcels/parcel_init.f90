@@ -7,7 +7,7 @@ module parcel_init
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
-    use parcel_interpl, only : trilinear, ngp
+    use parcel_interpl, only : bilinear, ngp
     use parameters, only : update_parameters,   &
                            dx, vcell, ncell,    &
                            extent, lower, nx, nz
@@ -168,7 +168,7 @@ module parcel_init
         end subroutine init_refine
 
 
-        ! Precompute weights, indices of trilinear
+        ! Precompute weights, indices of bilinear
         ! interpolation and "apar"
         subroutine alloc_and_precompute
             double precision :: resi(0:nz, 0:nx-1), rsum
@@ -185,7 +185,7 @@ module parcel_init
             !$omp parallel do default(shared) private(n, l) reduction(+:resi)
             do n = 1, n_parcels
                 ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(n, :), is(n, :), js(n, :), weights(n, :))
+                call bilinear(parcels%position(n, :), is(n, :), js(n, :), weights(n, :))
 
                 do l = 1, ngp
                     resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) + weights(n, l)
