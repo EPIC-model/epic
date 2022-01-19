@@ -112,12 +112,13 @@ module parcel_diagnostics
             double precision :: velocity(:, :)
             integer          :: n, is(ngp), js(ngp), l
             double precision :: b, z, vel(2), vol, zmin
-            double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum, ke2, ke3, k4
-            double precision :: psig(0:nz, 0:nx-1), weights(ngp), psi, b2var, z2var
+            double precision :: eval, lam, B22, lsum, l2sum, vsum, v2sum
+            double precision :: psig(0:nz, 0:nx-1), weights(ngp), psi, kef
 
             ! reset
             ke = zero
             pe = zero
+            kef = zero
 
             lsum = zero
             l2sum = zero
@@ -135,32 +136,17 @@ module parcel_diagnostics
             std_lam = zero
             std_vol = zero
 
-            k4 = zero
-
-            b2var = zero
-            z2var = zero
-
-            call calc_field_ekin(vortg, ke2, ke3, psig)
+            ! calculate the field contribution of the kinetic energy (stored in kef)
+            call calc_field_ekin(vortg, kef, psig)
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, eval, lam, B22, is, js, weights, psi, l) &
-            !$omp& reduction(+: k4, b2var, z2var, ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
+            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
             do n = 1, n_parcels
 
-                call bilinear(parcels%position(n, :), is, js, weights)
-
-                psi = zero
-                do l = 1, ngp
-                    psi = psi + weights(l) * psig(js(l), is(l))
-                enddo
-
-                vel = velocity(n, :)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
                 z   = parcels%position(n, 2) - zmin
-
-                ! kinetic energy
-                ke = ke + (vel(1) ** 2 + vel(2) ** 2) * vol
 
                 ! potential energy
                 pe = pe - b * z * vol
@@ -181,24 +167,25 @@ module parcel_diagnostics
 
                 rms_zeta = rms_zeta + vol * parcels%vorticity(n) ** 2
 
-                k4 = k4 + psi * parcels%vorticity(n) * parcels%volume(n)
+                ! kinetic energy
+                ! Compute energy as (1/2)*L_x*int{u_bar^2*dz} - (1/2)*int{int{psi*zeta*dx}*dz}:
+                ! the first term is computed using the gridded data
+                call bilinear(parcels%position(n, :), is, js, weights)
 
-                b2var = b2var + parcels%buoyancy(n) ** 2 * parcels%volume(n)
-                z2var = z2var + parcels%vorticity(n) ** 2 * parcels%volume(n)
+                psi = zero
+                do l = 1, ngp
+                    psi = psi + weights(l) * psig(js(l), is(l))
+                enddo
+
+                ke = ke + psi * parcels%vorticity(n) * vol
 
             enddo
             !$omp end do
             !$omp end parallel
 
-            ke = f12 * ke
+            ke = kef - f12 * ke
 
             pe = pe - peref
-
-!             b2var = b2var / vsum
-!             z2var = z2var / vsum
-
-            print *, ke, ke2, ke3 - f12 * k4, pe, b2var, z2var
-
 
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))

@@ -105,14 +105,13 @@ module tri_inversion
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine calc_field_ekin(vortg, ke, ket, psig)
+        subroutine calc_field_ekin(vortg, ke, psig)
             double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1)
             double precision, intent(out) :: ke
-            double precision, intent(out) :: ket
+            double precision, intent(out) :: psig(0:nz, 0:nx-1) ! stream function
             double precision              :: ubar(0:nz)
             integer                       :: iz
             double precision              :: dz2, ubaravg
-            double precision, intent(out) :: psig(0:nz, 0:nx-1) ! stream function
 
             ! copy vorticity
             psig = vortg(0:nz, 0:nx-1)
@@ -144,14 +143,10 @@ module tri_inversion
             call revfft(nz+1, nx, psig, xtrig, xfactors)
 
             ! Compute energy as (1/2)*L_x*int{u_bar^2*dz} - (1/2)*int{int{psi*zeta*dx}*dz}:
+            ! the second term is calculated using the parcels
             ubar = ubar ** 2
 
-            ke = f12 * dx(2) * extent(1) * (f12 * (ubar(0) + ubar(nz)) + sum(ubar(1:nz-1))) &
-               - f12 * vcell * sum(psig * vortg(0:nz, :))
-
-            ket = f12 * dx(2) * extent(1) * (f12 * (ubar(0) + ubar(nz)) + sum(ubar(1:nz-1)))
-
-!             print *, "psig:", sum(psig(0, :) ** 2), sum(psig(nz, :) ** 2)
+            ke = f12 * dx(2) * extent(1) * (f12 * (ubar(0) + ubar(nz)) + sum(ubar(1:nz-1)))
 
         end subroutine calc_field_ekin
 
