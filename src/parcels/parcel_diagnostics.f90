@@ -13,7 +13,7 @@ module parcel_diagnostics
     use tri_inversion, only : calc_field_ekin
     use fields, only : vortg
     use timer, only : start_timer, stop_timer
-    use parcel_interpl, only : trilinear, ngp
+    use parcel_interpl, only : bilinear, ngp
     implicit none
 
 
@@ -147,7 +147,7 @@ module parcel_diagnostics
             !$omp& reduction(+: k4, b2var, z2var, ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
             do n = 1, n_parcels
 
-                call trilinear(parcels%position(n, :), is, js, weights)
+                call bilinear(parcels%position(n, :), is, js, weights)
 
                 psi = zero
                 do l = 1, ngp
