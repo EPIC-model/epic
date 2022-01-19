@@ -63,7 +63,7 @@ module parcel_interpl
 
                     if (p == 1) then
                       call trilinear(points(:, p), is, js, ks, weights)
-                    elseif( (i == i_stored) .and. (j == j_stored) .and. (k == k_stored) ) then
+                    elseif ((i == i_stored) .and. (j == j_stored) .and. (k == k_stored)) then
                       ! if point is in same grid cell, just add to weights
                       call trilinear_weights_add(points(:, p), i, j, k, weights)
                     else
@@ -169,10 +169,10 @@ module parcel_interpl
                     call apply_periodic_bc(points(:, p))
                     call get_index(points(:, p), i, j, k)
 
-                    if(p == 1) then
+                    if (p == 1) then
                       ! first parcel point, reset weights
                       call trilinear(points(:, p), is, js, ks, weights)
-                    elseif( (i == i_stored) .and. (j == j_stored) .and. (k == k_stored) ) then
+                    elseif ((i == i_stored) .and. (j == j_stored) .and. (k == k_stored)) then
                       ! if point is in same grid cell, just add to weights
                       call trilinear_weights_add(points(:, p), i, j, k, weights)
                     else
@@ -297,8 +297,8 @@ module parcel_interpl
             call start_timer(grid2par_timer)
 
             ! clear old data efficiently
-            if(present(add)) then
-               if(add .eqv. .false.) then
+            if (present(add)) then
+               if (add .eqv. .false.) then
                     !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, n_parcels
@@ -354,7 +354,7 @@ module parcel_interpl
         ! @param[inout] vor is the parcel vorticity
         ! @param[inout] vgrad is the parcel strain
         subroutine grid2par_add(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+            double precision, intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
 
             call grid2par(vel, vor, vgrad, add=.true.)
 
@@ -426,10 +426,10 @@ module parcel_interpl
         end subroutine trilinear
 
         pure subroutine trilinear_weights_add(pos, i, j, k, ww)
-            double precision, intent(in)     :: pos(3)
-            double precision, intent(inout)  :: ww(ngp)
-            integer, intent(in)              :: i, j, k
-            double precision                 :: xyz(3)
+            double precision, intent(in)    :: pos(3)
+            double precision, intent(inout) :: ww(ngp)
+            integer,          intent(in)    :: i, j, k
+            double precision                :: xyz(3)
             xyz = (pos - lower) * dxi
             call get_weights(xyz, i, j, k, ww)
 
@@ -437,11 +437,11 @@ module parcel_interpl
 
 
         pure subroutine get_weights(xyz, i, j, k, ww)
-            double precision, intent(in)     :: xyz(3)
-            double precision, intent(inout)  :: ww(ngp)
-            integer, intent(in)              :: i, j, k
-            double precision                 :: px, py, pz, pxc, pyc, pzc
-            double precision                 :: w00, w10, w01, w11
+            double precision, intent(in)    :: xyz(3)
+            double precision, intent(inout) :: ww(ngp)
+            integer,          intent(in)    :: i, j, k
+            double precision                :: px, py, pz, pxc, pyc, pzc
+            double precision                :: w00, w10, w01, w11
 
             ! (i, j, k)
             px = xyz(1) - dble(i)
