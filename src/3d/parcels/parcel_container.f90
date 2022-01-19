@@ -41,7 +41,7 @@ module parcel_container
 
             delx = x1 - x2
             ! works across periodic edge
-            delx = delx - extent(1) * dble(floor((delx+hl(1))*extenti(1)))
+            delx = delx - extent(1) * dble(floor((delx+hl(1)) * extenti(1)))
         end function get_delx
 
         ! Obtain the difference between two meridional coordinates
@@ -55,7 +55,7 @@ module parcel_container
 
             dely = y1 - y2
             ! works across periodic edge
-            dely = dely - extent(2) * dble(floor((dely+hl(2))*extenti(2)))
+            dely = dely - extent(2) * dble(floor((dely+hl(2)) * extenti(2)))
         end function get_dely
 
 

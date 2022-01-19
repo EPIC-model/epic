@@ -39,7 +39,7 @@ module parcel_container
 
             delx = x1 - x2
             ! works across periodic edge
-            delx = delx - extent(1) * dble(floor((delx+hl(1))*extenti(1)))
+            delx = delx - extent(1) * dble(floor((delx+hl(1)) * extenti(1)))
 
         end function get_delx
 
