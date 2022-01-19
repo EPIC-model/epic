@@ -105,6 +105,12 @@ module tri_inversion
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! Compute the field contribution of the kinetic energy, that is, the
+        ! first summand of
+        !       (1/2)*L_x*int{u_bar^2*dz} - (1/2)*int{int{psi*zeta*dx}*dz}
+        ! @param[in]  vortg is the gridded vorticity
+        ! @param[out] ke calculated first part of the kinetic energy
+        ! @param[out] psig the gridded stream function
         subroutine calc_field_ekin(vortg, ke, psig)
             double precision, intent(in)  :: vortg(-1:nz+1, 0:nx-1)
             double precision, intent(out) :: ke
