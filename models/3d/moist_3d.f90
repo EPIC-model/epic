@@ -113,7 +113,7 @@ module moist_3d
             buoyg = zero
             humg = zero
 
-            centre = f12 * (2.0*origin + extent)
+            centre = f12 * (two * origin + extent)
 
             do i = 0, nx-1
                 do j = 0, ny-1
@@ -121,10 +121,10 @@ module moist_3d
 
                         pos = origin + dx * dble((/i, j, k/))
 
-                        rpos1 = (pos(1) - centre(1)) 
+                        rpos1 = (pos(1) - centre(1))
                         rpos2 = (pos(2) - centre(2))
                         rpos3 = (pos(3) - moist%r_plume)
-                        r2 = rpos1**2+rpos2**2+rpos3**2
+                        r2 = rpos1 ** 2 + rpos2 ** 2 + rpos3 ** 2
 
                         if (r2 <= radsq) then
                             buoyg(k, j, i) = b_pl * (one + moist%e_values(1) * rpos1 * rpos2  &
