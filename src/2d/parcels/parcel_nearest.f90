@@ -4,7 +4,7 @@
 module parcel_nearest
     use constants, only : pi, f12, max_num_parcels
     use parcel_container, only : parcels, n_parcels, get_delx
-    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin
+    use parameters, only : dx, dxi, vcell, lower, extent, ncell, nx, nz, vmin
     use options, only : parcel
     use timer, only : start_timer, stop_timer
 

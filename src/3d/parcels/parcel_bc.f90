@@ -5,7 +5,7 @@
 ! =============================================================================
 module parcel_bc
     use constants, only : zero, two
-    use parameters, only : lower, upper, extent, hli, center
+    use parameters, only : lower, upper, extent, extenti
     use parcel_container, only : n_parcels
     use omp_lib
     implicit none
@@ -16,8 +16,8 @@ module parcel_bc
         ! @param[inout] position vector of parcel
         pure subroutine apply_periodic_bc(position)
             double precision, intent(inout) :: position(3)
-            position(1) = position(1) - extent(1) * dble(int((position(1) - center(1)) * hli(1)))
-            position(2) = position(2) - extent(2) * dble(int((position(2) - center(2)) * hli(2)))
+            position(1) = position(1) - extent(1) * dble(floor((position(1) - lower(1)) * extenti(1)))
+            position(2) = position(2) - extent(2) * dble(floor((position(2) - lower(2)) * extenti(2)))
         end subroutine apply_periodic_bc
 
         ! Apply mirroring bc on n-th parcel (vertically)

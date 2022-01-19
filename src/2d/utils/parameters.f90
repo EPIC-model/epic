@@ -43,7 +43,8 @@ module parameters
     ! domain half widths values
     double precision :: hl(2)
 
-    double precision :: hli(2)
+    ! inverse extent
+    double precision :: extenti(2)
 
     ! domain origin
     double precision :: lower(2)
@@ -93,7 +94,7 @@ module parameters
         ! domain
         center = f12 * (lower + upper)
         hl = extent / two
-        hli = one / hl
+        extenti = one / extent
 
         vmin = vcell / parcel%min_vratio
         vmax = vcell / parcel%max_vratio
