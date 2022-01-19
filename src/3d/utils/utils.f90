@@ -7,9 +7,6 @@ module utils
     use parcel_container, only : n_parcels
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
-#ifndef NDEBUG
-    use parcel_interpl, only : vol2grid_symmetry_error
-#endif
     use field_diagnostics, only : write_h5_field_stats_step
 
     implicit none
@@ -87,9 +84,6 @@ module utils
             double precision,  intent(in) :: dt
             logical, optional, intent(in) :: l_force
             double precision              :: neg = one
-#ifndef NDEBUG
-            logical                      :: do_vol2grid_sym_err = .true.
-#endif
 
             if (present(l_force)) then
                 if (l_force) then
@@ -100,10 +94,6 @@ module utils
             ! make sure we always write initial setup
             if (output%h5_write_fields .and. &
                 (t + epsilon(zero) >= neg * dble(nfw) * output%h5_field_freq)) then
-#ifndef NDEBUG
-                call vol2grid_symmetry_error
-                do_vol2grid_sym_err = .false.
-#endif
                 call write_h5_field_step(nfw, t, dt)
             endif
 
@@ -121,11 +111,6 @@ module utils
             if (output%h5_write_field_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nsfw) * output%h5_field_stats_freq)) then
 
-#ifndef NDEBUG
-                if (do_vol2grid_sym_err) then
-                    call vol2grid_symmetry_error
-                endif
-#endif
                 call write_h5_field_stats_step(nsfw, t, dt)
             endif
         end subroutine write_step

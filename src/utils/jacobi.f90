@@ -55,8 +55,8 @@ module jacobi
         ! @param[in] i the row
         ! @param[in] j first column with i .ne. j
         ! @param[in] k second column with i .ne. k
-        pure subroutine apply_rotation_AV(A, D, B, Z, i, j, V)
-            double precision, intent(inout) :: A(n, n), D(n), B(n), Z(n)
+        pure subroutine apply_rotation_AV(A, D, Z, i, j, V)
+            double precision, intent(inout) :: A(n, n), D(n), Z(n)
             integer,          intent(in)    :: i, j
             double precision, intent(inout) :: V(n, n)
             double precision                :: c, s, t, tau
@@ -150,7 +150,7 @@ module jacobi
 
                 do i = 1, n-1
                     do j = i+1, n
-                        call apply_rotation_AV(A, D, B, Z, i, j, V)
+                        call apply_rotation_AV(A, D, Z, i, j, V)
                     enddo
                 enddo
 
@@ -206,8 +206,8 @@ module jacobi
         ! Jacobi algorithm -- eigenvalues only
         !
 
-        pure subroutine apply_rotation(A, D, B, Z, i, j)
-            double precision, intent(inout) :: A(n, n), D(n), B(n), Z(n)
+        pure subroutine apply_rotation(A, D, Z, i, j)
+            double precision, intent(inout) :: A(n, n), D(n), Z(n)
             integer,          intent(in)    :: i, j
             double precision                :: c, s, t, tau
             integer                         :: k
@@ -283,7 +283,7 @@ module jacobi
 
                 do i = 1, n-1
                     do j = i+1, n
-                        call apply_rotation(A, D, B, Z, i, j)
+                        call apply_rotation(A, D, Z, i, j)
                     enddo
                 enddo
 

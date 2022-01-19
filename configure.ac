@@ -239,7 +239,7 @@ else
     AC_MSG_RESULT([no])
 fi
 
-ENABLE_DRY_MODE='yes'
+ENABLE_DRY_MODE='no'
 AC_ARG_ENABLE([dry-mode],
               [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=no)])],
               [ENABLE_DRY_MODE=$enableval])

@@ -119,6 +119,15 @@ module parcel_init
                 deallocate(buffer_1d)
             endif
 
+#ifndef ENABLE_DRY_MODE
+            if (has_dataset(group, 'humidity')) then
+                l_valid = .true.
+                call read_h5_dataset(group, 'humidity', buffer_1d)
+                parcels%buoyancy(1:n_parcels) = buffer_1d
+                deallocate(buffer_1d)
+            endif
+#endif
+
             if (.not. l_valid) then
                 print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
                 stop
@@ -368,9 +377,19 @@ module parcel_init
                 call gen_parcel_scalar_attr(field_3d, tol, parcels%buoyancy)
             endif
 
+#ifndef ENABLE_DRY_MODE
+            if (has_dataset(h5handle, 'humidity')) then
+                call read_h5_dataset(h5handle, 'humidity', buffer_3d)
+                call fill_field_from_buffer_3d(buffer_3d, field_3d)
+                deallocate(buffer_3d)
+                call gen_parcel_scalar_attr(field_3d, tol, parcels%humidity)
+            endif
+#endif
+
             if (n_steps > 0) then
                 call close_h5_group(group)
             endif
+
             call close_h5_file(h5handle)
 
             call dealloc
