@@ -13,7 +13,7 @@ module parcel_correction
     use stafft
     use deriv1d
 
-    use parcel_interpl, only : trilinear, ngp, vol2grid
+    use parcel_interpl, only : bilinear, ngp, vol2grid
     use parcel_bc
     use omp_lib
 
@@ -187,7 +187,7 @@ module parcel_correction
         !$omp parallel default(shared)
         !$omp do private(n, l, is, js, weights)
         do n = 1, n_parcels
-            call trilinear(parcels%position(n, :), is, js, weights)
+            call bilinear(parcels%position(n, :), is, js, weights)
 
             do l = 1, ngp
                 parcels%position(n, 1) = parcels%position(n, 1)             &
@@ -226,7 +226,7 @@ module parcel_correction
         !$omp do private(n, is, js, weights, x1_fpos, x2_fpos, shift_x1, shift_x2, lim_x1, lim_x2)
         do n = 1, n_parcels
 
-            call trilinear(parcels%position(n, :), is, js, weights)
+            call bilinear(parcels%position(n, :), is, js, weights)
 
             x1_fpos=weights(2)+weights(4) ! fractional position along x1
             x2_fpos=weights(3)+weights(4) ! fractional position along x2
