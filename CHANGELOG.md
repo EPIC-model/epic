@@ -1,7 +1,11 @@
 ## EPIC version 0.10.3
 * [restarting EPIC](https://github.com/matt-frey/epic/pull/278)
 * [fix calculation of get_delx and get_dely for non-centred domains](https://github.com/matt-frey/epic/pull/279)
+* [update pillow dependency](https://github.com/matt-frey/epic/pull/280)
+* [update pyyaml dependency](https://github.com/matt-frey/epic/pull/281)
+* [update urllib3 dependency](https://github.com/matt-frey/epic/pull/282)
 * [fix get_delx for non-centred domains](https://github.com/matt-frey/epic/pull/283)
+* [update python dependencies](https://github.com/matt-frey/epic/pull/285)
 * [use proper interpolation name](https://github.com/matt-frey/epic/pull/287)
 * [new directory structure in main like in branch develop](https://github.com/matt-frey/epic/pull/291)
 * [combine to array](https://github.com/matt-frey/epic/pull/293)
