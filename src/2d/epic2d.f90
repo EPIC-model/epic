@@ -109,7 +109,7 @@ program epic2d
                     stop
                 endif
             else
-                time%initial = zero ! make sure user cannot start at arbirtrary time
+                time%initial = zero ! make sure user cannot start at arbitrary time
 
                 call init_parcels(field_file, field_tol)
             endif
