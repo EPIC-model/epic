@@ -20,14 +20,11 @@ AC_CONFIG_FILES([
     src/hdf5/Makefile
     src/fft/Makefile
     src/2d/Makefile
-    src/3d/Makefile
     models/Makefile
     models/2d/Makefile
-    models/3d/Makefile
     analyse/Makefile
     unit-tests/Makefile
     unit-tests/2d/Makefile
-    unit-tests/3d/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
