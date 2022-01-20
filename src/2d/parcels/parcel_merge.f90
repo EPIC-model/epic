@@ -196,7 +196,7 @@ module parcel_merge
                     B22 = get_B22(parcels%B(ic, 1), parcels%B(ic, 2), parcels%volume(ic))
 
                     delx = get_delx(parcels%position(ic, 1), posm(l, 1))
-                    dely = parcels%position(ic, 2) - posm(l, 1)
+                    dely = parcels%position(ic, 2) - posm(l, 2)
 
                     mu = parcels%volume(ic) * vmerge
                     B11m(l) = mu * (four * delx ** 2 + parcels%B(ic, 1))
