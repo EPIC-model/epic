@@ -160,12 +160,20 @@ module parcel_merge
                 ! temporary scalar containing 1 / vm(m)
                 vmerge = one / vm(m)
 
+                ! need to sanitise input and output, but first to determine input
+                posm(1, m)= - vmerge * posm(1, m)
+                posm(2, m)= - vmerge * posm(2, m)
+
+                call apply_periodic_bc(posm(:, m))
                 ! x and y centre of merged parcel, modulo periodicity
-                posm(1, m) = get_delx(x0(m), - vmerge * posm(1, m))
-                posm(2, m) = get_dely(y0(m), - vmerge * posm(2, m))
+                posm(1, m) = get_delx(x0(m), posm(1, m))
+                posm(2, m) = get_dely(y0(m), posm(2, m))
 
                 ! z centre of merged parcel
                 posm(3, m) = vmerge * posm(3, m)
+
+                ! need to correct position
+                call apply_periodic_bc(posm(:, m))
 
                 ! buoyancy and humidity
                 buoym(m) = vmerge * buoym(m)
