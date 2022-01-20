@@ -160,9 +160,11 @@ module parcel_merge
                 ! temporary scalar containing 1 / vm(m)
                 vmerge = one / vm(m)
 
-                ! x and y centre of merged parcel, modulo periodicity
+                ! x and y centre of merged parcel, modulo periodicity, and apply parcel bc
                 xm(m) = get_delx(x0(m), - vmerge * xm(m))
+                xm(m) = xm(m) - extent(1) * dble(int((xm(m) - center(1)) * hli(1)))
                 ym(m) = get_dely(y0(m), - vmerge * ym(m))
+                ym(m) = ym(m) - extent(2) * dble(int((ym(m) - center(2)) * hli(2)))
 
                 ! z centre of merged parcel
                 zm(m) = vmerge * zm(m)
