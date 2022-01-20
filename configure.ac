@@ -2,6 +2,8 @@ AC_INIT([epic], [1.0.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
+AM_PROG_AR
+LT_INIT
 
 # change file extension from *.f to *.f90
 # (important for library tests since it autogenerates a file conftest.f90)
@@ -19,6 +21,7 @@ AC_CONFIG_FILES([
     models/Makefile
     analyse/Makefile
     unit-tests/Makefile
+    unit-tests/2d/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile

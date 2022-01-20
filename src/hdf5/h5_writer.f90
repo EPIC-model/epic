@@ -5,14 +5,48 @@
 ! https://support.hdfgroup.org/HDF5/doc1.8/RM/RM_H5Front.html
 ! =============================================================================
 module h5_writer
-    use options, only : allow_larger_anisotropy,    &
-                        output, verbose,            &
-                        field_file, field_tol,      &
-                        parcel, time
-    use parameters, only : nx, nz, lower, extent
     use hdf5
     use h5_utils
     implicit none
+
+    private :: write_h5_dataset_1d,                 &
+               write_h5_dataset_2d,                 &
+               write_h5_dataset_3d,                 &
+               write_h5_int_dataset_2d,             &
+               write_h5_char_scalar_attrib,         &
+               write_h5_double_scalar_attrib,       &
+               write_h5_int_scalar_attrib,          &
+               write_h5_logical_attrib,             &
+               write_h5_double_scalar_step_attrib,  &
+               write_h5_int_scalar_step_attrib
+
+
+    interface write_h5_dataset
+        module procedure :: write_h5_dataset_1d
+        module procedure :: write_h5_dataset_2d
+        module procedure :: write_h5_dataset_3d
+        module procedure :: write_h5_dataset_4d
+        module procedure :: write_h5_int_dataset_2d
+        module procedure :: write_h5_int_dataset_3d
+    end interface write_h5_dataset
+
+    interface write_h5_scalar_attrib
+        module procedure :: write_h5_char_scalar_attrib
+        module procedure :: write_h5_double_scalar_attrib
+        module procedure :: write_h5_int_scalar_attrib
+        module procedure :: write_h5_logical_attrib
+    end interface write_h5_scalar_attrib
+
+    interface write_h5_scalar_step_attrib
+        module procedure :: write_h5_double_scalar_step_attrib
+        module procedure :: write_h5_int_scalar_step_attrib
+    end interface write_h5_scalar_step_attrib
+
+    interface write_h5_vector_attrib
+        module procedure :: write_h5_char_vector_attrib
+        module procedure :: write_h5_double_vector_attrib
+        module procedure :: write_h5_int_vector_attrib
+    end interface write_h5_vector_attrib
 
     contains
 
@@ -131,6 +165,45 @@ module h5_writer
             call check_h5_error("Failed to close data space.")
         end subroutine write_h5_int_dataset_2d
 
+        subroutine write_h5_int_dataset_3d(h5file_id, group, name, data)
+            integer(hid_t),   intent(in)     :: h5file_id
+            ! 12 March 2021
+            ! https://stackoverflow.com/questions/48816383/passing-character-strings-of-different-lengths-to-functions-in-fortran
+            character(*),     intent(in)     :: group
+            character(*),     intent(in)     :: name
+            integer,          intent(in)     :: data(:, :, :)
+            integer(hid_t)                   :: dset, dataspace
+            integer(hsize_t), dimension(1:3) :: dims
+
+            if (size(data) == 0) then
+                print *, "Error in 'write_h5_int_dataset_3d': ", &
+                         "No memory for '", name, "' allocated!"
+                stop
+            endif
+
+            dims = shape(data)
+
+            ! create space for data
+            call h5screate_simple_f(3, dims, dataspace, h5err)
+            call check_h5_error("Failed to create data space.")
+
+            ! create the dataset
+            call h5dcreate_f(h5file_id, group // "/" // name,            &
+                             H5T_NATIVE_INTEGER, dataspace, dset, h5err)
+            call check_h5_error("Failed to create dataset.")
+
+            ! write dataset
+            call h5dwrite_f(dset, H5T_NATIVE_INTEGER, data, dims, h5err)
+            call check_h5_error("Failed to write dataset.")
+
+            ! close all
+            call h5dclose_f(dset , h5err)
+            call check_h5_error("Failed to close dataset.")
+
+            call h5sclose_f(dataspace, h5err)
+            call check_h5_error("Failed to close data space.")
+        end subroutine write_h5_int_dataset_3d
+
         subroutine write_h5_dataset_3d(h5file_id, group, name, data)
             integer(hid_t),   intent(in)     :: h5file_id
             character(*),     intent(in)     :: group
@@ -167,6 +240,43 @@ module h5_writer
             call h5sclose_f(dataspace, h5err)
             call check_h5_error("Failed to close data space.")
         end subroutine write_h5_dataset_3d
+
+        subroutine write_h5_dataset_4d(h5file_id, group, name, data)
+            integer(hid_t),   intent(in)     :: h5file_id
+            character(*),     intent(in)     :: group
+            character(*),     intent(in)     :: name
+            double precision, intent(in)     :: data(:, :, :, :)
+            integer(hid_t)                   :: dset, dataspace
+            integer(hsize_t), dimension(1:4) :: dims
+
+            if (size(data) == 0) then
+                print *, "Error in 'write_h5_dataset_4d': ", &
+                         "No memory for '", name, "' allocated!"
+                stop
+            endif
+
+            dims = shape(data)
+
+            ! create space for data
+            call h5screate_simple_f(4, dims, dataspace, h5err)
+            call check_h5_error("Failed to create data space.")
+
+            ! create the dataset
+            call h5dcreate_f(h5file_id, group // "/" // name,              &
+                             H5T_NATIVE_DOUBLE, dataspace, dset, h5err)
+            call check_h5_error("Failed to create dataset.")
+
+            ! write dataset
+            call h5dwrite_f(dset, H5T_NATIVE_DOUBLE, data, dims, h5err)
+            call check_h5_error("Failed to write dataset.")
+
+            ! close all
+            call h5dclose_f(dset , h5err)
+            call check_h5_error("Failed to close dataset.")
+
+            call h5sclose_f(dataspace, h5err)
+            call check_h5_error("Failed to close data space.")
+        end subroutine write_h5_dataset_4d
 
 
         subroutine write_h5_double_scalar_step_attrib(h5file_id, iter, name, val)
@@ -213,18 +323,6 @@ module h5_writer
 
             call close_h5_group(group)
         end subroutine write_h5_int_scalar_step_attrib
-
-
-        ! convert iteration number to string
-        function get_step_group_name(iter) result(name)
-            integer, intent(in) :: iter
-            ! 12 March 2021
-            ! https://stackoverflow.com/questions/1262695/convert-integers-to-strings-to-create-output-filenames-at-run-time
-            character(len=32) :: name
-
-            write(name, fmt='(I10.10)') iter
-            name = 'step#' // trim(name)
-        end function get_step_group_name
 
 
         subroutine write_h5_double_vector_attrib(group, name, val)
@@ -517,62 +615,16 @@ module h5_writer
             call write_h5_char_scalar_attrib(h5file_id, "creation zone", tmp3)
         end subroutine write_h5_timestamp
 
-
-        subroutine write_h5_options(h5file_id)
+        subroutine write_h5_box(h5file_id, origin, extent, ncells)
             integer(hid_t),   intent(in) :: h5file_id
-            integer(hid_t)               :: gopts, group
-
-            call create_h5_group(h5file_id, "options", gopts)
-
-#ifdef ENABLE_VERBOSE
-            call write_h5_logical_attrib(gopts, "verbose", verbose)
-#endif
-            call write_h5_char_scalar_attrib(gopts, "field_file", field_file)
-            call write_h5_double_scalar_attrib(gopts, "field_tol", field_tol)
-
-            call write_h5_logical_attrib(gopts, "allow_larger_anisotropy", &
-                                         allow_larger_anisotropy)
-
-            call create_h5_group(gopts, "parcel", group)
-                call write_h5_int_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
-                call write_h5_double_scalar_attrib(group, "lambda", parcel%lambda_max)
-                call write_h5_double_scalar_attrib(group, "min_vratio", parcel%min_vratio)
-                call write_h5_int_scalar_attrib(group, "correction_iters", parcel%correction_iters)
-                call write_h5_double_scalar_attrib(group, "gradient_pref", parcel%gradient_pref)
-                call write_h5_double_scalar_attrib(group, "max_compression", parcel%max_compression)
-                call write_h5_double_scalar_attrib(group, "max_vratio", parcel%max_vratio)
-            call close_h5_group(group)
-
-            call create_h5_group(gopts, "output", group)
-                call write_h5_double_scalar_attrib(group, "h5_parcel_freq", output%h5_parcel_freq)
-                call write_h5_double_scalar_attrib(group, "h5_field_freq", output%h5_field_freq)
-                call write_h5_double_scalar_attrib(group, "h5_parcel_stats_freq", output%h5_parcel_stats_freq)
-                call write_h5_logical_attrib(group, "h5_write_parcel_stats", output%h5_write_parcel_stats)
-                call write_h5_double_scalar_attrib(group, "h5_field_stats_freq", output%h5_field_stats_freq)
-                call write_h5_logical_attrib(group, "h5_write_field_stats", output%h5_write_field_stats)
-                call write_h5_logical_attrib(group, "h5_write_fields", output%h5_write_fields)
-                call write_h5_logical_attrib(group, "h5_overwrite", output%h5_overwrite)
-                call write_h5_logical_attrib(group, "h5_write_parcels", output%h5_write_parcels)
-                call write_h5_char_scalar_attrib(group, "h5_basename", trim(output%h5_basename))
-            call close_h5_group(group)
-
-            call create_h5_group(gopts, "time", group)
-                call write_h5_double_scalar_attrib(group, "limit", time%limit)
-                call write_h5_logical_attrib(group, "precise_stop", time%precise_stop)
-                call write_h5_double_scalar_attrib(group, "alpha", time%alpha)
-            call close_h5_group(group)
-
-            call close_h5_group(gopts)
-        end subroutine write_h5_options
-
-        subroutine write_h5_box(h5file_id)
-            integer(hid_t), intent(in) :: h5file_id
-            integer(hid_t)             :: group
+            double precision, intent(in) :: origin(:), extent(:)
+            integer,          intent(in) :: ncells(:)
+            integer(hid_t)               :: group
 
             call create_h5_group(h5file_id, "box", group)
-            call write_h5_int_vector_attrib(group, "ncells", (/nx, nz/))
-            call write_h5_double_vector_attrib(group, "extent", extent)
-            call write_h5_double_vector_attrib(group, "origin", lower)
+            call write_h5_vector_attrib(group, "ncells", ncells)
+            call write_h5_vector_attrib(group, "extent", extent)
+            call write_h5_vector_attrib(group, "origin", origin)
             call close_h5_group(group)
         end subroutine write_h5_box
 

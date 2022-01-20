@@ -44,7 +44,7 @@ module jacobi
             double precision, intent(inout) :: A(n, n), V(n, n)
             integer,          intent(in)    :: i, j
             double precision                :: theta, c, s, t, tau
-            integer                         :: k, l
+            integer                         :: k
             double precision                :: g, h, aij
 
             ! compute the rotation angle theta

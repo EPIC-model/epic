@@ -7,6 +7,9 @@ epic2d_SOURCES = 				\
 	utils/stafft.f90			\
 	utils/sta2dfft.f90			\
 	utils/deriv1d.f90			\
+	utils/options.f90			\
+	utils/parameters.f90			\
+	utils/phys_parameters.f90		\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_hdf5.f90			\
@@ -28,9 +31,9 @@ epic2d_SOURCES = 				\
 	stepper/ls_rk4.f90			\
 	epic2d.f90
 
-epic2d_LDADD = 					\
-	$(top_builddir)/src/utils/libutils.la 	\
-	$(top_builddir)/src/hdf5/libhdf5.la
+epic2d_LDADD = 						\
+	$(top_builddir)/src/utils/libepic_utils.la 	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
 clean-local:
 	rm -f *.mod
