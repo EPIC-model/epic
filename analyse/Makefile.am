@@ -13,9 +13,9 @@ analyse_PROGRAMS = genspec
 
 genspec_SOURCES = genspec.f90
 
-genspec_LDADD = 				\
-	$(top_builddir)/src/utils/libutils.la	\
-	$(top_builddir)/src/hdf5/libhdf5.la
+genspec_LDADD = 					\
+	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 
 clean-local:
 	rm -f *.mod
