@@ -36,7 +36,7 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH
 ## Running
 In order to run the model, execute
 ```
-$ epic --config filename
+$ epic2d --config filename
 ```
 where `filename` is the configuration file. An example of a configuration file is given
 [here](examples/taylor_green.config).

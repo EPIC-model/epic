@@ -1,11 +1,11 @@
 ! =============================================================================
-!                       Test parcel laplace correction module
+!                        Test gradient correction
 !
-!         This unit test checks the correction module by initializing
+!         This unit test checks the gradient correction by initializing
 !         the parcels with a small deviation from the optimal position.
-!         It then performs 500 relaxation steps.
+!         It then performs 20 relaxation steps.
 ! =============================================================================
-program test_laplace_correction
+program test_parcel_correction
     use unit_test
     use options, only : parcel
     use constants, only : pi, one, zero, f14, f32
@@ -17,6 +17,7 @@ program test_laplace_correction
     use parameters, only : lower, extent, update_parameters, vcell, nx, nz
     use fields, only : volg
     use timer
+
     implicit none
 
     double precision :: final_error, init_error, val, tmp
@@ -31,8 +32,7 @@ program test_laplace_correction
 
     call  parse_command_line
 
-    call register_timer('laplace correction', lapl_corr_timer)
-
+    call register_timer('gradient correction', grad_corr_timer)
 
     nx = 32
     nz = 32
@@ -81,7 +81,7 @@ program test_laplace_correction
     init_error = sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1))
 
     if (verbose) then
-        write(*,*) 'test laplace correction'
+        write(*,*) 'Test gradient correction'
         write(*,*) 'iteration, average error, max absolute error'
         write(*,*) 0, init_error, maxval(abs(volg(0:nz, 0:nx-1) / vcell - one))
     endif
@@ -89,7 +89,7 @@ program test_laplace_correction
     call init_parcel_correction
 
     do i = 1, 20
-        call apply_laplace
+        call apply_gradient(1.80d0,0.5d0)
         if (verbose) then
             call vol2grid
             write(*,*) i, sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1)), &
@@ -101,9 +101,8 @@ program test_laplace_correction
 
     final_error = sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1))
 
-    call print_result_dp('Test laplace correction', final_error, init_error)
+    call print_result_dp('Test gradient correction', final_error, init_error)
 
     deallocate(volg)
 
-end program test_laplace_correction
-
+end program test_parcel_correction
