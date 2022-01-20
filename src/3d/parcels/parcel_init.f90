@@ -44,7 +44,7 @@ module parcel_init
             character(*),     intent(in)  :: h5fname
             integer,          intent(in)  :: step
             integer(hid_t)                :: h5handle, group
-            integer                       :: n, ncells(3)
+            integer                       :: ncells(3)
             character(:), allocatable     :: grn
             double precision, allocatable :: buffer_1d(:),   &
                                              buffer_2d(:, :)

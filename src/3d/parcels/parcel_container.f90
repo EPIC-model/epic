@@ -4,7 +4,7 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use parameters, only : extent, hli, center, upper, lower
+    use parameters, only : extent, hli, center
     implicit none
 
     integer :: n_parcels
@@ -40,11 +40,6 @@ module parcel_container
             double precision             :: delx
 
             delx = x1 - x2
-#ifndef NDEBUG
-            if((x1 < lower(1) .or. (x2 < lower(1)) .or. (x1 > upper(1)) .or. (x2 > upper(1)) ) then
-                write(*,*) 'point outside domain was fed into get_dely'
-            endif
-#endif
             ! works across periodic edge
             delx = delx - extent(1) * dble(int(delx * hli(1)))
         end function get_delx
@@ -59,11 +54,6 @@ module parcel_container
             double precision             :: dely
 
             dely = y1 - y2
-#ifndef NDEBUG
-            if((y1 < lower(2) .or. (y2 < lower(2)) .or. (y1 > upper(2)) .or. (y2 > upper(2)) ) then
-                write(*,*) 'point outside domain was fed into get_dely'
-            endif
-#endif
             ! works across periodic edge
             dely = dely - extent(2) * dble(int(dely * hli(2)))
         end function get_dely

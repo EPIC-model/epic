@@ -372,10 +372,8 @@ module parcel_interpl
             integer,          intent(out) :: ii(ngp), jj(ngp), kk(ngp)
             double precision, intent(out) :: ww(ngp)
             double precision              :: xyz(3)
-            double precision              :: px, py, pz, pxc, pyc, pzc
-            double precision              :: w00, w10, w01, w11
 
-            ww=zero
+            ww = zero
 
             ! (i, j, k)
             xyz = (pos - lower) * dxi
