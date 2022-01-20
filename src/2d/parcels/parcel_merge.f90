@@ -94,8 +94,8 @@ module parcel_merge
             integer,                     intent(in)    :: n_merge
             integer                                    :: m, ic, is, l, n
             integer                                    :: loca(n_parcels)
-            double precision                           :: x0(n_merge), xm(n_merge)
-            double precision                           :: zm(n_merge), delx, vmerge, dely, B22, mu
+            double precision                           :: x0(n_merge)
+            double precision                           :: posm(n_merge, 2), delx, vmerge, dely, B22, mu
             double precision                           :: buoym(n_merge), vortm(n_merge)
 #ifndef ENABLE_DRY_MODE
             double precision                           :: hum(n_merge)
@@ -120,11 +120,11 @@ module parcel_merge
                     !x0 stores the x centre of the other parcel
                     x0(l) = parcels%position(ic, 1)
 
-                    ! xm will sum v(is)*(x(is)-x(ic)) modulo periodicity
-                    xm(l) = zero
+                    ! posm(l, 1) will sum v(is)*(x(is)-x(ic)) modulo periodicity
+                    posm(l, 1) = zero
 
-                    ! zm will contain v(ic)*z(ic)+sum{v(is)*z(is)}
-                    zm(l) = parcels%volume(ic) * parcels%position(ic, 2)
+                    ! posm(l, 2) will contain v(ic)*z(ic)+sum{v(is)*z(is)}
+                    posm(l, 2) = parcels%volume(ic) * parcels%position(ic, 2)
 
                     ! buoyancy and humidity
                     buoym(l) = parcels%volume(ic) * parcels%buoyancy(ic)
@@ -148,10 +148,10 @@ module parcel_merge
                 delx = get_delx(parcels%position(is, 1), x0(n))
 
                 ! Accumulate sum of v(is)*(x(is)-x(ic))
-                xm(n) = xm(n) + parcels%volume(is) * delx
+                posm(n, 1) = posm(n, 1) + parcels%volume(is) * delx
 
                 ! Accumulate v(ic)*z(ic)+sum{v(is)*z(is)}
-                zm(n) = zm(n) + parcels%volume(is) * parcels%position(is, 2)
+                posm(n, 2) = posm(n, 2) + parcels%volume(is) * parcels%position(is, 2)
 
                 ! Accumulate buoyancy and humidity
                 buoym(n) = buoym(n) + parcels%volume(is) * parcels%buoyancy(is)
@@ -168,10 +168,10 @@ module parcel_merge
                 vmerge = one / vm(m)
 
                 ! x centre of merged parcel, modulo periodicity
-                xm(m) = get_delx(x0(m), - vmerge * xm(m))
+                posm(m, 1) = get_delx(x0(m), - vmerge * posm(m, 1))
 
                 ! z centre of merged parcel
-                zm(m) = vmerge * zm(m)
+                posm(m, 2) = vmerge * posm(m, 2)
 
                 ! buoyancy and humidity
                 buoym(m) = vmerge * buoym(m)
@@ -195,8 +195,8 @@ module parcel_merge
 
                     B22 = get_B22(parcels%B(ic, 1), parcels%B(ic, 2), parcels%volume(ic))
 
-                    delx = get_delx(parcels%position(ic, 1), xm(l))
-                    dely = parcels%position(ic, 2) - zm(l)
+                    delx = get_delx(parcels%position(ic, 1), posm(l, 1))
+                    dely = parcels%position(ic, 2) - posm(l, 2)
 
                     mu = parcels%volume(ic) * vmerge
                     B11m(l) = mu * (four * delx ** 2 + parcels%B(ic, 1))
@@ -204,8 +204,8 @@ module parcel_merge
                     B22m(l) = mu * (four * dely ** 2 + B22)
 
                     parcels%volume(ic)  = vm(l)
-                    parcels%position(ic, 1) = xm(l)
-                    parcels%position(ic, 2) = zm(l)
+                    parcels%position(ic, 1) = posm(l, 1)
+                    parcels%position(ic, 2) = posm(l, 2)
 
                     parcels%buoyancy(ic) = buoym(l)
 #ifndef ENABLE_DRY_MODE
@@ -220,8 +220,8 @@ module parcel_merge
 
                 vmerge = one / vm(n)
 
-                delx = get_delx(parcels%position(is, 1), xm(n))
-                dely = parcels%position(is, 2) - zm(n)
+                delx = get_delx(parcels%position(is, 1), posm(n, 1))
+                dely = parcels%position(is, 2) - posm(n, 2)
 
                 B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is))
 
