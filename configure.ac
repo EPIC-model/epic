@@ -9,19 +9,25 @@ LT_INIT
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
 
-FCFLAGS="-fdefault-real-8 -fdefault-double-8 -cpp"
+FCFLAGS="-fdefault-real-8 -fdefault-double-8 -cpp -fPIC"
 
+AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
     src/utils/Makefile
     src/hdf5/Makefile
+    src/fft/Makefile
     src/2d/Makefile
+    src/3d/Makefile
     models/Makefile
+    models/2d/Makefile
+    models/3d/Makefile
     analyse/Makefile
     unit-tests/Makefile
     unit-tests/2d/Makefile
+    unit-tests/3d/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
@@ -209,7 +215,7 @@ AC_ARG_ENABLE([merger-dump],
               [AS_HELP_STRING([--enable-merger-dump], [enable merger dump (default=no)])],
               [ENABLE_MERGER_DUMP=$enableval])
 
-AM_CONDITIONAL([ENABLE_MERGER_DUMP], [test "ENABLE_MERGER_DUMP" = "yes"])
+AM_CONDITIONAL([ENABLE_MERGER_DUMP], [test "$ENABLE_MERGER_DUMP" = "yes"])
 
 AC_MSG_CHECKING([whether we are compiling with merger dump])
 if test "x$ENABLE_MERGER_DUMP" = "xyes"; then
@@ -221,7 +227,7 @@ fi
 
 ENABLE_DRY_MODE='yes'
 AC_ARG_ENABLE([dry-mode],
-              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=no)])],
+              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=yes)])],
               [ENABLE_DRY_MODE=$enableval])
 
 AM_CONDITIONAL([ENABLE_DRY_MODE], [test "$ENABLE_DRY_MODE" = "yes"])
@@ -277,10 +283,10 @@ AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
     FCFLAGS="$FCFLAGS -Wall -Wno-maybe-uninitialized -Werror -g -O0"
-    FCFLAGS="$FCFLAGS -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow"
+    FCFLAGS="$FCFLAGS -fcheck=all -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow"
 else
     AC_MSG_RESULT([no])
-    FCFLAGS="$FCFLAGS -O3 -DNDEBUG"
+    FCFLAGS="$FCFLAGS -O3 -funroll-all-loops -flto -DNDEBUG"
 fi
 
 
