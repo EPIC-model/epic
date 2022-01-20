@@ -4,9 +4,11 @@
 module field_diagnostics
     use constants, only : zero
     use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
+    use options, only : verbose, write_h5_options
     use fields
     use h5_utils
     use h5_writer
+    use h5_reader, only : get_num_steps
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -28,19 +30,33 @@ module field_diagnostics
         ! Create the field diagnostic file.
         ! @param[in] basename of the file
         ! @param[in] overwrite the file
-        subroutine create_h5_field_stats_file(basename, overwrite)
-            character(*), intent(in) :: basename
-            logical,      intent(in) :: overwrite
+        subroutine create_h5_field_stats_file(basename, overwrite, l_restart, step)
+            character(*), intent(in)  :: basename
+            logical,      intent(in)  :: overwrite
+            logical,      intent(in)  :: l_restart
+            integer,      intent(out) :: step
+            logical                   :: l_exist
 
             h5fname =  basename // '_field_stats.hdf5'
 
+            call exist_h5_file(h5fname, l_exist)
+
+            if (l_restart .and. l_exist) then
+                call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
+                call get_num_steps(h5file_id, step)
+                call close_h5_file(h5file_id)
+                return
+            endif
+
+            step = 0
+
             call create_h5_file(h5fname, overwrite, h5file_id)
 
-            call write_h5_char_scalar_attrib(h5file_id, 'output_type', 'field diagnostics')
+            call write_h5_scalar_attrib(h5file_id, 'output_type', 'field diagnostics')
 
             call write_h5_timestamp(h5file_id)
             call write_h5_options(h5file_id)
-            call write_h5_box(h5file_id)
+            call write_h5_box(h5file_id, lower, extent, (/nx, nz/))
 
             call close_h5_file(h5file_id)
 
@@ -98,35 +114,34 @@ module field_diagnostics
             endif
 
 
-            call write_h5_double_scalar_attrib(group, "t", t)
+            call write_h5_scalar_attrib(group, "t", t)
 
-            call write_h5_double_scalar_attrib(group, "dt", dt)
+            call write_h5_scalar_attrib(group, "dt", dt)
 
             !
             ! write diagnostics
             !
             rms_v = get_rms_volume_error()
-            call write_h5_double_scalar_attrib(group, "rms volume error", rms_v)
+            call write_h5_scalar_attrib(group, "rms volume error", rms_v)
 
             abserr_v = get_max_abs_normalised_volume_error()
-            call write_h5_double_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
+            call write_h5_scalar_attrib(group, "max absolute normalised volume error", abserr_v)
 
             max_npar = maxval(nparg(0:nz-1, :))
-            call write_h5_int_scalar_attrib(group, "max num parcels per cell", max_npar)
+            call write_h5_scalar_attrib(group, "max num parcels per cell", max_npar)
 
             min_npar = minval(nparg(0:nz-1, :))
-            call write_h5_int_scalar_attrib(group, "min num parcels per cell", min_npar)
+            call write_h5_scalar_attrib(group, "min num parcels per cell", min_npar)
 
             res = sum(nparg(0:nz-1, :)) * ncelli
-            call write_h5_double_scalar_attrib(group, "average num parcels per cell", res)
+            call write_h5_scalar_attrib(group, "average num parcels per cell", res)
 
             res = sum(nsparg(0:nz-1, :)) * ncelli
-            call write_h5_double_scalar_attrib(group, "average num small parcels per cell", res)
+            call write_h5_scalar_attrib(group, "average num small parcels per cell", res)
 
 #ifndef NDEBUG
             vol_sym_err = maxval(dabs(sym_volg(0:nz, :)))
-            call write_h5_double_scalar_attrib(group, "max symmetry volume error", &
-                                               vol_sym_err)
+            call write_h5_scalar_attrib(group, "max symmetry volume error", vol_sym_err)
 #endif
 
             ! increment counter

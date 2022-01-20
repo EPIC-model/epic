@@ -3,7 +3,7 @@
 !
 !         This unit test checks the correction module by initializing
 !         the parcels with a small deviation from the optimal position.
-!         It then performs 500 relaxation steps.
+!         It then performs 20 relaxation steps.
 ! =============================================================================
 program test_laplace_correction
     use unit_test

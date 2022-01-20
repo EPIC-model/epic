@@ -61,7 +61,7 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call bilinear(points(p, :), is, js, weights)
+                    call trilinear(points(p, :), is, js, weights)
 
                     do l = 1, ngp
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
@@ -117,7 +117,7 @@ module parcel_interpl
                         call apply_periodic_bc(points(p, :))
 
                         ! get interpolation weights and mesh indices
-                        call bilinear(points(p, :), is, js, weights)
+                        call trilinear(points(p, :), is, js, weights)
 
                         do l = 1, ngp
                             sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
@@ -196,7 +196,7 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call bilinear(points(p, :), is, js, weights)
+                    call trilinear(points(p, :), is, js, weights)
 
                     ! loop over grid points which are part of the interpolation
                     ! the weight is halved due to 2 points per ellipse
@@ -341,7 +341,7 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call bilinear(points(p, :), is, js, weights)
+                    call trilinear(points(p, :), is, js, weights)
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp
@@ -389,7 +389,7 @@ module parcel_interpl
         ! @param[out] ii horizontal grid points for interoplation
         ! @param[out] jj vertical grid points for interpolation
         ! @param[out] ww interpolation weights
-        subroutine bilinear(pos, ii, jj, ww)
+        subroutine trilinear(pos, ii, jj, ww)
             double precision, intent(in)  :: pos(2)
             integer,          intent(out) :: ii(4), jj(4)
             double precision, intent(out) :: ww(4)
@@ -421,6 +421,6 @@ module parcel_interpl
             ! account for x periodicity
             call periodic_index_shift(ii)
 
-        end subroutine bilinear
+        end subroutine trilinear
 
 end module parcel_interpl
