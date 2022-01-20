@@ -1,11 +1,11 @@
 ! =============================================================================
 !               This program writes fields to HDF5 in EPIC format.
 ! =============================================================================
-program epic_models
+program epic2d_models
     use options, only : filename, verbose
-    use taylorgreen
-    use straka
-    use robert
+    use taylor_green_2d
+    use straka_2d
+    use robert_2d
     use constants, only : pi
     use parameters, only : nx, nz, dx, lower, extent
     use h5_utils
@@ -53,7 +53,7 @@ program epic_models
                     box%extent = pi * box%extent
                     dx = dx * pi
 
-                    call taylorgreen_init(h5handle, nx, nz, box%origin, dx)
+                    call taylor_green_init(h5handle, nx, nz, box%origin, dx)
                 case ('Straka')
                     call straka_init(h5handle, nx, nz, box%origin, dx)
                 case ('Robert')
@@ -66,7 +66,7 @@ program epic_models
             ! write box
             lower = box%origin
             extent = box%extent
-            call write_h5_box(h5handle)
+            call write_h5_box(h5handle, lower, extent, (/nx, nz/))
             call close_h5_file(h5handle)
         end subroutine generate_fields
 
@@ -129,15 +129,15 @@ program epic_models
                 else if (arg == '--verbose') then
                     verbose = .true.
                 else if (arg == '--help') then
-                    print *, 'Run code with "epic-models --config [config file]"'
+                    print *, 'Run code with "epic2d-models --config [config file]"'
                     stop
                 endif
                 i = i+1
             end do
 
             if (filename == '') then
-                print *, 'No configuration file provided. Run code with "epic-models --config [config file]"'
+                print *, 'No configuration file provided. Run code with "epic2d-models --config [config file]"'
                 stop
             endif
         end subroutine parse_command_line
-end program epic_models
+end program epic2d_models

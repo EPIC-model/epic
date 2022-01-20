@@ -11,7 +11,7 @@
 !
 ! =============================================================================
 
-module robert
+module robert_2d
     use phys_constants
     use constants
     use h5_writer
@@ -75,7 +75,7 @@ module robert
                 end select
             enddo
 
-            call write_h5_dataset_2d(h5handle, '/', 'buoyancy', buoyg)
+            call write_h5_dataset(h5handle, '/', 'buoyancy', buoyg)
 
             deallocate(buoyg)
 
