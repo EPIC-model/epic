@@ -1,5 +1,6 @@
 ## EPIC version 0.10.4
 * [fix name of executable](https://github.com/matt-frey/epic/pull/299)
+* [fix name of executable](https://github.com/matt-frey/epic/pull/301)
 ## EPIC version 0.10.3
 * [restarting EPIC](https://github.com/matt-frey/epic/pull/278)
 * [fix calculation of get_delx and get_dely for non-centred domains](https://github.com/matt-frey/epic/pull/279)
