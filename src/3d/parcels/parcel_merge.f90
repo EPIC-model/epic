@@ -161,8 +161,8 @@ module parcel_merge
                 vmerge = one / vm(m)
 
                 ! need to sanitise input and output, but first to determine input
-                posm(1, m)= - vmerge * posm(1, m)
-                posm(2, m)= - vmerge * posm(2, m)
+                posm(1, m) = - vmerge * posm(1, m)
+                posm(2, m) = - vmerge * posm(2, m)
 
                 call apply_periodic_bc(posm(:, m))
                 ! x and y centre of merged parcel, modulo periodicity

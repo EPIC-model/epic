@@ -46,7 +46,7 @@ module parcel_container
 
             delx = x1 - x2
 #ifndef NDEBUG
-            if((x1 < lower(1)) .or. (x2 < lower(1)) .or. (x1 > upper(1)) .or. (x2 > upper(1)) ) then
+            if ((x1 < lower(1)) .or. (x2 < lower(1)) .or. (x1 > upper(1)) .or. (x2 > upper(1))) then
                 write(*,*) 'point outside domain was fed into get_delx'
                 write(*,*) 'x1, x2, lower(1), upper(1)'
                 write(*,*) x1, x2, lower(1), upper(1)
@@ -72,7 +72,7 @@ module parcel_container
 
             dely = y1 - y2
 #ifndef NDEBUG
-            if((y1 < lower(2)) .or. (y2 < lower(2)) .or. (y1 > upper(2)) .or. (y2 > upper(2)) ) then
+            if ((y1 < lower(2)) .or. (y2 < lower(2)) .or. (y1 > upper(2)) .or. (y2 > upper(2))) then
                 write(*,*) 'point outside domain was fed into get_dely'
                 write(*,*) 'y1, y2, lower(2), upper(2)'
                 write(*,*) y1, y2, lower(2), upper(2)
