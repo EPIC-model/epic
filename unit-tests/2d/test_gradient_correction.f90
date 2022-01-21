@@ -56,14 +56,14 @@ program test_parcel_correction
         if (val < 0.5) then
             tmp = -dev
         endif
-        parcels%position(n, 1) = parcels%position(n, 1) + tmp
+        parcels%position(1, n) = parcels%position(1, n) + tmp
 
         tmp = dev
         call random_number(val)
         if (val < 0.5) then
             tmp = -dev
         endif
-        parcels%position(n, 2) = parcels%position(n, 2) + tmp
+        parcels%position(2, n) = parcels%position(2, n) + tmp
     enddo
 
     volg = zero
@@ -71,10 +71,10 @@ program test_parcel_correction
     parcels%volume = f14 * vcell
 
     ! b11
-    parcels%B(:, 1) = get_ab(parcels%volume(1:n_parcels))
+    parcels%B(1, :) = get_ab(parcels%volume(1:n_parcels))
 
     ! b12
-    parcels%B(:, 2) = zero
+    parcels%B(2, :) = zero
 
     call vol2grid
 
