@@ -47,7 +47,7 @@ program test_ellipse_split
     B22 = a2 * dsin(angle) ** 2 + b2 * dcos(angle) ** 2
 
     parcels%B(1, 1) = B11
-    parcels%B(1, 2) = B12
+    parcels%B(2, 1) = B12
 
     ! analytic split
     h = f14 * dsqrt(three * a2)

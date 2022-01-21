@@ -85,7 +85,7 @@ module parcel_split
                 parcels%humidity(n_thread_loc) = parcels%humidity(n)
 #endif
                 parcels%position(:, n_thread_loc) = parcels%position(:, n) - h * evec
-                parcels%position(:, n) = parcels%position(:, n)  + h * evec
+                parcels%position(:, n) = parcels%position(:, n) + h * evec
 
                 ! child parcels need to be reflected into domain, if their center
                 ! is inside the halo region
