@@ -50,8 +50,8 @@ module parcel_interpl
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
-                points = get_ellipse_points(parcels%position(n, :), &
-                                            pvol, parcels%B(n, :))
+                points = get_ellipse_points(parcels%position(:, n), &
+                                            pvol, parcels%B(:, n))
 
 
                 ! we have 2 points per ellipse
@@ -61,7 +61,7 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call trilinear(points(p, :), is, js, weights)
+                    call bilinear(points(p, :), is, js, weights)
 
                     do l = 1, ngp
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
@@ -100,11 +100,11 @@ module parcel_interpl
                 !$omp& reduction(+: sym_volg)
                 do n = 1, n_parcels
 
-                    pos = parcels%position(n, :)
+                    pos = parcels%position(:, n)
                     pvol = parcels%volume(n)
                     pos(1) = dble(m) * pos(1)
                     V = dble(m) * pvol
-                    B = parcels%B(n, :)
+                    B = parcels%B(:, n)
 
                     B(2) = dble(m) * B(2)
 
@@ -117,7 +117,7 @@ module parcel_interpl
                         call apply_periodic_bc(points(p, :))
 
                         ! get interpolation weights and mesh indices
-                        call trilinear(points(p, :), is, js, weights)
+                        call bilinear(points(p, :), is, js, weights)
 
                         do l = 1, ngp
                             sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
@@ -171,7 +171,7 @@ module parcel_interpl
 #ifndef ENABLE_DRY_MODE
                 ! liquid water content
                 h_c = parcels%humidity(n) &
-                    - h_0 * dexp(lam_c * (lower(2) - parcels%position(n, 2)))
+                    - h_0 * dexp(lam_c * (lower(2) - parcels%position(2, n)))
                 h_c = max(zero, h_c)
 
                 ! total buoyancy (including effects of latent heating)
@@ -179,10 +179,10 @@ module parcel_interpl
 #else
                 btot = parcels%buoyancy(n)
 #endif
-                points = get_ellipse_points(parcels%position(n, :), &
-                                            pvol, parcels%B(n, :))
+                points = get_ellipse_points(parcels%position(:, n), &
+                                            pvol, parcels%B(:, n))
 
-                call get_index(parcels%position(n, :), i, j)
+                call get_index(parcels%position(:, n), i, j)
                 i = mod(i + nx, nx)
                 nparg(j, i) = nparg(j, i) + 1
                 if (parcels%volume(n) <= vmin) then
@@ -196,7 +196,7 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call trilinear(points(p, :), is, js, weights)
+                    call bilinear(points(p, :), is, js, weights)
 
                     ! loop over grid points which are part of the interpolation
                     ! the weight is halved due to 2 points per ellipse
@@ -292,14 +292,10 @@ module parcel_interpl
         subroutine grid2par(vel, vor, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
             logical, optional, intent(in)       :: add
-            integer                             :: ncomp
             double precision                    :: points(2, 2), weight
-            integer                             :: n, p, c, l
+            integer                             :: n, p, l
 
             call start_timer(grid2par_timer)
-
-            ! number of field components
-            ncomp = 2
 
             ! clear old data efficiently
             if(present(add)) then
@@ -307,7 +303,7 @@ module parcel_interpl
                     !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, n_parcels
-                        vel(n, :) = zero
+                        vel(:, n) = zero
                         vor(n)    = zero
                     enddo
                     !$omp end do
@@ -317,7 +313,7 @@ module parcel_interpl
                 !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_parcels
-                    vel(n, :) = zero
+                    vel(:, n) = zero
                     vor(n)    = zero
                 enddo
                 !$omp end do
@@ -325,14 +321,14 @@ module parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, c, points, weight, is, js, weights)
+            !$omp do private(n, p, l, points, weight, is, js, weights)
             do n = 1, n_parcels
 
-                vgrad(n, :) = zero
+                vgrad(:, n) = zero
 
-                points = get_ellipse_points(parcels%position(n, :), &
+                points = get_ellipse_points(parcels%position(:, n), &
                                             parcels%volume(n),      &
-                                            parcels%B(n, :))
+                                            parcels%B(:, n))
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -341,23 +337,18 @@ module parcel_interpl
                     call apply_periodic_bc(points(p, :))
 
                     ! get interpolation weights and mesh indices
-                    call trilinear(points(p, :), is, js, weights)
+                    call bilinear(points(p, :), is, js, weights)
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp
                         weight = f12 * weights(l)
 
-                        ! loop over field components
-                        do c = 1, ncomp
-                            ! the weight is halved due to 2 points per ellipse
-                            vel(n, c) = vel(n, c) &
-                                      + weight * velog(js(l), is(l), c)
-                        enddo
+                        ! the weight is halved due to 2 points per ellipse
+                        vel(:, n) = vel(:, n) &
+                                  + weight * velog(js(l), is(l), :)
 
-                        do c = 1, 4
-                            vgrad(n, c) = vgrad(n, c) &
-                                        + weight * velgradg(js(l), is(l), c)
-                        enddo
+                        vgrad(:, n) = vgrad(:, n) &
+                                    + weight * velgradg(js(l), is(l), :)
 
                         vor(n) = vor(n) + weight * vtend(js(l), is(l))
                     enddo
@@ -389,7 +380,7 @@ module parcel_interpl
         ! @param[out] ii horizontal grid points for interoplation
         ! @param[out] jj vertical grid points for interpolation
         ! @param[out] ww interpolation weights
-        subroutine trilinear(pos, ii, jj, ww)
+        subroutine bilinear(pos, ii, jj, ww)
             double precision, intent(in)  :: pos(2)
             integer,          intent(out) :: ii(4), jj(4)
             double precision, intent(out) :: ww(4)
@@ -421,6 +412,6 @@ module parcel_interpl
             ! account for x periodicity
             call periodic_index_shift(ii)
 
-        end subroutine trilinear
+        end subroutine bilinear
 
 end module parcel_interpl
