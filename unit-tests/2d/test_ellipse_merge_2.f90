@@ -58,30 +58,30 @@ program test_ellipse_multi_merge_2
             d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
 
             n_parcels = 3
-            parcels%position(1, :) = zero
+            parcels%position(:, 1) = zero
             parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
-            parcels%B(1, 2) = zero
+            parcels%B(2, 1) = zero
             parcels%buoyancy(1) = 1.5d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(1) = 1.3d0
 #endif
             ! small parcel left
-            parcels%position(2, 1) = -d
+            parcels%position(1, 2) = -d
             parcels%position(2, 2) = -d
             parcels%volume(2) = a2b2 * pi
-            parcels%B(2, 1) = a2b2
+            parcels%B(1, 2) = a2b2
             parcels%B(2, 2) = zero
             parcels%buoyancy(2) = 1.8d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(2) = 1.2d0
 #endif
             ! small parcel right
-            parcels%position(3, 1) = d
-            parcels%position(3, 2) = d
+            parcels%position(1, 3) = d
+            parcels%position(2, 3) = d
             parcels%volume(3) = a2b2 * pi
-            parcels%B(3, 1) = a2b2
-            parcels%B(3, 2) = zero
+            parcels%B(1, 3) = a2b2
+            parcels%B(2, 3) = zero
             parcels%buoyancy(3) = 1.4d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(3) = 1.1d0
@@ -112,11 +112,11 @@ program test_ellipse_multi_merge_2
             error = zero
             error = max(error, abs(dble(n_parcels - 1)))
             error = max(error, abs(parcels%B(1, 1) - B11))
-            error = max(error, abs(parcels%B(1, 2) - B12))
+            error = max(error, abs(parcels%B(2, 1) - B12))
             error = max(error, abs(get_B22(parcels%B(1, 1), &
-                                           parcels%B(1, 2), &
+                                           parcels%B(2, 1), &
                                            parcels%volume(1)) - B22))
-            error = max(error, sum(abs(parcels%position(1, :))))
+            error = max(error, sum(abs(parcels%position(:, 1))))
             error = max(error, abs(parcels%volume(1) - vol))
             error = max(error, abs(parcels%buoyancy(1) - buoy))
 #ifndef ENABLE_DRY_MODE

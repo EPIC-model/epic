@@ -36,8 +36,8 @@ program test_bilinear
         do i = 0, nx-1
             do jj = 1, 4, 2
                 do ii = 1, 4, 2
-                    parcels%position(k, 1) = lower(1) + i * dx(1) + f14 * dx(1) * ii
-                    parcels%position(k, 2) = lower(2) + j * dx(2) + f14 * dx(2) * jj
+                    parcels%position(1, k) = lower(1) + i * dx(1) + f14 * dx(1) * ii
+                    parcels%position(2, k) = lower(2) + j * dx(2) + f14 * dx(2) * jj
                     k = k + 1
                 enddo
             enddo
@@ -47,10 +47,10 @@ program test_bilinear
     parcels%volume = f14 * vcell
 
     ! b11
-    parcels%B(:, 1) = get_ab(parcels%volume(1:n_parcels))
+    parcels%B(1, :) = get_ab(parcels%volume(1:n_parcels))
 
     ! b12
-    parcels%B(:, 2) = zero
+    parcels%B(2, :) = zero
 
     call par2grid
 
