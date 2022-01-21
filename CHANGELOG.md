@@ -10,7 +10,7 @@
 * [new directory structure in main like in branch develop](https://github.com/matt-frey/epic/pull/291)
 * [combine to array](https://github.com/matt-frey/epic/pull/293)
 * [add initial time like in the 3D model](https://github.com/matt-frey/epic/pull/295)
-* [apply pull request #297 to master branch](https://github.com/matt-frey/epic/pull/298)
+* [apply periodic BCs to parcel mergers](https://github.com/matt-frey/epic/pull/298)
 ## EPIC version 0.10.2
 * [fix import in README](https://github.com/matt-frey/epic/commit/fa36d763f9ee9d16c60b9bca58a5bc60e5464105)
 ## EPIC version 0.10.1
