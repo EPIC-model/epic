@@ -135,7 +135,7 @@ try:
 
     # 24 June 2021
     # https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-    if shutil.which("epic") is None:
+    if shutil.which("epic2d") is None:
         raise RuntimeError("EPIC executable not found in PATH environment variable")
 
     for fname in args.filenames:
