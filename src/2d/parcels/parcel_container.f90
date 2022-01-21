@@ -4,7 +4,7 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use parameters, only : extent, hli, center
+    use parameters, only : extent, hli, center, lower, upper
     implicit none
 
     integer :: n_parcels
@@ -77,7 +77,7 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n) = parcels%humidity(m)
 #endif
-            parcels%B(:, n) = parcels%B(: m)
+            parcels%B(:, n) = parcels%B(:, m)
 
         end subroutine parcel_replace
 

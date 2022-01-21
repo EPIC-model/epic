@@ -48,7 +48,7 @@ program test_ellipse_reflection
         parcels%B(1, 1) = B11
         parcels%B(2, 1) = B12
 
-        call apply_reflective_bc(parcels%position(:, 1), parcels%B(: 1))
+        call apply_reflective_bc(parcels%position(:, 1), parcels%B(:, 1))
 
         call check_result('lower')
 
