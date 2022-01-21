@@ -42,8 +42,8 @@ module parcel_split
             !$omp parallel default(shared)
             !$omp do private(n, B11, B12, B22, a2, lam, V, evec, h, n_thread_loc)
             do n = 1, last_index
-                B11 = parcels%B(n, 1)
-                B12 = parcels%B(n, 2)
+                B11 = parcels%B(1, n)
+                B12 = parcels%B(2, n)
                 V = parcels%volume(n)
                 B22 = get_B22(B11, B12, V)
 
@@ -62,8 +62,8 @@ module parcel_split
 
                 evec = get_eigenvector(a2, B11, B12, B22)
 
-                parcels%B(n, 1) = B11 - f34 * a2 * evec(1) ** 2
-                parcels%B(n, 2) = B12 - f34 * a2 * (evec(1) * evec(2))
+                parcels%B(1, n) = B11 - f34 * a2 * evec(1) ** 2
+                parcels%B(2, n) = B12 - f34 * a2 * (evec(1) * evec(2))
 
                 h = f14 * dsqrt(three * a2)
                 parcels%volume(n) = f12 * V
@@ -76,7 +76,7 @@ module parcel_split
                 !$omp end critical
 
 
-                parcels%B(n_thread_loc, :) = parcels%B(n, :)
+                parcels%B(:, n_thread_loc) = parcels%B(:, n)
 
                 parcels%vorticity(n_thread_loc) = parcels%vorticity(n)
                 parcels%volume(n_thread_loc) = parcels%volume(n)
@@ -84,15 +84,15 @@ module parcel_split
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n_thread_loc) = parcels%humidity(n)
 #endif
-                parcels%position(n_thread_loc, :) = parcels%position(n, :) - h * evec
-                parcels%position(n, :) = parcels%position(n, :)  + h * evec
+                parcels%position(:, n_thread_loc) = parcels%position(:, n) - h * evec
+                parcels%position(:, n) = parcels%position(:, n)  + h * evec
 
                 ! child parcels need to be reflected into domain, if their center
                 ! is inside the halo region
-                call apply_reflective_bc(parcels%position(n_thread_loc, :), &
-                                         parcels%B(n_thread_loc, :))
+                call apply_reflective_bc(parcels%position(:, n_thread_loc), &
+                                         parcels%B(:, n_thread_loc))
 
-                call apply_reflective_bc(parcels%position(n, :), parcels%B(n, :))
+                call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
 
             enddo
             !$omp end do

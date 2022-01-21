@@ -48,10 +48,10 @@ module ls_rk4
         subroutine ls_rk4_alloc(num)
             integer, intent(in) :: num
 
-            allocate(delta_pos(num, 2))
+            allocate(delta_pos(2, num))
             allocate(delta_vor(num))
-            allocate(strain(num, 4))
-            allocate(delta_b(num, 2))
+            allocate(strain(4, num))
+            allocate(delta_b(2, num))
 
         end subroutine ls_rk4_alloc
 
@@ -136,7 +136,7 @@ module ls_rk4
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
-                    delta_b(n,:) = get_B(parcels%B(n,:), strain(n,:), parcels%volume(n))
+                    delta_b(:, n) = get_B(parcels%B(:, n), strain(:, n), parcels%volume(n))
                 enddo
                 !$omp end parallel do
 
@@ -152,8 +152,8 @@ module ls_rk4
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
-                    delta_b(n,:) = delta_b(n,:) &
-                                 + get_B(parcels%B(n,:), strain(n,:), parcels%volume(n))
+                    delta_b(:, n) = delta_b(:, n) &
+                                 + get_B(parcels%B(:, n), strain(:, n), parcels%volume(n))
                 enddo
                 !$omp end parallel do
 
@@ -164,11 +164,11 @@ module ls_rk4
 
             !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
-                parcels%position(n,:) = parcels%position(n,:) &
-                                      + cb * dt * delta_pos(n,:)
+                parcels%position(:, n) = parcels%position(:, n) &
+                                      + cb * dt * delta_pos(:, n)
 
                 parcels%vorticity(n) = parcels%vorticity(n) + cb * dt * delta_vor(n)
-                parcels%B(n,:) = parcels%B(n,:) + cb * dt * delta_b(n,:)
+                parcels%B(:, n) = parcels%B(:, n) + cb * dt * delta_b(:, n)
             enddo
             !$omp end parallel do
 
@@ -182,9 +182,9 @@ module ls_rk4
 
             !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
-                delta_pos(n,:) = ca * delta_pos(n,:)
+                delta_pos(:, n) = ca * delta_pos(:, n)
                 delta_vor(n) = ca * delta_vor(n)
-                delta_b(n,:) = ca * delta_b(n,:)
+                delta_b(:, n) = ca * delta_b(:, n)
             enddo
             !$omp end parallel do
 

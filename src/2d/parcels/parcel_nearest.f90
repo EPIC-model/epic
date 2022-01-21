@@ -74,8 +74,8 @@ module parcel_nearest
             ! Bin parcels in cells:
             ! Form list of small parcels:
             do n = 1, n_parcels
-                ix = int(dxi(1) * (parcels%position(n,1) - lower(1)))
-                iz = int(dxi(2) * (parcels%position(n,2) - lower(2)))
+                ix = int(dxi(1) * (parcels%position(1, n) - lower(1)))
+                iz = int(dxi(2) * (parcels%position(2, n) - lower(2)))
 
                 ! Cell index of parcel:
                 ij = 1 + ix + nx * iz !This runs from 1 to ncell
@@ -137,8 +137,8 @@ module parcel_nearest
             ! Rather, stop if no nearest parcel found  in surrounding grid boxes
             do m = 1, nmerge
                 is = isma(m)
-                x_small = parcels%position(is, 1)
-                z_small = parcels%position(is, 2)
+                x_small = parcels%position(1, is)
+                z_small = parcels%position(2, is)
                 ! Parcel "is" is small and should be merged; find closest other:
                 ix0 = mod(nint(dxi(1) * (x_small - lower(1))), nx) ! ranges from 0 to nx-1
                 iz0 = nint(dxi(2) * (z_small - lower(2)))          ! ranges from 0 to nz
@@ -157,9 +157,9 @@ module parcel_nearest
                         do k = kc1(ij), kc2(ij)
                             n = node(k)
                             if (n .ne. is) then
-                                delz = parcels%position(n,2) - z_small
+                                delz = parcels%position(2, n) - z_small
                                 if (delz*delz < dsqmin) then
-                                    delx = get_delx(parcels%position(n,1), x_small) ! works across periodic edge
+                                    delx = get_delx(parcels%position(1, n), x_small) ! works across periodic edge
                                     ! Minimise dsqmin
                                     dsq = delz * delz + delx * delx
                                     if (dsq < dsqmin) then

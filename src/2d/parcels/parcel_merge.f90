@@ -95,7 +95,7 @@ module parcel_merge
             integer                                    :: m, ic, is, l, n
             integer                                    :: loca(n_parcels)
             double precision                           :: x0(n_merge)
-            double precision                           :: posm(n_merge, 2), delx, vmerge, dely, B22, mu
+            double precision                           :: posm(2, n_merge), delx, vmerge, dely, B22, mu
             double precision                           :: buoym(n_merge), vortm(n_merge)
 #ifndef ENABLE_DRY_MODE
             double precision                           :: hum(n_merge)
@@ -118,13 +118,13 @@ module parcel_merge
                     vm(l) = parcels%volume(ic)
 
                     !x0 stores the x centre of the other parcel
-                    x0(l) = parcels%position(ic, 1)
+                    x0(l) = parcels%position(1, ic)
 
-                    ! posm(l, 1) will sum v(is)*(x(is)-x(ic)) modulo periodicity
-                    posm(l, 1) = zero
+                    ! posm(1, l) will sum v(is)*(x(is)-x(ic)) modulo periodicity
+                    posm(1, l) = zero
 
-                    ! posm(l, 2) will contain v(ic)*z(ic)+sum{v(is)*z(is)}
-                    posm(l, 2) = parcels%volume(ic) * parcels%position(ic, 2)
+                    ! posm(2, l) will contain v(ic)*z(ic)+sum{v(is)*z(is)}
+                    posm(2, l) = parcels%volume(ic) * parcels%position(2, ic)
 
                     ! buoyancy and humidity
                     buoym(l) = parcels%volume(ic) * parcels%buoyancy(ic)
@@ -145,13 +145,13 @@ module parcel_merge
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
 
                 ! works across periodic edge
-                delx = get_delx(parcels%position(is, 1), x0(n))
+                delx = get_delx(parcels%position(1, is), x0(n))
 
                 ! Accumulate sum of v(is)*(x(is)-x(ic))
-                posm(n, 1) = posm(n, 1) + parcels%volume(is) * delx
+                posm(1, n) = posm(1, n) + parcels%volume(is) * delx
 
                 ! Accumulate v(ic)*z(ic)+sum{v(is)*z(is)}
-                posm(n, 2) = posm(n, 2) + parcels%volume(is) * parcels%position(is, 2)
+                posm(2, n) = posm(2, n) + parcels%volume(is) * parcels%position(2, is)
 
                 ! Accumulate buoyancy and humidity
                 buoym(n) = buoym(n) + parcels%volume(is) * parcels%buoyancy(is)
@@ -168,18 +168,18 @@ module parcel_merge
                 vmerge = one / vm(m)
 
                 ! need to sanitise input and output, but first to determine input
-                posm(m, 1) = - vmerge * posm(m, 1)
+                posm(1, m) = - vmerge * posm(1, m)
 
-                call apply_periodic_bc(posm(m, :))
+                call apply_periodic_bc(posm(:, m))
 
                 ! x centre of merged parcel, modulo periodicity
-                posm(m, 1) = get_delx(x0(m), posm(m, 1))
+                posm(1, m) = get_delx(x0(m), posm(1, m))
 
                 ! z centre of merged parcel
-                posm(m, 2) = vmerge * posm(m, 2)
+                posm(2, m) = vmerge * posm(2, m)
 
                 ! need to correct position
-                call apply_periodic_bc(posm(m, :))
+                call apply_periodic_bc(posm(:, m))
 
                 ! buoyancy and humidity
                 buoym(m) = vmerge * buoym(m)
@@ -201,19 +201,19 @@ module parcel_merge
 
                     vmerge = one / vm(l)
 
-                    B22 = get_B22(parcels%B(ic, 1), parcels%B(ic, 2), parcels%volume(ic))
+                    B22 = get_B22(parcels%B(1, ic), parcels%B(2, ic), parcels%volume(ic))
 
-                    delx = get_delx(parcels%position(ic, 1), posm(l, 1))
-                    dely = parcels%position(ic, 2) - posm(l, 2)
+                    delx = get_delx(parcels%position(1, ic), posm(1, l))
+                    dely = parcels%position(2, ic) - posm(2, l)
 
                     mu = parcels%volume(ic) * vmerge
-                    B11m(l) = mu * (four * delx ** 2 + parcels%B(ic, 1))
-                    B12m(l) = mu * (four * delx * dely + parcels%B(ic, 2))
+                    B11m(l) = mu * (four * delx ** 2 + parcels%B(1, ic))
+                    B12m(l) = mu * (four * delx * dely + parcels%B(2, ic))
                     B22m(l) = mu * (four * dely ** 2 + B22)
 
                     parcels%volume(ic)  = vm(l)
-                    parcels%position(ic, 1) = posm(l, 1)
-                    parcels%position(ic, 2) = posm(l, 2)
+                    parcels%position(1, ic) = posm(1, l)
+                    parcels%position(2, ic) = posm(2, l)
 
                     parcels%buoyancy(ic) = buoym(l)
 #ifndef ENABLE_DRY_MODE
@@ -228,16 +228,16 @@ module parcel_merge
 
                 vmerge = one / vm(n)
 
-                delx = get_delx(parcels%position(is, 1), posm(n, 1))
-                dely = parcels%position(is, 2) - posm(n, 2)
+                delx = get_delx(parcels%position(1, is), posm(1, n))
+                dely = parcels%position(2, is) - posm(2, n)
 
-                B22 = get_B22(parcels%B(is, 1), parcels%B(is, 2), parcels%volume(is))
+                B22 = get_B22(parcels%B(1, is), parcels%B(2, is), parcels%volume(is))
 
                 ! volume fraction A_{is} / A
                 mu = vmerge * parcels%volume(is)
 
-                B11m(n) = B11m(n) + mu * (four * delx ** 2   + parcels%B(is, 1))
-                B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(is, 2))
+                B11m(n) = B11m(n) + mu * (four * delx ** 2   + parcels%B(1, is))
+                B12m(n) = B12m(n) + mu * (four * delx * dely + parcels%B(2, is))
                 B22m(n) = B22m(n) + mu * (four * dely ** 2   + B22)
             enddo
 
@@ -279,10 +279,10 @@ module parcel_merge
                     ! ab / sqrt(det(B))
                     factor = get_ab(V(l)) / dsqrt(B11(l) * B22(l) - B12(l) ** 2)
 
-                    parcels%B(ic, 1) = B11(l) * factor
-                    parcels%B(ic, 2) = B12(l) * factor
+                    parcels%B(1, ic) = B11(l) * factor
+                    parcels%B(2, ic) = B12(l) * factor
 
-                    call apply_periodic_bc(parcels%position(ic, :))
+                    call apply_periodic_bc(parcels%position(:, ic))
                 endif
             enddo
 
