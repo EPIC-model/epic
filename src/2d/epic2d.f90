@@ -30,9 +30,6 @@ program epic2d
     use h5_utils, only : initialise_hdf5, finalise_hdf5, open_h5_file, close_h5_file
     use h5_reader, only : get_file_type, get_num_steps, get_time
     use utils, only : write_last_step, setup_output_files
-#ifdef ENABLE_VERBOSE
-    use merge_hdf5, only : create_h5_merger_files
-#endif
     implicit none
 
     integer          :: epic_timer
@@ -128,9 +125,6 @@ program epic2d
 
             call setup_output_files
 
-#ifdef ENABLE_MERGER_DUMP
-            call create_h5_merger_files(trim(output%h5_basename), output%h5_overwrite)
-#endif
         end subroutine
 
 
