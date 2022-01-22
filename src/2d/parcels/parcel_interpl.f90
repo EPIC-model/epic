@@ -58,10 +58,10 @@ module parcel_interpl
                 do p = 1, 2
 
                     ! ensure point is within the domain
-                    call apply_periodic_bc(points(p, :))
+                    call apply_periodic_bc(points(:, p))
 
                     ! get interpolation weights and mesh indices
-                    call bilinear(points(p, :), is, js, weights)
+                    call bilinear(points(:, p), is, js, weights)
 
                     do l = 1, ngp
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
@@ -114,10 +114,10 @@ module parcel_interpl
                     do p = 1, 2
 
                         ! ensure point is within the domain
-                        call apply_periodic_bc(points(p, :))
+                        call apply_periodic_bc(points(:, p))
 
                         ! get interpolation weights and mesh indices
-                        call bilinear(points(p, :), is, js, weights)
+                        call bilinear(points(:, p), is, js, weights)
 
                         do l = 1, ngp
                             sym_volg(js(l), is(l)) = sym_volg(js(l), is(l)) &
@@ -193,10 +193,10 @@ module parcel_interpl
                 do p = 1, 2
 
                     ! ensure point is within the domain
-                    call apply_periodic_bc(points(p, :))
+                    call apply_periodic_bc(points(:, p))
 
                     ! get interpolation weights and mesh indices
-                    call bilinear(points(p, :), is, js, weights)
+                    call bilinear(points(:, p), is, js, weights)
 
                     ! loop over grid points which are part of the interpolation
                     ! the weight is halved due to 2 points per ellipse
@@ -334,10 +334,10 @@ module parcel_interpl
                 do p = 1, 2
 
                     ! ensure point is within the domain
-                    call apply_periodic_bc(points(p, :))
+                    call apply_periodic_bc(points(:, p))
 
                     ! get interpolation weights and mesh indices
-                    call bilinear(points(p, :), is, js, weights)
+                    call bilinear(points(:, p), is, js, weights)
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, ngp

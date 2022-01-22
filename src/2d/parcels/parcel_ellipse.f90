@@ -140,8 +140,8 @@ module parcel_ellipse
 
             h = f12 * c * evec
 
-            points(1, :) = position - h
-            points(2, :) = position + h
+            points(:, 1) = position - h
+            points(:, 2) = position + h
 
         end function get_ellipse_points
 end module parcel_ellipse
