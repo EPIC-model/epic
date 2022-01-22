@@ -40,7 +40,7 @@ program test_ellipse_orientation
 
         parcels%B(1, 1) = B11
 
-        parcels%B(1, 2) = B12
+        parcels%B(2, 1) = B12
 
         ! get_angle computes the angle in the first and fourth quadrant, i.e.,
         ! -pi/2 <= get_angle <= pi/2

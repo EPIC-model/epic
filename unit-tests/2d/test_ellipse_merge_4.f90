@@ -51,22 +51,22 @@ program test_ellipse_multi_merge_4
         subroutine parcel_setup
             n_parcels = 3
             parcels%position(1, 1) = -0.5d0
-            parcels%position(1, 2) = zero
+            parcels%position(2, 1) = zero
             parcels%volume(1) = 0.25d0 * pi
             parcels%B(1, 1) = 0.25d0
-            parcels%B(1, 2) = zero
+            parcels%B(2, 1) = zero
 
-            parcels%position(2, 1) = 0.0d0
+            parcels%position(1, 2) = 0.0d0
             parcels%position(2, 2) = zero
             parcels%volume(2) = 0.26d0 * pi
-            parcels%B(2, 1) = 0.26d0
+            parcels%B(1, 2) = 0.26d0
             parcels%B(2, 2) = zero
 
-            parcels%position(3, 1) = 0.5d0
-            parcels%position(3, 2) = zero
+            parcels%position(1, 3) = 0.5d0
+            parcels%position(2, 3) = zero
             parcels%volume(3) = 0.27d0 * pi
-            parcels%B(3, 1) = 0.27d0
-            parcels%B(3, 2) = zero
+            parcels%B(1, 3) = 0.27d0
+            parcels%B(2, 3) = zero
 
         end subroutine parcel_setup
 

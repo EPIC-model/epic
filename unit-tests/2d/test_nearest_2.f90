@@ -117,64 +117,64 @@ program test_nearest_2
         ! (3a) a = b - c
         subroutine parcel_setup_3a(p)
             integer, intent(in) :: p(3)
-            parcels%position(p(1), 1) = -0.1d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.1d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = 0.0d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = 0.0d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.1d0 * pi
 
-            parcels%position(p(3), 1) = 0.12d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.12d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.1d0 * pi
         end subroutine parcel_setup_3a
 
         ! (3b) a - b - C
         subroutine parcel_setup_3b(p)
             integer, intent(in) :: p(3)
-            parcels%position(p(1), 1) = -0.2d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.2d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = 0.0d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = 0.0d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.1d0 * pi
 
-            parcels%position(p(3), 1) = 0.1d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.1d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.4d0 * pi
         end subroutine parcel_setup_3b
 
         ! (3c) a = b   C
         subroutine parcel_setup_3c(p)
             integer, intent(in) :: p(3)
-            parcels%position(p(1), 1) = -0.1d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.1d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = 0.0d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = 0.0d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.1d0 * pi
 
-            parcels%position(p(3), 1) = 0.11d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.11d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.4d0 * pi
         end subroutine parcel_setup_3c
 
         ! (3d) a - B - c
         subroutine parcel_setup_3d(p)
             integer, intent(in) :: p(3)
-            parcels%position(p(1), 1) = -0.1d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.1d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = 0.0d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = 0.0d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.4d0 * pi
 
-            parcels%position(p(3), 1) = 0.1d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.1d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.1d0 * pi
         end subroutine parcel_setup_3d
 

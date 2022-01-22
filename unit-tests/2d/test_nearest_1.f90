@@ -75,12 +75,12 @@ program test_nearest_1
         subroutine parcel_setup_2a(p)
             integer, intent(in) :: p(2)
 
-            parcels%position(p(1), 1) = -0.25d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.25d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = 0.25d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = 0.25d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.2d0 * pi
         end subroutine parcel_setup_2a
 
@@ -88,12 +88,12 @@ program test_nearest_1
         subroutine parcel_setup_2b(p)
             integer, intent(in) :: p(2)
 
-            parcels%position(p(1), 1) = -0.25d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.25d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = 0.25d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = 0.25d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.4d0 * pi
         end subroutine parcel_setup_2b
 

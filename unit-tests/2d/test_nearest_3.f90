@@ -133,100 +133,100 @@ program test_nearest_3
         ! (4a) a - b = c - d
         subroutine parcel_setup_4a(p)
             integer, intent(in) :: p(4)
-            parcels%position(p(1), 1) = -0.2d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.2d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = -0.05d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = -0.05d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.1d0 * pi
 
-            parcels%position(p(3), 1) = 0.05d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.05d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.1d0 * pi
 
-            parcels%position(p(4), 1) = 0.2d0
-            parcels%position(p(4), 2) = zero
+            parcels%position(1, p(4)) = 0.2d0
+            parcels%position(2, p(4)) = zero
             parcels%volume(p(4)) = 0.1d0 * pi
         end subroutine parcel_setup_4a
 
         ! (4b) a - b - c = d
         subroutine parcel_setup_4b(p)
             integer, intent(in) :: p(4)
-            parcels%position(p(1), 1) = -0.25d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.25d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = -0.05d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = -0.05d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.1d0 * pi
 
-            parcels%position(p(3), 1) = 0.1d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.1d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.1d0 * pi
 
-            parcels%position(p(4), 1) = 0.2d0
-            parcels%position(p(4), 2) = zero
+            parcels%position(1, p(4)) = 0.2d0
+            parcels%position(2, p(4)) = zero
             parcels%volume(p(4)) = 0.1d0 * pi
         end subroutine parcel_setup_4b
 
         ! (4c) a - B - c - d
         subroutine parcel_setup_4c(p)
             integer, intent(in) :: p(4)
-            parcels%position(p(1), 1) = -0.2d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.2d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = -0.1d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = -0.1d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.4d0 * pi
 
-            parcels%position(p(3), 1) = 0.0d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.0d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.12d0 * pi
 
-            parcels%position(p(4), 1) = 0.15d0
-            parcels%position(p(4), 2) = zero
+            parcels%position(1, p(4)) = 0.15d0
+            parcels%position(2, p(4)) = zero
             parcels%volume(p(4)) = 0.1d0 * pi
         end subroutine parcel_setup_4c
 
         ! (4d) a = b   c = d
         subroutine parcel_setup_4d(p)
             integer, intent(in) :: p(4)
-            parcels%position(p(1), 1) = -0.1d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.1d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = 0.0d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = 0.0d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.1d0 * pi
 
-            parcels%position(p(3), 1) = 0.101d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.101d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.1d0 * pi
 
-            parcels%position(p(4), 1) = 0.2d0
-            parcels%position(p(4), 2) = zero
+            parcels%position(1, p(4)) = 0.2d0
+            parcels%position(2, p(4)) = zero
             parcels%volume(p(4)) = 0.1d0 * pi
         end subroutine parcel_setup_4d
 
         ! (4e) a - b - c - D
         subroutine parcel_setup_4e(p)
             integer, intent(in) :: p(4)
-            parcels%position(p(1), 1) = -0.11d0
-            parcels%position(p(1), 2) = zero
+            parcels%position(1, p(1)) = -0.11d0
+            parcels%position(2, p(1)) = zero
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = -0.02d0
-            parcels%position(p(2), 2) = zero
+            parcels%position(1, p(2)) = -0.02d0
+            parcels%position(2, p(2)) = zero
             parcels%volume(p(2)) = 0.1d0 * pi
 
-            parcels%position(p(3), 1) = 0.05d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.05d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.1d0 * pi
 
-            parcels%position(p(4), 1) = 0.1d0
-            parcels%position(p(4), 2) = zero
+            parcels%position(1, p(4)) = 0.1d0
+            parcels%position(2, p(4)) = zero
             parcels%volume(p(4)) = 0.4d0 * pi
         end subroutine parcel_setup_4e
 !
