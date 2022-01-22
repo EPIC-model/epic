@@ -187,17 +187,17 @@ module parcel_correction
         !$omp parallel default(shared)
         !$omp do private(n, l, is, js, weights)
         do n = 1, n_parcels
-            call bilinear(parcels%position(n, :), is, js, weights)
+            call bilinear(parcels%position(:, n), is, js, weights)
 
             do l = 1, ngp
-                parcels%position(n, 1) = parcels%position(n, 1)             &
+                parcels%position(1, n) = parcels%position(1, n)             &
                                        + weights(l) * ud(js(l), is(l))
 
-                parcels%position(n, 2) = parcels%position(n, 2)             &
+                parcels%position(2, n) = parcels%position(2, n)             &
                                        + weights(l) * wd(js(l), is(l))
             enddo
 
-            call apply_periodic_bc(parcels%position(n, :))
+            call apply_periodic_bc(parcels%position(:, n))
         enddo
         !$omp end do
         !$omp end parallel
@@ -226,7 +226,7 @@ module parcel_correction
         !$omp do private(n, is, js, weights, x1_fpos, x2_fpos, shift_x1, shift_x2, lim_x1, lim_x2)
         do n = 1, n_parcels
 
-            call bilinear(parcels%position(n, :), is, js, weights)
+            call bilinear(parcels%position(:, n), is, js, weights)
 
             x1_fpos=weights(2)+weights(4) ! fractional position along x1
             x2_fpos=weights(3)+weights(4) ! fractional position along x2
@@ -247,8 +247,8 @@ module parcel_correction
 
             shift_x2= max(-lim_x2,min(shift_x2,lim_x2))
 
-            parcels%position(n, 1) = parcels%position(n, 1) + shift_x1
-            parcels%position(n, 2) = parcels%position(n, 2) + shift_x2
+            parcels%position(1, n) = parcels%position(1, n) + shift_x1
+            parcels%position(2, n) = parcels%position(2, n) + shift_x2
         enddo
         !$omp end do
         !$omp end parallel

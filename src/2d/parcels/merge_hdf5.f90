@@ -99,7 +99,7 @@ module merge_hdf5
                 if (ib .ne. iclo_sorted(m)) then
                     ib = iclo_sorted(m)
 
-                    call get_index(parcels%position(ib, :), i, j)
+                    call get_index(parcels%position(:, ib), i, j)
                     ilo = i - 2
                     ihi = i + 2
                     i = mod(i + nx, nx)
@@ -109,14 +109,14 @@ module merge_hdf5
                     tag = get_group_merge_number('merger', num)
 
                     do k = 1, n_parcels
-                        call get_index(parcels%position(k, :), ii, jj)
+                        call get_index(parcels%position(:, k), ii, jj)
                         ii = mod(ii + nx, nx)
 
                         if ((j - 2 <= jj) .and. (jj < j + 3)) then
                             if ((ilo >= ii) .or. (ii == i) .or. (ii <= ihi)) then
                                     nm = nm + 1
-                                    parcels%position(n + nm, :) = parcels%position(k, :)
-                                    parcels%B(n + nm, :) = parcels%B(k, :)
+                                    parcels%position(:, n + nm) = parcels%position(:, k)
+                                    parcels%B(:, n + nm) = parcels%B(:, k)
                                     parcels%volume(n + nm) = parcels%volume(k)
                             endif
                         endif
@@ -125,10 +125,10 @@ module merge_hdf5
                     call create_h5_group(group, trim(tag), mgroup)
                     ! write all involved parcels
                     call write_h5_dataset(group, trim(tag), "position", &
-                                          parcels%position(n:n + nm, :))
+                                          parcels%position(:, n:n + nm))
 
                     call write_h5_dataset(group, trim(tag), "B", &
-                                          parcels%B(n:n + nm, :))
+                                          parcels%B(:, n:n + nm))
 
                     call write_h5_dataset(group, trim(tag), "volume", &
                                           parcels%volume(n:n + nm))
@@ -189,8 +189,8 @@ module merge_hdf5
                 endif
 
                 ! big parcel
-                parcels%position(n, :) = parcels%position(ib, :)
-                parcels%B(n, :) = parcels%B(ib, :)
+                parcels%position(:, n) = parcels%position(:, ib)
+                parcels%B(:, n) = parcels%B(:, ib)
                 parcels%volume(n) = parcels%volume(ib)
 
                 nm = 1
@@ -198,8 +198,8 @@ module merge_hdf5
                 do m = l, nmerge
                     if (ib == iclo_sorted(m)) then
                         is = isma(ind(m))
-                        parcels%position(n + nm, :) = parcels%position(is, :)
-                        parcels%B(n + nm, :) = parcels%B(is, :)
+                        parcels%position(:, n + nm) = parcels%position(:, is)
+                        parcels%B(:, n + nm) = parcels%B(:, is)
                         parcels%volume(n + nm) = parcels%volume(is)
                         nm = nm + 1
 
@@ -216,7 +216,7 @@ module merge_hdf5
                                       parcels%position(n:n + nm-1, :))
 
                 call write_h5_dataset(group, trim(tag), "B", &
-                                      parcels%B(n:n + nm-1, :))
+                                      parcels%B(:, n:n + nm-1))
 
                 call write_h5_dataset(group, trim(tag), "volume", &
                                       parcels%volume(n:n+nm-1))
@@ -275,8 +275,8 @@ module merge_hdf5
                     nm = nm + 1
                     ib = iclo_sorted(m)
 
-                    parcels%position(n + nm, :) = parcels%position(ib, :)
-                    parcels%B(n + nm, :) = parcels%B(ib, :)
+                    parcels%position(:, n + nm) = parcels%position(:, ib)
+                    parcels%B(:, n + nm) = parcels%B(:, ib)
                     parcels%volume(n + nm) = parcels%volume(ib)
                 endif
             enddo
@@ -284,10 +284,10 @@ module merge_hdf5
 
             ! write all involved parcels
             call write_h5_dataset(h5file_id2, name, "position", &
-                                 parcels%position(n:n + nm, :))
+                                 parcels%position(:, n:n + nm))
 
             call write_h5_dataset(h5file_id2, name, "B", &
-                                  parcels%B(n:n + nm, :))
+                                  parcels%B(:, n:n + nm))
 
             call write_h5_dataset(h5file_id2, name, "volume", &
                                   parcels%volume(n:n + nm))

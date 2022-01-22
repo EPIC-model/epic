@@ -182,10 +182,10 @@ module parcel_init
             !$omp do private(n)
             do n = 1, n_parcels
                 ! B11
-                parcels%B(n, 1) = ratio * get_ab(parcels%volume(n))
+                parcels%B(1, n) = ratio * get_ab(parcels%volume(n))
 
                 ! B12
-                parcels%B(n, 2) = zero
+                parcels%B(2, n) = zero
             enddo
             !$omp end do
             !$omp end parallel
@@ -232,8 +232,8 @@ module parcel_init
                     corner = lower + dble((/ix, iz/)) * dx
                     do j = 1, n_per_dim
                         do i = 1, n_per_dim
-                            parcels%position(k, 1) = corner(1) + dx(1) * (dble(i) - f12) * im
-                            parcels%position(k, 2) = corner(2) + dx(2) * (dble(j) - f12) * im
+                            parcels%position(1, k) = corner(1) + dx(1) * (dble(i) - f12) * im
+                            parcels%position(2, k) = corner(2) + dx(2) * (dble(j) - f12) * im
                             k = k + 1
                         enddo
                     enddo
@@ -267,9 +267,9 @@ module parcel_init
             integer          :: n, l
 
             allocate(apar(n_parcels))
-            allocate(weights(n_parcels, ngp))
-            allocate(is(n_parcels, ngp))
-            allocate(js(n_parcels, ngp))
+            allocate(weights(ngp, n_parcels))
+            allocate(is(ngp, n_parcels))
+            allocate(js(ngp, n_parcels))
 
             ! Compute mean parcel density:
             resi = zero
@@ -277,10 +277,10 @@ module parcel_init
             !$omp parallel do default(shared) private(n, l) reduction(+:resi)
             do n = 1, n_parcels
                 ! get interpolation weights and mesh indices
-                call bilinear(parcels%position(n, :), is(n, :), js(n, :), weights(n, :))
+                call bilinear(parcels%position(:, n), is(:, n), js(:, n), weights(:, n))
 
                 do l = 1, ngp
-                    resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) + weights(n, l)
+                    resi(js(l, n), is(l, n)) = resi(js(l, n), is(l, n)) + weights(l, n)
                 enddo
             enddo
             !$omp end parallel do
@@ -294,7 +294,7 @@ module parcel_init
             do n = 1, n_parcels
                 rsum = zero
                 do l = 1, ngp
-                    rsum = rsum + resi(js(n, l), is(n, l)) * weights(n, l)
+                    rsum = rsum + resi(js(l, n), is(l, n)) * weights(l, n)
                 enddo
                 apar(n) = one / rsum
             enddo
@@ -432,7 +432,7 @@ module parcel_init
             do n = 1, n_parcels
                 fsum = zero
                 do l = 1, ngp
-                    fsum = fsum + field(js(n, l), is(n, l)) * weights(n, l)
+                    fsum = fsum + field(js(l, n), is(l, n)) * weights(l, n)
                 enddo
                 par(n) = apar(n) * fsum
             enddo
@@ -446,8 +446,8 @@ module parcel_init
                 resi = zero
                 do n = 1, n_parcels
                     do l = 1, ngp
-                        resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) &
-                                                 + weights(n, l) * par(n)
+                        resi(js(l, n), is(l, n)) = resi(js(l, n), is(l, n)) &
+                                                 + weights(l, n) * par(n)
                     enddo
                 enddo
 
@@ -460,7 +460,7 @@ module parcel_init
                 do n = 1, n_parcels
                     rsum = zero
                     do l = 1, ngp
-                        rsum = rsum + resi(js(n, l), is(n, l)) * weights(n, l)
+                        rsum = rsum + resi(js(l, n), is(l, n)) * weights(l, n)
                     enddo
                     par(n) = par(n) + apar(n) * rsum
                 enddo

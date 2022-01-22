@@ -36,7 +36,7 @@ program test_ellipse_split
     a2 = ab * lam
     b2 = ab / lam
 
-    parcels%position(1, :) = zero
+    parcels%position(:, 1) = zero
     parcels%volume(1) = ab * pi
     parcels%buoyancy(1) = one
 #ifndef ENABLE_DRY_MODE
@@ -47,14 +47,14 @@ program test_ellipse_split
     B22 = a2 * dsin(angle) ** 2 + b2 * dcos(angle) ** 2
 
     parcels%B(1, 1) = B11
-    parcels%B(1, 2) = B12
+    parcels%B(2, 1) = B12
 
     ! analytic split
     h = f14 * dsqrt(three * a2)
     B11 = B11 - 0.75d0 * a2 * evec(1) ** 2
     B12 = B12 - 0.75d0 * a2 * evec(1) * evec(2)
-    pos(1, :) = parcels%position(1, :) + h * evec
-    pos(2, :) = parcels%position(1, :) - h * evec
+    pos(:, 1) = parcels%position(:, 1) + h * evec
+    pos(:, 2) = parcels%position(:, 1) - h * evec
 
     ! numerical split
     call split_ellipses(parcels, threshold=four)
@@ -67,8 +67,8 @@ program test_ellipse_split
 
     ! first parcel
     error = max(error, abs(parcels%B(1, 1) - B11))
-    error = max(error, abs(parcels%B(1, 2) - B12))
-    error = max(error, sum(abs(pos(1, :) - parcels%position(1, :))))
+    error = max(error, abs(parcels%B(2, 1) - B12))
+    error = max(error, sum(abs(pos(:, 1) - parcels%position(:, 1))))
     error = max(error, abs(f12 * ab * pi - parcels%volume(1)))
     error = max(error, abs(parcels%buoyancy(1) - one))
 #ifndef ENABLE_DRY_MODE
@@ -76,9 +76,9 @@ program test_ellipse_split
 #endif
 
     ! second parcel
-    error = max(error, abs(parcels%B(2, 1) - B11))
+    error = max(error, abs(parcels%B(1, 2) - B11))
     error = max(error, abs(parcels%B(2, 2) - B12))
-    error = max(error, sum(abs(pos(2, :) - parcels%position(2, :))))
+    error = max(error, sum(abs(pos(:, 2) - parcels%position(:, 2))))
     error = max(error, abs(f12 * ab * pi - parcels%volume(2)))
     error = max(error, dble(abs(n_parcels - 2)))
     error = max(error, abs(parcels%buoyancy(2) - one))

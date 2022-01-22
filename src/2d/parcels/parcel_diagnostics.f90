@@ -152,10 +152,10 @@ module parcel_diagnostics
             !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
             do n = 1, n_parcels
 
-                vel = velocity(n, :)
+                vel = velocity(:, n)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
-                z   = parcels%position(n, 2) - zmin
+                z   = parcels%position(2, n) - zmin
 
                 ! kinetic energy
                 ke = ke + (vel(1) ** 2 + vel(2) ** 2) * vol
@@ -163,8 +163,8 @@ module parcel_diagnostics
                 ! potential energy
                 pe = pe - b * z * vol
 
-                B22 = get_B22(parcels%B(n, 1), parcels%B(n, 2), vol)
-                eval = get_eigenvalue(parcels%B(n, 1), parcels%B(n, 2), B22)
+                B22 = get_B22(parcels%B(1, n), parcels%B(2, n), vol)
+                eval = get_eigenvalue(parcels%B(1, n), parcels%B(2, n), B22)
                 lam = get_aspect_ratio(eval, vol)
 
                 lsum = lsum + lam
@@ -244,25 +244,25 @@ module parcel_diagnostics
             !$omp& reduction(+: vvsum, bvsum, xbv, zbv, x2bv, z2bv, xzbv, xvv, zvv, x2vv, z2vv, xzvv)
             do n = 1, n_parcels
                 ! we only use the upper half in horizontal direction
-                if (parcels%position(n, 1) >= 0) then
+                if (parcels%position(1, n) >= 0) then
                     bv = parcels%buoyancy(n) * parcels%volume(n)
                     bvsum = bvsum + bv
-                    xbv = xbv + bv * parcels%position(n, 1)
-                    zbv = zbv + bv * parcels%position(n, 2)
+                    xbv = xbv + bv * parcels%position(1, n)
+                    zbv = zbv + bv * parcels%position(2, n)
 
-                    x2bv = x2bv + bv * parcels%position(n, 1) ** 2
-                    z2bv = z2bv + bv * parcels%position(n, 2) ** 2
-                    xzbv = xzbv + bv * parcels%position(n, 1) * parcels%position(n, 2)
+                    x2bv = x2bv + bv * parcels%position(1, n) ** 2
+                    z2bv = z2bv + bv * parcels%position(2, n) ** 2
+                    xzbv = xzbv + bv * parcels%position(1, n) * parcels%position(2, n)
 
 
                     vv = parcels%vorticity(n) * parcels%volume(n)
                     vvsum = vvsum + vv
-                    xvv = xvv + vv * parcels%position(n, 1)
-                    zvv = zvv + vv * parcels%position(n, 2)
+                    xvv = xvv + vv * parcels%position(1, n)
+                    zvv = zvv + vv * parcels%position(2, n)
 
-                    x2vv = x2vv + vv * parcels%position(n, 1) ** 2
-                    z2vv = z2vv + vv * parcels%position(n, 2) ** 2
-                    xzvv = xzvv + vv * parcels%position(n, 1) * parcels%position(n, 2)
+                    x2vv = x2vv + vv * parcels%position(1, n) ** 2
+                    z2vv = z2vv + vv * parcels%position(2, n) ** 2
+                    xzvv = xzvv + vv * parcels%position(1, n) * parcels%position(2, n)
                 endif
             enddo
             !$omp end do

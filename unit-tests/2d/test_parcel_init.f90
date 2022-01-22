@@ -70,11 +70,11 @@ program test_parcel_init
             do mz = 1,nbgz
                 do mx = 1,nbgx
                     i = i + 1
-                    parcels%position(i, 1) = lower(1) + dx(1) * (dble(ix) + dxf * (dble(mx) - f12))
-                    parcels%position(i, 2) = lower(2) + dx(2) * (dble(iz) + dzf * (dble(mz) - f12))
+                    parcels%position(1, i) = lower(1) + dx(1) * (dble(ix) + dxf * (dble(mx) - f12))
+                    parcels%position(2, i) = lower(2) + dx(2) * (dble(iz) + dzf * (dble(mz) - f12))
                     parcels%volume(i) = v0
-                    parcels%B(i, 2) = zero
-                    parcels%B(i, 1) = get_ab(v0)
+                    parcels%B(2, i) = zero
+                    parcels%B(1, i) = get_ab(v0)
                 enddo
             enddo
         enddo
