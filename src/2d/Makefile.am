@@ -17,7 +17,6 @@ epic2d_SOURCES = 				\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
 	parcels/parcel_nearest.f90		\
-	parcels/merge_hdf5.f90			\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\
 	parcels/parcel_diagnostics.f90		\
