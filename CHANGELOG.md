@@ -1,3 +1,6 @@
+## EPIC version 0.10.5
+* [change order of multi-dimensional arrays](https://github.com/matt-frey/epic/pull/302)
+* [remove merger dump](https://github.com/matt-frey/epic/pull/304)
 ## EPIC version 0.10.4
 * [fix name of executable](https://github.com/matt-frey/epic/pull/299)
 * [fix name of executable](https://github.com/matt-frey/epic/pull/301)
