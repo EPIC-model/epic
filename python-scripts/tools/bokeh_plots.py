@@ -1,7 +1,7 @@
 from bokeh.io import export_png, export_svg
 from bokeh.io.export import get_screenshot_as_png
 import bokeh.plotting as bpl
-from bokeh.models import ColumnDataSource, ColorBar, FixedTicker, LinearColorMapper
+from bokeh.models import ColumnDataSource, ColorBar, FixedTicker, LinearColorMapper, SingleIntervalTicker
 from bokeh.transform import linear_cmap
 from tools.h5_reader import H5Reader
 from tools.bokeh_style import *
@@ -18,6 +18,8 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
     display = kwargs.pop("display", "full HD")
     plot_width = kwargs.pop('plot_width', None)
     plot_height = kwargs.pop('plot_height', None)
+    yaxis_interval = kwargs.pop('yaxis_interval', None)
+    xaxis_interval = kwargs.pop('xaxis_interval', None)
 
     # instantiating the figure object
     fkwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -99,6 +101,12 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
     graph.xaxis.formatter.power_limit_high = bokeh_style["formatter.power_limit_high"]
     graph.yaxis.formatter.precision = bokeh_style["formatter.precision"]
     graph.xaxis.formatter.precision = bokeh_style["formatter.precision"]
+
+    if not yaxis_interval is None:
+        graph.yaxis.ticker = SingleIntervalTicker(interval=yaxis_interval)
+
+    if not xaxis_interval is None:
+        graph.xaxis.ticker = SingleIntervalTicker(interval=xaxis_interval)
 
     if not title is None:
         graph.title.text_font_size = font_size
@@ -244,6 +252,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
         dh=extent[1] + dy,
         color_mapper=mapper,
     )
+
 
     if not no_colorbar:
         color_bar.width = color_bar_width
