@@ -135,6 +135,8 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
     zoom_factor = kwargs.pop("zoom_factor", 1.0)
     norm = kwargs.pop("norm", False)
     color_bar_width = kwargs.pop('color_bar_width', 'auto')
+    high_color = kwargs.pop('high_color', None)
+    low_color = kwargs.pop('low_color', None)
 
     cmap = kwargs.get("cmap", "viridis_r")
     if not cmap in bokeh_palettes.keys():
@@ -211,7 +213,8 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
         ticker = FixedTicker(ticks=[-1, -0.5, 0, 0.5, 1])
 
 
-    mapper = LinearColorMapper(palette=palette, low=vmin, high=vmax)
+    mapper = LinearColorMapper(palette=palette, low=vmin, high=vmax,
+                               high_color=high_color, low_color=low_color)
 
     color_bar = ColorBar(
         color_mapper=mapper,
