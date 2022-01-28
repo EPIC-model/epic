@@ -11,7 +11,7 @@ import os
 
 projfac = 12  # Subgrid zoom factor
 r_limit_fac = 4.0  # How far out we project the parcels, expressed in ellipsoid radii.
-nthreads = 1
+nthreads = 4
 set_num_threads(nthreads)
 
 parser = argparse.ArgumentParser()
@@ -20,6 +20,11 @@ parser.add_argument("input_file_name", type=str)
 parser.add_argument("a_fac", type=float)
 parser.add_argument("b_fac", type=float)
 parser.add_argument("time_step", type=int)
+parser.add_argument('-f','--fields',
+                    nargs='+',
+                    type=str,
+                    help='List of fields to refine.',
+                    required=True)
 
 args = parser.parse_args()
 input_file_name = args.input_file_name
@@ -191,7 +196,7 @@ nx_file = xupperfile - xlowerfile + 1
 
 
 
-outfile = file_root + "_" + str(a_fac) + "_" + str(b_fac) + "_" + str(time_step) + "_fields.hdf5"
+outfile = file_root + "_subgrid_fields.hdf5"
 
 h5file = h5py.File(outfile, 'w')
 dt = h5py.string_dtype('ascii', 6)
@@ -201,7 +206,15 @@ h5file.attrs['nsteps'] = [1]
 box = h5file.create_group('box')
 box.attrs['extent'] = extent
 box.attrs['origin'] = origin
-box.attrs['ncells'] = (np.int32(nxproj), np.int32(nzproj))
+box.attrs['ncells'] = (np.int32(nxproj), np.int32(nzproj-1))
+
+h5file.attrs['a_fac'] = a_fac
+h5file.attrs['b_fac'] = b_fac
+h5file.attrs['time_step'] = time_step
+
+h5file.attrs['projfac'] = 12
+h5file.attrs['r_limit_fac'] = 4.0
+h5file.attrs['input_file_name'] = input_file_name
 
 group = h5file.create_group('step#' + '0'.zfill(10))
 group.attrs['t'] = 0.0
