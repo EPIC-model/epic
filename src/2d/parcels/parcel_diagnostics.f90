@@ -39,6 +39,12 @@ module parcel_diagnostics
     ! rms vorticity
     double precision :: rms_zeta
 
+    ! min and max buoyancy
+    double precision :: bmin, bmax
+
+    ! min and max vorticity
+    double precision :: vmin, vmax
+
 #ifdef ENABLE_DIAGNOSE
     ! buoyancy weighted first and second moments
     double precision :: xb_bar, x2b_bar
@@ -130,6 +136,13 @@ module parcel_diagnostics
             ! reset
             ke = zero
             pe = zero
+
+            ! find extrema outside OpenMP loop, we can integrate it later;
+            ! this way the result is reproducible
+            bmin = min(parcels%buoyancy(1:n_parcels))
+            bmax = max(parcels%buoyancy(1:n_parcels))
+            vmin = min(parcels%vorticity(1:n_parcels))
+            vmax = min(parcels%vorticity(1:n_parcels))
 
             lsum = zero
             l2sum = zero
@@ -355,6 +368,11 @@ module parcel_diagnostics
             call write_h5_scalar_attrib(group, "std volume", std_vol)
 
             call write_h5_scalar_attrib(group, "rms vorticity", rms_zeta)
+
+            call write_h5_scalar_attrib(group, "min buoyancy", bmin)
+            call write_h5_scalar_attrib(group, "max buoyancy", bmax)
+            call write_h5_scalar_attrib(group, "min vorticity", vmin)
+            call write_h5_scalar_attrib(group, "max vorticity", vmax)
 
 #ifdef ENABLE_DIAGNOSE
             call write_h5_scalar_attrib(group, "xb_bar", xb_bar)
