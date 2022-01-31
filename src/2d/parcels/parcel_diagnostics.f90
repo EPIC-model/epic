@@ -43,7 +43,7 @@ module parcel_diagnostics
     double precision :: bmin, bmax
 
     ! min and max vorticity
-    double precision :: vmin, vmax
+    double precision :: vormin, vormax
 
 #ifdef ENABLE_DIAGNOSE
     ! buoyancy weighted first and second moments
@@ -141,8 +141,8 @@ module parcel_diagnostics
             ! this way the result is reproducible
             bmin = min(parcels%buoyancy(1:n_parcels))
             bmax = max(parcels%buoyancy(1:n_parcels))
-            vmin = min(parcels%vorticity(1:n_parcels))
-            vmax = min(parcels%vorticity(1:n_parcels))
+            vormin = min(parcels%vorticity(1:n_parcels))
+            vormax = max(parcels%vorticity(1:n_parcels))
 
             lsum = zero
             l2sum = zero
@@ -371,8 +371,8 @@ module parcel_diagnostics
 
             call write_h5_scalar_attrib(group, "min buoyancy", bmin)
             call write_h5_scalar_attrib(group, "max buoyancy", bmax)
-            call write_h5_scalar_attrib(group, "min vorticity", vmin)
-            call write_h5_scalar_attrib(group, "max vorticity", vmax)
+            call write_h5_scalar_attrib(group, "min vorticity", vormin)
+            call write_h5_scalar_attrib(group, "max vorticity", vormax)
 
 #ifdef ENABLE_DIAGNOSE
             call write_h5_scalar_attrib(group, "xb_bar", xb_bar)
