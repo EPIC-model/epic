@@ -249,11 +249,8 @@ program genspec
                 write(1235, *) '#         k   P(k)'
             endif
 
-            do kz = 0, nz
-                do kx = 0, nx - 1
-                    k = kmag(kx, kz)
-                    write(1235, *) k * delk, spec(k)
-                enddo
+            do k = 1, kmax
+                write(1235, *) k * delk, spec(k)
             enddo
 
             close(1235)
