@@ -142,7 +142,7 @@ module parcel_diagnostics
             bmin = min(parcels%buoyancy(1:n_parcels))
             bmax = max(parcels%buoyancy(1:n_parcels))
             vormin = min(parcels%vorticity(1:n_parcels))
-            vormax = min(parcels%vorticity(1:n_parcels))
+            vormax = max(parcels%vorticity(1:n_parcels))
 
             lsum = zero
             l2sum = zero
