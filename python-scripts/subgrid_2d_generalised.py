@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from numba import njit, prange, set_num_threads
 import h5py
 from tools.h5_reader import H5Reader
