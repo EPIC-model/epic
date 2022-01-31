@@ -209,8 +209,9 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
 
     ticker = None
 
-    dmax = max(vmax, data_periodic.max())
-    dmin = min(vmin, data_periodic.min())
+    dmax = vmax
+    dmin = vmin
+
     if norm:
         data_periodic[data_periodic > 0] = data_periodic[data_periodic > 0] / dmax
         data_periodic[data_periodic < 0] = data_periodic[data_periodic < 0] / (-dmin)
