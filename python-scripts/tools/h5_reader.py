@@ -125,14 +125,14 @@ class H5Reader:
         V = self.get_dataset(step, "volume")
         B = self.get_dataset(step, "B")
 
-        B22 = self._get_B22(B[0, :], B[1, :], V)
-        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
-        angle = self._get_angle(B[0, :], B[1, :], B22, a2)
+        B22 = self._get_B22(B[:, 0], B[:, 1], V)
+        a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
+        angle = self._get_angle(B[:, 0], B[:, 1], B22, a2)
 
         b2 = (V / np.pi) ** 2 / a2
         return [
             Ellipse(
-                xy=position[:, i],
+                xy=position[i, :],
                 width=2 * np.sqrt(a2[i]),
                 height=2 * np.sqrt(b2[i]),
                 angle=np.rad2deg(angle[i]),
@@ -146,13 +146,13 @@ class H5Reader:
         position = self.get_dataset(step, "position")
         V = self.get_dataset(step, "volume")
         B = self.get_dataset(step, "B")
-        B22 = self._get_B22(B[0, :], B[1, :], V)
-        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
-        angle = self._get_angle(B[0, :], B[1, :], B22, a2)
+        B22 = self._get_B22(B[:, 0], B[:, 1], V)
+        a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
+        angle = self._get_angle(B[:, 0], B[:, 1], B22, a2)
         b2 = (V / np.pi) ** 2 / a2
         return (
-            position[0, :],
-            position[1, :],
+            position[:, 0],
+            position[:, 1],
             2 * np.sqrt(a2[:]),
             2 * np.sqrt(b2[:]),
             angle[:],
@@ -163,8 +163,8 @@ class H5Reader:
             raise IOError("Not a parcel output file.")
         V = self.get_dataset(step, "volume")
         B = self.get_dataset(step, "B")
-        B22 = self._get_B22(B[0, :], B[1, :], V)
-        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
+        B22 = self._get_B22(B[:, 0], B[:, 1], V)
+        a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
         return a2 / V * np.pi
 
     def _get_B22(self, B11, B12, V):
