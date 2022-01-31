@@ -139,10 +139,10 @@ module parcel_diagnostics
 
             ! find extrema outside OpenMP loop, we can integrate it later;
             ! this way the result is reproducible
-            bmin = min(parcels%buoyancy(1:n_parcels))
-            bmax = max(parcels%buoyancy(1:n_parcels))
-            vormin = min(parcels%vorticity(1:n_parcels))
-            vormax = max(parcels%vorticity(1:n_parcels))
+            bmin = minval(parcels%buoyancy(1:n_parcels))
+            bmax = maxval(parcels%buoyancy(1:n_parcels))
+            vormin = minval(parcels%vorticity(1:n_parcels))
+            vormax = maxval(parcels%vorticity(1:n_parcels))
 
             lsum = zero
             l2sum = zero
