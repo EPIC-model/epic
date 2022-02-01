@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg)](https://doi.org/10.5281/zenodo.5940225)
+
 # EPIC - Elliptical Parcel-in-Cell
 Elliptical PIC model for fluid dynamics
 
