@@ -33,6 +33,7 @@ input_file_name = args.input_file_name
 time_step = args.time_step
 a_fac = args.a_fac
 b_fac = args.b_fac
+fields = args.fields
 
 file_root, file_ext = os.path.splitext(input_file_name)
 
@@ -214,15 +215,15 @@ h5file.attrs['a_fac'] = a_fac
 h5file.attrs['b_fac'] = b_fac
 h5file.attrs['time_step'] = time_step
 
-h5file.attrs['projfac'] = 12
-h5file.attrs['r_limit_fac'] = 4.0
+h5file.attrs['projfac'] = projfac
+h5file.attrs['r_limit_fac'] = r_limit_fac
 h5file.attrs['input_file_name'] = input_file_name
 
 group = h5file.create_group('step#' + '0'.zfill(10))
 group.attrs['t'] = 0.0
 
 
-for target_variable in ["buoyancy"]: #, "vorticity"]:
+for target_variable in fields:
     scalar = h5reader.get_dataset(time_step, target_variable).copy()
 
     # Initialise "thread-based" fields for this file
