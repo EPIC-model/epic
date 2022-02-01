@@ -13,8 +13,6 @@ import os
 
 projfac = 12  # Subgrid zoom factor
 r_limit_fac = 4.0  # How far out we project the parcels, expressed in ellipsoid radii.
-nthreads = 4
-set_num_threads(nthreads)
 
 parser = argparse.ArgumentParser()
 
@@ -27,6 +25,10 @@ parser.add_argument('-f','--fields',
                     type=str,
                     help='List of fields to refine.',
                     required=True)
+parser.add_argument('--nthreads',
+                    type=int,
+                    help='Number of threads.',
+                    default=1)
 
 args = parser.parse_args()
 input_file_name = args.input_file_name
@@ -34,6 +36,9 @@ time_step = args.time_step
 a_fac = args.a_fac
 b_fac = args.b_fac
 fields = args.fields
+nthreads = args.nthreads
+
+set_num_threads(nthreads)
 
 file_root, file_ext = os.path.splitext(input_file_name)
 
@@ -229,6 +234,10 @@ for target_variable in fields:
     # Initialise "thread-based" fields for this file
     xz_field_thread_file = np.zeros((nthreads, nx_file, nzproj), np.double)
     xz_volg_thread_file = np.zeros((nthreads, nx_file, nzproj), np.double)
+
+    # Reset field
+    xz_field = np.zeros((nxproj, nzproj), np.double)
+    xz_volg = np.zeros((nxproj, nzproj), np.double)
 
     add_data(
         scalar,
