@@ -3,7 +3,7 @@ units = {
     "energy":       "m^4 / s^2",
     "k":            "1 / m",
     "position":     "m",
-    "power":        "m^5 / s^4"
+    "power":        "m^5 / s^4",
     "time":         "s",
     "time step":    "s",
     "t":            "s",
