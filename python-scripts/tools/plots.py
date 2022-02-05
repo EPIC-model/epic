@@ -38,19 +38,13 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     bottom = fkwargs.get("ymin", origin[1])
     top = fkwargs.get("ymax", origin[1] + extent[1])
 
-    print ("get positions")
-
     pos = h5reader.get_dataset(step=step, name="position")
-
-    print ("has positions")
 
     ind = np.argwhere((pos[:, 0] >= left - dx[0]) & (pos[:, 0] <= right + dx[0]) &
                       (pos[:, 1] >= bottom - dx[1]) & (pos[:, 1] <= top + dx[1]))
     ind = ind.squeeze()
 
     pos = None
-
-    print ("found indices")
 
     if coloring == "aspect-ratio":
         data = h5reader.get_aspect_ratio(step=step)
@@ -65,10 +59,7 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     else:
         data = h5reader.get_dataset(step=step, name=coloring, indices=ind)
 
-    print ("get ellipses")
     ells = h5reader.get_ellipses(step=step, indices=ind)
-
-    print ("created ellipses")
 
     ax.set_rasterized(True)
 
@@ -77,13 +68,6 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     ells.set_clip_box(ax.bbox)
     ells.set_alpha(1.0)
     ells.set_facecolor(cmap(norm(data)))
-
-    #for j, e in enumerate(ells):
-        #ax.add_artist(e)
-        #e.set_clip_box(ax.bbox)
-        #e.set_alpha(0.75)
-        #e.set_facecolor(cmap(norm(data[j])))
-    print ("plotted ellipses")
 
     ax.set_xlim([left, right])
     ax.set_ylim([bottom, top])
