@@ -1,4 +1,18 @@
-units = {"time": "s", "position": "m", "velocity": "m/s", "energy": "m^4/s^2"}
+units = {
+    "buoyancy":     "m / s^2",
+    "energy":       "m^4 / s^2",
+    "k":            "1 / m",
+    "position":     "m",
+    "power":        "m^5 / s^4"
+    "time":         "s",
+    "time step":    "s",
+    "t":            "s",
+    "velocity":     "m / s",
+    "vorticity":    "1 / s",
+    "wavenumber":   "1 / m",
+    "x":            "m",
+    "y":            "m"
+}
 
 
 def get_label(label, unit, is_bokeh=False):
@@ -6,6 +20,6 @@ def get_label(label, unit, is_bokeh=False):
         return label
     else:
         if is_bokeh:
-            return label + " $$(" + unit + ")$$"
+            return label + r" $$(" + unit + ")$$"
         else:
-            return label + " $(" + unit + ")$"
+            return label + r" (\si{" + unit + "})"
