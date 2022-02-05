@@ -28,6 +28,8 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     timestamp_xy = kwargs.pop('timestamp_xy', (0.75, 1.05))
     timestamp_fmt = kwargs.pop('timestamp_fmt', "%.3f")
     nparcels_xy = kwargs.pop('nparcels_xy', (0.01, 1.05))
+    no_xlabel = kwargs.pop("no_xlabel", False)
+    no_ylabel = kwargs.pop("no_ylabel", False)
 
     # instantiating the figure object
     fkwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -121,8 +123,11 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
         else:
             cbar.set_label(coloring)
 
-    ax.set_xlabel(r"$x$")
-    ax.set_ylabel(r"$y$")
+    if not no_xlabel:
+        ax.set_xlabel(r"$x$")
+
+    if not no_ylabel:
+        ax.set_ylabel(r"$y$")
 
     return plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 
