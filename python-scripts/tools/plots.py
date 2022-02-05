@@ -108,10 +108,10 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
             cbar.set_label(coloring)
 
     if not no_xlabel:
-        ax.set_xlabel(get_label("$x$", unit["position"]))
+        ax.set_xlabel(get_label("$x$", units["position"]))
 
     if not no_ylabel:
-        ax.set_ylabel(get_label("$y$", unit["position"]))
+        ax.set_ylabel(get_label("$y$", units["position"]))
 
     return plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 
