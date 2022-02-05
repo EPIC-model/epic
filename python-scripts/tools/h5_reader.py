@@ -98,7 +98,10 @@ class H5Reader:
         s = self._get_step_string(step)
         if not name in self._h5file[s].attrs.keys():
             raise IOError("Step attribute '" + name + "' unknown.")
-        return self._h5file[s].attrs[name][0]
+        val = self._h5file[s].attrs[name]
+        if isinstance(val, np.float64):
+            return val
+        return val[0]
 
     def get_diagnostic_names(self):
         return self.get_step_attribute_names()
