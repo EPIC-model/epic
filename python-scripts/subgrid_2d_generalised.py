@@ -19,7 +19,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("input_file_name", type=str)
 parser.add_argument("a_fac", type=float)
 parser.add_argument("b_fac", type=float)
-parser.add_argument("time_step", type=int)
 parser.add_argument('-f','--fields',
                     nargs='+',
                     type=str,
@@ -30,12 +29,18 @@ parser.add_argument('--nthreads',
                     help='Number of threads.',
                     default=1)
 
+parser.add_argument('-s','--steps',
+                    nargs='+',
+                    type=int,
+                    help='List of steps to refine.',
+                    required=True)
+
 args = parser.parse_args()
 input_file_name = args.input_file_name
-time_step = args.time_step
 a_fac = args.a_fac
 b_fac = args.b_fac
 fields = args.fields
+steps = args.steps
 nthreads = args.nthreads
 
 set_num_threads(nthreads)
@@ -186,93 +191,95 @@ def final_calc(field, volg, zp):
 def write_field(h5handle, field, field_name):
     h5handle[field_name] = np.float64(field.copy())
 
-x = h5reader.get_dataset(time_step, "position")[:, 0]
-z = h5reader.get_dataset(time_step, "position")[:, 1]
-vol = h5reader.get_dataset(time_step, "volume")[:]
-bb1 = h5reader.get_dataset(time_step, "B")[:, 0]
-bb2 = h5reader.get_dataset(time_step, "B")[:, 1]
-
-# Local domain min and max values
-xminval = np.nanmin(x)
-xmaxval = np.nanmax(x)
-# Local domain projection coordinates boundaries
-# Add one (round up rather than down), as values are zero at r_max distance
-xlowerfile = int(dxi_project * ((xminval - 3.0 * dx) - origin[0])) + 1
-xupperfile = int(dxi_project * ((xmaxval + 3.0 * dx) - origin[0]))
-# Size of local projection domain, which includes both xupper and xlower etc.
-nx_file = xupperfile - xlowerfile + 1
-
 
 
 outfile = file_root + "_subgrid_fields.hdf5"
-
 h5file = h5py.File(outfile, 'w')
 dt = h5py.string_dtype('ascii', 6)
 h5file.attrs.create("output_type", r"fields", dtype=dt, shape=1)
-h5file.attrs['nsteps'] = [1]
+h5file.attrs['nsteps'] = [len(steps)]
+h5file.attrs['a_fac'] = a_fac
+h5file.attrs['b_fac'] = b_fac
+h5file.attrs['steps'] = steps
+h5file.attrs['projfac'] = projfac
+h5file.attrs['r_limit_fac'] = r_limit_fac
+h5file.attrs['input_file_name'] = input_file_name
 
 box = h5file.create_group('box')
 box.attrs['extent'] = extent
 box.attrs['origin'] = origin
 box.attrs['ncells'] = (np.int32(nxproj), np.int32(nzproj-1))
 
-h5file.attrs['a_fac'] = a_fac
-h5file.attrs['b_fac'] = b_fac
-h5file.attrs['time_step'] = time_step
+niters = 0
+for time_step in steps:
 
-h5file.attrs['projfac'] = projfac
-h5file.attrs['r_limit_fac'] = r_limit_fac
-h5file.attrs['input_file_name'] = input_file_name
+    x = h5reader.get_dataset(time_step, "position")[:, 0]
+    z = h5reader.get_dataset(time_step, "position")[:, 1]
+    vol = h5reader.get_dataset(time_step, "volume")[:]
+    bb1 = h5reader.get_dataset(time_step, "B")[:, 0]
+    bb2 = h5reader.get_dataset(time_step, "B")[:, 1]
+    t = h5reader.get_step_attribute(time_step, 't')
 
-group = h5file.create_group('step#' + '0'.zfill(10))
-group.attrs['t'] = 0.0
+    # Local domain min and max values
+    xminval = np.nanmin(x)
+    xmaxval = np.nanmax(x)
+    # Local domain projection coordinates boundaries
+    # Add one (round up rather than down), as values are zero at r_max distance
+    xlowerfile = int(dxi_project * ((xminval - 3.0 * dx) - origin[0])) + 1
+    xupperfile = int(dxi_project * ((xmaxval + 3.0 * dx) - origin[0]))
+    # Size of local projection domain, which includes both xupper and xlower etc.
+    nx_file = xupperfile - xlowerfile + 1
 
 
-for target_variable in fields:
-    scalar = h5reader.get_dataset(time_step, target_variable).copy()
+    group = h5file.create_group('step#' + str(niters).zfill(10))
+    niters += 1
+    group.attrs['t'] = t
 
-    # Initialise "thread-based" fields for this file
-    xz_field_thread_file = np.zeros((nthreads, nx_file, nzproj), np.double)
-    xz_volg_thread_file = np.zeros((nthreads, nx_file, nzproj), np.double)
+    for target_variable in fields:
+        scalar = h5reader.get_dataset(time_step, target_variable).copy()
 
-    # Reset field
-    xz_field = np.zeros((nxproj, nzproj), np.double)
-    xz_volg = np.zeros((nxproj, nzproj), np.double)
+        # Initialise "thread-based" fields for this file
+        xz_field_thread_file = np.zeros((nthreads, nx_file, nzproj), np.double)
+        xz_volg_thread_file = np.zeros((nthreads, nx_file, nzproj), np.double)
 
-    add_data(
-        scalar,
-        x,
-        z,
-        bb1,
-        bb2,
-        vol,
-        xz_field_thread_file,
-        xz_volg_thread_file,
-        xlowerfile,
-    )
-    add_fields(
-        xz_field,
-        xz_volg,
-        xz_field_thread_file,
-        xz_volg_thread_file,
-        xlowerfile,
-        nx_file,
-    )
+        # Reset field
+        xz_field = np.zeros((nxproj, nzproj), np.double)
+        xz_volg = np.zeros((nxproj, nzproj), np.double)
 
-    del xz_field_thread_file, xz_volg_thread_file
+        add_data(
+            scalar,
+            x,
+            z,
+            bb1,
+            bb2,
+            vol,
+            xz_field_thread_file,
+            xz_volg_thread_file,
+            xlowerfile,
+        )
+        add_fields(
+            xz_field,
+            xz_volg,
+            xz_field_thread_file,
+            xz_volg_thread_file,
+            xlowerfile,
+            nx_file,
+        )
 
-    final_calc(xz_field, xz_volg, zp)
+        del xz_field_thread_file, xz_volg_thread_file
 
-    write_field(
-        group,
-        xz_field,
-        target_variable
-    )
-#write_field(
-    #group,
-    #xz_volg,
-    #"volume"
-##)
+        final_calc(xz_field, xz_volg, zp)
+
+        write_field(
+            group,
+            xz_field,
+            target_variable
+        )
+    #write_field(
+        #group,
+        #xz_volg,
+        #"volume"
+    ##)
 
 h5file.close()
 

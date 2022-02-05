@@ -16,10 +16,20 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     # 19 Feb 2021
     # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
     norm = cls.Normalize(vmin=vmin, vmax=vmax)
-    cmap = plt.cm.viridis_r
+    cmap = kwargs.pop('cmap', plt.cm.viridis_r)
 
     origin = h5reader.get_box_origin()
     extent = h5reader.get_box_extent()
+    ncells = h5reader.get_box_ncells()
+    dx = extent / ncells
+
+    timestamp = kwargs.pop('timestamp', True)
+    nparcels = kwargs.pop('nparcels', True)
+    timestamp_xy = kwargs.pop('timestamp_xy', (0.75, 1.05))
+    timestamp_fmt = kwargs.pop('timestamp_fmt', "%.3f")
+    nparcels_xy = kwargs.pop('nparcels_xy', (0.01, 1.05))
+    no_xlabel = kwargs.pop("no_xlabel", False)
+    no_ylabel = kwargs.pop("no_ylabel", False)
 
     # instantiating the figure object
     fkwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -28,10 +38,18 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     bottom = fkwargs.get("ymin", origin[1])
     top = fkwargs.get("ymax", origin[1] + extent[1])
 
+    pos = h5reader.get_dataset(step=step, name="position")
+
+    ind = np.argwhere((pos[:, 0] >= left - dx[0]) & (pos[:, 0] <= right + dx[0]) &
+                      (pos[:, 1] >= bottom - dx[1]) & (pos[:, 1] <= top + dx[1]))
+    ind = ind.squeeze()
+
+    pos = None
+
     if coloring == "aspect-ratio":
         data = h5reader.get_aspect_ratio(step=step)
     elif coloring == "vol-distr":
-        data = h5reader.get_dataset(step=step, name="volume")
+        data = h5reader.get_dataset(step=step, name="volume", indices=ind)
         # 5 August 2021
         # https://stackoverflow.com/questions/14777066/matplotlib-discrete-colorbar
         # https://stackoverflow.com/questions/40601997/setting-discrete-colormap-corresponding-to-specific-data-range-in-matplotlib
@@ -39,14 +57,17 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
         bounds = [0, vmin, vmax]
         norm = cls.BoundaryNorm(bounds, cmap.N)
     else:
-        data = h5reader.get_dataset(step=step, name=coloring)
+        data = h5reader.get_dataset(step=step, name=coloring, indices=ind)
 
-    ells = h5reader.get_ellipses(step=step)
-    for j, e in enumerate(ells):
-        ax.add_artist(e)
-        # e.set_clip_box(ax.bbox)
-        e.set_alpha(0.75)
-        e.set_facecolor(cmap(norm(data[j])))
+    ells = h5reader.get_ellipses(step=step, indices=ind)
+
+    ax.set_rasterized(True)
+
+    ax.add_collection(ells)
+    ells.set_offset_transform(ax.transData)
+    ells.set_clip_box(ax.bbox)
+    ells.set_alpha(1.0)
+    ells.set_facecolor(cmap(norm(data)))
 
     ax.set_xlim([left, right])
     ax.set_ylim([bottom, top])
@@ -55,9 +76,12 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     # https://matplotlib.org/stable/gallery/subplots_axes_and_figures/axis_equal_demo.html
     ax.set_aspect("equal", "box")
 
-    add_timestamp(ax, h5reader.get_step_attribute(step=step, name="t"))
+    if timestamp:
+        add_timestamp(ax, h5reader.get_step_attribute(step=step, name="t"),
+                      xy=timestamp_xy, fmt=timestamp_fmt)
 
-    add_number_of_parcels(ax, len(data))
+    if nparcels:
+        add_number_of_parcels(ax, len(data), xy=nparcels_xy)
 
     if draw_cbar:
         # 27 May 2021
@@ -83,8 +107,13 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
         else:
             cbar.set_label(coloring)
 
-    ax.set_xlabel(r"$x$")
-    ax.set_ylabel(r"$y$")
+    if not no_xlabel:
+        ax.set_xlabel(get_label("$x$", units["position"]))
+
+    if not no_ylabel:
+        ax.set_ylabel(get_label("$y$", units["position"]))
+
+    return plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 
 
 def plot_parcels(
@@ -773,8 +802,8 @@ def plot_center_of_mass(fnames, figure="save", fmt="png", dset="buoyancy", **kwa
             bbox_to_anchor=legend_dict["bbox_to_anchor"],
         )
 
-    ax1.set_xlabel(r"time (s)")
-    ax2.set_xlabel(r"time (s)")
+    ax1.set_xlabel(get_label("time", units["time"]))
+    ax2.set_xlabel(get_label("time", units["time"]))
     if variance:
         ax1.set_ylabel(
             r"$\langle x\rangle_"
@@ -902,8 +931,8 @@ def plot_power_spectrum(fnames, figure="save", fmt="png", **kwargs):
     plt.grid(which="both", linestyle="dashed")
 
     if not no_xlabel:
-        plt.xlabel(r"$k$ $(1/m)$")
-    plt.ylabel(r"$P(k)$ $(m^5/s^4)$")
+        plt.xlabel(get_label(r"$k$", units["wavenumber"]))
+    plt.ylabel(get_label(r"$P(k)$", units["power"]))
 
     if not labels[0] is None:
         plt.legend(
@@ -1338,7 +1367,7 @@ def plot_time_speedup(fnames, nthreads, figure="save", fmt="png"):
     )
 
     plt.ylabel(r"wall time (s)")
-    plt.xlabel("number of OpenMP threads")
+    plt.xlabel(r"number of OpenMP threads")
     plt.grid(which="both", linestyle="dashed")
     plt.legend(loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.4))
     plt.tight_layout()

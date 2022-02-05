@@ -45,8 +45,8 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
             plot_width = np.nanmin([1920, int(1080 * (right - left) / (top - bottom))])
             plot_height = np.nanmin([1080, int(1920 * (top - bottom) / (right - left))])
 
-    x_axis_label = get_label("x", units["position"])
-    y_axis_label = get_label("y", units["position"])
+    x_axis_label = get_label("$$x$$", units["position"], is_bokeh=True)
+    y_axis_label = get_label("$$y$$", units["position"], is_bokeh=True)
 
     if no_xlabel:
         x_axis_label = " "
