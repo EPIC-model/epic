@@ -108,10 +108,10 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
             cbar.set_label(coloring)
 
     if not no_xlabel:
-        ax.set_xlabel(r"$x$")
+        ax.set_xlabel(get_label("$x$", unit["position"]))
 
     if not no_ylabel:
-        ax.set_ylabel(r"$y$")
+        ax.set_ylabel(get_label("$y$", unit["position"]))
 
     return plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 
@@ -802,8 +802,8 @@ def plot_center_of_mass(fnames, figure="save", fmt="png", dset="buoyancy", **kwa
             bbox_to_anchor=legend_dict["bbox_to_anchor"],
         )
 
-    ax1.set_xlabel(r"time (s)")
-    ax2.set_xlabel(r"time (s)")
+    ax1.set_xlabel(get_label("time", units["time"]))
+    ax2.set_xlabel(get_label("time", units["time"]))
     if variance:
         ax1.set_ylabel(
             r"$\langle x\rangle_"
@@ -931,8 +931,8 @@ def plot_power_spectrum(fnames, figure="save", fmt="png", **kwargs):
     plt.grid(which="both", linestyle="dashed")
 
     if not no_xlabel:
-        plt.xlabel(r"$k$ $(1/m)$")
-    plt.ylabel(r"$P(k)$ $(m^5/s^4)$")
+        plt.xlabel(get_label(r"$k$", units["wavenumber"]))
+    plt.ylabel(get_label(r"$P(k)$", units["power"]))
 
     if not labels[0] is None:
         plt.legend(
@@ -1367,7 +1367,7 @@ def plot_time_speedup(fnames, nthreads, figure="save", fmt="png"):
     )
 
     plt.ylabel(r"wall time (s)")
-    plt.xlabel("number of OpenMP threads")
+    plt.xlabel(r"number of OpenMP threads")
     plt.grid(which="both", linestyle="dashed")
     plt.legend(loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.4))
     plt.tight_layout()
