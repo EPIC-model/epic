@@ -1281,7 +1281,7 @@ def plot_time_bar(fnames, figure="save", fmt="png", **kwargs):
     # https://stackoverflow.com/questions/14852821/aligning-rotated-xticklabels-with-their-respective-xticks
     plt.xticks(rotation=30, ha="right")
 
-    plt.ylabel(r"wall time (s)")
+    plt.ylabel(get_label("wall time", units["time"]))
     plt.xlabel("")
     plt.grid(which="both", linestyle="dashed")
     plt.tight_layout()
@@ -1380,7 +1380,7 @@ def plot_time_speedup(fnames, nthreads, figure="save", fmt="png"):
         nthreads, data, linestyle="dashed", color="black", label="perfect scaling"
     )
 
-    plt.ylabel(r"wall time (s)")
+    plt.ylabel(get_label("wall time", units["time"]))
     plt.xlabel(r"number of OpenMP threads")
     plt.grid(which="both", linestyle="dashed")
     plt.legend(loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.4))

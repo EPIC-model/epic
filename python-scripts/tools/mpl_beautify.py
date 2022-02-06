@@ -50,4 +50,4 @@ def get_autopct(pct, allvals):
     import numpy as np
 
     absolute = pct / 100.0 * np.sum(allvals)
-    return r"{:.2f}$\%$\n({:.1f} \si{s})".format(pct, absolute)
+    return "{:.2f}$\%$\n({:.1f} s)".format(pct, absolute)
