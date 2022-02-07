@@ -255,6 +255,7 @@ def plot_rms_volume_error(fnames, figure="save", fmt="png", **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
+    tight_layout = kwargs.pop('tight_layout', True)
 
     if len(labels) < n:
         raise ValueError("Not enough labels provided.")
@@ -292,7 +293,9 @@ def plot_rms_volume_error(fnames, figure="save", fmt="png", **kwargs):
     if yscale == "linear":
         plt.ticklabel_format(axis="y", style="scientific", scilimits=(0, 0))
     plt.ylim(ylim)
-    plt.tight_layout()
+
+    if tight_layout:
+        plt.tight_layout()
 
     if figure == "return":
         return plt
@@ -314,6 +317,7 @@ def plot_max_volume_error(fnames, figure="save", fmt="png", **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
+    tight_layout = kwargs.pop('tight_layout', True)
 
     if len(labels) < n:
         raise ValueError("Not enough labels provided.")
@@ -348,7 +352,9 @@ def plot_max_volume_error(fnames, figure="save", fmt="png", **kwargs):
             ncol=legend_dict["ncol"],
             bbox_to_anchor=legend_dict["bbox_to_anchor"],
         )
-    plt.tight_layout()
+
+    if tight_layout:
+        plt.tight_layout()
 
     if figure == "return":
         return plt
@@ -370,6 +376,7 @@ def plot_parcel_profile(fnames, figure="save", fmt="png", **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
+    tight_layout = kwargs.pop('tight_layout', True)
 
     colors = plt.cm.tab10(np.arange(n).astype(int))
 
@@ -451,7 +458,8 @@ def plot_parcel_profile(fnames, figure="save", fmt="png", **kwargs):
             bbox_to_anchor=legend_dict["bbox_to_anchor"],
         )
 
-    plt.tight_layout()
+    if tight_layout:
+        plt.tight_layout()
 
     if figure == "return":
         return plt
@@ -567,6 +575,7 @@ def plot_parcel_number(fnames, figure="save", fmt="png", **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
+    tight_layout = kwargs.pop('tight_layout', True)
 
     if labels is None:
         labels = [None] * len(fnames)
@@ -604,7 +613,9 @@ def plot_parcel_number(fnames, figure="save", fmt="png", **kwargs):
     if not no_xlabel:
         plt.xlabel(get_label("time", units["time"]))
     plt.ylabel(r"parcel count")
-    plt.tight_layout()
+
+    if tight_layout:
+        plt.tight_layout()
 
     if figure == "return":
         return plt
@@ -623,6 +634,7 @@ def plot_small_parcel_number(fnames, figure="save", fmt="png", **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
+    tight_layout = kwargs.pop('tight_layout', True)
 
     if labels is None:
         labels = [None] * len(fnames)
@@ -664,7 +676,9 @@ def plot_small_parcel_number(fnames, figure="save", fmt="png", **kwargs):
     if not no_xlabel:
         plt.xlabel(get_label("time", units["time"]))
     plt.ylabel(r"small parcel fraction (\%)")
-    plt.tight_layout()
+
+    if tight_layout:
+        plt.tight_layout()
 
     if figure == "return":
         return plt
@@ -1267,7 +1281,7 @@ def plot_time_bar(fnames, figure="save", fmt="png", **kwargs):
     # https://stackoverflow.com/questions/14852821/aligning-rotated-xticklabels-with-their-respective-xticks
     plt.xticks(rotation=30, ha="right")
 
-    plt.ylabel(r"wall time (s)")
+    plt.ylabel(get_label("wall time", units["time"]))
     plt.xlabel("")
     plt.grid(which="both", linestyle="dashed")
     plt.tight_layout()
@@ -1366,7 +1380,7 @@ def plot_time_speedup(fnames, nthreads, figure="save", fmt="png"):
         nthreads, data, linestyle="dashed", color="black", label="perfect scaling"
     )
 
-    plt.ylabel(r"wall time (s)")
+    plt.ylabel(get_label("wall time", units["time"]))
     plt.xlabel(r"number of OpenMP threads")
     plt.grid(which="both", linestyle="dashed")
     plt.legend(loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.4))

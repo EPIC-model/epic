@@ -1,6 +1,6 @@
 import matplotlib as mpl
-
-mpl.rcParams["text.usetex"] = True
+from tools.mpl_style import *
+from tools.units import *
 
 
 def add_timestamp(plt, time, xy=(0.75, 1.05), fmt="%.3f"):
@@ -9,8 +9,13 @@ def add_timestamp(plt, time, xy=(0.75, 1.05), fmt="%.3f"):
     # https://stackoverflow.com/questions/7045729/automatically-position-text-box-in-matplotlib
     # https://matplotlib.org/3.1.0/gallery/recipes/placing_text_boxes.html
     bbox = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+
+    label = r"t = " + fmt % (time)
+    if units['time'] is not None:
+        label = r"t = \SI{" + fmt % (time) + r"}{" + units["time"] + r"}"
+
     plt.annotate(
-        "t = " + fmt % (time), xy=xy, xycoords="axes fraction", bbox=bbox
+        label, xy=xy, xycoords="axes fraction", bbox=bbox
     )
 
 
@@ -28,8 +33,14 @@ def add_number_of_parcels(plt, num, xy=(0.01, 1.05)):
 
 def add_box(plt, label, value, unit="", xy=(0.01, 1.05), fmt="%1.3f"):
     bbox = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+
+
+    text = label + " = " + fmt % (value) + unit
+    if not unit == "":
+        text = label + " = \SI{" + fmt % (value) + r"}{" + unit + r"}"
+
     plt.annotate(
-        label + " = " + fmt % (value) + unit, xy=xy, xycoords="axes fraction", bbox=bbox
+        text, xy=xy, xycoords="axes fraction", bbox=bbox
     )
 
 
