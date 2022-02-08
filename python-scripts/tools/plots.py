@@ -47,7 +47,7 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     pos = None
 
     if coloring == "aspect-ratio":
-        data = h5reader.get_aspect_ratio(step=step)
+        data = h5reader.get_aspect_ratio(step=step, indices=ind)
     elif coloring == "vol-distr":
         data = h5reader.get_dataset(step=step, name="volume", indices=ind)
         # 5 August 2021

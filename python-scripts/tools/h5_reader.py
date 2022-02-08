@@ -68,13 +68,13 @@ class H5Reader:
         else:
             return np.array(self._h5file[s][name])
 
-    def get_dataset_min_max(self, name):
+    def get_dataset_min_max(self, name, indices=None):
         nsteps = self.get_num_steps()
-        data = self.get_dataset(0, name)
+        data = self.get_dataset(0, name, indices=indices)
         vmax = data.max()
         vmin = data.min()
         for step in range(1, nsteps):
-            data = self.get_dataset(step, name)
+            data = self.get_dataset(step, name, indices=indices)
             vmax = max(vmax, data.max())
             vmin = min(vmin, data.min())
         return vmin, vmax
@@ -154,12 +154,12 @@ class H5Reader:
             #for i in range(len(V))
         #]
 
-    def get_ellipses_for_bokeh(self, step):
+    def get_ellipses_for_bokeh(self, step, indices=None):
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
-        position = self.get_dataset(step, "position")
-        V = self.get_dataset(step, "volume")
-        B = self.get_dataset(step, "B")
+        position = self.get_dataset(step, "position", indices=indices)
+        V = self.get_dataset(step, "volume", indices=indices)
+        B = self.get_dataset(step, "B", indices=indices)
         B22 = self._get_B22(B[:, 0], B[:, 1], V)
         a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
         angle = self._get_angle(B[:, 0], B[:, 1], B22, a2)
@@ -172,11 +172,11 @@ class H5Reader:
             angle[:],
         )
 
-    def get_aspect_ratio(self, step):
+    def get_aspect_ratio(self, step, indices=None):
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
-        V = self.get_dataset(step, "volume")
-        B = self.get_dataset(step, "B")
+        V = self.get_dataset(step, "volume", indices=indices)
+        B = self.get_dataset(step, "B", indices=indices)
         B22 = self._get_B22(B[:, 0], B[:, 1], V)
         a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
         return a2 / V * np.pi
