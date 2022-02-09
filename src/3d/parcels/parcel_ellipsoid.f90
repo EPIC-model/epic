@@ -14,7 +14,8 @@ module parcel_ellipsoid
                         , two   &
                         , three &
                         , five  &
-                        , seven
+                        , seven &
+                        , max_num_parcels
     use jacobi
     implicit none
 
@@ -25,47 +26,43 @@ module parcel_ellipsoid
     double precision, parameter :: costheta(4) = dcos((/fpi4, f3pi4, f5pi4, f7pi4/))
     double precision, parameter :: sintheta(4) = dsin((/fpi4, f3pi4, f5pi4, f7pi4/))
 
-    private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_symmetric_matrix
+    double precision :: Vetas(3, max_num_parcels), &
+                        Vtaus(3, max_num_parcels)
+
+    private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_upper_triangular
 
     contains
 
         ! Obtain the parcel shape matrix.
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
-        ! @returns the symmetric 3x3 shape matrix
-        function get_symmetric_matrix(B, volume) result(D)
+        ! @returns the upper trinagular matrix
+        function get_upper_triangular(B, volume) result(U)
             double precision, intent(in) :: B(5)
             double precision, intent(in) :: volume
-            double precision             :: D(3, 3)
+            double precision             :: U(3, 3)
 
-            D(1, 1) = B(1)
-            D(1, 2) = B(2)
-            D(2, 1) = B(2)
-            D(1, 3) = B(3)
-            D(3, 1) = B(3)
-            D(2, 2) = B(4)
-            D(2, 3) = B(5)
-            D(3, 2) = B(5)
-            D(3, 3) = get_B33(B, volume)
-        end function get_symmetric_matrix
+            U(1, 1) = B(1)
+            U(1, 2) = B(2)
+            U(1, 3) = B(3)
+            U(2, 2) = B(4)
+            U(2, 3) = B(5)
+            U(3, 3) = get_B33(B, volume)
+        end function get_upper_triangular
 
         ! Obtain all eigenvalues sorted in descending order
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
         ! @returns all eigenvalues (sorted in descending order)
-        function get_eigenvalues(B, volume) result(evals)
+        function get_eigenvalues(B, volume) result(D)
             double precision, intent(in) :: B(5)
             double precision, intent(in) :: volume
-            double precision             :: D(3, 3)
-            double precision             :: evals(3)
+            double precision             :: U(3, 3)
+            double precision             :: D(3)
 
-            D = get_symmetric_matrix(B, volume)
+            U = get_upper_triangular(B, volume)
 
-            call jacobi_diagonalise(D)
-
-            evals(1) = D(1, 1)
-            evals(2) = D(2, 2)
-            evals(3) = D(3, 3)
+            call jacobi_eigenvalues(U, D)
 
         end function get_eigenvalues
 
@@ -78,11 +75,11 @@ module parcel_ellipsoid
         function get_eigenvectors(B, volume) result(V)
             double precision, intent(in) :: B(5)
             double precision, intent(in) :: volume
-            double precision             :: D(3, 3), V(3, 3)
+            double precision             :: U(3, 3), D(3), V(3, 3)
 
-            D = get_symmetric_matrix(B, volume)
+            U = get_upper_triangular(B, volume)
 
-            call jacobi_diagonalise(D, V)
+            call jacobi_diagonalise(U, D, V)
 
         end function get_eigenvectors
 
@@ -93,20 +90,17 @@ module parcel_ellipsoid
         ! eigenvalue.
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
-        ! @returns the eigenvectors
-        subroutine diagonalise(B, volume, a2, b2, c2, V)
+        ! @param[out] D eigenvalues (sorted in descending order)
+        ! @param[out] V eigenvectors
+        subroutine diagonalise(B, volume, D, V)
             double precision, intent(in)  :: B(5)
             double precision, intent(in)  :: volume
-            double precision, intent(out) :: a2, b2, c2, V(3, 3)
-            double precision              :: D(3, 3)
+            double precision, intent(out) :: D(3), V(3, 3)
+            double precision              :: U(3, 3)
 
-            D = get_symmetric_matrix(B, volume)
+            U = get_upper_triangular(B, volume)
 
-            call jacobi_diagonalise(D, V)
-
-            a2 = D(1, 1)
-            b2 = D(2, 2)
-            c2 = D(3, 3)
+            call jacobi_diagonalise(U, D, V)
 
         end subroutine diagonalise
 
@@ -137,7 +131,7 @@ module parcel_ellipsoid
         ! Obtain the product of the semi-minor and semi-major axis.
         ! @param[in] volume of the parcel
         ! @returns abc = 3 * volume / (4 * pi)
-        elemental function get_abc(volume) result(abc)
+        pure elemental function get_abc(volume) result(abc)
             double precision, intent(in) :: volume
             double precision             :: abc
 
@@ -145,15 +139,14 @@ module parcel_ellipsoid
         end function get_abc
 
         ! Obtain the aspect ratio a/c of the parcel(s).
-        ! @param[in] a2 is the largest eigenvalue
-        ! @param[in] c2 is the smallest eigenvalue
+        ! @param[in] D eigenvalues sorted in descending order
         ! @param[in] volume of the parcel(s)
         ! @returns a/c
-        elemental function get_aspect_ratio(a2, c2) result(lam)
-            double precision, intent(in) :: a2, c2
+        pure function get_aspect_ratio(D) result(lam)
+            double precision, intent(in) :: D(3)
             double precision             :: lam
 
-            lam = dsqrt(a2 / c2)
+            lam = dsqrt(D(1) / D(3))
         end function get_aspect_ratio
 
         ! Obtain the ellipse support points for par2grid and grid2par
@@ -161,34 +154,68 @@ module parcel_ellipsoid
         ! @param[in] volume of the parcel
         ! @param[in] B matrix elements of the parcel
         ! @returns the parcel support points
-        function get_ellipsoid_points(position, volume, B) result(points)
-            double precision, intent(in) :: position(3)
-            double precision, intent(in) :: volume
-            double precision, intent(in) :: B(5)        ! B11, B12, B13, B22, B23
-            double precision             :: eta, tau, a2, b2, c2, V(3, 3)
-            integer                      :: j, k
-            double precision             :: points(4, 3)
+        function get_ellipsoid_points(position, volume, B, n, l_reuse) result(points)
+            double precision,  intent(in) :: position(3)
+            double precision,  intent(in) :: volume
+            double precision,  intent(in) :: B(5)        ! B11, B12, B13, B22, B23
+            integer, optional, intent(in) :: n
+            logical, optional, intent(in) :: l_reuse
+            double precision              :: Veta(3), Vtau(3), D(3), V(3, 3)
+            integer                       :: j
+            double precision              :: points(3, 4)
 
-            ! (/a2, b2, c2/) with a >= b >= c
-            call diagonalise(B, volume, a2, b2, c2, V)
 
-            eta = dsqrt(dabs(a2 - c2)) * rho
-            tau = dsqrt(dabs(b2 - c2)) * rho
+            if (present(l_reuse)) then
+                if (l_reuse) then
+                    Veta = Vetas(:, n)
+                    Vtau = Vtaus(:, n)
+                else
+                    call diagonalise(B, volume, D, V)
+                    Veta = dsqrt(dabs(D(1) - D(3))) * rho * V(:, 1)
+                    Vtau = dsqrt(dabs(D(2) - D(3))) * rho * V(:, 2)
+
+                    Vetas(:, n) = Veta
+                    Vtaus(:, n) = Vtau
+                endif
+            else
+                ! (/a2, b2, c2/) with a >= b >= c
+                ! D = (/a2, b2, c2/)
+                call diagonalise(B, volume, D, V)
+
+                Veta = dsqrt(dabs(D(1) - D(3))) * rho * V(:, 1)
+                Vtau = dsqrt(dabs(D(2) - D(3))) * rho * V(:, 2)
+
+                Vetas(:, n) = Veta
+                Vtaus(:, n) = Vtau
+            endif
 
             do j = 1, 4
                 ! support point in the reference frame of the ellipsoid
                 ! theta = j * pi / 2 - pi / 4 (j = 1, 2, 3, 4)
                 ! x_j = eta * rho * cos(theta_j)
                 ! y_j = tau * rho * sin(theta_j)
-                points(j, :) = (/eta * costheta(j), tau * sintheta(j), zero/)
 
                 ! suppport point in the global reference frame
-                do k = 1, 3
-                    points(j, k) = position(k)            &
-                                 + points(j, 1) * V(k, 1) &
-                                 + points(j, 2) * V(k, 2) &
-                                 + points(j, 3) * V(k, 3)
-                enddo
+                points(:, j) = position           &
+                             + Veta * costheta(j) &
+                             + Vtau * sintheta(j)
             enddo
         end function get_ellipsoid_points
+
+        function get_angles(B, volume) result(angles)
+            double precision, intent(in) :: B(5)
+            double precision, intent(in) :: volume
+            double precision             :: evec(3, 3)
+            double precision             :: angles(2) ! (/azimuth, polar/)
+
+            evec = get_eigenvectors(B, volume)
+
+            ! azimuthal angle
+            angles(1) = datan2(evec(2, 1), evec(1, 1))
+
+            ! polar angle
+            angles(2) = dasin(evec(3, 3))
+
+        end function get_angles
+
 end module parcel_ellipsoid

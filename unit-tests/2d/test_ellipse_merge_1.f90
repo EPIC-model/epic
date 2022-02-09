@@ -54,50 +54,50 @@ program test_ellipse_multi_merge_1
 
         subroutine parcel_setup
             n_parcels = 5
-            parcels%position(1, :) = zero
+            parcels%position(:, 1) = zero
             parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
-            parcels%B(1, 2) = zero
+            parcels%B(2, 1) = zero
             parcels%buoyancy(1) = 1.5d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(1) = 1.3d0
 #endif
             ! small parcel left
-            parcels%position(2, 1) = -0.6d0
+            parcels%position(1, 2) = -0.6d0
             parcels%position(2, 2) = zero
             parcels%volume(2) = a2b2 * pi
-            parcels%B(2, 1) = a2b2
+            parcels%B(1, 2) = a2b2
             parcels%B(2, 2) = zero
             parcels%buoyancy(2) = 1.8d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(2) = 1.2d0
 #endif
             ! small parcel right
-            parcels%position(3, 1) = 0.6d0
-            parcels%position(3, 2) = zero
+            parcels%position(1, 3) = 0.6d0
+            parcels%position(2, 3) = zero
             parcels%volume(3) = a2b2 * pi
-            parcels%B(3, 1) = a2b2
-            parcels%B(3, 2) = zero
+            parcels%B(1, 3) = a2b2
+            parcels%B(2, 3) = zero
             parcels%buoyancy(3) = 1.4d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(3) = 1.1d0
 #endif
             ! small parcel below
-            parcels%position(4, 1) = zero
-            parcels%position(4, 2) = -0.6d0
+            parcels%position(1, 4) = zero
+            parcels%position(2, 4) = -0.6d0
             parcels%volume(4) = a2b2 * pi
-            parcels%B(4, 1) = a2b2
-            parcels%B(4, 2) = zero
+            parcels%B(1, 4) = a2b2
+            parcels%B(2, 4) = zero
             parcels%buoyancy(4) = 1.7d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(4) = 1.0d0
 #endif
             ! small parcel above
-            parcels%position(5, 1) = zero
-            parcels%position(5, 2) = 0.6d0
+            parcels%position(1, 5) = zero
+            parcels%position(2, 5) = 0.6d0
             parcels%volume(5) = a2b2 * pi
-            parcels%B(5, 1) = a2b2
-            parcels%B(5, 2) = zero
+            parcels%B(1, 5) = a2b2
+            parcels%B(2, 5) = zero
             parcels%buoyancy(5) = 1.5d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(5) = 1.4d0
@@ -126,11 +126,11 @@ program test_ellipse_multi_merge_1
 
             max_err = max(max_err, abs(dble(n_parcels - 1)))
             max_err = max(max_err, abs(parcels%B(1, 1) - B11))
-            max_err = max(max_err, abs(parcels%B(1, 2) - B12))
+            max_err = max(max_err, abs(parcels%B(2, 1) - B12))
             max_err = max(max_err, abs(get_B22(parcels%B(1, 1), &
-                                               parcels%B(1, 2), &
+                                               parcels%B(2, 1), &
                                                parcels%volume(1)) - B22))
-            max_err = max(max_err, sum(abs(parcels%position(1, :))))
+            max_err = max(max_err, sum(abs(parcels%position(:, 1))))
             max_err = max(max_err, abs(parcels%volume(1) - vol))
             max_err = max(max_err, abs(parcels%buoyancy(1) - buoy))
 #ifndef ENABLE_DRY_MODE

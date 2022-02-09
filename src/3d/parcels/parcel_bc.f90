@@ -14,7 +14,7 @@ module parcel_bc
 
         ! Apply periodic bc on n-th parcel (zonally and meridionally)
         ! @param[inout] position vector of parcel
-        subroutine apply_periodic_bc(position)
+        pure subroutine apply_periodic_bc(position)
             double precision, intent(inout) :: position(3)
             position(1) = position(1) - extent(1) * dble(int((position(1) - center(1)) * hli(1)))
             position(2) = position(2) - extent(2) * dble(int((position(2) - center(2)) * hli(2)))
@@ -23,7 +23,7 @@ module parcel_bc
         ! Apply mirroring bc on n-th parcel (vertically)
         ! @param[inout] position vector of parcel
         ! @param[inout] B matrix of parcel
-        subroutine apply_reflective_bc(position, B)
+        pure subroutine apply_reflective_bc(position, B)
             double precision, intent(inout) :: position(3), B(5)
 
             if (position(3) > upper(3)) then
@@ -50,10 +50,10 @@ module parcel_bc
             !$omp do private(n)
             do n = 1, n_parcels
                 ! zonal direction
-                call apply_periodic_bc(position(n, :))
+                call apply_periodic_bc(position(:, n))
 
                 ! vertical direction
-                call apply_reflective_bc(position(n, :), B(n, :))
+                call apply_reflective_bc(position(:, n), B(:, n))
             enddo
             !$omp end do
             !$omp end parallel

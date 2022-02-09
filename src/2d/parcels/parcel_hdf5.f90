@@ -5,6 +5,7 @@ module parcel_hdf5
     use hdf5
     use h5_utils
     use h5_writer
+    use h5_reader, only : get_num_steps
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -21,11 +22,25 @@ module parcel_hdf5
         ! Create the parcel file.
         ! @param[in] basename of the file
         ! @param[in] overwrite the file
-        subroutine create_h5_parcel_file(basename, overwrite)
-            character(*), intent(in) :: basename
-            logical,      intent(in) :: overwrite
+        subroutine create_h5_parcel_file(basename, overwrite, l_restart, step)
+            character(*), intent(in)  :: basename
+            logical,      intent(in)  :: overwrite
+            logical,      intent(in)  :: l_restart
+            integer,      intent(out) :: step
+            logical                   :: l_exist
 
             h5fname =  basename // '_parcels.hdf5'
+
+            call exist_h5_file(h5fname, l_exist)
+
+            if (l_restart .and. l_exist) then
+                call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
+                call get_num_steps(h5file_id, step)
+                call close_h5_file(h5file_id)
+                return
+            endif
+
+            step = 0
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
@@ -100,10 +115,10 @@ module parcel_hdf5
             !
 
             call write_h5_dataset(h5file_id, name, "position", &
-                                  parcels%position(1:n_parcels, :))
+                                  parcels%position(:, 1:n_parcels))
 
             call write_h5_dataset(h5file_id, name, "B", &
-                                  parcels%B(1:n_parcels, :))
+                                  parcels%B(:, 1:n_parcels))
 
             call write_h5_dataset(h5file_id, name, "volume", &
                                   parcels%volume(1:n_parcels))

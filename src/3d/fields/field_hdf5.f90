@@ -2,6 +2,7 @@ module field_hdf5
     use options, only : verbose, write_h5_options
     use h5_utils
     use h5_writer
+    use h5_reader, only : get_num_steps
     use fields
     use timer, only : start_timer, stop_timer
     implicit none
@@ -18,11 +19,25 @@ module field_hdf5
         ! Create the field file.
         ! @param[in] basename of the file
         ! @param[in] overwrite the file
-        subroutine create_h5_field_file(basename, overwrite)
-            character(*), intent(in) :: basename
-            logical,      intent(in) :: overwrite
+        subroutine create_h5_field_file(basename, overwrite, l_restart, step)
+            character(*), intent(in)  :: basename
+            logical,      intent(in)  :: overwrite
+            logical,      intent(in)  :: l_restart
+            integer,      intent(out) :: step
+            logical                   :: l_exist
 
             h5fname =  basename // '_fields.hdf5'
+
+            call exist_h5_file(h5fname, l_exist)
+
+            if (l_restart .and. l_exist) then
+                call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
+                call get_num_steps(h5file_id, step)
+                call close_h5_file(h5file_id)
+                return
+            endif
+
+            step = 0
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
@@ -102,11 +117,11 @@ module field_hdf5
             call write_h5_dataset(h5file_id, name, "total buoyancy", &
                                   tbuoyg(0:nz, 0:ny-1, 0:nx-1))
 
-#ifdef ENABLE_DIAGNOSE
 #ifndef ENABLE_DRY_MODE
             call write_h5_dataset(h5file_id, name, "dry buoyancy", &
                                   dbuoyg(0:nz, 0:ny-1, 0:nx-1))
 #endif
+#ifdef ENABLE_DIAGNOSE
             call write_h5_dataset(h5file_id, name, "volume", &
                                   volg(0:nz, 0:ny-1, 0:nx-1))
 

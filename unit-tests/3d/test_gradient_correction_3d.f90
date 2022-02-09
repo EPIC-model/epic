@@ -59,7 +59,7 @@ program test_gradient_correction_3d
             if (val < 0.5) then
                 tmp = -dev
             endif
-            parcels%position(n, i) = parcels%position(n, i) + tmp
+            parcels%position(i, n) = parcels%position(i, n) + tmp
         enddo
     enddo
 
@@ -70,10 +70,10 @@ program test_gradient_correction_3d
     parcels%B(:, :) = zero
 
     ! b11
-    parcels%B(1:n_parcels, 1) = get_abc(parcels%volume(1:n_parcels)) ** f23
+    parcels%B(1, :) = get_abc(parcels%volume) ** f23
 
     ! b22
-    parcels%B(:, 4) = parcels%B(:, 1)
+    parcels%B(4, :) = parcels%B(1, :)
 
     call vol2grid
 

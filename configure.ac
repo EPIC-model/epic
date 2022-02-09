@@ -23,6 +23,8 @@ AC_CONFIG_FILES([
     src/2d/Makefile
     src/3d/Makefile
     models/Makefile
+    models/2d/Makefile
+    models/3d/Makefile
     analyse/Makefile
     unit-tests/Makefile
     unit-tests/2d/Makefile
@@ -247,24 +249,9 @@ else
     AC_MSG_RESULT([no])
 fi
 
-ENABLE_MERGER_DUMP='no'
-AC_ARG_ENABLE([merger-dump],
-              [AS_HELP_STRING([--enable-merger-dump], [enable merger dump (default=no)])],
-              [ENABLE_MERGER_DUMP=$enableval])
-
-AM_CONDITIONAL([ENABLE_MERGER_DUMP], [test "$ENABLE_MERGER_DUMP" = "yes"])
-
-AC_MSG_CHECKING([whether we are compiling with merger dump])
-if test "x$ENABLE_MERGER_DUMP" = "xyes"; then
-    AC_MSG_RESULT([yes])
-    FCFLAGS="$FCFLAGS -DENABLE_MERGER_DUMP"
-else
-    AC_MSG_RESULT([no])
-fi
-
-ENABLE_DRY_MODE='yes'
+ENABLE_DRY_MODE='no'
 AC_ARG_ENABLE([dry-mode],
-              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=no)])],
+              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=yes)])],
               [ENABLE_DRY_MODE=$enableval])
 
 AM_CONDITIONAL([ENABLE_DRY_MODE], [test "$ENABLE_DRY_MODE" = "yes"])
@@ -320,10 +307,10 @@ AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
     FCFLAGS="$FCFLAGS -Wall -Wno-maybe-uninitialized -Werror -g -O0"
-    FCFLAGS="$FCFLAGS -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow"
+    FCFLAGS="$FCFLAGS -fcheck=all -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow"
 else
     AC_MSG_RESULT([no])
-    FCFLAGS="$FCFLAGS -O3 -DNDEBUG"
+    FCFLAGS="$FCFLAGS -O3 -funroll-all-loops -flto -DNDEBUG"
 fi
 
 

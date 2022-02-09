@@ -39,6 +39,107 @@ module parcel_init
             call alloc_and_precompute
         end subroutine unit_test_parcel_init_alloc
 
+        ! This subroutine reads parcels from an EPIC output file
+        subroutine read_parcels(h5fname, step)
+            character(*),     intent(in)  :: h5fname
+            integer,          intent(in)  :: step
+            integer(hid_t)                :: h5handle, group
+            integer                       :: ncells(3)
+            character(:), allocatable     :: grn
+            double precision, allocatable :: buffer_1d(:),   &
+                                             buffer_2d(:, :)
+            logical                       :: l_valid = .false.
+
+
+            call start_timer(init_timer)
+
+            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
+
+            ! read domain dimensions
+            call read_h5_box(h5handle, ncells, extent, lower)
+            nx = ncells(1)
+            ny = ncells(2)
+            nz = ncells(3)
+
+            ! update global parameters
+            call update_parameters
+
+            grn = trim(get_step_group_name(step))
+            call open_h5_group(h5handle, grn, group)
+            call get_num_parcels(group, n_parcels)
+
+            if (n_parcels > max_num_parcels) then
+                print *, "Number of parcels exceeds limit of", &
+                          max_num_parcels, ". Exiting."
+                stop
+            endif
+
+            ! Be aware that the starting index of buffer_1d and buffer_2d
+            ! is 0; hence, the range is 0:n_parcels-1 in contrast to the
+            ! parcel container where it is 1:n_parcels.
+
+            if (has_dataset(group, 'B')) then
+                call read_h5_dataset(group, 'B', buffer_2d)
+                parcels%B(:, 1:n_parcels) = buffer_2d
+                deallocate(buffer_2d)
+            else
+                print *, "The parcel shape must be present! Exiting."
+                stop
+            endif
+
+            if (has_dataset(group, 'position')) then
+                call read_h5_dataset(group, 'position', buffer_2d)
+                parcels%position(:, 1:n_parcels) = buffer_2d
+                deallocate(buffer_2d)
+            else
+                print *, "The parcel position must be present! Exiting."
+                stop
+            endif
+
+            if (has_dataset(group, 'volume')) then
+                call read_h5_dataset(group, 'volume', buffer_1d)
+                parcels%volume(1:n_parcels) = buffer_1d
+                deallocate(buffer_1d)
+            else
+                print *, "The parcel volume must be present! Exiting."
+                stop
+            endif
+
+            if (has_dataset(group, 'vorticity')) then
+                l_valid = .true.
+                call read_h5_dataset(group, 'vorticity', buffer_2d)
+                parcels%vorticity(:, 1:n_parcels) = buffer_2d
+                deallocate(buffer_2d)
+            endif
+
+            if (has_dataset(group, 'buoyancy')) then
+                l_valid = .true.
+                call read_h5_dataset(group, 'buoyancy', buffer_1d)
+                parcels%buoyancy(1:n_parcels) = buffer_1d
+                deallocate(buffer_1d)
+            endif
+
+#ifndef ENABLE_DRY_MODE
+            if (has_dataset(group, 'humidity')) then
+                l_valid = .true.
+                call read_h5_dataset(group, 'humidity', buffer_1d)
+                parcels%buoyancy(1:n_parcels) = buffer_1d
+                deallocate(buffer_1d)
+            endif
+#endif
+
+            if (.not. l_valid) then
+                print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
+                stop
+            endif
+
+            call close_h5_group(group)
+            call close_h5_file(h5handle)
+
+            call stop_timer(init_timer)
+
+        end subroutine read_parcels
+
 
         ! Set default values for parcel attributes
         ! Attention: This subroutine assumes that the parcel
@@ -48,13 +149,16 @@ module parcel_init
             double precision, intent(in) :: tol
             double precision             :: lam, l23
             integer(hid_t)               :: h5handle
-            integer                      :: n
+            integer                      :: n, ncells(3)
 
             call start_timer(init_timer)
 
             ! read domain dimensions
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
-            call read_h5_box(h5handle, nx, nz, extent, lower)
+            call read_h5_box(h5handle, ncells, extent, lower)
+            nx = ncells(1)
+            ny = ncells(2)
+            nz = ncells(3)
             call close_h5_file(h5handle)
 
             ! update global parameters
@@ -69,7 +173,6 @@ module parcel_init
                           max_num_parcels, ". Exiting."
                 stop
             endif
-
 
             call init_regular_positions
 
@@ -91,15 +194,15 @@ module parcel_init
             !$omp do private(n, l23)
             do n = 1, n_parcels
                 ! set all to zero
-                parcels%B(n, :) = zero
+                parcels%B(:, n) = zero
 
                 l23 = (lam * get_abc(parcels%volume(n))) ** f23
 
                 ! B11
-                parcels%B(n, 1) = l23
+                parcels%B(1, n) = l23
 
                 ! B22
-                parcels%B(n, 4) = l23
+                parcels%B(4, n) = l23
             enddo
             !$omp end do
             !$omp end parallel
@@ -109,7 +212,7 @@ module parcel_init
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
-                parcels%vorticity(n, :) = zero
+                parcels%vorticity(:, n) = zero
                 parcels%buoyancy(n) = zero
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n) = zero
@@ -148,9 +251,9 @@ module parcel_init
                         do k = 1, n_per_dim
                             do j = 1, n_per_dim
                                 do i = 1, n_per_dim
-                                    parcels%position(l, 1) = corner(1) + dx(1) * (dble(i) - f12) * im
-                                    parcels%position(l, 2) = corner(2) + dx(2) * (dble(j) - f12) * im
-                                    parcels%position(l, 3) = corner(3) + dx(3) * (dble(k) - f12) * im
+                                    parcels%position(1, l) = corner(1) + dx(1) * (dble(i) - f12) * im
+                                    parcels%position(2, l) = corner(2) + dx(2) * (dble(j) - f12) * im
+                                    parcels%position(3, l) = corner(3) + dx(3) * (dble(k) - f12) * im
                                     l = l + 1
                                 enddo
                             enddo
@@ -182,24 +285,24 @@ module parcel_init
         ! interpolation and "apar"
         subroutine alloc_and_precompute
             double precision :: resi(0:nz, 0:ny-1, 0:nx-1), rsum
-            integer          :: n, l
+            integer          :: l, n
 
             allocate(apar(n_parcels))
-            allocate(weights(n_parcels, ngp))
-            allocate(is(n_parcels, ngp))
-            allocate(js(n_parcels, ngp))
-            allocate(ks(n_parcels, ngp))
+            allocate(weights(ngp, n_parcels))
+            allocate(is(ngp, n_parcels))
+            allocate(js(ngp, n_parcels))
+            allocate(ks(ngp, n_parcels))
 
             ! Compute mean parcel density:
             resi = zero
 
-            !$omp parallel do default(shared) private(n, l) reduction(+:resi)
+            !$omp parallel do default(shared) private(l, n) reduction(+:resi)
             do n = 1, n_parcels
                 ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(n, :), is(n, :), js(n, :), ks(n, :), weights(n, :))
+                call trilinear(parcels%position(:, n), is(:, n), js(:, n), ks(:, n), weights(:, n))
 
                 do l = 1, ngp
-                    resi(ks(n, l), js(n, l), is(n, l)) = resi(ks(n, l), js(n, l), is(n, l)) + weights(n, l)
+                    resi(ks(l, n), js(l, n), is(l, n)) = resi(ks(l, n), js(l, n), is(l, n)) + weights(l, n)
                 enddo
             enddo
             !$omp end parallel do
@@ -209,11 +312,11 @@ module parcel_init
             resi(nz, :, :) = two * resi(nz, :, :)
 
             ! Determine local inverse density of parcels (apar)
-            !$omp parallel do default(shared) private(n, l, rsum)
+            !$omp parallel do default(shared) private(l, n, rsum)
             do n = 1, n_parcels
                 rsum = zero
                 do l = 1, ngp
-                    rsum = rsum + resi(ks(n, l), js(n, l), is(n, l)) * weights(n, l)
+                    rsum = rsum + resi(ks(l, n), js(l, n), is(l, n)) * weights(l, n)
                 enddo
                 apar(n) = one / rsum
             enddo
@@ -236,30 +339,55 @@ module parcel_init
         subroutine init_from_grids(h5fname, tol)
             character(*),     intent(in)  :: h5fname
             double precision, intent(in)  :: tol
-            double precision, allocatable :: buffer_3d(:, :, :), buffer_4d(:, :, :, :)
-            double precision              :: field_3d(-1:nz+1, 0:ny-1, 0:nx-1)
-            integer(hid_t)                :: h5handle
-            integer                       :: l
+            double precision, allocatable :: buffer_3d(:, :, :), &
+                                             buffer_4d(:, :, :, :)
+            double precision              :: field_3d(-1:nz+1, 0:ny-1, 0:nx-1), &
+                                             field_4d(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+            integer(hid_t)                :: h5handle, group
+            integer                       :: l, n_steps
+            character(:), allocatable     :: grn
 
             call alloc_and_precompute
 
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
 
-            if (has_dataset(h5handle, 'vorticity')) then
-                call read_h5_dataset(h5handle, 'vorticity', buffer_4d)
-                call fill_field_from_buffer_4d(buffer_4d, buffer_4d)
-                deallocate(buffer_4d)
-                do l = 1, 3
-                    call gen_parcel_scalar_attr(buffer_4d(:, :, :, l), tol, parcels%vorticity(:, l))
-                enddo
+            call get_num_steps(h5handle, n_steps)
+
+            group = h5handle
+            if (n_steps > 0) then
+                ! we need to subtract 1 since it starts with 0
+                grn = trim(get_step_group_name(n_steps - 1))
+                call open_h5_group(h5handle, grn, group)
             endif
 
 
-            if (has_dataset(h5handle, 'buoyancy')) then
-                call read_h5_dataset(h5handle, 'buoyancy', buffer_3d)
+            if (has_dataset(group, 'vorticity')) then
+                call read_h5_dataset(group, 'vorticity', buffer_4d)
+                call fill_field_from_buffer_4d(buffer_4d, field_4d)
+                deallocate(buffer_4d)
+                do l = 1, 3
+                    call gen_parcel_scalar_attr(field_4d(:, :, :, l), tol, parcels%vorticity(l, :))
+                enddo
+            endif
+
+            if (has_dataset(group, 'buoyancy')) then
+                call read_h5_dataset(group, 'buoyancy', buffer_3d)
                 call fill_field_from_buffer_3d(buffer_3d, field_3d)
                 deallocate(buffer_3d)
                 call gen_parcel_scalar_attr(field_3d, tol, parcels%buoyancy)
+            endif
+
+#ifndef ENABLE_DRY_MODE
+            if (has_dataset(h5handle, 'humidity')) then
+                call read_h5_dataset(h5handle, 'humidity', buffer_3d)
+                call fill_field_from_buffer_3d(buffer_3d, field_3d)
+                deallocate(buffer_3d)
+                call gen_parcel_scalar_attr(field_3d, tol, parcels%humidity)
+            endif
+#endif
+
+            if (n_steps > 0) then
+                call close_h5_group(group)
             endif
 
             call close_h5_file(h5handle)
@@ -331,7 +459,7 @@ module parcel_init
             double precision, intent(out) :: par(:)
             double precision :: resi(0:nz, 0:ny-1, 0:nx-1)
             double precision :: rms, rtol, rerr, rsum, fsum, avg_field
-            integer          :: n, l
+            integer          :: l, n
 
 #ifdef ENABLE_VERBOSE
                 if (verbose) then
@@ -366,11 +494,11 @@ module parcel_init
             rtol = rms * tol
 
             ! Initialise (volume-weighted) parcel attribute with a guess
-            !$omp parallel do default(shared) private(n, l, fsum)
+            !$omp parallel do default(shared) private(l, n, fsum)
             do n = 1, n_parcels
                 fsum = zero
                 do l = 1, ngp
-                    fsum = fsum + field(ks(n, l), js(n, l), is(n, l)) * weights(n, l)
+                    fsum = fsum + field(ks(l, n), js(l, n), is(l, n)) * weights(l, n)
                 enddo
                 par(n) = apar(n) * fsum
             enddo
@@ -384,8 +512,8 @@ module parcel_init
                 resi = zero
                 do n = 1, n_parcels
                     do l = 1, ngp
-                        resi(ks(n, l), js(n, l), is(n, l)) = resi(ks(n, l), js(n, l), is(n, l)) &
-                                                           + weights(n, l) * par(n)
+                        resi(ks(l, n), js(l, n), is(l, n)) = resi(ks(l, n), js(l, n), is(l, n)) &
+                                                           + weights(l, n) * par(n)
                     enddo
                 enddo
 
@@ -398,7 +526,7 @@ module parcel_init
                 do n = 1, n_parcels
                     rsum = zero
                     do l = 1, ngp
-                        rsum = rsum + resi(ks(n, l), js(n, l), is(n, l)) * weights(n, l)
+                        rsum = rsum + resi(ks(l, n), js(l, n), is(l, n)) * weights(l, n)
                     enddo
                     par(n) = par(n) + apar(n) * rsum
                 enddo

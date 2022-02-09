@@ -17,7 +17,7 @@ program test_ellipsoid_split
     double precision, parameter :: lam = five
     double precision :: theta, phi, st, ct, sp, cp
     double precision :: B11, B12, B13, B22, B23, B33, abc, ab, evec(3)
-    double precision :: h, pos(2, 3), error, a2, b2, c2
+    double precision :: h, pos(3, 2), error, a2, b2, c2
     integer :: i, j
 
     nx = 10
@@ -70,7 +70,7 @@ program test_ellipsoid_split
         subroutine setup_parcels
             n_parcels = 1
 
-            parcels%position(1, :) = zero
+            parcels%position(:, 1) = zero
             parcels%volume(1) = four / three * abc * pi
             parcels%buoyancy(1) = one
 #ifndef ENABLE_DRY_MODE
@@ -86,10 +86,10 @@ program test_ellipsoid_split
             B33 = a2 * cp ** 2 + c2 * sp ** 2
 
             parcels%B(1, 1) = B11
-            parcels%B(1, 2) = B12
-            parcels%B(1, 3) = B13
-            parcels%B(1, 4) = B22
-            parcels%B(1, 5) = B23
+            parcels%B(2, 1) = B12
+            parcels%B(3, 1) = B13
+            parcels%B(4, 1) = B22
+            parcels%B(5, 1) = B23
         end subroutine setup_parcels
 
         subroutine check_result
@@ -112,22 +112,22 @@ program test_ellipsoid_split
                 error = one
             endif
 
-            pos(1, :) = h * evec
-            pos(2, :) = - h * evec
+            pos(:, 1) = h * evec
+            pos(:, 2) = - h * evec
 
             ! exchange position
-            if (sum(abs(pos(1, :) - parcels%position(1, :))) > 1.0e-13) then
+            if (sum(abs(pos(:, 1) - parcels%position(:, 1))) > 1.0e-13) then
                 pos = -pos
             endif
 
             ! first parcel
             error = max(error, abs(parcels%B(1, 1) - B11))
-            error = max(error, abs(parcels%B(1, 2) - B12))
-            error = max(error, abs(parcels%B(1, 3) - B13))
-            error = max(error, abs(parcels%B(1, 4) - B22))
-            error = max(error, abs(parcels%B(1, 5) - B23))
-            error = max(error, abs(get_B33(parcels%B(1, :), parcels%volume(1)) - B33))
-            error = max(error, sum(abs(pos(1, :) - parcels%position(1, :))))
+            error = max(error, abs(parcels%B(2, 1) - B12))
+            error = max(error, abs(parcels%B(3, 1) - B13))
+            error = max(error, abs(parcels%B(4, 1) - B22))
+            error = max(error, abs(parcels%B(5, 1) - B23))
+            error = max(error, abs(get_B33(parcels%B(:, 1), parcels%volume(1)) - B33))
+            error = max(error, sum(abs(pos(:, 1) - parcels%position(:, 1))))
             error = max(error, abs(f12 * four / three * abc * pi - parcels%volume(1)))
             error = max(error, abs(parcels%buoyancy(1) - one))
 #ifndef ENABLE_DRY_MODE
@@ -135,13 +135,13 @@ program test_ellipsoid_split
 #endif
 
             ! second parcel
-            error = max(error, abs(parcels%B(2, 1) - B11))
+            error = max(error, abs(parcels%B(1, 2) - B11))
             error = max(error, abs(parcels%B(2, 2) - B12))
-            error = max(error, abs(parcels%B(2, 3) - B13))
-            error = max(error, abs(parcels%B(2, 4) - B22))
-            error = max(error, abs(parcels%B(2, 5) - B23))
-            error = max(error, abs(get_B33(parcels%B(2, :), parcels%volume(2)) - B33))
-            error = max(error, sum(abs(pos(2, :) - parcels%position(2, :))))
+            error = max(error, abs(parcels%B(3, 2) - B13))
+            error = max(error, abs(parcels%B(4, 2) - B22))
+            error = max(error, abs(parcels%B(5, 2) - B23))
+            error = max(error, abs(get_B33(parcels%B(:, 2), parcels%volume(2)) - B33))
+            error = max(error, sum(abs(pos(:, 2) - parcels%position(:, 2))))
             error = max(error, abs(f12 * four / three * abc * pi - parcels%volume(2)))
             error = max(error, dble(abs(n_parcels - 2)))
             error = max(error, abs(parcels%buoyancy(2) - one))

@@ -13,8 +13,8 @@ program test_jacobi_2
     double precision     :: error
     integer              :: n, k, num
     double precision     :: V(3, 3)
-    double precision     :: B(3, 3)
-    double precision     :: Q(3, 3), D(3) ! reference
+    double precision     :: B(3, 3), D(3)
+    double precision     :: Q(3, 3), EV(3) ! reference
 
     error = zero
 
@@ -24,12 +24,12 @@ program test_jacobi_2
 
         call read_next_line
 
-        call jacobi_diagonalise(B, V)
+        call jacobi_diagonalise(B, D, V)
 
         ! check eigenvalues
-        error = max(error, dabs(D(1) - B(1, 1)) &
-                         + dabs(D(2) - B(2, 2)) &
-                         + dabs(D(3) - B(3, 3)))
+        error = max(error, dabs(EV(1) - D(1)) &
+                         + dabs(EV(2) - D(2)) &
+                         + dabs(EV(3) - D(3)))
 
 
         ! check eigenvectors
@@ -115,7 +115,7 @@ program test_jacobi_2
             read(1235, *) Q(:, 1), Q(:, 2), Q(:, 3)
 
             ! eigenvalues
-            read(1236, *) D(1), D(2), D(3)
+            read(1236, *) EV(1), EV(2), EV(3)
         end subroutine read_next_line
 
 end program test_jacobi_2

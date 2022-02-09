@@ -80,13 +80,13 @@ program test_parcel_init_3d
                     do my = 1, nbgy
                         do mx = 1, nbgx
                             i = i + 1
-                            parcels%position(i, 1) = lower(1) + dx(1) * (dble(ix) + dxf * (dble(mx) - f12))
-                            parcels%position(i, 2) = lower(2) + dx(2) * (dble(iy) + dyf * (dble(my) - f12))
-                            parcels%position(i, 3) = lower(3) + dx(3) * (dble(iz) + dzf * (dble(mz) - f12))
+                            parcels%position(1, i) = lower(1) + dx(1) * (dble(ix) + dxf * (dble(mx) - f12))
+                            parcels%position(2, i) = lower(2) + dx(2) * (dble(iy) + dyf * (dble(my) - f12))
+                            parcels%position(3, i) = lower(3) + dx(3) * (dble(iz) + dzf * (dble(mz) - f12))
                             parcels%volume(i) = v0
-                            parcels%B(i, :) = zero
-                            parcels%B(i, 1) = get_abc(v0) ** f23
-                            parcels%B(i, 4) = parcels%B(i, 1)
+                            parcels%B(:, i) = zero
+                            parcels%B(1, i) = get_abc(v0) ** f23
+                            parcels%B(4, i) = parcels%B(1, i)
                         enddo
                     enddo
                 enddo

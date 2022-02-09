@@ -1,3 +1,7 @@
+<!--- How to add a license badge found on https://gist.github.com/lukas-h/2a5d00690736b4c3a7ba (1 Feb 2022) --->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg)](https://doi.org/10.5281/zenodo.5940225)
+[![License](https://img.shields.io/github/license/matt-frey/epic)](https://github.com/matt-frey/epic/blob/main/LICENSE)
+
 # EPIC - Elliptical Parcel-in-Cell
 Elliptical PIC model for fluid dynamics
 
@@ -36,7 +40,7 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH
 ## Running
 In order to run the model, execute
 ```
-$ epic --config filename
+$ epic2d --config filename
 ```
 where `filename` is the configuration file. An example of a configuration file is given
 [here](examples/taylor_green.config).
@@ -47,7 +51,7 @@ The directory `$PREFIX/bin` contains following Python scripts:
 * plot-parcels.py
 * plot-diagnostics.py
 * merge-ellipses.py
-* plot-mergers.py
+* subgrid_2d_generalised.py
 
 Please append the argument `--help` when calling the scripts to get further information. We recommend to install
 a separate Python virtual environment using [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) for EPIC. After installing conda, all necessary Python packages can be installed via

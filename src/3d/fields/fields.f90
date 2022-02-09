@@ -98,24 +98,21 @@ module fields
         ! @param[in] pos position of the parcel
         ! @param[out] i lower, zonal cell index
         ! @param[out] j lower, vertical cell index
-        subroutine get_index(pos, i, j, k)
+        pure subroutine get_index(pos, i, j, k)
             double precision, intent(in)  :: pos(3)
             integer,          intent(out) :: i, j, k
-            integer                       :: idx(3)
 
-            idx = floor((pos - lower) * dxi)
-
-            i = idx(1)
-            j = idx(2)
-            k = idx(3)
+            i = floor((pos(1) - lower(1)) * dxi(1))
+            j = floor((pos(2) - lower(2)) * dxi(2))
+            k = floor((pos(3) - lower(3)) * dxi(3))
         end subroutine get_index
 
 
         ! Do periodic shift of the index
         ! @param[inout] ii zonal grid point indices
         ! @param[inout] jj meridional grid point indices
-        subroutine periodic_index_shift(ii, jj)
-            integer, intent(inout) :: ii(:), jj(:)
+        elemental pure subroutine periodic_index_shift(ii, jj)
+            integer, intent(inout) :: ii, jj
 
             ! account for x / y periodicity:
             ! -1          --> nx-1 / ny-1
@@ -134,11 +131,13 @@ module fields
         ! @param[in] j meridional cell index
         ! @param[in] k vertical cell index
         ! @param[out] pos position of (i, j, k) in the domain
-        subroutine get_position(i, j, k, pos)
+        pure subroutine get_position(i, j, k, pos)
             integer,          intent(in)  :: i, j, k
             double precision, intent(out) :: pos(3)
 
-            pos = lower + dble((/i, j, k/)) * dx
+            pos(1) = lower(1) + i * dx(1)
+            pos(2) = lower(2) + j * dx(2)
+            pos(3) = lower(3) + k * dx(3)
 
         end subroutine get_position
 

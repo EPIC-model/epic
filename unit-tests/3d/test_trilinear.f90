@@ -46,9 +46,9 @@ program test_trilinear
                 do k = 1, n_per_dim
                     do j = 1, n_per_dim
                         do i = 1, n_per_dim
-                            parcels%position(l, 1) = corner(1) + dx(1) * (dble(i) - f12) * im
-                            parcels%position(l, 2) = corner(2) + dx(2) * (dble(j) - f12) * im
-                            parcels%position(l, 3) = corner(3) + dx(3) * (dble(k) - f12) * im
+                            parcels%position(1, l) = corner(1) + dx(1) * (dble(i) - f12) * im
+                            parcels%position(2, l) = corner(2) + dx(2) * (dble(j) - f12) * im
+                            parcels%position(3, l) = corner(3) + dx(3) * (dble(k) - f12) * im
                             l = l + 1
                         enddo
                     enddo
@@ -62,10 +62,10 @@ program test_trilinear
     parcels%B(:, :) = zero
 
     ! b11
-    parcels%B(:, 1) = get_abc(parcels%volume(1:n_parcels)) ** f23
+    parcels%B(1, :) = get_abc(parcels%volume(1:n_parcels)) ** f23
 
     ! b22
-    parcels%B(:, 4) = parcels%B(:, 1)
+    parcels%B(4, :) = parcels%B(1, :)
 
     call par2grid
 
