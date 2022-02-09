@@ -81,7 +81,7 @@ module parcel_merge
             integer                                    :: m, ic, is, l, n
             integer                                    :: loca(n_parcels)
             double precision                           :: x0(n_merge), y0(n_merge)
-            double precision                           :: xm(n_merge), ym(n_merge), zm(n_merge)
+            double precision                           :: posm(3, n_merge)
             double precision                           :: delx, vmerge, dely, delz, B33, mu
             double precision                           :: buoym(n_merge), vortm(3, n_merge)
 #ifndef ENABLE_DRY_MODE
@@ -110,14 +110,14 @@ module parcel_merge
                     !y0 stores the y centre of the other parcel
                     y0(l) = parcels%position(2, ic)
 
-                    ! xm will sum v(is)*(x(is)-x(ic)) modulo periodicity
-                    xm(l) = zero
+                    ! posm(1, :) will sum v(is)*(x(is)-x(ic)) modulo periodicity
+                    posm(1, l) = zero
 
-                    ! ym will sum v(is)*(y(is)-y(ic)) modulo periodicity
-                    ym(l) = zero
+                    ! posm(2, :) will sum v(is)*(y(is)-y(ic)) modulo periodicity
+                    posm(2, l) = zero
 
-                    ! zm will contain v(ic)*z(ic)+sum{v(is)*z(is)}
-                    zm(l) = parcels%volume(ic) * parcels%position(3, ic)
+                    ! posm(3, :) will contain v(ic)*z(ic)+sum{v(is)*z(is)}
+                    posm(3, l) = parcels%volume(ic) * parcels%position(3, ic)
 
                     ! buoyancy and humidity
                     buoym(l) = parcels%volume(ic) * parcels%buoyancy(ic)
@@ -140,11 +140,11 @@ module parcel_merge
                 dely = get_dely(parcels%position(2, is), y0(n))
 
                 ! Accumulate sum of v(is)*(x(is)-x(ic)) and v(is)*(y(is)-y(ic))
-                xm(n) = xm(n) + parcels%volume(is) * delx
-                ym(n) = ym(n) + parcels%volume(is) * dely
+                posm(1, n) = posm(1, n) + parcels%volume(is) * delx
+                posm(2, n) = posm(2, n) + parcels%volume(is) * dely
 
                 ! Accumulate v(ic)*z(ic)+sum{v(is)*z(is)}
-                zm(n) = zm(n) + parcels%volume(is) * parcels%position(3, is)
+                posm(3, n) = posm(3, n) + parcels%volume(is) * parcels%position(3, is)
 
                 ! Accumulate buoyancy and humidity
                 buoym(n) = buoym(n) + parcels%volume(is) * parcels%buoyancy(is)
@@ -160,12 +160,20 @@ module parcel_merge
                 ! temporary scalar containing 1 / vm(m)
                 vmerge = one / vm(m)
 
+                ! need to sanitise input and output, but first to determine input
+                posm(1, m) = - vmerge * posm(1, m)
+                posm(2, m) = - vmerge * posm(2, m)
+
+                call apply_periodic_bc(posm(:, m))
                 ! x and y centre of merged parcel, modulo periodicity
-                xm(m) = get_delx(x0(m), - vmerge * xm(m))
-                ym(m) = get_dely(y0(m), - vmerge * ym(m))
+                posm(1, m) = get_delx(x0(m), posm(1, m))
+                posm(2, m) = get_dely(y0(m), posm(2, m))
 
                 ! z centre of merged parcel
-                zm(m) = vmerge * zm(m)
+                posm(3, m) = vmerge * posm(3, m)
+
+                ! need to correct position
+                call apply_periodic_bc(posm(:, m))
 
                 ! buoyancy and humidity
                 buoym(m) = vmerge * buoym(m)
@@ -189,9 +197,9 @@ module parcel_merge
 
                     B33 = get_B33(parcels%B(:, ic), parcels%volume(ic))
 
-                    delx = get_delx(parcels%position(1, ic), xm(l))
-                    dely = get_dely(parcels%position(2, ic), ym(l))
-                    delz = parcels%position(3, ic) - zm(l)
+                    delx = get_delx(parcels%position(1, ic), posm(1, l))
+                    dely = get_dely(parcels%position(2, ic), posm(2, l))
+                    delz = parcels%position(3, ic) - posm(3, l)
 
                     mu = parcels%volume(ic) * vmerge
 
@@ -204,9 +212,9 @@ module parcel_merge
                     Bm(6, l) = mu * (five * delz ** 2   + B33)
 
                     parcels%volume(ic)  = vm(l)
-                    parcels%position(1, ic) = xm(l)
-                    parcels%position(2, ic) = ym(l)
-                    parcels%position(3, ic) = zm(l)
+                    parcels%position(1, ic) = posm(1, l)
+                    parcels%position(2, ic) = posm(2, l)
+                    parcels%position(3, ic) = posm(3, l)
 
                     parcels%buoyancy(ic) = buoym(l)
 #ifndef ENABLE_DRY_MODE
@@ -221,9 +229,9 @@ module parcel_merge
 
                 vmerge = one / vm(n)
 
-                delx = get_delx(parcels%position(1, is), xm(n))
-                dely = get_dely(parcels%position(2, is), ym(n))
-                delz = parcels%position(3, is) - zm(n)
+                delx = get_delx(parcels%position(1, is), posm(1, n))
+                dely = get_dely(parcels%position(2, is), posm(2, n))
+                delz = parcels%position(3, is) - posm(3, n)
 
                 B33 = get_B33(parcels%B(:, is), parcels%volume(is))
 

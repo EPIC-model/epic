@@ -10,6 +10,7 @@ module parcel_diagnostics
     use parcel_ellipse
     use h5_utils
     use h5_writer
+    use h5_reader, only : get_num_steps
     use omp_lib
     use timer, only : start_timer, stop_timer
     implicit none
@@ -38,6 +39,12 @@ module parcel_diagnostics
     ! rms vorticity
     double precision :: rms_zeta
 
+    ! min and max buoyancy
+    double precision :: bmin, bmax
+
+    ! min and max vorticity
+    double precision :: vormin, vormax
+
 #ifdef ENABLE_DIAGNOSE
     ! buoyancy weighted first and second moments
     double precision :: xb_bar, x2b_bar
@@ -63,11 +70,25 @@ module parcel_diagnostics
         ! Create the parcel diagnostic file.
         ! @param[in] basename of the file
         ! @param[in] overwrite the file
-        subroutine create_h5_parcel_stat_file(basename, overwrite)
-            character(*), intent(in) :: basename
-            logical,      intent(in) :: overwrite
+        subroutine create_h5_parcel_stat_file(basename, overwrite, l_restart, step)
+            character(*), intent(in)  :: basename
+            logical,      intent(in)  :: overwrite
+            logical,      intent(in)  :: l_restart
+            integer,      intent(out) :: step
+            logical                   :: l_exist
 
             h5fname =  basename // '_parcel_stats.hdf5'
+
+            call exist_h5_file(h5fname, l_exist)
+
+            if (l_restart .and. l_exist) then
+                call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
+                call get_num_steps(h5file_id, step)
+                call close_h5_file(h5file_id)
+                return
+            endif
+
+            step = 0
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
@@ -92,12 +113,12 @@ module parcel_diagnostics
             ! sort buoyancy in ascending order
             call msort(b, ii)
 
-            gam = one / extent(1)
-            zmean = f12 * gam * parcels%volume(ii(1))
+            gam = f12 / extent(1)
+            zmean = gam * parcels%volume(ii(1))
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
             do n = 2, n_parcels
-                zmean = zmean + gam * parcels%volume(ii(n))
+                zmean = zmean + gam * (parcels%volume(ii(n-1)) + parcels%volume(ii(n)))
 
                 peref = peref &
                       - b(n) * parcels%volume(ii(n)) * zmean
@@ -115,6 +136,13 @@ module parcel_diagnostics
             ! reset
             ke = zero
             pe = zero
+
+            ! find extrema outside OpenMP loop, we can integrate it later;
+            ! this way the result is reproducible
+            bmin = minval(parcels%buoyancy(1:n_parcels))
+            bmax = maxval(parcels%buoyancy(1:n_parcels))
+            vormin = minval(parcels%vorticity(1:n_parcels))
+            vormax = maxval(parcels%vorticity(1:n_parcels))
 
             lsum = zero
             l2sum = zero
@@ -137,10 +165,10 @@ module parcel_diagnostics
             !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
             do n = 1, n_parcels
 
-                vel = velocity(n, :)
+                vel = velocity(:, n)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
-                z   = parcels%position(n, 2) - zmin
+                z   = parcels%position(2, n) - zmin
 
                 ! kinetic energy
                 ke = ke + (vel(1) ** 2 + vel(2) ** 2) * vol
@@ -148,8 +176,8 @@ module parcel_diagnostics
                 ! potential energy
                 pe = pe - b * z * vol
 
-                B22 = get_B22(parcels%B(n, 1), parcels%B(n, 2), vol)
-                eval = get_eigenvalue(parcels%B(n, 1), parcels%B(n, 2), B22)
+                B22 = get_B22(parcels%B(1, n), parcels%B(2, n), vol)
+                eval = get_eigenvalue(parcels%B(1, n), parcels%B(2, n), B22)
                 lam = get_aspect_ratio(eval, vol)
 
                 lsum = lsum + lam
@@ -229,25 +257,25 @@ module parcel_diagnostics
             !$omp& reduction(+: vvsum, bvsum, xbv, zbv, x2bv, z2bv, xzbv, xvv, zvv, x2vv, z2vv, xzvv)
             do n = 1, n_parcels
                 ! we only use the upper half in horizontal direction
-                if (parcels%position(n, 1) >= 0) then
+                if (parcels%position(1, n) >= 0) then
                     bv = parcels%buoyancy(n) * parcels%volume(n)
                     bvsum = bvsum + bv
-                    xbv = xbv + bv * parcels%position(n, 1)
-                    zbv = zbv + bv * parcels%position(n, 2)
+                    xbv = xbv + bv * parcels%position(1, n)
+                    zbv = zbv + bv * parcels%position(2, n)
 
-                    x2bv = x2bv + bv * parcels%position(n, 1) ** 2
-                    z2bv = z2bv + bv * parcels%position(n, 2) ** 2
-                    xzbv = xzbv + bv * parcels%position(n, 1) * parcels%position(n, 2)
+                    x2bv = x2bv + bv * parcels%position(1, n) ** 2
+                    z2bv = z2bv + bv * parcels%position(2, n) ** 2
+                    xzbv = xzbv + bv * parcels%position(1, n) * parcels%position(2, n)
 
 
                     vv = parcels%vorticity(n) * parcels%volume(n)
                     vvsum = vvsum + vv
-                    xvv = xvv + vv * parcels%position(n, 1)
-                    zvv = zvv + vv * parcels%position(n, 2)
+                    xvv = xvv + vv * parcels%position(1, n)
+                    zvv = zvv + vv * parcels%position(2, n)
 
-                    x2vv = x2vv + vv * parcels%position(n, 1) ** 2
-                    z2vv = z2vv + vv * parcels%position(n, 2) ** 2
-                    xzvv = xzvv + vv * parcels%position(n, 1) * parcels%position(n, 2)
+                    x2vv = x2vv + vv * parcels%position(1, n) ** 2
+                    z2vv = z2vv + vv * parcels%position(2, n) ** 2
+                    xzvv = xzvv + vv * parcels%position(1, n) * parcels%position(2, n)
                 endif
             enddo
             !$omp end do
@@ -340,6 +368,11 @@ module parcel_diagnostics
             call write_h5_scalar_attrib(group, "std volume", std_vol)
 
             call write_h5_scalar_attrib(group, "rms vorticity", rms_zeta)
+
+            call write_h5_scalar_attrib(group, "min buoyancy", bmin)
+            call write_h5_scalar_attrib(group, "max buoyancy", bmax)
+            call write_h5_scalar_attrib(group, "min vorticity", vormin)
+            call write_h5_scalar_attrib(group, "max vorticity", vormax)
 
 #ifdef ENABLE_DIAGNOSE
             call write_h5_scalar_attrib(group, "xb_bar", xb_bar)

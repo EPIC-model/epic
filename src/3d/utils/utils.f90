@@ -3,12 +3,10 @@ module utils
     use field_hdf5
     use parcel_hdf5
     use parcel_diagnostics
+    use field_diagnostics
     use parcel_container, only : n_parcels
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
-#ifndef NDEBUG
-    use parcel_interpl, only : vol2grid_symmetry_error
-#endif
     use field_diagnostics, only : write_h5_field_stats_step
 #ifdef ENABLE_NETCDF
     use field_netcdf
@@ -24,6 +22,39 @@ module utils
     private :: nfw, npw, nspw, nsfw, nnfw
 
     contains
+
+        ! Create H5 files and set the step number
+        subroutine setup_output_files
+            use options, only : output, l_restart
+
+            if (output%h5_write_parcel_stats) then
+                call create_h5_parcel_stat_file(trim(output%h5_basename), &
+                                                output%h5_overwrite,      &
+                                                l_restart, nspw)
+            endif
+
+            if (output%h5_write_fields) then
+                call create_h5_field_file(trim(output%h5_basename), &
+                                          output%h5_overwrite,      &
+                                          l_restart, nfw)
+#ifdef ENABLE_NETCDF
+                call create_netcdf_field_file(trim(output%h5_basename), output%h5_overwrite)
+#endif
+            endif
+
+            if (output%h5_write_field_stats) then
+                call create_h5_field_stats_file(trim(output%h5_basename),   &
+                                                output%h5_overwrite,        &
+                                                l_restart, nsfw)
+            endif
+
+            if (output%h5_write_parcels) then
+                call create_h5_parcel_file(trim(output%h5_basename),    &
+                                           output%h5_overwrite,         &
+                                           l_restart, npw)
+            endif
+
+        end subroutine setup_output_files
 
         ! Write last step to the H5 files. For the time step dt, it
         ! writes zero.
@@ -59,9 +90,6 @@ module utils
             double precision,  intent(in) :: dt
             logical, optional, intent(in) :: l_force
             double precision              :: neg = one
-#ifndef NDEBUG
-            logical                      :: do_vol2grid_sym_err = .true.
-#endif
 
             if (present(l_force)) then
                 if (l_force) then
@@ -72,10 +100,6 @@ module utils
             ! make sure we always write initial setup
             if (output%h5_write_fields .and. &
                 (t + epsilon(zero) >= neg * dble(nfw) * output%h5_field_freq)) then
-#ifndef NDEBUG
-                call vol2grid_symmetry_error
-                do_vol2grid_sym_err = .false.
-#endif
                 call write_h5_field_step(nfw, t, dt)
                 call write_netcdf_field_step(nnfw, t, dt)
             endif
@@ -94,11 +118,6 @@ module utils
             if (output%h5_write_field_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nsfw) * output%h5_field_stats_freq)) then
 
-#ifndef NDEBUG
-                if (do_vol2grid_sym_err) then
-                    call vol2grid_symmetry_error
-                endif
-#endif
                 call write_h5_field_stats_step(nsfw, t, dt)
             endif
         end subroutine write_step

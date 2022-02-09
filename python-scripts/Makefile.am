@@ -15,5 +15,5 @@ plot_timingsdir = $(bindir)
 merge_ellipses_PYTHON = merge-ellipses.py
 merge_ellipsesdir = $(bindir)
 
-plot_mergers_PYTHON = plot-mergers.py
-plot_mergersdir = $(bindir)
+subgrid_2d_generalised_PYTHON = subgrid_2d_generalised.py
+subgrid_2d_generaliseddir = $(bindir)

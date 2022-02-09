@@ -12,8 +12,14 @@ module options
     ! print more info if true
     logical :: verbose = .false.
 
+    ! if a restarted simulation
+    logical :: l_restart = .false.
+
     ! configuration file
     character(len=512) :: filename = ''
+
+    ! restart file
+    character(len=512) :: restart_file = ''
 
     ! field input file
     character(len=512)  :: field_file = ''
@@ -60,6 +66,7 @@ module options
 
     ! time limit
     type time_info_type
+        double precision :: initial     = zero       ! initial time
         double precision :: limit       = zero       ! time limit
         double precision :: alpha       = 0.2d0      ! factor for adaptive time stepping with strain and buoyancy
                                                      ! gradient

@@ -2,6 +2,7 @@ import h5py
 import os
 import numpy as np
 from matplotlib.patches import Ellipse, Circle
+from matplotlib.collections import EllipseCollection
 
 
 class H5Reader:
@@ -58,19 +59,22 @@ class H5Reader:
     def get_box_origin(self):
         return np.array(self._h5file["box"].attrs["origin"])
 
-    def get_dataset(self, step, name):
+    def get_dataset(self, step, name, indices=None):
         s = self._get_step_string(step)
         if not name in self._h5file[s].keys():
             raise IOError("Dataset '" + name + "' unknown.")
-        return np.array(self._h5file[s][name])
+        if indices is not None:
+            return np.array(self._h5file[s][name])[indices, ...]
+        else:
+            return np.array(self._h5file[s][name])
 
-    def get_dataset_min_max(self, name):
+    def get_dataset_min_max(self, name, indices=None):
         nsteps = self.get_num_steps()
-        data = self.get_dataset(0, name)
+        data = self.get_dataset(0, name, indices=indices)
         vmax = data.max()
         vmin = data.min()
         for step in range(1, nsteps):
-            data = self.get_dataset(step, name)
+            data = self.get_dataset(step, name, indices=indices)
             vmax = max(vmax, data.max())
             vmin = min(vmin, data.min())
         return vmin, vmax
@@ -94,7 +98,10 @@ class H5Reader:
         s = self._get_step_string(step)
         if not name in self._h5file[s].attrs.keys():
             raise IOError("Step attribute '" + name + "' unknown.")
-        return self._h5file[s].attrs[name]
+        val = self._h5file[s].attrs[name]
+        if isinstance(val, np.float64):
+            return val
+        return val[0]
 
     def get_diagnostic_names(self):
         return self.get_step_attribute_names()
@@ -116,55 +123,62 @@ class H5Reader:
     def get_num_parcels(self, step):
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
-        return self.get_step_attribute(step, "num parcel")[0]
+        return self.get_step_attribute(step, "num parcel")
 
-    def get_ellipses(self, step):
+    def get_ellipses(self, step, indices=None):
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
-        position = self.get_dataset(step, "position")
-        V = self.get_dataset(step, "volume")
-        B = self.get_dataset(step, "B")
+        position = self.get_dataset(step, "position", indices=indices)
+        V = self.get_dataset(step, "volume", indices=indices)
+        B = self.get_dataset(step, "B", indices=indices)
 
-        B22 = self._get_B22(B[0, :], B[1, :], V)
-        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
-        angle = self._get_angle(B[0, :], B[1, :], B22, a2)
+        B22 = self._get_B22(B[:, 0], B[:, 1], V)
+        a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
+        angle = self._get_angle(B[:, 0], B[:, 1], B22, a2)
 
         b2 = (V / np.pi) ** 2 / a2
-        return [
-            Ellipse(
-                xy=position[:, i],
-                width=2 * np.sqrt(a2[i]),
-                height=2 * np.sqrt(b2[i]),
-                angle=np.rad2deg(angle[i]),
-            )
-            for i in range(len(V))
-        ]
+        # 4 Feb 2022
+        # https://matplotlib.org/stable/gallery/shapes_and_collections/ellipse_collection.html
+        return EllipseCollection(widths=2 * np.sqrt(a2),
+                                 heights=2 * np.sqrt(b2),
+                                 angles=np.rad2deg(angle),
+                                 units='xy',
+                                 offsets=position)
+        #return [
+            #Ellipse(
+                #xy=position[i, :],
+                #width=2 * np.sqrt(a2[i]),
+                #height=2 * np.sqrt(b2[i]),
+                #angle=np.rad2deg(angle[i]),
+            #)
+            #for i in range(len(V))
+        #]
 
-    def get_ellipses_for_bokeh(self, step):
+    def get_ellipses_for_bokeh(self, step, indices=None):
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
-        position = self.get_dataset(step, "position")
-        V = self.get_dataset(step, "volume")
-        B = self.get_dataset(step, "B")
-        B22 = self._get_B22(B[0, :], B[1, :], V)
-        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
-        angle = self._get_angle(B[0, :], B[1, :], B22, a2)
+        position = self.get_dataset(step, "position", indices=indices)
+        V = self.get_dataset(step, "volume", indices=indices)
+        B = self.get_dataset(step, "B", indices=indices)
+        B22 = self._get_B22(B[:, 0], B[:, 1], V)
+        a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
+        angle = self._get_angle(B[:, 0], B[:, 1], B22, a2)
         b2 = (V / np.pi) ** 2 / a2
         return (
-            position[0, :],
-            position[1, :],
+            position[:, 0],
+            position[:, 1],
             2 * np.sqrt(a2[:]),
             2 * np.sqrt(b2[:]),
             angle[:],
         )
 
-    def get_aspect_ratio(self, step):
+    def get_aspect_ratio(self, step, indices=None):
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
-        V = self.get_dataset(step, "volume")
-        B = self.get_dataset(step, "B")
-        B22 = self._get_B22(B[0, :], B[1, :], V)
-        a2 = self._get_eigenvalue(B[0, :], B[1, :], B22)
+        V = self.get_dataset(step, "volume", indices=indices)
+        B = self.get_dataset(step, "B", indices=indices)
+        B22 = self._get_B22(B[:, 0], B[:, 1], V)
+        a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
         return a2 / V * np.pi
 
     def _get_B22(self, B11, B12, V):

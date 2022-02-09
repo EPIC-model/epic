@@ -10,6 +10,7 @@ module parcel_diagnostics
     use parcel_ellipsoid
     use h5_utils
     use h5_writer
+    use h5_reader, only : get_num_steps
     use omp_lib
     use timer, only : start_timer, stop_timer
     implicit none
@@ -51,11 +52,25 @@ module parcel_diagnostics
         ! Create the parcel diagnostic file.
         ! @param[in] basename of the file
         ! @param[in] overwrite the file
-        subroutine create_h5_parcel_stat_file(basename, overwrite)
-            character(*), intent(in) :: basename
-            logical,      intent(in) :: overwrite
+        subroutine create_h5_parcel_stat_file(basename, overwrite, l_restart, step)
+            character(*), intent(in)  :: basename
+            logical,      intent(in)  :: overwrite
+            logical,      intent(in)  :: l_restart
+            integer,      intent(out) :: step
+            logical                   :: l_exist
 
             h5fname =  basename // '_parcel_stats.hdf5'
+
+            call exist_h5_file(h5fname, l_exist)
+
+            if (l_restart .and. l_exist) then
+                call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
+                call get_num_steps(h5file_id, step)
+                call close_h5_file(h5file_id)
+                return
+            endif
+
+            step = 0
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
@@ -80,7 +95,7 @@ module parcel_diagnostics
             ! sort buoyancy in ascending order
             call msort(b, ii)
 
-            gam = one / extent(1)
+            gam = one / (extent(1) * extent(2))
             zmean = f12 * gam * parcels%volume(ii(1))
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
@@ -113,7 +128,7 @@ module parcel_diagnostics
 
             n_small = zero
 
-            zmin = lower(2)
+            zmin = lower(3)
 
             avg_lam = zero
             avg_vol = zero
@@ -131,7 +146,7 @@ module parcel_diagnostics
                 z   = parcels%position(3, n) - zmin
 
                 ! kinetic energy
-                ke = ke + (vel(1) ** 2 + vel(2) ** 2 + vel(3)) * vol
+                ke = ke + (vel(1) ** 2 + vel(2) ** 2 + vel(3) ** 2) * vol
 
                 ! potential energy
                 pe = pe - b * z * vol

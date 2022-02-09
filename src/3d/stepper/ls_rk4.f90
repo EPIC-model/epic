@@ -3,7 +3,7 @@
 !            (see https://doi.org/10.5194/gmd-10-3145-2017)
 ! =============================================================================
 module ls_rk4
-    use options, only : parcel
+    use options, only : parcel, time
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_dBdt, get_time_step
@@ -73,7 +73,7 @@ module ls_rk4
             double precision, intent(inout) :: t
             double precision                :: dt
 
-            call par2grid
+            call par2grid((t > time%initial))
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep

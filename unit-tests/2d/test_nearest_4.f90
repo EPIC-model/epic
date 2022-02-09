@@ -79,48 +79,48 @@ program test_nearest_4
         ! (5a) (a, b) - c - d = e
         subroutine parcel_setup_5a(p)
             integer, intent(in) :: p(5)
-            parcels%position(p(1), 1) = 0.12d0
-            parcels%position(p(1), 2) = 0.07d0
+            parcels%position(1, p(1)) = 0.12d0
+            parcels%position(2, p(1)) = 0.07d0
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = 0.12d0
-            parcels%position(p(2), 2) = -0.07d0
+            parcels%position(1, p(2)) = 0.12d0
+            parcels%position(2, p(2)) = -0.07d0
             parcels%volume(p(2)) = 0.1d0 * pi
 
-            parcels%position(p(3), 1) = 0.19d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.19d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.1d0 * pi
 
-            parcels%position(p(4), 1) = 0.25d0
-            parcels%position(p(4), 2) = zero
+            parcels%position(1, p(4)) = 0.25d0
+            parcels%position(2, p(4)) = zero
             parcels%volume(p(4)) = 0.1d0 * pi
 
-            parcels%position(p(5), 1) = 0.3d0
-            parcels%position(p(5), 2) = zero
+            parcels%position(1, p(5)) = 0.3d0
+            parcels%position(2, p(5)) = zero
             parcels%volume(p(5)) = 0.1d0 * pi
         end subroutine parcel_setup_5a
 
         ! (5b) (a, b) - C - (d, e)
         subroutine parcel_setup_5b(p)
             integer, intent(in) :: p(5)
-            parcels%position(p(1), 1) = -0.12d0
-            parcels%position(p(1), 2) = 0.07d0
+            parcels%position(1, p(1)) = -0.12d0
+            parcels%position(2, p(1)) = 0.07d0
             parcels%volume(p(1)) = 0.1d0 * pi
 
-            parcels%position(p(2), 1) = -0.12d0
-            parcels%position(p(2), 2) = -0.07d0
+            parcels%position(1, p(2)) = -0.12d0
+            parcels%position(2, p(2)) = -0.07d0
             parcels%volume(p(2)) = 0.1d0 * pi
 
-            parcels%position(p(3), 1) = 0.0d0
-            parcels%position(p(3), 2) = zero
+            parcels%position(1, p(3)) = 0.0d0
+            parcels%position(2, p(3)) = zero
             parcels%volume(p(3)) = 0.4d0 * pi
 
-            parcels%position(p(4), 1) = 0.12d0
-            parcels%position(p(4), 2) = 0.07d0
+            parcels%position(1, p(4)) = 0.12d0
+            parcels%position(2, p(4)) = 0.07d0
             parcels%volume(p(4)) = 0.1d0 * pi
 
-            parcels%position(p(5), 1) = 0.12d0
-            parcels%position(p(5), 2) = -0.07d0
+            parcels%position(1, p(5)) = 0.12d0
+            parcels%position(2, p(5)) = -0.07d0
             parcels%volume(p(5)) = 0.1d0 * pi
         end subroutine parcel_setup_5b
 

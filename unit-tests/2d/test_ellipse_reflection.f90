@@ -42,13 +42,13 @@ program test_ellipse_reflection
         ! lower boundary check
         !
 
-        parcels%position(1, :) = (/f12, - f12 * dx(2)/)
+        parcels%position(:, 1) = (/f12, - f12 * dx(2)/)
         B11 = a2 * dcos(angle) ** 2 + b2 * dsin(angle) ** 2
         B12 = f12 * (a2 - b2) * dsin(two * angle)
         parcels%B(1, 1) = B11
-        parcels%B(1, 2) = B12
+        parcels%B(2, 1) = B12
 
-        call apply_reflective_bc(parcels%position(1, :), parcels%B(1, :))
+        call apply_reflective_bc(parcels%position(:, 1), parcels%B(:, 1))
 
         call check_result('lower')
 
@@ -58,13 +58,13 @@ program test_ellipse_reflection
 
         angle = dble(iter) * pi / 180.0d0
 
-        parcels%position(1, :) = (/f12, one + f12 * dx(2)/)
+        parcels%position(:, 1) = (/f12, one + f12 * dx(2)/)
         B11 = a2 * dcos(angle) ** 2 + b2 * dsin(angle) ** 2
         B12 = f12 * (a2 - b2) * dsin(two * angle)
         parcels%B(1, 1) = B11
-        parcels%B(1, 2) = B12
+        parcels%B(2, 1) = B12
 
-        call apply_reflective_bc(parcels%position(1, :), parcels%B(1, :))
+        call apply_reflective_bc(parcels%position(:, 1), parcels%B(:, 1))
 
         call check_result('upper')
     enddo
@@ -88,15 +88,15 @@ program test_ellipse_reflection
             endif
 
             error = max(error, abs(parcels%B(1, 1) - B11))
-            error = max(error, abs(parcels%B(1, 2) + B12))
-            error = max(error, abs(angle + get_angle(parcels%B(1, 1), parcels%B(1, 2), &
+            error = max(error, abs(parcels%B(2, 1) + B12))
+            error = max(error, abs(angle + get_angle(parcels%B(1, 1), parcels%B(2, 1), &
                                                      parcels%volume(1))))
             error = max(error, abs(f12 - parcels%position(1, 1)))
 
             if (bc == 'lower') then
-                error = max(error, abs(f12 * dx(2) - parcels%position(1, 2)))
+                error = max(error, abs(f12 * dx(2) - parcels%position(2, 1)))
             else
-                error = max(error, abs(one - f12 * dx(2) - parcels%position(1, 2)))
+                error = max(error, abs(one - f12 * dx(2) - parcels%position(2, 1)))
             endif
         end subroutine check_result
 

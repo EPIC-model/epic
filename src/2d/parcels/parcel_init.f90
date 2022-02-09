@@ -7,7 +7,7 @@ module parcel_init
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
-    use parcel_interpl, only : trilinear, ngp
+    use parcel_interpl, only : bilinear, ngp
     use parameters, only : update_parameters,   &
                            dx, vcell, ncell,    &
                            extent, lower, nx, nz
@@ -38,6 +38,96 @@ module parcel_init
             call alloc_and_precompute
         end subroutine unit_test_parcel_init_alloc
 
+        ! This subroutine reads parcels from an EPIC output file
+        subroutine read_parcels(h5fname, step)
+            character(*),     intent(in)  :: h5fname
+            integer,          intent(in)  :: step
+            integer(hid_t)                :: h5handle, group
+            integer                       :: ncells(2)
+            character(:), allocatable     :: grn
+            double precision, allocatable :: buffer_1d(:),   &
+                                             buffer_2d(:, :)
+            logical                       :: l_valid = .false.
+
+
+            call start_timer(init_timer)
+
+            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
+
+            ! read domain dimensions
+            call read_h5_box(h5handle, ncells, extent, lower)
+            nx = ncells(1)
+            nz = ncells(2)
+
+            ! update global parameters
+            call update_parameters
+
+            grn = trim(get_step_group_name(step))
+            call open_h5_group(h5handle, grn, group)
+            call get_num_parcels(group, n_parcels)
+
+            if (n_parcels > max_num_parcels) then
+                print *, "Number of parcels exceeds limit of", &
+                          max_num_parcels, ". Exiting."
+                stop
+            endif
+
+            ! Be aware that the starting index of buffer_1d and buffer_2d
+            ! is 0; hence, the range is 0:n_parcels-1 in contrast to the
+            ! parcel container where it is 1:n_parcels.
+
+            if (has_dataset(group, 'B')) then
+                call read_h5_dataset(group, 'B', buffer_2d)
+                parcels%B(:, 1:n_parcels) = buffer_2d
+                deallocate(buffer_2d)
+            else
+                print *, "The parcel shape must be present! Exiting."
+                stop
+            endif
+
+            if (has_dataset(group, 'position')) then
+                call read_h5_dataset(group, 'position', buffer_2d)
+                parcels%position(:, 1:n_parcels) = buffer_2d
+                deallocate(buffer_2d)
+            else
+                print *, "The parcel position must be present! Exiting."
+                stop
+            endif
+
+            if (has_dataset(group, 'volume')) then
+                call read_h5_dataset(group, 'volume', buffer_1d)
+                parcels%volume(1:n_parcels) = buffer_1d
+                deallocate(buffer_1d)
+            else
+                print *, "The parcel volume must be present! Exiting."
+                stop
+            endif
+
+            if (has_dataset(group, 'vorticity')) then
+                l_valid = .true.
+                call read_h5_dataset(group, 'vorticity', buffer_1d)
+                parcels%vorticity(1:n_parcels) = buffer_1d
+                deallocate(buffer_1d)
+            endif
+
+            if (has_dataset(group, 'buoyancy')) then
+                l_valid = .true.
+                call read_h5_dataset(group, 'buoyancy', buffer_1d)
+                parcels%buoyancy(1:n_parcels) = buffer_1d
+                deallocate(buffer_1d)
+            endif
+
+            if (.not. l_valid) then
+                print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
+                stop
+            endif
+
+            call close_h5_group(group)
+            call close_h5_file(h5handle)
+
+            call stop_timer(init_timer)
+
+        end subroutine read_parcels
 
         ! Set default values for parcel attributes
         ! Attention: This subroutine assumes that the parcel
@@ -92,10 +182,10 @@ module parcel_init
             !$omp do private(n)
             do n = 1, n_parcels
                 ! B11
-                parcels%B(n, 1) = ratio * get_ab(parcels%volume(n))
+                parcels%B(1, n) = ratio * get_ab(parcels%volume(n))
 
                 ! B12
-                parcels%B(n, 2) = zero
+                parcels%B(2, n) = zero
             enddo
             !$omp end do
             !$omp end parallel
@@ -142,8 +232,8 @@ module parcel_init
                     corner = lower + dble((/ix, iz/)) * dx
                     do j = 1, n_per_dim
                         do i = 1, n_per_dim
-                            parcels%position(k, 1) = corner(1) + dx(1) * (dble(i) - f12) * im
-                            parcels%position(k, 2) = corner(2) + dx(2) * (dble(j) - f12) * im
+                            parcels%position(1, k) = corner(1) + dx(1) * (dble(i) - f12) * im
+                            parcels%position(2, k) = corner(2) + dx(2) * (dble(j) - f12) * im
                             k = k + 1
                         enddo
                     enddo
@@ -170,16 +260,18 @@ module parcel_init
         end subroutine init_refine
 
 
-        ! Precompute weights, indices of trilinear
+        ! Precompute weights, indices of bilinear
         ! interpolation and "apar"
         subroutine alloc_and_precompute
-            double precision :: resi(0:nz, 0:nx-1), rsum
+            double precision, allocatable :: resi(:, :)
+            double precision :: rsum
             integer          :: n, l
 
             allocate(apar(n_parcels))
-            allocate(weights(n_parcels, ngp))
-            allocate(is(n_parcels, ngp))
-            allocate(js(n_parcels, ngp))
+            allocate(weights(ngp, n_parcels))
+            allocate(is(ngp, n_parcels))
+            allocate(js(ngp, n_parcels))
+            allocate(resi(0:nz, 0:nx-1))
 
             ! Compute mean parcel density:
             resi = zero
@@ -187,10 +279,10 @@ module parcel_init
             !$omp parallel do default(shared) private(n, l) reduction(+:resi)
             do n = 1, n_parcels
                 ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(n, :), is(n, :), js(n, :), weights(n, :))
+                call bilinear(parcels%position(:, n), is(:, n), js(:, n), weights(:, n))
 
                 do l = 1, ngp
-                    resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) + weights(n, l)
+                    resi(js(l, n), is(l, n)) = resi(js(l, n), is(l, n)) + weights(l, n)
                 enddo
             enddo
             !$omp end parallel do
@@ -204,11 +296,13 @@ module parcel_init
             do n = 1, n_parcels
                 rsum = zero
                 do l = 1, ngp
-                    rsum = rsum + resi(js(n, l), is(n, l)) * weights(n, l)
+                    rsum = rsum + resi(js(l, n), is(l, n)) * weights(l, n)
                 enddo
                 apar(n) = one / rsum
             enddo
             !$omp end parallel do
+
+            deallocate(resi)
 
         end subroutine alloc_and_precompute
 
@@ -228,27 +322,41 @@ module parcel_init
             double precision, intent(in)  :: tol
             double precision, allocatable :: buffer_2d(:, :)
             double precision              :: field_2d(-1:nz+1, 0:nx-1)
-            integer(hid_t)                :: h5handle
+            integer(hid_t)                :: h5handle, group
+            integer                       :: n_steps
+            character(:), allocatable     :: grn
 
             call alloc_and_precompute
 
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
 
-            if (has_dataset(h5handle, 'vorticity')) then
-                call read_h5_dataset(h5handle, 'vorticity', buffer_2d)
+            call get_num_steps(h5handle, n_steps)
+
+            group = h5handle
+            if (n_steps > 0) then
+                ! we need to subtract 1 since it starts with 0
+                grn = trim(get_step_group_name(n_steps - 1))
+                call open_h5_group(h5handle, grn, group)
+            endif
+
+            if (has_dataset(group, 'vorticity')) then
+                call read_h5_dataset(group, 'vorticity', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
                 call gen_parcel_scalar_attr(field_2d, tol, parcels%vorticity)
             endif
 
 
-            if (has_dataset(h5handle, 'buoyancy')) then
-                call read_h5_dataset(h5handle, 'buoyancy', buffer_2d)
+            if (has_dataset(group, 'buoyancy')) then
+                call read_h5_dataset(group, 'buoyancy', buffer_2d)
                 call fill_field_from_buffer_2d(buffer_2d, field_2d)
                 deallocate(buffer_2d)
                 call gen_parcel_scalar_attr(field_2d, tol, parcels%buoyancy)
             endif
 
+            if (n_steps > 0) then
+                call close_h5_group(group)
+            endif
             call close_h5_file(h5handle)
 
             call dealloc
@@ -328,7 +436,7 @@ module parcel_init
             do n = 1, n_parcels
                 fsum = zero
                 do l = 1, ngp
-                    fsum = fsum + field(js(n, l), is(n, l)) * weights(n, l)
+                    fsum = fsum + field(js(l, n), is(l, n)) * weights(l, n)
                 enddo
                 par(n) = apar(n) * fsum
             enddo
@@ -342,8 +450,8 @@ module parcel_init
                 resi = zero
                 do n = 1, n_parcels
                     do l = 1, ngp
-                        resi(js(n, l), is(n, l)) = resi(js(n, l), is(n, l)) &
-                                                 + weights(n, l) * par(n)
+                        resi(js(l, n), is(l, n)) = resi(js(l, n), is(l, n)) &
+                                                 + weights(l, n) * par(n)
                     enddo
                 enddo
 
@@ -356,7 +464,7 @@ module parcel_init
                 do n = 1, n_parcels
                     rsum = zero
                     do l = 1, ngp
-                        rsum = rsum + resi(js(n, l), is(n, l)) * weights(n, l)
+                        rsum = rsum + resi(js(l, n), is(l, n)) * weights(l, n)
                     enddo
                     par(n) = par(n) + apar(n) * rsum
                 enddo
