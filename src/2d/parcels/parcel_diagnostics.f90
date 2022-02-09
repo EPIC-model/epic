@@ -39,6 +39,12 @@ module parcel_diagnostics
     ! rms vorticity
     double precision :: rms_zeta
 
+    ! min and max buoyancy
+    double precision :: bmin, bmax
+
+    ! min and max vorticity
+    double precision :: vormin, vormax
+
 #ifdef ENABLE_DIAGNOSE
     ! buoyancy weighted first and second moments
     double precision :: xb_bar, x2b_bar
@@ -107,12 +113,12 @@ module parcel_diagnostics
             ! sort buoyancy in ascending order
             call msort(b, ii)
 
-            gam = one / extent(1)
-            zmean = f12 * gam * parcels%volume(ii(1))
+            gam = f12 / extent(1)
+            zmean = gam * parcels%volume(ii(1))
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
             do n = 2, n_parcels
-                zmean = zmean + gam * parcels%volume(ii(n))
+                zmean = zmean + gam * (parcels%volume(ii(n-1)) + parcels%volume(ii(n)))
 
                 peref = peref &
                       - b(n) * parcels%volume(ii(n)) * zmean
@@ -130,6 +136,13 @@ module parcel_diagnostics
             ! reset
             ke = zero
             pe = zero
+
+            ! find extrema outside OpenMP loop, we can integrate it later;
+            ! this way the result is reproducible
+            bmin = minval(parcels%buoyancy(1:n_parcels))
+            bmax = maxval(parcels%buoyancy(1:n_parcels))
+            vormin = minval(parcels%vorticity(1:n_parcels))
+            vormax = maxval(parcels%vorticity(1:n_parcels))
 
             lsum = zero
             l2sum = zero
@@ -355,6 +368,11 @@ module parcel_diagnostics
             call write_h5_scalar_attrib(group, "std volume", std_vol)
 
             call write_h5_scalar_attrib(group, "rms vorticity", rms_zeta)
+
+            call write_h5_scalar_attrib(group, "min buoyancy", bmin)
+            call write_h5_scalar_attrib(group, "max buoyancy", bmax)
+            call write_h5_scalar_attrib(group, "min vorticity", vormin)
+            call write_h5_scalar_attrib(group, "max vorticity", vormax)
 
 #ifdef ENABLE_DIAGNOSE
             call write_h5_scalar_attrib(group, "xb_bar", xb_bar)

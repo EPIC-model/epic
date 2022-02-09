@@ -263,13 +263,15 @@ module parcel_init
         ! Precompute weights, indices of bilinear
         ! interpolation and "apar"
         subroutine alloc_and_precompute
-            double precision :: resi(0:nz, 0:nx-1), rsum
+            double precision, allocatable :: resi(:, :)
+            double precision :: rsum
             integer          :: n, l
 
             allocate(apar(n_parcels))
             allocate(weights(ngp, n_parcels))
             allocate(is(ngp, n_parcels))
             allocate(js(ngp, n_parcels))
+            allocate(resi(0:nz, 0:nx-1))
 
             ! Compute mean parcel density:
             resi = zero
@@ -299,6 +301,8 @@ module parcel_init
                 apar(n) = one / rsum
             enddo
             !$omp end parallel do
+
+            deallocate(resi)
 
         end subroutine alloc_and_precompute
 

@@ -20,7 +20,25 @@ Development of the 3D model (see [#230](https://github.com/matt-frey/epic/issues
 #### Bug fixes
 * [fix bug in Straka diagnostics](https://github.com/matt-frey/epic/pull/265)
 * [fix calculation of get_delx and get_dely for non-centred domains](https://github.com/matt-frey/epic/pull/279)
-
+## EPIC version 0.10.5
+* [change order of multi-dimensional arrays](https://github.com/matt-frey/epic/pull/302)
+* [remove merger dump](https://github.com/matt-frey/epic/pull/304)
+## EPIC version 0.10.4
+* [fix name of executable](https://github.com/matt-frey/epic/pull/299)
+* [fix name of executable](https://github.com/matt-frey/epic/pull/301)
+## EPIC version 0.10.3
+* [restarting EPIC](https://github.com/matt-frey/epic/pull/278)
+* [fix calculation of get_delx and get_dely for non-centred domains](https://github.com/matt-frey/epic/pull/279)
+* [update pillow dependency](https://github.com/matt-frey/epic/pull/280)
+* [update pyyaml dependency](https://github.com/matt-frey/epic/pull/281)
+* [update urllib3 dependency](https://github.com/matt-frey/epic/pull/282)
+* [fix get_delx for non-centred domains](https://github.com/matt-frey/epic/pull/283)
+* [update python dependencies](https://github.com/matt-frey/epic/pull/285)
+* [use proper interpolation name](https://github.com/matt-frey/epic/pull/287)
+* [new directory structure in main like in branch develop](https://github.com/matt-frey/epic/pull/291)
+* [combine to array](https://github.com/matt-frey/epic/pull/293)
+* [add initial time like in the 3D model](https://github.com/matt-frey/epic/pull/295)
+* [apply periodic BCs to parcel mergers](https://github.com/matt-frey/epic/pull/298)
 ## EPIC version 0.10.2
 * [fix import in README](https://github.com/matt-frey/epic/commit/fa36d763f9ee9d16c60b9bca58a5bc60e5464105)
 ## EPIC version 0.10.1

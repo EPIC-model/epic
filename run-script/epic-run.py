@@ -69,7 +69,7 @@ def run_job(config):
     # 24 June 2021
     # https://stackoverflow.com/questions/37058013/how-to-run-a-background-process-and-do-not-wait
     proc = subprocess.Popen(
-        args=["epic", "--config", config],
+        args=["epic2d", "--config", config],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
@@ -135,7 +135,7 @@ try:
 
     # 24 June 2021
     # https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-    if shutil.which("epic") is None:
+    if shutil.which("epic2d") is None:
         raise RuntimeError("EPIC executable not found in PATH environment variable")
 
     for fname in args.filenames:

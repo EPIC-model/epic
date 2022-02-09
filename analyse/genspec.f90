@@ -226,7 +226,7 @@ program genspec
         subroutine write_spectrum
             logical                   :: exists = .false.
             character(:), allocatable :: fname
-            integer                   :: pos, kx, kz
+            integer                   :: pos
 
             ! 1 October 2021
             ! https://stackoverflow.com/questions/36731707/fortran-how-to-remove-file-extension-from-character
@@ -249,11 +249,8 @@ program genspec
                 write(1235, *) '#         k   P(k)'
             endif
 
-            do kz = 0, nz
-                do kx = 0, nx - 1
-                    k = kmag(kx, kz)
-                    write(1235, *) k * delk, spec(k)
-                enddo
+            do k = 1, kmax
+                write(1235, *) k * delk, spec(k)
             enddo
 
             close(1235)

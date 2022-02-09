@@ -226,7 +226,7 @@ fi
 
 ENABLE_DRY_MODE='no'
 AC_ARG_ENABLE([dry-mode],
-              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=no)])],
+              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=yes)])],
               [ENABLE_DRY_MODE=$enableval])
 
 AM_CONDITIONAL([ENABLE_DRY_MODE], [test "$ENABLE_DRY_MODE" = "yes"])

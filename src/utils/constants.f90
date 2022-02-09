@@ -44,6 +44,6 @@ module constants
     double precision, parameter :: deg2rad = one / rad2deg
 
     ! maximum number of allowed parcels
-    integer, parameter :: max_num_parcels = 2.2e6
+    integer, parameter :: max_num_parcels = 4.5e7
 
 end module
