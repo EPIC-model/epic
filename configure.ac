@@ -18,12 +18,16 @@ AC_CONFIG_FILES([
     src/Makefile
     src/utils/Makefile
     src/hdf5/Makefile
+    src/fft/Makefile
     src/2d/Makefile
+    src/3d/Makefile
     models/Makefile
     models/2d/Makefile
+    models/3d/Makefile
     analyse/Makefile
     unit-tests/Makefile
     unit-tests/2d/Makefile
+    unit-tests/3d/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
@@ -206,7 +210,21 @@ AC_MSG_RESULT([$hdf5_found])
 ## "--enable" flags
 ##
 
-ENABLE_DRY_MODE='yes'
+ENABLE_3D='no'
+AC_ARG_ENABLE([3d],
+              [AS_HELP_STRING([--enable-3d], [enable 3D model (default=no)])],
+              [ENABLE_3D=$enableval])
+
+AM_CONDITIONAL([ENABLE_3D], [test "$ENABLE_3D" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling the 3D model])
+if test "x$ENABLE_3D" = "xyes"; then
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+fi
+
+ENABLE_DRY_MODE='no'
 AC_ARG_ENABLE([dry-mode],
               [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=yes)])],
               [ENABLE_DRY_MODE=$enableval])
