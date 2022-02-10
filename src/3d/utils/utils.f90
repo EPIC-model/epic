@@ -14,12 +14,11 @@ module utils
     implicit none
 
     integer :: nfw  = 0    ! number of field writes to h5
-    integer :: nnfw = 1
     integer :: npw  = 0    ! number of parcel writes to h5
     integer :: nspw = 0    ! number of parcel diagnostics writes to h5
     integer :: nsfw = 0    ! number of field diagnostics writes to h5
 
-    private :: nfw, npw, nspw, nsfw, nnfw
+    private :: nfw, npw, nspw, nsfw
 
     contains
 
@@ -38,7 +37,9 @@ module utils
                                           output%h5_overwrite,      &
                                           l_restart, nfw)
 #ifdef ENABLE_NETCDF
-                call create_netcdf_field_file(trim(output%h5_basename), output%h5_overwrite)
+                call create_netcdf_field_file(trim(output%h5_basename), &
+                                              output%h5_overwrite,      &
+                                              l_restart)
 #endif
             endif
 
@@ -102,7 +103,7 @@ module utils
                 (t + epsilon(zero) >= neg * dble(nfw) * output%h5_field_freq)) then
                 call write_h5_field_step(nfw, t, dt)
 #ifdef ENABLE_NETCDF
-                call write_netcdf_field_step(nnfw, t, dt)
+                call write_netcdf_field_step(t, dt)
 #endif
             endif
 

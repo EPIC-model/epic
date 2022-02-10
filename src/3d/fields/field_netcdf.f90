@@ -12,24 +12,41 @@ module field_netcdf
     integer            :: x_dim_id, y_dim_id, z_dim_id, t_dim_id
 
     integer            :: x_vel_id, y_vel_id, z_vel_id, &
-                          x_vor_id, y_vor_id, z_vor_id
+                          x_vor_id, y_vor_id, z_vor_id, &
+                          n_writes
 
     private :: ncid, ncfname,                           &
                x_dim_id, y_dim_id, z_dim_id, t_dim_id,  &
                x_vel_id, y_vel_id, z_vel_id,            &
-               x_vor_id, y_vor_id, z_vor_id
+               x_vor_id, y_vor_id, z_vor_id,            &
+               n_writes
 
     contains
 
         ! Create the field file.
         ! @param[in] basename of the file
         ! @param[in] overwrite the file
-        subroutine create_netcdf_field_file(basename, overwrite)
-            character(*), intent(in) :: basename
-            logical,      intent(in) :: overwrite
-            integer                  :: dimids(4)
+        subroutine create_netcdf_field_file(basename, overwrite, l_restart)
+            character(*), intent(in)  :: basename
+            logical,      intent(in)  :: overwrite
+            logical,      intent(in)  :: l_restart
+            logical                   :: l_exist
+            integer                   :: dimids(4)
+            character(:), allocatable :: name
 
             ncfname =  basename // '_fields.nc'
+
+            call exist_netcdf_file(ncfname, l_exist)
+
+            if (l_restart .and. l_exist) then
+                call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
+                ncerr = nf90_inquire_dimension(ncid, t_dim_id, name, n_writes)
+                call check_netcdf_error("Failed to inquire the dimension.")
+                call close_netcdf_file(ncid)
+                return
+            endif
+
+            n_writes = 1
 
             call create_netcdf_file(ncfname, overwrite, ncid)
 
@@ -42,35 +59,69 @@ module field_netcdf
             ! define fields
             dimids = (/z_dim_id, y_dim_id, x_dim_id, t_dim_id/)
 
-            call define_netcdf_dataset(ncid, 'x_velocity', 'm/s', &
-                                       NF90_DOUBLE, dimids, x_vel_id)
+            call define_netcdf_dataset(ncid=ncid,           &
+                                       name='x_velocity',   &
+                                       long_name='',        &
+                                       std_name='',         &
+                                       unit='m/s',          &
+                                       dtype=NF90_DOUBLE,   &
+                                       dimids=dimids,       &
+                                       varid=x_vel_id)
 
-            call define_netcdf_dataset(ncid, 'y_velocity', 'm/s', &
-                                       NF90_DOUBLE, dimids, y_vel_id)
+            call define_netcdf_dataset(ncid=ncid,           &
+                                       name='y_velocity',   &
+                                       long_name='',        &
+                                       std_name='',         &
+                                       unit='m/s',          &
+                                       dtype=NF90_DOUBLE,   &
+                                       dimids=dimids,       &
+                                       varid=y_vel_id)
 
-            call define_netcdf_dataset(ncid, 'z_velocity', 'm/s', &
-                                       NF90_DOUBLE, dimids, z_vel_id)
+            call define_netcdf_dataset(ncid=ncid,           &
+                                       name='z_velocity',   &
+                                       long_name='',        &
+                                       std_name='',         &
+                                       unit='m/s',          &
+                                       dtype=NF90_DOUBLE,   &
+                                       dimids=dimids,       &
+                                       varid=z_vel_id)
 
 
-            call define_netcdf_dataset(ncid, 'x_vorticity', '1/s', &
-                                       NF90_DOUBLE, dimids, x_vor_id)
+            call define_netcdf_dataset(ncid=ncid,           &
+                                       name='x_vorticity',  &
+                                       long_name='',        &
+                                       std_name='',         &
+                                       unit='1/s',          &
+                                       dtype=NF90_DOUBLE,   &
+                                       dimids=dimids,       &
+                                       varid=x_vor_id)
 
-            call define_netcdf_dataset(ncid, 'y_vorticity', '1/s', &
-                                       NF90_DOUBLE, dimids, y_vor_id)
+            call define_netcdf_dataset(ncid=ncid,           &
+                                       name='y_vorticity',  &
+                                       long_name='',        &
+                                       std_name='',         &
+                                       unit='1/s',          &
+                                       dtype=NF90_DOUBLE,   &
+                                       dimids=dimids,       &
+                                       varid=y_vor_id)
 
-            call define_netcdf_dataset(ncid, 'z_vorticity', '1/s', &
-                                       NF90_DOUBLE, dimids, z_vor_id)
+            call define_netcdf_dataset(ncid=ncid,           &
+                                       name='z_vorticity',  &
+                                       long_name='',        &
+                                       std_name='',         &
+                                       unit='1/s',          &
+                                       dtype=NF90_DOUBLE,   &
+                                       dimids=dimids,       &
+                                       varid=z_vor_id)
 
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_file
 
         ! Write a step in the field file.
-        ! @param[inout] nw counts the number of writes
         ! @param[in] t is the time
         ! @param[in] dt is the time step
-        subroutine write_netcdf_field_step(nw, t, dt)
-            integer,          intent(inout) :: nw
+        subroutine write_netcdf_field_step(t, dt)
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
 
@@ -84,14 +135,10 @@ module field_netcdf
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
-!             call write_h5_scalar_step_attrib(ncid, nw, "t", t)
-
-!             call write_h5_scalar_step_attrib(ncid, nw, "dt", dt)
-
-            call write_netcdf_fields(nw)
+            call write_netcdf_fields
 
             ! increment counter
-            nw = nw + 1
+            n_writes = n_writes + 1
 
             call close_netcdf_file(ncid)
 
@@ -102,26 +149,17 @@ module field_netcdf
 
         ! Write field datasets (called from write_netcdf_field_step).
         ! @param[in] iter is the number of the write
-        subroutine write_netcdf_fields(iter)
-            integer, intent(in)        :: iter ! iteration
+        subroutine write_netcdf_fields
 !             integer(hid_t)             :: group
             character(:), allocatable  :: name
             logical                    :: created
             integer                    :: cnt(4), start(4)
 
-!             name = trim(get_step_group_name(iter))
-
-!             call create_h5_group(ncid, name, group, created)
-
-!             if (.not. created) then
-!                 call open_h5_group(ncid, name, group)
-!             endif
-
             ! time step to write [step(4) is the time]
             cnt   = (/ nz+1, ny, nx, 1    /)
-            start = (/ 1,    1,  1,  iter /)
+            start = (/ 1,    1,  1,  n_writes /)
 
-            print *, "iter", iter
+            print *, "iter", n_writes
 
 
             !

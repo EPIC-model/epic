@@ -16,14 +16,14 @@ module netcdf_utils
             character(*), intent(in)  :: ncfname
             logical,      intent(in)  :: overwrite
             integer,      intent(out) :: ncid
-            logical                     :: exists = .true.
+            logical                   :: l_exist = .true.
 
             ! check whether file exists
-            inquire(file=ncfname, exist=exists)
+            call exist_netcdf_file(ncfname, l_exist)
 
-            if (exists .and. overwrite) then
+            if (l_exist .and. overwrite) then
                 call delete_netcdf_file(ncfname)
-            else if (exists) then
+            else if (l_exist) then
                 print *, "File '" // trim(ncfname) // "' already exists. Exiting."
                 stop
             endif
@@ -72,12 +72,20 @@ module netcdf_utils
 
             call check_netcdf_error("Closing the netcdf file failed.")
         end subroutine close_netcdf_file
-!
+
+        subroutine exist_netcdf_file(ncfname, l_exist)
+            character(*), intent(in)  :: ncfname
+            logical,      intent(out) :: l_exist
+
+            ! check whether file exists
+            inquire(file=ncfname, exist=l_exist)
+        end subroutine exist_netcdf_file
+
         subroutine check_netcdf_error(msg)
             character(*), intent(in) :: msg
 #ifndef NDEBUG
             if (ncerr /= nf90_noerr) then
-                print *, msgq
+                print *, msg
                 print *, trim(nf90_strerror(ncerr))
                 stop
             endif

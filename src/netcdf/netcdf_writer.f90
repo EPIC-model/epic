@@ -22,9 +22,11 @@ module netcdf_writer
             call check_netcdf_error("Failed to define" // name // "dimension.")
         end subroutine define_netcdf_dimension
 
-        subroutine define_netcdf_dataset(ncid, name, unit, dtype, dimids, varid)
+        subroutine define_netcdf_dataset(ncid, name, long_name, std_name, unit, dtype, dimids, varid)
             integer,      intent(in)  :: ncid
             character(*), intent(in)  :: name
+            character(*), intent(in)  :: long_name
+            character(*), intent(in)  :: std_name
             character(*), intent(in)  :: unit
             integer,      intent(in)  :: dtype ! NF90_DOUBLE or NF90_INT
             integer,      intent(in)  :: dimids(:)
@@ -38,6 +40,14 @@ module netcdf_writer
             ncerr = nf90_put_att(ncid, varid, "units", unit)
 
             call check_netcdf_error("Failed to define the dataset unit.")
+
+            ncerr = nf90_put_att(ncid, varid, "long_name", long_name)
+
+            call check_netcdf_error("Failed to define the dataset long name.")
+
+            ncerr = nf90_put_att(ncid, varid, "std_name", std_name)
+
+            call check_netcdf_error("Failed to define the dataset standard name.")
 
         end subroutine define_netcdf_dataset
 
