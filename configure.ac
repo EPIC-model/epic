@@ -181,6 +181,10 @@ fi
 ## "--with" flags
 ##
 
+## define some default search paths
+declare default_lib_paths="/lib:/usr/lib:/lib64:/usr/lib64:/usr/local/lib:$LD_LIBRARY_PATH"
+declare default_include_paths="/usr/include:/usr/local/lib:$C_INCLUDE_PATH:$CPLUS_INCLUDE_PATH"
+
 # 11 March 2021
 # https://www.gnu.org/software/autoconf/manual/autoconf-2.60/html_node/External-Software.html
 AC_ARG_WITH([hdf5],
@@ -192,11 +196,44 @@ if test -n "${HDF5_DIR}"; then
     FCFLAGS="$FCFLAGS -I$HDF5_DIR/include"
     LDFLAGS="$LDFLAGS -L$HDF5_DIR/lib"
     LIBS="$LIBS -lhdf5_fortran -lhdf5hl_fortran -lhdf5"
+else
+    # check default paths
+    # 9 Feb 2022
+    # https://stackoverflow.com/questions/11655770/looping-through-the-elements-of-a-path-variable-in-bash
+    for path in ${default_lib_paths//:/ }; do
+        AC_MSG_CHECKING([for hdf5 Fortran libraries in $path])
+        if test -e "$path/libhdf5hl_fortran.a"; then
+            HDF5_LIBRARY_DIR="$path"
+            AC_MSG_RESULT([yes])
+            break
+        fi
+        AC_MSG_RESULT([no])
+    done
+
+    for path in ${default_include_paths//:/ }; do
+        AC_MSG_CHECKING([for hdf5 Fortran modules in $path])
+        if test -e "$path/hdf5.mod"; then
+            HDF5_INCLUDE_DIR="$path"
+            AC_MSG_RESULT([yes])
+            break
+        fi
+        AC_MSG_RESULT([no])
+    done
+
+    if test -n "${HDF5_LIBRARY_DIR}" && test -n "${HDF5_INCLUDE_DIR}"; then
+        FCFLAGS="$FCFLAGS -I$HDF5_INCLUDE_DIR"
+        LDFLAGS="$LDFLAGS -L$HDF5_LIBRARY_DIR"
+        LIBS="$LIBS -lhdf5_fortran -lhdf5hl_fortran -lhdf5"
+    else
+        AC_MSG_ERROR([Cannot find hdf5.
+                    Please export the environment variable HDF5_DIR pointing
+                    to the root directory of hdf5.])
+    fi
 fi
 
 # 11 March 2021
 # https://github.com/PhysicsofFluids/AFiD/blob/master/configure.ac#L139
-AC_MSG_CHECKING([for hdf5 Fortran library])
+AC_MSG_CHECKING([whether we can compile a hdf5 program])
 AC_LINK_IFELSE(
   [AC_LANG_PROGRAM([], [
       use hdf5
@@ -204,7 +241,7 @@ AC_LINK_IFELSE(
       integer         :: h5err
       call h5open_f(h5err)])],
   [hdf5_found=yes],
-  [hdf5_found=no AC_MSG_ERROR([Cannot find hdf5 Fortran library])])
+  [hdf5_found=no AC_MSG_ERROR([Cannot compile a hdf5 program])])
 AC_MSG_RESULT([$hdf5_found])
 
 
