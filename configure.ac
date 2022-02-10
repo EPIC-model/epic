@@ -271,16 +271,44 @@ if test "x$ENABLE_NETCDF" = "xyes"; then
         LDFLAGS="$LDFLAGS -L$NETCDF_DIR/lib"
         LIBS="$LIBS -lnetcdff -lnetcdf"
     else
-        AC_MSG_ERROR([Variable 'NETCDF_DIR' not set])]
+        for path in ${default_lib_paths//:/ }; do
+            AC_MSG_CHECKING([for netcdf Fortran libraries in $path])
+            if test -e "$path/libnetcdff.a"; then
+                NETCDF_LIBRARY_DIR="$path"
+                AC_MSG_RESULT([yes])
+                break
+            fi
+            AC_MSG_RESULT([no])
+        done
+
+        for path in ${default_include_paths//:/ }; do
+            AC_MSG_CHECKING([for netcdf Fortran modules in $path])
+            if test -e "$path/netcdf.mod"; then
+                NETCDF_INCLUDE_DIR="$path"
+                AC_MSG_RESULT([yes])
+                break
+            fi
+            AC_MSG_RESULT([no])
+        done
+
+        if test -n "${NETCDF_LIBRARY_DIR}" && test -n "${NETCDF_INCLUDE_DIR}"; then
+            FCFLAGS="$FCFLAGS -I$NETCDF_INCLUDE_DIR"
+            LDFLAGS="$LDFLAGS -L$NETCDF_LIBRARY_DIR"
+            LIBS="$LIBS -lnetcdff -lnetcdf"
+        else
+            AC_MSG_ERROR([Cannot find netcdf.
+                        Please export the environment variable NETCDF_DIR pointing
+                        to the root directory of netcdf.])
+        fi
     fi
 
-    AC_MSG_CHECKING([for netcdf library])
+    AC_MSG_CHECKING([whether we can compile a netcdf program])
     AC_LINK_IFELSE(
     [AC_LANG_PROGRAM([], [
         use netcdf
         implicit none])],
     [netcdf_found=yes],
-    [netcdf_found=no AC_MSG_ERROR([Cannot find netcdf library])])
+    [netcdf_found=no AC_MSG_ERROR([Cannot compile a netcdf program])])
     AC_MSG_RESULT([$netcdf_found])
 
     FCFLAGS="$FCFLAGS -DENABLE_NETCDF"
