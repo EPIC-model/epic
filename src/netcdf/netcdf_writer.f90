@@ -41,13 +41,15 @@ module netcdf_writer
 
             call check_netcdf_error("Failed to define the dataset unit.")
 
-            ncerr = nf90_put_att(ncid, varid, "long_name", long_name)
+            if (len(long_name) > 0) then
+                ncerr = nf90_put_att(ncid, varid, "long_name", long_name)
+                call check_netcdf_error("Failed to define the dataset long name.")
+            endif
 
-            call check_netcdf_error("Failed to define the dataset long name.")
-
-            ncerr = nf90_put_att(ncid, varid, "std_name", std_name)
-
-            call check_netcdf_error("Failed to define the dataset standard name.")
+            if (len(std_name) > 0) then
+                ncerr = nf90_put_att(ncid, varid, "standard_name", std_name)
+                call check_netcdf_error("Failed to define the dataset standard name.")
+            endif
 
         end subroutine define_netcdf_dataset
 

@@ -51,67 +51,86 @@ module field_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define dimensions
-            call define_netcdf_dimension(ncid, "x", nx,             x_dim_id)
-            call define_netcdf_dimension(ncid, "y", ny,             y_dim_id)
-            call define_netcdf_dimension(ncid, "z", nz+1,           z_dim_id)
-            call define_netcdf_dimension(ncid, "t", NF90_UNLIMITED, t_dim_id)
+            call define_netcdf_dimension(                                   &
+                ncid=ncid,                                                  &
+                name='x',                                                   &
+                dimsize=nx,                                                 &
+                dimid=x_dim_id)
+
+            call define_netcdf_dimension(                                   &
+                ncid=ncid,                                                  &
+                name='y',                                                   &
+                dimsize=ny,                                                 &
+                dimid=y_dim_id)
+
+            call define_netcdf_dimension(                                       &
+                ncid=ncid,                                                      &
+                name='z',                                                       &
+                dimsize=nz+1,                                                   &
+                dimid=z_dim_id)
+
+            call define_netcdf_dimension(                                   &
+                ncid=ncid,                                                  &
+                name='t',                                                   &
+                dimsize=NF90_UNLIMITED,                                     &
+                dimid=t_dim_id)
 
             ! define fields
             dimids = (/z_dim_id, y_dim_id, x_dim_id, t_dim_id/)
 
-            call define_netcdf_dataset(ncid=ncid,           &
-                                       name='x_velocity',   &
-                                       long_name='',        &
-                                       std_name='',         &
-                                       unit='m/s',          &
-                                       dtype=NF90_DOUBLE,   &
-                                       dimids=dimids,       &
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='x_velocity',                   &
+                                       long_name='x velocity component',    &
+                                       std_name='',                         &
+                                       unit='m/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
                                        varid=x_vel_id)
 
-            call define_netcdf_dataset(ncid=ncid,           &
-                                       name='y_velocity',   &
-                                       long_name='',        &
-                                       std_name='',         &
-                                       unit='m/s',          &
-                                       dtype=NF90_DOUBLE,   &
-                                       dimids=dimids,       &
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='y_velocity',                   &
+                                       long_name='y velocity component',    &
+                                       std_name='',                         &
+                                       unit='m/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
                                        varid=y_vel_id)
 
-            call define_netcdf_dataset(ncid=ncid,           &
-                                       name='z_velocity',   &
-                                       long_name='',        &
-                                       std_name='',         &
-                                       unit='m/s',          &
-                                       dtype=NF90_DOUBLE,   &
-                                       dimids=dimids,       &
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='z_velocity',                   &
+                                       long_name='z velocity component',    &
+                                       std_name='',                         &
+                                       unit='m/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
                                        varid=z_vel_id)
 
 
-            call define_netcdf_dataset(ncid=ncid,           &
-                                       name='x_vorticity',  &
-                                       long_name='',        &
-                                       std_name='',         &
-                                       unit='1/s',          &
-                                       dtype=NF90_DOUBLE,   &
-                                       dimids=dimids,       &
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='x_vorticity',                  &
+                                       long_name='x vorticity component',   &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
                                        varid=x_vor_id)
 
-            call define_netcdf_dataset(ncid=ncid,           &
-                                       name='y_vorticity',  &
-                                       long_name='',        &
-                                       std_name='',         &
-                                       unit='1/s',          &
-                                       dtype=NF90_DOUBLE,   &
-                                       dimids=dimids,       &
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='y_vorticity',                  &
+                                       long_name='y vorticity component',   &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
                                        varid=y_vor_id)
 
-            call define_netcdf_dataset(ncid=ncid,           &
-                                       name='z_vorticity',  &
-                                       long_name='',        &
-                                       std_name='',         &
-                                       unit='1/s',          &
-                                       dtype=NF90_DOUBLE,   &
-                                       dimids=dimids,       &
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='z_vorticity',                  &
+                                       long_name='z vorticity component',   &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
                                        varid=z_vor_id)
 
             call close_definition(ncid)
@@ -156,11 +175,8 @@ module field_netcdf
             integer                    :: cnt(4), start(4)
 
             ! time step to write [step(4) is the time]
-            cnt   = (/ nz+1, ny, nx, 1    /)
+            cnt   = (/ nz+1, ny, nx, 1        /)
             start = (/ 1,    1,  1,  n_writes /)
-
-            print *, "iter", n_writes
-
 
             !
             ! write fields (do not write halo cells)
@@ -195,9 +211,6 @@ module field_netcdf
 ! #endif
 !
 ! #ifndef NDEBUG
-!             call write_h5_dataset(ncid, name, "symmetry volume", &
-!                                   sym_volg(0:nz, 0:ny-1, 0:nx-1))
-!
 !             call write_h5_dataset(ncid, name, "velocity gradient tensor", &
 !                                   velgradg(0:nz, 0:ny-1, 0:nx-1, :))
 !
