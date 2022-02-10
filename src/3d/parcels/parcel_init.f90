@@ -284,9 +284,11 @@ module parcel_init
         ! Precompute weights, indices of trilinear
         ! interpolation and "apar"
         subroutine alloc_and_precompute
-            double precision :: resi(0:nz, 0:ny-1, 0:nx-1), rsum
-            integer          :: l, n
+            double precision, allocatable :: resi(:, :, :)
+            double precision              :: rsum
+            integer                       :: l, n
 
+            allocate(resi(0:nz, 0:ny-1, 0:nx-1))
             allocate(apar(n_parcels))
             allocate(weights(ngp, n_parcels))
             allocate(is(ngp, n_parcels))
@@ -321,6 +323,8 @@ module parcel_init
                 apar(n) = one / rsum
             enddo
             !$omp end parallel do
+
+            deallocate(resi)
 
         end subroutine alloc_and_precompute
 

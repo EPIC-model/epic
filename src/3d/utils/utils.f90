@@ -101,7 +101,9 @@ module utils
             if (output%h5_write_fields .and. &
                 (t + epsilon(zero) >= neg * dble(nfw) * output%h5_field_freq)) then
                 call write_h5_field_step(nfw, t, dt)
+#ifdef ENABLE_NETCDF
                 call write_netcdf_field_step(nnfw, t, dt)
+#endif
             endif
 
 
