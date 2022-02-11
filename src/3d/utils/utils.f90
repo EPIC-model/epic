@@ -3,6 +3,7 @@ module utils
     use field_io
     use field_diagnostics_io
     use parcel_io
+    use parcel_diagnostics_io
     use parcel_diagnostics
     use parcel_container, only : n_parcels
     use inversion_mod, only : vor2vel, vorticity_tendency
@@ -23,9 +24,9 @@ module utils
             use options, only : output, l_restart
 
             if (output%h5_write_parcel_stats) then
-                call create_h5_parcel_stat_file(trim(output%h5_basename), &
-                                                output%h5_overwrite,      &
-                                                l_restart, nspw)
+                call create_parcel_stats_file(trim(output%h5_basename), &
+                                              output%h5_overwrite,      &
+                                              l_restart)
             endif
 
             if (output%h5_write_fields) then
@@ -67,7 +68,7 @@ module utils
 
             call grid2par(velocity, vorticity, strain)
 
-            call calc_parcel_diagnostics(velocity)
+            call calculate_parcel_diagnostics(velocity)
 
             call write_step(t, zero, .true.)
         end subroutine write_last_step
@@ -93,7 +94,6 @@ module utils
             if (output%h5_write_fields .and. &
                 (t + epsilon(zero) >= neg * dble(nfw) * output%h5_field_freq)) then
                 call write_field_step(t, dt)
-
                 nfw = nfw + 1
             endif
 
@@ -106,16 +106,14 @@ module utils
 
             if (output%h5_write_parcel_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nspw) * output%h5_parcel_stats_freq)) then
-                call write_h5_parcel_stats_step(nspw, t, dt)
+                call write_parcel_stats_step(t, dt)
+                nspw = nspw + 1
             endif
 
             if (output%h5_write_field_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nsfw) * output%h5_field_stats_freq)) then
-
                 call write_field_stats_step(t, dt)
-
                 nsfw = nsfw + 1
-
             endif
         end subroutine write_step
 

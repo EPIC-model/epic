@@ -48,6 +48,8 @@ epic3d_SOURCES +=				\
 	parcels/parcel_hdf5.f90			\
 	parcels/parcel_netcdf.f90		\
 	parcels/parcel_io.f90			\
+	parcels/parcel_diagnostics_hdf5.f90	\
+	parcels/parcel_diagnostics_netcdf.f90	\
 	parcels/parcel_diagnostics_io.f90	\
 	utils/utils.f90				\
 	stepper/rk4_utils.f90			\

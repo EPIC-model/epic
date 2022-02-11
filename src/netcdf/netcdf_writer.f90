@@ -6,6 +6,12 @@ module netcdf_writer
                write_netcdf_dataset_2d, &
                write_netcdf_dataset_3d
 
+
+    interface write_netcdf_scalar
+        module procedure write_netcdf_scalar_integer
+        module procedure write_netcdf_scalar_double
+    end interface write_netcdf_scalar
+
     interface write_netcdf_dataset
         module procedure write_netcdf_dataset_1d
         module procedure write_netcdf_dataset_2d
@@ -64,7 +70,21 @@ module netcdf_writer
             call check_netcdf_error("Failed to define metadata.")
         end subroutine close_definition
 
-        subroutine write_netcdf_scalar(ncid, varid, data, start)
+        subroutine write_netcdf_scalar_integer(ncid, varid, data, start)
+            integer, intent(in) :: ncid
+            integer, intent(in) :: varid
+            integer, intent(in) :: data
+            integer, intent(in) :: start
+
+            ! write data
+            ncerr = nf90_put_var(ncid, varid, (/data/), &
+                                 start=(/start/), count=(/1/))
+
+            call check_netcdf_error("Failed to write scalar.")
+
+        end subroutine write_netcdf_scalar_integer
+
+        subroutine write_netcdf_scalar_double(ncid, varid, data, start)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data
@@ -76,7 +96,7 @@ module netcdf_writer
 
             call check_netcdf_error("Failed to write scalar.")
 
-        end subroutine write_netcdf_scalar
+        end subroutine write_netcdf_scalar_double
 
         subroutine write_netcdf_dataset_1d(ncid, varid, data, start, cnt)
             integer,           intent(in) :: ncid
