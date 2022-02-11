@@ -13,9 +13,9 @@ program epic3d
                                   apply_gradient,         &
                                   lapl_corr_timer,        &
                                   grad_corr_timer
-    use parcel_diagnostics, only : init_parcel_diagnostics,    &
-                                   hdf5_parcel_stat_timer
-    use parcel_hdf5
+    use parcel_diagnostics, only : init_parcel_diagnostics
+    use parcel_io, only : parcel_io_timer
+    use parcel_diagnostics_io, only : parcel_stat_io_timer
     use fields
     use field_io, only : field_io_timer
     use field_diagnostics_io, only : field_stat_io_timer
@@ -24,6 +24,7 @@ program epic3d
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_parcels, read_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
+    use hdf5
     use h5_utils, only : initialise_hdf5, finalise_hdf5, open_h5_file, close_h5_file
     use h5_reader, only : get_file_type, get_num_steps, get_time
     use utils, only : write_last_step, setup_output_files
@@ -66,8 +67,8 @@ program epic3d
             call register_timer('laplace correction', lapl_corr_timer)
             call register_timer('gradient correction', grad_corr_timer)
             call register_timer('parcel init', init_timer)
-            call register_timer('parcel hdf5', hdf5_parcel_timer)
-            call register_timer('parcel diagnostics hdf5', hdf5_parcel_stat_timer)
+            call register_timer('parcel io', parcel_io_timer)
+            call register_timer('parcel diagnostics io', parcel_stat_io_timer)
             call register_timer('field io', field_io_timer)
             call register_timer('field diagnostics io', field_stat_io_timer)
             call register_timer('vor2vel', vor2vel_timer)

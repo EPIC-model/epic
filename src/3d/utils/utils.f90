@@ -2,7 +2,7 @@ module utils
     use constants, only : one
     use field_io
     use field_diagnostics_io
-    use parcel_hdf5
+    use parcel_io
     use parcel_diagnostics
     use parcel_container, only : n_parcels
     use inversion_mod, only : vor2vel, vorticity_tendency
@@ -41,9 +41,9 @@ module utils
             endif
 
             if (output%h5_write_parcels) then
-                call create_h5_parcel_file(trim(output%h5_basename),    &
-                                           output%h5_overwrite,         &
-                                           l_restart, npw)
+                call create_parcel_file(trim(output%h5_basename),    &
+                                        output%h5_overwrite,         &
+                                        l_restart)
             endif
 
         end subroutine setup_output_files
@@ -100,7 +100,8 @@ module utils
 
             if (output%h5_write_parcels .and. &
                 (t + epsilon(zero) >= neg * dble(npw) * output%h5_parcel_freq)) then
-                call write_h5_parcel_step(npw, t, dt)
+                call write_parcel_step(t, dt)
+                npw = npw + 1
             endif
 
             if (output%h5_write_parcel_stats .and. &
