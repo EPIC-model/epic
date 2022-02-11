@@ -32,7 +32,7 @@ program test_netcdf_time_series
     call define_netcdf_dimension(ncid, "x", nx, dimids(2))
     call define_netcdf_dimension(ncid, "t", NF90_UNLIMITED, dimids(3))
 
-    call define_netcdf_dataset(ncid, 'x_velocity', 'm/s', NF90_DOUBLE, dimids, var_id)
+    call define_netcdf_dataset(ncid, 'x_velocity', '', '', 'm/s', NF90_DOUBLE, dimids, var_id)
 
     call close_definition(ncid)
 

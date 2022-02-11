@@ -2,10 +2,12 @@ module netcdf_writer
     use netcdf_utils
     implicit none
 
-    private :: write_netcdf_dataset_2d, &
+    private :: write_netcdf_dataset_1d, &
+               write_netcdf_dataset_2d, &
                write_netcdf_dataset_3d
 
     interface write_netcdf_dataset
+        module procedure write_netcdf_dataset_1d
         module procedure write_netcdf_dataset_2d
         module procedure write_netcdf_dataset_3d
     end interface write_netcdf_dataset
@@ -61,6 +63,21 @@ module netcdf_writer
 
             call check_netcdf_error("Failed to define metadata.")
         end subroutine close_definition
+
+        subroutine write_netcdf_dataset_1d(ncid, varid, data, start, cnt)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            double precision,  intent(in) :: data(:)
+            integer, optional, intent(in) :: start(:)
+            integer, optional, intent(in) :: cnt(:)
+
+            ! write data
+            ncerr = nf90_put_var(ncid, varid, data, &
+                                 start=start, count = cnt)
+
+            call check_netcdf_error("Failed to write dataset.")
+
+        end subroutine write_netcdf_dataset_1d
 
         subroutine write_netcdf_dataset_2d(ncid, varid, data, start, cnt)
             integer,           intent(in) :: ncid

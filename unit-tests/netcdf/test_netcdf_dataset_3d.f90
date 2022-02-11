@@ -34,9 +34,9 @@ program test_netcdf_dataset_3d
     call define_netcdf_dimension(ncid, "y", ny, dimids(2))
     call define_netcdf_dimension(ncid, "z", nz, dimids(1))
 
-    call define_netcdf_dataset(ncid, 'x_velocity', 'm/s', NF90_DOUBLE, dimids, var_id1)
-    call define_netcdf_dataset(ncid, 'y_velocity', 'm/s', NF90_DOUBLE, dimids, var_id2)
-    call define_netcdf_dataset(ncid, 'nparg', '-', NF90_INT, dimids, var_id3)
+    call define_netcdf_dataset(ncid, 'x_velocity', '', '', 'm/s', NF90_DOUBLE, dimids, var_id1)
+    call define_netcdf_dataset(ncid, 'y_velocity', '', '', 'm/s', NF90_DOUBLE, dimids, var_id2)
+    call define_netcdf_dataset(ncid, 'nparg', '', '', '-', NF90_INT, dimids, var_id3)
 
     call close_definition(ncid)
 

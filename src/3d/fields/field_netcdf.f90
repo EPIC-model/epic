@@ -9,16 +9,18 @@ module field_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: x_dim_id, y_dim_id, z_dim_id, t_dim_id
+    integer            :: x_dim_id, y_dim_id, z_dim_id, t_dim_id,       &
+                          x_axis_id, y_axis_id, z_axis_id, t_axis_id
 
     integer            :: x_vel_id, y_vel_id, z_vel_id, &
                           x_vor_id, y_vor_id, z_vor_id, &
                           n_writes
 
-    private :: ncid, ncfname,                           &
-               x_dim_id, y_dim_id, z_dim_id, t_dim_id,  &
-               x_vel_id, y_vel_id, z_vel_id,            &
-               x_vor_id, y_vor_id, z_vor_id,            &
+    private :: ncid, ncfname,                               &
+               x_dim_id, y_dim_id, z_dim_id, t_dim_id,      &
+               x_axis_id, y_axis_id, z_axis_id, t_axis_id,  &
+               x_vel_id, y_vel_id, z_vel_id,                &
+               x_vor_id, y_vor_id, z_vor_id,                &
                n_writes
 
     contains
@@ -51,29 +53,91 @@ module field_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define dimensions
-            call define_netcdf_dimension(                                   &
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='x',                          &
+                                         dimsize=nx,                        &
+                                         dimid=x_dim_id)
+
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='y',                          &
+                                         dimsize=ny,                        &
+                                         dimid=y_dim_id)
+
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='z',                          &
+                                         dimsize=nz+1,                      &
+                                         dimid=z_dim_id)
+
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='t',                          &
+                                         dimsize=NF90_UNLIMITED,            &
+                                         dimid=t_dim_id)
+
+
+            call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='x',                                                   &
-                dimsize=nx,                                                 &
-                dimid=x_dim_id)
+                long_name='x-coordinate in projected coordinate system',    &
+                std_name='projection_x_coordinate',                         &
+                unit='m',                                                   &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/x_dim_id/),                                        &
+                varid=x_axis_id)
 
-            call define_netcdf_dimension(                                   &
+            ncerr = nf90_put_att(ncid, x_axis_id, "axis", 'x')
+            call check_netcdf_error("Failed to add axis attribute.")
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='x',                                                   &
+                long_name='x-coordinate in projected coordinate system',    &
+                std_name='projection_x_coordinate',                         &
+                unit='m',                                                   &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/x_dim_id/),                                        &
+                varid=x_axis_id)
+
+            ncerr = nf90_put_att(ncid, x_axis_id, "axis", 'x')
+            call check_netcdf_error("Failed to add axis attribute.")
+
+            call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='y',                                                   &
-                dimsize=ny,                                                 &
-                dimid=y_dim_id)
+                long_name='y-coordinate in projected coordinate system',    &
+                std_name='projection_y_coordinate',                         &
+                unit='m',                                                   &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/y_dim_id/),                                       &
+                varid=y_axis_id)
 
-            call define_netcdf_dimension(                                       &
+            ncerr = nf90_put_att(ncid, y_axis_id, "axis", 'y')
+            call check_netcdf_error("Failed to add axis attribute.")
+
+            call define_netcdf_dataset(                                         &
                 ncid=ncid,                                                      &
                 name='z',                                                       &
-                dimsize=nz+1,                                                   &
-                dimid=z_dim_id)
+                long_name='height coordinate in projected coordinate system',   &
+                std_name='height',                                              &
+                unit='m',                                                       &
+                dtype=NF90_DOUBLE,                                              &
+                dimids=(/z_dim_id/),                                            &
+                varid=z_axis_id)
 
-            call define_netcdf_dimension(                                   &
+            ncerr = nf90_put_att(ncid, z_axis_id, "axis", 'z')
+            call check_netcdf_error("Failed to add axis attribute.")
+
+            call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='t',                                                   &
-                dimsize=NF90_UNLIMITED,                                     &
-                dimid=t_dim_id)
+                long_name='time ',                                          &
+                std_name='time',                                            &
+                unit='s',                                                   &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=t_axis_id)
+
+            ncerr = nf90_put_att(ncid, t_axis_id, "axis", 't')
+            call check_netcdf_error("Failed to add axis attribute.")
 
             ! define fields
             dimids = (/z_dim_id, y_dim_id, x_dim_id, t_dim_id/)
@@ -154,6 +218,14 @@ module field_netcdf
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
+            if (n_writes == 1) then
+                call write_netcdf_projected_axes
+            endif
+
+            ! write time
+            call write_netcdf_dataset(ncid, t_axis_id, (/t/), (/n_writes/), (/1/))
+
+
             call write_netcdf_fields
 
             ! increment counter
@@ -166,13 +238,34 @@ module field_netcdf
         end subroutine write_netcdf_field_step
 
 
+        ! Write x, y, z axes (called from write_netcdf_field_step).
+        subroutine write_netcdf_projected_axes
+            integer          :: i, cnt(4), start(4)
+            double precision :: x_axis(0:nx-1), y_axis(0:ny-1), z_axis(0:nz)
+
+
+            do i = 0, nx-1
+                x_axis(i) = lower(1) + dble(i) * dx(1)
+            enddo
+
+            do i = 0, ny-1
+                y_axis(i) = lower(2) + dble(i) * dx(2)
+            enddo
+
+            do i = 0, nz
+                z_axis(i) = lower(3) + dble(i) * dx(3)
+            enddo
+
+            call write_netcdf_dataset(ncid, x_axis_id, x_axis)
+            call write_netcdf_dataset(ncid, y_axis_id, y_axis)
+            call write_netcdf_dataset(ncid, z_axis_id, z_axis)
+
+        end subroutine write_netcdf_projected_axes
+
+
         ! Write field datasets (called from write_netcdf_field_step).
-        ! @param[in] iter is the number of the write
         subroutine write_netcdf_fields
-!             integer(hid_t)             :: group
-            character(:), allocatable  :: name
-            logical                    :: created
-            integer                    :: cnt(4), start(4)
+            integer :: cnt(4), start(4)
 
             ! time step to write [step(4) is the time]
             cnt   = (/ nz+1, ny, nx, 1        /)
