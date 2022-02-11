@@ -122,7 +122,7 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='avg aspect ratio',                                    &
+                name='avg_lam',                                             &
                 long_name='average aspect ratio',                           &
                 std_name='',                                                &
                 unit='-',                                                   &
@@ -132,7 +132,7 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='std dev aspect ratio',                                &
+                name='std_lam',                                             &
                 long_name='standard deviation aspect ratio',                &
                 std_name='',                                                &
                 unit='-',                                                   &
@@ -142,7 +142,7 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='avg volume',                                          &
+                name='avg_vol',                                             &
                 long_name='average volume',                                 &
                 std_name='',                                                &
                 unit='m^3',                                                 &
@@ -152,7 +152,7 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='std dev volume',                                      &
+                name='std_vol',                                             &
                 long_name='standard deviation volume',                      &
                 std_name='',                                                &
                 unit='m^3',                                                 &
@@ -162,7 +162,7 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='x rms vorticity',                                     &
+                name='x_rms_vorticity',                                     &
                 long_name='root mean square of x vorticity component',      &
                 std_name='',                                                &
                 unit='1/s',                                                 &
@@ -172,7 +172,7 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='y rms vorticity',                                     &
+                name='y_rms_vorticity',                                     &
                 long_name='root mean square of y vorticity component',      &
                 std_name='',                                                &
                 unit='1/s',                                                 &
@@ -182,7 +182,7 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='z rms vorticity',                                     &
+                name='z_rms_vorticity',                                     &
                 long_name='root mean square of z vorticity component',      &
                 std_name='',                                                &
                 unit='1/s',                                                 &
