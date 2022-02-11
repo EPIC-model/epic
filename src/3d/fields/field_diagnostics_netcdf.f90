@@ -62,6 +62,8 @@ module field_diagnostics_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=t_axis_id)
 
+            ncerr = nf90_put_att(ncid, t_axis_id, "axis", 't')
+            call check_netcdf_error("Failed to add axis attribute.")
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
@@ -136,22 +138,22 @@ module field_diagnostics_netcdf
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             ! write time
-            call write_netcdf_scalar(ncid, t_axis_id, t)
+            call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
 
             !
             ! write diagnostics
             !
-            call write_netcdf_scalar(ncid, rms_v_id, rms_v)
-            call write_netcdf_scalar(ncid, abserr_v_id, abserr_v)
-            call write_netcdf_scalar(ncid, max_npar_id, max_npar)
-            call write_netcdf_scalar(ncid, min_npar_id, min_npar)
-            call write_netcdf_scalar(ncid, avg_npar_id, avg_npar)
-            call write_netcdf_scalar(ncid, avg_nspar_id, avg_nspar)
+            call write_netcdf_scalar(ncid, rms_v_id, rms_v, n_writes)
+            call write_netcdf_scalar(ncid, abserr_v_id, abserr_v, n_writes)
+            call write_netcdf_scalar(ncid, max_npar_id, max_npar, n_writes)
+            call write_netcdf_scalar(ncid, min_npar_id, min_npar, n_writes)
+            call write_netcdf_scalar(ncid, avg_npar_id, avg_npar, n_writes)
+            call write_netcdf_scalar(ncid, avg_nspar_id, avg_nspar, n_writes)
+
+            call close_netcdf_file(ncid)
 
             ! increment counter
             n_writes = n_writes + 1
-
-            call close_netcdf_file(ncid)
 
         end subroutine write_netcdf_field_stats_step
 

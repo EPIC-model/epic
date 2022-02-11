@@ -64,13 +64,15 @@ module netcdf_writer
             call check_netcdf_error("Failed to define metadata.")
         end subroutine close_definition
 
-        subroutine write_netcdf_scalar(ncid, varid, data)
+        subroutine write_netcdf_scalar(ncid, varid, data, start)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data
+            integer,           intent(in) :: start
 
             ! write data
-            ncerr = nf90_put_var(ncid, varid, data)
+            ncerr = nf90_put_var(ncid, varid, (/data/), &
+                                 start=(/start/), count=(/1/))
 
             call check_netcdf_error("Failed to write scalar.")
 

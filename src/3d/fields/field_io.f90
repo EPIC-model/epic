@@ -15,8 +15,6 @@ module field_io
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
 
-            call start_timer(field_io_timer)
-
             call create_h5_field_file(basename,     &
                                       overwrite,    &
                                       l_restart)
@@ -25,7 +23,6 @@ module field_io
                                           overwrite,    &
                                           l_restart)
 #endif
-            call stop_timer(field_io_timer)
         end subroutine create_field_file
 
 

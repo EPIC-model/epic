@@ -19,14 +19,11 @@ module field_diagnostics_io
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
 
-            call start_timer(field_stat_io_timer)
-
             call create_h5_field_stats_file(basename, overwrite, l_restart)
 
 #ifdef ENABLE_NETCDF
             call create_netcdf_field_stats_file(basename, overwrite, l_restart)
 #endif
-            call stop_timer(field_stat_io_timer)
         end subroutine create_field_stats_file
 
         subroutine write_field_stats_step(t, dt)
@@ -40,7 +37,7 @@ module field_diagnostics_io
             call write_h5_field_stats_step(t, dt)
 
 #ifdef ENABLE_NETCDF
-            call write_h5_field_stats_step(t, dt)
+            call write_netcdf_field_stats_step(t, dt)
 #endif
             call stop_timer(field_stat_io_timer)
 

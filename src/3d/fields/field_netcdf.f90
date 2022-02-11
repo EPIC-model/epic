@@ -86,19 +86,6 @@ module field_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='x',                                                   &
-                long_name='x-coordinate in projected coordinate system',    &
-                std_name='projection_x_coordinate',                         &
-                unit='m',                                                   &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/x_dim_id/),                                        &
-                varid=x_axis_id)
-
-            ncerr = nf90_put_att(ncid, x_axis_id, "axis", 'x')
-            call check_netcdf_error("Failed to add axis attribute.")
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
                 name='y',                                                   &
                 long_name='y-coordinate in projected coordinate system',    &
                 std_name='projection_y_coordinate',                         &
@@ -212,7 +199,7 @@ module field_netcdf
             endif
 
             ! write time
-            call write_netcdf_dataset(ncid, t_axis_id, (/t/), (/n_writes/), (/1/))
+            call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
 
             call write_netcdf_fields
 
