@@ -34,7 +34,7 @@ module field_io
 
             call write_h5_field_step(t, dt)
 #ifdef ENABLE_NETCDF
-            call write_netcdf_field_step(t, dt)
+            call write_netcdf_field_step(t)
 #endif
 
             call stop_timer(field_io_timer)

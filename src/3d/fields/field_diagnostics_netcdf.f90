@@ -131,9 +131,8 @@ module field_diagnostics_netcdf
         ! Write a step in the field diagnostic file.
         ! @param[in] t is the time
         ! @param[in] dt is the time step
-        subroutine write_netcdf_field_stats_step(t, dt)
+        subroutine write_netcdf_field_stats_step(t)
             double precision, intent(in)    :: t
-            double precision, intent(in)    :: dt
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 

@@ -116,7 +116,8 @@ module netcdf_writer
             integer, optional, intent(in) :: cnt(:)
 
             ! write data
-            ncerr = nf90_put_var(ncid, varid, data)
+            ncerr = nf90_put_var(ncid, varid, data, &
+                                 start=start, count = cnt)
 
             call check_netcdf_error("Failed to write dataset.")
 

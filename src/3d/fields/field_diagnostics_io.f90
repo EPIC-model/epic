@@ -37,7 +37,7 @@ module field_diagnostics_io
             call write_h5_field_stats_step(t, dt)
 
 #ifdef ENABLE_NETCDF
-            call write_netcdf_field_stats_step(t, dt)
+            call write_netcdf_field_stats_step(t)
 #endif
             call stop_timer(field_stat_io_timer)
 

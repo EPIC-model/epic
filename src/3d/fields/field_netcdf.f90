@@ -188,9 +188,8 @@ module field_netcdf
         ! Write a step in the field file.
         ! @param[in] t is the time
         ! @param[in] dt is the time step
-        subroutine write_netcdf_field_step(t, dt)
+        subroutine write_netcdf_field_step(t)
             double precision, intent(in)    :: t
-            double precision, intent(in)    :: dt
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
@@ -213,7 +212,7 @@ module field_netcdf
 
         ! Write x, y, z axes (called from write_netcdf_field_step).
         subroutine write_netcdf_projected_axes
-            integer          :: i, cnt(4), start(4)
+            integer          :: i
             double precision :: x_axis(0:nx-1), y_axis(0:ny-1), z_axis(0:nz)
 
 
