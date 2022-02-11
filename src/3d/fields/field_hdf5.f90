@@ -4,26 +4,24 @@ module field_hdf5
     use h5_writer
     use h5_reader, only : get_num_steps
     use fields
-    use timer, only : start_timer, stop_timer
     implicit none
 
-    integer :: hdf5_field_timer
+    integer :: n_writes
 
     character(len=512) :: h5fname
     integer(hid_t)     :: h5file_id
 
-    private :: h5file_id, h5fname
+    private :: h5file_id, h5fname, n_writes
 
     contains
 
         ! Create the field file.
         ! @param[in] basename of the file
         ! @param[in] overwrite the file
-        subroutine create_h5_field_file(basename, overwrite, l_restart, step)
+        subroutine create_h5_field_file(basename, overwrite, l_restart)
             character(*), intent(in)  :: basename
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
-            integer,      intent(out) :: step
             logical                   :: l_exist
 
             h5fname =  basename // '_fields.hdf5'
@@ -32,12 +30,12 @@ module field_hdf5
 
             if (l_restart .and. l_exist) then
                 call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
-                call get_num_steps(h5file_id, step)
+                call get_num_steps(h5file_id, n_writes)
                 call close_h5_file(h5file_id)
                 return
             endif
 
-            step = 0
+            n_writes = 0
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
@@ -52,15 +50,11 @@ module field_hdf5
         end subroutine create_h5_field_file
 
         ! Write a step in the field file.
-        ! @param[inout] nw counts the number of writes
         ! @param[in] t is the time
         ! @param[in] dt is the time step
-        subroutine write_h5_field_step(nw, t, dt)
-            integer,          intent(inout) :: nw
+        subroutine write_h5_field_step(t, dt)
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
-
-            call start_timer(hdf5_field_timer)
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
@@ -70,21 +64,19 @@ module field_hdf5
 
             call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
 
-            call write_h5_scalar_step_attrib(h5file_id, nw, "t", t)
+            call write_h5_scalar_step_attrib(h5file_id, n_writes, "t", t)
 
-            call write_h5_scalar_step_attrib(h5file_id, nw, "dt", dt)
+            call write_h5_scalar_step_attrib(h5file_id, n_writes, "dt", dt)
 
-            call write_h5_fields(nw)
+            call write_h5_fields(n_writes)
 
             ! increment counter
-            nw = nw + 1
+            n_writes = n_writes + 1
 
             ! update number of iterations to h5 file
-            call write_h5_num_steps(h5file_id, nw)
+            call write_h5_num_steps(h5file_id, n_writes)
 
             call close_h5_file(h5file_id)
-
-            call stop_timer(hdf5_field_timer)
 
         end subroutine write_h5_field_step
 

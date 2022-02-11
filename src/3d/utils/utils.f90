@@ -1,16 +1,12 @@
 module utils
     use constants, only : one
-    use field_hdf5
+    use field_io
+    use field_diagnostics_io
     use parcel_hdf5
     use parcel_diagnostics
-    use field_diagnostics
     use parcel_container, only : n_parcels
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
-    use field_diagnostics, only : write_h5_field_stats_step
-#ifdef ENABLE_NETCDF
-    use field_netcdf
-#endif
     implicit none
 
     integer :: nfw  = 0    ! number of field writes to h5
@@ -33,20 +29,15 @@ module utils
             endif
 
             if (output%h5_write_fields) then
-                call create_h5_field_file(trim(output%h5_basename), &
-                                          output%h5_overwrite,      &
-                                          l_restart, nfw)
-#ifdef ENABLE_NETCDF
-                call create_netcdf_field_file(trim(output%h5_basename), &
-                                              output%h5_overwrite,      &
-                                              l_restart)
-#endif
+                call create_field_file(trim(output%h5_basename), &
+                                          output%h5_overwrite,   &
+                                          l_restart)
             endif
 
             if (output%h5_write_field_stats) then
-                call create_h5_field_stats_file(trim(output%h5_basename),   &
-                                                output%h5_overwrite,        &
-                                                l_restart, nsfw)
+                call create_field_stats_file(trim(output%h5_basename),   &
+                                             output%h5_overwrite,        &
+                                             l_restart)
             endif
 
             if (output%h5_write_parcels) then
@@ -101,10 +92,9 @@ module utils
             ! make sure we always write initial setup
             if (output%h5_write_fields .and. &
                 (t + epsilon(zero) >= neg * dble(nfw) * output%h5_field_freq)) then
-                call write_h5_field_step(nfw, t, dt)
-#ifdef ENABLE_NETCDF
-                call write_netcdf_field_step(t, dt)
-#endif
+                call write_field_step(t, dt)
+
+                nfw = nfw + 1
             endif
 
 
@@ -121,7 +111,10 @@ module utils
             if (output%h5_write_field_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nsfw) * output%h5_field_stats_freq)) then
 
-                call write_h5_field_stats_step(nsfw, t, dt)
+                call write_field_stats_step(t, dt)
+
+                nsfw = nsfw + 1
+
             endif
         end subroutine write_step
 

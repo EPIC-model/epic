@@ -2,10 +2,7 @@ module field_netcdf
     use netcdf_utils
     use netcdf_writer
     use fields
-    use timer, only : start_timer, stop_timer
     implicit none
-
-    integer :: netcdf_field_timer
 
     character(len=512) :: ncfname
     integer            :: ncid
@@ -208,14 +205,6 @@ module field_netcdf
             double precision, intent(in)    :: t
             double precision, intent(in)    :: dt
 
-            call start_timer(netcdf_field_timer)
-
-! c #ifdef ENABLE_VERBOSE
-!             if (verbose) then
-!                 print "(a18)", "write fields to netcdf"
-!             endif
-! c #endif
-
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             if (n_writes == 1) then
@@ -225,15 +214,12 @@ module field_netcdf
             ! write time
             call write_netcdf_dataset(ncid, t_axis_id, (/t/), (/n_writes/), (/1/))
 
-
             call write_netcdf_fields
 
             ! increment counter
             n_writes = n_writes + 1
 
             call close_netcdf_file(ncid)
-
-            call stop_timer(netcdf_field_timer)
 
         end subroutine write_netcdf_field_step
 
@@ -311,7 +297,6 @@ module field_netcdf
 !                                   vtend(0:nz, 0:ny-1, 0:nx-1, :))
 ! #endif
 
-!             call close_h5_group(group)
         end subroutine write_netcdf_fields
 
 end module field_netcdf

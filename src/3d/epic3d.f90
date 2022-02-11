@@ -4,7 +4,6 @@
 program epic3d
     use constants, only : max_num_parcels, zero
     use timer
-    use field_diagnostics, only : hdf5_field_stat_timer
     use parcel_container
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
@@ -18,10 +17,8 @@ program epic3d
                                    hdf5_parcel_stat_timer
     use parcel_hdf5
     use fields
-    use field_hdf5, only : hdf5_field_timer
-#ifdef ENABLE_NETCDF
-    use field_netcdf, only : netcdf_field_timer
-#endif
+    use field_io, only : field_io_timer
+    use field_diagnostics_io, only : field_stat_io_timer
     use inversion_mod, only : vor2vel_timer, vtend_timer
     use inversion_utils, only : init_fft
     use parcel_interpl, only : grid2par_timer, par2grid_timer
@@ -71,11 +68,8 @@ program epic3d
             call register_timer('parcel init', init_timer)
             call register_timer('parcel hdf5', hdf5_parcel_timer)
             call register_timer('parcel diagnostics hdf5', hdf5_parcel_stat_timer)
-            call register_timer('field hdf5', hdf5_field_timer)
-#ifdef ENABLE_NETCDF
-            call register_timer('field netcdf', netcdf_field_timer)
-#endif
-            call register_timer('field diagnostics hdf5', hdf5_field_stat_timer)
+            call register_timer('field io', field_io_timer)
+            call register_timer('field diagnostics io', field_stat_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
             call register_timer('parcel push', rk4_timer)
