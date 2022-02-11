@@ -1,5 +1,7 @@
 module field_io
+#ifdef ENABLE_HDF5
     use field_hdf5
+#endif
 #ifdef ENABLE_NETCDF
     use field_netcdf
 #endif
@@ -15,9 +17,12 @@ module field_io
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
 
+#ifdef ENABLE_HDF5
             call create_h5_field_file(basename,     &
                                       overwrite,    &
                                       l_restart)
+#endif
+
 #ifdef ENABLE_NETCDF
             call create_netcdf_field_file(basename,     &
                                           overwrite,    &
@@ -32,7 +37,10 @@ module field_io
 
             call start_timer(field_io_timer)
 
+#ifdef ENABLE_HDF5
             call write_h5_field_step(t, dt)
+#endif
+
 #ifdef ENABLE_NETCDF
             call write_netcdf_field_step(t)
 #endif

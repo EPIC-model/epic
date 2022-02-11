@@ -1,5 +1,7 @@
 module field_diagnostics_io
+#ifdef ENABLE_HDF5
     use field_diagnostics_hdf5
+#endif
 #ifdef ENABLE_NETCDF
     use field_diagnostics_netcdf
 #endif
@@ -19,7 +21,9 @@ module field_diagnostics_io
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
 
+#ifdef ENABLE_HDF5
             call create_h5_field_stats_file(basename, overwrite, l_restart)
+#endif ENABLE_HDF5
 
 #ifdef ENABLE_NETCDF
             call create_netcdf_field_stats_file(basename, overwrite, l_restart)
@@ -34,7 +38,9 @@ module field_diagnostics_io
 
             call calculate_field_diagnostics
 
+#ifdef ENABLE_HDF5
             call write_h5_field_stats_step(t, dt)
+#endif
 
 #ifdef ENABLE_NETCDF
             call write_netcdf_field_stats_step(t)

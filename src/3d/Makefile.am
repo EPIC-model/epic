@@ -24,9 +24,13 @@ epic3d_SOURCES +=				\
 	fields/field_diagnostics_netcdf.f90
 endif
 
+if ENABLE_HDF5
 epic3d_SOURCES +=				\
 	fields/field_hdf5.f90			\
-	fields/field_diagnostics_hdf5.f90	\
+	fields/field_diagnostics_hdf5.f90
+endif
+
+epic3d_SOURCES +=				\
 	fields/field_io.f90			\
 	fields/field_diagnostics_io.f90		\
 	parcels/parcel_ellipsoid.f90		\

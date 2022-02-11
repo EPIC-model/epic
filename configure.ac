@@ -254,15 +254,28 @@ AC_ARG_WITH([netcdf],
 ##
 ## "--enable" flags
 ##
+ENABLE_HDF5='yes'
+AC_ARG_ENABLE([hdf5],
+              [AS_HELP_STRING([--enable-hdf5], [enable hdf5 I/O (default=yes)])],
+              [ENABLE_HDF5=$enableval])
+
+AM_CONDITIONAL([ENABLE_HDF5], [test "$ENABLE_HDF5" = "yes"])
+AC_MSG_CHECKING([whether we are compiling with hdf5 I/O])
+if test "x$ENABLE_HDF5" = "xyes"; then
+    FCFLAGS="$FCFLAGS -DENABLE_HDF5"
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+fi
 
 ENABLE_NETCDF='no'
 AC_ARG_ENABLE([netcdf],
-              [AS_HELP_STRING([--enable-netcdf], [enable netcdf support (default=no)])],
+              [AS_HELP_STRING([--enable-netcdf], [enable netcdf I/O (default=no)])],
               [ENABLE_NETCDF=$enableval])
 
 AM_CONDITIONAL([ENABLE_NETCDF], [test "$ENABLE_NETCDF" = "yes"])
 
-AC_MSG_CHECKING([whether we are compiling with netcdf support])
+AC_MSG_CHECKING([whether we are compiling with netcdf I/O])
 if test "x$ENABLE_NETCDF" = "xyes"; then
     AC_MSG_RESULT([yes])
 
@@ -315,6 +328,11 @@ if test "x$ENABLE_NETCDF" = "xyes"; then
 
 else
     AC_MSG_RESULT([no])
+fi
+
+# check if one of the I/O interfaces is enabled
+if test "x$ENABLE_HDF5" = "xno" && test "x$ENABLE_NETCDF" = "xno"; then
+    AC_MSG_ERROR([Either HDF5 I/O or NetCDF I/O must be turned on.])
 fi
 
 ENABLE_3D='no'

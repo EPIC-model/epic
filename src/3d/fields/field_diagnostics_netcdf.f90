@@ -126,6 +126,8 @@ module field_diagnostics_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=avg_nspar_id)
 
+            call close_definition(ncid)
+
         end subroutine create_netcdf_field_stats_file
 
         ! Write a step in the field diagnostic file.
@@ -149,10 +151,10 @@ module field_diagnostics_netcdf
             call write_netcdf_scalar(ncid, avg_npar_id, avg_npar, n_writes)
             call write_netcdf_scalar(ncid, avg_nspar_id, avg_nspar, n_writes)
 
-            call close_netcdf_file(ncid)
-
             ! increment counter
             n_writes = n_writes + 1
+
+            call close_netcdf_file(ncid)
 
         end subroutine write_netcdf_field_stats_step
 
