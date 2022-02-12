@@ -122,13 +122,14 @@ module utils
             use h5_reader, only : get_file_type, get_num_steps, get_time
             integer(hid_t) :: h5handle
             integer        :: n_steps
+            character(:), allocatable, intent(out) :: file_type
 #else
             use netcdf_reader, only : get_file_type, get_num_steps, get_time
             integer :: ncid
 #endif
-            character(*),              intent(in)  :: restart_file
-            double precision,          intent(out) :: t
-            character(:), allocatable, intent(out) :: file_type
+            character(*),     intent(in)  :: restart_file
+            double precision, intent(out) :: t
+            character(*),     intent(out) :: file_type
 
 #ifndef ENABLE_NETCDF
             call open_h5_file(restart_file, H5F_ACC_RDONLY_F, h5handle)
