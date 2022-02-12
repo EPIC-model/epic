@@ -2,12 +2,14 @@ AM_FCFLAGS =				\
 	-I $(top_builddir)/src/3d/ 	\
 	-I $(top_builddir)/unit-tests	\
 	-I $(top_builddir)/src/utils	\
-	-I $(top_builddir)/src/hdf5	\
 	-I $(top_builddir)/src/fft
 
 if ENABLE_NETCDF
 AM_FCFLAGS +=				\
 	-I $(top_builddir)/src/netcdf
+else
+AM_FCFLAGS +=				\
+	-I $(top_builddir)/src/hdf5
 endif
 
 AM_LDFLAGS =						\
@@ -23,12 +25,14 @@ libcombi_la_SOURCES =
 libcombi_la_LIBADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
 	$(top_builddir)/src/fft/libepic_fft.la
 
 if ENABLE_NETCDF
 libcombi_la_LIBADD +=					\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
+else
+libcombi_la_LIBADD +=					\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 endif
 
 unittestsdir = $(prefix)/unit-tests

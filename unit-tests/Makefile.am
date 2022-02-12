@@ -1,7 +1,8 @@
 if ENABLE_UNIT_TESTS
 SUBDIRS = 	\
-	.	\
-	2d
+ 	.
+
+# 	2d
 
 if ENABLE_3D
 SUBDIRS += 3d
@@ -10,15 +11,6 @@ endif
 if ENABLE_NETCDF
 SUBDIRS += netcdf
 endif
-
-AM_FCFLAGS =				\
-	-I $(top_builddir)/src/2d 	\
-	-I $(top_builddir)/src/utils
-
-# AM_LDFLAGS =                                            \
-        $(top_builddir)/src/2d/utils/*.o
-
-
 
 unittestsdir = $(prefix)/unit-tests
 
