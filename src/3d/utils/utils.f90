@@ -100,7 +100,7 @@ module utils
 
             if (output%h5_write_parcels .and. &
                 (t + epsilon(zero) >= neg * dble(npw) * output%h5_parcel_freq)) then
-                call write_parcel_step(t, dt)
+                call write_parcels(t)
                 npw = npw + 1
             endif
 

@@ -1,6 +1,7 @@
 module field_io
 #ifdef ENABLE_HDF5
     use field_hdf5
+    use h5_reader
 #endif
 #ifdef ENABLE_NETCDF
     use field_netcdf
@@ -54,12 +55,14 @@ module field_io
             integer,          intent(out) :: ncells(:)
             double precision, intent(out) :: extent(:), origin(:)
 
+            print *, "read domain"
+
 #ifdef ENABLE_HDF5
             call read_h5_domain(fname, origin, extent, ncells)
 #endif
 
 #ifdef ENABLE_NETCDF
-            call read_netcdf_domain(fname, origin, extent, ncells)
+!             call read_netcdf_domain(fname, origin, extent, ncells)
 #endif
         end subroutine read_domain
 

@@ -2,7 +2,7 @@ module parcel_hdf5
     use constants, only : max_num_parcels
     use parcel_container, only : parcels, n_parcels
     use options, only : verbose, write_h5_options
-    use parameters, only : nx, ny, nz, extent, lower
+    use parameters, only : nx, ny, nz, extent, lower, update_parameters
     use hdf5
     use h5_utils
     use h5_writer
@@ -12,19 +12,19 @@ module parcel_hdf5
     ! h5 file handle
     integer(hid_t)     :: h5file_id
     character(len=512) :: h5fname
+    integer            :: n_writes
 
-    private :: h5file_id, h5fname
+    private :: h5file_id, h5fname, n_writes
 
     contains
 
         ! Create the parcel file.
         ! @param[in] basename of the file
         ! @param[in] overwrite the file
-        subroutine create_h5_parcel_file(basename, overwrite, l_restart, step)
+        subroutine create_h5_parcel_file(basename, overwrite, l_restart)
             character(*), intent(in)  :: basename
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
-            integer,      intent(out) :: step
             logical                   :: l_exist
 
             h5fname =  basename // '_parcels.hdf5'
@@ -33,12 +33,12 @@ module parcel_hdf5
 
             if (l_restart .and. l_exist) then
                 call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
-                call get_num_steps(h5file_id, step)
+                call get_num_steps(h5file_id, n_writes)
                 call close_h5_file(h5file_id)
                 return
             endif
 
-            step = 0
+            n_writes = 0
 
             call create_h5_file(h5fname, overwrite, h5file_id)
 
@@ -53,13 +53,12 @@ module parcel_hdf5
         end subroutine create_h5_parcel_file
 
         ! Write diagnostics for the current time step in the parcel file.
-        ! @param[inout] nw counts the number of writes
         ! @param[in] t is the time
-        ! @param[in] dt is the time step
-        subroutine write_h5_parcel_step(nw, t, dt)
-            integer,          intent(inout) :: nw
+        subroutine write_h5_parcels(t)
             double precision, intent(in)    :: t
-            double precision, intent(in)    :: dt
+            integer(hid_t)                  :: group
+            character(:), allocatable       :: name
+            logical                         :: created
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
@@ -69,34 +68,11 @@ module parcel_hdf5
 
             call open_h5_file(h5fname, H5F_ACC_RDWR_F, h5file_id)
 
-            call write_h5_scalar_step_attrib(h5file_id, nw, "t", t)
+            call write_h5_scalar_step_attrib(h5file_id, n_writes, "t", t)
 
-            call write_h5_scalar_step_attrib(h5file_id, nw, "dt", dt)
+            call write_h5_scalar_step_attrib(h5file_id, n_writes, "num parcel", n_parcels)
 
-            call write_h5_scalar_step_attrib(h5file_id, nw, "num parcel", n_parcels)
-
-            call write_h5_parcels(nw)
-
-            ! increment counter
-            nw = nw + 1
-
-            ! update number of iterations to h5 file
-            call write_h5_num_steps(h5file_id, nw)
-
-            call close_h5_file(h5file_id)
-
-        end subroutine write_h5_parcel_step
-
-
-        ! Write parcel datasets (called from write_h5_parcel_step).
-        ! @param[in] iter is the number of the write
-        subroutine write_h5_parcels(iter)
-            integer, intent(in)           :: iter ! iteration
-            integer(hid_t)                :: group
-            character(:), allocatable     :: name
-            logical                       :: created
-
-            name = trim(get_step_group_name(iter))
+            name = trim(get_step_group_name(n_writes))
 
             call create_h5_group(h5file_id, name, group, created)
 
@@ -128,25 +104,35 @@ module parcel_hdf5
 #endif
             call close_h5_group(group)
 
+            ! increment counter
+            n_writes = n_writes + 1
+
+            ! update number of iterations to h5 file
+            call write_h5_num_steps(h5file_id, n_writes)
+
+            call close_h5_file(h5file_id)
+
         end subroutine write_h5_parcels
 
 
         ! This subroutine reads parcels from an EPIC output file
-        subroutine read_h5_parcels(h5fname, step)
+        subroutine read_h5_parcels(h5fname)
             character(*),     intent(in)  :: h5fname
-            integer,          intent(in)  :: step
             integer(hid_t)                :: h5handle, group
             integer                       :: ncells(3)
             character(:), allocatable     :: grn
             double precision, allocatable :: buffer_1d(:),   &
                                              buffer_2d(:, :)
+            integer                       :: n_steps
             logical                       :: l_valid = .false.
 
 
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
 
+            call get_num_steps(h5handle, n_steps)
+
             ! read domain dimensions
-            call read_h5_box(h5handle, ncells, extent, lower)
+            call get_h5_box(h5handle, lower, extent, ncells)
             nx = ncells(1)
             ny = ncells(2)
             nz = ncells(3)
@@ -154,7 +140,7 @@ module parcel_hdf5
             ! update global parameters
             call update_parameters
 
-            grn = trim(get_step_group_name(step))
+            grn = trim(get_step_group_name(n_steps - 1))
             call open_h5_group(h5handle, grn, group)
             call get_num_parcels(group, n_parcels)
 

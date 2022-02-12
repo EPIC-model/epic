@@ -23,7 +23,7 @@ module field_diagnostics_io
 
 #ifdef ENABLE_HDF5
             call create_h5_field_stats_file(basename, overwrite, l_restart)
-#endif ENABLE_HDF5
+#endif
 
 #ifdef ENABLE_NETCDF
             call create_netcdf_field_stats_file(basename, overwrite, l_restart)

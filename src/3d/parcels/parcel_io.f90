@@ -35,15 +35,13 @@ module parcel_io
 
         ! Write parcels
         ! @param[in] t is the time
-        ! @param[in] dt is the time step
-        subroutine write_parcel_step(t, dt)
+        subroutine write_parcels(t)
             double precision, intent(in)    :: t
-            double precision, intent(in)    :: dt
 
             call start_timer(parcel_io_timer)
 
 #ifdef ENABLE_HDF5
-            call write_h5_parcel_step(t, dt)
+            call write_h5_parcels(t)
 #endif
 #ifdef ENABLE_NETCDF
             call write_netcdf_parcels(t)
@@ -51,7 +49,7 @@ module parcel_io
 
             call stop_timer(parcel_io_timer)
 
-        end subroutine write_parcel_step
+        end subroutine write_parcels
 
         ! Read parcels
         subroutine read_parcels(fname)
