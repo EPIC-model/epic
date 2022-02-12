@@ -194,8 +194,9 @@ module field_netcdf
         ! Write a step in the field file.
         ! @param[in] t is the time
         ! @param[in] dt is the time step
-        subroutine write_netcdf_field_step(t)
-            double precision, intent(in)    :: t
+        subroutine write_netcdf_fields(t)
+            double precision, intent(in) :: t
+            integer                      :: cnt(4), start(4)
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
@@ -205,45 +206,6 @@ module field_netcdf
 
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
-
-            call write_netcdf_fields
-
-            ! increment counter
-            n_writes = n_writes + 1
-
-            call close_netcdf_file(ncid)
-
-        end subroutine write_netcdf_field_step
-
-
-        ! Write x, y, z axes (called from write_netcdf_field_step).
-        subroutine write_netcdf_projected_axes
-            integer          :: i
-            double precision :: x_axis(0:nx-1), y_axis(0:ny-1), z_axis(0:nz)
-
-
-            do i = 0, nx-1
-                x_axis(i) = lower(1) + dble(i) * dx(1)
-            enddo
-
-            do i = 0, ny-1
-                y_axis(i) = lower(2) + dble(i) * dx(2)
-            enddo
-
-            do i = 0, nz
-                z_axis(i) = lower(3) + dble(i) * dx(3)
-            enddo
-
-            call write_netcdf_dataset(ncid, x_axis_id, x_axis)
-            call write_netcdf_dataset(ncid, y_axis_id, y_axis)
-            call write_netcdf_dataset(ncid, z_axis_id, z_axis)
-
-        end subroutine write_netcdf_projected_axes
-
-
-        ! Write field datasets (called from write_netcdf_field_step).
-        subroutine write_netcdf_fields
-            integer :: cnt(4), start(4)
 
             ! time step to write [step(4) is the time]
             cnt   = (/ nz+1, ny, nx, 1        /)
@@ -289,6 +251,36 @@ module field_netcdf
 !                                   vtend(0:nz, 0:ny-1, 0:nx-1, :))
 ! #endif
 
+            ! increment counter
+            n_writes = n_writes + 1
+
+            call close_netcdf_file(ncid)
+
         end subroutine write_netcdf_fields
+
+
+        ! Write x, y, z axes (called from write_netcdf_field_step).
+        subroutine write_netcdf_projected_axes
+            integer          :: i
+            double precision :: x_axis(0:nx-1), y_axis(0:ny-1), z_axis(0:nz)
+
+
+            do i = 0, nx-1
+                x_axis(i) = lower(1) + dble(i) * dx(1)
+            enddo
+
+            do i = 0, ny-1
+                y_axis(i) = lower(2) + dble(i) * dx(2)
+            enddo
+
+            do i = 0, nz
+                z_axis(i) = lower(3) + dble(i) * dx(3)
+            enddo
+
+            call write_netcdf_dataset(ncid, x_axis_id, x_axis)
+            call write_netcdf_dataset(ncid, y_axis_id, y_axis)
+            call write_netcdf_dataset(ncid, z_axis_id, z_axis)
+
+        end subroutine write_netcdf_projected_axes
 
 end module field_netcdf

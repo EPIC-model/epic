@@ -88,7 +88,7 @@ module ls_rk4
 
             call calculate_parcel_diagnostics(delta_pos)
 
-            call write_step(t, dt)
+            call write_step(t)
 
             call ls_rk4_substep(ca1, cb1, dt, 1)
 

@@ -27,21 +27,20 @@ module parcel_diagnostics_io
 #endif
         end subroutine create_parcel_stats_file
 
-        subroutine write_parcel_stats_step(t, dt)
+        subroutine write_parcel_stats(t)
             double precision, intent(in)    :: t
-            double precision, intent(in)    :: dt
 
             call start_timer(parcel_stat_io_timer)
 
 #ifdef ENABLE_HDF5
-            call write_h5_parcel_stats_step(t, dt)
+            call write_h5_parcel_stats(t)
 #endif
 
 #ifdef ENABLE_NETCDF
-            call write_netcdf_parcel_stats_step(t)
+            call write_netcdf_parcel_stats(t)
 #endif
             call stop_timer(parcel_stat_io_timer)
 
-        end subroutine write_parcel_stats_step
+        end subroutine write_parcel_stats
 
 end module parcel_diagnostics_io

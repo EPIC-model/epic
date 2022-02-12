@@ -17,7 +17,7 @@ module field_diagnostics_netcdf
                           avg_npar_id, avg_nspar_id
 
     public :: create_netcdf_field_stats_file,  &
-              write_netcdf_field_stats_step
+              write_netcdf_field_stats
 
 
     contains
@@ -139,7 +139,7 @@ module field_diagnostics_netcdf
         ! Write a step in the field diagnostic file.
         ! @param[in] t is the time
         ! @param[in] dt is the time step
-        subroutine write_netcdf_field_stats_step(t)
+        subroutine write_netcdf_field_stats(t)
             double precision, intent(in)    :: t
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
@@ -162,6 +162,6 @@ module field_diagnostics_netcdf
 
             call close_netcdf_file(ncid)
 
-        end subroutine write_netcdf_field_stats_step
+        end subroutine write_netcdf_field_stats
 
 end module field_diagnostics_netcdf

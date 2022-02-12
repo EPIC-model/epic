@@ -118,11 +118,10 @@ module parcel_init
             !$omp end do
             !$omp end parallel
 
-#ifdef ENABLE_HDF5
-            call init_from_h5_grids(fname, tol)
-#endif
 #ifdef ENABLE_NETCDF
             call init_from_netcdf_grids(fname, tol)
+#else
+            call init_from_h5_grids(fname, tol)
 #endif
 
             call stop_timer(init_timer)

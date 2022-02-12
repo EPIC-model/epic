@@ -70,17 +70,15 @@ module utils
 
             call calculate_parcel_diagnostics(velocity)
 
-            call write_step(t, zero, .true.)
+            call write_step(t, .true.)
         end subroutine write_last_step
 
         ! Write step to the H5 files.
         ! @param[in] t is the time
-        ! @param[in] dt is the time step
         ! @param[in] l_force a logical to force a write (optional)
-        subroutine write_step(t, dt, l_force)
+        subroutine write_step(t, l_force)
             use options, only : output
             double precision,  intent(in) :: t
-            double precision,  intent(in) :: dt
             logical, optional, intent(in) :: l_force
             double precision              :: neg = one
 
@@ -93,7 +91,7 @@ module utils
             ! make sure we always write initial setup
             if (output%h5_write_fields .and. &
                 (t + epsilon(zero) >= neg * dble(nfw) * output%h5_field_freq)) then
-                call write_field_step(t, dt)
+                call write_fields(t)
                 nfw = nfw + 1
             endif
 
@@ -106,13 +104,13 @@ module utils
 
             if (output%h5_write_parcel_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nspw) * output%h5_parcel_stats_freq)) then
-                call write_parcel_stats_step(t, dt)
+                call write_parcel_stats(t)
                 nspw = nspw + 1
             endif
 
             if (output%h5_write_field_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nsfw) * output%h5_field_stats_freq)) then
-                call write_field_stats_step(t, dt)
+                call write_field_stats(t)
                 nsfw = nsfw + 1
             endif
         end subroutine write_step

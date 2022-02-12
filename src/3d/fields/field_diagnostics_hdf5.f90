@@ -19,7 +19,7 @@ module field_diagnostics_hdf5
 
 
     public :: create_h5_field_stats_file,   &
-              write_h5_field_stats_step
+              write_h5_field_stats
 
 
     contains
@@ -60,10 +60,8 @@ module field_diagnostics_hdf5
 
         ! Write a step in the field diagnostic file.
         ! @param[in] t is the time
-        ! @param[in] dt is the time step
-        subroutine write_h5_field_stats_step(t, dt)
+        subroutine write_h5_field_stats(t)
             double precision, intent(in)    :: t
-            double precision, intent(in)    :: dt
             integer(hid_t)                  :: group
             character(:), allocatable       :: name
             logical                         :: created
@@ -86,8 +84,6 @@ module field_diagnostics_hdf5
 
 
             call write_h5_scalar_attrib(group, "t", t)
-
-            call write_h5_scalar_attrib(group, "dt", dt)
 
             !
             ! write diagnostics
@@ -114,6 +110,6 @@ module field_diagnostics_hdf5
 
             call close_h5_file(h5file_id)
 
-        end subroutine write_h5_field_stats_step
+        end subroutine write_h5_field_stats
 
 end module field_diagnostics_hdf5

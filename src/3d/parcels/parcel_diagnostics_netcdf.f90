@@ -22,7 +22,7 @@ module parcel_diagnostics_netcdf
                           avg_vol_id, std_vol_id
 
     public :: create_netcdf_parcel_stats_file,  &
-              write_netcdf_parcel_stats_step
+              write_netcdf_parcel_stats
 
 
     contains
@@ -213,7 +213,7 @@ module parcel_diagnostics_netcdf
 
         ! Write a step in the parcel diagnostic file.
         ! @param[in] t is the time
-        subroutine write_netcdf_parcel_stats_step(t)
+        subroutine write_netcdf_parcel_stats(t)
             double precision, intent(in)    :: t
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
@@ -242,5 +242,5 @@ module parcel_diagnostics_netcdf
 
             call close_netcdf_file(ncid)
 
-        end subroutine write_netcdf_parcel_stats_step
+        end subroutine write_netcdf_parcel_stats
 end module parcel_diagnostics_netcdf
