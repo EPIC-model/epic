@@ -55,16 +55,11 @@ module parcel_init
 
             call start_timer(init_timer)
 
-            print *, "start reading"
-
             ! read domain dimensions
             call read_domain(fname, lower, extent, ncells)
             nx = ncells(1)
             ny = ncells(2)
             nz = ncells(3)
-
-            print *, lower, extent, ncells
-            stop
 
             ! update global parameters
             call update_parameters

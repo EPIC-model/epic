@@ -404,13 +404,9 @@ module h5_reader
             integer,          intent(out) :: ncells(:)
             integer(hid_t)                :: h5file_id
 
-            print *, "h5 read domain"
-
             call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5file_id)
             call get_h5_box(h5file_id, origin, extent, ncells)
             call close_h5_file(h5file_id)
-
-            print *, "ncells", ncells
 
         end subroutine read_h5_domain
 
