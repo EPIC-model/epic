@@ -118,14 +118,17 @@ module utils
         subroutine setup_restart(restart_file, t, file_type)
 #ifndef ENABLE_NETCDF
             use hdf5
-            use h5_utils, only : initialise_hdf5, finalise_hdf5, open_h5_file, close_h5_file
+            use h5_utils, only : open_h5_file, close_h5_file
             use h5_reader, only : get_file_type, get_num_steps, get_time
-            integer(hid_t)            :: h5handle
+            integer(hid_t) :: h5handle
+            integer        :: n_steps
+#else
+            use netcdf_reader, only : get_file_type, get_num_steps, get_time
+            integer :: ncid
 #endif
             character(*),              intent(in)  :: restart_file
             double precision,          intent(out) :: t
             character(:), allocatable, intent(out) :: file_type
-            integer                   :: n_steps
 
 #ifndef ENABLE_NETCDF
             call open_h5_file(restart_file, H5F_ACC_RDONLY_F, h5handle)
@@ -133,6 +136,11 @@ module utils
             call get_num_steps(h5handle, n_steps)
             call get_time(h5handle, n_steps - 1, t)
             call close_h5_file(h5handle)
+#else
+            call open_netcdf_file(restart_file, NF90_NOWRITE, ncid)
+            call get_file_type(ncid, file_type)
+            call get_time(ncid, t)
+            call close_netcdf_file(ncid)
 #endif
         end subroutine setup_restart
 
