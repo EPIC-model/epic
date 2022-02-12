@@ -8,11 +8,15 @@ module parcel_init
     use parcel_ellipsoid, only : get_abc, get_eigenvalues
     use parcel_split_mod, only : parcel_split
     use parcel_interpl, only : trilinear, ngp
+    use field_io, only : read_domain
     use parameters, only : update_parameters,   &
                            dx, vcell, ncell,    &
                            extent, lower, nx, ny, nz
-    use h5_reader
     use timer, only : start_timer, stop_timer
+!!
+    use hdf5
+    use h5_reader
+!!
     use omp_lib
     implicit none
 
@@ -39,127 +43,20 @@ module parcel_init
             call alloc_and_precompute
         end subroutine unit_test_parcel_init_alloc
 
-        ! This subroutine reads parcels from an EPIC output file
-        subroutine read_parcels(h5fname, step)
-            character(*),     intent(in)  :: h5fname
-            integer,          intent(in)  :: step
-            integer(hid_t)                :: h5handle, group
-            integer                       :: ncells(3)
-            character(:), allocatable     :: grn
-            double precision, allocatable :: buffer_1d(:),   &
-                                             buffer_2d(:, :)
-            logical                       :: l_valid = .false.
-
-
-            call start_timer(init_timer)
-
-            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
-
-            ! read domain dimensions
-            call read_h5_box(h5handle, ncells, extent, lower)
-            nx = ncells(1)
-            ny = ncells(2)
-            nz = ncells(3)
-
-            ! update global parameters
-            call update_parameters
-
-            grn = trim(get_step_group_name(step))
-            call open_h5_group(h5handle, grn, group)
-            call get_num_parcels(group, n_parcels)
-
-            if (n_parcels > max_num_parcels) then
-                print *, "Number of parcels exceeds limit of", &
-                          max_num_parcels, ". Exiting."
-                stop
-            endif
-
-            ! Be aware that the starting index of buffer_1d and buffer_2d
-            ! is 0; hence, the range is 0:n_parcels-1 in contrast to the
-            ! parcel container where it is 1:n_parcels.
-
-            if (has_dataset(group, 'B')) then
-                call read_h5_dataset(group, 'B', buffer_2d)
-                parcels%B(:, 1:n_parcels) = buffer_2d
-                deallocate(buffer_2d)
-            else
-                print *, "The parcel shape must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(group, 'position')) then
-                call read_h5_dataset(group, 'position', buffer_2d)
-                parcels%position(:, 1:n_parcels) = buffer_2d
-                deallocate(buffer_2d)
-            else
-                print *, "The parcel position must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(group, 'volume')) then
-                call read_h5_dataset(group, 'volume', buffer_1d)
-                parcels%volume(1:n_parcels) = buffer_1d
-                deallocate(buffer_1d)
-            else
-                print *, "The parcel volume must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(group, 'vorticity')) then
-                l_valid = .true.
-                call read_h5_dataset(group, 'vorticity', buffer_2d)
-                parcels%vorticity(:, 1:n_parcels) = buffer_2d
-                deallocate(buffer_2d)
-            endif
-
-            if (has_dataset(group, 'buoyancy')) then
-                l_valid = .true.
-                call read_h5_dataset(group, 'buoyancy', buffer_1d)
-                parcels%buoyancy(1:n_parcels) = buffer_1d
-                deallocate(buffer_1d)
-            endif
-
-#ifndef ENABLE_DRY_MODE
-            if (has_dataset(group, 'humidity')) then
-                l_valid = .true.
-                call read_h5_dataset(group, 'humidity', buffer_1d)
-                parcels%buoyancy(1:n_parcels) = buffer_1d
-                deallocate(buffer_1d)
-            endif
-#endif
-
-            if (.not. l_valid) then
-                print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
-                stop
-            endif
-
-            call close_h5_group(group)
-            call close_h5_file(h5handle)
-
-            call stop_timer(init_timer)
-
-        end subroutine read_parcels
-
 
         ! Set default values for parcel attributes
         ! Attention: This subroutine assumes that the parcel
         !            container is already allocated!
-        subroutine init_parcels(h5fname, tol)
-            character(*),     intent(in) :: h5fname
+        subroutine init_parcels(fname, tol)
+            character(*),     intent(in) :: fname
             double precision, intent(in) :: tol
             double precision             :: lam, l23
-            integer(hid_t)               :: h5handle
-            integer                      :: n, ncells(3)
+            integer                      :: n
 
             call start_timer(init_timer)
 
             ! read domain dimensions
-            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5handle)
-            call read_h5_box(h5handle, ncells, extent, lower)
-            nx = ncells(1)
-            ny = ncells(2)
-            nz = ncells(3)
-            call close_h5_file(h5handle)
+            call read_domain(fname)
 
             ! update global parameters
             call update_parameters
@@ -221,7 +118,7 @@ module parcel_init
             !$omp end do
             !$omp end parallel
 
-            call init_from_grids(h5fname, tol)
+            call init_from_grids(fname, tol)
 
             call stop_timer(init_timer)
 

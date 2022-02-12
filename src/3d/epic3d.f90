@@ -14,7 +14,7 @@ program epic3d
                                   lapl_corr_timer,        &
                                   grad_corr_timer
     use parcel_diagnostics, only : init_parcel_diagnostics
-    use parcel_io, only : parcel_io_timer
+    use parcel_io, only : parcel_io_timer, read_parcels
     use parcel_diagnostics_io, only : parcel_stat_io_timer
     use fields
     use field_io, only : field_io_timer
@@ -22,13 +22,14 @@ program epic3d
     use inversion_mod, only : vor2vel_timer, vtend_timer
     use inversion_utils, only : init_fft
     use parcel_interpl, only : grid2par_timer, par2grid_timer
-    use parcel_init, only : init_parcels, read_parcels, init_timer
+    use parcel_init, only : init_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
     use hdf5
     use h5_utils, only : initialise_hdf5, finalise_hdf5, open_h5_file, close_h5_file
     use h5_reader, only : get_file_type, get_num_steps, get_time
     use utils, only : write_last_step, setup_output_files
     use phys_parameters, only : update_phys_parameters
+!     use config, only : VERSION
     implicit none
 
     integer          :: epic_timer
@@ -98,7 +99,7 @@ program epic3d
                 if (file_type == 'fields') then
                     call init_parcels(restart_file, field_tol)
                 else if (file_type == 'parcels') then
-                    call read_parcels(restart_file, n_steps - 1)
+                    call read_parcels(restart_file) !, n_steps - 1)
                 else
                     print *, 'Restart file must be of type "fields" or "parcels".'
                     stop

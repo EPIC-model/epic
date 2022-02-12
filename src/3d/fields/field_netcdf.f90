@@ -285,4 +285,18 @@ module field_netcdf
 
         end subroutine write_netcdf_fields
 
+        subroutine read_netcdf_domain(fname)
+            character(*), intent(in) :: fname
+            integer                  :: nc_id
+            double precision         :: ncells(3)
+
+            call open_netcdf_file(ncfname, NF90_NOWRITE, nc_id)
+!             call read_h5_box(nc_id, ncells, extent, lower)
+            nx = ncells(1)
+            ny = ncells(2)
+            nz = ncells(3)
+            call close_netcdf_file(nc_id)
+
+        end subroutine read_netcdf_domain
+
 end module field_netcdf

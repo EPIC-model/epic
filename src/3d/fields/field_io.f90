@@ -48,4 +48,16 @@ module field_io
             call stop_timer(field_io_timer)
         end subroutine write_field_step
 
+        subroutine read_domain(fname)
+            character(*), intent(in) :: fname
+
+#ifdef ENABLE_HDF5
+            call read_h5_domain(fname)
+#endif
+
+#ifdef ENABLE_NETCDF
+            call read_netcdf_domain(fname)
+#endif
+        end subroutine read_domain
+
 end module field_io

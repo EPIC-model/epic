@@ -52,4 +52,23 @@ module parcel_io
             call stop_timer(parcel_io_timer)
 
         end subroutine write_parcel_step
+
+        ! Read parcels
+        subroutine read_parcels(fname)
+            character(*), intent(in) :: fname
+
+            call start_timer(parcel_io_timer)
+
+#ifdef ENABLE_HDF5
+            call read_h5_parcels(fname)
+#endif
+#ifdef ENABLE_NETCDF
+            call read_netcdf_parcels(fname)
+#endif
+            call stop_timer(parcel_io_timer)
+
+        end subroutine read_parcels
+
+
+
 end module parcel_io

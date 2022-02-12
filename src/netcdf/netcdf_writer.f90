@@ -18,6 +18,12 @@ module netcdf_writer
         module procedure write_netcdf_dataset_3d
     end interface write_netcdf_dataset
 
+    interface write_netcdf_global_attribute
+        module procedure write_global_attribute_integer
+        module procedure write_global_attribute_double
+        module procedure write_global_attribute_character
+    end interface write_netcdf_global_attribute
+
     contains
 
         subroutine define_netcdf_dimension(ncid, name, dimsize, dimid)
@@ -69,6 +75,33 @@ module netcdf_writer
 
             call check_netcdf_error("Failed to define metadata.")
         end subroutine close_definition
+
+        subroutine write_global_attribute_integer(ncid, name, val)
+            integer,      intent(in) :: ncid
+            character(*), intent(in) :: name
+            integer,      intent(in) :: val
+
+            ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name=name, values=val)
+            call check_netcdf_error("Failed to define '" // name // "' global attribute.")
+        end subroutine write_global_attribute_integer
+
+        subroutine write_global_attribute_double(ncid, name, val)
+            integer,          intent(in) :: ncid
+            character(*),     intent(in) :: name
+            double precision, intent(in) :: val
+
+            ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name=name, values=val)
+            call check_netcdf_error("Failed to define '" // name // "' global attribute.")
+        end subroutine write_global_attribute_double
+
+        subroutine write_global_attribute_character(ncid, name, val)
+            integer,      intent(in) :: ncid
+            character(*), intent(in) :: name
+            character(*), intent(in) :: val
+
+            ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name=name, values=val)
+            call check_netcdf_error("Failed to define '" // name // "' global attribute.")
+        end subroutine write_global_attribute_character
 
         subroutine write_netcdf_scalar_integer(ncid, varid, data, start)
             integer, intent(in) :: ncid
@@ -142,5 +175,40 @@ module netcdf_writer
             call check_netcdf_error("Failed to write dataset.")
 
         end subroutine write_netcdf_dataset_3d
+
+        subroutine write_netcdf_timestamp(ncid)
+            integer,          intent(in) :: ncid
+            character(len=8)             :: cdate, tmp2
+            character(len=10)            :: ctime, tmp1
+            character(len=5)             :: czone
+            character(len=9)             :: tmp3
+
+            ! 15 June 2021
+            ! https://gcc.gnu.org/onlinedocs/gfortran/DATE_005fAND_005fTIME.html
+            call date_and_time(date=cdate, time=ctime, zone=czone)
+            ! 15 June 2021
+            ! https://stackoverflow.com/questions/13755762/access-character-at-specific-index-in-a-string-in-fortran
+            tmp1 = cdate(1:4) // '/' // cdate(5:6) // '/' // cdate(7:8)
+            tmp2 = ctime(1:2) // ':' // ctime(3:4) // ':' // ctime(5:6)
+            tmp3 = 'UTC' // czone(1:3) // ':' // czone(4:5)
+            call write_global_attribute_character(ncid, "creation date", tmp1)
+            call write_global_attribute_character(ncid, "creation time", tmp2)
+            call write_global_attribute_character(ncid, "creation zone", tmp3)
+        end subroutine write_netcdf_timestamp
+
+        subroutine write_netcdf_box(ncid, origin, extent, ncells)
+            integer,          intent(in) :: ncid
+            double precision, intent(in) :: origin(:), extent(:)
+            integer,          intent(in) :: ncells(:)
+
+            ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name="ncells", values=ncells)
+            call check_netcdf_error("Failed to define 'ncells' global attribute.")
+
+            ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name="extent", values=extent)
+            call check_netcdf_error("Failed to define 'extent' global attribute.")
+
+            ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name="origin", values=origin)
+            call check_netcdf_error("Failed to define 'origin' global attribute.")
+        end subroutine write_netcdf_box
 
 end module netcdf_writer
