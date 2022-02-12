@@ -8,13 +8,22 @@ module netcdf_reader
     use netcdf_utils
     implicit none
 
+    interface read_netcdf_dataset
+        module procedure :: read_netcdf_dataset_1d
+        module procedure :: read_netcdf_dataset_2d
+        module procedure :: read_netcdf_dataset_3d
+    end interface read_netcdf_dataset
+
     interface read_netcdf_global_attribute
         module procedure :: read_netcdf_global_attrib_integer
         module procedure :: read_netcdf_global_attrib_double
     end interface read_netcdf_global_attribute
 
     private :: read_netcdf_global_attrib_integer,   &
-               read_netcdf_global_attrib_double
+               read_netcdf_global_attrib_double,    &
+               read_netcdf_dataset_1d,              &
+               read_netcdf_dataset_2d,              &
+               read_netcdf_dataset_3d
 
     contains
 
@@ -104,18 +113,50 @@ module netcdf_reader
             ncerr = 0
         end function has_dataset
 
-        subroutine read_netcdf_dataset(ncid, name, buffer)
-            integer,          intent(in)  :: ncid
-            character(*),     intent(in)  :: name
-            double precision, intent(out) :: buffer(:)
-            integer                       :: varid
+        subroutine read_netcdf_dataset_1d(ncid, name, buffer, start, cnt)
+            integer,           intent(in)  :: ncid
+            character(*),      intent(in)  :: name
+            double precision,  intent(out) :: buffer(:)
+            integer, optional, intent(in)  :: start(:)
+            integer, optional, intent(in)  :: cnt(:)
+            integer                        :: varid
 
             ncerr = nf90_inq_varid(ncid, name, varid)
             call check_netcdf_error("Reading dataset id failed.")
 
-!             ncerr = nf90_get_var(ncid, varid, values, start, count
+            ncerr = nf90_get_var(ncid=ncid, varid=varid, values=buffer, &
+                                 start=start, count=cnt)
+        end subroutine read_netcdf_dataset_1d
 
-        end subroutine read_netcdf_dataset
+        subroutine read_netcdf_dataset_2d(ncid, name, buffer, start, cnt)
+            integer,           intent(in)  :: ncid
+            character(*),      intent(in)  :: name
+            double precision,  intent(out) :: buffer(:, :)
+            integer, optional, intent(in)  :: start(:)
+            integer, optional, intent(in)  :: cnt(:)
+            integer                        :: varid
+
+            ncerr = nf90_inq_varid(ncid, name, varid)
+            call check_netcdf_error("Reading dataset id failed.")
+
+            ncerr = nf90_get_var(ncid=ncid, varid=varid, values=buffer, &
+                                 start=start, count=cnt)
+        end subroutine read_netcdf_dataset_2d
+
+        subroutine read_netcdf_dataset_3d(ncid, name, buffer, start, cnt)
+            integer,           intent(in)  :: ncid
+            character(*),      intent(in)  :: name
+            double precision,  intent(out) :: buffer(:, :, :)
+            integer, optional, intent(in)  :: start(:)
+            integer, optional, intent(in)  :: cnt(:)
+            integer                        :: varid
+
+            ncerr = nf90_inq_varid(ncid, name, varid)
+            call check_netcdf_error("Reading dataset id failed.")
+
+            ncerr = nf90_get_var(ncid=ncid, varid=varid, values=buffer, &
+                                 start=start, count=cnt)
+        end subroutine read_netcdf_dataset_3d
 
         subroutine read_netcdf_global_attrib_integer(ncid, name, val)
             integer,       intent(in)     :: ncid

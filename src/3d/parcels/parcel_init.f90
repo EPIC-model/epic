@@ -13,10 +13,6 @@ module parcel_init
                            dx, vcell, ncell,    &
                            extent, lower, nx, ny, nz
     use timer, only : start_timer, stop_timer
-!!
-    use hdf5
-    use h5_reader
-!!
     use omp_lib
     implicit none
 
@@ -29,7 +25,8 @@ module parcel_init
 
 
     private :: init_refine,                 &
-               init_from_grids,             &
+               init_from_h5_grids,          &
+               init_from_netcdf_grids,      &
                fill_field_from_buffer_3d,   &
                fill_field_from_buffer_4d,   &
                alloc_and_precompute,        &
@@ -121,7 +118,12 @@ module parcel_init
             !$omp end do
             !$omp end parallel
 
-            call init_from_grids(fname, tol)
+#ifdef ENABLE_HDF5
+            call init_from_h5_grids(fname, tol)
+#endif
+#ifdef ENABLE_NETCDF
+            call init_from_netcdf_grids(fname, tol)
+#endif
 
             call stop_timer(init_timer)
 
@@ -236,11 +238,13 @@ module parcel_init
             deallocate(ks)
         end subroutine dealloc
 
-
+#ifdef ENABLE_HDF5
         ! Initialise parcel attributes from gridded quantities.
         ! Attention: This subroutine currently only supports
         !            vorticity and buoyancy fields.
-        subroutine init_from_grids(h5fname, tol)
+        subroutine init_from_h5_grids(h5fname, tol)
+            use hdf5
+            use h5_reader
             character(*),     intent(in)  :: h5fname
             double precision, intent(in)  :: tol
             double precision, allocatable :: buffer_3d(:, :, :), &
@@ -298,7 +302,7 @@ module parcel_init
 
             call dealloc
 
-        end subroutine init_from_grids
+        end subroutine init_from_h5_grids
 
         ! After reading the H5 dataset scalar field into the buffer, copy
         ! the data to a field container
@@ -354,6 +358,61 @@ module parcel_init
                 enddo
             enddo
         end subroutine fill_field_from_buffer_4d
+#endif
+
+#ifdef ENABLE_NETCDF
+        ! Initialise parcel attributes from gridded quantities.
+        ! Attention: This subroutine currently only supports
+        !            vorticity and buoyancy fields.
+        subroutine init_from_netcdf_grids(ncfname, tol)
+            use netcdf_reader
+            character(*),     intent(in)  :: ncfname
+            double precision, intent(in)  :: tol
+            double precision              :: buffer(-1:nz+1, 0:ny-1, 0:nx-1)
+            integer                       :: ncid
+            integer                       :: n_steps, start(4), cnt(4)
+
+            call alloc_and_precompute
+
+            call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
+
+            call get_num_steps(ncid, n_steps)
+
+            cnt  =  (/ nz+1, ny, nx, 1       /)
+            start = (/ 1,    1,  1,  n_steps /)
+
+            if (has_dataset(ncid, 'x_vorticity')) then
+                call read_netcdf_dataset(ncid, 'x_vorticity', buffer, start=start, cnt=cnt)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(1, :))
+            endif
+
+            if (has_dataset(ncid, 'y_vorticity')) then
+                call read_netcdf_dataset(ncid, 'y_vorticity', buffer, start=start, cnt=cnt)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(2, :))
+            endif
+
+            if (has_dataset(ncid, 'z_vorticity')) then
+                call read_netcdf_dataset(ncid, 'z_vorticity', buffer, start=start, cnt=cnt)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(3, :))
+            endif
+
+            if (has_dataset(ncid, 'buoyancy')) then
+                call read_netcdf_dataset(ncid, 'buoyancy', buffer, start=start, cnt=cnt)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%buoyancy)
+            endif
+
+#ifndef ENABLE_DRY_MODE
+            if (has_dataset(ncid, 'humidity')) then
+                call read_netcdf_dataset(ncid, 'humidity', buffer, start=start, cnt=cnt)
+                call gen_parcel_scalar_attr(buffer, tol, parcels%humidity)
+            endif
+#endif
+            call close_netcdf_file(ncid)
+
+            call dealloc
+
+        end subroutine init_from_netcdf_grids
+#endif
 
         ! Generates the parcel attribute "par" from the field values provided
         ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)
