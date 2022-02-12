@@ -6,6 +6,7 @@ module field_diagnostics_netcdf
     use netcdf_utils
     use netcdf_writer
     use parameters, only : lower, extent, nx, ny, nz
+    use config, only : package_version
     implicit none
 
     private
@@ -48,7 +49,7 @@ module field_diagnostics_netcdf
 
             call create_netcdf_file(ncfname, overwrite, ncid)
 
-            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val='0.11.0')
+            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val=package_version)
             call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='field_stats')
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
             call write_netcdf_timestamp(ncid)

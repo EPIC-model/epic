@@ -5,6 +5,7 @@ module parcel_netcdf
     use netcdf_reader
     use parcel_container, only : parcels, n_parcels
     use parameters, only : nx, ny, nz, extent, lower, update_parameters
+    use config, only : package_version
     implicit none
 
     integer :: n_writes
@@ -57,7 +58,7 @@ module parcel_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
-            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val='0.11.0')
+            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val=package_version)
             call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='parcels')
             ncells = (/nx, ny, nz/)
             call write_netcdf_box(ncid, lower, extent, ncells)

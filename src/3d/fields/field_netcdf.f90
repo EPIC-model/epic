@@ -2,6 +2,7 @@ module field_netcdf
     use netcdf_utils
     use netcdf_writer
     use fields
+    use config, only : package_version
     implicit none
 
     character(len=512) :: ncfname
@@ -50,7 +51,7 @@ module field_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
-            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val='0.11.0')
+            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val=package_version)
             call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='fields')
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
             call write_netcdf_timestamp(ncid)

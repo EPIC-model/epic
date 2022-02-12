@@ -29,7 +29,6 @@ program epic3d
 #endif
     use utils, only : write_last_step, setup_output_files, setup_restart
     use phys_parameters, only : update_phys_parameters
-!     use config, only : VERSION
     implicit none
 
     integer          :: epic_timer
