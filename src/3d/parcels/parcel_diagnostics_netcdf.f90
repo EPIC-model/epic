@@ -6,6 +6,7 @@ module parcel_diagnostics_netcdf
     use netcdf_writer
     use parcel_container, only : parcels, n_parcels
     use parcel_diagnostics
+    use parameters, only : lower, extent, nx, ny, nz
     use omp_lib
     implicit none
 
@@ -51,6 +52,12 @@ module parcel_diagnostics_netcdf
             n_writes = 1
 
             call create_netcdf_file(ncfname, overwrite, ncid)
+
+            ! define global attributes
+            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val='0.11.0')
+            call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='parcel_stats')
+            call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
+            call write_netcdf_timestamp(ncid)
 
             call define_netcdf_dimension(ncid=ncid,                         &
                                          name='t',                          &

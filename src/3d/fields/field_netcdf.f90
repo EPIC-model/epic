@@ -49,6 +49,12 @@ module field_netcdf
 
             call create_netcdf_file(ncfname, overwrite, ncid)
 
+            ! define global attributes
+            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val='0.11.0')
+            call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='fields')
+            call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
+            call write_netcdf_timestamp(ncid)
+
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &
                                          name='x',                          &

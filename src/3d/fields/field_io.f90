@@ -55,8 +55,6 @@ module field_io
             integer,          intent(out) :: ncells(:)
             double precision, intent(out) :: extent(:), origin(:)
 
-            print *, "read domain"
-
 #ifdef ENABLE_HDF5
             call read_h5_domain(fname, origin, extent, ncells)
 #endif

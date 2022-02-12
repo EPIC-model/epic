@@ -57,11 +57,14 @@ module parcel_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
-            call write_netcdf_global_attribute(ncid=ncid, name='EPIC version', val='0.11.0')
+            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val='0.11.0')
             call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='parcels')
             ncells = (/nx, ny, nz/)
             call write_netcdf_box(ncid, lower, extent, ncells)
             call write_netcdf_timestamp(ncid)
+
+            ! write dummy time --> will be replaced with correct time in write_netcdf_parcels
+            call write_netcdf_global_attribute(ncid=ncid, name='t', val=0.0)
 
 
             ! define dimensions

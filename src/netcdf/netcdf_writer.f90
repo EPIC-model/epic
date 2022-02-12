@@ -191,9 +191,9 @@ module netcdf_writer
             tmp1 = cdate(1:4) // '/' // cdate(5:6) // '/' // cdate(7:8)
             tmp2 = ctime(1:2) // ':' // ctime(3:4) // ':' // ctime(5:6)
             tmp3 = 'UTC' // czone(1:3) // ':' // czone(4:5)
-            call write_global_attribute_character(ncid, "creation date", tmp1)
-            call write_global_attribute_character(ncid, "creation time", tmp2)
-            call write_global_attribute_character(ncid, "creation zone", tmp3)
+            call write_global_attribute_character(ncid, "creation_date", tmp1)
+            call write_global_attribute_character(ncid, "creation_time", tmp2)
+            call write_global_attribute_character(ncid, "creation_zone", tmp3)
         end subroutine write_netcdf_timestamp
 
         subroutine write_netcdf_box(ncid, origin, extent, ncells)
