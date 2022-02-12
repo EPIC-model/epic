@@ -44,29 +44,38 @@ module netcdf_reader
         subroutine get_num_steps(ncid, n_steps)
             integer, intent(in)  :: ncid
             integer, intent(out) :: n_steps
+            integer              :: dimid
 
-            if (.not. has_attribute(ncid, 'n_steps')) then
-                n_steps = -1
-                return
-            endif
-
-            call read_netcdf_global_attrib_integer(ncid, 'n_steps', n_steps)
+            ncerr = nf90_inq_dimid(ncid, 't', dimid)
+            call check_netcdf_error("Reading time dimension id failed.")
+            ncerr = nf90_inquire_dimension(ncid, dimid, len=n_steps)
         end subroutine get_num_steps
 
         ! @returns -1 if NetCDF file does not contain the attribute 't'
         subroutine get_time(ncid, t)
             integer,          intent(in)  :: ncid
             double precision, intent(out) :: t
+            integer                       :: n_steps, varid, start(1), cnt(1), values(1)
 
             if (has_attribute(ncid, 't')) then
+                ! parcel file
                 call read_netcdf_global_attrib_double(ncid, 't', t)
                 return
             endif
 
-!             if (has_dataset(ncid, 't')) then
-!                 call read_netcdf_dataset(ncid, 't', t)
-!                 return
-!             endif
+            ! field file
+            call get_num_steps(ncid, n_steps)
+
+            if (has_dataset(ncid, 't')) then
+                start(1) = n_steps
+                cnt(1) = 1
+                ncerr = nf90_inq_varid(ncid, 't', varid)
+                call check_netcdf_error("Reading time id failed.")
+                ncerr = nf90_get_var(ncid, varid, values, start=start, count=cnt)
+                t = values(1)
+                call check_netcdf_error("Reading time failed.")
+                return
+            endif
 
             t = -1.0d0
         end subroutine get_time
@@ -74,13 +83,17 @@ module netcdf_reader
         ! 11 Jan 2022
         ! https://support.hdfgroup.org/ftp/HDF5/examples/examples-by-api/hdf5-examples/1_8/FORTRAN/H5T/h5ex_t_stringCatt_F03.f90
         subroutine get_file_type(ncid, file_type)
-            integer, intent(in)  :: ncid
-            character(:), allocatable, intent(out) :: file_type
+            integer,      intent(in)  :: ncid
+            character(*), intent(out) :: file_type
 
             if (.not. has_attribute(ncid, 'file_type')) then
                 print *, 'Not a proper EPIC NetCDF file.'
                 stop
             endif
+
+            ncerr = nf90_get_att(ncid=ncid, varid=NF90_GLOBAL, &
+                                 name='file_type', values=file_type)
+            call check_netcdf_error("Reading file type failed.")
 
         end subroutine get_file_type
 
@@ -92,7 +105,7 @@ module netcdf_reader
 
             ncerr = nf90_inquire_attribute(ncid, NF90_GLOBAL, name)
 
-            if (ncerr /= nf90_noerr) then
+            if (ncerr == nf90_noerr) then
                 link_exists = .true.
             endif
             ncerr = 0
@@ -107,7 +120,7 @@ module netcdf_reader
 
             ncerr = nf90_inq_varid(ncid, name, varid)
             ncerr = nf90_inquire_variable(ncid, varid)
-            if (ncerr /= nf90_noerr) then
+            if (ncerr == nf90_noerr) then
                 link_exists = .true.
             endif
             ncerr = 0

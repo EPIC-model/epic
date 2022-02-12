@@ -16,7 +16,8 @@ unittests_PROGRAMS = 				\
 	test_netcdf_dataset_2d			\
 	test_netcdf_dataset_3d			\
 	test_netcdf_time_series_1		\
-	test_netcdf_time_series_2
+	test_netcdf_time_series_2		\
+	test_netcdf_read_attributes
 
 test_netcdf_dataset_2d_SOURCES = test_netcdf_dataset_2d.f90
 test_netcdf_dataset_2d_LDADD = libcombi.la
@@ -29,5 +30,8 @@ test_netcdf_time_series_1_LDADD = libcombi.la
 
 test_netcdf_time_series_2_SOURCES = test_netcdf_time_series_2.f90
 test_netcdf_time_series_2_LDADD = libcombi.la
+
+test_netcdf_read_attributes_SOURCES = test_netcdf_read_attributes.f90
+test_netcdf_read_attributes_LDADD = libcombi.la
 
 endif
