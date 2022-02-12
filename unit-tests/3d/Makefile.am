@@ -1,5 +1,3 @@
-if ENABLE_UNIT_TESTS
-
 AM_FCFLAGS =				\
 	-I $(top_builddir)/src/3d/ 	\
 	-I $(top_builddir)/unit-tests	\
@@ -134,5 +132,3 @@ test_diffz0_LDADD = libcombi.la
 
 test_diffz1_SOURCES = test_diffz1.f90
 test_diffz1_LDADD = libcombi.la
-
-endif

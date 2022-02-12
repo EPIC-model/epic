@@ -3,7 +3,11 @@
 ! =============================================================================
 module options
     use constants, only : zero, one, two, pi, four, twopi
+#ifdef ENABLE_NETCDF
+
+#else
     use h5_writer
+#endif
     implicit none
     !
     ! global options
@@ -28,20 +32,20 @@ module options
     !
     ! output options
     !
-    type h5_info
-        double precision    :: h5_field_freq         = one
-        logical             :: h5_write_fields       = .true.
-        double precision    :: h5_parcel_freq        = one
-        logical             :: h5_overwrite          = .false.
-        logical             :: h5_write_parcels      = .true.
-        double precision    :: h5_parcel_stats_freq  = one
-        logical             :: h5_write_parcel_stats = .true.
-        double precision    :: h5_field_stats_freq   = one
-        logical             :: h5_write_field_stats  = .true.
-        character(len=512)  :: h5_basename           = ''
-    end type h5_info
+    type info
+        double precision    :: field_freq         = one
+        logical             :: write_fields       = .true.
+        double precision    :: parcel_freq        = one
+        logical             :: overwrite          = .false.
+        logical             :: write_parcels      = .true.
+        double precision    :: parcel_stats_freq  = one
+        logical             :: write_parcel_stats = .true.
+        double precision    :: field_stats_freq   = one
+        logical             :: write_field_stats  = .true.
+        character(len=512)  :: basename           = ''
+    end type info
 
-    type(h5_info) :: output
+    type(info) :: output
 
     !
     ! domain options
@@ -120,15 +124,18 @@ module options
             close(fn)
 
             ! check whether h5 files already exist
-            inquire(file=output%h5_basename, exist=exists)
+            inquire(file=output%basename, exist=exists)
 
             if (exists) then
-                print *, 'Error: output file "', trim(output%h5_basename), '" already exists.'
+                print *, 'Error: output file "', trim(output%basename), '" already exists.'
                 stop
             endif
 
         end subroutine read_config_file
 
+#ifdef ENABLE_NETCDF
+
+#else
         subroutine write_h5_options(h5file_id)
             integer(hid_t),   intent(in) :: h5file_id
             integer(hid_t)               :: gopts, group
@@ -155,16 +162,16 @@ module options
             call close_h5_group(group)
 
             call create_h5_group(gopts, "output", group)
-                call write_h5_scalar_attrib(group, "h5_parcel_freq", output%h5_parcel_freq)
-                call write_h5_scalar_attrib(group, "h5_field_freq", output%h5_field_freq)
-                call write_h5_scalar_attrib(group, "h5_parcel_stats_freq", output%h5_parcel_stats_freq)
-                call write_h5_scalar_attrib(group, "h5_write_parcel_stats", output%h5_write_parcel_stats)
-                call write_h5_scalar_attrib(group, "h5_field_stats_freq", output%h5_field_stats_freq)
-                call write_h5_scalar_attrib(group, "h5_write_field_stats", output%h5_write_field_stats)
-                call write_h5_scalar_attrib(group, "h5_write_fields", output%h5_write_fields)
-                call write_h5_scalar_attrib(group, "h5_overwrite", output%h5_overwrite)
-                call write_h5_scalar_attrib(group, "h5_write_parcels", output%h5_write_parcels)
-                call write_h5_scalar_attrib(group, "h5_basename", trim(output%h5_basename))
+                call write_h5_scalar_attrib(group, "h5_parcel_freq", output%parcel_freq)
+                call write_h5_scalar_attrib(group, "h5_field_freq", output%field_freq)
+                call write_h5_scalar_attrib(group, "h5_parcel_stats_freq", output%parcel_stats_freq)
+                call write_h5_scalar_attrib(group, "h5_write_parcel_stats", output%write_parcel_stats)
+                call write_h5_scalar_attrib(group, "h5_field_stats_freq", output%field_stats_freq)
+                call write_h5_scalar_attrib(group, "h5_write_field_stats", output%write_field_stats)
+                call write_h5_scalar_attrib(group, "h5_write_fields", output%write_fields)
+                call write_h5_scalar_attrib(group, "h5_overwrite", output%overwrite)
+                call write_h5_scalar_attrib(group, "h5_write_parcels", output%write_parcels)
+                call write_h5_scalar_attrib(group, "h5_basename", trim(output%basename))
             call close_h5_group(group)
 
             call create_h5_group(gopts, "time", group)
@@ -175,5 +182,6 @@ module options
 
             call close_h5_group(gopts)
         end subroutine write_h5_options
+#endif
 
 end module options

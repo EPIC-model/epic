@@ -1,5 +1,3 @@
-if ENABLE_UNIT_TESTS
-
 AM_FCFLAGS = 				\
 	-I $(top_builddir)/src/2d/	\
 	-I $(top_builddir)/unit-tests	\
@@ -164,6 +162,4 @@ test_ellipse_merge_symmetry_LDADD = 			\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/hdf5/libepic_hdf5.la
-endif
-
 endif

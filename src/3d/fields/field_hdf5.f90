@@ -51,10 +51,11 @@ module field_hdf5
 
         ! Write a step in the field file.
         ! @param[in] t is the time
-        ! @param[in] dt is the time step
-        subroutine write_h5_field_step(t, dt)
-            double precision, intent(in)    :: t
-            double precision, intent(in)    :: dt
+        subroutine write_h5_fields(t)
+            double precision, intent(in) :: t
+            integer(hid_t)               :: group
+            character(:), allocatable    :: name
+            logical                      :: created
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
@@ -66,30 +67,7 @@ module field_hdf5
 
             call write_h5_scalar_step_attrib(h5file_id, n_writes, "t", t)
 
-            call write_h5_scalar_step_attrib(h5file_id, n_writes, "dt", dt)
-
-            call write_h5_fields(n_writes)
-
-            ! increment counter
-            n_writes = n_writes + 1
-
-            ! update number of iterations to h5 file
-            call write_h5_num_steps(h5file_id, n_writes)
-
-            call close_h5_file(h5file_id)
-
-        end subroutine write_h5_field_step
-
-
-        ! Write field datasets (called from write_h5_field_step).
-        ! @param[in] iter is the number of the write
-        subroutine write_h5_fields(iter)
-            integer, intent(in)        :: iter ! iteration
-            integer(hid_t)             :: group
-            character(:), allocatable  :: name
-            logical                    :: created
-
-            name = trim(get_step_group_name(iter))
+            name = trim(get_step_group_name(n_writes))
 
             call create_h5_group(h5file_id, name, group, created)
 
@@ -133,6 +111,14 @@ module field_hdf5
 #endif
 
             call close_h5_group(group)
-        end subroutine write_h5_fields
 
+            ! increment counter
+            n_writes = n_writes + 1
+
+            ! update number of iterations to h5 file
+            call write_h5_num_steps(h5file_id, n_writes)
+
+            call close_h5_file(h5file_id)
+
+        end subroutine write_h5_fields
 end module field_hdf5

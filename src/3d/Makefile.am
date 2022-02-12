@@ -1,12 +1,14 @@
 if ENABLE_3D
 AM_FCFLAGS =				\
 	-I $(top_builddir)/src/utils	\
-	-I $(top_builddir)/src/hdf5	\
 	-I $(top_builddir)/src/fft
 
 if ENABLE_NETCDF
 AM_FCFLAGS +=				\
 	-I $(top_builddir)/src/netcdf
+else
+AM_FCFLAGS +=				\
+	-I $(top_builddir)/src/hdf5
 endif
 
 bin_PROGRAMS = epic3d
@@ -22,11 +24,9 @@ if ENABLE_NETCDF
 epic3d_SOURCES +=				\
 	fields/field_netcdf.f90			\
 	fields/field_diagnostics_netcdf.f90
-endif
-
-if ENABLE_HDF5
+else
 epic3d_SOURCES +=				\
-	fields/field_hdf5.f90			\
+ 	fields/field_hdf5.f90			\
 	fields/field_diagnostics_hdf5.f90
 endif
 
@@ -44,12 +44,20 @@ epic3d_SOURCES +=				\
 	parcels/parcel_init.f90			\
 	inversion/inversion_utils.f90		\
 	inversion/inversion.f90			\
-	parcels/parcel_correction.f90		\
-	parcels/parcel_hdf5.f90			\
+	parcels/parcel_correction.f90
+
+if ENABLE_NETCDF
+epic3d_SOURCES +=				\
 	parcels/parcel_netcdf.f90		\
+	parcels/parcel_diagnostics_netcdf.f90
+else
+epic3d_SOURCES +=				\
+	parcels/parcel_hdf5.f90			\
+	parcels/parcel_diagnostics_hdf5.f90
+endif
+
+epic3d_SOURCES +=				\
 	parcels/parcel_io.f90			\
-	parcels/parcel_diagnostics_hdf5.f90	\
-	parcels/parcel_diagnostics_netcdf.f90	\
 	parcels/parcel_diagnostics_io.f90	\
 	utils/utils.f90				\
 	stepper/rk4_utils.f90			\
@@ -58,12 +66,14 @@ epic3d_SOURCES +=				\
 
 epic3d_LDADD = 						\
 	$(top_builddir)/src/utils/libepic_utils.la 	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la	\
 	$(top_builddir)/src/fft/libepic_fft.la
 
 if ENABLE_NETCDF
 epic3d_LDADD +=						\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
+else
+epic3d_LDADD +=						\
+	$(top_builddir)/src/hdf5/libepic_hdf5.la
 endif
 
 clean-local:

@@ -2,9 +2,10 @@ SUBDIRS =		\
 	src		\
 	unit-tests	\
 	python-scripts	\
-	models		\
-	analyse		\
 	run-script
+
+# 	analyse		\
+# 	models
 
 # 3 November 2021
 # https://stackoverflow.com/questions/16657991/glibtoolize-on-macos-tells-me-to-consider-adding-i-m4-to-aclocal-amflags-but

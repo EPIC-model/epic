@@ -1,4 +1,4 @@
-AC_INIT([epic], [1.0.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
+AC_INIT([epic], [0.11.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
@@ -12,7 +12,7 @@ AC_FC_SRCEXT(f90)
 FCFLAGS="-fdefault-real-8 -fdefault-double-8 -cpp -fPIC -mcmodel=large"
 
 AC_CONFIG_MACRO_DIRS([m4])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([config.f90])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
@@ -192,58 +192,6 @@ AC_ARG_WITH([hdf5],
             [HDF5_DIR=$withval],
             [])
 
-if test -n "${HDF5_DIR}"; then
-    FCFLAGS="$FCFLAGS -I$HDF5_DIR/include"
-    LDFLAGS="$LDFLAGS -L$HDF5_DIR/lib"
-    LIBS="$LIBS -lhdf5_fortran -lhdf5hl_fortran -lhdf5"
-else
-    # check default paths
-    # 9 Feb 2022
-    # https://stackoverflow.com/questions/11655770/looping-through-the-elements-of-a-path-variable-in-bash
-    for path in ${default_lib_paths//:/ }; do
-        AC_MSG_CHECKING([for hdf5 Fortran libraries in $path])
-        if test -e "$path/libhdf5hl_fortran.a"; then
-            HDF5_LIBRARY_DIR="$path"
-            AC_MSG_RESULT([yes])
-            break
-        fi
-        AC_MSG_RESULT([no])
-    done
-
-    for path in ${default_include_paths//:/ }; do
-        AC_MSG_CHECKING([for hdf5 Fortran modules in $path])
-        if test -e "$path/hdf5.mod"; then
-            HDF5_INCLUDE_DIR="$path"
-            AC_MSG_RESULT([yes])
-            break
-        fi
-        AC_MSG_RESULT([no])
-    done
-
-    if test -n "${HDF5_LIBRARY_DIR}" && test -n "${HDF5_INCLUDE_DIR}"; then
-        FCFLAGS="$FCFLAGS -I$HDF5_INCLUDE_DIR"
-        LDFLAGS="$LDFLAGS -L$HDF5_LIBRARY_DIR"
-        LIBS="$LIBS -lhdf5_fortran -lhdf5hl_fortran -lhdf5"
-    else
-        AC_MSG_ERROR([Cannot find hdf5.
-                    Please export the environment variable HDF5_DIR pointing
-                    to the root directory of hdf5.])
-    fi
-fi
-
-# 11 March 2021
-# https://github.com/PhysicsofFluids/AFiD/blob/master/configure.ac#L139
-AC_MSG_CHECKING([whether we can compile a hdf5 program])
-AC_LINK_IFELSE(
-  [AC_LANG_PROGRAM([], [
-      use hdf5
-      implicit none
-      integer         :: h5err
-      call h5open_f(h5err)])],
-  [hdf5_found=yes],
-  [hdf5_found=no AC_MSG_ERROR([Cannot compile a hdf5 program])])
-AC_MSG_RESULT([$hdf5_found])
-
 
 AC_ARG_WITH([netcdf],
             [AS_HELP_STRING([--with-netcdf=<path>], [path to netcdf library @<:@default=$NETCDF_DIR@:>@])],
@@ -254,20 +202,6 @@ AC_ARG_WITH([netcdf],
 ##
 ## "--enable" flags
 ##
-ENABLE_HDF5='yes'
-AC_ARG_ENABLE([hdf5],
-              [AS_HELP_STRING([--enable-hdf5], [enable hdf5 I/O (default=yes)])],
-              [ENABLE_HDF5=$enableval])
-
-AM_CONDITIONAL([ENABLE_HDF5], [test "$ENABLE_HDF5" = "yes"])
-AC_MSG_CHECKING([whether we are compiling with hdf5 I/O])
-if test "x$ENABLE_HDF5" = "xyes"; then
-    FCFLAGS="$FCFLAGS -DENABLE_HDF5"
-    AC_MSG_RESULT([yes])
-else
-    AC_MSG_RESULT([no])
-fi
-
 ENABLE_NETCDF='no'
 AC_ARG_ENABLE([netcdf],
               [AS_HELP_STRING([--enable-netcdf], [enable netcdf I/O (default=no)])],
@@ -328,16 +262,63 @@ if test "x$ENABLE_NETCDF" = "xyes"; then
 
 else
     AC_MSG_RESULT([no])
+
+    if test -n "${HDF5_DIR}"; then
+        FCFLAGS="$FCFLAGS -I$HDF5_DIR/include"
+        LDFLAGS="$LDFLAGS -L$HDF5_DIR/lib"
+        LIBS="$LIBS -lhdf5_fortran -lhdf5hl_fortran -lhdf5"
+    else
+        # check default paths
+        # 9 Feb 2022
+        # https://stackoverflow.com/questions/11655770/looping-through-the-elements-of-a-path-variable-in-bash
+        for path in ${default_lib_paths//:/ }; do
+            AC_MSG_CHECKING([for hdf5 Fortran libraries in $path])
+            if test -e "$path/libhdf5hl_fortran.a"; then
+                HDF5_LIBRARY_DIR="$path"
+                AC_MSG_RESULT([yes])
+                break
+            fi
+            AC_MSG_RESULT([no])
+        done
+
+        for path in ${default_include_paths//:/ }; do
+            AC_MSG_CHECKING([for hdf5 Fortran modules in $path])
+            if test -e "$path/hdf5.mod"; then
+                HDF5_INCLUDE_DIR="$path"
+                AC_MSG_RESULT([yes])
+                break
+            fi
+            AC_MSG_RESULT([no])
+        done
+
+        if test -n "${HDF5_LIBRARY_DIR}" && test -n "${HDF5_INCLUDE_DIR}"; then
+            FCFLAGS="$FCFLAGS -I$HDF5_INCLUDE_DIR"
+            LDFLAGS="$LDFLAGS -L$HDF5_LIBRARY_DIR"
+            LIBS="$LIBS -lhdf5_fortran -lhdf5hl_fortran -lhdf5"
+        else
+            AC_MSG_ERROR([Cannot find hdf5.
+                        Please export the environment variable HDF5_DIR pointing
+                        to the root directory of hdf5.])
+        fi
+    fi
+
+    # 11 March 2021
+    # https://github.com/PhysicsofFluids/AFiD/blob/master/configure.ac#L139
+    AC_MSG_CHECKING([whether we can compile a hdf5 program])
+    AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([], [
+        use hdf5
+        implicit none
+        integer         :: h5err
+        call h5open_f(h5err)])],
+    [hdf5_found=yes],
+    [hdf5_found=no AC_MSG_ERROR([Cannot compile a hdf5 program])])
+    AC_MSG_RESULT([$hdf5_found])
 fi
 
-# check if one of the I/O interfaces is enabled
-if test "x$ENABLE_HDF5" = "xno" && test "x$ENABLE_NETCDF" = "xno"; then
-    AC_MSG_ERROR([Either HDF5 I/O or NetCDF I/O must be turned on.])
-fi
-
-ENABLE_3D='no'
+ENABLE_3D='yes'
 AC_ARG_ENABLE([3d],
-              [AS_HELP_STRING([--enable-3d], [enable 3D model (default=no)])],
+              [AS_HELP_STRING([--enable-3d], [enable 3D model (default=yes)])],
               [ENABLE_3D=$enableval])
 
 AM_CONDITIONAL([ENABLE_3D], [test "$ENABLE_3D" = "yes"])

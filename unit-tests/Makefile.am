@@ -1,3 +1,4 @@
+if ENABLE_UNIT_TESTS
 SUBDIRS = 	\
 	.	\
 	2d
@@ -30,3 +31,4 @@ unittests_SCRIPTS = run_unit_tests.sh
 # https://www.gnu.org/software/libtool/manual/html_node/LT_005fINIT.html
 lib_LTLIBRARIES = libunit_test.la
 libunit_test_la_SOURCES = unit_test.f90 permute.f90
+endif

@@ -24,10 +24,10 @@ program epic3d
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
-    use hdf5
-    use h5_utils, only : initialise_hdf5, finalise_hdf5, open_h5_file, close_h5_file
-    use h5_reader, only : get_file_type, get_num_steps, get_time
-    use utils, only : write_last_step, setup_output_files
+#ifndef ENABLE_NETCDF
+    use h5_utils, only : initialise_hdf5, finalise_hdf5
+#endif
+    use utils, only : write_last_step, setup_output_files, setup_restart
     use phys_parameters, only : update_phys_parameters
 !     use config, only : VERSION
     implicit none
@@ -56,9 +56,7 @@ program epic3d
                               , l_restart           &
                               , restart_file        &
                               , time
-            integer(hid_t)            :: h5handle
             character(:), allocatable :: file_type
-            integer                   :: n_steps
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
@@ -80,7 +78,9 @@ program epic3d
 
             call start_timer(epic_timer)
 
+#ifndef ENABLE_NETCDF
             call initialise_hdf5
+#endif
 
             ! parse the config file
             call read_config_file
@@ -90,16 +90,12 @@ program epic3d
             call parcel_alloc(max_num_parcels)
 
             if (l_restart) then
-                call open_h5_file(restart_file, H5F_ACC_RDONLY_F, h5handle)
-                call get_file_type(h5handle, file_type)
-                call get_num_steps(h5handle, n_steps)
-                call get_time(h5handle, n_steps - 1, time%initial)
-                call close_h5_file(h5handle)
+                call setup_restart(trim(restart_file), time%initial, file_type)
 
                 if (file_type == 'fields') then
                     call init_parcels(restart_file, field_tol)
                 else if (file_type == 'parcels') then
-                    call read_parcels(restart_file) !, n_steps - 1)
+                    call read_parcels(restart_file)
                 else
                     print *, 'Restart file must be of type "fields" or "parcels".'
                     stop
@@ -114,7 +110,7 @@ program epic3d
 
             call init_fft
 
-            if (output%h5_write_parcel_stats) then
+            if (output%write_parcel_stats) then
                 call init_parcel_diagnostics
             endif
 
@@ -166,11 +162,12 @@ program epic3d
             use options, only : output
             call parcel_dealloc
             call ls_rk4_dealloc
+#ifndef ENABLE_NETCDF
             call finalise_hdf5
-
+#endif
             call stop_timer(epic_timer)
 
-            call write_time_to_csv(output%h5_basename)
+            call write_time_to_csv(output%basename)
             call print_timer
         end subroutine
 

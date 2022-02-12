@@ -23,27 +23,27 @@ module utils
         subroutine setup_output_files
             use options, only : output, l_restart
 
-            if (output%h5_write_parcel_stats) then
-                call create_parcel_stats_file(trim(output%h5_basename), &
-                                              output%h5_overwrite,      &
+            if (output%write_parcel_stats) then
+                call create_parcel_stats_file(trim(output%basename), &
+                                              output%overwrite,      &
                                               l_restart)
             endif
 
-            if (output%h5_write_fields) then
-                call create_field_file(trim(output%h5_basename), &
-                                          output%h5_overwrite,   &
+            if (output%write_fields) then
+                call create_field_file(trim(output%basename), &
+                                          output%overwrite,   &
                                           l_restart)
             endif
 
-            if (output%h5_write_field_stats) then
-                call create_field_stats_file(trim(output%h5_basename),   &
-                                             output%h5_overwrite,        &
+            if (output%write_field_stats) then
+                call create_field_stats_file(trim(output%basename),   &
+                                             output%overwrite,        &
                                              l_restart)
             endif
 
-            if (output%h5_write_parcels) then
-                call create_parcel_file(trim(output%h5_basename),    &
-                                        output%h5_overwrite,         &
+            if (output%write_parcels) then
+                call create_parcel_file(trim(output%basename),    &
+                                        output%overwrite,         &
                                         l_restart)
             endif
 
@@ -89,30 +89,51 @@ module utils
             endif
 
             ! make sure we always write initial setup
-            if (output%h5_write_fields .and. &
-                (t + epsilon(zero) >= neg * dble(nfw) * output%h5_field_freq)) then
+            if (output%write_fields .and. &
+                (t + epsilon(zero) >= neg * dble(nfw) * output%field_freq)) then
                 call write_fields(t)
                 nfw = nfw + 1
             endif
 
 
-            if (output%h5_write_parcels .and. &
-                (t + epsilon(zero) >= neg * dble(npw) * output%h5_parcel_freq)) then
+            if (output%write_parcels .and. &
+                (t + epsilon(zero) >= neg * dble(npw) * output%parcel_freq)) then
                 call write_parcels(t)
                 npw = npw + 1
             endif
 
-            if (output%h5_write_parcel_stats .and. &
-                (t + epsilon(zero) >= neg * dble(nspw) * output%h5_parcel_stats_freq)) then
+            if (output%write_parcel_stats .and. &
+                (t + epsilon(zero) >= neg * dble(nspw) * output%parcel_stats_freq)) then
                 call write_parcel_stats(t)
                 nspw = nspw + 1
             endif
 
-            if (output%h5_write_field_stats .and. &
-                (t + epsilon(zero) >= neg * dble(nsfw) * output%h5_field_stats_freq)) then
+            if (output%write_field_stats .and. &
+                (t + epsilon(zero) >= neg * dble(nsfw) * output%field_stats_freq)) then
                 call write_field_stats(t)
                 nsfw = nsfw + 1
             endif
         end subroutine write_step
+
+        subroutine setup_restart(restart_file, t, file_type)
+#ifndef ENABLE_NETCDF
+            use hdf5
+            use h5_utils, only : initialise_hdf5, finalise_hdf5, open_h5_file, close_h5_file
+            use h5_reader, only : get_file_type, get_num_steps, get_time
+            integer(hid_t)            :: h5handle
+#endif
+            character(*),              intent(in)  :: restart_file
+            double precision,          intent(out) :: t
+            character(:), allocatable, intent(out) :: file_type
+            integer                   :: n_steps
+
+#ifndef ENABLE_NETCDF
+            call open_h5_file(restart_file, H5F_ACC_RDONLY_F, h5handle)
+            call get_file_type(h5handle, file_type)
+            call get_num_steps(h5handle, n_steps)
+            call get_time(h5handle, n_steps - 1, t)
+            call close_h5_file(h5handle)
+#endif
+        end subroutine setup_restart
 
 end module utils
