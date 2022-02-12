@@ -46,7 +46,7 @@ module parcel_io
             call write_h5_parcel_step(t, dt)
 #endif
 #ifdef ENABLE_NETCDF
-            call write_netcdf_parcel_step(t)
+            call write_netcdf_parcels(t)
 #endif
 
             call stop_timer(parcel_io_timer)

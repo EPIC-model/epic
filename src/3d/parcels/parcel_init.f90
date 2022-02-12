@@ -51,12 +51,15 @@ module parcel_init
             character(*),     intent(in) :: fname
             double precision, intent(in) :: tol
             double precision             :: lam, l23
-            integer                      :: n
+            integer                      :: n, ncells(3)
 
             call start_timer(init_timer)
 
             ! read domain dimensions
-            call read_domain(fname)
+            call read_domain(fname, lower, extent, ncells)
+            nx = ncells(1)
+            ny = ncells(2)
+            nz = ncells(3)
 
             ! update global parameters
             call update_parameters

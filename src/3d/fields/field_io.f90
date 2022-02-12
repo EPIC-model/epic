@@ -4,6 +4,7 @@ module field_io
 #endif
 #ifdef ENABLE_NETCDF
     use field_netcdf
+    use netcdf_reader
 #endif
     use timer, only : start_timer, stop_timer
     implicit none
@@ -48,15 +49,17 @@ module field_io
             call stop_timer(field_io_timer)
         end subroutine write_field_step
 
-        subroutine read_domain(fname)
-            character(*), intent(in) :: fname
+        subroutine read_domain(fname, origin, extent, ncells)
+            character(*), intent(in)      :: fname
+            integer,          intent(out) :: ncells(:)
+            double precision, intent(out) :: extent(:), origin(:)
 
 #ifdef ENABLE_HDF5
-            call read_h5_domain(fname)
+            call read_h5_domain(fname, origin, extent, ncells)
 #endif
 
 #ifdef ENABLE_NETCDF
-            call read_netcdf_domain(fname)
+            call read_netcdf_domain(fname, origin, extent, ncells)
 #endif
         end subroutine read_domain
 

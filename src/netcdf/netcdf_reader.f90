@@ -44,24 +44,23 @@ module netcdf_reader
             call read_netcdf_global_attrib_integer(ncid, 'n_steps', n_steps)
         end subroutine get_num_steps
 
-!         ! @returns -1 if NetCDF file does not contain the attribute 't'
-!         subroutine get_time(ncid, step, t)
-!             integer,          intent(in)  :: ncid
-!             integer,          intent(in)  :: step
-!             double precision, intent(out) :: t
-!             integer(hid_t)                :: group
-!             character(:), allocatable     :: grn
-!
-!             if (.not. has_attribute(group, 't')) then
-!                 t = -1.0d0
-!                 call close_h5_group(group)
+        ! @returns -1 if NetCDF file does not contain the attribute 't'
+        subroutine get_time(ncid, t)
+            integer,          intent(in)  :: ncid
+            double precision, intent(out) :: t
+
+            if (has_attribute(ncid, 't')) then
+                call read_netcdf_global_attrib_double(ncid, 't', t)
+                return
+            endif
+
+!             if (has_dataset(ncid, 't')) then
+!                 call read_netcdf_dataset(ncid, 't', t)
 !                 return
 !             endif
-!
-!             call read_h5_double_attrib(group, 't', t)
-!
-!             call close_h5_group(group)
-!         end subroutine get_time
+
+            t = -1.0d0
+        end subroutine get_time
 
         ! 11 Jan 2022
         ! https://support.hdfgroup.org/ftp/HDF5/examples/examples-by-api/hdf5-examples/1_8/FORTRAN/H5T/h5ex_t_stringCatt_F03.f90
@@ -137,10 +136,22 @@ module netcdf_reader
 
         end subroutine read_netcdf_global_attrib_double
 
-        subroutine read_netcdf_box(ncid, ncells, extent, origin)
+        subroutine read_netcdf_domain(ncfname, origin, extent, ncells)
+            character(*), intent(in)      :: ncfname
+            integer                       :: ncid
+            double precision, intent(out) :: extent(:), origin(:)
+            integer,          intent(out) :: ncells(:)
+
+            call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
+            call get_netcdf_box(ncid, origin, extent, ncells)
+            call close_netcdf_file(ncid)
+
+        end subroutine read_netcdf_domain
+
+        subroutine get_netcdf_box(ncid, origin, extent, ncells)
             integer,          intent(in)     :: ncid
-            integer,          intent(out)    :: ncells(:)
             double precision, intent(out)    :: extent(:), origin(:)
+            integer,          intent(out)    :: ncells(:)
 
             if ((size(ncells) > 3) .or. (size(extent) > 3) .or. (size(extent) > 3)) then
                 print *, "Cannot read more than 3 dimensions!"
@@ -156,6 +167,6 @@ module netcdf_reader
             ncerr = nf90_get_att(ncid, NF90_GLOBAL, "origin", origin)
             call check_netcdf_error("Reading attribute 'origin' failed.")
 
-        end subroutine read_netcdf_box
+        end subroutine get_netcdf_box
 
 end module netcdf_reader

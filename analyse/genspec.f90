@@ -144,7 +144,7 @@ program genspec
             integer          :: ncells(2)
             ! read domain dimensions
             call open_h5_file(trim(filename), H5F_ACC_RDONLY_F, h5handle)
-            call read_h5_box(h5handle, ncells, extent, lower)
+            call get_h5_box(h5handle, lower, extent, ncells)
             nx = ncells(1)
             nz = ncells(2)
             call close_h5_file(h5handle)

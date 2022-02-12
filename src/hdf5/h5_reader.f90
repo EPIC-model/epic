@@ -398,10 +398,22 @@ module h5_reader
             call check_h5_error("Failed to close attribute.")
         end subroutine read_h5_vector_double_attrib
 
-        subroutine read_h5_box(h5file_id, ncells, extent, origin)
+        subroutine read_h5_domain(h5fname, origin, extent, ncells)
+            character(*), intent(in)      :: h5fname
+            double precision, intent(out) :: extent(:), origin(:)
+            integer,          intent(out) :: ncells(:)
+            integer(hid_t)                :: h5file_id
+
+            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5file_id)
+            call get_h5_box(h5file_id, origin, extent, ncells)
+            call close_h5_file(h5file_id)
+
+        end subroutine read_h5_domain
+
+        subroutine get_h5_box(h5file_id, origin, extent, ncells)
             integer(hid_t),   intent(in)     :: h5file_id
-            integer,          intent(out)    :: ncells(:)
             double precision, intent(out)    :: extent(:), origin(:)
+            integer,          intent(out)    :: ncells(:)
             integer(hid_t)                   :: group
 
             if ((size(ncells) > 3) .or. (size(extent) > 3) .or. (size(extent) > 3)) then
@@ -417,6 +429,6 @@ module h5_reader
 
             ! close all
             call close_h5_group(group)
-        end subroutine read_h5_box
+        end subroutine get_h5_box
 
 end module h5_reader

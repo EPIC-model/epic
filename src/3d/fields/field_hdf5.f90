@@ -135,16 +135,4 @@ module field_hdf5
             call close_h5_group(group)
         end subroutine write_h5_fields
 
-        subroutine read_h5_domain(h5fname)
-            character(*), intent(in) :: h5fname
-
-            call open_h5_file(h5fname, H5F_ACC_RDONLY_F, h5file_id)
-            call read_h5_box(h5file_id, ncells, extent, lower)
-            nx = ncells(1)
-            ny = ncells(2)
-            nz = ncells(3)
-            call close_h5_file(h5file_id)
-
-        end subroutine read_h5_domain
-
 end module field_hdf5

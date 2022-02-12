@@ -204,26 +204,14 @@ module parcel_netcdf
 
         ! Write parcels of the current time step into the parcel file.
         ! @param[in] t is the time
-        subroutine write_netcdf_parcel_step(t)
+        subroutine write_netcdf_parcels(t)
             double precision, intent(in)    :: t
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
-!             ! write time
-!             call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
+            ! write time
+            call write_netcdf_global_attribute(ncid=ncid, name='t', val=t)
 
-            call write_netcdf_parcels
-
-            ! increment counter
-            n_writes = n_writes + 1
-
-            call close_netcdf_file(ncid)
-
-        end subroutine write_netcdf_parcel_step
-
-
-        ! Write parcel datasets (called from write_netcdf_parcel_step).
-        subroutine write_netcdf_parcels
             call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels))
             call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels))
             call write_netcdf_dataset(ncid, z_pos_id, parcels%position(3, 1:n_parcels))
@@ -245,9 +233,12 @@ module parcel_netcdf
 #ifndef ENABLE_DRY_MODE
             call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:n_parcels))
 #endif
+            ! increment counter
+            n_writes = n_writes + 1
+
+            call close_netcdf_file(ncid)
 
         end subroutine write_netcdf_parcels
-
 
         subroutine read_netcdf_parcels(fname)
             character(*),     intent(in)  :: fname
@@ -258,7 +249,7 @@ module parcel_netcdf
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
             ! read domain dimensions
-            call read_netcdf_box(ncid, ncells, extent, lower)
+            call get_netcdf_box(ncid, lower, extent, ncells)
             nx = ncells(1)
             ny = ncells(2)
             nz = ncells(3)
