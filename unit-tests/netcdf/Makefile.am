@@ -1,19 +1,13 @@
-if ENABLE_UNIT_TESTS
 if ENABLE_NETCDF
 
 AM_FCFLAGS =				\
 	-I $(top_builddir)/unit-tests	\
-	-I $(top_builddir)/src/hdf5	\
 	-I $(top_builddir)/src/netcdf
-
-AM_LDFLAGS =                                            \
-        $(top_builddir)/src/3d/utils/options*.o
 
 noinst_LTLIBRARIES = libcombi.la
 libcombi_la_SOURCES =
 libcombi_la_LIBADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la        \
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 unittestsdir = $(prefix)/unit-tests
@@ -36,5 +30,4 @@ test_netcdf_time_series_1_LDADD = libcombi.la
 test_netcdf_time_series_2_SOURCES = test_netcdf_time_series_2.f90
 test_netcdf_time_series_2_LDADD = libcombi.la
 
-endif
 endif
