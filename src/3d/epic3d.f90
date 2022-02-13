@@ -63,7 +63,7 @@ program epic3d
             call register_timer('parcel merge', merge_timer)
             call register_timer('laplace correction', lapl_corr_timer)
             call register_timer('gradient correction', grad_corr_timer)
-            call register_timer('parcel init', init_timer)
+            call register_timer('parcel initialisation', init_timer)
             call register_timer('parcel diagnostics', parcel_stats_timer)
             call register_timer('parcel I/O', parcel_io_timer)
             call register_timer('parcel diagnostics I/O', parcel_stats_io_timer)

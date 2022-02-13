@@ -7,9 +7,11 @@ module parcel_netcdf
     use parameters, only : nx, nz, extent, lower, update_parameters
     use config, only : package_version
     use timer, only : start_timer, stop_timer
+    use iomanip, only : zfill
     implicit none
 
     integer :: n_writes
+    character(len=512) :: ncbasename
 
     integer :: parcel_io_timer
 
@@ -30,6 +32,8 @@ module parcel_netcdf
     private :: hum_id
 #endif
 
+    private :: ncbasename
+
     contains
 
         ! Create the parcel file.
@@ -42,7 +46,9 @@ module parcel_netcdf
             logical                   :: l_exist
             integer                   :: ncells(2)
 
-            ncfname =  basename // '_parcels.nc'
+            ncfname =  basename // '_' // zfill(n_writes) // '_parcels.nc'
+
+            ncbasename = basename
 
             call exist_netcdf_file(ncfname, l_exist)
 
@@ -156,6 +162,10 @@ module parcel_netcdf
             double precision, intent(in)    :: t
 
             call start_timer(parcel_io_timer)
+
+            if (n_writes > 1) then
+                call create_netcdf_parcel_file(ncbasename, .true., .false.)
+            endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
