@@ -238,14 +238,17 @@ module parcel_init
             cnt  =  (/ nz+1, nx, 1       /)
             start = (/ 1,    1,  n_steps /)
 
+
             if (has_dataset(ncid, 'vorticity')) then
-                call read_netcdf_dataset(ncid, 'vorticity', buffer, start=start, cnt=cnt)
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'vorticity', buffer(0:nz, :), start=start, cnt=cnt)
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity)
             endif
 
 
             if (has_dataset(ncid, 'buoyancy')) then
-                call read_netcdf_dataset(ncid, 'buoyancy', buffer, start=start, cnt=cnt)
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'buoyancy', buffer(0:nz, :), start=start, cnt=cnt)
                 call gen_parcel_scalar_attr(buffer, tol, parcels%buoyancy)
             endif
 

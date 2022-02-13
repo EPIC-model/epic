@@ -251,28 +251,33 @@ module parcel_init
             start = (/ 1,    1,  1,  n_steps /)
 
             if (has_dataset(ncid, 'x_vorticity')) then
-                call read_netcdf_dataset(ncid, 'x_vorticity', buffer, start=start, cnt=cnt)
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'x_vorticity', buffer(0:nz, :, :), start=start, cnt=cnt)
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(1, :))
             endif
 
             if (has_dataset(ncid, 'y_vorticity')) then
-                call read_netcdf_dataset(ncid, 'y_vorticity', buffer, start=start, cnt=cnt)
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'y_vorticity', buffer(0:nz, :, :), start=start, cnt=cnt)
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(2, :))
             endif
 
             if (has_dataset(ncid, 'z_vorticity')) then
-                call read_netcdf_dataset(ncid, 'z_vorticity', buffer, start=start, cnt=cnt)
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'z_vorticity', buffer(0:nz, :, :), start=start, cnt=cnt)
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(3, :))
             endif
 
             if (has_dataset(ncid, 'buoyancy')) then
-                call read_netcdf_dataset(ncid, 'buoyancy', buffer, start=start, cnt=cnt)
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'buoyancy', buffer(0:nz, :, :), start=start, cnt=cnt)
                 call gen_parcel_scalar_attr(buffer, tol, parcels%buoyancy)
             endif
 
 #ifndef ENABLE_DRY_MODE
             if (has_dataset(ncid, 'humidity')) then
-                call read_netcdf_dataset(ncid, 'humidity', buffer, start=start, cnt=cnt)
+                buffer = zero
+                call read_netcdf_dataset(ncid, 'humidity', buffer(0:nz, :, :), start=start, cnt=cnt)
                 call gen_parcel_scalar_attr(buffer, tol, parcels%humidity)
             endif
 #endif
