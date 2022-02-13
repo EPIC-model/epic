@@ -27,7 +27,24 @@ module netcdf_reader
 
     contains
 
-        ! @returns -1 if NetCDF file does not contain the attribute 'n_parcels'
+        subroutine get_var_id(ncid, name, varid)
+            integer,      intent(in)  :: ncid
+            character(*), intent(in)  :: name
+            integer,      intent(out) :: varid
+
+            ncerr = nf90_inq_varid(ncid, name, varid)
+            call check_netcdf_error("Reading the ID of '" // name // "' failed.")
+        end subroutine get_var_id
+
+        subroutine get_dim_id(ncid, name, dimid)
+            integer,      intent(in)  :: ncid
+            character(*), intent(in)  :: name
+            integer,      intent(out) :: dimid
+
+            ncerr = nf90_inq_dimid(ncid, name, dimid)
+            call check_netcdf_error("Reading the ID of '" // name // "' failed.")
+        end subroutine get_dim_id
+
         subroutine get_num_parcels(ncid, n_parcels)
             integer, intent(in)  :: ncid
             integer, intent(out) :: n_parcels
@@ -39,7 +56,6 @@ module netcdf_reader
             call check_netcdf_error("Reading n_parcels failed.")
         end subroutine get_num_parcels
 
-        ! @returns -1 if NetCDF file does not contain the attribute 'n_steps'
         subroutine get_num_steps(ncid, n_steps)
             integer, intent(in)  :: ncid
             integer, intent(out) :: n_steps

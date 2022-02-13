@@ -1,6 +1,7 @@
 module field_netcdf
     use netcdf_utils
     use netcdf_writer
+    use netcdf_reader
     use fields
     use config, only : package_version
     use timer, only : start_timer, stop_timer
@@ -59,8 +60,8 @@ module field_netcdf
 
             if (l_restart .and. l_exist) then
                 call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
-                ncerr = nf90_inquire_dimension(ncid, t_dim_id, name, n_writes)
-                call check_netcdf_error("Failed to inquire the dimension.")
+                call get_num_steps(ncid, n_writes)
+                call read_netcdf_field_content
                 call close_netcdf_file(ncid)
                 n_writes = n_writes + 1
                 return
@@ -228,6 +229,50 @@ module field_netcdf
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_file
+
+
+        ! Pre-condition: Assumes an open file
+        subroutine read_netcdf_field_content
+
+            call get_dim_id(ncid, 'x', x_dim_id)
+
+            call get_dim_id(ncid, 'z', z_dim_id)
+
+            call get_dim_id(ncid, 't', t_dim_id)
+
+            call get_var_id(ncid, 'x', x_axis_id)
+
+            call get_var_id(ncid, 'z', z_axis_id)
+
+            call get_var_id(ncid, 't', t_axis_id)
+
+            call get_var_id(ncid, 'x_velocity', x_vel_id)
+
+            call get_var_id(ncid, 'z_velocity', z_vel_id)
+
+            call get_var_id(ncid, 'vorticity', vor_id)
+
+#ifdef ENABLE_DRY_MODE
+            call get_var_id(ncid, 'buoyancy',tbuo_id)
+#else
+#ifdef ENABLE_DIAGNOSE
+            call get_var_id(ncid, 'total_buoyancy', tbuo_id)
+
+            call get_var_id(ncid, 'dry_buoyancy', dbuo_id)
+#endif
+#endif
+
+#ifdef ENABLE_DIAGNOSE
+            call get_var_id(ncid, 'volume', vol_id)
+
+            call get_var_id(ncid, 'npar', npar_id)
+#endif
+
+#ifndef NDEBUG
+            call get_var_id(ncid, 'sym_vol', sym_vol_id)
+#endif
+
+        end subroutine read_netcdf_field_content
 
         ! Write a step in the field file.
         ! @param[in] t is the time

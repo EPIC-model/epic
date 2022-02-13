@@ -1,6 +1,7 @@
 module field_netcdf
     use netcdf_utils
     use netcdf_writer
+    use netcdf_reader
     use fields
     use config, only : package_version
     use timer, only : start_timer, stop_timer
@@ -43,8 +44,8 @@ module field_netcdf
 
             if (l_restart .and. l_exist) then
                 call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
-                ncerr = nf90_inquire_dimension(ncid, t_dim_id, name, n_writes)
-                call check_netcdf_error("Failed to inquire the dimension.")
+                call get_num_steps(ncid, n_writes)
+                call read_netcdf_field_content
                 call close_netcdf_file(ncid)
                 n_writes = n_writes + 1
                 return
@@ -195,6 +196,40 @@ module field_netcdf
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_file
+
+        ! Pre-condition: Assumes an open file
+        subroutine read_netcdf_field_content
+
+            call get_dim_id(ncid, 'x', x_dim_id)
+
+            call get_dim_id(ncid, 'y', y_dim_id)
+
+            call get_dim_id(ncid, 'z', z_dim_id)
+
+            call get_dim_id(ncid, 't', t_dim_id)
+
+
+            call get_var_id(ncid, 'x', x_axis_id)
+
+            call get_var_id(ncid, 'y', y_axis_id)
+
+            call get_var_id(ncid, 'z', z_axis_id)
+
+            call get_var_id(ncid, 't', t_axis_id)
+
+            call get_var_id(ncid, 'x_velocity', x_vel_id)
+
+            call get_var_id(ncid, 'y_velocity', y_vel_id)
+
+            call get_var_id(ncid, 'z_velocity', z_vel_id)
+
+            call get_var_id(ncid, 'x_vorticity', x_vor_id)
+
+            call get_var_id(ncid, 'y_vorticity', y_vor_id)
+
+            call get_var_id(ncid, 'z_vorticity', z_vor_id)
+
+        end subroutine read_netcdf_field_content
 
         ! Write a step in the field file.
         ! @param[in] t is the time

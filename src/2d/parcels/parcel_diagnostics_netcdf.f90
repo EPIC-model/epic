@@ -5,6 +5,7 @@ module parcel_diagnostics_netcdf
     use parcel_diagnostics
     use netcdf_utils
     use netcdf_writer
+    use netcdf_reader
     use parcel_container, only : parcels, n_parcels
     use parcel_diagnostics
     use parameters, only : lower, extent, nx, nz
@@ -57,8 +58,8 @@ module parcel_diagnostics_netcdf
 
             if (l_restart .and. l_exist) then
                 call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
-                ncerr = nf90_inquire_dimension(ncid, t_dim_id, name, n_writes)
-                call check_netcdf_error("Failed to inquire the dimension.")
+                call get_num_steps(ncid, n_writes)
+                call read_netcdf_parcel_stats_content
                 call close_netcdf_file(ncid)
                 n_writes = n_writes + 1
                 return
@@ -348,6 +349,65 @@ module parcel_diagnostics_netcdf
             call close_definition(ncid)
 
         end subroutine create_netcdf_parcel_stats_file
+
+        ! Pre-condition: Assumes an open file
+        subroutine read_netcdf_parcel_stats_content
+
+            call get_dim_id(ncid, 't', t_dim_id)
+
+            call get_var_id(ncid, 't', t_axis_id)
+
+            call get_var_id(ncid, 'pe', pe_id)
+
+            call get_var_id(ncid, 'ke', ke_id)
+
+            call get_var_id(ncid, 'te', te_id)
+
+            call get_var_id(ncid, 'n_parcels', npar_id)
+
+            call get_var_id(ncid, 'n_small_parcel', nspar_id)
+
+            call get_var_id(ncid, 'avg_lam', avg_lam_id)
+
+            call get_var_id(ncid, 'std_lam', std_lam_id)
+
+            call get_var_id(ncid, 'avg_vol', avg_vol_id)
+
+            call get_var_id(ncid, 'std_vol', std_vol_id)
+
+            call get_var_id(ncid, 'rms_vorticity', rms_vor_id)
+
+            call get_var_id(ncid, 'min_buoyancy', min_buo_id)
+
+            call get_var_id(ncid, 'max_buoyancy', max_buo_id)
+
+            call get_var_id(ncid, 'min_vorticity', min_vor_id)
+
+            call get_var_id(ncid, 'max_vorticity', max_vor_id)
+
+#ifdef ENABLE_DIAGNOSE
+            call get_var_id(ncid, 'xb_bar', xb_bar_id)
+
+            call get_var_id(ncid, 'x2b_bar', x2b_bar_id)
+
+            call get_var_id(ncid, 'zb_bar', zb_bar_id)
+
+            call get_var_id(ncid, 'z2b_bar', z2b_bar_id)
+
+            call get_var_id(ncid, 'xzb_bar', xzb_bar_id)
+
+            call get_var_id(ncid, 'xv_bar', xv_bar_id)
+
+            call get_var_id(ncid, 'x2v_bar', x2v_bar_id)
+
+            call get_var_id(ncid, 'zv_bar', zv_bar_id)
+
+            call get_var_id(ncid, 'z2v_bar', z2v_bar_id)
+
+            call get_var_id(ncid, 'xzv_bar', xzv_bar_id)
+#endif
+
+        end subroutine read_netcdf_parcel_stats_content
 
         ! Write a step in the parcel diagnostic file.
         ! @param[in] t is the time

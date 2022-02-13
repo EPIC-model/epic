@@ -5,6 +5,7 @@ module field_diagnostics_netcdf
     use field_diagnostics
     use netcdf_utils
     use netcdf_writer
+    use netcdf_reader
     use parameters, only : lower, extent, nx, ny, nz
     use config, only : package_version
     use timer, only : start_timer, stop_timer
@@ -43,8 +44,8 @@ module field_diagnostics_netcdf
 
             if (l_restart .and. l_exist) then
                 call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
-                ncerr = nf90_inquire_dimension(ncid, t_dim_id, name, n_writes)
-                call check_netcdf_error("Failed to inquire the dimension.")
+                call get_num_steps(ncid, n_writes)
+                call read_netcdf_field_stats_content
                 call close_netcdf_file(ncid)
                 n_writes = n_writes + 1
                 return
@@ -141,6 +142,27 @@ module field_diagnostics_netcdf
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_stats_file
+
+        ! Pre-condition: Assumes an open file
+        subroutine read_netcdf_field_stats_content
+
+            call get_dim_id(ncid, 't', t_dim_id)
+
+            call get_var_id(ncid, 't', t_axis_id)
+
+            call get_var_id(ncid, 'rms_v', rms_v_id)
+
+            call get_var_id(ncid, 'abserr_v', abserr_v_id)
+
+            call get_var_id(ncid, 'max_npar', max_npar_id)
+
+            call get_var_id(ncid, 'min_npar', min_npar_id)
+
+            call get_var_id(ncid, 'avg_npar', avg_npar_id)
+
+            call get_var_id(ncid, 'avg_nspar', avg_nspar_id)
+
+        end subroutine read_netcdf_field_stats_content
 
         ! Write a step in the field diagnostic file.
         ! @param[in] t is the time

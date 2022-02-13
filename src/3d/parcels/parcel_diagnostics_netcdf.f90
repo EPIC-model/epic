@@ -4,6 +4,7 @@
 module parcel_diagnostics_netcdf
     use netcdf_utils
     use netcdf_writer
+    use netcdf_reader
     use parcel_container, only : parcels, n_parcels
     use parcel_diagnostics
     use parameters, only : lower, extent, nx, ny, nz
@@ -47,8 +48,8 @@ module parcel_diagnostics_netcdf
 
             if (l_restart .and. l_exist) then
                 call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
-                ncerr = nf90_inquire_dimension(ncid, t_dim_id, name, n_writes)
-                call check_netcdf_error("Failed to inquire the dimension.")
+                call get_num_steps(ncid, n_writes)
+                call read_netcdf_parcel_stats_content
                 call close_netcdf_file(ncid)
                 n_writes = n_writes + 1
                 return
@@ -215,6 +216,39 @@ module parcel_diagnostics_netcdf
             call close_definition(ncid)
 
         end subroutine create_netcdf_parcel_stats_file
+
+        ! Pre-condition: Assumes an open file
+        subroutine read_netcdf_parcel_stats_content
+
+            call get_dim_id(ncid, 't', t_dim_id)
+
+            call get_var_id(ncid, 't', t_axis_id)
+
+            call get_var_id(ncid, 'pe', pe_id)
+
+            call get_var_id(ncid, 'ke', ke_id)
+
+            call get_var_id(ncid, 'te', te_id)
+
+            call get_var_id(ncid, 'n_parcels', npar_id)
+
+            call get_var_id(ncid, 'n_small_parcel', nspar_id)
+
+            call get_var_id(ncid, 'avg_lam', avg_lam_id)
+
+            call get_var_id(ncid, 'std_lam', std_lam_id)
+
+            call get_var_id(ncid, 'avg_vol', avg_vol_id)
+
+            call get_var_id(ncid, 'std_vol', std_vol_id)
+
+            call get_var_id(ncid, 'x_rms_vorticity', rms_x_vor_id)
+
+            call get_var_id(ncid, 'y_rms_vorticity', rms_y_vor_id)
+
+            call get_var_id(ncid, 'z_rms_vorticity', rms_z_vor_id)
+
+        end subroutine read_netcdf_parcel_stats_content
 
         ! Write a step in the parcel diagnostic file.
         ! @param[in] t is the time
