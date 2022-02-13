@@ -7,6 +7,7 @@ module field_diagnostics_netcdf
     use netcdf_writer
     use parameters, only : lower, extent, nx, ny, nz
     use config, only : package_version
+    use timer, only : start_timer, stop_timer
     implicit none
 
     private
@@ -17,8 +18,11 @@ module field_diagnostics_netcdf
                           rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
                           avg_npar_id, avg_nspar_id
 
-    public :: create_netcdf_field_stats_file,  &
-              write_netcdf_field_stats
+    integer :: field_stats_io_timer
+
+    public :: create_netcdf_field_stats_file,   &
+              write_netcdf_field_stats,         &
+              field_stats_io_timer
 
 
     contains
@@ -143,6 +147,8 @@ module field_diagnostics_netcdf
         subroutine write_netcdf_field_stats(t)
             double precision, intent(in)    :: t
 
+            call start_timer(field_stats_io_timer)
+
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             ! write time
@@ -162,6 +168,8 @@ module field_diagnostics_netcdf
             n_writes = n_writes + 1
 
             call close_netcdf_file(ncid)
+
+            call stop_timer(field_stats_io_timer)
 
         end subroutine write_netcdf_field_stats
 

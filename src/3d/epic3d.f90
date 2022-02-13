@@ -14,11 +14,11 @@ program epic3d
                                   lapl_corr_timer,        &
                                   grad_corr_timer
     use parcel_diagnostics, only : init_parcel_diagnostics
-    use parcel_io, only : parcel_io_timer, read_parcels
-    use parcel_diagnostics_io, only : parcel_stat_io_timer
+    use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
+    use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
     use fields
-    use field_io, only : field_io_timer
-    use field_diagnostics_io, only : field_stat_io_timer
+    use field_netcdf, only : field_io_timer
+    use field_diagnostics_netcdf, only : field_stats_io_timer
     use inversion_mod, only : vor2vel_timer, vtend_timer
     use inversion_utils, only : init_fft
     use parcel_interpl, only : grid2par_timer, par2grid_timer
@@ -62,10 +62,10 @@ program epic3d
             call register_timer('laplace correction', lapl_corr_timer)
             call register_timer('gradient correction', grad_corr_timer)
             call register_timer('parcel init', init_timer)
-            call register_timer('parcel io', parcel_io_timer)
-            call register_timer('parcel diagnostics io', parcel_stat_io_timer)
-            call register_timer('field io', field_io_timer)
-            call register_timer('field diagnostics io', field_stat_io_timer)
+            call register_timer('parcel I/O', parcel_io_timer)
+            call register_timer('parcel diagnostics I/O', parcel_stats_io_timer)
+            call register_timer('field I/O', field_io_timer)
+            call register_timer('field diagnostics I/O', field_stats_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
             call register_timer('parcel push', rk4_timer)
@@ -88,7 +88,7 @@ program epic3d
                 if (file_type == 'fields') then
                     call init_parcels(restart_file, field_tol)
                 else if (file_type == 'parcels') then
-                    call read_parcels(restart_file)
+                    call read_netcdf_parcels(restart_file)
                 else
                     print *, 'Restart file must be of type "fields" or "parcels".'
                     stop

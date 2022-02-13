@@ -3,7 +3,10 @@ module field_netcdf
     use netcdf_writer
     use fields
     use config, only : package_version
+    use timer, only : start_timer, stop_timer
     implicit none
+
+    integer :: field_io_timer
 
     character(len=512) :: ncfname
     integer            :: ncid
@@ -199,6 +202,8 @@ module field_netcdf
             double precision, intent(in) :: t
             integer                      :: cnt(4), start(4)
 
+            call start_timer(field_io_timer)
+
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             if (n_writes == 1) then
@@ -256,6 +261,8 @@ module field_netcdf
             n_writes = n_writes + 1
 
             call close_netcdf_file(ncid)
+
+            call stop_timer(field_io_timer)
 
         end subroutine write_netcdf_fields
 

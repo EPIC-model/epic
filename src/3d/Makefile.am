@@ -15,8 +15,6 @@ epic3d_SOURCES = 				\
 	fields/field_diagnostics.f90		\
 	fields/field_netcdf.f90			\
 	fields/field_diagnostics_netcdf.f90	\
-	fields/field_io.f90			\
-	fields/field_diagnostics_io.f90		\
 	parcels/parcel_ellipsoid.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
@@ -31,8 +29,6 @@ epic3d_SOURCES = 				\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_netcdf.f90		\
 	parcels/parcel_diagnostics_netcdf.f90	\
-	parcels/parcel_io.f90			\
-	parcels/parcel_diagnostics_io.f90	\
 	utils/utils.f90				\
 	stepper/rk4_utils.f90			\
 	stepper/ls_rk4.f90			\

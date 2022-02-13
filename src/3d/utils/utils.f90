@@ -1,9 +1,9 @@
 module utils
     use constants, only : one
-    use field_io
-    use field_diagnostics_io
-    use parcel_io
-    use parcel_diagnostics_io
+    use field_netcdf
+    use field_diagnostics_netcdf
+    use parcel_netcdf
+    use parcel_diagnostics_netcdf
     use parcel_diagnostics
     use parcel_container, only : n_parcels
     use inversion_mod, only : vor2vel, vorticity_tendency
@@ -25,27 +25,27 @@ module utils
             use options, only : output, l_restart
 
             if (output%write_parcel_stats) then
-                call create_parcel_stats_file(trim(output%basename), &
-                                              output%overwrite,      &
-                                              l_restart)
+                call create_netcdf_parcel_stats_file(trim(output%basename), &
+                                                     output%overwrite,      &
+                                                     l_restart)
             endif
 
             if (output%write_fields) then
-                call create_field_file(trim(output%basename), &
-                                          output%overwrite,   &
-                                          l_restart)
+                call create_netcdf_field_file(trim(output%basename), &
+                                              output%overwrite,   &
+                                              l_restart)
             endif
 
             if (output%write_field_stats) then
-                call create_field_stats_file(trim(output%basename),   &
-                                             output%overwrite,        &
-                                             l_restart)
+                call create_netcdf_field_stats_file(trim(output%basename),   &
+                                                    output%overwrite,        &
+                                                    l_restart)
             endif
 
             if (output%write_parcels) then
-                call create_parcel_file(trim(output%basename),    &
-                                        output%overwrite,         &
-                                        l_restart)
+                call create_netcdf_parcel_file(trim(output%basename),    &
+                                               output%overwrite,         &
+                                               l_restart)
             endif
 
         end subroutine setup_output_files
@@ -92,26 +92,26 @@ module utils
             ! make sure we always write initial setup
             if (output%write_fields .and. &
                 (t + epsilon(zero) >= neg * dble(nfw) * output%field_freq)) then
-                call write_fields(t)
+                call write_netcdf_fields(t)
                 nfw = nfw + 1
             endif
 
 
             if (output%write_parcels .and. &
                 (t + epsilon(zero) >= neg * dble(npw) * output%parcel_freq)) then
-                call write_parcels(t)
+                call write_netcdf_parcels(t)
                 npw = npw + 1
             endif
 
             if (output%write_parcel_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nspw) * output%parcel_stats_freq)) then
-                call write_parcel_stats(t)
+                call write_netcdf_parcel_stats(t)
                 nspw = nspw + 1
             endif
 
             if (output%write_field_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nsfw) * output%field_stats_freq)) then
-                call write_field_stats(t)
+                call write_netcdf_field_stats(t)
                 nsfw = nsfw + 1
             endif
         end subroutine write_step

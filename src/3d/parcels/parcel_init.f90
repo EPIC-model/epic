@@ -8,7 +8,7 @@ module parcel_init
     use parcel_ellipsoid, only : get_abc, get_eigenvalues
     use parcel_split_mod, only : parcel_split
     use parcel_interpl, only : trilinear, ngp
-    use field_io, only : read_domain
+    use netcdf_reader, only : read_netcdf_domain
     use parameters, only : update_parameters,   &
                            dx, vcell, ncell,    &
                            extent, lower, nx, ny, nz
@@ -50,7 +50,7 @@ module parcel_init
             call start_timer(init_timer)
 
             ! read domain dimensions
-            call read_domain(fname, lower, extent, ncells)
+            call read_netcdf_domain(fname, lower, extent, ncells)
             nx = ncells(1)
             ny = ncells(2)
             nz = ncells(3)
