@@ -16,7 +16,7 @@
 !                       tg_flow%phase = (/d, e, f/)
 ! ====================================================================================
 module taylor_green_3d
-    use h5_writer
+    use netcdf_writer
     use constants, only : pi, f12, zero, one, two
     implicit none
 
@@ -29,6 +29,8 @@ module taylor_green_3d
 
         type(flow_type) :: tg_flow
 
+        integer :: x_vor_id, y_vor_id, z_vor_id
+
 
         double precision, parameter :: hpi = f12 * pi
 
@@ -38,14 +40,45 @@ module taylor_green_3d
 
 
     contains
-        subroutine taylor_green_init(h5handle, nx, ny, nz, origin, dx)
-            integer(hid_t),   intent(inout) :: h5handle
+        subroutine taylor_green_init(ncfname, ncid, dimids, nx, ny, nz, origin, dx)
+            character(*),     intent(in)    :: ncfname
+            integer,          intent(inout) :: ncid
+            integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, ny, nz
             double precision, intent(in)    :: origin(3)
             double precision, intent(in)    :: dx(3)
             double precision                :: pos(3)
             double precision                :: vortg(0:nz, 0:ny-1, 0:nx-1, 3)
             integer                         :: i, j, k
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='x_vorticity',                  &
+                                       long_name='x vorticity component',   &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=x_vor_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='y_vorticity',                  &
+                                       long_name='y vorticity component',   &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=y_vor_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='z_vorticity',                  &
+                                       long_name='z vorticity component',   &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=z_vor_id)
+
+            call close_definition(ncid)
 
             do i = 0, nx - 1
                 do j = 0, ny - 1
@@ -56,7 +89,11 @@ module taylor_green_3d
                 enddo
             enddo
 
-            call write_h5_dataset(h5handle, '/', 'vorticity', vortg)
+            call open_netcdf_file(ncfname, NF90_WRITE, ncid)
+
+            call write_netcdf_dataset(ncid, x_vor_id, vortg(:, :, :, 1))
+            call write_netcdf_dataset(ncid, y_vor_id, vortg(:, :, :, 2))
+            call write_netcdf_dataset(ncid, z_vor_id, vortg(:, :, :, 3))
 
         end subroutine taylor_green_init
 

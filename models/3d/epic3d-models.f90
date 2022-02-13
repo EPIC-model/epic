@@ -2,19 +2,21 @@
 !               This program writes fields to HDF5 in EPIC format.
 ! =============================================================================
 program epic3d_models
-    use options, only : filename, verbose
     use taylor_green_3d
     use robert_3d
     use moist_3d
     use constants, only : pi
     use parameters, only : nx, ny, nz, dx, lower, extent
-    use h5_utils
-    use h5_writer
+    use netcdf_utils
+    use netcdf_writer
     implicit none
 
+    logical            :: verbose = .false.
+    character(len=512) :: filename = ''
     character(len=512) :: model = ''
-    character(len=512) :: h5fname = ''
-    integer(hid_t)     :: h5handle
+    character(len=512) :: ncfname = ''
+    integer            :: ncid
+    integer            :: x_dim_id, y_dim_id, z_dim_id, t_dim_id, dimids(4)
 
     type box_type
         integer          :: ncells(3)   ! number of cells
@@ -30,22 +32,41 @@ program epic3d_models
 
     call read_config_file
 
-    call initialise_hdf5
-
     call generate_fields
-
-    call finalise_hdf5
 
     contains
 
         subroutine generate_fields
 
-            call create_h5_file(h5fname, .false., h5handle)
+            call create_netcdf_file(ncfname, .false., ncid)
 
             dx = box%extent / dble(box%ncells)
             nx = box%ncells(1)
             ny = box%ncells(2)
             nz = box%ncells(3)
+
+            ! define dimensions
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='x',                          &
+                                         dimsize=nx,                        &
+                                         dimid=x_dim_id)
+
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='y',                          &
+                                         dimsize=ny,                        &
+                                         dimid=y_dim_id)
+
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='z',                          &
+                                         dimsize=nz+1,                      &
+                                         dimid=z_dim_id)
+
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='t',                          &
+                                         dimsize=NF90_UNLIMITED,            &
+                                         dimid=t_dim_id)
+
+            dimids = (/z_dim_id, y_dim_id, x_dim_id, t_dim_id/)
 
             select case (trim(model))
                 case ('TaylorGreen')
@@ -54,11 +75,11 @@ program epic3d_models
                     box%extent = pi * box%extent
                     dx = dx * pi
 
-                    call taylor_green_init(h5handle, nx, ny, nz, box%origin, dx)
+                    call taylor_green_init(ncfname, ncid, dimids, nx, ny, nz, box%origin, dx)
                 case ('Robert')
-                    call robert_init(h5handle, nx, ny, nz, box%origin, dx)
+                    call robert_init(ncfname, ncid, dimids, nx, ny, nz, box%origin, dx)
                 case ('MoistPlume')
-                    call moist_init(h5handle, nx, ny, nz, box%origin, dx)
+                    call moist_init(ncfname, ncid, dimids, nx, ny, nz, box%origin, dx)
                 case default
                     print *, "Unknown model: '", trim(model), "'."
                     stop
@@ -67,8 +88,8 @@ program epic3d_models
             ! write box
             lower = box%origin
             extent = box%extent
-            call write_h5_box(h5handle, lower, extent, (/nx, ny, nz/))
-            call close_h5_file(h5handle)
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
+            call close_netcdf_file(ncid)
         end subroutine generate_fields
 
 
@@ -80,7 +101,7 @@ program epic3d_models
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODELS/ model, h5fname, box, tg_flow, robert_flow, moist
+            namelist /MODELS/ model, ncfname, box, tg_flow, robert_flow, moist
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -102,11 +123,11 @@ program epic3d_models
 
             close(fn)
 
-            ! check whether h5 file already exists
-            inquire(file=h5fname, exist=exists)
+            ! check whether NetCDF file already exists
+            inquire(file=ncfname, exist=exists)
 
             if (exists) then
-                print *, 'Error: output file "', trim(h5fname), '" already exists.'
+                print *, 'Error: output file "', trim(ncfname), '" already exists.'
                 stop
             endif
         end subroutine read_config_file

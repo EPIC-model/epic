@@ -8,7 +8,7 @@
 module robert_3d
     use phys_constants
     use constants
-    use h5_writer
+    use netcdf_writer
     implicit none
 
     private
@@ -16,6 +16,8 @@ module robert_3d
     double precision, allocatable :: buoyg(:, :, :)
 
     double precision :: ref_theta = 303.15d0    ![K] reference potential temperature
+
+    integer :: buoy_id
 
     type bubble_type
         double precision :: center(3)       ![m] bubble center (x, z)
@@ -36,13 +38,26 @@ module robert_3d
 
     contains
 
-        subroutine robert_init(h5handle, nx, ny, nz, origin, dx)
-            integer(hid_t),   intent(inout) :: h5handle
+        subroutine robert_init(ncfname, ncid, dimids, nx, ny, nz, origin, dx)
+            character(*),     intent(in)    :: ncfname
+            integer,          intent(inout) :: ncid
+            integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, ny, nz
             double precision, intent(in)    :: origin(3)
             double precision, intent(in)    :: dx(3)
             integer                         :: k
             type(bubble_type)               :: bubble
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='buoyancy',                     &
+                                       long_name='buoyancy',                &
+                                       std_name='',                         &
+                                       unit='m/s^2',                        &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=buoy_id)
+
+            call close_definition(ncid)
 
             if (robert_flow%n_bubbles > size(robert_flow%bubbles)) then
                 print *, 'Number of bubbles beyond upper limit.'
@@ -59,7 +74,7 @@ module robert_3d
                 call robert_gaussian_init(nx, ny, nz, origin, dx, bubble)
             enddo
 
-            call write_h5_dataset(h5handle, '/', 'buoyancy', buoyg)
+            call write_netcdf_dataset(ncid, buoy_id, buoyg)
 
             deallocate(buoyg)
 
