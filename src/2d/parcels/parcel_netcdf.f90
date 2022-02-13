@@ -6,9 +6,12 @@ module parcel_netcdf
     use parcel_container, only : parcels, n_parcels
     use parameters, only : nx, nz, extent, lower, update_parameters
     use config, only : package_version
+    use timer, only : start_timer, stop_timer
     implicit none
 
     integer :: n_writes
+
+    integer :: parcel_io_timer
 
     character(len=512) :: ncfname
     integer            :: ncid
@@ -152,6 +155,8 @@ module parcel_netcdf
         subroutine write_netcdf_parcels(t)
             double precision, intent(in)    :: t
 
+            call start_timer(parcel_io_timer)
+
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             ! write time
@@ -177,6 +182,8 @@ module parcel_netcdf
 
             call close_netcdf_file(ncid)
 
+            call stop_timer(parcel_io_timer)
+
         end subroutine write_netcdf_parcels
 
         subroutine read_netcdf_parcels(fname)
@@ -184,6 +191,7 @@ module parcel_netcdf
             integer                       :: ncells(2)
             logical                       :: l_valid = .false.
 
+            call start_timer(parcel_io_timer)
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
@@ -271,6 +279,8 @@ module parcel_netcdf
             endif
 
             call close_netcdf_file(ncid)
+
+            call stop_timer(parcel_io_timer)
 
         end subroutine read_netcdf_parcels
 

@@ -56,6 +56,8 @@ module parcel_diagnostics
             double precision :: b(n_parcels)
             double precision :: gam, zmean
 
+            call start_timer(parcel_stats_timer)
+
             b = parcels%buoyancy(1:n_parcels)
 
             ! sort buoyancy in ascending order
@@ -71,6 +73,8 @@ module parcel_diagnostics
                 peref = peref &
                       - b(n) * parcels%volume(ii(n)) * zmean
             enddo
+
+            call stop_timer(parcel_stats_timer)
         end subroutine init_parcel_diagnostics
 
 

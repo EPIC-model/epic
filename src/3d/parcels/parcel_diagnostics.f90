@@ -8,7 +8,10 @@ module parcel_diagnostics
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipsoid
     use omp_lib
+    use timer, only : start_timer, stop_timer
     implicit none
+
+    integer :: parcel_stats_timer
 
 
     ! peref : potential energy reference
@@ -36,21 +39,25 @@ module parcel_diagnostics
             double precision :: b(n_parcels)
             double precision :: gam, zmean
 
+            call start_timer(parcel_stats_timer)
+
             b = parcels%buoyancy(1:n_parcels)
 
             ! sort buoyancy in ascending order
             call msort(b, ii)
 
             gam = one / (extent(1) * extent(2))
-            zmean = f12 * gam * parcels%volume(ii(1))
+            zmean = gam * parcels%volume(ii(1))
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
             do n = 2, n_parcels
-                zmean = zmean + gam * parcels%volume(ii(n))
+                zmean = zmean + gam * (parcels%volume(ii(n-1)) + parcels%volume(ii(n)))
 
                 peref = peref &
                       - b(n) * parcels%volume(ii(n)) * zmean
             enddo
+
+            call stop_timer(parcel_stats_timer)
         end subroutine init_parcel_diagnostics
 
 
@@ -60,6 +67,8 @@ module parcel_diagnostics
             integer          :: n
             double precision :: b, z, vel(3), vol, zmin
             double precision :: evals(3), lam, lsum, l2sum, vsum, v2sum
+
+            call start_timer(parcel_stats_timer)
 
             ! reset
             ke = zero
@@ -126,6 +135,8 @@ module parcel_diagnostics
 
             avg_vol = vsum / dble(n_parcels)
             std_vol = dsqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))
+
+            call stop_timer(parcel_stats_timer)
 
         end subroutine calculate_parcel_diagnostics
 

@@ -15,11 +15,14 @@ program epic2d
                                   apply_gradient,         &
                                   lapl_corr_timer,        &
                                   grad_corr_timer
-    use parcel_diagnostics, only : init_parcel_diagnostics !,    &
-!                                    hdf5_parcel_stat_timer
+    use parcel_diagnostics, only : init_parcel_diagnostics, &
+                                   parcel_stats_timer
     use parcel_netcdf
+    use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
     use fields
-!     use field_netcdf, only : hdf5_field_timer
+    use field_netcdf, only : field_io_timer
+    use field_diagnostics, only : field_stats_timer
+    use field_diagnostics_netcdf, only : field_stats_io_timer
     use tri_inversion, only : init_inversion, vor2vel_timer, vtend_timer
     use parcel_interpl, only : grid2par_timer, par2grid_timer
 #ifndef NDEBUG
@@ -64,10 +67,12 @@ program epic2d
             call register_timer('laplace correction', lapl_corr_timer)
             call register_timer('gradient correction', grad_corr_timer)
             call register_timer('parcel init', init_timer)
-!             call register_timer('parcel hdf5', hdf5_parcel_timer)
-!             call register_timer('parcel diagnostics hdf5', hdf5_parcel_stat_timer)
-!             call register_timer('field hdf5', hdf5_field_timer)
-!             call register_timer('field diagnostics hdf5', hdf5_field_stat_timer)
+            call register_timer('parcel diagnostics', parcel_stats_timer)
+            call register_timer('parcel I/O', parcel_io_timer)
+            call register_timer('parcel diagnostics I/O', parcel_stats_io_timer)
+            call register_timer('field I/O', field_io_timer)
+            call register_timer('field diagnostics', field_stats_timer)
+            call register_timer('field diagnostics I/O', field_stats_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
             call register_timer('parcel push', rk4_timer)

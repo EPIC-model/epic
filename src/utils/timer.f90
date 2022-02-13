@@ -16,7 +16,7 @@ module timer
         integer(8)        :: cr1, cr2
     end type timer_type
 
-    type(timer_type) :: timings(18)
+    type(timer_type) :: timings(20)
 
     integer :: n_timers = 0
 

@@ -13,11 +13,13 @@ program epic3d
                                   apply_gradient,         &
                                   lapl_corr_timer,        &
                                   grad_corr_timer
-    use parcel_diagnostics, only : init_parcel_diagnostics
+    use parcel_diagnostics, only : init_parcel_diagnostics, &
+                                   parcel_stats_timer
     use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
     use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
     use fields
     use field_netcdf, only : field_io_timer
+    use field_diagnostics, only : field_stats_timer
     use field_diagnostics_netcdf, only : field_stats_io_timer
     use inversion_mod, only : vor2vel_timer, vtend_timer
     use inversion_utils, only : init_fft
@@ -62,9 +64,11 @@ program epic3d
             call register_timer('laplace correction', lapl_corr_timer)
             call register_timer('gradient correction', grad_corr_timer)
             call register_timer('parcel init', init_timer)
+            call register_timer('parcel diagnostics', parcel_stats_timer)
             call register_timer('parcel I/O', parcel_io_timer)
             call register_timer('parcel diagnostics I/O', parcel_stats_io_timer)
             call register_timer('field I/O', field_io_timer)
+            call register_timer('field diagnostics', field_stats_timer)
             call register_timer('field diagnostics I/O', field_stats_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)

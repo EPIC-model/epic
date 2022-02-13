@@ -10,10 +10,12 @@ module parcel_diagnostics_netcdf
     use parameters, only : lower, extent, nx, nz
     use config, only : package_version
     use omp_lib
+    use timer, only : start_timer, stop_timer
     implicit none
 
-
     private
+
+    integer :: parcel_stats_io_timer
 
     character(len=512) :: ncfname
     integer            :: ncid
@@ -33,7 +35,8 @@ module parcel_diagnostics_netcdf
 #endif
 
     public :: create_netcdf_parcel_stats_file,  &
-              write_netcdf_parcel_stats
+              write_netcdf_parcel_stats,        &
+              parcel_stats_io_timer
 
 
     contains
@@ -350,6 +353,8 @@ module parcel_diagnostics_netcdf
         subroutine write_netcdf_parcel_stats(t)
             double precision, intent(in)    :: t
 
+            call start_timer(parcel_stats_io_timer)
+
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             ! write time
@@ -391,6 +396,8 @@ module parcel_diagnostics_netcdf
             n_writes = n_writes + 1
 
             call close_netcdf_file(ncid)
+
+            call stop_timer(parcel_stats_io_timer)
 
         end subroutine write_netcdf_parcel_stats
 end module parcel_diagnostics_netcdf
