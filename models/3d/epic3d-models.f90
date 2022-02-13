@@ -68,13 +68,20 @@ program epic3d_models
 
             dimids = (/z_dim_id, y_dim_id, x_dim_id, t_dim_id/)
 
+            if (model == 'TaylorGreen') then
+                ! make origin and extent always a multiple of pi
+                box%origin = pi * box%origin
+                box%extent = pi * box%extent
+                dx = dx * pi
+            endif
+
+            ! write box
+            lower = box%origin
+            extent = box%extent
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
+
             select case (trim(model))
                 case ('TaylorGreen')
-                    ! make origin and extent always a multiple of pi
-                    box%origin = pi * box%origin
-                    box%extent = pi * box%extent
-                    dx = dx * pi
-
                     call taylor_green_init(ncfname, ncid, dimids, nx, ny, nz, box%origin, dx)
                 case ('Robert')
                     call robert_init(ncfname, ncid, dimids, nx, ny, nz, box%origin, dx)
@@ -85,10 +92,6 @@ program epic3d_models
                     stop
             end select
 
-            ! write box
-            lower = box%origin
-            extent = box%extent
-            call write_netcdf_box(ncid, lower, extent, box%ncells)
             call close_netcdf_file(ncid)
         end subroutine generate_fields
 
