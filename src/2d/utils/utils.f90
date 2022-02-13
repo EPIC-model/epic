@@ -1,5 +1,6 @@
 module utils
     use constants, only : one
+    use options, only : output, l_restart
     use field_netcdf
     use parcel_netcdf
     use parcel_diagnostics_netcdf, only : create_netcdf_parcel_stats_file, &
@@ -28,7 +29,6 @@ module utils
 
         ! Create NetCDF files and set the step number
         subroutine setup_output_files
-            use options, only : output, l_restart
 
             if (output%write_parcel_stats) then
                 call create_netcdf_parcel_stats_file(trim(output%basename), &
@@ -84,7 +84,6 @@ module utils
         ! @param[in] t is the time
         ! @param[in] l_force a logical to force a write (optional)
         subroutine write_step(t, l_force)
-            use options, only : output
             double precision,  intent(in) :: t
             logical, optional, intent(in) :: l_force
             double precision              :: neg = one
@@ -150,6 +149,13 @@ module utils
             call get_file_type(ncid, file_type)
             call get_time(ncid, t)
             call close_netcdf_file(ncid)
+
+            ! set counters (we nee to increment by 1 since
+            ! we want to write the next time
+            nfw = int(t / output%field_freq) + 1
+            npw = int(t / output%parcel_freq) + 1
+            nspw = int(t / output%parcel_stats_freq) + 1
+            nsfw = int(t / output%field_stats_freq) + 1
         end subroutine setup_restart
 
 end module utils

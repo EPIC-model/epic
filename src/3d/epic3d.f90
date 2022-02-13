@@ -54,7 +54,7 @@ program epic3d
                               , l_restart           &
                               , restart_file        &
                               , time
-            character(:), allocatable :: file_type
+            character(len=16) :: file_type
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
