@@ -64,6 +64,8 @@ module robert_2d
                                        dimids=dimids,                       &
                                        varid=buo_id)
 
+            call close_definition(ncid)
+
             if (robert_flow%n_bubbles > size(robert_flow%bubbles)) then
                 print *, 'Number of bubbles beyond upper limit.'
                 stop

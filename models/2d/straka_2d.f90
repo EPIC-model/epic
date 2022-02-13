@@ -53,6 +53,8 @@ module straka_2d
                                        dimids=dimids,                       &
                                        varid=buo_id)
 
+            call close_definition(ncid)
+
             ! in metres
             xc = straka_flow%center(1)
             xr = straka_flow%radii(1)

@@ -54,6 +54,8 @@ module taylor_green_2d
                                        dimids=dimids,                       &
                                        varid=vor_id)
 
+            call close_definition(ncid)
+
             do j = 0, nz
                 do i = 0, nx - 1
                     pos = origin + dx * dble((/i, j/))
