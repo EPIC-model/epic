@@ -10,7 +10,7 @@ module parcel_netcdf
     use iomanip, only : zfill
     implicit none
 
-    integer :: n_writes
+    integer :: n_writes = 1
     character(len=512) :: ncbasename
 
     integer :: parcel_io_timer
@@ -56,8 +56,6 @@ module parcel_netcdf
                 ! tag the parcel file number inside
                 return
             endif
-
-            n_writes = 1
 
             call create_netcdf_file(ncfname, overwrite, ncid)
 
@@ -164,7 +162,7 @@ module parcel_netcdf
             call start_timer(parcel_io_timer)
 
             if (n_writes > 1) then
-                call create_netcdf_parcel_file(ncbasename, .true., .false.)
+                call create_netcdf_parcel_file(trim(ncbasename), .true., .false.)
             endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
