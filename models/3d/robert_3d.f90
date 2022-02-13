@@ -17,7 +17,7 @@ module robert_3d
 
     double precision :: ref_theta = 303.15d0    ![K] reference potential temperature
 
-    integer :: buoy_id
+    integer :: buo_id
 
     type bubble_type
         double precision :: center(3)       ![m] bubble center (x, z)
@@ -55,7 +55,7 @@ module robert_3d
                                        unit='m/s^2',                        &
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
-                                       varid=buoy_id)
+                                       varid=buo_id)
 
             call close_definition(ncid)
 
@@ -74,7 +74,7 @@ module robert_3d
                 call robert_gaussian_init(nx, ny, nz, origin, dx, bubble)
             enddo
 
-            call write_netcdf_dataset(ncid, buoy_id, buoyg)
+            call write_netcdf_dataset(ncid, buo_id, buoyg)
 
             deallocate(buoyg)
 

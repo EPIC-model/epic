@@ -31,7 +31,6 @@ module taylor_green_3d
 
         integer :: x_vor_id, y_vor_id, z_vor_id
 
-
         double precision, parameter :: hpi = f12 * pi
 
     public :: get_flow_vorticity,   &

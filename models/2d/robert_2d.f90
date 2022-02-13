@@ -14,7 +14,7 @@
 module robert_2d
     use phys_constants
     use constants
-    use h5_writer
+    use netcdf_writer
     implicit none
 
     private
@@ -22,6 +22,8 @@ module robert_2d
     double precision, allocatable :: buoyg(:, :)
 
     double precision :: ref_theta = 303.15d0    ![K] reference potential temperature
+
+    integer :: buo_id
 
     type bubble_type
         character(len=8) :: distr           ! distribution ('gaussian' or 'uniform')
@@ -44,13 +46,24 @@ module robert_2d
 
     contains
 
-        subroutine robert_init(h5handle, nx, nz, origin, dx)
-            integer(hid_t),   intent(inout) :: h5handle
+        subroutine robert_init(ncfname, ncid, dimids, nx, nz, origin, dx)
+            character(*),     intent(in)    :: ncfname
+            integer,          intent(inout) :: ncid
+            integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, nz
             double precision, intent(in)    :: origin(2)
             double precision, intent(in)    :: dx(2)
             integer                         :: k
             type(bubble_type)               :: bubble
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='buoyancy',                     &
+                                       long_name='buoyancy',                &
+                                       std_name='',                         &
+                                       unit='m/s^2',                        &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=buo_id)
 
             if (robert_flow%n_bubbles > size(robert_flow%bubbles)) then
                 print *, 'Number of bubbles beyond upper limit.'
@@ -75,7 +88,7 @@ module robert_2d
                 end select
             enddo
 
-            call write_h5_dataset(h5handle, '/', 'buoyancy', buoyg)
+            call write_netcdf_dataset(ncid, buo_id, buoyg)
 
             deallocate(buoyg)
 

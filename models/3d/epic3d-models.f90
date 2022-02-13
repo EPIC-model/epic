@@ -1,5 +1,5 @@
 ! =============================================================================
-!               This program writes fields to HDF5 in EPIC format.
+!               This program writes fields to NetCDF in EPIC format.
 ! =============================================================================
 program epic3d_models
     use taylor_green_3d
