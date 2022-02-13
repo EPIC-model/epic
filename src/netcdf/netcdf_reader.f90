@@ -31,13 +31,12 @@ module netcdf_reader
         subroutine get_num_parcels(ncid, n_parcels)
             integer, intent(in)  :: ncid
             integer, intent(out) :: n_parcels
+            integer              :: dimid
 
-            if (.not. has_attribute(ncid, 'n_parcels')) then
-                n_parcels = -1
-                return
-            endif
-
-            call read_netcdf_global_attrib_integer(ncid, 'n_parcels', n_parcels)
+            ncerr = nf90_inq_dimid(ncid, 'n_parcels', dimid)
+            call check_netcdf_error("Reading n_parcel dimension id failed.")
+            ncerr = nf90_inquire_dimension(ncid, dimid, len=n_parcels)
+            call check_netcdf_error("Reading n_parcels failed.")
         end subroutine get_num_parcels
 
         ! @returns -1 if NetCDF file does not contain the attribute 'n_steps'
@@ -49,6 +48,7 @@ module netcdf_reader
             ncerr = nf90_inq_dimid(ncid, 't', dimid)
             call check_netcdf_error("Reading time dimension id failed.")
             ncerr = nf90_inquire_dimension(ncid, dimid, len=n_steps)
+            call check_netcdf_error("Reading time failed.")
         end subroutine get_num_steps
 
         ! @returns -1 if NetCDF file does not contain the attribute 't'

@@ -50,10 +50,14 @@ module parcel_netcdf
 
             ncbasename = basename
 
-            call exist_netcdf_file(ncfname, l_exist)
-
-            if (l_restart .and. l_exist) then
-                ! tag the parcel file number inside
+            if (l_restart) then
+                ! find the last parcel file in order to set "n_writes" properly
+                call exist_netcdf_file(ncfname, l_exist)
+                do while (l_exist)
+                    n_writes = n_writes + 1
+                    ncfname =  basename // '_' // zfill(n_writes) // '_parcels.nc'
+                    call exist_netcdf_file(ncfname, l_exist)
+                enddo
                 return
             endif
 
