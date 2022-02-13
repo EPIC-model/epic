@@ -187,6 +187,11 @@ module parcel_init
                 call bilinear(parcels%position(:, n), is(:, n), js(:, n), weights(:, n))
 
                 do l = 1, ngp
+                    ! catch if in halo
+                    if ((js(l, n) < 0) .or. (js(l, n) > nz)) then
+                        print *, "Error: Tries to access undefined halo grid point."
+                        stop
+                    endif
                     resi(js(l, n), is(l, n)) = resi(js(l, n), is(l, n)) + weights(l, n)
                 enddo
             enddo

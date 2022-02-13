@@ -198,6 +198,11 @@ module parcel_init
                 call trilinear(parcels%position(:, n), is(:, n), js(:, n), ks(:, n), weights(:, n))
 
                 do l = 1, ngp
+                    ! catch if in halo
+                    if ((ks(l, n) < 0) .or. (ks(l, n) > nz)) then
+                        print *, "Error: Tries to access undefined halo grid point."
+                        stop
+                    endif
                     resi(ks(l, n), js(l, n), is(l, n)) = resi(ks(l, n), js(l, n), is(l, n)) + weights(l, n)
                 enddo
             enddo
