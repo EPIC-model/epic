@@ -1,10 +1,5 @@
-SUBDIRS = utils fft
+SUBDIRS = utils fft netcdf 2d
 
-if ENABLE_NETCDF
-SUBDIRS += netcdf
-else
-SUBDIRS += hdf5
-endif
-
-# SUBDIRS += 2d 3d
+if ENABLE_3D
 SUBDIRS += 3d
+endif

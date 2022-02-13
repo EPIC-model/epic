@@ -1,7 +1,7 @@
 AM_FCFLAGS = 				\
 	-I $(top_builddir)/src/2d/	\
 	-I $(top_builddir)/src/utils	\
-	-I $(top_builddir)/src/hdf5
+	-I $(top_builddir)/src/netcdf
 
 AM_LDFLAGS =                                            \
         $(top_builddir)/src/2d/utils/stafft.o		\
@@ -15,7 +15,7 @@ genspec_SOURCES = genspec.f90
 
 genspec_LDADD = 					\
 	$(top_builddir)/src/utils/libepic_utils.la	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la
+	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 clean-local:
 	rm -f *.mod

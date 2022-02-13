@@ -172,7 +172,7 @@ program genspec
 
         subroutine read_data
             double precision :: buffer(nz+1, nx)
-            integer          :: ncid
+            integer          :: ncid, cnt(3), start(3), n_steps
 
             call open_netcdf_file(trim(filename), NF90_NOWRITE, ncid)
 
