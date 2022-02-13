@@ -60,6 +60,7 @@ module parcel_diagnostics_netcdf
                 ncerr = nf90_inquire_dimension(ncid, t_dim_id, name, n_writes)
                 call check_netcdf_error("Failed to inquire the dimension.")
                 call close_netcdf_file(ncid)
+                n_writes = n_writes + 1
                 return
             endif
 
