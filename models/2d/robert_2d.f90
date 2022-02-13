@@ -46,8 +46,7 @@ module robert_2d
 
     contains
 
-        subroutine robert_init(ncfname, ncid, dimids, nx, nz, origin, dx)
-            character(*),     intent(in)    :: ncfname
+        subroutine robert_init(ncid, dimids, nx, nz, origin, dx)
             integer,          intent(inout) :: ncid
             integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, nz

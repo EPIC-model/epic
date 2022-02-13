@@ -1,5 +1,3 @@
-if ENABLE_NETCDF
-
 AM_FCFLAGS =				\
 	-I $(top_builddir)/unit-tests	\
 	-I $(top_builddir)/src/netcdf
@@ -45,5 +43,3 @@ test_netcdf_read_dataset_2d_LDADD = libcombi.la
 
 test_netcdf_read_dataset_3d_SOURCES = test_netcdf_read_dataset_3d.f90
 test_netcdf_read_dataset_3d_LDADD = libcombi.la
-
-endif

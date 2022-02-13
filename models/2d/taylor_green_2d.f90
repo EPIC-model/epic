@@ -35,8 +35,7 @@ module taylor_green_2d
 
 
     contains
-        subroutine taylor_green_init(ncfname, ncid, dimids, nx, nz, origin, dx)
-            character(*),     intent(in)    :: ncfname
+        subroutine taylor_green_init(ncid, dimids, nx, nz, origin, dx)
             integer,          intent(inout) :: ncid
             integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, nz

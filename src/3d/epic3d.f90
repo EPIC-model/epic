@@ -24,9 +24,6 @@ program epic3d
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
-#ifndef ENABLE_NETCDF
-    use h5_utils, only : initialise_hdf5, finalise_hdf5
-#endif
     use utils, only : write_last_step, setup_output_files, setup_restart
     use phys_parameters, only : update_phys_parameters
     implicit none
@@ -77,9 +74,6 @@ program epic3d
 
             call start_timer(epic_timer)
 
-#ifndef ENABLE_NETCDF
-            call initialise_hdf5
-#endif
 
             ! parse the config file
             call read_config_file
@@ -161,9 +155,6 @@ program epic3d
             use options, only : output
             call parcel_dealloc
             call ls_rk4_dealloc
-#ifndef ENABLE_NETCDF
-            call finalise_hdf5
-#endif
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)

@@ -37,7 +37,6 @@ module parcel_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
-            character(:), allocatable :: name
             integer                   :: ncells(2)
 
             ncfname =  basename // '_parcels.nc'

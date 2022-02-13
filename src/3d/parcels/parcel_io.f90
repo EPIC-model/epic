@@ -1,9 +1,5 @@
 module parcel_io
-#ifdef ENABLE_NETCDF
     use parcel_netcdf
-#else
-    use parcel_hdf5
-#endif
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -20,15 +16,9 @@ module parcel_io
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
 
-#ifdef ENABLE_NETCDF
             call create_netcdf_parcel_file(basename,    &
                                            overwrite,   &
                                            l_restart)
-#else
-            call create_h5_parcel_file(basename,        &
-                                       overwrite,       &
-                                       l_restart)
-#endif
         end subroutine create_parcel_file
 
         ! Write parcels
@@ -38,11 +28,7 @@ module parcel_io
 
             call start_timer(parcel_io_timer)
 
-#ifdef ENABLE_NETCDF
             call write_netcdf_parcels(t)
-#else
-            call write_h5_parcels(t)
-#endif
             call stop_timer(parcel_io_timer)
         end subroutine write_parcels
 
@@ -52,11 +38,8 @@ module parcel_io
 
             call start_timer(parcel_io_timer)
 
-#ifdef ENABLE_NETCDF
             call read_netcdf_parcels(fname)
-#else
-            call read_h5_parcels(fname)
-#endif
+
             call stop_timer(parcel_io_timer)
         end subroutine read_parcels
 

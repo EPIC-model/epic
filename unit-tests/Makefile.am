@@ -1,15 +1,11 @@
 if ENABLE_UNIT_TESTS
 SUBDIRS = 	\
- 	.
-
-# 	2d
+ 	.	\
+ 	2d	\
+ 	netcdf
 
 if ENABLE_3D
 SUBDIRS += 3d
-endif
-
-if ENABLE_NETCDF
-SUBDIRS += netcdf
 endif
 
 unittestsdir = $(prefix)/unit-tests

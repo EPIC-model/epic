@@ -11,14 +11,14 @@ module field_diagnostics_netcdf
 
     private
 
-    character(len=512) :: ncfname
-    integer            :: ncid
-    integer            :: t_axis_id, t_dim_id, n_writes,                   &
-                          rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
+    character(len=512)  :: ncfname
+    integer             :: ncid
+    integer             :: t_axis_id, t_dim_id, n_writes,                   &
+                           rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
+                           avg_npar_id, avg_nspar_id
 #ifndef NDEBUG
-                          max_sym_vol_err_id,
+    integer             :: max_sym_vol_err_id
 #endif
-                          avg_npar_id, avg_nspar_id
 
     public :: create_netcdf_field_stats_file,  &
               write_netcdf_field_stats
@@ -173,7 +173,7 @@ module field_diagnostics_netcdf
             call write_netcdf_scalar(ncid, avg_npar_id, avg_npar, n_writes)
             call write_netcdf_scalar(ncid, avg_nspar_id, avg_nspar, n_writes)
 #ifndef NDEBUG
-            call write_netcdf_scalar(ncid, max_sym_vol_err_id, max_sym_vol_err, n_writes)
+            call write_netcdf_scalar(ncid, max_sym_vol_err_id, max_vol_sym_err, n_writes)
 #endif
             ! increment counter
             n_writes = n_writes + 1

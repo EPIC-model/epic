@@ -26,16 +26,16 @@ module field_netcdf
                x_dim_id, z_dim_id, t_dim_id,        &
                x_axis_id, z_axis_id, t_axis_id,     &
                x_vel_id, z_vel_id, vor_id, tbuo_id, &
+               n_writes
 #ifdef ENABLE_DIAGNOSE
 #ifndef ENABLE_DRY_MODE
-               dbuo_id,
+    private :: dbuo_id
 #endif
-               vol_id, npar_id,
+    private :: vol_id, npar_id
 #endif
 #ifndef NDEBUG
-               sym_vol_id,
+    private :: sym_vol_id
 #endif
-               n_writes
 
     contains
 

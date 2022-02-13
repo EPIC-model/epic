@@ -41,8 +41,7 @@ module moist_3d
 
     contains
 
-        subroutine moist_init(ncfname, ncid, dimids, nx, ny, nz, origin, dx)
-            character(*),     intent(in)    :: ncfname
+        subroutine moist_init(ncid, dimids, nx, ny, nz, origin, dx)
             integer,          intent(inout) :: ncid
             integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, ny, nz

@@ -3,11 +3,6 @@
 ! =============================================================================
 module options
     use constants, only : zero, one, two, pi, four, twopi
-#ifdef ENABLE_NETCDF
-
-#else
-    use h5_writer
-#endif
     implicit none
     !
     ! global options
@@ -133,55 +128,51 @@ module options
 
         end subroutine read_config_file
 
-#ifdef ENABLE_NETCDF
-
-#else
-        subroutine write_h5_options(h5file_id)
-            integer(hid_t),   intent(in) :: h5file_id
-            integer(hid_t)               :: gopts, group
-
-            call create_h5_group(h5file_id, "options", gopts)
-
-#ifdef ENABLE_VERBOSE
-            call write_h5_scalar_attrib(gopts, "verbose", verbose)
-#endif
-            call write_h5_scalar_attrib(gopts, "field_file", field_file)
-            call write_h5_scalar_attrib(gopts, "field_tol", field_tol)
-
-            call write_h5_scalar_attrib(gopts, "allow_larger_anisotropy", &
-                                        allow_larger_anisotropy)
-
-            call create_h5_group(gopts, "parcel", group)
-                call write_h5_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
-                call write_h5_scalar_attrib(group, "lambda", parcel%lambda_max)
-                call write_h5_scalar_attrib(group, "min_vratio", parcel%min_vratio)
-                call write_h5_scalar_attrib(group, "correction_iters", parcel%correction_iters)
-                call write_h5_scalar_attrib(group, "gradient_pref", parcel%gradient_pref)
-                call write_h5_scalar_attrib(group, "max_compression", parcel%max_compression)
-                call write_h5_scalar_attrib(group, "max_vratio", parcel%max_vratio)
-            call close_h5_group(group)
-
-            call create_h5_group(gopts, "output", group)
-                call write_h5_scalar_attrib(group, "h5_parcel_freq", output%parcel_freq)
-                call write_h5_scalar_attrib(group, "h5_field_freq", output%field_freq)
-                call write_h5_scalar_attrib(group, "h5_parcel_stats_freq", output%parcel_stats_freq)
-                call write_h5_scalar_attrib(group, "h5_write_parcel_stats", output%write_parcel_stats)
-                call write_h5_scalar_attrib(group, "h5_field_stats_freq", output%field_stats_freq)
-                call write_h5_scalar_attrib(group, "h5_write_field_stats", output%write_field_stats)
-                call write_h5_scalar_attrib(group, "h5_write_fields", output%write_fields)
-                call write_h5_scalar_attrib(group, "h5_overwrite", output%overwrite)
-                call write_h5_scalar_attrib(group, "h5_write_parcels", output%write_parcels)
-                call write_h5_scalar_attrib(group, "h5_basename", trim(output%basename))
-            call close_h5_group(group)
-
-            call create_h5_group(gopts, "time", group)
-                call write_h5_scalar_attrib(group, "limit", time%limit)
-                call write_h5_scalar_attrib(group, "precise_stop", time%precise_stop)
-                call write_h5_scalar_attrib(group, "alpha", time%alpha)
-            call close_h5_group(group)
-
-            call close_h5_group(gopts)
-        end subroutine write_h5_options
-#endif
+!         subroutine write_h5_options(h5file_id)
+!             integer(hid_t),   intent(in) :: h5file_id
+!             integer(hid_t)               :: gopts, group
+!
+!             call create_h5_group(h5file_id, "options", gopts)
+!
+! #ifdef ENABLE_VERBOSE
+!             call write_h5_scalar_attrib(gopts, "verbose", verbose)
+! #endif
+!             call write_h5_scalar_attrib(gopts, "field_file", field_file)
+!             call write_h5_scalar_attrib(gopts, "field_tol", field_tol)
+!
+!             call write_h5_scalar_attrib(gopts, "allow_larger_anisotropy", &
+!                                         allow_larger_anisotropy)
+!
+!             call create_h5_group(gopts, "parcel", group)
+!                 call write_h5_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
+!                 call write_h5_scalar_attrib(group, "lambda", parcel%lambda_max)
+!                 call write_h5_scalar_attrib(group, "min_vratio", parcel%min_vratio)
+!                 call write_h5_scalar_attrib(group, "correction_iters", parcel%correction_iters)
+!                 call write_h5_scalar_attrib(group, "gradient_pref", parcel%gradient_pref)
+!                 call write_h5_scalar_attrib(group, "max_compression", parcel%max_compression)
+!                 call write_h5_scalar_attrib(group, "max_vratio", parcel%max_vratio)
+!             call close_h5_group(group)
+!
+!             call create_h5_group(gopts, "output", group)
+!                 call write_h5_scalar_attrib(group, "h5_parcel_freq", output%parcel_freq)
+!                 call write_h5_scalar_attrib(group, "h5_field_freq", output%field_freq)
+!                 call write_h5_scalar_attrib(group, "h5_parcel_stats_freq", output%parcel_stats_freq)
+!                 call write_h5_scalar_attrib(group, "h5_write_parcel_stats", output%write_parcel_stats)
+!                 call write_h5_scalar_attrib(group, "h5_field_stats_freq", output%field_stats_freq)
+!                 call write_h5_scalar_attrib(group, "h5_write_field_stats", output%write_field_stats)
+!                 call write_h5_scalar_attrib(group, "h5_write_fields", output%write_fields)
+!                 call write_h5_scalar_attrib(group, "h5_overwrite", output%overwrite)
+!                 call write_h5_scalar_attrib(group, "h5_write_parcels", output%write_parcels)
+!                 call write_h5_scalar_attrib(group, "h5_basename", trim(output%basename))
+!             call close_h5_group(group)
+!
+!             call create_h5_group(gopts, "time", group)
+!                 call write_h5_scalar_attrib(group, "limit", time%limit)
+!                 call write_h5_scalar_attrib(group, "precise_stop", time%precise_stop)
+!                 call write_h5_scalar_attrib(group, "alpha", time%alpha)
+!             call close_h5_group(group)
+!
+!             call close_h5_group(gopts)
+!         end subroutine write_h5_options
 
 end module options

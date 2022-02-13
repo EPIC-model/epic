@@ -39,8 +39,7 @@ module taylor_green_3d
 
 
     contains
-        subroutine taylor_green_init(ncfname, ncid, dimids, nx, ny, nz, origin, dx)
-            character(*),     intent(in)    :: ncfname
+        subroutine taylor_green_init(ncid, dimids, nx, ny, nz, origin, dx)
             integer,          intent(inout) :: ncid
             integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, ny, nz
@@ -87,8 +86,6 @@ module taylor_green_3d
                     enddo
                 enddo
             enddo
-
-            call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             call write_netcdf_dataset(ncid, x_vor_id, vortg(:, :, :, 1))
             call write_netcdf_dataset(ncid, y_vor_id, vortg(:, :, :, 2))

@@ -8,18 +8,19 @@ module utils
     use parcel_container, only : n_parcels
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
+    use netcdf_reader, only : get_file_type, get_num_steps, get_time
     implicit none
 
-    integer :: nfw  = 0    ! number of field writes to h5
-    integer :: npw  = 0    ! number of parcel writes to h5
-    integer :: nspw = 0    ! number of parcel diagnostics writes to h5
-    integer :: nsfw = 0    ! number of field diagnostics writes to h5
+    integer :: nfw  = 0    ! number of field writes
+    integer :: npw  = 0    ! number of parcel writes
+    integer :: nspw = 0    ! number of parcel diagnostics writes
+    integer :: nsfw = 0    ! number of field diagnostics writes
 
     private :: nfw, npw, nspw, nsfw
 
     contains
 
-        ! Create H5 files and set the step number
+        ! Create NetCDF files and set the step number
         subroutine setup_output_files
             use options, only : output, l_restart
 
@@ -49,7 +50,7 @@ module utils
 
         end subroutine setup_output_files
 
-        ! Write last step to the H5 files. For the time step dt, it
+        ! Write last step to the NetCDF files. For the time step dt, it
         ! writes zero.
         ! @param[in] t is the time
         subroutine write_last_step(t)
@@ -73,7 +74,7 @@ module utils
             call write_step(t, .true.)
         end subroutine write_last_step
 
-        ! Write step to the H5 files.
+        ! Write step to the NetCDF files.
         ! @param[in] t is the time
         ! @param[in] l_force a logical to force a write (optional)
         subroutine write_step(t, l_force)
@@ -116,33 +117,15 @@ module utils
         end subroutine write_step
 
         subroutine setup_restart(restart_file, t, file_type)
-#ifndef ENABLE_NETCDF
-            use hdf5
-            use h5_utils, only : open_h5_file, close_h5_file
-            use h5_reader, only : get_file_type, get_num_steps, get_time
-            integer(hid_t) :: h5handle
-            integer        :: n_steps
-            character(:), allocatable, intent(out) :: file_type
-#else
-            use netcdf_reader, only : get_file_type, get_num_steps, get_time
-            integer :: ncid
-#endif
             character(*),     intent(in)  :: restart_file
             double precision, intent(out) :: t
             character(*),     intent(out) :: file_type
+            integer                       :: ncid
 
-#ifndef ENABLE_NETCDF
-            call open_h5_file(restart_file, H5F_ACC_RDONLY_F, h5handle)
-            call get_file_type(h5handle, file_type)
-            call get_num_steps(h5handle, n_steps)
-            call get_time(h5handle, n_steps - 1, t)
-            call close_h5_file(h5handle)
-#else
             call open_netcdf_file(restart_file, NF90_NOWRITE, ncid)
             call get_file_type(ncid, file_type)
             call get_time(ncid, t)
             call close_netcdf_file(ncid)
-#endif
         end subroutine setup_restart
 
 end module utils

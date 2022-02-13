@@ -76,11 +76,11 @@ program epic2d_models
 
             select case (trim(model))
                 case ('TaylorGreen')
-                    call taylor_green_init(ncfname, ncid, dimids, nx, nz, box%origin, dx)
+                    call taylor_green_init(ncid, dimids, nx, nz, box%origin, dx)
                 case ('Straka')
-                    call straka_init(ncfname, ncid, dimids, nx, nz, box%origin, dx)
+                    call straka_init(ncid, dimids, nx, nz, box%origin, dx)
                 case ('Robert')
-                    call robert_init(ncfname, ncid, dimids, nx, nz, box%origin, dx)
+                    call robert_init(ncid, dimids, nx, nz, box%origin, dx)
                 case default
                     print *, "Unknown model: '", trim(model), "'."
                     stop
