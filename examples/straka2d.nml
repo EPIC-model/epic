@@ -1,7 +1,7 @@
 &MODELS
 
  model       = 'Straka'
- h5fname     = 'straka2d.hdf5'
+ ncfname     = 'straka2d.nc'
 
  box%ncells  = 128, 16
  box%extent  = 51200, 6400
