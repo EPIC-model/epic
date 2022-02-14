@@ -395,7 +395,7 @@ def bokeh_plot(fname, step, show=False, fmt="png", coloring="vorticity", **kwarg
         if not ncreader.is_parcel_file:
             raise RuntimeError("Neither a field nor parcel file.")
         ncreader.close()
-        fname = fname.replace("_parcels.hdf5", "_fields.hdf5")
+        fname = fname.replace("_" + str(step).zfill(10) + "_parcels.nc", "_fields.nc")
         ncreader.open(fname)
 
     nsteps = ncreader.get_num_steps()
@@ -435,7 +435,7 @@ def bokeh_plot(fname, step, show=False, fmt="png", coloring="vorticity", **kwarg
         )
 
         if hybrid:
-            fname = fname.replace("_fields.hdf5", "_parcels.hdf5")
+            fname = fname.replace("_fields.nc", "_" + str(step).zfill(10) + "_parcels.nc")
             ncreader.close()
             ncreader.open(fname)
 
