@@ -8,6 +8,7 @@ nobase_tools_DATA = 			\
 	colors.py			\
 	nc_reader.py 			\
 	nc_fields.py			\
+	nc_parcels.py			\
 	plots.py			\
 	bokeh_style.py			\
 	bokeh_plots.py			\

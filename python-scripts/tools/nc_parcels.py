@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 
-class nc_fields:
+class nc_parcels:
     def __init__(self):
         self._ncfile = None
 
@@ -17,12 +17,12 @@ class nc_fields:
             Filename with extension.
         """
         self._ncfile = nc.Dataset(fname, "w", format="NETCDF4")
-        self._ndims = 0
+        self._nparcels = 0
 
 
-    def add_field(self, name, values, dtype='f8', **kwargs):
+    def add_dataset(self, name, values, dtype='f8', **kwargs):
         """
-        Add a field dataset.
+        Add a parcel attribute dataset.
 
         Parameters
         ----------
@@ -34,35 +34,21 @@ class nc_fields:
 
         values = np.asarray(values)
 
-        if self._ndims == 0:
-            shape = np.shape(values)
+        shape = np.shape(values)
+        if len(shape) > 1:
+            RuntimeError("Shape must be of 1-dimensional.")
 
-            # add dimensions
-            self._ncfile.createDimension(dimname="t", size=1)
-            self._ncfile.setncattr('file_type', 'fields')
-            if len(shape) == 2:
-                self._ncfile.createDimension(dimname="x", size=shape[0])
-                self._ncfile.createDimension(dimname="z", size=shape[1])
-                self._ndims = 2
-            elif len(shape) == 3:
-                self._ncfile.createDimension(dimname="x", size=shape[0])
-                self._ncfile.createDimension(dimname="y", size=shape[1])
-                self._ncfile.createDimension(dimname="z", size=shape[2])
-                self._ndims = 3
-            else:
-                RuntimeError("Shape must be of 2 or 3 dimensions")
+        if self._nparcels == 0:
+            self._nparcels = len(values)
+            # add dimension
+            self._ncfile.createDimension(dimname="n_parcels", size=self._nparcels)
+            self._ncfile.setncattr('file_type', 'parcels')
+            self._ncfile.setncattr('t', 0.0)
 
-
-        if self._ndims == 2:
-            var = self._ncfile.createVariable(varname=name,
-                                              datatype=dtype,
-                                              dimensions=('t', 'x', 'z'))
-            var[0, :, :] = values
-        else:
-            var = self._ncfile.createVariable(varname=name,
-                                              datatype=dtype,
-                                              dimensions=('t', 'x', 'y', 'z'))
-            var[0, :, :, :] = values
+        var = self._ncfile.createVariable(varname=name,
+                                          datatype=dtype,
+                                          dimensions=("n_parcels"))
+        var[:] = values[:]
 
         unit = kwargs.pop('unit', '')
         if unit:
