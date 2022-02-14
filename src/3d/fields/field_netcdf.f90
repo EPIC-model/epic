@@ -273,29 +273,6 @@ module field_netcdf
             call write_netcdf_dataset(ncid, z_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 3), &
                                       start, cnt)
 
-!             call write_h5_dataset(ncid, name, "total buoyancy", &
-!                                   tbuoyg(0:nz, 0:ny-1, 0:nx-1))
-!
-! #ifdef ENABLE_DIAGNOSE
-! #ifndef ENABLE_DRY_MODE
-!             call write_h5_dataset(ncid, name, "dry buoyancy", &
-!                                   dbuoyg(0:nz, 0:ny-1, 0:nx-1))
-! #endif
-!             call write_h5_dataset(ncid, name, "volume", &
-!                                   volg(0:nz, 0:ny-1, 0:nx-1))
-!
-!             call write_h5_dataset(ncid, name, "nparg", &
-!                                   nparg(0:nz-1, :, :))
-! #endif
-!
-! #ifndef NDEBUG
-!             call write_h5_dataset(ncid, name, "velocity gradient tensor", &
-!                                   velgradg(0:nz, 0:ny-1, 0:nx-1, :))
-!
-!             call write_h5_dataset(ncid, name, "vorticity tendency", &
-!                                   vtend(0:nz, 0:ny-1, 0:nx-1, :))
-! #endif
-
             ! increment counter
             n_writes = n_writes + 1
 

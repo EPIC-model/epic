@@ -107,7 +107,7 @@ module options
 
             close(fn)
 
-            ! check whether h5 files already exist
+            ! check whether NetCDF files already exist
             inquire(file=output%basename, exist=exists)
 
             if (exists) then

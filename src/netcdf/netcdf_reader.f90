@@ -96,8 +96,6 @@ module netcdf_reader
             t = -1.0d0
         end subroutine get_time
 
-        ! 11 Jan 2022
-        ! https://support.hdfgroup.org/ftp/HDF5/examples/examples-by-api/hdf5-examples/1_8/FORTRAN/H5T/h5ex_t_stringCatt_F03.f90
         subroutine get_file_type(ncid, file_type)
             integer,      intent(in)  :: ncid
             character(*), intent(out) :: file_type
