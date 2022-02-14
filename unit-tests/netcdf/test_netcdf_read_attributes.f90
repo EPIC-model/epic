@@ -22,7 +22,7 @@ program test_netcdf_read_attributes
                             overwrite=.true.,    &
                             ncid=ncid)
 
-    call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='fields')
+    call write_netcdf_attribute(ncid=ncid, name='file_type', val='fields')
     call write_netcdf_box(ncid, (/0.0d0, 0.0d0, 0.0d0/), &
                                 (/1.0d0, 1.0d0, 1.0d0/), &
                                 (/nx, ny, nz/))
@@ -77,7 +77,7 @@ program test_netcdf_read_attributes
                             overwrite=.true.,    &
                             ncid=ncid)
 
-    call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='field_stats')
+    call write_netcdf_attribute(ncid=ncid, name='file_type', val='field_stats')
     call write_netcdf_box(ncid, (/0.0d0, 0.0d0, 0.0d0/), &
                                 (/1.0d0, 1.0d0, 1.0d0/), &
                                 (/nx, ny, nz/))
@@ -102,12 +102,12 @@ program test_netcdf_read_attributes
                             overwrite=.true.,    &
                             ncid=ncid)
 
-    call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='parcels')
+    call write_netcdf_attribute(ncid=ncid, name='file_type', val='parcels')
     call write_netcdf_box(ncid, (/0.0d0, 0.0d0, 0.0d0/), &
                                 (/1.0d0, 1.0d0, 1.0d0/), &
                                 (/nx, ny, nz/))
 
-    call write_netcdf_global_attribute(ncid=ncid, name='t', val=12.0)
+    call write_netcdf_attribute(ncid=ncid, name='t', val=12.0)
 
     call close_definition(ncid)
 
@@ -131,7 +131,7 @@ program test_netcdf_read_attributes
                             overwrite=.true.,    &
                             ncid=ncid)
 
-    call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='parcel_stats')
+    call write_netcdf_attribute(ncid=ncid, name='file_type', val='parcel_stats')
     call write_netcdf_box(ncid, (/0.0d0, 0.0d0, 0.0d0/), &
                                 (/1.0d0, 1.0d0, 1.0d0/), &
                                 (/nx, ny, nz/))

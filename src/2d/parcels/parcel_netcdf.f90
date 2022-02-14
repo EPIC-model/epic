@@ -8,6 +8,7 @@ module parcel_netcdf
     use config, only : package_version
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
+    use options, only : write_netcdf_options
     implicit none
 
     integer :: n_writes = 1
@@ -64,14 +65,16 @@ module parcel_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
-            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val=package_version)
-            call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='parcels')
+            call write_netcdf_attribute(ncid=ncid, name='EPIC_version', val=package_version)
+            call write_netcdf_attribute(ncid=ncid, name='file_type', val='parcels')
             ncells = (/nx, nz/)
             call write_netcdf_box(ncid, lower, extent, ncells)
             call write_netcdf_timestamp(ncid)
 
+            call write_netcdf_options(ncid)
+
             ! write dummy time --> will be replaced with correct time in write_netcdf_parcels
-            call write_netcdf_global_attribute(ncid=ncid, name='t', val=0.0)
+            call write_netcdf_attribute(ncid=ncid, name='t', val=0.0)
 
 
             ! define dimensions
@@ -172,7 +175,7 @@ module parcel_netcdf
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             ! write time
-            call write_netcdf_global_attribute(ncid=ncid, name='t', val=t)
+            call write_netcdf_attribute(ncid=ncid, name='t', val=t)
 
             call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels))
             call write_netcdf_dataset(ncid, z_pos_id, parcels%position(2, 1:n_parcels))

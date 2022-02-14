@@ -5,6 +5,7 @@ module field_netcdf
     use fields
     use config, only : package_version
     use timer, only : start_timer, stop_timer
+    use options, only : write_netcdf_options
     implicit none
 
     integer :: field_io_timer
@@ -72,10 +73,12 @@ module field_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
-            call write_netcdf_global_attribute(ncid=ncid, name='EPIC_version', val=package_version)
-            call write_netcdf_global_attribute(ncid=ncid, name='file_type', val='fields')
+            call write_netcdf_attribute(ncid=ncid, name='EPIC_version', val=package_version)
+            call write_netcdf_attribute(ncid=ncid, name='file_type', val='fields')
             call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
             call write_netcdf_timestamp(ncid)
+
+            call write_netcdf_options(ncid)
 
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &

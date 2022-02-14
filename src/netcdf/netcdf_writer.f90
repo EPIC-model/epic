@@ -2,10 +2,15 @@ module netcdf_writer
     use netcdf_utils
     implicit none
 
-    private :: write_netcdf_dataset_1d, &
-               write_netcdf_dataset_2d, &
-               write_netcdf_dataset_3d
-
+    private :: write_netcdf_dataset_1d,             &
+               write_netcdf_dataset_2d,             &
+               write_netcdf_dataset_3d,             &
+               write_netcdf_scalar_integer,         &
+               write_netcdf_scalar_double,          &
+               write_netcdf_attribute_integer,      &
+               write_netcdf_attribute_double,       &
+               write_netcdf_attribute_character,    &
+               write_netcdf_attribute_logical
 
     interface write_netcdf_scalar
         module procedure write_netcdf_scalar_integer
@@ -18,11 +23,12 @@ module netcdf_writer
         module procedure write_netcdf_dataset_3d
     end interface write_netcdf_dataset
 
-    interface write_netcdf_global_attribute
-        module procedure write_global_attribute_integer
-        module procedure write_global_attribute_double
-        module procedure write_global_attribute_character
-    end interface write_netcdf_global_attribute
+    interface write_netcdf_attribute
+        module procedure write_netcdf_attribute_integer
+        module procedure write_netcdf_attribute_double
+        module procedure write_netcdf_attribute_character
+        module procedure write_netcdf_attribute_logical
+    end interface write_netcdf_attribute
 
     contains
 
@@ -76,32 +82,48 @@ module netcdf_writer
             call check_netcdf_error("Failed to define metadata.")
         end subroutine close_definition
 
-        subroutine write_global_attribute_integer(ncid, name, val)
+        subroutine write_netcdf_attribute_integer(ncid, name, val)
             integer,      intent(in) :: ncid
             character(*), intent(in) :: name
             integer,      intent(in) :: val
 
             ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name=name, values=val)
-            call check_netcdf_error("Failed to define '" // name // "' global attribute.")
-        end subroutine write_global_attribute_integer
+            call check_netcdf_error("Failed to define '" // name // "' attribute.")
+        end subroutine write_netcdf_attribute_integer
 
-        subroutine write_global_attribute_double(ncid, name, val)
+        subroutine write_netcdf_attribute_double(ncid, name, val)
             integer,          intent(in) :: ncid
             character(*),     intent(in) :: name
             double precision, intent(in) :: val
 
             ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name=name, values=val)
-            call check_netcdf_error("Failed to define '" // name // "' global attribute.")
-        end subroutine write_global_attribute_double
+            call check_netcdf_error("Failed to define '" // name // "' attribute.")
+        end subroutine write_netcdf_attribute_double
 
-        subroutine write_global_attribute_character(ncid, name, val)
+        subroutine write_netcdf_attribute_character(ncid, name, val)
             integer,      intent(in) :: ncid
             character(*), intent(in) :: name
             character(*), intent(in) :: val
 
             ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name=name, values=val)
-            call check_netcdf_error("Failed to define '" // name // "' global attribute.")
-        end subroutine write_global_attribute_character
+            call check_netcdf_error("Failed to define '" // name // "' attribute.")
+        end subroutine write_netcdf_attribute_character
+
+        subroutine write_netcdf_attribute_logical(ncid, name, val)
+            integer,      intent(in) :: ncid
+            character(*), intent(in) :: name
+            logical,      intent(in) :: val
+            integer                  :: int_val
+
+            int_val = 0
+            if (val) then
+                int_val = 1
+            endif
+
+            ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name=name, values=int_val)
+            call check_netcdf_error("Failed to define '" // name // "' attribute.")
+
+        end subroutine write_netcdf_attribute_logical
 
         subroutine write_netcdf_scalar_integer(ncid, varid, data, start)
             integer, intent(in) :: ncid
@@ -191,9 +213,9 @@ module netcdf_writer
             tmp1 = cdate(1:4) // '/' // cdate(5:6) // '/' // cdate(7:8)
             tmp2 = ctime(1:2) // ':' // ctime(3:4) // ':' // ctime(5:6)
             tmp3 = 'UTC' // czone(1:3) // ':' // czone(4:5)
-            call write_global_attribute_character(ncid, "creation_date", tmp1)
-            call write_global_attribute_character(ncid, "creation_time", tmp2)
-            call write_global_attribute_character(ncid, "creation_zone", tmp3)
+            call write_netcdf_attribute_character(ncid, "creation_date", tmp1)
+            call write_netcdf_attribute_character(ncid, "creation_time", tmp2)
+            call write_netcdf_attribute_character(ncid, "creation_zone", tmp3)
         end subroutine write_netcdf_timestamp
 
         subroutine write_netcdf_box(ncid, origin, extent, ncells)
