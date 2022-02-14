@@ -143,11 +143,12 @@ class nc_reader:
         position[:, 0] = x_pos
         position[:, 1] = z_pos
         V = self.get_dataset(step, "volume", indices=indices)
-        B = self.get_dataset(step, "B", indices=indices)
+        B11 = self.get_dataset(step, "B11", indices=indices)
+        B12 = self.get_dataset(step, "B12", indices=indices)
 
-        B22 = self._get_B22(B[:, 0], B[:, 1], V)
-        a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
-        angle = self._get_angle(B[:, 0], B[:, 1], B22, a2)
+        B22 = self._get_B22(B11, B12, V)
+        a2 = self._get_eigenvalue(B11, B12, B22)
+        angle = self._get_angle(B11, B12, B22, a2)
 
         b2 = (V / np.pi) ** 2 / a2
         # 4 Feb 2022
@@ -164,10 +165,11 @@ class nc_reader:
         x_pos = self.get_dataset(step, "x_position", indices=indices)
         z_pos = self.get_dataset(step, "z_position", indices=indices)
         V = self.get_dataset(step, "volume", indices=indices)
-        B = self.get_dataset(step, "B", indices=indices)
-        B22 = self._get_B22(B[:, 0], B[:, 1], V)
-        a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
-        angle = self._get_angle(B[:, 0], B[:, 1], B22, a2)
+        B11 = self.get_dataset(step, "B11", indices=indices)
+        B12 = self.get_dataset(step, "B12", indices=indices)
+        B22 = self._get_B22(B11, B12, V)
+        a2 = self._get_eigenvalue(B11, B12, B22)
+        angle = self._get_angle(B11, B12, B22, a2)
         b2 = (V / np.pi) ** 2 / a2
         return (
             x_pos[:],
@@ -181,9 +183,10 @@ class nc_reader:
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
         V = self.get_dataset(step, "volume", indices=indices)
-        B = self.get_dataset(step, "B", indices=indices)
-        B22 = self._get_B22(B[:, 0], B[:, 1], V)
-        a2 = self._get_eigenvalue(B[:, 0], B[:, 1], B22)
+        B11 = self.get_dataset(step, "B11", indices=indices)
+        B12 = self.get_dataset(step, "B12", indices=indices)
+        B22 = self._get_B22(B11, B12, V)
+        a2 = self._get_eigenvalue(B11, B12, B22)
         return a2 / V * np.pi
 
     def _get_B22(self, B11, B12, V):
