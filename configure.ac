@@ -133,15 +133,15 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
     fi
 
     #
-    # h5py
+    # netcdf
     #
-    AC_MSG_CHECKING([for python h5py library])
-    `${PYTHON} -c 'import h5py' 2> config.log`
+    AC_MSG_CHECKING([for python netcdf library])
+    `${PYTHON} -c 'import netCDF4' 2> config.log`
     if test "x$?" = "x0" ; then
         AC_MSG_RESULT([yes])
     else
         AC_MSG_RESULT([no])
-        AC_MSG_NOTICE([Install h5py with "conda install -c conda-forge h5py".])
+        AC_MSG_NOTICE([Install netcdf with "conda install -c conda-forge netcdf4".])
         exit 1
     fi
 
