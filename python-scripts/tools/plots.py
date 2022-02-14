@@ -38,10 +38,11 @@ def _plot_parcels(ax, ncreader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     bottom = fkwargs.get("ymin", origin[1])
     top = fkwargs.get("ymax", origin[1] + extent[1])
 
-    pos = ncreader.get_dataset(step=step, name="position")
+    x_pos = ncreader.get_dataset(step=step, name="x_position")
+    z_pos = ncreader.get_dataset(step=step, name="z_position")
 
-    ind = np.argwhere((pos[:, 0] >= left - dx[0]) & (pos[:, 0] <= right + dx[0]) &
-                      (pos[:, 1] >= bottom - dx[1]) & (pos[:, 1] <= top + dx[1]))
+    ind = np.argwhere((x_pos >= left - dx[0]) & (x_pos <= right + dx[0]) &
+                      (z_pos >= bottom - dx[1]) & (z_pos <= top + dx[1]))
     ind = ind.squeeze()
 
     pos = None
@@ -77,7 +78,7 @@ def _plot_parcels(ax, ncreader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     ax.set_aspect("equal", "box")
 
     if timestamp:
-        add_timestamp(ax, ncreader.get_step_attribute(step=step, name="t"),
+        add_timestamp(ax, ncreader.get_dataset(step=step, name="t"),
                       xy=timestamp_xy, fmt=timestamp_fmt)
 
     if nparcels:
@@ -136,13 +137,13 @@ def plot_parcels(
 
     if coloring == "aspect-ratio":
         vmin = 1.0
-        vmax = ncreader.get_parcel_option("lambda")
+        vmax = ncreader.get_global_attribute("lambda_max")
     elif coloring == "vol-distr":
         extent = ncreader.get_box_extent()
         ncells = ncreader.get_box_ncells()
         vcell = np.prod(extent / ncells)
-        vmin = vcell / ncreader.get_parcel_option("vmin_fraction")
-        vmax = vcell / ncreader.get_parcel_option("vmax_fraction")
+        vmin = vcell / ncreader.get_global_attribute("vmin_fraction")
+        vmax = vcell / ncreader.get_global_attribute("vmax_fraction")
     else:
         vmin, vmax = ncreader.get_dataset_min_max(coloring)
 
@@ -192,7 +193,7 @@ def plot_volume_symmetry_error(fnames, figure="save", fmt="png", **kwargs):
             raise IOError("Not a field output file.")
 
         try:
-            ncreader.get_step_attribute(0, "max symmetry volume error")
+            ncreader.get_dataset(0, "max_sym_vol_err")
         except:
             raise IOError("This plot is only available in debug mode.")
 
@@ -201,8 +202,8 @@ def plot_volume_symmetry_error(fnames, figure="save", fmt="png", **kwargs):
         vmax = np.zeros(nsteps)
         t = np.zeros(nsteps)
         for step in range(nsteps):
-            vmax[step] = ncreader.get_step_attribute(step, "max symmetry volume error")
-            t[step] = ncreader.get_step_attribute(step, "t")
+            vmax[step] = ncreader.get_dataset(step, "max_sym_vol_err")
+            t[step] = ncreader.get_dataset(step, "t")
 
         ncreader.close()
 
@@ -269,7 +270,7 @@ def plot_rms_volume_error(fnames, figure="save", fmt="png", **kwargs):
         if ncreader.is_parcel_file:
             raise IOError("Not a field output file.")
 
-        vrms = ncreader.get_diagnostic("rms volume error")
+        vrms = ncreader.get_diagnostic("rms_v")
         t = ncreader.get_diagnostic("t")
         ncreader.close()
 
@@ -418,10 +419,10 @@ def plot_parcel_profile(fnames, figure="save", fmt="png", **kwargs):
             data_mean[step] = data.mean()
             data_std[step] = data.std()
 
-            t[step] = ncreader.get_step_attribute(step, "t")
+            t[step] = ncreader.get_dataset(step, "t")
 
         if dset == "aspect-ratio":
-            lmax = max(lmax, ncreader.get_parcel_option("lambda"))
+            lmax = max(lmax, ncreader.get_global_attribute("lambda_max"))
 
         ncreader.close()
 
@@ -512,12 +513,12 @@ def plot_parcel_stats_profile(fnames, figure="save", fmt="png", **kwargs):
         t = np.zeros(nsteps)
 
         for step in range(nsteps):
-            t[step] = ncreader.get_step_attribute(step, "t")
-            data_mean[step] = ncreader.get_step_attribute(step, "avg " + dset)
-            data_std[step] = ncreader.get_step_attribute(step, "std " + dset)
+            t[step] = ncreader.get_dataset(step, "t")
+            data_mean[step] = ncreader.get_dataset(step, "avg " + dset)
+            data_std[step] = ncreader.get_dataset(step, "std " + dset)
 
         if dset == "aspect ratio":
-            lmax = max(lmax, ncreader.get_parcel_option("lambda"))
+            lmax = max(lmax, ncreader.get_global_attribute("lambda_max"))
 
         ncreader.close()
 
@@ -595,7 +596,7 @@ def plot_parcel_number(fnames, figure="save", fmt="png", **kwargs):
 
         for step in range(nsteps):
             nparcels[step] = ncreader.get_num_parcels(step)
-            t[step] = ncreader.get_step_attribute(step, "t")
+            t[step] = ncreader.get_dataset(step, "t")
 
         ncreader.close()
 
@@ -654,9 +655,9 @@ def plot_small_parcel_number(fnames, figure="save", fmt="png", **kwargs):
         t = np.zeros(nsteps)
 
         for step in range(nsteps):
-            nparcels[step] = ncreader.get_step_attribute(step, "num parcel")
-            nsmall[step] = ncreader.get_step_attribute(step, "num small parcels")
-            t[step] = ncreader.get_step_attribute(step, "t")
+            nparcels[step] = ncreader.get_dataset(step, "n_parcels")
+            nsmall[step] = ncreader.get_dataset(step, "n_small_parcel")
+            t[step] = ncreader.get_dataset(step, "t")
 
         ncreader.close()
 
@@ -745,17 +746,17 @@ def plot_center_of_mass(fnames, figure="save", fmt="png", dset="buoyancy", **kwa
         ## skip zero step since vorticity is not given
         for j in range(0, nsteps):
 
-            t[j] = ncreader.get_step_attribute(j, "t")
-            xb_bar[j] = ncreader.get_step_attribute(j, "xb_bar")
-            zb_bar[j] = ncreader.get_step_attribute(j, "zb_bar")
-            x2b_bar[j] = ncreader.get_step_attribute(j, "x2b_bar")
-            z2b_bar[j] = ncreader.get_step_attribute(j, "z2b_bar")
-            xzb_bar[j] = ncreader.get_step_attribute(j, "xzb_bar")
-            xw_bar[j] = ncreader.get_step_attribute(j, "xv_bar")
-            zw_bar[j] = ncreader.get_step_attribute(j, "zv_bar")
-            x2w_bar[j] = ncreader.get_step_attribute(j, "x2v_bar")
-            z2w_bar[j] = ncreader.get_step_attribute(j, "z2v_bar")
-            xzw_bar[j] = ncreader.get_step_attribute(j, "xzv_bar")
+            t[j] = ncreader.get_dataset(j, "t")
+            xb_bar[j] = ncreader.get_dataset(j, "xb_bar")
+            zb_bar[j] = ncreader.get_dataset(j, "zb_bar")
+            x2b_bar[j] = ncreader.get_dataset(j, "x2b_bar")
+            z2b_bar[j] = ncreader.get_dataset(j, "z2b_bar")
+            xzb_bar[j] = ncreader.get_dataset(j, "xzb_bar")
+            xw_bar[j] = ncreader.get_dataset(j, "xv_bar")
+            zw_bar[j] = ncreader.get_dataset(j, "zv_bar")
+            x2w_bar[j] = ncreader.get_dataset(j, "x2v_bar")
+            z2w_bar[j] = ncreader.get_dataset(j, "z2v_bar")
+            xzw_bar[j] = ncreader.get_dataset(j, "xzv_bar")
 
         ncreader.close()
 
@@ -1005,18 +1006,12 @@ def plot_parcels_per_cell(fnames, figure="save", fmt="png", **kwargs):
         t = np.zeros(nsteps)
 
         for step in range(nsteps):
-            n_avg[step] = ncreader.get_step_attribute(
-                step, "average num parcels per cell"
-            )
-            t[step] = ncreader.get_step_attribute(step, "t")
+            n_avg[step] = ncreader.get_dataset(step, "avg_npar")
+            t[step] = ncreader.get_dataset(step, "t")
 
             if add_minmax:
-                n_min[step] = ncreader.get_step_attribute(
-                    step, "min num parcels per cell"
-                )
-                n_max[step] = ncreader.get_step_attribute(
-                    step, "max num parcels per cell"
-                )
+                n_min[step] = ncreader.get_dataset(step, "min_npar")
+                n_max[step] = ncreader.get_dataset(step, "max_nar")
 
         ncreader.close()
 
@@ -1080,10 +1075,10 @@ def plot_energy(fname, figure="save", fmt="png", **kwargs):
     t = np.zeros(nsteps)
 
     for step in range(nsteps):
-        pe[step] = ncreader.get_step_attribute(step, "potential energy")
-        ke[step] = ncreader.get_step_attribute(step, "kinetic energy")
-        te[step] = ncreader.get_step_attribute(step, "total energy")
-        t[step] = ncreader.get_step_attribute(step, "t")
+        pe[step] = ncreader.get_dataset(step, "pe")
+        ke[step] = ncreader.get_dataset(step, "ke")
+        te[step] = ncreader.get_dataset(step, "te")
+        t[step] = ncreader.get_dataset(step, "t")
 
     ncreader.close()
 

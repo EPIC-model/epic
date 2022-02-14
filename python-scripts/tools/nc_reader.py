@@ -73,25 +73,20 @@ class nc_reader:
     def get_box_origin(self):
         return self.get_global_attribute("origin")
 
-    #TODO
-    #def get_parcel_option(self, name):
-        #if not name in self._ncfile["options"]["parcel"].attrs.keys():
-            #raise IOError("Parcel options '" + name + "' unknown.")
-        #opt = self._ncfile["options"]["parcel"].attrs[name][0]
-        #if isinstance(opt, np.bytes_):
-            ## 16 June 2021
-            ## https://stackoverflow.com/questions/35576999/how-to-read-strings-from-hdf5-dataset-using-h5py
-            #opt = opt.decode()
-        #return opt
-
-
     def get_dataset(self, step, name, indices=None):
-        if not name in self._ncfile.variables.keys():
-            raise IOError("Dataset '" + name + "' unknown.")
 
         nsteps = self.get_num_steps()
         if step > nsteps - 1:
             raise ValueError("Dataset has only steps 0 to " + str(nsteps - 1) + ".")
+
+        if self.is_parcel_file and name == 't':
+            # parcel files store the time as a global attribute
+            step = step + 1
+            self._load_parcel_file(step)
+            return self.get_global_attribute('t')
+
+        if not name in self._ncfile.variables.keys():
+            raise IOError("Dataset '" + name + "' unknown.")
 
         if self.is_parcel_file:
             step = step + 1
@@ -117,11 +112,9 @@ class nc_reader:
             vmin = min(vmin, data.min())
         return vmin, vmax
 
-    #TODO
     def get_global_attribute_names(self):
         return list(self._ncfile.ncattrs())
 
-    #TODO
     def get_global_attribute(self, name):
         if not name in self._ncfile.ncattrs():
             raise IOError("Global attribute '" + name + "' unknown.")
@@ -130,35 +123,10 @@ class nc_reader:
             attr = attr.decode()
         return attr
 
-    #TODO
-    def get_step_attribute_names(self):
-        s = self._get_step_string(step)
-        return list(self._ncfile[s].attrs.keys())
-
-    #TODO
-    def get_step_attribute(self, step, name):
-        s = self._get_step_string(step)
-        if not name in self._ncfile[s].attrs.keys():
-            raise IOError("Step attribute '" + name + "' unknown.")
-        val = self._ncfile[s].attrs[name]
-        if isinstance(val, np.float64):
-            return val
-        return val[0]
-
-    #TODO
     def get_diagnostic(self, name):
-        s = self._get_step_string(0)
-        if not name in self._ncfile[s].attrs.keys():
-            raise IOError("Attribute '" + name + "' unknown.")
-
-        nsteps = self.get_num_steps()
-        shape = np.array(self._ncfile[s].attrs[name].shape)
-        shape[0] = nsteps
-        data = np.zeros(shape)
-        for step in range(nsteps):
-            s = self._get_step_string(step)
-            data[step] = np.array(self._ncfile[s].attrs[name])
-        return data
+        if not name in self._ncfile.variables.keys():
+            raise IOError("Dataset '" + name + "' unknown.")
+        return np.array(self._ncfile.variables[name])
 
     def get_num_parcels(self, step):
         if not self.is_parcel_file:
@@ -169,7 +137,11 @@ class nc_reader:
     def get_ellipses(self, step, indices=None):
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
-        position = self.get_dataset(step, "position", indices=indices)
+        x_pos = self.get_dataset(step, "x_position", indices=indices)
+        z_pos = self.get_dataset(step, "z_position", indices=indices)
+        position = np.empty((len(x_pos), 2))
+        position[:, 0] = x_pos
+        position[:, 1] = z_pos
         V = self.get_dataset(step, "volume", indices=indices)
         B = self.get_dataset(step, "B", indices=indices)
 
@@ -189,7 +161,8 @@ class nc_reader:
     def get_ellipses_for_bokeh(self, step, indices=None):
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
-        position = self.get_dataset(step, "position", indices=indices)
+        x_pos = self.get_dataset(step, "x_position", indices=indices)
+        z_pos = self.get_dataset(step, "z_position", indices=indices)
         V = self.get_dataset(step, "volume", indices=indices)
         B = self.get_dataset(step, "B", indices=indices)
         B22 = self._get_B22(B[:, 0], B[:, 1], V)
@@ -197,8 +170,8 @@ class nc_reader:
         angle = self._get_angle(B[:, 0], B[:, 1], B22, a2)
         b2 = (V / np.pi) ** 2 / a2
         return (
-            position[:, 0],
-            position[:, 1],
+            x_pos[:],
+            z_pos[:],
             2 * np.sqrt(a2[:]),
             2 * np.sqrt(b2[:]),
             angle[:],

@@ -41,7 +41,7 @@ class ParcelAnimation:
 
         if coloring == "aspect-ratio":
             self.vmin = 1.0
-            self.vmax = self.ncreader.get_parcel_option("lambda")
+            self.vmax = self.ncreader.get_global_attribute("lambda_max")
         else:
             self.vmin, self.vmax = self.ncreader.get_dataset_min_max(coloring)
 

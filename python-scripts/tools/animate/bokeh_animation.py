@@ -29,15 +29,16 @@ class BokehAnimation:
             tmin = 0.0
 
         if tmax is None:
-            t = self.ncreader.get_step_attribute(nsteps - 2, "t")
-            dt = self.ncreader.get_step_attribute(nsteps - 2, "dt")
-            tmax = t + 10 * dt
+            t1 = self.ncreader.get_dataset(nsteps - 2, "t")
+            t2 = self.ncreader.get_dataset(nsteps - 3, "t")
+            dt = t1 - t2
+            tmax = t1 + 10 * dt
 
         bar = progressbar.ProgressBar(maxval=nsteps).start()
         i = 0
         for step in range(nsteps):
 
-            t = self.ncreader.get_step_attribute(step, "t")
+            t = self.ncreader.get_dataset(step, "t")
             if t < tmin:
                 continue
 
@@ -46,13 +47,13 @@ class BokehAnimation:
 
             if coloring == "aspect-ratio":
                 vmin = 1.0
-                vmax = self.ncreader.get_parcel_option("lambda")
+                vmax = self.ncreader.get_global_attribute("lambda_max")
             elif coloring == "vol-distr":
                 extent = self.ncreader.get_box_extent()
                 ncells = self.ncreader.get_box_ncells()
                 vcell = np.prod(extent / ncells)
-                vmin = vcell / self.ncreader.get_parcel_option("min_vratio")
-                vmax = vcell / self.ncreader.get_parcel_option("max_vratio")
+                vmin = vcell / self.ncreader.get_global_attribute("min_vratio")
+                vmax = vcell / self.ncreader.get_global_attribute("max_vratio")
             else:
                 vmin, vmax = self.ncreader.get_dataset_min_max(coloring)
 

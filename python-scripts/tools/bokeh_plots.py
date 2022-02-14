@@ -155,7 +155,7 @@ def _bokeh_plot_field(ncreader, step, field, vmin, vmax, hybrid=False, **kwargs)
     extent = ncreader.get_box_extent()
     origin = ncreader.get_box_origin()
 
-    ttime = ncreader.get_step_attribute(step=step, name="t")
+    ttime = ncreader.get_dataset(step=step, name="t")
     title = field + "\t\t\t\t time = %15.3f" % ttime
 
     if no_title:
@@ -281,7 +281,7 @@ def _bokeh_plot_parcels(ncreader, step, coloring, vmin, vmax, **kwargs):
     origin = ncreader.get_box_origin()
 
     nparcels = ncreader.get_num_parcels(step)
-    ttime = ncreader.get_step_attribute(step=step, name="t")
+    ttime = ncreader.get_dataset(step, "t")
 
     label = ""
     if coloring == "aspect-ratio":
@@ -411,13 +411,13 @@ def bokeh_plot(fname, step, show=False, fmt="png", coloring="vorticity", **kwarg
     if ncreader.is_parcel_file:
         if coloring == "aspect-ratio":
             vmin = 1.0
-            vmax = ncreader.get_parcel_option("lambda")
+            vmax = ncreader.get_global_attribute("lambda_max")
         elif coloring == "vol-distr":
             extent = ncreader.get_box_extent()
             ncells = ncreader.get_box_ncells()
             vcell = np.prod(extent / ncells)
-            vmin = vcell / ncreader.get_parcel_option("min_vratio")
-            vmax = vcell / ncreader.get_parcel_option("max_vratio")
+            vmin = vcell / ncreader.get_global_attribute("min_vratio")
+            vmax = vcell / ncreader.get_global_attribute("max_vratio")
         else:
             vmin, vmax = ncreader.get_dataset_min_max(coloring)
 
