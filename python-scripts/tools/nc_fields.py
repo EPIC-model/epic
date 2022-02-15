@@ -38,16 +38,16 @@ class nc_fields:
             shape = np.shape(values)
 
             # add dimensions
-            self._ncfile.createDimension(dimname="t", size=1)
             self._ncfile.setncattr('file_type', 'fields')
+            self._ncfile.createDimension(dimname="t", size=None)
             if len(shape) == 2:
-                self._ncfile.createDimension(dimname="x", size=shape[0])
-                self._ncfile.createDimension(dimname="z", size=shape[1])
+                self._ncfile.createDimension(dimname="z", size=shape[0])
+                self._ncfile.createDimension(dimname="x", size=shape[1])
                 self._ndims = 2
             elif len(shape) == 3:
-                self._ncfile.createDimension(dimname="x", size=shape[0])
+                self._ncfile.createDimension(dimname="z", size=shape[0])
                 self._ncfile.createDimension(dimname="y", size=shape[1])
-                self._ncfile.createDimension(dimname="z", size=shape[2])
+                self._ncfile.createDimension(dimname="x", size=shape[2])
                 self._ndims = 3
             else:
                 RuntimeError("Shape must be of 2 or 3 dimensions")
@@ -57,12 +57,12 @@ class nc_fields:
             var = self._ncfile.createVariable(varname=name,
                                               datatype=dtype,
                                               dimensions=('t', 'z', 'x'))
-            var[0, :, :] = values
+            var[0, :, :] = values[:, :]
         else:
             var = self._ncfile.createVariable(varname=name,
                                               datatype=dtype,
                                               dimensions=('t', 'z', 'y', 'x'))
-            var[0, :, :, :] = values
+            var[0, :, :, :] = values[:, :, :]
 
         unit = kwargs.pop('unit', '')
         if unit:

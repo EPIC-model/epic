@@ -106,15 +106,15 @@ try:
     dx = extent[0] / nx
     dz = extent[1] / nz
 
-    vorticity = np.zeros((nx, nz+1))
+    vorticity = np.zeros((nz+1, nx))
 
     # ranges from 0 to nx-1
     for i in range(nx):
         # ranges from 0 to nz
         for j in range(nz+1):
             x = origin[0] + i * dx
-            z = origin[0] + j * dz
-            vorticity[i, j] = (B * a - A * b) * np.cos(a * x + d) * np.cos(b * z + e)
+            z = origin[1] + j * dz
+            vorticity[j, i] = (B * a - A * b) * np.cos(a * x + d) * np.cos(b * z + e)
 
     # write all provided fields
     ncf.add_field('vorticity', vorticity, unit='1/s')
