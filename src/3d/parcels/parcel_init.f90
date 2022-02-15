@@ -252,8 +252,8 @@ module parcel_init
 
             call get_num_steps(ncid, n_steps)
 
-            cnt  =  (/ nz+1, ny, nx, 1       /)
-            start = (/ 1,    1,  1,  n_steps /)
+            cnt  =  (/ nx, ny, nz+1, 1       /)
+            start = (/ 1,  1,  1,    n_steps /)
 
             if (has_dataset(ncid, 'x_vorticity')) then
                 buffer = zero

@@ -240,8 +240,8 @@ module parcel_init
 
             call get_num_steps(ncid, n_steps)
 
-            cnt  =  (/ nz+1, nx, 1       /)
-            start = (/ 1,    1,  n_steps /)
+            cnt  =  (/ nx, nz+1, 1       /)
+            start = (/ 1,  1,    n_steps /)
 
 
             if (has_dataset(ncid, 'vorticity')) then

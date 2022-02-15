@@ -27,9 +27,9 @@ program test_netcdf_read_dataset_3d
                             overwrite=.true.,    &
                             ncid=ncid)
 
-    call define_netcdf_dimension(ncid, "z", nz, dimids(1))
+    call define_netcdf_dimension(ncid, "x", nx, dimids(1))
     call define_netcdf_dimension(ncid, "y", ny, dimids(2))
-    call define_netcdf_dimension(ncid, "x", nx, dimids(3))
+    call define_netcdf_dimension(ncid, "z", nz, dimids(3))
     call define_netcdf_dimension(ncid, "t", NF90_UNLIMITED, dimids(4))
 
     call define_netcdf_dataset(ncid, 'x_velocity', '', '', 'm/s', NF90_DOUBLE, dimids, var_id)
@@ -40,7 +40,7 @@ program test_netcdf_read_dataset_3d
 
     do t = 1, nt
 
-        cnt   = (/ nz, ny, nx, 1 /)
+        cnt   = (/ nx, ny, nz, 1 /)
         start = (/ 1,  1,  1,  t /)
 
         call open_netcdf_file(ncfname='nctest.nc',    &
@@ -63,7 +63,7 @@ program test_netcdf_read_dataset_3d
                             access_flag=NF90_NOWRITE, &
                             ncid=ncid)
 
-    cnt   = (/nz, ny, nx, 1/)
+    cnt   = (/nx, ny, nz, 1/)
     start = (/1,  1,  1,  nt/)
     call read_netcdf_dataset(ncid, 'x_velocity', rdset, start, cnt)
 

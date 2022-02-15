@@ -30,9 +30,9 @@ program test_netcdf_dataset_3d
                           access_flag=NF90_WRITE, &
                           ncid=ncid)
 
-    call define_netcdf_dimension(ncid, "x", nx, dimids(3))
+    call define_netcdf_dimension(ncid, "x", nx, dimids(1))
     call define_netcdf_dimension(ncid, "y", ny, dimids(2))
-    call define_netcdf_dimension(ncid, "z", nz, dimids(1))
+    call define_netcdf_dimension(ncid, "z", nz, dimids(3))
 
     call define_netcdf_dataset(ncid, 'x_velocity', '', '', 'm/s', NF90_DOUBLE, dimids, var_id1)
     call define_netcdf_dataset(ncid, 'y_velocity', '', '', 'm/s', NF90_DOUBLE, dimids, var_id2)

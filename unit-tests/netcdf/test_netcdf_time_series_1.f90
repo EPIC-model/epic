@@ -28,22 +28,22 @@ program test_netcdf_time_series
                           access_flag=NF90_WRITE, &
                           ncid=ncid)
 
-    call define_netcdf_dimension(ncid, "y", ny, dimids(1))
-    call define_netcdf_dimension(ncid, "x", nx, dimids(2))
+    call define_netcdf_dimension(ncid, "x", nx, dimids(1))
+    call define_netcdf_dimension(ncid, "y", ny, dimids(2))
     call define_netcdf_dimension(ncid, "t", NF90_UNLIMITED, dimids(3))
 
     call define_netcdf_dataset(ncid, 'x_velocity', '', '', 'm/s', NF90_DOUBLE, dimids, var_id)
 
     call close_definition(ncid)
 
-    cnt   = (/ ny, nx, 1 /)
+    cnt   = (/ nx, ny, 1 /)
     start = (/ 1,  1,  1 /)
 
     call write_netcdf_dataset(ncid, var_id, dset, start, cnt)
 
     dset = 1.5d0 + dset
 
-    cnt   = (/ ny, nx, 1 /)
+    cnt   = (/ nx, ny, 1 /)
     start = (/ 1,  1,  2 /)
 
     call write_netcdf_dataset(ncid, var_id, dset, start, cnt)

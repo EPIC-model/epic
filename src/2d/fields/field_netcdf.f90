@@ -296,8 +296,8 @@ module field_netcdf
             call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
 
             ! time step to write [step(4) is the time]
-            cnt   = (/ nz+1, nx, 1        /)
-            start = (/ 1,    1,  n_writes /)
+            cnt   = (/ nx, nz+1, 1        /)
+            start = (/ 1,  1,    n_writes /)
 
             !
             ! write fields (do not write halo cells)
