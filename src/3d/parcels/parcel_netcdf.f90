@@ -22,7 +22,8 @@ module parcel_netcdf
                           x_pos_id, y_pos_id, z_pos_id, &
                           x_vor_id, y_vor_id, z_vor_id, &
                           b11_id, b12_id, b13_id,       &
-                          b22_id, b23_id
+                          b22_id, b23_id,               &
+                          t_axis_id, t_dim_id
 
 #ifndef ENABLE_DRY_MODE
     integer :: hum_id
@@ -32,7 +33,7 @@ module parcel_netcdf
                x_pos_id, y_pos_id, z_pos_id,            &
                x_vor_id, y_vor_id, z_vor_id,            &
                b11_id, b12_id, b13_id, b22_id, b23_id,  &
-               vol_id, buo_id
+               vol_id, buo_id, t_dim_id, t_axis_id
 #ifndef ENABLE_DRY_MODE
     private :: hum_id
 #endif
@@ -50,7 +51,7 @@ module parcel_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
-            integer                   :: ncells(3)
+            integer                   :: ncells(3), dimids(2)
 
             ncfname =  basename // '_' // zfill(n_writes) // '_parcels.nc'
 
@@ -78,15 +79,28 @@ module parcel_netcdf
 
             call write_netcdf_options(ncid)
 
-            ! write dummy time --> will be replaced with correct time in write_netcdf_parcels
-            call write_netcdf_attribute(ncid=ncid, name='t', val=0.0)
-
-
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &
                                          name='n_parcels',                  &
                                          dimsize=n_parcels,                 &
                                          dimid=npar_dim_id)
+
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='t',                          &
+                                         dimsize=NF90_UNLIMITED,            &
+                                         dimid=t_dim_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='t',                                                   &
+                long_name='time ',                                          &
+                std_name='time',                                            &
+                unit='seconds since 1-1-1970 (epoch)',                      &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=t_axis_id)
+
+            dimids = (/npar_dim_id, t_dim_id/)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='x_position',                   &
@@ -94,7 +108,7 @@ module parcel_netcdf
                                        std_name='',                         &
                                        unit='m',                            &
                                        dtype=NF90_DOUBLE,                   &
-                                       dimids=(/npar_dim_id/),              &
+                                       dimids=dimids,                       &
                                        varid=x_pos_id)
 
             call define_netcdf_dataset(ncid=ncid,                           &
@@ -103,7 +117,7 @@ module parcel_netcdf
                                        std_name='',                         &
                                        unit='m',                            &
                                        dtype=NF90_DOUBLE,                   &
-                                       dimids=(/npar_dim_id/),              &
+                                       dimids=dimids,                       &
                                        varid=y_pos_id)
 
             call define_netcdf_dataset(ncid=ncid,                           &
@@ -112,7 +126,7 @@ module parcel_netcdf
                                        std_name='',                         &
                                        unit='m',                            &
                                        dtype=NF90_DOUBLE,                   &
-                                       dimids=(/npar_dim_id/),              &
+                                       dimids=dimids,                       &
                                        varid=z_pos_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -121,7 +135,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='m',                                &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=b11_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -130,7 +144,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='m',                                &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=b12_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -139,7 +153,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='m',                                &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=b13_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -148,7 +162,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='m',                                &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=b22_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -157,7 +171,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='m',                                &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=b23_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -166,7 +180,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='m^3',                              &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=vol_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -175,7 +189,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='1/s',                              &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=x_vor_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -184,7 +198,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='1/s',                              &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=y_vor_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -193,7 +207,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='1/s',                              &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=z_vor_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -202,7 +216,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='m/s^2',                            &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=buo_id)
 
 #ifndef ENABLE_DRY_MODE
@@ -212,7 +226,7 @@ module parcel_netcdf
                                        std_name='',                             &
                                        unit='-',                                &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=(/npar_dim_id/),                  &
+                                       dimids=dimids,                           &
                                        varid=hum_id)
 #endif
 
@@ -223,39 +237,42 @@ module parcel_netcdf
         ! Write parcels of the current time step into the parcel file.
         ! @param[in] t is the time
         subroutine write_netcdf_parcels(t)
-            double precision, intent(in)    :: t
+            double precision, intent(in) :: t
+            integer                      :: cnt(2), start(2)
 
             call start_timer(parcel_io_timer)
 
-            if (n_writes > 1) then
-                call create_netcdf_parcel_file(trim(ncbasename), .true., .false.)
-            endif
+            call create_netcdf_parcel_file(trim(ncbasename), .true., .false.)
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             ! write time
-            call write_netcdf_attribute(ncid=ncid, name='t', val=t)
+            call write_netcdf_scalar(ncid, t_axis_id, t, 1)
 
-            call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels))
-            call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels))
-            call write_netcdf_dataset(ncid, z_pos_id, parcels%position(3, 1:n_parcels))
+            ! time step to write [step(2) is the time]
+            cnt   = (/ n_parcels, 1 /)
+            start = (/ 1,         1 /)
 
-            call write_netcdf_dataset(ncid, b11_id, parcels%B(1, 1:n_parcels))
-            call write_netcdf_dataset(ncid, b12_id, parcels%B(2, 1:n_parcels))
-            call write_netcdf_dataset(ncid, b13_id, parcels%B(3, 1:n_parcels))
-            call write_netcdf_dataset(ncid, b22_id, parcels%B(4, 1:n_parcels))
-            call write_netcdf_dataset(ncid, b23_id, parcels%B(5, 1:n_parcels))
+            call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, z_pos_id, parcels%position(3, 1:n_parcels), start, cnt)
 
-            call write_netcdf_dataset(ncid, vol_id, parcels%volume(1:n_parcels))
+            call write_netcdf_dataset(ncid, b11_id, parcels%B(1, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b12_id, parcels%B(2, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b13_id, parcels%B(3, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b22_id, parcels%B(4, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b23_id, parcels%B(5, 1:n_parcels), start, cnt)
 
-            call write_netcdf_dataset(ncid, x_vor_id, parcels%vorticity(1, 1:n_parcels))
-            call write_netcdf_dataset(ncid, y_vor_id, parcels%vorticity(2, 1:n_parcels))
-            call write_netcdf_dataset(ncid, z_vor_id, parcels%vorticity(3, 1:n_parcels))
+            call write_netcdf_dataset(ncid, vol_id, parcels%volume(1:n_parcels), start, cnt)
 
-            call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:n_parcels))
+            call write_netcdf_dataset(ncid, x_vor_id, parcels%vorticity(1, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, y_vor_id, parcels%vorticity(2, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, z_vor_id, parcels%vorticity(3, 1:n_parcels), start, cnt)
+
+            call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:n_parcels), start, cnt)
 
 #ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:n_parcels))
+            call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:n_parcels), start, cnt)
 #endif
             ! increment counter
             n_writes = n_writes + 1
@@ -267,9 +284,10 @@ module parcel_netcdf
         end subroutine write_netcdf_parcels
 
         subroutine read_netcdf_parcels(fname)
-            character(*),     intent(in)  :: fname
-            integer                       :: ncells(3)
-            logical                       :: l_valid = .false.
+            character(*),     intent(in) :: fname
+            integer                      :: ncells(3)
+            logical                      :: l_valid = .false.
+            integer                      :: cnt(2), start(2)
 
             call start_timer(parcel_io_timer)
 
@@ -292,40 +310,44 @@ module parcel_netcdf
                 stop
             endif
 
+            ! time step to read [step(2) is the time]
+            cnt   = (/ n_parcels, 1 /)
+            start = (/ 1,         1 /)
+
             ! Be aware that the starting index of buffer_1d and buffer_2d
             ! is 0; hence, the range is 0:n_parcels-1 in contrast to the
             ! parcel container where it is 1:n_parcels.
 
             if (has_dataset(ncid, 'B11')) then
-                call read_netcdf_dataset(ncid, 'B11', parcels%B(1, 1:n_parcels))
+                call read_netcdf_dataset(ncid, 'B11', parcels%B(1, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel shape component B11 must be present! Exiting."
                 stop
             endif
 
             if (has_dataset(ncid, 'B12')) then
-                call read_netcdf_dataset(ncid, 'B12', parcels%B(2, 1:n_parcels))
+                call read_netcdf_dataset(ncid, 'B12', parcels%B(2, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel shape component B12 must be present! Exiting."
                 stop
             endif
 
             if (has_dataset(ncid, 'B13')) then
-                call read_netcdf_dataset(ncid, 'B13', parcels%B(3, 1:n_parcels))
+                call read_netcdf_dataset(ncid, 'B13', parcels%B(3, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel shape component B13 must be present! Exiting."
                 stop
             endif
 
             if (has_dataset(ncid, 'B22')) then
-                call read_netcdf_dataset(ncid, 'B22', parcels%B(4, 1:n_parcels))
+                call read_netcdf_dataset(ncid, 'B22', parcels%B(4, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel shape component B22 must be present! Exiting."
                 stop
             endif
 
             if (has_dataset(ncid, 'B23')) then
-                call read_netcdf_dataset(ncid, 'B23', parcels%B(5, 1:n_parcels))
+                call read_netcdf_dataset(ncid, 'B23', parcels%B(5, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel shape component B23 must be present! Exiting."
                 stop
@@ -333,7 +355,7 @@ module parcel_netcdf
 
             if (has_dataset(ncid, 'x_position')) then
                 call read_netcdf_dataset(ncid, 'x_position', &
-                                         parcels%position(1, 1:n_parcels))
+                                         parcels%position(1, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel x position must be present! Exiting."
                 stop
@@ -341,7 +363,7 @@ module parcel_netcdf
 
             if (has_dataset(ncid, 'y_position')) then
                 call read_netcdf_dataset(ncid, 'y_position', &
-                                         parcels%position(2, 1:n_parcels))
+                                         parcels%position(2, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel y position must be present! Exiting."
                 stop
@@ -349,7 +371,7 @@ module parcel_netcdf
 
             if (has_dataset(ncid, 'z_position')) then
                 call read_netcdf_dataset(ncid, 'z_position', &
-                                         parcels%position(3, 1:n_parcels))
+                                         parcels%position(3, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel z position must be present! Exiting."
                 stop
@@ -357,7 +379,7 @@ module parcel_netcdf
 
             if (has_dataset(ncid, 'volume')) then
                 call read_netcdf_dataset(ncid, 'volume', &
-                                         parcels%volume(1:n_parcels))
+                                         parcels%volume(1:n_parcels), start, cnt)
             else
                 print *, "The parcel volume must be present! Exiting."
                 stop
@@ -366,31 +388,31 @@ module parcel_netcdf
             if (has_dataset(ncid, 'x_vorticity')) then
                 l_valid = .true.
                 call read_netcdf_dataset(ncid, 'x_vorticity', &
-                                         parcels%vorticity(1, 1:n_parcels))
+                                         parcels%vorticity(1, 1:n_parcels), start, cnt)
             endif
 
             if (has_dataset(ncid, 'y_vorticity')) then
                 call read_netcdf_dataset(ncid, 'y_vorticity', &
-                                         parcels%vorticity(2, 1:n_parcels))
+                                         parcels%vorticity(2, 1:n_parcels), start, cnt)
             endif
 
             if (has_dataset(ncid, 'z_vorticity')) then
                 l_valid = .true.
                 call read_netcdf_dataset(ncid, 'z_vorticity', &
-                                         parcels%vorticity(3, 1:n_parcels))
+                                         parcels%vorticity(3, 1:n_parcels), start, cnt)
             endif
 
             if (has_dataset(ncid, 'buoyancy')) then
                 l_valid = .true.
                 call read_netcdf_dataset(ncid, 'buoyancy', &
-                                         parcels%buoyancy(1:n_parcels))
+                                         parcels%buoyancy(1:n_parcels), start, cnt)
             endif
 
 #ifndef ENABLE_DRY_MODE
             if (has_dataset(ncid, 'humidity')) then
                 l_valid = .true.
                 call read_netcdf_dataset(ncid, 'humidity', &
-                                         parcels%humidity(1:n_parcels))
+                                         parcels%humidity(1:n_parcels), start, cnt)
             endif
 #endif
 

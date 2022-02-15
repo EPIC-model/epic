@@ -83,7 +83,7 @@ class nc_reader:
             # parcel files store the time as a global attribute
             step = step + 1
             self._load_parcel_file(step)
-            return self.get_global_attribute('t')
+            return self._ncfile.variables[name]
 
         if not name in self._ncfile.variables.keys():
             raise IOError("Dataset '" + name + "' unknown.")

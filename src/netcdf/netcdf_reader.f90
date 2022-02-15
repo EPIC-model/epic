@@ -67,19 +67,11 @@ module netcdf_reader
             call check_netcdf_error("Reading time failed.")
         end subroutine get_num_steps
 
-        ! @returns -1 if NetCDF file does not contain the attribute 't'
         subroutine get_time(ncid, t)
             integer,          intent(in)  :: ncid
             double precision, intent(out) :: t
             integer                       :: n_steps, varid, start(1), cnt(1), values(1)
 
-            if (has_attribute(ncid, 't')) then
-                ! parcel file
-                call read_netcdf_global_attrib_double(ncid, 't', t)
-                return
-            endif
-
-            ! field file
             call get_num_steps(ncid, n_steps)
 
             if (has_dataset(ncid, 't')) then
@@ -91,9 +83,10 @@ module netcdf_reader
                 t = values(1)
                 call check_netcdf_error("Reading time failed.")
                 return
+            else
+                print *, "Error: No time dataset found."
+                stop
             endif
-
-            t = -1.0d0
         end subroutine get_time
 
         subroutine get_file_type(ncid, file_type)

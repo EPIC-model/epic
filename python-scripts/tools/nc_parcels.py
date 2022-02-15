@@ -41,14 +41,19 @@ class nc_parcels:
         if self._nparcels == 0:
             self._nparcels = len(values)
             # add dimension
+            self._ncfile.createDimension(dimname="t", size=None)
             self._ncfile.createDimension(dimname="n_parcels", size=self._nparcels)
             self._ncfile.setncattr('file_type', 'parcels')
-            self._ncfile.setncattr('t', 0.0)
+
+            time = self._ncfile.createVariable(varname='t',
+                                               datatype=dtype,
+                                               dimensions=('t'))
+            time[0] = 0.0
 
         var = self._ncfile.createVariable(varname=name,
                                           datatype=dtype,
-                                          dimensions=("n_parcels"))
-        var[:] = values[:]
+                                          dimensions=('t', 'n_parcels'))
+        var[0, :] = values[:]
 
         unit = kwargs.pop('unit', '')
         if unit:
