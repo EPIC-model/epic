@@ -390,7 +390,7 @@ module parcel_netcdf
             if (has_dataset(ncid, 'humidity')) then
                 l_valid = .true.
                 call read_netcdf_dataset(ncid, 'humidity', &
-                                         parcels%buoyancy(1:n_parcels))
+                                         parcels%humidity(1:n_parcels))
             endif
 #endif
 
