@@ -17,6 +17,7 @@ module field_netcdf
 
     integer            :: x_vel_id, y_vel_id, z_vel_id, &
                           x_vor_id, y_vor_id, z_vor_id, &
+                          tbuoy_id, dbuoy_id,           &
                           n_writes
 
     private :: ncid, ncfname,                               &
@@ -24,6 +25,7 @@ module field_netcdf
                x_axis_id, y_axis_id, z_axis_id, t_axis_id,  &
                x_vel_id, y_vel_id, z_vel_id,                &
                x_vor_id, y_vor_id, z_vor_id,                &
+               tbuoy_id, dbuoy_id,                          &
                n_writes
 
     contains
@@ -196,6 +198,24 @@ module field_netcdf
                                        dimids=dimids,                       &
                                        varid=z_vor_id)
 
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='buoyancy',                     &
+                                       long_name='total buoyancy',          &
+                                       std_name='',                         &
+                                       unit='m/s^2',                        &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=tbuoy_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='dry_buoyancy',                 &
+                                       long_name='liquid-water buoyancy',   &
+                                       std_name='',                         &
+                                       unit='m/s^2',                        &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=dbuoy_id)
+
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_file
@@ -231,6 +251,10 @@ module field_netcdf
             call get_var_id(ncid, 'y_vorticity', y_vor_id)
 
             call get_var_id(ncid, 'z_vorticity', z_vor_id)
+
+            call get_var_id(ncid, 'buoyancy', tbuoy_id)
+
+            call get_var_id(ncid, 'dry_buoyancy', dbuoy_id)
 
         end subroutine read_netcdf_field_content
 
@@ -271,6 +295,12 @@ module field_netcdf
             call write_netcdf_dataset(ncid, y_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 2), &
                                       start, cnt)
             call write_netcdf_dataset(ncid, z_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 3), &
+                                      start, cnt)
+
+            call write_netcdf_dataset(ncid, tbuoy_id, tbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
+                                      start, cnt)
+
+            call write_netcdf_dataset(ncid, dbuoy_id, dbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
                                       start, cnt)
 
             ! increment counter
