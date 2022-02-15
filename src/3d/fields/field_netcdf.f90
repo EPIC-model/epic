@@ -132,7 +132,7 @@ module field_netcdf
                 name='t',                                                   &
                 long_name='time ',                                          &
                 std_name='time',                                            &
-                unit='s',                                                   &
+                unit='seconds since 1-1-1970 (epoch)',                      &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=t_axis_id)
@@ -141,7 +141,7 @@ module field_netcdf
             call check_netcdf_error("Failed to add axis attribute.")
 
             ! define fields
-            dimids = (/z_dim_id, y_dim_id, x_dim_id, t_dim_id/)
+            dimids = (/x_dim_id, y_dim_id, z_dim_id, t_dim_id/)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='x_velocity',                   &
