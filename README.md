@@ -119,7 +119,7 @@ try:
     # write all provided fields
     ncf.add_field('vorticity', vorticity, unit='1/s')
 
-    ncf.add_box(origint, extent, [nx, nz])
+    ncf.add_box(origin, extent, [nx, nz])
 
     ncf.close()
 
