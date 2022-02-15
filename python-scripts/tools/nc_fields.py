@@ -56,12 +56,12 @@ class nc_fields:
         if self._ndims == 2:
             var = self._ncfile.createVariable(varname=name,
                                               datatype=dtype,
-                                              dimensions=('t', 'x', 'z'))
+                                              dimensions=('t', 'z', 'x'))
             var[0, :, :] = values
         else:
             var = self._ncfile.createVariable(varname=name,
                                               datatype=dtype,
-                                              dimensions=('t', 'x', 'y', 'z'))
+                                              dimensions=('t', 'z', 'y', 'x'))
             var[0, :, :, :] = values
 
         unit = kwargs.pop('unit', '')
