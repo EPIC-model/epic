@@ -17,7 +17,7 @@ module field_netcdf
 
     integer            :: x_vel_id, y_vel_id, z_vel_id, &
                           x_vor_id, y_vor_id, z_vor_id, &
-                          tbuoy_id, dbuoy_id,           &
+                          tbuoy_id, dbuoy_id, lbuoy_id, &
                           n_writes
 
     private :: ncid, ncfname,                               &
@@ -25,7 +25,7 @@ module field_netcdf
                x_axis_id, y_axis_id, z_axis_id, t_axis_id,  &
                x_vel_id, y_vel_id, z_vel_id,                &
                x_vor_id, y_vor_id, z_vor_id,                &
-               tbuoy_id, dbuoy_id,                          &
+               tbuoy_id, dbuoy_id, lbuoy_id,                &
                n_writes
 
     contains
@@ -209,12 +209,21 @@ module field_netcdf
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='dry_buoyancy',                 &
-                                       long_name='liquid-water buoyancy',   &
+                                       long_name='dry buoyancy',            &
                                        std_name='',                         &
                                        unit='m/s^2',                        &
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
                                        varid=dbuoy_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='liquid_buoyancy',              &
+                                       long_name='liquid-water buoyancy',   &
+                                       std_name='',                         &
+                                       unit='m/s^2',                        &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=lbuoy_id)
 
             call close_definition(ncid)
 
@@ -255,6 +264,8 @@ module field_netcdf
             call get_var_id(ncid, 'buoyancy', tbuoy_id)
 
             call get_var_id(ncid, 'dry_buoyancy', dbuoy_id)
+
+            call get_var_id(ncid, 'liquid_buoyancy', lbuoy_id)
 
         end subroutine read_netcdf_field_content
 
@@ -302,6 +313,9 @@ module field_netcdf
 
             call write_netcdf_dataset(ncid, dbuoy_id, dbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
                                       start, cnt)
+
+            call write_netcdf_dataset(ncid, lbuoy_id, tbuoyg(0:nz, 0:ny-1, 0:nx-1)    &
+                                      - dbuoyg(0:nz, 0:ny-1, 0:nx-1), start, cnt)
 
             ! increment counter
             n_writes = n_writes + 1
