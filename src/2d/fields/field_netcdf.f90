@@ -75,6 +75,7 @@ module field_netcdf
             ! define global attributes
             call write_netcdf_attribute(ncid=ncid, name='EPIC_version', val=package_version)
             call write_netcdf_attribute(ncid=ncid, name='file_type', val='fields')
+            call write_netcdf_attribute(ncid=ncid, name='Conventions', val='CF-1.9')
             call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
             call write_netcdf_timestamp(ncid)
 
@@ -107,7 +108,7 @@ module field_netcdf
                 dimids=(/x_dim_id/),                                        &
                 varid=x_axis_id)
 
-            ncerr = nf90_put_att(ncid, x_axis_id, "axis", 'x')
+            ncerr = nf90_put_att(ncid, x_axis_id, "axis", 'X')
             call check_netcdf_error("Failed to add axis attribute.")
 
             call define_netcdf_dataset(                                     &
@@ -120,7 +121,7 @@ module field_netcdf
                 dimids=(/z_dim_id/),                                        &
                 varid=z_axis_id)
 
-            ncerr = nf90_put_att(ncid, z_axis_id, "axis", 'z')
+            ncerr = nf90_put_att(ncid, z_axis_id, "axis", 'Z')
             call check_netcdf_error("Failed to add axis attribute.")
 
             call define_netcdf_dataset(                                     &
@@ -133,7 +134,7 @@ module field_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=t_axis_id)
 
-            ncerr = nf90_put_att(ncid, t_axis_id, "axis", 'time')
+            ncerr = nf90_put_att(ncid, t_axis_id, "axis", 'T')
             call check_netcdf_error("Failed to add axis attribute.")
 
             ncerr = nf90_put_att(ncid, t_axis_id, "calendar", &

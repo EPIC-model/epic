@@ -63,6 +63,7 @@ module parcel_diagnostics_netcdf
             ! define global attributes
             call write_netcdf_attribute(ncid=ncid, name='EPIC_version', val=package_version)
             call write_netcdf_attribute(ncid=ncid, name='file_type', val='parcel_stats')
+            call write_netcdf_attribute(ncid=ncid, name='Conventions', val='CF-1.9')
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
             call write_netcdf_timestamp(ncid)
 
@@ -83,7 +84,7 @@ module parcel_diagnostics_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=t_axis_id)
 
-            ncerr = nf90_put_att(ncid, t_axis_id, "axis", 'time')
+            ncerr = nf90_put_att(ncid, t_axis_id, "axis", 'T')
             call check_netcdf_error("Failed to add axis attribute.")
 
             ncerr = nf90_put_att(ncid, t_axis_id, "calendar", &
