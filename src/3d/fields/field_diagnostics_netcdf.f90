@@ -73,13 +73,17 @@ module field_diagnostics_netcdf
                 name='t',                                                   &
                 long_name='time ',                                          &
                 std_name='time',                                            &
-                unit='seconds since 1-1-1970',                              &
+                unit='seconds since 1970-01-01',                            &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=t_axis_id)
 
             ncerr = nf90_put_att(ncid, t_axis_id, "axis", 't')
             call check_netcdf_error("Failed to add axis attribute.")
+
+            ncerr = nf90_put_att(ncid, t_axis_id, "calendar", &
+                                 'proleptic_gregorian')
+            call check_netcdf_error("Failed to add calendear attribute.")
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
