@@ -63,7 +63,7 @@ module parcel_diagnostics_netcdf
             ! define global attributes
             call write_netcdf_attribute(ncid=ncid, name='EPIC_version', val=package_version)
             call write_netcdf_attribute(ncid=ncid, name='file_type', val='parcel_stats')
-            call write_netcdf_attribute(ncid=ncid, name='Conventions', val='CF-1.9')
+            call write_netcdf_attribute(ncid=ncid, name='Conventions', val='CF-1.8')
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
             call write_netcdf_timestamp(ncid)
 

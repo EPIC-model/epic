@@ -75,7 +75,7 @@ module field_netcdf
             ! define global attributes
             call write_netcdf_attribute(ncid=ncid, name='EPIC_version', val=package_version)
             call write_netcdf_attribute(ncid=ncid, name='file_type', val='fields')
-            call write_netcdf_attribute(ncid=ncid, name='Conventions', val='CF-1.9')
+            call write_netcdf_attribute(ncid=ncid, name='Conventions', val='CF-1.8')
             call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
             call write_netcdf_timestamp(ncid)
 
