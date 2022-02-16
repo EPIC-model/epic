@@ -95,7 +95,7 @@ module parcel_netcdf
                 name='t',                                                   &
                 long_name='time ',                                          &
                 std_name='time',                                            &
-                unit='seconds since 1-1-1970 (epoch)',                      &
+                unit='seconds since 1-1-1970',                              &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=t_axis_id)

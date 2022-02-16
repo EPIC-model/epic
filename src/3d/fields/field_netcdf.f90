@@ -6,6 +6,7 @@ module field_netcdf
     use config, only : package_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
+    use phys_parameters, only : glati
     implicit none
 
     integer :: field_io_timer
@@ -108,7 +109,7 @@ module field_netcdf
                 std_name='projection_y_coordinate',                         &
                 unit='m',                                                   &
                 dtype=NF90_DOUBLE,                                          &
-                dimids=(/y_dim_id/),                                       &
+                dimids=(/y_dim_id/),                                        &
                 varid=y_axis_id)
 
             ncerr = nf90_put_att(ncid, y_axis_id, "axis", 'y')
@@ -132,7 +133,7 @@ module field_netcdf
                 name='t',                                                   &
                 long_name='time ',                                          &
                 std_name='time',                                            &
-                unit='seconds since 1-1-1970 (epoch)',                      &
+                unit='seconds since 1-1-1970',                              &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=t_axis_id)
@@ -217,8 +218,8 @@ module field_netcdf
                                        varid=dbuoy_id)
 
             call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='liquid_buoyancy',              &
-                                       long_name='liquid-water buoyancy',   &
+                                       name='liquid_water_content',         &
+                                       long_name='liquid-water content',    &
                                        std_name='',                         &
                                        unit='m/s^2',                        &
                                        dtype=NF90_DOUBLE,                   &
@@ -265,7 +266,7 @@ module field_netcdf
 
             call get_var_id(ncid, 'dry_buoyancy', dbuoy_id)
 
-            call get_var_id(ncid, 'liquid_buoyancy', lbuoy_id)
+            call get_var_id(ncid, 'liquid_water_content', lbuoy_id)
 
         end subroutine read_netcdf_field_content
 
@@ -314,8 +315,9 @@ module field_netcdf
             call write_netcdf_dataset(ncid, dbuoy_id, dbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
                                       start, cnt)
 
-            call write_netcdf_dataset(ncid, lbuoy_id, tbuoyg(0:nz, 0:ny-1, 0:nx-1)    &
-                                      - dbuoyg(0:nz, 0:ny-1, 0:nx-1), start, cnt)
+            call write_netcdf_dataset(ncid, lbuoy_id, glati * (tbuoyg(0:nz, 0:ny-1, 0:nx-1)     &
+                                                             - dbuoyg(0:nz, 0:ny-1, 0:nx-1)),   &
+                                      start, cnt)
 
             ! increment counter
             n_writes = n_writes + 1
