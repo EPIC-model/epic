@@ -221,7 +221,7 @@ module field_netcdf
                                        name='liquid_water_content',         &
                                        long_name='liquid-water content',    &
                                        std_name='',                         &
-                                       unit='m/s^2',                        &
+                                       unit='-',                            &
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
                                        varid=lbuoy_id)
