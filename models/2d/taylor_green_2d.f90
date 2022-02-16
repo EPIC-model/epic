@@ -56,8 +56,8 @@ module taylor_green_2d
 
             call close_definition(ncid)
 
-            do j = 0, nz
-                do i = 0, nx - 1
+            do i = 0, nx - 1
+                do j = 0, nz
                     pos = origin + dx * dble((/i, j/))
                     vortg(j, i) = get_flow_vorticity(pos)
                 enddo

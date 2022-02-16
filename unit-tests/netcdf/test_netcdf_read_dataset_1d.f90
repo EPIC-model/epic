@@ -14,7 +14,7 @@ program test_netcdf_read_dataset_1d
     integer            :: n, ncid, dimid
     integer            :: var_id = -1, cnt(1), start(1)
     double precision   :: wdset(n_parcels), rdset(n_parcels + 100), error
-    logical            :: passed
+    logical            :: passed = .true.
 
     do n = 1, n_parcels
         wdset(n) = dble(n)
@@ -24,11 +24,19 @@ program test_netcdf_read_dataset_1d
                             overwrite=.true.,    &
                             ncid=ncid)
 
+    passed = (passed .and. (ncerr == 0))
+
     call define_netcdf_dimension(ncid, "n_parcels", n_parcels, dimid)
+
+    passed = (passed .and. (ncerr == 0))
 
     call define_netcdf_dataset(ncid, 'wdset', '', '', '', NF90_DOUBLE, (/dimid/), var_id)
 
+    passed = (passed .and. (ncerr == 0))
+
     call close_definition(ncid)
+
+    passed = (passed .and. (ncerr == 0))
 
     ! write data
     cnt   = (/ n_parcels /)
@@ -37,25 +45,39 @@ program test_netcdf_read_dataset_1d
     call open_netcdf_file(ncfname='nctest.nc',    &
                           access_flag=NF90_WRITE, &
                           ncid=ncid)
+
+    passed = (passed .and. (ncerr == 0))
+
     call write_netcdf_dataset(ncid, var_id, wdset, start, cnt)
 
+    passed = (passed .and. (ncerr == 0))
 
     call close_netcdf_file(ncid)
+
+    passed = (passed .and. (ncerr == 0))
 
     ! read data
     call open_netcdf_file(ncfname='nctest.nc',        &
                             access_flag=NF90_NOWRITE, &
                             ncid=ncid)
 
+    passed = (passed .and. (ncerr == 0))
+
     call read_netcdf_dataset(ncid, 'wdset', rdset(1:n_parcels), start, cnt)
+
+    passed = (passed .and. (ncerr == 0))
 
     call close_netcdf_file(ncid)
 
+    passed = (passed .and. (ncerr == 0))
+
     error = sum(wdset - rdset(1:n_parcels))
 
-    passed = ((ncerr == 0) .and. (error == 0.0d0))
+    passed = (passed .and. (ncerr == 0) .and. (error == 0.0d0))
 
     call delete_netcdf_file(ncfname='nctest.nc')
+
+    passed = (passed .and. (ncerr == 0))
 
     call print_result_logical('Test netCDF read 1D dataset', passed)
 

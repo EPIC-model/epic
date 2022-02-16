@@ -175,8 +175,11 @@ module netcdf_writer
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
 
+            ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/)
+            ! with map = shape(data)
+
             ! write data
-            ncerr = nf90_put_var(ncid, varid, data, &
+            ncerr = nf90_put_var(ncid, varid, transpose(data),  &
                                  start=start, count = cnt)
 
             call check_netcdf_error("Failed to write dataset.")
@@ -189,9 +192,15 @@ module netcdf_writer
             double precision,  intent(in) :: data(:, :, :)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            integer                       :: layout(3), ix, iy, iz
+            integer                       :: map(3)
+
+            map = shape(data)
 
             ! write data
-            ncerr = nf90_put_var(ncid, varid, data, &
+            ncerr = nf90_put_var(ncid, varid,                                    &
+                                 reshape(data, shape=(/map(3), map(2), map(1)/), &
+                                         order=(/3, 2, 1/)),                     &
                                  start=start, count = cnt)
 
             call check_netcdf_error("Failed to write dataset.")

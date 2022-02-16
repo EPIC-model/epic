@@ -60,7 +60,7 @@ program epic2d_models
                                          dimsize=NF90_UNLIMITED,            &
                                          dimid=t_dim_id)
 
-            dimids = (/z_dim_id, x_dim_id, t_dim_id/)
+            dimids = (/x_dim_id, z_dim_id, t_dim_id/)
 
             if (model == 'TaylorGreen') then
                 ! make origin and extent always a multiple of pi
