@@ -138,7 +138,7 @@ module field_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=t_axis_id)
 
-            ncerr = nf90_put_att(ncid, t_axis_id, "axis", 't')
+            ncerr = nf90_put_att(ncid, t_axis_id, "axis", 'time')
             call check_netcdf_error("Failed to add axis attribute.")
 
             ncerr = nf90_put_att(ncid, t_axis_id, "calendar", &
