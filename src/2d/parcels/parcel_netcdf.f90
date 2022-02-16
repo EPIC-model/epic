@@ -77,12 +77,12 @@ module parcel_netcdf
 
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='n_parcels',                  &
+                                         name='P',                          &
                                          dimsize=n_parcels,                 &
                                          dimid=npar_dim_id)
 
             call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='t',                          &
+                                         name='T',                          &
                                          dimsize=NF90_UNLIMITED,            &
                                          dimid=t_dim_id)
 

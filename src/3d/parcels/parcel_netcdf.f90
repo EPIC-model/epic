@@ -82,12 +82,12 @@ module parcel_netcdf
 
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='n_parcels',                  &
+                                         name='P',                          &
                                          dimsize=n_parcels,                 &
                                          dimid=npar_dim_id)
 
             call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='t',                          &
+                                         name='T',                          &
                                          dimsize=NF90_UNLIMITED,            &
                                          dimid=t_dim_id)
 
@@ -111,7 +111,7 @@ module parcel_netcdf
             dimids = (/npar_dim_id, t_dim_id/)
 
             call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='x_position',                   &
+                                       name='Position_x',                   &
                                        long_name='x position component',    &
                                        std_name='',                         &
                                        unit='m',                            &
@@ -120,7 +120,7 @@ module parcel_netcdf
                                        varid=x_pos_id)
 
             call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='y_position',                   &
+                                       name='Position_y',                   &
                                        long_name='y position component',    &
                                        std_name='',                         &
                                        unit='m',                            &
@@ -129,7 +129,7 @@ module parcel_netcdf
                                        varid=y_pos_id)
 
             call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='z_position',                   &
+                                       name='Position_z',                   &
                                        long_name='z position component',    &
                                        std_name='',                         &
                                        unit='m',                            &
@@ -232,7 +232,7 @@ module parcel_netcdf
                                        name='humidity',                         &
                                        long_name='parcel humidity',             &
                                        std_name='',                             &
-                                       unit='-',                                &
+                                       unit='1',                                &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
                                        varid=hum_id)
@@ -361,24 +361,24 @@ module parcel_netcdf
                 stop
             endif
 
-            if (has_dataset(ncid, 'x_position')) then
-                call read_netcdf_dataset(ncid, 'x_position', &
+            if (has_dataset(ncid, 'Position_x')) then
+                call read_netcdf_dataset(ncid, 'Position_x', &
                                          parcels%position(1, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel x position must be present! Exiting."
                 stop
             endif
 
-            if (has_dataset(ncid, 'y_position')) then
-                call read_netcdf_dataset(ncid, 'y_position', &
+            if (has_dataset(ncid, 'Position_y')) then
+                call read_netcdf_dataset(ncid, 'Position_y', &
                                          parcels%position(2, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel y position must be present! Exiting."
                 stop
             endif
 
-            if (has_dataset(ncid, 'z_position')) then
-                call read_netcdf_dataset(ncid, 'z_position', &
+            if (has_dataset(ncid, 'Position_z')) then
+                call read_netcdf_dataset(ncid, 'Position_z', &
                                          parcels%position(3, 1:n_parcels), start, cnt)
             else
                 print *, "The parcel z position must be present! Exiting."
