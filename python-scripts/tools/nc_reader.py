@@ -75,6 +75,9 @@ class nc_reader:
 
     def get_dataset(self, step, name, indices=None):
 
+        if not name in self._ncfile.variables.keys():
+            raise IOError("Dataset '" + name + "' unknown.")
+
         nsteps = self.get_num_steps()
         if step > nsteps - 1:
             raise ValueError("Dataset has only steps 0 to " + str(nsteps - 1) + ".")
@@ -84,9 +87,6 @@ class nc_reader:
             step = step + 1
             self._load_parcel_file(step)
             return self._ncfile.variables[name]
-
-        if not name in self._ncfile.variables.keys():
-            raise IOError("Dataset '" + name + "' unknown.")
 
         if self.is_parcel_file:
             step = step + 1
@@ -100,6 +100,15 @@ class nc_reader:
                 return self._ncfile.variables[name][step, ...][indices, ...]
             else:
                 return np.array(self._ncfile.variables[name][step, ...])
+
+    def get_dataset_attribute(self, name, attr):
+        if not name in self._ncfile.variables.keys():
+            raise IOError("Dataset '" + name + "' unknown.")
+
+        if not attr in self._ncfile.variables[name].ncattrs():
+            raise IOError("Dataset attribute '" + name + "' unknown.")
+
+        return self._ncfile.variables[name].getncattr(attr)
 
     def get_dataset_min_max(self, name, indices=None):
         nsteps = self.get_num_steps()
@@ -224,3 +233,40 @@ class nc_reader:
         s = self._get_step_string(step)
         fname = os.path.join(self._dirname, self._basename + '_' + s + '_parcels.nc')
         self._ncfile = nc.Dataset(fname, "r", format="NETCDF4")
+
+    # 18 Feb 2022
+    # https://stackoverflow.com/questions/8450472/how-to-print-a-string-at-a-fixed-width
+    # 19 Feb 2022
+    # https://stackoverflow.com/questions/873327/pythons-most-efficient-way-to-choose-longest-string-in-list
+    def __str__(self):
+        print("=" * 80)
+        # print global attributes
+        print("GLOBAL ATTRIBUTES:")
+        l = len(max(self._ncfile.ncattrs(), key=len))
+        fmt = '{0: <' + str(l) + '}'
+        for key in self._ncfile.ncattrs():
+            print(fmt.format(key), "\t", self._ncfile.getncattr(key))
+        print("-" * 80)
+
+        print("DIMENSIONS:")
+
+        for dim in self._ncfile.dimensions:
+            print("    ", dim, "=", self._ncfile.dimensions[dim].size)
+
+        print("-" * 80)
+
+        print("VARIABLES:")
+        # get first variable name
+        name = list(self._ncfile.variables.keys())[0]
+
+        # get length of longest attribute string
+        l = len(max(self._ncfile.variables[name].ncattrs(), key=len))
+        fmt = '{0: <' + str(l) + '}'
+
+        # print variables and their attributes
+        for var in self._ncfile.variables:
+            print("    ", var)
+            for attr in self._ncfile.variables[var].ncattrs():
+                print("\t", fmt.format(attr), "\t", self._ncfile.variables[var].getncattr(attr))
+        print("=" * 80)
+        return ""
