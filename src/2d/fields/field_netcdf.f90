@@ -1,4 +1,5 @@
 module field_netcdf
+    use constants, only : one
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
@@ -14,6 +15,7 @@ module field_netcdf
     integer             :: ncid
     integer             :: x_dim_id, z_dim_id, t_dim_id,       &
                            x_axis_id, z_axis_id, t_axis_id
+    double precision    :: restart_time
 
     integer             :: x_vel_id, z_vel_id, vor_id, &
                            tbuo_id, n_writes
@@ -31,7 +33,7 @@ module field_netcdf
                x_dim_id, z_dim_id, t_dim_id,        &
                x_axis_id, z_axis_id, t_axis_id,     &
                x_vel_id, z_vel_id, vor_id, tbuo_id, &
-               n_writes
+               n_writes, restart_time
 #ifdef ENABLE_DIAGNOSE
 #ifndef ENABLE_DRY_MODE
     private :: dbuo_id
@@ -57,18 +59,20 @@ module field_netcdf
 
             ncfname =  basename // '_fields.nc'
 
+            restart_time = -one
+            n_writes = 1
+
             call exist_netcdf_file(ncfname, l_exist)
 
             if (l_restart .and. l_exist) then
                 call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
                 call get_num_steps(ncid, n_writes)
+                call get_time(ncid, restart_time)
                 call read_netcdf_field_content
                 call close_netcdf_file(ncid)
                 n_writes = n_writes + 1
                 return
             endif
-
-            n_writes = 1
 
             call create_netcdf_file(ncfname, overwrite, ncid)
 
@@ -290,6 +294,11 @@ module field_netcdf
             integer                      :: cnt(3), start(3)
 
             call start_timer(field_io_timer)
+
+            if (t <= restart_time) then
+                call stop_timer(field_io_timer)
+                return
+            endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 

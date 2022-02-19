@@ -2,6 +2,7 @@
 !                      Write parcel diagnostics to NetCDF
 ! =============================================================================
 module parcel_diagnostics_netcdf
+    use constants, only : one
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
@@ -23,6 +24,7 @@ module parcel_diagnostics_netcdf
                           rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
                           avg_lam_id, std_lam_id,                   &
                           avg_vol_id, std_vol_id
+    double precision   :: restart_time
 
     integer :: parcel_stats_io_timer
 
@@ -45,18 +47,20 @@ module parcel_diagnostics_netcdf
 
             ncfname =  basename // '_parcel_stats.nc'
 
+            restart_time = -one
+            n_writes = 1
+
             call exist_netcdf_file(ncfname, l_exist)
 
             if (l_restart .and. l_exist) then
                 call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
                 call get_num_steps(ncid, n_writes)
+                call get_time(ncid, restart_time)
                 call read_netcdf_parcel_stats_content
                 call close_netcdf_file(ncid)
                 n_writes = n_writes + 1
                 return
             endif
-
-            n_writes = 1
 
             call create_netcdf_file(ncfname, overwrite, ncid)
 
@@ -265,6 +269,11 @@ module parcel_diagnostics_netcdf
             double precision, intent(in)    :: t
 
             call start_timer(parcel_stats_io_timer)
+
+            if (t <= restart_time) then
+                call stop_timer(parcel_stats_io_timer)
+                return
+            endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 

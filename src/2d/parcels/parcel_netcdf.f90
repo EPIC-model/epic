@@ -1,5 +1,5 @@
 module parcel_netcdf
-    use constants, only : max_num_parcels
+    use constants, only : max_num_parcels, one
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
@@ -22,6 +22,7 @@ module parcel_netcdf
                           x_pos_id, z_pos_id, vor_id,   &
                           b11_id, b12_id,               &
                           t_axis_id, t_dim_id
+    double precision   :: restart_time
 
 #ifndef ENABLE_DRY_MODE
     integer :: hum_id
@@ -29,7 +30,8 @@ module parcel_netcdf
 
     private :: ncid, ncfname, n_writes, npar_dim_id,        &
                x_pos_id, z_pos_id, vor_id, vol_id, buo_id,  &
-               b11_id, b12_id, t_axis_id, t_dim_id
+               b11_id, b12_id, t_axis_id, t_dim_id,         &
+               restart_time
 #ifndef ENABLE_DRY_MODE
     private :: hum_id
 #endif
@@ -52,6 +54,8 @@ module parcel_netcdf
 
             ncbasename = basename
 
+            restart_time = -one
+
             if (l_restart) then
                 ! find the last parcel file in order to set "n_writes" properly
                 call exist_netcdf_file(ncfname, l_exist)
@@ -59,6 +63,11 @@ module parcel_netcdf
                     n_writes = n_writes + 1
                     ncfname =  basename // '_' // zfill(n_writes) // '_parcels.nc'
                     call exist_netcdf_file(ncfname, l_exist)
+                    if (l_exist) then
+                        call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
+                        call get_time(ncid, restart_time)
+                        call close_netcdf_file(ncid)
+                    endif
                 enddo
                 return
             endif
@@ -190,6 +199,11 @@ module parcel_netcdf
             integer                      :: cnt(2), start(2)
 
             call start_timer(parcel_io_timer)
+
+            if (t <= restart_time) then
+                call stop_timer(parcel_io_timer)
+                return
+            endif
 
             call create_netcdf_parcel_file(trim(ncbasename), .true., .false.)
 
