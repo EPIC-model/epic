@@ -70,7 +70,8 @@ module netcdf_reader
         subroutine get_time(ncid, t)
             integer,          intent(in)  :: ncid
             double precision, intent(out) :: t
-            integer                       :: n_steps, varid, start(1), cnt(1), values(1)
+            integer                       :: n_steps, varid, start(1), cnt(1)
+            double precision              :: values(1)
 
             call get_num_steps(ncid, n_steps)
 
