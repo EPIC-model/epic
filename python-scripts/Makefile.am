@@ -17,3 +17,6 @@ merge_ellipsesdir = $(bindir)
 
 subgrid_2d_generalised_PYTHON = subgrid_2d_generalised.py
 subgrid_2d_generaliseddir = $(bindir)
+
+compare_results_PYTHON = compare_results.py
+compare_resultsdir = $(bindir)
