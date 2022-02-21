@@ -7,6 +7,7 @@ module utils
                                           write_netcdf_parcel_stats
     use parcel_diagnostics, only : calculate_parcel_diagnostics
     use field_diagnostics_netcdf
+    use field_diagnostics, only : calculate_field_diagnostics
     use parcel_container, only : n_parcels
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
@@ -76,6 +77,8 @@ module utils
             call grid2par(velocity, vorticity, strain)
 
             call calculate_parcel_diagnostics(velocity)
+
+            call calculate_field_diagnostics
 
             call write_step(t, .true.)
         end subroutine write_last_step

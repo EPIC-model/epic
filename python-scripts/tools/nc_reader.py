@@ -73,6 +73,15 @@ class nc_reader:
     def get_box_origin(self):
         return self.get_global_attribute("origin")
 
+    def get_all(self, name):
+        if self.is_parcel_file:
+            raise IOError("This function is not availble for parcel files.")
+
+        if not name in self._ncfile.variables.keys():
+            raise IOError("Dataset '" + name + "' unknown.")
+
+        return np.array(self._ncfile.variables[name])
+
     def get_dataset(self, step, name, indices=None):
 
         if not name in self._ncfile.variables.keys():

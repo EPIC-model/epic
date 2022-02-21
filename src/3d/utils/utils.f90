@@ -3,6 +3,7 @@ module utils
     use options, only : output
     use field_netcdf
     use field_diagnostics_netcdf
+    use field_diagnostics, only : calculate_field_diagnostics
     use parcel_netcdf
     use parcel_diagnostics_netcdf
     use parcel_diagnostics
@@ -71,6 +72,7 @@ module utils
             call grid2par(velocity, vorticity, strain)
 
             call calculate_parcel_diagnostics(velocity)
+            call calculate_field_diagnostics
 
             call write_step(t, .true.)
         end subroutine write_last_step
