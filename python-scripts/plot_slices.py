@@ -46,11 +46,10 @@ try:
 
             cbar = self.im.axes.figure.colorbar(self.im, ax=ax)
             cbar.set_label(long_name + r' ($\si{' + units + '}$)')
-            #self.im.axes.figure.tight_layout()
+            self.im.axes.figure.tight_layout()
             self.update()
 
         def on_scroll(self, event):
-            print("%s %s" % (event.button, event.step))
             if event.button == 'up':
                 self.ind = (self.ind + 1) % self.slices
             else:
@@ -65,7 +64,7 @@ try:
             if self.ann is not None:
                 self.ann.remove()
             self.ann = self.ax.annotate(text, xy=(0.75, 1.05), xycoords="axes fraction", bbox=self.bbox)
-            #self.im.axes.figure.tight_layout()
+            self.im.axes.figure.tight_layout()
             self.im.axes.figure.canvas.draw()
 
 
@@ -97,7 +96,11 @@ try:
 
     args = parser.parse_args()
 
-    fig, ax = plt.subplots(1, 1)
+    mpl.rcParams["font.size"] = 14
+
+    fig = plt.figure(figsize=(5, 4), dpi=150)
+
+    ax = plt.gca()
 
     ncreader = nc_reader()
 
