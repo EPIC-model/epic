@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 from tools.nc_parcels import nc_parcels
 import argparse
@@ -11,6 +12,7 @@ try:
         "--ngrid",
         type=int,
         required=False,
+        default=32,
         help="number of grid cells per dimension",
     )
 
