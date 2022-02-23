@@ -290,10 +290,10 @@ module inversion_mod
             call fftxyp2s(b, bs)
 
             call diffy(bs, ds)                      ! b_y = db/dy in spectral space
-            call fftxys2p(ds, dbdy)                 ! db = b_y in physical space
+            call fftxys2p(ds, dbdy(0:nz, :, :))     ! db = b_y in physical space
 
             call diffx(bs, ds)                      ! b_x = db/dx in spectral space
-            call fftxys2p(ds, dbdx)                 ! db = b_x in physical space
+            call fftxys2p(ds, dbdx(0:nz, :, :))     ! db = b_x in physical space
 
             ! Extrapolate to halo grid points
             dbdy(-1,   :, :) = two * dbdy(0,  :, :) - dbdy(1,    :, :)
