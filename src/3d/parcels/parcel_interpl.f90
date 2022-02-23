@@ -331,14 +331,42 @@ module parcel_interpl
                 ! get interpolation weights and mesh indices
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
+
                 ! loop over grid points which are part of the interpolation
                 do l = 1, ngp
                     vel(:, n) = vel(:, n) + weights(l) * velog(ks(l), js(l), is(l), :)
 
                     vgrad(:, n) = vgrad(:, n) + weights(l) * velgradg(ks(l), js(l), is(l), :)
 
-                    vor(:, n) = vor(:, n) + weights(l) * vtend(ks(l), js(l), is(l), :)
+                    ! add buoyancy part of vorticity tendency to x-vorticity
+                    vor(1, n) = vor(1, n) + weights(l) * dbdy(ks(l), js(l), is(l))
+
+                    ! subtract buoyancy part of vorticity tendency to y-vorticity
+                    vor(2, n) = vor(2, n) - weights(l) * dbdx(ks(l), js(l), is(l))
                 enddo
+
+                ! add strain part of vorticity tendency to x-vorticity
+                vor(1, n) = vor(1, n)                                        &
+                          + parcels%vorticity(1, n)           * vgrad(1, n)  & ! \omegax * du/dx
+                          + parcels%vorticity(2, n) + ft_cor) * vgrad(2, n)  & ! \omegay * du/dy
+                          + parcels%vorticity(3, n) +  f_cor) *              &
+                                (parcels%vorticity(2, n) + vgrad(4, n))        ! \omegaz * du/dz
+
+                ! add strain part of vorticity tendency to y-vorticity
+                vor(2, n) = vor(2, n)                                        &
+                          +  parcels%vorticity(1, n)           *             &
+                                    (parcels%vorticity(3, n) + vgrad(2, n))  & ! \omegax * dv/dx
+                          + (parcels%vorticity(2, n) + ft_cor) * vgrad(3, n) & ! \omegay * dv/dy
+                          + (parcels%vorticity(3, n) + f_cor)  *             &
+                                    (vgrad(5, n) - parcels%vorticity(1, n))    ! \omegaz * dv/dz
+
+                ! add strain part of vorticity tendency to z-vorticity
+                vor(3, n) = vor(3, n)                                        &
+                          +  parcels%vorticity(1, n)           * vgrad(4, n) & ! \omegax * dw/dx
+                          + (parcels%vorticity(2, n) + ft_cor) * vgrad(5, n) & ! \omegay * dw/dy
+                          - (parcels%vorticity(3, n) + f_cor)  *             &
+                                    (vgrad(1, n) + vgrad(3, n))                ! \omegaz * dw/dz
+
             enddo
             !$omp end do
             !$omp end parallel

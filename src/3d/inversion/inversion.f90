@@ -7,7 +7,7 @@ module inversion_mod
     implicit none
 
     integer :: vor2vel_timer,   &
-               vtend_timer
+               db_timer
 
     contains
 
@@ -74,27 +74,28 @@ module inversion_mod
             !$omp end do
             !$omp end parallel
 
-            !Subtract grad(lambda) to enforce div(vortg) = 0:
-            call diffx(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            as = as - ds
-            !$omp end workshare
-            !$omp end parallel
+! !             !Subtract grad(lambda) to enforce div(vortg) = 0:
+! !             call diffx(fs, ds)
+! !             !$omp parallel
+! !             !$omp workshare
+! !             as = as - ds
+! !             !$omp end workshare
+! !             !$omp end parallel
+! !
+! !             call diffy(fs, ds)
+! !             !$omp parallel
+! !             !$omp workshare
+! !             bs = bs - ds
+! !             !$omp end workshare
+! !             !$omp end parallel
+! !
+! !             call diffz1(fs, ds)
+! !             !$omp parallel
+! !             !$omp workshare
+! !             cs = cs - ds
+! !             !$omp end workshare
+! !             !$omp end parallel
 
-            call diffy(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            bs = bs - ds
-            !$omp end workshare
-            !$omp end parallel
-
-            call diffz1(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            cs = cs - ds
-            !$omp end workshare
-            !$omp end parallel
             !Ensure horizontal average of vertical vorticity is zero:
             cs(:, 0, 0) = zero
 
@@ -272,18 +273,14 @@ module inversion_mod
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Compute the gridded vorticity tendency:
-        subroutine vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
-            double precision, intent(in)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+        ! Compute the gridded buoyancy derivatives db/dx and db/dy
+        subroutine buoyancy_derivatives(tbuoyg, dbdx, dbdy)
             double precision, intent(in)  :: tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1)
+            double precision, intent(out) :: dbdx(-1:nz+1, 0:ny-1, 0:nx-1)
+            double precision, intent(out) :: dbdy(-1:nz+1, 0:ny-1, 0:nx-1)
             double precision              :: b(0:nz, 0:ny-1, 0:nx-1)
-            double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
-            double precision, intent(out) :: vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3)
-            double precision              :: bs(0:nz, 0:nx-1, 0:ny-1) ! spectral buoyancy
-            double precision              :: ds(0:nz, 0:nx-1, 0:ny-1) ! spectral derivatives
-            double precision              :: db(0:nz, 0:ny-1, 0:nx-1) ! buoyancy derivatives
 
-            call start_timer(vtend_timer)
+            call start_timer(db_timer)
 
             ! copy buoyancy
             b = tbuoyg(0:nz, :, :)
@@ -292,45 +289,21 @@ module inversion_mod
             call fftxyp2s(b, bs)
 
             call diffy(bs, ds)                      ! b_y = db/dy in spectral space
-            call fftxys2p(ds, db)                   ! db = b_y in physical space
-
-            !$omp parallel
-            !$omp workshare
-            vtend(0:nz, :, :, 1) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 1) & ! \omegax * du/dx
-                                 + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 2) & ! \omegay * du/dy
-                                 + (vortg(0:nz, :, :, 3) +  f_cor) *                         &
-                                            (vortg(0:nz, :, :, 2) + velgradg(0:nz, :, :, 4)) & ! \omegaz * du/dz
-                                 + db                                                          ! db/dy
-            !$omp end workshare
-            !$omp end parallel
+            call fftxys2p(ds, dbdy)                 ! db = b_y in physical space
 
             call diffx(bs, ds)                      ! b_x = db/dx in spectral space
-            call fftxys2p(ds, db)                   ! db = b_x in physical space
-
-            !$omp parallel
-            !$omp workshare
-            vtend(0:nz, :, :, 2) =  vortg(0:nz, :, :, 1)           *                         &
-                                            (vortg(0:nz, :, :, 3) + velgradg(0:nz, :, :, 2)) & ! \omegax * dv/dx
-                                 + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 3) & ! \omegay * dv/dy
-                                 + (vortg(0:nz, :, :, 3) + f_cor)  *                         &
-                                            (velgradg(0:nz, :, :, 5) - vortg(0:nz, :, :, 1)) & ! \omegaz * dv/dz
-                                 - db                                                          ! dbdx
-
-            vtend(0:nz, :, :, 3) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 4) & ! \omegax * dw/dx
-                                 + (vortg(0:nz, :, :, 2) + ft_cor) * velgradg(0:nz, :, :, 5) & ! \omegay * dw/dy
-                                 - (vortg(0:nz, :, :, 3) + f_cor)  *                         &
-                                         (velgradg(0:nz, :, :, 1) + velgradg(0:nz, :, :, 3))   ! \omegaz * dw/dz
-
-            !$omp end workshare
-            !$omp end parallel
+            call fftxys2p(ds, dbdx)                 ! db = b_x in physical space
 
             ! Extrapolate to halo grid points
-            vtend(-1,   :, :, :) = two * vtend(0,  :, :, :) - vtend(1,    :, :, :)
-            vtend(nz+1, :, :, :) = two * vtend(nz, :, :, :) - vtend(nz-1, :, :, :)
+            dbdy(-1,   :, :, :) = two * dbdy(0,  :, :, :) - dbdy(1,    :, :, :)
+            dbdy(nz+1, :, :, :) = two * dbdy(nz, :, :, :) - dbdy(nz-1, :, :, :)
 
-            call stop_timer(vtend_timer)
+            dbdx(-1,   :, :, :) = two * dbdx(0,  :, :, :) - dbdx(1,    :, :, :)
+            dbdx(nz+1, :, :, :) = two * dbdx(nz, :, :, :) - dbdx(nz-1, :, :, :)
 
-        end subroutine vorticity_tendency
+            call stop_timer(db_timer)
+
+        end subroutine buoyancy_derivatives
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

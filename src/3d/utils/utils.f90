@@ -67,7 +67,7 @@ module utils
             ! this is also needed for the first ls-rk4 substep
             call vor2vel(vortg, velog, velgradg)
 
-            call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
+            call buoyancy_derivatives(tbuoyg, dbdx, dbdy)
 
             call grid2par(velocity, vorticity, strain)
 
