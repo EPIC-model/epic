@@ -182,7 +182,7 @@ module parcel_netcdf
                                        name='humidity',                         &
                                        long_name='parcel humidity',             &
                                        std_name='',                             &
-                                       unit='-',                                &
+                                       unit='1',                                &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
                                        varid=hum_id)

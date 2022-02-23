@@ -101,7 +101,7 @@ module parcel_diagnostics_netcdf
                 name='pe',                                                  &
                 long_name='potential energy',                               &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='m^4/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=pe_id)
@@ -111,7 +111,7 @@ module parcel_diagnostics_netcdf
                 name='ke',                                                  &
                 long_name='kinetic energy',                                 &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='m^4/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=ke_id)
@@ -121,17 +121,7 @@ module parcel_diagnostics_netcdf
                 name='te',                                                  &
                 long_name='total energy',                                   &
                 std_name='',                                                &
-                unit='-',                                                   &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=te_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='te',                                                  &
-                long_name='total energy',                                   &
-                std_name='',                                                &
-                unit='-',                                                   &
+                unit='m^4/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=te_id)
@@ -141,7 +131,7 @@ module parcel_diagnostics_netcdf
                 name='n_parcels',                                           &
                 long_name='number of parcels',                              &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=npar_id)
@@ -151,7 +141,7 @@ module parcel_diagnostics_netcdf
                 name='n_small_parcel',                                      &
                 long_name='number of small parcels',                        &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=nspar_id)
@@ -161,7 +151,7 @@ module parcel_diagnostics_netcdf
                 name='avg_lam',                                             &
                 long_name='average aspect ratio',                           &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=avg_lam_id)
@@ -171,7 +161,7 @@ module parcel_diagnostics_netcdf
                 name='std_lam',                                             &
                 long_name='standard deviation aspect ratio',                &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=std_lam_id)

@@ -95,7 +95,7 @@ module field_diagnostics_netcdf
                 name='rms_v',                                               &
                 long_name='rms volume error',                               &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=rms_v_id)
@@ -106,7 +106,7 @@ module field_diagnostics_netcdf
                 name='abserr_v',                                            &
                 long_name='max absolute normalised volume error',           &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=abserr_v_id)
@@ -116,7 +116,7 @@ module field_diagnostics_netcdf
                 name='max_npar',                                            &
                 long_name='max num parcels per cell',                       &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=max_npar_id)
@@ -126,7 +126,7 @@ module field_diagnostics_netcdf
                 name='min_npar',                                            &
                 long_name='min num parcels per cell',                       &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=min_npar_id)
@@ -136,7 +136,7 @@ module field_diagnostics_netcdf
                 name='avg_npar',                                            &
                 long_name='average num parcels per cell',                   &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=avg_npar_id)
@@ -146,7 +146,7 @@ module field_diagnostics_netcdf
                 name='avg_nspar',                                           &
                 long_name='average num small parcels per cell',             &
                 std_name='',                                                &
-                unit='-',                                                   &
+                unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=avg_nspar_id)
