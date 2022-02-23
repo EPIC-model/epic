@@ -35,3 +35,4 @@ install-exec-hook:
 	chmod 755 $(bindir)/epic-run.py
 	chmod 755 $(bindir)/subgrid_2d_generalised.py
 	chmod 755 $(bindir)/compare_results.py
+	chmod 755 $(bindir)/plot_slices.py

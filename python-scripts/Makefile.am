@@ -20,3 +20,6 @@ subgrid_2d_generaliseddir = $(bindir)
 
 compare_results_PYTHON = compare_results.py
 compare_resultsdir = $(bindir)
+
+plot_slices_PYTHON = plot_slices.py
+plot_slicesdir = $(bindir)
