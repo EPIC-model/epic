@@ -21,7 +21,8 @@ dataroot_DATA = 				\
 	examples/robert2d-one-uniform.nml	\
 	examples/robert2d-two-gaussians.nml	\
 	examples/straka2d.nml			\
-	examples/taylorgreen2d.nml
+	examples/taylorgreen2d.nml		\
+	examples/write_moist_setup.py
 
 
 # make python script an executable script
