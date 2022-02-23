@@ -1,7 +1,6 @@
 module inversion_mod
     use inversion_utils
     use parameters, only : nx, ny, nz
-    use phys_parameters, only : ft_cor, f_cor
     use constants, only : zero, two, f12
     use timer, only : start_timer, stop_timer
     implicit none
@@ -278,7 +277,9 @@ module inversion_mod
             double precision, intent(in)  :: tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1)
             double precision, intent(out) :: dbdx(-1:nz+1, 0:ny-1, 0:nx-1)
             double precision, intent(out) :: dbdy(-1:nz+1, 0:ny-1, 0:nx-1)
-            double precision              :: b(0:nz, 0:ny-1, 0:nx-1)
+            double precision              :: b(0:nz, 0:ny-1, 0:nx-1)    ! buoyancy in physical space
+            double precision              :: bs(0:nz, 0:nx-1, 0:ny-1)   ! buoyancy in spectral space
+            double precision              :: ds(0:nz, 0:nx-1, 0:ny-1)   ! buoyancy derivative in spectral space
 
             call start_timer(db_timer)
 
@@ -295,11 +296,11 @@ module inversion_mod
             call fftxys2p(ds, dbdx)                 ! db = b_x in physical space
 
             ! Extrapolate to halo grid points
-            dbdy(-1,   :, :, :) = two * dbdy(0,  :, :, :) - dbdy(1,    :, :, :)
-            dbdy(nz+1, :, :, :) = two * dbdy(nz, :, :, :) - dbdy(nz-1, :, :, :)
+            dbdy(-1,   :, :) = two * dbdy(0,  :, :) - dbdy(1,    :, :)
+            dbdy(nz+1, :, :) = two * dbdy(nz, :, :) - dbdy(nz-1, :, :)
 
-            dbdx(-1,   :, :, :) = two * dbdx(0,  :, :, :) - dbdx(1,    :, :, :)
-            dbdx(nz+1, :, :, :) = two * dbdx(nz, :, :, :) - dbdx(nz-1, :, :, :)
+            dbdx(-1,   :, :) = two * dbdx(0,  :, :) - dbdx(1,    :, :)
+            dbdx(nz+1, :, :) = two * dbdx(nz, :, :) - dbdx(nz-1, :, :)
 
             call stop_timer(db_timer)
 

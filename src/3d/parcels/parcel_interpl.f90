@@ -11,6 +11,7 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use fields
+    use phys_parameters, only : ft_cor, f_cor
     use phys_constants, only : h_0
     use phys_parameters, only : glat, lam_c
     use omp_lib
@@ -331,7 +332,6 @@ module parcel_interpl
                 ! get interpolation weights and mesh indices
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
-
                 ! loop over grid points which are part of the interpolation
                 do l = 1, ngp
                     vel(:, n) = vel(:, n) + weights(l) * velog(ks(l), js(l), is(l), :)
@@ -346,14 +346,14 @@ module parcel_interpl
                 enddo
 
                 ! add strain part of vorticity tendency to x-vorticity
-                vor(1, n) = vor(1, n)                                        &
-                          + parcels%vorticity(1, n)           * vgrad(1, n)  & ! \omegax * du/dx
-                          + parcels%vorticity(2, n) + ft_cor) * vgrad(2, n)  & ! \omegay * du/dy
-                          + parcels%vorticity(3, n) +  f_cor) *              &
+                vor(1, n) =  vor(1, n)                                       &
+                          +  parcels%vorticity(1, n)           * vgrad(1, n) & ! \omegax * du/dx
+                          + (parcels%vorticity(2, n) + ft_cor) * vgrad(2, n) & ! \omegay * du/dy
+                          + (parcels%vorticity(3, n) +  f_cor) *             &
                                 (parcels%vorticity(2, n) + vgrad(4, n))        ! \omegaz * du/dz
 
                 ! add strain part of vorticity tendency to y-vorticity
-                vor(2, n) = vor(2, n)                                        &
+                vor(2, n) =  vor(2, n)                                       &
                           +  parcels%vorticity(1, n)           *             &
                                     (parcels%vorticity(3, n) + vgrad(2, n))  & ! \omegax * dv/dx
                           + (parcels%vorticity(2, n) + ft_cor) * vgrad(3, n) & ! \omegay * dv/dy
@@ -361,7 +361,7 @@ module parcel_interpl
                                     (vgrad(5, n) - parcels%vorticity(1, n))    ! \omegaz * dv/dz
 
                 ! add strain part of vorticity tendency to z-vorticity
-                vor(3, n) = vor(3, n)                                        &
+                vor(3, n) =  vor(3, n)                                       &
                           +  parcels%vorticity(1, n)           * vgrad(4, n) & ! \omegax * dw/dx
                           + (parcels%vorticity(2, n) + ft_cor) * vgrad(5, n) & ! \omegay * dw/dy
                           - (parcels%vorticity(3, n) + f_cor)  *             &

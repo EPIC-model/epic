@@ -17,8 +17,6 @@ module fields
     double precision, allocatable, dimension(:, :, :, :) :: &
         velog,     &   ! velocity vector field
         vortg,     &   ! vorticity vector field
-        dbdx,      &   ! buoyancy derivative in x
-        dbdy,      &   ! buoyancy derivative in y
         velgradg       ! velocity gradient tensor
                        ! ordering: du/dx, du/dy,
                        !                  dv/dy,
@@ -36,6 +34,8 @@ module fields
         dbuoyg,    &   ! dry buoyancy (or liquid-water buoyancy)
 #endif
         tbuoyg,    &   ! buoyancy
+        dbdx,      &   ! buoyancy derivative in x
+        dbdy,      &   ! buoyancy derivative in y
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif

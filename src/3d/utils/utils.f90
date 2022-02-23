@@ -8,7 +8,7 @@ module utils
     use parcel_diagnostics_netcdf
     use parcel_diagnostics
     use parcel_container, only : n_parcels
-    use inversion_mod, only : vor2vel, vorticity_tendency
+    use inversion_mod, only : vor2vel, buoyancy_derivatives
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time
     implicit none
