@@ -56,7 +56,7 @@ Please append the argument `--help` when calling the scripts to get further info
 a separate Python virtual environment using [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) for EPIC. After installing conda, all necessary Python packages can be installed via
 ```
 $ conda config --add channels conda-forge
-$ conda create --name <env> python=3.9.5 --file requirements.txt
+$ conda create --name <env> python=3.9.9 --file requirements.txt
 ```
 where `<env>` is the name of the environment. The file `requirements.txt` is contained in the root directory of EPIC.
 
