@@ -136,7 +136,7 @@ module parcel_netcdf
                                        name='B11',                              &
                                        long_name='B11 element of shape matrix', &
                                        std_name='',                             &
-                                       unit='m',                                &
+                                       unit='m^2',                              &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
                                        varid=b11_id)
@@ -145,7 +145,7 @@ module parcel_netcdf
                                        name='B12',                              &
                                        long_name='B12 element of shape matrix', &
                                        std_name='',                             &
-                                       unit='m',                                &
+                                       unit='m^2',                              &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
                                        varid=b12_id)
