@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# recipe for:
+NETCDF_C=netcdf-c
+NETCDF_C_VERSION=4.8.1
+NETCDF_F=netcdf-fortran
+NETCDF_F_VERSION=4.5.4
+
+
+# download NetCDF-C
+curl -L \
+    --output "${DOWNLOADS_DIR}/$NETCDF_C-$NETCDF_C_VERSION.tar.gz" \
+    "https://downloads.unidata.ucar.edu/$NETCDF_C/$NETCDF_C_VERSION/$NETCDF_C-$NETCDF_C_VERSION.tar.gz"
+
+# unpack
+mkdir -p "${SRC_DIR}/$NETCDF_C" && cd "$_"
+tar xvf "${DOWNLOADS_DIR}/$NETCDF_C-$NETCDF_C_VERSION.tar.gz"
+
+# configure
+mkdir -p "${SRC_DIR}/$NETCDF_C/build" && cd "$_"
+${SRC_DIR}/$NETCDF_C/$NETCDF_C-$NETCDF_C_VERSION/configure      \
+    --enable-netcdf-4                                           \
+    --with-pic                                                  \
+    --prefix=${PREFIX}
+
+# compile & install
+make -j ${NJOBS}
+make install
+
+# download NetCDF-Fortran
+curl -L \
+    --output "${DOWNLOADS_DIR}/$NETCDF_F-$NETCDF_F_VERSION.tar.gz" \
+    "https://github.com/Unidata/$NETCDF_F/archive/refs/tags/v$NETCDF_F_VERSION.tar.gz"
+
+# unpack
+mkdir -p "${SRC_DIR}/$NETCDF_F" && cd "$_"
+tar xvf "${DOWNLOADS_DIR}/$NETCDF_F-$NETCDF_F_VERSION.tar.gz"
+
+# we need to append these paths
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/lib
+export LDFLAGS="$LDFLAGS -L${PREFIX}/lib"
+export CPPFLAGS="$CPPFLAGS -I${PREFIX}/include"
+
+# configure
+mkdir -p "${SRC_DIR}/$NETCDF_F/build" && cd "$_"
+${SRC_DIR}/$NETCDF_F/$NETCDF_F-$NETCDF_F_VERSION/configure      \
+    --with-pic                                                  \
+    --prefix=${PREFIX}
+
+# compile & install
+make -j ${NJOBS}
+make install
