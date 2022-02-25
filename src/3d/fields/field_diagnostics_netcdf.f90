@@ -93,7 +93,7 @@ module field_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='rms_v',                                               &
-                long_name='rms volume error',                               &
+                long_name='relative rms volume error',                      &
                 std_name='',                                                &
                 unit='1',                                                   &
                 dtype=NF90_DOUBLE,                                          &
@@ -106,7 +106,7 @@ module field_diagnostics_netcdf
                 name='abserr_v',                                            &
                 long_name='max absolute normalised volume error',           &
                 std_name='',                                                &
-                unit='1',                                                   &
+                unit='m^3',                                                 &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=abserr_v_id)
