@@ -105,8 +105,8 @@ module field_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='x',                                                   &
-                long_name='width coordinate',                               &
-                std_name='width',                                           &
+                long_name='x-coordinate in projected coordinate system',    &
+                std_name='projection_x_coordinate',                         &
                 unit='m',                                                   &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/x_dim_id/),                                        &
@@ -115,14 +115,14 @@ module field_netcdf
             ncerr = nf90_put_att(ncid, x_axis_id, "axis", 'X')
             call check_netcdf_error("Failed to add axis attribute.")
 
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='z',                                                   &
-                long_name='height coordinate',                              &
-                std_name='height',                                          &
-                unit='m',                                                   &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/z_dim_id/),                                        &
+            call define_netcdf_dataset(                                         &
+                ncid=ncid,                                                      &
+                name='z',                                                       &
+                long_name='height coordinate in projected coordinate system',   &
+                std_name='height',                                              &
+                unit='m',                                                       &
+                dtype=NF90_DOUBLE,                                              &
+                dimids=(/z_dim_id/),                                            &
                 varid=z_axis_id)
 
             ncerr = nf90_put_att(ncid, z_axis_id, "axis", 'Z')
