@@ -54,10 +54,10 @@ program epic3d_models
 
             call write_netcdf_box(ncid, lower, extent, box%ncells)
 
-            call define_netcdf_spatial_dimensions(ncid=ncid,            &
-                                                  ncells=box%ncells,    &
-                                                  dimids=dimids(1:3),   &
-                                                  axids=axids(1:3))
+            call define_netcdf_spatial_dimensions_3d(ncid=ncid,            &
+                                                     ncells=box%ncells,    &
+                                                     dimids=dimids(1:3),   &
+                                                     axids=axids(1:3))
 
             call define_netcdf_temporal_dimension(ncid, dimids(4), axids(4))
 
@@ -85,7 +85,7 @@ program epic3d_models
                     stop
             end select
 
-            call write_netcdf_axis(ncid, lower, dx, box%ncells)
+            call write_netcdf_axis_3d(ncid, dimids, lower, dx, box%ncells)
 
             call close_netcdf_file(ncid)
         end subroutine generate_fields

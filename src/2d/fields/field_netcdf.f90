@@ -88,10 +88,10 @@ module field_netcdf
             axids = (/x_axis_id, z_axis_id/)
 
             ! define dimensions
-            call define_netcdf_spatial_dimensions(ncid=ncid,            &
-                                                  ncells=(/nx, nz/),    &
-                                                  dimids=dimids(1:2),   &
-                                                  axids=axids)
+            call define_netcdf_spatial_dimensions_2d(ncid=ncid,            &
+                                                     ncells=(/nx, nz/),    &
+                                                     dimids=dimids(1:2),   &
+                                                     axids=axids)
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
 
@@ -251,7 +251,7 @@ module field_netcdf
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             if (n_writes == 1) then
-                call write_netcdf_axis(ncid, lower, dx, (/nx, nz/))
+                call write_netcdf_axis_2d(ncid, (/x_dim_id, z_dim_id/), lower, dx, (/nx, nz/))
             endif
 
             ! write time

@@ -30,11 +30,6 @@ module netcdf_writer
         module procedure write_netcdf_attribute_logical
     end interface write_netcdf_attribute
 
-    interface define_spatial_dimensions
-        module procedure define_spatial_dimensions_2d
-        module procedure define_spatial_dimensions_3d
-    end interface define_spatial_dimensions
-
     contains
 
         subroutine define_netcdf_dimension(ncid, name, dimsize, dimid)
@@ -266,12 +261,14 @@ module netcdf_writer
             call write_netcdf_dataset(ncid, dimids(2), z_axis)
         end subroutine write_netcdf_axis_2d
 
-        subroutine write_netcdf_axis_3d(ncid, origin, dx, ncells)
+        subroutine write_netcdf_axis_3d(ncid, dimids, origin, dx, ncells)
             integer,          intent(in) :: ncid
             double precision, intent(in) :: origin(3), dx(3)
             integer,          intent(in) :: dimids(3), ncells(3)
             integer                      :: i
-            double precision             :: x_axis(0:nx-1), y_axis(0:ny-1), z_axis(0:nz)
+            double precision             :: x_axis(0:ncells(1)-1)
+            double precision             :: y_axis(0:ncells(2)-1)
+            double precision             :: z_axis(0:ncells(3))
 
 
             do i = 0, ncells(1)-1
@@ -346,7 +343,7 @@ module netcdf_writer
 
         end subroutine define_netcdf_spatial_dimensions_2d
 
-        subroutine define_netcdf_spatial_dimensions_3d(ncid, ncells, dimids)
+        subroutine define_netcdf_spatial_dimensions_3d(ncid, ncells, dimids, axids)
             integer, intent(in)  :: ncid
             integer, intent(in)  :: ncells(3)
             integer, intent(out) :: dimids(3), axids(3)
@@ -386,7 +383,7 @@ module netcdf_writer
                 std_name='projection_y_coordinate',                         &
                 unit='m',                                                   &
                 dtype=NF90_DOUBLE,                                          &
-                dimids=(/y_dim_id/),                                        &
+                dimids=(/dimids(2)/),                                       &
                 varid=axids(2))
 
             ncerr = nf90_put_att(ncid, axids(2), "axis", 'Y')
@@ -407,7 +404,7 @@ module netcdf_writer
 
         end subroutine define_netcdf_spatial_dimensions_3d
 
-        subroutine define_temporal_dimension(ncid, dimid, axid)
+        subroutine define_netcdf_temporal_dimension(ncid, dimid, axid)
             integer, intent(in)  :: ncid
             integer, intent(out) :: dimid, axid
 
@@ -432,6 +429,6 @@ module netcdf_writer
             ncerr = nf90_put_att(ncid, axid, "calendar", &
                                  'proleptic_gregorian')
             call check_netcdf_error("Failed to add calendear attribute.")
-        end subroutine define_temporal_dimension
+        end subroutine define_netcdf_temporal_dimension
 
 end module netcdf_writer
