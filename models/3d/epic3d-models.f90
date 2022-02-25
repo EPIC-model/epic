@@ -52,11 +52,14 @@ program epic3d_models
                                    file_type='fields',           &
                                    cf_version=cf_version)
 
-            call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
 
-            call define_dimensions(ncid, dimids, box%ncells)
+            call define_netcdf_spatial_dimensions(ncid=ncid,            &
+                                                  ncells=box%ncells,    &
+                                                  dimids=dimids(1:3),   &
+                                                  axids=axids(1:3))
 
-            call define_netcdf_axis(dimids, axids)
+            call define_netcdf_temporal_dimension(ncid, dimids(4), axids(4))
 
             if (model == 'TaylorGreen') then
                 ! make origin and extent always a multiple of pi

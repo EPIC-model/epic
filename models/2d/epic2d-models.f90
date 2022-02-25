@@ -51,11 +51,14 @@ program epic2d_models
                                    file_type='fields',           &
                                    cf_version=cf_version)
 
-            call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
 
-            call define_dimensions(ncid, dimids, box%ncells)
+            call define_netcdf_spatial_dimensions(ncid=ncid,            &
+                                                  ncells=box%ncells,    &
+                                                  dimids=dimids(1:2),   &
+                                                  axids=axids(1:2))
 
-            call define_netcdf_axis(dimids, axids)
+            call define_netcdf_temporal_dimension(ncid, dimids(3), axids(3))
 
             if (model == 'TaylorGreen') then
                 ! make origin and extent always a multiple of pi
@@ -67,7 +70,7 @@ program epic2d_models
             ! write box
             lower = box%origin
             extent = box%extent
-            call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
 
             select case (trim(model))
                 case ('TaylorGreen')
