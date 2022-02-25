@@ -5,7 +5,7 @@ module parcel_netcdf
     use netcdf_reader
     use parcel_container, only : parcels, n_parcels
     use parameters, only : nx, nz, extent, lower, update_parameters
-    use config, only : package_version
+    use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
     use options, only : write_netcdf_options
@@ -48,7 +48,7 @@ module parcel_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
-            integer                   :: ncells(2), dimids(2)
+            integer                   :: dimids(2)
 
             ncfname =  basename // '_' // zfill(n_writes) // '_parcels.nc'
 
@@ -75,11 +75,12 @@ module parcel_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
-            call write_netcdf_attribute(ncid=ncid, name='EPIC_version', val=package_version)
-            call write_netcdf_attribute(ncid=ncid, name='file_type', val='parcels')
-            call write_netcdf_attribute(ncid=ncid, name='Conventions', val='CF-1.8')
-            ncells = (/nx, nz/)
-            call write_netcdf_box(ncid, lower, extent, ncells)
+            call write_netcdf_info(ncid=ncid,                    &
+                                   epic_version=package_version, &
+                                   file_type='parcels',          &
+                                   cf_version=cf_version)
+
+            call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
             call write_netcdf_timestamp(ncid)
 
             call write_netcdf_options(ncid)
@@ -90,27 +91,7 @@ module parcel_netcdf
                                          dimsize=n_parcels,                 &
                                          dimid=npar_dim_id)
 
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='t',                          &
-                                         dimsize=NF90_UNLIMITED,            &
-                                         dimid=t_dim_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='t',                                                   &
-                long_name='time ',                                          &
-                std_name='time',                                            &
-                unit='seconds since 1970-01-01',                            &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=t_axis_id)
-
-            ncerr = nf90_put_att(ncid, t_axis_id, "axis", 'T')
-            call check_netcdf_error("Failed to add axis attribute.")
-
-            ncerr = nf90_put_att(ncid, t_axis_id, "calendar", &
-                                 'proleptic_gregorian')
-            call check_netcdf_error("Failed to add calendear attribute.")
+            call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
 
             dimids = (/npar_dim_id, t_dim_id/)
 
