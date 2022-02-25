@@ -8,7 +8,15 @@ Elliptical PIC model for fluid dynamics
 ## Dependencies
 EPIC has following requirements:
 * gfortran
+* hdf5
 * NetCDF
+
+The scripts to install hdf5 and NetCDF are found in the subdirectory `dependencies`. If you do not install hdf5
+and NetCDF to the system location, configure EPIC with
+```
+$ ../configure --prefix=$PREFIX --with-hdf5=$HDF5 --width-netcdf=$NETCDF
+```
+where `$HDF5` and `$NETCDF` are the root directories of your hdf5 and NetCDF installation, respectively.
 
 ## Compile
 In the following `$PREFIX` denotes the installation directory of EPIC.
