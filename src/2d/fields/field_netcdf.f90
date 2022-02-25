@@ -13,8 +13,9 @@ module field_netcdf
 
     character(len=512)  :: ncfname
     integer             :: ncid
-    integer             :: x_dim_id, z_dim_id, t_dim_id,       &
-                           x_axis_id, z_axis_id, t_axis_id
+    integer             :: dimids(3)    ! = (x, z, t)
+    integer             :: coord_ids(2) ! = (x, z)
+    integer             :: t_axis_id
     double precision    :: restart_time
 
     integer             :: x_vel_id, z_vel_id, vor_id, &
@@ -30,8 +31,8 @@ module field_netcdf
 #endif
 
     private :: ncid, ncfname,                       &
-               x_dim_id, z_dim_id, t_dim_id,        &
-               x_axis_id, z_axis_id, t_axis_id,     &
+               dimids,                              &
+               coord_ids, t_axis_id,                &
                x_vel_id, z_vel_id, vor_id, tbuo_id, &
                n_writes, restart_time
 #ifdef ENABLE_DIAGNOSE
@@ -54,7 +55,6 @@ module field_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
-            integer                   :: dimids(3), axids(2)
 
             ncfname =  basename // '_fields.nc'
 
@@ -84,16 +84,13 @@ module field_netcdf
 
             call write_netcdf_options(ncid)
 
-            dimids = (/x_dim_id, z_dim_id, t_dim_id/)
-            axids = (/x_axis_id, z_axis_id/)
-
             ! define dimensions
             call define_netcdf_spatial_dimensions_2d(ncid=ncid,            &
                                                      ncells=(/nx, nz/),    &
                                                      dimids=dimids(1:2),   &
-                                                     axids=axids)
+                                                     axids=coord_ids)
 
-            call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
+            call define_netcdf_temporal_dimension(ncid, dimids(3), t_axis_id)
 
             ! define fields
             call define_netcdf_dataset(ncid=ncid,                           &
@@ -194,15 +191,15 @@ module field_netcdf
         ! Pre-condition: Assumes an open file
         subroutine read_netcdf_field_content
 
-            call get_dim_id(ncid, 'x', x_dim_id)
+            call get_dim_id(ncid, 'x', dimids(1))
 
-            call get_dim_id(ncid, 'z', z_dim_id)
+            call get_dim_id(ncid, 'z', dimids(2))
 
-            call get_dim_id(ncid, 't', t_dim_id)
+            call get_dim_id(ncid, 't', dimids(3))
 
-            call get_var_id(ncid, 'x', x_axis_id)
+            call get_var_id(ncid, 'x', coord_ids(1))
 
-            call get_var_id(ncid, 'z', z_axis_id)
+            call get_var_id(ncid, 'z', coord_ids(2))
 
             call get_var_id(ncid, 't', t_axis_id)
 
@@ -251,7 +248,7 @@ module field_netcdf
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             if (n_writes == 1) then
-                call write_netcdf_axis_2d(ncid, (/x_dim_id, z_dim_id/), lower, dx, (/nx, nz/))
+                call write_netcdf_axis_2d(ncid, dimids(1:2), lower, dx, (/nx, nz/))
             endif
 
             ! write time

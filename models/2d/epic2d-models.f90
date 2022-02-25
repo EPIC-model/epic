@@ -5,7 +5,7 @@ program epic2d_models
     use taylor_green_2d
     use straka_2d
     use robert_2d
-    use constants, only : pi
+    use constants, only : pi, zero
     use parameters, only : nx, nz, dx, lower, extent
     use netcdf_utils
     use netcdf_writer
@@ -85,6 +85,9 @@ program epic2d_models
             end select
 
             call write_netcdf_axis_2d(ncid, dimids, lower, dx, box%ncells)
+
+            ! write time
+            call write_netcdf_scalar(ncid, axids(3), zero, 1)
 
             call close_netcdf_file(ncid)
         end subroutine generate_fields
