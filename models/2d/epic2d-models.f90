@@ -5,10 +5,11 @@ program epic2d_models
     use taylor_green_2d
     use straka_2d
     use robert_2d
-    use constants, only : pi
+    use constants, only : pi, zero
     use parameters, only : nx, nz, dx, lower, extent
     use netcdf_utils
     use netcdf_writer
+    use config, only : package_version, cf_version
     implicit none
 
     logical            :: verbose = .false.
@@ -16,7 +17,7 @@ program epic2d_models
     character(len=512) :: model = ''
     character(len=512) :: ncfname = ''
     integer            :: ncid
-    integer            :: x_dim_id, z_dim_id, t_dim_id, dimids(3)
+    integer            :: dimids(3), axids(3)
 
     type box_type
         integer          :: ncells(2)   ! number of cells
@@ -44,23 +45,20 @@ program epic2d_models
             nx = box%ncells(1)
             nz = box%ncells(2)
 
-            ! define dimensions
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='x',                          &
-                                         dimsize=nx,                        &
-                                         dimid=x_dim_id)
+            ! define global attributes
+            call write_netcdf_info(ncid=ncid,                    &
+                                   epic_version=package_version, &
+                                   file_type='fields',           &
+                                   cf_version=cf_version)
 
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='z',                          &
-                                         dimsize=nz+1,                      &
-                                         dimid=z_dim_id)
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
 
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='t',                          &
-                                         dimsize=NF90_UNLIMITED,            &
-                                         dimid=t_dim_id)
+            call define_netcdf_spatial_dimensions_2d(ncid=ncid,            &
+                                                     ncells=box%ncells,    &
+                                                     dimids=dimids(1:2),   &
+                                                     axids=axids(1:2))
 
-            dimids = (/x_dim_id, z_dim_id, t_dim_id/)
+            call define_netcdf_temporal_dimension(ncid, dimids(3), axids(3))
 
             if (model == 'TaylorGreen') then
                 ! make origin and extent always a multiple of pi
@@ -72,7 +70,7 @@ program epic2d_models
             ! write box
             lower = box%origin
             extent = box%extent
-            call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
 
             select case (trim(model))
                 case ('TaylorGreen')
@@ -85,6 +83,11 @@ program epic2d_models
                     print *, "Unknown model: '", trim(model), "'."
                     stop
             end select
+
+            call write_netcdf_axis_2d(ncid, dimids, lower, dx, box%ncells)
+
+            ! write time
+            call write_netcdf_scalar(ncid, axids(3), zero, 1)
 
             call close_netcdf_file(ncid)
         end subroutine generate_fields

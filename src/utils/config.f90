@@ -1,5 +1,5 @@
 module config
-#include "../config.h"
+#include "config.h"
 
     ! Name of package
     character(*), parameter :: package = PACKAGE
@@ -24,5 +24,8 @@ module config
 
     ! Version number of package
     character(*), parameter :: version = VERSION
+
+    ! Version of the CF-convention
+    character(*), parameter :: cf_version = 'CF-1.8'
 
 end module config

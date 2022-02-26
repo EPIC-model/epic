@@ -8,7 +8,15 @@ Elliptical PIC model for fluid dynamics
 ## Dependencies
 EPIC has following requirements:
 * gfortran
+* hdf5
 * NetCDF
+
+The scripts to install hdf5 and NetCDF are found in the subdirectory `dependencies`. If you do not install hdf5
+and NetCDF to the system location, configure EPIC with
+```
+$ ../configure --prefix=$PREFIX --with-hdf5=$HDF5 --width-netcdf=$NETCDF
+```
+where `$HDF5` and `$NETCDF` are the root directories of your hdf5 and NetCDF installation, respectively.
 
 ## Compile
 In the following `$PREFIX` denotes the installation directory of EPIC.
@@ -48,7 +56,7 @@ Please append the argument `--help` when calling the scripts to get further info
 a separate Python virtual environment using [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) for EPIC. After installing conda, all necessary Python packages can be installed via
 ```
 $ conda config --add channels conda-forge
-$ conda create --name <env> python=3.9.5 --file requirements.txt
+$ conda create --name <env> python=3.9.9 --file requirements.txt
 ```
 where `<env>` is the name of the environment. The file `requirements.txt` is contained in the root directory of EPIC.
 

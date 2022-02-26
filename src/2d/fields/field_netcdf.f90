@@ -4,7 +4,7 @@ module field_netcdf
     use netcdf_writer
     use netcdf_reader
     use fields
-    use config, only : package_version
+    use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     implicit none
@@ -13,8 +13,9 @@ module field_netcdf
 
     character(len=512)  :: ncfname
     integer             :: ncid
-    integer             :: x_dim_id, z_dim_id, t_dim_id,       &
-                           x_axis_id, z_axis_id, t_axis_id
+    integer             :: dimids(3)    ! = (x, z, t)
+    integer             :: coord_ids(2) ! = (x, z)
+    integer             :: t_axis_id
     double precision    :: restart_time
 
     integer             :: x_vel_id, z_vel_id, vor_id, &
@@ -30,8 +31,8 @@ module field_netcdf
 #endif
 
     private :: ncid, ncfname,                       &
-               x_dim_id, z_dim_id, t_dim_id,        &
-               x_axis_id, z_axis_id, t_axis_id,     &
+               dimids,                              &
+               coord_ids, t_axis_id,                &
                x_vel_id, z_vel_id, vor_id, tbuo_id, &
                n_writes, restart_time
 #ifdef ENABLE_DIAGNOSE
@@ -54,8 +55,6 @@ module field_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
-            integer                   :: dimids(3)
-            character(:), allocatable :: name
 
             ncfname =  basename // '_fields.nc'
 
@@ -77,77 +76,23 @@ module field_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
-            call write_netcdf_attribute(ncid=ncid, name='EPIC_version', val=package_version)
-            call write_netcdf_attribute(ncid=ncid, name='file_type', val='fields')
-            call write_netcdf_attribute(ncid=ncid, name='Conventions', val='CF-1.8')
+            call write_netcdf_info(ncid=ncid,                    &
+                                   epic_version=package_version, &
+                                   file_type='fields',           &
+                                   cf_version=cf_version)
             call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
-            call write_netcdf_timestamp(ncid)
 
             call write_netcdf_options(ncid)
 
             ! define dimensions
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='x',                          &
-                                         dimsize=nx,                        &
-                                         dimid=x_dim_id)
+            call define_netcdf_spatial_dimensions_2d(ncid=ncid,            &
+                                                     ncells=(/nx, nz/),    &
+                                                     dimids=dimids(1:2),   &
+                                                     axids=coord_ids)
 
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='z',                          &
-                                         dimsize=nz+1,                      &
-                                         dimid=z_dim_id)
-
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='t',                          &
-                                         dimsize=NF90_UNLIMITED,            &
-                                         dimid=t_dim_id)
-
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='x',                                                   &
-                long_name='width coordinate',                               &
-                std_name='width',                                           &
-                unit='m',                                                   &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/x_dim_id/),                                        &
-                varid=x_axis_id)
-
-            ncerr = nf90_put_att(ncid, x_axis_id, "axis", 'X')
-            call check_netcdf_error("Failed to add axis attribute.")
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='z',                                                   &
-                long_name='height coordinate',                              &
-                std_name='height',                                          &
-                unit='m',                                                   &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/z_dim_id/),                                        &
-                varid=z_axis_id)
-
-            ncerr = nf90_put_att(ncid, z_axis_id, "axis", 'Z')
-            call check_netcdf_error("Failed to add axis attribute.")
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='t',                                                   &
-                long_name='time ',                                          &
-                std_name='time',                                            &
-                unit='seconds since 1970-01-01',                            &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=t_axis_id)
-
-            ncerr = nf90_put_att(ncid, t_axis_id, "axis", 'T')
-            call check_netcdf_error("Failed to add axis attribute.")
-
-            ncerr = nf90_put_att(ncid, t_axis_id, "calendar", &
-                                 'proleptic_gregorian')
-            call check_netcdf_error("Failed to add calendear attribute.")
+            call define_netcdf_temporal_dimension(ncid, dimids(3), t_axis_id)
 
             ! define fields
-            dimids = (/x_dim_id, z_dim_id, t_dim_id/)
-
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='x_velocity',                   &
                                        long_name='x velocity component',    &
@@ -246,15 +191,15 @@ module field_netcdf
         ! Pre-condition: Assumes an open file
         subroutine read_netcdf_field_content
 
-            call get_dim_id(ncid, 'x', x_dim_id)
+            call get_dim_id(ncid, 'x', dimids(1))
 
-            call get_dim_id(ncid, 'z', z_dim_id)
+            call get_dim_id(ncid, 'z', dimids(2))
 
-            call get_dim_id(ncid, 't', t_dim_id)
+            call get_dim_id(ncid, 't', dimids(3))
 
-            call get_var_id(ncid, 'x', x_axis_id)
+            call get_var_id(ncid, 'x', coord_ids(1))
 
-            call get_var_id(ncid, 'z', z_axis_id)
+            call get_var_id(ncid, 'z', coord_ids(2))
 
             call get_var_id(ncid, 't', t_axis_id)
 
@@ -303,7 +248,7 @@ module field_netcdf
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             if (n_writes == 1) then
-                call write_netcdf_projected_axes
+                call write_netcdf_axis_2d(ncid, dimids(1:2), lower, dx, (/nx, nz/))
             endif
 
             ! write time
@@ -351,25 +296,5 @@ module field_netcdf
             call stop_timer(field_io_timer)
 
         end subroutine write_netcdf_fields
-
-
-        ! Write x, y, z axes (called from write_netcdf_field_step).
-        subroutine write_netcdf_projected_axes
-            integer          :: i
-            double precision :: x_axis(0:nx-1), z_axis(0:nz)
-
-
-            do i = 0, nx-1
-                x_axis(i) = lower(1) + dble(i) * dx(1)
-            enddo
-
-            do i = 0, nz
-                z_axis(i) = lower(2) + dble(i) * dx(2)
-            enddo
-
-            call write_netcdf_dataset(ncid, x_axis_id, x_axis)
-            call write_netcdf_dataset(ncid, z_axis_id, z_axis)
-
-        end subroutine write_netcdf_projected_axes
 
 end module field_netcdf

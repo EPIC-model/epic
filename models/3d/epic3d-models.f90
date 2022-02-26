@@ -5,10 +5,11 @@ program epic3d_models
     use taylor_green_3d
     use robert_3d
     use moist_3d
-    use constants, only : pi
+    use constants, only : pi, zero
     use parameters, only : nx, ny, nz, dx, lower, extent
     use netcdf_utils
     use netcdf_writer
+    use config, only : package_version, cf_version
     implicit none
 
     logical            :: verbose = .false.
@@ -16,7 +17,7 @@ program epic3d_models
     character(len=512) :: model = ''
     character(len=512) :: ncfname = ''
     integer            :: ncid
-    integer            :: x_dim_id, y_dim_id, z_dim_id, t_dim_id, dimids(4)
+    integer            :: dimids(4), axids(4)
 
     type box_type
         integer          :: ncells(3)   ! number of cells
@@ -45,28 +46,20 @@ program epic3d_models
             ny = box%ncells(2)
             nz = box%ncells(3)
 
-            ! define dimensions
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='x',                          &
-                                         dimsize=nx,                        &
-                                         dimid=x_dim_id)
+            ! define global attributes
+            call write_netcdf_info(ncid=ncid,                    &
+                                   epic_version=package_version, &
+                                   file_type='fields',           &
+                                   cf_version=cf_version)
 
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='y',                          &
-                                         dimsize=ny,                        &
-                                         dimid=y_dim_id)
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
 
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='z',                          &
-                                         dimsize=nz+1,                      &
-                                         dimid=z_dim_id)
+            call define_netcdf_spatial_dimensions_3d(ncid=ncid,            &
+                                                     ncells=box%ncells,    &
+                                                     dimids=dimids(1:3),   &
+                                                     axids=axids(1:3))
 
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='t',                          &
-                                         dimsize=NF90_UNLIMITED,            &
-                                         dimid=t_dim_id)
-
-            dimids = (/x_dim_id, y_dim_id, z_dim_id, t_dim_id/)
+            call define_netcdf_temporal_dimension(ncid, dimids(4), axids(4))
 
             if (model == 'TaylorGreen') then
                 ! make origin and extent always a multiple of pi
@@ -91,6 +84,11 @@ program epic3d_models
                     print *, "Unknown model: '", trim(model), "'."
                     stop
             end select
+
+            call write_netcdf_axis_3d(ncid, dimids, lower, dx, box%ncells)
+
+            ! write time
+            call write_netcdf_scalar(ncid, axids(4), zero, 1)
 
             call close_netcdf_file(ncid)
         end subroutine generate_fields

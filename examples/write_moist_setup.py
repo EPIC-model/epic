@@ -156,19 +156,19 @@ try:
 
     ncp.add_dataset('buoyancy', buoyancy, unit='m/s^2')
 
-    ncp.add_dataset('humidity', humidity, unit='-')
+    ncp.add_dataset('humidity', humidity, unit='1')
 
     ncp.add_dataset('volume', volume, unit='m^3')
 
-    ncp.add_dataset('x_vorticity', vorticity[:, 0], unit='m')
-    ncp.add_dataset('y_vorticity', vorticity[:, 1], unit='m')
-    ncp.add_dataset('z_vorticity', vorticity[:, 2], unit='m')
+    ncp.add_dataset('x_vorticity', vorticity[:, 0], unit='1/s')
+    ncp.add_dataset('y_vorticity', vorticity[:, 1], unit='1/s')
+    ncp.add_dataset('z_vorticity', vorticity[:, 2], unit='1/s')
 
-    ncp.add_dataset('B11', B[:, 0], unit='-')
-    ncp.add_dataset('B12', B[:, 1], unit='-')
-    ncp.add_dataset('B13', B[:, 2], unit='-')
-    ncp.add_dataset('B22', B[:, 3], unit='-')
-    ncp.add_dataset('B23', B[:, 4], unit='-')
+    ncp.add_dataset('B11', B[:, 0], unit='m^2')
+    ncp.add_dataset('B12', B[:, 1], unit='m^2')
+    ncp.add_dataset('B13', B[:, 2], unit='m^2')
+    ncp.add_dataset('B22', B[:, 3], unit='m^2')
+    ncp.add_dataset('B23', B[:, 4], unit='m^2')
 
     ncp.close()
 except Exception as ex:
