@@ -15,7 +15,7 @@ module inversion_mod
         ! Given the vorticity vector field (vortg) in physical space, this
         ! returns the associated velocity field (velog) and the velocity
         ! gradient tensor (velgradg).  Note: the
-        ! vorticity is modified to be solenoidal and spectrally filtered.
+        ! vorticity is spectrally filtered.
         subroutine vor2vel(vortg,  velog,  velgradg)
             double precision, intent(inout) :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out)   :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
@@ -72,28 +72,6 @@ module inversion_mod
             enddo
             !$omp end do
             !$omp end parallel
-
-! !             !Subtract grad(lambda) to enforce div(vortg) = 0:
-! !             call diffx(fs, ds)
-! !             !$omp parallel
-! !             !$omp workshare
-! !             as = as - ds
-! !             !$omp end workshare
-! !             !$omp end parallel
-! !
-! !             call diffy(fs, ds)
-! !             !$omp parallel
-! !             !$omp workshare
-! !             bs = bs - ds
-! !             !$omp end workshare
-! !             !$omp end parallel
-! !
-! !             call diffz1(fs, ds)
-! !             !$omp parallel
-! !             !$omp workshare
-! !             cs = cs - ds
-! !             !$omp end workshare
-! !             !$omp end parallel
 
             !Ensure horizontal average of vertical vorticity is zero:
             cs(:, 0, 0) = zero
