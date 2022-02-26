@@ -343,13 +343,19 @@ module parcel_interpl
 
                     vgrad(:, n) = vgrad(:, n) + weights(l) * velgradg(ks(l), js(l), is(l), :)
 
+                    ! du/dz = \omegay + dw/dx
                     dudz = dudz &
                          + weights(l) * (vortg(ks(l), js(l), is(l), 2) + velgradg(ks(l), js(l), is(l), 4))
+
+                    ! dv/dz = dw/dy - \omegax
                     dvdz = dvdz &
                          + weights(l) * (velgradg(ks(l), js(l), is(l), 5) - vortg(ks(l), js(l), is(l), 1))
+
+                    ! dw/dz = du/dx + dv/dy
                     dwdz = dwdz &
                          + weights(l) * (velgradg(ks(l), js(l), is(l), 1) + velgradg(ks(l), js(l), is(l), 3))
 
+                    ! dv/dx = \omegaz + du/dy
                     dvdx = dvdx &
                          + weights(l) * (vortg(ks(l), js(l), is(l), 3) + velgradg(ks(l), js(l), is(l), 2))
 
