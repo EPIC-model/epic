@@ -294,7 +294,7 @@ module parcel_interpl
             double precision,     intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
             integer                             :: n, l
-            double precision                    :: dudz, dvdz, dwdz
+            double precision                    :: dudz, dvdz, dwdz, dvdx
 
             call start_timer(grid2par_timer)
 
@@ -322,13 +322,14 @@ module parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, ks, weights, dudz, dvdz, dwdz)
+            !$omp do private(n, l, is, js, ks, weights, dudz, dvdz, dwdz, dvdx)
             do n = 1, n_parcels
 
                 vgrad(:, n) = zero
                 dudz = zero
                 dvdz = zero
                 dwdz = zero
+                dvdx = zero
 
                 ! ensure point is within the domain
                 call apply_periodic_bc(parcels%position(:, n))
@@ -349,6 +350,9 @@ module parcel_interpl
                     dwdz = dwdz &
                          + weights(l) * (velgradg(ks(l), js(l), is(l), 1) + velgradg(ks(l), js(l), is(l), 3))
 
+                    dvdx = dvdx &
+                         + weights(l) * (vortg(ks(l), js(l), is(l), 3) + velgradg(ks(l), js(l), is(l), 2))
+
                     ! add buoyancy part of vorticity tendency to x-vorticity
                     vortend(1, n) = vortend(1, n) + weights(l) * dbdy(ks(l), js(l), is(l))
 
@@ -364,8 +368,7 @@ module parcel_interpl
 
                 ! add strain part of vorticity tendency to y-vorticity
                 vortend(2, n) =  vortend(2, n)                                   &
-                              +  parcels%vorticity(1, n)           *             &
-                                        (parcels%vorticity(3, n) + vgrad(2, n))  & ! \omegax * dv/dx
+                              +  parcels%vorticity(1, n)           * dvdx        & ! \omegax * dv/dx
                               + (parcels%vorticity(2, n) + ft_cor) * vgrad(3, n) & ! \omegay * dv/dy
                               + (parcels%vorticity(3, n) + f_cor)  * dvdz          ! \omegaz * dv/dz
 
