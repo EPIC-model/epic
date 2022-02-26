@@ -286,12 +286,12 @@ module parcel_interpl
 
         ! Interpolate the gridded quantities to the parcels
         ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vor is the parcel vorticity
+        ! @param[inout] vortend is the parcel vorticity tendency
         ! @param[inout] vgrad is the parcel strain
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
-        subroutine grid2par(vel, vor, vgrad, add)
-            double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+        subroutine grid2par(vel, vortend, vgrad, add)
+            double precision,     intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
             integer                             :: n, l
 
@@ -304,7 +304,7 @@ module parcel_interpl
                     !$omp do private(n)
                     do n = 1, n_parcels
                         vel(:, n) = zero
-                        vor(:, n) = zero
+                        vortend(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -314,7 +314,7 @@ module parcel_interpl
                 !$omp do private(n)
                 do n = 1, n_parcels
                     vel(:, n) = zero
-                    vor(:, n) = zero
+                    vortend(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -339,33 +339,33 @@ module parcel_interpl
                     vgrad(:, n) = vgrad(:, n) + weights(l) * velgradg(ks(l), js(l), is(l), :)
 
                     ! add buoyancy part of vorticity tendency to x-vorticity
-                    vor(1, n) = vor(1, n) + weights(l) * dbdy(ks(l), js(l), is(l))
+                    vortend(1, n) = vortend(1, n) + weights(l) * dbdy(ks(l), js(l), is(l))
 
                     ! subtract buoyancy part of vorticity tendency to y-vorticity
-                    vor(2, n) = vor(2, n) - weights(l) * dbdx(ks(l), js(l), is(l))
+                    vortend(2, n) = vortend(2, n) - weights(l) * dbdx(ks(l), js(l), is(l))
                 enddo
 
                 ! add strain part of vorticity tendency to x-vorticity
-                vor(1, n) =  vor(1, n)                                       &
-                          +  parcels%vorticity(1, n)           * vgrad(1, n) & ! \omegax * du/dx
-                          + (parcels%vorticity(2, n) + ft_cor) * vgrad(2, n) & ! \omegay * du/dy
-                          + (parcels%vorticity(3, n) +  f_cor) *             &
-                                (parcels%vorticity(2, n) + vgrad(4, n))        ! \omegaz * du/dz
+                vortend(1, n) =  vortend(1, n)                                   &
+                              +  parcels%vorticity(1, n)           * vgrad(1, n) & ! \omegax * du/dx
+                              + (parcels%vorticity(2, n) + ft_cor) * vgrad(2, n) & ! \omegay * du/dy
+                              + (parcels%vorticity(3, n) +  f_cor) *             &
+                                    (parcels%vorticity(2, n) + vgrad(4, n))        ! \omegaz * du/dz
 
                 ! add strain part of vorticity tendency to y-vorticity
-                vor(2, n) =  vor(2, n)                                       &
-                          +  parcels%vorticity(1, n)           *             &
-                                    (parcels%vorticity(3, n) + vgrad(2, n))  & ! \omegax * dv/dx
-                          + (parcels%vorticity(2, n) + ft_cor) * vgrad(3, n) & ! \omegay * dv/dy
-                          + (parcels%vorticity(3, n) + f_cor)  *             &
-                                    (vgrad(5, n) - parcels%vorticity(1, n))    ! \omegaz * dv/dz
+                vortend(2, n) =  vortend(2, n)                                   &
+                              +  parcels%vorticity(1, n)           *             &
+                                        (parcels%vorticity(3, n) + vgrad(2, n))  & ! \omegax * dv/dx
+                              + (parcels%vorticity(2, n) + ft_cor) * vgrad(3, n) & ! \omegay * dv/dy
+                              + (parcels%vorticity(3, n) + f_cor)  *             &
+                                        (vgrad(5, n) - parcels%vorticity(1, n))    ! \omegaz * dv/dz
 
                 ! add strain part of vorticity tendency to z-vorticity
-                vor(3, n) =  vor(3, n)                                       &
-                          +  parcels%vorticity(1, n)           * vgrad(4, n) & ! \omegax * dw/dx
-                          + (parcels%vorticity(2, n) + ft_cor) * vgrad(5, n) & ! \omegay * dw/dy
-                          - (parcels%vorticity(3, n) + f_cor)  *             &
-                                    (vgrad(1, n) + vgrad(3, n))                ! \omegaz * dw/dz
+                vortend(3, n) =  vortend(3, n)                                   &
+                              +  parcels%vorticity(1, n)           * vgrad(4, n) & ! \omegax * dw/dx
+                              + (parcels%vorticity(2, n) + ft_cor) * vgrad(5, n) & ! \omegay * dw/dy
+                              - (parcels%vorticity(3, n) + f_cor)  *             &
+                                        (vgrad(1, n) + vgrad(3, n))                ! \omegaz * dw/dz
 
             enddo
             !$omp end do
@@ -379,12 +379,12 @@ module parcel_interpl
         ! Interpolate the gridded quantities to the parcels without resetting
         ! their values to zero before doing grid2par.
         ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vor is the parcel vorticity
+        ! @param[inout] vortend is the parcel vorticity tendency
         ! @param[inout] vgrad is the parcel strain
-        subroutine grid2par_add(vel, vor, vgrad)
-            double precision, intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+        subroutine grid2par_add(vel, vortend, vgrad)
+            double precision, intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
 
-            call grid2par(vel, vor, vgrad, add=.true.)
+            call grid2par(vel, vortend, vgrad, add=.true.)
 
         end subroutine grid2par_add
 
