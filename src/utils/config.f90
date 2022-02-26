@@ -1,5 +1,5 @@
 module config
-#include "../config.h"
+#include "config.h"
 
     ! Name of package
     character(*), parameter :: package = PACKAGE

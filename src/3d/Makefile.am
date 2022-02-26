@@ -6,7 +6,6 @@ AM_FCFLAGS =				\
 
 bin_PROGRAMS = epic3d
 epic3d_SOURCES = 				\
-	config.f90				\
 	utils/deriv1d.f90			\
 	utils/options.f90			\
 	utils/parameters.f90			\

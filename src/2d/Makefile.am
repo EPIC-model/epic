@@ -4,7 +4,6 @@ AM_FCFLAGS =				\
 
 bin_PROGRAMS = epic2d
 epic2d_SOURCES = 				\
-	config.f90				\
 	utils/stafft.f90			\
 	utils/sta2dfft.f90			\
 	utils/deriv1d.f90			\
