@@ -21,4 +21,4 @@ Please follow our coding style when contributing to EPIC.
 
 
 ### Opening a pull request <a name="pull-request"></a>
-Developers should fork the main repo and work with the branch `develop`. We only accept pull requests into `develop` of this repository. From time to time we pull all changes in `develop` into `main` and publish a release.
+Developers should fork the main repo.

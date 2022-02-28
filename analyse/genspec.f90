@@ -1,8 +1,8 @@
 program genspec
     use sta2dfft
     use constants, only : pi, twopi, f14, f12, zero, one, two
-    use h5_reader
-    use h5_writer, only : get_step_group_name
+    use netcdf_reader
+    use netcdf_writer
     implicit none
 
     ! Grid dimensions:
@@ -39,8 +39,6 @@ program genspec
     character(len=512) :: filename
     character(len=64)  :: dset
     integer            :: step
-
-    call initialise_hdf5
 
     call parse_command_line
 
@@ -134,20 +132,18 @@ program genspec
 
     call dealloc_arrays
 
-    call finalise_hdf5
-
     contains
 
         subroutine get_domain
-            integer(hid_t)   :: h5handle
+            integer          :: ncid
             double precision :: lower(2)
             integer          :: ncells(2)
             ! read domain dimensions
-            call open_h5_file(trim(filename), H5F_ACC_RDONLY_F, h5handle)
-            call read_h5_box(h5handle, ncells, extent, lower)
+            call open_netcdf_file(trim(filename), NF90_NOWRITE, ncid)
+            call get_netcdf_box(ncid, lower, extent, ncells)
             nx = ncells(1)
             nz = ncells(2)
-            call close_h5_file(h5handle)
+            call close_netcdf_file(ncid)
         end subroutine get_domain
 
         subroutine alloc_arrays
@@ -175,53 +171,31 @@ program genspec
         end subroutine dealloc_arrays
 
         subroutine read_data
-            double precision, allocatable :: buffer_2d(:, :)
-            integer(hid_t)                :: h5handle, group
-            character(:), allocatable     :: grn
+            double precision :: buffer(nz+1, nx)
+            integer          :: ncid, cnt(3), start(3), n_steps
 
-            call open_h5_file(trim(filename), H5F_ACC_RDONLY_F, h5handle)
+            call open_netcdf_file(trim(filename), NF90_NOWRITE, ncid)
 
-            grn = trim(get_step_group_name(step))
+            call get_num_steps(ncid, n_steps)
 
-            call open_h5_group(h5handle, grn, group)
+            if (step > n_steps) then
+                print *, "Error: NetCDF file has not enough records."
+                stop
+            endif
 
-            if (has_dataset(group, trim(dset))) then
-                call read_h5_dataset(group, trim(dset), buffer_2d)
-                call fill_field_from_buffer_2d(buffer_2d, pp)
-                deallocate(buffer_2d)
+            cnt  =  (/ nz+1, nx, 1    /)
+            start = (/ 1,    1,  step /)
+
+            if (has_dataset(ncid, trim(dset))) then
+                call read_netcdf_dataset(ncid, trim(dset), buffer, &
+                                         start=start, cnt=cnt)
             else
                 print *, "Error: No dataset '" // trim(dset) // "' in the file."
                 stop
             endif
 
-            call close_h5_group(group)
-            call close_h5_file(h5handle)
+            call close_netcdf_file(ncid)
         end subroutine read_data
-
-        ! After reading the H5 dataset into the buffer, copy
-        ! the data to a field container
-        ! @pre field and buffer must be of rank 2
-        subroutine fill_field_from_buffer_2d(buffer, field)
-            double precision, allocatable :: buffer(:, :)
-            double precision              :: field(0:nz, 0:nx-1)
-            integer                       :: dims(2), bdims(2), i, j
-
-            dims = (/nz+1, nx/)
-
-            bdims = shape(buffer)
-            if (.not. sum(dims - bdims) == 0) then
-                print "(a32, i4, a1, i4, a6, i4, a1, i4, a1)", &
-                      "Field dimensions do not agree: (", dims(1), ",", &
-                      dims(2), ") != (", bdims(1), ",", bdims(2), ")"
-                stop
-            endif
-
-            do j = 0, nz
-                do i = 0, nx-1
-                    field(j, i) = buffer(j, i)
-                enddo
-            enddo
-        end subroutine fill_field_from_buffer_2d
 
         subroutine write_spectrum
             logical                   :: exists = .false.
@@ -308,7 +282,7 @@ program genspec
             endif
 
             ! check if correct file is passed
-            stat = index(trim(filename), '_fields.hdf5', back=.true.)
+            stat = index(trim(filename), '_fields.nc', back=.true.)
             if (stat == 0) then
                 print *, "Error: No EPIC field output file provided."
                 stop

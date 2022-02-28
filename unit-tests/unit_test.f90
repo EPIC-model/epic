@@ -48,10 +48,10 @@ module unit_test
 
         ! Give option to run unit tests verbosely using command line
         subroutine parse_command_line
-            use options, only : verbose
-            integer                          :: i
-            character(len=32)                :: arg
-            character(len=32)                :: testname
+            integer           :: i
+            character(len=32) :: arg
+            character(len=32) :: testname
+            logical           :: verbose
 
             testname = ''
             i = 0

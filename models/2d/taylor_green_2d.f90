@@ -10,7 +10,7 @@
 !                       tg_flow%phase = (/d, e/)
 ! =============================================================================
 module taylor_green_2d
-    use h5_writer
+    use netcdf_writer
     use constants, only : pi, f12, zero, one, two
     implicit none
 
@@ -23,6 +23,7 @@ module taylor_green_2d
 
         type(flow_type) :: tg_flow
 
+        integer :: vor_id
 
         double precision, parameter :: hpi = f12 * pi
 
@@ -34,8 +35,9 @@ module taylor_green_2d
 
 
     contains
-        subroutine taylor_green_init(h5handle, nx, nz, origin, dx)
-            integer(hid_t),   intent(inout) :: h5handle
+        subroutine taylor_green_init(ncid, dimids, nx, nz, origin, dx)
+            integer,          intent(inout) :: ncid
+            integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, nz
             double precision, intent(in)    :: origin(2)
             double precision, intent(in)    :: dx(2)
@@ -43,14 +45,25 @@ module taylor_green_2d
             double precision                :: vortg(0:nz, 0:nx-1)
             integer                         :: i, j
 
-            do j = 0, nz
-                do i = 0, nx - 1
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='vorticity',                    &
+                                       long_name='',                        &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=vor_id)
+
+            call close_definition(ncid)
+
+            do i = 0, nx - 1
+                do j = 0, nz
                     pos = origin + dx * dble((/i, j/))
                     vortg(j, i) = get_flow_vorticity(pos)
                 enddo
             enddo
 
-            call write_h5_dataset(h5handle, '/', 'vorticity', vortg)
+            call write_netcdf_dataset(ncid, vor_id, vortg)
 
         end subroutine taylor_green_init
 

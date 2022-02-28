@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import animation
-from tools.h5_reader import H5Reader
+from tools.nc_reader import nc_reader
 import matplotlib.colors as cls
 from tools.plots import _plot_parcels
 from tools.mpl_beautify import *
@@ -24,14 +24,14 @@ class ParcelAnimation:
         self.ani = None
 
     def create(self, fname, coloring="aspect-ratio", **kwargs):
-        self.h5reader = H5Reader()
+        self.ncreader = nc_reader()
 
-        self.h5reader.open(fname)
+        self.ncreader.open(fname)
 
-        if not self.h5reader.is_parcel_file:
+        if not self.ncreader.is_parcel_file:
             raise IOError("Not a parcel output file.")
 
-        self.nsteps = self.h5reader.get_num_steps()
+        self.nsteps = self.ncreader.get_num_steps()
         self.coloring = coloring
 
         self.fkwargs = kwargs
@@ -41,9 +41,9 @@ class ParcelAnimation:
 
         if coloring == "aspect-ratio":
             self.vmin = 1.0
-            self.vmax = self.h5reader.get_parcel_option("lambda")
+            self.vmax = self.ncreader.get_global_attribute("lambda_max")
         else:
-            self.vmin, self.vmax = self.h5reader.get_dataset_min_max(coloring)
+            self.vmin, self.vmax = self.ncreader.get_dataset_min_max(coloring)
 
         self.norm = cls.Normalize(vmin=self.vmin, vmax=self.vmax)
         self.cmap = plt.cm.viridis_r
@@ -61,7 +61,7 @@ class ParcelAnimation:
     def save(self, fname, fps=3, dpi=200, extra_args=["-vcodec", "libx264"]):
         self.ani.save(fname, fps=fps, dpi=dpi, extra_args=extra_args)
         print("Save animation in", fname)
-        self.h5reader.close()
+        self.ncreader.close()
 
     def _resize(self):
         # make plot domain 5 percent larger
@@ -80,7 +80,7 @@ class ParcelAnimation:
 
         _plot_parcels(
             self.ax,
-            self.h5reader,
+            self.ncreader,
             step,
             self.coloring,
             self.vmin,

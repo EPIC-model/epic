@@ -13,7 +13,7 @@
 module straka_2d
     use phys_constants
     use constants
-    use h5_writer
+    use netcdf_writer
     implicit none
 
     private
@@ -24,14 +24,17 @@ module straka_2d
         double precision :: radii(2)  = (/4000.0d0, 2000.d0/) ![m] ellipse radii (x, z)
     end type flow_type
 
+    integer :: buo_id
+
     type(flow_type) :: straka_flow
 
     public :: straka_init, straka_flow
 
     contains
 
-        subroutine straka_init(h5handle, nx, nz, origin, dx)
-            integer(hid_t),   intent(inout) :: h5handle
+        subroutine straka_init(ncid, dimids, nx, nz, origin, dx)
+            integer,          intent(inout) :: ncid
+            integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, nz
             double precision, intent(in)    :: origin(2)
             double precision, intent(in)    :: dx(2)
@@ -40,6 +43,17 @@ module straka_2d
             double precision                :: dtheta, dtheta_max
             double precision                :: buoyg(0:nz, 0:nx-1)
             integer                         :: i, j
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='buoyancy',                     &
+                                       long_name='buoyancy',                &
+                                       std_name='',                         &
+                                       unit='m/s^2',                        &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=buo_id)
+
+            call close_definition(ncid)
 
             ! in metres
             xc = straka_flow%center(1)
@@ -72,7 +86,7 @@ module straka_2d
                 enddo
             enddo
 
-            call write_h5_dataset(h5handle, '/', 'buoyancy', buoyg)
+            call write_netcdf_dataset(ncid, buo_id, buoyg)
 
         end subroutine straka_init
 end module

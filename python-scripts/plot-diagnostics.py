@@ -36,7 +36,7 @@ try:
         type=str,
         nargs="+",
         required=True,
-        help="list of hdf5 output files of EPIC",
+        help="list of NetCDF output files of EPIC",
     )
 
     parser.add_argument(
@@ -76,7 +76,7 @@ try:
         type=int,
         required=False,
         default=0,
-        help="step in hdf5 file (cumulative plot only)",
+        help="step in NetCDF file (cumulative plot only)",
     )
 
     parser.add_argument(
