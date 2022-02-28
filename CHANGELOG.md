@@ -1,3 +1,5 @@
+## EPIC version 0.12.0
+* [replace HDF5 with NetCDF](https://github.com/matt-frey/epic/pull/325)
 ## EPIC version 0.11.0
 #### New features and enhancements
 Development of the 3D model (see [#230](https://github.com/matt-frey/epic/issues/230)):
