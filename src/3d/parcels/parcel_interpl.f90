@@ -351,9 +351,9 @@ module parcel_interpl
                     dvdz = dvdz &
                          + weights(l) * (velgradg(ks(l), js(l), is(l), 5) - vortg(ks(l), js(l), is(l), 1))
 
-                    ! dw/dz = du/dx + dv/dy
+                    ! dw/dz = - (du/dx + dv/dy)
                     dwdz = dwdz &
-                         + weights(l) * (velgradg(ks(l), js(l), is(l), 1) + velgradg(ks(l), js(l), is(l), 3))
+                         - weights(l) * (velgradg(ks(l), js(l), is(l), 1) + velgradg(ks(l), js(l), is(l), 3))
 
                     ! dv/dx = \omegaz + du/dy
                     dvdx = dvdx &
@@ -382,7 +382,7 @@ module parcel_interpl
                 vortend(3, n) =  vortend(3, n)                                   &
                               +  parcels%vorticity(1, n)           * vgrad(4, n) & ! \omegax * dw/dx
                               + (parcels%vorticity(2, n) + ft_cor) * vgrad(5, n) & ! \omegay * dw/dy
-                              - (parcels%vorticity(3, n) + f_cor)  * dwdz          ! \omegaz * dw/dz
+                              + (parcels%vorticity(3, n) + f_cor)  * dwdz          ! \omegaz * dw/dz
 
             enddo
             !$omp end do
