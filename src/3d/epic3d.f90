@@ -4,7 +4,6 @@
 program epic3d
     use constants, only : max_num_parcels, zero
     use timer
-    use field_diagnostics, only : hdf5_field_stat_timer
     use parcel_container
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
@@ -14,19 +13,20 @@ program epic3d
                                   apply_gradient,         &
                                   lapl_corr_timer,        &
                                   grad_corr_timer
-    use parcel_diagnostics, only : init_parcel_diagnostics,    &
-                                   hdf5_parcel_stat_timer
-    use parcel_hdf5
+    use parcel_diagnostics, only : init_parcel_diagnostics, &
+                                   parcel_stats_timer
+    use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
+    use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
     use fields
-    use field_hdf5, only : hdf5_field_timer
+    use field_netcdf, only : field_io_timer
+    use field_diagnostics, only : field_stats_timer
+    use field_diagnostics_netcdf, only : field_stats_io_timer
     use inversion_mod, only : vor2vel_timer, vtend_timer
     use inversion_utils, only : init_fft
     use parcel_interpl, only : grid2par_timer, par2grid_timer
-    use parcel_init, only : init_parcels, read_parcels, init_timer
+    use parcel_init, only : init_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
-    use h5_utils, only : initialise_hdf5, finalise_hdf5, open_h5_file, close_h5_file
-    use h5_reader, only : get_file_type, get_num_steps, get_time
-    use utils, only : write_last_step, setup_output_files
+    use utils, only : write_last_step, setup_output_files, setup_restart
     use phys_parameters, only : update_phys_parameters
     implicit none
 
@@ -54,9 +54,7 @@ program epic3d
                               , l_restart           &
                               , restart_file        &
                               , time
-            integer(hid_t)            :: h5handle
-            character(:), allocatable :: file_type
-            integer                   :: n_steps
+            character(len=16) :: file_type
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
@@ -65,11 +63,13 @@ program epic3d
             call register_timer('parcel merge', merge_timer)
             call register_timer('laplace correction', lapl_corr_timer)
             call register_timer('gradient correction', grad_corr_timer)
-            call register_timer('parcel init', init_timer)
-            call register_timer('parcel hdf5', hdf5_parcel_timer)
-            call register_timer('parcel diagnostics hdf5', hdf5_parcel_stat_timer)
-            call register_timer('field hdf5', hdf5_field_timer)
-            call register_timer('field diagnostics hdf5', hdf5_field_stat_timer)
+            call register_timer('parcel initialisation', init_timer)
+            call register_timer('parcel diagnostics', parcel_stats_timer)
+            call register_timer('parcel I/O', parcel_io_timer)
+            call register_timer('parcel diagnostics I/O', parcel_stats_io_timer)
+            call register_timer('field I/O', field_io_timer)
+            call register_timer('field diagnostics', field_stats_timer)
+            call register_timer('field diagnostics I/O', field_stats_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
             call register_timer('parcel push', rk4_timer)
@@ -78,7 +78,6 @@ program epic3d
 
             call start_timer(epic_timer)
 
-            call initialise_hdf5
 
             ! parse the config file
             call read_config_file
@@ -88,16 +87,12 @@ program epic3d
             call parcel_alloc(max_num_parcels)
 
             if (l_restart) then
-                call open_h5_file(restart_file, H5F_ACC_RDONLY_F, h5handle)
-                call get_file_type(h5handle, file_type)
-                call get_num_steps(h5handle, n_steps)
-                call get_time(h5handle, n_steps - 1, time%initial)
-                call close_h5_file(h5handle)
+                call setup_restart(trim(restart_file), time%initial, file_type)
 
                 if (file_type == 'fields') then
                     call init_parcels(restart_file, field_tol)
                 else if (file_type == 'parcels') then
-                    call read_parcels(restart_file, n_steps - 1)
+                    call read_netcdf_parcels(restart_file)
                 else
                     print *, 'Restart file must be of type "fields" or "parcels".'
                     stop
@@ -112,7 +107,7 @@ program epic3d
 
             call init_fft
 
-            if (output%h5_write_parcel_stats) then
+            if (output%write_parcel_stats) then
                 call init_parcel_diagnostics
             endif
 
@@ -164,11 +159,9 @@ program epic3d
             use options, only : output
             call parcel_dealloc
             call ls_rk4_dealloc
-            call finalise_hdf5
-
             call stop_timer(epic_timer)
 
-            call write_time_to_csv(output%h5_basename)
+            call write_time_to_csv(output%basename)
             call print_timer
         end subroutine
 

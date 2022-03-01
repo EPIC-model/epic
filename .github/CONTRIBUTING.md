@@ -6,7 +6,7 @@ Hi there. The core developers of EPIC thank you for your contribution. We have s
 #### Table of Contents
 1. [Unit Testing](#unit-testing)
 2. [Coding Style](#coding-style)
-2. [Opening a pull request](#pull-request)
+3. [Opening a pull request](#pull-request)
 
 ### Unit Testing <a name="unit-testing"></a>
 Please write unit tests for newly added features and routines. All unit tests are located in the directory `unit-tests`.
@@ -21,4 +21,4 @@ Please follow our coding style when contributing to EPIC.
 
 
 ### Opening a pull request <a name="pull-request"></a>
-Developers should fork the main repo and work with the branch `develop`. We only accept pull requests into `develop` of this repository. From time to time we pull all changes in `develop` into `main` and publish a release.
+Developers should fork the main repo.

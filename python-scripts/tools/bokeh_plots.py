@@ -3,7 +3,7 @@ from bokeh.io.export import get_screenshot_as_png
 import bokeh.plotting as bpl
 from bokeh.models import ColumnDataSource, ColorBar, FixedTicker, LinearColorMapper, SingleIntervalTicker
 from bokeh.transform import linear_cmap
-from tools.h5_reader import H5Reader
+from tools.nc_reader import nc_reader
 from tools.bokeh_style import *
 from tools.units import *
 import numpy as np
@@ -137,7 +137,7 @@ def _bokeh_save(graph, fname, fmt, show, **kwargs):
         raise IOError("Bokeh plot does not support '" + fmt + "' format.")
 
 
-def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs):
+def _bokeh_plot_field(ncreader, step, field, vmin, vmax, hybrid=False, **kwargs):
     no_title = kwargs.pop("no_title", False)
     no_colorbar = kwargs.pop("no_colorbar", False)
     zoom_factor = kwargs.pop("zoom_factor", 1.0)
@@ -151,11 +151,11 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
         raise ValueError("Colormap '" + cmap + "' not available.")
     palette = bokeh_palettes[cmap]
 
-    nsteps = h5reader.get_num_steps()
-    extent = h5reader.get_box_extent()
-    origin = h5reader.get_box_origin()
+    nsteps = ncreader.get_num_steps()
+    extent = ncreader.get_box_extent()
+    origin = ncreader.get_box_origin()
 
-    ttime = h5reader.get_step_attribute(step=step, name="t")
+    ttime = ncreader.get_dataset(step=step, name="t")
     title = field + "\t\t\t\t time = %15.3f" % ttime
 
     if no_title:
@@ -165,7 +165,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
         origin=origin, extent=extent, title=title, **kwargs
     )
 
-    data = np.transpose(h5reader.get_dataset(step=step, name=field))
+    data = np.transpose(ncreader.get_dataset(step=step, name=field))
 
     font_size = bokeh_style["font.size"]
     text_font = bokeh_style["font.font"]
@@ -183,7 +183,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
 
     # Zoom in on the data
     if hybrid:
-        ncells = ncells = h5reader.get_box_ncells()
+        ncells = ncells = ncreader.get_box_ncells()
         zoom = (
             max(int(zoom_factor * pw / ncells[0]), int(zoom_factor * ph / ncells[1]))
             + 1
@@ -262,7 +262,7 @@ def _bokeh_plot_field(h5reader, step, field, vmin, vmax, hybrid=False, **kwargs)
     return graph
 
 
-def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
+def _bokeh_plot_parcels(ncreader, step, coloring, vmin, vmax, **kwargs):
     no_title = kwargs.pop("no_title", False)
     no_colorbar = kwargs.pop("no_colorbar", False)
     graph = kwargs.pop("graph", None)
@@ -276,25 +276,25 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
         raise ValueError("Colormap '" + cmap + "' not available.")
     palette = bokeh_palettes[cmap]
 
-    nsteps = h5reader.get_num_steps()
-    extent = h5reader.get_box_extent()
-    origin = h5reader.get_box_origin()
+    nsteps = ncreader.get_num_steps()
+    extent = ncreader.get_box_extent()
+    origin = ncreader.get_box_origin()
 
-    nparcels = h5reader.get_num_parcels(step)
-    ttime = h5reader.get_step_attribute(step=step, name="t")
+    nparcels = ncreader.get_num_parcels(step)
+    ttime = ncreader.get_dataset(step, "t")
 
     label = ""
     if coloring == "aspect-ratio":
         label = "aspect ratio"
-        data = h5reader.get_aspect_ratio(step=step)
+        data = ncreader.get_aspect_ratio(step=step)
     elif coloring == "vol-distr":
         label = "volume distribution"
-        data = h5reader.get_dataset(step=step, name="volume")
+        data = ncreader.get_dataset(step=step, name="volume")
         data[data <= vmin] = 0.0
         data[data > vmin] = 1.0
     else:
         label = coloring
-        data = h5reader.get_dataset(step=step, name=coloring)
+        data = ncreader.get_dataset(step=step, name=coloring)
 
     if title is None:
         title = (
@@ -311,7 +311,7 @@ def _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs):
             origin=origin, extent=extent, title=title, **kwargs
         )
 
-    x, y, width, height, angle = h5reader.get_ellipses_for_bokeh(step)
+    x, y, width, height, angle = ncreader.get_ellipses_for_bokeh(step)
 
 
     if norm:
@@ -387,18 +387,18 @@ def bokeh_plot(fname, step, show=False, fmt="png", coloring="vorticity", **kwarg
 
     hybrid = kwargs.pop("hybrid", False)
 
-    h5reader = H5Reader()
+    ncreader = nc_reader()
 
-    h5reader.open(fname)
+    ncreader.open(fname)
 
-    if hybrid and not h5reader.is_field_file:
-        if not h5reader.is_parcel_file:
+    if hybrid and not ncreader.is_field_file:
+        if not ncreader.is_parcel_file:
             raise RuntimeError("Neither a field nor parcel file.")
-        h5reader.close()
-        fname = fname.replace("_parcels.hdf5", "_fields.hdf5")
-        h5reader.open(fname)
+        ncreader.close()
+        fname = fname.replace("_" + str(step).zfill(10) + "_parcels.nc", "_fields.nc")
+        ncreader.open(fname)
 
-    nsteps = h5reader.get_num_steps()
+    nsteps = ncreader.get_num_steps()
 
     if step > nsteps - 1:
         raise ValueError("Step number exceeds limit of " + str(nsteps - 1) + ".")
@@ -408,44 +408,44 @@ def bokeh_plot(fname, step, show=False, fmt="png", coloring="vorticity", **kwarg
 
     saveas = coloring + "_step_" + str(step).zfill(len(str(nsteps)))
 
-    if h5reader.is_parcel_file:
+    if ncreader.is_parcel_file:
         if coloring == "aspect-ratio":
             vmin = 1.0
-            vmax = h5reader.get_parcel_option("lambda")
+            vmax = ncreader.get_global_attribute("lambda_max")
         elif coloring == "vol-distr":
-            extent = h5reader.get_box_extent()
-            ncells = h5reader.get_box_ncells()
+            extent = ncreader.get_box_extent()
+            ncells = ncreader.get_box_ncells()
             vcell = np.prod(extent / ncells)
-            vmin = vcell / h5reader.get_parcel_option("min_vratio")
-            vmax = vcell / h5reader.get_parcel_option("max_vratio")
+            vmin = vcell / ncreader.get_global_attribute("min_vratio")
+            vmax = vcell / ncreader.get_global_attribute("max_vratio")
         else:
-            vmin, vmax = h5reader.get_dataset_min_max(coloring)
+            vmin, vmax = ncreader.get_dataset_min_max(coloring)
 
         saveas = "parcels_" + saveas
-        graph = _bokeh_plot_parcels(h5reader, step, coloring, vmin, vmax, **kwargs)
+        graph = _bokeh_plot_parcels(ncreader, step, coloring, vmin, vmax, **kwargs)
 
-    elif h5reader.is_field_file:
+    elif ncreader.is_field_file:
         saveas = "field_" + saveas
         col = coloring
         if col == "buoyancy":
             col = "total " + col
-        vmin, vmax = h5reader.get_dataset_min_max(col)
+        vmin, vmax = ncreader.get_dataset_min_max(col)
         graph = _bokeh_plot_field(
-            h5reader, step, col, vmin, vmax, hybrid=hybrid, **kwargs
+            ncreader, step, col, vmin, vmax, hybrid=hybrid, **kwargs
         )
 
         if hybrid:
-            fname = fname.replace("_fields.hdf5", "_parcels.hdf5")
-            h5reader.close()
-            h5reader.open(fname)
+            fname = fname.replace("_fields.nc", "_" + str(step).zfill(10) + "_parcels.nc")
+            ncreader.close()
+            ncreader.open(fname)
 
-            if not (nsteps == h5reader.get_num_steps()):
+            if not (nsteps == ncreader.get_num_steps()):
                 raise RuntimeError(
                     "Field and parcel file do not have the same step count"
                 )
 
             graph = _bokeh_plot_parcels(
-                h5reader,
+                ncreader,
                 step,
                 coloring,
                 vmin,
@@ -458,6 +458,6 @@ def bokeh_plot(fname, step, show=False, fmt="png", coloring="vorticity", **kwarg
     else:
         raise RuntimeError("Neither a field nor parcel file.")
 
-    h5reader.close()
+    ncreader.close()
 
     _bokeh_save(graph=graph, fname=saveas, fmt=fmt, show=show, **kwargs)

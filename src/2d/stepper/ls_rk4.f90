@@ -11,7 +11,8 @@ module ls_rk4
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
-    use parcel_diagnostics, only : calc_parcel_diagnostics
+    use parcel_diagnostics, only : calculate_parcel_diagnostics
+    use field_diagnostics, only : calculate_field_diagnostics
     use parameters, only : nx, nz
     use timer, only : start_timer, stop_timer, timings
     implicit none
@@ -88,9 +89,11 @@ module ls_rk4
 
             call grid2par(delta_pos, delta_vor, strain)
 
-            call calc_parcel_diagnostics(delta_pos)
+            call calculate_parcel_diagnostics(delta_pos)
 
-            call write_step(t, dt)
+            call calculate_field_diagnostics
+
+            call write_step(t)
 
             call ls_rk4_substep(ca1, cb1, dt, 1)
 

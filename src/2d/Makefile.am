@@ -1,6 +1,6 @@
 AM_FCFLAGS =				\
 	-I $(top_builddir)/src/utils	\
-	-I $(top_builddir)/src/hdf5
+	-I $(top_builddir)/src/netcdf
 
 bin_PROGRAMS = epic2d
 epic2d_SOURCES = 				\
@@ -12,7 +12,8 @@ epic2d_SOURCES = 				\
 	utils/phys_parameters.f90		\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
-	fields/field_hdf5.f90			\
+	fields/field_netcdf.f90			\
+	fields/field_diagnostics_netcdf.f90	\
 	parcels/parcel_ellipse.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
@@ -23,7 +24,8 @@ epic2d_SOURCES = 				\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_init.f90			\
 	parcels/parcel_correction.f90		\
-	parcels/parcel_hdf5.f90			\
+	parcels/parcel_netcdf.f90		\
+	parcels/parcel_diagnostics_netcdf.f90	\
 	tri_inversion.f90			\
 	utils/utils.f90				\
 	stepper/rk4_utils.f90			\
@@ -32,7 +34,7 @@ epic2d_SOURCES = 				\
 
 epic2d_LDADD = 						\
 	$(top_builddir)/src/utils/libepic_utils.la 	\
-	$(top_builddir)/src/hdf5/libepic_hdf5.la
+	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 clean-local:
 	rm -f *.mod

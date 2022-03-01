@@ -1,1 +1,5 @@
-SUBDIRS = utils hdf5 fft 2d 3d
+SUBDIRS = utils fft netcdf 2d
+
+if ENABLE_3D
+SUBDIRS += 3d
+endif

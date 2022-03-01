@@ -163,7 +163,7 @@ module rk4_utils
 
             dt = min(time%alpha / gmax, time%alpha / bmax)
 #ifdef ENABLE_VERBOSE
-            fname = trim(output%h5_basename) // '_alpha_time_step.asc'
+            fname = trim(output%basename) // '_alpha_time_step.asc'
             inquire(file=fname, exist=exists)
             ! 23 August
             ! https://stackoverflow.com/questions/15526203/single-command-to-open-a-file-or-create-it-and-the-append-data

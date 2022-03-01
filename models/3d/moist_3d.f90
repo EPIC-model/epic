@@ -9,12 +9,14 @@ module moist_3d
     use phys_constants
     use phys_parameters
     use constants
-    use h5_writer
+    use netcdf_writer
     implicit none
 
     private
 
     double precision, allocatable :: buoyg(:, :, :), humg(:, :, :)
+
+    integer :: buo_id, hum_id
 
     type plume_type
         double precision :: H           ! Relative humidity H (as a fraction < 1) at z_b
@@ -39,14 +41,35 @@ module moist_3d
 
     contains
 
-        subroutine moist_init(h5handle, nx, ny, nz, origin, dx)
-            integer(hid_t),   intent(inout) :: h5handle
+        subroutine moist_init(ncid, dimids, nx, ny, nz, origin, dx)
+            integer,          intent(inout) :: ncid
+            integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, ny, nz
             double precision, intent(in)    :: origin(3)
             double precision, intent(in)    :: dx(3)
             integer                         :: i, j, k
             double precision                :: rpos1, rpos2, rpos3, r2, pos(3), centre(3), extent(3)
             double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='buoyancy',                     &
+                                       long_name='buoyancy',                &
+                                       std_name='',                         &
+                                       unit='m/s^2',                        &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=buo_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='humidity',                     &
+                                       long_name='humidity',                &
+                                       std_name='',                         &
+                                       unit='-',                            &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=hum_id)
+
+            call close_definition(ncid)
 
             if (moist%H .gt. one) then
                 write(*,*) 'Error: Relative humidity fraction must be < 1.'
@@ -146,8 +169,8 @@ module moist_3d
                 enddo
             enddo
 
-            call write_h5_dataset(h5handle, '/', 'buoyancy', buoyg)
-            call write_h5_dataset(h5handle, '/', 'humidity', humg)
+            call write_netcdf_dataset(ncid, buo_id, buoyg)
+            call write_netcdf_dataset(ncid, hum_id, humg)
 
             deallocate(buoyg)
             deallocate(humg)

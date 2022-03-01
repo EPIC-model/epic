@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 from numba import njit, prange, set_num_threads
-import h5py
-from tools.h5_reader import H5Reader
+from tools.nc_reader import nc_reader
+import netCDF4 as nc
 import numpy as np
 from glob import glob
 from math import erf
@@ -47,17 +47,17 @@ set_num_threads(nthreads)
 
 file_root, file_ext = os.path.splitext(input_file_name)
 
-if not (file_ext == ".hdf5"):
-    raise argparse.ArgumentTypeError('Argument filename must end on ".hdf5"')
+if not (file_ext == ".nc"):
+    raise argparse.ArgumentTypeError('Argument filename must end on ".nc"')
 
-h5reader = H5Reader()
-h5reader.open(input_file_name)
+ncreader = nc_reader()
+ncreader.open(input_file_name)
 
 
 # set up spatial arrays
-extent = h5reader.get_box_extent()
-origin = h5reader.get_box_origin()
-ncells = h5reader.get_box_ncells()
+extent = ncreader.get_box_extent()
+origin = ncreader.get_box_origin()
+ncells = ncreader.get_box_ncells()
 
 # initialisation
 nx = ncells[0]
@@ -188,37 +188,41 @@ def final_calc(field, volg, zp):
 
 
 # Write to netcdf file
-def write_field(h5handle, field, field_name):
-    h5handle[field_name] = np.float64(field.copy())
+def write_field(nchandle, i, field, field_name):
+    var = nchandle.createVariable(varname=field_name, datatype='f8', dimensions=('t', 'x', 'z'))
+    var.long_name = field_name
+    var[i, :, :] = field.copy()
 
 
 
-outfile = file_root + "_subgrid_fields.hdf5"
-h5file = h5py.File(outfile, 'w')
-dt = h5py.string_dtype('ascii', 6)
-h5file.attrs.create("output_type", r"fields", dtype=dt, shape=1)
-h5file.attrs['nsteps'] = [len(steps)]
-h5file.attrs['a_fac'] = a_fac
-h5file.attrs['b_fac'] = b_fac
-h5file.attrs['steps'] = steps
-h5file.attrs['projfac'] = projfac
-h5file.attrs['r_limit_fac'] = r_limit_fac
-h5file.attrs['input_file_name'] = input_file_name
+outfile = file_root + "_subgrid_fields.nc"
+ncfile = nc.Dataset(outfile, "w", format="NETCDF4")
+ncfile.createDimension(dimname="t", size=len(steps))
+ncfile.createDimension(dimname="x", size=nxproj)
+ncfile.createDimension(dimname="z", size=nzproj)
+ncfile.setncattr("file_type", r"fields")
+ncfile.setncattr('a_fac', np.float64(a_fac))
+ncfile.setncattr('b_fac', np.float64(b_fac))
+ncfile.setncattr('steps', np.int32(steps))
+ncfile.setncattr('projfac', np.int32(projfac))
+ncfile.setncattr('r_limit_fac', np.float64(r_limit_fac))
+ncfile.setncattr('input_file_name', input_file_name)
 
-box = h5file.create_group('box')
-box.attrs['extent'] = extent
-box.attrs['origin'] = origin
-box.attrs['ncells'] = (np.int32(nxproj), np.int32(nzproj-1))
+ncfile.setncattr(name="origin", value=np.asarray(origin, dtype=np.float64))
+ncfile.setncattr(name="extent", value=np.asarray(extent, dtype=np.float64))
+ncfile.setncattr(name="ncells", value=np.asarray([nxproj, nzproj-1], dtype=np.int32))
+
+t_var = ncfile.createVariable(varname='t', datatype='f8', dimensions=('t'))
 
 niters = 0
 for time_step in steps:
 
-    x = h5reader.get_dataset(time_step, "position")[:, 0]
-    z = h5reader.get_dataset(time_step, "position")[:, 1]
-    vol = h5reader.get_dataset(time_step, "volume")[:]
-    bb1 = h5reader.get_dataset(time_step, "B")[:, 0]
-    bb2 = h5reader.get_dataset(time_step, "B")[:, 1]
-    t = h5reader.get_step_attribute(time_step, 't')
+    x = ncreader.get_dataset(time_step, "x_position")
+    z = ncreader.get_dataset(time_step, "z_position")
+    vol = ncreader.get_dataset(time_step, "volume")[:]
+    bb1 = ncreader.get_dataset(time_step, "B11")
+    bb2 = ncreader.get_dataset(time_step, "B12")
+    t = ncreader.get_dataset(time_step, 't')
 
     # Local domain min and max values
     xminval = np.nanmin(x)
@@ -231,12 +235,10 @@ for time_step in steps:
     nx_file = xupperfile - xlowerfile + 1
 
 
-    group = h5file.create_group('step#' + str(niters).zfill(10))
-    niters += 1
-    group.attrs['t'] = t
+    t_var[niters] = t
 
     for target_variable in fields:
-        scalar = h5reader.get_dataset(time_step, target_variable).copy()
+        scalar = ncreader.get_dataset(time_step, target_variable).copy()
 
         # Initialise "thread-based" fields for this file
         xz_field_thread_file = np.zeros((nthreads, nx_file, nzproj), np.double)
@@ -271,7 +273,8 @@ for time_step in steps:
         final_calc(xz_field, xz_volg, zp)
 
         write_field(
-            group,
+            ncfile,
+            niters,
             xz_field,
             target_variable
         )
@@ -281,7 +284,9 @@ for time_step in steps:
         #"volume"
     ##)
 
-h5file.close()
+    niters += 1
+
+ncfile.close()
 
 # python subgrid_2d_generalised.py straka_parcels.hdf5 1.0 2.0 45
 # python subgrid_2d_generalised.py straka_parcels.hdf5 1.2 2.0 45

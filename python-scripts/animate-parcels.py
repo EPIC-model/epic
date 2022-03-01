@@ -20,7 +20,7 @@ try:
     required = parser.add_argument_group("required arguments")
 
     required.add_argument(
-        "--filename", type=str, required=True, help="hdf5 output file of EPIC"
+        "--filename", type=str, required=True, help="NetCDF output file of EPIC"
     )
 
     parser.add_argument(

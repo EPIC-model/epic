@@ -65,10 +65,10 @@ module inversion_utils
         !Initialises this module (FFTs, x & y wavenumbers, tri-diagonal
         !coefficients, etc).
         subroutine init_fft
-            double precision   :: a0(nx, ny), a0b(nx, ny), ksq(nx, ny)
-            double precision   :: rkxmax, rkymax
-            double precision   :: rksqmax, rkfsq
-            integer            :: kx, ky, iz, isub, ib_sub, ie_sub
+            double precision, allocatable  :: a0(:, :), a0b(:, :), ksq(:, :)
+            double precision               :: rkxmax, rkymax
+            double precision               :: rksqmax, rkfsq
+            integer                        :: kx, ky, iz, isub, ib_sub, ie_sub
 
             if (is_initialised) then
                 return
@@ -87,6 +87,10 @@ module inversion_utils
             nwy = ny / 2
             nyp2 = ny + 2
             nxp2 = nx + 2
+
+            allocate(a0(nx, ny))
+            allocate(a0b(nx, ny))
+            allocate(ksq(nx, ny))
 
             allocate(etdh(nz-1, nx, ny))
             allocate(htdh(nz-1, nx, ny))
@@ -237,6 +241,11 @@ module inversion_utils
                 etda(iz) = -f16 * htda(iz)
             enddo
             htda(nz) = one / (one + f16 + f16 * etda(nz-2))
+
+
+            deallocate(a0)
+            deallocate(a0b)
+            deallocate(ksq)
         end subroutine
 
 

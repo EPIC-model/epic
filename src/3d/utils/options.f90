@@ -3,7 +3,7 @@
 ! =============================================================================
 module options
     use constants, only : zero, one, two, pi, four, twopi
-    use h5_writer
+    use netcdf_writer
     implicit none
     !
     ! global options
@@ -28,20 +28,20 @@ module options
     !
     ! output options
     !
-    type h5_info
-        double precision    :: h5_field_freq         = one
-        logical             :: h5_write_fields       = .true.
-        double precision    :: h5_parcel_freq        = one
-        logical             :: h5_overwrite          = .false.
-        logical             :: h5_write_parcels      = .true.
-        double precision    :: h5_parcel_stats_freq  = one
-        logical             :: h5_write_parcel_stats = .true.
-        double precision    :: h5_field_stats_freq   = one
-        logical             :: h5_write_field_stats  = .true.
-        character(len=512)  :: h5_basename           = ''
-    end type h5_info
+    type info
+        double precision    :: field_freq         = one
+        logical             :: write_fields       = .true.
+        double precision    :: parcel_freq        = one
+        logical             :: overwrite          = .false.
+        logical             :: write_parcels      = .true.
+        double precision    :: parcel_stats_freq  = one
+        logical             :: write_parcel_stats = .true.
+        double precision    :: field_stats_freq   = one
+        logical             :: write_field_stats  = .true.
+        character(len=512)  :: basename           = ''
+    end type info
 
-    type(h5_info) :: output
+    type(info) :: output
 
     !
     ! domain options
@@ -119,61 +119,52 @@ module options
 
             close(fn)
 
-            ! check whether h5 files already exist
-            inquire(file=output%h5_basename, exist=exists)
+            ! check whether NetCDF files already exist
+            inquire(file=output%basename, exist=exists)
 
             if (exists) then
-                print *, 'Error: output file "', trim(output%h5_basename), '" already exists.'
+                print *, 'Error: output file "', trim(output%basename), '" already exists.'
                 stop
             endif
 
         end subroutine read_config_file
 
-        subroutine write_h5_options(h5file_id)
-            integer(hid_t),   intent(in) :: h5file_id
-            integer(hid_t)               :: gopts, group
-
-            call create_h5_group(h5file_id, "options", gopts)
+        subroutine write_netcdf_options(ncid)
+            integer, intent(in) :: ncid
 
 #ifdef ENABLE_VERBOSE
-            call write_h5_scalar_attrib(gopts, "verbose", verbose)
+            call write_netcdf_attribute(ncid, "verbose", verbose)
 #endif
-            call write_h5_scalar_attrib(gopts, "field_file", field_file)
-            call write_h5_scalar_attrib(gopts, "field_tol", field_tol)
+            call write_netcdf_attribute(ncid, "field_file", field_file)
+            call write_netcdf_attribute(ncid, "field_tol", field_tol)
 
-            call write_h5_scalar_attrib(gopts, "allow_larger_anisotropy", &
-                                        allow_larger_anisotropy)
+            call write_netcdf_attribute(ncid, "allow_larger_anisotropy", &
+                                               allow_larger_anisotropy)
 
-            call create_h5_group(gopts, "parcel", group)
-                call write_h5_scalar_attrib(group, "n_per_cell", parcel%n_per_cell)
-                call write_h5_scalar_attrib(group, "lambda", parcel%lambda_max)
-                call write_h5_scalar_attrib(group, "min_vratio", parcel%min_vratio)
-                call write_h5_scalar_attrib(group, "correction_iters", parcel%correction_iters)
-                call write_h5_scalar_attrib(group, "gradient_pref", parcel%gradient_pref)
-                call write_h5_scalar_attrib(group, "max_compression", parcel%max_compression)
-                call write_h5_scalar_attrib(group, "max_vratio", parcel%max_vratio)
-            call close_h5_group(group)
+            call write_netcdf_attribute(ncid, "n_per_cell", parcel%n_per_cell)
+            call write_netcdf_attribute(ncid, "lambda_max", parcel%lambda_max)
+            call write_netcdf_attribute(ncid, "min_vratio", parcel%min_vratio)
+            call write_netcdf_attribute(ncid, "correction_iters", parcel%correction_iters)
+            call write_netcdf_attribute(ncid, "gradient_pref", parcel%gradient_pref)
+            call write_netcdf_attribute(ncid, "max_compression", parcel%max_compression)
+            call write_netcdf_attribute(ncid, "max_vratio", parcel%max_vratio)
 
-            call create_h5_group(gopts, "output", group)
-                call write_h5_scalar_attrib(group, "h5_parcel_freq", output%h5_parcel_freq)
-                call write_h5_scalar_attrib(group, "h5_field_freq", output%h5_field_freq)
-                call write_h5_scalar_attrib(group, "h5_parcel_stats_freq", output%h5_parcel_stats_freq)
-                call write_h5_scalar_attrib(group, "h5_write_parcel_stats", output%h5_write_parcel_stats)
-                call write_h5_scalar_attrib(group, "h5_field_stats_freq", output%h5_field_stats_freq)
-                call write_h5_scalar_attrib(group, "h5_write_field_stats", output%h5_write_field_stats)
-                call write_h5_scalar_attrib(group, "h5_write_fields", output%h5_write_fields)
-                call write_h5_scalar_attrib(group, "h5_overwrite", output%h5_overwrite)
-                call write_h5_scalar_attrib(group, "h5_write_parcels", output%h5_write_parcels)
-                call write_h5_scalar_attrib(group, "h5_basename", trim(output%h5_basename))
-            call close_h5_group(group)
+            call write_netcdf_attribute(ncid, "parcel_freq", output%parcel_freq)
+            call write_netcdf_attribute(ncid, "field_freq", output%field_freq)
+            call write_netcdf_attribute(ncid, "parcel_stats_freq", output%parcel_stats_freq)
+            call write_netcdf_attribute(ncid, "write_parcel_stats", output%write_parcel_stats)
+            call write_netcdf_attribute(ncid, "field_stats_freq", output%field_stats_freq)
+            call write_netcdf_attribute(ncid, "write_field_stats", output%write_field_stats)
+            call write_netcdf_attribute(ncid, "write_fields", output%write_fields)
+            call write_netcdf_attribute(ncid, "overwrite", output%overwrite)
+            call write_netcdf_attribute(ncid, "write_parcels", output%write_parcels)
+            call write_netcdf_attribute(ncid, "basename", trim(output%basename))
 
-            call create_h5_group(gopts, "time", group)
-                call write_h5_scalar_attrib(group, "limit", time%limit)
-                call write_h5_scalar_attrib(group, "precise_stop", time%precise_stop)
-                call write_h5_scalar_attrib(group, "alpha", time%alpha)
-            call close_h5_group(group)
+            call write_netcdf_attribute(ncid, "limit", time%limit)
+            call write_netcdf_attribute(ncid, "initial", time%initial)
+            call write_netcdf_attribute(ncid, "precise_stop", time%precise_stop)
+            call write_netcdf_attribute(ncid, "alpha", time%alpha)
 
-            call close_h5_group(gopts)
-        end subroutine write_h5_options
+        end subroutine write_netcdf_options
 
 end module options

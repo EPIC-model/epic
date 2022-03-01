@@ -2,7 +2,7 @@
 
  model      = 'TaylorGreen'
 
- h5fname    = 'taylor_green.hdf5'
+ ncfname    = 'taylor_green.nc'
 
  box%ncells = 32, 32, 32
 

@@ -1,20 +1,23 @@
 ! =============================================================================
-!               This program writes fields to HDF5 in EPIC format.
+!               This program writes fields to NetCDF in EPIC format.
 ! =============================================================================
 program epic2d_models
-    use options, only : filename, verbose
     use taylor_green_2d
     use straka_2d
     use robert_2d
-    use constants, only : pi
+    use constants, only : pi, zero
     use parameters, only : nx, nz, dx, lower, extent
-    use h5_utils
-    use h5_writer
+    use netcdf_utils
+    use netcdf_writer
+    use config, only : package_version, cf_version
     implicit none
 
+    logical            :: verbose = .false.
+    character(len=512) :: filename = ''
     character(len=512) :: model = ''
-    character(len=512) :: h5fname = ''
-    integer(hid_t)     :: h5handle
+    character(len=512) :: ncfname = ''
+    integer            :: ncid
+    integer            :: dimids(3), axids(3)
 
     type box_type
         integer          :: ncells(2)   ! number of cells
@@ -30,44 +33,63 @@ program epic2d_models
 
     call read_config_file
 
-    call initialise_hdf5
-
     call generate_fields
-
-    call finalise_hdf5
 
     contains
 
         subroutine generate_fields
 
-            call create_h5_file(h5fname, .false., h5handle)
+            call create_netcdf_file(ncfname, .false., ncid)
 
             dx = box%extent / dble(box%ncells)
             nx = box%ncells(1)
             nz = box%ncells(2)
 
+            ! define global attributes
+            call write_netcdf_info(ncid=ncid,                    &
+                                   epic_version=package_version, &
+                                   file_type='fields',           &
+                                   cf_version=cf_version)
+
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
+
+            call define_netcdf_spatial_dimensions_2d(ncid=ncid,            &
+                                                     ncells=box%ncells,    &
+                                                     dimids=dimids(1:2),   &
+                                                     axids=axids(1:2))
+
+            call define_netcdf_temporal_dimension(ncid, dimids(3), axids(3))
+
+            if (model == 'TaylorGreen') then
+                ! make origin and extent always a multiple of pi
+                box%origin = pi * box%origin
+                box%extent = pi * box%extent
+                dx = dx * pi
+            endif
+
+            ! write box
+            lower = box%origin
+            extent = box%extent
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
+
             select case (trim(model))
                 case ('TaylorGreen')
-                    ! make origin and extent always a multiple of pi
-                    box%origin = pi * box%origin
-                    box%extent = pi * box%extent
-                    dx = dx * pi
-
-                    call taylor_green_init(h5handle, nx, nz, box%origin, dx)
+                    call taylor_green_init(ncid, dimids, nx, nz, box%origin, dx)
                 case ('Straka')
-                    call straka_init(h5handle, nx, nz, box%origin, dx)
+                    call straka_init(ncid, dimids, nx, nz, box%origin, dx)
                 case ('Robert')
-                    call robert_init(h5handle, nx, nz, box%origin, dx)
+                    call robert_init(ncid, dimids, nx, nz, box%origin, dx)
                 case default
                     print *, "Unknown model: '", trim(model), "'."
                     stop
             end select
 
-            ! write box
-            lower = box%origin
-            extent = box%extent
-            call write_h5_box(h5handle, lower, extent, (/nx, nz/))
-            call close_h5_file(h5handle)
+            call write_netcdf_axis_2d(ncid, dimids, lower, dx, box%ncells)
+
+            ! write time
+            call write_netcdf_scalar(ncid, axids(3), zero, 1)
+
+            call close_netcdf_file(ncid)
         end subroutine generate_fields
 
 
@@ -79,7 +101,7 @@ program epic2d_models
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODELS/ model, h5fname, box, tg_flow, straka_flow, robert_flow
+            namelist /MODELS/ model, ncfname, box, tg_flow, straka_flow, robert_flow
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -101,11 +123,11 @@ program epic2d_models
 
             close(fn)
 
-            ! check whether h5 file already exists
-            inquire(file=h5fname, exist=exists)
+            ! check whether NetCDF file already exists
+            inquire(file=ncfname, exist=exists)
 
             if (exists) then
-                print *, 'Error: output file "', trim(h5fname), '" already exists.'
+                print *, 'Error: output file "', trim(ncfname), '" already exists.'
                 stop
             endif
         end subroutine read_config_file

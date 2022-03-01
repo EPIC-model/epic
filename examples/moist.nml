@@ -2,7 +2,7 @@
 
  model      = 'MoistPlume'
 
- h5fname    = 'moist.hdf5'
+ ncfname    = 'moist.nc'
 
  box%ncells = 32, 32, 32
 

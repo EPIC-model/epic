@@ -1,4 +1,4 @@
-AC_INIT([epic], [1.0.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
+AC_INIT([epic], [0.12.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
@@ -9,16 +9,16 @@ LT_INIT
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
 
-FCFLAGS="-fdefault-real-8 -fdefault-double-8 -cpp -fPIC"
+FCFLAGS="-fdefault-real-8 -fdefault-double-8 -cpp -fPIC -mcmodel=large"
 
 AC_CONFIG_MACRO_DIRS([m4])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([src/utils/config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
     src/utils/Makefile
-    src/hdf5/Makefile
     src/mpi/Makefile
+    src/netcdf/Makefile
     src/fft/Makefile
     src/2d/Makefile
     src/3d/Makefile
@@ -29,6 +29,7 @@ AC_CONFIG_FILES([
     unit-tests/Makefile
     unit-tests/2d/Makefile
     unit-tests/3d/Makefile
+    unit-tests/netcdf/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
@@ -133,15 +134,15 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
     fi
 
     #
-    # h5py
+    # netcdf
     #
-    AC_MSG_CHECKING([for python h5py library])
-    `${PYTHON} -c 'import h5py' 2> config.log`
+    AC_MSG_CHECKING([for python netcdf library])
+    `${PYTHON} -c 'import netCDF4' 2> config.log`
     if test "x$?" = "x0" ; then
         AC_MSG_RESULT([yes])
     else
         AC_MSG_RESULT([no])
-        AC_MSG_NOTICE([Install h5py with "conda install -c conda-forge h5py".])
+        AC_MSG_NOTICE([Install netcdf with "conda install -c conda-forge netcdf4".])
         exit 1
     fi
 
@@ -180,31 +181,63 @@ fi
 ## "--with" flags
 ##
 
+## define some default search paths
+declare default_lib_paths="/lib:/usr/lib:/lib64:/usr/lib64:/usr/local/lib:$LD_LIBRARY_PATH"
+declare default_include_paths="/usr/include:/usr/local/lib:$C_INCLUDE_PATH:$CPLUS_INCLUDE_PATH"
+
 # 11 March 2021
 # https://www.gnu.org/software/autoconf/manual/autoconf-2.60/html_node/External-Software.html
-AC_ARG_WITH([hdf5],
-            [AS_HELP_STRING([--with-hdf5=<path>], [path to hdf5 library @<:@default=$HDF5_DIR@:>@])],
-            [HDF5_DIR=$withval],
+AC_ARG_WITH([netcdf],
+            [AS_HELP_STRING([--with-netcdf=<path>], [path to netcdf library @<:@default=$NETCDF_DIR@:>@])],
+            [NETCDF_DIR=$withval],
             [])
 
-if test -n "${HDF5_DIR}"; then
-    FCFLAGS="$FCFLAGS -I$HDF5_DIR/include"
-    LDFLAGS="$LDFLAGS -L$HDF5_DIR/lib"
-    LIBS="$LIBS -lhdf5_fortran -lhdf5hl_fortran -lhdf5"
+if test -n "${NETCDF_DIR}"; then
+    FCFLAGS="$FCFLAGS -I$NETCDF_DIR/include"
+    LDFLAGS="$LDFLAGS -L$NETCDF_DIR/lib"
+    LIBS="$LIBS -lnetcdff -lnetcdf"
+else
+    for path in ${default_lib_paths//:/ }; do
+        AC_MSG_CHECKING([for netcdf Fortran libraries in $path])
+        if test -e "$path/libnetcdff.a"; then
+            NETCDF_LIBRARY_DIR="$path"
+            AC_MSG_RESULT([yes])
+            break
+        fi
+        AC_MSG_RESULT([no])
+    done
+
+    for path in ${default_include_paths//:/ }; do
+        AC_MSG_CHECKING([for netcdf Fortran modules in $path])
+        if test -e "$path/netcdf.mod"; then
+            NETCDF_INCLUDE_DIR="$path"
+            AC_MSG_RESULT([yes])
+            break
+        fi
+        AC_MSG_RESULT([no])
+    done
+
+    if test -n "${NETCDF_LIBRARY_DIR}" && test -n "${NETCDF_INCLUDE_DIR}"; then
+        FCFLAGS="$FCFLAGS -I$NETCDF_INCLUDE_DIR"
+        LDFLAGS="$LDFLAGS -L$NETCDF_LIBRARY_DIR"
+        LIBS="$LIBS -lnetcdff -lnetcdf"
+    else
+        AC_MSG_ERROR([Cannot find netcdf.
+                    Please export the environment variable NETCDF_DIR pointing
+                    to the root directory of netcdf.])
+    fi
 fi
 
 # 11 March 2021
 # https://github.com/PhysicsofFluids/AFiD/blob/master/configure.ac#L139
-AC_MSG_CHECKING([for hdf5 Fortran library])
+AC_MSG_CHECKING([whether we can compile a netcdf program])
 AC_LINK_IFELSE(
-  [AC_LANG_PROGRAM([], [
-      use hdf5
-      implicit none
-      integer         :: h5err
-      call h5open_f(h5err)])],
-  [hdf5_found=yes],
-  [hdf5_found=no AC_MSG_ERROR([Cannot find hdf5 Fortran library])])
-AC_MSG_RESULT([$hdf5_found])
+[AC_LANG_PROGRAM([], [
+    use netcdf
+    implicit none])],
+[netcdf_found=yes],
+[netcdf_found=no AC_MSG_ERROR([Cannot compile a netcdf program])])
+AC_MSG_RESULT([$netcdf_found])
 
 
 AC_ARG_WITH([mpi],
@@ -216,6 +249,36 @@ if test -n "${MPI_DIR}"; then
     FCFLAGS="$FCFLAGS -I$MPI_DIR/include -I$MPI_DIR/lib"
     LDFLAGS="$LDFLAGS -L$MPI_DIR/lib"
     LIBS="$LIBS -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
+else
+    for path in ${default_lib_paths//:/ }; do
+        AC_MSG_CHECKING([for MPI Fortran libraries in $path])
+        if test -e "$path/mpi_usempif08.a"; then
+            MPI_LIBRARY_DIR="$path"
+            AC_MSG_RESULT([yes])
+            break
+        fi
+        AC_MSG_RESULT([no])
+    done
+
+    for path in ${default_include_paths//:/ }; do
+        AC_MSG_CHECKING([for MPI Fortran modules in $path])
+        if test -e "$path/mpi.mod"; then
+            MPI_INCLUDE_DIR="$path"
+            AC_MSG_RESULT([yes])
+            break
+        fi
+        AC_MSG_RESULT([no])
+    done
+
+    if test -n "${MPI_LIBRARY_DIR}" && test -n "${MPI_INCLUDE_DIR}"; then
+        FCFLAGS="$FCFLAGS -I$MPI_INCLUDE_DIR"
+        LDFLAGS="$LDFLAGS -L$MPI_LIBRARY_DIR"
+        LIBS="$LIBS -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
+    else
+        AC_MSG_ERROR([Cannot find MPI.
+                    Please export the environment variable MPI_DIR pointing
+                    to the root directory of MPI.])
+    fi
 fi
 
 AC_MSG_CHECKING([for mpi Fortran library])
@@ -235,9 +298,9 @@ AC_MSG_RESULT([$mpi_found])
 ## "--enable" flags
 ##
 
-ENABLE_3D='no'
+ENABLE_3D='yes'
 AC_ARG_ENABLE([3d],
-              [AS_HELP_STRING([--enable-3d], [enable 3D model (default=no)])],
+              [AS_HELP_STRING([--enable-3d], [enable 3D model (default=yes)])],
               [ENABLE_3D=$enableval])
 
 AM_CONDITIONAL([ENABLE_3D], [test "$ENABLE_3D" = "yes"])

@@ -1,5 +1,5 @@
 import numpy as np
-from tools.h5_reader import H5Reader
+from tools.nc_reader import nc_reader
 import progressbar
 from bokeh.io import export_png
 import matplotlib.pyplot as plt
@@ -12,14 +12,14 @@ class BokehAnimation:
         pass
 
     def create(self, fname, coloring="aspect-ratio", **kwargs):
-        self.h5reader = H5Reader()
+        self.ncreader = nc_reader()
 
-        self.h5reader.open(fname)
+        self.ncreader.open(fname)
 
-        if not self.h5reader.is_parcel_file:
+        if not self.ncreader.is_parcel_file:
             raise IOError("Not a parcel output file.")
 
-        nsteps = self.h5reader.get_num_steps()
+        nsteps = self.ncreader.get_num_steps()
         os.mkdir("temp-movie")
 
         tmin = kwargs.pop("tmin", None)
@@ -29,15 +29,16 @@ class BokehAnimation:
             tmin = 0.0
 
         if tmax is None:
-            t = self.h5reader.get_step_attribute(nsteps - 2, "t")
-            dt = self.h5reader.get_step_attribute(nsteps - 2, "dt")
-            tmax = t + 10 * dt
+            t1 = self.ncreader.get_dataset(nsteps - 2, "t")
+            t2 = self.ncreader.get_dataset(nsteps - 3, "t")
+            dt = t1 - t2
+            tmax = t1 + 10 * dt
 
         bar = progressbar.ProgressBar(maxval=nsteps).start()
         i = 0
         for step in range(nsteps):
 
-            t = self.h5reader.get_step_attribute(step, "t")
+            t = self.ncreader.get_dataset(step, "t")
             if t < tmin:
                 continue
 
@@ -46,18 +47,18 @@ class BokehAnimation:
 
             if coloring == "aspect-ratio":
                 vmin = 1.0
-                vmax = self.h5reader.get_parcel_option("lambda")
+                vmax = self.ncreader.get_global_attribute("lambda_max")
             elif coloring == "vol-distr":
-                extent = self.h5reader.get_box_extent()
-                ncells = self.h5reader.get_box_ncells()
+                extent = self.ncreader.get_box_extent()
+                ncells = self.ncreader.get_box_ncells()
                 vcell = np.prod(extent / ncells)
-                vmin = vcell / self.h5reader.get_parcel_option("min_vratio")
-                vmax = vcell / self.h5reader.get_parcel_option("max_vratio")
+                vmin = vcell / self.ncreader.get_global_attribute("min_vratio")
+                vmax = vcell / self.ncreader.get_global_attribute("max_vratio")
             else:
-                vmin, vmax = self.h5reader.get_dataset_min_max(coloring)
+                vmin, vmax = self.ncreader.get_dataset_min_max(coloring)
 
             graph = _bokeh_plot_parcels(
-                self.h5reader, step, coloring, vmin, vmax, **kwargs
+                self.ncreader, step, coloring, vmin, vmax, **kwargs
             )
 
             export_png(graph, filename="temp-movie/movie.%05d.png" % i)
