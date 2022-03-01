@@ -252,7 +252,7 @@ if test -n "${MPI_DIR}"; then
 else
     for path in ${default_lib_paths//:/ }; do
         AC_MSG_CHECKING([for MPI Fortran libraries in $path])
-        if test -e "$path/mpi_usempif08.a"; then
+        if test -e "$path/libmpi_usempif08.a"; then
             MPI_LIBRARY_DIR="$path"
             AC_MSG_RESULT([yes])
             break
@@ -261,8 +261,8 @@ else
     done
 
     for path in ${default_include_paths//:/ }; do
-        AC_MSG_CHECKING([for MPI Fortran modules in $path])
-        if test -e "$path/mpi.mod"; then
+        AC_MSG_CHECKING([for MPI C header in $path])
+        if test -e "$path/mpi.h"; then
             MPI_INCLUDE_DIR="$path"
             AC_MSG_RESULT([yes])
             break
@@ -271,7 +271,7 @@ else
     done
 
     if test -n "${MPI_LIBRARY_DIR}" && test -n "${MPI_INCLUDE_DIR}"; then
-        FCFLAGS="$FCFLAGS -I$MPI_INCLUDE_DIR"
+        FCFLAGS="$FCFLAGS -I$MPI_INCLUDE_DIR -I$MPI_LIBRARY_DIR"
         LDFLAGS="$LDFLAGS -L$MPI_LIBRARY_DIR"
         LIBS="$LIBS -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
     else
@@ -281,7 +281,7 @@ else
     fi
 fi
 
-AC_MSG_CHECKING([for mpi Fortran library])
+AC_MSG_CHECKING([for MPI Fortran library])
 AC_LINK_IFELSE(
   [AC_LANG_PROGRAM([], [
       use mpi
