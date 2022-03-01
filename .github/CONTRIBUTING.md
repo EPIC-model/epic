@@ -6,7 +6,7 @@ Hi there. The core developers of EPIC thank you for your contribution. We have s
 #### Table of Contents
 1. [Unit Testing](#unit-testing)
 2. [Coding Style](#coding-style)
-2. [Opening a pull request](#pull-request)
+3. [Opening a pull request](#pull-request)
 
 ### Unit Testing <a name="unit-testing"></a>
 Please write unit tests for newly added features and routines. All unit tests are located in the directory `unit-tests`.
