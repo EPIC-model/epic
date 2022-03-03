@@ -14,8 +14,7 @@ module inversion_mod
 
         ! Given the vorticity vector field (vortg) in physical space, this
         ! returns the associated velocity field (velog) and the velocity
-        ! gradient tensor (velgradg).  Note: the
-        ! vorticity is spectrally filtered.
+        ! gradient tensor (velgradg).
         subroutine vor2vel(vortg,  velog,  velgradg)
             double precision, intent(inout) :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out)   :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
@@ -64,28 +63,13 @@ module inversion_mod
             !boundaries (store solution lambda in fs):
             call lapinv1(fs)
 
-            !Filter lambda:
-            !$omp parallel shared(fs, filt, nz) private(iz)  default(none)
-            !$omp do
-            do iz = 0, nz
-                fs(iz, :, :) = filt * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
             !Ensure horizontal average of vertical vorticity is zero:
             cs(:, 0, 0) = zero
 
-            !Compute spectrally filtered vorticity in physical space:
-            !$omp parallel shared(ds, es, fs, as, bs, cs, filt, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                ds(iz, :, :) = filt * as(iz, :, :)
-                es(iz, :, :) = filt * bs(iz, :, :)
-                fs(iz, :, :) = filt * cs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
+            !Compute vorticity in physical space:
+            ds = as
+            es = bs
+            fs = cs
 
             !Save boundary values of x and y vorticity for z derivatives of A & B:
             asbot = as(0, :, :)
@@ -132,13 +116,8 @@ module inversion_mod
             !$omp end parallel
             !Add horizontally-averaged flow:
             fs(:, 0, 0) = ubar
-            !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                svelog(iz, :, :, 1) = filt * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
+
+            svelog(:, :, :, 1) = fs
 
             !------------------------------------------------------------
             !Compute y velocity component, v = C_x - A_z:
@@ -150,15 +129,11 @@ module inversion_mod
             fs = ds - es
             !$omp end workshare
             !$omp end parallel
+
             !Add horizontally-averaged flow:
             fs(:, 0, 0) = vbar
-            !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                svelog(iz, :, :, 2) = filt * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
+
+            svelog(:, :, :, 2) = fs
 
             !------------------------------------------------------------
             !Compute z velocity component, w = A_y - B_x:
@@ -170,13 +145,7 @@ module inversion_mod
             !$omp end workshare
             !$omp end parallel
 
-            !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                svelog(iz, :, :, 3) = filt * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
+            svelog(:, :, :, 3) = fs
 
             ! compute the velocity gradient tensor
             call vel2vgrad(svelog, velgradg)

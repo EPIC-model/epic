@@ -32,9 +32,6 @@ module inversion_utils
     integer, parameter :: nsubs_tri = 8 !number of blocks for openmp
     integer :: nxsub
 
-    !De-aliasing filter:
-    double precision, allocatable :: filt(:, :)
-
     double precision :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq
     integer :: nwx, nwy, nxp2, nyp2
 
@@ -51,7 +48,6 @@ module inversion_utils
             , fftxyp2s  &
             , fftxys2p  &
             , dz2       &
-            , filt      &
             , hdzi      &
             , xfactors  &
             , yfactors  &
@@ -67,7 +63,7 @@ module inversion_utils
         subroutine init_fft
             double precision, allocatable  :: a0(:, :), a0b(:, :), ksq(:, :)
             double precision               :: rkxmax, rkymax
-            double precision               :: rksqmax, rkfsq
+            double precision               :: rksqmax
             integer                        :: kx, ky, iz, isub, ib_sub, ie_sub
 
             if (is_initialised) then
@@ -110,7 +106,6 @@ module inversion_utils
             allocate(hrky(ny))
             allocate(xtrig(2 * nx))
             allocate(ytrig(2 * ny))
-            allocate(filt(nx, ny))
 
             nxsub = nx / nsubs_tri
 
@@ -143,20 +138,6 @@ module inversion_utils
             do ky = 1, ny
                 do kx = 1, nx
                     ksq(kx, ky) = rkx(kx) ** 2 + rky(ky) ** 2
-                enddo
-            enddo
-
-            !--------------------------------------------------------------------
-            ! Define de-aliasing filter:
-            rkfsq = two * rksqmax / nine
-            ! rkfsq: the square of the filter wavenumber (generic 2/3 rule)
-            do ky = 1, ny
-                do kx = 1, nx
-                    if (ksq(kx, ky) .gt. rkfsq) then
-                        filt(kx, ky) = zero
-                    else
-                        filt(kx, ky) = one
-                    endif
                 enddo
             enddo
 
