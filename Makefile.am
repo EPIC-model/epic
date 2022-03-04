@@ -1,11 +1,13 @@
 SUBDIRS =		\
 	src		\
 	unit-tests	\
-	python-scripts	\
  	analyse		\
- 	models		\
-	run-script
+ 	models
 
+if ENABLE_PYTHON
+SUBDIRS += python-scripts	\
+	   run-script
+endif
 
 # 3 November 2021
 # https://stackoverflow.com/questions/16657991/glibtoolize-on-macos-tells-me-to-consider-adding-i-m4-to-aclocal-amflags-but
@@ -21,8 +23,10 @@ dataroot_DATA = 				\
 	examples/robert2d-one-uniform.nml	\
 	examples/robert2d-two-gaussians.nml	\
 	examples/straka2d.nml			\
-	examples/taylorgreen2d.nml		\
-	examples/write_moist_setup.py
+	examples/taylorgreen2d.nml
+
+if ENABLE_PYTHON
+dataroot_DATA += examples/write_moist_setup.py
 
 
 # make python script an executable script
@@ -36,3 +40,4 @@ install-exec-hook:
 	chmod 755 $(bindir)/subgrid_2d_generalised.py
 	chmod 755 $(bindir)/compare_results.py
 	chmod 755 $(bindir)/plot_slices.py
+endif
