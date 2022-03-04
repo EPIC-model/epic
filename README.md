@@ -60,6 +60,8 @@ $ conda create --name <env> python=3.9.9 --file requirements.txt
 ```
 where `<env>` is the name of the environment. The file `requirements.txt` is contained in the root directory of EPIC.
 
+**Note:** In order to install the Python scripts you need to configure with `--enable-python`.
+
 We further provide Fortran analysis scripts. These are:
 * genspec (power spectrum analysis)
 
