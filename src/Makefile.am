@@ -1,5 +1,5 @@
 SUBDIRS = utils fft netcdf 2d
 
 if ENABLE_3D
-SUBDIRS += 3d
+SUBDIRS += mpi 3d
 endif

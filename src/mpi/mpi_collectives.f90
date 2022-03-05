@@ -17,18 +17,18 @@ module mpi_collectives
             double precision,  intent(in),  asynchronous :: sendbuf(..)
             double precision,  intent(out), asynchronous :: recvbuf(..)
             type(MPI_Op),      intent(in)                :: op
-            type(MPI_Request), intent(out)               :: request
-            call MPI_Reduce(sendbuf, recvbuf, size(recvbuf), MPI_DOUBLE, &
-                            op, 0, comm, request, mpi_err)
+            type(MPI_Request)                            :: request
+!             call MPI_Ireduce(sendbuf, recvbuf, size(recvbuf), MPI_DOUBLE, &
+!                              op, 0, comm, request, mpi_err)
         end subroutine mpi_double_ireduce
 
         subroutine mpi_integer_ireduce(sendbuf, recvbuf, op)
             integer,           intent(in),  asynchronous :: sendbuf(..)
             integer,           intent(out), asynchronous :: recvbuf(..)
             type(MPI_Op),      intent(in)                :: op
-            type(MPI_Request), intent(out)               :: request
-            call MPI_Reduce(sendbuf, recvbuf, size(recvbuf), MPI_INT, &
-                            op, 0, comm, request, mpi_err)
+            type(MPI_Request)                            :: request
+!             call MPI_Ireduce(sendbuf, recvbuf, size(recvbuf), MPI_INT, &
+!                              op, 0, comm, request, mpi_err)
         end subroutine mpi_integer_ireduce
 
         subroutine mpi_double_reduce(sendbuf, recvbuf, op)

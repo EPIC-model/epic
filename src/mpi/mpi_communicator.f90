@@ -3,7 +3,7 @@ module mpi_communicator
     implicit none
 
     type(MPI_Comm), parameter :: comm = MPI_COMM_WORLD
-    integer                   :: mpi_err
+    integer                   :: mpi_err = 0
     integer                   :: mpi_rank
     integer                   :: mpi_size
 
