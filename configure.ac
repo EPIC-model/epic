@@ -36,24 +36,143 @@ AC_CONFIG_FILES([
     run-script/Makefile
 ])
 
+#######################################################################################
+##
+## "--with" flags
+##
+
+## define some default search paths
+declare default_lib_paths="/lib:/usr/lib:/lib64:/usr/lib64:/usr/local/lib:$LD_LIBRARY_PATH"
+declare default_include_paths="/usr/include:/usr/local/lib:$C_INCLUDE_PATH:$CPLUS_INCLUDE_PATH"
+
+# 11 March 2021
+# https://www.gnu.org/software/autoconf/manual/autoconf-2.60/html_node/External-Software.html
+AC_ARG_WITH([netcdf],
+            [AS_HELP_STRING([--with-netcdf=<path>], [path to netcdf library @<:@default=$NETCDF_DIR@:>@])],
+            [NETCDF_DIR=$withval],
+            [])
+
+if test -n "${NETCDF_DIR}"; then
+    FCFLAGS="$FCFLAGS -I$NETCDF_DIR/include"
+    LDFLAGS="$LDFLAGS -L$NETCDF_DIR/lib"
+    LIBS="$LIBS -lnetcdff -lnetcdf"
+else
+    for path in ${default_lib_paths//:/ }; do
+        AC_MSG_CHECKING([for netcdf Fortran libraries in $path])
+        if test -e "$path/libnetcdff.a"; then
+            NETCDF_LIBRARY_DIR="$path"
+            AC_MSG_RESULT([yes])
+            break
+        fi
+        AC_MSG_RESULT([no])
+    done
+
+    for path in ${default_include_paths//:/ }; do
+        AC_MSG_CHECKING([for netcdf Fortran modules in $path])
+        if test -e "$path/netcdf.mod"; then
+            NETCDF_INCLUDE_DIR="$path"
+            AC_MSG_RESULT([yes])
+            break
+        fi
+        AC_MSG_RESULT([no])
+    done
+
+    if test -n "${NETCDF_LIBRARY_DIR}" && test -n "${NETCDF_INCLUDE_DIR}"; then
+        FCFLAGS="$FCFLAGS -I$NETCDF_INCLUDE_DIR"
+        LDFLAGS="$LDFLAGS -L$NETCDF_LIBRARY_DIR"
+        LIBS="$LIBS -lnetcdff -lnetcdf"
+    else
+        AC_MSG_ERROR([Cannot find netcdf.
+                    Please export the environment variable NETCDF_DIR pointing
+                    to the root directory of netcdf.])
+    fi
+fi
+
+# 11 March 2021
+# https://github.com/PhysicsofFluids/AFiD/blob/master/configure.ac#L139
+AC_MSG_CHECKING([whether we can compile a netcdf program])
+AC_LINK_IFELSE(
+[AC_LANG_PROGRAM([], [
+    use netcdf
+    implicit none])],
+[netcdf_found=yes],
+[netcdf_found=no AC_MSG_ERROR([Cannot compile a netcdf program])])
+AC_MSG_RESULT([$netcdf_found])
+
+AC_ARG_WITH([mpi],
+            [AS_HELP_STRING([--with-mpi=<path>], [path to mpi library @<:@default=$MPI_DIR@:>@])],
+            [MPI_DIR=$withval],
+            [])
+
+if test -n "${MPI_DIR}"; then
+    FCFLAGS="$FCFLAGS -I$MPI_DIR/include -I$MPI_DIR/lib"
+    LDFLAGS="$LDFLAGS -L$MPI_DIR/lib"
+    LIBS="$LIBS -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
+else
+    for path in ${default_lib_paths//:/ }; do
+        AC_MSG_CHECKING([for MPI Fortran libraries in $path])
+        if test -e "$path/libmpi_usempif08.a"; then
+            MPI_LIBRARY_DIR="$path"
+            AC_MSG_RESULT([yes])
+            break
+        fi
+        AC_MSG_RESULT([no])
+    done
+
+    for path in ${default_include_paths//:/ }; do
+        AC_MSG_CHECKING([for MPI C header in $path])
+        if test -e "$path/mpi.h"; then
+            MPI_INCLUDE_DIR="$path"
+            AC_MSG_RESULT([yes])
+            break
+        fi
+        AC_MSG_RESULT([no])
+    done
+
+    if test -n "${MPI_LIBRARY_DIR}" && test -n "${MPI_INCLUDE_DIR}"; then
+        FCFLAGS="$FCFLAGS -I$MPI_INCLUDE_DIR -I$MPI_LIBRARY_DIR"
+        LDFLAGS="$LDFLAGS -L$MPI_LIBRARY_DIR"
+        LIBS="$LIBS -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
+    else
+        AC_MSG_ERROR([Cannot find MPI.
+                    Please export the environment variable MPI_DIR pointing
+                    to the root directory of MPI.])
+    fi
+fi
+
+AC_MSG_CHECKING([for MPI Fortran library])
+AC_LINK_IFELSE(
+  [AC_LANG_PROGRAM([], [
+      use mpi
+      implicit none
+      integer :: ierr
+      call MPI_INIT(ierr)
+      call MPI_FINALIZE(ierr)])],
+  [mpi_found=yes],
+  [mpi_found=no AC_MSG_ERROR([Cannot find mpi Fortran library])])
+AC_MSG_RESULT([$mpi_found])
 
 #######################################################################################
 ##
-## check Python installation
+## "--enable" flags
+##
+
+##
+## Python
 ##
 ## # 23 March 2021
 ## https://askubuntu.com/questions/29370/how-to-check-if-a-command-succeeded
 ## https://gitlab.psi.ch/H5hut/src/-/blob/master/configure.ac
 ##
 
-DISABLE_PYTHON_CHECK='no'
-AC_ARG_ENABLE([python-check],
-              [AS_HELP_STRING([--disable-python-check], [disable Python checke (default=no)])],
-              [DISABLE_PYTHON_CHECK=$disableval])
+ENABLE_PYTHON='no'
+AC_ARG_ENABLE([python],
+              [AS_HELP_STRING([--enable-python], [enable Python (default=no)])],
+              [ENABLE_PYTHON=$enableval])
 
-AM_CONDITIONAL([DISABLE_PYTHON_CHECK], [test "$DISABLE_PYTHON_CHECK" = "yes"])
+AM_CONDITIONAL([ENABLE_PYTHON], [test "$ENABLE_PYTHON" = "yes"])
 
-if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
+if test "x$ENABLE_PYTHON" = "xyes"; then
     AM_PATH_PYTHON([3.0])
     #
     # argparse
@@ -175,128 +294,6 @@ if test "x$DISABLE_PYTHON_CHECK" = "xno"; then
         AC_MSG_RESULT([no])
     fi
 fi
-
-#######################################################################################
-##
-## "--with" flags
-##
-
-## define some default search paths
-declare default_lib_paths="/lib:/usr/lib:/lib64:/usr/lib64:/usr/local/lib:$LD_LIBRARY_PATH"
-declare default_include_paths="/usr/include:/usr/local/lib:$C_INCLUDE_PATH:$CPLUS_INCLUDE_PATH"
-
-# 11 March 2021
-# https://www.gnu.org/software/autoconf/manual/autoconf-2.60/html_node/External-Software.html
-AC_ARG_WITH([netcdf],
-            [AS_HELP_STRING([--with-netcdf=<path>], [path to netcdf library @<:@default=$NETCDF_DIR@:>@])],
-            [NETCDF_DIR=$withval],
-            [])
-
-if test -n "${NETCDF_DIR}"; then
-    FCFLAGS="$FCFLAGS -I$NETCDF_DIR/include"
-    LDFLAGS="$LDFLAGS -L$NETCDF_DIR/lib"
-    LIBS="$LIBS -lnetcdff -lnetcdf"
-else
-    for path in ${default_lib_paths//:/ }; do
-        AC_MSG_CHECKING([for netcdf Fortran libraries in $path])
-        if test -e "$path/libnetcdff.a"; then
-            NETCDF_LIBRARY_DIR="$path"
-            AC_MSG_RESULT([yes])
-            break
-        fi
-        AC_MSG_RESULT([no])
-    done
-
-    for path in ${default_include_paths//:/ }; do
-        AC_MSG_CHECKING([for netcdf Fortran modules in $path])
-        if test -e "$path/netcdf.mod"; then
-            NETCDF_INCLUDE_DIR="$path"
-            AC_MSG_RESULT([yes])
-            break
-        fi
-        AC_MSG_RESULT([no])
-    done
-
-    if test -n "${NETCDF_LIBRARY_DIR}" && test -n "${NETCDF_INCLUDE_DIR}"; then
-        FCFLAGS="$FCFLAGS -I$NETCDF_INCLUDE_DIR"
-        LDFLAGS="$LDFLAGS -L$NETCDF_LIBRARY_DIR"
-        LIBS="$LIBS -lnetcdff -lnetcdf"
-    else
-        AC_MSG_ERROR([Cannot find netcdf.
-                    Please export the environment variable NETCDF_DIR pointing
-                    to the root directory of netcdf.])
-    fi
-fi
-
-# 11 March 2021
-# https://github.com/PhysicsofFluids/AFiD/blob/master/configure.ac#L139
-AC_MSG_CHECKING([whether we can compile a netcdf program])
-AC_LINK_IFELSE(
-[AC_LANG_PROGRAM([], [
-    use netcdf
-    implicit none])],
-[netcdf_found=yes],
-[netcdf_found=no AC_MSG_ERROR([Cannot compile a netcdf program])])
-AC_MSG_RESULT([$netcdf_found])
-
-
-AC_ARG_WITH([mpi],
-            [AS_HELP_STRING([--with-mpi=<path>], [path to mpi library @<:@default=$MPI_DIR@:>@])],
-            [MPI_DIR=$withval],
-            [])
-
-if test -n "${MPI_DIR}"; then
-    FCFLAGS="$FCFLAGS -I$MPI_DIR/include -I$MPI_DIR/lib"
-    LDFLAGS="$LDFLAGS -L$MPI_DIR/lib"
-    LIBS="$LIBS -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
-else
-    for path in ${default_lib_paths//:/ }; do
-        AC_MSG_CHECKING([for MPI Fortran libraries in $path])
-        if test -e "$path/libmpi_usempif08.a"; then
-            MPI_LIBRARY_DIR="$path"
-            AC_MSG_RESULT([yes])
-            break
-        fi
-        AC_MSG_RESULT([no])
-    done
-
-    for path in ${default_include_paths//:/ }; do
-        AC_MSG_CHECKING([for MPI C header in $path])
-        if test -e "$path/mpi.h"; then
-            MPI_INCLUDE_DIR="$path"
-            AC_MSG_RESULT([yes])
-            break
-        fi
-        AC_MSG_RESULT([no])
-    done
-
-    if test -n "${MPI_LIBRARY_DIR}" && test -n "${MPI_INCLUDE_DIR}"; then
-        FCFLAGS="$FCFLAGS -I$MPI_INCLUDE_DIR -I$MPI_LIBRARY_DIR"
-        LDFLAGS="$LDFLAGS -L$MPI_LIBRARY_DIR"
-        LIBS="$LIBS -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi"
-    else
-        AC_MSG_ERROR([Cannot find MPI.
-                    Please export the environment variable MPI_DIR pointing
-                    to the root directory of MPI.])
-    fi
-fi
-
-AC_MSG_CHECKING([for MPI Fortran library])
-AC_LINK_IFELSE(
-  [AC_LANG_PROGRAM([], [
-      use mpi
-      implicit none
-      integer :: ierr
-      call MPI_INIT(ierr)
-      call MPI_FINALIZE(ierr)])],
-  [mpi_found=yes],
-  [mpi_found=no AC_MSG_ERROR([Cannot find mpi Fortran library])])
-AC_MSG_RESULT([$mpi_found])
-
-#######################################################################################
-##
-## "--enable" flags
-##
 
 ENABLE_3D='yes'
 AC_ARG_ENABLE([3d],
