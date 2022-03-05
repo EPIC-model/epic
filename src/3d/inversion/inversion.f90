@@ -16,10 +16,11 @@ module inversion_mod
         ! returns the associated velocity field (velog) and the velocity
         ! gradient tensor (velgradg).
         subroutine vor2vel(vortg,  velog,  velgradg)
-            double precision, intent(inout) :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+            double precision, intent(in)    :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out)   :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out)   :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
             double precision                :: svelog(0:nz, 0:nx-1, 0:ny-1, 3)
+            double precision                :: vortg_copy(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision                :: as(0:nz, 0:nx-1, 0:ny-1) &
                                              , bs(0:nz, 0:nx-1, 0:ny-1) &
                                              , cs(0:nz, 0:nx-1, 0:ny-1)
@@ -34,42 +35,17 @@ module inversion_mod
 
             call start_timer(vor2vel_timer)
 
+            ! Copy vorticity vector field
+            vortg_copy = vortg
+
             !------------------------------------------------------------------
             !Convert vorticity to spectral space as (as, bs, cs):
-            call fftxyp2s(vortg(0:nz, :, :, 1), as)
-            call fftxyp2s(vortg(0:nz, :, :, 2), bs)
-            call fftxyp2s(vortg(0:nz, :, :, 3), cs)
-
-            !Add -grad(lambda) where Laplace(lambda) = div(vortg) to
-            !enforce the solenoidal condition on the vorticity field:
-            call diffx(as, ds)
-            call diffy(bs, es)
-
-            !For the vertical parcel vorticity, use 4th-order compact
-            !differencing:
-            call diffz1(cs, fs)
-
-            !Form div(vortg):
-            !$omp parallel
-            !$omp workshare
-            fs = ds + es + fs
-            !$omp end workshare
-            !$omp end parallel
-
-            !Remove horizontally-averaged part (plays no role):
-            fs(:, 0, 0) = zero
-
-            !Invert Lap(lambda) = div(vortg) assuming dlambda/dz = 0 at the
-            !boundaries (store solution lambda in fs):
-            call lapinv1(fs)
+            call fftxyp2s(vortg_copy(0:nz, :, :, 1), as)
+            call fftxyp2s(vortg_copy(0:nz, :, :, 2), bs)
+            call fftxyp2s(vortg_copy(0:nz, :, :, 3), cs)
 
             !Ensure horizontal average of vertical vorticity is zero:
             cs(:, 0, 0) = zero
-
-            !Compute vorticity in physical space:
-            ds = as
-            es = bs
-            fs = cs
 
             !Save boundary values of x and y vorticity for z derivatives of A & B:
             asbot = as(0, :, :)
@@ -81,8 +57,8 @@ module inversion_mod
             ubar(0) = zero
             vbar(0) = zero
             do iz = 0, nz-1
-                ubar(iz+1) = ubar(iz) + dz2 * (es(iz, 0, 0) + es(iz+1, 0, 0))
-                vbar(iz+1) = vbar(iz) - dz2 * (ds(iz, 0, 0) + ds(iz+1, 0, 0))
+                ubar(iz+1) = ubar(iz) + dz2 * (bs(iz, 0, 0) + bs(iz+1, 0, 0))
+                vbar(iz+1) = vbar(iz) - dz2 * (as(iz, 0, 0) + as(iz+1, 0, 0))
             enddo
 
             ! remove the mean value to have zero net momentum
@@ -92,11 +68,6 @@ module inversion_mod
                 ubar(iz) = ubar(iz) - uavg
                 vbar(iz) = vbar(iz) - vavg
             enddo
-
-            !Return corrected vorticity to physical space:
-            call fftxys2p(ds, vortg(0:nz, :, :, 1))
-            call fftxys2p(es, vortg(0:nz, :, :, 2))
-            call fftxys2p(fs, vortg(0:nz, :, :, 3))
 
             !-----------------------------------------------------------------
             !Invert vorticity to find vector potential (A, B, C) -> (as, bs, cs):
