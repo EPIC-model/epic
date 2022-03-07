@@ -573,7 +573,7 @@ module inversion_utils
         ! space and returns the result as fp in physical space (in x & y).
         ! Only inverse FFTs over the x and y directions are performed.
         ! *** fs is destroyed upon exit ***
-        subroutine fftxys2p(fs,fp)
+        subroutine fftxys2p(fs, fp)
             double precision, intent(inout):: fs(:, :, :)  !Spectral
             double precision, intent(out)  :: fp(:, :, :)  !Physical
             integer                        :: kx, iy, nzval, nxval, nyval
