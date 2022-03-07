@@ -20,7 +20,6 @@ module inversion_mod
             double precision, intent(out)   :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out)   :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
             double precision                :: svelog(0:nz, 0:nx-1, 0:ny-1, 3)
-            double precision                :: vortg_copy(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision                :: as(0:nz, 0:nx-1, 0:ny-1) &
                                              , bs(0:nz, 0:nx-1, 0:ny-1) &
                                              , cs(0:nz, 0:nx-1, 0:ny-1)
@@ -35,14 +34,15 @@ module inversion_mod
 
             call start_timer(vor2vel_timer)
 
-            ! Copy vorticity vector field
-            vortg_copy = vortg
+            ! Copy vorticity to velocity field to peform FFT transforms
+            ! (FFT transforms overwrite the input array)
+            velog = vortg
 
             !------------------------------------------------------------------
-            !Convert vorticity to spectral space as (as, bs, cs):
-            call fftxyp2s(vortg_copy(0:nz, :, :, 1), as)
-            call fftxyp2s(vortg_copy(0:nz, :, :, 2), bs)
-            call fftxyp2s(vortg_copy(0:nz, :, :, 3), cs)
+            !Convert vorticity to spectral space as (as, bs, cs): (velog is overwritten in this operation)
+            call fftxyp2s(velog(0:nz, :, :, 1), as)
+            call fftxyp2s(velog(0:nz, :, :, 2), bs)
+            call fftxyp2s(velog(0:nz, :, :, 3), cs)
 
             !Ensure horizontal average of vertical vorticity is zero:
             cs(:, 0, 0) = zero
