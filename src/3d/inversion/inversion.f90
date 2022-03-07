@@ -34,7 +34,7 @@ module inversion_mod
 
             call start_timer(vor2vel_timer)
 
-            ! Copy vorticity to velocity field to peform FFT transforms
+            ! Copy vorticity to velocity field to perform FFT transforms
             ! (FFT transforms overwrite the input array)
             velog = vortg
 
