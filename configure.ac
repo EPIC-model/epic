@@ -32,6 +32,7 @@ AC_CONFIG_FILES([
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
+    python-scripts/tools/epic_config.py
     run-script/Makefile
 ])
 
