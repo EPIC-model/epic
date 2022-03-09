@@ -29,7 +29,7 @@ module beltrami_3d
 
         type(beltrami_type) :: beltrami_flow
 
-        double precision :: fk2l2, kk, ll, mm
+        double precision :: fk2l2, kk, ll, mm, alpha
 
         integer :: x_vor_id, y_vor_id, z_vor_id
 
@@ -84,7 +84,8 @@ module beltrami_3d
             kk = dble(beltrami_flow%k)
             ll = dble(beltrami_flow%l)
             mm = dble(beltrami_flow%m)
-            fk2l2 = one / dble(beltrami_flow%k ** 2 + beltrami_flow%l ** 2)
+            alpha = beltrami_flow%alpha
+            fk2l2 = alpha / dble(beltrami_flow%k ** 2 + beltrami_flow%l ** 2)
 
             do i = 0, nx - 1
                 do j = 0, ny - 1
@@ -116,9 +117,9 @@ module beltrami_3d
             sinkxly = dsin(kk * x + ll * y)
             coskxly = dcos(kk * x + ll * y)
 
-            omega(1) = fk2l2 * (kk * mm * sinmz - ll * beltrami_flow%alpha * cosmz) * sinkxly
-            omega(2) = fk2l2 * (kk * mm * sinmz + ll * beltrami_flow%alpha * cosmz) * sinkxly
-            omega(3) = cosmz * coskxly
+            omega(1) = fk2l2 * (kk * mm * sinmz - ll * alpha * cosmz) * sinkxly
+            omega(2) = fk2l2 * (kk * mm * sinmz + ll * alpha * cosmz) * sinkxly
+            omega(3) = alpha * cosmz * coskxly
 
         end function get_flow_vorticity
 
