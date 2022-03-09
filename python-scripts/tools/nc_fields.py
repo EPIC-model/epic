@@ -1,6 +1,7 @@
 import netCDF4 as nc
 import os
 import numpy as np
+from tools.nc_utils import write_nc_info
 
 
 class nc_fields:
@@ -17,6 +18,9 @@ class nc_fields:
             Filename with extension.
         """
         self._ncfile = nc.Dataset(fname, "w", format="NETCDF4")
+
+        write_nc_info(ncfile=self._ncfile, file_type='fields')
+
         self._ndims = 0
 
 
@@ -38,7 +42,6 @@ class nc_fields:
             shape = np.shape(values)
 
             # add dimensions
-            self._ncfile.setncattr('file_type', 'fields')
             self._ncfile.createDimension(dimname="t", size=None)
             if len(shape) == 2:
                 self._ncfile.createDimension(dimname="z", size=shape[0])
