@@ -11,10 +11,9 @@
 !  zeta(x, y, z) = alpha * w(x, y, z)
 !
 !                   The code uses following variable names:
-!                       beltrami_flow%alpha = alpha
-!                       beltrami_flow%k     = k
-!                       beltrami_flow%l     = l
-!                       beltrami_flow%m     = m
+!                       beltrami_flow%k = k
+!                       beltrami_flow%l = l
+!                       beltrami_flow%m = m
 ! ====================================================================================
 module beltrami_3d
     use netcdf_writer
@@ -24,7 +23,6 @@ module beltrami_3d
     private
         type beltrami_type
             integer          :: k, l, m
-            double precision :: alpha
         end type beltrami_type
 
         type(beltrami_type) :: beltrami_flow
@@ -84,7 +82,7 @@ module beltrami_3d
             kk = dble(beltrami_flow%k)
             ll = dble(beltrami_flow%l)
             mm = dble(beltrami_flow%m)
-            alpha = beltrami_flow%alpha
+            alpha = dsqrt(kk ** 2 + ll ** 2 + mm ** 2)
             fk2l2 = alpha / dble(beltrami_flow%k ** 2 + beltrami_flow%l ** 2)
 
             do i = 0, nx - 1

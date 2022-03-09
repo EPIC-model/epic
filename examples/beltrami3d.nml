@@ -20,9 +20,10 @@
  !    xi(x, y, z) = alpha * u(x, y, z)
  !   eta(x, y, z) = alpha * v(x, y, z)
  !  zeta(x, y, z) = alpha * w(x, y, z)
+ !
+ ! alpha = sqrt(k^2 + l^2 + m^2)
 
  beltrami_flow%k = 2
  beltrami_flow%l = 2
  beltrami_flow%m = 1
- beltrami_flow%alpha = 3.0
 /
