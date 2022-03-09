@@ -14,7 +14,6 @@ epic3d_models_PROGRAMS = epic3d-models
 
 epic3d_models_SOURCES =		\
 	beltrami_3d.f90		\
-	taylor_green_3d.f90	\
 	robert_3d.f90		\
 	moist_3d.f90		\
 	epic3d-models.f90
