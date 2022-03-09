@@ -3,7 +3,7 @@
 !
 ! Beltrami flow:
 !     u(x, y, z) = (k^2 + l^2)^(-1) * [k*m*sin(mz) - l*alpha*cos(m*z) * sin(k*x + l*y)]
-!     v(x, y, z) = (k^2 + l^2)^(-1) * [k*m*sin(mz) + l*alpha*cos(m*z) * sin(k*x + l*y)]
+!     v(x, y, z) = (k^2 + l^2)^(-1) * [l*m*sin(mz) + k*alpha*cos(m*z) * sin(k*x + l*y)]
 !     w(x, y, z) = cos(m*z) * cos(k*x + l*y)
 ! The vorticity of this flow is
 !    xi(x, y, z) = alpha * u(x, y, z)
@@ -116,7 +116,7 @@ module beltrami_3d
             coskxly = dcos(kk * x + ll * y)
 
             omega(1) = fk2l2 * (kk * mm * sinmz - ll * alpha * cosmz) * sinkxly
-            omega(2) = fk2l2 * (kk * mm * sinmz + ll * alpha * cosmz) * sinkxly
+            omega(2) = fk2l2 * (ll * mm * sinmz + kk * alpha * cosmz) * sinkxly
             omega(3) = alpha * cosmz * coskxly
 
         end function get_flow_vorticity
