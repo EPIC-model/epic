@@ -103,31 +103,23 @@ module beltrami_3d
 
         function get_flow_vorticity(pos) result(omega)
             double precision, intent(in) :: pos(3)
-            double precision             :: xx, yy, zz
+            double precision             :: x, y, z
             double precision             :: omega(3)
             double precision             :: cosmz, sinmz, sinkxly, coskxly
 
-            call get_flow_pos(pos, xx, yy, zz)
+            x = pos(1)
+            y = pos(2)
+            z = pos(3)
 
-            cosmz = dcos(mm * zz)
-            sinmz = dsin(mm * zz)
-            sinkxly = dsin(kk * xx + ll * yy)
-            coskxly = dcos(kk * xx + ll * yy)
+            cosmz = dcos(mm * z)
+            sinmz = dsin(mm * z)
+            sinkxly = dsin(kk * x + ll * y)
+            coskxly = dcos(kk * x + ll * y)
 
             omega(1) = fk2l2 * (kk * mm * sinmz - ll * beltrami_flow%alpha * cosmz) * sinkxly
             omega(2) = fk2l2 * (kk * mm * sinmz + ll * beltrami_flow%alpha * cosmz) * sinkxly
             omega(3) = cosmz * coskxly
 
         end function get_flow_vorticity
-
-        subroutine get_flow_pos(pos, xx, yy, zz)
-            double precision, intent(in) :: pos(3)
-            double precision, intent(out) :: xx, yy, zz
-
-            xx = pos(1) + hpi
-            yy = pos(2) + hpi
-            zz = pos(3) + hpi
-
-        end subroutine get_flow_pos
 
 end module beltrami_3d
