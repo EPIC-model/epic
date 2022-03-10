@@ -71,7 +71,7 @@ program test_netcdf_read_dataset_1d
 
     passed = (passed .and. (ncerr == 0))
 
-    error = sum(wdset - rdset(1:n_parcels))
+    error = sum(abs(wdset - rdset(1:n_parcels)))
 
     passed = (passed .and. (ncerr == 0) .and. (error == 0.0d0))
 
