@@ -2,7 +2,7 @@
 !               This program writes fields to NetCDF in EPIC format.
 ! =============================================================================
 program epic3d_models
-    use taylor_green_3d
+    use beltrami_3d
     use robert_3d
     use moist_3d
     use constants, only : pi, zero
@@ -61,7 +61,7 @@ program epic3d_models
 
             call define_netcdf_temporal_dimension(ncid, dimids(4), axids(4))
 
-            if (model == 'TaylorGreen') then
+            if (model == 'Beltrami') then
                 ! make origin and extent always a multiple of pi
                 box%origin = pi * box%origin
                 box%extent = pi * box%extent
@@ -74,8 +74,8 @@ program epic3d_models
             call write_netcdf_box(ncid, lower, extent, box%ncells)
 
             select case (trim(model))
-                case ('TaylorGreen')
-                    call taylor_green_init(ncid, dimids, nx, ny, nz, box%origin, dx)
+                case ('Beltrami')
+                    call beltrami_init(ncid, dimids, nx, ny, nz, box%origin, dx)
                 case ('Robert')
                     call robert_init(ncid, dimids, nx, ny, nz, box%origin, dx)
                 case ('MoistPlume')
@@ -102,7 +102,7 @@ program epic3d_models
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /MODELS/ model, ncfname, box, tg_flow, robert_flow, moist
+            namelist /MODELS/ model, ncfname, box, beltrami_flow, robert_flow, moist
 
             ! check whether file exists
             inquire(file=filename, exist=exists)

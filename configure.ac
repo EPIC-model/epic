@@ -1,4 +1,4 @@
-AC_INIT([epic], [0.11.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
+AC_INIT([epic], [0.12.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
@@ -32,6 +32,7 @@ AC_CONFIG_FILES([
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
+    python-scripts/tools/epic_config.py
     run-script/Makefile
 ])
 

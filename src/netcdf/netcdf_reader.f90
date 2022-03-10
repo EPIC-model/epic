@@ -166,7 +166,7 @@ module netcdf_reader
             call check_netcdf_error("Reading dataset id failed.")
 
             ncerr = nf90_get_var(ncid=ncid, varid=varid, values=values, &
-                                 start=start, count=cnt, map=(/map(1), 1/))
+                                 start=start, count=cnt)
 
             buffer = transpose(values)
 
@@ -179,13 +179,21 @@ module netcdf_reader
             double precision,  intent(out) :: buffer(:, :, :)
             integer, optional, intent(in)  :: start(:)
             integer, optional, intent(in)  :: cnt(:)
-            integer                        :: varid
+            integer                        :: varid, map(3)
+            double precision, allocatable  :: values(:, :, :)
+
+            map = shape(buffer)
+
+            allocate(values(map(3), map(2), map(1)))
 
             ncerr = nf90_inq_varid(ncid, name, varid)
             call check_netcdf_error("Reading dataset id failed.")
 
-            ncerr = nf90_get_var(ncid=ncid, varid=varid, values=buffer, &
+            ncerr = nf90_get_var(ncid=ncid, varid=varid, values=values, &
                                  start=start, count=cnt)
+
+            buffer = reshape(values, shape=(/map(1), map(2), map(3)/), order=(/3, 2, 1/))
+            deallocate(values)
         end subroutine read_netcdf_dataset_3d
 
         subroutine read_netcdf_global_attrib_integer(ncid, name, val)
