@@ -24,8 +24,7 @@ module inversion_mod
                                              , bs(0:nz, 0:nx-1, 0:ny-1) &
                                              , cs(0:nz, 0:nx-1, 0:ny-1)
             double precision                :: ds(0:nz, 0:nx-1, 0:ny-1) &
-                                             , es(0:nz, 0:nx-1, 0:ny-1) &
-                                             , fs(0:nz, 0:nx-1, 0:ny-1)
+                                             , es(0:nz, 0:nx-1, 0:ny-1)
             double precision                :: dstop(0:nx-1, 0:ny-1), dsbot(0:nx-1, 0:ny-1)
             double precision                :: ubar(0:nz), vbar(0:nz)
             double precision                :: uavg, vavg
