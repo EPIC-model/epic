@@ -147,7 +147,13 @@ module inversion_utils
             enddo
 
             k2l2i(1, 1) = zero ! k = l = 0
-            k2l2i(2:, 2:) = one / ksq(2:, 2:)
+            k2l2i(1, 2) = one / ksq(1, 2)
+            k2l2i(2, 1) = one / ksq(2, 1)
+            do ky = 2, ny
+                do kx = 2, nx
+                    k2l2i(kx, ky) = one / ksq(kx, ky)
+                enddo
+            enddo
 
             !-----------------------------------------------------------------------
             ! Fixed coefficients used in the tridiagonal problems:
