@@ -26,8 +26,7 @@ module inversion_mod
             double precision                :: ds(0:nz, 0:nx-1, 0:ny-1) &
                                              , es(0:nz, 0:nx-1, 0:ny-1) &
                                              , fs(0:nz, 0:nx-1, 0:ny-1)
-            double precision                :: astop(0:nx-1, 0:ny-1), bstop(0:nx-1, 0:ny-1)
-            double precision                :: asbot(0:nx-1, 0:ny-1), bsbot(0:nx-1, 0:ny-1)
+            double precision                :: dstop(0:nx-1, 0:ny-1), dsbot(0:nx-1, 0:ny-1)
             double precision                :: ubar(0:nz), vbar(0:nz)
             double precision                :: uavg, vavg
             integer                         :: iz
@@ -43,15 +42,6 @@ module inversion_mod
             call fftxyp2s(velog(0:nz, :, :, 1), as)
             call fftxyp2s(velog(0:nz, :, :, 2), bs)
             call fftxyp2s(velog(0:nz, :, :, 3), cs)
-
-            !Ensure horizontal average of vertical vorticity is zero:
-            cs(:, 0, 0) = zero
-
-            !Save boundary values of x and y vorticity for z derivatives of A & B:
-            asbot = as(0, :, :)
-            bsbot = bs(0, :, :)
-            astop = as(nz, :, :)
-            bstop = bs(nz, :, :)
 
             !Define horizontally-averaged flow by integrating horizontal vorticity:
             ubar(0) = zero
@@ -69,66 +59,71 @@ module inversion_mod
                 vbar(iz) = vbar(iz) - vavg
             enddo
 
-            !-----------------------------------------------------------------
-            !Invert vorticity to find vector potential (A, B, C) -> (as, bs, cs):
-            call lapinv0(as)
-            call lapinv0(bs)
-            call lapinv1(cs)
+            !Form source term for inversion of vertical velocity:
+            call diffy(as, ds)
+            call diffx(bs, es)
 
-            !------------------------------------------------------------
-            !Compute x velocity component, u = B_z - C_y:
-            call diffy(cs, ds)
-            call diffz0(bs, es, bsbot, bstop)
-            !bsbot & bstop contain spectral y vorticity component at z_min and z_max
             !$omp parallel
             !$omp workshare
-            fs = es - ds
+            ds = ds - es
             !$omp end workshare
             !$omp end parallel
+
+            !as & bs are now free to re-use
+
+            !Save boundary values for z derivative of w below:
+            dsbot = ds(0,  :, :)
+            dstop = ds(nz, :, :)
+
+            !Invert to find vertical velocity \hat{w} (store in ds, spectrally):
+            call lapinv0(ds)
+
+            !Find \hat{w}' (store in es, spectrally):
+            call diffz0(ds, es, dsbot, dstop)
+
+            !Find x velocity component \hat{u}:
+            call diffx(es, as)
+            call diffy(cs, bs)
+
+            !$omp parallel do
+            do iz = 0, nz
+                as(iz, :, :) = k2l2i * (as(iz, :, :) + bs(iz, :, :))
+            enddo
+            !$omp end parallel do
+
             !Add horizontally-averaged flow:
-            fs(:, 0, 0) = ubar
+            as(:, 0, 0) = ubar
 
-            svelog(:, :, :, 1) = fs
+            svelog(:, :, :, 1) = as
 
-            !------------------------------------------------------------
-            !Compute y velocity component, v = C_x - A_z:
-            call diffx(cs, ds)
-            call diffz0(as, es, asbot, astop)
-            !asbot & astop contain spectral x vorticity component at z_min and z_max
-            !$omp parallel
-            !$omp workshare
-            fs = ds - es
-            !$omp end workshare
-            !$omp end parallel
+            !Get u in physical space:
+            call fftxys2p(as, velog(0:nz, :, :, 1))
+
+            !Find y velocity component \hat{v}:
+            call diffy(es, as)
+            call diffx(cs, bs)
+
+            !$omp parallel do
+            do iz = 0, nz
+                as(iz, :, :) = k2l2i * (as(iz, :, :) - bs(iz, :, :))
+            enddo
+            !$omp end parallel do
 
             !Add horizontally-averaged flow:
-            fs(:, 0, 0) = vbar
+            as(:, 0, 0) = vbar
 
-            svelog(:, :, :, 2) = fs
+            svelog(:, :, :, 2) = as
 
-            !------------------------------------------------------------
-            !Compute z velocity component, w = A_y - B_x:
-            call diffx(bs, ds)
-            call diffy(as, es)
-            !$omp parallel
-            !$omp workshare
-            fs = es - ds
-            !$omp end workshare
-            !$omp end parallel
+            !Get v in physical space:
+            call fftxys2p(as, velog(0:nz, :, :, 2))
 
-            svelog(:, :, :, 3) = fs
+            svelog(:, :, :, 3) = ds
+
+            !Get w in physical space:
+            call fftxys2p(ds, velog(0:nz, :, :, 3))
 
             ! compute the velocity gradient tensor
             call vel2vgrad(svelog, velgradg)
-
-            !Get u in physical space:
-            call fftxys2p(svelog(0:nz, :, :, 1), velog(0:nz, :, :, 1))
-
-            !Get v in physical space:
-            call fftxys2p(svelog(0:nz, :, :, 2), velog(0:nz, :, :, 2))
-
-            !Get w in physical space:
-            call fftxys2p(svelog(0:nz, :, :, 3), velog(0:nz, :, :, 3))
 
             ! use symmetry to fill z grid points outside domain:
             velog(-1, :, :, 1) =  velog(1, :, :, 1) ! u
