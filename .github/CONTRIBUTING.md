@@ -7,6 +7,7 @@ Hi there. The core developers of EPIC thank you for your contribution. We have s
 1. [Unit Testing](#unit-testing)
 2. [Coding Style](#coding-style)
 3. [Opening a pull request](#pull-request)
+4. [Creating a new release](#new-release)
 
 ### Unit Testing <a name="unit-testing"></a>
 Please write unit tests for newly added features and routines. All unit tests are located in the directory `unit-tests`.
@@ -22,3 +23,9 @@ Please follow our coding style when contributing to EPIC.
 
 ### Opening a pull request <a name="pull-request"></a>
 Developers should fork the main repo.
+
+### Creating a new release <a name="new-release"></a>
+These are the steps to create new releases:
+1. update CHANGELOG.md
+2. increment the tag in configure.ac (in AC_INIT)
+3. draft new release on GitHub

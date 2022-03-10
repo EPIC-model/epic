@@ -1,3 +1,9 @@
+## EPIC version 0.12.1
+* [enable Python by](https://github.com/matt-frey/epic/pull/328)
+* [Beltrami flow by](https://github.com/matt-frey/epic/pull/330)
+* [remove 3D Taylor-Green flow by](https://github.com/matt-frey/epic/pull/331)
+* [add python EPIC config and write netCDF header by](https://github.com/matt-frey/epic/pull/329)
+* [fix reading netcdf datasets by](https://github.com/matt-frey/epic/pull/332)
 ## EPIC version 0.12.0
 * [replace HDF5 with NetCDF](https://github.com/matt-frey/epic/pull/325)
 ## EPIC version 0.11.0
