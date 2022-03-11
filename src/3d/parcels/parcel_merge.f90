@@ -4,8 +4,7 @@
 ! =============================================================================
 module parcel_merge
     use parcel_nearest
-    use constants, only : pi, zero, one, two, five, f13 &
-                        , max_num_parcels
+    use constants, only : pi, zero, one, two, five, f13
     use parcel_container, only : parcel_container_type  &
                                , n_parcels              &
                                , parcel_replace         &
