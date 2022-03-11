@@ -15,8 +15,8 @@ module fields
     ! Due to periodicity in x and y, the grid points in x go from 0 to nx-1
     ! and from 0 to ny-1 in y
     double precision, allocatable, dimension(:, :, :, :) :: &
-        velog,     &   ! velocity vector field
-        vortg,     &   ! vorticity vector field
+        velog,     &   ! velocity vector field (u, v, w)
+        vortg,     &   ! vorticity vector field (\omegax, \omegay, \omegaz)
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
                        ! ordering: du/dx, du/dy,
