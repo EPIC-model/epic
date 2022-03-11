@@ -140,17 +140,20 @@ module inversion_utils
             rksqmax = rkxmax ** 2 + rkymax ** 2
 
             !Squared wavenumber array (used in tridiagonal solve):
-            rkx(1) = one
-            rky(1) = one
             do ky = 1, ny
                 do kx = 1, nx
                     ksq(kx, ky) = rkx(kx) ** 2 + rky(ky) ** 2
+                enddo
+            enddo
+
+            k2l2i(1, 1) = zero ! k = l = 0
+            k2l2i(1, 2) = one / ksq(1, 2)
+            k2l2i(2, 1) = one / ksq(2, 1)
+            do ky = 2, ny
+                do kx = 2, nx
                     k2l2i(kx, ky) = one / ksq(kx, ky)
                 enddo
             enddo
-            rkx(1) = zero
-            rky(1) = zero
-            k2l2i(1, 1) = zero ! k = l = 0
 
             !-----------------------------------------------------------------------
             ! Fixed coefficients used in the tridiagonal problems:
