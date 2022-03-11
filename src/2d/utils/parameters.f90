@@ -57,6 +57,9 @@ module parameters
     ! maximum volume
     double precision :: vmax
 
+    ! maximum number of allowed parcels
+    integer :: max_num_parcels
+
     contains
 
     ! Update all parameters according to the
@@ -97,6 +100,8 @@ module parameters
 
         vmin = vcell / parcel%min_vratio
         vmax = vcell / parcel%max_vratio
+
+        max_num_parcels = nx * nz * parcel%n_per_cell * parcel%size_factor
 
     end subroutine update_parameters
 end module parameters

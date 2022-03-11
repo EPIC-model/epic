@@ -1,10 +1,10 @@
 module parcel_netcdf
-    use constants, only : max_num_parcels, one
+    use constants, only : one
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
     use parcel_container, only : parcels, n_parcels
-    use parameters, only : nx, nz, extent, lower, update_parameters
+    use parameters, only : nx, nz, extent, lower, max_num_parcels
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
@@ -231,14 +231,6 @@ module parcel_netcdf
             call start_timer(parcel_io_timer)
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
-
-            ! read domain dimensions
-            call get_netcdf_box(ncid, lower, extent, ncells)
-            nx = ncells(1)
-            nz = ncells(2)
-
-            ! update global parameters
-            call update_parameters
 
             call get_num_parcels(ncid, n_parcels)
 

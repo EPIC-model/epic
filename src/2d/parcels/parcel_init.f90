@@ -3,14 +3,14 @@
 ! =============================================================================
 module parcel_init
     use options, only : parcel, output, verbose, field_tol
-    use constants, only : zero, two, one, f12, max_num_parcels
+    use constants, only : zero, two, one, f12
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : bilinear, ngp
-    use parameters, only : update_parameters,   &
-                           dx, vcell, ncell,    &
-                           extent, lower, nx, nz
+    use parameters, only : dx, vcell, ncell,        &
+                           extent, lower, nx, nz,   &
+                           max_num_parcels
     use netcdf_reader
     use timer, only : start_timer, stop_timer
     use omp_lib
@@ -44,17 +44,9 @@ module parcel_init
             character(*),     intent(in) :: fname
             double precision, intent(in) :: tol
             double precision             :: lam, ratio
-            integer                      :: n, ncells(2)
+            integer                      :: n
 
             call start_timer(init_timer)
-
-            ! read domain dimensions
-            call read_netcdf_domain(fname, lower, extent, ncells)
-            nx = ncells(1)
-            nz = ncells(2)
-
-            ! update global parameters
-            call update_parameters
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
