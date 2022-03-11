@@ -41,7 +41,6 @@ unittests_PROGRAMS = 				\
 	test_ellipsoid_reflection		\
 	test_free_slip_3d			\
 	test_vor2vel				\
-	test_vtend				\
 	test_velgradg				\
 	test_lapinv0_1				\
 	test_lapinv0_2				\
@@ -104,9 +103,6 @@ test_free_slip_3d_LDADD = libcombi.la
 
 test_vor2vel_SOURCES = test_vor2vel.f90
 test_vor2vel_LDADD = libcombi.la
-
-test_vtend_SOURCES = test_vtend.f90
-test_vtend_LDADD = libcombi.la
 
 test_velgradg_SOURCES = test_velgradg.f90
 test_velgradg_LDADD = libcombi.la

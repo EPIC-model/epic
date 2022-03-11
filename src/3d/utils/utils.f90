@@ -8,7 +8,7 @@ module utils
     use parcel_diagnostics_netcdf
     use parcel_diagnostics
     use parcel_container, only : n_parcels
-    use inversion_mod, only : vor2vel, vorticity_tendency
+    use inversion_mod, only : vor2vel, buoyancy_derivatives
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time
     implicit none
@@ -67,7 +67,7 @@ module utils
             ! this is also needed for the first ls-rk4 substep
             call vor2vel(vortg, velog, velgradg)
 
-            call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
+            call buoyancy_derivatives(tbuoyg, dbdx, dbdy)
 
             call grid2par(velocity, vorticity, strain)
 
