@@ -150,7 +150,6 @@ module inversion_utils
             enddo
             rkx(1) = zero
             rky(1) = zero
-            ksq(1, 1) = zero
             k2l2i(1, 1) = zero ! k = l = 0
 
             !-----------------------------------------------------------------------
