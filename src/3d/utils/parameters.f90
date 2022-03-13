@@ -106,7 +106,7 @@ module parameters
         vmin = vcell / parcel%min_vratio
         vmax = vcell / parcel%max_vratio
 
-        max_num_parcels = nx * ny * nz * parcel%n_per_cell * parcel%size_factor
+        max_num_parcels = int(nx * ny * nz * parcel%min_vratio * parcel%size_factor)
 
     end subroutine update_parameters
 end module parameters

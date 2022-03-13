@@ -52,7 +52,7 @@ module options
     ! parcel options
     !
     type parcel_type
-        integer          :: size_factor      = 3        ! factor to increase max. number of parcels
+        double precision :: size_factor      = 1.0d0    ! factor to increase max. number of parcels
         integer          :: n_per_cell       = 9        ! number of parcels per cell (need to be a square)
         double precision :: lambda_max       = four     ! max. ellipse aspect ratio a/b
         double precision :: min_vratio       = 40.0d0   ! minimum ratio of grid cell volume / parcel volume
