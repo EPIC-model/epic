@@ -32,15 +32,15 @@ module parcel_ellipsoid
 
     contains
 
-        subroutine parcel_ellispoid_allocate
+        subroutine parcel_ellipsoid_allocate
             allocate(Vetas(3, max_num_parcels))
             allocate(Vtaus(3, max_num_parcels))
-        end subroutine parcel_ellispoid_allocate
+        end subroutine parcel_ellipsoid_allocate
 
-        subroutine parcel_ellispoid_deallocate
+        subroutine parcel_ellipsoid_deallocate
             deallocate(Vetas)
             deallocate(Vtaus)
-        end subroutine parcel_ellispoid_deallocate
+        end subroutine parcel_ellipsoid_deallocate
 
         ! Obtain the parcel shape matrix.
         ! @param[in] B = (B11, B12, B13, B22, B23)
