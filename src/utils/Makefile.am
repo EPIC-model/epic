@@ -9,5 +9,6 @@ libepic_utils_la_SOURCES = 	\
 	timer.f90		\
 	jacobi.f90		\
 	iomanip.f90		\
-	config.f90
+	config.f90		\
+	phys_parameters.f90
 

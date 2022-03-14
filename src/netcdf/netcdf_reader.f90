@@ -14,15 +14,15 @@ module netcdf_reader
         module procedure :: read_netcdf_dataset_3d
     end interface read_netcdf_dataset
 
-    interface read_netcdf_global_attribute
-        module procedure :: read_netcdf_global_attrib_integer
-        module procedure :: read_netcdf_global_attrib_double
-    end interface read_netcdf_global_attribute
+    interface read_netcdf_attribute
+        module procedure :: read_netcdf_attrib_integer
+        module procedure :: read_netcdf_attrib_double
+    end interface read_netcdf_attribute
 
-    private :: read_netcdf_global_attrib_integer,   &
-               read_netcdf_global_attrib_double,    &
-               read_netcdf_dataset_1d,              &
-               read_netcdf_dataset_2d,              &
+    private :: read_netcdf_attrib_integer,  &
+               read_netcdf_attrib_double,   &
+               read_netcdf_dataset_1d,      &
+               read_netcdf_dataset_2d,      &
                read_netcdf_dataset_3d
 
     contains
@@ -196,16 +196,16 @@ module netcdf_reader
             deallocate(values)
         end subroutine read_netcdf_dataset_3d
 
-        subroutine read_netcdf_global_attrib_integer(ncid, name, val)
+        subroutine read_netcdf_attrib_integer(ncid, name, val)
             integer,       intent(in)     :: ncid
             character(*),  intent(in)     :: name
             integer,       intent(out)    :: val
 
             ncerr = nf90_get_att(ncid, NF90_GLOBAL, name, val)
             call check_netcdf_error("Reading attribute '" // name // "' failed.")
-        end subroutine read_netcdf_global_attrib_integer
+        end subroutine read_netcdf_attrib_integer
 
-        subroutine read_netcdf_global_attrib_double(ncid, name, val)
+        subroutine read_netcdf_attrib_double(ncid, name, val)
             integer,          intent(in)     :: ncid
             character(*),     intent(in)     :: name
             double precision, intent(out)    :: val
@@ -213,7 +213,7 @@ module netcdf_reader
             ncerr = nf90_get_att(ncid, NF90_GLOBAL, name, val)
             call check_netcdf_error("Reading attribute '" // name // "' failed.")
 
-        end subroutine read_netcdf_global_attrib_double
+        end subroutine read_netcdf_attrib_double
 
         subroutine read_netcdf_domain(ncfname, origin, extent, ncells)
             character(*), intent(in)      :: ncfname
