@@ -12,6 +12,8 @@ module parcel_diagnostics_netcdf
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
+    use physical_parameters, only : write_physical_parameters
+    use physical_constants, only : write_physical_constants
     implicit none
 
 
@@ -71,7 +73,9 @@ module parcel_diagnostics_netcdf
                                    cf_version=cf_version)
 
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
-            call write_netcdf_timestamp(ncid)
+
+            call write_physical_parameters(ncid)
+            call write_physical_constants(ncid)
 
             call write_netcdf_options(ncid)
 
