@@ -7,7 +7,7 @@ module field_netcdf
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
-    use phys_parameters, only : glati
+    use physical_parameters, only : glati
     implicit none
 
     integer :: field_io_timer

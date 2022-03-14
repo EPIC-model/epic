@@ -248,4 +248,20 @@ module netcdf_reader
 
         end subroutine get_netcdf_box
 
+        subroutine get_netcdf_physical_quantity(ncid, name, val)
+            integer,      intent(in)        :: ncid
+            character(*), intent(in)        :: name
+            double precision, intent(inout) :: val      ! needs to be "inout" if parameter not available
+
+            if (has_attribute(ncid, name)) then
+                call read_netcdf_attribute(ncid, name, val)
+#ifdef ENABLE_VERBOSE
+                print *, "Found physical quantity '" // name // "'."
+            else
+                print *, "WARNING: Using default value of '" // name // "'."
+#endif
+            endif
+
+        end subroutine get_netcdf_physical_quantity
+
 end module netcdf_reader

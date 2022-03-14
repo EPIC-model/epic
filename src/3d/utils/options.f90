@@ -49,18 +49,6 @@ module options
     logical :: allow_larger_anisotropy = .false.
 
     !
-    ! physical input
-    !
-
-    !FIXME parameters for coriolis and mean wind
-    !non-dimensional ang_vel of earth = t_scale*Omega
-    !t_scale = 142.8571428571 Omega = 7.2921159e-5
-    logical          :: l_coriolis  = .false.
-    double precision :: ang_vel     = twopi / 86400.0d0 ![m/s] angular velocity
-    double precision :: lat_degrees = 45.0d0
-
-
-    !
     ! parcel options
     !
     type parcel_type

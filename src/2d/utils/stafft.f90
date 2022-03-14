@@ -194,8 +194,9 @@ module stafft
         ! Backend consists of mixed-radix routines, with 'decimation in time'.
         ! Transform is stored in Hermitian form.
         subroutine forfft(m, n, x, trig, factors)
+            integer,          intent(in)    :: m, n
             double precision, intent(inout) :: x(0:m*n-1), trig(0:2*n-1)
-            integer,          intent(in)    :: m, n, factors(5)
+            integer,          intent(in)    :: factors(5)
             double precision                :: wk(0:m*n-1), normfac
             integer                         :: i, rem, cum, iloc
             logical                         :: orig
@@ -292,8 +293,9 @@ module stafft
     ! Backend consists of mixed-radix routines, with 'decimation in frequency'.
     ! Reverse transform starts in Hermitian form.
     subroutine revfft(m, n, x, trig, factors)
+        integer,          intent(in)    :: m, n
         double precision, intent(inout) :: x(0:m*n-1), trig(0:2*n-1)
-        integer,          intent(in)    :: m, n, factors(5)
+        integer,          intent(in)    :: factors(5)
         double precision                :: wk(0:m*n-1), normfac
         integer                         :: i, k, cum, rem, iloc
         logical                         :: orig
