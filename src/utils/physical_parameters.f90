@@ -51,9 +51,9 @@ module physical_parameters
 
         end subroutine update_physical_parameters
 
-        subroutine read_physical_parameters(fname)
-            character(*), intent(in) :: fname
-            integer                  :: ncid, grp_ncid
+        subroutine read_physical_parameters(ncid)
+            integer, intent(in) :: ncid
+            integer             :: grp_ncid
 
             ncerr = nf90_inq_ncid(ncid, 'physical_parameters', grp_ncid)
 
@@ -84,9 +84,9 @@ module physical_parameters
                 ft_cor = zero
             endif
 
-        end subroutine read_physical_parameters(ncid)
+        end subroutine read_physical_parameters
 
-        subroutine write_physical_parameters
+        subroutine write_physical_parameters(ncid)
             integer, intent(in)     :: ncid
             integer                 :: grp_ncid
             character(*), parameter :: name = 'physical_parameters'

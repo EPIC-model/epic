@@ -26,9 +26,9 @@ module physical_constants
 
     contains
 
-        subroutine read_physical_constants(fname)
-            character(*), intent(in) :: fname
-            integer                  :: ncid, grp_ncid
+        subroutine read_physical_constants(ncid)
+            integer, intent(in) :: ncid
+            integer             :: grp_ncid
 
             ncerr = nf90_inq_ncid(ncid, 'physical_constants', grp_ncid)
 
