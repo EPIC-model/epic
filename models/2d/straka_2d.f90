@@ -11,10 +11,9 @@
 ! =============================================================================
 
 module straka_2d
-    use phys_constants
     use constants
     use netcdf_writer
-    use physical_constants, only : write_physical_constants
+    use physical_constants, only : write_physical_constants, gravity
     use physical_parameters, only : write_physical_parameters, theta_l0
     implicit none
 

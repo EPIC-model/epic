@@ -6,8 +6,8 @@
 ! stratified zone aloft.
 ! =============================================================================
 module moist_3d
-    use phys_constants
-    use phys_parameters
+    use physical_parameters, only : write_physical_parameters, theta_l0
+    use physical_constants, only : write_physical_constants, gravity
     use constants
     use netcdf_writer
     implicit none
@@ -50,6 +50,9 @@ module moist_3d
             integer                         :: i, j, k
             double precision                :: rpos1, rpos2, rpos3, r2, pos(3), centre(3), extent(3)
             double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
+
+            ! set physical parameters
+            theta_l0 = moist%theta_l0    ![K] reference potential temperature
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -171,6 +174,9 @@ module moist_3d
 
             call write_netcdf_dataset(ncid, buo_id, buoyg)
             call write_netcdf_dataset(ncid, hum_id, humg)
+
+            call write_physical_constants(ncid)
+            call write_physical_parameters(ncid)
 
             deallocate(buoyg)
             deallocate(humg)
