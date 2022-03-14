@@ -16,11 +16,6 @@ module physical_parameters
     ![m] inverse condensation scale-height
     double precision :: lam_c = 0.001d0
 
-    ![] see equation (5) of MPIC paper
-    double precision, protected :: glat
-
-    double precision, protected :: glati
-
     double precision, protected :: lat_ref
 
     logical :: l_coriolis = .false.
@@ -42,14 +37,19 @@ module physical_parameters
     ![K] mean liquid-water potential temperature
     double precision :: theta_l0 = 300.0d0
 
+    ![] see equation (5) of MPIC paper
+    double precision, protected :: glat
+
+    double precision, protected :: glati
+
+    private :: update_physical_constants
+
     contains
 
-        subroutine update_physical_parameters
-
-             glat = gravity * L_v / (c_p * theta_l0)
-             glati = one / glat
-
-        end subroutine update_physical_parameters
+        subroutine update_physical_constants
+            glat = gravity * L_v / (c_p * theta_l0)
+            glati = one / glat
+        end subroutine update_physical_constants
 
         subroutine read_physical_parameters(ncid)
             integer, intent(in) :: ncid
@@ -64,6 +64,7 @@ module physical_parameters
                     print *, "WARNING: No physical parameters found! EPIC uses default values."
                 endif
 #endif
+                call update_physical_constants
                 return
             endif
 
@@ -82,6 +83,8 @@ module physical_parameters
                 f_cor  = zero
                 ft_cor = zero
             endif
+
+            call update_physical_constants
 
         end subroutine read_physical_parameters
 

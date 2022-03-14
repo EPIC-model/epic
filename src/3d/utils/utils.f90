@@ -12,8 +12,7 @@ module utils
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters
-    use physical_parameters, only : update_physical_parameters, &
-                                    read_physical_parameters
+    use physical_parameters, only : read_physical_parameters
     use physical_constants, only : read_physical_constants
     implicit none
 
@@ -160,7 +159,6 @@ module utils
 
             ! update global parameters
             call update_parameters
-            call update_physical_parameters
         end subroutine setup_domain_and_parameters
 
 end module utils
