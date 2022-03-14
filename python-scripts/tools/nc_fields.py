@@ -23,10 +23,14 @@ class nc_fields:
 
         self._ndims = 0
 
-        self._params = {}
+        self._physical_constants = {}
+        self._physical_parameters = {}
 
-    def add_parameter(self, key, value):
-        self._params[key] = value
+    def add_physical_constant(self, key, value):
+        self._physical_constants[key] = value
+
+    def add_physical_parameter(self, key, value):
+        self._physical_parameters[key] = value
 
     def add_field(self, name, values, dtype='f8', **kwargs):
         """
@@ -84,8 +88,13 @@ class nc_fields:
             var.long_name = long_name
 
     def close(self):
-        if not self._params == {}:
-            write_nc_parameters(self._ncfile, self._params)
+        if not self._physical_parameters == {}:
+            write_nc_parameters(self._ncfile, 'physical_parameters',
+                                self._physical_parameters)
+
+        if not self._physical_constants == {}:
+            write_nc_parameters(self._ncfile, 'physical_constants',
+                                self._physical_constants)
 
         self._ncfile.close()
 

@@ -1,5 +1,5 @@
 ! =========================================================================================
-! This module contains non-modifiable physical constants.
+! This module contains physical constants.
 !
 ! Note: We cannot use the keyword "parameter" since we read in the values
 !       of the quantities from the NetCDF file. Hence, they are not known

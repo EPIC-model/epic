@@ -170,11 +170,11 @@ try:
     ncp.add_dataset('B22', B[:, 3], unit='m^2')
     ncp.add_dataset('B23', B[:, 4], unit='m^2')
 
-    ncp.add_parameter('q_0', q0)
-    ncp.add_parameter('theta_l0', theta_l0)
-    ncp.add_parameter('gravity', gravity)
-    ncp.add_parameter('L_v', L_v)
-    ncp.add_parameter('c_p', c_p)
+    ncp.add_physical_constant('q_0', q0)
+    ncp.add_physical_constant('liquid_water_potential_temperature', theta_l0)
+    ncp.add_physical_constant('gravity', gravity)
+    ncp.add_physical_constant('latent_heat', L_v)
+    ncp.add_physical_constant('specific_heat', c_p)
 
     ncp.close()
 except Exception as ex:

@@ -1,5 +1,5 @@
 ! =============================================================================
-! This module contains modifiable physical parameters.
+! This module contains physical parameters.
 ! =============================================================================
 module physical_parameters
     use constants
