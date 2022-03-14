@@ -16,19 +16,19 @@ module physical_constants
     implicit none
 
     ![m/s**2]
-    double precision, protected :: gravity = 9.81d0
+    double precision, protected :: gravity
 
     ![J/kg] latent heat of condensation
-    double precision, protected :: L_v = 2.501e6
+    double precision, protected :: L_v
 
     ![J/(kg*K)] specific heat at constant pressure
-    double precision, protected :: c_p = 1005.0d0
+    double precision, protected :: c_p
 
     ![kg/m**3] saturation specific humidity at ground level
-    double precision, protected :: h_0 = 0.015d0
+    double precision, protected :: h_0
 
     ![K] mean liquid-water potential temperature
-    double precision, protected :: theta_l0 = 300.0d0
+    double precision, protected :: theta_l0
 
     contains
 
@@ -48,15 +48,27 @@ module physical_constants
                 return
             endif
 
-            call get_netcdf_physical_quantity(grp_ncid, 'gravity', gravity)
-            call get_netcdf_physical_quantity(grp_ncid, 'latent_heat', L_v)
-            call get_netcdf_physical_quantity(grp_ncid, 'specific_heat', c_p)
-            call get_netcdf_physical_quantity(grp_ncid, 'specific_humidity', h_0)
-            call get_netcdf_physical_quantity(grp_ncid, 'liquid_water_potential_temperature', theta_l0)
+            call read_netcdf_attribute_default(grp_ncid, 'gravity', gravity, 9.81d0)
+            call read_netcdf_attribute_default(grp_ncid, 'latent_heat', L_v, 2.501e6)
+            call read_netcdf_attribute_default(grp_ncid, 'specific_heat', c_p, 1005.0d0)
+            call read_netcdf_attribute_default(grp_ncid, 'specific_humidity', h_0, 0.015d0)
+            call read_netcdf_attribute_default(grp_ncid, 'liquid_water_potential_temperature', theta_l0, 300.0d0)
 
         end subroutine read_physical_constants
 
-        subroutine write_physical_constants
+        subroutine write_physical_constants(ncid)
+            integer, intent(in)     :: ncid
+            integer                 :: grp_ncid
+            character(*), parameter :: name = 'physical_constants'
+
+            ncerr = nf90_def_grp(ncid, name, grp_ncid)
+            call check_netcdf_error("Faild to create NetCDF group '" // name // "'.")
+
+            call write_netcdf_attribute(grp_ncid, 'gravity', gravity)
+            call write_netcdf_attribute(grp_ncid, 'latent_heat', L_v)
+            call write_netcdf_attribute(grp_ncid, 'specific_heat', c_p)
+            call write_netcdf_attribute(grp_ncid, 'specific_humidity', h_0)
+            call write_netcdf_attribute(grp_ncid, 'liquid_water_potential_temperature', theta_l0)
 
         end subroutine write_physical_constants
 

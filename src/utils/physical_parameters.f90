@@ -23,12 +23,12 @@ module physical_parameters
 
     double precision, protected :: lat_ref
 
-    logical, protected :: l_coriolis  = .false.
+    logical, protected :: l_coriolis
 
     ![m/s] angular velocity
-    double precision, protected :: ang_vel = twopi / 86400.0d0
+    double precision, protected :: ang_vel
 
-    double precision, protected :: lat_degrees = 45.0d0
+    double precision, protected :: lat_degrees
 
     ! Coriolis frequency
     double precision, protected :: f_cor
@@ -61,9 +61,9 @@ module physical_parameters
                 return
             endif
 
-!             call get_netcdf_physical_quantity(grp_ncid, 'coriolis', l_coriolis)
-            call get_netcdf_physical_quantity(grp_ncid, 'angular_velocity', ang_vel)
-            call get_netcdf_physical_quantity(grp_ncid, 'lat_degrees', lat_degrees)
+            call read_netcdf_attribute_default(grp_ncid, 'coriolis', l_coriolis, .false.)
+            call read_netcdf_attribute_default(grp_ncid, 'angular_velocity', ang_vel, twopi / 86400.0d0)
+            call read_netcdf_attribute_default(grp_ncid, 'lat_degrees', lat_degrees, 45.0d0)
 
 
             if (l_coriolis) then

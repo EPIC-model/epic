@@ -17,12 +17,23 @@ module netcdf_reader
     interface read_netcdf_attribute
         module procedure :: read_netcdf_attrib_integer
         module procedure :: read_netcdf_attrib_double
+        module procedure :: read_netcdf_attrib_logical
     end interface read_netcdf_attribute
 
-    private :: read_netcdf_attrib_integer,  &
-               read_netcdf_attrib_double,   &
-               read_netcdf_dataset_1d,      &
-               read_netcdf_dataset_2d,      &
+    interface read_netcdf_attribute_default
+        module procedure :: read_netcdf_attrib_default_integer
+        module procedure :: read_netcdf_attrib_default_double
+        module procedure :: read_netcdf_attrib_default_logical
+    end interface read_netcdf_attribute_default
+
+    private :: read_netcdf_attrib_integer,          &
+               read_netcdf_attrib_double,           &
+               read_netcdf_attrib_logical,          &
+               read_netcdf_attrib_default_integer,  &
+               read_netcdf_attrib_default_double,   &
+               read_netcdf_attrib_default_logical,  &
+               read_netcdf_dataset_1d,              &
+               read_netcdf_dataset_2d,              &
                read_netcdf_dataset_3d
 
     contains
@@ -215,6 +226,20 @@ module netcdf_reader
 
         end subroutine read_netcdf_attrib_double
 
+        subroutine read_netcdf_attrib_logical(ncid, name, val)
+            integer,      intent(in)  :: ncid
+            character(*), intent(in)  :: name
+            logical,      intent(out) :: val
+            integer                   :: int_val
+
+
+            ncerr = nf90_get_att(ncid, NF90_GLOBAL, name, int_val)
+            call check_netcdf_error("Reading attribute '" // name // "' failed.")
+
+            val = (int_val .ne. 0)
+
+        end subroutine read_netcdf_attrib_logical
+
         subroutine read_netcdf_domain(ncfname, origin, extent, ncells)
             character(*), intent(in)      :: ncfname
             integer                       :: ncid
@@ -248,20 +273,62 @@ module netcdf_reader
 
         end subroutine get_netcdf_box
 
-        subroutine get_netcdf_physical_quantity(ncid, name, val)
-            integer,      intent(in)        :: ncid
-            character(*), intent(in)        :: name
-            double precision, intent(inout) :: val      ! needs to be "inout" if parameter not available
+        subroutine read_netcdf_attrib_default_double(ncid, name, val, default)
+            integer,          intent(in)  :: ncid
+            character(*),     intent(in)  :: name
+            double precision, intent(out) :: val
+            double precision, intent(in)  :: default
+
+            val = default
 
             if (has_attribute(ncid, name)) then
-                call read_netcdf_attribute(ncid, name, val)
+                call read_netcdf_attrib_double(ncid, name, val)
 #ifdef ENABLE_VERBOSE
-                print *, "Found physical quantity '" // name // "'."
+                print *, "Found float attribute '" // name // "'."
             else
                 print *, "WARNING: Using default value of '" // name // "'."
 #endif
             endif
 
-        end subroutine get_netcdf_physical_quantity
+        end subroutine read_netcdf_attrib_default_double
+
+        subroutine read_netcdf_attrib_default_integer(ncid, name, val, default)
+            integer,      intent(in)  :: ncid
+            character(*), intent(in)  :: name
+            integer,      intent(out) :: val
+            integer,      intent(in)  :: default
+
+            val = default
+
+            if (has_attribute(ncid, name)) then
+                call read_netcdf_attrib_integer(ncid, name, val)
+#ifdef ENABLE_VERBOSE
+                print *, "Found integer attribute '" // name // "'."
+            else
+                print *, "WARNING: Using default value of '" // name // "'."
+#endif
+            endif
+
+        end subroutine read_netcdf_attrib_default_integer
+
+
+        subroutine read_netcdf_attrib_default_logical(ncid, name, val, default)
+            integer,      intent(in)  :: ncid
+            character(*), intent(in)  :: name
+            logical,      intent(out) :: val
+            logical,      intent(in)  :: default
+
+            val = default
+
+            if (has_attribute(ncid, name)) then
+                call read_netcdf_attrib_logical(ncid, name, val)
+#ifdef ENABLE_VERBOSE
+                print *, "Found integer attribute '" // name // "'."
+            else
+                print *, "WARNING: Using default value of '" // name // "'."
+#endif
+            endif
+
+        end subroutine read_netcdf_attrib_default_logical
 
 end module netcdf_reader
