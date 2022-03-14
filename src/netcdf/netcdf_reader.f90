@@ -232,7 +232,6 @@ module netcdf_reader
             logical,      intent(out) :: val
             integer                   :: int_val
 
-
             ncerr = nf90_get_att(ncid, NF90_GLOBAL, name, int_val)
             call check_netcdf_error("Reading attribute '" // name // "' failed.")
 
