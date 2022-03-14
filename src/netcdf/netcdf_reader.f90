@@ -323,7 +323,7 @@ module netcdf_reader
             if (has_attribute(ncid, name)) then
                 call read_netcdf_attrib_logical(ncid, name, val)
 #ifdef ENABLE_VERBOSE
-                print *, "Found integer attribute '" // name // "'."
+                print *, "Found boolean attribute '" // name // "'."
             else
                 print *, "WARNING: Using default value of '" // name // "'."
 #endif
