@@ -24,12 +24,6 @@ module physical_constants
     ![J/(kg*K)] specific heat at constant pressure
     double precision, protected :: c_p
 
-    ![kg/m**3] saturation specific humidity at ground level
-    double precision, protected :: h_0
-
-    ![K] mean liquid-water potential temperature
-    double precision, protected :: theta_l0
-
     contains
 
         subroutine read_physical_constants(fname)
@@ -51,8 +45,6 @@ module physical_constants
             call read_netcdf_attribute_default(grp_ncid, 'gravity', gravity, 9.81d0)
             call read_netcdf_attribute_default(grp_ncid, 'latent_heat', L_v, 2.501e6)
             call read_netcdf_attribute_default(grp_ncid, 'specific_heat', c_p, 1005.0d0)
-            call read_netcdf_attribute_default(grp_ncid, 'specific_humidity', h_0, 0.015d0)
-            call read_netcdf_attribute_default(grp_ncid, 'liquid_water_potential_temperature', theta_l0, 300.0d0)
 
         end subroutine read_physical_constants
 
@@ -67,8 +59,6 @@ module physical_constants
             call write_netcdf_attribute(grp_ncid, 'gravity', gravity)
             call write_netcdf_attribute(grp_ncid, 'latent_heat', L_v)
             call write_netcdf_attribute(grp_ncid, 'specific_heat', c_p)
-            call write_netcdf_attribute(grp_ncid, 'specific_humidity', h_0)
-            call write_netcdf_attribute(grp_ncid, 'liquid_water_potential_temperature', theta_l0)
 
         end subroutine write_physical_constants
 

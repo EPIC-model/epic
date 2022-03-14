@@ -36,6 +36,12 @@ module physical_parameters
     ! component of the planetary vorticity in the y direction
     double precision, protected :: ft_cor
 
+    ![kg/m**3] saturation specific humidity at ground level
+    double precision, protected :: h_0
+
+    ![K] mean liquid-water potential temperature
+    double precision, protected :: theta_l0
+
     contains
 
         subroutine update_physical_parameters
@@ -61,6 +67,8 @@ module physical_parameters
                 return
             endif
 
+            call read_netcdf_attribute_default(grp_ncid, 'specific_humidity', h_0, 0.015d0)
+            call read_netcdf_attribute_default(grp_ncid, 'liquid_water_potential_temperature', theta_l0, 300.0d0)
             call read_netcdf_attribute_default(grp_ncid, 'coriolis', l_coriolis, .false.)
             call read_netcdf_attribute_default(grp_ncid, 'angular_velocity', ang_vel, twopi / 86400.0d0)
             call read_netcdf_attribute_default(grp_ncid, 'lat_degrees', lat_degrees, 45.0d0)
@@ -75,9 +83,21 @@ module physical_parameters
                 ft_cor = zero
             endif
 
-        end subroutine read_physical_parameters
+        end subroutine read_physical_parameters(ncid)
 
         subroutine write_physical_parameters
+            integer, intent(in)     :: ncid
+            integer                 :: grp_ncid
+            character(*), parameter :: name = 'physical_parameters'
+
+            ncerr = nf90_def_grp(ncid, name, grp_ncid)
+            call check_netcdf_error("Faild to create NetCDF group '" // name // "'.")
+
+            call write_netcdf_attribute(grp_ncid, 'specific_humidity', h_0)
+            call write_netcdf_attribute(grp_ncid, 'liquid_water_potential_temperature', theta_l0)
+            call write_netcdf_attribute(grp_ncid, 'coriolis', l_coriolis)
+            call write_netcdf_attribute(grp_ncid, 'angular_velocity', ang_vel)
+            call write_netcdf_attribute(grp_ncid, 'lat_degrees', lat_degrees)
 
         end subroutine write_physical_parameters
 
