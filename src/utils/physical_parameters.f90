@@ -14,7 +14,7 @@ module physical_parameters
 !     !t_scale = 142.8571428571 Omega = 7.2921159e-5
 
     ![m] inverse condensation scale-height
-    double precision, protected :: lam_c = 0.001d0
+    double precision, protected :: lam_c
 
     ![] see equation (5) of MPIC paper
     double precision, protected :: glat
@@ -72,6 +72,7 @@ module physical_parameters
             call read_netcdf_attribute_default(grp_ncid, 'coriolis', l_coriolis, .false.)
             call read_netcdf_attribute_default(grp_ncid, 'angular_velocity', ang_vel, twopi / 86400.0d0)
             call read_netcdf_attribute_default(grp_ncid, 'lat_degrees', lat_degrees, 45.0d0)
+            call read_netcdf_attribute_default(grp_ncid, 'inverse_condensation_scale_height', lam_c, 0.001d0)
 
 
             if (l_coriolis) then
@@ -98,6 +99,7 @@ module physical_parameters
             call write_netcdf_attribute(grp_ncid, 'coriolis', l_coriolis)
             call write_netcdf_attribute(grp_ncid, 'angular_velocity', ang_vel)
             call write_netcdf_attribute(grp_ncid, 'lat_degrees', lat_degrees)
+            call write_netcdf_attribute(grp_ncid, 'inverse_condensation_scale_height', lam_c)
 
         end subroutine write_physical_parameters
 
