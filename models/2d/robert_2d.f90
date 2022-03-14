@@ -12,16 +12,15 @@
 ! =============================================================================
 
 module robert_2d
-    use phys_constants
     use constants
     use netcdf_writer
+    use physical_constants, only : write_physical_constants, gravity
+    use physical_parameters, only : write_physical_parameters, theta_l0
     implicit none
 
     private
 
     double precision, allocatable :: buoyg(:, :)
-
-    double precision :: ref_theta = 303.15d0    ![K] reference potential temperature
 
     integer :: buo_id
 
@@ -54,6 +53,9 @@ module robert_2d
             double precision, intent(in)    :: dx(2)
             integer                         :: k
             type(bubble_type)               :: bubble
+
+            ! set physical parameters
+            theta_l0 = 303.15d0         ![K] reference potential temperature
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -91,6 +93,9 @@ module robert_2d
 
             call write_netcdf_dataset(ncid, buo_id, buoyg)
 
+            call write_physical_constants(ncid)
+            call write_physical_parameters(ncid)
+
             deallocate(buoyg)
 
         end subroutine robert_init
@@ -122,10 +127,10 @@ module robert_2d
                     endif
 
                     ! MPIC paper:
-                    ! liquid-water buoyancy is defined by b = g * (theta − ref_theta) / ref_theta
-                    ! (dtheta = theta - ref_theta)
+                    ! liquid-water buoyancy is defined by b = g * (theta − theta_l0) / theta_l0
+                    ! (dtheta = theta - theta_l0)
                     buoyg(j, i) = buoyg(j, i) &
-                                + gravity * dtheta / ref_theta
+                                + gravity * dtheta / theta_l0
                 enddo
             enddo
         end subroutine robert_uniform_init
@@ -168,10 +173,10 @@ module robert_2d
                     endif
 
                     ! MPIC paper:
-                    ! liquid-water buoyancy is defined by b = g * (theta − ref_theta) / ref_theta
-                    ! (dtheta = theta - ref_theta)
+                    ! liquid-water buoyancy is defined by b = g * (theta − theta_l0) / theta_l0
+                    ! (dtheta = theta - theta_l0)
                     buoyg(j, i) = buoyg(j, i) &
-                                + gravity * dtheta / ref_theta
+                                + gravity * dtheta / theta_l0
                 enddo
             enddo
         end subroutine robert_gaussian_init

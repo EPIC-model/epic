@@ -272,13 +272,10 @@ module netcdf_reader
 
         end subroutine get_netcdf_box
 
-        subroutine read_netcdf_attrib_default_double(ncid, name, val, default)
-            integer,          intent(in)  :: ncid
-            character(*),     intent(in)  :: name
-            double precision, intent(out) :: val
-            double precision, intent(in)  :: default
-
-            val = default
+        subroutine read_netcdf_attrib_default_double(ncid, name, val)
+            integer,          intent(in)   :: ncid
+            character(*),     intent(in)    :: name
+            double precision, intent(inout) :: val
 
             if (has_attribute(ncid, name)) then
                 call read_netcdf_attrib_double(ncid, name, val)
@@ -291,13 +288,10 @@ module netcdf_reader
 
         end subroutine read_netcdf_attrib_default_double
 
-        subroutine read_netcdf_attrib_default_integer(ncid, name, val, default)
-            integer,      intent(in)  :: ncid
-            character(*), intent(in)  :: name
-            integer,      intent(out) :: val
-            integer,      intent(in)  :: default
-
-            val = default
+        subroutine read_netcdf_attrib_default_integer(ncid, name, val)
+            integer,      intent(in)    :: ncid
+            character(*), intent(in)    :: name
+            integer,      intent(inout) :: val
 
             if (has_attribute(ncid, name)) then
                 call read_netcdf_attrib_integer(ncid, name, val)
@@ -311,13 +305,10 @@ module netcdf_reader
         end subroutine read_netcdf_attrib_default_integer
 
 
-        subroutine read_netcdf_attrib_default_logical(ncid, name, val, default)
-            integer,      intent(in)  :: ncid
-            character(*), intent(in)  :: name
-            logical,      intent(out) :: val
-            logical,      intent(in)  :: default
-
-            val = default
+        subroutine read_netcdf_attrib_default_logical(ncid, name, val)
+            integer,      intent(in)    :: ncid
+            character(*), intent(in)    :: name
+            logical,      intent(inout) :: val
 
             if (has_attribute(ncid, name)) then
                 call read_netcdf_attrib_logical(ncid, name, val)

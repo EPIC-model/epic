@@ -16,13 +16,13 @@ module physical_constants
     implicit none
 
     ![m/s**2]
-    double precision, protected :: gravity
+    double precision, protected :: gravity = 9.81d0
 
     ![J/kg] latent heat of condensation
-    double precision, protected :: L_v
+    double precision, protected :: L_v = 2.501e6
 
     ![J/(kg*K)] specific heat at constant pressure
-    double precision, protected :: c_p
+    double precision, protected :: c_p = 1005.0d0
 
     contains
 
@@ -32,7 +32,7 @@ module physical_constants
 
             ncerr = nf90_inq_ncid(ncid, 'physical_constants', grp_ncid)
 
-            ! if no group available, leave the function
+            ! if no group available --> we use default values
             if (ncerr .ne. 0) then
 #ifdef ENABLE_VERBOSE
                 if (verbose) then
@@ -42,9 +42,9 @@ module physical_constants
                 return
             endif
 
-            call read_netcdf_attribute_default(grp_ncid, 'gravity', gravity, 9.81d0)
-            call read_netcdf_attribute_default(grp_ncid, 'latent_heat', L_v, 2.501e6)
-            call read_netcdf_attribute_default(grp_ncid, 'specific_heat', c_p, 1005.0d0)
+            call read_netcdf_attribute_default(grp_ncid, 'gravity', gravity)
+            call read_netcdf_attribute_default(grp_ncid, 'latent_heat', L_v)
+            call read_netcdf_attribute_default(grp_ncid, 'specific_heat', c_p)
 
         end subroutine read_physical_constants
 
@@ -54,6 +54,7 @@ module physical_constants
             character(*), parameter :: name = 'physical_constants'
 
             ncerr = nf90_def_grp(ncid, name, grp_ncid)
+
             call check_netcdf_error("Faild to create NetCDF group '" // name // "'.")
 
             call write_netcdf_attribute(grp_ncid, 'gravity', gravity)

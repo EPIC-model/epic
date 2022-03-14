@@ -14,7 +14,7 @@ module physical_parameters
 !     !t_scale = 142.8571428571 Omega = 7.2921159e-5
 
     ![m] inverse condensation scale-height
-    double precision, protected :: lam_c
+    double precision :: lam_c = 0.001d0
 
     ![] see equation (5) of MPIC paper
     double precision, protected :: glat
@@ -23,12 +23,12 @@ module physical_parameters
 
     double precision, protected :: lat_ref
 
-    logical, protected :: l_coriolis
+    logical :: l_coriolis = .false.
 
     ![m/s] angular velocity
-    double precision, protected :: ang_vel
+    double precision :: ang_vel = twopi / 86400.0d0
 
-    double precision, protected :: lat_degrees
+    double precision :: lat_degrees = 45.0d0
 
     ! Coriolis frequency
     double precision, protected :: f_cor
@@ -37,10 +37,10 @@ module physical_parameters
     double precision, protected :: ft_cor
 
     ![kg/m**3] saturation specific humidity at ground level
-    double precision, protected :: h_0
+    double precision :: h_0 = 0.015d0
 
     ![K] mean liquid-water potential temperature
-    double precision, protected :: theta_l0
+    double precision :: theta_l0 = 300.0d0
 
     contains
 
@@ -57,7 +57,7 @@ module physical_parameters
 
             ncerr = nf90_inq_ncid(ncid, 'physical_parameters', grp_ncid)
 
-            ! if no group available, leave the function
+            ! if no group available --> we use default values
             if (ncerr .ne. 0) then
 #ifdef ENABLE_VERBOSE
                 if (verbose) then
@@ -67,13 +67,12 @@ module physical_parameters
                 return
             endif
 
-            call read_netcdf_attribute_default(grp_ncid, 'specific_humidity', h_0, 0.015d0)
-            call read_netcdf_attribute_default(grp_ncid, 'liquid_water_potential_temperature', theta_l0, 300.0d0)
-            call read_netcdf_attribute_default(grp_ncid, 'coriolis', l_coriolis, .false.)
-            call read_netcdf_attribute_default(grp_ncid, 'angular_velocity', ang_vel, twopi / 86400.0d0)
-            call read_netcdf_attribute_default(grp_ncid, 'lat_degrees', lat_degrees, 45.0d0)
-            call read_netcdf_attribute_default(grp_ncid, 'inverse_condensation_scale_height', lam_c, 0.001d0)
-
+            call read_netcdf_attribute_default(grp_ncid, 'specific_humidity', h_0)
+            call read_netcdf_attribute_default(grp_ncid, 'liquid_water_potential_temperature', theta_l0)
+            call read_netcdf_attribute_default(grp_ncid, 'coriolis', l_coriolis)
+            call read_netcdf_attribute_default(grp_ncid, 'angular_velocity', ang_vel)
+            call read_netcdf_attribute_default(grp_ncid, 'lat_degrees', lat_degrees)
+            call read_netcdf_attribute_default(grp_ncid, 'inverse_condensation_scale_height', lam_c)
 
             if (l_coriolis) then
                 lat_ref = lat_degrees * deg2rad
