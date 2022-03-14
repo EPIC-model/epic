@@ -2,7 +2,7 @@
 !                       EPIC2D - Elliptical Parcel-in-Cell
 ! =============================================================================
 program epic2d
-    use constants, only : max_num_parcels, zero
+    use constants, only : zero
     use timer
 !     use field_diagnostics, only : hdf5_field_stat_timer
     use parcel_container
@@ -31,6 +31,7 @@ program epic2d
     use parcel_init, only : init_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
     use utils, only : write_last_step, setup_output_files, setup_restart
+    use parameters, only : max_num_parcels, nx, nz, lower, extent, update_parameters
     implicit none
 
     integer          :: epic_timer
@@ -58,6 +59,7 @@ program epic2d
                               , restart_file        &
                               , time
             character(len=16) :: file_type
+            integer           :: ncells(2)
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
@@ -86,6 +88,19 @@ program epic2d
 
             ! parse the config file
             call read_config_file
+
+            ! read domain dimensions
+            if (l_restart) then
+                call read_netcdf_domain(trim(restart_file), lower, extent, ncells)
+            else
+                call read_netcdf_domain(trim(field_file), lower, extent, ncells)
+            endif
+
+            nx = ncells(1)
+            nz = ncells(2)
+
+            ! update global parameters
+            call update_parameters
 
             call parcel_alloc(max_num_parcels)
 

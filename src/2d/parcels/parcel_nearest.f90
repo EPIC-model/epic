@@ -2,9 +2,9 @@
 !               Finds the parcels nearest every "small" parcel
 !==============================================================================
 module parcel_nearest
-    use constants, only : pi, f12, max_num_parcels
+    use constants, only : pi, f12
     use parcel_container, only : parcels, n_parcels, get_delx
-    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin
+    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin, max_num_parcels
     use options, only : parcel
     use timer, only : start_timer, stop_timer
 
@@ -16,21 +16,21 @@ module parcel_nearest
 
     !Used for searching for possible parcel merger:
     integer, allocatable :: nppc(:), kc1(:),kc2(:)
-    integer :: loca(max_num_parcels)
-    integer :: node(max_num_parcels)
+    integer, allocatable :: loca(:)
+    integer, allocatable :: node(:)
 
     ! Logicals used to determine which mergers are executed
     ! Integers above could be reused for this, but this would
     ! make the algorithm less readable
-    logical :: l_leaf(max_num_parcels)
-    logical :: l_available(max_num_parcels)
-    logical :: l_first_merged(max_num_parcels) ! indicates parcels merged in first stage
+    logical, allocatable :: l_leaf(:)
+    logical, allocatable :: l_available(:)
+    logical, allocatable :: l_first_merged(:) ! indicates parcels merged in first stage
 
 #ifndef NDEBUG
     ! Logicals that are only needed for sanity checks
-    logical :: l_merged(max_num_parcels)! SANITY CHECK ONLY
-    logical :: l_small(max_num_parcels) ! SANITY CHECK ONLY
-    logical :: l_close(max_num_parcels) ! SANITY CHECK ONLY
+    logical, allocatable :: l_merged(:)! SANITY CHECK ONLY
+    logical, allocatable :: l_small(:) ! SANITY CHECK ONLY
+    logical, allocatable :: l_close(:) ! SANITY CHECK ONLY
 #endif
 
     logical :: l_continue_iteration, l_do_merge
@@ -63,6 +63,16 @@ module parcel_nearest
                 allocate(nppc(ncell))
                 allocate(kc1(ncell))
                 allocate(kc2(ncell))
+                allocate(loca(max_num_parcels))
+                allocate(node(max_num_parcels))
+                allocate(l_leaf(max_num_parcels))
+                allocate(l_available(max_num_parcels))
+                allocate(l_first_merged(max_num_parcels))
+#ifndef NDEBUG
+                allocate(l_merged(max_num_parcels))
+                allocate(l_small(max_num_parcels))
+                allocate(l_close(max_num_parcels))
+#endif
             endif
 
             nmerge = 0

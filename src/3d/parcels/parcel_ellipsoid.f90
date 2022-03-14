@@ -14,8 +14,8 @@ module parcel_ellipsoid
                         , two   &
                         , three &
                         , five  &
-                        , seven &
-                        , max_num_parcels
+                        , seven
+    use parameters, only : max_num_parcels
     use jacobi
     implicit none
 
@@ -26,12 +26,21 @@ module parcel_ellipsoid
     double precision, parameter :: costheta(4) = dcos((/fpi4, f3pi4, f5pi4, f7pi4/))
     double precision, parameter :: sintheta(4) = dsin((/fpi4, f3pi4, f5pi4, f7pi4/))
 
-    double precision :: Vetas(3, max_num_parcels), &
-                        Vtaus(3, max_num_parcels)
+    double precision, allocatable :: Vetas(:, :), Vtaus(:, :)
 
-    private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_upper_triangular
+    private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_upper_triangular, Vetas, Vtaus
 
     contains
+
+        subroutine parcel_ellipsoid_allocate
+            allocate(Vetas(3, max_num_parcels))
+            allocate(Vtaus(3, max_num_parcels))
+        end subroutine parcel_ellipsoid_allocate
+
+        subroutine parcel_ellipsoid_deallocate
+            deallocate(Vetas)
+            deallocate(Vtaus)
+        end subroutine parcel_ellipsoid_deallocate
 
         ! Obtain the parcel shape matrix.
         ! @param[in] B = (B11, B12, B13, B22, B23)

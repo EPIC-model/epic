@@ -5,6 +5,7 @@
 module parcel_container
     use options, only : verbose
     use parameters, only : extent, hli, center, lower, upper
+    use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
     implicit none
 
     integer :: n_parcels
@@ -122,6 +123,7 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             allocate(parcels%humidity(num))
 #endif
+            call parcel_ellipsoid_allocate
         end subroutine parcel_alloc
 
         ! Deallocate parcel memory
@@ -134,6 +136,7 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             deallocate(parcels%humidity)
 #endif
+            call parcel_ellipsoid_deallocate
         end subroutine parcel_dealloc
 
 end module parcel_container
