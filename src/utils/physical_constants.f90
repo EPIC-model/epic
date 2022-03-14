@@ -1,6 +1,13 @@
-! =============================================================================
+! =========================================================================================
 ! This module contains non-modifiable physical constants.
-! =============================================================================
+!
+! Note: We cannot use the keyword "parameter" since we read in the values
+!       of the quantities from the NetCDF file. Hence, they are not known
+!       at compile-time which is required for "parameter variables". However,
+!       the keyword "protected" (Fortran2003) allows to make the quantities
+!       non-modifiable outside the module (14 March 2022,
+!       https://stackoverflow.com/questions/15020460/protected-global-variables-in-fortran)
+! =========================================================================================
 module physical_constants
     use constants
     use netcdf_reader
