@@ -242,14 +242,13 @@ module inversion_mod
             call diffx(svelog(:, :, :, 3), ds)         ! w_x = dw/dx in spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, 4)) ! w_x in physical space
 
-            ! use symmetry to fill z grid points outside domain:
-            ! u_x(-1) =  u_x(1) and u_x(nz+1) =  u_x(nz-1)
-            ! u_y(-1) =  u_y(1) and u_y(nz+1) =  u_y(nz-1)
-            ! w_x(-1) = -w_x(1) and w_x(nz+1) = -w_x(nz-1)
-            velgradg(  -1, :, :, 1) =  velgradg(   1, :, :, 1) ! lower boundary du/dx
-            velgradg(nz+1, :, :, 1) =  velgradg(nz-1, :, :, 1) ! upper boundary du/dx
-            velgradg(  -1, :, :, 2) =  velgradg(   1, :, :, 2) ! lower boundary du/dy
-            velgradg(nz+1, :, :, 2) =  velgradg(nz-1, :, :, 2) ! upper boundary du/dy
+            ! use extrapolation in du/dx and du/dy to fill z grid points outside domain:
+            velgradg(  -1, :, :, 1) =  two * velgradg( 0, :, :, 1) - velgradg(   1, :, :, 1) ! lower boundary du/dx
+            velgradg(nz+1, :, :, 1) =  two * velgradg(nz, :, :, 1) - velgradg(nz-1, :, :, 1) ! upper boundary du/dx
+            velgradg(  -1, :, :, 2) =  two * velgradg( 0, :, :, 2) - velgradg(   1, :, :, 2) ! lower boundary du/dy
+            velgradg(nz+1, :, :, 2) =  two * velgradg(nz, :, :, 2) - velgradg(nz-1, :, :, 2) ! upper boundary du/dy
+
+            ! use anti-symmetry for dw/dx to fill z grid points outside domain:
             velgradg(  -1, :, :, 4) = -velgradg(   1, :, :, 4) ! lower boundary dw/dx
             velgradg(nz+1, :, :, 4) = -velgradg(nz-1, :, :, 4) ! upper boundary dw/dx
 
@@ -260,11 +259,12 @@ module inversion_mod
             call diffy(svelog(:, :, :, 3), ds)         ! w_y = dw/dy in spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, 5)) ! w_y in physical space
 
-            ! use symmetry to fill z grid points outside domain:
-            ! v_y(-1) =  v_y(1) and v_y(nz+1) =  v_y(nz-1)
+            ! use extrapolation in dv/dy to fill z grid points outside domain:
+            velgradg(  -1, :, :, 3) = two * velgradg( 0, :, :, 3) - velgradg(   1, :, :, 3) ! lower boundary dv/dy
+            velgradg(nz+1, :, :, 3) = two * velgradg(nz, :, :, 3) - velgradg(nz-1, :, :, 3) ! upper boundary dv/dy
+
+            ! use anti-symmetry in dw/dy to fill z grid points outside domain:
             ! w_y(-1) = -w_y(1) and w_y(nz+1) = -w_y(nz-1)
-            velgradg(  -1, :, :, 3) =  velgradg(   1, :, :, 3) ! lower boundary dv/dy
-            velgradg(nz+1, :, :, 3) =  velgradg(nz-1, :, :, 3) ! upper boundary dv/dy
             velgradg(  -1, :, :, 5) = -velgradg(   1, :, :, 5) ! lower boundary dw/dy
             velgradg(nz+1, :, :, 5) = -velgradg(nz-1, :, :, 5) ! upper boundary dw/dy
 
