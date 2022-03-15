@@ -27,7 +27,7 @@ module physical_parameters
     double precision :: q_0 = 0.015d0
 
     ![K] reference virtual/density temperature
-    double precision :: theta_v0 = 300.0d0
+    double precision :: theta_v0 = 298.6268656716418d0
 
     ![] see equation (5) of MPIC paper
     double precision, protected :: glat
