@@ -107,7 +107,7 @@ module physical_parameters
         end subroutine write_physical_parameters
 
         subroutine print_physical_parameters
-            write(*, "(a)") 'List of physical parameters:'
+            write(*, "(a)") 'List of physical parameters (in MKS units):'
             write(*, "(a)") repeat("-", 78)
             call print_key_value_pair('saturation specific humidity at ground level', q_0)
             call print_key_value_pair('reference virtual temperature', theta_v0)

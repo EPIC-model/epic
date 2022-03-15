@@ -61,7 +61,7 @@ module physical_constants
         end subroutine write_physical_constants
 
         subroutine print_physical_constants
-            write(*, "(a)") 'List of physical constants:'
+            write(*, "(a)") 'List of physical constants (in MKS units):'
             write(*, "(a)") repeat("-", 78)
             call print_key_value_pair('gravity', gravity)
             call print_key_value_pair('latent heat', L_v)
