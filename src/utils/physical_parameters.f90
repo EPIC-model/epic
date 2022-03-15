@@ -16,20 +16,12 @@ module physical_parameters
     ![m] inverse condensation scale-height
     double precision :: lam_c = 0.001d0
 
-    double precision, protected :: lat_ref
-
     logical :: l_coriolis = .false.
 
     ![m/s] angular velocity
     double precision :: ang_vel = twopi / 86400.0d0
 
     double precision :: lat_degrees = 45.0d0
-
-    ! Coriolis frequency
-    double precision, protected :: f_cor
-
-    ! component of the planetary vorticity in the y direction
-    double precision, protected :: ft_cor
 
     ![kg/m**3] saturation specific humidity at ground level
     double precision :: h_0 = 0.015d0
@@ -41,6 +33,15 @@ module physical_parameters
     double precision, protected :: glat
 
     double precision, protected :: glati
+
+    double precision, protected :: lat_ref
+
+    ! Coriolis frequency
+    double precision, protected :: f_cor
+
+    ! component of the planetary vorticity in the y direction
+    double precision, protected :: ft_cor
+
 
     private :: update_physical_constants
 

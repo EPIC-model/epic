@@ -7,7 +7,7 @@
 ! =============================================================================
 module moist_3d
     use physical_parameters, only : write_physical_parameters, theta_l0
-    use physical_constants, only : write_physical_constants, gravity
+    use physical_constants, only : write_physical_constants, gravity, L_v, c_p
     use constants
     use netcdf_writer
     implicit none
