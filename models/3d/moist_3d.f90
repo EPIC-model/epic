@@ -6,7 +6,7 @@
 ! stratified zone aloft.
 ! =============================================================================
 module moist_3d
-    use physical_parameters, only : write_physical_parameters, theta_l0
+    use physical_parameters, only : write_physical_parameters, theta_v0
     use physical_constants, only : write_physical_constants, gravity, L_v, c_p
     use constants
     use netcdf_writer
@@ -31,7 +31,7 @@ module moist_3d
                                         ! according to  b = b_pl*[1 + (e1*x*y+e2*x*z+e3*yz)/R^2].
         double precision :: l_condense
         double precision :: q0
-        double precision :: theta_l0
+        double precision :: theta_v0
     end type plume_type
 
     type(plume_type) :: moist
@@ -52,7 +52,7 @@ module moist_3d
             double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
 
             ! set physical parameters
-            theta_l0 = moist%theta_l0    ![K] reference potential temperature
+            theta_v0 = moist%theta_v0    ![K] reference potential temperature
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -96,7 +96,7 @@ module moist_3d
 
             write(*,"('Base of mixed layer is ',f12.3)") z_b
 
-            dbdz = (gravity * L_v / (c_p * moist%theta_l0)) &
+            dbdz = (gravity * L_v / (c_p * moist%theta_v0)) &
                  * (h_pl - moist%q0 * dexp(-moist%z_m / moist%l_condense)) / (moist%z_m - moist%z_d)
 
             write(*,"('The buoyancy frequency in the stratified zone is ',f12.3)") dsqrt(dbdz)
@@ -104,7 +104,7 @@ module moist_3d
             !Also obtain the plume liquid-water buoyancy (using also z_b):
             b_pl = dbdz * (moist%z_d - z_b)
             write(*,'(a,f7.5)') '  The plume liquid water buoyancy b_pl = ', b_pl
-            write(*,'(a,f7.5)') '  corresponding to (theta_l-theta_l0)/theta_l0 = ', b_pl * gravity
+            write(*,'(a,f7.5)') '  corresponding to (theta_l-theta_v0)/theta_v0 = ', b_pl * gravity
 
 
             if (two * moist%r_plume > z_b) then

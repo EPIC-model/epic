@@ -14,7 +14,7 @@ module straka_2d
     use constants
     use netcdf_writer
     use physical_constants, only : write_physical_constants, gravity
-    use physical_parameters, only : write_physical_parameters, theta_l0
+    use physical_parameters, only : write_physical_parameters, theta_v0
     implicit none
 
     private
@@ -46,7 +46,7 @@ module straka_2d
             integer                         :: i, j
 
             ! set physical parameters
-            theta_l0 = 300.0d0
+            theta_v0 = 300.0d0
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -84,9 +84,9 @@ module straka_2d
                     endif
 
                     ! MPIC paper:
-                    ! liquid-water buoyancy is defined by b = g * (theta − theta_l0) / theta_l0
-                    ! (dtheta = theta - theta_l0)
-                    buoyg(j, i) = gravity * dtheta / theta_l0
+                    ! liquid-water buoyancy is defined by b = g * (theta − theta_v0) / theta_v0
+                    ! (dtheta = theta - theta_v0)
+                    buoyg(j, i) = gravity * dtheta / theta_v0
                 enddo
             enddo
 

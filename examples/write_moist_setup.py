@@ -28,7 +28,7 @@ try:
     e_values = np.array([0.3, -0.4, 0.5])
     l_condense = 1000.0
     q0 = 0.015
-    theta_l0 = 288.0
+    theta_v0 = 288.0
     ngrid = args.ngrid
     n_par_res = 2  # how many parcels per grid box in each dimension
     gravity = 9.81
@@ -73,7 +73,7 @@ try:
     print("Base of mixed layer is " + str(z_b))
 
     dbdz = (
-        (gravity * L_v / (c_p * theta_l0))
+        (gravity * L_v / (c_p * theta_v0))
         * (h_pl - q0 * np.exp(-z_m / l_condense))
         / (z_m - z_d)
     )
@@ -84,7 +84,7 @@ try:
     b_pl = dbdz * (z_d - z_b)
 
     print("The plume liquid water buoyancy b_pl = " + str(b_pl))
-    print("corresponding to (theta_l-theta_l0)/theta_l0 = " + str(b_pl * gravity))
+    print("corresponding to (theta_l-theta_v0)/theta_v0 = " + str(b_pl * gravity))
 
     if 2.0 * r_plume > z_b:
         print("Error: Plume radius is too big. At most it can be " + str(0.5 * z_b))
@@ -171,7 +171,7 @@ try:
     ncp.add_dataset('B23', B[:, 4], unit='m^2')
 
     ncp.add_physical_constant('specific_humidity', q0)
-    ncp.add_physical_constant('liquid_water_potential_temperature', theta_l0)
+    ncp.add_physical_constant('reference_virtual_temperature', theta_v0)
     ncp.add_physical_constant('gravity', gravity)
     ncp.add_physical_constant('latent_heat', L_v)
     ncp.add_physical_constant('specific_heat', c_p)
