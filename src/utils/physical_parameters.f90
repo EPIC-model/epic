@@ -14,9 +14,6 @@ module physical_parameters
 !     !non-dimensional ang_vel of earth = t_scale*Omega
 !     !t_scale = 142.8571428571 Omega = 7.2921159e-5
 
-    ![m] inverse condensation scale-height
-    double precision :: lam_c = 0.001d0
-
     logical :: l_coriolis = .false.
 
     ![m/s] angular velocity
@@ -43,6 +40,8 @@ module physical_parameters
     ! component of the planetary vorticity in the y direction
     double precision, protected :: ft_cor
 
+    ![m] inverse condensation scale-height
+    double precision :: lam_c
 
     private :: update_physical_parameters
 
