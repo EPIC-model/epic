@@ -31,7 +31,7 @@ module iomanip
         character(64)                :: fix_length_name
 
         fix_length_name = name
-        write (*, "(a, '=', D15.8)") fix_length_name, val
+        write (*, "(a, 1p,e14.7)") fix_length_name, val
     end subroutine print_key_value_pair_double
 
     subroutine print_key_value_pair_integer(name, val)
@@ -40,7 +40,7 @@ module iomanip
         character(64)            :: fix_length_name
 
         fix_length_name = name
-        write (*, "(a, '=', I15)") fix_length_name, val
+        write (*, "(a, I14)") fix_length_name, val
     end subroutine print_key_value_pair_integer
 
     subroutine print_key_value_pair_logical(name, val)
@@ -60,7 +60,7 @@ module iomanip
         character(64)            :: fix_length_name
 
         fix_length_name = name
-        write (*, "(a, '=', a15)") fix_length_name, val
+        write (*, "(a, a14)") fix_length_name, val
     end subroutine print_key_value_pair_character
 
 end module iomanip
