@@ -170,11 +170,12 @@ try:
     ncp.add_dataset('B22', B[:, 3], unit='m^2')
     ncp.add_dataset('B23', B[:, 4], unit='m^2')
 
-    ncp.add_physical_constant('saturation_specific_humidity_at_ground_level', q0)
-    ncp.add_physical_constant('reference_virtual_temperature', theta_v0)
     ncp.add_physical_constant('gravity', gravity)
     ncp.add_physical_constant('latent_heat', L_v)
     ncp.add_physical_constant('specific_heat', c_p)
+
+    ncp.add_physical_parameter('saturation_specific_humidity_at_ground_level', q0)
+    ncp.add_physical_parameter('reference_virtual_temperature', theta_v0)
 
     ncp.close()
 except Exception as ex:
