@@ -1,6 +1,6 @@
 module utils
     use constants, only : one
-    use options, only : output
+    use options, only : output, verbose
     use field_netcdf
     use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
@@ -12,8 +12,8 @@ module utils
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters
-    use physical_parameters, only : read_physical_parameters
-    use physical_constants, only : read_physical_constants
+    use physical_parameters, only : read_physical_parameters, print_physical_parameters
+    use physical_constants, only : read_physical_constants, print_physical_constants
     implicit none
 
     integer :: nfw  = 0    ! number of field writes
@@ -159,6 +159,13 @@ module utils
 
             ! update global parameters
             call update_parameters
+
+#ifdef ENABLE_VERBOSE
+            if (verbose) then
+                call print_physical_constants
+                call print_physical_parameters
+            endif
+#endif
         end subroutine setup_domain_and_parameters
 
 end module utils

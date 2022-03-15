@@ -7,6 +7,7 @@ module physical_parameters
     use netcdf_reader
     use netcdf_utils
     use netcdf_writer
+    use iomanip, only : print_key_value_pair
     implicit none
 
     !FIXME parameters for coriolis and mean wind
@@ -58,23 +59,19 @@ module physical_parameters
 
             ncerr = nf90_inq_ncid(ncid, 'physical_parameters', grp_ncid)
 
-            ! if no group available --> we use default values
-            if (ncerr .ne. 0) then
+            if (ncerr == 0) then
+                call read_netcdf_attribute_default(grp_ncid, 'specific_humidity', q_0)
+                call read_netcdf_attribute_default(grp_ncid, 'reference_virtual_temperature', theta_v0)
+                call read_netcdf_attribute_default(grp_ncid, 'coriolis', l_coriolis)
+                call read_netcdf_attribute_default(grp_ncid, 'angular_velocity', ang_vel)
+                call read_netcdf_attribute_default(grp_ncid, 'lat_degrees', lat_degrees)
+                call read_netcdf_attribute_default(grp_ncid, 'inverse_condensation_scale_height', lam_c)
 #ifdef ENABLE_VERBOSE
-                if (verbose) then
-                    print *, "WARNING: No physical parameters found! EPIC uses default values."
-                endif
+            else
+                print *, "WARNING: No physical parameters found! EPIC uses default values."
 #endif
-                call update_physical_constants
-                return
             endif
 
-            call read_netcdf_attribute_default(grp_ncid, 'specific_humidity', q_0)
-            call read_netcdf_attribute_default(grp_ncid, 'reference_virtual_temperature', theta_v0)
-            call read_netcdf_attribute_default(grp_ncid, 'coriolis', l_coriolis)
-            call read_netcdf_attribute_default(grp_ncid, 'angular_velocity', ang_vel)
-            call read_netcdf_attribute_default(grp_ncid, 'lat_degrees', lat_degrees)
-            call read_netcdf_attribute_default(grp_ncid, 'inverse_condensation_scale_height', lam_c)
 
             if (l_coriolis) then
                 lat_ref = lat_degrees * deg2rad
@@ -105,5 +102,19 @@ module physical_parameters
             call write_netcdf_attribute(grp_ncid, 'inverse_condensation_scale_height', lam_c)
 
         end subroutine write_physical_parameters
+
+        subroutine print_physical_parameters
+            write(*, "(a)") 'List of physical parameters:'
+            write(*, "(a)") repeat("-", 56)
+            call print_key_value_pair('specific humidity', q_0)
+            call print_key_value_pair('reference virtual temperature', theta_v0)
+            call print_key_value_pair('coriolis', l_coriolis)
+            call print_key_value_pair('coriolis frequency', f_cor)
+            call print_key_value_pair('planetary vorticity', ft_cor)
+            call print_key_value_pair('angular velocity', ang_vel)
+            call print_key_value_pair('latitude degrees', lat_degrees)
+            call print_key_value_pair('inverse condensation scale height', lam_c)
+            write(*, *) ''
+        end subroutine print_physical_parameters
 
 end module physical_parameters

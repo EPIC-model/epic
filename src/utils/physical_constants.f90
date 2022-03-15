@@ -13,6 +13,7 @@ module physical_constants
     use netcdf_reader
     use netcdf_utils
     use netcdf_writer
+    use iomanip, only : print_key_value_pair
     implicit none
 
     ![m/s**2]
@@ -32,19 +33,15 @@ module physical_constants
 
             ncerr = nf90_inq_ncid(ncid, 'physical_constants', grp_ncid)
 
-            ! if no group available --> we use default values
-            if (ncerr .ne. 0) then
+            if (ncerr == 0) then
+                call read_netcdf_attribute_default(grp_ncid, 'gravity', gravity)
+                call read_netcdf_attribute_default(grp_ncid, 'latent_heat', L_v)
+                call read_netcdf_attribute_default(grp_ncid, 'specific_heat', c_p)
 #ifdef ENABLE_VERBOSE
-                if (verbose) then
-                    print *, "WARNING: No physical constants found! EPIC uses default values."
-                endif
+            else
+                print *, "WARNING: No physical constants found! EPIC uses default values."
 #endif
-                return
             endif
-
-            call read_netcdf_attribute_default(grp_ncid, 'gravity', gravity)
-            call read_netcdf_attribute_default(grp_ncid, 'latent_heat', L_v)
-            call read_netcdf_attribute_default(grp_ncid, 'specific_heat', c_p)
 
         end subroutine read_physical_constants
 
@@ -62,5 +59,14 @@ module physical_constants
             call write_netcdf_attribute(grp_ncid, 'specific_heat', c_p)
 
         end subroutine write_physical_constants
+
+        subroutine print_physical_constants
+            write(*, "(a)") 'List of physical constants:'
+            write(*, "(a)") repeat("-", 56)
+            call print_key_value_pair('gravity', gravity)
+            call print_key_value_pair('latent heat', L_v)
+            call print_key_value_pair('specific heat', c_p)
+            write(*, *) ''
+        end subroutine print_physical_constants
 
 end module physical_constants

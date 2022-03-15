@@ -4,12 +4,12 @@ AM_FCFLAGS = -I $(top_builddir)/src/utils	\
 
 lib_LTLIBRARIES = libepic_utils.la
 libepic_utils_la_SOURCES = 	\
+	iomanip.f90		\
 	merge_sort.f90		\
 	constants.f90		\
 	physical_constants.f90	\
 	timer.f90		\
 	jacobi.f90		\
-	iomanip.f90		\
 	config.f90		\
 	physical_parameters.f90
 
