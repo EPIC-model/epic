@@ -170,7 +170,7 @@ try:
     ncp.add_dataset('B22', B[:, 3], unit='m^2')
     ncp.add_dataset('B23', B[:, 4], unit='m^2')
 
-    ncp.add_physical_constant('specific_humidity', q0)
+    ncp.add_physical_constant('saturation_specific_humidity_at_ground_level', q0)
     ncp.add_physical_constant('reference_virtual_temperature', theta_v0)
     ncp.add_physical_constant('gravity', gravity)
     ncp.add_physical_constant('latent_heat', L_v)

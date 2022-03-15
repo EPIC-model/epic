@@ -28,16 +28,16 @@ module iomanip
     subroutine print_key_value_pair_double(name, val)
         character(*),     intent(in) :: name
         double precision, intent(in) :: val
-        character(40)                :: fix_length_name
+        character(64)                :: fix_length_name
 
         fix_length_name = name
-        write (*, "(a, '=', f15.3)") fix_length_name, val
+        write (*, "(a, '=', D15.8)") fix_length_name, val
     end subroutine print_key_value_pair_double
 
     subroutine print_key_value_pair_integer(name, val)
         character(*), intent(in) :: name
         integer,      intent(in) :: val
-        character(40)            :: fix_length_name
+        character(64)            :: fix_length_name
 
         fix_length_name = name
         write (*, "(a, '=', I15)") fix_length_name, val
@@ -57,7 +57,7 @@ module iomanip
     subroutine print_key_value_pair_character(name, val)
         character(*), intent(in) :: name
         character(*), intent(in) :: val
-        character(40)            :: fix_length_name
+        character(64)            :: fix_length_name
 
         fix_length_name = name
         write (*, "(a, '=', a15)") fix_length_name, val

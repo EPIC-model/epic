@@ -44,14 +44,17 @@ module physical_parameters
     double precision, protected :: ft_cor
 
 
-    private :: update_physical_constants
+    private :: update_physical_parameters
 
     contains
 
-        subroutine update_physical_constants
+        subroutine update_physical_parameters
             glat = gravity * L_v / (c_p * theta_v0)
             glati = one / glat
-        end subroutine update_physical_constants
+
+            lam_c = 1000.0d0 * (10.0d0 / gravity)
+            lam_c = one / lam_c
+        end subroutine update_physical_parameters
 
         subroutine read_physical_parameters(ncid)
             integer, intent(in) :: ncid
@@ -60,12 +63,11 @@ module physical_parameters
             ncerr = nf90_inq_ncid(ncid, 'physical_parameters', grp_ncid)
 
             if (ncerr == 0) then
-                call read_netcdf_attribute_default(grp_ncid, 'specific_humidity', q_0)
+                call read_netcdf_attribute_default(grp_ncid, 'saturation_specific_humidity_at_ground_level', q_0)
                 call read_netcdf_attribute_default(grp_ncid, 'reference_virtual_temperature', theta_v0)
                 call read_netcdf_attribute_default(grp_ncid, 'coriolis', l_coriolis)
                 call read_netcdf_attribute_default(grp_ncid, 'angular_velocity', ang_vel)
-                call read_netcdf_attribute_default(grp_ncid, 'lat_degrees', lat_degrees)
-                call read_netcdf_attribute_default(grp_ncid, 'inverse_condensation_scale_height', lam_c)
+                call read_netcdf_attribute_default(grp_ncid, 'latitude_degrees', lat_degrees)
 #ifdef ENABLE_VERBOSE
             else
                 print *, "WARNING: No physical parameters found! EPIC uses default values."
@@ -82,7 +84,7 @@ module physical_parameters
                 ft_cor = zero
             endif
 
-            call update_physical_constants
+            call update_physical_parameters
 
         end subroutine read_physical_parameters
 
@@ -94,19 +96,21 @@ module physical_parameters
             ncerr = nf90_def_grp(ncid, name, grp_ncid)
             call check_netcdf_error("Faild to create NetCDF group '" // name // "'.")
 
-            call write_netcdf_attribute(grp_ncid, 'specific_humidity', q_0)
+            call write_netcdf_attribute(grp_ncid, 'saturation_specific_humidity_at_ground_level', q_0)
             call write_netcdf_attribute(grp_ncid, 'reference_virtual_temperature', theta_v0)
             call write_netcdf_attribute(grp_ncid, 'coriolis', l_coriolis)
+            call write_netcdf_attribute(grp_ncid, 'coriolis_frequency', f_cor)
+            call write_netcdf_attribute(grp_ncid, 'planetary_vorticity', ft_cor)
             call write_netcdf_attribute(grp_ncid, 'angular_velocity', ang_vel)
-            call write_netcdf_attribute(grp_ncid, 'lat_degrees', lat_degrees)
+            call write_netcdf_attribute(grp_ncid, 'latitude_degrees', lat_degrees)
             call write_netcdf_attribute(grp_ncid, 'inverse_condensation_scale_height', lam_c)
 
         end subroutine write_physical_parameters
 
         subroutine print_physical_parameters
             write(*, "(a)") 'List of physical parameters:'
-            write(*, "(a)") repeat("-", 56)
-            call print_key_value_pair('specific humidity', q_0)
+            write(*, "(a)") repeat("-", 80)
+            call print_key_value_pair('saturation specific humidity at ground level', q_0)
             call print_key_value_pair('reference virtual temperature', theta_v0)
             call print_key_value_pair('coriolis', l_coriolis)
             call print_key_value_pair('coriolis frequency', f_cor)
