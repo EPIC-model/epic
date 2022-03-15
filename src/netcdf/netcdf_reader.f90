@@ -17,6 +17,7 @@ module netcdf_reader
     interface read_netcdf_attribute
         module procedure :: read_netcdf_attrib_integer
         module procedure :: read_netcdf_attrib_double
+        module procedure :: read_netcdf_attrib_character
         module procedure :: read_netcdf_attrib_logical
     end interface read_netcdf_attribute
 
@@ -28,6 +29,7 @@ module netcdf_reader
 
     private :: read_netcdf_attrib_integer,          &
                read_netcdf_attrib_double,           &
+               read_netcdf_attrib_character,        &
                read_netcdf_attrib_logical,          &
                read_netcdf_attrib_default_integer,  &
                read_netcdf_attrib_default_double,   &
@@ -226,16 +228,25 @@ module netcdf_reader
 
         end subroutine read_netcdf_attrib_double
 
+        subroutine read_netcdf_attrib_character(ncid, name, val)
+            integer,      intent(in)     :: ncid
+            character(*), intent(in)     :: name
+            character(*), intent(out)    :: val
+
+            ncerr = nf90_get_att(ncid, NF90_GLOBAL, name, val)
+            call check_netcdf_error("Reading attribute '" // name // "' failed.")
+
+        end subroutine read_netcdf_attrib_character
+
         subroutine read_netcdf_attrib_logical(ncid, name, val)
             integer,      intent(in)  :: ncid
             character(*), intent(in)  :: name
             logical,      intent(out) :: val
-            integer                   :: int_val
+            character(5)              :: char_val
 
-            ncerr = nf90_get_att(ncid, NF90_GLOBAL, name, int_val)
-            call check_netcdf_error("Reading attribute '" // name // "' failed.")
+            call read_netcdf_attrib_character(ncid, name, char_val)
 
-            val = (int_val .ne. 0)
+            val = (char_val == 'true')
 
         end subroutine read_netcdf_attrib_logical
 
