@@ -25,12 +25,13 @@ module physical_parameters
     ![°] latitude angle (45° corresponds to standard gravity)
     double precision, protected  :: lat_degrees = 45.0d0
 
-    ![1] MPIC moist physics parameter: saturation specific humidity at ground level
+    ![1] MPIC specific: saturation specific humidity at ground level
     double precision, protected  :: q_0 = 0.015d0
 
-    ![] see equation (5) of MPIC paper
+    ! MPIC specific, see equation (5) of MPIC paper
     double precision, protected :: glat
 
+    ! MPIC specific
     double precision, protected :: glati
 
     double precision, protected :: lat_ref
@@ -41,10 +42,10 @@ module physical_parameters
     ! component of the planetary vorticity in the y direction
     double precision, protected :: ft_cor
 
-    ![m] scale-height, H
+    ![m] MPIC specific, scale-height, H
     double precision, protected :: height_c = 1000.0d0
 
-    ![1/m] inverse scale-height
+    ![1/m] MPIC specific, inverse scale-height
     double precision, protected :: lambda_c
 
     interface set_physical_parameter
