@@ -49,6 +49,29 @@ module physical_constants
 
     contains
 
+        ! Warning: This function should only be used by model setup subroutines/programs
+        subroutine set_physical_constant(name, val)
+            character(*),     intent(in) :: name
+            double precision, intent(in) :: val
+
+            select case (name)
+                case ('standard_gravity')
+                    gravity = val
+                case ('latent_heat_of_vaporization')
+                    L_v = val
+                case ('specific_heat')
+                    c_p = val
+                case ('temperature_at_sea_level')
+                    theta_0 = val
+                case ('earth_angular_velocity')
+                    ang_vel_earth = val
+                case default
+                    print *, "Unknown physical constant: '", trim(name), "'."
+                    stop
+            end select
+
+        end subroutine set_physical_constant
+
         subroutine read_physical_constants(ncid)
             integer, intent(in) :: ncid
             integer             :: grp_ncid

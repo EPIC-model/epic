@@ -6,7 +6,8 @@
 ! stratified zone aloft.
 ! =============================================================================
 module moist_3d
-    use physical_parameters, only : write_physical_parameters, theta_0
+    use physical_parameters, only : write_physical_parameters, &
+                                    set_physical_constant
     use physical_constants, only : write_physical_constants, gravity, L_v, c_p
     use constants
     use netcdf_writer
@@ -52,7 +53,7 @@ module moist_3d
             double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
 
             ! set physical parameters
-            theta_0 = moist%theta_0    ![K] reference potential temperature
+            call set_physical_constant('temperature_at_sea_level', moist%theta_0)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &

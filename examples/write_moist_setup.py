@@ -175,7 +175,7 @@ try:
     ncp.add_physical_constant('specific_heat', c_p)
 
     ncp.add_physical_parameter('saturation_specific_humidity_at_ground_level', q0)
-    ncp.add_physical_parameter('reference_virtual_temperature', theta_0)
+    ncp.add_physical_parameter('temperature_at_sea_level', theta_0)
 
     ncp.close()
 except Exception as ex:

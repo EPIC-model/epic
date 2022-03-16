@@ -14,8 +14,9 @@
 module robert_2d
     use constants
     use netcdf_writer
-    use physical_constants, only : write_physical_constants, gravity
-    use physical_parameters, only : write_physical_parameters, theta_0
+    use physical_constants, only : write_physical_constants, gravity, &
+                                   set_physical_constant
+    use physical_parameters, only : write_physical_parameters
     implicit none
 
     private
@@ -32,6 +33,8 @@ module robert_2d
                                             ! or plateau radius ('gaussian')
         double precision :: width           ![m] standard deviation of Gaussian
     end type bubble_type
+
+    double precision, parameter :: theta_0 = 303.15d0
 
     type flow_type
         integer           :: n_bubbles   = 1
@@ -54,8 +57,8 @@ module robert_2d
             integer                         :: k
             type(bubble_type)               :: bubble
 
-            ! set physical parameters
-            theta_0 = 303.15d0         ![K] reference potential temperature
+            ! set physical constants and parameters
+            call set_physical_constant('temperature_at_sea_level', theta_0)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
