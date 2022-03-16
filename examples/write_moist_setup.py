@@ -26,9 +26,9 @@ try:
     z_m = 5000.0
     r_plume = 800.0
     e_values = np.array([0.3, -0.4, 0.5])
-    l_condense = 1000.0
+    l_condense = 1019.367991845056
     q0 = 0.015
-    theta_0 = 288.0
+    theta_0 = 298.6268656716418
     ngrid = args.ngrid
     n_par_res = 2  # how many parcels per grid box in each dimension
     gravity = 9.81
