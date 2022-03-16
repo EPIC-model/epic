@@ -5,6 +5,11 @@
 !   Dritschel D.G., Böing S.J., Parker D.J., Blyth A.M.
 !   The moist parcel-in-cell method for modelling moist convection.
 !   Q J R Meteorol Soc. 2018; 144:1695–1718. https://doi.org/10.1002/qj.3319
+!
+!   Böing S.J., Dritschel D.G., Parker D.J., Blyth, A.M.
+!   Comparison of the Moist Parcel-in-Cell (MPIC) model with large-eddy
+!   simulation for an idealized cloud.
+!   Q J R Meteorol Soc. 2019; 145: 1865– 1881. https://doi.org/10.1002/qj.3532
 ! =============================================================================
 module physical_parameters
     use constants
