@@ -53,8 +53,8 @@ module physical_parameters
 
             if (l_coriolis) then
                 lat_ref = lat_degrees * deg2rad
-                f_cor  = two * ang_vel_earth * dsin(lat_ref)
-                ft_cor = two * ang_vel_earth * dcos(lat_ref)
+                f_cor  = two * ang_vel * dsin(lat_ref)
+                ft_cor = two * ang_vel * dcos(lat_ref)
             else
                 f_cor  = zero
                 ft_cor = zero

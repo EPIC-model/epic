@@ -44,8 +44,8 @@ module physical_constants
     ![K] temperature at zero pressure altitude (15°C)
     double precision, protected :: theta_0 = 288.15d0
 
-    ![rad/s] angular velocity of the earth
-    double precision :: ang_vel_earth = 0.000072921d0
+    ![rad/s] default value: angular velocity of the earth
+    double precision :: ang_vel = 0.000072921d0
 
     contains
 
@@ -63,8 +63,8 @@ module physical_constants
                     c_p = val
                 case ('temperature_at_sea_level')
                     theta_0 = val
-                case ('earth_angular_velocity')
-                    ang_vel_earth = val
+                case ('planetary_angular_velocity')
+                    ang_vel = val
                 case default
                     print *, "Unknown physical constant: '", trim(name), "'."
                     stop
@@ -83,7 +83,7 @@ module physical_constants
                 call read_netcdf_attribute_default(grp_ncid, 'latent_heat_of_vaporization', L_v)
                 call read_netcdf_attribute_default(grp_ncid, 'specific_heat', c_p)
                 call read_netcdf_attribute_default(grp_ncid, 'temperature_at_sea_level', theta_0)
-                call read_netcdf_attribute_default(grp_ncid, 'earth_angular_velocity', ang_vel_earth)
+                call read_netcdf_attribute_default(grp_ncid, 'planetary_angular_velocity', ang_vel)
 #ifdef ENABLE_VERBOSE
             else
                 print *, "WARNING: No physical constants found! EPIC uses default values."
@@ -105,7 +105,7 @@ module physical_constants
             call write_netcdf_attribute(grp_ncid, 'latent_heat_of_vaporization', L_v)
             call write_netcdf_attribute(grp_ncid, 'specific_heat', c_p)
             call write_netcdf_attribute(grp_ncid, 'temperature_at_sea_level', theta_0)
-            call write_netcdf_attribute(grp_ncid, 'earth_angular_velocity', ang_vel_earth)
+            call write_netcdf_attribute(grp_ncid, 'planetary_angular_velocity', ang_vel)
 
         end subroutine write_physical_constants
 
@@ -116,7 +116,7 @@ module physical_constants
             call print_quantity('latent heat of vaporization', L_v, 'J/kg')
             call print_quantity('specific heat', c_p, 'J/(kg*K)')
             call print_quantity('temperature at sea level', theta_0, 'K')
-            call print_quantity('angular velocity of the earth', ang_vel_earth, 'rad/s')
+            call print_quantity('planetary angular velocity', pl_ang_vel, 'rad/s')
             write(*, *) ''
         end subroutine print_physical_constants
 

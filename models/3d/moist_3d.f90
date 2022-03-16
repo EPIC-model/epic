@@ -30,7 +30,7 @@ module moist_3d
         double precision :: r_plume     ! Radius of the plume, R (must be < z_b/2)
         double precision :: e_values(3) ! To create asymmetry, we vary the buoyancy in the plume
                                         ! according to  b = b_pl*[1 + (e1*x*y+e2*x*z+e3*yz)/R^2].
-        double precision :: l_condense
+        double precision :: l_condense  ! scale height
         double precision :: q0
         double precision :: theta_0
     end type plume_type
