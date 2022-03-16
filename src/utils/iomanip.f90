@@ -30,13 +30,12 @@ module iomanip
         double precision,       intent(in) :: val
         character(*), optional, intent(in) :: unit
         character(64)                      :: fix_length_name
-        character(16)                      :: fix_length_unit = ''
 
         fix_length_name = name
         if (present(unit)) then
-            fix_length_unit = unit
+            fix_length_name = name // ', ' // unit
         endif
-        write (*, "(a, 1p,e14.7, a)") fix_length_name, val, fix_length_unit
+        write (*, "(a, 1p,e14.7)") fix_length_name, val
     end subroutine print_quantity_double
 
     subroutine print_quantity_integer(name, val, unit)
@@ -44,13 +43,12 @@ module iomanip
         integer,                intent(in) :: val
         character(*), optional, intent(in) :: unit
         character(64)                      :: fix_length_name
-        character(16)                      :: fix_length_unit = ''
 
         fix_length_name = name
         if (present(unit)) then
-            fix_length_unit = unit
+            fix_length_name = name // ', ' // unit
         endif
-        write (*, "(a, I14, a)") fix_length_name, val, fix_length_unit
+        write (*, "(a, I14)") fix_length_name, val
     end subroutine print_quantity_integer
 
     subroutine print_quantity_logical(name, val, unit)
@@ -70,10 +68,9 @@ module iomanip
         character(*),           intent(in) :: val
         character(*), optional, intent(in) :: unit
         character(64)                      :: fix_length_name
-        character(16)                      :: fix_length_unit = ''
 
         fix_length_name = name
-        write (*, "(a, a14, a)") fix_length_name, val, fix_length_unit
+        write (*, "(a, a14)") fix_length_name, val
     end subroutine print_quantity_character
 
 end module iomanip

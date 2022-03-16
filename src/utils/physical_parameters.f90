@@ -145,7 +145,7 @@ module physical_parameters
             call print_quantity('coriolis', l_coriolis)
             call print_quantity('coriolis frequency', f_cor, '1/s')
             call print_quantity('planetary vorticity', ft_cor, '1/s')
-            call print_quantity('latitude degrees', lat_degrees, '°')
+            call print_quantity('latitude degrees', lat_degrees, 'deg')
             call print_quantity('scale height', height_c, 'm')
             call print_quantity('inverse scale height', lambda_c, '1/m')
             write(*, *) ''
