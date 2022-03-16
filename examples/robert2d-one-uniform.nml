@@ -1,7 +1,7 @@
 &MODELS
 
  model      = 'Robert'
- h5fname    = 'robert2d.hdf5'
+ ncfname    = 'robert2d.nc'
 
  box%ncells = 32, 48
  box%extent = 1000, 1500

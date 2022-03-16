@@ -1,19 +1,22 @@
+<!--- How to add a license badge found on https://gist.github.com/lukas-h/2a5d00690736b4c3a7ba (1 Feb 2022) --->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg)](https://doi.org/10.5281/zenodo.5940225)
+[![License](https://img.shields.io/github/license/matt-frey/epic)](https://github.com/matt-frey/epic/blob/main/LICENSE)
+
 # EPIC - Elliptical Parcel-in-Cell
 Elliptical PIC model for fluid dynamics
 
 ## Dependencies
 EPIC has following requirements:
 * gfortran
-* zlib
 * hdf5
+* NetCDF
 
-The scripts to install hdf5 and zlib are found in the subdirectory `dependencies`. If you do not install hdf5 to
-the system location, replace `../configure --prefix=$HDF5` below by
+The scripts to install hdf5 and NetCDF are found in the subdirectory `dependencies`. If you do not install hdf5
+and NetCDF to the system location, configure EPIC with
 ```
-$ ../configure --prefix=$PREFIX --with-hdf5=$HDF5
+$ ../configure --prefix=$PREFIX --with-hdf5=$HDF5 --width-netcdf=$NETCDF
 ```
-where `$HDF5` is the root directory of your hdf5 installation. To install hdf5 with zlib, you need to export
-the variable `ZLIB_DIR` to the root install directory.
+where `$HDF5` and `$NETCDF` are the root directories of your hdf5 and NetCDF installation, respectively.
 
 ## Compile
 In the following `$PREFIX` denotes the installation directory of EPIC.
@@ -36,7 +39,7 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH
 ## Running
 In order to run the model, execute
 ```
-$ epic --config filename
+$ epic2d --config filename
 ```
 where `filename` is the configuration file. An example of a configuration file is given
 [here](examples/taylor_green.config).
@@ -47,15 +50,17 @@ The directory `$PREFIX/bin` contains following Python scripts:
 * plot-parcels.py
 * plot-diagnostics.py
 * merge-ellipses.py
-* plot-mergers.py
+* subgrid_2d_generalised.py
 
 Please append the argument `--help` when calling the scripts to get further information. We recommend to install
 a separate Python virtual environment using [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) for EPIC. After installing conda, all necessary Python packages can be installed via
 ```
 $ conda config --add channels conda-forge
-$ conda create --name <env> python=3.9.5 --file requirements.txt
+$ conda create --name <env> python=3.9.10 --file requirements.txt
 ```
 where `<env>` is the name of the environment. The file `requirements.txt` is contained in the root directory of EPIC.
+
+**Note:** In order to install the Python scripts you need to configure with `--enable-python`.
 
 We further provide Fortran analysis scripts. These are:
 * genspec (power spectrum analysis)
@@ -64,19 +69,19 @@ We further provide Fortran analysis scripts. These are:
 When configuring EPIC with `--enable-scalasca`, it is built with the performance tool [Scalasca](https://www.scalasca.org/) and [Score-P](https://www.vi-hps.org/projects/score-p/). Scripts to install Scalasca and Score-P are found in the directory `dependencies`.
 
 ## How to write an EPIC input field file
-EPIC parses a HDF5 file containing all fields to initialise the parcels. You can simply generate the input fields with Python and write them with the provided tools. Below you can find an example where the vorticity field of a Taylor-Green flow is initialised and written to a file.
+EPIC parses a NetCDF file containing all fields to initialise the parcels. You can simply generate the input fields with Python and write them with the provided tools. Below you can find an example where the vorticity field of a Taylor-Green flow is initialised and written to a file.
 ```Python
 #!/usr/bin/env python
 #
 # Example of writing a field file that can be parsed by EPIC.
 #
-from tools.h5_fields import h5fields
+from tools.nc_fields import nc_fields
 import numpy as np
 
 try:
-    h5f = h5fields()
+    ncf = nc_fields()
 
-    h5f.open('taylor_green.hdf5')
+    ncf.open('taylor_green.nc')
 
     # velocity field:
     # u(x, z) = A * cos(ax + d) * sin(bz + e)
@@ -111,22 +116,22 @@ try:
     dx = extent[0] / nx
     dz = extent[1] / nz
 
-    vorticity = np.zeros((nx, nz+1))
+    vorticity = np.zeros((nz+1, nx))
 
     # ranges from 0 to nx-1
     for i in range(nx):
         # ranges from 0 to nz
         for j in range(nz+1):
             x = origin[0] + i * dx
-            z = origin[0] + j * dz
-            vorticity[i, j] = (B * a - A * b) * np.cos(a * x + d) * np.cos(b * z + e)
-
-    fields = {'vorticity': vorticity}
+            z = origin[1] + j * dz
+            vorticity[j, i] = (B * a - A * b) * np.cos(a * x + d) * np.cos(b * z + e)
 
     # write all provided fields
-    h5f.add_fields(origin, extent, fields)
+    ncf.add_field('vorticity', vorticity, unit='1/s')
 
-    h5f.close()
+    ncf.add_box(origin, extent, [nx, nz])
+
+    ncf.close()
 
 except Exception as err:
     print(err)

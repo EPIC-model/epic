@@ -1,4 +1,4 @@
-from tools.h5_reader import H5Reader
+from tools.nc_reader import nc_reader
 from tools.mpl_beautify import *
 from tools.mpl_style import *
 from tools.units import *
@@ -11,15 +11,25 @@ import pandas as pd
 import seaborn as sns
 
 
-def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kwargs):
+def _plot_parcels(ax, ncreader, step, coloring, vmin, vmax, draw_cbar=True, **kwargs):
 
     # 19 Feb 2021
     # https://stackoverflow.com/questions/43009724/how-can-i-convert-numbers-to-a-color-scale-in-matplotlib
     norm = cls.Normalize(vmin=vmin, vmax=vmax)
-    cmap = plt.cm.viridis_r
+    cmap = kwargs.pop('cmap', plt.cm.viridis_r)
 
-    origin = h5reader.get_box_origin()
-    extent = h5reader.get_box_extent()
+    origin = ncreader.get_box_origin()
+    extent = ncreader.get_box_extent()
+    ncells = ncreader.get_box_ncells()
+    dx = extent / ncells
+
+    timestamp = kwargs.pop('timestamp', True)
+    nparcels = kwargs.pop('nparcels', True)
+    timestamp_xy = kwargs.pop('timestamp_xy', (0.75, 1.05))
+    timestamp_fmt = kwargs.pop('timestamp_fmt', "%.3f")
+    nparcels_xy = kwargs.pop('nparcels_xy', (0.01, 1.05))
+    no_xlabel = kwargs.pop("no_xlabel", False)
+    no_ylabel = kwargs.pop("no_ylabel", False)
 
     # instantiating the figure object
     fkwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -28,10 +38,19 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     bottom = fkwargs.get("ymin", origin[1])
     top = fkwargs.get("ymax", origin[1] + extent[1])
 
+    x_pos = ncreader.get_dataset(step=step, name="x_position")
+    z_pos = ncreader.get_dataset(step=step, name="z_position")
+
+    ind = np.argwhere((x_pos >= left - dx[0]) & (x_pos <= right + dx[0]) &
+                      (z_pos >= bottom - dx[1]) & (z_pos <= top + dx[1]))
+    ind = ind.squeeze()
+
+    pos = None
+
     if coloring == "aspect-ratio":
-        data = h5reader.get_aspect_ratio(step=step)
+        data = ncreader.get_aspect_ratio(step=step, indices=ind)
     elif coloring == "vol-distr":
-        data = h5reader.get_dataset(step=step, name="volume")
+        data = ncreader.get_dataset(step=step, name="volume", indices=ind)
         # 5 August 2021
         # https://stackoverflow.com/questions/14777066/matplotlib-discrete-colorbar
         # https://stackoverflow.com/questions/40601997/setting-discrete-colormap-corresponding-to-specific-data-range-in-matplotlib
@@ -39,14 +58,17 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
         bounds = [0, vmin, vmax]
         norm = cls.BoundaryNorm(bounds, cmap.N)
     else:
-        data = h5reader.get_dataset(step=step, name=coloring)
+        data = ncreader.get_dataset(step=step, name=coloring, indices=ind)
 
-    ells = h5reader.get_ellipses(step=step)
-    for j, e in enumerate(ells):
-        ax.add_artist(e)
-        # e.set_clip_box(ax.bbox)
-        e.set_alpha(0.75)
-        e.set_facecolor(cmap(norm(data[j])))
+    ells = ncreader.get_ellipses(step=step, indices=ind)
+
+    ax.set_rasterized(True)
+
+    ax.add_collection(ells)
+    ells.set_offset_transform(ax.transData)
+    ells.set_clip_box(ax.bbox)
+    ells.set_alpha(1.0)
+    ells.set_facecolor(cmap(norm(data)))
 
     ax.set_xlim([left, right])
     ax.set_ylim([bottom, top])
@@ -55,9 +77,12 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
     # https://matplotlib.org/stable/gallery/subplots_axes_and_figures/axis_equal_demo.html
     ax.set_aspect("equal", "box")
 
-    add_timestamp(ax, h5reader.get_step_attribute(step=step, name="t"))
+    if timestamp:
+        add_timestamp(ax, ncreader.get_dataset(step=step, name="t"),
+                      xy=timestamp_xy, fmt=timestamp_fmt)
 
-    add_number_of_parcels(ax, len(data))
+    if nparcels:
+        add_number_of_parcels(ax, len(data), xy=nparcels_xy)
 
     if draw_cbar:
         # 27 May 2021
@@ -83,21 +108,26 @@ def _plot_parcels(ax, h5reader, step, coloring, vmin, vmax, draw_cbar=True, **kw
         else:
             cbar.set_label(coloring)
 
-    ax.set_xlabel(r"$x$")
-    ax.set_ylabel(r"$y$")
+    if not no_xlabel:
+        ax.set_xlabel(get_label("$x$", units["position"]))
+
+    if not no_ylabel:
+        ax.set_ylabel(get_label("$y$", units["position"]))
+
+    return plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 
 
 def plot_parcels(
     fname, step, figure="save", fmt="png", coloring="aspect-ratio", **kwargs
 ):
-    h5reader = H5Reader()
+    ncreader = nc_reader()
 
-    h5reader.open(fname)
+    ncreader.open(fname)
 
-    if not h5reader.is_parcel_file:
+    if not ncreader.is_parcel_file:
         raise IOError("Not a parcel output file.")
 
-    nsteps = h5reader.get_num_steps()
+    nsteps = ncreader.get_num_steps()
 
     if step > nsteps - 1:
         raise ValueError("Step number exceeds limit of " + str(nsteps - 1) + ".")
@@ -107,21 +137,21 @@ def plot_parcels(
 
     if coloring == "aspect-ratio":
         vmin = 1.0
-        vmax = h5reader.get_parcel_option("lambda")
+        vmax = ncreader.get_global_attribute("lambda_max")
     elif coloring == "vol-distr":
-        extent = h5reader.get_box_extent()
-        ncells = h5reader.get_box_ncells()
+        extent = ncreader.get_box_extent()
+        ncells = ncreader.get_box_ncells()
         vcell = np.prod(extent / ncells)
-        vmin = vcell / h5reader.get_parcel_option("vmin_fraction")
-        vmax = vcell / h5reader.get_parcel_option("vmax_fraction")
+        vmin = vcell / ncreader.get_global_attribute("vmin_fraction")
+        vmax = vcell / ncreader.get_global_attribute("vmax_fraction")
     else:
-        vmin, vmax = h5reader.get_dataset_min_max(coloring)
+        vmin, vmax = ncreader.get_dataset_min_max(coloring)
 
     plt.figure(num=step)
 
-    _plot_parcels(plt.gca(), h5reader, step, coloring, vmin, vmax, **kwargs)
+    _plot_parcels(plt.gca(), ncreader, step, coloring, vmin, vmax, **kwargs)
 
-    h5reader.close()
+    ncreader.close()
 
     if figure == "return":
         return plt
@@ -156,26 +186,26 @@ def plot_volume_symmetry_error(fnames, figure="save", fmt="png", **kwargs):
     colors = plt.cm.tab10(np.arange(n).astype(int))
 
     for i, fname in enumerate(fnames):
-        h5reader = H5Reader()
-        h5reader.open(fname)
+        ncreader = nc_reader()
+        ncreader.open(fname)
 
-        if h5reader.is_parcel_file:
+        if ncreader.is_parcel_file:
             raise IOError("Not a field output file.")
 
         try:
-            h5reader.get_step_attribute(0, "max symmetry volume error")
+            ncreader.get_dataset(0, "max_sym_vol_err")
         except:
             raise IOError("This plot is only available in debug mode.")
 
-        nsteps = h5reader.get_num_steps()
+        nsteps = ncreader.get_num_steps()
 
         vmax = np.zeros(nsteps)
         t = np.zeros(nsteps)
         for step in range(nsteps):
-            vmax[step] = h5reader.get_step_attribute(step, "max symmetry volume error")
-            t[step] = h5reader.get_step_attribute(step, "t")
+            vmax[step] = ncreader.get_dataset(step, "max_sym_vol_err")
+            t[step] = ncreader.get_dataset(step, "t")
 
-        h5reader.close()
+        ncreader.close()
 
         plt.fill_between(
             t,
@@ -226,22 +256,23 @@ def plot_rms_volume_error(fnames, figure="save", fmt="png", **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
+    tight_layout = kwargs.pop('tight_layout', True)
 
     if len(labels) < n:
         raise ValueError("Not enough labels provided.")
 
     colors = plt.cm.tab10(np.arange(n).astype(int))
 
-    h5reader = H5Reader()
+    ncreader = nc_reader()
     for i, fname in enumerate(fnames):
-        h5reader.open(fname)
+        ncreader.open(fname)
 
-        if h5reader.is_parcel_file:
+        if ncreader.is_parcel_file:
             raise IOError("Not a field output file.")
 
-        vrms = h5reader.get_diagnostic("rms volume error")
-        t = h5reader.get_diagnostic("t")
-        h5reader.close()
+        vrms = ncreader.get_diagnostic("rms_v")
+        t = ncreader.get_diagnostic("t")
+        ncreader.close()
 
         plt.plot(
             t[beg:end], vrms[beg:end], label=labels[i], linewidth=2, color=colors[i]
@@ -263,7 +294,9 @@ def plot_rms_volume_error(fnames, figure="save", fmt="png", **kwargs):
     if yscale == "linear":
         plt.ticklabel_format(axis="y", style="scientific", scilimits=(0, 0))
     plt.ylim(ylim)
-    plt.tight_layout()
+
+    if tight_layout:
+        plt.tight_layout()
 
     if figure == "return":
         return plt
@@ -285,22 +318,23 @@ def plot_max_volume_error(fnames, figure="save", fmt="png", **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
+    tight_layout = kwargs.pop('tight_layout', True)
 
     if len(labels) < n:
         raise ValueError("Not enough labels provided.")
 
     colors = plt.cm.tab10(np.arange(n).astype(int))
 
-    h5reader = H5Reader()
+    ncreader = nc_reader()
     for i, fname in enumerate(fnames):
-        h5reader.open(fname)
+        ncreader.open(fname)
 
-        if h5reader.is_parcel_file:
+        if ncreader.is_parcel_file:
             raise IOError("Not a field output file.")
 
-        vmax = h5reader.get_diagnostic("max absolute normalised volume error")
-        t = h5reader.get_diagnostic("t")
-        h5reader.close()
+        vmax = ncreader.get_diagnostic("max absolute normalised volume error")
+        t = ncreader.get_diagnostic("t")
+        ncreader.close()
 
         plt.plot(
             t[beg:end], vmax[beg:end], label=labels[i], linewidth=2, color=colors[i]
@@ -319,7 +353,9 @@ def plot_max_volume_error(fnames, figure="save", fmt="png", **kwargs):
             ncol=legend_dict["ncol"],
             bbox_to_anchor=legend_dict["bbox_to_anchor"],
         )
-    plt.tight_layout()
+
+    if tight_layout:
+        plt.tight_layout()
 
     if figure == "return":
         return plt
@@ -341,24 +377,25 @@ def plot_parcel_profile(fnames, figure="save", fmt="png", **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
+    tight_layout = kwargs.pop('tight_layout', True)
 
     colors = plt.cm.tab10(np.arange(n).astype(int))
 
     if len(labels) < n:
         raise ValueError("Not enough labels provided.")
 
-    h5reader = H5Reader()
+    ncreader = nc_reader()
 
     lmax = 0
 
     for i, fname in enumerate(fnames):
 
-        h5reader.open(fname)
+        ncreader.open(fname)
 
-        if not h5reader.is_parcel_file:
+        if not ncreader.is_parcel_file:
             raise IOError("Not a parcel output file.")
 
-        nsteps = h5reader.get_num_steps()
+        nsteps = ncreader.get_num_steps()
 
         data_mean = np.zeros(nsteps)
         data_std = np.zeros(nsteps)
@@ -369,25 +406,25 @@ def plot_parcel_profile(fnames, figure="save", fmt="png", **kwargs):
             data = None
 
             if dset == "aspect-ratio":
-                data = h5reader.get_aspect_ratio(step)
+                data = ncreader.get_aspect_ratio(step)
             else:
-                data = h5reader.get_dataset(step, dset)
+                data = ncreader.get_dataset(step, dset)
 
             if dset == "volume":
-                extent = h5reader.get_box_extent()
-                ncells = h5reader.get_box_ncells()
+                extent = ncreader.get_box_extent()
+                ncells = ncreader.get_box_ncells()
                 vcell = np.prod(extent / ncells)
                 data /= vcell
 
             data_mean[step] = data.mean()
             data_std[step] = data.std()
 
-            t[step] = h5reader.get_step_attribute(step, "t")
+            t[step] = ncreader.get_dataset(step, "t")
 
         if dset == "aspect-ratio":
-            lmax = max(lmax, h5reader.get_parcel_option("lambda"))
+            lmax = max(lmax, ncreader.get_global_attribute("lambda_max"))
 
-        h5reader.close()
+        ncreader.close()
 
         plt.plot(t[beg:end], data_mean[beg:end], label=labels[i], color=colors[i])
         plt.fill_between(
@@ -422,7 +459,8 @@ def plot_parcel_profile(fnames, figure="save", fmt="png", **kwargs):
             bbox_to_anchor=legend_dict["bbox_to_anchor"],
         )
 
-    plt.tight_layout()
+    if tight_layout:
+        plt.tight_layout()
 
     if figure == "return":
         return plt
@@ -457,32 +495,32 @@ def plot_parcel_stats_profile(fnames, figure="save", fmt="png", **kwargs):
     if len(labels) < n:
         raise ValueError("Not enough labels provided.")
 
-    h5reader = H5Reader()
+    ncreader = nc_reader()
 
     lmax = 0
 
     for i, fname in enumerate(fnames):
 
-        h5reader.open(fname)
+        ncreader.open(fname)
 
-        if not h5reader.is_parcel_stats_file:
+        if not ncreader.is_parcel_stats_file:
             raise IOError("Not a parcel diagnostic output file.")
 
-        nsteps = h5reader.get_num_steps()
+        nsteps = ncreader.get_num_steps()
 
         data_mean = np.zeros(nsteps)
         data_std = np.zeros(nsteps)
         t = np.zeros(nsteps)
 
         for step in range(nsteps):
-            t[step] = h5reader.get_step_attribute(step, "t")
-            data_mean[step] = h5reader.get_step_attribute(step, "avg " + dset)
-            data_std[step] = h5reader.get_step_attribute(step, "std " + dset)
+            t[step] = ncreader.get_dataset(step, "t")
+            data_mean[step] = ncreader.get_dataset(step, "avg " + dset)
+            data_std[step] = ncreader.get_dataset(step, "std " + dset)
 
         if dset == "aspect ratio":
-            lmax = max(lmax, h5reader.get_parcel_option("lambda"))
+            lmax = max(lmax, ncreader.get_global_attribute("lambda_max"))
 
-        h5reader.close()
+        ncreader.close()
 
         plt.plot(t[beg:end], data_mean[beg:end], label=labels[i], color=colors[i])
         plt.fill_between(
@@ -538,28 +576,29 @@ def plot_parcel_number(fnames, figure="save", fmt="png", **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
+    tight_layout = kwargs.pop('tight_layout', True)
 
     if labels is None:
         labels = [None] * len(fnames)
 
     for i, fname in enumerate(fnames):
 
-        h5reader = H5Reader()
-        h5reader.open(fname)
+        ncreader = nc_reader()
+        ncreader.open(fname)
 
-        if not h5reader.is_parcel_file:
+        if not ncreader.is_parcel_file:
             raise IOError("Not a parcel output file.")
 
-        nsteps = h5reader.get_num_steps()
+        nsteps = ncreader.get_num_steps()
 
         nparcels = np.zeros(nsteps)
         t = np.zeros(nsteps)
 
         for step in range(nsteps):
-            nparcels[step] = h5reader.get_num_parcels(step)
-            t[step] = h5reader.get_step_attribute(step, "t")
+            nparcels[step] = ncreader.get_num_parcels(step)
+            t[step] = ncreader.get_dataset(step, "t")
 
-        h5reader.close()
+        ncreader.close()
 
         plt.plot(t[beg:end], nparcels[beg:end], label=labels[i])
 
@@ -575,7 +614,9 @@ def plot_parcel_number(fnames, figure="save", fmt="png", **kwargs):
     if not no_xlabel:
         plt.xlabel(get_label("time", units["time"]))
     plt.ylabel(r"parcel count")
-    plt.tight_layout()
+
+    if tight_layout:
+        plt.tight_layout()
 
     if figure == "return":
         return plt
@@ -594,30 +635,31 @@ def plot_small_parcel_number(fnames, figure="save", fmt="png", **kwargs):
     no_xlabel = kwargs.pop("no_xlabel", False)
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
+    tight_layout = kwargs.pop('tight_layout', True)
 
     if labels is None:
         labels = [None] * len(fnames)
 
     for i, fname in enumerate(fnames):
 
-        h5reader = H5Reader()
-        h5reader.open(fname)
+        ncreader = nc_reader()
+        ncreader.open(fname)
 
-        if not h5reader.is_parcel_stats_file:
+        if not ncreader.is_parcel_stats_file:
             raise IOError("Not a parcel diagnostic output file.")
 
-        nsteps = h5reader.get_num_steps()
+        nsteps = ncreader.get_num_steps()
 
         nparcels = np.zeros(nsteps)
         nsmall = np.zeros(nsteps)
         t = np.zeros(nsteps)
 
         for step in range(nsteps):
-            nparcels[step] = h5reader.get_step_attribute(step, "num parcel")
-            nsmall[step] = h5reader.get_step_attribute(step, "num small parcels")
-            t[step] = h5reader.get_step_attribute(step, "t")
+            nparcels[step] = ncreader.get_dataset(step, "n_parcels")
+            nsmall[step] = ncreader.get_dataset(step, "n_small_parcel")
+            t[step] = ncreader.get_dataset(step, "t")
 
-        h5reader.close()
+        ncreader.close()
 
         plt.plot(
             t[beg:end], nsmall[beg:end] / nparcels[beg:end] * 100.0, label=labels[i]
@@ -635,7 +677,9 @@ def plot_small_parcel_number(fnames, figure="save", fmt="png", **kwargs):
     if not no_xlabel:
         plt.xlabel(get_label("time", units["time"]))
     plt.ylabel(r"small parcel fraction (\%)")
-    plt.tight_layout()
+
+    if tight_layout:
+        plt.tight_layout()
 
     if figure == "return":
         return plt
@@ -669,7 +713,7 @@ def plot_center_of_mass(fnames, figure="save", fmt="png", dset="buoyancy", **kwa
 
     colors = plt.cm.tab10(np.arange(n).astype(int))
 
-    h5reader = H5Reader()
+    ncreader = nc_reader()
 
     fig1 = plt.figure(num=1)
     ax1 = fig1.gca()
@@ -679,12 +723,12 @@ def plot_center_of_mass(fnames, figure="save", fmt="png", dset="buoyancy", **kwa
 
     for i, fname in enumerate(fnames):
 
-        h5reader.open(fname)
+        ncreader.open(fname)
 
-        if not h5reader.is_parcel_stats_file:
+        if not ncreader.is_parcel_stats_file:
             raise IOError("Not a parcel diagnostic output file.")
 
-        nsteps = h5reader.get_num_steps()
+        nsteps = ncreader.get_num_steps()
 
         t = np.zeros(nsteps)
 
@@ -702,19 +746,19 @@ def plot_center_of_mass(fnames, figure="save", fmt="png", dset="buoyancy", **kwa
         ## skip zero step since vorticity is not given
         for j in range(0, nsteps):
 
-            t[j] = h5reader.get_step_attribute(j, "t")
-            xb_bar[j] = h5reader.get_step_attribute(j, "xb_bar")
-            zb_bar[j] = h5reader.get_step_attribute(j, "zb_bar")
-            x2b_bar[j] = h5reader.get_step_attribute(j, "x2b_bar")
-            z2b_bar[j] = h5reader.get_step_attribute(j, "z2b_bar")
-            xzb_bar[j] = h5reader.get_step_attribute(j, "xzb_bar")
-            xw_bar[j] = h5reader.get_step_attribute(j, "xv_bar")
-            zw_bar[j] = h5reader.get_step_attribute(j, "zv_bar")
-            x2w_bar[j] = h5reader.get_step_attribute(j, "x2v_bar")
-            z2w_bar[j] = h5reader.get_step_attribute(j, "z2v_bar")
-            xzw_bar[j] = h5reader.get_step_attribute(j, "xzv_bar")
+            t[j] = ncreader.get_dataset(j, "t")
+            xb_bar[j] = ncreader.get_dataset(j, "xb_bar")
+            zb_bar[j] = ncreader.get_dataset(j, "zb_bar")
+            x2b_bar[j] = ncreader.get_dataset(j, "x2b_bar")
+            z2b_bar[j] = ncreader.get_dataset(j, "z2b_bar")
+            xzb_bar[j] = ncreader.get_dataset(j, "xzb_bar")
+            xw_bar[j] = ncreader.get_dataset(j, "xv_bar")
+            zw_bar[j] = ncreader.get_dataset(j, "zv_bar")
+            x2w_bar[j] = ncreader.get_dataset(j, "x2v_bar")
+            z2w_bar[j] = ncreader.get_dataset(j, "z2v_bar")
+            xzw_bar[j] = ncreader.get_dataset(j, "xzv_bar")
 
-        h5reader.close()
+        ncreader.close()
 
         data = {
             "t": t[beg:end],
@@ -773,8 +817,8 @@ def plot_center_of_mass(fnames, figure="save", fmt="png", dset="buoyancy", **kwa
             bbox_to_anchor=legend_dict["bbox_to_anchor"],
         )
 
-    ax1.set_xlabel(r"time (s)")
-    ax2.set_xlabel(r"time (s)")
+    ax1.set_xlabel(get_label("time", units["time"]))
+    ax2.set_xlabel(get_label("time", units["time"]))
     if variance:
         ax1.set_ylabel(
             r"$\langle x\rangle_"
@@ -831,20 +875,20 @@ def plot_cumulative(fnames, step=0, dset="volume", figure="save", fmt="png", **k
     colors = plt.cm.tab10(np.arange(n).astype(int))
 
     for i, fname in enumerate(fnames):
-        h5reader = H5Reader()
-        h5reader.open(fname)
+        ncreader = nc_reader()
+        ncreader.open(fname)
 
-        if not h5reader.is_parcel_file:
+        if not ncreader.is_parcel_file:
             raise IOError("Not a parcel output file.")
 
-        nsteps = h5reader.get_num_steps()
+        nsteps = ncreader.get_num_steps()
 
         if step < 0 or step > nsteps - 1:
             raise ValueError("Number of steps exceeded.")
 
-        data = {dset: h5reader.get_dataset(step, dset)}
+        data = {dset: ncreader.get_dataset(step, dset)}
 
-        h5reader.close()
+        ncreader.close()
 
         sns.ecdfplot(data=data, x=dset, stat=stat, color=colors[i], label=labels[i])
 
@@ -902,8 +946,8 @@ def plot_power_spectrum(fnames, figure="save", fmt="png", **kwargs):
     plt.grid(which="both", linestyle="dashed")
 
     if not no_xlabel:
-        plt.xlabel(r"$k$ $(1/m)$")
-    plt.ylabel(r"$P(k)$ $(m^5/s^4)$")
+        plt.xlabel(get_label(r"$k$", units["wavenumber"]))
+    plt.ylabel(get_label(r"$P(k)$", units["power"]))
 
     if not labels[0] is None:
         plt.legend(
@@ -945,13 +989,13 @@ def plot_parcels_per_cell(fnames, figure="save", fmt="png", **kwargs):
     colors = plt.cm.tab10(np.arange(n).astype(int))
 
     for i, fname in enumerate(fnames):
-        h5reader = H5Reader()
-        h5reader.open(fname)
+        ncreader = nc_reader()
+        ncreader.open(fname)
 
-        if not h5reader.is_field_stats_file:
+        if not ncreader.is_field_stats_file:
             raise IOError("Not a field diagnostic output file.")
 
-        nsteps = h5reader.get_num_steps()
+        nsteps = ncreader.get_num_steps()
 
         n_avg = np.zeros(nsteps)
 
@@ -962,20 +1006,14 @@ def plot_parcels_per_cell(fnames, figure="save", fmt="png", **kwargs):
         t = np.zeros(nsteps)
 
         for step in range(nsteps):
-            n_avg[step] = h5reader.get_step_attribute(
-                step, "average num parcels per cell"
-            )
-            t[step] = h5reader.get_step_attribute(step, "t")
+            n_avg[step] = ncreader.get_dataset(step, "avg_npar")
+            t[step] = ncreader.get_dataset(step, "t")
 
             if add_minmax:
-                n_min[step] = h5reader.get_step_attribute(
-                    step, "min num parcels per cell"
-                )
-                n_max[step] = h5reader.get_step_attribute(
-                    step, "max num parcels per cell"
-                )
+                n_min[step] = ncreader.get_dataset(step, "min_npar")
+                n_max[step] = ncreader.get_dataset(step, "max_nar")
 
-        h5reader.close()
+        ncreader.close()
 
         plt.plot(t[beg:end], n_avg[beg:end], color=colors[i], label=labels[i])
 
@@ -1023,13 +1061,13 @@ def plot_energy(fname, figure="save", fmt="png", **kwargs):
     beg = kwargs.pop("begin", None)
     end = kwargs.pop("end", None)
 
-    h5reader = H5Reader()
-    h5reader.open(fname)
+    ncreader = nc_reader()
+    ncreader.open(fname)
 
-    if not h5reader.is_parcel_stats_file:
+    if not ncreader.is_parcel_stats_file:
         raise IOError("Not a parcel diagnostic output file.")
 
-    nsteps = h5reader.get_num_steps()
+    nsteps = ncreader.get_num_steps()
 
     pe = np.zeros(nsteps)
     ke = np.zeros(nsteps)
@@ -1037,12 +1075,12 @@ def plot_energy(fname, figure="save", fmt="png", **kwargs):
     t = np.zeros(nsteps)
 
     for step in range(nsteps):
-        pe[step] = h5reader.get_step_attribute(step, "potential energy")
-        ke[step] = h5reader.get_step_attribute(step, "kinetic energy")
-        te[step] = h5reader.get_step_attribute(step, "total energy")
-        t[step] = h5reader.get_step_attribute(step, "t")
+        pe[step] = ncreader.get_dataset(step, "pe")
+        ke[step] = ncreader.get_dataset(step, "ke")
+        te[step] = ncreader.get_dataset(step, "te")
+        t[step] = ncreader.get_dataset(step, "t")
 
-    h5reader.close()
+    ncreader.close()
 
     plt.plot(t[beg:end], pe[beg:end], label=r"$P$")
     plt.plot(t[beg:end], ke[beg:end], label=r"$K$")
@@ -1238,7 +1276,7 @@ def plot_time_bar(fnames, figure="save", fmt="png", **kwargs):
     # https://stackoverflow.com/questions/14852821/aligning-rotated-xticklabels-with-their-respective-xticks
     plt.xticks(rotation=30, ha="right")
 
-    plt.ylabel(r"wall time (s)")
+    plt.ylabel(get_label("wall time", units["time"]))
     plt.xlabel("")
     plt.grid(which="both", linestyle="dashed")
     plt.tight_layout()
@@ -1337,8 +1375,8 @@ def plot_time_speedup(fnames, nthreads, figure="save", fmt="png"):
         nthreads, data, linestyle="dashed", color="black", label="perfect scaling"
     )
 
-    plt.ylabel(r"wall time (s)")
-    plt.xlabel("number of OpenMP threads")
+    plt.ylabel(get_label("wall time", units["time"]))
+    plt.xlabel(r"number of OpenMP threads")
     plt.grid(which="both", linestyle="dashed")
     plt.legend(loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.4))
     plt.tight_layout()

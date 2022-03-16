@@ -1,3 +1,4 @@
+if ENABLE_PYTHON
 SUBDIRS = tools
 
 animate_parcels_PYTHON = animate-parcels.py
@@ -15,5 +16,12 @@ plot_timingsdir = $(bindir)
 merge_ellipses_PYTHON = merge-ellipses.py
 merge_ellipsesdir = $(bindir)
 
-plot_mergers_PYTHON = plot-mergers.py
-plot_mergersdir = $(bindir)
+subgrid_2d_generalised_PYTHON = subgrid_2d_generalised.py
+subgrid_2d_generaliseddir = $(bindir)
+
+compare_results_PYTHON = compare_results.py
+compare_resultsdir = $(bindir)
+
+plot_slices_PYTHON = plot_slices.py
+plot_slicesdir = $(bindir)
+endif
