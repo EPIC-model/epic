@@ -11,7 +11,7 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use fields
-    use physical_parameters, only : ft_cor, f_cor, glat, lam_c, q_0
+    use physical_parameters, only : ft_cor, f_cor, glat, lambda_c, q_0
     use omp_lib
     implicit none
 
@@ -143,7 +143,7 @@ module parcel_interpl
 #ifndef ENABLE_DRY_MODE
                 ! liquid water content
                 q_c = parcels%humidity(n) &
-                    - q_0 * dexp(lam_c * (lower(3) - parcels%position(3, n)))
+                    - q_0 * dexp(lambda_c * (lower(3) - parcels%position(3, n)))
                 q_c = max(zero, q_c)
 
                 ! total buoyancy (including effects of latent heating)

@@ -1,16 +1,16 @@
 module iomanip
 
-    interface print_key_value_pair
-        module procedure :: print_key_value_pair_double
-        module procedure :: print_key_value_pair_integer
-        module procedure :: print_key_value_pair_logical
-        module procedure :: print_key_value_pair_character
-    end interface print_key_value_pair
+    interface print_quantity
+        module procedure :: print_quantity_double
+        module procedure :: print_quantity_integer
+        module procedure :: print_quantity_logical
+        module procedure :: print_quantity_character
+    end interface print_quantity
 
-    private :: print_key_value_pair_double,     &
-               print_key_value_pair_integer,    &
-               print_key_value_pair_logical,    &
-               print_key_value_pair_character
+    private :: print_quantity_double,     &
+               print_quantity_integer,    &
+               print_quantity_logical,    &
+               print_quantity_character
     contains
 
     ! convert number to string of length 10 with
@@ -25,42 +25,55 @@ module iomanip
     end function zfill
 
 
-    subroutine print_key_value_pair_double(name, val)
-        character(*),     intent(in) :: name
-        double precision, intent(in) :: val
-        character(64)                :: fix_length_name
+    subroutine print_quantity_double(name, val, unit)
+        character(*),           intent(in) :: name
+        double precision,       intent(in) :: val
+        character(*), optional, intent(in) :: unit
+        character(64)                      :: fix_length_name
+        character(16)                      :: fix_length_unit = ''
 
         fix_length_name = name
-        write (*, "(a, 1p,e14.7)") fix_length_name, val
-    end subroutine print_key_value_pair_double
+        if (present(unit)) then
+            fix_length_unit = unit
+        endif
+        write (*, "(a, 1p,e14.7, a)") fix_length_name, val, fix_length_unit
+    end subroutine print_quantity_double
 
-    subroutine print_key_value_pair_integer(name, val)
-        character(*), intent(in) :: name
-        integer,      intent(in) :: val
-        character(64)            :: fix_length_name
+    subroutine print_quantity_integer(name, val, unit)
+        character(*),           intent(in) :: name
+        integer,                intent(in) :: val
+        character(*), optional, intent(in) :: unit
+        character(64)                      :: fix_length_name
+        character(16)                      :: fix_length_unit = ''
 
         fix_length_name = name
-        write (*, "(a, I14)") fix_length_name, val
-    end subroutine print_key_value_pair_integer
+        if (present(unit)) then
+            fix_length_unit = unit
+        endif
+        write (*, "(a, I14, a)") fix_length_name, val, fix_length_unit
+    end subroutine print_quantity_integer
 
-    subroutine print_key_value_pair_logical(name, val)
-        character(*), intent(in) :: name
-        logical,      intent(in) :: val
+    subroutine print_quantity_logical(name, val, unit)
+        character(*),           intent(in) :: name
+        logical,                intent(in) :: val
+        character(*), optional, intent(in) :: unit
 
         if (val) then
-            call print_key_value_pair_character(name, 'true')
+            call print_quantity_character(name, 'true')
         else
-            call print_key_value_pair_character(name, 'false')
+            call print_quantity_character(name, 'false')
         endif
-    end subroutine print_key_value_pair_logical
+    end subroutine print_quantity_logical
 
-    subroutine print_key_value_pair_character(name, val)
-        character(*), intent(in) :: name
-        character(*), intent(in) :: val
-        character(64)            :: fix_length_name
+    subroutine print_quantity_character(name, val, unit)
+        character(*),           intent(in) :: name
+        character(*),           intent(in) :: val
+        character(*), optional, intent(in) :: unit
+        character(64)                      :: fix_length_name
+        character(16)                      :: fix_length_unit = ''
 
         fix_length_name = name
-        write (*, "(a, a14)") fix_length_name, val
-    end subroutine print_key_value_pair_character
+        write (*, "(a, a14, a)") fix_length_name, val, fix_length_unit
+    end subroutine print_quantity_character
 
 end module iomanip
