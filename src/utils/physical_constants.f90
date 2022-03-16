@@ -66,7 +66,7 @@ module physical_constants
                 case ('planetary_angular_velocity')
                     ang_vel = val
                 case default
-                    print *, "Unknown physical constant: '", trim(name), "'."
+                    print *, "Unknown physical constant: '" // name // "'."
                     stop
             end select
 
@@ -116,7 +116,7 @@ module physical_constants
             call print_quantity('latent heat of vaporization', L_v, 'J/kg')
             call print_quantity('specific heat', c_p, 'J/(kg*K)')
             call print_quantity('temperature at sea level', theta_0, 'K')
-            call print_quantity('planetary angular velocity', pl_ang_vel, 'rad/s')
+            call print_quantity('planetary angular velocity', ang_vel, 'rad/s')
             write(*, *) ''
         end subroutine print_physical_constants
 

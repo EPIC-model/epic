@@ -1,5 +1,10 @@
 ! =============================================================================
 ! This module contains physical parameters.
+!
+! References:
+!   Dritschel D.G., Böing S.J., Parker D.J., Blyth A.M.
+!   The moist parcel-in-cell method for modelling moist convection.
+!   Q J R Meteorol Soc. 2018; 144:1695–1718. https://doi.org/10.1002/qj.3319
 ! =============================================================================
 module physical_parameters
     use constants
@@ -10,17 +15,13 @@ module physical_parameters
     use iomanip, only : print_quantity
     implicit none
 
-    !FIXME parameters for coriolis and mean wind
-!     !non-dimensional ang_vel of earth = t_scale*Omega
-!     !t_scale = 142.8571428571 Omega = 7.2921159e-5
-
-    logical :: l_coriolis = .false.
+    logical, protected  :: l_coriolis = .false.
 
     ![°] latitude angle (45° corresponds to standard gravity)
-    double precision :: lat_degrees = 45.0d0
+    double precision, protected  :: lat_degrees = 45.0d0
 
-    ![1] saturation specific humidity at ground level
-    double precision :: q_0 = 0.015d0
+    ![1] MPIC moist physics parameter: saturation specific humidity at ground level
+    double precision, protected  :: q_0 = 0.015d0
 
     ![] see equation (5) of MPIC paper
     double precision, protected :: glat
@@ -36,14 +37,51 @@ module physical_parameters
     double precision, protected :: ft_cor
 
     ![m] scale-height, H
-    double precision :: height_c
+    double precision, protected :: height_c = 1000.0d0
 
     ![1/m] inverse scale-height
-    double precision :: lambda_c
+    double precision, protected :: lambda_c
 
-    private :: update_physical_parameters
+    interface set_physical_parameter
+        module procedure :: set_physical_parameter_double
+        module procedure :: set_physical_parameter_logical
+    end interface set_physical_parameter
+
+    private :: update_physical_parameters,      &
+               set_physical_parameter_double,   &
+               set_physical_parameter_logical
 
     contains
+
+        subroutine set_physical_parameter_double(name, val)
+            character(*),     intent(in) :: name
+            double precision, intent(in) :: val
+
+            select case (name)
+                case ('latitude_degrees')
+                    lat_degrees = val
+                case ('saturation_specific_humidity_at_ground_level')
+                    q_0 = val
+                case ('scale_height')
+                    height_c = val
+                case default
+                    print *, "Unknown physical parameter: '" // name // "'."
+                    stop
+            end select
+        end subroutine set_physical_parameter_double
+
+        subroutine set_physical_parameter_logical(name, val)
+            character(*), intent(in) :: name
+            logical,      intent(in) :: val
+
+            select case (name)
+                case ('coriolis')
+                    l_coriolis = val
+                case default
+                    print *, "Unknown physical parameter: '" // name // "'."
+                    stop
+            end select
+        end subroutine set_physical_parameter_logical
 
         subroutine update_physical_parameters
             glat = gravity * L_v / (c_p * theta_0)

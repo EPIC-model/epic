@@ -7,8 +7,9 @@
 ! =============================================================================
 module moist_3d
     use physical_parameters, only : write_physical_parameters, &
-                                    set_physical_constant
-    use physical_constants, only : write_physical_constants, gravity, L_v, c_p
+                                    set_physical_parameter
+    use physical_constants, only : write_physical_constants, gravity, L_v, c_p, &
+                                   set_physical_constant
     use constants
     use netcdf_writer
     implicit none
@@ -52,8 +53,10 @@ module moist_3d
             double precision                :: rpos1, rpos2, rpos3, r2, pos(3), centre(3), extent(3)
             double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
 
-            ! set physical parameters
+            ! set physical constants and parameters
             call set_physical_constant('temperature_at_sea_level', moist%theta_0)
+            call set_physical_parameter('scale_height', moist%l_condense)
+            call set_physical_parameter('saturation_specific_humidity_at_ground_level', moist%q0)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
