@@ -8,6 +8,8 @@
  box%origin = -500.0, -500.0, 0.0
 
  robert_flow%n_bubbles = 3
+ robert_flow%gravity   = 9.81
+ robert_flow%theta_0   = 303.15d0
 
  robert_flow%bubbles(1)%dtheta_max = 0.5
  robert_flow%bubbles(1)%center = 0.0, 0.0, 300.0

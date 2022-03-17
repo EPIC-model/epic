@@ -23,8 +23,8 @@ module straka_2d
         double precision :: dtheta_max = 15.0d0               ![K] max. pot. temp. perturbation
         double precision :: center(2) = (/zero, 3000.0d0/)    ![m] sphere center (x, z)
         double precision :: radii(2)  = (/4000.0d0, 2000.d0/) ![m] ellipse radii (x, z)
-        double precision :: theta_0 = 300.0d0
-        double precision :: gravity = 9.81d0
+        double precision :: theta_0
+        double precision :: gravity
     end type flow_type
 
     integer :: buo_id

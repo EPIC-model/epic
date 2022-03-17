@@ -10,6 +10,7 @@ program epic3d_models
     use netcdf_utils
     use netcdf_writer
     use config, only : package_version, cf_version
+    use physics, only : gravity, theta_0, q_0, height_c, c_p, L_v
     implicit none
 
     logical            :: verbose = .false.
@@ -30,6 +31,17 @@ program epic3d_models
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
+
+    ! set defaults for physical parameters:
+    robert_flow%gravity = gravity
+    robert_flow%theta_0 = theta_0
+
+    moist%height_c = height_c
+    moist%q0 = q_0
+    moist%theta_0 = theta_0
+    moist%gravity = gravity
+    moist%L_v = L_v
+    moist%c_p = c_p
 
     call read_config_file
 

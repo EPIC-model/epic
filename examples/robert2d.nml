@@ -1,9 +1,9 @@
 &MODELS
 
  model      = 'Robert'
- ncfname    = 'robert2d.nc'
+ ncfname    = 'robert2d_1024x1536.nc'
 
- box%ncells = 32, 48
+ box%ncells = 1024, 1536
  box%extent = 1000, 1500
  box%origin = -500.0, 0.0
 

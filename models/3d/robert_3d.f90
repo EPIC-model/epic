@@ -28,8 +28,8 @@ module robert_3d
     type flow_type
         integer           :: n_bubbles   = 1
         type(bubble_type) :: bubbles(10)
-        double precision  :: theta_0 = 303.15d0 ![K]
-        double precision  :: gravity = 9.81d0
+        double precision  :: theta_0
+        double precision  :: gravity
     end type flow_type
 
     type(flow_type) :: robert_flow
