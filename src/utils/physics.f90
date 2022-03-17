@@ -108,7 +108,9 @@ module physics
                print_physical_quantity_double,      &
                print_physical_quantity_integer,     &
                print_physical_quantity_logical,     &
-               print_physical_quantity_character
+               print_physical_quantity_character,   &
+               set_coriolis_effects.                &
+               set_inverse_scale_height
 
     contains
 
@@ -133,6 +135,7 @@ module physics
                     q_0 = val
                 case ('scale_height')
                     height_c = val
+                    call set_inverse_scale_height
                 case default
                     print *, "Unknown physical quantity: '" // name // "'."
                     stop
@@ -146,6 +149,7 @@ module physics
             select case (name)
                 case ('coriolis')
                     l_coriolis = val
+                    call set_coriolis_effects
                 case default
                     print *, "Unknown physical quantity: '" // name // "'."
                     stop
@@ -165,12 +169,7 @@ module physics
 
         end subroutine set_physical_quantity
 
-        subroutine update_physical_quantities
-            glat = gravity * L_v / (c_p * theta_0)
-            glati = one / glat
-
-            lambda_c = one / height_c
-
+        subroutine set_coriolis_effects
             if (l_coriolis) then
                 lat_ref = lat_degrees * deg2rad
                 f_cor  = two * ang_vel * dsin(lat_ref)
@@ -179,6 +178,20 @@ module physics
                 f_cor  = zero
                 ft_cor = zero
             endif
+        end subroutine set_coriolis_effects
+
+        subroutine set_inverse_scale_height
+            lambda_c = one / height_c
+        end subroutine set_inverse_scale_height
+
+        subroutine update_physical_quantities
+
+            glat = gravity * L_v / (c_p * theta_0)
+            glati = one / glat
+
+            call set_inverse_scale_height
+            call set_coriolis_effects
+
         end subroutine update_physical_quantities
 
         subroutine read_physical_quantities(ncid)
