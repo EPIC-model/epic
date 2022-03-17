@@ -109,7 +109,7 @@ module physics
                print_physical_quantity_integer,     &
                print_physical_quantity_logical,     &
                print_physical_quantity_character,   &
-               set_coriolis_effects.                &
+               set_coriolis_effects,                &
                set_inverse_scale_height
 
     contains
