@@ -176,6 +176,7 @@ try:
 
     ncp.add_physical_quantity('saturation_specific_humidity_at_ground_level', q0)
     ncp.add_physical_quantity('temperature_at_sea_level', theta_0)
+    ncp.add_physical_quantity('scale_height', height_c)
 
     ncp.close()
 except Exception as ex:
