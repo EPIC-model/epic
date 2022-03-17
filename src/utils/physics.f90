@@ -236,11 +236,8 @@ module physics
             call write_netcdf_attribute(grp_ncid, 'planetary_angular_velocity', ang_vel)
             call write_netcdf_attribute(grp_ncid, 'saturation_specific_humidity_at_ground_level', q_0)
             call write_netcdf_attribute(grp_ncid, 'coriolis', l_coriolis)
-            call write_netcdf_attribute(grp_ncid, 'coriolis_frequency', f_cor)
-            call write_netcdf_attribute(grp_ncid, 'planetary_vorticity', ft_cor)
             call write_netcdf_attribute(grp_ncid, 'latitude_degrees', lat_degrees)
             call write_netcdf_attribute(grp_ncid, 'scale_height', height_c)
-            call write_netcdf_attribute(grp_ncid, 'inverse_scale_height', lambda_c)
 
         end subroutine write_physical_quantities
 
