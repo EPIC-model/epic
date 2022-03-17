@@ -26,14 +26,14 @@ try:
     z_m = 5000.0
     r_plume = 800.0
     e_values = np.array([0.3, -0.4, 0.5])
-    l_condense = 1019.367991845056
+    height_c = 1000.0
     q0 = 0.015
-    theta_0 = 298.6268656716418
+    theta_0 = 300.0
     ngrid = args.ngrid
     n_par_res = 2  # how many parcels per grid box in each dimension
-    gravity = 9.81
-    L_v = 2.501e6
-    c_p = 1005.0
+    gravity = 10.0
+    L_v = 2.5e6
+    c_p = 1000.0
 
     parcels_per_dim = ngrid * n_par_res
     tuple_origin = (0, 0, 0)
@@ -56,7 +56,7 @@ try:
         print("Error: Relative humidity fraction must be < 1.")
         quit()
 
-    h_pl = q0 * np.exp(-z_c / l_condense)
+    h_pl = q0 * np.exp(-z_c / height_c)
 
     print("Humidity inside the plume is " + str(h_pl))
 
@@ -68,13 +68,13 @@ try:
 
     print("Background humidity is " + str(h_bg))
 
-    z_b = l_condense * np.log(q0 * RH / h_bg)
+    z_b = height_c * np.log(q0 * RH / h_bg)
 
     print("Base of mixed layer is " + str(z_b))
 
     dbdz = (
         (gravity * L_v / (c_p * theta_0))
-        * (h_pl - q0 * np.exp(-z_m / l_condense))
+        * (h_pl - q0 * np.exp(-z_m / height_c))
         / (z_m - z_d)
     )
 
@@ -146,7 +146,7 @@ try:
                     else:
                         # Stratified layer
                         buoyancy[iparcel] = dbdz * (pos[2] - z_b)
-                        humidity[iparcel] = q0 * RH * np.exp(-pos[2] / l_condense)
+                        humidity[iparcel] = q0 * RH * np.exp(-pos[2] / height_c)
                 iparcel = iparcel + 1
 
     # write parcel attributes

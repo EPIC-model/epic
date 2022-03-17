@@ -14,7 +14,7 @@
 module robert_2d
     use constants
     use netcdf_writer
-    use physics, only : write_physical_quantities, gravity, &
+    use physics, only : write_physical_quantities, &
                         set_physical_quantity
     implicit none
 
@@ -33,11 +33,11 @@ module robert_2d
         double precision :: width           ![m] standard deviation of Gaussian
     end type bubble_type
 
-    double precision, parameter :: theta_0 = 303.15d0
-
     type flow_type
         integer           :: n_bubbles   = 1
         type(bubble_type) :: bubbles(10)
+        double precision  :: theta_0 = 303.15d0
+        double precision  :: gravity = 9.81d0
     end type flow_type
 
     type(flow_type) :: robert_flow
@@ -57,7 +57,8 @@ module robert_2d
             type(bubble_type)               :: bubble
 
             ! set physical constants and parameters
-            call set_physical_quantity('temperature_at_sea_level', theta_0)
+            call set_physical_quantity('temperature_at_sea_level', robert_flow%theta_0)
+            call set_physical_quantity('standard_gravity', robert_flow%gravity)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -131,7 +132,7 @@ module robert_2d
                     ! liquid-water buoyancy is defined by b = g * (theta − theta_0) / theta_0
                     ! (dtheta = theta - theta_0)
                     buoyg(j, i) = buoyg(j, i) &
-                                + gravity * dtheta / theta_0
+                                + robert_flow%gravity * dtheta / robert_flow%theta_0
                 enddo
             enddo
         end subroutine robert_uniform_init
@@ -177,7 +178,7 @@ module robert_2d
                     ! liquid-water buoyancy is defined by b = g * (theta − theta_0) / theta_0
                     ! (dtheta = theta - theta_0)
                     buoyg(j, i) = buoyg(j, i) &
-                                + gravity * dtheta / theta_0
+                                + robert_flow%gravity * dtheta / robert_flow%theta_0
                 enddo
             enddo
         end subroutine robert_gaussian_init

@@ -16,7 +16,10 @@
  moist%z_m        = 5000
  moist%r_plume    = 800
  moist%e_values   = 0.3, -0.4, 0.5
- moist%l_condense = 1019.367991845056
+ moist%height_c   = 1000
  moist%q0         = 0.015
- moist%theta_0   = 298.6268656716418
+ moist%theta_0    = 300
+ moist%gravity    = 10
+ moist%L_v        = 2500000
+ moist%c_p        = 1000
 /
