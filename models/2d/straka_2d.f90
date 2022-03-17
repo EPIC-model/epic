@@ -13,9 +13,8 @@
 module straka_2d
     use constants
     use netcdf_writer
-    use physical_constants, only : write_physical_constants, gravity, &
-                                   set_physical_constant
-    use physical_parameters, only : write_physical_parameters
+    use physics, only : write_physical_quantities, gravity, &
+                        set_physical_quantity
     implicit none
 
     private
@@ -48,7 +47,7 @@ module straka_2d
             double precision, parameter     :: theta_0 = 300.0d0
 
             ! set physical constants and parameters
-            call set_physical_constant('temperature_at_sea_level', theta_0)
+            call set_physical_quantity('temperature_at_sea_level', theta_0)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -94,8 +93,7 @@ module straka_2d
 
             call write_netcdf_dataset(ncid, buo_id, buoyg)
 
-            call write_physical_constants(ncid)
-            call write_physical_parameters(ncid)
+            call write_physical_quantities(ncid)
 
         end subroutine straka_init
 end module

@@ -7,9 +7,8 @@ libepic_utils_la_SOURCES = 	\
 	iomanip.f90		\
 	merge_sort.f90		\
 	constants.f90		\
-	physical_constants.f90	\
 	timer.f90		\
 	jacobi.f90		\
 	config.f90		\
-	physical_parameters.f90
+	physics.f90
 

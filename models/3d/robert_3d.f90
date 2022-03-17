@@ -8,9 +8,8 @@
 module robert_3d
     use constants
     use netcdf_writer
-    use physical_parameters, only : write_physical_parameters, &
-                                    set_physical_constant
-    use physical_constants, only : write_physical_constants, gravity
+    use physics, only : write_physical_quantities, gravity, &
+                        set_physical_quantity
     implicit none
 
     private
@@ -51,7 +50,7 @@ module robert_3d
             type(bubble_type)               :: bubble
 
             ! set physical parameters
-            call set_physical_constant('temperature_at_sea_level', theta_0)
+            call set_physical_quantity('temperature_at_sea_level', theta_0)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -81,8 +80,7 @@ module robert_3d
 
             call write_netcdf_dataset(ncid, buo_id, buoyg)
 
-            call write_physical_constants(ncid)
-            call write_physical_parameters(ncid)
+            call write_physical_quantities(ncid)
 
             deallocate(buoyg)
 

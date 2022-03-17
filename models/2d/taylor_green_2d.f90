@@ -12,8 +12,6 @@
 module taylor_green_2d
     use netcdf_writer
     use constants, only : pi, f12, zero, one, two
-    use physical_constants, only : write_physical_constants
-    use physical_parameters, only : write_physical_parameters
     implicit none
 
     private

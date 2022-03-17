@@ -1,16 +1,5 @@
 module iomanip
 
-    interface print_quantity
-        module procedure :: print_quantity_double
-        module procedure :: print_quantity_integer
-        module procedure :: print_quantity_logical
-        module procedure :: print_quantity_character
-    end interface print_quantity
-
-    private :: print_quantity_double,     &
-               print_quantity_integer,    &
-               print_quantity_logical,    &
-               print_quantity_character
     contains
 
     ! convert number to string of length 10 with
@@ -23,54 +12,5 @@ module iomanip
 
         write(name, fmt='(I10.10)') num
     end function zfill
-
-
-    subroutine print_quantity_double(name, val, unit)
-        character(*),           intent(in) :: name
-        double precision,       intent(in) :: val
-        character(*), optional, intent(in) :: unit
-        character(64)                      :: fix_length_name
-
-        fix_length_name = name
-        if (present(unit)) then
-            fix_length_name = name // ', ' // unit
-        endif
-        write (*, "(a, 1p,e14.7)") fix_length_name, val
-    end subroutine print_quantity_double
-
-    subroutine print_quantity_integer(name, val, unit)
-        character(*),           intent(in) :: name
-        integer,                intent(in) :: val
-        character(*), optional, intent(in) :: unit
-        character(64)                      :: fix_length_name
-
-        fix_length_name = name
-        if (present(unit)) then
-            fix_length_name = name // ', ' // unit
-        endif
-        write (*, "(a, I14)") fix_length_name, val
-    end subroutine print_quantity_integer
-
-    subroutine print_quantity_logical(name, val, unit)
-        character(*),           intent(in) :: name
-        logical,                intent(in) :: val
-        character(*), optional, intent(in) :: unit
-
-        if (val) then
-            call print_quantity_character(name, 'true')
-        else
-            call print_quantity_character(name, 'false')
-        endif
-    end subroutine print_quantity_logical
-
-    subroutine print_quantity_character(name, val, unit)
-        character(*),           intent(in) :: name
-        character(*),           intent(in) :: val
-        character(*), optional, intent(in) :: unit
-        character(64)                      :: fix_length_name
-
-        fix_length_name = name
-        write (*, "(a, a14)") fix_length_name, val
-    end subroutine print_quantity_character
 
 end module iomanip

@@ -9,8 +9,7 @@ module parcel_netcdf
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
     use options, only : write_netcdf_options
-    use physical_parameters, only : write_physical_parameters
-    use physical_constants, only : write_physical_constants
+    use physics, only : write_physical_quantities
     implicit none
 
     integer :: parcel_io_timer
@@ -90,8 +89,7 @@ module parcel_netcdf
 
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
 
-            call write_physical_parameters(ncid)
-            call write_physical_constants(ncid)
+            call write_physical_quantities(ncid)
 
             call write_netcdf_options(ncid)
 

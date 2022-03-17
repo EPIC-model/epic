@@ -13,8 +13,7 @@ module utils
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters
-    use physical_parameters, only : read_physical_parameters, print_physical_parameters
-    use physical_constants, only : read_physical_constants, print_physical_constants
+    use physics, only : read_physical_quantities, print_physical_quantities
 #ifndef NDEBUG
     use parcel_interpl, only : vol2grid_symmetry_error
 #endif
@@ -172,8 +171,7 @@ module utils
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
             call get_netcdf_box(ncid, lower, extent, ncells)
-            call read_physical_constants(ncid)
-            call read_physical_parameters(ncid)
+            call read_physical_quantities(ncid)
 
             call close_netcdf_file(ncid)
 
@@ -185,8 +183,7 @@ module utils
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
-                call print_physical_constants
-                call print_physical_parameters
+                call print_physical_quantities
             endif
 #endif
         end subroutine setup_domain_and_parameters

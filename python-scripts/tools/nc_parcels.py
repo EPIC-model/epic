@@ -22,14 +22,10 @@ class nc_parcels:
 
         self._nparcels = 0
 
-        self._physical_constants = {}
-        self._physical_parameters = {}
+        self._physical_quantities = {}
 
-    def add_physical_constant(self, key, value):
-        self._physical_constants[key] = value
-
-    def add_physical_parameter(self, key, value):
-        self._physical_parameters[key] = value
+    def add_physical_quantity(self, key, value):
+        self._physical_quantities[key] = value
 
     def add_dataset(self, name, values, dtype='f8', **kwargs):
         """
@@ -78,13 +74,9 @@ class nc_parcels:
             var.long_name = long_name
 
     def close(self):
-        if not self._physical_parameters == {}:
-            write_nc_parameters(self._ncfile, 'physical_parameters',
-                                self._physical_parameters)
-
-        if not self._physical_constants == {}:
-            write_nc_parameters(self._ncfile, 'physical_constants',
-                                self._physical_constants)
+        if not self._physical_quantities == {}:
+            write_nc_parameters(self._ncfile, 'physical_quantities',
+                                self._physical_quantities)
 
         self._ncfile.close()
 

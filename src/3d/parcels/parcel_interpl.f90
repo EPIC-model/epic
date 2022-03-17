@@ -11,7 +11,7 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use fields
-    use physical_parameters, only : ft_cor, f_cor, glat, lambda_c, q_0
+    use physics, only : ft_cor, f_cor, glat, lambda_c, q_0
     use omp_lib
     implicit none
 

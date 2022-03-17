@@ -11,8 +11,7 @@ module field_diagnostics_netcdf
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
-    use physical_parameters, only : write_physical_parameters
-    use physical_constants, only : write_physical_constants
+    use physics, only : write_physical_quantities
     implicit none
 
     private
@@ -71,8 +70,7 @@ module field_diagnostics_netcdf
 
             call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
 
-            call write_physical_parameters(ncid)
-            call write_physical_constants(ncid)
+            call write_physical_quantities(ncid)
 
             call write_netcdf_options(ncid)
 

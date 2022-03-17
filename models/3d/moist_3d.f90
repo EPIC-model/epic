@@ -6,10 +6,8 @@
 ! stratified zone aloft.
 ! =============================================================================
 module moist_3d
-    use physical_parameters, only : write_physical_parameters, &
-                                    set_physical_parameter
-    use physical_constants, only : write_physical_constants, gravity, L_v, c_p, &
-                                   set_physical_constant
+    use physics, only : write_physical_quantities, gravity, L_v, c_p, &
+                        set_physical_quantity
     use constants
     use netcdf_writer
     implicit none
@@ -54,9 +52,9 @@ module moist_3d
             double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
 
             ! set physical constants and parameters
-            call set_physical_constant('temperature_at_sea_level', moist%theta_0)
-            call set_physical_parameter('scale_height', moist%l_condense)
-            call set_physical_parameter('saturation_specific_humidity_at_ground_level', moist%q0)
+            call set_physical_quantity('temperature_at_sea_level', moist%theta_0)
+            call set_physical_quantity('scale_height', moist%l_condense)
+            call set_physical_quantity('saturation_specific_humidity_at_ground_level', moist%q0)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -179,8 +177,7 @@ module moist_3d
             call write_netcdf_dataset(ncid, buo_id, buoyg)
             call write_netcdf_dataset(ncid, hum_id, humg)
 
-            call write_physical_constants(ncid)
-            call write_physical_parameters(ncid)
+            call write_physical_quantities(ncid)
 
             deallocate(buoyg)
             deallocate(humg)
