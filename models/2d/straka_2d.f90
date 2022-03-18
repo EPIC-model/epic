@@ -14,7 +14,7 @@ module straka_2d
     use constants
     use netcdf_writer
     use physics, only : write_physical_quantities, &
-                        set_physical_quantity
+                        set_physical_quantity, theta_0, gravity
     implicit none
 
     private
@@ -23,8 +23,6 @@ module straka_2d
         double precision :: dtheta_max = 15.0d0               ![K] max. pot. temp. perturbation
         double precision :: center(2) = (/zero, 3000.0d0/)    ![m] sphere center (x, z)
         double precision :: radii(2)  = (/4000.0d0, 2000.d0/) ![m] ellipse radii (x, z)
-        double precision :: theta_0
-        double precision :: gravity
     end type flow_type
 
     integer :: buo_id
@@ -46,10 +44,6 @@ module straka_2d
             double precision                :: dtheta, dtheta_max
             double precision                :: buoyg(0:nz, 0:nx-1)
             integer                         :: i, j
-
-            ! set physical constants and parameters
-            call set_physical_quantity('temperature_at_sea_level', straka_flow%theta_0)
-            call set_physical_quantity('standard_gravity', straka_flow%gravity)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -89,7 +83,7 @@ module straka_2d
                     ! MPIC paper:
                     ! liquid-water buoyancy is defined by b = g * (theta − theta_0) / theta_0
                     ! (dtheta = theta - theta_0)
-                    buoyg(j, i) = straka_flow%gravity * dtheta / straka_flow%theta_0
+                    buoyg(j, i) = gravity * dtheta / theta_0
                 enddo
             enddo
 

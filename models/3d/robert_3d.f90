@@ -9,7 +9,7 @@ module robert_3d
     use constants
     use netcdf_writer
     use physics, only : write_physical_quantities, &
-                        set_physical_quantity
+                        set_physical_quantity, gravity, theta_0
     implicit none
 
     private
@@ -28,8 +28,6 @@ module robert_3d
     type flow_type
         integer           :: n_bubbles   = 1
         type(bubble_type) :: bubbles(10)
-        double precision  :: theta_0
-        double precision  :: gravity
     end type flow_type
 
     type(flow_type) :: robert_flow
@@ -47,10 +45,6 @@ module robert_3d
             double precision, intent(in)    :: dx(3)
             integer                         :: k
             type(bubble_type)               :: bubble
-
-            ! set physical parameters
-            call set_physical_quantity('temperature_at_sea_level', robert_flow%theta_0)
-            call set_physical_quantity('standard_gravity', robert_flow%gravity)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -129,7 +123,7 @@ module robert_3d
                         ! liquid-water buoyancy is defined by b = g * (theta − theta_0) / theta_0
                         ! (dtheta = theta - theta_0)
                         buoyg(k, j, i) = buoyg(k, j, i) &
-                                       + robert_flow%gravity * dtheta / robert_flow%theta_0
+                                       + gravity * dtheta / theta_0
                     enddo
                 enddo
             enddo

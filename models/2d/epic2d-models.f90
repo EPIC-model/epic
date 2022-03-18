@@ -10,7 +10,7 @@ program epic2d_models
     use netcdf_utils
     use netcdf_writer
     use config, only : package_version, cf_version
-    use physics, only : gravity, theta_0
+    use physics, only : read_physical_quantities_from_namelist
     implicit none
 
     logical            :: verbose = .false.
@@ -32,14 +32,9 @@ program epic2d_models
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
 
-    ! set defaults for physical parameters:
-    robert_flow%gravity = gravity
-    robert_flow%theta_0 = theta_0
-
-    straka_flow%gravity = gravity
-    straka_flow%theta_0 = theta_0
-
     call read_config_file
+
+    call read_physical_quantities_from_namelist(trim(filename))
 
     call generate_fields
 

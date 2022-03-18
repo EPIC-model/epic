@@ -87,14 +87,6 @@ module physics
     ! component of the planetary vorticity in the y direction
     double precision, protected :: ft_cor
 
-
-
-    ! Warning: This function should only be used by model setup subroutines/programs
-    interface set_physical_quantity
-        module procedure :: set_physical_quantity_double
-        module procedure :: set_physical_quantity_logical
-    end interface set_physical_quantity
-
     interface print_physical_quantity
         module procedure :: print_physical_quantity_double
         module procedure :: print_physical_quantity_integer
@@ -103,73 +95,62 @@ module physics
     end interface print_physical_quantity
 
     private :: update_physical_quantities,          &
-               set_physical_quantity_double,        &
-               set_physical_quantity_logical,       &
                print_physical_quantity_double,      &
                print_physical_quantity_integer,     &
                print_physical_quantity_logical,     &
-               print_physical_quantity_character,   &
-               set_coriolis_effects,                &
-               set_inverse_scale_height
+               print_physical_quantity_character
 
     contains
 
-        subroutine set_physical_quantity_double(name, val)
-            character(*),     intent(in) :: name
-            double precision, intent(in) :: val
+        ! This subroutine is only used in model setups
+        subroutine read_physical_quantities_from_namelist(fname)
+            character(*), intent(in) :: fname
+            integer                  :: ios
+            integer                  :: fn = 2
+            logical                  :: exists = .false.
 
-            select case (name)
-                case ('standard_gravity')
-                    gravity = val
-                case ('latent_heat_of_vaporization')
-                    L_v = val
-                case ('specific_heat')
-                    c_p = val
-                case ('temperature_at_sea_level')
-                    theta_0 = val
-                case ('planetary_angular_velocity')
-                    ang_vel = val
-                case ('latitude_degrees')
-                    lat_degrees = val
-                case ('saturation_specific_humidity_at_ground_level')
-                    q_0 = val
-                case ('scale_height')
-                    height_c = val
-                    call set_inverse_scale_height
-                case default
-                    print *, "Unknown physical quantity: '" // name // "'."
-                    stop
-            end select
-        end subroutine set_physical_quantity_double
+            ! namelist definitions
+            namelist /PHYSICS/ gravity,     &
+                               L_v,         &
+                               c_p,         &
+                               theta_0,     &
+                               ang_vel,     &
+                               l_coriolis,  &
+                               lat_degrees, &
+                               q_0,         &
+                               height_c
 
-        subroutine set_physical_quantity_logical(name, val)
-            character(*), intent(in) :: name
-            logical,      intent(in) :: val
+            ! check whether file exists
+            inquire(file=fname, exist=exists)
 
-            select case (name)
-                case ('coriolis')
-                    l_coriolis = val
-                    call set_coriolis_effects
-                case default
-                    print *, "Unknown physical quantity: '" // name // "'."
-                    stop
-            end select
-        end subroutine set_physical_quantity_logical
+            if (exists .eqv. .false.) then
+                print *, 'Error: input file "' // fname // '" does not exist.'
+                stop
+            endif
 
-        subroutine set_physical_quantity(name, val)
-            character(*),     intent(in) :: name
-            double precision, intent(in) :: val
+            ! open and read Namelist file.
+            open(action='read', file=fname, iostat=ios, newunit=fn)
 
-            select case (name)
+            read(nml=PHYSICS, iostat=ios, unit=fn)
 
-                case default
-                    print *, "Unknown physical constant: '" // name // "'."
-                    stop
-            end select
+            if (ios /= 0) then
+                print *, 'Error: invalid Namelist format.'
+                stop
+            end if
 
-        end subroutine set_physical_quantity
+            close(fn)
 
-        subroutine set_coriolis_effects
+            call update_physical_quantities
+
+        end subroutine read_physical_quantities_from_namelist
+
+        subroutine update_physical_quantities
+
+            glat = gravity * L_v / (c_p * theta_0)
+            glati = one / glat
+
+            lambda_c = one / height_c
+
             if (l_coriolis) then
                 lat_ref = lat_degrees * deg2rad
                 f_cor  = two * ang_vel * dsin(lat_ref)
@@ -178,20 +159,6 @@ module physics
                 f_cor  = zero
                 ft_cor = zero
             endif
-        end subroutine set_coriolis_effects
-
-        subroutine set_inverse_scale_height
-            lambda_c = one / height_c
-        end subroutine set_inverse_scale_height
-
-        subroutine update_physical_quantities
-
-            glat = gravity * L_v / (c_p * theta_0)
-            glati = one / glat
-
-            call set_inverse_scale_height
-            call set_coriolis_effects
-
         end subroutine update_physical_quantities
 
         subroutine read_physical_quantities(ncid)

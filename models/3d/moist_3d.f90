@@ -7,7 +7,7 @@
 ! =============================================================================
 module moist_3d
     use physics, only : write_physical_quantities, &
-                        set_physical_quantity
+                        set_physical_quantity, height_c, q_0, gravity, theta_0, L_v, c_p
     use constants
     use netcdf_writer
     implicit none
@@ -29,12 +29,6 @@ module moist_3d
         double precision :: r_plume             ! Radius of the plume, R (must be < z_b/2)
         double precision :: e_values(3)         ! To create asymmetry, we vary the buoyancy in the plume
                                                 ! according to  b = b_pl*[1 + (e1*x*y+e2*x*z+e3*yz)/R^2].
-        double precision :: height_c            ! scale height
-        double precision :: q0
-        double precision :: theta_0
-        double precision :: gravity
-        double precision :: L_v
-        double precision :: c_p
     end type plume_type
 
     type(plume_type) :: moist
@@ -53,14 +47,6 @@ module moist_3d
             integer                         :: i, j, k
             double precision                :: rpos1, rpos2, rpos3, r2, pos(3), centre(3), extent(3)
             double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
-
-            ! set physical constants and parameters
-            call set_physical_quantity('temperature_at_sea_level', moist%theta_0)
-            call set_physical_quantity('scale_height', moist%height_c)
-            call set_physical_quantity('saturation_specific_humidity_at_ground_level', moist%q0)
-            call set_physical_quantity('standard_gravity', moist%gravity)
-            call set_physical_quantity('latent_heat_of_vaporization', moist%L_v)
-            call set_physical_quantity('specific_heat', moist%c_p)
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -87,7 +73,7 @@ module moist_3d
                 stop
             endif
 
-            h_pl = moist%q0 * dexp(- moist%z_c / moist%height_c)
+            h_pl = q_0 * dexp(- moist%z_c / height_c)
 
             write(*,"('Humidity inside the plume is ',f6.3)") h_pl
 
@@ -100,19 +86,19 @@ module moist_3d
 
             write(*,"('Background humidity is ',f6.3)") h_bg
 
-            z_b = moist%height_c * dlog(moist%q0 * moist%H / h_bg)
+            z_b = height_c * dlog(q_0 * moist%H / h_bg)
 
             write(*,"('Base of mixed layer is ',f12.3)") z_b
 
-            dbdz = (moist%gravity * moist%L_v / (moist%c_p * moist%theta_0)) &
-                 * (h_pl - moist%q0 * dexp(-moist%z_m / moist%height_c)) / (moist%z_m - moist%z_d)
+            dbdz = (gravity * L_v / (c_p * theta_0)) &
+                 * (h_pl - q_0 * dexp(-moist%z_m / height_c)) / (moist%z_m - moist%z_d)
 
             write(*,"('The buoyancy frequency in the stratified zone is ',f12.3)") dsqrt(dbdz)
 
             !Also obtain the plume liquid-water buoyancy (using also z_b):
             b_pl = dbdz * (moist%z_d - z_b)
             write(*,'(a,f7.5)') '  The plume liquid water buoyancy b_pl = ', b_pl
-            write(*,'(a,f7.5)') '  corresponding to (theta_l-theta_0)/theta_0 = ', b_pl * moist%gravity
+            write(*,'(a,f7.5)') '  corresponding to (theta_l-theta_0)/theta_0 = ', b_pl * gravity
 
 
             if (two * moist%r_plume > z_b) then
@@ -173,7 +159,7 @@ module moist_3d
                             else
                                 ! Stratified layer
                                 buoyg(k, j, i)= dbdz * (pos(3) - z_b)
-                                humg(k, j, i) = moist%q0 * moist%H * dexp(- pos(3) / moist%height_c)
+                                humg(k, j, i) = q_0 * moist%H * dexp(- pos(3) / height_c)
                             endif
                         endif
                     enddo
