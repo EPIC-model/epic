@@ -25,3 +25,8 @@
  robert_flow%bubbles(3)%width = 70.0
 
 /
+
+&PHYSICS
+ gravity = 9.81d0
+ theta_0 = 303.15d0
+/

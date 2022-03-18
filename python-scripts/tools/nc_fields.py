@@ -1,7 +1,7 @@
 import netCDF4 as nc
 import os
 import numpy as np
-from tools.nc_utils import write_nc_info
+from tools.nc_utils import write_nc_info, write_nc_parameters
 
 
 class nc_fields:
@@ -23,6 +23,10 @@ class nc_fields:
 
         self._ndims = 0
 
+        self._physical_quantities = {}
+
+    def add_physical_quantity(self, key, value):
+        self._physical_quantities[key] = value
 
     def add_field(self, name, values, dtype='f8', **kwargs):
         """
@@ -80,6 +84,10 @@ class nc_fields:
             var.long_name = long_name
 
     def close(self):
+        if not self._physical_quantities == {}:
+            write_nc_parameters(self._ncfile, 'physical_quantities',
+                                self._physical_quantities)
+
         self._ncfile.close()
 
 

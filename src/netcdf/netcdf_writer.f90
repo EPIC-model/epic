@@ -113,15 +113,14 @@ module netcdf_writer
             integer,      intent(in) :: ncid
             character(*), intent(in) :: name
             logical,      intent(in) :: val
-            integer                  :: int_val
+            character(5)             :: char_val
 
-            int_val = 0
+            char_val = 'false'
             if (val) then
-                int_val = 1
+                char_val = 'true'
             endif
 
-            ncerr = nf90_put_att(ncid=ncid, varid=NF90_GLOBAL, name=name, values=int_val)
-            call check_netcdf_error("Failed to define '" // name // "' attribute.")
+            call write_netcdf_attribute_character(ncid, name, trim(char_val))
 
         end subroutine write_netcdf_attribute_logical
 

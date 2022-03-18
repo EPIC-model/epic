@@ -74,11 +74,11 @@ module stafft
         ! It calls routines to factorise the array length n and then sets up
         ! a trig array full of sin/cos values used in the transform backend.
         subroutine initfft(n, factors, trig)
-            integer,          intent(in)    :: n
-            integer,          intent(inout) :: factors(5)
-            double precision, intent(out)   :: trig(2*n)
-            double precision                :: ftwopin
-            integer                         :: i, j, k, l, m, fac(5), rem, ierr
+            integer,          intent(in)  :: n
+            integer,          intent(out) :: factors(5)
+            double precision, intent(out) :: trig(2*n)
+            double precision              :: ftwopin
+            integer                       :: i, j, k, l, m, fac(5), rem, ierr
 
             ! First factorise n:
             call factorisen(n, factors, ierr)
@@ -126,9 +126,9 @@ module stafft
 
 
         subroutine factorisen(n, factors, ierr)
-            integer, intent(in)    :: n
-            integer, intent(inout) :: factors(5), ierr
-            integer             :: i, rem
+            integer, intent(in)  :: n
+            integer, intent(out) :: factors(5), ierr
+            integer              :: i, rem
 
             ierr = 0
             ! Initialiase factors array:
@@ -194,8 +194,10 @@ module stafft
         ! Backend consists of mixed-radix routines, with 'decimation in time'.
         ! Transform is stored in Hermitian form.
         subroutine forfft(m, n, x, trig, factors)
-            double precision, intent(inout) :: x(0:m*n-1), trig(0:2*n-1)
-            integer,          intent(in)    :: m, n, factors(5)
+            integer,          intent(in)    :: m, n
+            double precision, intent(inout) :: x(0:m*n-1)
+            double precision, intent(in)    :: trig(0:2*n-1)
+            integer,          intent(in)    :: factors(5)
             double precision                :: wk(0:m*n-1), normfac
             integer                         :: i, rem, cum, iloc
             logical                         :: orig
@@ -292,8 +294,10 @@ module stafft
     ! Backend consists of mixed-radix routines, with 'decimation in frequency'.
     ! Reverse transform starts in Hermitian form.
     subroutine revfft(m, n, x, trig, factors)
-        double precision, intent(inout) :: x(0:m*n-1), trig(0:2*n-1)
-        integer,          intent(in)    :: m, n, factors(5)
+        integer,          intent(in)    :: m, n
+        double precision, intent(inout) :: x(0:m*n-1)
+        double precision, intent(in)    :: trig(0:2*n-1)
+        integer,          intent(in)    :: factors(5)
         double precision                :: wk(0:m*n-1), normfac
         integer                         :: i, k, cum, rem, iloc
         logical                         :: orig
@@ -405,7 +409,8 @@ module stafft
     ! along with pre- and post-processing steps to extract the dst.
     subroutine dct(m, n, x, trig, factors)
         integer,          intent(in)    :: m, n, factors(5)
-        double precision, intent(inout) :: x(m, 0:n), trig(2 * n)
+        double precision, intent(inout) :: x(m, 0:n)
+        double precision, intent(in)    :: trig(2 * n)
         double precision                :: wk(1:m, 0:n - 1), fpin, rtn, rowsum
         integer                         :: i, j, nd2
 
@@ -483,7 +488,8 @@ module stafft
     ! along with pre- and post-processing steps to extract the dst.
     subroutine dst(m, n, x, trig, factors)
         integer, intent(in)             :: m, n, factors(5)
-        double precision, intent(inout) :: x(m, n), trig(2 * n)
+        double precision, intent(inout) :: x(m, n)
+        double precision, intent(in)    :: trig(2 * n)
         double precision                :: wk(1:m, 0:n - 1), fpin
         integer                         :: i, j
 
@@ -554,10 +560,10 @@ module stafft
     ! Radix six physical to Hermitian FFT with 'decimation in time'.
     subroutine forrdx6(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
-        double precision, intent(inout) :: a(0:nv - 1, 0:5, 0:lv - 1)  &
-                                         , b(0:nv - 1, 0:lv - 1, 0:5)  &
-                                         , cosine(0:lv - 1, 5)         &
-                                         , sine(0:lv - 1, 5)
+        double precision, intent(in)    :: a(0:nv - 1, 0:5, 0:lv - 1)
+        double precision, intent(inout) :: b(0:nv - 1, 0:lv - 1, 0:5)
+        double precision, intent(in)    :: cosine(0:lv - 1, 5)
+        double precision, intent(in)    :: sine(0:lv - 1, 5)
         double precision                :: x1p, x2p, x3p, x4p, x5p
         double precision                :: y1p, y2p, y3p, y4p, y5p
         double precision                :: s1k, s2k, s3k, s4k, s5k
@@ -747,10 +753,10 @@ module stafft
     ! Radix five physical to Hermitian FFT with 'decimation in time'.
     subroutine forrdx5(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
-        double precision, intent(inout) :: a(0:nv - 1, 0:4, 0:lv - 1)  &
-                                         , b(0:nv - 1, 0:lv - 1, 0:4)  &
-                                         , cosine(0:lv - 1, 1:4)       &
-                                         , sine(0:lv - 1, 1:4)
+        double precision, intent(in)    :: a(0:nv - 1, 0:4, 0:lv - 1)
+        double precision, intent(inout) :: b(0:nv - 1, 0:lv - 1, 0:4)
+        double precision, intent(in)    :: cosine(0:lv - 1, 1:4)
+        double precision, intent(in)    :: sine(0:lv - 1, 1:4)
         double precision                :: x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p
         double precision                :: s1k, s2k, s3k, s4k, c1k, c2k, c3k, c4k
         double precision                :: t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r
@@ -893,10 +899,10 @@ module stafft
     ! Radix four physical to Hermitian FFT with 'decimation in time'.
     subroutine forrdx4(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
-        double precision, intent(inout) :: a(0:nv - 1, 0:3, 0:lv - 1) &
-                                         , b(0:nv - 1, 0:lv - 1, 0:3) &
-                                         , cosine(0:lv - 1, 1:3)      &
-                                         , sine(0:lv - 1, 1:3)
+        double precision, intent(in)    :: a(0:nv - 1, 0:3, 0:lv - 1)
+        double precision, intent(inout) :: b(0:nv - 1, 0:lv - 1, 0:3)
+        double precision, intent(in)    :: cosine(0:lv - 1, 1:3)
+        double precision, intent(in)    :: sine(0:lv - 1, 1:3)
         double precision                :: x1p,x2p, x3p, y1p, y2p, y3p
         double precision                :: s1k, s2k, s3k, c1k,c2k,c3k
         double precision                :: t1i,t1r,t2i,t2r,t3i,t3r,t4i,t4r
@@ -1008,10 +1014,10 @@ module stafft
     ! Radix three physical to Hermitian FFT with 'decimation in time'.
     subroutine forrdx3(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
-        double precision, intent(inout) :: a(0:nv - 1, 0:2, 0:lv - 1) &
-                                         , b(0:nv - 1, 0:lv - 1, 0:2) &
-                                         , cosine(0:lv - 1, 1:2)      &
-                                         , sine(0:lv - 1, 1:2)
+        double precision, intent(in)    :: a(0:nv - 1, 0:2, 0:lv - 1)
+        double precision, intent(inout) :: b(0:nv - 1, 0:lv - 1, 0:2)
+        double precision, intent(in)    :: cosine(0:lv - 1, 1:2)
+        double precision, intent(in)    :: sine(0:lv - 1, 1:2)
         double precision                :: x1p, x2p, y1p, y2p
         double precision                :: s1k, s2k, c1k, c2k
         double precision                :: t1i, t1r, t2i, t2r, t3i, t3r
@@ -1091,10 +1097,10 @@ module stafft
     ! Radix two physical to Hermitian FFT with 'decimation in time'.
     subroutine forrdx2(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
-        double precision, intent(inout) :: a(0:nv - 1, 0:1, 0:lv - 1) &
-                                         , b(0:nv - 1, 0:lv - 1, 0:1) &
-                                         , cosine(0:lv - 1)           &
-                                         , sine(0:lv - 1)
+        double precision, intent(in)    :: a(0:nv - 1, 0:1, 0:lv - 1)
+        double precision, intent(inout) :: b(0:nv - 1, 0:lv - 1, 0:1)
+        double precision, intent(in)    :: cosine(0:lv - 1)
+        double precision, intent(in)    :: sine(0:lv - 1)
         double precision                :: x1, y1, c1k, s1k
         integer                         :: i, k, kc
 
@@ -1149,10 +1155,10 @@ module stafft
     !Radix six Hermitian to physical FFT with 'decimation in frequency'.
     subroutine revrdx6(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
-        double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:5) &
-                                         , b(0:nv - 1, 0:5, 0:lv - 1) &
-                                         , cosine(0:lv - 1, 1:5)      &
-                                         , sine(0:lv - 1, 1:5)
+        double precision, intent(in)    :: a(0:nv - 1, 0:lv - 1, 0:5)
+        double precision, intent(inout) :: b(0:nv - 1, 0:5, 0:lv - 1)
+        double precision, intent(in)    :: cosine(0:lv - 1, 1:5)
+        double precision, intent(in)    :: sine(0:lv - 1, 1:5)
         double precision                :: x1p, x2p, x3p, x4p, x5p
         double precision                :: y1p, y2p, y3p, y4p, y5p
         double precision                :: s1k, s2k, s3k, s4k, s5k
@@ -1343,10 +1349,10 @@ module stafft
     ! Radix five Hermitian to physical FFT with 'decimation in frequency'.
     subroutine revrdx5(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
-        double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:4) &
-                                         , b(0:nv - 1, 0:4, 0:lv - 1) &
-                                         , cosine(0:lv - 1, 1:4)      &
-                                         , sine(0:lv - 1, 1:4)
+        double precision, intent(in)    :: a(0:nv - 1, 0:lv - 1, 0:4)
+        double precision, intent(inout) :: b(0:nv - 1, 0:4, 0:lv - 1)
+        double precision, intent(in)    :: cosine(0:lv - 1, 1:4)
+        double precision, intent(in)    :: sine(0:lv - 1, 1:4)
         double precision                :: x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p
         double precision                :: s1k, s2k, s3k, s4k, c1k, c2k, c3k, c4k
         double precision                :: t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r
@@ -1491,10 +1497,10 @@ module stafft
     !Radix four Hermitian to physical FFT with 'decimation in frequency'.
     subroutine revrdx4(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
-        double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:3) &
-                                         , b(0:nv - 1, 0:3, 0:lv - 1) &
-                                         , cosine(0:lv - 1, 1:3)      &
-                                         , sine(0:lv - 1, 1:3)
+        double precision, intent(in)    :: a(0:nv - 1, 0:lv - 1, 0:3)
+        double precision, intent(inout) :: b(0:nv - 1, 0:3, 0:lv - 1)
+        double precision, intent(in)    :: cosine(0:lv - 1, 1:3)
+        double precision, intent(in)    :: sine(0:lv - 1, 1:3)
         double precision                :: x1p, x2p, x3p, y1p, y2p, y3p
         double precision                :: s1k, s2k, s3k, c1k, c2k, c3k
         double precision                :: t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r
@@ -1607,10 +1613,10 @@ module stafft
     !Radix three Hermitian to physical FFT with 'decimation in frequency'.
     subroutine revrdx3(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
-        double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:2) &
-                                         , b(0:nv - 1, 0:2, 0:lv - 1) &
-                                         , cosine(0:lv - 1, 1:2)      &
-                                         , sine(0:lv - 1, 1:2)
+        double precision, intent(in)    :: a(0:nv - 1, 0:lv - 1, 0:2)
+        double precision, intent(inout) :: b(0:nv - 1, 0:2, 0:lv - 1)
+        double precision, intent(in)    :: cosine(0:lv - 1, 1:2)
+        double precision, intent(in)    :: sine(0:lv - 1, 1:2)
         double precision                :: x1p, x2p, y1p, y2p
         double precision                :: c2k, c1k, s2k, s1k
         double precision                :: t1i, t1r, t2i, t2r, t3i, t3r
@@ -1692,10 +1698,10 @@ module stafft
     !Radix two Hermitian to physical FFT with 'decimation in frequency'.
     subroutine revrdx2(a, b, nv, lv, cosine, sine)
         integer,          intent(in)    :: nv, lv
-        double precision, intent(inout) :: a(0:nv - 1, 0:lv - 1, 0:1) &
-                                         , b(0:nv - 1, 0:1, 0:lv - 1) &
-                                         , cosine(0:lv - 1)           &
-                                         , sine(0:lv - 1)
+        double precision, intent(in)    :: a(0:nv - 1, 0:lv - 1, 0:1)
+        double precision, intent(inout) :: b(0:nv - 1, 0:1, 0:lv - 1)
+        double precision, intent(in)    :: cosine(0:lv - 1)
+        double precision, intent(in)    :: sine(0:lv - 1)
         double precision                :: x1p, y1p, c1k, s1k
         integer                         :: i, k, kc
 

@@ -1,6 +1,6 @@
 module utils
     use constants, only : one
-    use options, only : output
+    use options, only : output, verbose
     use field_netcdf
     use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
@@ -8,9 +8,11 @@ module utils
     use parcel_diagnostics_netcdf
     use parcel_diagnostics
     use parcel_container, only : n_parcels
-    use inversion_mod, only : vor2vel, vorticity_tendency
+    use inversion_mod, only : vor2vel, buoyancy_derivatives
     use parcel_interpl, only : par2grid, grid2par
-    use netcdf_reader, only : get_file_type, get_num_steps, get_time
+    use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
+    use parameters, only : lower, extent, update_parameters
+    use physics, only : read_physical_quantities, print_physical_quantities
     implicit none
 
     integer :: nfw  = 0    ! number of field writes
@@ -67,7 +69,7 @@ module utils
             ! this is also needed for the first ls-rk4 substep
             call vor2vel(vortg, velog, velgradg)
 
-            call vorticity_tendency(vortg, tbuoyg, velgradg, vtend)
+            call buoyancy_derivatives(tbuoyg, dbdx, dbdy)
 
             call grid2par(velocity, vorticity, strain)
 
@@ -136,5 +138,31 @@ module utils
             nspw = int(t / output%parcel_stats_freq) + 1
             nsfw = int(t / output%field_stats_freq) + 1
         end subroutine setup_restart
+
+        subroutine setup_domain_and_parameters(fname)
+            character(*), intent(in) :: fname
+            integer                  :: ncid
+            integer                  :: ncells(3)
+
+            call open_netcdf_file(fname, NF90_NOWRITE, ncid)
+
+            call get_netcdf_box(ncid, lower, extent, ncells)
+            call read_physical_quantities(ncid)
+
+            call close_netcdf_file(ncid)
+
+            nx = ncells(1)
+            ny = ncells(2)
+            nz = ncells(3)
+
+            ! update global parameters
+            call update_parameters
+
+#ifdef ENABLE_VERBOSE
+            if (verbose) then
+                call print_physical_quantities
+            endif
+#endif
+        end subroutine setup_domain_and_parameters
 
 end module utils

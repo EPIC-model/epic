@@ -14,13 +14,26 @@ module netcdf_reader
         module procedure :: read_netcdf_dataset_3d
     end interface read_netcdf_dataset
 
-    interface read_netcdf_global_attribute
-        module procedure :: read_netcdf_global_attrib_integer
-        module procedure :: read_netcdf_global_attrib_double
-    end interface read_netcdf_global_attribute
+    interface read_netcdf_attribute
+        module procedure :: read_netcdf_attrib_integer
+        module procedure :: read_netcdf_attrib_double
+        module procedure :: read_netcdf_attrib_character
+        module procedure :: read_netcdf_attrib_logical
+    end interface read_netcdf_attribute
 
-    private :: read_netcdf_global_attrib_integer,   &
-               read_netcdf_global_attrib_double,    &
+    interface read_netcdf_attribute_default
+        module procedure :: read_netcdf_attrib_default_integer
+        module procedure :: read_netcdf_attrib_default_double
+        module procedure :: read_netcdf_attrib_default_logical
+    end interface read_netcdf_attribute_default
+
+    private :: read_netcdf_attrib_integer,          &
+               read_netcdf_attrib_double,           &
+               read_netcdf_attrib_character,        &
+               read_netcdf_attrib_logical,          &
+               read_netcdf_attrib_default_integer,  &
+               read_netcdf_attrib_default_double,   &
+               read_netcdf_attrib_default_logical,  &
                read_netcdf_dataset_1d,              &
                read_netcdf_dataset_2d,              &
                read_netcdf_dataset_3d
@@ -196,16 +209,16 @@ module netcdf_reader
             deallocate(values)
         end subroutine read_netcdf_dataset_3d
 
-        subroutine read_netcdf_global_attrib_integer(ncid, name, val)
+        subroutine read_netcdf_attrib_integer(ncid, name, val)
             integer,       intent(in)     :: ncid
             character(*),  intent(in)     :: name
             integer,       intent(out)    :: val
 
             ncerr = nf90_get_att(ncid, NF90_GLOBAL, name, val)
             call check_netcdf_error("Reading attribute '" // name // "' failed.")
-        end subroutine read_netcdf_global_attrib_integer
+        end subroutine read_netcdf_attrib_integer
 
-        subroutine read_netcdf_global_attrib_double(ncid, name, val)
+        subroutine read_netcdf_attrib_double(ncid, name, val)
             integer,          intent(in)     :: ncid
             character(*),     intent(in)     :: name
             double precision, intent(out)    :: val
@@ -213,7 +226,29 @@ module netcdf_reader
             ncerr = nf90_get_att(ncid, NF90_GLOBAL, name, val)
             call check_netcdf_error("Reading attribute '" // name // "' failed.")
 
-        end subroutine read_netcdf_global_attrib_double
+        end subroutine read_netcdf_attrib_double
+
+        subroutine read_netcdf_attrib_character(ncid, name, val)
+            integer,      intent(in)     :: ncid
+            character(*), intent(in)     :: name
+            character(*), intent(out)    :: val
+
+            ncerr = nf90_get_att(ncid, NF90_GLOBAL, name, val)
+            call check_netcdf_error("Reading attribute '" // name // "' failed.")
+
+        end subroutine read_netcdf_attrib_character
+
+        subroutine read_netcdf_attrib_logical(ncid, name, val)
+            integer,      intent(in)  :: ncid
+            character(*), intent(in)  :: name
+            logical,      intent(out) :: val
+            character(5)              :: char_val
+
+            call read_netcdf_attrib_character(ncid, name, char_val)
+
+            val = (char_val == 'true')
+
+        end subroutine read_netcdf_attrib_logical
 
         subroutine read_netcdf_domain(ncfname, origin, extent, ncells)
             character(*), intent(in)      :: ncfname
@@ -247,5 +282,54 @@ module netcdf_reader
             call check_netcdf_error("Reading attribute 'origin' failed.")
 
         end subroutine get_netcdf_box
+
+        subroutine read_netcdf_attrib_default_double(ncid, name, val)
+            integer,          intent(in)   :: ncid
+            character(*),     intent(in)    :: name
+            double precision, intent(inout) :: val
+
+            if (has_attribute(ncid, name)) then
+                call read_netcdf_attrib_double(ncid, name, val)
+#ifdef ENABLE_VERBOSE
+                print *, "Found float attribute '" // name // "'."
+            else
+                print *, "WARNING: Using default value of '" // name // "'."
+#endif
+            endif
+
+        end subroutine read_netcdf_attrib_default_double
+
+        subroutine read_netcdf_attrib_default_integer(ncid, name, val)
+            integer,      intent(in)    :: ncid
+            character(*), intent(in)    :: name
+            integer,      intent(inout) :: val
+
+            if (has_attribute(ncid, name)) then
+                call read_netcdf_attrib_integer(ncid, name, val)
+#ifdef ENABLE_VERBOSE
+                print *, "Found integer attribute '" // name // "'."
+            else
+                print *, "WARNING: Using default value of '" // name // "'."
+#endif
+            endif
+
+        end subroutine read_netcdf_attrib_default_integer
+
+
+        subroutine read_netcdf_attrib_default_logical(ncid, name, val)
+            integer,      intent(in)    :: ncid
+            character(*), intent(in)    :: name
+            logical,      intent(inout) :: val
+
+            if (has_attribute(ncid, name)) then
+                call read_netcdf_attrib_logical(ncid, name, val)
+#ifdef ENABLE_VERBOSE
+                print *, "Found boolean attribute '" // name // "'."
+            else
+                print *, "WARNING: Using default value of '" // name // "'."
+#endif
+            endif
+
+        end subroutine read_netcdf_attrib_default_logical
 
 end module netcdf_reader
