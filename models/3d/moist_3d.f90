@@ -6,8 +6,8 @@
 ! stratified zone aloft.
 ! =============================================================================
 module moist_3d
-    use phys_constants
-    use phys_parameters
+    use physics, only : write_physical_quantities, &
+                        height_c, q_0, gravity, theta_0, L_v, c_p
     use constants
     use netcdf_writer
     implicit none
@@ -19,19 +19,16 @@ module moist_3d
     integer :: buo_id, hum_id
 
     type plume_type
-        double precision :: H           ! Relative humidity H (as a fraction < 1) at z_b
-        double precision :: z_c         ! Lifting condensation level
-        double precision :: mu          ! q_bg/q_pl where q_bg is the specific humidity fraction
-                                        ! in the mixed layer outside of the plume (note, this should be
-                                        ! between H and 1; a value < H would put z_c below z_b)
-        double precision :: z_d         ! Level of dry neutral stratification z_n
-        double precision :: z_m         ! Level of moist neutral stratification (cloud top) z_t
-        double precision :: r_plume     ! Radius of the plume, R (must be < z_b/2)
-        double precision :: e_values(3) ! To create asymmetry, we vary the buoyancy in the plume
-                                        ! according to  b = b_pl*[1 + (e1*x*y+e2*x*z+e3*yz)/R^2].
-        double precision :: l_condense
-        double precision :: q0
-        double precision :: theta_l0
+        double precision :: H                   ! Relative humidity H (as a fraction < 1) at z_b
+        double precision :: z_c                 ! Lifting condensation level
+        double precision :: mu                  ! q_bg/q_pl where q_bg is the specific humidity fraction
+                                                ! in the mixed layer outside of the plume (note, this should be
+                                                ! between H and 1; a value < H would put z_c below z_b)
+        double precision :: z_d                 ! Level of dry neutral stratification z_n
+        double precision :: z_m                 ! Level of moist neutral stratification (cloud top) z_t
+        double precision :: r_plume             ! Radius of the plume, R (must be < z_b/2)
+        double precision :: e_values(3)         ! To create asymmetry, we vary the buoyancy in the plume
+                                                ! according to  b = b_pl*[1 + (e1*x*y+e2*x*z+e3*yz)/R^2].
     end type plume_type
 
     type(plume_type) :: moist
@@ -76,7 +73,7 @@ module moist_3d
                 stop
             endif
 
-            h_pl = moist%q0 * dexp(- moist%z_c / moist%l_condense)
+            h_pl = q_0 * dexp(- moist%z_c / height_c)
 
             write(*,"('Humidity inside the plume is ',f6.3)") h_pl
 
@@ -89,19 +86,19 @@ module moist_3d
 
             write(*,"('Background humidity is ',f6.3)") h_bg
 
-            z_b = moist%l_condense * dlog(moist%q0 * moist%H / h_bg)
+            z_b = height_c * dlog(q_0 * moist%H / h_bg)
 
             write(*,"('Base of mixed layer is ',f12.3)") z_b
 
-            dbdz = (gravity * L_v / (c_p * moist%theta_l0)) &
-                 * (h_pl - moist%q0 * dexp(-moist%z_m / moist%l_condense)) / (moist%z_m - moist%z_d)
+            dbdz = (gravity * L_v / (c_p * theta_0)) &
+                 * (h_pl - q_0 * dexp(-moist%z_m / height_c)) / (moist%z_m - moist%z_d)
 
             write(*,"('The buoyancy frequency in the stratified zone is ',f12.3)") dsqrt(dbdz)
 
             !Also obtain the plume liquid-water buoyancy (using also z_b):
             b_pl = dbdz * (moist%z_d - z_b)
             write(*,'(a,f7.5)') '  The plume liquid water buoyancy b_pl = ', b_pl
-            write(*,'(a,f7.5)') '  corresponding to (theta_l-theta_l0)/theta_l0 = ', b_pl * gravity
+            write(*,'(a,f7.5)') '  corresponding to (theta_l-theta_0)/theta_0 = ', b_pl * gravity
 
 
             if (two * moist%r_plume > z_b) then
@@ -162,7 +159,7 @@ module moist_3d
                             else
                                 ! Stratified layer
                                 buoyg(k, j, i)= dbdz * (pos(3) - z_b)
-                                humg(k, j, i) = moist%q0 * moist%H * dexp(- pos(3) / moist%l_condense)
+                                humg(k, j, i) = q_0 * moist%H * dexp(- pos(3) / height_c)
                             endif
                         endif
                     enddo
@@ -171,6 +168,8 @@ module moist_3d
 
             call write_netcdf_dataset(ncid, buo_id, buoyg)
             call write_netcdf_dataset(ncid, hum_id, humg)
+
+            call write_physical_quantities(ncid)
 
             deallocate(buoyg)
             deallocate(humg)

@@ -10,6 +10,7 @@ program epic2d_models
     use netcdf_utils
     use netcdf_writer
     use config, only : package_version, cf_version
+    use physics, only : read_physical_quantities_from_namelist
     implicit none
 
     logical            :: verbose = .false.
@@ -32,6 +33,8 @@ program epic2d_models
     call parse_command_line
 
     call read_config_file
+
+    call read_physical_quantities_from_namelist(trim(filename))
 
     call generate_fields
 

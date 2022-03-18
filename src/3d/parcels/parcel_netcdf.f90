@@ -1,14 +1,15 @@
 module parcel_netcdf
-    use constants, only : max_num_parcels, one
+    use constants, only : one
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
     use parcel_container, only : parcels, n_parcels
-    use parameters, only : nx, ny, nz, extent, lower, update_parameters
+    use parameters, only : nx, ny, nz, extent, lower, max_num_parcels
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
     use options, only : write_netcdf_options
+    use physics, only : write_physical_quantities
     implicit none
 
     integer :: parcel_io_timer
@@ -87,7 +88,8 @@ module parcel_netcdf
                                    cf_version=cf_version)
 
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
-            call write_netcdf_timestamp(ncid)
+
+            call write_physical_quantities(ncid)
 
             call write_netcdf_options(ncid)
 
@@ -289,22 +291,12 @@ module parcel_netcdf
 
         subroutine read_netcdf_parcels(fname)
             character(*),     intent(in) :: fname
-            integer                      :: ncells(3)
             logical                      :: l_valid = .false.
             integer                      :: cnt(2), start(2)
 
             call start_timer(parcel_io_timer)
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
-
-            ! read domain dimensions
-            call get_netcdf_box(ncid, lower, extent, ncells)
-            nx = ncells(1)
-            ny = ncells(2)
-            nz = ncells(3)
-
-            ! update global parameters
-            call update_parameters
 
             call get_num_parcels(ncid, n_parcels)
 

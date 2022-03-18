@@ -11,8 +11,7 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipse
     use fields
-    use phys_constants, only : h_0
-    use phys_parameters, only : glat, lam_c
+    use physics, only : glat, lambda_c, q_0
     use omp_lib
     implicit none
 
@@ -144,7 +143,7 @@ module parcel_interpl
             integer          :: n, p, l, i, j
             double precision :: pvol, weight, btot
 #ifndef ENABLE_DRY_MODE
-            double precision :: h_c
+            double precision :: q_c
 #endif
 
             call start_timer(par2grid_timer)
@@ -159,7 +158,7 @@ module parcel_interpl
             tbuoyg = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, h_c, is, js, weights) &
+            !$omp do private(n, p, l, i, j, points, pvol, weight, btot, q_c, is, js, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, tbuoyg, volg)
 #else
             !$omp do private(n, p, l, i, j, points, pvol, weight, btot, is, js, weights) &
@@ -170,12 +169,12 @@ module parcel_interpl
 
 #ifndef ENABLE_DRY_MODE
                 ! liquid water content
-                h_c = parcels%humidity(n) &
-                    - h_0 * dexp(lam_c * (lower(2) - parcels%position(2, n)))
-                h_c = max(zero, h_c)
+                q_c = parcels%humidity(n) &
+                    - q_0 * dexp(lambda_c * (lower(2) - parcels%position(2, n)))
+                q_c = max(zero, q_c)
 
                 ! total buoyancy (including effects of latent heating)
-                btot = parcels%buoyancy(n) + glat * h_c
+                btot = parcels%buoyancy(n) + glat * q_c
 #else
                 btot = parcels%buoyancy(n)
 #endif

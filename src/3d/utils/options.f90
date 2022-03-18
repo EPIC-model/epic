@@ -49,21 +49,10 @@ module options
     logical :: allow_larger_anisotropy = .false.
 
     !
-    ! physical input
-    !
-
-    !FIXME parameters for coriolis and mean wind
-    !non-dimensional ang_vel of earth = t_scale*Omega
-    !t_scale = 142.8571428571 Omega = 7.2921159e-5
-    logical          :: l_coriolis  = .false.
-    double precision :: ang_vel     = twopi / 86400.0d0 ![m/s] angular velocity
-    double precision :: lat_degrees = 45.0d0
-
-
-    !
     ! parcel options
     !
     type parcel_type
+        double precision :: size_factor      = 1.0d0    ! factor to increase max. number of parcels
         integer          :: n_per_cell       = 9        ! number of parcels per cell (need to be a square)
         double precision :: lambda_max       = four     ! max. ellipse aspect ratio a/b
         double precision :: min_vratio       = 40.0d0   ! minimum ratio of grid cell volume / parcel volume
@@ -141,6 +130,7 @@ module options
             call write_netcdf_attribute(ncid, "allow_larger_anisotropy", &
                                                allow_larger_anisotropy)
 
+            call write_netcdf_attribute(ncid, "size_factor", parcel%size_factor)
             call write_netcdf_attribute(ncid, "n_per_cell", parcel%n_per_cell)
             call write_netcdf_attribute(ncid, "lambda_max", parcel%lambda_max)
             call write_netcdf_attribute(ncid, "min_vratio", parcel%min_vratio)

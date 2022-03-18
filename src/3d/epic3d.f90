@@ -2,7 +2,7 @@
 !                       EPIC3D - Elliptical Parcel-in-Cell
 ! =============================================================================
 program epic3d
-    use constants, only : max_num_parcels, zero
+    use constants, only : zero
     use timer
     use parcel_container
     use parcel_bc
@@ -21,13 +21,14 @@ program epic3d
     use field_netcdf, only : field_io_timer
     use field_diagnostics, only : field_stats_timer
     use field_diagnostics_netcdf, only : field_stats_io_timer
-    use inversion_mod, only : vor2vel_timer, vtend_timer
+    use inversion_mod, only : vor2vel_timer, db_timer
     use inversion_utils, only : init_fft
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
-    use utils, only : write_last_step, setup_output_files, setup_restart
-    use phys_parameters, only : update_phys_parameters
+    use utils, only : write_last_step, setup_output_files,       &
+                      setup_restart, setup_domain_and_parameters
+    use parameters, only : max_num_parcels
     implicit none
 
     integer          :: epic_timer
@@ -71,7 +72,7 @@ program epic3d
             call register_timer('field diagnostics', field_stats_timer)
             call register_timer('field diagnostics I/O', field_stats_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
-            call register_timer('vorticity tendency', vtend_timer)
+            call register_timer('buoyancy derivatives', db_timer)
             call register_timer('parcel push', rk4_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
@@ -82,7 +83,12 @@ program epic3d
             ! parse the config file
             call read_config_file
 
-            call update_phys_parameters
+            ! read domain dimensions
+            if (l_restart) then
+                call setup_domain_and_parameters(trim(restart_file))
+            else
+                call setup_domain_and_parameters(trim(field_file))
+            endif
 
             call parcel_alloc(max_num_parcels)
 

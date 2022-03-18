@@ -35,7 +35,7 @@ program test_fft_2
         ! forward FFT (Hermitian form) (overwrites fun)
         call forfft(1, n, fun, trig, factors)
 
-        err = max(err, get_max_absolute_error(fun, ref, n))
+        err = max(err, get_max_absolute_error(n, fun, ref))
 
         a = a + da
     enddo
@@ -53,7 +53,7 @@ program test_fft_2
         ! forward FFT (Hermitian form) (overwrites fun)
         call forfft(1, n, fun, trig, factors)
 
-        err = max(err, get_max_absolute_error(fun, ref, n))
+        err = max(err, get_max_absolute_error(n, fun, ref))
 
         a = a + da
     enddo
@@ -129,9 +129,9 @@ program test_fft_2
         end subroutine dft
 
 
-        function get_max_absolute_error(fun, ref, n) result(err)
-            double precision, intent(in) :: fun(n), ref(2 * n)
+        function get_max_absolute_error(n, fun, ref) result(err)
             integer,          intent(in) :: n
+            double precision, intent(in) :: fun(n), ref(2 * n)
             double precision             :: err, err_cos, err_sin
             integer                      :: i, j, k, nw
 

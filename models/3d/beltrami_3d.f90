@@ -1,45 +1,45 @@
 ! ====================================================================================
-!                           3D TAYLOR-GREEN FLOW
+!                           3D BELTRAMI FLOW
 !
-! Taylor-Green flow:
-!     u(x, y, z) = A * cos(a * x + d) * sin(b * y + e) * sin(c * z + f)
-!     v(x, y, z) = B * sin(a * x + d) * cos(b * y + e) * sin(c * z + f)
-!     w(x, y, z) = C * sin(a * x + d) * sin(b * y + e) * cos(c * z + f)
+! Beltrami flow:
+!     u(x, y, z) = (k^2 + l^2)^(-1) * [k*m*sin(mz) - l*alpha*cos(m*z) * sin(k*x + l*y)]
+!     v(x, y, z) = (k^2 + l^2)^(-1) * [l*m*sin(mz) + k*alpha*cos(m*z) * sin(k*x + l*y)]
+!     w(x, y, z) = cos(m*z) * cos(k*x + l*y)
 ! The vorticity of this flow is
-!    xi(x, y, z) = (b * C - c * B) * sin(a * x + d) * cos(b * y + e) * cos(c * z + f)
-!   eta(x, y, z) = (c * A - a * C) * cos(a * x + d) * sin(b * y + e) * cos(c * z + f)
-!  zeta(x, y, z) = (a * B - b * A) * cos(a * x + d) * cos(b * y + e) * sin(c * z + f)
+!    xi(x, y, z) = alpha * u(x, y, z)
+!   eta(x, y, z) = alpha * v(x, y, z)
+!  zeta(x, y, z) = alpha * w(x, y, z)
 !
 !                   The code uses following variable names:
-!                       tg_flow%freq  = (/a, b, c/)
-!                       tg_flow%amp   = (/A, B, C/)
-!                       tg_flow%phase = (/d, e, f/)
+!                       beltrami_flow%k = k
+!                       beltrami_flow%l = l
+!                       beltrami_flow%m = m
 ! ====================================================================================
-module taylor_green_3d
+module beltrami_3d
     use netcdf_writer
     use constants, only : pi, f12, zero, one, two
     implicit none
 
     private
-        type flow_type
-            double precision :: amp(3) = (/one, one, -two/)      ! amplitudes
-            double precision :: freq(3) = (/one, one, one/)      ! frequencies
-            double precision :: phase(3) = (/zero, zero, zero/)  ! phase shift
-        end type flow_type
+        type beltrami_type
+            integer          :: k, l, m
+        end type beltrami_type
 
-        type(flow_type) :: tg_flow
+        type(beltrami_type) :: beltrami_flow
+
+        double precision :: fk2l2, kk, ll, mm, alpha
 
         integer :: x_vor_id, y_vor_id, z_vor_id
 
         double precision, parameter :: hpi = f12 * pi
 
     public :: get_flow_vorticity,   &
-              taylor_green_init,    &
-              tg_flow
+              beltrami_init,        &
+              beltrami_flow
 
 
     contains
-        subroutine taylor_green_init(ncid, dimids, nx, ny, nz, origin, dx)
+        subroutine beltrami_init(ncid, dimids, nx, ny, nz, origin, dx)
             integer,          intent(inout) :: ncid
             integer,          intent(in)    :: dimids(:)
             integer,          intent(in)    :: nx, ny, nz
@@ -78,6 +78,13 @@ module taylor_green_3d
 
             call close_definition(ncid)
 
+
+            kk = dble(beltrami_flow%k)
+            ll = dble(beltrami_flow%l)
+            mm = dble(beltrami_flow%m)
+            alpha = dsqrt(kk ** 2 + ll ** 2 + mm ** 2)
+            fk2l2 = alpha / dble(beltrami_flow%k ** 2 + beltrami_flow%l ** 2)
+
             do i = 0, nx - 1
                 do j = 0, ny - 1
                     do k = 0, nz
@@ -91,39 +98,27 @@ module taylor_green_3d
             call write_netcdf_dataset(ncid, y_vor_id, vortg(:, :, :, 2))
             call write_netcdf_dataset(ncid, z_vor_id, vortg(:, :, :, 3))
 
-        end subroutine taylor_green_init
+        end subroutine beltrami_init
 
         function get_flow_vorticity(pos) result(omega)
             double precision, intent(in) :: pos(3)
-            double precision             :: xx, yy, zz
+            double precision             :: x, y, z
             double precision             :: omega(3)
-            double precision             :: A, B, C
+            double precision             :: cosmz, sinmz, sinkxly, coskxly
 
-            call get_flow_pos(pos, xx, yy, zz)
+            x = pos(1)
+            y = pos(2)
+            z = pos(3)
 
-            A = tg_flow%freq(2) * tg_flow%amp(3) &
-              - tg_flow%freq(3) * tg_flow%amp(2)
+            cosmz = dcos(mm * z)
+            sinmz = dsin(mm * z)
+            sinkxly = dsin(kk * x + ll * y)
+            coskxly = dcos(kk * x + ll * y)
 
-            B = tg_flow%freq(3) * tg_flow%amp(1) &
-              - tg_flow%freq(1) * tg_flow%amp(3)
-
-            C = tg_flow%freq(1) * tg_flow%amp(2) &
-              - tg_flow%freq(2) * tg_flow%amp(1)
-
-            omega(1) = A * dsin(xx) * dcos(yy) * dcos(zz)
-            omega(2) = B * dcos(xx) * dsin(yy) * dcos(zz)
-            omega(3) = C * dcos(xx) * dcos(yy) * dsin(zz)
+            omega(1) = fk2l2 * (kk * mm * sinmz - ll * alpha * cosmz) * sinkxly
+            omega(2) = fk2l2 * (ll * mm * sinmz + kk * alpha * cosmz) * sinkxly
+            omega(3) = alpha * cosmz * coskxly
 
         end function get_flow_vorticity
 
-        subroutine get_flow_pos(pos, xx, yy, zz)
-            double precision, intent(in) :: pos(3)
-            double precision, intent(out) :: xx, yy, zz
-
-            xx = tg_flow%freq(1) * pos(1) + tg_flow%phase(1) + hpi
-            yy = tg_flow%freq(2) * pos(2) + tg_flow%phase(2) + hpi
-            zz = tg_flow%freq(3) * pos(3) + tg_flow%phase(3)
-
-        end subroutine get_flow_pos
-
-end module taylor_green_3d
+end module beltrami_3d

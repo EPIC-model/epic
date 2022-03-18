@@ -14,6 +14,7 @@ module parcel_diagnostics_netcdf
     use omp_lib
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
+    use physics, only : write_physical_quantities
     implicit none
 
     private
@@ -81,7 +82,8 @@ module parcel_diagnostics_netcdf
                                    cf_version=cf_version)
 
             call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
-            call write_netcdf_timestamp(ncid)
+
+            call write_physical_quantities(ncid)
 
             call write_netcdf_options(ncid)
 

@@ -15,5 +15,9 @@
 
  ![m] ellipse radii (x, z)
  straka_flow%radii = 4000.0, 2000.0
+/
 
+&PHYSICS
+ gravity = 9.81d0
+ theta_0 = 300.0d0
 /

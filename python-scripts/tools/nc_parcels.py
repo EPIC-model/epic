@@ -1,7 +1,7 @@
 import netCDF4 as nc
 import os
 import numpy as np
-
+from tools.nc_utils import write_nc_info, write_nc_parameters
 
 class nc_parcels:
     def __init__(self):
@@ -17,8 +17,15 @@ class nc_parcels:
             Filename with extension.
         """
         self._ncfile = nc.Dataset(fname, "w", format="NETCDF4")
+
+        write_nc_info(ncfile=self._ncfile, file_type='parcels')
+
         self._nparcels = 0
 
+        self._physical_quantities = {}
+
+    def add_physical_quantity(self, key, value):
+        self._physical_quantities[key] = value
 
     def add_dataset(self, name, values, dtype='f8', **kwargs):
         """
@@ -43,7 +50,6 @@ class nc_parcels:
             # add dimension
             self._ncfile.createDimension(dimname="t", size=None)
             self._ncfile.createDimension(dimname="n_parcels", size=self._nparcels)
-            self._ncfile.setncattr('file_type', 'parcels')
 
             time = self._ncfile.createVariable(varname='t',
                                                datatype=dtype,
@@ -68,6 +74,10 @@ class nc_parcels:
             var.long_name = long_name
 
     def close(self):
+        if not self._physical_quantities == {}:
+            write_nc_parameters(self._ncfile, 'physical_quantities',
+                                self._physical_quantities)
+
         self._ncfile.close()
 
 

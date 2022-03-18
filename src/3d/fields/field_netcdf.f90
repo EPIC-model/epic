@@ -7,7 +7,7 @@ module field_netcdf
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
-    use phys_parameters, only : glati
+    use physics, only : write_physical_quantities, glati
     implicit none
 
     integer :: field_io_timer
@@ -20,8 +20,10 @@ module field_netcdf
 
     integer            :: x_vel_id, y_vel_id, z_vel_id, &
                           x_vor_id, y_vor_id, z_vor_id, &
-                          tbuoy_id, dbuoy_id, lbuoy_id, &
-                          n_writes
+                          tbuoy_id, n_writes
+#ifndef ENABLE_DRY_MODE
+    integer            :: dbuoy_id, lbuoy_id
+#endif
 
     double precision   :: restart_time
 
@@ -30,8 +32,11 @@ module field_netcdf
                coord_ids, t_axis_id,            &
                x_vel_id, y_vel_id, z_vel_id,    &
                x_vor_id, y_vor_id, z_vor_id,    &
-               tbuoy_id, dbuoy_id, lbuoy_id,    &
+               tbuoy_id,                        &
                n_writes, restart_time
+#ifndef ENABLE_DRY_MODE
+    private :: dbuoy_id, lbuoy_id
+#endif
 
     contains
 
@@ -70,6 +75,8 @@ module field_netcdf
                                    cf_version=cf_version)
 
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
+
+            call write_physical_quantities(ncid)
 
             call write_netcdf_options(ncid)
 
@@ -147,6 +154,7 @@ module field_netcdf
                                        dimids=dimids,                       &
                                        varid=tbuoy_id)
 
+#ifndef ENABLE_DRY_MODE
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='dry_buoyancy',                 &
                                        long_name='dry buoyancy',            &
@@ -164,7 +172,7 @@ module field_netcdf
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
                                        varid=lbuoy_id)
-
+#endif
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_file
@@ -203,10 +211,11 @@ module field_netcdf
 
             call get_var_id(ncid, 'buoyancy', tbuoy_id)
 
+#ifndef ENABLE_DRY_MODE
             call get_var_id(ncid, 'dry_buoyancy', dbuoy_id)
 
             call get_var_id(ncid, 'liquid_water_content', lbuoy_id)
-
+#endif
         end subroutine read_netcdf_field_content
 
         ! Write a step in the field file.
@@ -256,13 +265,14 @@ module field_netcdf
             call write_netcdf_dataset(ncid, tbuoy_id, tbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
                                       start, cnt)
 
+#ifndef ENABLE_DRY_MODE
             call write_netcdf_dataset(ncid, dbuoy_id, dbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
                                       start, cnt)
 
             call write_netcdf_dataset(ncid, lbuoy_id, glati * (tbuoyg(0:nz, 0:ny-1, 0:nx-1)     &
                                                              - dbuoyg(0:nz, 0:ny-1, 0:nx-1)),   &
                                       start, cnt)
-
+#endif
             ! increment counter
             n_writes = n_writes + 1
 
