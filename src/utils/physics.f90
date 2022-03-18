@@ -38,6 +38,7 @@ module physics
     use netcdf_reader
     use netcdf_utils
     use netcdf_writer
+    use iso_fortran_env, only : IOSTAT_END
     implicit none
 
     ![m/s**2] standard gravity (i.e. at 45° latitude and mean sea level):
@@ -133,10 +134,12 @@ module physics
 
             read(nml=PHYSICS, iostat=ios, unit=fn)
 
-            if (ios /= 0) then
+            if (ios == IOSTAT_END) then
+                ! physical constants/parameters not present
+            else if (ios /= 0) then
                 print *, 'Error: invalid Namelist format.'
                 stop
-            end if
+            endif
 
             close(fn)
 
