@@ -9,7 +9,7 @@ module robert_3d
     use constants
     use netcdf_writer
     use physics, only : write_physical_quantities, &
-                        set_physical_quantity, gravity, theta_0
+                        gravity, theta_0
     implicit none
 
     private

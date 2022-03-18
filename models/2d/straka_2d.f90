@@ -14,7 +14,7 @@ module straka_2d
     use constants
     use netcdf_writer
     use physics, only : write_physical_quantities, &
-                        set_physical_quantity, theta_0, gravity
+                        theta_0, gravity
     implicit none
 
     private

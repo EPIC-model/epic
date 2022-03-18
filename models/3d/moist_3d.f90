@@ -7,7 +7,7 @@
 ! =============================================================================
 module moist_3d
     use physics, only : write_physical_quantities, &
-                        set_physical_quantity, height_c, q_0, gravity, theta_0, L_v, c_p
+                        height_c, q_0, gravity, theta_0, L_v, c_p
     use constants
     use netcdf_writer
     implicit none
