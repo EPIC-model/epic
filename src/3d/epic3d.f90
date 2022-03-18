@@ -26,10 +26,9 @@ program epic3d
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
-    use utils, only : write_last_step, setup_output_files, setup_restart
-    use phys_parameters, only : update_phys_parameters
-    use parameters, only : max_num_parcels, nx, ny, nz, lower, extent, update_parameters
-    use netcdf_reader, only : read_netcdf_domain
+    use utils, only : write_last_step, setup_output_files,       &
+                      setup_restart, setup_domain_and_parameters
+    use parameters, only : max_num_parcels
     implicit none
 
     integer          :: epic_timer
@@ -57,7 +56,6 @@ program epic3d
                               , restart_file        &
                               , time
             character(len=16) :: file_type
-            integer           :: ncells(3)
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
@@ -87,19 +85,10 @@ program epic3d
 
             ! read domain dimensions
             if (l_restart) then
-                call read_netcdf_domain(trim(restart_file), lower, extent, ncells)
+                call setup_domain_and_parameters(trim(restart_file))
             else
-                call read_netcdf_domain(trim(field_file), lower, extent, ncells)
+                call setup_domain_and_parameters(trim(field_file))
             endif
-
-            nx = ncells(1)
-            ny = ncells(2)
-            nz = ncells(3)
-
-            ! update global parameters
-            call update_parameters
-
-            call update_phys_parameters
 
             call parcel_alloc(max_num_parcels)
 

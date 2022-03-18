@@ -1,6 +1,6 @@
 module utils
     use constants, only : one
-    use options, only : output, l_restart
+    use options, only : output, l_restart, verbose
     use field_netcdf
     use parcel_netcdf
     use parcel_diagnostics_netcdf, only : create_netcdf_parcel_stats_file, &
@@ -11,7 +11,9 @@ module utils
     use parcel_container, only : n_parcels
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
-    use netcdf_reader, only : get_file_type, get_num_steps, get_time
+    use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
+    use parameters, only : lower, extent, update_parameters
+    use physics, only : read_physical_quantities, print_physical_quantities
 #ifndef NDEBUG
     use parcel_interpl, only : vol2grid_symmetry_error
 #endif
@@ -160,5 +162,30 @@ module utils
             nspw = int(t / output%parcel_stats_freq) + 1
             nsfw = int(t / output%field_stats_freq) + 1
         end subroutine setup_restart
+
+        subroutine setup_domain_and_parameters(fname)
+            character(*), intent(in) :: fname
+            integer                  :: ncid
+            integer                  :: ncells(2)
+
+            call open_netcdf_file(fname, NF90_NOWRITE, ncid)
+
+            call get_netcdf_box(ncid, lower, extent, ncells)
+            call read_physical_quantities(ncid)
+
+            call close_netcdf_file(ncid)
+
+            nx = ncells(1)
+            nz = ncells(2)
+
+            ! update global parameters
+            call update_parameters
+
+#ifdef ENABLE_VERBOSE
+            if (verbose) then
+                call print_physical_quantities
+            endif
+#endif
+        end subroutine setup_domain_and_parameters
 
 end module utils

@@ -28,10 +28,8 @@ module netcdf_utils
                 stop
             endif
 
-            ! nf90_noclobber -- do not want to clobber (overwrite) an existing dataset
-            ! nf90_clobber -- overwrite this file, if it already exists.
             ncerr = nf90_create(path = ncfname,        &
-                                cmode = nf90_clobber,  &
+                                cmode = NF90_NETCDF4,  &
                                 ncid = ncid)
 
             call check_netcdf_error("Failed to create netcdf file'" // trim(ncfname) // "'.")

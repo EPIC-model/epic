@@ -6,7 +6,7 @@
 program test_trilinear
     use unit_test
     use constants, only : pi, zero, one, two, three, four, five, f12, f23
-    use phys_parameters, only : ft_cor, f_cor
+    use physics, only : ft_cor, f_cor
     use parcel_container
     use parcel_interpl, only : grid2par, grid2par_timer
     use parcel_ellipsoid, only : get_abc

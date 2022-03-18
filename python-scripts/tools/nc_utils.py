@@ -18,3 +18,9 @@ def write_nc_timestamp(ncfile):
     ncfile.setncattr('creation_date', datetime.today().strftime('%Y/%m/%d'))
     ncfile.setncattr('creation_time', datetime.now().strftime('%H:%M:%S'))
     ncfile.setncattr('creation_zone', "UTC" + datetime.now(tzlocal()).strftime('%z'))
+
+
+def write_nc_parameters(ncfile, group_name, params = {}):
+    pgrp = ncfile.createGroup(group_name)
+    for key, val in params.items():
+        pgrp.setncattr(key, val)

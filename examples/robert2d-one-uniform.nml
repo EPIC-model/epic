@@ -15,3 +15,8 @@
  robert_flow%bubbles(1)%radius = 250.0
 
 /
+
+&PHYSICS
+ gravity = 9.81d0
+ theta_0 = 303.15d0
+/

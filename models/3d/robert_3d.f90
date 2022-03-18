@@ -6,16 +6,15 @@
 ! =============================================================================
 
 module robert_3d
-    use phys_constants
     use constants
     use netcdf_writer
+    use physics, only : write_physical_quantities, &
+                        gravity, theta_0
     implicit none
 
     private
 
     double precision, allocatable :: buoyg(:, :, :)
-
-    double precision :: ref_theta = 303.15d0    ![K] reference potential temperature
 
     integer :: buo_id
 
@@ -75,6 +74,8 @@ module robert_3d
 
             call write_netcdf_dataset(ncid, buo_id, buoyg)
 
+            call write_physical_quantities(ncid)
+
             deallocate(buoyg)
 
         end subroutine robert_init
@@ -119,10 +120,10 @@ module robert_3d
                         endif
 
                         ! MPIC paper:
-                        ! liquid-water buoyancy is defined by b = g * (theta − ref_theta) / ref_theta
-                        ! (dtheta = theta - ref_theta)
+                        ! liquid-water buoyancy is defined by b = g * (theta − theta_0) / theta_0
+                        ! (dtheta = theta - theta_0)
                         buoyg(k, j, i) = buoyg(k, j, i) &
-                                       + gravity * dtheta / ref_theta
+                                       + gravity * dtheta / theta_0
                     enddo
                 enddo
             enddo
