@@ -51,7 +51,7 @@ module unit_test
             integer           :: i
             character(len=32) :: arg
             character(len=32) :: testname
-            logical           :: verbose
+            logical           :: verbose = .false.
 
             testname = ''
             i = 0
