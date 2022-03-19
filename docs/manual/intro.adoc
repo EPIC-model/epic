@@ -1,11 +1,18 @@
 = EPIC - Elliptical Parcel-In-Cell
-Matthias Frey; David G. Dritschel; Steven J. Böing; Evgenij Belikov
+Matthias Frey (Univ. of St Andrews); David G. Dritschel (Univ. of St Andrews); Steven J. Böing (Univ. of Leeds); Evgenij Belikov (Univ. of Edinburgh)
 :page-layout: default
-:toc:
+:toc: left
+:sectnums:
 
-== Prerequisites
+EPIC is an open-source project developed to simulate fluid flows.
+
 
 
 == Installation
 
-== Input/Output
+=== Prerequisites
+
+
+== Conventions and Units
+
+== Citation
