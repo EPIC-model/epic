@@ -102,14 +102,22 @@ program test_netcdf_read_attributes
                             overwrite=.true.,    &
                             ncid=ncid)
 
+    call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
+
+    call close_definition(ncid)
+
+    call open_netcdf_file(ncfname='nctest.nc',    &
+                          access_flag=NF90_WRITE, &
+                          ncid=ncid)
+
     call write_netcdf_attribute(ncid=ncid, name='file_type', val='parcels')
     call write_netcdf_box(ncid, (/0.0d0, 0.0d0, 0.0d0/), &
                                 (/1.0d0, 1.0d0, 1.0d0/), &
                                 (/nx, ny, nz/))
 
-    call write_netcdf_attribute(ncid=ncid, name='t', val=12.0)
+    call write_netcdf_scalar(ncid, t_axis_id, 12.0, 1)
 
-    call close_definition(ncid)
+    call close_netcdf_file(ncid)
 
     call open_netcdf_file(ncfname='nctest.nc',    &
                           access_flag=NF90_NOWRITE, &
