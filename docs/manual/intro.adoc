@@ -1,5 +1,11 @@
-= EPIC
+= EPIC - Elliptical Parcel-In-Cell
+Matthias Frey; David G. Dritschel; Steven J. Böing; Evgenij Belikov
 :page-layout: default
+:toc:
+
+== Prerequisites
 
 
-TODO
+== Installation
+
+== Input/Output
