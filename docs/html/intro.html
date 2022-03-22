@@ -452,12 +452,16 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <ul class="sectlevel1">
 <li><a href="#_installation">1. Installation</a>
 <ul class="sectlevel2">
-<li><a href="#_prerequisites">1.1. Prerequisites</a></li>
+<li><a href="#_cloning_the_repository">1.1. Cloning the Repository</a></li>
+<li><a href="#_prerequisites">1.2. Prerequisites</a></li>
+<li><a href="#_configuring">1.3. Configuring</a></li>
 </ul>
 </li>
 <li><a href="#_conventions_and_units">2. Conventions and Units</a></li>
 <li><a href="#_model">3. Model</a></li>
-<li><a href="#_citation">4. Citation</a></li>
+<li><a href="#_input">4. Input</a></li>
+<li><a href="#_output">5. Output</a></li>
+<li><a href="#_citation">6. Citation</a></li>
 </ul>
 </div>
 </div>
@@ -480,8 +484,60 @@ system.</p>
 <h2 id="_installation">1. Installation</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_prerequisites">1.1. Prerequisites</h3>
-
+<h3 id="_cloning_the_repository">1.1. Cloning the Repository</h3>
+<div class="paragraph">
+<p>Users can obtain the source code by</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">git clone https://github.com/matt-frey/epic.git</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is however recommended to use the latest <a href="https://github.com/matt-frey/epic/releases">release</a> for production runs. EPIC contributors can also clone the repository using the SSH version</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">git clone git@github.com:matt-frey/epic.git</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites">1.2. Prerequisites</h3>
+<div class="paragraph">
+<p>EPIC is implemented in Fortran; hence, a Fortran compiler is required. We recommend to use <a href="https://gcc.gnu.org/wiki/GFortran">GNU Fortran compiler</a>. It further depends on <a href="https://www.hdfgroup.org/solutions/hdf5/">HDF5</a> and
+<a href="https://www.unidata.ucar.edu/software/netcdf/">NetCDF</a>. Scripts to install HDF5 and NetCDF are found in the
+source code subdirectory <code>dependencies</code>. No guarantee can be given for a successful installation with these scripts.
+Optionally, users can install Python in order to use the provided pre- and post-processing scripts.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring">1.3. Configuring</h3>
+<div class="paragraph">
+<p>In this subsection <code>$PREFIX</code> denotes the installation directory of EPIC. The basic installation is obtained by typing</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ autoreconf --install
+$ mkdir build
+$ cd build
+$ ../configure --prefix=$PREFIX
+$ make
+$ make install</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>in your terminal.</p>
+</div>
+<div class="paragraph">
+<p><strong>Note:</strong> You can add the bin directory <code>$PREFIX/bin</code> to your <code>$PATH</code> and <code>PYTHONPATH</code> environment variables with</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">export PATH=$PREFIX/bin:$PATH
+export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -498,7 +554,19 @@ system.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_citation">4. Citation</h2>
+<h2 id="_input">4. Input</h2>
+<div class="sectionbody">
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="_output">5. Output</h2>
+<div class="sectionbody">
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="_citation">6. Citation</h2>
 <div class="sectionbody">
 
 </div>
@@ -507,7 +575,7 @@ system.</p>
 <div id="footer">
 <div id="footer-text">
 Version 0.12.1<br>
-Last updated 2022-03-22 14:38:12 UTC
+Last updated 2022-03-22 15:43:12 UTC
 </div>
 </div>
 </body>
