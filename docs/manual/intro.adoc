@@ -26,4 +26,8 @@ include::conventions.adoc[]
 
 include::model.adoc[]
 
+include::input.adoc[]
+
+include::output.adoc[]
+
 include::citation.adoc[]
