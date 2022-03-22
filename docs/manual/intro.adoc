@@ -8,11 +8,8 @@ EPIC is an open-source project developed to simulate fluid flows.
 
 
 
-== Installation
+include::installation.adoc[]
 
-=== Prerequisites
+include::conventions.adoc[]
 
-
-== Conventions and Units
-
-== Citation
+include::citation.adoc[]
