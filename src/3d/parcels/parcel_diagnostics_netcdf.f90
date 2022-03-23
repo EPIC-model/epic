@@ -44,7 +44,6 @@ module parcel_diagnostics_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
-            character(:), allocatable :: name
 
             ncfname =  basename // '_parcel_stats.nc'
 

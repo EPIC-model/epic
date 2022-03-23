@@ -40,7 +40,6 @@ module field_diagnostics_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
-            character(:), allocatable :: name
 
             ncfname =  basename // '_field_stats.nc'
 

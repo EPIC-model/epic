@@ -191,7 +191,6 @@ module netcdf_writer
             double precision,  intent(in) :: data(:, :, :)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
-            integer                       :: layout(3), ix, iy, iz
             integer                       :: map(3)
 
             map = shape(data)
