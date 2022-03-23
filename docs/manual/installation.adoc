@@ -32,17 +32,41 @@ where `<env>` is the name of the environment. The file `requirements.txt` is con
 **Note:** In order to install the Python scripts you need to configure EPIC with `--enable-python`.
 
 === Configuring
-In this subsection `$PREFIX` denotes the installation directory of EPIC. The basic installation is obtained by typing
+Assuming you are in the root directory of EPIC, you must first create the configure script and all Makefiles by
+calling
 [source, bash]
 ----
-$ autoreconf --install
+$ ./bootstrap
+----
+in your terminal. You then create a build directory and configure EPIC
+[source, bash]
+----
 $ mkdir build
 $ cd build
-$ ../configure --prefix=$PREFIX
-$ make
-$ make install
+$ ../configure ..
 ----
-in your terminal.
+The most important configure options are given in <<tab_configure_options>>. You can also append the flag `--help`
+to see all available options. In the following we denote with `$PREFIX` the installation directory of EPIC.
+
+.Important configuration options.
+[[tab_configure_options,Table {counter:tab-cnt}]]
+[cols="1,4"]
+|===
+|Option                 |Description
+
+|`--enable-3d`          |Compile EPIC 3D alongside EPIC 2D
+|`--enable-debug`       |Compile in debug mode with backtrace, floating point operation checks etc.
+|`--enable-diagnose`    |Enables more diagnostics and output (especially in EPIC 2D
+|`--enable-dry-mode`    |Install dry model, that is no moist physics model
+|`--enable-openmp`      |Compile with shared memory parallelism
+|`--enable-python`      |Install Python pre- and pos-processing scripts
+|`--enable-scalasca`    |Compile EPIC with performance analysis (this extremely slows down EPIC)
+|`--enable-unit-tests`  |Compile unit tests
+|`--enable-verbose`     |Compile in verbose mode to allow running with more output
+|`--prefix=$PREFIX`     |Install directory when performing `make install`
+|===
+
+
 
 **Note:** You can add the bin directory `$PREFIX/bin` to your `$PATH` and `PYTHONPATH` environment variables with
 [source, bash]

@@ -1,0 +1,4 @@
+#!/bin/bash
+# This script generates the configure script and all Makefile.in
+
+autoreconf --install --verbose --force
