@@ -115,12 +115,23 @@ module rk4_utils
                         !    du/dz = \omegay + dw/dx
                         !    dv/dz = dw/dy - \omegax
                         !    dw/dz = - (du/dx + dv/dy)
-                        strain(1, 1) = velgradg(iz, iy, ix, 1)                              ! du/dx
-                        strain(1, 2) = two * velgradg(iz, iy, ix, 2) + vortg(iz, iy, ix, 3) ! du/dy + dv/dx
-                        strain(1, 3) = two * velgradg(iz, iy, ix, 4) + vortg(iz, iy, ix, 2) ! du/dz + dw/dx
-                        strain(2, 2) = velgradg(iz, iy, ix, 3)                              ! dv/dy
-                        strain(2, 3) = two * velgradg(iz, iy, ix, 5) - vortg(iz, iy, ix, 1) ! dv/dz + dw/dy
-                        strain(3, 3) = -(velgradg(iz, iy, ix, 1) + velgradg(iz, iy, ix, 3)) ! dw/dz
+                        !
+                        !                         /  2 * u_x  u_y + v_x u_z + w_x\
+                        ! 1/2 * (S + S^T) = 1/2 = |u_y + v_x   2 * v_y  v_z + w_y|
+                        !                         \u_z + w_x  v_z + w_y   2 * w_z/
+                        !
+                        ! S11 = du/dx
+                        ! S12 = 1/2 * (du/dy + dv/dx) = 1/2 * (2 * du/dy + \omegaz) = du/dy + 1/2 * \omegaz
+                        ! S13 = 1/2 * (du/dz + dw/dx) = 1/2 * (\omegay + 2 * dw/dx) = 1/2 * \omegay + dw/dx
+                        ! S22 = dv/dy
+                        ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \omegax) = dw/dy - 1/2 * \omegax
+                        ! S33 = dw/dz = - (du/dx + dv/dy)
+                        strain(1, 1) = velgradg(iz, iy, ix, 1)                              ! S11
+                        strain(1, 2) = velgradg(iz, iy, ix, 2) + f12 * vortg(iz, iy, ix, 3) ! S12
+                        strain(1, 3) = velgradg(iz, iy, ix, 4) + f12 * vortg(iz, iy, ix, 2) ! S13
+                        strain(2, 2) = velgradg(iz, iy, ix, 3)                              ! S22
+                        strain(2, 3) = velgradg(iz, iy, ix, 5) - f12 * vortg(iz, iy, ix, 1) ! S23
+                        strain(3, 3) = -(velgradg(iz, iy, ix, 1) + velgradg(iz, iy, ix, 3)) ! S33
 
                         ! calculate its eigenvalues (strain is overwritten and diagonal entries
                         ! will be the eigenvalues sorted in descending order), i.e.
