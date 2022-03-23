@@ -1,18 +1,33 @@
 = EPIC - Elliptical Parcel-In-Cell
 Matthias Frey (Univ. of St Andrews); David G. Dritschel (Univ. of St Andrews); Steven J. Böing (Univ. of Leeds); Evgenij Belikov (Univ. of Edinburgh)
+v@VERSION@
+:version-label: Version
 :page-layout: default
 :toc: left
 :sectnums:
 
-EPIC is an open-source project developed to simulate fluid flows.
+// 22 March 2022
+// https://github.com/badges/shields/issues/1104
+// https://stackoverflow.com/questions/68376464/asciidoctor-pdf-exclude-content-from-pdf-only
+ifeval::["{backend}" == "html5"]
+image:https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg[Codeship, role="block image", link=https://doi.org/10.5281/zenodo.5940225]
+image:https://img.shields.io/github/license/matt-frey/epic.svg[Codeship, role="block image", link=https://github.com/matt-frey/epic/blob/main/LICENSE]
+endif::[]
+
+The EPIC framework is an open-source project developed to simulate fluid flows where the Lagrangian parcels are
+described by ellipses in 2D and ellipsoids in 3D. Although EPIC targets the simulation
+of cloud and atmospheric systems, the core idea of advecting elliptical parcels is applicable to any fluid dynamical
+system.
 
 
+include::installation.adoc[]
 
-== Installation
+include::conventions.adoc[]
 
-=== Prerequisites
+include::model.adoc[]
 
+include::input.adoc[]
 
-== Conventions and Units
+include::output.adoc[]
 
-== Citation
+include::citation.adoc[]

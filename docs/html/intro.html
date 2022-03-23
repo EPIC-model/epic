@@ -445,17 +445,30 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <span id="author2" class="author">David G. Dritschel (Univ. of St Andrews)</span><br>
 <span id="author3" class="author">Steven J. Böing (Univ. of Leeds)</span><br>
 <span id="author4" class="author">Evgenij Belikov (Univ. of Edinburgh)</span><br>
+<span id="revnumber">version 0.12.1</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#_installation">1. Installation</a>
 <ul class="sectlevel2">
-<li><a href="#_prerequisites">1.1. Prerequisites</a></li>
+<li><a href="#_cloning_the_repository">1.1. Cloning the Repository</a></li>
+<li><a href="#_prerequisites">1.2. Prerequisites</a></li>
+<li><a href="#_configuring">1.3. Configuring</a></li>
 </ul>
 </li>
 <li><a href="#_conventions_and_units">2. Conventions and Units</a></li>
-<li><a href="#_citation">3. Citation</a></li>
+<li><a href="#_model">3. Model</a></li>
+<li><a href="#_input">4. Input</a>
+<ul class="sectlevel2">
+<li><a href="#_configuration_file">4.1. Configuration File</a></li>
+<li><a href="#_netcdf_field_file">4.2. NetCDF Field File</a></li>
+<li><a href="#_netcdf_parcel_file">4.3. NetCDF Parcel File</a></li>
+<li><a href="#_restarting">4.4. Restarting</a></li>
+</ul>
+</li>
+<li><a href="#_output">5. Output</a></li>
+<li><a href="#_citation">6. Citation</a></li>
 </ul>
 </div>
 </div>
@@ -463,7 +476,14 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>EPIC is an open-source project developed to simulate fluid flows.</p>
+<p><span class="image block image"><a class="image" href="https://doi.org/10.5281/zenodo.5940225"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg" alt="Codeship"></a></span>
+<span class="image block image"><a class="image" href="https://github.com/matt-frey/epic/blob/main/LICENSE"><img src="https://img.shields.io/github/license/matt-frey/epic.svg" alt="Codeship"></a></span></p>
+</div>
+<div class="paragraph">
+<p>The EPIC framework is an open-source project developed to simulate fluid flows where the Lagrangian parcels are
+described by ellipses in 2D and ellipsoids in 3D. Although EPIC targets the simulation
+of cloud and atmospheric systems, the core idea of advecting elliptical parcels is applicable to any fluid dynamical
+system.</p>
 </div>
 </div>
 </div>
@@ -471,8 +491,74 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="_installation">1. Installation</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_prerequisites">1.1. Prerequisites</h3>
-
+<h3 id="_cloning_the_repository">1.1. Cloning the Repository</h3>
+<div class="paragraph">
+<p>Users can obtain the source code by</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">git clone https://github.com/matt-frey/epic.git</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is however recommended to use the latest <a href="https://github.com/matt-frey/epic/releases">release</a> for production runs. EPIC contributors can also clone the repository using the SSH version</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">git clone git@github.com:matt-frey/epic.git</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites">1.2. Prerequisites</h3>
+<div class="paragraph">
+<p>EPIC is implemented in Fortran; hence, a Fortran compiler is required. We recommend to use <a href="https://gcc.gnu.org/wiki/GFortran">GNU Fortran compiler</a>. It further depends on <a href="https://www.hdfgroup.org/solutions/hdf5/">HDF5</a> and
+<a href="https://www.unidata.ucar.edu/software/netcdf/">NetCDF</a>. Scripts to install HDF5 and NetCDF are found in the
+source code subdirectory <code>dependencies</code>. No guarantee can be given for a successful installation with these scripts.
+Optionally, users can install Python in order to use the provided pre- and post-processing scripts. It is generally
+recommended to create a separate Python virtual environment using <a href="https://conda.io/projects/conda/en/latest/user-guide/install/index.html">conda</a>. After installing conda, all necessary Python packages for EPIC can be installed
+via</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ conda config --add channels conda-forge
+$ conda create --name &lt;env&gt; python=3.9.10 --file requirements.txt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>where <code>&lt;env&gt;</code> is the name of the environment. The file <code>requirements.txt</code> is contained in the root directory of EPIC.</p>
+</div>
+<div class="paragraph">
+<p><strong>Note:</strong> In order to install the Python scripts you need to configure EPIC with <code>--enable-python</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuring">1.3. Configuring</h3>
+<div class="paragraph">
+<p>In this subsection <code>$PREFIX</code> denotes the installation directory of EPIC. The basic installation is obtained by typing</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ autoreconf --install
+$ mkdir build
+$ cd build
+$ ../configure --prefix=$PREFIX
+$ make
+$ make install</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>in your terminal.</p>
+</div>
+<div class="paragraph">
+<p><strong>Note:</strong> You can add the bin directory <code>$PREFIX/bin</code> to your <code>$PATH</code> and <code>PYTHONPATH</code> environment variables with</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">export PATH=$PREFIX/bin:$PATH
+export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -483,7 +569,171 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 </div>
 <div class="sect1">
-<h2 id="_citation">3. Citation</h2>
+<h2 id="_model">3. Model</h2>
+<div class="sectionbody">
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="_input">4. Input</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_configuration_file">4.1. Configuration File</h3>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. EPIC input options and their default values.</caption>
+<colgroup>
+<col style="width: 22.2222%;">
+<col style="width: 11.1111%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Parameter</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">field_file</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">n/a</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NetCDF Input field file</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">field_tol</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.0d-10</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tolerance for parcel generation from field file</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%field_freq</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Write after these many seconds to the field NetCDF file</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%parcel_freq</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Write after these many seconds to the parcel NetCDF file</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%parcel_stats_freq</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Write after these many seconds to parcel stats NetCDF file</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%field_stats_freq</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Write after these many seconds to the field stats NetCDF file</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%write_fields</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.true.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable / disable field dump</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%write_parcels</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.true.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable / disable parcel dump</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%write_parcel_stats</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.true.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable / disable parcel statistics</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%write_field_stats</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.true.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enable / disable field statistics</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%overwrite</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.false.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Replace existing NetCDF files</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">output%basename</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">n/a</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NetCDF output base name</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%size_factor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Factor to increase max. number of parcels</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%n_per_cell</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Initial number of parcels per cell</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%lambda_max</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum parcel aspect ratio</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%min_vratio</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">40</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Minimum ratio of grid cell volume / parcel volume</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%max_vratio</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2.89</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maximum ratio of grid cell volume / parcel volume</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%correction_iters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">How many parcel correction iterations</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%gradient_pref</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gradient correction prefactor</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">parcel%max_compression</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gradient correction maximum compression</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">time%limit</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Time limit (s)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">time%alpha</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Scaling factor for the strain and buoyancy gradient time step</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">time%precise_stop</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">.false.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stop exactly at the time limit</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_netcdf_field_file">4.2. NetCDF Field File</h3>
+
+</div>
+<div class="sect2">
+<h3 id="_netcdf_parcel_file">4.3. NetCDF Parcel File</h3>
+
+</div>
+<div class="sect2">
+<h3 id="_restarting">4.4. Restarting</h3>
+
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_output">5. Output</h2>
+<div class="sectionbody">
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="_citation">6. Citation</h2>
 <div class="sectionbody">
 
 </div>
@@ -491,7 +741,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2022-03-19 20:11:51 UTC
+Version 0.12.1<br>
+Last updated 2022-03-23 13:09:03 UTC
 </div>
 </div>
 </body>

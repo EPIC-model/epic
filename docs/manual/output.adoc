@@ -1,0 +1,13 @@
+== Output
+
+// ## Post-processing
+// The directory `$PREFIX/bin` contains following Python scripts:
+// * animate-parcels.py
+// * plot-parcels.py
+// * plot-diagnostics.py
+// * merge-ellipses.py
+// * subgrid_2d_generalised.py
+//
+// Please append the argument `--help` when calling the scripts to get further information.
+// We further provide Fortran analysis scripts. These are:
+// * genspec (power spectrum analysis)
