@@ -117,7 +117,7 @@ module rk4_utils
                         !    dw/dz = - (du/dx + dv/dy)
                         !
                         !                         /  2 * u_x  u_y + v_x u_z + w_x\
-                        ! 1/2 * (S + S^T) = 1/2 = |u_y + v_x   2 * v_y  v_z + w_y|
+                        ! 1/2 * (S + S^T) = 1/2 * |u_y + v_x   2 * v_y  v_z + w_y|
                         !                         \u_z + w_x  v_z + w_y   2 * w_z/
                         !
                         ! S11 = du/dx
