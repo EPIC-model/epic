@@ -3,5 +3,5 @@
 [![License](https://img.shields.io/github/license/matt-frey/epic)](https://github.com/matt-frey/epic/blob/main/LICENSE)
 
 # EPIC - Elliptical Parcel-in-Cell
-Please check the [manual](https://matt-frey.github.io/epic/manual/intro.html) of the current release (*Note:* this is still work in progress).
+Please check the [manual](https://matt-frey.github.io/epic/html/intro.html) of the current release (*Note:* this is still work in progress).
 
