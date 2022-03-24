@@ -146,7 +146,7 @@ module jacobi
             ! sm should convergence to zero
             sm = dabs(A(1, 2)) + dabs(A(1, 3)) + dabs(A(2, 3))
 
-            do while (sm > atol)
+            do while (sm >= atol)
 
                 do i = 1, n-1
                     do j = i+1, n
