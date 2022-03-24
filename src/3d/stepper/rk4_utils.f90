@@ -87,7 +87,7 @@ module rk4_utils
             double precision             :: gmax, bmax, strain(3, 3), D(3)
             double precision             :: gradb(0:nz, 0:ny-1, 0:nx-1)
             double precision             :: db2(0:nz, 0:ny-1, 0:nx-1)
-            integer                      :: ix, iy, iz, mix, miy, miz
+            integer                      :: ix, iy, iz
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
             character(:), allocatable    :: fname
@@ -139,28 +139,11 @@ module rk4_utils
                         ! requires the upper triangular matrix only.
                         call jacobi_eigenvalues(strain, D)
 
-                        if (D(1) > gmax) then
-                            print *, "--------------------------"
-                            mix = ix
-                            miy = iy
-                            miz = iz
-
-                            print *, D(1), D(2), D(3)
-                            print *, velgradg(iz, iy, ix, 1)                              ! S11
-                            print *, velgradg(iz, iy, ix, 2) + f12 * vortg(iz, iy, ix, 3) ! S12
-                            print *, velgradg(iz, iy, ix, 4) + f12 * vortg(iz, iy, ix, 2) ! S13
-                            print *, velgradg(iz, iy, ix, 3)                              ! S22
-                            print *, velgradg(iz, iy, ix, 5) - f12 * vortg(iz, iy, ix, 1) ! S23
-                            print *, -(velgradg(iz, iy, ix, 1) + velgradg(iz, iy, ix, 3)) ! S33
-                        endif
-
                         gmax = max(gmax, D(1))
                     enddo
                 enddo
             enddo
 
-            print *, "gmax = ", gmax, vcell
-            print *, mix, miy, miz
             !
             ! buoyancy gradient (central difference)
             !
