@@ -1,4 +1,5 @@
 == Installation
+Note that any occurrences of `$PREFIX` in the following subsections denote the installation directory of EPIC.
 
 === Cloning the Repository
 Users can obtain the source code by
@@ -31,6 +32,7 @@ where `<env>` is the name of the environment. The file `requirements.txt` is con
 
 **Note:** In order to install the Python scripts you need to configure EPIC with `--enable-python`.
 
+[#sec-installation-configuring, reftext=Configuring]
 === Configuring
 Assuming you are in the root directory of EPIC, you must first create the configure script and all Makefiles by
 calling
@@ -46,10 +48,10 @@ $ cd build
 $ ../configure ..
 ----
 The most important configure options are given in <<tab_configure_options>>. You can also append the flag `--help`
-to see all available options. In the following we denote with `$PREFIX` the installation directory of EPIC.
+to see all available options.
 
 .Important configuration options.
-[[tab_configure_options,Table {counter:tab-cnt}]]
+[#tab_configure_options, reftext=Table {counter:tab-cnt}]
 [cols="1,4"]
 |===
 |Option                 |Description
@@ -66,7 +68,14 @@ to see all available options. In the following we denote with `$PREFIX` the inst
 |`--prefix=$PREFIX`     |Install directory when performing `make install`
 |===
 
-
+=== Compiling
+After <<sec-installation-configuring>> EPIC you only need to type
+[source, bash]
+----
+$ make
+$ make install
+----
+inside your build directory.
 
 **Note:** You can add the bin directory `$PREFIX/bin` to your `$PATH` and `PYTHONPATH` environment variables with
 [source, bash]
