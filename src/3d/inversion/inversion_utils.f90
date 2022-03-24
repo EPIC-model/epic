@@ -26,14 +26,16 @@ module inversion_utils
     !Horizontal wavenumbers:
     double precision, allocatable :: rkx(:), hrkx(:), rky(:), hrky(:)
 
-    ! Note k2l2i = 1/(k^2+l^2) (except k = l = 0, then k2l2i(0, 0) = 0)
-    double precision, allocatable :: k2l2i(:, :)
-
     !Quantities needed in FFTs:
     double precision, allocatable :: xtrig(:), ytrig(:)
     integer :: xfactors(5), yfactors(5)
     integer, parameter :: nsubs_tri = 8 !number of blocks for openmp
     integer :: nxsub
+
+    !De-aliasing filter:
+    double precision, allocatable :: filt(:, :)
+
+
 
     double precision :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq
     integer :: nwx, nwy, nxp2, nyp2
@@ -51,12 +53,12 @@ module inversion_utils
             , fftxyp2s  &
             , fftxys2p  &
             , dz2       &
+            , filt      &
             , hdzi      &
             , xfactors  &
             , yfactors  &
             , xtrig     &
-            , ytrig     &
-            , k2l2i
+            , ytrig
 
     contains
 
@@ -67,7 +69,7 @@ module inversion_utils
         subroutine init_fft
             double precision, allocatable  :: a0(:, :), a0b(:, :), ksq(:, :)
             double precision               :: rkxmax, rkymax
-            double precision               :: rksqmax
+            double precision               :: rksqmax, rkfsq
             integer                        :: kx, ky, iz, isub, ib_sub, ie_sub
 
             if (is_initialised) then
@@ -91,7 +93,6 @@ module inversion_utils
             allocate(a0(nx, ny))
             allocate(a0b(nx, ny))
             allocate(ksq(nx, ny))
-            allocate(k2l2i(nx, ny))
 
             allocate(etdh(nz-1, nx, ny))
             allocate(htdh(nz-1, nx, ny))
@@ -111,6 +112,7 @@ module inversion_utils
             allocate(hrky(ny))
             allocate(xtrig(2 * nx))
             allocate(ytrig(2 * ny))
+            allocate(filt(nx, ny))
 
             nxsub = nx / nsubs_tri
 
@@ -146,9 +148,19 @@ module inversion_utils
                 enddo
             enddo
 
-            ksq(1, 1) = one
-            k2l2i = one / ksq
-            ksq(1, 1) = zero
+            !--------------------------------------------------------------------
+            ! Define de-aliasing filter:
+            rkfsq = two * rksqmax / nine
+            ! rkfsq: the square of the filter wavenumber (generic 2/3 rule)
+            do ky = 1, ny
+                do kx = 1, nx
+                    if (ksq(kx, ky) .gt. rkfsq) then
+                        filt(kx, ky) = zero
+                    else
+                        filt(kx, ky) = one
+                    endif
+                enddo
+            enddo
 
             !-----------------------------------------------------------------------
             ! Fixed coefficients used in the tridiagonal problems:
