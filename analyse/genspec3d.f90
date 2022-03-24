@@ -5,50 +5,56 @@ program genspec
     use netcdf_writer
     implicit none
 
+    ! Ordering in physical space: z, y, x
+    ! Ordering in spectral space: z, x, y
+
     ! Grid dimensions:
-    integer :: nx, nz
+    integer :: nx, ny, nz
 
     ! Width and height of the domain:
-    double precision :: extent(2)
+    double precision :: extent(3)
 
-    double precision :: dx, dz
+    double precision :: dx, dy, dz
 
     ! Array to contain data:
-    double precision, allocatable :: pp(:, :)
+    double precision, allocatable :: pp(:, :, :)
 
     ! Its Fourier transform:
     double precision, allocatable :: ss(:, :)
 
     ! The spectrum:
     double precision, allocatable :: spec(:)
+    double precision, allocatable :: spec_per_height(:, :)
 
-    ! x and z wavenumbers:
-    double precision, allocatable :: rkx(:), hrkx(:), rkz(:)
+    ! x and y wavenumbers:
+    double precision, allocatable :: rkx(:), rky(:), hrkx(:), hrky(:)
 
     ! Generic arrays needed for the FFTs:
-    double precision, allocatable :: xtrig(:), ztrig(:)
-    integer :: xfactors(5), zfactors(5)
+    double precision, allocatable :: xtrig(:), ytrig(:)
+    integer :: xfactors(5), yfactors(5)
 
     ! Wavenumber magnitude used for the spectrum:
     integer, allocatable :: kmag(:, :)
 
     ! Other work variables:
-    double precision :: scx, rkxmax, scz, rkzmax, delk, delki, snorm
-    integer :: kxc, kmax, kx, kz, k
+    double precision :: scx, rkxmax, scy, rkymax, delk, delki, snorm
+    integer :: kxc, kmax, kx, ky, k
 
     character(len=512) :: filename
     character(len=64)  :: dset
     integer            :: step
+    integer            :: iz
 
     call parse_command_line
 
     call get_domain
 
     dx = extent(1) / dble(nx)
-    dz = extent(2) / dble(nz)
+    dy = extent(2) / dble(ny)
+    dz = extent(3) / dble(nz)
 
     print *, 'Field: ' // trim(dset)
-    print '(a23, i5, a6, i5)', 'Grid dimensions: nx = ', nx, ' nz = ', nz
+    print '(a23, i5, a6, i5, a6, i5)', 'Grid dimensions: nx = ', nx, ' ny = ', ny, ' nz = ', nz
 
     call alloc_arrays
 
@@ -57,7 +63,7 @@ program genspec
 
     !---------------------------------------------------------------------
     ! Set up FFTs:
-    call init2dfft(nx, nz, extent(1), extent(2), xfactors, zfactors, xtrig, ztrig, hrkx, rkz)
+    call init2dfft(nx, ny, extent(1), extent(2), xfactors, yfactors, xtrig, ytrig, hrkx, hrky)
 
     !Define x wavenumbers:
     rkx(0) = zero
@@ -68,63 +74,78 @@ program genspec
     enddo
     rkx(nx / 2) = hrkx(nx)
 
+    !Define y wavenumbers:
+    rky(0) = zero
+    do ky = 1, ny / 2 - 1
+        kyc = ny - ky
+        rky(ky ) = hrky(2 * ky)
+        rky(kyc) = hrky(2 * ky)
+    enddo
+    rky(ny / 2) = hrky(ny)
+
     !Initialise arrays for computing the spectrum:
     scx = twopi / extent(1)
     rkxmax = scx * dble(nx / 2)
-    scz = pi / extent(2)
-    rkzmax = scz * dble(nz)
-    delk = sqrt(scx ** 2 + scz **2)
+    scy = pi / extent(2)
+    rkymax = scy * dble(ny / 2)
+    delk = sqrt(scx ** 2 + scy ** 2)
     delki = one / delk
-    kmax = nint(dsqrt(rkxmax ** 2 + rkzmax ** 2) * delki)
-    do kz = 1, nz
+    kmax = nint(dsqrt(rkxmax ** 2 + rkymax ** 2) * delki)
+    do ky = 0, ny - 1
         do kx = 0, nx - 1
-            kmag(kx, kz) = nint(dsqrt(rkx(kx) ** 2 + rkz(kz) ** 2) * delki)
+            kmag(kx, ky) = nint(dsqrt(rkx(kx) ** 2 + rky(ky) ** 2) * delki)
         enddo
-    enddo
-    do kx = 0, nx - 1
-        kmag(kx, 0) = nint(rkx(kx) * delki)
     enddo
 
     !Compute spectrum multiplication factor (snorm) so that the sum
     !of the spectrum is equal to the L2 norm of the original field:
-    snorm = two * dx * dz * delki
+    snorm = two * dx * dy * delki
 
     !---------------------------------------------------------------------
-    !Compute spectrum:
+    !Compute spectrum over all z
 
-    !Transform data in pp to spectral space:
-    call ptospc_fc(nx, nz, pp, ss, xfactors, zfactors, xtrig, ztrig)
+    do iz = 0, nz
+        !Transform data in pp to spectral space:
+        call ptospc(nx, ny, pp(iz, :, :), ss, xfactors, yfactors, xtrig, ytrig)
 
-    do k = 0, kmax
-        spec(k) = zero
-    enddo
-
-    !x and y-independent mode:
-    k = kmag(0, 0)
-    spec(k) = spec(k) + f14 * ss(0, 0) ** 2
-
-    !y-independent mode:
-    do kx = 1, nx - 1
-        k = kmag(kx, 0)
-        spec(k) = spec(k) + f12 * ss(kx, 0) ** 2
-    enddo
-
-    !x-independent mode:
-    do kz = 1, nz
-        k = kmag(0, kz)
-        spec(k) = spec(k) + f12 * ss(0, kz) ** 2
-    enddo
-
-    !All other modes:
-    do kz = 1, nz
-        do kx = 1, nx - 1
-            k = kmag(kx, kz)
-            spec(k) = spec(k) + ss(kx, kz) ** 2
+        do k = 0, kmax
+            spec_per_height(iz, k) = zero
         enddo
-    enddo
 
-    !Normalise:
-    spec(0:kmax) = snorm * spec(0:kmax)
+        !x and y-independent mode:
+        k = kmag(0, 0)
+        spec_per_height(iz, k) = spec_per_height(iz, k) + f14 * ss(0, 0) ** 2
+
+        !y-independent mode:
+        do kx = 1, nx - 1
+            k = kmag(kx, 0)
+            spec_per_height(iz, k) = spec_per_height(iz, k) + f12 * ss(kx, 0) ** 2
+        enddo
+
+        !x-independent mode:
+        do ky = 1, ny - 1
+            k = kmag(0, ky)
+            spec_per_height(iz, k) = spec_per_height(iz, k) + f12 * ss(0, ky) ** 2
+        enddo
+
+        !All other modes:
+        do ky = 1, ny - 1
+            do kx = 1, nx - 1
+                k = kmag(kx, ky)
+                spec_per_height(iz, k) = spec_per_height(iz, k) + ss(kx, ky) ** 2
+            enddo
+        enddo
+
+        !Normalise:
+        spec_per_height(iz, 0:kmax) = snorm * spec_per_height(iz, 0:kmax)
+
+
+    ! Trapzeoidal rule
+    spec(0:kmax) = dz * (                                       &
+                        f12 * spec_per_height(0, 0:kmax)        &
+                      + sum(spec_per_height(1:nz-1, 0:kmax))    &
+                      + f12 * spec_per_height(nz, 0:kmax)       &
+                   )
 
     !---------------------------------------------------------------------
     !Write spectrum contained in spec(k):
@@ -136,42 +157,47 @@ program genspec
 
         subroutine get_domain
             integer          :: ncid
-            double precision :: lower(2)
-            integer          :: ncells(2)
+            double precision :: lower(3)
+            integer          :: ncells(3)
             ! read domain dimensions
             call open_netcdf_file(trim(filename), NF90_NOWRITE, ncid)
             call get_netcdf_box(ncid, lower, extent, ncells)
             nx = ncells(1)
-            nz = ncells(2)
+            ny = ncells(2)
+            nz = ncells(3)
             call close_netcdf_file(ncid)
         end subroutine get_domain
 
         subroutine alloc_arrays
-            allocate(pp(0:nz, 0:nx - 1))
-            allocate(ss(0:nx - 1, 0:nz))
-            allocate(spec(0:max(nx, nz)))
+            allocate(pp(0:nz, 0:ny-1, 0:nx-1))
+            allocate(ss(0:nx-1, 0:ny-1))
+            allocate(spec(0:max(nx, ny)))
+            allocate(spec_per_height(nz, 0:max(nx, ny)))
             allocate(rkx(0:nx - 1))
             allocate(hrkx(nx))
-            allocate(rkz(nz))
+            allocate(rky(0:ny - 1))
+            allocate(hrky(ny))
             allocate(xtrig(2 * nx))
-            allocate(ztrig(2 * nz))
-            allocate(kmag(0:nx - 1, 0:nz))
+            allocate(ytrig(2 * ny))
+            allocate(kmag(0:nx - 1, 0:ny-1))
         end subroutine alloc_arrays
 
         subroutine dealloc_arrays
             deallocate(pp)
             deallocate(ss)
+            deallocate(spec_per_height)
             deallocate(spec)
             deallocate(rkx)
             deallocate(hrkx)
-            deallocate(rkz)
+            deallocate(rky)
+            deallocate(hrky)
             deallocate(xtrig)
-            deallocate(ztrig)
+            deallocate(ytrig)
             deallocate(kmag)
         end subroutine dealloc_arrays
 
         subroutine read_data
-            integer :: ncid, cnt(3), start(3), n_steps
+            integer          :: ncid, cnt(4), start(4), n_steps
 
             call open_netcdf_file(trim(filename), NF90_NOWRITE, ncid)
 
@@ -182,10 +208,11 @@ program genspec
                 stop
             endif
 
-            cnt  =  (/ nx, nz+1, 1    /)
-            start = (/ 1,  1,    step /)
+            cnt  =  (/ nx, ny, nz+1, 1    /)
+            start = (/ 1,  1,  1,    step /)
 
             if (has_dataset(ncid, trim(dset))) then
+                pp = zero
                 call read_netcdf_dataset(ncid, trim(dset), pp, &
                                          start=start, cnt=cnt)
             else
