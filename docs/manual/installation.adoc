@@ -56,7 +56,7 @@ to see all available options. In the following we denote with `$PREFIX` the inst
 
 |`--enable-3d`          |Compile EPIC 3D alongside EPIC 2D
 |`--enable-debug`       |Compile in debug mode with backtrace, floating point operation checks etc.
-|`--enable-diagnose`    |Enables more diagnostics and output (especially in EPIC 2D
+|`--enable-diagnose`    |Enables more diagnostics and output (only in EPIC 2D)
 |`--enable-dry-mode`    |Install dry model, that is no moist physics model
 |`--enable-openmp`      |Compile with shared memory parallelism
 |`--enable-python`      |Install Python pre- and pos-processing scripts
