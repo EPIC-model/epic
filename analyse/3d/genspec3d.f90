@@ -1,6 +1,6 @@
 program genspec
     use sta2dfft
-    use constants, only : pi, twopi, f14, f12, zero, one, two
+    use constants, only : pi, twopi, f14, f12, zero, one, four
     use netcdf_reader
     use netcdf_writer
     implicit none
@@ -14,7 +14,7 @@ program genspec
     ! Width and height of the domain:
     double precision :: extent(3)
 
-    double precision :: dx, dy, dz, blub
+    double precision :: dx, dy, dz
 
     ! Array to contain data:
     double precision, allocatable :: pp(:, :, :), slice(:, :)
@@ -99,7 +99,7 @@ program genspec
 
     !Compute spectrum multiplication factor (snorm) so that the sum
     !of the spectrum is equal to the L2 norm of the original field:
-    snorm = two * dx * dy * delki
+    snorm = four * dx * dy * delki
 
     !---------------------------------------------------------------------
     !Compute spectrum over all z
@@ -140,7 +140,6 @@ program genspec
 
         !Normalise:
         spec_per_height(iz, 0:kmax) = snorm * spec_per_height(iz, 0:kmax)
-
     enddo
 
     ! Trapzeoidal rule
