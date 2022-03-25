@@ -14,10 +14,10 @@ program genspec
     ! Width and height of the domain:
     double precision :: extent(3)
 
-    double precision :: dx, dy, dz
+    double precision :: dx, dy, dz, blub
 
     ! Array to contain data:
-    double precision, allocatable :: pp(:, :, :)
+    double precision, allocatable :: pp(:, :, :), slice(:, :)
 
     ! Its Fourier transform:
     double precision, allocatable :: ss(:, :)
@@ -86,7 +86,7 @@ program genspec
     !Initialise arrays for computing the spectrum:
     scx = twopi / extent(1)
     rkxmax = scx * dble(nx / 2)
-    scy = pi / extent(2)
+    scy = twopi / extent(2)
     rkymax = scy * dble(ny / 2)
     delk = sqrt(scx ** 2 + scy ** 2)
     delki = one / delk
@@ -105,8 +105,10 @@ program genspec
     !Compute spectrum over all z
 
     do iz = 0, nz
+        slice = pp(iz, :, :)
+
         !Transform data in pp to spectral space:
-        call ptospc(nx, ny, pp(iz, :, :), ss, xfactors, yfactors, xtrig, ytrig)
+        call ptospc(nx, ny, slice, ss, xfactors, yfactors, xtrig, ytrig)
 
         do k = 0, kmax
             spec_per_height(iz, k) = zero
@@ -172,6 +174,7 @@ program genspec
 
         subroutine alloc_arrays
             allocate(pp(0:nz, 0:ny-1, 0:nx-1))
+            allocate(slice(0:ny-1, 0:nx-1))
             allocate(ss(0:nx-1, 0:ny-1))
             allocate(spec(0:max(nx, ny)))
             allocate(spec_per_height(0:nz, 0:max(nx, ny)))
@@ -186,6 +189,7 @@ program genspec
 
         subroutine dealloc_arrays
             deallocate(pp)
+            deallocate(slice)
             deallocate(ss)
             deallocate(spec_per_height)
             deallocate(spec)
