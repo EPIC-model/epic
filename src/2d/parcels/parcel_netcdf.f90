@@ -226,7 +226,6 @@ module parcel_netcdf
 
         subroutine read_netcdf_parcels(fname)
             character(*),     intent(in) :: fname
-            integer                      :: ncells(2)
             logical                      :: l_valid = .false.
             integer                      :: cnt(2), start(2)
 

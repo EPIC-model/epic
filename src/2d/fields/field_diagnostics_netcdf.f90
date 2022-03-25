@@ -173,7 +173,7 @@ module field_diagnostics_netcdf
             call get_var_id(ncid, 'avg_nspar', avg_nspar_id)
 
 #ifndef NDEBUG
-            call get_var_id(ncid, 'max_sym_vol_err'', max_sym_vol_err_id)
+            call get_var_id(ncid, 'max_sym_vol_err', max_sym_vol_err_id)
 #endif
 
         end subroutine read_netcdf_field_stats_content
