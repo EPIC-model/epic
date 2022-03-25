@@ -38,7 +38,7 @@ program genspec
 
     ! Other work variables:
     double precision :: scx, rkxmax, scy, rkymax, delk, delki, snorm
-    integer :: kxc, kmax, kx, ky, k
+    integer :: kxc, kyc, kmax, kx, ky, k
 
     character(len=512) :: filename
     character(len=64)  :: dset
@@ -138,6 +138,7 @@ program genspec
 
         !Normalise:
         spec_per_height(iz, 0:kmax) = snorm * spec_per_height(iz, 0:kmax)
+    enddo
 
 
     ! Trapzeoidal rule
