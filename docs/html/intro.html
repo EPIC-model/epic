@@ -454,7 +454,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <ul class="sectlevel2">
 <li><a href="#_cloning_the_repository">1.1. Cloning the Repository</a></li>
 <li><a href="#_prerequisites">1.2. Prerequisites</a></li>
-<li><a href="#_configuring">1.3. Configuring</a></li>
+<li><a href="#sec-installation-configuring">1.3. Configuring</a></li>
+<li><a href="#_compiling">1.4. Compiling</a></li>
 </ul>
 </li>
 <li><a href="#_conventions_and_units">2. Conventions and Units</a></li>
@@ -490,6 +491,9 @@ system.</p>
 <div class="sect1">
 <h2 id="_installation">1. Installation</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>Note that any occurrences of <code>$PREFIX</code> in the following subsections denote the installation directory of EPIC.</p>
+</div>
 <div class="sect2">
 <h3 id="_cloning_the_repository">1.1. Cloning the Repository</h3>
 <div class="paragraph">
@@ -533,22 +537,99 @@ $ conda create --name &lt;env&gt; python=3.9.10 --file requirements.txt</code></
 </div>
 </div>
 <div class="sect2">
-<h3 id="_configuring">1.3. Configuring</h3>
+<h3 id="sec-installation-configuring">1.3. Configuring</h3>
 <div class="paragraph">
-<p>In this subsection <code>$PREFIX</code> denotes the installation directory of EPIC. The basic installation is obtained by typing</p>
+<p>Assuming you are in the root directory of EPIC, you must first create the configure script and all Makefiles by
+calling</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">$ autoreconf --install
-$ mkdir build
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ ./bootstrap</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>in your terminal. You then create a build directory and configure EPIC</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ mkdir build
 $ cd build
-$ ../configure --prefix=$PREFIX
-$ make
+$ ../configure ..</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The most important configure options are given in <a href="#tab_configure_options">Table 1</a>. You can also append the flag <code>--help</code>
+to see all available options.</p>
+</div>
+<table id="tab_configure_options" class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Important configuration options.</caption>
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 80%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Option</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--enable-3d</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Compile EPIC 3D alongside EPIC 2D</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--enable-debug</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Compile in debug mode with backtrace, floating point operation checks etc.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--enable-diagnose</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables more diagnostics and output (only in EPIC 2D)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--enable-dry-mode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install dry model, that is no moist physics model</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--enable-openmp</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Compile with shared memory parallelism</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--enable-python</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install Python pre- and pos-processing scripts</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--enable-scalasca</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Compile EPIC with performance analysis (this extremely slows down EPIC)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--enable-unit-tests</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Compile unit tests</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--enable-verbose</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Compile in verbose mode to allow running with more output</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--prefix=$PREFIX</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install directory when performing <code>make install</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_compiling">1.4. Compiling</h3>
+<div class="paragraph">
+<p>After <a href="#sec-installation-configuring">Configuring</a> EPIC you only need to type</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ make
 $ make install</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>in your terminal.</p>
+<p>inside your build directory.</p>
 </div>
 <div class="paragraph">
 <p><strong>Note:</strong> You can add the bin directory <code>$PREFIX/bin</code> to your <code>$PATH</code> and <code>PYTHONPATH</code> environment variables with</p>
@@ -580,7 +661,7 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 <div class="sect2">
 <h3 id="_configuration_file">4.1. Configuration File</h3>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 1. EPIC input options and their default values.</caption>
+<caption class="title">Table 2. EPIC input options and their default values.</caption>
 <colgroup>
 <col style="width: 22.2222%;">
 <col style="width: 11.1111%;">
@@ -742,7 +823,7 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 <div id="footer">
 <div id="footer-text">
 Version 0.12.1<br>
-Last updated 2022-03-23 13:09:03 UTC
+Last updated 2022-03-25 14:36:38 UTC
 </div>
 </div>
 </body>
