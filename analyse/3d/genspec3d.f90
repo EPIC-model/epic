@@ -138,8 +138,8 @@ program genspec
 
         !Normalise:
         spec_per_height(iz, 0:kmax) = snorm * spec_per_height(iz, 0:kmax)
-    enddo
 
+    enddo
 
     ! Trapzeoidal rule
     spec(0:kmax) = dz * (                                       &
@@ -151,6 +151,7 @@ program genspec
     !---------------------------------------------------------------------
     !Write spectrum contained in spec(k):
     call write_spectrum
+
 
     call dealloc_arrays
 
@@ -173,7 +174,7 @@ program genspec
             allocate(pp(0:nz, 0:ny-1, 0:nx-1))
             allocate(ss(0:nx-1, 0:ny-1))
             allocate(spec(0:max(nx, ny)))
-            allocate(spec_per_height(nz, 0:max(nx, ny)))
+            allocate(spec_per_height(0:nz, 0:max(nx, ny)))
             allocate(rkx(0:nx - 1))
             allocate(hrkx(nx))
             allocate(rky(0:ny - 1))
