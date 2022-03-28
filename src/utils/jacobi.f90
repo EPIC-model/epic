@@ -26,9 +26,9 @@ module jacobi
             g = hundred * dabs(aij)
             h = D(j) - D(i)
             if (dabs(h) + g == dabs(h)) then
-                t = aij / h
+                t = aij / (h + epsilon(h))
             else
-                theta = f12 * h / aij
+                theta = f12 * h / (aij + epsilon(aij))
                 t = one / (dabs(theta) + dsqrt(one + theta ** 2))
                 if (theta < zero) then
                     t = -t
