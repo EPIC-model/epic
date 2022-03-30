@@ -27,8 +27,6 @@ module inversion_mod
             double precision                :: ds(0:nz, 0:nx-1, 0:ny-1) &
                                              , es(0:nz, 0:nx-1, 0:ny-1) &
                                              , fs(0:nz, 0:nx-1, 0:ny-1)
-            double precision                :: astop(0:nx-1, 0:ny-1), bstop(0:nx-1, 0:ny-1)
-            double precision                :: asbot(0:nx-1, 0:ny-1), bsbot(0:nx-1, 0:ny-1)
             double precision                :: ubar(0:nz), vbar(0:nz)
             double precision                :: uavg, vavg
             integer                         :: iz
@@ -63,15 +61,14 @@ module inversion_mod
 
             !-----------------------------------------------------------------
             !Invert vorticity to find vector potential (A, B, C) -> (as, bs, cs):
-            call lapinv0(as)    !FIXME NEEDS TO BE 2ND ORDER
-            call lapinv0(bs)    !FIXME NEEDS TO BE 2ND ORDER
-            call lapinv1(cs)    !FIXME NEEDS TO BE 2ND ORDER
+            call lapinv0(as)
+            call lapinv0(bs)
+            call lapinv1(cs)
 
             !------------------------------------------------------------
             !Compute x velocity component, u = B_z - C_y:
             call diffy(cs, ds)
-            call diffz0(bs, es, bsbot, bstop)           !FIXME NEEDS TO BE 2ND ORDER
-            !bsbot & bstop contain spectral y vorticity component at z_min and z_max
+            call diffz0(bs, es)
             !$omp parallel
             !$omp workshare
             fs = es - ds
@@ -90,8 +87,7 @@ module inversion_mod
             !------------------------------------------------------------
             !Compute y velocity component, v = C_x - A_z:
             call diffx(cs, ds)
-            call diffz0(as, es, asbot, astop)       !FIXME NEEDS TO BE 2ND ORDER
-            !asbot & astop contain spectral x vorticity component at z_min and z_max
+            call diffz0(as, es)
             !$omp parallel
             !$omp workshare
             fs = ds - es
