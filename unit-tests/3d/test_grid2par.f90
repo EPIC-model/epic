@@ -6,12 +6,11 @@
 program test_trilinear
     use unit_test
     use constants, only : pi, zero, one, two, three, four, five, f12, f23
-    use physics, only : ft_cor, f_cor
     use parcel_container
     use parcel_interpl, only : grid2par, grid2par_timer
     use parcel_ellipsoid, only : get_abc
     use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz
-    use fields, only : velog, vortg, velgradg, dbdx, dbdy, field_alloc
+    use fields, only : velog, vortg, velgradg, field_alloc
     use timer
     implicit none
 
@@ -80,9 +79,6 @@ program test_trilinear
     vortg(:, :, :, 1) = one
     vortg(:, :, :, 2) = two
     vortg(:, :, :, 3) = three
-
-    dbdx = one
-    dbdy = two
 
     do l = 1, 5
         velgradg(:, :, :, l) = dble(l)
