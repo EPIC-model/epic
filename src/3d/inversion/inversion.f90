@@ -15,8 +15,7 @@ module inversion_mod
 
         ! Given the vorticity vector field (vortg) in physical space, this
         ! returns the associated velocity field (velog) and the velocity
-        ! gradient tensor (velgradg).  Note: the
-        ! vorticity is modified to be solenoidal and spectrally filtered.
+        ! gradient tensor (velgradg).
         subroutine vor2vel(vortg,  velog,  velgradg)
             double precision, intent(inout) :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out)   :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
@@ -36,91 +35,22 @@ module inversion_mod
 
             call start_timer(vor2vel_timer)
 
+            ! Copy vorticity to velocity output to save memory
+            ! (we need to do this since fftxyp2s overwrites the input)
+            velog = vortg
+
             !------------------------------------------------------------------
             !Convert vorticity to spectral space as (as, bs, cs):
-            call fftxyp2s(vortg(0:nz, :, :, 1), as)
-            call fftxyp2s(vortg(0:nz, :, :, 2), bs)
-            call fftxyp2s(vortg(0:nz, :, :, 3), cs)
-
-            !Add -grad(lambda) where Laplace(lambda) = div(vortg) to
-            !enforce the solenoidal condition on the vorticity field:
-            call diffx(as, ds)
-            call diffy(bs, es)
-
-            !For the vertical parcel vorticity, use 4th-order compact
-            !differencing:
-            call diffz1(cs, fs)
-
-            !Form div(vortg):
-            !$omp parallel
-            !$omp workshare
-            fs = ds + es + fs
-            !$omp end workshare
-            !$omp end parallel
-
-            !Remove horizontally-averaged part (plays no role):
-            fs(:, 0, 0) = zero
-
-            !Invert Lap(lambda) = div(vortg) assuming dlambda/dz = 0 at the
-            !boundaries (store solution lambda in fs):
-            call lapinv1(fs)
-
-            !Filter lambda:
-            !$omp parallel shared(fs, filt, nz) private(iz)  default(none)
-            !$omp do
-            do iz = 0, nz
-                fs(iz, :, :) = filt * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            !Subtract grad(lambda) to enforce div(vortg) = 0:
-            call diffx(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            as = as - ds
-            !$omp end workshare
-            !$omp end parallel
-
-            call diffy(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            bs = bs - ds
-            !$omp end workshare
-            !$omp end parallel
-
-            call diffz1(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            cs = cs - ds
-            !$omp end workshare
-            !$omp end parallel
-            !Ensure horizontal average of vertical vorticity is zero:
-            cs(:, 0, 0) = zero
-
-            !Compute spectrally filtered vorticity in physical space:
-            !$omp parallel shared(ds, es, fs, as, bs, cs, filt, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                ds(iz, :, :) = filt * as(iz, :, :)
-                es(iz, :, :) = filt * bs(iz, :, :)
-                fs(iz, :, :) = filt * cs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            !Save boundary values of x and y vorticity for z derivatives of A & B:
-            asbot = as(0, :, :)
-            bsbot = bs(0, :, :)
-            astop = as(nz, :, :)
-            bstop = bs(nz, :, :)
+            call fftxyp2s(velog(0:nz, :, :, 1), as)
+            call fftxyp2s(velog(0:nz, :, :, 2), bs)
+            call fftxyp2s(velog(0:nz, :, :, 3), cs)
 
             !Define horizontally-averaged flow by integrating horizontal vorticity:
             ubar(0) = zero
             vbar(0) = zero
             do iz = 0, nz-1
-                ubar(iz+1) = ubar(iz) + dz2 * (es(iz, 0, 0) + es(iz+1, 0, 0))
-                vbar(iz+1) = vbar(iz) - dz2 * (ds(iz, 0, 0) + ds(iz+1, 0, 0))
+                ubar(iz+1) = ubar(iz) + dz2 * (bs(iz, 0, 0) + bs(iz+1, 0, 0))
+                vbar(iz+1) = vbar(iz) - dz2 * (as(iz, 0, 0) + as(iz+1, 0, 0))
             enddo
 
             ! remove the mean value to have zero net momentum
@@ -131,21 +61,16 @@ module inversion_mod
                 vbar(iz) = vbar(iz) - vavg
             enddo
 
-            !Return corrected vorticity to physical space:
-            call fftxys2p(ds, vortg(0:nz, :, :, 1))
-            call fftxys2p(es, vortg(0:nz, :, :, 2))
-            call fftxys2p(fs, vortg(0:nz, :, :, 3))
-
             !-----------------------------------------------------------------
             !Invert vorticity to find vector potential (A, B, C) -> (as, bs, cs):
-            call lapinv0(as)
-            call lapinv0(bs)
-            call lapinv1(cs)
+            call lapinv0(as)    !FIXME NEEDS TO BE 2ND ORDER
+            call lapinv0(bs)    !FIXME NEEDS TO BE 2ND ORDER
+            call lapinv1(cs)    !FIXME NEEDS TO BE 2ND ORDER
 
             !------------------------------------------------------------
             !Compute x velocity component, u = B_z - C_y:
             call diffy(cs, ds)
-            call diffz0(bs, es, bsbot, bstop)
+            call diffz0(bs, es, bsbot, bstop)           !FIXME NEEDS TO BE 2ND ORDER
             !bsbot & bstop contain spectral y vorticity component at z_min and z_max
             !$omp parallel
             !$omp workshare
@@ -154,10 +79,10 @@ module inversion_mod
             !$omp end parallel
             !Add horizontally-averaged flow:
             fs(:, 0, 0) = ubar
-            !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
+            !$omp parallel shared(svelog, fs, nz) private(iz) default(none)
             !$omp do
             do iz = 0, nz
-                svelog(iz, :, :, 1) = filt * fs(iz, :, :)
+                svelog(iz, :, :, 1) = fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
@@ -165,7 +90,7 @@ module inversion_mod
             !------------------------------------------------------------
             !Compute y velocity component, v = C_x - A_z:
             call diffx(cs, ds)
-            call diffz0(as, es, asbot, astop)
+            call diffz0(as, es, asbot, astop)       !FIXME NEEDS TO BE 2ND ORDER
             !asbot & astop contain spectral x vorticity component at z_min and z_max
             !$omp parallel
             !$omp workshare
@@ -174,10 +99,10 @@ module inversion_mod
             !$omp end parallel
             !Add horizontally-averaged flow:
             fs(:, 0, 0) = vbar
-            !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
+            !$omp parallel shared(svelog, fs, nz) private(iz) default(none)
             !$omp do
             do iz = 0, nz
-                svelog(iz, :, :, 2) = filt * fs(iz, :, :)
+                svelog(iz, :, :, 2) = fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
@@ -192,10 +117,10 @@ module inversion_mod
             !$omp end workshare
             !$omp end parallel
 
-            !$omp parallel shared(svelog, fs, filt, nz) private(iz) default(none)
+            !$omp parallel shared(svelog, fs, nz) private(iz) default(none)
             !$omp do
             do iz = 0, nz
-                svelog(iz, :, :, 3) = filt * fs(iz, :, :)
+                svelog(iz, :, :, 3) = fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
