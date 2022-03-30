@@ -146,9 +146,9 @@ module inversion_utils
 
             !-----------------------------------------------------------------------
             ! Fixed coefficients used in the tridiagonal problems:
-            a0 = -two * dzisq - f56 * ksq
+            a0 = -two * dzisq - ksq
             a0b = -dzisq - f13 * ksq
-            ap = dzisq - f112 * ksq
+            ap = dzisq
             apb = dzisq - f16 * ksq
 
             !-----------------------------------------------------------------------
@@ -400,27 +400,18 @@ module inversion_utils
         !*** Overwrites fs ***
         subroutine lapinv0(fs)
             double precision, intent(inout) :: fs(0:nz, nx, ny)
-            double precision                :: rs(nz-1, nx, ny)
             integer                         :: iz, isub, ib_sub, ie_sub
 
-            !$omp parallel shared(rs, fs, nz) private(iz) default(none)
-            !$omp do
-            do iz = 1, nz-1
-                rs(iz, :, :) = f112 * (fs(iz-1, :, :) + fs(iz+1, :, :)) + f56 * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
             fs(0, :, :) = zero
-            fs(1, :, :) = rs(1, :, :) * htdh(1, :, :)
+            fs(1, :, :) = fs(1, :, :) * htdh(1, :, :)
 
-            !$omp parallel shared(rs, fs, ap, htdh, nz, nxsub) private(isub, ib_sub, ie_sub, iz) default(none)
+            !$omp parallel shared(fs, ap, htdh, nz, nxsub) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
             do isub = 0, nsubs_tri-1
                 ib_sub = isub * nxsub + 1
                 ie_sub = (isub + 1) * nxsub
                 do iz = 2, nz-1
-                    fs(iz, ib_sub:ie_sub, :) = (rs(iz, ib_sub:ie_sub, :) &
+                    fs(iz, ib_sub:ie_sub, :) = (fs(iz, ib_sub:ie_sub, :) &
                                              - ap(ib_sub:ie_sub, :) * fs(iz-1, ib_sub:ie_sub, :)) &
                                              * htdh(iz, ib_sub:ie_sub, :)
                 enddo
