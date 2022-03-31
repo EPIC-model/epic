@@ -359,19 +359,33 @@ module inversion_utils
         subroutine vertint(ds, fs)
             double precision, intent(in)  :: ds(0:nz)
             double precision, intent(out) :: fs(0:nz)
+            double precision              :: c
             integer                       :: iz
 
-            ! set boundary values
+            ! set lower boundary value
             fs(0)  = zero
-            fs(nz) = zero
 
             !$omp parallel private(iz)
             !$omp do
-            do iz = 1, nz-1
-                fs(iz) = - dz * sum(ds(iz:nz-1))
+            do iz = 1, nz
+                fs(iz) = fs(iz-1) + dz2 * (ds(i) - ds(i-1))
             enddo
             !$omp end do
             !$omp end parallel
+
+            ! shift to adjust f(nz) to be zero
+            c = f(nz) / dble(nz)
+
+            !$omp parallel private(iz)
+            !$omp do
+            do iz = 1, nz
+                fs(iz) = fs(iz) - c * dble(iz)
+            enddo
+            !$omp end do
+            !$omp end parallel
+
+            ! set upper boundary value
+            fs(nz)  = zero
 
         end subroutine
 
