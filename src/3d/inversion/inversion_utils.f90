@@ -16,13 +16,6 @@ module inversion_utils
     ! Tridiagonal arrays for the vertical vorticity component:
     double precision, allocatable :: etdv(:, :, :), htdv(:, :, :)
 
-    ! Tridiagonal arrays for the compact difference calculation of d/dz:
-    double precision, allocatable :: etd0(:), htd0(:)
-    double precision, allocatable :: etd1(:), htd1(:)
-
-    ! Tridiagonal arrays for integrating in z:
-    double precision, allocatable :: etda(:), htda(:)
-
     !Horizontal wavenumbers:
     double precision, allocatable :: rkx(:), hrkx(:), rky(:), hrky(:)
 
@@ -43,8 +36,7 @@ module inversion_utils
     public :: init_fft  &
             , diffx     &
             , diffy     &
-            , diffz0    &
-            , diffz1    &
+            , diffz     &
             , lapinv0   &
             , lapinv1   &
             , vertint   &
@@ -94,12 +86,6 @@ module inversion_utils
             allocate(htdh(nz-1, nx, ny))
             allocate(etdv(0:nz, nx, ny))
             allocate(htdv(0:nz, nx, ny))
-            allocate(etd0(0:nz))
-            allocate(htd0(0:nz))
-            allocate(etd1(nz-1))
-            allocate(htd1(nz-1))
-            allocate(etda(nz))
-            allocate(htda(nz))
             allocate(rkx(nx))
             allocate(hrkx(nx))
             allocate(rky(ny))
@@ -193,35 +179,6 @@ module inversion_utils
             htdv(:, 1, 1) = zero
             etdv(:, 1, 1) = zero
 
-            ! Tridiagonal arrays for the compact difference calculation of d/dz
-            ! for fields f for which f  =  0 at the boundaries:
-            htd0(0) = one / f23
-            etd0(0) = -f13 * htd0(0)
-            do iz = 1, nz-1
-                htd0(iz) = one / (f23 + f16 * etd0(iz-1))
-                etd0(iz) = -f16 * htd0(iz)
-            enddo
-            htd0(nz) = one / (f23 + f13 * etd0(nz-1))
-
-            ! Tridiagonal arrays for the compact difference calculation of d /dz
-            ! for fields f for which df/dz = 0 at the boundaries:
-            htd1(1) = one / f23
-            etd1(1) = -f16 * htd1(1)
-            do iz = 2, nz-2
-                htd1(iz) = one / (f23 + f16 * etd1(iz-1))
-                etd1(iz) = -f16 * htd1(iz)
-            enddo
-            htd1(nz-1) = one / (f23 + f16 * etd1(nz-2))
-
-            ! Tridiagonal arrays used for integrating in z (see vertint):
-            htda(1) = one / (one + f16)
-            etda(1) = -f16 * htda(1)
-            do iz = 2, nz-1
-                htda(iz) = one / (one + f16 * etda(iz-1))
-                etda(iz) = -f16 * htda(iz)
-            enddo
-            htda(nz) = one / (one + f16 + f16 * etda(nz-2))
-
             deallocate(a0)
             deallocate(ksq)
         end subroutine
@@ -281,20 +238,18 @@ module inversion_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !Calculates df/dz for a field f which has f = 0 at the boundaries
-        !using 2nd-order differencing.  Here fs = f, ds = df/dz,
-        !lapfsbot = Laplace(f) at z_min and lapfstop = Laplace(f) at z_max,
-        !both given.  *** All quantities must be in semi-spectral space ***
-        subroutine diffz0(fs, ds)
+        !Calculates df/dz for a field f using 2nd-order differencing.
+        !Here fs = f, ds = df/dz.
+        subroutine diffz(fs, ds)
             double precision, intent(in)  :: fs(0:nz, nx, ny)
             double precision, intent(out) :: ds(0:nz, nx, ny)
             integer                       :: iz
 
             ! forward and backward differencing for boundary cells
-            ! iz = 0:  (fs(1) - fs(0)) / dz with fs(0) = 0
-            ! iz = nz: (fs(nz) - fs(nz-1)) / dz with fs(nz) = 0
-            ds(0,  :, :) =   dzi * fs(1,    :, :)
-            ds(nz, :, :) = - dzi * fs(nz-1, :, :)
+            ! iz = 0:  (fs(1) - fs(0)) / dz
+            ! iz = nz: (fs(nz) - fs(nz-1)) / dz
+            ds(0,  :, :) =   dzi * (fs(1,    :, :) - fs(0,    :, :))
+            ds(nz, :, :) = - dzi * (fs(nz,   :, :) - fs(nz-1, :, :))
 
             ! central differencing for interior cells
             !$omp parallel shared(ds, fs, hdzi, nz) private(iz) default(none)
@@ -305,55 +260,6 @@ module inversion_utils
             !$omp end do
             !$omp end parallel
 
-        end subroutine
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        !Calculates df/dz for a field f which has df/dz = 0 at the boundaries
-        !using 4th-order compact differencing.  Here fs = f and ds = df/dz.
-        subroutine diffz1(fs, ds)
-            double precision, intent(in)  :: fs(0:nz, nx, ny)
-            double precision, intent(out) :: ds(0:nz, nx, ny)
-            integer                       :: iz, isub, ib_sub, ie_sub
-
-            !$omp parallel shared(ds, fs, nz, hdzi) private(iz) default(none)
-            !$omp do
-            do iz = 1, nz-1
-                ds(iz, :, :) = (fs(iz+1, :, :) - fs(iz-1, :, :)) * hdzi
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            ds(0, :, :) = zero
-            ds(1, :, :) = ds(1, :, :) * htd1(1)
-
-            !$omp parallel shared(ds, htd1, nz, nxsub) private(isub, ib_sub, ie_sub, iz) default(none)
-            !$omp do
-            do isub = 0, nsubs_tri-1
-                ib_sub = isub * nxsub + 1
-                ie_sub = (isub + 1) * nxsub
-                do iz = 2, nz-1
-                    ds(iz, ib_sub:ie_sub, :) = (ds(iz, ib_sub:ie_sub, :) &
-                                             - f16 * ds(iz-1, ib_sub:ie_sub, :)) * htd1(iz)
-                enddo
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            ds(nz, :, :) = zero
-
-            !$omp parallel shared(ds, etd1, nz, nxsub) private(isub, ib_sub, ie_sub, iz) default(none)
-            !$omp do
-            do isub = 0, nsubs_tri-1
-                ib_sub = isub * nxsub + 1
-                ie_sub = (isub + 1) * nxsub
-                do iz = nz-2, 1, -1
-                    ds(iz, ib_sub:ie_sub, :) = etd1(iz) * ds(iz+1, ib_sub:ie_sub, :) &
-                                             + ds(iz, ib_sub:ie_sub, :)
-                enddo
-            end do
-            !$omp end do
-            !$omp end parallel
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -449,40 +355,24 @@ module inversion_utils
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         !Finds f by integrating df/dz = d, ensuring f = 0 at the boundaries
-        !using 4th-order compact differencing.  Here ds = df/dz and fs = f.
+        !using finite differencing.  Here ds = df/dz and fs = f.
         subroutine vertint(ds, fs)
             double precision, intent(in)  :: ds(0:nz)
             double precision, intent(out) :: fs(0:nz)
-            double precision              :: es(nz), esum
             integer                       :: iz
 
-            !-------------------------------------------
-            !First interpolate ds to a half grid as es:
-            do iz = 1, nz
-                es(iz) = f23 * (ds(iz-1) + ds(iz))
-            enddo
-
-            es(1) = es(1) * htda(1)
-            do iz = 2, nz
-                es(iz) = (es(iz) - f16 * es(iz-1)) * htda(iz)
-            enddo
-
-            do iz = nz-1, 1, -1
-                es(iz) = etda(iz) * es(iz+1) + es(iz)
-            enddo
-
-            !-------------------------------------------
-            !Next adjust es to ensure f(nz) = 0:
-            esum = (f1112 * (es(1) + es(nz)) + sum(es(2:nz-1))) / (dble(nz) - f16)
-            es = es - esum
-
-            !Integrate:
-            fs(0) = zero
-            fs(1) = dz24 * (23.0d0 * es(1) + es(2))
-            do iz = 2, nz-1
-                fs(iz) = fs(iz-1) + dz24 * (es(iz-1) + 22.d0 * es(iz) + es(iz+1))
-            enddo
+            ! set boundary values
+            fs(0)  = zero
             fs(nz) = zero
+
+            !$omp parallel private(iz)
+            !$omp do
+            do iz = 1, nz-1
+                fs(iz) = - dz * sum(ds(iz:nz-1))
+            enddo
+            !$omp end do
+            !$omp end parallel
+
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

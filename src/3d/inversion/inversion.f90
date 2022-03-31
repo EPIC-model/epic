@@ -67,7 +67,7 @@ module inversion_mod
             !------------------------------------------------------------
             !Compute x velocity component, u = B_z - C_y:
             call diffy(cs, ds)
-            call diffz0(bs, es)
+            call diffz(bs, es)
             !$omp parallel
             !$omp workshare
             svelog(:, :, :, 1) = es - ds
@@ -80,7 +80,7 @@ module inversion_mod
             !------------------------------------------------------------
             !Compute y velocity component, v = C_x - A_z:
             call diffx(cs, ds)
-            call diffz0(as, es)
+            call diffz(as, es)
             !$omp parallel
             !$omp workshare
             svelog(:, :, :, 2) = ds - es
@@ -250,7 +250,7 @@ module inversion_mod
             ! Compute the x & y-independent part of ds by integration:
             call vertint(ds(:, 1, 1), wbar)
 
-            ! Invert Laplace's operator semi-spectrally with compact differences:
+            ! Invert Laplace's operator semi-spectrally:
             call lapinv1(ds)
 
             ! Compute x derivative spectrally:
@@ -265,8 +265,8 @@ module inversion_mod
             ! Reverse FFT to define y velocity component vd:
             call fftxys2p(vs, vd)
 
-            ! Compute z derivative by compact differences:
-            call diffz1(ds, ws)
+            ! Compute z derivative by central differences:
+            call diffz(ds, ws)
 
             ! Add on the x and y-independent part of wd:
             ws(:, 1, 1) = ws(:, 1, 1) + wbar
