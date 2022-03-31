@@ -25,8 +25,7 @@ module inversion_mod
                                              , bs(0:nz, 0:nx-1, 0:ny-1) &
                                              , cs(0:nz, 0:nx-1, 0:ny-1)
             double precision                :: ds(0:nz, 0:nx-1, 0:ny-1) &
-                                             , es(0:nz, 0:nx-1, 0:ny-1) &
-                                             , fs(0:nz, 0:nx-1, 0:ny-1)
+                                             , es(0:nz, 0:nx-1, 0:ny-1)
             double precision                :: ubar(0:nz), vbar(0:nz)
             double precision                :: uavg, vavg
             integer                         :: iz
@@ -71,18 +70,12 @@ module inversion_mod
             call diffz0(bs, es)
             !$omp parallel
             !$omp workshare
-            fs = es - ds
+            svelog(:, :, :, 1) = es - ds
             !$omp end workshare
             !$omp end parallel
+
             !Add horizontally-averaged flow:
-            fs(:, 0, 0) = ubar
-            !$omp parallel shared(svelog, fs, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                svelog(iz, :, :, 1) = fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
+            svelog(:, 0, 0, 1) = ubar
 
             !------------------------------------------------------------
             !Compute y velocity component, v = C_x - A_z:
@@ -90,18 +83,12 @@ module inversion_mod
             call diffz0(as, es)
             !$omp parallel
             !$omp workshare
-            fs = ds - es
+            svelog(:, :, :, 2) = ds - es
             !$omp end workshare
             !$omp end parallel
+
             !Add horizontally-averaged flow:
-            fs(:, 0, 0) = vbar
-            !$omp parallel shared(svelog, fs, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                svelog(iz, :, :, 2) = fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
+            svelog(:, 0, 0, 2) = vbar
 
             !------------------------------------------------------------
             !Compute z velocity component, w = A_y - B_x:
@@ -109,16 +96,8 @@ module inversion_mod
             call diffy(as, es)
             !$omp parallel
             !$omp workshare
-            fs = es - ds
+            svelog(:, :, :, 3) = es - ds
             !$omp end workshare
-            !$omp end parallel
-
-            !$omp parallel shared(svelog, fs, nz) private(iz) default(none)
-            !$omp do
-            do iz = 0, nz
-                svelog(iz, :, :, 3) = fs(iz, :, :)
-            enddo
-            !$omp end do
             !$omp end parallel
 
             ! compute the velocity gradient tensor
