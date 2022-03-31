@@ -248,8 +248,8 @@ module inversion_utils
             ! forward and backward differencing for boundary cells
             ! iz = 0:  (fs(1) - fs(0)) / dz
             ! iz = nz: (fs(nz) - fs(nz-1)) / dz
-            ds(0,  :, :) =   dzi * (fs(1,    :, :) - fs(0,    :, :))
-            ds(nz, :, :) = - dzi * (fs(nz,   :, :) - fs(nz-1, :, :))
+            ds(0,  :, :) = dzi * (fs(1,    :, :) - fs(0,    :, :))
+            ds(nz, :, :) = dzi * (fs(nz,   :, :) - fs(nz-1, :, :))
 
             ! central differencing for interior cells
             !$omp parallel shared(ds, fs, hdzi, nz) private(iz) default(none)
@@ -355,7 +355,7 @@ module inversion_utils
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         !Finds f by integrating df/dz = d, ensuring f = 0 at the boundaries
-        !using finite differencing.  Here ds = df/dz and fs = f.
+        !using trapezoidal rule.  Here ds = df/dz and fs = f.
         subroutine vertint(ds, fs)
             double precision, intent(in)  :: ds(0:nz)
             double precision, intent(out) :: fs(0:nz)
@@ -368,7 +368,7 @@ module inversion_utils
             !$omp parallel private(iz)
             !$omp do
             do iz = 1, nz
-                fs(iz) = fs(iz-1) + dz2 * (ds(i) - ds(i-1))
+                fs(iz) = fs(iz-1) + dz2 * (ds(i) + ds(i-1))
             enddo
             !$omp end do
             !$omp end parallel
@@ -378,7 +378,7 @@ module inversion_utils
 
             !$omp parallel private(iz)
             !$omp do
-            do iz = 1, nz
+            do iz = 1, nz-1
                 fs(iz) = fs(iz) - c * dble(iz)
             enddo
             !$omp end do
