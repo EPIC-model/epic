@@ -268,6 +268,10 @@ module inversion_mod
             ! Compute z derivative by central differences:
             call diffz(ds, ws)
 
+            ! Set vertical boundary values to zero
+            ws(0,  :, :) = zero
+            ws(nz, :, :) = zero
+
             ! Add on the x and y-independent part of wd:
             ws(:, 1, 1) = ws(:, 1, 1) + wbar
 
