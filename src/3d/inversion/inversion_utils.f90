@@ -368,13 +368,13 @@ module inversion_utils
             !$omp parallel private(iz)
             !$omp do
             do iz = 1, nz
-                fs(iz) = fs(iz-1) + dz2 * (ds(i) + ds(i-1))
+                fs(iz) = fs(iz-1) + dz2 * (ds(iz) + ds(iz-1))
             enddo
             !$omp end do
             !$omp end parallel
 
             ! shift to adjust f(nz) to be zero
-            c = f(nz) / dble(nz)
+            c = fs(nz) / dble(nz)
 
             !$omp parallel private(iz)
             !$omp do
