@@ -365,13 +365,9 @@ module inversion_utils
             ! set lower boundary value
             fs(0)  = zero
 
-            !$omp parallel private(iz)
-            !$omp do
             do iz = 1, nz
                 fs(iz) = fs(iz-1) + dz2 * (ds(iz) + ds(iz-1))
             enddo
-            !$omp end do
-            !$omp end parallel
 
             ! shift to adjust f(nz) to be zero
             c = fs(nz) / dble(nz)
