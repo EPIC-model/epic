@@ -64,7 +64,7 @@ program test_lapinv0_1
 
     error = maxval(dabs(fp - ref_sol))
 
-    call print_result_dp('Test inversion (lapinv0)', error, atol=4.0e-12)
+    call print_result_dp('Test inversion (lapinv0)', error, atol=2.0e-7)
 
     deallocate(fs)
     deallocate(fp)

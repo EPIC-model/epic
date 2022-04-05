@@ -90,7 +90,7 @@ program test_lapinv0_2
     endif
 
 
-    call print_result_dp('Test inversion (lapinv0)', emax, atol=2.0e-11)
+    call print_result_dp('Test inversion (lapinv0)', emax, atol=7.0e-7)
 
     deallocate(vorx)
     deallocate(potx)
