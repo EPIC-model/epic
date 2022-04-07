@@ -2,7 +2,7 @@
 !                               Parcel diagnostics
 ! =============================================================================
 module parcel_diagnostics
-    use constants, only : zero, one, f12, pi
+    use constants, only : zero, one, f12
     use merge_sort
     use parameters, only : extent, lower, vcell, vmin, nx, nz
     use parcel_container, only : parcels, n_parcels
