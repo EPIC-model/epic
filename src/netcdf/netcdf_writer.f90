@@ -2,9 +2,12 @@ module netcdf_writer
     use netcdf_utils
     implicit none
 
-    private :: write_netcdf_dataset_1d,             &
-               write_netcdf_dataset_2d,             &
-               write_netcdf_dataset_3d,             &
+    private :: write_netcdf_dataset_1d_double,      &
+               write_netcdf_dataset_2d_double,      &
+               write_netcdf_dataset_3d_double,      &
+               write_netcdf_dataset_1d_integer,     &
+               write_netcdf_dataset_2d_integer,     &
+               write_netcdf_dataset_3d_integer,     &
                write_netcdf_scalar_integer,         &
                write_netcdf_scalar_double,          &
                write_netcdf_attribute_integer,      &
@@ -18,9 +21,12 @@ module netcdf_writer
     end interface write_netcdf_scalar
 
     interface write_netcdf_dataset
-        module procedure write_netcdf_dataset_1d
-        module procedure write_netcdf_dataset_2d
-        module procedure write_netcdf_dataset_3d
+        module procedure write_netcdf_dataset_1d_double
+        module procedure write_netcdf_dataset_2d_double
+        module procedure write_netcdf_dataset_3d_double
+        module procedure write_netcdf_dataset_1d_integer
+        module procedure write_netcdf_dataset_2d_integer
+        module procedure write_netcdf_dataset_3d_integer
     end interface write_netcdf_dataset
 
     interface write_netcdf_attribute
@@ -152,7 +158,7 @@ module netcdf_writer
 
         end subroutine write_netcdf_scalar_double
 
-        subroutine write_netcdf_dataset_1d(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_1d_double(ncid, varid, data, start, cnt)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data(:)
@@ -165,9 +171,9 @@ module netcdf_writer
 
             call check_netcdf_error("Failed to write dataset.")
 
-        end subroutine write_netcdf_dataset_1d
+        end subroutine write_netcdf_dataset_1d_double
 
-        subroutine write_netcdf_dataset_2d(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_2d_double(ncid, varid, data, start, cnt)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data(:, :)
@@ -183,9 +189,9 @@ module netcdf_writer
 
             call check_netcdf_error("Failed to write dataset.")
 
-        end subroutine write_netcdf_dataset_2d
+        end subroutine write_netcdf_dataset_2d_double
 
-        subroutine write_netcdf_dataset_3d(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_3d_double(ncid, varid, data, start, cnt)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data(:, :, :)
@@ -203,7 +209,60 @@ module netcdf_writer
 
             call check_netcdf_error("Failed to write dataset.")
 
-        end subroutine write_netcdf_dataset_3d
+        end subroutine write_netcdf_dataset_3d_double
+
+        subroutine write_netcdf_dataset_1d_integer(ncid, varid, data, start, cnt)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            integer,           intent(in) :: data(:)
+            integer, optional, intent(in) :: start(:)
+            integer, optional, intent(in) :: cnt(:)
+
+            ! write data
+            ncerr = nf90_put_var(ncid, varid, data, &
+                                 start=start, count = cnt)
+
+            call check_netcdf_error("Failed to write dataset.")
+
+        end subroutine write_netcdf_dataset_1d_integer
+
+        subroutine write_netcdf_dataset_2d_integer(ncid, varid, data, start, cnt)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            integer,           intent(in) :: data(:, :)
+            integer, optional, intent(in) :: start(:)
+            integer, optional, intent(in) :: cnt(:)
+
+            ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/)
+            ! with map = shape(data)
+
+            ! write data
+            ncerr = nf90_put_var(ncid, varid, transpose(data),  &
+                                 start=start, count = cnt)
+
+            call check_netcdf_error("Failed to write dataset.")
+
+        end subroutine write_netcdf_dataset_2d_integer
+
+        subroutine write_netcdf_dataset_3d_integer(ncid, varid, data, start, cnt)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            integer,           intent(in) :: data(:, :, :)
+            integer, optional, intent(in) :: start(:)
+            integer, optional, intent(in) :: cnt(:)
+            integer                       :: map(3)
+
+            map = shape(data)
+
+            ! write data
+            ncerr = nf90_put_var(ncid, varid,                                    &
+                                 reshape(data, shape=(/map(3), map(2), map(1)/), &
+                                         order=(/3, 2, 1/)),                     &
+                                 start=start, count = cnt)
+
+            call check_netcdf_error("Failed to write dataset.")
+
+        end subroutine write_netcdf_dataset_3d_integer
 
         subroutine write_netcdf_timestamp(ncid)
             integer,          intent(in) :: ncid
