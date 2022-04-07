@@ -1,0 +1,111 @@
+== Installation
+Note that any occurrences of `$PREFIX` in the following subsections denote the installation directory of EPIC.
+
+=== Cloning the Repository
+Users can obtain the source code by
+
+[source, bash]
+----
+git clone https://github.com/matt-frey/epic.git
+----
+
+It is however recommended to use the latest link:https://github.com/matt-frey/epic/releases[release] for production runs. EPIC contributors can also clone the repository using the SSH version
+[source, bash]
+----
+git clone git@github.com:matt-frey/epic.git
+----
+
+
+=== Prerequisites
+EPIC is implemented in Fortran; hence, a Fortran compiler is required. We recommend to use link:https://gcc.gnu.org/wiki/GFortran[GNU Fortran compiler]. It further depends on link:https://www.hdfgroup.org/solutions/hdf5/[HDF5] and
+link:https://www.unidata.ucar.edu/software/netcdf/[NetCDF]. Scripts to install HDF5 and NetCDF are found in the
+source code subdirectory `dependencies`. No guarantee can be given for a successful installation with these scripts.
+Optionally, users can install Python in order to use the provided pre- and post-processing scripts. It is generally
+recommended to create a separate Python virtual environment using link:https://conda.io/projects/conda/en/latest/user-guide/install/index.html[conda]. After installing conda, all necessary Python packages for EPIC can be installed
+via
+[source, bash]
+----
+$ conda config --add channels conda-forge
+$ conda create --name <env> python=3.9.10 --file requirements.txt
+----
+where `<env>` is the name of the environment. The file `requirements.txt` is contained in the root directory of EPIC.
+
+**Note:** In order to install the Python scripts you need to configure EPIC with `--enable-python`.
+
+[#sec-installation-configuring, reftext=Configuring]
+=== Configuring
+Assuming you are in the root directory of EPIC, you must first create the configure script and all Makefiles by
+calling
+[source, bash]
+----
+$ ./bootstrap
+----
+in your terminal. You then create a build directory and configure EPIC
+[source, bash]
+----
+$ mkdir build
+$ cd build
+$ ../configure ..
+----
+The most important configure options are given in <<tab_configure_options>>. You can also append the flag `--help`
+to see all available options.
+
+.Important configuration options.
+[#tab_configure_options, reftext=Table {counter:tab-cnt}]
+[cols="1,4"]
+|===
+|Option                 |Description
+
+|`--enable-3d`          |Compile EPIC 3D alongside EPIC 2D
+|`--enable-debug`       |Compile in debug mode with backtrace, floating point operation checks etc.
+|`--enable-diagnose`    |Enables more diagnostics and output (only in EPIC 2D)
+|`--enable-dry-mode`    |Install dry model, that is no moist physics model
+|`--enable-openmp`      |Compile with shared memory parallelism
+|`--enable-python`      |Install Python pre- and pos-processing scripts
+|`--enable-scalasca`    |Compile EPIC with performance analysis (this extremely slows down EPIC)
+|`--enable-unit-tests`  |Compile unit tests
+|`--enable-verbose`     |Compile in verbose mode to allow running with more output
+|`--prefix=$PREFIX`     |Install directory when performing `make install`
+|===
+
+=== Compiling
+After <<sec-installation-configuring>> EPIC you only need to type
+[source, bash]
+----
+$ make
+$ make install
+----
+inside your build directory.
+
+**Note:** You can add the bin directory `$PREFIX/bin` to your `$PATH` and `PYTHONPATH` environment variables with
+[source, bash]
+----
+export PATH=$PREFIX/bin:$PATH
+export PYTHONPATH=$PREFIX/bin:$PYTHONPATH
+----
+
+
+// ## Performance analysis
+// When configuring EPIC with `--enable-scalasca`, it is built with the performance tool [Scalasca](https://www.scalasca.org/) and [Score-P](https://www.vi-hps.org/projects/score-p/). Scripts to install Scalasca and Score-P are found in the directory `dependencies`.
+
+// ## Dependencies
+// EPIC has following requirements:
+// * gfortran
+// * hdf5
+// * NetCDF
+//
+// The scripts to install hdf5 and NetCDF are found in the subdirectory `dependencies`. If you do not install hdf5
+// and NetCDF to the system location, configure EPIC with
+// ```
+// $ ../configure --prefix=$PREFIX --with-hdf5=$HDF5 --width-netcdf=$NETCDF
+// ```
+// where `$HDF5` and `$NETCDF` are the root directories of your hdf5 and NetCDF installation, respectively.
+
+
+// ## Running
+// In order to run the model, execute
+// ```
+// $ epic2d --config filename
+// ```
+// where `filename` is the configuration file. An example of a configuration file is given
+// [here](examples/taylor_green.config).

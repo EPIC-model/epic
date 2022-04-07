@@ -73,7 +73,26 @@ module parcel_ellipsoid
 
             call jacobi_eigenvalues(U, D)
 
+#ifndef NDEBUG
+            ! check if any eigenvalue is less or equal zero
+            if (minval(D) <= zero) then
+                print *, "Invalid parcel shape."
+                stop
+            endif
+#endif
         end function get_eigenvalues
+
+        function get_determinant(B, volume) result(detB)
+            double precision, intent(in) :: B(5)
+            double precision, intent(in) :: volume
+            double precision             :: detB, B33
+
+            B33 = get_B33(B, volume)
+
+            detB = B(1) * (B(4) * B33 - B(5) ** 2)    &
+                 - B(2) * (B(2) * B33 - B(3) * B(5))  &
+                 + B(3) * (B(2) * B(5) - B(3) * B(4))
+        end function get_determinant
 
         ! Obtain the normalized eigenvectors.
         ! The eigenvector V(:, j) belongs to the j-th
@@ -90,6 +109,13 @@ module parcel_ellipsoid
 
             call jacobi_diagonalise(U, D, V)
 
+#ifndef NDEBUG
+            ! check if any eigenvalue is less or equal zero
+            if (minval(D) <= zero) then
+                print *, "Invalid parcel shape."
+                stop
+            endif
+#endif
         end function get_eigenvectors
 
         ! Compute the eigenvalue decomposition B = V^T * D * V
@@ -111,6 +137,13 @@ module parcel_ellipsoid
 
             call jacobi_diagonalise(U, D, V)
 
+#ifndef NDEBUG
+            ! check if any eigenvalue is less or equal zero
+            if (minval(D) <= zero) then
+                print *, "Invalid parcel shape."
+                stop
+            endif
+#endif
         end subroutine diagonalise
 
         ! Obtain the B33 matrix element

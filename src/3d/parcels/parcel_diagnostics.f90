@@ -28,6 +28,8 @@ module parcel_diagnostics
     double precision :: avg_lam, avg_vol
     double precision :: std_lam, std_vol
 
+    double precision :: sum_vol
+
     ! rms vorticity
     double precision :: rms_zeta(3)
 
@@ -66,7 +68,7 @@ module parcel_diagnostics
             double precision :: velocity(:, :)
             integer          :: n
             double precision :: b, z, vel(3), vol, zmin
-            double precision :: evals(3), lam, lsum, l2sum, vsum, v2sum
+            double precision :: evals(3), lam, lsum, l2sum, v2sum
 
             call start_timer(parcel_stats_timer)
 
@@ -76,7 +78,6 @@ module parcel_diagnostics
 
             lsum = zero
             l2sum = zero
-            vsum = zero
             v2sum = zero
 
             rms_zeta = zero
@@ -89,10 +90,12 @@ module parcel_diagnostics
             avg_vol = zero
             std_lam = zero
             std_vol = zero
+            sum_vol = zero
+
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
+            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
@@ -112,13 +115,21 @@ module parcel_diagnostics
                 lsum = lsum + lam
                 l2sum = l2sum + lam ** 2
 
-                vsum = vsum + vol
+                sum_vol = sum_vol + vol
                 v2sum = v2sum + vol ** 2
 
                 if (vol <= vmin) then
                     n_small = n_small + 1
                 endif
 
+#ifndef NDEBUG
+                !$omp critical
+                if (abs(get_determinant(parcels%B(:, n), vol) - get_abc(vol) ** 2) > epsilon(zero)) then
+                    print *, "Parcel determinant not preserved!"
+                    stop
+                endif
+                !$omp end critical
+#endif
                 rms_zeta = rms_zeta + vol * parcels%vorticity(:, n) ** 2
 
             enddo
@@ -131,9 +142,9 @@ module parcel_diagnostics
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
 
-            rms_zeta = dsqrt(rms_zeta / vsum)
+            rms_zeta = dsqrt(rms_zeta / sum_vol)
 
-            avg_vol = vsum / dble(n_parcels)
+            avg_vol = sum_vol / dble(n_parcels)
             std_vol = dsqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))
 
             call stop_timer(parcel_stats_timer)

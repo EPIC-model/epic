@@ -26,9 +26,15 @@ module jacobi
             g = hundred * dabs(aij)
             h = D(j) - D(i)
             if (dabs(h) + g == dabs(h)) then
-                t = aij / h
+                ! sign(A, B) returns A with the sign of B
+                ! We need to add epsilon with the proper sign
+                ! since h might be -epsilon causing a division by zero.
+                t = aij / (h + sign(epsilon(h), h))
             else
-                theta = f12 * h / aij
+                ! sign(A, B) returns A with the sign of B
+                ! We need to add epsilon with the proper sign
+                ! since aij might be -epsilon causing a division by zero.
+                theta = f12 * h / (aij + sign(epsilon(aij), aij))
                 t = one / (dabs(theta) + dsqrt(one + theta ** 2))
                 if (theta < zero) then
                     t = -t

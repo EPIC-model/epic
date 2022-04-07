@@ -261,9 +261,9 @@ module physics
             character(*), optional, intent(in) :: unit
 
             if (val) then
-                call print_physical_quantity_character(name, 'true')
+                call print_physical_quantity_character(name, 'true', unit)
             else
-                call print_physical_quantity_character(name, 'false')
+                call print_physical_quantity_character(name, 'false', unit)
             endif
         end subroutine print_physical_quantity_logical
 
@@ -274,6 +274,9 @@ module physics
             character(64)                      :: fix_length_name
 
             fix_length_name = name
+            if (present(unit)) then
+                fix_length_name = name // ', ' // unit
+            endif
             write (*, "(a, a14)") fix_length_name, val
         end subroutine print_physical_quantity_character
 
