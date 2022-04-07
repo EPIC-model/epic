@@ -24,7 +24,7 @@ module parcel_diagnostics_netcdf
                           pe_id, ke_id, te_id, npar_id, nspar_id,   &
                           rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
                           avg_lam_id, std_lam_id,                   &
-                          avg_vol_id, std_vol_id
+                          avg_vol_id, std_vol_id, sum_vol_id
     double precision   :: restart_time
 
     integer :: parcel_stats_io_timer
@@ -170,6 +170,16 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
+                name='sum_vol',                                             &
+                long_name='total volume',                                   &
+                std_name='',                                                &
+                unit='m^3',                                                 &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=sum_vol_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
                 name='x_rms_vorticity',                                     &
                 long_name='root mean square of x vorticity component',      &
                 std_name='',                                                &
@@ -227,6 +237,8 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 'std_vol', std_vol_id)
 
+            call get_var_id(ncid, 'sum_vol', sum_vol_id)
+
             call get_var_id(ncid, 'x_rms_vorticity', rms_x_vor_id)
 
             call get_var_id(ncid, 'y_rms_vorticity', rms_y_vor_id)
@@ -264,6 +276,7 @@ module parcel_diagnostics_netcdf
             call write_netcdf_scalar(ncid, std_lam_id, std_lam, n_writes)
             call write_netcdf_scalar(ncid, avg_vol_id, avg_vol, n_writes)
             call write_netcdf_scalar(ncid, std_vol_id, std_vol, n_writes)
+            call write_netcdf_scalar(ncid, sum_vol_id, sum_vol, n_writes)
             call write_netcdf_scalar(ncid, rms_x_vor_id, rms_zeta(1), n_writes)
             call write_netcdf_scalar(ncid, rms_y_vor_id, rms_zeta(2), n_writes)
             call write_netcdf_scalar(ncid, rms_z_vor_id, rms_zeta(3), n_writes)
