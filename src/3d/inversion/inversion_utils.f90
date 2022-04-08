@@ -170,8 +170,8 @@ module inversion_utils
             !$omp end parallel
             htdh(nz-1, :, :) = one / (a0 + ap * etdh(nz-2, :, :))
             ! Remove horizontally-averaged part (done separately):
-            htdh(:, 1, 1) = zero    !FIXME NOT DONE
-            etdh(:, 1, 1) = zero    !FIXME NOT DONE
+            htdh(:, 1, 1) = zero
+            etdh(:, 1, 1) = zero
 
             ! Tridiagonal arrays for the vertical vorticity component:
             htdv(0, :, :) = one / a0
@@ -190,12 +190,12 @@ module inversion_utils
             !$omp end do
             !$omp end parallel
 
-            etdv(nz-1, 1, 1) = zero    !FIXME NOT DONE
+            etdv(nz-1, 1, 1) = zero
 
             htdv(nz, :, :) = one / (a0 + two * ap * etdv(nz-1, :, :))
             ! Remove horizontally-averaged part (done separately):
-            htdv(:, 1, 1) = zero    !FIXME NOT DONE
-            etdv(:, 1, 1) = zero    !FIXME NOT DONE
+            htdv(:, 1, 1) = zero
+            etdv(:, 1, 1) = zero
 
             deallocate(a0)
             deallocate(ksq)
@@ -335,7 +335,7 @@ module inversion_utils
             integer                         :: iz, isub, ib_sub, ie_sub
 
             rs = fs
-            fs(0, :, :) = fs(0, :, :) * htdv(0, :, :)
+            fs(0, :, :) = rs(0, :, :) * htdv(0, :, :)
 
             !$omp parallel shared(rs, fs, ap, htdv, nz, nxsub) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
