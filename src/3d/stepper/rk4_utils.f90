@@ -2,7 +2,7 @@ module rk4_utils
     use parcel_ellipsoid, only : get_B33
     use fields, only : velgradg, tbuoyg, vortg
     use constants, only : zero, one, two, f12
-    use parameters, only : nx, ny, nz, dxi
+    use parameters, only : nx, ny, nz, dxi, vcell
     use jacobi, only : jacobi_eigenvalues
 #ifdef ENABLE_VERBOSE
     use options, only : output
@@ -133,13 +133,12 @@ module rk4_utils
                         strain(2, 3) = velgradg(iz, iy, ix, 5) - f12 * vortg(iz, iy, ix, 1) ! S23
                         strain(3, 3) = -(velgradg(iz, iy, ix, 1) + velgradg(iz, iy, ix, 3)) ! S33
 
-                        ! calculate its eigenvalues (strain is overwritten and diagonal entries
-                        ! will be the eigenvalues sorted in descending order), i.e.
-                        ! the largest eigenvalue is in D(1). The Jacobi solver
+                        ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
                         call jacobi_eigenvalues(strain, D)
 
-                        gmax = max(gmax, D(1))
+                        ! we must take the largest eigenvalue in magnitude (absolute value)
+                        gmax = max(gmax, maxval(abs(D)))
                     enddo
                 enddo
             enddo

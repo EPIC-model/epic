@@ -122,13 +122,10 @@ module netcdf_reader
             integer,      intent(in) :: ncid
             character(*), intent(in) :: name
             logical                  :: link_exists
-            link_exists = .false.
 
             ncerr = nf90_inquire_attribute(ncid, NF90_GLOBAL, name)
 
-            if (ncerr == nf90_noerr) then
-                link_exists = .true.
-            endif
+            link_exists = (ncerr == nf90_noerr)
             ncerr = 0
         end function has_attribute
 
@@ -137,13 +134,14 @@ module netcdf_reader
             character(*), intent(in) :: name
             integer                  :: varid
             logical                  :: link_exists
-            link_exists = .false.
 
             ncerr = nf90_inq_varid(ncid, name, varid)
+
+            link_exists = (ncerr == nf90_noerr)
+
             ncerr = nf90_inquire_variable(ncid, varid)
-            if (ncerr == nf90_noerr) then
-                link_exists = .true.
-            endif
+
+            link_exists = (link_exists .and. (ncerr == nf90_noerr))
             ncerr = 0
         end function has_dataset
 

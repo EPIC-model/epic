@@ -1,20 +1,20 @@
 ! =============================================================================
-!                       Test subroutine lapinv0
+!                       Test subroutine lapinv1
 !
-!  This unit test checks the subroutine lapinv0 using the the
+!  This unit test checks the subroutine lapinv1 using the the
 !  function:
-!              cos(k * x) * sin(l * y) * sin(m * z)
+!              cos(k * x) * sin(l * y) * cos(m * z)
 !  where k = 2pi/L_x, l = 2pi/L_y and m = pi/L_z and where x, y and z all start
 !  at 0 (one could start at -pi for x and y just as well).
-!  The subroutine lapinv0 should return the same function multiplied by
+!  The subroutine lapinv1 should return the same function multiplied by
 !  -1/(k^2 + l^2 + m^2).
 ! =============================================================================
-program test_lapinv0_1
+program test_lapinv1
     use unit_test
     use constants, only : zero, one, two, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use inversion_utils, only : init_fft, fftxyp2s, fftxys2p
-    use inversion_mod, only : lapinv0
+    use inversion_mod, only : lapinv1
     implicit none
 
     double precision              :: error
@@ -47,7 +47,7 @@ program test_lapinv0_1
             do iz = 0, nz
                 z = lower(3) + iz * dx(3)
 
-                fp(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dsin(m * z)
+                fp(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dcos(m * z)
 
                 ref_sol(iz, iy, ix) = prefactor * fp(iz, iy, ix)
             enddo
@@ -58,16 +58,16 @@ program test_lapinv0_1
 
     call fftxyp2s(fp, fs)
 
-    call lapinv0(fs)
+    call lapinv1(fs)
 
     call fftxys2p(fs, fp)
 
     error = maxval(dabs(fp - ref_sol))
 
-    call print_result_dp('Test inversion (lapinv0)', error, atol=2.0e-7)
+    call print_result_dp('Test inversion (lapinv1)', error, atol=2.0e-7)
 
     deallocate(fs)
     deallocate(fp)
     deallocate(ref_sol)
 
-end program test_lapinv0_1
+end program test_lapinv1

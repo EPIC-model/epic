@@ -9,7 +9,7 @@ program test_netcdf_dataset_2d
     implicit none
 
     integer, parameter :: nx = 5, ny = 10
-    integer            :: ix, iy, ncid, dimids(2), map(2)
+    integer            :: ix, iy, ncid, dimids(2)
     integer            :: var_id1 = -1, var_id2 = -1, var_id3 = -1
     double precision   :: dset(ny, nx)
     logical            :: passed = .true.
