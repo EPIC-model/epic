@@ -2,7 +2,7 @@ module rk4_utils
     use parcel_ellipsoid, only : get_B33
     use fields, only : velgradg, tbuoyg, vortg
     use constants, only : zero, one, two, f12
-    use parameters, only : nx, ny, nz, dxi
+    use parameters, only : nx, ny, nz, dxi, vcell
     use jacobi, only : jacobi_eigenvalues
 #ifdef ENABLE_VERBOSE
     use options, only : output

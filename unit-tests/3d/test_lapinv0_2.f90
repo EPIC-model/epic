@@ -1,13 +1,7 @@
 ! =============================================================================
 !                       Test subroutine lapinv0
 !
-!  This unit test checks the subroutine lapinv0 using the the
-!  function:
-!              cos(k * x) * sin(l * y) * sin(m * z)
-!  where k = 2pi/L_x, l = 2pi/L_y and m = pi/L_z and where x, y and z all start
-!  at 0 (one could start at -pi for x and y just as well).
-!  The subroutine lapinv0 should return the same function multiplied by
-!  -1/(k^2 + l^2 + m^2).
+!  This unit test checks the subroutine lapinv0.
 ! =============================================================================
 program test_lapinv0_2
     use unit_test
@@ -90,7 +84,7 @@ program test_lapinv0_2
     endif
 
 
-    call print_result_dp('Test inversion (lapinv0)', emax, atol=2.0e-11)
+    call print_result_dp('Test inversion (lapinv0)', emax, atol=7.0e-7)
 
     deallocate(vorx)
     deallocate(potx)
