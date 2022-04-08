@@ -28,8 +28,6 @@ module inversion_mod
             double precision                :: ds(0:nz, 0:nx-1, 0:ny-1) &
                                              , es(0:nz, 0:nx-1, 0:ny-1) &
                                              , fs(0:nz, 0:nx-1, 0:ny-1)
-            double precision                :: astop(0:nx-1, 0:ny-1), bstop(0:nx-1, 0:ny-1)
-            double precision                :: asbot(0:nx-1, 0:ny-1), bsbot(0:nx-1, 0:ny-1)
             double precision                :: ubar(0:nz), vbar(0:nz)
             double precision                :: uavg, vavg
             integer                         :: iz
@@ -49,7 +47,7 @@ module inversion_mod
 
             !For the vertical parcel vorticity, use 4th-order compact
             !differencing:
-            call diffz1(cs, fs)
+            call diffz(cs, fs)
 
             !Form div(vortg):
             !$omp parallel
@@ -89,7 +87,7 @@ module inversion_mod
             !$omp end workshare
             !$omp end parallel
 
-            call diffz1(fs, ds)
+            call diffz(fs, ds)
             !$omp parallel
             !$omp workshare
             cs = cs - ds
@@ -108,12 +106,6 @@ module inversion_mod
             enddo
             !$omp end do
             !$omp end parallel
-
-            !Save boundary values of x and y vorticity for z derivatives of A & B:
-            asbot = as(0, :, :)
-            bsbot = bs(0, :, :)
-            astop = as(nz, :, :)
-            bstop = bs(nz, :, :)
 
             !Define horizontally-averaged flow by integrating horizontal vorticity:
             ubar(0) = zero
@@ -145,8 +137,8 @@ module inversion_mod
             !------------------------------------------------------------
             !Compute x velocity component, u = B_z - C_y:
             call diffy(cs, ds)
-            call diffz0(bs, es, bsbot, bstop)
-            !bsbot & bstop contain spectral y vorticity component at z_min and z_max
+            call diffz(bs, es)
+
             !$omp parallel
             !$omp workshare
             fs = es - ds
@@ -165,8 +157,8 @@ module inversion_mod
             !------------------------------------------------------------
             !Compute y velocity component, v = C_x - A_z:
             call diffx(cs, ds)
-            call diffz0(as, es, asbot, astop)
-            !asbot & astop contain spectral x vorticity component at z_min and z_max
+            call diffz(as, es)
+
             !$omp parallel
             !$omp workshare
             fs = ds - es
@@ -366,7 +358,11 @@ module inversion_mod
             call fftxys2p(vs, vd)
 
             ! Compute z derivative by compact differences:
-            call diffz1(ds, ws)
+            call diffz(ds, ws)
+
+            ! Set vertical boundary values to zero
+            ws(0,  :, :) = zero
+            ws(nz, :, :) = zero
 
             ! Add on the x and y-independent part of wd:
             ws(:, 1, 1) = ws(:, 1, 1) + wbar
