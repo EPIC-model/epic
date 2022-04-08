@@ -72,27 +72,6 @@ module inversion_mod
             !$omp end do
             !$omp end parallel
 
-            !Subtract grad(lambda) to enforce div(vortg) = 0:
-            call diffx(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            as = as - ds
-            !$omp end workshare
-            !$omp end parallel
-
-            call diffy(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            bs = bs - ds
-            !$omp end workshare
-            !$omp end parallel
-
-            call diffz(fs, ds)
-            !$omp parallel
-            !$omp workshare
-            cs = cs - ds
-            !$omp end workshare
-            !$omp end parallel
             !Ensure horizontal average of vertical vorticity is zero:
             cs(:, 0, 0) = zero
 
