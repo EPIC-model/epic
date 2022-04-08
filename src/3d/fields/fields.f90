@@ -17,6 +17,7 @@ module fields
     double precision, allocatable, dimension(:, :, :, :) :: &
         velog,     &   ! velocity vector field (u, v, w)
         vortg,     &   ! vorticity vector field (\omegax, \omegay, \omegaz)
+        vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
                        ! ordering: du/dx, du/dy,
                        !                  dv/dy,
@@ -34,8 +35,6 @@ module fields
         dbuoyg,    &   ! dry buoyancy (or liquid-water buoyancy)
 #endif
         tbuoyg,    &   ! buoyancy
-        dbdx,      &   ! buoyancy derivative in x
-        dbdy,      &   ! buoyancy derivative in y
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
@@ -64,9 +63,7 @@ module fields
 
             allocate(vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3))
 
-            allocate(dbdx(-1:nz+1, 0:ny-1, 0:nx-1))
-
-            allocate(dbdy(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3))
 
             allocate(tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1))
 
@@ -87,8 +84,7 @@ module fields
             velgradg = zero
             volg     = zero
             vortg    = zero
-            dbdx     = zero
-            dbdy     = zero
+            vtend    = zero
             tbuoyg   = zero
 #ifndef ENABLE_DRY_MODE
             dbuoyg   = zero

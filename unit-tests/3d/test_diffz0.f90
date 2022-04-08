@@ -1,25 +1,24 @@
 ! =============================================================================
-!                       Test subroutine diffz0
+!                       Test subroutine diffz
 !
-!  This unit test checks the subroutine diffz0 using the
+!  This unit test checks the subroutine diffz using the
 !  function:
 !               cos(k * x) * sin(l * y) * sin(m * z)
 !  where k = 2pi/L_x, l = 2pi/L_y and m = pi/L_z and where x, y and z all start
 !  at 0 (one could start at -pi for x and y just as well).
-!  The subroutine diffz0 should return
+!  The subroutine diffz should return
 !               m * cos(k * x) * sin(l * y) * cos(m * z)
 ! =============================================================================
-program test_diffz0
+program test_diffz
     use unit_test
     use constants, only : zero, one, two, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use inversion_utils, only : init_fft
-    use inversion_mod, only : diffz0
+    use inversion_mod, only : diffz
     implicit none
 
     double precision              :: error
     double precision, allocatable :: fs(:, :, :), ds(:, :, :), &
-                                     fsbot(:, :), fstop(:, :), &
                                      ref_sol(:, :, :)
     integer                       :: ix, iy, iz
     double precision              :: x, y, z, k, l, m, prefactor
@@ -32,8 +31,6 @@ program test_diffz0
 
     allocate(fs(0:nz, nx, ny))
     allocate(ds(0:nz, nx, ny))
-    allocate(fsbot(nx, ny))
-    allocate(fstop(nx, ny))
     allocate(ref_sol(0:nz, nx, ny))
 
     call update_parameters
@@ -58,21 +55,16 @@ program test_diffz0
         enddo
     enddo
 
-    fsbot = fs(0, :, :)
-    fstop = fs(nz, :, :)
-
     call init_fft
 
-    call diffz0(fs, ds, fsbot, fstop)
+    call diffz(fs, ds)
 
     error = maxval(dabs(ds - ref_sol))
 
-    call print_result_dp('Test inversion (diffz0)', error, atol=6.0e-10)
+    call print_result_dp('Test inversion (diffz)', error, atol=2.6e-5)
 
     deallocate(fs)
     deallocate(ds)
-    deallocate(fsbot)
-    deallocate(fstop)
     deallocate(ref_sol)
 
-end program test_diffz0
+end program test_diffz

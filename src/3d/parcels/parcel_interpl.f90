@@ -292,7 +292,6 @@ module parcel_interpl
             double precision,     intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
             integer                             :: n, l
-            double precision                    :: dudz, dvdz, dwdz, dvdx
 
             call start_timer(grid2par_timer)
 
@@ -320,14 +319,10 @@ module parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, ks, weights, dudz, dvdz, dwdz, dvdx)
+            !$omp do private(n, l, is, js, ks, weights)
             do n = 1, n_parcels
 
                 vgrad(:, n) = zero
-                dudz = zero
-                dvdz = zero
-                dwdz = zero
-                dvdx = zero
 
                 ! ensure point is within the domain
                 call apply_periodic_bc(parcels%position(:, n))
@@ -341,47 +336,8 @@ module parcel_interpl
 
                     vgrad(:, n) = vgrad(:, n) + weights(l) * velgradg(ks(l), js(l), is(l), :)
 
-                    ! du/dz = \omegay + dw/dx
-                    dudz = dudz &
-                         + weights(l) * (vortg(ks(l), js(l), is(l), 2) + velgradg(ks(l), js(l), is(l), 4))
-
-                    ! dv/dz = dw/dy - \omegax
-                    dvdz = dvdz &
-                         + weights(l) * (velgradg(ks(l), js(l), is(l), 5) - vortg(ks(l), js(l), is(l), 1))
-
-                    ! dw/dz = - (du/dx + dv/dy)
-                    dwdz = dwdz &
-                         - weights(l) * (velgradg(ks(l), js(l), is(l), 1) + velgradg(ks(l), js(l), is(l), 3))
-
-                    ! dv/dx = \omegaz + du/dy
-                    dvdx = dvdx &
-                         + weights(l) * (vortg(ks(l), js(l), is(l), 3) + velgradg(ks(l), js(l), is(l), 2))
-
-                    ! add buoyancy part of vorticity tendency to x-vorticity
-                    vortend(1, n) = vortend(1, n) + weights(l) * dbdy(ks(l), js(l), is(l))
-
-                    ! subtract buoyancy part of vorticity tendency to y-vorticity
-                    vortend(2, n) = vortend(2, n) - weights(l) * dbdx(ks(l), js(l), is(l))
+                    vortend(:, n) = vortend(:, n) + weights(l) * vtend(ks(l), js(l), is(l), :)
                 enddo
-
-                ! add strain part of vorticity tendency to x-vorticity
-                vortend(1, n) =  vortend(1, n)                                   &
-                              +  parcels%vorticity(1, n)           * vgrad(1, n) & ! \omegax * du/dx
-                              + (parcels%vorticity(2, n) + ft_cor) * vgrad(2, n) & ! \omegay * du/dy
-                              + (parcels%vorticity(3, n) +  f_cor) * dudz          ! \omegaz * du/dz
-
-                ! add strain part of vorticity tendency to y-vorticity
-                vortend(2, n) =  vortend(2, n)                                   &
-                              +  parcels%vorticity(1, n)           * dvdx        & ! \omegax * dv/dx
-                              + (parcels%vorticity(2, n) + ft_cor) * vgrad(3, n) & ! \omegay * dv/dy
-                              + (parcels%vorticity(3, n) + f_cor)  * dvdz          ! \omegaz * dv/dz
-
-                ! add strain part of vorticity tendency to z-vorticity
-                vortend(3, n) =  vortend(3, n)                                   &
-                              +  parcels%vorticity(1, n)           * vgrad(4, n) & ! \omegax * dw/dx
-                              + (parcels%vorticity(2, n) + ft_cor) * vgrad(5, n) & ! \omegay * dw/dy
-                              + (parcels%vorticity(3, n) + f_cor)  * dwdz          ! \omegaz * dw/dz
-
             enddo
             !$omp end do
             !$omp end parallel
