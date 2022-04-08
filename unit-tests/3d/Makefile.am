@@ -45,6 +45,7 @@ unittests_PROGRAMS = 				\
 	test_velgradg				\
 	test_lapinv0_1				\
 	test_lapinv0_2				\
+	test_lapinv1				\
 	test_diffz0				\
 	test_diffz1
 
@@ -116,6 +117,9 @@ test_lapinv0_1_LDADD = libcombi.la
 
 test_lapinv0_2_SOURCES = test_lapinv0_2.f90
 test_lapinv0_2_LDADD = libcombi.la
+
+test_lapinv1_SOURCES = test_lapinv1.f90
+test_lapinv1_LDADD = libcombi.la
 
 test_diffz0_SOURCES = test_diffz0.f90
 test_diffz0_LDADD = libcombi.la
