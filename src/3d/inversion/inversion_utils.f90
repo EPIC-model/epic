@@ -170,12 +170,12 @@ module inversion_utils
             !$omp end parallel
             htdh(nz-1, :, :) = one / (a0 + ap * etdh(nz-2, :, :))
             ! Remove horizontally-averaged part (done separately):
-            htdh(:, 1, 1) = zero
-            etdh(:, 1, 1) = zero
+            htdh(:, 1, 1) = zero    !FIXME NOT DONE
+            etdh(:, 1, 1) = zero    !FIXME NOT DONE
 
             ! Tridiagonal arrays for the vertical vorticity component:
-            htdv(0, :, :) = one / a0b
-            etdv(0, :, :) = -ap * htdv(0, :, :)
+            htdv(0, :, :) = one / a0
+            etdv(0, :, :) = -two * ap * htdv(0, :, :)
             !$omp parallel shared(a0, ap, etdv, htdv, nz, nxsub) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
             do isub = 0, nsubs_tri-1
@@ -190,12 +190,12 @@ module inversion_utils
             !$omp end do
             !$omp end parallel
 
-            etdv(nz-1, 1, 1) = zero
+            etdv(nz-1, 1, 1) = zero    !FIXME NOT DONE
 
-            htdv(nz, :, :) = one / (a0b + ap * etdv(nz-1, :, :))
+            htdv(nz, :, :) = one / (a0 + two * ap * etdv(nz-1, :, :))
             ! Remove horizontally-averaged part (done separately):
-            htdv(:, 1, 1) = zero
-            etdv(:, 1, 1) = zero
+            htdv(:, 1, 1) = zero    !FIXME NOT DONE
+            etdv(:, 1, 1) = zero    !FIXME NOT DONE
 
             deallocate(a0)
             deallocate(ksq)
@@ -334,8 +334,8 @@ module inversion_utils
             double precision                :: rs(0:nz, nx, ny)
             integer                         :: iz, isub, ib_sub, ie_sub
 
-            fs(0, :, :) = fs(0, :, :) * htdv(0, :, :)
             rs = fs
+            fs(0, :, :) = fs(0, :, :) * htdv(0, :, :)
 
             !$omp parallel shared(rs, fs, ap, htdv, nz, nxsub) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
@@ -351,7 +351,7 @@ module inversion_utils
             !$omp end do
             !$omp end parallel
 
-            fs(nz, :, :) = (rs(nz, :, :) - ap * fs(nz-1, :, :)) * htdv(nz, :, :)
+            fs(nz, :, :) = (rs(nz, :, :) - two * ap * fs(nz-1, :, :)) * htdv(nz, :, :)
 
             !$omp parallel shared(fs, etdv, nz, nxsub) private(isub, ib_sub, ie_sub, iz) default(none)
             !$omp do
