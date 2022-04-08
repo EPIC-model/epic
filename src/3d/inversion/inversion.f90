@@ -45,7 +45,7 @@ module inversion_mod
             call diffx(as, ds)
             call diffy(bs, es)
 
-            !For the vertical parcel vorticity, use 4th-order compact
+            !For the vertical parcel vorticity, use 2nd-order
             !differencing:
             call diffz(cs, fs)
 
