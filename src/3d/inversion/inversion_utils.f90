@@ -27,6 +27,7 @@ module inversion_utils
 
     !De-aliasing filter:
     double precision, allocatable :: filt(:, :)
+    double precision, allocatable :: skx(:), sky(:)
 
 
 
@@ -61,7 +62,8 @@ module inversion_utils
         subroutine init_fft
             double precision, allocatable  :: a0(:, :), ksq(:, :)
             double precision               :: rkxmax, rkymax
-            double precision               :: rksqmax, rkfsq
+            double precision               :: rksqmax
+            double precision               :: kxmaxi, kymaxi
             integer                        :: kx, ky, iz, isub, ib_sub, ie_sub
 
             if (is_initialised) then
@@ -84,6 +86,8 @@ module inversion_utils
 
             allocate(a0(nx, ny))
             allocate(ksq(nx, ny))
+            allocate(skx(nx))
+            allocate(sky(ny))
 
             allocate(etdh(nz-1, nx, ny))
             allocate(htdh(nz-1, nx, ny))
@@ -132,16 +136,14 @@ module inversion_utils
             enddo
 
             !--------------------------------------------------------------------
-            ! Define de-aliasing filter:
-            rkfsq = two * rksqmax / nine
-            ! rkfsq: the square of the filter wavenumber (generic 2/3 rule)
+            ! Define Hou and Li filter:
+            kxmaxi = one / maxval(rkx)
+            skx = -36.d0 * (kxmaxi * rkx) ** 36
+            kymaxi = one/maxval(rky)
+            sky = -36.d0 * (kymaxi * rky) ** 36
             do ky = 1, ny
                 do kx = 1, nx
-                    if (ksq(kx, ky) .gt. rkfsq) then
-                        filt(kx, ky) = zero
-                    else
-                        filt(kx, ky) = one
-                    endif
+                    filt(kx, ky) = dexp(skx(kx) + sky(ky))
                 enddo
             enddo
 
