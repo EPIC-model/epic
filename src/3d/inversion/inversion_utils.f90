@@ -31,7 +31,7 @@ module inversion_utils
 
 
 
-    double precision :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq, ap, a0b
+    double precision :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq, ap
     integer :: nwx, nwy, nxp2, nyp2
 
     logical :: is_initialised = .false.
@@ -150,7 +150,6 @@ module inversion_utils
             !-----------------------------------------------------------------------
             ! Fixed coefficients used in the tridiagonal problems:
             a0 = -two * dzisq - ksq
-            a0b = -dzisq
             ap = dzisq
 
             !-----------------------------------------------------------------------
