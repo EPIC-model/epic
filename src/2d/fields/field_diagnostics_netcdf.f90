@@ -20,7 +20,7 @@ module field_diagnostics_netcdf
     integer             :: ncid
     integer             :: t_axis_id, t_dim_id, n_writes,                   &
                            rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
-                           avg_npar_id, avg_nspar_id
+                           avg_npar_id, avg_nspar_id, keg_id
     double precision    :: restart_time
 #ifndef NDEBUG
     integer             :: max_sym_vol_err_id
@@ -137,6 +137,16 @@ module field_diagnostics_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=avg_nspar_id)
 
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='ke',                                                  &
+                long_name='kinetic energy',                                 &
+                std_name='',                                                &
+                unit='m^4/s^2',                                             &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=keg_id)
+
 #ifndef NDEBUG
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
@@ -172,6 +182,8 @@ module field_diagnostics_netcdf
 
             call get_var_id(ncid, 'avg_nspar', avg_nspar_id)
 
+            call get_var_id(ncid, 'ke', keg_id)
+
 #ifndef NDEBUG
             call get_var_id(ncid, 'max_sym_vol_err', max_sym_vol_err_id)
 #endif
@@ -205,6 +217,7 @@ module field_diagnostics_netcdf
             call write_netcdf_scalar(ncid, min_npar_id, min_npar, n_writes)
             call write_netcdf_scalar(ncid, avg_npar_id, avg_npar, n_writes)
             call write_netcdf_scalar(ncid, avg_nspar_id, avg_nspar, n_writes)
+            call write_netcdf_scalar(ncid, keg_id, keg, n_writes)
 #ifndef NDEBUG
             call write_netcdf_scalar(ncid, max_sym_vol_err_id, max_vol_sym_err, n_writes)
 #endif
