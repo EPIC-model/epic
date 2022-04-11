@@ -2,7 +2,7 @@
 !                              Field diagnostics
 ! =============================================================================
 module field_diagnostics
-    use constants, only : zero
+    use constants, only : f12
     use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
     use fields
     use timer, only : start_timer, stop_timer
