@@ -55,7 +55,7 @@ module options
         double precision :: size_factor      = 1.0d0    ! factor to increase max. number of parcels
         integer          :: n_per_cell       = 9        ! number of parcels per cell (need to be a square)
         double precision :: lambda_max       = four     ! max. ellipse aspect ratio a/b
-        double precision :: min_vratio       = 68.0d0   ! minimum ratio of grid cell volume / parcel volume
+        double precision :: min_vratio       = 40.0d0   ! minimum ratio of grid cell volume / parcel volume
         integer          :: correction_iters = 2        ! parcel correction iterations
         double precision :: gradient_pref    = 1.8d0    ! prefactor for gradient descent
         double precision :: max_compression  = 0.5d0    ! parameter for gradient descent (limits the shift in parcel position)
