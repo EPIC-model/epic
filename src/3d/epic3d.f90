@@ -29,9 +29,12 @@ program epic3d
     use utils, only : write_last_step, setup_output_files,       &
                       setup_restart, setup_domain_and_parameters
     use parameters, only : max_num_parcels
+    use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
     implicit none
 
     integer          :: epic_timer
+
+    call mpi_comm_initialise
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -44,6 +47,8 @@ program epic3d
 
     ! Deallocate memory
     call post_run
+
+    call mpi_comm_finalise
 
     contains
 
