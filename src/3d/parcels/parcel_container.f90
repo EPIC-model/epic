@@ -139,4 +139,34 @@ module parcel_container
             call parcel_ellipsoid_deallocate
         end subroutine parcel_dealloc
 
+        ! Serialize all parcel attributes into a single buffer
+        subroutine parcel_serialize(n, buffer)
+            integer,          intent(in)  :: n
+            double precision, intent(out) :: buffer(14)
+
+            buffer(1:3)  = parcels%position(:, n)
+            buffer(4:6)  = parcels%vorticity(:, n)
+            buffer(7:11) = parcels%B(:, n)
+            buffer(12)   = parcels%volume(n)
+            buffer(13)   = parcels%buoyancy(n)
+#ifndef ENABLE_DRY_MODE
+            buffer(14)   = parcels%humidity(n)
+#endif
+        end subroutine parcel_serialize
+
+        ! Deserialize all parcel attributes from a single buffer
+        subroutine parcel_deserialize(n, buffer)
+            integer,          intent(in) :: n
+            double precision, intent(in) :: buffer(14)
+
+            parcels%position(:, n)  = buffer(1:3)
+            parcels%vorticity(:, n) = buffer(4:6)
+            parcels%B(:, n)         = buffer(7:11)
+            parcels%volume(n)       = buffer(12)
+            parcels%buoyancy(n)     = buffer(13)
+#ifndef ENABLE_DRY_MODE
+            parcels%humidity(n)     = buffer(14)
+#endif
+        end subroutine parcel_deserialize
+
 end module parcel_container
