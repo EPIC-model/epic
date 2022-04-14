@@ -5,7 +5,6 @@ module field_layout
     implicit none
 
     type box_type
-        integer :: nx, ny, nz
         integer :: lo(3), hi(3)
     end type box_type
 
