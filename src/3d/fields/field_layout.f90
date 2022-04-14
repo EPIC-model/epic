@@ -35,8 +35,8 @@ module field_layout
                 neighbour%xhi = mpi_rank
                 neighbour%ylo = mpi_rank
                 neighbour%yhi = mpi_rank
-                box%lo = (/0,  0,  0 /)
-                box%hi = (/nx, ny, nz/)
+                box%lo = (/0,    0,    0 /)
+                box%hi = (/nx-1, ny-1, nz/)
                 return
             endif
 
@@ -76,8 +76,8 @@ module field_layout
             !   disp        -- displacement ( > 0: upward shift, < 0: downward shift) (integer)
             !   rank_source -- rank of source process (integer)
             !   rank_dest   -- rank of destination process (integer)
-            call MPI_Cart_shift(comm_cart, 0, xx, neighbour%xlo, neighbour%xhi, mpi_err) !FIXME
-            call MPI_Cart_shift(comm_cart, 1, xx, neighbour%ylo, neighbour%yhi, mpi_err) !FIXME
+            call MPI_Cart_shift(comm_cart, 0, 1, neighbour%xlo, neighbour%xhi, mpi_err)
+            call MPI_Cart_shift(comm_cart, 1, 1, neighbour%ylo, neighbour%yhi, mpi_err)
 
         end subroutine field_layout_init
 
@@ -98,7 +98,7 @@ module field_layout
                 first = first + remaining
             endif
 
-            last = first + nlocal
+            last = first + nlocal - 1
 
         end subroutine set_local_bounds
 
