@@ -2,7 +2,7 @@
 !                               Parcel diagnostics
 ! =============================================================================
 module parcel_diagnostics
-    use constants, only : zero, one, f12
+    use constants, only : zero, one, f12, thousand
     use merge_sort
     use parameters, only : extent, lower, vcell, vmin, nx, nz
     use parcel_container, only : parcels, n_parcels
@@ -13,6 +13,9 @@ module parcel_diagnostics
 
     integer :: parcel_stats_timer
 
+#ifndef NDEBUG
+    double precision, parameter :: thres = thousand * epsilon(zero)
+#endif
 
     ! peref : potential energy reference
     ! pe    : potential energy
@@ -124,7 +127,7 @@ module parcel_diagnostics
 
 #ifndef NDEBUG
                 !$omp critical
-                if (abs(get_determinant(parcels%B(:, n), vol) - get_abc(vol) ** 2) > epsilon(zero)) then
+                if (abs(get_determinant(parcels%B(:, n), vol) / get_abc(vol) ** 2 - one) > thres) then
                     print *, "Parcel determinant not preserved!"
                     stop
                 endif
