@@ -25,13 +25,13 @@ program test_mpi_layout
     passed = (mpi_err == 0)
 
 
-    call field_layout_init(nx, ny, nz, 0)
+    call field_layout_init(nx, ny, nz, 2)
 
-    allocate(data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+    allocate(data(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 
     data(:, :, :) = 1.0d0
 
-    sendbuf = sum(data)
+    sendbuf = sum(data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
     recvbuf = 0.0d0
 
     call MPI_Reduce(sendbuf, recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, comm_world, mpi_err)
