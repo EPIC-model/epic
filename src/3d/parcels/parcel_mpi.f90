@@ -1,6 +1,4 @@
 module parcel_mpi
-    use fields, only : get_index
-    use field_layout
     implicit none
 
     private :: locate_parcels,  &
