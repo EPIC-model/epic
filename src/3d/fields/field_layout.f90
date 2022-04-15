@@ -1,7 +1,6 @@
 module field_layout
     use mpi_f08
     use mpi_communicator, only : mpi_size, mpi_rank, mpi_err, comm_world, comm_cart
-!     use parameters, only : nx, ny, nz
     implicit none
 
     type box_type
@@ -18,7 +17,8 @@ module field_layout
     type(box_type)       :: box
     type(neighbour_type) :: neighbour
 
-    integer :: n_halo
+    ! we always have 1 internal halo layer
+    integer :: n_halo = 1
 
     private :: set_local_bounds
 
@@ -75,7 +75,7 @@ module field_layout
             box%hi(3) = nz
 
             ! box including halo
-            n_halo = nh
+            n_halo = n_halo + nh
             box%hlo = box%lo - nh
             box%hhi = box%hi + nh
 
