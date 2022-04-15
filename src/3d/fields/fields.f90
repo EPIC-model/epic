@@ -3,8 +3,9 @@
 !     and functions.
 ! =============================================================================
 module fields
-    use parameters, only : dx, dxi, extent, lower, nx, ny, nz
+    use parameters, only : dx, dxi, extent, lower, nx, ny, nz, nh
     use constants, only : zero
+    use field_layout
     implicit none
 
     ! x: zonal
@@ -48,31 +49,38 @@ module fields
 
         ! Allocate all fields
         subroutine field_alloc
+            integer :: lo(3), hi(3)
+
             if (allocated(velog)) then
                 return
             endif
 
-            allocate(velog(-1:nz+1, 0:ny-1, 0:nx-1, 3))
-            allocate(velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5))
+            call field_layout_init(nx, ny, nz, nh)
 
-            allocate(volg(-1:nz+1, 0:ny-1, 0:nx-1))
+            lo = box%hlo(3)
+            hi = box%hhi(3)
+
+            allocate(velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3))
+            allocate(velgradg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 5))
+
+            allocate(volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
 
 #ifndef NDEBUG
-            allocate(sym_volg(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(sym_volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
 #endif
 
-            allocate(vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3))
+            allocate(vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3))
 
-            allocate(vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3))
+            allocate(vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3))
 
-            allocate(tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
 
 #ifndef ENABLE_DRY_MODE
-            allocate(dbuoyg(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
 #endif
 
-            allocate(nparg(-1:nz, 0:ny-1, 0:nx-1))
-            allocate(nsparg(-1:nz, 0:ny-1, 0:nx-1))
+            allocate(nparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
+            allocate(nsparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
 
         end subroutine field_alloc
 
