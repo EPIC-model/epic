@@ -419,13 +419,13 @@ module stafft
 
         !$omp parallel
         !Pre-process the array and store it in wk:
-        !$omp do
+        !$omp do private(i)
         do i = 1, m
             wk(i, 0) = f12 * (x(i, 0) + x(i, n))
         enddo
         !$omp enddo
 
-        !$omp do
+        !$omp do private(i, j)
         do j = 1, n - 1
             do i = 1, m
                 wk(i, j) = f12 * (x(i, j) + x(i, n - j)) - dsin(dble(j) * fpin) * (x(i, j) - x(i, n - j))
@@ -436,7 +436,7 @@ module stafft
         !Get the first element of the transform x(i, 1) and store
         !in x(i, n), as this is not overwritten when x is used
         !as a work array in the forfft routine called next:
-        !$omp do private(rowsum)
+        !$omp do private(rowsum, i, j)
         do i = 1, m
             rowsum = zero
             rowsum = rowsum + f12 * x(i, 0)
@@ -498,14 +498,14 @@ module stafft
         !$omp parallel
         !Pre-process the array and store it in wk:
         !First set 0 frequency element to zero:
-        !$omp do
+        !$omp do private(i)
         do i = 1, m
             wk(i, 0) = zero
         enddo
         !$omp enddo
 
         !Next set up the rest of the array:
-        !$omp do
+        !$omp do private(i, j)
         do j = 1, n - 1
             do i = 1, m
                 wk(i, j) = f12 * (x(i, j) - x(i, n - j)) + dsin(dble(j) * fpin) * (x(i, j) + x(i, n - j))
@@ -576,7 +576,7 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
-        !$omp do private(t1r, t2r, t3r, u0r, t1i, t2i, t3i, v0r)
+        !$omp do private(i, t1r, t2r, t3r, u0r, t1i, t2i, t3i, v0r)
         do i = 0, nv - 1
             t1r = a(i, 2, 0) + a(i, 4, 0)
             t2r = a(i, 0, 0) - f12 * t1r
@@ -597,11 +597,11 @@ module stafft
 
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
-            !$omp do private(kc,x1p,x2p,x3p,x4p,x5p,     &
-            !$omp               y1p,y2p,y3p,y4p,y5p,     &
-            !$omp               t1i,t1r,t2i,t2r,t3i,t3r, &
-            !$omp               u0i,u0r,u1i,u1r,u2i,u2r, &
-            !$omp               v0i,v0r,v1i,v1r,v2i,v2r )
+            !$omp do private(i, k, kc, x1p, x2p, x3p, x4p, x5p,         &
+            !$omp                      y1p, y2p, y3p, y4p, y5p,         &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r,    &
+            !$omp                      u0i, u0r, u1i, u1r, u2i, u2r,    &
+            !$omp                      v0i, v0r, v1i, v1r, v2i, v2r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -655,13 +655,13 @@ module stafft
             enddo
             !$omp enddo
         else
-            !$omp do private(kc,x1p,x2p,x3p,x4p,x5p,     &
-            !$omp               y1p,y2p,y3p,y4p,y5p,     &
-            !$omp               s1k,s2k,s3k,s4k,s5k,     &
-            !$omp               c1k,c2k,c3k,c4k,c5k,     &
-            !$omp               t1i,t1r,t2i,t2r,t3i,t3r, &
-            !$omp               u0i,u0r,u1i,u1r,u2i,u2r, &
-            !$omp               v0i,v0r,v1i,v1r,v2i,v2r )
+            !$omp do private(i, k, kc, x1p, x2p, x3p, x4p, x5p,         &
+            !$omp                      y1p, y2p, y3p, y4p, y5p,         &
+            !$omp                      s1k, s2k, s3k, s4k, s5k,         &
+            !$omp                      c1k, c2k, c3k, c4k, c5k,         &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r,    &
+            !$omp                      u0i, u0r, u1i, u1r, u2i, u2r,    &
+            !$omp                      v0i, v0r, v1i, v1r, v2i, v2r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -729,7 +729,7 @@ module stafft
         !Catch the case k = lv / 2 when lv even:
         if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
-            !$omp do private(q1, q2, q3, q4, q5, q6)
+            !$omp do private(i, q1, q2, q3, q4, q5, q6)
             do i = 0, nv - 1
                 q1 = a(i, 2, lvd2) - a(i, 4, lvd2)
                 q2 = a(i, 0, lvd2) + f12 * q1
@@ -765,7 +765,7 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
-        !$omp do private(t1r, t2r, t3r, t4r, t5r, t6r, t7r)
+        !$omp do private(i, t1r, t2r, t3r, t4r, t5r, t6r, t7r)
         do i = 0, nv - 1
             t1r = a(i, 1, 0) + a(i, 4, 0)
             t2r = a(i, 2, 0) + a(i, 3, 0)
@@ -781,11 +781,12 @@ module stafft
             b(i, 0, 4) = t3r - sinrat * t4r
         enddo
         !$omp enddo
+
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
-            !$omp do private(kc, x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
-            !$omp                t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
+            !$omp do private(i, k, kc, x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
+            !$omp                      t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -833,10 +834,10 @@ module stafft
             enddo
             !$omp enddo
         else
-            !$omp do private(kc, s1k, s2k, s3k, s4k, c1k, c2k, c3k, c4k,                     &
-            !$omp                x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
-            !$omp                t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
+            !$omp do private(i, k, kc, s1k, s2k, s3k, s4k, c1k, c2k, c3k, c4k,                     &
+            !$omp                      x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
+            !$omp                      t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -911,7 +912,7 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
-        !$omp do private(t1r, t2r)
+        !$omp do private(i, t1r, t2r)
         do i = 0,nv - 1
             t1r = a(i,0,0) + a(i,2,0)
             t2r = a(i, 1, 0) + a(i, 3, 0)
@@ -921,10 +922,11 @@ module stafft
             b(i, 0, 3) = a(i, 3, 0) - a(i, 1, 0)
         enddo
         !$omp enddo
+
         !Next do remaining k:
         if (nv .lt. (lv - 1) / 2) then
-            !$omp do private(kc, x1p, x2p, x3p, y1p, y2p, y3p,           &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
+            !$omp do private(i, k, kc, x1p, x2p, x3p, y1p, y2p, y3p,           &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -954,9 +956,9 @@ module stafft
             enddo
             !$omp enddo
         else
-            !$omp do private(kc, x1p, x2p, x3p, y1p, y2p, y3p,          &
-            !$omp                s1k, s2k, s3k, c1k, c2k, c3k,          &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
+            !$omp do private(i, k, kc, x1p, x2p, x3p, y1p, y2p, y3p,          &
+            !$omp                      s1k, s2k, s3k, c1k, c2k, c3k,          &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -996,7 +998,7 @@ module stafft
         !Catch the case k = lv / 2 when lv even:
         if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
-            !$omp do private(q1, q2)
+            !$omp do private(i, q1, q2)
             do i = 0, nv - 1
                 q1 = rtf12 * (a(i, 1, lvd2) - a(i, 3, lvd2))
                 q2 = rtf12 * (a(i, 1, lvd2) + a(i, 3, lvd2))
@@ -1025,7 +1027,7 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
-        !$omp do private(t1r)
+        !$omp do private(i, t1r)
         do i = 0, nv - 1
             t1r = a(i, 1, 0) + a(i, 2, 0)
             b(i, 0, 0) = a(i, 0, 0) + t1r
@@ -1033,10 +1035,11 @@ module stafft
             b(i, 0, 2) = sinfpi3 * (a(i, 2, 0) - a(i, 1, 0))
         enddo
         !$omp enddo
+
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
-            !$omp do private(kc, x1p, x2p, y1p, y2p,          &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r)
+            !$omp do private(i, k, kc, x1p, x2p, y1p, y2p,              &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1060,9 +1063,9 @@ module stafft
             enddo
             !$omp enddo
         else
-            !$omp do private(kc, x1p, x2p, y1p, y2p,           &
-            !$omp                s1k, s2k, c1k, c2k,           &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r)
+            !$omp do private(k, i, kc, x1p, x2p, y1p, y2p,              &
+            !$omp                      s1k, s2k, c1k, c2k,              &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -1106,15 +1109,16 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
-        !$omp do
+        !$omp do private(i)
         do i = 0, nv - 1
             b(i, 0, 0) = a(i, 0, 0) + a(i, 1, 0)
             b(i, 0, 1) = a(i, 0, 0) - a(i, 1, 0)
         enddo
         !$omp enddo
+
         !Next do remaining k:
         if (nv .lt. (lv - 1) / 2) then
-            !$omp do private(kc, x1, y1)
+            !$omp do private(i, k, kc, x1, y1)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1128,7 +1132,7 @@ module stafft
             enddo
             !$omp enddo
         else
-            !$omp do private(kc, c1k, s1k, x1, y1)
+            !$omp do private(i, k, kc, c1k, s1k, x1, y1)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k)
@@ -1171,7 +1175,7 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
-        !$omp do private(t2r, t3r, u0r, u1r, u2r, t2i, t3i, v0r, v1r, v2r)
+        !$omp do private(i, t2r, t3r, u0r, u1r, u2r, t2i, t3i, v0r, v1r, v2r)
         do i = 0, nv - 1
             t2r = a(i, 0, 0) - f12 * a(i, 0, 2)
             t3r = sinfpi3 * a(i, 0, 4)
@@ -1191,13 +1195,14 @@ module stafft
             b(i, 5, 0) = u2r - v2r
         enddo
         !$omp enddo
+
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
-            !$omp do private(kc, t1i, t1r, t2i, t2r, t3i, t3r, &
-            !$omp                u0i, u0r, u1i, u1r, u2i, u2r, &
-            !$omp                v0i, v0r, v1i, v1r, v2i, v2r, &
-            !$omp                     x1p, x2p, x3p, x4p, x5p, &
-            !$omp                     y1p, y2p, y3p, y4p, y5p)
+            !$omp do private(i, k, kc, t1i, t1r, t2i, t2r, t3i, t3r, &
+            !$omp                      u0i, u0r, u1i, u1r, u2i, u2r, &
+            !$omp                      v0i, v0r, v1i, v1r, v2i, v2r, &
+            !$omp                           x1p, x2p, x3p, x4p, x5p, &
+            !$omp                           y1p, y2p, y3p, y4p, y5p)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1251,13 +1256,13 @@ module stafft
             enddo
             !$omp enddo
         else
-            !$omp do private(kc, t1i, t1r, t2i, t2r, t3i, t3r, &
-            !$omp                u0i, u0r, u1i, u1r, u2i, u2r, &
-            !$omp                v0i, v0r, v1i, v1r, v2i, v2r, &
-            !$omp                     x1p, x2p, x3p, x4p, x5p, &
-            !$omp                     y1p, y2p, y3p, y4p, y5p, &
-            !$omp                     s1k, s2k, s3k, s4k, s5k, &
-            !$omp                     c1k, c2k, c3k, c4k, c5k)
+            !$omp do private(i, k, kc, t1i, t1r, t2i, t2r, t3i, t3r, &
+            !$omp                      u0i, u0r, u1i, u1r, u2i, u2r, &
+            !$omp                      v0i, v0r, v1i, v1r, v2i, v2r, &
+            !$omp                           x1p, x2p, x3p, x4p, x5p, &
+            !$omp                           y1p, y2p, y3p, y4p, y5p, &
+            !$omp                           s1k, s2k, s3k, s4k, s5k, &
+            !$omp                           c1k, c2k, c3k, c4k, c5k)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -1325,7 +1330,7 @@ module stafft
         !Catch the case k = lv / 2 when lv even:
         if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
-            !$omp do private(q1, q2, q3, q4, q5, q6)
+            !$omp do private(i, q1, q2, q3, q4, q5, q6)
             do i = 0, nv - 1
                 q1 = a(i, lvd2, 0) + a(i, lvd2, 2)
                 q2 = a(i, lvd2, 5) + a(i, lvd2, 3)
@@ -1361,7 +1366,7 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
-        !$omp do private(t3r, t4r, t5r, t6r, t7r, t8r, t9r, t10r, t11r)
+        !$omp do private(i, t3r, t4r, t5r, t6r, t7r, t8r, t9r, t10r, t11r)
         do i = 0, nv - 1
             t3r = sinf2pi5 * a(i, 0, 4)
             t4r = sinf2pi5 * a(i, 0, 3)
@@ -1381,9 +1386,9 @@ module stafft
         !$omp enddo
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
-            !$omp do private(kc, x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
-            !$omp                t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
+            !$omp do private(i, k, kc, x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
+            !$omp                      t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1431,10 +1436,10 @@ module stafft
             enddo
             !$omp enddo
         else
-            !$omp do private(kc, x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
-            !$omp                s1k, s2k, s3k, s4k, c1k, c2k, c3k, c4k,                     &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
-            !$omp                t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
+            !$omp do private(i, k, kc, x1p, x2p, x3p, x4p, y1p, y2p, y3p, y4p,                     &
+            !$omp                      s1k, s2k, s3k, s4k, c1k, c2k, c3k, c4k,                     &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r, t5i, t5r, t6i, t6r, &
+            !$omp                      t7i, t7r, t8i, t8r, t9i, t9r, t10i, t10r, t11i, t11r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -1508,7 +1513,7 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
-        !$omp do private(t1r, t2r, t3r, t4r)
+        !$omp do private(i, t1r, t2r, t3r, t4r)
         do i = 0, nv - 1
             t1r = a(i, 0, 0) + a(i, 0, 2)
             t2r = a(i, 0, 1)
@@ -1520,10 +1525,11 @@ module stafft
             b(i, 3, 0) = t3r - t4r
         enddo
         !$omp enddo
+
         !Next do remaining k:
         if (nv .lt. (lv - 1) / 2) then
-            !$omp do private(kc, x1p, x2p, x3p, y1p, y2p, y3p,          &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
+            !$omp do private(i, k, kc, x1p, x2p, x3p, y1p, y2p, y3p,          &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1553,9 +1559,9 @@ module stafft
             enddo
             !$omp enddo
         else
-            !$omp do private(kc, x1p, x2p, x3p, y1p, y2p, y3p,           &
-            !$omp                s1k, s2k, s3k, c1k, c2k, c3k,           &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
+            !$omp do private(i, k, kc, x1p, x2p, x3p, y1p, y2p, y3p,           &
+            !$omp                      s1k, s2k, s3k, c1k, c2k, c3k,           &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r, t4i, t4r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -1595,7 +1601,7 @@ module stafft
         !Catch the case k = lv / 2 when lv even:
         if (mod(lv, 2) == 0) then
             lvd2 = lv / 2
-            !$omp do private(t3r, t4r)
+            !$omp do private(i, t3r, t4r)
             do i = 0, nv - 1
                 b(i, 0, lvd2) = a(i, lvd2, 0) + a(i, lvd2, 1)
                 b(i, 2, lvd2) = a(i, lvd2, 3) - a(i, lvd2, 2)
@@ -1624,7 +1630,7 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
-        !$omp do private(t1r, t2r, t3r)
+        !$omp do private(i, t1r, t2r, t3r)
         do i = 0, nv - 1
             t1r = a(i, 0, 1)
             t2r = a(i, 0, 0) - f12 * t1r
@@ -1634,10 +1640,11 @@ module stafft
             b(i, 2, 0) = t2r - t3r
         enddo
         !$omp enddo
+
         !Next do remaining k:
         if (nv .le. (lv - 1) / 2) then
-            !$omp do private(kc, x1p, x2p, y1p, y2p,            &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r)
+            !$omp do private(i, k, kc, x1p, x2p, y1p, y2p,            &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1661,9 +1668,9 @@ module stafft
             enddo
             !$omp enddo
         else
-            !$omp do private(kc, x1p, x2p, y1p, y2p,            &
-            !$omp                c1k, c2k, s1k, s2k,            &
-            !$omp                t1i, t1r, t2i, t2r, t3i, t3r)
+            !$omp do private(i, k, kc, x1p, x2p, y1p, y2p,            &
+            !$omp                      c1k, c2k, s1k, s2k,            &
+            !$omp                      t1i, t1r, t2i, t2r, t3i, t3r)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k, 1)
@@ -1707,15 +1714,16 @@ module stafft
 
         !$omp parallel
         !Do k = 0 first:
-        !$omp do
+        !$omp do private(i)
         do i = 0, nv - 1
             b(i, 0, 0) = a(i, 0, 0) + a(i, 0, 1)
             b(i, 1, 0) = a(i, 0, 0) - a(i, 0, 1)
         enddo
         !$omp enddo
+
         !Next do remaining k:
         if (nv .lt. (lv - 1) / 2) then
-            !$omp do private(kc, x1p, y1p)
+            !$omp do private(i, k, kc, x1p, y1p)
             do i = 0, nv - 1
                 do k = 1, (lv - 1) / 2
                     kc = lv - k
@@ -1729,7 +1737,7 @@ module stafft
             enddo
             !$omp enddo
         else
-            !$omp do private(kc, c1k, s1k, x1p, y1p)
+            !$omp do private(i, k, kc, c1k, s1k, x1p, y1p)
             do k = 1, (lv - 1) / 2
                 kc = lv - k
                 c1k = cosine(k)
