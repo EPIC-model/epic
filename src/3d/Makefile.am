@@ -10,7 +10,6 @@ epic3d_SOURCES = 				\
 	utils/deriv1d.f90			\
 	utils/options.f90			\
 	utils/parameters.f90			\
-	fields/field_layout.f90			\
 	fields/fields.f90			\
 	fields/field_diagnostics.f90		\
 	fields/field_netcdf.f90			\

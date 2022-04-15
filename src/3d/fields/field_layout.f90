@@ -1,7 +1,7 @@
 module field_layout
     use mpi_f08
     use mpi_communicator, only : mpi_size, mpi_rank, mpi_err, comm
-!     use parameters, only : nx, ny, nz
+    use parameters, only : nx, ny, nz
     implicit none
 
     type box_type
@@ -23,13 +23,12 @@ module field_layout
 
         ! We only distribute x and y.
         ! Each process owns all grid points in z-direction.
-        subroutine field_layout_init(nx, ny, nz)
-            integer, intent(in) :: nx, ny, nz
-            integer             :: dims(2)
-            type(MPI_Comm)      :: comm_cart
-            integer             :: coords(2)
-            integer             :: new_rank
-            logical             :: periods(2)
+        subroutine field_layout_init
+            integer        :: dims(2)
+            type(MPI_Comm) :: comm_cart
+            integer        :: coords(2)
+            integer        :: new_rank
+            logical        :: periods(2)
 
             if (mpi_size == 1) then
                 neighbour%xlo = mpi_rank
