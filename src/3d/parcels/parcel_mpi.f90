@@ -32,10 +32,6 @@ module parcel_mpi
             do n = 1, n_parcels
                 call get_index(parcels%position(:, n), i, j, k)
 
-!                 if (is_outside(i, j)) then
-
-!                 endif
-
             enddo
 
         end subroutine parcel_locate
