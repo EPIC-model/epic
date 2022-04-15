@@ -5,16 +5,20 @@ module field_layout
     implicit none
 
     type box_type
-        integer :: lo(3), hi(3)
+        integer :: lo(3),  hi(3)
+        integer :: hlo(3), hhi(3)
     end type box_type
 
     type neighbour_type
         integer :: xlo, xhi
         integer :: ylo, yhi
+        integer :: corners(4)
     end type neighbour_type
 
     type(box_type)       :: box
     type(neighbour_type) :: neighbour
+
+    integer :: n_halo
 
     private :: set_local_bounds
 
@@ -22,8 +26,8 @@ module field_layout
 
         ! We only distribute x and y.
         ! Each process owns all grid points in z-direction.
-        subroutine field_layout_init(nx, ny, nz)
-            integer, intent(in) :: nx, ny, nz
+        subroutine field_layout_init(nx, ny, nz, nh)
+            integer, intent(in) :: nx, ny, nz, nh
             integer             :: dims(2)
             type(MPI_Comm)      :: comm_cart
             integer             :: coords(2)
@@ -35,8 +39,8 @@ module field_layout
                 neighbour%xhi = mpi_rank
                 neighbour%ylo = mpi_rank
                 neighbour%yhi = mpi_rank
-                box%lo = (/0,    0,    0 /)
-                box%hi = (/nx-1, ny-1, nz/)
+                box%lo = (/0,  0,  0 /)
+                box%hi = (/nx, ny, nz/)
                 return
             endif
 
@@ -55,6 +59,7 @@ module field_layout
             !   reorder  -- ranking may be reordered (true) or not (false) (logical)
             call MPI_Cart_create(comm, 2, dims, periods, .true., comm_cart, mpi_err)
 
+            ! Get MPI rank of corners of local box
             call MPI_Comm_rank(comm_cart, new_rank, mpi_err)
 
             ! Info from https://www.open-mpi.org
@@ -69,6 +74,11 @@ module field_layout
             box%lo(3) = 0
             box%hi(3) = nz
 
+            ! box including halo
+            n_halo = nh
+            box%hlo = box%lo - nh
+            box%hhi = box%hi + nh
+
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)
             !   comm        -- communicator with Cartesian structure
@@ -78,6 +88,25 @@ module field_layout
             !   rank_dest   -- rank of destination process (integer)
             call MPI_Cart_shift(comm_cart, 0, 1, neighbour%xlo, neighbour%xhi, mpi_err)
             call MPI_Cart_shift(comm_cart, 1, 1, neighbour%ylo, neighbour%yhi, mpi_err)
+
+            ! Info from https://www.open-mpi.org
+
+            ! lower left corner
+            call MPI_Cart_rank(comm_cart, (/box%lo(1)-1, box%lo(2)-1/), neighbour%corners(1), mpi_err)
+
+            ! upper left corner
+            call MPI_Cart_rank(comm_cart, (/box%lo(1)-1, box%hi(2)+1/), neighbour%corners(2), mpi_err)
+
+            ! upper right corner
+            call MPI_Cart_rank(comm_cart, (/box%hi(1)+1, box%hi(2)+1/), neighbour%corners(3), mpi_err)
+
+            ! lower right corner
+            call MPI_Cart_rank(comm_cart, (/box%hi(1)+1, box%lo(2)-1/), neighbour%corners(4), mpi_err)
+
+            print *, "lower left corner", mpi_rank, (/box%lo(1)-1, box%lo(2)-1/), neighbour%corners(1)
+            print *, "upper left corner", mpi_rank, (/box%lo(1)-1, box%hi(2)+1/), neighbour%corners(2)
+            print *, "upper right corner", mpi_rank, (/box%hi(1)+1, box%hi(2)+1/), neighbour%corners(3)
+            print *, "lower right corner", mpi_rank, (/box%hi(1)+1, box%lo(2)-1/), neighbour%corners(4)
 
         end subroutine field_layout_init
 
@@ -98,7 +127,7 @@ module field_layout
                 first = first + remaining
             endif
 
-            last = first + nlocal - 1
+            last = first + nlocal
 
         end subroutine set_local_bounds
 
