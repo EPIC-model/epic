@@ -67,6 +67,7 @@ module field_layout
             !   comm    -- communicator with Cartesian structure
             !   rank    -- rank of a process within group of comm
             !   maxdims -- length of vector coords in the calling program
+            !   coords  -- containing the Cartesian coordinates of the specified process
             call MPI_Cart_coords(comm_cart, new_rank, 2, coords)
 
             call set_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
@@ -78,6 +79,8 @@ module field_layout
             n_halo = nh
             box%hlo = box%lo - nh
             box%hhi = box%hi + nh
+
+            print *, mpi_rank, "coords:", coords
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)
@@ -92,21 +95,16 @@ module field_layout
             ! Info from https://www.open-mpi.org
 
             ! lower left corner
-            call MPI_Cart_rank(comm_cart, (/box%lo(1)-1, box%lo(2)-1/), neighbour%corners(1), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)-1/), neighbour%corners(1), mpi_err)
 
             ! upper left corner
-            call MPI_Cart_rank(comm_cart, (/box%lo(1)-1, box%hi(2)+1/), neighbour%corners(2), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)+1/), neighbour%corners(2), mpi_err)
 
             ! upper right corner
-            call MPI_Cart_rank(comm_cart, (/box%hi(1)+1, box%hi(2)+1/), neighbour%corners(3), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)+1/), neighbour%corners(3), mpi_err)
 
             ! lower right corner
-            call MPI_Cart_rank(comm_cart, (/box%hi(1)+1, box%lo(2)-1/), neighbour%corners(4), mpi_err)
-
-            print *, "lower left corner", mpi_rank, (/box%lo(1)-1, box%lo(2)-1/), neighbour%corners(1)
-            print *, "upper left corner", mpi_rank, (/box%lo(1)-1, box%hi(2)+1/), neighbour%corners(2)
-            print *, "upper right corner", mpi_rank, (/box%hi(1)+1, box%hi(2)+1/), neighbour%corners(3)
-            print *, "lower right corner", mpi_rank, (/box%hi(1)+1, box%lo(2)-1/), neighbour%corners(4)
+            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)-1/), neighbour%corners(4), mpi_err)
 
         end subroutine field_layout_init
 
