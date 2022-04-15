@@ -36,7 +36,7 @@ program test_mpi_layout
 
     call MPI_Reduce(sendbuf, recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, comm_world, mpi_err)
 
-    passed = (passed .and. (mpi_err == 0) .and. (dble((nz+1)*nx*ny)) - recvbuf == 0.0d0)
+    passed = (passed .and. (mpi_err == 0) .and. (dble((nz+1)*nx*ny) - recvbuf == 0.0d0))
 
     call mpi_comm_finalise
 
