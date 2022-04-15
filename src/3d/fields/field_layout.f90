@@ -106,6 +106,11 @@ module field_layout
             ! lower right corner
             call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)-1/), neighbour%corners(4), mpi_err)
 
+            print *, "lower left corner", mpi_rank, (/coords(1)-1, coords(2)-1/), neighbour%corners(1)
+            print *, "upper left corner", mpi_rank, (/coords(1)-1, coords(2)+1/), neighbour%corners(2)
+            print *, "upper right corner", mpi_rank, (/coords(1)+1, coords(2)+1/), neighbour%corners(3)
+            print *, "lower right corner", mpi_rank, (/coords(1)+1, coords(2)-1/), neighbour%corners(4)
+
         end subroutine field_layout_init
 
 
