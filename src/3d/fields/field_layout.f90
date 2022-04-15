@@ -80,8 +80,6 @@ module field_layout
             box%hlo = box%lo - nh
             box%hhi = box%hi + nh
 
-            print *, mpi_rank, "coords:", coords
-
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)
             !   comm        -- communicator with Cartesian structure
@@ -93,6 +91,10 @@ module field_layout
             call MPI_Cart_shift(comm_cart, 1, 1, neighbour%ylo, neighbour%yhi, mpi_err)
 
             ! Info from https://www.open-mpi.org
+            ! MPI_Cart_rank(comm, coords, rank)
+            !   comm   -- communicator
+            !   coords -- Cartesian coordinates of a process
+            !   rank   -- rank of specified process
 
             ! lower left corner
             call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)-1/), neighbour%corners(1), mpi_err)
