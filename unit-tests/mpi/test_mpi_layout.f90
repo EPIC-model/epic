@@ -9,7 +9,10 @@ program test_mpi_layout
     use field_layout
     implicit none
 
-    logical :: passed = .false.
+    integer, parameter            :: nx = 32, ny = 32, nz = 32
+    double precision, allocatable :: data(:, :, :)
+    double precision              :: sendbuf, recvbuf
+    logical                       :: passed = .false.
 
     call mpi_comm_initialise
 
@@ -22,18 +25,27 @@ program test_mpi_layout
     passed = (mpi_err == 0)
 
 
-    call field_layout_init(10, 10, 10, 1)
+    call field_layout_init(nx, ny, nz, 0)
 
-    print *, mpi_rank, box%lo(1), box%hi(1), box%lo(2), box%hi(2)
-    print *, mpi_rank, neighbour%xlo, neighbour%xhi, neighbour%ylo, neighbour%yhi
+    allocate(data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
+    data(:, :, :) = 1.0d0
+
+    sendbuf = sum(data)
+    recvbuf = 0.0d0
+
+    call MPI_Reduce(sendbuf, recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, comm_world, mpi_err)
+
+    passed = (passed .and. (mpi_err == 0) .and. (dble((nz+1)*nx*ny)) - recvbuf == 0.0d0)
 
     call mpi_comm_finalise
 
     passed = (passed .and. (mpi_err == 0))
 
     if (mpi_rank == 0) then
-        call print_result_logical('Test MPI init', passed)
+        call print_result_logical('Test MPI layout', passed)
     endif
+
+    deallocate(data)
 
 end program test_mpi_layout

@@ -126,7 +126,7 @@ module field_layout
                 first = first + remaining
             endif
 
-            last = first + nlocal
+            last = first + nlocal - 1
 
         end subroutine set_local_bounds
 
