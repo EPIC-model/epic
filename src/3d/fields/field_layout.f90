@@ -1,6 +1,6 @@
 module field_layout
     use mpi_f08
-    use mpi_communicator, only : mpi_size, mpi_rank, mpi_err, comm
+    use mpi_communicator, only : mpi_size, mpi_rank, mpi_err, comm_world, comm_cart
 !     use parameters, only : nx, ny, nz
     implicit none
 
@@ -29,9 +29,8 @@ module field_layout
         subroutine field_layout_init(nx, ny, nz, nh)
             integer, intent(in) :: nx, ny, nz, nh
             integer             :: dims(2)
-            type(MPI_Comm)      :: comm_cart
             integer             :: coords(2)
-            integer             :: new_rank
+            integer             :: rank ! we do not reorder the rank numbers, so this is unused!
             logical             :: periods(2)
 
             if (mpi_size == 1) then
@@ -57,10 +56,10 @@ module field_layout
             !   dims     -- number of processes in each dimension
             !   periods  -- grid is periodic (true) or not (false) in each dimension
             !   reorder  -- ranking may be reordered (true) or not (false) (logical)
-            call MPI_Cart_create(comm, 2, dims, periods, .true., comm_cart, mpi_err)
+            call MPI_Cart_create(comm_world, 2, dims, periods, .false., comm_cart, mpi_err)
 
             ! Get MPI rank of corners of local box
-            call MPI_Comm_rank(comm_cart, new_rank, mpi_err)
+            call MPI_Comm_rank(comm_cart, rank, mpi_err)
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_coords(comm, rank, maxdims, coords, ierror)
@@ -68,7 +67,7 @@ module field_layout
             !   rank    -- rank of a process within group of comm
             !   maxdims -- length of vector coords in the calling program
             !   coords  -- containing the Cartesian coordinates of the specified process
-            call MPI_Cart_coords(comm_cart, new_rank, 2, coords)
+            call MPI_Cart_coords(comm_cart, rank, 2, coords)
 
             call set_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
             call set_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))

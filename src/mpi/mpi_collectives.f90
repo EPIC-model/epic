@@ -19,7 +19,7 @@ module mpi_collectives
 !             type(MPI_Op),      intent(in)                :: op
 !             type(MPI_Request)                            :: request
 !             call MPI_Ireduce(sendbuf, recvbuf, size(recvbuf), MPI_DOUBLE, &
-!                              op, 0, comm, request, mpi_err)
+!                              op, 0, comm_world, request, mpi_err)
 !         end subroutine mpi_double_ireduce
 
 !         subroutine mpi_integer_ireduce(sendbuf, recvbuf, op)
@@ -28,7 +28,7 @@ module mpi_collectives
 !             type(MPI_Op),      intent(in)                :: op
 !             type(MPI_Request)                            :: request
 !             call MPI_Ireduce(sendbuf, recvbuf, size(recvbuf), MPI_INT, &
-!                              op, 0, comm, request, mpi_err)
+!                              op, 0, comm_world, request, mpi_err)
 !         end subroutine mpi_integer_ireduce
 
         subroutine mpi_double_reduce(sendbuf, recvbuf, op)
@@ -36,7 +36,7 @@ module mpi_collectives
             double precision, intent(out) :: recvbuf(..)
             type(MPI_Op),     intent(in)  :: op
             call MPI_Reduce(sendbuf, recvbuf, size(recvbuf), MPI_DOUBLE, &
-                            op, 0, comm, mpi_err)
+                            op, 0, comm_world, mpi_err)
         end subroutine mpi_double_reduce
 
         subroutine mpi_integer_reduce(sendbuf, recvbuf, op)
@@ -44,7 +44,7 @@ module mpi_collectives
             integer,      intent(out) :: recvbuf(..)
             type(MPI_Op), intent(in)  :: op
             call MPI_Reduce(sendbuf, recvbuf, size(recvbuf), MPI_INT, &
-                            op, 0, comm, mpi_err)
+                            op, 0, comm_world, mpi_err)
         end subroutine mpi_integer_reduce
 
 end module mpi_collectives
