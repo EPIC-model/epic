@@ -20,6 +20,7 @@ program test_netcdf_read_attributes
     !
     call create_netcdf_file(ncfname='nctest.nc', &
                             overwrite=.true.,    &
+                            cmode=NF90_NETCDF4,  &
                             ncid=ncid)
 
     call write_netcdf_attribute(ncid=ncid, name='file_type', val='fields')
@@ -75,6 +76,7 @@ program test_netcdf_read_attributes
     !
     call create_netcdf_file(ncfname='nctest.nc', &
                             overwrite=.true.,    &
+                            cmode=NF90_NETCDF4,  &
                             ncid=ncid)
 
     call write_netcdf_attribute(ncid=ncid, name='file_type', val='field_stats')
@@ -100,6 +102,7 @@ program test_netcdf_read_attributes
     !
     call create_netcdf_file(ncfname='nctest.nc', &
                             overwrite=.true.,    &
+                            cmode=NF90_NETCDF4,  &
                             ncid=ncid)
 
     call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
@@ -137,6 +140,7 @@ program test_netcdf_read_attributes
     !
     call create_netcdf_file(ncfname='nctest.nc', &
                             overwrite=.true.,    &
+                            cmode=NF90_NETCDF4,  &
                             ncid=ncid)
 
     call write_netcdf_attribute(ncid=ncid, name='file_type', val='parcel_stats')

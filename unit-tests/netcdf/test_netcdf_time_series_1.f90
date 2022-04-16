@@ -22,6 +22,7 @@ program test_netcdf_time_series
 
     call create_netcdf_file(ncfname='nctest.nc', &
                             overwrite=.true.,    &
+                            cmode=NF90_NETCDF4,  &
                             ncid=ncid)
 
     call open_netcdf_file(ncfname='nctest.nc',    &

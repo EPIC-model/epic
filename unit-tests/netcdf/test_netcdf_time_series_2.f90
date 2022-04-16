@@ -22,6 +22,7 @@ program test_netcdf_time_series_2
 
     call create_netcdf_file(ncfname='nctest.nc', &
                             overwrite=.true.,    &
+                            cmode=NF90_NETCDF4,  &
                             ncid=ncid)
 
     call define_netcdf_dimension(ncid, "x", nx, dimids(1))

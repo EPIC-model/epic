@@ -10,6 +10,7 @@ module parcel_netcdf
     use iomanip, only : zfill
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
+    use mpi_communicator, only : comm, MPI_INFO_NULL
     implicit none
 
     integer :: parcel_io_timer
@@ -79,7 +80,12 @@ module parcel_netcdf
                 return
             endif
 
-            call create_netcdf_file(ncfname, overwrite, ncid)
+            call create_netcdf_file(ncfname=ncfname,                        &
+                                    overwrite=overwrite,                    &
+                                    cmode=ior(NF90_NETCDF4, NF90_MPIIO),    &
+                                    ncid=ncid,                              &
+                                    comm=comm%MPI_VAL,                      &
+                                    info=MPI_INFO_NULL%MPI_VAL)
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &

@@ -74,7 +74,7 @@ module field_netcdf
                 return
             endif
 
-            call create_netcdf_file(ncfname, overwrite, ncid)
+            call create_netcdf_file(ncfname, overwrite, NF90_NETCDF4, ncid)
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
