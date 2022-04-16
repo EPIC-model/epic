@@ -5,6 +5,7 @@
 ! =============================================================================
 module netcdf_utils
     use netcdf
+    use mpi_communicator
     implicit none
 
     ! netCDF error if non-zero
@@ -28,9 +29,19 @@ module netcdf_utils
                 stop
             endif
 
-            ncerr = nf90_create(path = ncfname,        &
-                                cmode = NF90_NETCDF4,  &
-                                ncid = ncid)
+            if (mpi_size > 1) then
+                ! 16 April
+                ! https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node25.htm
+                ncerr = nf90_create(path = ncfname,                         &
+                                    cmode = ior(NF90_NETCDF4, NF90_MPIIO),  &
+                                    ncid = ncid,                            &
+                                    comm=comm%MPI_VAL,                      &
+                                    info=MPI_INFO_NULL%MPI_VAL)
+            else
+                ncerr = nf90_create(path = ncfname,        &
+                                    cmode = NF90_NETCDF4,  &
+                                    ncid = ncid)
+            endif
 
             call check_netcdf_error("Failed to create netcdf file'" // trim(ncfname) // "'.")
 
@@ -39,6 +50,10 @@ module netcdf_utils
         subroutine delete_netcdf_file(ncfname)
             character(*), intent(in) :: ncfname
             integer                  :: stat
+
+            if (mpi_rank .ne. mpi_root) then
+                return
+            endif
 
             ! 15 June 2021
             ! https://stackoverflow.com/questions/18668832/how-delete-file-from-fortran-code

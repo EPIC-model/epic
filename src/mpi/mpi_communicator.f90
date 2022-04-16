@@ -4,8 +4,8 @@ module mpi_communicator
 
     type(MPI_Comm), parameter :: comm = MPI_COMM_WORLD
     integer                   :: mpi_err = 0
-    integer                   :: mpi_rank
-    integer                   :: mpi_size
+    integer                   :: mpi_rank = 0
+    integer                   :: mpi_size = 1
 
     contains
 

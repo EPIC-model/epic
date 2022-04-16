@@ -2,8 +2,8 @@ if ENABLE_3D
 AM_FCFLAGS =				\
 	-I $(top_builddir)/src/utils	\
 	-I $(top_builddir)/src/fft	\
-	-I $(top_builddir)/src/netcdf	\
-	-I $(top_builddir)/src/mpi
+	-I $(top_builddir)/src/mpi	\
+	-I $(top_builddir)/src/netcdf
 
 bin_PROGRAMS = epic3d
 epic3d_SOURCES = 				\
@@ -36,8 +36,8 @@ epic3d_SOURCES = 				\
 epic3d_LDADD = 						\
 	$(top_builddir)/src/utils/libepic_utils.la 	\
 	$(top_builddir)/src/fft/libepic_fft.la		\
-	$(top_builddir)/src/netcdf/libepic_netcdf.la	\
-	$(top_builddir)/src/mpi/libepic_mpi.la
+	$(top_builddir)/src/mpi/libepic_mpi.la		\
+	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 clean-local:
 	rm -f *.mod
