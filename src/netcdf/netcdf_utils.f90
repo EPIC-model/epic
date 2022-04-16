@@ -35,8 +35,8 @@ module netcdf_utils
                 ncerr = nf90_create(path = ncfname,                         &
                                     cmode = ior(NF90_NETCDF4, NF90_MPIIO),  &
                                     ncid = ncid,                            &
-                                    comm=comm%MPI_VAL,                      &
-                                    info=MPI_INFO_NULL%MPI_VAL)
+                                    comm = comm%MPI_VAL,                    &
+                                    info = MPI_INFO_NULL%MPI_VAL)
             else
                 ncerr = nf90_create(path = ncfname,        &
                                     cmode = NF90_NETCDF4,  &
@@ -51,7 +51,7 @@ module netcdf_utils
             character(*), intent(in) :: ncfname
             integer                  :: stat
 
-            if (mpi_rank .ne. mpi_root) then
+            if (mpi_rank .ne. mpi_master) then
                 return
             endif
 
@@ -69,9 +69,17 @@ module netcdf_utils
             integer,      intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
             integer,      intent(out) :: ncid
 
-            ncerr = nf90_open(path = ncfname,       &
-                              mode = access_flag,   &
-                              ncid = ncid)
+            if (mpi_size > 1) then
+                ncerr = nf90_open(path = ncfname,               &
+                                  mode = access_flag,           &
+                                  ncid = ncid,                  &
+                                  comm = comm%MPI_VAL,          &
+                                  info = MPI_INFO_NULL%MPI_VAL)
+            else
+                ncerr = nf90_open(path = ncfname,       &
+                                  mode = access_flag,   &
+                                  ncid = ncid)
+            endif
 
             call check_netcdf_error("Opening the netcdf file failed.")
 
@@ -97,7 +105,7 @@ module netcdf_utils
         subroutine check_netcdf_error(msg)
             character(*), intent(in) :: msg
 #ifndef NDEBUG
-            if (ncerr /= nf90_noerr) then
+            if (ncerr /= nf90_noerr .and. mpi_rank == mpi_root) then
                 print *, msg
                 print *, trim(nf90_strerror(ncerr))
                 stop

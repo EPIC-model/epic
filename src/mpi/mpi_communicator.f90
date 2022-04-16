@@ -6,6 +6,7 @@ module mpi_communicator
     integer                   :: mpi_err = 0
     integer                   :: mpi_rank = 0
     integer                   :: mpi_size = 1
+    integer, parameter        :: mpi_master = 0
 
     contains
 
