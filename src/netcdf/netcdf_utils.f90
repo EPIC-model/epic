@@ -105,7 +105,7 @@ module netcdf_utils
         subroutine check_netcdf_error(msg)
             character(*), intent(in) :: msg
 #ifndef NDEBUG
-            if (ncerr /= nf90_noerr .and. mpi_rank == mpi_root) then
+            if (ncerr /= nf90_noerr .and. mpi_rank == mpi_master) then
                 print *, msg
                 print *, trim(nf90_strerror(ncerr))
                 stop
