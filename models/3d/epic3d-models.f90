@@ -42,7 +42,7 @@ program epic3d_models
 
         subroutine generate_fields
 
-            call create_netcdf_file(ncfname, .false., NF90_NETCDF4, ncid)
+            call create_netcdf_file(ncfname, .false., ncid)
 
             dx = box%extent / dble(box%ncells)
             nx = box%ncells(1)

@@ -22,7 +22,6 @@ program test_netcdf_dataset_2d
 
     call create_netcdf_file(ncfname='nctest.nc', &
                             overwrite=.true.,    &
-                            cmode=NF90_NETCDF4,  &
                             ncid=ncid)
 
     passed = (passed .and. (ncerr == 0))

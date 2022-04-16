@@ -12,13 +12,11 @@ module netcdf_utils
 
     contains
 
-        subroutine create_netcdf_file(ncfname, overwrite, cmode, ncid, comm, info)
-            character(*),      intent(in)  :: ncfname
-            logical,           intent(in)  :: overwrite
-            integer,           intent(in)  :: cmode
-            integer,           intent(out) :: ncid
-            integer, optional, intent(in)  :: comm, info
-            logical                        :: l_exist = .true.
+        subroutine create_netcdf_file(ncfname, overwrite, ncid)
+            character(*), intent(in)  :: ncfname
+            logical,      intent(in)  :: overwrite
+            integer,      intent(out) :: ncid
+            logical                   :: l_exist = .true.
 
             ! check whether file exists
             call exist_netcdf_file(ncfname, l_exist)
@@ -30,12 +28,9 @@ module netcdf_utils
                 stop
             endif
 
-            ncerr = nf90_create(path = ncfname,     &
-                                cmode = cmode,      &
-                                ncid = ncid,        &
-                                comm = comm,        &
-                                info = info)
-
+            ncerr = nf90_create(path = ncfname,        &
+                                cmode = NF90_NETCDF4,  &
+                                ncid = ncid)
 
             call check_netcdf_error("Failed to create netcdf file'" // trim(ncfname) // "'.")
 
@@ -54,17 +49,14 @@ module netcdf_utils
         end subroutine delete_netcdf_file
 
 
-        subroutine open_netcdf_file(ncfname, access_flag, ncid, comm, info)
-            character(*),      intent(in)  :: ncfname
-            integer,           intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
-            integer,           intent(out) :: ncid
-            integer, optional, intent(in)  :: comm, info
+        subroutine open_netcdf_file(ncfname, access_flag, ncid)
+            character(*), intent(in)  :: ncfname
+            integer,      intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
+            integer,      intent(out) :: ncid
 
             ncerr = nf90_open(path = ncfname,       &
                               mode = access_flag,   &
-                              ncid = ncid,          &
-                              comm = comm,          &
-                              info = info)
+                              ncid = ncid)
 
             call check_netcdf_error("Opening the netcdf file failed.")
 

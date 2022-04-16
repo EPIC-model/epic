@@ -4,7 +4,6 @@ module field_netcdf
     use netcdf_writer
     use netcdf_reader
     use fields
-    use mpi_communicator, only : comm, MPI_INFO_NULL
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
@@ -67,12 +66,7 @@ module field_netcdf
                 return
             endif
 
-            call create_netcdf_file(ncfname=ncfname,                        &
-                                    overwrite=overwrite,                    &
-                                    cmode=ior(NF90_NETCDF4, NF90_MPIIO),    &
-                                    ncid=ncid,                              &
-                                    comm=comm%MPI_VAL,                      &
-                                    info=MPI_INFO_NULL%MPI_VAL)
+            call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &

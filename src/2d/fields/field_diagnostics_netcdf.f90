@@ -61,7 +61,7 @@ module field_diagnostics_netcdf
                 return
             endif
 
-            call create_netcdf_file(ncfname, overwrite, NF90_NETCDF4, ncid)
+            call create_netcdf_file(ncfname, overwrite, ncid)
 
             call write_netcdf_info(ncid=ncid,                    &
                                    epic_version=package_version, &
