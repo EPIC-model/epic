@@ -67,7 +67,6 @@ program test_netcdf_dataset_2d
     if (mpi_rank == mpi_master) then
         call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LOR, mpi_master, comm, mpi_err)
     else
-
         call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LOR, mpi_master, comm, mpi_err)
     endif
 
