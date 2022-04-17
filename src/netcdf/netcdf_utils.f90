@@ -35,7 +35,7 @@ module netcdf_utils
                 ncerr = nf90_create(path = ncfname,                         &
                                     cmode = ior(NF90_NETCDF4, NF90_MPIIO),  &
                                     ncid = ncid,                            &
-                                    comm = comm%MPI_VAL,                    &
+                                    comm = comm_world%MPI_VAL,              &
                                     info = MPI_INFO_NULL%MPI_VAL)
             else
                 ncerr = nf90_create(path = ncfname,        &
@@ -73,7 +73,7 @@ module netcdf_utils
                 ncerr = nf90_open(path = ncfname,               &
                                   mode = access_flag,           &
                                   ncid = ncid,                  &
-                                  comm = comm%MPI_VAL,          &
+                                  comm = comm_world%MPI_VAL,    &
                                   info = MPI_INFO_NULL%MPI_VAL)
             else
                 ncerr = nf90_open(path = ncfname,       &
