@@ -1,9 +1,9 @@
 ! =============================================================================
-!                       Test netCDF 2D dataset
+!                    Test MPI netCDF 2D dataset
 !
-!               This unit test checks to write 2D datasets to netCDF.
+!         This unit test checks to write 2D datasets in parallel to netCDF.
 ! =============================================================================
-program test_netcdf_dataset_2d
+program test_mpi_netcdf_dataset_2d
     use unit_test
     use netcdf_writer
     use mpi_communicator
@@ -106,4 +106,4 @@ program test_netcdf_dataset_2d
 
     call mpi_comm_finalise
 
-end program test_netcdf_dataset_2d
+end program test_mpi_netcdf_dataset_2d

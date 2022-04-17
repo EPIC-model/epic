@@ -1,9 +1,9 @@
 ! =============================================================================
-!                       Test netCDF 3D dataset
+!                       Test MPI netCDF 3D dataset
 !
-!               This unit test checks to write 3D datasets to netCDF.
+!        This unit test checks to write 3D datasets in parallel to netCDF.
 ! =============================================================================
-program test_netcdf_dataset_3d
+program test_mpi_netcdf_dataset_3d
     use unit_test
     use netcdf_writer
     use mpi_communicator, only : comm_world, mpi_err, mpi_comm_initialise, mpi_comm_finalise
@@ -149,4 +149,4 @@ program test_netcdf_dataset_3d
             last = first + nlocal - 1
         end subroutine set_local_bounds
 
-end program test_netcdf_dataset_3d
+end program test_mpi_netcdf_dataset_3d
