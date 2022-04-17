@@ -3,6 +3,7 @@
 ! =============================================================================
 module field_diagnostics
     use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
+    use constants, only : f12
     use fields
     use timer, only : start_timer, stop_timer
     implicit none
@@ -14,7 +15,8 @@ module field_diagnostics
                         max_npar,   &       ! max num parcels per cell
                         min_npar,   &       ! min num parcels per cell
                         avg_npar,   &       ! average num parcels per cell
-                        avg_nspar           ! average num small parcels per cell
+                        avg_nspar,  &       ! average num small parcels per cell
+                        keg                 ! kinetic energy calculated on the grid
     contains
 
         subroutine calculate_field_diagnostics
@@ -35,6 +37,10 @@ module field_diagnostics
             avg_npar = sum(nparg(0:nz-1, :, :)) * ncelli
 
             avg_nspar = sum(nsparg(0:nz-1, :, :)) * ncelli
+
+            keg = f12 * sum(volg(0:nz, :, :) * (velog(0:nz, :, :, 1) ** 2   &
+                                              + velog(0:nz, :, :, 2) ** 2   &
+                                              + velog(0:nz, :, :, 3) ** 2))
 
             call stop_timer(field_stats_timer)
 

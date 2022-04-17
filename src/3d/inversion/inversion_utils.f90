@@ -424,7 +424,7 @@ module inversion_utils
             call forfft(nzval * nyval, nxval, fp, xtrig, xfactors)
 
             ! Transpose array:
-            !$omp parallel do
+            !$omp parallel do shared(fs, fp) private(kx, iy)
             do kx = 1, nxval
                 do iy = 1, nyval
                     fs(:, kx, iy) = fp(:, iy, kx)
@@ -455,7 +455,7 @@ module inversion_utils
             call revfft(nzval * nxval, nyval, fs, ytrig, yfactors)
 
             ! Transpose array:
-            !$omp parallel do
+            !$omp parallel do shared(fs, fp) private(kx, iy)
             do kx = 1, nxval
                 do iy = 1, nyval
                     fp(:, iy, kx) = fs(:, kx, iy)
