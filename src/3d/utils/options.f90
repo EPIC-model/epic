@@ -59,7 +59,7 @@ module options
         integer          :: correction_iters = 2        ! parcel correction iterations
         double precision :: gradient_pref    = 1.8d0    ! prefactor for gradient descent
         double precision :: max_compression  = 0.5d0    ! parameter for gradient descent (limits the shift in parcel position)
-        double precision :: max_vratio       = 2.89     ! maximum ratio of grid cell volume / parcel volume
+        double precision :: max_vratio       = 4.913d0  ! maximum ratio of grid cell volume / parcel volume (1.7^3)
 
     end type parcel_type
 
