@@ -14,6 +14,6 @@ module mpi_utils
             character(*), intent(in) :: msg
             print *, "Error on rank ", mpi_rank
             print *, "    ", msg
-            call MPI_Abort(comm, -1, mpi_err)
+            call MPI_Abort(comm_world, -1, mpi_err)
         end subroutine mpi_exit_on_error
 end module mpi_utils
