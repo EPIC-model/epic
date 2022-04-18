@@ -5,6 +5,7 @@
 ! =============================================================================
 module netcdf_utils
     use netcdf
+    use mpi_communicator
     implicit none
 
     ! netCDF error if non-zero
@@ -28,9 +29,19 @@ module netcdf_utils
                 stop
             endif
 
-            ncerr = nf90_create(path = ncfname,        &
-                                cmode = NF90_NETCDF4,  &
-                                ncid = ncid)
+            if (mpi_size > 1) then
+                ! 16 April
+                ! https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node25.htm
+                ncerr = nf90_create(path = ncfname,                         &
+                                    cmode = ior(NF90_NETCDF4, NF90_MPIIO),  &
+                                    ncid = ncid,                            &
+                                    comm = comm_world%MPI_VAL,              &
+                                    info = MPI_INFO_NULL%MPI_VAL)
+            else
+                ncerr = nf90_create(path = ncfname,        &
+                                    cmode = NF90_NETCDF4,  &
+                                    ncid = ncid)
+            endif
 
             call check_netcdf_error("Failed to create netcdf file'" // trim(ncfname) // "'.")
 
@@ -39,6 +50,10 @@ module netcdf_utils
         subroutine delete_netcdf_file(ncfname)
             character(*), intent(in) :: ncfname
             integer                  :: stat
+
+            if (mpi_rank .ne. mpi_master) then
+                return
+            endif
 
             ! 15 June 2021
             ! https://stackoverflow.com/questions/18668832/how-delete-file-from-fortran-code
@@ -54,9 +69,17 @@ module netcdf_utils
             integer,      intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
             integer,      intent(out) :: ncid
 
-            ncerr = nf90_open(path = ncfname,       &
-                              mode = access_flag,   &
-                              ncid = ncid)
+            if (mpi_size > 1) then
+                ncerr = nf90_open(path = ncfname,               &
+                                  mode = access_flag,           &
+                                  ncid = ncid,                  &
+                                  comm = comm_world%MPI_VAL,    &
+                                  info = MPI_INFO_NULL%MPI_VAL)
+            else
+                ncerr = nf90_open(path = ncfname,       &
+                                  mode = access_flag,   &
+                                  ncid = ncid)
+            endif
 
             call check_netcdf_error("Opening the netcdf file failed.")
 
@@ -82,7 +105,7 @@ module netcdf_utils
         subroutine check_netcdf_error(msg)
             character(*), intent(in) :: msg
 #ifndef NDEBUG
-            if (ncerr /= nf90_noerr) then
+            if (ncerr /= nf90_noerr .and. mpi_rank == mpi_master) then
                 print *, msg
                 print *, trim(nf90_strerror(ncerr))
                 stop

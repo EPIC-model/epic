@@ -1,23 +1,38 @@
 ! =============================================================================
-!                       Test netCDF reading 2D datasets
+!                       Test MPI netCDF reading 2D datasets
 !
-!               This unit test checks to read 2D datasets.
+!               This unit test checks to read 2D datasets in parallel.
 ! =============================================================================
-program test_netcdf_read_dataset_2d
+program test_mpi_netcdf_read_dataset_2d
     use unit_test
     use netcdf_writer
     use netcdf_reader
+    use mpi_communicator
     implicit none
 
-    integer, parameter :: nx = 5, ny = 10, nt = 3
-    integer            :: ix, iy, ncid, dimids(3), t
-    integer            :: var_id = -1, cnt(3), start(3)
-    double precision   :: wdset(ny, nx), rdset(ny, nx), error
-    logical            :: passed = .true.
+    integer, parameter            :: nx = 5, ny = 10, nt = 3
+    integer                       :: ix, iy, ncid, dimids(3), t
+    integer                       :: var_id = -1, cnt(3), start(3)
+    double precision, allocatable :: wdset(:, :), rdset(:, :), error
+    logical                       :: passed = .true.
+    integer                       :: xstart, xend, ystart, yend, xlen, ylen
 
-    do ix = 1, nx
-        do iy = 1, ny
-            wdset(iy, ix) = iy + (ix-1) * ny
+    call mpi_comm_initialise
+
+    xstart = mpi_rank * nx + 1
+    xend   = (mpi_rank + 1) * nx
+    ystart = 1
+    yend   = ny
+
+    xlen = xend - xstart + 1
+    ylen = yend - ystart + 1
+
+    allocate(wdset(ystart:yend, xstart:xend))
+    allocate(rdset(ystart:yend, xstart:xend))
+
+    do ix = xstart, xend
+        do iy = ystart, yend
+            wdset(iy, ix) = dble(mpi_rank + 1)
         enddo
     enddo
 
@@ -27,7 +42,7 @@ program test_netcdf_read_dataset_2d
 
     passed = (passed .and. (ncerr == 0))
 
-    call define_netcdf_dimension(ncid, "x", nx, dimids(1))
+    call define_netcdf_dimension(ncid, "x", mpi_size * nx, dimids(1))
 
     passed = (passed .and. (ncerr == 0))
 
@@ -51,12 +66,13 @@ program test_netcdf_read_dataset_2d
 
     passed = (passed .and. (ncerr == 0))
 
+
     ! write data
 
     do t = 1, nt
 
-        cnt   = (/ nx, ny, 1 /)
-        start = (/ 1,  1,  t /)
+        cnt   = (/ xlen,   ylen,    1 /)
+        start = (/ xstart, ystart,  t /)
 
         call open_netcdf_file(ncfname='nctest.nc',    &
                             access_flag=NF90_WRITE, &
@@ -64,7 +80,7 @@ program test_netcdf_read_dataset_2d
 
         passed = (passed .and. (ncerr == 0))
 
-        call write_netcdf_dataset(ncid, var_id, wdset, start, cnt)
+        call write_netcdf_dataset(ncid, var_id, wdset, start=start, cnt=cnt)
 
         passed = (passed .and. (ncerr == 0))
 
@@ -86,8 +102,9 @@ program test_netcdf_read_dataset_2d
 
     passed = (passed .and. (ncerr == 0))
 
-    cnt   = (/nx, ny, 1/)
-    start = (/1,  1,  nt/)
+    cnt   = (/ xlen,   ylen,    1  /)
+    start = (/ xstart, ystart,  nt /)
+
     call read_netcdf_dataset(ncid, 'x_velocity', rdset, start, cnt)
 
     passed = (passed .and. (ncerr == 0))
@@ -104,6 +121,19 @@ program test_netcdf_read_dataset_2d
 
     passed = (passed .and. (ncerr == 0))
 
-    call print_result_logical('Test netCDF read 2D dataset', passed)
+    if (mpi_rank == mpi_master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LOR, mpi_master, comm_world, mpi_err)
+    else
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LOR, mpi_master, comm_world, mpi_err)
+    endif
 
-end program test_netcdf_read_dataset_2d
+    if (mpi_rank == mpi_master) then
+        call print_result_logical('Test MPI netCDF read 2D dataset', passed)
+    endif
+
+    deallocate(wdset)
+    deallocate(rdset)
+
+    call mpi_comm_finalise
+
+end program test_mpi_netcdf_read_dataset_2d
