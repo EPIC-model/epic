@@ -3,10 +3,6 @@ AM_FCFLAGS =				\
 	-I $(top_builddir)/src/3d/	\
 	-I $(top_builddir)/src/mpi
 
-AM_LDFLAGS =						\
-	$(top_builddir)/src/3d/fields/field_layout.o
-
-
 noinst_LTLIBRARIES = libcombi.la
 libcombi_la_SOURCES =
 libcombi_la_LIBADD = 					\

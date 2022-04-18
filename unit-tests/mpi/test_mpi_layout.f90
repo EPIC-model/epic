@@ -1,12 +1,12 @@
 ! =============================================================================
 !                       Test MPI initialisation
 !
-!               This unit test checks the MPI init and finalize.
+!                   This unit test checks the MPI layout.
 ! =============================================================================
 program test_mpi_layout
     use unit_test
     use mpi_communicator
-    use field_layout
+    use mpi_layout
     implicit none
 
     integer, parameter            :: nx = 32, ny = 32, nz = 32
@@ -24,8 +24,7 @@ program test_mpi_layout
 
     passed = (mpi_err == 0)
 
-
-    call field_layout_init(nx, ny, nz, 2)
+    call mpi_layout_init(nx, ny, nz, 2)
 
     allocate(data(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 

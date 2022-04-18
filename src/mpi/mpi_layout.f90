@@ -1,4 +1,4 @@
-module field_layout
+module mpi_layout
     use mpi_f08
     use mpi_communicator, only : mpi_size, mpi_rank, mpi_err, comm_world, comm_cart
     implicit none
@@ -26,7 +26,7 @@ module field_layout
 
         ! We only distribute x and y.
         ! Each process owns all grid points in z-direction.
-        subroutine field_layout_init(nx, ny, nz, nh)
+        subroutine mpi_layout_init(nx, ny, nz, nh)
             integer, intent(in) :: nx, ny, nz, nh
             integer             :: dims(2)
             integer             :: coords(2)
@@ -107,7 +107,7 @@ module field_layout
             ! lower right corner
             call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)-1/), neighbour%corners(4), mpi_err)
 
-        end subroutine field_layout_init
+        end subroutine mpi_layout_init
 
 
         subroutine set_local_bounds(nglobal, coords, dims, first, last)
@@ -130,4 +130,4 @@ module field_layout
 
         end subroutine set_local_bounds
 
-end module field_layout
+end module mpi_layout

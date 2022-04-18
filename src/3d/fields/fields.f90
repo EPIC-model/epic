@@ -5,7 +5,7 @@
 module fields
     use parameters, only : dx, dxi, extent, lower, nx, ny, nz, nh
     use constants, only : zero
-    use field_layout
+    use mpi_layout
     implicit none
 
     ! x: zonal
@@ -55,7 +55,7 @@ module fields
                 return
             endif
 
-            call field_layout_init(nx, ny, nz, nh)
+            call mpi_layout_init(nx, ny, nz, nh)
 
             lo = box%hlo(3)
             hi = box%hhi(3)
