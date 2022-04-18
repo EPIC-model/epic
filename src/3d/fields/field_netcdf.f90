@@ -8,6 +8,7 @@ module field_netcdf
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities, glati
+    use mpi_layout, only : box
     implicit none
 
     integer :: field_io_timer
@@ -226,6 +227,7 @@ module field_netcdf
         subroutine write_netcdf_fields(t)
             double precision, intent(in) :: t
             integer                      :: cnt(4), start(4)
+            integer                      :: lo(3), hi(3)
 
             call start_timer(field_io_timer)
 
@@ -243,36 +245,42 @@ module field_netcdf
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
 
-            ! time step to write [step(4) is the time]
-            cnt   = (/ nx, ny, nz+1, 1        /)
-            start = (/ 1,  1,  1,    n_writes /)
+            lo = box%lo
+            hi = box%hi
+
+            ! need to add 1 since start must begin with index 1
+            start(1:3) = lo + 1
+            start(4) = n_writes
+
+            cnt(1:3) = hi - lo + 1
+            cnt(4)   = 1
 
             !
             ! write fields (do not write halo cells)
             !
-            call write_netcdf_dataset(ncid, x_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 1), &
+            call write_netcdf_dataset(ncid, x_vel_id, velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1), &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, y_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 2), &
+            call write_netcdf_dataset(ncid, y_vel_id, velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2), &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, z_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 3), &
-                                      start, cnt)
-
-            call write_netcdf_dataset(ncid, x_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 1), &
-                                      start, cnt)
-            call write_netcdf_dataset(ncid, y_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 2), &
-                                      start, cnt)
-            call write_netcdf_dataset(ncid, z_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 3), &
+            call write_netcdf_dataset(ncid, z_vel_id, velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3), &
                                       start, cnt)
 
-            call write_netcdf_dataset(ncid, tbuoy_id, tbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
+            call write_netcdf_dataset(ncid, x_vor_id, vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1), &
+                                      start, cnt)
+            call write_netcdf_dataset(ncid, y_vor_id, vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2), &
+                                      start, cnt)
+            call write_netcdf_dataset(ncid, z_vor_id, vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3), &
+                                      start, cnt)
+
+            call write_netcdf_dataset(ncid, tbuoy_id, tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
 
 #ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, dbuoy_id, dbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
+            call write_netcdf_dataset(ncid, dbuoy_id, dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
 
-            call write_netcdf_dataset(ncid, lbuoy_id, glati * (tbuoyg(0:nz, 0:ny-1, 0:nx-1)     &
-                                                             - dbuoyg(0:nz, 0:ny-1, 0:nx-1)),   &
+            call write_netcdf_dataset(ncid, lbuoy_id, glati * (tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))    &
+                                                             - dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))),  &
                                       start, cnt)
 #endif
             ! increment counter
