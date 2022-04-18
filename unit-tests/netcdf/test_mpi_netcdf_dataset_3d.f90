@@ -125,7 +125,7 @@ program test_mpi_netcdf_dataset_3d
         call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LOR, mpi_master, comm_world, mpi_err)
     endif
 
-    if (mpi_rank == 0) then
+    if (mpi_rank == mpi_master) then
         call print_result_logical('Test MPI netCDF write 3D datasets', passed)
     endif
 

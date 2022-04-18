@@ -136,6 +136,13 @@ module netcdf_writer
             integer, intent(in) :: data
             integer, intent(in) :: start
 
+            if (mpi_size > 1) then
+                ! 18 April 2022
+                ! see also https://github.com/Unidata/netcdf-fortran/blob/main/examples/F90/simple_xy_par_wr2.f90
+                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
+                call check_netcdf_error("Failed to set collective.")
+            endif
+
             ! write data
             ncerr = nf90_put_var(ncid, varid, (/data/), &
                                  start=(/start/), count=(/1/))
@@ -149,6 +156,13 @@ module netcdf_writer
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data
             integer,           intent(in) :: start
+
+            if (mpi_size > 1) then
+                ! 18 April 2022
+                ! see also https://github.com/Unidata/netcdf-fortran/blob/main/examples/F90/simple_xy_par_wr2.f90
+                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
+                call check_netcdf_error("Failed to set collective.")
+            endif
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, (/data/), &
