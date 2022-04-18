@@ -13,6 +13,7 @@ module parcel_init
                            max_num_parcels
     use timer, only : start_timer, stop_timer
     use omp_lib
+    use mpi_layout, only : box
     implicit none
 
     integer :: init_timer
@@ -232,9 +233,10 @@ module parcel_init
             use netcdf_reader
             character(*),     intent(in)  :: ncfname
             double precision, intent(in)  :: tol
-            double precision              :: buffer(-1:nz+1, 0:ny-1, 0:nx-1)
+            double precision, allocatable :: buffer(:, :, :)
             integer                       :: ncid
             integer                       :: n_steps, start(4), cnt(4)
+            integer                       :: lo(3), hi(3)
 
             call alloc_and_precompute
 
@@ -242,46 +244,73 @@ module parcel_init
 
             call get_num_steps(ncid, n_steps)
 
-            cnt  =  (/ nx, ny, nz+1, 1       /)
-            start = (/ 1,  1,  1,    n_steps /)
+
+            ! allocate with halo grid points
+            allocate(buffer(box%hlo(3):box%hhi(3), &
+                            box%hlo(2):box%hhi(2), &
+                            box%hlo(1):box%hhi(1)))
+
+            ! read without halo grid points
+            ! we must add +1 since index starts at 1
+            lo = box%lo
+            hi = box%hi
+            start(1:3) = lo + 1
+            start(4)   = n_steps
+
+            cnt(1:3) = hi - lo + 1
+            cnt(4)   = 1
 
             if (has_dataset(ncid, 'x_vorticity')) then
                 buffer = zero
-                call read_netcdf_dataset(ncid, 'x_vorticity', buffer(0:nz, :, :), &
+                call read_netcdf_dataset(ncid, 'x_vorticity', buffer(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                          start=start, cnt=cnt)
+                ! FIXME fill halo
+
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(1, :))
             endif
 
             if (has_dataset(ncid, 'y_vorticity')) then
                 buffer = zero
-                call read_netcdf_dataset(ncid, 'y_vorticity', buffer(0:nz, :, :), &
+                call read_netcdf_dataset(ncid, 'y_vorticity', buffer(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                          start=start, cnt=cnt)
+
+                ! FIXME fill halo
+
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(2, :))
             endif
 
             if (has_dataset(ncid, 'z_vorticity')) then
                 buffer = zero
-                call read_netcdf_dataset(ncid, 'z_vorticity', buffer(0:nz, :, :), &
+                call read_netcdf_dataset(ncid, 'z_vorticity', buffer(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                          start=start, cnt=cnt)
+
+                ! FIXME fill halo
+
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(3, :))
             endif
 
             if (has_dataset(ncid, 'buoyancy')) then
                 buffer = zero
-                call read_netcdf_dataset(ncid, 'buoyancy', buffer(0:nz, :, :), &
+                call read_netcdf_dataset(ncid, 'buoyancy', buffer(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                          start=start, cnt=cnt)
+                ! FIXME fill halo
+
                 call gen_parcel_scalar_attr(buffer, tol, parcels%buoyancy)
             endif
 
 #ifndef ENABLE_DRY_MODE
             if (has_dataset(ncid, 'humidity')) then
                 buffer = zero
-                call read_netcdf_dataset(ncid, 'humidity', buffer(0:nz, :, :), &
+                call read_netcdf_dataset(ncid, 'humidity', buffer(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                          start=start, cnt=cnt)
+                ! FIXME fill halo
+
                 call gen_parcel_scalar_attr(buffer, tol, parcels%humidity)
             endif
 #endif
             call close_netcdf_file(ncid)
+
+            deallocate(buffer)
 
             call dealloc
 
