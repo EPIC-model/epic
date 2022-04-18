@@ -50,7 +50,8 @@ unittests_PROGRAMS = 				\
 	test_lapinv1				\
 	test_diffz0				\
 	test_diffz1				\
-	test_mpi_parcel_write
+	test_mpi_parcel_write			\
+	test_mpi_parcel_read
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -130,6 +131,8 @@ test_diffz0_LDADD = libcombi.la
 test_diffz1_SOURCES = test_diffz1.f90
 test_diffz1_LDADD = libcombi.la
 
-
 test_mpi_parcel_write_SOURCES = test_mpi_parcel_write.f90
 test_mpi_parcel_write_LDADD = libcombi.la
+
+test_mpi_parcel_read_SOURCES = test_mpi_parcel_read.f90
+test_mpi_parcel_read_LDADD = libcombi.la
