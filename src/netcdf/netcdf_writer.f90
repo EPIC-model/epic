@@ -1,3 +1,4 @@
+! Note: In parallel we need to set NF90_COLLECTIVE for variables if one dimension is NF90_UNLIMITED
 module netcdf_writer
     use netcdf_utils
     implicit none
