@@ -3,13 +3,14 @@ module parcel_netcdf
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
-    use parcel_container, only : parcels, n_parcels
+    use parcel_container, only : parcels, n_parcels, n_total_parcels
     use parameters, only : nx, ny, nz, extent, lower, max_num_parcels
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
+    use mpi_communicator
     implicit none
 
     integer :: parcel_io_timer
@@ -96,7 +97,7 @@ module parcel_netcdf
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &
                                          name='n_parcels',                  &
-                                         dimsize=n_parcels,                 &
+                                         dimsize=n_total_parcels,           &
                                          dimid=npar_dim_id)
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
@@ -233,6 +234,8 @@ module parcel_netcdf
 
             call close_definition(ncid)
 
+            call close_netcdf_file(ncid)
+
         end subroutine create_netcdf_parcel_file
 
         ! Write parcels of the current time step into the parcel file.
@@ -240,6 +243,8 @@ module parcel_netcdf
         subroutine write_netcdf_parcels(t)
             double precision, intent(in) :: t
             integer                      :: cnt(2), start(2)
+            integer                      :: recvcounts(mpi_size)
+            integer                      :: sendbuf(mpi_size), start_index
 
             call start_timer(parcel_io_timer)
 
@@ -255,9 +260,20 @@ module parcel_netcdf
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, 1)
 
-            ! time step to write [step(2) is the time]
-            cnt   = (/ n_parcels, 1 /)
-            start = (/ 1,         1 /)
+            ! after this operation all MPI ranks now their starting index
+            recvcounts = 1
+            start_index = 0
+            sendbuf = 0
+            sendbuf(mpi_rank+1:mpi_size) = n_parcels
+            sendbuf(mpi_rank+1) = 0
+
+            call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, comm_world, mpi_err)
+
+            cnt   = (/ n_parcels,       1 /)
+
+            ! we need to increase the start_index by 1
+            ! since the starting index in Fortran is 1 and not 0.
+            start = (/ 1 + start_index, 1 /)
 
             call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels), start, cnt)
