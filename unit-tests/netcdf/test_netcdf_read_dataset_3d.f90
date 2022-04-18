@@ -53,6 +53,10 @@ program test_netcdf_read_dataset_3d
 
     passed = (passed .and. (ncerr == 0))
 
+    call close_netcdf_file(ncid)
+
+    passed = (passed .and. (ncerr == 0))
+
     ! write data
 
     do t = 1, nt

@@ -50,6 +50,10 @@ program test_mpi_netcdf_read_dataset_1d
 
     passed = (passed .and. (ncerr == 0))
 
+    call close_netcdf_file(ncid)
+
+    passed = (passed .and. (ncerr == 0))
+
 
     ! get start index of writing
     recvcounts = 1

@@ -60,7 +60,11 @@ program test_mpi_netcdf_read_dataset_2d
 
     call close_definition(ncid)
 
+    passed = (passed .and. (ncerr == 0))
+
     call close_netcdf_file(ncid)
+
+    passed = (passed .and. (ncerr == 0))
 
 
     ! write data
