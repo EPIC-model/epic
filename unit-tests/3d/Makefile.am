@@ -3,6 +3,7 @@ AM_FCFLAGS =				\
 	-I $(top_builddir)/unit-tests	\
 	-I $(top_builddir)/src/utils	\
 	-I $(top_builddir)/src/fft	\
+	-I $(top_builddir)/src/mpi	\
 	-I $(top_builddir)/src/netcdf
 
 AM_LDFLAGS =						\
@@ -19,6 +20,7 @@ libcombi_la_LIBADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/fft/libepic_fft.la		\
+	$(top_builddir)/src/mpi/libepic_mpi.la		\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 unittestsdir = $(prefix)/unit-tests
@@ -47,7 +49,8 @@ unittests_PROGRAMS = 				\
 	test_lapinv0_2				\
 	test_lapinv1				\
 	test_diffz0				\
-	test_diffz1
+	test_diffz1				\
+	test_mpi_parcel_write
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -126,3 +129,7 @@ test_diffz0_LDADD = libcombi.la
 
 test_diffz1_SOURCES = test_diffz1.f90
 test_diffz1_LDADD = libcombi.la
+
+
+test_mpi_parcel_write_SOURCES = test_mpi_parcel_write.f90
+test_mpi_parcel_write_LDADD = libcombi.la

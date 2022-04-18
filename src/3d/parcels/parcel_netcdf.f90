@@ -320,7 +320,7 @@ module parcel_netcdf
             remaining = n_total_parcels - n_parcels * mpi_size
             start_index = n_parcels * mpi_rank
 
-            if (mpi_rank < remaining)
+            if (mpi_rank < remaining) then
                 n_parcels = n_parcels + 1
             endif
 
