@@ -175,6 +175,8 @@ module field_netcdf
 #endif
             call close_definition(ncid)
 
+            call close_netcdf_file(ncid)
+
         end subroutine create_netcdf_field_file
 
         ! Pre-condition: Assumes an open file

@@ -146,6 +146,8 @@ module field_diagnostics_netcdf
 
             call close_definition(ncid)
 
+            call close_netcdf_file(ncid)
+
         end subroutine create_netcdf_field_stats_file
 
         ! Pre-condition: Assumes an open file
