@@ -269,11 +269,10 @@ module parcel_netcdf
 
             call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, comm_world, mpi_err)
 
-            cnt   = (/ n_parcels,       1 /)
-
             ! we need to increase the start_index by 1
             ! since the starting index in Fortran is 1 and not 0.
             start = (/ 1 + start_index, 1 /)
+            cnt   = (/ n_parcels,       1 /)
 
             call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels), start, cnt)
@@ -309,12 +308,23 @@ module parcel_netcdf
             character(*),     intent(in) :: fname
             logical                      :: l_valid = .false.
             integer                      :: cnt(2), start(2)
+            integer                      :: remaining, start_index
 
             call start_timer(parcel_io_timer)
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
-            call get_num_parcels(ncid, n_parcels)
+            call get_num_parcels(ncid, n_total_parcels)
+
+            n_parcels = n_total_parcels / mpi_size
+            remaining = n_total_parcels - n_parcels * mpi_size
+            start_index = n_parcels * mpi_rank
+
+            if (mpi_rank < remaining)
+                n_parcels = n_parcels + 1
+            endif
+
+            start_index = start_index + min(remaining, mpi_rank)
 
             if (n_parcels > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", &
@@ -322,9 +332,10 @@ module parcel_netcdf
                 stop
             endif
 
-            ! time step to read [step(2) is the time]
-            cnt   = (/ n_parcels, 1 /)
-            start = (/ 1,         1 /)
+            ! we need to increase the start_index by 1
+            ! since the starting index in Fortran is 1 and not 0.
+            start = (/ 1 + start_index, 1 /)
+            cnt   = (/ n_parcels,       1 /)
 
             ! Be aware that the starting index of buffer_1d and buffer_2d
             ! is 0; hence, the range is 0:n_parcels-1 in contrast to the
