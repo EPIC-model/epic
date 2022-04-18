@@ -324,6 +324,8 @@ module parcel_netcdf
                 n_parcels = n_parcels + 1
             endif
 
+            ! all MPI ranks < remaining get an additional parcel;
+            ! hence, we must shift the start indices accordingly
             start_index = start_index + min(remaining, mpi_rank)
 
             if (n_parcels > max_num_parcels) then
