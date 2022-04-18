@@ -33,7 +33,8 @@ unittests_PROGRAMS +=				\
 	test_mpi_netcdf_dataset_1d		\
 	test_mpi_netcdf_dataset_2d		\
 	test_mpi_netcdf_dataset_3d		\
-	test_mpi_netcdf_read_dataset_1d
+	test_mpi_netcdf_read_dataset_1d		\
+	test_mpi_netcdf_read_dataset_2d
 endif
 
 test_netcdf_dataset_2d_SOURCES = test_netcdf_dataset_2d.f90
@@ -72,4 +73,7 @@ test_mpi_netcdf_dataset_3d_LDADD = libcombi.la
 
 test_mpi_netcdf_read_dataset_1d_SOURCES = test_mpi_netcdf_read_dataset_1d.f90
 test_mpi_netcdf_read_dataset_1d_LDADD = libcombi.la
+
+test_mpi_netcdf_read_dataset_2d_SOURCES = test_mpi_netcdf_read_dataset_2d.f90
+test_mpi_netcdf_read_dataset_2d_LDADD = libcombi.la
 endif
