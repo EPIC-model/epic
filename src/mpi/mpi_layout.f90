@@ -76,8 +76,11 @@ module mpi_layout
 
             ! box including halo
             n_halo = n_halo + nh
-            box%hlo = box%lo - nh
-            box%hhi = box%hi + nh
+            box%hlo(1:2) = box%lo(1:2) - nh
+            box%hhi(1:2) = box%hi(1:2) + nh
+            ! we only need 1 halo layer in vertical direction
+            box%hlo(3) = -1
+            box%hhi(2) = nz + 1
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)
