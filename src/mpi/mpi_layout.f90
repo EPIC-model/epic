@@ -34,7 +34,7 @@ module mpi_layout
             logical             :: periods(2)
 
             if (mpi_size == 1) then
-                neighbour%left = mpi_rank
+                neighbour%left  = mpi_rank
                 neighbour%right = mpi_rank
                 neighbour%south = mpi_rank
                 neighbour%north = mpi_rank
@@ -86,7 +86,7 @@ module mpi_layout
             !   disp        -- displacement ( > 0: upward shift, < 0: downward shift) (integer)
             !   rank_source -- rank of source process (integer)
             !   rank_dest   -- rank of destination process (integer)
-            call MPI_Cart_shift(comm_cart, 0, 1, neighbour%left, neighbour%right, mpi_err)
+            call MPI_Cart_shift(comm_cart, 0, 1, neighbour%left,  neighbour%right, mpi_err)
             call MPI_Cart_shift(comm_cart, 1, 1, neighbour%south, neighbour%north, mpi_err)
 
             ! Info from https://www.open-mpi.org
