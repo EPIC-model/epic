@@ -22,7 +22,9 @@ module netcdf_utils
             integer,           intent(out) :: ncid
             logical                        :: l_exist = .true.
             logical, optional, intent(in)  :: l_single
-            logical                        :: l_parallel = (mpi_size > 1)
+            logical                        :: l_parallel
+
+            l_parallel = (mpi_size > 1)
 
             if (present(l_single)) then
                 l_parallel = .not. l_single
@@ -84,7 +86,9 @@ module netcdf_utils
             integer,           intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
             integer,           intent(out) :: ncid
             logical, optional, intent(in)  :: l_single
-            logical                        :: l_parallel = (mpi_size > 1)
+            logical                        :: l_parallel
+
+            l_parallel = (mpi_size > 1)
 
             if (present(l_single)) then
                 l_parallel = .not. l_single
@@ -114,7 +118,9 @@ module netcdf_utils
         subroutine close_netcdf_file(ncid, l_single)
             integer,           intent(in)  :: ncid
             logical, optional, intent(in)  :: l_single
-            logical                        :: l_parallel = (mpi_size > 1)
+            logical                        :: l_parallel
+
+            l_parallel = (mpi_size > 1)
 
             if (present(l_single)) then
                 l_parallel = (.not. l_single)

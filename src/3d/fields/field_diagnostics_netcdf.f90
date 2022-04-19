@@ -152,7 +152,7 @@ module field_diagnostics_netcdf
 
             call close_definition(ncid)
 
-            call close_netcdf_file(l_single=.true.)
+            call close_netcdf_file(ncid, l_single=.true.)
 
         end subroutine create_netcdf_field_stats_file
 

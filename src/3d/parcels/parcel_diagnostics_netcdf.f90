@@ -53,16 +53,16 @@ module parcel_diagnostics_netcdf
             call exist_netcdf_file(ncfname, l_exist)
 
             if (l_restart .and. l_exist) then
-                call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
+                call open_netcdf_file(ncfname, NF90_NOWRITE, ncid, l_single=.true.)
                 call get_num_steps(ncid, n_writes)
                 call get_time(ncid, restart_time)
                 call read_netcdf_parcel_stats_content
-                call close_netcdf_file(ncid)
+                call close_netcdf_file(ncid, l_single=.true.)
                 n_writes = n_writes + 1
                 return
             endif
 
-            call create_netcdf_file(ncfname, overwrite, ncid)
+            call create_netcdf_file(ncfname, overwrite, ncid, l_single=.true.)
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
@@ -210,6 +210,8 @@ module parcel_diagnostics_netcdf
 
             call close_definition(ncid)
 
+            call close_netcdf_file(ncid, l_single=.true.)
+
         end subroutine create_netcdf_parcel_stats_file
 
         ! Pre-condition: Assumes an open file
@@ -254,12 +256,16 @@ module parcel_diagnostics_netcdf
 
             call start_timer(parcel_stats_io_timer)
 
+            if (mpi_rank > mpi_master) then
+                return
+            endif
+
             if (t <= restart_time) then
                 call stop_timer(parcel_stats_io_timer)
                 return
             endif
 
-            call open_netcdf_file(ncfname, NF90_WRITE, ncid)
+            call open_netcdf_file(ncfname, NF90_WRITE, ncid, l_single=.true.)
 
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
@@ -267,24 +273,24 @@ module parcel_diagnostics_netcdf
             !
             ! write diagnostics
             !
-            call write_netcdf_scalar(ncid, pe_id, pe, n_writes)
-            call write_netcdf_scalar(ncid, ke_id, ke, n_writes)
-            call write_netcdf_scalar(ncid, te_id, ke + pe, n_writes)
-            call write_netcdf_scalar(ncid, npar_id, n_parcels, n_writes)
-            call write_netcdf_scalar(ncid, nspar_id, n_small, n_writes)
-            call write_netcdf_scalar(ncid, avg_lam_id, avg_lam, n_writes)
-            call write_netcdf_scalar(ncid, std_lam_id, std_lam, n_writes)
-            call write_netcdf_scalar(ncid, avg_vol_id, avg_vol, n_writes)
-            call write_netcdf_scalar(ncid, std_vol_id, std_vol, n_writes)
-            call write_netcdf_scalar(ncid, sum_vol_id, sum_vol, n_writes)
-            call write_netcdf_scalar(ncid, rms_x_vor_id, rms_zeta(1), n_writes)
-            call write_netcdf_scalar(ncid, rms_y_vor_id, rms_zeta(2), n_writes)
-            call write_netcdf_scalar(ncid, rms_z_vor_id, rms_zeta(3), n_writes)
+            call write_netcdf_scalar(ncid, pe_id, parcel_stats(IDX_PE), n_writes)
+            call write_netcdf_scalar(ncid, ke_id, parcel_stats(IDX_KE), n_writes)
+            call write_netcdf_scalar(ncid, te_id, parcel_stats(IDX_KE) + parcel_stats(IDX_PE), n_writes)
+            call write_netcdf_scalar(ncid, npar_id, int(parcel_stats(IDX_NTOT_PAR)), n_writes)
+            call write_netcdf_scalar(ncid, nspar_id, int(parcel_stats(IDX_N_SMALL)), n_writes)
+            call write_netcdf_scalar(ncid, avg_lam_id, parcel_stats(IDX_AVG_LAM), n_writes)
+            call write_netcdf_scalar(ncid, std_lam_id, parcel_stats(IDX_STD_LAM), n_writes)
+            call write_netcdf_scalar(ncid, avg_vol_id, parcel_stats(IDX_AVG_VOL), n_writes)
+            call write_netcdf_scalar(ncid, std_vol_id, parcel_stats(IDX_STD_VOL), n_writes)
+            call write_netcdf_scalar(ncid, sum_vol_id, parcel_stats(IDX_SUM_VOL), n_writes)
+            call write_netcdf_scalar(ncid, rms_x_vor_id, parcel_stats(IDX_RMS_XI), n_writes)
+            call write_netcdf_scalar(ncid, rms_y_vor_id, parcel_stats(IDX_RMS_ETA), n_writes)
+            call write_netcdf_scalar(ncid, rms_z_vor_id, parcel_stats(IDX_RMS_ZETA), n_writes)
 
             ! increment counter
             n_writes = n_writes + 1
 
-            call close_netcdf_file(ncid)
+            call close_netcdf_file(ncid, l_single=.true.)
 
             call stop_timer(parcel_stats_io_timer)
 
