@@ -13,11 +13,20 @@ module netcdf_utils
 
     contains
 
-        subroutine create_netcdf_file(ncfname, overwrite, ncid)
-            character(*), intent(in)  :: ncfname
-            logical,      intent(in)  :: overwrite
-            integer,      intent(out) :: ncid
-            logical                   :: l_exist = .true.
+        ! If the logical argument 'l_single = .true.', the file
+        ! is created by the root MPI rank with MPI size > 1. The argument
+        ! is .false. by default.
+        subroutine create_netcdf_file(ncfname, overwrite, ncid, l_single)
+            character(*),      intent(in)  :: ncfname
+            logical,           intent(in)  :: overwrite
+            integer,           intent(out) :: ncid
+            logical                        :: l_exist = .true.
+            logical, optional, intent(in)  :: l_single
+            logical                        :: l_parallel = (mpi_size > 1)
+
+            if (present(l_single)) then
+                l_parallel = .not. l_single
+            endif
 
             ! check whether file exists
             call exist_netcdf_file(ncfname, l_exist)
@@ -29,7 +38,7 @@ module netcdf_utils
                 stop
             endif
 
-            if (mpi_size > 1) then
+            if (l_parallel) then
                 ! 16 April
                 ! https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node25.htm
                 ncerr = nf90_create(path = ncfname,                         &
@@ -38,9 +47,12 @@ module netcdf_utils
                                     comm = comm_world%MPI_VAL,              &
                                     info = MPI_INFO_NULL%MPI_VAL)
             else
-                ncerr = nf90_create(path = ncfname,        &
-                                    cmode = NF90_NETCDF4,  &
-                                    ncid = ncid)
+                ! in single execution mpi_master = mpi_rank = 0
+                if (mpi_master == mpi_rank) then
+                    ncerr = nf90_create(path = ncfname,        &
+                                        cmode = NF90_NETCDF4,  &
+                                        ncid = ncid)
+                endif
             endif
 
             call check_netcdf_error("Failed to create netcdf file'" // trim(ncfname) // "'.")
@@ -64,32 +76,57 @@ module netcdf_utils
         end subroutine delete_netcdf_file
 
 
-        subroutine open_netcdf_file(ncfname, access_flag, ncid)
-            character(*), intent(in)  :: ncfname
-            integer,      intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
-            integer,      intent(out) :: ncid
+        ! If the logical argument 'l_single = .true.', the file
+        ! is opened by the root MPI rank with MPI size > 1. The argument
+        ! is .false. by default.
+        subroutine open_netcdf_file(ncfname, access_flag, ncid, l_single)
+            character(*),      intent(in)  :: ncfname
+            integer,           intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
+            integer,           intent(out) :: ncid
+            logical, optional, intent(in)  :: l_single
+            logical                        :: l_parallel = (mpi_size > 1)
 
-            if (mpi_size > 1) then
+            if (present(l_single)) then
+                l_parallel = .not. l_single
+            endif
+
+            if (l_parallel) then
                 ncerr = nf90_open(path = ncfname,               &
                                   mode = access_flag,           &
                                   ncid = ncid,                  &
                                   comm = comm_world%MPI_VAL,    &
                                   info = MPI_INFO_NULL%MPI_VAL)
             else
-                ncerr = nf90_open(path = ncfname,       &
-                                  mode = access_flag,   &
-                                  ncid = ncid)
+                ! in single execution mpi_master = mpi_rank = 0
+                if (mpi_master == mpi_rank) then
+                    ncerr = nf90_open(path = ncfname,     &
+                                    mode = access_flag,   &
+                                    ncid = ncid)
+                endif
             endif
 
             call check_netcdf_error("Opening the netcdf file failed.")
 
         end subroutine open_netcdf_file
 
+        ! Note: This subroutine should only be called with l_single = .true.
+        ! if it was opened in single mode.
+        subroutine close_netcdf_file(ncid, l_single)
+            integer,           intent(in)  :: ncid
+            logical, optional, intent(in)  :: l_single
+            logical                        :: l_parallel = (mpi_size > 1)
 
-        subroutine close_netcdf_file(ncid)
-            integer, intent(in) :: ncid
+            if (present(l_single)) then
+                l_parallel = (.not. l_single)
+            endif
 
-            ncerr = nf90_close(ncid)
+            if (l_parallel) then
+                ncerr = nf90_close(ncid)
+            else
+                if (mpi_master == mpi_rank) then
+                    ncerr = nf90_close(ncid)
+                endif
+            endif
 
             call check_netcdf_error("Closing the netcdf file failed.")
         end subroutine close_netcdf_file
