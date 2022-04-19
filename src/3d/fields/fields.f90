@@ -49,7 +49,7 @@ module fields
 
         ! Allocate all fields
         subroutine field_alloc
-            integer :: lo(3), hi(3)
+            integer :: hlo(3), hhi(3)
 
             if (allocated(velog)) then
                 return
@@ -57,30 +57,30 @@ module fields
 
             call mpi_layout_init(nx, ny, nz, nh)
 
-            lo = box%hlo(3)
-            hi = box%hhi(3)
+            hlo = box%hlo(3)
+            hhi = box%hhi(3)
 
-            allocate(velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3))
-            allocate(velgradg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 5))
+            allocate(velog(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 3))
+            allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 5))
 
-            allocate(volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
+            allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef NDEBUG
-            allocate(sym_volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
+            allocate(sym_volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
-            allocate(vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3))
+            allocate(vortg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 3))
 
-            allocate(vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3))
+            allocate(vtend(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 3))
 
-            allocate(tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
+            allocate(tbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef ENABLE_DRY_MODE
-            allocate(dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
+            allocate(dbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
-            allocate(nparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
-            allocate(nsparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
+            allocate(nparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(nsparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
         end subroutine field_alloc
 
