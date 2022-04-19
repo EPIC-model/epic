@@ -1,5 +1,7 @@
 ! =============================================================================
 !                   Write field diagnostics to NetCDF.
+!
+! Note: Only the root rank writes field diagnostics.
 ! =============================================================================
 module field_diagnostics_netcdf
     use field_diagnostics
