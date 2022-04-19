@@ -3,8 +3,9 @@
 !     and functions.
 ! =============================================================================
 module fields
-    use parameters, only : dx, dxi, extent, lower, nx, ny, nz
+    use parameters, only : dx, dxi, extent, lower, nx, ny, nz, nh
     use constants, only : zero
+    use mpi_layout
     implicit none
 
     ! x: zonal
@@ -48,31 +49,38 @@ module fields
 
         ! Allocate all fields
         subroutine field_alloc
+            integer :: hlo(3), hhi(3)
+
             if (allocated(velog)) then
                 return
             endif
 
-            allocate(velog(-1:nz+1, 0:ny-1, 0:nx-1, 3))
-            allocate(velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5))
+            call mpi_layout_init(nx, ny, nz, nh)
 
-            allocate(volg(-1:nz+1, 0:ny-1, 0:nx-1))
+            hlo = box%hlo(3)
+            hhi = box%hhi(3)
+
+            allocate(velog(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 3))
+            allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 5))
+
+            allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef NDEBUG
-            allocate(sym_volg(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(sym_volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
-            allocate(vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3))
+            allocate(vortg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 3))
 
-            allocate(vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3))
+            allocate(vtend(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 3))
 
-            allocate(tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(tbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef ENABLE_DRY_MODE
-            allocate(dbuoyg(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(dbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
-            allocate(nparg(-1:nz, 0:ny-1, 0:nx-1))
-            allocate(nsparg(-1:nz, 0:ny-1, 0:nx-1))
+            allocate(nparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(nsparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
         end subroutine field_alloc
 

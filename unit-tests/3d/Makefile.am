@@ -1,6 +1,7 @@
 AM_FCFLAGS =				\
 	-I $(top_builddir)/src/3d/ 	\
 	-I $(top_builddir)/unit-tests	\
+	-I $(top_builddir)/src/mpi	\
 	-I $(top_builddir)/src/utils	\
 	-I $(top_builddir)/src/fft	\
 	-I $(top_builddir)/src/netcdf
@@ -18,6 +19,7 @@ libcombi_la_SOURCES =
 libcombi_la_LIBADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/mpi/libepic_mpi.la		\
 	$(top_builddir)/src/fft/libepic_fft.la		\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
