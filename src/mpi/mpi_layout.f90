@@ -17,9 +17,6 @@ module mpi_layout
     type(box_type)       :: box
     type(neighbour_type) :: neighbour
 
-    ! we always have 1 internal halo layer
-    integer :: n_halo = 1
-
     private :: set_local_bounds
 
     contains
@@ -75,9 +72,10 @@ module mpi_layout
             box%hi(3) = nz
 
             ! box including halo
-            n_halo = n_halo + nh
-            box%hlo(1:2) = box%lo(1:2) - nh
-            box%hhi(1:2) = box%hi(1:2) + nh
+            ! (subtract/add one more halo layer; the first layer extends to
+            ! shared edges)
+            box%hlo(1:2) = box%lo(1:2) - nh - 1
+            box%hhi(1:2) = box%hi(1:2) + nh + 1
             ! we only need 1 halo layer in vertical direction
             box%hlo(3) = -1
             box%hhi(2) = nz + 1
