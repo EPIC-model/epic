@@ -260,7 +260,7 @@ module parcel_netcdf
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, 1)
 
-            ! after this operation all MPI ranks now their starting index
+            ! after this operation all MPI ranks know their starting index
             recvcounts = 1
             start_index = 0
             sendbuf = 0
