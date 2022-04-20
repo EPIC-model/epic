@@ -20,11 +20,10 @@ module parcel_diagnostics_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: t_axis_id, t_dim_id, n_writes,            &
-                          pe_id, ke_id, te_id, npar_id, nspar_id,   &
-                          rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
-                          avg_lam_id, std_lam_id,                   &
-                          avg_vol_id, std_vol_id, sum_vol_id
+    integer            :: t_axis_id, t_dim_id, n_writes,                                &
+                          peref_id, pe_id, ke_id, te_id, npar_id, nspar_id,             &
+                          rms_x_vor_id, rms_y_vor_id, rms_z_vor_id,                     &
+                          avg_lam_id, std_lam_id, avg_vol_id, std_vol_id, sum_vol_id
     double precision   :: restart_time
 
     integer :: parcel_stats_io_timer
@@ -44,6 +43,8 @@ module parcel_diagnostics_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
+            double precision          :: buffer(1)
+            integer                   :: start(1), cnt(1)
 
             ncfname =  basename // '_parcel_stats.nc'
 
@@ -57,6 +58,10 @@ module parcel_diagnostics_netcdf
                 call get_num_steps(ncid, n_writes)
                 call get_time(ncid, restart_time)
                 call read_netcdf_parcel_stats_content
+                start = 1
+                cnt = 1
+                call read_netcdf_dataset(ncid, 'peref', buffer, start, cnt)
+                peref = buffer(1)
                 call close_netcdf_file(ncid, l_single=.true.)
                 n_writes = n_writes + 1
                 return
@@ -87,6 +92,16 @@ module parcel_diagnostics_netcdf
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=pe_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='peref',                                               &
+                long_name='reference potential energy',                     &
+                std_name='',                                                &
+                unit='m^4/s^2',                                             &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=peref_id)
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
@@ -223,6 +238,8 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 'pe', pe_id)
 
+            call get_var_id(ncid, 'peref', peref_id)
+
             call get_var_id(ncid, 'ke', ke_id)
 
             call get_var_id(ncid, 'te', te_id)
@@ -273,6 +290,12 @@ module parcel_diagnostics_netcdf
             !
             ! write diagnostics
             !
+
+            ! we only write at t = 0, which happens for n_writes = 1
+            if (n_writes == 1) then
+                call write_netcdf_scalar(ncid, peref_id, peref, n_writes)
+            endif
+
             call write_netcdf_scalar(ncid, pe_id, parcel_stats(IDX_PE), n_writes)
             call write_netcdf_scalar(ncid, ke_id, parcel_stats(IDX_KE), n_writes)
             call write_netcdf_scalar(ncid, te_id, parcel_stats(IDX_KE) + parcel_stats(IDX_PE), n_writes)
