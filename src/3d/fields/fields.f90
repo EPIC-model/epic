@@ -3,7 +3,7 @@
 !     and functions.
 ! =============================================================================
 module fields
-    use parameters, only : dx, dxi, extent, lower, nx, ny, nz, nh
+    use parameters, only : dx, dxi, extent, lower, nx, ny, nz
     use constants, only : zero
     use mpi_layout
     implicit none
@@ -55,7 +55,7 @@ module fields
                 return
             endif
 
-            call mpi_layout_init(nx, ny, nz, nh)
+            call mpi_layout_init(nx, ny, nz)
 
             hlo = box%hlo(3)
             hhi = box%hhi(3)

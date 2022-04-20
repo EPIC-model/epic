@@ -23,8 +23,8 @@ module mpi_layout
 
         ! We only distribute x and y.
         ! Each process owns all grid points in z-direction.
-        subroutine mpi_layout_init(nx, ny, nz, nh)
-            integer, intent(in) :: nx, ny, nz, nh
+        subroutine mpi_layout_init(nx, ny, nz)
+            integer, intent(in) :: nx, ny, nz
             integer             :: dims(2)
             integer             :: coords(2)
             integer             :: rank ! we do not reorder the rank numbers, so this is unused!
@@ -37,6 +37,8 @@ module mpi_layout
                 neighbour%north = mpi_rank
                 box%lo = (/0,  0,  -1  /)
                 box%hi = (/nx, ny, nz+1/)
+                box%hlo = box%lo
+                box%hhi = box%hi
                 return
             endif
 
@@ -66,8 +68,8 @@ module mpi_layout
             !   coords  -- containing the Cartesian coordinates of the specified process
             call MPI_Cart_coords(comm_cart, rank, 2, coords)
 
-            call set_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
-            call set_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))
+            call set_local_bounds(nx+1, coords(1), dims(1), box%lo(1), box%hi(1))
+            call set_local_bounds(ny+1, coords(2), dims(2), box%lo(2), box%hi(2))
             box%lo(3) = 0
             box%hi(3) = nz
 
@@ -76,7 +78,7 @@ module mpi_layout
             box%hhi(1:2) = box%hi(1:2) + 2 !nh + 1
             ! we only need 1 halo layer in vertical direction
             box%hlo(3) = -1
-            box%hhi(2) = nz + 1
+            box%hhi(3) = nz + 1
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)

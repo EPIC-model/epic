@@ -22,8 +22,8 @@ module parameters
     ! number of grid cells in each dimension
     integer :: nx, ny, nz
 
-    ! number of halo grid cells in each dimension
-    integer :: nh
+!     ! number of halo grid cells in each dimension
+!     integer :: nh
 
     ! total number of grid cells
     integer :: ncell
@@ -75,7 +75,7 @@ module parameters
         dx = extent / dble((/nx, ny, nz/))
         dxi = one / dx;
 
-        nh = mpi_info%n_halo_cells
+!         nh = mpi_info%n_halo_cells
 
         msr = maxval((/dxi(1) * dx(2), dxi(2) * dx(1),   &
                        dxi(1) * dx(3), dxi(3) * dx(1),   &

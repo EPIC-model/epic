@@ -76,11 +76,11 @@ module options
 
     type(time_info_type) :: time
 
-    type mpi_info_type
-        integer          :: n_halo_cells = 1        ! number of halo cells
-    end type mpi_info_type
+!     type mpi_info_type
+!         integer          :: n_halo_cells = 1        ! number of halo cells
+!     end type mpi_info_type
 
-    type(mpi_info_type) :: mpi_info
+!     type(mpi_info_type) :: mpi_info
 
 
     contains
@@ -92,7 +92,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, field_tol, output, parcel, time, mpi_info
+            namelist /EPIC/ field_file, field_tol, output, parcel, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -161,7 +161,7 @@ module options
             call write_netcdf_attribute(ncid, "precise_stop", time%precise_stop)
             call write_netcdf_attribute(ncid, "alpha", time%alpha)
 
-            call write_netcdf_attribute(ncid, "n_halo_cells", mpi_info%n_halo_cells)
+!             call write_netcdf_attribute(ncid, "n_halo_cells", mpi_info%n_halo_cells)
 
         end subroutine write_netcdf_options
 
