@@ -9,7 +9,7 @@ module mpi_layout
     end type box_type
 
     type neighbour_type
-        integer :: left, right
+        integer :: west, east
         integer :: south, north
         integer :: corners(4)
     end type neighbour_type
@@ -31,12 +31,12 @@ module mpi_layout
             logical             :: periods(2)
 
             if (mpi_size == 1) then
-                neighbour%left  = mpi_rank
-                neighbour%right = mpi_rank
+                neighbour%west  = mpi_rank
+                neighbour%east = mpi_rank
                 neighbour%south = mpi_rank
                 neighbour%north = mpi_rank
-                box%lo = (/0,  0,  0 /)
-                box%hi = (/nx, ny, nz/)
+                box%lo = (/0,  0,  -1  /)
+                box%hi = (/nx, ny, nz+1/)
                 return
             endif
 
@@ -87,7 +87,7 @@ module mpi_layout
             !   disp        -- displacement ( > 0: upward shift, < 0: downward shift) (integer)
             !   rank_source -- rank of source process (integer)
             !   rank_dest   -- rank of destination process (integer)
-            call MPI_Cart_shift(comm_cart, 0, 1, neighbour%left,  neighbour%right, mpi_err)
+            call MPI_Cart_shift(comm_cart, 0, 1, neighbour%west,  neighbour%east, mpi_err)
             call MPI_Cart_shift(comm_cart, 1, 1, neighbour%south, neighbour%north, mpi_err)
 
             ! Info from https://www.open-mpi.org
