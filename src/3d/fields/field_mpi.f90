@@ -37,28 +37,29 @@ module field_mpi
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
 
+            call copy_to_buffers(data)
 
-            call halo_communication(data)
+            call halo_communication
+
+            call copy_from_buffers(data, .false.)
 
         end subroutine field_halo_fill
 
-!         subroutine field_halo_accumulate(data)
-
-!         end subroutine field_halo_accumulate
-
-        subroutine halo_communication(data)
+        subroutine field_halo_accumulate(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
 
-            type(MPI_Status) :: status
-
-            if (.not. l_allocated) then
-                l_allocated = .true.
-                call allocate_buffers
-            endif
-
             call copy_to_buffers(data)
+
+            call halo_communication
+
+            call copy_from_buffers(data, .true.)
+
+        end subroutine field_halo_accumulate
+
+        subroutine halo_communication
+            type(MPI_Status) :: status
 
             ! send west buffer to east halo
             call MPI_Send(west_buf, west_size, MPI_DOUBLE, neighbour%west, HALO_EAST_TAG, comm_cart, mpi_err)
@@ -141,9 +142,6 @@ module field_mpi
             call MPI_Recv(southeast_halo_buf, northwest_size, &
                           MPI_DOUBLE, neighbour%southeast, HALO_SOUTHEAST_TAG, comm_cart, status, mpi_err)
 
-
-            call copy_from_buffers(data)
-
         end subroutine halo_communication
 
 
@@ -193,6 +191,11 @@ module field_mpi
                                                  box%hlo(2):box%hhi(2), &
                                                  box%hlo(1):box%hhi(1))
 
+            if (.not. l_allocated) then
+                l_allocated = .true.
+                call allocate_buffers
+            endif
+
             west_buf  = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1)
             east_buf  = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2),   box%hi(1))
             south_buf = data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))
@@ -205,19 +208,48 @@ module field_mpi
 
         end subroutine copy_to_buffers
 
-        subroutine copy_from_buffers(data)
+        subroutine copy_from_buffers(data, l_add)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
+            logical,          intent(in)    :: l_add
 
-            data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) = east_halo_buf
-            data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1)) = west_halo_buf
-            data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) = north_halo_buf
-            data(box%lo(3):box%hi(3), box%hlo(2), box%lo(1):box%hi(1)) = south_halo_buf
-            data(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1)) = southwest_halo_buf
-            data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1)) = northwest_halo_buf
-            data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) = northeast_halo_buf
-            data(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1)) = southeast_halo_buf
+            if (l_add) then
+
+                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) &
+                    = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) + east_halo_buf
+
+                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1)) &
+                    = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1)) + west_halo_buf
+
+                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) &
+                    = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) + north_halo_buf
+
+                data(box%lo(3):box%hi(3), box%hlo(2), box%lo(1):box%hi(1)) &
+                    = data(box%lo(3):box%hi(3), box%hlo(2), box%lo(1):box%hi(1)) + south_halo_buf
+
+                data(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1)) &
+                    = data(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1)) + southwest_halo_buf
+
+                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1)) &
+                    = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1)) + northwest_halo_buf
+
+                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) &
+                    = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) &
+                    + northeast_halo_buf
+
+                data(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1)) &
+                    = data(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1)) + southeast_halo_buf
+            else
+                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) = east_halo_buf
+                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1)) = west_halo_buf
+                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) = north_halo_buf
+                data(box%lo(3):box%hi(3), box%hlo(2), box%lo(1):box%hi(1)) = south_halo_buf
+                data(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1)) = southwest_halo_buf
+                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1)) = northwest_halo_buf
+                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) = northeast_halo_buf
+                data(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1)) = southeast_halo_buf
+            endif
 
         end subroutine copy_from_buffers
 
