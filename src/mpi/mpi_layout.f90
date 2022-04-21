@@ -11,7 +11,8 @@ module mpi_layout
     type neighbour_type
         integer :: west, east
         integer :: south, north
-        integer :: corners(4)
+        integer :: southwest, northwest
+        integer :: southeast, northeast
     end type neighbour_type
 
     type(box_type)       :: box
@@ -97,16 +98,16 @@ module mpi_layout
             !   rank   -- rank of specified process
 
             ! lower left corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)-1/), neighbour%corners(1), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)-1/), neighbour%southwest, mpi_err)
 
             ! upper left corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)+1/), neighbour%corners(2), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)+1/), neighbour%northwest, mpi_err)
 
             ! upper right corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)+1/), neighbour%corners(3), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)+1/), neighbour%northeast, mpi_err)
 
             ! lower right corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)-1/), neighbour%corners(4), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)-1/), neighbour%southeast, mpi_err)
 
         end subroutine mpi_layout_init
 

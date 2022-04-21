@@ -3,15 +3,6 @@ module field_mpi
     use mpi_communicator
     implicit none
 
-    integer, parameter :: HALO_WEST_TAG  = 100000,   &
-                          HALO_EAST_TAG  = 100001,   &
-                          HALO_SOUTH_TAG = 100002,   &
-                          HALO_NORTH_TAG = 100003,   &
-                          HALO_LOWLE_TAG = 100004,   &
-                          HALO_UPPLE_TAG = 100005,   &
-                          HALO_UPPRI_TAG = 100006,   &
-                          HALO_LOWRI_TAG = 100007
-
     contains
 
         subroutine field_halo_fill(data)
@@ -77,10 +68,10 @@ module field_mpi
             cnt = 4
 
             call MPI_Send(data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1), &
-                          cnt, MPI_INT, neighbour%corners(1), HALO_LOWLE_TAG, comm_cart, mpi_err)
+                          cnt, MPI_INT, neighbour%southwest, HALO_SOUTHWEST_TAG, comm_cart, mpi_err)
 
             call MPI_Recv(data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)), &
-                          cnt, MPI_INT, neighbour%corners(3), HALO_LOWLE_TAG, comm_cart, status, mpi_err)
+                          cnt, MPI_INT, neighbour%northeast, HALO_SOUTHWEST_TAG, comm_cart, status, mpi_err)
 
 
 
@@ -89,10 +80,10 @@ module field_mpi
             cnt = 2
 
             call MPI_Send(data(box%lo(3):box%hi(3), box%hi(2), box%lo(1):box%lo(1)+1), &
-                          cnt, MPI_INT, neighbour%corners(2), HALO_UPPLE_TAG, comm_cart, mpi_err)
+                          cnt, MPI_INT, neighbour%northwest, HALO_NORTHWEST_TAG, comm_cart, mpi_err)
 
             call MPI_Recv(data(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1)), &
-                          cnt, MPI_INT, neighbour%corners(4), HALO_UPPLE_TAG, comm_cart, status, mpi_err)
+                          cnt, MPI_INT, neighbour%southeast, HALO_NORTHWEST_TAG, comm_cart, status, mpi_err)
 
 
 
@@ -102,10 +93,10 @@ module field_mpi
             cnt = 1
 
             call MPI_Send(data(box%lo(3):box%hi(3), box%hi(2), box%hi(1)), &
-                          cnt, MPI_INT, neighbour%corners(3), HALO_UPPRI_TAG, comm_cart, mpi_err)
+                          cnt, MPI_INT, neighbour%northeast, HALO_NORTHEAST_TAG, comm_cart, mpi_err)
 
             call MPI_Recv(data(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1)), &
-                          cnt, MPI_INT, neighbour%corners(1), HALO_UPPRI_TAG, comm_cart, status, mpi_err)
+                          cnt, MPI_INT, neighbour%southwest, HALO_NORTHEAST_TAG, comm_cart, status, mpi_err)
 
 
 
@@ -113,10 +104,10 @@ module field_mpi
             cnt = 2
 
             call MPI_Send(data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%hi(1)), &
-                          cnt, MPI_INT, neighbour%corners(4), HALO_LOWRI_TAG, comm_cart, mpi_err)
+                          cnt, MPI_INT, neighbour%southeast, HALO_SOUTHEAST_TAG, comm_cart, mpi_err)
 
             call MPI_Recv(data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1)), &
-                          cnt, MPI_INT, neighbour%corners(2), HALO_LOWRI_TAG, comm_cart, status, mpi_err)
+                          cnt, MPI_INT, neighbour%northwest, HALO_SOUTHEAST_TAG, comm_cart, status, mpi_err)
 
 
         end subroutine field_halo_fill
