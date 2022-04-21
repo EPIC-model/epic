@@ -57,7 +57,7 @@ module field_mpi
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
 
-            call copy_to_buffers(data)
+            call copy_from_interior_to_buffers(data)
 
             call interior_to_halo_communication
 
@@ -71,7 +71,7 @@ module field_mpi
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
 
-            call copy_to_buffers(data)
+            call copy_from_interior_to_buffers(data)
 
             call interior_to_halo_communication
 
@@ -88,6 +88,9 @@ module field_mpi
             ! after this operation, the halo has
             ! correct values
             call field_halo_accumulate(data)
+
+            !FIXME This copy can be saved if halo is added to buffers (see line 78)
+            call copy_from_halo_to_buffers(data)
 
             ! send halo data to valid regions of other processes
             call halo_to_interior_communication
@@ -305,7 +308,7 @@ module field_mpi
 
         end subroutine allocate_buffers
 
-        subroutine copy_to_buffers(data)
+        subroutine copy_from_interior_to_buffers(data)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
                                                  box%hlo(1):box%hhi(1))
@@ -325,7 +328,28 @@ module field_mpi
             southwest_buf = data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1)
             northwest_buf = data(box%lo(3):box%hi(3), box%hi(2),             box%lo(1):box%lo(1)+1)
 
-        end subroutine copy_to_buffers
+        end subroutine copy_from_interior_to_buffers
+
+        subroutine copy_from_halo_to_buffers(data)
+            double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
+                                                 box%hlo(2):box%hhi(2), &
+                                                 box%hlo(1):box%hhi(1))
+
+            if (.not. l_allocated) then
+                l_allocated = .true.
+                call allocate_buffers
+            endif
+
+            east_halo_buf = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1))
+            west_halo_buf = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1))
+            north_halo_buf = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))
+            south_halo_buf = data(box%lo(3):box%hi(3), box%hlo(2), box%lo(1):box%hi(1))
+            southwest_halo_buf = data(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1))
+            northwest_halo_buf = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1))
+            northeast_halo_buf = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1))
+            southeast_halo_buf = data(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1))
+
+        end subroutine copy_from_halo_to_buffers
 
         subroutine copy_from_buffers_to_halo(data, l_add)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
