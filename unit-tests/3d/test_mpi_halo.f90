@@ -1,9 +1,9 @@
 ! =============================================================================
-!                             Test MPI field halo
+!                             Test MPI field halo fill
 !
 !                   This unit test checks filling the field halo.
 ! =============================================================================
-program test_mpi_layout
+program test_field_halo_fill
     use constants, only : zero
     use unit_test
     use mpi_communicator
@@ -86,9 +86,9 @@ program test_mpi_layout
     passed = (passed .and. (mpi_err == 0))
 
     if (mpi_rank == mpi_master) then
-        call print_result_logical('Test MPI field halo', passed)
+        call print_result_logical('Test MPI field halo fill', passed)
     endif
 
     deallocate(values)
 
-end program test_mpi_layout
+end program test_field_halo_fill
