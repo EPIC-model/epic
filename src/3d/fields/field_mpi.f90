@@ -26,6 +26,9 @@ module field_mpi
         integer :: west_size, east_size, north_size, south_size
         integer :: southwest_size, southeast_size, northwest_size, northeast_size
 
+        integer :: west_halo_size, east_halo_size, north_halo_size, south_halo_size
+        integer :: southwest_halo_size, southeast_halo_size, northwest_halo_size, northeast_halo_size
+
         logical :: l_allocated = .false.
 
         public :: field_halo_fill
@@ -59,43 +62,46 @@ module field_mpi
         end subroutine field_halo_accumulate
 
         subroutine halo_communication
-            type(MPI_Status) :: status
 
             ! send west buffer to east halo
-            call MPI_Send(west_buf, west_size, MPI_DOUBLE, neighbour%west, HALO_EAST_TAG, comm_cart, mpi_err)
+            call MPI_Send(west_buf, west_size, MPI_DOUBLE, neighbour%west, &
+                          HALO_EAST_TAG, comm_cart, mpi_err)
 
             ! receive west buffer to east halo (left to right)
-            call MPI_Recv(east_halo_buf, &
-                          west_size, MPI_DOUBLE, neighbour%east, HALO_EAST_TAG, comm_cart, status, mpi_err)
+            call MPI_Recv(east_halo_buf, east_halo_size, MPI_DOUBLE, neighbour%east, &
+                          HALO_EAST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
 
 
 
             ! send east buffer to west halo
-            call MPI_Send(east_buf, east_size, MPI_DOUBLE, neighbour%east, HALO_WEST_TAG, comm_cart, mpi_err)
+            call MPI_Send(east_buf, east_size, MPI_DOUBLE, neighbour%east, &
+                          HALO_WEST_TAG, comm_cart, mpi_err)
 
             ! receive east buffer into west halo (right to left)
-            call MPI_Recv(west_halo_buf, &
-                          east_size, MPI_DOUBLE, neighbour%west, HALO_WEST_TAG, comm_cart, status, mpi_err)
+            call MPI_Recv(west_halo_buf, west_halo_size, MPI_DOUBLE, neighbour%west, &
+                          HALO_WEST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
 
 
             ! send south buffer to north halo
-            call MPI_Send(south_buf, south_size, MPI_DOUBLE, neighbour%south, HALO_NORTH_TAG, comm_cart, mpi_err)
+            call MPI_Send(south_buf, south_size, MPI_DOUBLE, neighbour%south, &
+                          HALO_NORTH_TAG, comm_cart, mpi_err)
 
             ! receive south buffer into north halo
-            call MPI_Recv(north_halo_buf, &
-                          south_size, MPI_DOUBLE, neighbour%north, HALO_NORTH_TAG, comm_cart, status, mpi_err)
+            call MPI_Recv(north_halo_buf, north_halo_size, MPI_DOUBLE, neighbour%north, &
+                          HALO_NORTH_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
 
 
 
             ! send north buffer to south halo
-            call MPI_Send(north_buf, north_size, MPI_DOUBLE, neighbour%north, HALO_SOUTH_TAG, comm_cart, mpi_err)
+            call MPI_Send(north_buf, north_size, MPI_DOUBLE, neighbour%north, &
+                          HALO_SOUTH_TAG, comm_cart, mpi_err)
 
             ! receive north buffer into south halo
-            call MPI_Recv(south_halo_buf, &
-                          north_size, MPI_DOUBLE, neighbour%south, HALO_SOUTH_TAG, comm_cart, status, mpi_err)
+            call MPI_Recv(south_halo_buf, south_halo_size, MPI_DOUBLE, neighbour%south, &
+                          HALO_SOUTH_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
 
 
@@ -105,19 +111,19 @@ module field_mpi
                           HALO_SOUTHWEST_TAG, comm_cart, mpi_err)
 
             ! receive northeast buffer into southwest halo
-            call MPI_Recv(southwest_halo_buf, northeast_size, &
-                          MPI_DOUBLE, neighbour%southwest, HALO_SOUTHWEST_TAG, comm_cart, status, mpi_err)
+            call MPI_Recv(southwest_halo_buf, southwest_halo_size, MPI_DOUBLE, neighbour%southwest, &
+                          HALO_SOUTHWEST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
 
 
 
             ! send southeast buffer to northwest halo
-            call MPI_Send(southeast_buf, &
-                          southeast_size, MPI_DOUBLE, neighbour%southeast, HALO_NORTHWEST_TAG, comm_cart, mpi_err)
+            call MPI_Send(southeast_buf, southeast_size, MPI_DOUBLE, neighbour%southeast, &
+                          HALO_NORTHWEST_TAG, comm_cart, mpi_err)
 
             ! receive southeast buffer into northwest halo
-            call MPI_Recv(northwest_halo_buf, southeast_size, &
-                          MPI_DOUBLE, neighbour%northwest, HALO_NORTHWEST_TAG, comm_cart, status, mpi_err)
+            call MPI_Recv(northwest_halo_buf, northwest_halo_size, MPI_DOUBLE, neighbour%northwest, &
+                          HALO_NORTHWEST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
 
 
@@ -127,20 +133,19 @@ module field_mpi
                           MPI_DOUBLE, neighbour%southwest, HALO_NORTHEAST_TAG, comm_cart, mpi_err)
 
             ! receive southwest buffer into northeast halo
-            call MPI_Recv(northeast_halo_buf, &
-                          southwest_size, MPI_DOUBLE, neighbour%northeast, HALO_NORTHEAST_TAG, comm_cart, &
-                          status, mpi_err)
+            call MPI_Recv(northeast_halo_buf, northeast_halo_size, MPI_DOUBLE, neighbour%northeast, &
+                          HALO_NORTHEAST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
 
 
 
             ! send northwest buffer to southeast halo
-            call MPI_Send(northwest_buf, northwest_size, &
-                          MPI_DOUBLE, neighbour%northwest, HALO_SOUTHEAST_TAG, comm_cart, mpi_err)
+            call MPI_Send(northwest_buf, northwest_size, MPI_DOUBLE, neighbour%northwest, &
+                          HALO_SOUTHEAST_TAG, comm_cart, mpi_err)
 
             ! receive northwest buffer into southeast halo
-            call MPI_Recv(southeast_halo_buf, northwest_size, &
-                          MPI_DOUBLE, neighbour%southeast, HALO_SOUTHEAST_TAG, comm_cart, status, mpi_err)
+            call MPI_Recv(southeast_halo_buf, southeast_halo_size, MPI_DOUBLE, neighbour%southeast, &
+                          HALO_SOUTHEAST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
         end subroutine halo_communication
 
@@ -183,6 +188,16 @@ module field_mpi
             allocate(northwest_halo_buf(zlen, 2))
             allocate(northeast_halo_buf(zlen, 2, 2))
             allocate(southeast_halo_buf(zlen, 2))
+
+            west_halo_size  = size(west_halo_buf)
+            east_halo_size  = size(east_halo_buf)
+            south_halo_size = size(south_halo_buf)
+            north_halo_size = size(north_halo_buf)
+
+            northeast_halo_size = size(northeast_halo_buf)
+            northwest_halo_size = size(northwest_halo_buf)
+            southeast_halo_size = size(southeast_halo_buf)
+            southwest_halo_size = size(southwest_halo_buf)
 
         end subroutine allocate_buffers
 
