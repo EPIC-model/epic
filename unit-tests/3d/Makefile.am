@@ -50,7 +50,7 @@ unittests_PROGRAMS = 				\
 	test_lapinv1				\
 	test_diffz0				\
 	test_diffz1				\
-	test_mpi_halo
+	test_mpi_field_halo_fill
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -130,5 +130,5 @@ test_diffz0_LDADD = libcombi.la
 test_diffz1_SOURCES = test_diffz1.f90
 test_diffz1_LDADD = libcombi.la
 
-test_mpi_halo_SOURCES = test_mpi_halo.f90
-test_mpi_halo_LDADD = libcombi.la
+test_mpi_field_halo_fill_SOURCES = test_mpi_field_halo_fill.f90
+test_mpi_field_halo_fill_LDADD = libcombi.la
