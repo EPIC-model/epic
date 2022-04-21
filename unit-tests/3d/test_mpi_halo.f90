@@ -24,9 +24,6 @@ program test_mpi_layout
 
     allocate(values(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 
-!     print *, mpi_rank, "     ", box%lo(1), box%hi(1), box%lo(2), box%hi(2), box%lo(3), box%hi(3)
-
-
     values(:, :, :) = dble(mpi_rank + 1)
 
     call field_halo_fill(values)
