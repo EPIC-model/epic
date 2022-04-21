@@ -36,10 +36,10 @@ module mpi_layout
                 neighbour%east = mpi_rank
                 neighbour%south = mpi_rank
                 neighbour%north = mpi_rank
-                box%lo = (/0,  0,  -1  /)
+                box%lo = (/ 0,  0,   -1/)
                 box%hi = (/nx, ny, nz+1/)
-                box%hlo = box%lo
-                box%hhi = box%hi
+                box%hlo = (/  -1,   -1,   -1/)
+                box%hhi = (/nx+1, ny+1, nz+1/)
                 return
             endif
 
