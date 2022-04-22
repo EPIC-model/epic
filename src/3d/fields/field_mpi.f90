@@ -94,7 +94,7 @@ module field_mpi
 
             call field_interior_accumulate(data)
 
-!             call field_halo_fill(data)
+            call field_halo_fill(data)
 
         end subroutine field_halo_swap
 
