@@ -10,6 +10,7 @@ module parcel_diagnostics
     use omp_lib
     use timer, only : start_timer, stop_timer
     use mpi_communicator
+    use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
     integer :: parcel_stats_timer
