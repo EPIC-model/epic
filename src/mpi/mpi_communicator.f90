@@ -1,5 +1,6 @@
 module mpi_communicator
     use mpi_f08
+    use mpi_tags
     implicit none
 
     type(MPI_Comm), parameter :: comm_world = MPI_COMM_WORLD

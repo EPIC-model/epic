@@ -9,9 +9,10 @@ module mpi_layout
     end type box_type
 
     type neighbour_type
-        integer :: left, right
+        integer :: west, east
         integer :: south, north
-        integer :: corners(4)
+        integer :: southwest, northwest
+        integer :: southeast, northeast
     end type neighbour_type
 
     type(box_type)       :: box
@@ -23,22 +24,12 @@ module mpi_layout
 
         ! We only distribute x and y.
         ! Each process owns all grid points in z-direction.
-        subroutine mpi_layout_init(nx, ny, nz, nh)
-            integer, intent(in) :: nx, ny, nz, nh
+        subroutine mpi_layout_init(nx, ny, nz)
+            integer, intent(in) :: nx, ny, nz
             integer             :: dims(2)
             integer             :: coords(2)
             integer             :: rank ! we do not reorder the rank numbers, so this is unused!
             logical             :: periods(2)
-
-            if (mpi_size == 1) then
-                neighbour%left  = mpi_rank
-                neighbour%right = mpi_rank
-                neighbour%south = mpi_rank
-                neighbour%north = mpi_rank
-                box%lo = (/0,  0,  0 /)
-                box%hi = (/nx, ny, nz/)
-                return
-            endif
 
             ! create slabs, z-direction keeps 1 processor
             dims = (/0, 0/)
@@ -66,19 +57,17 @@ module mpi_layout
             !   coords  -- containing the Cartesian coordinates of the specified process
             call MPI_Cart_coords(comm_cart, rank, 2, coords)
 
-            call set_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
-            call set_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))
+            call set_local_bounds(nx+1, coords(1), dims(1), box%lo(1), box%hi(1))
+            call set_local_bounds(ny+1, coords(2), dims(2), box%lo(2), box%hi(2))
             box%lo(3) = 0
             box%hi(3) = nz
 
-            ! box including halo
-            ! (subtract/add one more halo layer; the first layer extends to
-            ! shared edges)
-            box%hlo(1:2) = box%lo(1:2) - nh - 1
-            box%hhi(1:2) = box%hi(1:2) + nh + 1
+            ! box including asymmetric halo
+            box%hlo(1:2) = box%lo(1:2) - 1
+            box%hhi(1:2) = box%hi(1:2) + 2
             ! we only need 1 halo layer in vertical direction
             box%hlo(3) = -1
-            box%hhi(2) = nz + 1
+            box%hhi(3) = nz + 1
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)
@@ -87,7 +76,7 @@ module mpi_layout
             !   disp        -- displacement ( > 0: upward shift, < 0: downward shift) (integer)
             !   rank_source -- rank of source process (integer)
             !   rank_dest   -- rank of destination process (integer)
-            call MPI_Cart_shift(comm_cart, 0, 1, neighbour%left,  neighbour%right, mpi_err)
+            call MPI_Cart_shift(comm_cart, 0, 1, neighbour%west,  neighbour%east, mpi_err)
             call MPI_Cart_shift(comm_cart, 1, 1, neighbour%south, neighbour%north, mpi_err)
 
             ! Info from https://www.open-mpi.org
@@ -97,16 +86,16 @@ module mpi_layout
             !   rank   -- rank of specified process
 
             ! lower left corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)-1/), neighbour%corners(1), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)-1/), neighbour%southwest, mpi_err)
 
             ! upper left corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)+1/), neighbour%corners(2), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)+1/), neighbour%northwest, mpi_err)
 
             ! upper right corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)+1/), neighbour%corners(3), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)+1/), neighbour%northeast, mpi_err)
 
             ! lower right corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)-1/), neighbour%corners(4), mpi_err)
+            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)-1/), neighbour%southeast, mpi_err)
 
         end subroutine mpi_layout_init
 

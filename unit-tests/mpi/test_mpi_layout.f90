@@ -24,7 +24,7 @@ program test_mpi_layout
 
     passed = (mpi_err == 0)
 
-    call mpi_layout_init(nx, ny, nz, 2)
+    call mpi_layout_init(nx, ny, nz)
 
     allocate(data(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 

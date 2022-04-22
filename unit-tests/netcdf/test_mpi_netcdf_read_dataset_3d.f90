@@ -7,7 +7,7 @@ program test_mpi_netcdf_read_dataset_3d
     use unit_test
     use netcdf_writer
     use netcdf_reader
-    use mpi_communicator, only : comm_world, mpi_err, mpi_comm_initialise, mpi_comm_finalise
+    use mpi_communicator, only : comm_world, mpi_err, mpi_comm_initialise, mpi_comm_finalise, comm_cart
     implicit none
 
     integer, parameter            :: nx = 5, ny = 10, nz = 15, nt = 3
@@ -20,7 +20,6 @@ program test_mpi_netcdf_read_dataset_3d
     logical                       :: periods(2)
     integer                       :: rank ! we do not reorder the rank numbers, so this is unused!
     integer                       :: lo(3), hi(3)
-    type(MPI_Comm)                :: comm_cart
 
     call mpi_comm_initialise
 
