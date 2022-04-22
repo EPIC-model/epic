@@ -1,7 +1,11 @@
 ! =============================================================================
-!                             Test MPI field halo accumulate
+!                       Test MPI field halo accumulate
 !
-!                   This unit test checks accumulating the field halo.
+!   This unit test checks accumulating the field halo. Each grid point
+!   (including halo) is assigned the value of the rank number + 1. After
+!   accumulating the halo values, each halo grid point should contain
+!   the sumf of the rankd number + 1 and the value of the neighbour
+!   rank + 1 owning the halo grid point as interior grid point.
 ! =============================================================================
 program test_field_halo_accumulate
     use constants, only : zero
