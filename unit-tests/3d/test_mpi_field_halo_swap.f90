@@ -11,10 +11,11 @@ program test_field_halo_swap
     use field_mpi
     implicit none
 
-    integer, parameter            :: nx = 4, ny = 4, nz = 1
+    integer, parameter            :: nx = 6, ny = 6, nz = 0
     double precision, allocatable :: values(:, :, :)
     logical                       :: passed = .true.
     double precision              :: diff
+    integer                       :: i, j
 
     call mpi_comm_initialise
 
@@ -24,32 +25,18 @@ program test_field_halo_swap
 
     allocate(values(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 
-    ! set all values to 0.5
-    values(:, :, :) = f12
+    ! set all values to 1
+    values(:, :, :) = one
 
-
-    ! set interior values to 1, excluding overlap with halo region of neighbours
-    values(box%lo(3):box%hi(3), box%lo(2)+2:box%hi(2)-1, box%lo(1)+2:box%hi(1)-1) = one
-
-!     ! set halo corners to 1/4
-!     values(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1)) = f14
-!     values(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1)) = f14
-!     values(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) = f14
-!     values(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1)) = f14
-
-    ! set interior corners to 1/4
-!     values(box%lo(3):box%hi(3), box%hi(2), box%hi(1)) = f14
-!     values(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%hi(1)) = f14
-!     values(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) = f14
-!     values(box%lo(3):box%hi(3), box%hi(2), box%lo(1):box%lo(1)+1) = f14
 
     call field_halo_swap(values)
 
     if (mpi_rank == 0) then
-        print *, values(0, :, :)
-!         print *, values(2, :)
-! !         print *, values(, :)
-!         print *, values(1, :)
+        do i = box%hlo(1), box%hhi(1)
+            do j = box%hlo(2), box%hhi(2)
+                print *, j, i, values(0, j, i)
+            enddo
+        enddo
     endif
 
     call mpi_comm_finalise

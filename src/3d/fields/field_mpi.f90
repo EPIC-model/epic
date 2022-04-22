@@ -32,9 +32,9 @@ module field_mpi
 
         logical :: l_allocated = .false.
 
-        public :: field_halo_reset,         &
-                  field_halo_fill,          &
-                  field_halo_accumulate,    &
+        public :: field_halo_reset,          &
+                  field_halo_fill,           &
+                  field_interior_accumulate, &
                   field_halo_swap
 
     contains
@@ -66,36 +66,35 @@ module field_mpi
         end subroutine field_halo_fill
 
 
-        subroutine field_halo_accumulate(data)
+        subroutine field_interior_accumulate(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
 
-            call copy_from_interior_to_buffers(data)
+            call copy_from_halo_to_buffers(data)
 
-            call interior_to_halo_communication
+            ! send halo data to valid regions of other processes
+            call halo_to_interior_communication
 
-            call copy_from_buffers_to_halo(data, .true.)
+            ! accumulate interior; after this operation
+            ! all interior grid points have the correct value
+            call copy_from_buffers_to_interior(data, .true.)
 
-        end subroutine field_halo_accumulate
+        end subroutine field_interior_accumulate
 
 
         subroutine field_halo_swap(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
+            ! we must first fill the interior grid points
+            ! correctly, and then the halo; otherwise
+            ! halo grid points do not have correct values at
+            ! corners where multiple processes share grid points.
 
-            ! after this operation, the halo has
-            ! correct values
-            call field_halo_accumulate(data)
+            call field_interior_accumulate(data)
 
-            !FIXME This copy can be saved if halo is added to buffers (see line 78)
-            call copy_from_halo_to_buffers(data)
-
-            ! send halo data to valid regions of other processes
-            call halo_to_interior_communication
-
-            call copy_from_buffers_to_interior(data, .true.)
+!             call field_halo_fill(data)
 
         end subroutine field_halo_swap
 
