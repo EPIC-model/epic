@@ -1,7 +1,11 @@
 ! =============================================================================
-!                             Test MPI field halo fill
+!                         Test MPI field halo fill
 !
-!                   This unit test checks filling the field halo.
+!   This unit test checks filling the field halo. Each grid point
+!   (including halo) is assigned the value of the rank number + 1. After
+!   the call "field_halo_fill", the halo values should be assigned
+!   the value of the neighbour rank + 1 owning the halo grid point as
+!   interior grid point.
 ! =============================================================================
 program test_field_halo_fill
     use constants, only : zero
