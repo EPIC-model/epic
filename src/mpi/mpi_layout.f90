@@ -31,18 +31,6 @@ module mpi_layout
             integer             :: rank ! we do not reorder the rank numbers, so this is unused!
             logical             :: periods(2)
 
-            if (mpi_size == 1) then
-                neighbour%west  = mpi_rank
-                neighbour%east = mpi_rank
-                neighbour%south = mpi_rank
-                neighbour%north = mpi_rank
-                box%lo = (/ 0,  0,   -1/)
-                box%hi = (/nx, ny, nz+1/)
-                box%hlo = (/  -1,   -1,   -1/)
-                box%hhi = (/nx+1, ny+1, nz+1/)
-                return
-            endif
-
             ! create slabs, z-direction keeps 1 processor
             dims = (/0, 0/)
             call MPI_Dims_create(mpi_size, 2, dims, mpi_err)

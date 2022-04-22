@@ -57,6 +57,10 @@ module field_mpi
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
 
+            if (mpi_size == 1) then
+                return
+            endif
+
             call copy_from_interior_to_buffers(data)
 
             call interior_to_halo_communication
