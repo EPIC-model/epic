@@ -20,12 +20,12 @@ module parcel_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: npar_dim_id, vol_id, buo_id,  &
-                          x_pos_id, y_pos_id, z_pos_id, &
-                          x_vor_id, y_vor_id, z_vor_id, &
-                          b11_id, b12_id, b13_id,       &
-                          b22_id, b23_id,               &
-                          t_axis_id, t_dim_id
+    integer            :: npar_dim_id, vol_id, buo_id,      &
+                          x_pos_id, y_pos_id, z_pos_id,     &
+                          x_vor_id, y_vor_id, z_vor_id,     &
+                          b11_id, b12_id, b13_id,           &
+                          b22_id, b23_id, start_id,         &
+                          t_axis_id, t_dim_id, mpi_dim_id
     double precision   :: restart_time
 
 #ifndef ENABLE_DRY_MODE
@@ -33,11 +33,11 @@ module parcel_netcdf
 #endif
 
     private :: ncid, ncfname, n_writes, npar_dim_id,    &
-               x_pos_id, y_pos_id, z_pos_id,            &
+               x_pos_id, y_pos_id, z_pos_id, start_id,  &
                x_vor_id, y_vor_id, z_vor_id,            &
                b11_id, b12_id, b13_id, b22_id, b23_id,  &
                vol_id, buo_id, t_dim_id, t_axis_id,     &
-               restart_time
+               restart_time, mpi_dim_id
 
 #ifndef ENABLE_DRY_MODE
     private :: hum_id
@@ -100,6 +100,11 @@ module parcel_netcdf
                                          dimsize=n_total_parcels,           &
                                          dimid=npar_dim_id)
 
+            call define_netcdf_dimension(ncid=ncid,                 &
+                                         name='mpi_size',           &
+                                         dimsize=mpi_size,          &
+                                         dimid=mpi_dim_id)
+
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
 
             dimids = (/npar_dim_id, t_dim_id/)
@@ -130,6 +135,15 @@ module parcel_netcdf
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
                                        varid=z_pos_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='start_index',                  &
+                                       long_name='MPI rank start index',    &
+                                       std_name='',                         &
+                                       unit='1',                            &
+                                       dtype=NF90_INT,                      &
+                                       dimids=(/mpi_dim_id/),               &
+                                       varid=start_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
                                        name='B11',                              &
@@ -273,6 +287,8 @@ module parcel_netcdf
             ! since the starting index in Fortran is 1 and not 0.
             start = (/ 1 + start_index, 1 /)
             cnt   = (/ n_parcels,       1 /)
+
+            call write_netcdf_dataset(ncid, start_id, (/start_index/), start=(/1+mpi_rank, 1/), cnt=(/1, 1/))
 
             call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels), start, cnt)
