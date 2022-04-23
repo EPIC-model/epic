@@ -1,7 +1,7 @@
 ! =============================================================================
 !                         Test MPI field diagnostics
 ! =============================================================================
-program test_field_diagnostics
+program test_mpi_field_diagnostics
     use constants, only : zero, one, f12
     use unit_test
     use mpi_communicator
@@ -57,4 +57,4 @@ program test_field_diagnostics
         call print_result_logical('Test MPI field diagnostics', passed)
     endif
 
-end program test_field_diagnostics
+end program test_mpi_field_diagnostics
