@@ -12,6 +12,7 @@ module parcel_init
                            extent, lower, nx, ny, nz,   &
                            max_num_parcels
     use timer, only : start_timer, stop_timer
+    use field_mpi, only : field_halo_fill
     use omp_lib
     use mpi_layout, only : box
     implicit none
@@ -264,7 +265,8 @@ module parcel_init
                 buffer = zero
                 call read_netcdf_dataset(ncid, 'x_vorticity', buffer(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                          start=start, cnt=cnt)
-                ! FIXME fill halo
+
+                call field_halo_fill(buffer)
 
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(1, :))
             endif
@@ -274,7 +276,7 @@ module parcel_init
                 call read_netcdf_dataset(ncid, 'y_vorticity', buffer(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                          start=start, cnt=cnt)
 
-                ! FIXME fill halo
+                call field_halo_fill(buffer)
 
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(2, :))
             endif
@@ -284,7 +286,7 @@ module parcel_init
                 call read_netcdf_dataset(ncid, 'z_vorticity', buffer(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                          start=start, cnt=cnt)
 
-                ! FIXME fill halo
+                call field_halo_fill(buffer)
 
                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(3, :))
             endif
@@ -293,7 +295,8 @@ module parcel_init
                 buffer = zero
                 call read_netcdf_dataset(ncid, 'buoyancy', buffer(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                          start=start, cnt=cnt)
-                ! FIXME fill halo
+
+                call field_halo_fill(buffer)
 
                 call gen_parcel_scalar_attr(buffer, tol, parcels%buoyancy)
             endif
@@ -303,7 +306,8 @@ module parcel_init
                 buffer = zero
                 call read_netcdf_dataset(ncid, 'humidity', buffer(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                          start=start, cnt=cnt)
-                ! FIXME fill halo
+
+                call field_halo_fill(buffer)
 
                 call gen_parcel_scalar_attr(buffer, tol, parcels%humidity)
             endif
