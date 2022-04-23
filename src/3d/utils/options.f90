@@ -76,7 +76,6 @@ module options
 
     type(time_info_type) :: time
 
-
     contains
         ! parse configuration file
         ! (see https://cyber.dabamos.de/programming/modernfortran/namelists.html [8 March 2021])
