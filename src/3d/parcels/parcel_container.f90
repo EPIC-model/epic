@@ -8,7 +8,8 @@ module parcel_container
     use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
     implicit none
 
-    integer :: n_parcels
+    integer :: n_parcels        ! local number of parcels
+    integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
 
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &

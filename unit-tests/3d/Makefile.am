@@ -4,6 +4,7 @@ AM_FCFLAGS =				\
 	-I $(top_builddir)/src/mpi	\
 	-I $(top_builddir)/src/utils	\
 	-I $(top_builddir)/src/fft	\
+	-I $(top_builddir)/src/mpi	\
 	-I $(top_builddir)/src/netcdf
 
 AM_LDFLAGS =						\
@@ -21,6 +22,7 @@ libcombi_la_LIBADD = 					\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/mpi/libepic_mpi.la		\
 	$(top_builddir)/src/fft/libepic_fft.la		\
+	$(top_builddir)/src/mpi/libepic_mpi.la		\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 unittestsdir = $(prefix)/unit-tests
@@ -53,7 +55,9 @@ unittests_PROGRAMS = 				\
 	test_mpi_field_halo_fill		\
 	test_mpi_field_interior_accumulate	\
 	test_mpi_field_diagnostics		\
-	test_mpi_parcel_diagnostics
+	test_mpi_parcel_diagnostics		\
+	test_mpi_parcel_write			\
+	test_mpi_parcel_read
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -144,3 +148,9 @@ test_mpi_field_diagnostics_LDADD = libcombi.la
 
 test_mpi_parcel_diagnostics_SOURCES = test_mpi_parcel_diagnostics.f90
 test_mpi_parcel_diagnostics_LDADD = libcombi.la
+
+test_mpi_parcel_write_SOURCES = test_mpi_parcel_write.f90
+test_mpi_parcel_write_LDADD = libcombi.la
+
+test_mpi_parcel_read_SOURCES = test_mpi_parcel_read.f90
+test_mpi_parcel_read_LDADD = libcombi.la

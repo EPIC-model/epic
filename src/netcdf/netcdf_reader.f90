@@ -12,6 +12,7 @@ module netcdf_reader
         module procedure :: read_netcdf_dataset_1d
         module procedure :: read_netcdf_dataset_2d
         module procedure :: read_netcdf_dataset_3d
+        module procedure :: read_netcdf_dataset_1d_integer
     end interface read_netcdf_dataset
 
     interface read_netcdf_attribute
@@ -58,26 +59,30 @@ module netcdf_reader
             call check_netcdf_error("Reading the ID of '" // name // "' failed.")
         end subroutine get_dim_id
 
+        subroutine get_dimension_size(ncid, name, num)
+            integer,      intent(in) :: ncid
+            character(*), intent(in) :: name
+            integer, intent(out)     :: num
+            integer                  :: dimid
+
+            ncerr = nf90_inq_dimid(ncid, name, dimid)
+            call check_netcdf_error("Reading " // name // " dimension id failed.")
+            ncerr = nf90_inquire_dimension(ncid, dimid, len=num)
+            call check_netcdf_error("Reading " // name // " failed.")
+        end subroutine get_dimension_size
+
         subroutine get_num_parcels(ncid, n_parcels)
             integer, intent(in)  :: ncid
             integer, intent(out) :: n_parcels
-            integer              :: dimid
 
-            ncerr = nf90_inq_dimid(ncid, 'n_parcels', dimid)
-            call check_netcdf_error("Reading n_parcel dimension id failed.")
-            ncerr = nf90_inquire_dimension(ncid, dimid, len=n_parcels)
-            call check_netcdf_error("Reading n_parcels failed.")
+            call get_dimension_size(ncid, 'n_parcels', n_parcels)
         end subroutine get_num_parcels
 
         subroutine get_num_steps(ncid, n_steps)
             integer, intent(in)  :: ncid
             integer, intent(out) :: n_steps
-            integer              :: dimid
 
-            ncerr = nf90_inq_dimid(ncid, 't', dimid)
-            call check_netcdf_error("Reading time dimension id failed.")
-            ncerr = nf90_inquire_dimension(ncid, dimid, len=n_steps)
-            call check_netcdf_error("Reading time failed.")
+            call get_dimension_size(ncid, 't', n_steps)
         end subroutine get_num_steps
 
         subroutine get_time(ncid, t)
@@ -144,6 +149,21 @@ module netcdf_reader
             link_exists = (link_exists .and. (ncerr == nf90_noerr))
             ncerr = 0
         end function has_dataset
+
+        subroutine read_netcdf_dataset_1d_integer(ncid, name, buffer, start, cnt)
+            integer,           intent(in)  :: ncid
+            character(*),      intent(in)  :: name
+            integer,           intent(out) :: buffer(:)
+            integer, optional, intent(in)  :: start(:)
+            integer, optional, intent(in)  :: cnt(:)
+            integer                        :: varid
+
+            ncerr = nf90_inq_varid(ncid, name, varid)
+            call check_netcdf_error("Reading dataset id failed.")
+
+            ncerr = nf90_get_var(ncid=ncid, varid=varid, values=buffer, &
+                                 start=start, count=cnt)
+        end subroutine read_netcdf_dataset_1d_integer
 
         subroutine read_netcdf_dataset_1d(ncid, name, buffer, start, cnt)
             integer,           intent(in)  :: ncid

@@ -3,13 +3,15 @@ module parcel_netcdf
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
-    use parcel_container, only : parcels, n_parcels
+    use parcel_container, only : parcels, n_parcels, n_total_parcels
     use parameters, only : nx, ny, nz, extent, lower, max_num_parcels
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
+    use mpi_communicator
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     integer :: parcel_io_timer
@@ -19,12 +21,12 @@ module parcel_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: npar_dim_id, vol_id, buo_id,  &
-                          x_pos_id, y_pos_id, z_pos_id, &
-                          x_vor_id, y_vor_id, z_vor_id, &
-                          b11_id, b12_id, b13_id,       &
-                          b22_id, b23_id,               &
-                          t_axis_id, t_dim_id
+    integer            :: npar_dim_id, vol_id, buo_id,      &
+                          x_pos_id, y_pos_id, z_pos_id,     &
+                          x_vor_id, y_vor_id, z_vor_id,     &
+                          b11_id, b12_id, b13_id,           &
+                          b22_id, b23_id, start_id,         &
+                          t_axis_id, t_dim_id, mpi_dim_id
     double precision   :: restart_time
 
 #ifndef ENABLE_DRY_MODE
@@ -32,11 +34,11 @@ module parcel_netcdf
 #endif
 
     private :: ncid, ncfname, n_writes, npar_dim_id,    &
-               x_pos_id, y_pos_id, z_pos_id,            &
+               x_pos_id, y_pos_id, z_pos_id, start_id,  &
                x_vor_id, y_vor_id, z_vor_id,            &
                b11_id, b12_id, b13_id, b22_id, b23_id,  &
                vol_id, buo_id, t_dim_id, t_axis_id,     &
-               restart_time
+               restart_time, mpi_dim_id
 
 #ifndef ENABLE_DRY_MODE
     private :: hum_id
@@ -96,8 +98,13 @@ module parcel_netcdf
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &
                                          name='n_parcels',                  &
-                                         dimsize=n_parcels,                 &
+                                         dimsize=n_total_parcels,           &
                                          dimid=npar_dim_id)
+
+            call define_netcdf_dimension(ncid=ncid,                 &
+                                         name='mpi_size',           &
+                                         dimsize=mpi_size,          &
+                                         dimid=mpi_dim_id)
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
 
@@ -129,6 +136,15 @@ module parcel_netcdf
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
                                        varid=z_pos_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='start_index',                  &
+                                       long_name='MPI rank start index',    &
+                                       std_name='',                         &
+                                       unit='1',                            &
+                                       dtype=NF90_INT,                      &
+                                       dimids=(/mpi_dim_id/),               &
+                                       varid=start_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
                                        name='B11',                              &
@@ -233,6 +249,8 @@ module parcel_netcdf
 
             call close_definition(ncid)
 
+            call close_netcdf_file(ncid)
+
         end subroutine create_netcdf_parcel_file
 
         ! Write parcels of the current time step into the parcel file.
@@ -240,6 +258,8 @@ module parcel_netcdf
         subroutine write_netcdf_parcels(t)
             double precision, intent(in) :: t
             integer                      :: cnt(2), start(2)
+            integer                      :: recvcounts(mpi_size)
+            integer                      :: sendbuf(mpi_size), start_index
 
             call start_timer(parcel_io_timer)
 
@@ -255,9 +275,21 @@ module parcel_netcdf
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, 1)
 
-            ! time step to write [step(2) is the time]
-            cnt   = (/ n_parcels, 1 /)
-            start = (/ 1,         1 /)
+            ! after this operation all MPI ranks know their starting index
+            recvcounts = 1
+            start_index = 0
+            sendbuf = 0
+            sendbuf(mpi_rank+1:mpi_size) = n_parcels
+            sendbuf(mpi_rank+1) = 0
+
+            call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, comm_world, mpi_err)
+
+            ! we need to increase the start_index by 1
+            ! since the starting index in Fortran is 1 and not 0.
+            start = (/ 1 + start_index, 1 /)
+            cnt   = (/ n_parcels,       1 /)
+
+            call write_netcdf_dataset(ncid, start_id, (/start_index/), start=(/1+mpi_rank, 1/), cnt=(/1, 1/))
 
             call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels), start, cnt)
@@ -293,12 +325,53 @@ module parcel_netcdf
             character(*),     intent(in) :: fname
             logical                      :: l_valid = .false.
             integer                      :: cnt(2), start(2)
+            integer                      :: remaining, start_index, num_indices, end_index
 
             call start_timer(parcel_io_timer)
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
-            call get_num_parcels(ncid, n_parcels)
+            call get_num_parcels(ncid, n_total_parcels)
+
+            if (has_dataset(ncid, 'start_index')) then
+                call get_dimension_size(ncid, 'mpi_size', num_indices)
+
+                if (num_indices .ne. mpi_size) then
+                    call mpi_exit_on_error("The number of MPI ranks disagree!")
+                endif
+
+                if (mpi_rank < mpi_size - 1) then
+                    ! we must add +1 since the start index is 1
+                    call read_netcdf_dataset(ncid, 'start_index', start, (/mpi_rank + 1/), (/2/))
+                    start_index = start(1)
+                    end_index = start(2)
+                else
+                    ! the last MPI rank must only read the start index
+                    call read_netcdf_dataset(ncid, 'start_index', start, (/num_indices/), (/1/))
+                    start_index = start(1)
+                    end_index = n_total_parcels
+                endif
+
+                n_parcels = end_index - start_index
+
+            else
+                n_parcels = n_total_parcels / mpi_size
+                remaining = n_total_parcels - n_parcels * mpi_size
+                start_index = n_parcels * mpi_rank
+
+                if (mpi_rank < remaining) then
+                    n_parcels = n_parcels + 1
+                endif
+
+                ! all MPI ranks < remaining get an additional parcel;
+                ! hence, we must shift the start indices accordingly
+                start_index = start_index + min(remaining, mpi_rank)
+
+                ! FIXME
+                call mpi_exit_on_error("This is not yet supported! See issue #371")
+
+            endif
+
 
             if (n_parcels > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", &
@@ -306,9 +379,10 @@ module parcel_netcdf
                 stop
             endif
 
-            ! time step to read [step(2) is the time]
-            cnt   = (/ n_parcels, 1 /)
-            start = (/ 1,         1 /)
+            ! we need to increase the start_index by 1
+            ! since the starting index in Fortran is 1 and not 0.
+            start = (/ 1 + start_index, 1 /)
+            cnt   = (/ n_parcels,       1 /)
 
             ! Be aware that the starting index of buffer_1d and buffer_2d
             ! is 0; hence, the range is 0:n_parcels-1 in contrast to the
