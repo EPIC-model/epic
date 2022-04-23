@@ -57,8 +57,8 @@ module mpi_layout
             !   coords  -- containing the Cartesian coordinates of the specified process
             call MPI_Cart_coords(comm_cart, rank, 2, coords)
 
-            call set_local_bounds(nx+1, coords(1), dims(1), box%lo(1), box%hi(1))
-            call set_local_bounds(ny+1, coords(2), dims(2), box%lo(2), box%hi(2))
+            call set_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
+            call set_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))
             box%lo(3) = 0
             box%hi(3) = nz
 

@@ -16,11 +16,11 @@ program test_mpi_layout
 
     call mpi_comm_initialise
 
-    if (mpi_size == 1) then
-        print *, "MPI tests must be run with more than one process."
-        call mpi_comm_finalise
-        stop
-    endif
+!     if (mpi_size == 1) then
+!         print *, "MPI tests must be run with more than one process."
+!         call mpi_comm_finalise
+!         stop
+!     endif
 
     passed = (mpi_err == 0)
 
