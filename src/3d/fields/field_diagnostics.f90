@@ -49,9 +49,9 @@ module field_diagnostics
 
             field_stats(IDX_MIN_NPAR) = minval(nparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1)))
 
-            field_stats(IDX_AVG_NPAR) = sum(nparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))) * ncelli
+            field_stats(IDX_AVG_NPAR) = sum(nparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1))) * ncelli
 
-            field_stats(IDX_AVG_NSPAR) = sum(nsparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))) * ncelli
+            field_stats(IDX_AVG_NSPAR) = sum(nsparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1))) * ncelli
 
             field_stats(IDX_KEG) = f12 * sum( volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)) *         &
                                             (velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1) ** 2   &

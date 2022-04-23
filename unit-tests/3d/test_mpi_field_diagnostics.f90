@@ -2,7 +2,7 @@
 !                         Test MPI field diagnostics
 ! =============================================================================
 program test_field_diagnostics
-    use constants, only : zero, one
+    use constants, only : zero, one, f12
     use unit_test
     use mpi_communicator
     use mpi_layout
@@ -35,21 +35,18 @@ program test_field_diagnostics
     volg = vcell + one
     nparg = 1
     nsparg = 1
-    velog = one
+    velog = f12
 
     call calculate_field_diagnostics
 
     if (mpi_rank == mpi_master) then
-        print *, ngrid, (box%hi(3)-box%lo(3) +1) * (box%hi(2)-box%lo(2)+1) * (box%hi(1)-box%lo(1)+1)
-        print *, vcelli, field_stats(IDX_RMS_V)
-!         passed = (passed .and. (field_stats(IDX_RMS_V) == one)
-!         passed = (passed .and. (field_stats(IDX_ABSERR_V) == one)
-!         passed = (passed .and. (field_stats(IDX_MAX_NPAR) == one)
-!         passed = (passed .and. (field_stats(IDX_MIN_NPAR) == one)
-!         passed = (passed .and. (field_stats(IDX_AVG_NPAR) == one)
-!         passed = (passed .and. (field_stats(IDX_AVG_NSPAR) == one)
-!         passed = (passed .and. (field_stats(IDX_KEG) == one)
-
+        passed = (passed .and. (dabs(field_stats(IDX_RMS_V) - vcelli) == zero))
+        passed = (passed .and. (dabs(field_stats(IDX_ABSERR_V) - vcelli) == zero))
+        passed = (passed .and. (field_stats(IDX_MAX_NPAR) == one))
+        passed = (passed .and. (field_stats(IDX_MIN_NPAR) == one))
+        passed = (passed .and. (field_stats(IDX_AVG_NPAR) == one))
+        passed = (passed .and. (field_stats(IDX_AVG_NSPAR) == one))
+        passed = (passed .and. (field_stats(IDX_KEG) == 0.375d0 * dble(ngrid) * (vcell + one)))
     endif
 
     call mpi_comm_finalise
