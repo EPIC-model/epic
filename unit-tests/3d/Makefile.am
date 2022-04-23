@@ -51,7 +51,9 @@ unittests_PROGRAMS = 				\
 	test_diffz0				\
 	test_diffz1				\
 	test_mpi_field_halo_fill		\
-	test_mpi_field_interior_accumulate
+	test_mpi_field_interior_accumulate	\
+	test_mpi_field_diagnostics		\
+	test_mpi_parcel_diagnostics
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -136,3 +138,9 @@ test_mpi_field_halo_fill_LDADD = libcombi.la
 
 test_mpi_field_interior_accumulate_SOURCES = test_mpi_field_interior_accumulate.f90
 test_mpi_field_interior_accumulate_LDADD = libcombi.la
+
+test_mpi_field_diagnostics_SOURCES = test_mpi_field_diagnostics.f90
+test_mpi_field_diagnostics_LDADD = libcombi.la
+
+test_mpi_parcel_diagnostics_SOURCES = test_mpi_parcel_diagnostics.f90
+test_mpi_parcel_diagnostics_LDADD = libcombi.la
