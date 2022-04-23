@@ -5,7 +5,7 @@ module parcel_diagnostics
     use constants, only : zero, one, f12, thousand
     use merge_sort
     use parameters, only : extent, lower, vcell, vmin, nx, nz
-    use parcel_container, only : parcels, n_parcels
+    use parcel_container, only : parcels, n_parcels, n_total_parcels
     use parcel_ellipsoid
     use omp_lib
     use timer, only : start_timer, stop_timer
@@ -137,6 +137,7 @@ module parcel_diagnostics
 
             call mpi_blocking_reduce(parcel_stats, MPI_SUM)
 
+            n_total_parcels = int(parcel_stats(IDX_NTOT_PAR))
             ntoti = one / parcel_stats(IDX_NTOT_PAR)
 
             parcel_stats(IDX_KE) = f12 * parcel_stats(IDX_KE)
