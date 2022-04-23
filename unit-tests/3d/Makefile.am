@@ -1,6 +1,7 @@
 AM_FCFLAGS =				\
 	-I $(top_builddir)/src/3d/ 	\
 	-I $(top_builddir)/unit-tests	\
+	-I $(top_builddir)/src/mpi	\
 	-I $(top_builddir)/src/utils	\
 	-I $(top_builddir)/src/fft	\
 	-I $(top_builddir)/src/mpi	\
@@ -19,6 +20,7 @@ libcombi_la_SOURCES =
 libcombi_la_LIBADD = 					\
 	$(top_builddir)/unit-tests/libunit_test.la	\
 	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/mpi/libepic_mpi.la		\
 	$(top_builddir)/src/fft/libepic_fft.la		\
 	$(top_builddir)/src/mpi/libepic_mpi.la		\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
@@ -50,6 +52,10 @@ unittests_PROGRAMS = 				\
 	test_lapinv1				\
 	test_diffz0				\
 	test_diffz1				\
+	test_mpi_field_halo_fill		\
+	test_mpi_field_interior_accumulate	\
+	test_mpi_field_diagnostics		\
+	test_mpi_parcel_diagnostics		\
 	test_mpi_parcel_write			\
 	test_mpi_parcel_read
 
@@ -130,6 +136,18 @@ test_diffz0_LDADD = libcombi.la
 
 test_diffz1_SOURCES = test_diffz1.f90
 test_diffz1_LDADD = libcombi.la
+
+test_mpi_field_halo_fill_SOURCES = test_mpi_field_halo_fill.f90
+test_mpi_field_halo_fill_LDADD = libcombi.la
+
+test_mpi_field_interior_accumulate_SOURCES = test_mpi_field_interior_accumulate.f90
+test_mpi_field_interior_accumulate_LDADD = libcombi.la
+
+test_mpi_field_diagnostics_SOURCES = test_mpi_field_diagnostics.f90
+test_mpi_field_diagnostics_LDADD = libcombi.la
+
+test_mpi_parcel_diagnostics_SOURCES = test_mpi_parcel_diagnostics.f90
+test_mpi_parcel_diagnostics_LDADD = libcombi.la
 
 test_mpi_parcel_write_SOURCES = test_mpi_parcel_write.f90
 test_mpi_parcel_write_LDADD = libcombi.la

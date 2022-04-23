@@ -3,7 +3,7 @@
 ! simulation.
 ! =============================================================================
 module parameters
-    use options, only : allow_larger_anisotropy, parcel
+    use options, only : allow_larger_anisotropy, parcel, mpi_info
     use constants
     implicit none
 

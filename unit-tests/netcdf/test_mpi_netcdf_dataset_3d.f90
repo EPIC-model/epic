@@ -6,7 +6,7 @@
 program test_mpi_netcdf_dataset_3d
     use unit_test
     use netcdf_writer
-    use mpi_communicator, only : comm_world, mpi_err, mpi_comm_initialise, mpi_comm_finalise
+    use mpi_communicator, only : comm_world, mpi_err, mpi_comm_initialise, mpi_comm_finalise, comm_cart
     implicit none
 
     integer, parameter   :: nx = 10, ny = 8, nz = 5
@@ -19,7 +19,6 @@ program test_mpi_netcdf_dataset_3d
     logical              :: periods(2)
     integer              :: rank ! we do not reorder the rank numbers, so this is unused!
     integer              :: lo(3), hi(3)
-    type(MPI_Comm)       :: comm_cart
 
     call mpi_comm_initialise
 
@@ -120,9 +119,9 @@ program test_mpi_netcdf_dataset_3d
     passed = (passed .and. (ncerr == 0))
 
     if (mpi_rank == mpi_master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LOR, mpi_master, comm_world, mpi_err)
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LOR, mpi_master, comm_world, mpi_err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
     endif
 
     if (mpi_rank == mpi_master) then
