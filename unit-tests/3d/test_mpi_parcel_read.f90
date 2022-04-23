@@ -2,8 +2,6 @@
 !                           Test parallel parcel reading
 !
 !       This unit test checks the reading of parcels in parallel.
-!       Note: In this test, each MPI rank reads a different number of
-!       parcels than it writes.
 ! =============================================================================
 program test_mpi_parcel_read
     use unit_test
@@ -17,7 +15,7 @@ program test_mpi_parcel_read
 
     logical              :: passed = .true.
     double precision     :: res
-    integer              :: n, remaining, start_index
+    integer              :: n, start_index, n_parcels_before
 
     max_num_parcels = 100000000
 
@@ -32,6 +30,7 @@ program test_mpi_parcel_read
     !
 
     n_parcels = 10 + (mpi_rank + 1)
+    n_parcels_before = n_parcels
     n_total_parcels = 11 * mpi_size + (mpi_size * (mpi_size - 1)) / 2
 
     call parcel_alloc(n_total_parcels)
@@ -77,37 +76,29 @@ program test_mpi_parcel_read
 
     call read_netcdf_parcels('nctest_0000000001_parcels.nc')
 
-    res = mpi_rank + 1
+    passed = (passed .and. (n_parcels == n_parcels_before))
 
-    n_parcels = n_total_parcels / mpi_size
-    remaining = n_total_parcels - n_parcels * mpi_size
-    start_index = n_parcels * mpi_rank
-
-    if (mpi_rank < remaining) then
-        n_parcels = n_parcels + 1
-    endif
-
-    start_index = start_index + min(remaining, mpi_rank)
-
-    do n = 1, n_parcels
-        res = dble(start_index + n)
-        passed = (passed .and. (abs(parcels%position(1, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%position(2, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%position(3, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%B(1, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%B(2, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%B(3, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%B(4, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%B(5, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%volume(n) - res) == zero))
-        passed = (passed .and. (abs(parcels%vorticity(1, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%vorticity(2, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%vorticity(3, n) - res) == zero))
-        passed = (passed .and. (abs(parcels%buoyancy(n) - res) == zero))
+    if (passed) then
+        do n = 1, n_parcels
+            res = dble(start_index + n)
+            passed = (passed .and. (abs(parcels%position(1, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%position(2, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%position(3, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%B(1, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%B(2, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%B(3, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%B(4, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%B(5, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%volume(n) - res) == zero))
+            passed = (passed .and. (abs(parcels%vorticity(1, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%vorticity(2, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%vorticity(3, n) - res) == zero))
+            passed = (passed .and. (abs(parcels%buoyancy(n) - res) == zero))
 #ifndef ENABLE_DRY_MODE
-        passed = (passed .and. (abs(parcels%humidity(n) - res) == zero))
+            passed = (passed .and. (abs(parcels%humidity(n) - res) == zero))
 #endif
-    enddo
+        enddo
+    endif
 
     call parcel_dealloc
 

@@ -11,6 +11,7 @@ module parcel_netcdf
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
     use mpi_communicator
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     integer :: parcel_io_timer
@@ -324,7 +325,7 @@ module parcel_netcdf
             character(*),     intent(in) :: fname
             logical                      :: l_valid = .false.
             integer                      :: cnt(2), start(2)
-            integer                      :: remaining, start_index
+            integer                      :: remaining, start_index, num_indices, end_index
 
             call start_timer(parcel_io_timer)
 
@@ -332,17 +333,45 @@ module parcel_netcdf
 
             call get_num_parcels(ncid, n_total_parcels)
 
-            n_parcels = n_total_parcels / mpi_size
-            remaining = n_total_parcels - n_parcels * mpi_size
-            start_index = n_parcels * mpi_rank
+            if (has_dataset(ncid, 'start_index')) then
+                call get_dimension_size(ncid, 'mpi_size', num_indices)
 
-            if (mpi_rank < remaining) then
-                n_parcels = n_parcels + 1
+                if (num_indices .ne. mpi_size) then
+                    call mpi_exit_on_error("The number of MPI ranks disagree!")
+                endif
+
+                if (mpi_rank < mpi_size - 1) then
+                    ! we must add +1 since the start index is 1
+                    call read_netcdf_dataset(ncid, 'start_index', start, (/mpi_rank + 1/), (/2/))
+                    start_index = start(1)
+                    end_index = start(2)
+                else
+                    ! the last MPI rank must only read the start index
+                    call read_netcdf_dataset(ncid, 'start_index', start, (/num_indices/), (/1/))
+                    start_index = start(1)
+                    end_index = n_total_parcels
+                endif
+
+                n_parcels = end_index - start_index
+
+            else
+                n_parcels = n_total_parcels / mpi_size
+                remaining = n_total_parcels - n_parcels * mpi_size
+                start_index = n_parcels * mpi_rank
+
+                if (mpi_rank < remaining) then
+                    n_parcels = n_parcels + 1
+                endif
+
+                ! all MPI ranks < remaining get an additional parcel;
+                ! hence, we must shift the start indices accordingly
+                start_index = start_index + min(remaining, mpi_rank)
+
+                ! FIXME
+                call mpi_exit_on_error("This is not yet supported! See issue #371")
+
             endif
 
-            ! all MPI ranks < remaining get an additional parcel;
-            ! hence, we must shift the start indices accordingly
-            start_index = start_index + min(remaining, mpi_rank)
 
             if (n_parcels > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", &
