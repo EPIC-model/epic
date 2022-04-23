@@ -38,6 +38,10 @@ program test_netcdf_read_dataset_1d
 
     passed = (passed .and. (ncerr == 0))
 
+    call close_netcdf_file(ncid)
+
+    passed = (passed .and. (ncerr == 0))
+
     ! write data
     cnt   = (/ n_parcels /)
     start = (/ 1 /)

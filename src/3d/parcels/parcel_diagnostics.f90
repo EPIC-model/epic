@@ -5,10 +5,12 @@ module parcel_diagnostics
     use constants, only : zero, one, f12, thousand
     use merge_sort
     use parameters, only : extent, lower, vcell, vmin, nx, nz
-    use parcel_container, only : parcels, n_parcels
+    use parcel_container, only : parcels, n_parcels, n_total_parcels
     use parcel_ellipsoid
     use omp_lib
     use timer, only : start_timer, stop_timer
+    use mpi_communicator
+    use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
     integer :: parcel_stats_timer
@@ -17,24 +19,23 @@ module parcel_diagnostics
     double precision, parameter :: thres = thousand * epsilon(zero)
 #endif
 
-    ! peref : potential energy reference
-    ! pe    : potential energy
-    ! ke    : kinetic energy
-    double precision :: peref, pe, ke
+    ! peref : potential energy reference (only correct on MPI root)
+    double precision :: peref
 
-    integer :: n_small
+    integer, parameter :: IDX_PE       =  1, & ! potential energy
+                          IDX_KE       =  2, & ! kinetic energy
+                          IDX_N_SMALL  =  3, & ! number of small parcels (V_i < V_min)
+                          IDX_AVG_LAM  =  4, & ! mean aspect ratio over all parcels
+                          IDX_AVG_VOL  =  5, & ! mean volume over all parcels
+                          IDX_STD_LAM  =  6, & ! standard deviation of aspect ratio
+                          IDX_STD_VOL  =  7, & ! standard deviation of volume
+                          IDX_SUM_VOL  =  8, & ! total volume
+                          IDX_RMS_XI   =  9, & ! rms value of x-vorticity
+                          IDX_RMS_ETA  = 10, & ! rms value of y-vorticity
+                          IDX_RMS_ZETA = 11, & ! rms value of z-vorticity
+                          IDX_NTOT_PAR = 12    ! total number of parcels
 
-    ! avg_lam : mean aspect ratio over all parcels
-    ! avg_vol : mean volume over all parcels
-    ! std_lam : standard deviation of aspect ratio
-    ! std_vol : standard deviation of volume
-    double precision :: avg_lam, avg_vol
-    double precision :: std_lam, std_vol
-
-    double precision :: sum_vol
-
-    ! rms vorticity
-    double precision :: rms_zeta(3)
+    double precision :: parcel_stats(IDX_NTOT_PAR)
 
     contains
 
@@ -52,6 +53,9 @@ module parcel_diagnostics
             call msort(b, ii)
 
             gam = one / (extent(1) * extent(2))
+
+            ! initially all parcels have the same volume,
+            ! hence, this is valid on each MPI rank
             zmean = gam * parcels%volume(ii(1))
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
@@ -62,6 +66,8 @@ module parcel_diagnostics
                       - b(n) * parcels%volume(ii(n)) * zmean
             enddo
 
+            call mpi_blocking_reduce(peref, MPI_SUM)
+
             call stop_timer(parcel_stats_timer)
         end subroutine init_parcel_diagnostics
 
@@ -71,34 +77,22 @@ module parcel_diagnostics
             double precision :: velocity(:, :)
             integer          :: n
             double precision :: b, z, vel(3), vol, zmin
-            double precision :: evals(3), lam, lsum, l2sum, v2sum
+            double precision :: evals(3), lam
+            double precision :: ntoti
+
 
             call start_timer(parcel_stats_timer)
 
             ! reset
-            ke = zero
-            pe = zero
-
-            lsum = zero
-            l2sum = zero
-            v2sum = zero
-
-            rms_zeta = zero
-
-            n_small = zero
+            parcel_stats = zero
 
             zmin = lower(3)
 
-            avg_lam = zero
-            avg_vol = zero
-            std_lam = zero
-            std_vol = zero
-            sum_vol = zero
-
+            parcel_stats(IDX_NTOT_PAR) = dble(n_parcels)
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta)
+            !$omp& reduction(+: parcel_stats)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
@@ -107,22 +101,22 @@ module parcel_diagnostics
                 z   = parcels%position(3, n) - zmin
 
                 ! kinetic energy
-                ke = ke + (vel(1) ** 2 + vel(2) ** 2 + vel(3) ** 2) * vol
+                parcel_stats(IDX_KE) = parcel_stats(IDX_KE) + (vel(1) ** 2 + vel(2) ** 2 + vel(3) ** 2) * vol
 
                 ! potential energy
-                pe = pe - b * z * vol
+                parcel_stats(IDX_PE) = parcel_stats(IDX_PE) - b * z * vol
 
                 evals = get_eigenvalues(parcels%B(:, n), parcels%volume(n))
                 lam = get_aspect_ratio(evals)
 
-                lsum = lsum + lam
-                l2sum = l2sum + lam ** 2
+                parcel_stats(IDX_AVG_LAM) = parcel_stats(IDX_AVG_LAM) + lam
+                parcel_stats(IDX_STD_LAM) = parcel_stats(IDX_STD_LAM) + lam ** 2
 
-                sum_vol = sum_vol + vol
-                v2sum = v2sum + vol ** 2
+                parcel_stats(IDX_SUM_VOL) = parcel_stats(IDX_SUM_VOL) + vol
+                parcel_stats(IDX_STD_VOL) = parcel_stats(IDX_STD_VOL) + vol ** 2
 
                 if (vol <= vmin) then
-                    n_small = n_small + 1
+                    parcel_stats(IDX_N_SMALL) = parcel_stats(IDX_N_SMALL) + one
                 endif
 
 #ifndef NDEBUG
@@ -133,22 +127,33 @@ module parcel_diagnostics
                 endif
                 !$omp end critical
 #endif
-                rms_zeta = rms_zeta + vol * parcels%vorticity(:, n) ** 2
+                parcel_stats(IDX_RMS_XI)   = parcel_stats(IDX_RMS_XI)   + vol * parcels%vorticity(1, n) ** 2
+                parcel_stats(IDX_RMS_ETA)  = parcel_stats(IDX_RMS_ETA)  + vol * parcels%vorticity(2, n) ** 2
+                parcel_stats(IDX_RMS_ZETA) = parcel_stats(IDX_RMS_ZETA) + vol * parcels%vorticity(3, n) ** 2
 
             enddo
             !$omp end do
             !$omp end parallel
 
-            ke = f12 * ke
-            pe = pe - peref
+            call mpi_blocking_reduce(parcel_stats, MPI_SUM)
 
-            avg_lam = lsum / dble(n_parcels)
-            std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
+            n_total_parcels = int(parcel_stats(IDX_NTOT_PAR))
+            ntoti = one / parcel_stats(IDX_NTOT_PAR)
 
-            rms_zeta = dsqrt(rms_zeta / sum_vol)
+            parcel_stats(IDX_KE) = f12 * parcel_stats(IDX_KE)
+            parcel_stats(IDX_PE) = parcel_stats(IDX_PE) - peref
 
-            avg_vol = sum_vol / dble(n_parcels)
-            std_vol = dsqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))
+            parcel_stats(IDX_AVG_LAM) = parcel_stats(IDX_AVG_LAM) * ntoti
+            parcel_stats(IDX_STD_LAM) = dsqrt(abs(parcel_stats(IDX_STD_LAM) * ntoti &
+                                                - parcel_stats(IDX_AVG_LAM) ** 2))
+
+            parcel_stats(IDX_RMS_XI)   = dsqrt(parcel_stats(IDX_RMS_XI)   / parcel_stats(IDX_SUM_VOL))
+            parcel_stats(IDX_RMS_ETA)  = dsqrt(parcel_stats(IDX_RMS_ETA)  / parcel_stats(IDX_SUM_VOL))
+            parcel_stats(IDX_RMS_ZETA) = dsqrt(parcel_stats(IDX_RMS_ZETA) / parcel_stats(IDX_SUM_VOL))
+
+            parcel_stats(IDX_AVG_VOL) = parcel_stats(IDX_SUM_VOL) * ntoti
+            parcel_stats(IDX_STD_VOL) = dsqrt(abs(parcel_stats(IDX_STD_VOL) * ntoti &
+                                                - parcel_stats(IDX_AVG_VOL) ** 2))
 
             call stop_timer(parcel_stats_timer)
 

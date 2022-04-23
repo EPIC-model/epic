@@ -31,20 +31,30 @@ module mpi_collectives
 !                              op, 0, comm_world, request, mpi_err)
 !         end subroutine mpi_integer_ireduce
 
-        subroutine mpi_double_reduce(sendbuf, recvbuf, op)
-            double precision, intent(in)  :: sendbuf(..)
-            double precision, intent(out) :: recvbuf(..)
-            type(MPI_Op),     intent(in)  :: op
-            call MPI_Reduce(sendbuf, recvbuf, size(recvbuf), MPI_DOUBLE, &
-                            op, 0, comm_world, mpi_err)
+        subroutine mpi_double_reduce(sendbuf, op)
+            double precision, intent(inout) :: sendbuf(..)
+            type(MPI_Op),     intent(in)    :: op
+
+            if (mpi_rank == mpi_master) then
+                call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_DOUBLE, &
+                                op, mpi_master, comm_world, mpi_err)
+            else
+                call MPI_Reduce(sendbuf, sendbuf, size(sendbuf), MPI_DOUBLE, &
+                                op, mpi_master, comm_world, mpi_err)
+            endif
         end subroutine mpi_double_reduce
 
-        subroutine mpi_integer_reduce(sendbuf, recvbuf, op)
-            integer,      intent(in)  :: sendbuf(..)
-            integer,      intent(out) :: recvbuf(..)
-            type(MPI_Op), intent(in)  :: op
-            call MPI_Reduce(sendbuf, recvbuf, size(recvbuf), MPI_INT, &
-                            op, 0, comm_world, mpi_err)
+        subroutine mpi_integer_reduce(sendbuf, op)
+            integer,      intent(inout) :: sendbuf(..)
+            type(MPI_Op), intent(in)    :: op
+
+            if (mpi_rank == mpi_master) then
+                call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_INT, &
+                                op, mpi_master, comm_world, mpi_err)
+            else
+                call MPI_Reduce(sendbuf, sendbuf, size(sendbuf), MPI_INT, &
+                                op, mpi_master, comm_world, mpi_err)
+            endif
         end subroutine mpi_integer_reduce
 
 end module mpi_collectives

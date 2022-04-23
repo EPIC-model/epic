@@ -1,13 +1,14 @@
 ! =============================================================================
-!                       Test netCDF read attributes
+!                       Test MPI netCDF read attributes
 !
 !               This unit test checks reading attributes like file type
-!               and time to perform restarts.
+!               and time to perform restarts in parallel.
 ! =============================================================================
-program test_netcdf_read_attributes
+program test_mpi_netcdf_read_attributes
     use unit_test
     use netcdf_writer
     use netcdf_reader
+    use mpi_communicator
     implicit none
 
     integer, parameter :: nx = 5, ny = 10, nz = 20
@@ -15,6 +16,8 @@ program test_netcdf_read_attributes
     logical            :: passed = .true.
     character(len=16)  :: file_type
     double precision   :: t
+
+    call mpi_comm_initialise
 
     !
     !
@@ -182,7 +185,16 @@ program test_netcdf_read_attributes
 
     call delete_netcdf_file(ncfname='nctest.nc')
 
+    if (mpi_rank == mpi_master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    else
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    endif
 
-    call print_result_logical('Test netCDF read attributes', passed)
+    if (mpi_rank == mpi_master) then
+        call print_result_logical('Test MPI netCDF read attributes', passed)
+    endif
 
-end program test_netcdf_read_attributes
+    call mpi_comm_finalise
+
+end program test_mpi_netcdf_read_attributes
