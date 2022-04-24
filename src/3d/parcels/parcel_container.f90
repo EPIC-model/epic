@@ -11,6 +11,32 @@ module parcel_container
     integer :: n_parcels        ! local number of parcels
     integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
 
+    ! buffer indices to access individual parcel attributes
+    integer, parameter :: IDX_X_POS = 1,    & ! x-position
+                          IDX_Y_POS = 2,    & ! y-position
+                          IDX_Z_POS = 3,    & ! z-position
+                          IDX_X_VOR = 4,    & ! x-vorticity
+                          IDX_Y_VOR = 5,    & ! y-vorticity
+                          IDX_Z_VOR = 6,    & ! z-vorticity
+                          IDX_B11   = 7,    & ! B11 shape matrix element
+                          IDX_B12   = 8,    & ! B12 shape matrix element
+                          IDX_B13   = 9,    & ! B13 shape matrix element
+                          IDX_B22   = 10,   & ! B22 shape matrix element
+                          IDX_B23   = 11,   & ! B23 shape matrix element
+                          IDX_VOL   = 12,   & ! volume
+                          IDX_BUO   = 13      ! buoyancy
+#ifndef ENABLE_DRY_MODE
+    integer, parameter :: IDX_HUM   = 14
+#endif
+
+#ifndef ENABLE_DRY_MODE
+    integer, parameter :: n_par_attrib = IDX_HUM ! number of  parcel attributes
+                                                 ! (components are counted individually, e.g. position counts
+                                                 ! as 3 attributes)
+#else
+    integer, parameter :: n_par_attrib = IDX_BUO
+#endif
+
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
             position,   &
@@ -143,30 +169,30 @@ module parcel_container
         ! Serialize all parcel attributes into a single buffer
         subroutine parcel_serialize(n, buffer)
             integer,          intent(in)  :: n
-            double precision, intent(out) :: buffer(14)
+            double precision, intent(out) :: buffer(n_par_attrib)
 
-            buffer(1:3)  = parcels%position(:, n)
-            buffer(4:6)  = parcels%vorticity(:, n)
-            buffer(7:11) = parcels%B(:, n)
-            buffer(12)   = parcels%volume(n)
-            buffer(13)   = parcels%buoyancy(n)
+            buffer(IDX_X_POS:IDX_Z_POS) = parcels%position(:, n)
+            buffer(IDX_X_VOR:IDX_Z_VOR) = parcels%vorticity(:, n)
+            buffer(IDX_B11:IDX_B23)     = parcels%B(:, n)
+            buffer(IDX_VOL)             = parcels%volume(n)
+            buffer(IDX_BUO)             = parcels%buoyancy(n)
 #ifndef ENABLE_DRY_MODE
-            buffer(14)   = parcels%humidity(n)
+            buffer(IDX_HUM)             = parcels%humidity(n)
 #endif
         end subroutine parcel_serialize
 
         ! Deserialize all parcel attributes from a single buffer
         subroutine parcel_deserialize(n, buffer)
             integer,          intent(in) :: n
-            double precision, intent(in) :: buffer(14)
+            double precision, intent(in) :: buffer(n_par_attrib)
 
-            parcels%position(:, n)  = buffer(1:3)
-            parcels%vorticity(:, n) = buffer(4:6)
-            parcels%B(:, n)         = buffer(7:11)
-            parcels%volume(n)       = buffer(12)
-            parcels%buoyancy(n)     = buffer(13)
+            parcels%position(:, n)  = buffer(IDX_X_POS:IDX_Z_POS)
+            parcels%vorticity(:, n) = buffer(IDX_X_VOR:IDX_Z_VOR)
+            parcels%B(:, n)         = buffer(IDX_B11:IDX_B23)
+            parcels%volume(n)       = buffer(IDX_VOL)
+            parcels%buoyancy(n)     = buffer(IDX_BUO)
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(n)     = buffer(14)
+            parcels%humidity(n)     = buffer(IDX_HUM)
 #endif
         end subroutine parcel_deserialize
 
