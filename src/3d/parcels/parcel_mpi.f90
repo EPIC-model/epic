@@ -1,9 +1,18 @@
 module parcel_mpi
-    use mpi_layout, only : box
+    use mpi_layout
     use mpi_utils, only : mpi_exit_on_error
     use mpi_tags
-    use parcel_container, only : n_par_attrib, parcel_serialize, parcel_deserialize, n_parcels
+    use fields, only : get_index
+    use merge_sort, only : msort
+    use parcel_container, only : n_par_attrib       &
+                               , parcel_serialize   &
+                               , parcel_deserialize &
+                               , parcel_delete      &
+                               , n_parcels          &
+                               , parcels
     implicit none
+
+    private
 
     ! we have 8 neighbours
     integer :: n_sends(8)
@@ -21,6 +30,11 @@ module parcel_mpi
 
             ! figure out where parcels should go
             call locate_parcels(loc, pid)
+
+            ! sort location in ascending order
+            call msort(loc, ii)
+
+            print *, "HI 1"
 
             ! tell your neighbours the number of receiving parcels
             call MPI_Sendrecv(n_sends(NB_NORTH), 1, MPI_INT, neighbour%north, SEND_NORTH_TAG, &
@@ -55,13 +69,13 @@ module parcel_mpi
                               n_recvs(NB_NORTHEAST), 1, MPI_INT, neighbour%northeast, RECV_NORTHEAST_TAG, &
                               comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
-            ! sort location in ascending order
-            call msort(loc, ii)
-
+            print *, "HI 2"
 
             ! communicate parcels
             call exchange_parcels(pid, ii, NB_NORTH, n_sends(NB_NORTH), neighbour%north, SEND_NORTH_TAG, &
                                                      n_recvs(NB_SOUTH), neighbour%south, RECV_SOUTH_TAG)
+
+            print *, "HI 3"
 
             call exchange_parcels(pid, ii, NB_SOUTH, n_sends(NB_SOUTH), neighbour%south, SEND_SOUTH_TAG, &
                                                      n_recvs(NB_NORTH), neighbour%north, RECV_NORTH_TAG)
@@ -117,13 +131,13 @@ module parcel_mpi
                               sendtype  = MPI_DOUBLE,           &
                               dest      = dest,                 &
                               sendtag   = sendtag,              &
-                              recvbuf   = recbuf,               &
+                              recvbuf   = recvbuf,              &
                               recvcount = recv_size,            &
                               recvtype  = MPI_DOUBLE,           &
                               source    = source,               &
                               recvtag   = recvtag,              &
                               comm      = comm_cart,            &
-                              status    = MPI_IGNORE_STATUS,    &
+                              status    = MPI_STATUS_IGNORE,    &
                               ierror    = mpi_err)
 
             call unpack_parcels(recvcount, recvbuf)
@@ -140,7 +154,7 @@ module parcel_mpi
             integer              :: i, j, k, n, nb, m
 
             ! reset the number of sends
-            n_sends = 0
+            n_sends(:) = 0
 
             m = 1
 
@@ -150,7 +164,7 @@ module parcel_mpi
                 nb = get_neighbour(i, j)
 
                 if (nb == NB_NONE) then
-                    continue
+                    cycle
                 endif
 
                 loc(m) = nb
@@ -174,6 +188,7 @@ module parcel_mpi
             double precision, intent(out) :: sendbuf(:)
             integer                       :: n, i, j, k
 
+            ! start index
             k = sum(n_sends(1:nb))
 
             do n = 1, sendcount
