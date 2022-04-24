@@ -196,4 +196,60 @@ module parcel_container
 #endif
         end subroutine parcel_deserialize
 
+
+        ! This algorithm replaces invalid parcels with valid parcels
+        ! from the end of the container
+        ! @param[in] pid are the parcel indices of the parcels to be deleted
+        ! @param[in] n_del is the array size of pid
+        ! @pre
+        !   - pid must be sorted in ascending order
+        !   - pid must be contiguously filled
+        !   The above preconditions must be fulfilled so that the
+        !   parcel pack algorithm works correctly.
+        subroutine parcel_delete(pid, n_del)
+            integer, intent(in) :: pid(0:)
+            integer, intent(in) :: n_del
+            integer             :: k, l, m
+
+            ! l points always to the last valid parcel
+            l = n_parcels
+
+            ! k points always to last invalid parcel in pid
+            k = n_del
+
+            ! find last parcel which is not invalid
+            do while ((k > 0) .and. (l == pid(k)))
+                l = l - 1
+                k = k - 1
+            enddo
+
+            if (l == 0) then
+                print *, "Error: All parcels are invalid."
+                stop
+            endif
+
+            ! replace invalid parcels with the last valid parcel
+            m = 1
+
+            do while (m <= k)
+                ! invalid parcel; overwrite *pid(m)* with last valid parcel *l*
+                call parcel_replace(pid(m), l)
+
+                l = l - 1
+
+                ! find next valid last parcel
+                do while ((k > 0) .and. (l == pid(k)))
+                    l = l - 1
+                    k = k - 1
+                enddo
+
+                ! next invalid
+                m = m + 1
+            enddo
+
+            ! update number of valid parcels
+            n_parcels = n_parcels - n_del
+
+        end subroutine parcel_delete
+
 end module parcel_container
