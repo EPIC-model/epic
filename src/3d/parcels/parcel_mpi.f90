@@ -2,7 +2,7 @@ module parcel_mpi
     use mpi_layout, only : box
     use mpi_utils, only : mpi_exit_on_error
     use mpi_tags
-    use parcel_container, only : n_par_attrib, parcel_serialize, parcel_deserialize
+    use parcel_container, only : n_par_attrib, parcel_serialize, parcel_deserialize, n_parcels
     implicit none
 
     ! buffers storing the parcel indices the neighbours get
@@ -12,6 +12,9 @@ module parcel_mpi
     ! we have 8 neighbours (the index 0, means the parcels is kept)
     integer :: n_sends(0:8)
     integer :: n_recvs(8)
+
+    ! current last index in parcel container
+    integer :: n_last
 
     public :: parcel_halo_swap
 
@@ -57,37 +60,43 @@ module parcel_mpi
                               n_recvs(NB_NORTHEAST), 1, MPI_INT, neighbour%northeast, RECV_NORTHEAST_TAG, &
                               comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
+            n_last = n_parcels
+
             ! communicate parcels
-            call exchange_parcels(north, n_sends(NB_NORTH), neighbour%north, &
-                                         n_recvs(NB_SOUTH), neighbour%south)
+            call exchange_parcels(north, n_sends(NB_NORTH), neighbour%north, SEND_NORTH_TAG, &
+                                         n_recvs(NB_SOUTH), neighbour%south, RECV_SOUTH_TAG)
 
-            call exchange_parcels(south, n_sends(NB_SOUTH), neighbour%south, &
-                                         n_recvs(NB_NORTH), neighbour%north)
+            call exchange_parcels(south, n_sends(NB_SOUTH), neighbour%south, SEND_SOUTH_TAG, &
+                                         n_recvs(NB_NORTH), neighbour%north, RECV_NORTH_TAG)
 
-            call exchange_parcels(west, n_sends(NB_WEST), neighbour%west, &
-                                        n_recvs(NB_EAST), neighbour%east)
+            call exchange_parcels(west, n_sends(NB_WEST), neighbour%west, SEND_WEST_TAG, &
+                                        n_recvs(NB_EAST), neighbour%east, RECV_EAST_TAG)
 
-            call exchange_parcels(east, n_sends(NB_EAST), neighbour%east, &
-                                        n_recvs(NB_WEST), neighbour%west)
+            call exchange_parcels(east, n_sends(NB_EAST), neighbour%east, SEND_EAST_TAG, &
+                                        n_recvs(NB_WEST), neighbour%west, RECV_WEST_TAG)
 
-            call exchange_parcels(northwest, n_sends(NB_NORTHWEST), neighbour%northwest, &
-                                             n_recvs(NB_SOUTHEAST), neighbour%southeast)
+            call exchange_parcels(northwest, n_sends(NB_NORTHWEST), neighbour%northwest, SEND_NORTHWEST_TAG, &
+                                             n_recvs(NB_SOUTHEAST), neighbour%southeast, RECV_SOUTHEAST_TAG)
 
-            call exchange_parcels(northeast, n_sends(NB_NORTHEAST), neighbour%northeast, &
-                                             n_recvs(NB_SOUTHWEST), neighbour%southwest)
+            call exchange_parcels(northeast, n_sends(NB_NORTHEAST), neighbour%northeast, SEND_SOUTHEAST_TAG, &
+                                             n_recvs(NB_SOUTHWEST), neighbour%southwest, RECV_NORTHWEST_TAG)
 
-            call exchange_parcels(southwest, n_sends(NB_SOUTHWEST), neighbour%southwest, &
-                                             n_recvs(NB_NORTHEAST), neighbour%northeast)
+            call exchange_parcels(southwest, n_sends(NB_SOUTHWEST), neighbour%southwest, SEND_NORTHEAST_TAG, &
+                                             n_recvs(NB_NORTHEAST), neighbour%northeast, RECV_SOUTHWEST_TAG)
 
-            call exchange_parcels(southeast, n_sends(NB_SOUTHEAST), neighbour%southeast, &
-                                             n_recvs(NB_NORTHWEST), neighbour%northwest)
+            call exchange_parcels(southeast, n_sends(NB_SOUTHEAST), neighbour%southeast, SEND_SOUTHWEST_TAG, &
+                                             n_recvs(NB_NORTHWEST), neighbour%northwest, RECV_NORTHEAST_TAG)
+
+
+            ! delete parcels that we sent
 
         end subroutine parcel_halo_swap
 
 
-        subroutine exchange_parcels(pid, sendcount, dest, recvcount, source)
+        subroutine exchange_parcels(pid, sendcount, dest, sendtag, recvcount, source, recvtag)
             integer, intent(in)           :: pid(:)
             integer, intent(in)           :: sendcount, recvcount
+            integer, intent(in)           :: sendtag, recvtag
             integer, intent(in)           :: dest, source
             double precision, allocatable :: sendbuf(:), recvbuf(:)
             integer                       :: send_size, recv_size
@@ -100,10 +109,21 @@ module parcel_mpi
 
             call pack_parcels(pid, sendcount, sendbuf)
 
+            call MPI_Sendrecv(sendbuf   = sendbuf,              &
+                              sendcount = send_size,            &
+                              sendtype  = MPI_DOUBLE,           &
+                              dest      = dest,                 &
+                              sendtag   = sendtag,              &
+                              recvbuf   = recbuf,               &
+                              recvcount = recv_size,            &
+                              recvtype  = MPI_DOUBLE,           &
+                              source    = source,               &
+                              recvtag   = recvtag,              &
+                              comm      = comm_cart,            &
+                              status    = MPI_IGNORE_STATUS,    &
+                              ierror    = mpi_err)
 
-
-
-            call unpack_parcels
+            call unpack_parcels(recvcount, recvbuf)
 
             deallocate(sendbuf)
             deallocate(recvbuf)
@@ -113,6 +133,9 @@ module parcel_mpi
 
         subroutine locate_parcels
             integer              :: i, j, k, n, nb, idx
+
+            ! reset the number of sends
+            n_sends = 0
 
             do n = 1, n_parcels
                 call get_index(parcels%position(:, n), i, j, k)
@@ -164,7 +187,18 @@ module parcel_mpi
         end subroutine pack_parcels
 
 
-        subroutine unpack_parcels
+        subroutine unpack_parcels(recvcount, recvbuf)
+            integer,          intent(in) :: recvcount
+            double precision, intent(in) :: recvbuf(:)
+            integer                      :: n, i, j
+
+            do n = 1, recvcount
+                i = 1 + (n-1) * n_par_attrib
+                j = n * n_par_attrib
+                call parcel_deserialize(n_last + n, recvbuf(i:j))
+            enddo
+
+            n_last = n_last + recvcount
 
         end subroutine unpack_parcels
 
