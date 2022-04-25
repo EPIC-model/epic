@@ -38,54 +38,54 @@ program test_mpi_parcel_halo_swap
 
     n_parcels = 8 * (mpi_rank + 1)
     n_total = 4 * mpi_size * (mpi_size + 1)
-    call parcel_alloc(n_parcels)
+    call parcel_alloc(2 * n_total)
 
     do n = 1, mpi_rank + 1
         ! place parcels in southwest halo
-        parcels%position(1, n) = box%hlo(1) + f12 * dx(1)
-        parcels%position(2, n) = box%hlo(2) + f12 * dx(2)
+        parcels%position(1, n) = (box%hlo(1) + f12) * dx(1)
+        parcels%position(2, n) = (box%hlo(2) + f12) * dx(2)
         parcels%position(3, n) = f12
 
         ! place parcels in west halo
         j = mpi_rank + 1
-        parcels%position(1, n + j) = box%hlo(1) + f12 * dx(1)
-        parcels%position(2, n + j) = box%lo(2) + f12 * dx(2)
+        parcels%position(1, n + j) = (box%hlo(1) + f12) * dx(1)
+        parcels%position(2, n + j) = (box%lo(2) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in northwest halo
         j = 2 * (mpi_rank + 1)
-        parcels%position(1, n + j) = box%hlo(1) + f12 * dx(1)
-        parcels%position(2, n + j) = (box%hhi(2) - 1) + f12 * dx(2)
+        parcels%position(1, n + j) = (box%hlo(1) + f12) * dx(1)
+        parcels%position(2, n + j) = ((box%hhi(2) - 1) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in north halo
         j = 3 * (mpi_rank + 1)
-        parcels%position(1, n + j) = box%lo(1) + f12 * dx(1)
-        parcels%position(2, n + j) = (box%hhi(2) - 1) + f12 * dx(2)
+        parcels%position(1, n + j) = (box%lo(1) + f12) * dx(1)
+        parcels%position(2, n + j) = ((box%hhi(2) - 1) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in northeast halo
         j = 4 * (mpi_rank + 1)
-        parcels%position(1, n + j) = (box%hhi(1) - 1) + f12 * dx(1)
-        parcels%position(2, n + j) = (box%hhi(2) - 1) + f12 * dx(2)
+        parcels%position(1, n + j) = ((box%hhi(1) - 1) + f12) * dx(1)
+        parcels%position(2, n + j) = ((box%hhi(2) - 1) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in east halo
         j = 5 * (mpi_rank + 1)
-        parcels%position(1, n + j) = (box%hhi(1) - 1) + f12 * dx(1)
-        parcels%position(2, n + j) = box%lo(2) + f12 * dx(2)
+        parcels%position(1, n + j) = ((box%hhi(1) - 1) + f12) * dx(1)
+        parcels%position(2, n + j) = (box%lo(2) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in southeast halo
         j = 6 * (mpi_rank + 1)
-        parcels%position(1, n + j) = (box%hhi(1) - 1) + f12 * dx(1)
-        parcels%position(2, n + j) = box%hlo(2) + f12 * dx(2)
+        parcels%position(1, n + j) = ((box%hhi(1) - 1) + f12) * dx(1)
+        parcels%position(2, n + j) = (box%hlo(2) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in south halo
         j = 7 * (mpi_rank + 1)
-        parcels%position(1, n + j) = box%lo(1) + f12 * dx(1)
-        parcels%position(2, n + j) = box%hlo(2) + f12 * dx(2)
+        parcels%position(1, n + j) = (box%lo(1) + f12) * dx(1)
+        parcels%position(2, n + j) = (box%hlo(2) + f12) * dx(2)
         parcels%position(3, n + j) = f12
     enddo
 
@@ -100,6 +100,8 @@ program test_mpi_parcel_halo_swap
     call mpi_blocking_reduce(n_verify, MPI_SUM)
 
     passed = (passed .and. (n_verify == n_total))
+
+    print *, n_total, n_verify
 
 !     if (mpi_rank == mpi_master) then
 !         total_vol = dble(n_total) * parcels%volume(1)
