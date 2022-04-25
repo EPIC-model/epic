@@ -34,9 +34,6 @@ module parcel_mpi
             ! figure out where parcels should go
             call locate_parcels(loc, pid)
 
-            print *, loc
-            print *, pid
-
             ! tell your neighbours the number of receiving parcels
             call MPI_Send(n_sends(NB_NORTH), 1, MPI_INT, neighbour%north, NORTH_TAG, &
                           comm_cart, mpi_err)
@@ -229,7 +226,6 @@ module parcel_mpi
             do n = 1, recvcount
                 i = 1 + (n-1) * n_par_attrib
                 j = n * n_par_attrib
-                print *, n_parcels, n
                 call parcel_deserialize(n_parcels + n, recvbuf(i:j))
             enddo
 

@@ -19,7 +19,8 @@ program test_mpi_parcel_halo_swap
     implicit none
 
     logical :: passed = .true.
-    integer :: n_total, n, j, n_verify
+    integer :: n_total, n, j, n_total_verify
+    integer :: n_local_verify, n_expected
 
     call mpi_comm_initialise
 
@@ -96,34 +97,54 @@ program test_mpi_parcel_halo_swap
 
     call parcel_halo_swap
 
-    n_verify = n_parcels
-    call mpi_blocking_reduce(n_verify, MPI_SUM)
+    n_total_verify = n_parcels
+    call mpi_blocking_reduce(n_total_verify, MPI_SUM)
 
-    passed = (passed .and. (n_verify == n_total))
-
-    print *, n_total, n_verify
-
-!     if (mpi_rank == mpi_master) then
-!         total_vol = dble(n_total) * parcels%volume(1)
-!         passed = (passed .and. (dabs(parcel_stats(IDX_KE) - 0.375d0 * total_vol) == zero))
-!         passed = (passed .and. (dabs(parcel_stats(IDX_N_SMALL) - n_total) == zero))
-!         passed = (passed .and. (dabs(parcel_stats(IDX_AVG_LAM) - one) < 1.0e-13))
-!         passed = (passed .and. (parcel_stats(IDX_STD_LAM) < 1.0e-7))
-!         passed = (passed .and. (parcel_stats(IDX_STD_VOL) < 1.0e-15))
-!         passed = (passed .and. (dabs(parcel_stats(IDX_SUM_VOL) - total_vol) < 1.0e-15))
-!         passed = (passed .and. (dabs(parcel_stats(IDX_NTOT_PAR) - n_total) == zero))
-!         passed = (passed .and. (dabs(parcel_stats(IDX_RMS_XI) - f12) < 1.0e-15))
-!         passed = (passed .and. (dabs(parcel_stats(IDX_RMS_ETA) - f12) < 1.0e-15))
-!         passed = (passed .and. (dabs(parcel_stats(IDX_RMS_ZETA) - f12) < 1.0e-15))
-!     endif
+    ! this needs to be checked by the MPI root only!
+    if (mpi_rank == mpi_master) then
+        passed = (passed .and. (n_total_verify == n_total))
+    endif
 
 
-    call mpi_comm_finalise
+    n_local_verify = (neighbour%west+1)      &
+                   + (neighbour%east+1)      &
+                   + (neighbour%north+1)     &
+                   + (neighbour%south+1)     &
+                   + (neighbour%northeast+1) &
+                   + (neighbour%northwest+1) &
+                   + (neighbour%southeast+1) &
+                   + (neighbour%southwest+1)
+
+
+    passed = (passed .and. (n_parcels == n_local_verify))
+
+    if (passed) then
+        n_total = int(sum(parcels%volume(1:n_parcels)))
+
+        n_expected = (neighbour%west+1) ** 2      &
+                   + (neighbour%east+1) ** 2      &
+                   + (neighbour%north+1) ** 2     &
+                   + (neighbour%south+1) ** 2     &
+                   + (neighbour%northeast+1) ** 2 &
+                   + (neighbour%northwest+1) ** 2 &
+                   + (neighbour%southeast+1) ** 2 &
+                   + (neighbour%southwest+1) ** 2
+
+        passed = (passed .and. (n_expected == n_total))
+    endif
+
+    if (mpi_rank == mpi_master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    else
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    endif
 
     passed = (passed .and. (mpi_err == 0))
 
     if (mpi_rank == mpi_master) then
         call print_result_logical('Test MPI parcel halo swap', passed)
     endif
+
+    call mpi_comm_finalise
 
 end program test_mpi_parcel_halo_swap
