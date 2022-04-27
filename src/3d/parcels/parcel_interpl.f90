@@ -236,6 +236,10 @@ module parcel_interpl
             vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
 
+            ! use symmetry to fill halo grid points
+            vortg(-1,   :, :, :) = vortg(1,    :, :, :)
+            vortg(nz+1, :, :, :) = vortg(nz-1, :, :, :)
+
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
             dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
