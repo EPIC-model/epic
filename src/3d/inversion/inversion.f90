@@ -1,6 +1,6 @@
 module inversion_mod
     use inversion_utils
-    use parameters, only : nx, ny, nz
+    use parameters, only : nx, ny, nz, dxi
     use physics, only : ft_cor, f_cor
     use constants, only : zero, two, f12
     use timer, only : start_timer, stop_timer
@@ -323,6 +323,39 @@ module inversion_mod
             call stop_timer(vtend_timer)
 
         end subroutine vorticity_tendency
+
+        subroutine divergence(f, div)
+            double precision, intent(in)  ::   f(0:nz, 0:ny-1, 0:nx-1, 3)
+            double precision, intent(out) :: div(0:nz, 0:ny-1, 0:nx-1)
+            double precision              ::  df(0:nz, 0:ny-1, 0:nx-1)
+            integer                       :: i
+
+            ! calculate df/dx with central differencing
+            do i = 1, nx-2
+                div(0:nz, 0:ny-1, i) = f12 * dxi(1) * (f(0:nz, 0:ny-1, i+1) - f(0:nz, 0:ny-1, i-1))
+            enddo
+            div(0:nz, 0:ny-1, 0)    = f12 * dxi(1) * (f(0:nz, 0:ny-1, 1) - f(0:nz, 0:ny-1, nx-1))
+            div(0:nz, 0:ny-1, nx-1) = f12 * dxi(1) * (f(0:nz, 0:ny-1, 0) - f(0:nz, 0:ny-1, nx-2))
+
+            ! calculate df/dy with central differencing
+            do i = 1, ny-2
+                df(0:nz, i, 0:nx-1) = f12 * dxi(2) * (f(0:nz, i+1, 0:nx-1) - f(0:nz, i-1, 0:nx-1))
+            enddo
+            df(0:nz, 0,    0:nx-1) = f12 * dxi(2) * (f(0:nz, 1, 0:nx-1) - f(0:nz, ny-1, 0:nx-1))
+            df(0:nz, ny-1, 0:nx-1) = f12 * dxi(2) * (f(0:nz, 0, 0:nx-1) - f(0:nz, ny-2, 0:nx-1))
+
+            div = div + df
+
+            ! calculate df/dz with central differencing
+            do i = 1, nz-1
+                df(i, 0:ny-1, 0:nx-1) = f12 * dxi(3) * (f(i+1, 0:ny-1, 0:nx-1) - f(i-1, 0:ny-1, 0:nx-1))
+            enddo
+            df(0,  0:ny-1, 0:nx-1) = f12 * dxi(3) * (f(1,    0:ny-1, 0:nx-1) - f(-1,   0:ny-1, 0:nx-1))
+            df(nz, 0:ny-1, 0:nx-1) = f12 * dxi(3) * (f(nz+1, 0:ny-1, 0:nx-1) - f(nz-1, 0:ny-1, 0:nx-1))
+
+            div = div + df
+
+        end subroutine divergence
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
