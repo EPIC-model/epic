@@ -112,23 +112,13 @@ module parcel_mpi
                                   n_sends(NB_SOUTHEAST), neighbour%southeast, &
                                   n_recvs(NB_NORTHWEST), neighbour%northwest, SOUTHWEST_TAG)
 
-
-
-            ! delete all parcels that were sent
-            call parcel_delete(north_buf, nsends(NB_NORTH))
-            call parcel_delete(south_buf, nsends(NB_SOUTH))
-            call parcel_delete(west_buf, nsends(NB_WEST))
-            call parcel_delete(east_buf, nsends(NB_EAST))
-            call parcel_delete(northwest_buf, nsends(NB_NORTHWEST))
-            call parcel_delete(northeast_buf, nsends(NB_NORTHEAST))
-            call parcel_delete(southwest_buf, nsends(NB_SOUTHWEST))
-            call parcel_delete(southeast_buf, nsends(NB_SOUTHEAST))
+            call remove_parcels
 
         end subroutine parcel_halo_swap
 
 
         subroutine exchange_parcels(pid, sendcount, dest, recvcount, source, tag)
-            integer, intent(in)           :: pid(0:)
+            integer, intent(in)           :: pid(:)
             integer, intent(in)           :: sendcount, recvcount
             integer, intent(in)           :: tag
             integer, intent(in)           :: dest, source
@@ -206,7 +196,7 @@ module parcel_mpi
 
 
         subroutine pack_parcels(pid, sendcount, sendbuf)
-            integer,          intent(in)  :: pid(0:)
+            integer,          intent(in)  :: pid(:)
             integer,          intent(in)  :: sendcount
             double precision, intent(out) :: sendbuf(:)
             integer                       :: n, i, j
@@ -250,23 +240,82 @@ module parcel_mpi
             ! number of cells sharing with north and south neighbour
             nc = (box%hi(1) - box%lo(1) + 1) * nz
 
-            allocate(north_buf(0:nc * ub))
-            allocate(south_buf(0:nc * ub))
+            allocate(north_buf(nc * ub))
+            allocate(south_buf(nc * ub))
 
             ! number of cells sharing with west and east neighbour
             nc = (box%hi(2) - box%lo(2) + 1) * nz
 
-            allocate(west_buf(0:nc * ub))
-            allocate(east_buf(0:nc * ub))
+            allocate(west_buf(nc * ub))
+            allocate(east_buf(nc * ub))
 
             ! number of cells sharing with corner neighbours
             nc = nz
 
-            allocate(northwest_buf(0:nc * ub))
-            allocate(northeast_buf(0:nc * ub))
-            allocate(southwest_buf(0:nc * ub))
-            allocate(southeast_buf(0:nc * ub))
+            allocate(northwest_buf(nc * ub))
+            allocate(northeast_buf(nc * ub))
+            allocate(southwest_buf(nc * ub))
+            allocate(southeast_buf(nc * ub))
 
         end subroutine allocate_buffers
+
+        ! We need to combine all invalid parcels into a single buffer
+        ! and then sort the indices in order to delete them properly
+        subroutine remove_parcels
+            integer, allocatable :: invalid(:)
+            integer, allocatable :: ii(:)
+            integer              :: n_total, i, j, n
+
+            n_total = sum(n_sends)
+
+            allocate(invalid(0:n_total))
+            allocate(ii(n_total))
+
+            n = n_sends(NB_NORTH)
+            invalid(1:n) = north_buf(1:n)
+
+            i = n + 1
+            n = n_sends(NB_SOUTH)
+            j = j + n
+            invalid(i:j) = south_buf(1:n)
+
+            i = n + 1
+            n = n_sends(NB_WEST)
+            j = j + n
+            invalid(i:j) = west_buf(1:n)
+
+            i = n + 1
+            n = n_sends(NB_EAST)
+            j = j + n
+            invalid(i:j) = east_buf(1:n)
+
+            i = n + 1
+            n = n_sends(NB_NORTHWEST)
+            j = j + n
+            invalid(i:j) = northwest_buf(1:n)
+
+            i = n + 1
+            n = n_sends(NB_NORTHEAST)
+            j = j + n
+            invalid(i:j) = northeast_buf(1:n)
+
+            i = n + 1
+            n = n_sends(NB_SOUTHWEST)
+            j = j + n
+            invalid(i:j) = southwest_buf(1:n)
+
+            i = n + 1
+            n = n_sends(NB_SOUTHEAST)
+            j = j + n
+            invalid(i:j) = southeast_buf(1:n)
+
+            call msort(invalid(1:n_total), ii)
+
+            call parcel_delete(invalid, n_total)
+
+            deallocate(invalid)
+            deallocate(ii)
+
+        end subroutine remove_parcels
 
 end module parcel_mpi
