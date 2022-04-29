@@ -4,6 +4,7 @@ module parcel_mpi
     use mpi_tags
     use fields, only : get_index
     use merge_sort, only : msort
+    use parameters, only : vmin, vcell, nz
     use parcel_container, only : n_par_attrib       &
                                , parcel_serialize   &
                                , parcel_deserialize &
@@ -14,25 +15,24 @@ module parcel_mpi
 
     private
 
+    integer, allocatable, dimension(:) :: north_buf, south_buf, west_buf, east_buf, &
+                                          northwest_buf, northeast_buf,             &
+                                          southwest_buf, southeast_buf
+
     ! we have 8 neighbours
     integer :: n_sends(8)
     integer :: n_recvs(8)
-    integer :: n_total
 
     public :: parcel_halo_swap
 
     contains
 
         subroutine parcel_halo_swap
-            integer :: loc(n_parcels)   !FIXME we need a smart estimate
-            integer :: pid(0:n_parcels)   !FIXME we need a smart estimate
-            integer :: ii(n_parcels)
-            integer :: k
 
-            pid(0) = -1
+            call allocate_buffers
 
             ! figure out where parcels should go
-            call locate_parcels(loc, pid)
+            call locate_parcels
 
             ! tell your neighbours the number of receiving parcels
             call MPI_Send(n_sends(NB_NORTH), 1, MPI_INT, neighbour%north, NORTH_TAG, &
@@ -84,46 +84,45 @@ module parcel_mpi
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
             ! communicate parcels
-            call exchange_parcels(pid, n_sends(NB_NORTH), neighbour%north, &
-                                       n_recvs(NB_SOUTH), neighbour%south, NORTH_TAG)
+            call exchange_parcels(north_buf, n_sends(NB_NORTH), neighbour%north, &
+                                             n_recvs(NB_SOUTH), neighbour%south, NORTH_TAG)
 
-            k = n_sends(1)
-            call exchange_parcels(pid(k:), n_sends(NB_SOUTH), neighbour%south, &
-                                           n_recvs(NB_NORTH), neighbour%north, SOUTH_TAG)
+            call exchange_parcels(south_buf, n_sends(NB_SOUTH), neighbour%south, &
+                                             n_recvs(NB_NORTH), neighbour%north, SOUTH_TAG)
 
-            k = k + n_sends(2)
-            call exchange_parcels(pid(k:), n_sends(NB_WEST), neighbour%west, &
-                                           n_recvs(NB_EAST), neighbour%east, WEST_TAG)
+            call exchange_parcels(west_buf, n_sends(NB_WEST), neighbour%west, &
+                                            n_recvs(NB_EAST), neighbour%east, WEST_TAG)
 
-            k = k + n_sends(3)
-            call exchange_parcels(pid(k:), n_sends(NB_EAST), neighbour%east, &
-                                           n_recvs(NB_WEST), neighbour%west, EAST_TAG)
+            call exchange_parcels(east_buf, n_sends(NB_EAST), neighbour%east, &
+                                            n_recvs(NB_WEST), neighbour%west, EAST_TAG)
 
-            k = k + n_sends(4)
-            call exchange_parcels(pid(k:),  &
+            call exchange_parcels(northwest_buf, &
                                   n_sends(NB_NORTHWEST), neighbour%northwest, &
                                   n_recvs(NB_SOUTHEAST), neighbour%southeast, NORTHWEST_TAG)
 
-            k = k + n_sends(5)
-            call exchange_parcels(pid(k:), &
+            call exchange_parcels(northeast_buf, &
                                   n_sends(NB_NORTHEAST), neighbour%northeast, &
                                   n_recvs(NB_SOUTHWEST), neighbour%southwest, SOUTHEAST_TAG)
 
-            k = k + n_sends(6)
-            call exchange_parcels(pid(k:),  &
+            call exchange_parcels(southwest_buf,  &
                                   n_sends(NB_SOUTHWEST), neighbour%southwest, &
                                   n_recvs(NB_NORTHEAST), neighbour%northeast, NORTHEAST_TAG)
 
-            k = k + n_sends(7)
-            call exchange_parcels(pid(k:), &
+            call exchange_parcels(southeast_buf, &
                                   n_sends(NB_SOUTHEAST), neighbour%southeast, &
                                   n_recvs(NB_NORTHWEST), neighbour%northwest, SOUTHWEST_TAG)
 
 
 
-            call msort(pid(1:n_total), ii(1:n_total))
-
-            call parcel_delete(pid(0:n_total), n_total)
+            ! delete all parcels that were sent
+            call parcel_delete(north_buf, nsends(NB_NORTH))
+            call parcel_delete(south_buf, nsends(NB_SOUTH))
+            call parcel_delete(west_buf, nsends(NB_WEST))
+            call parcel_delete(east_buf, nsends(NB_EAST))
+            call parcel_delete(northwest_buf, nsends(NB_NORTHWEST))
+            call parcel_delete(northeast_buf, nsends(NB_NORTHEAST))
+            call parcel_delete(southwest_buf, nsends(NB_SOUTHWEST))
+            call parcel_delete(southeast_buf, nsends(NB_SOUTHEAST))
 
         end subroutine parcel_halo_swap
 
@@ -156,50 +155,52 @@ module parcel_mpi
 
         end subroutine exchange_parcels
 
-        subroutine locate_parcels(loc, pid)
-            integer, intent(out) :: loc(:)
-            integer, intent(out) :: pid(0:)
-            integer, allocatable :: ii(:), tmp(:)
+
+        subroutine locate_parcels
             integer              :: i, j, k, n, nb, m
 
             ! reset the number of sends
             n_sends(:) = 0
-
-            m = 1
 
             do n = 1, n_parcels
                 call get_index(parcels%position(:, n), i, j, k)
 
                 nb = get_neighbour(i, j)
 
-                if (nb == NB_NONE) then
-                    cycle
-                endif
-
-                loc(m) = nb
-                pid(m) = n
-
-                m = m + 1
+                select case (nb)
+                    case (NB_NONE)
+                        ! do nothing
+                        cycle
+                    case (NB_NORTH)
+                        m = n_sends(nb) + 1
+                        north_buf(m) = n
+                    case (NB_SOUTH)
+                        m = n_sends(nb) + 1
+                        south_buf(m) = n
+                    case (NB_WEST)
+                        m = n_sends(nb) + 1
+                        west_buf(m) = n
+                    case (NB_EAST)
+                        m = n_sends(nb) + 1
+                        east_buf(m) = n
+                    case (NB_NORTHWEST)
+                        m = n_sends(nb) + 1
+                        northwest_buf(m) = n
+                    case (NB_NORTHEAST)
+                        m = n_sends(nb) + 1
+                        northeast_buf(m) = n
+                    case (NB_SOUTHWEST)
+                        m = n_sends(nb) + 1
+                        southwest_buf(m) = n
+                    case (NB_SOUTHEAST)
+                        m = n_sends(nb) + 1
+                        southeast_buf(m) = n
+                    case default
+                        call mpi_exit_on_error("locate_parcels: Parcel was not assigned properly.")
+                end select
 
                 n_sends(nb) = n_sends(nb) + 1
             enddo
-
-            n_total = sum(n_sends)
-
-            allocate(ii(n_total))
-            allocate(tmp(n_total))
-
-            ! sort location in ascending order
-            call msort(loc(1:n_total), ii)
-
-            tmp = pid(1:n_total)
-
-            do n = 1, n_total
-                pid(n) = tmp(ii(n))
-            enddo
-
-            deallocate(ii)
-            deallocate(tmp)
 
         end subroutine locate_parcels
 
@@ -232,5 +233,40 @@ module parcel_mpi
             n_parcels = n_parcels + recvcount
 
         end subroutine unpack_parcels
+
+
+        ! Note: Buffers need to have start index 0 because of the parcel delete routine.
+        !       However, this first array element is never assigned any value.
+        subroutine allocate_buffers
+            integer :: nc, ub
+
+            if (allocated(north_buf)) then
+                return
+            endif
+
+            ! upper bound (ub) of parcels per cell
+            ub = ceiling(vcell / vmin)
+
+            ! number of cells sharing with north and south neighbour
+            nc = (box%hi(1) - box%lo(1) + 1) * nz
+
+            allocate(north_buf(0:nc * ub))
+            allocate(south_buf(0:nc * ub))
+
+            ! number of cells sharing with west and east neighbour
+            nc = (box%hi(2) - box%lo(2) + 1) * nz
+
+            allocate(west_buf(0:nc * ub))
+            allocate(east_buf(0:nc * ub))
+
+            ! number of cells sharing with corner neighbours
+            nc = nz
+
+            allocate(northwest_buf(0:nc * ub))
+            allocate(northeast_buf(0:nc * ub))
+            allocate(southwest_buf(0:nc * ub))
+            allocate(southeast_buf(0:nc * ub))
+
+        end subroutine allocate_buffers
 
 end module parcel_mpi
