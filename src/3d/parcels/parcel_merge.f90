@@ -9,7 +9,8 @@ module parcel_merge
                                , n_parcels              &
                                , parcel_replace         &
                                , get_delx               &
-                               , get_dely
+                               , get_dely               &
+                               , parcel_delete
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
     use parcel_bc
@@ -20,8 +21,7 @@ module parcel_merge
     integer:: merge_timer
 
     private :: geometric_merge, &
-               do_group_merge,  &
-               pack_parcels
+               do_group_merge
 
     contains
 
@@ -52,7 +52,7 @@ module parcel_merge
                 call geometric_merge(parcels, isma, iclo, n_merge)
 
                 ! overwrite invalid parcels
-                call pack_parcels(isma, n_merge)
+                call parcel_delete(isma, n_merge)
             endif
 
             if (allocated(isma)) then
@@ -292,62 +292,5 @@ module parcel_merge
             enddo
 
         end subroutine geometric_merge
-
-
-        ! This algorithm replaces invalid parcels with valid parcels
-        ! from the end of the container
-        ! @param[in] isma are the indices of the small parcels
-        ! @param[in] n_merge is the array size of isma and iclo
-        ! @pre
-        !   - isma must be sorted in ascending order
-        !   - isma must be contiguously filled
-        !   The above preconditions must be fulfilled so that the
-        !   parcel pack algorithm works correctly.
-        subroutine pack_parcels(isma, n_merge)
-            integer, intent(in) :: isma(0:)
-            integer, intent(in) :: n_merge
-            integer             :: k, l, m
-
-            ! l points always to the last valid parcel
-            l = n_parcels
-
-            ! k points always to last invalid parcel in isma
-            k = n_merge
-
-            ! find last parcel which is not invalid
-            do while ((k > 0) .and. (l == isma(k)))
-                l = l - 1
-                k = k - 1
-            enddo
-
-            if (l == 0) then
-                print *, "Error: All parcels are invalid."
-                stop
-            endif
-
-            ! replace invalid parcels with the last valid parcel
-            m = 1
-
-            do while (m <= k)
-                ! invalid parcel; overwrite *isma(m)* with last valid parcel *l*
-                call parcel_replace(isma(m), l)
-
-                l = l - 1
-
-                ! find next valid last parcel
-                do while ((k > 0) .and. (l == isma(k)))
-                    l = l - 1
-                    k = k - 1
-                enddo
-
-                ! next invalid
-                m = m + 1
-            enddo
-
-            ! update number of valid parcels
-            n_parcels = n_parcels - n_merge
-
-        end subroutine pack_parcels
-
 
 end module parcel_merge

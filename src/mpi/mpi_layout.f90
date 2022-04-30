@@ -8,6 +8,16 @@ module mpi_layout
         integer :: hlo(3), hhi(3)
     end type box_type
 
+    integer, parameter  :: NB_NONE      = 0, &
+                           NB_NORTH     = 1, &
+                           NB_SOUTH     = 2, &
+                           NB_WEST      = 3, &
+                           NB_EAST      = 4, &
+                           NB_NORTHWEST = 5, &
+                           NB_NORTHEAST = 6, &
+                           NB_SOUTHWEST = 7, &
+                           NB_SOUTHEAST = 8
+
     type neighbour_type
         integer :: west, east
         integer :: south, north
@@ -98,6 +108,92 @@ module mpi_layout
             call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)-1/), neighbour%southeast, mpi_err)
 
         end subroutine mpi_layout_init
+
+        pure function is_north(j) result(l_north)
+            integer, intent(in) :: j
+            logical             :: l_north
+
+            l_north = (j > box%hi(2))
+        end function
+
+        pure function is_south(j) result(l_south)
+            integer, intent(in) :: j
+            logical             :: l_south
+
+            l_south = (j < box%lo(2))
+        end function
+
+        pure function is_west(i) result(l_west)
+            integer, intent(in) :: i
+            logical             :: l_west
+
+            l_west = (i == box%hlo(1))
+        end function
+
+        pure function is_east(i) result(l_east)
+            integer, intent(in) :: i
+            logical             :: l_east
+
+            l_east = (i > box%hi(1))
+        end function
+
+        pure function is_contained(i, j) result(l_contained)
+            integer, intent(in) :: i, j
+            logical             :: l_contained
+
+            l_contained = ((i > box%hlo(1))   .and. &
+                           (i < box%hhi(1)-1) .and. &
+                           (j > box%hlo(2))   .and. &
+                           (j < box%hhi(2)-1))
+        end function
+
+        pure function get_neighbour(i, j) result(nb)
+            integer, intent(in) :: i, j
+            integer             :: nb
+
+            nb = NB_NONE
+
+            if (is_north(j)) then
+                ! check if northwest, north or northeast
+                if (is_west(i)) then
+                    nb = NB_NORTHWEST
+                    return
+                else if (is_east(i)) then
+                    nb = NB_NORTHEAST
+                    return
+                endif
+
+                nb = NB_NORTH
+                return
+            endif
+
+            if (is_south(j)) then
+                ! check if southwest, south or southeast
+                if (is_west(i)) then
+                    nb = NB_SOUTHWEST
+                    return
+                else if (is_east(i)) then
+                    nb = NB_SOUTHEAST
+                    return
+                endif
+
+                nb = NB_SOUTH
+                return
+            endif
+
+            ! if none of the above is true, the owner can only be
+            ! either neighbour west or east or the rank itself
+            if (is_west(i)) then
+                nb = NB_WEST
+                return
+            endif
+
+            if (is_east(i)) then
+                nb = NB_EAST
+                return
+            endif
+
+        end function get_neighbour
 
 
         subroutine set_local_bounds(nglobal, coords, dims, first, last)

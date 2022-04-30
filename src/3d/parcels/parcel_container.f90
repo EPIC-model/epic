@@ -11,6 +11,32 @@ module parcel_container
     integer :: n_parcels        ! local number of parcels
     integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
 
+    ! buffer indices to access individual parcel attributes
+    integer, parameter :: IDX_X_POS = 1,    & ! x-position
+                          IDX_Y_POS = 2,    & ! y-position
+                          IDX_Z_POS = 3,    & ! z-position
+                          IDX_X_VOR = 4,    & ! x-vorticity
+                          IDX_Y_VOR = 5,    & ! y-vorticity
+                          IDX_Z_VOR = 6,    & ! z-vorticity
+                          IDX_B11   = 7,    & ! B11 shape matrix element
+                          IDX_B12   = 8,    & ! B12 shape matrix element
+                          IDX_B13   = 9,    & ! B13 shape matrix element
+                          IDX_B22   = 10,   & ! B22 shape matrix element
+                          IDX_B23   = 11,   & ! B23 shape matrix element
+                          IDX_VOL   = 12,   & ! volume
+                          IDX_BUO   = 13      ! buoyancy
+#ifndef ENABLE_DRY_MODE
+    integer, parameter :: IDX_HUM   = 14
+#endif
+
+#ifndef ENABLE_DRY_MODE
+    integer, parameter :: n_par_attrib = IDX_HUM ! number of  parcel attributes
+                                                 ! (components are counted individually, e.g. position counts
+                                                 ! as 3 attributes)
+#else
+    integer, parameter :: n_par_attrib = IDX_BUO
+#endif
+
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
             position,   &
@@ -139,5 +165,91 @@ module parcel_container
 #endif
             call parcel_ellipsoid_deallocate
         end subroutine parcel_dealloc
+
+        ! Serialize all parcel attributes into a single buffer
+        subroutine parcel_serialize(n, buffer)
+            integer,          intent(in)  :: n
+            double precision, intent(out) :: buffer(n_par_attrib)
+
+            buffer(IDX_X_POS:IDX_Z_POS) = parcels%position(:, n)
+            buffer(IDX_X_VOR:IDX_Z_VOR) = parcels%vorticity(:, n)
+            buffer(IDX_B11:IDX_B23)     = parcels%B(:, n)
+            buffer(IDX_VOL)             = parcels%volume(n)
+            buffer(IDX_BUO)             = parcels%buoyancy(n)
+#ifndef ENABLE_DRY_MODE
+            buffer(IDX_HUM)             = parcels%humidity(n)
+#endif
+        end subroutine parcel_serialize
+
+        ! Deserialize all parcel attributes from a single buffer
+        subroutine parcel_deserialize(n, buffer)
+            integer,          intent(in) :: n
+            double precision, intent(in) :: buffer(n_par_attrib)
+
+            parcels%position(:, n)  = buffer(IDX_X_POS:IDX_Z_POS)
+            parcels%vorticity(:, n) = buffer(IDX_X_VOR:IDX_Z_VOR)
+            parcels%B(:, n)         = buffer(IDX_B11:IDX_B23)
+            parcels%volume(n)       = buffer(IDX_VOL)
+            parcels%buoyancy(n)     = buffer(IDX_BUO)
+#ifndef ENABLE_DRY_MODE
+            parcels%humidity(n)     = buffer(IDX_HUM)
+#endif
+        end subroutine parcel_deserialize
+
+
+        ! This algorithm replaces invalid parcels with valid parcels
+        ! from the end of the container
+        ! @param[in] pid are the parcel indices of the parcels to be deleted
+        ! @param[in] n_del is the array size of pid
+        ! @pre
+        !   - pid must be sorted in ascending order
+        !   - pid must be contiguously filled
+        !   The above preconditions must be fulfilled so that the
+        !   parcel pack algorithm works correctly.
+        subroutine parcel_delete(pid, n_del)
+            integer, intent(in) :: pid(0:)
+            integer, intent(in) :: n_del
+            integer             :: k, l, m
+
+            ! l points always to the last valid parcel
+            l = n_parcels
+
+            ! k points always to last invalid parcel in pid
+            k = n_del
+
+            ! find last parcel which is not invalid
+            do while ((k > 0) .and. (l == pid(k)))
+                l = l - 1
+                k = k - 1
+            enddo
+
+            if (l == 0) then
+                print *, "Error: All parcels are invalid."
+                stop
+            endif
+
+            ! replace invalid parcels with the last valid parcel
+            m = 1
+
+            do while (m <= k)
+                ! invalid parcel; overwrite *pid(m)* with last valid parcel *l*
+                call parcel_replace(pid(m), l)
+
+                l = l - 1
+
+                ! find next valid last parcel
+                do while ((k > 0) .and. (l == pid(k)))
+                    l = l - 1
+                    k = k - 1
+                enddo
+
+                ! next invalid
+                m = m + 1
+            enddo
+
+            ! update number of valid parcels
+            n_parcels = n_parcels - n_del
+
+        end subroutine parcel_delete
 
 end module parcel_container

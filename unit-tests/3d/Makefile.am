@@ -57,7 +57,8 @@ unittests_PROGRAMS = 				\
 	test_mpi_field_diagnostics		\
 	test_mpi_parcel_diagnostics		\
 	test_mpi_parcel_write			\
-	test_mpi_parcel_read
+	test_mpi_parcel_read			\
+	test_mpi_parcel_halo_swap
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -154,3 +155,6 @@ test_mpi_parcel_write_LDADD = libcombi.la
 
 test_mpi_parcel_read_SOURCES = test_mpi_parcel_read.f90
 test_mpi_parcel_read_LDADD = libcombi.la
+
+test_mpi_parcel_halo_swap_SOURCES = test_mpi_parcel_halo_swap.f90
+test_mpi_parcel_halo_swap_LDADD = libcombi.la
