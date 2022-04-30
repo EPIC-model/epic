@@ -229,8 +229,6 @@ module parcel_mpi
         end subroutine unpack_parcels
 
 
-        ! Note: Buffers need to have start index 0 because of the parcel delete routine.
-        !       However, this first array element is never assigned any value.
         subroutine allocate_buffers
             integer :: nc, ub, n_max
 
@@ -240,8 +238,6 @@ module parcel_mpi
 
             ! upper bound (ub) of parcels per cell
             ub = ceiling(vcell / vmin)
-
-            print *, "ub = ", ub
 
             ! number of cells sharing with north and south neighbour
             nc = (box%hi(1) - box%lo(1) + 1) * nz
@@ -266,7 +262,9 @@ module parcel_mpi
             allocate(southwest_buf(nc * ub))
             allocate(southeast_buf(nc * ub))
 
-            allocate(invalid(0:nc * ub))
+            ! Note: This buffer needs to have start index 0 because of the parcel delete routine.
+            !       However, this first array element is never assigned any value.
+            allocate(invalid(0:n_max * ub))
 
         end subroutine allocate_buffers
 
