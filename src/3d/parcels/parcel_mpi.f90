@@ -29,6 +29,7 @@ module parcel_mpi
     contains
 
         subroutine parcel_halo_swap
+            integer :: n_total_sends
 
             call allocate_buffers
 
@@ -113,7 +114,9 @@ module parcel_mpi
                                   n_sends(NB_SOUTHEAST), neighbour%southeast, &
                                   n_recvs(NB_NORTHWEST), neighbour%northwest, SOUTHWEST_TAG)
 
-            call remove_parcels
+            ! delete parcel that we sent
+            n_total_sends = sum(n_sends)
+            call parcel_delete(invalid, n_total_sends)
 
         end subroutine parcel_halo_swap
 
@@ -267,14 +270,5 @@ module parcel_mpi
             allocate(invalid(0:n_max * ub))
 
         end subroutine allocate_buffers
-
-        subroutine remove_parcels
-            integer :: n_total
-
-            n_total = sum(n_sends)
-
-            call parcel_delete(invalid, n_total)
-
-        end subroutine remove_parcels
 
 end module parcel_mpi
