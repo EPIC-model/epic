@@ -12,8 +12,10 @@ module parcel_init
                            extent, lower, nx, ny, nz,   &
                            max_num_parcels
     use timer, only : start_timer, stop_timer
-    use field_mpi, only : field_halo_fill
+    use field_mpi, only : field_halo_fill, field_halo_swap
+    use field_ops, only : get_mean, get_rms, get_abs_max
     use omp_lib
+    use mpi_communicator
     use mpi_layout, only : box
     use mpi_utils, only : mpi_print
     implicit none
@@ -325,6 +327,7 @@ module parcel_init
 
         ! Generates the parcel attribute "par" from the field values provided
         ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)
+        ! Precondition: The halo grid points of the field input must be filled.
         subroutine gen_parcel_scalar_attr(field, tol, par)
             double precision, intent(in)  :: field(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision, intent(in)  :: tol
@@ -339,16 +342,13 @@ module parcel_init
                 endif
 #endif
 
-            ! make sure halo grid points are filled
-            call fill_halo_fill(field)
-
             ! Compute mean field value:
             ! (divide by ncell since lower and upper edge weights are halved)
             avg_field = get_mean(field)
 
             resi(0:nz, :, :) = (field(0:nz, :, :) - avg_field) ** 2
 
-            call fill_halo_fill(resi)
+            call field_halo_fill(resi)
 
             rms = get_rms(resi)
 

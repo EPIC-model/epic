@@ -5,50 +5,52 @@ module field_ops
     use parameters, only : nz, ncell
     implicit none
 
-    function get_mean(ff) result(mean)
-        double precision, intent(in) :: ff(box%hlo(3):box%hhi(3), &
-                                           box%hlo(2):box%hhi(2), &
-                                           box%hlo(1):box%hhi(1))
-        double precision :: mean
+    contains
 
-        mean = f12 * sum(field(0, :, :) + field(nz, :, :)) &
-                   + sum(field(1:nz-1, :, :))
+        function get_mean(ff) result(mean)
+            double precision, intent(in) :: ff(box%hlo(3):box%hhi(3), &
+                                               box%hlo(2):box%hhi(2), &
+                                               box%hlo(1):box%hhi(1))
+            double precision :: mean
 
-        call MPI_Allreduce(MPI_IN_PLACE, mean, 1, MPI_DOUBLE, MPI_SUM, comm_world, mpi_err)
+            mean = f12 * sum(ff(0, :, :) + ff(nz, :, :)) &
+                       + sum(ff(1:nz-1, :, :))
 
-        mean = mean / dble(ncell)
+            call MPI_Allreduce(MPI_IN_PLACE, mean, 1, MPI_DOUBLE, MPI_SUM, comm_world, mpi_err)
 
-    end function get_mean
+            mean = mean / dble(ncell)
 
-
-    function get_rms(ff) result(rms)
-        double precision, intent(in) :: ff(box%hlo(3):box%hhi(3), &
-                                           box%hlo(2):box%hhi(2), &
-                                           box%hlo(1):box%hhi(1))
-        double precision :: rms
-
-        rms = f12 * sum(resi(0, :, :) + resi(nz, :, :)) &
-                  + sum(resi(1:nz-1, :, :))
-
-        call MPI_Allreduce(MPI_IN_PLACE, rms, 1, MPI_DOUBLE, MPI_SUM, comm_world, mpi_err)
-
-        rms = dsqrt(rms / dble(ncell))
-
-    end function get_rms
-
-    function get_abs_max(ff) result(abs_max)
-        double precision, intent(in) :: ff(box%hlo(3):box%hhi(3), &
-                                           box%hlo(2):box%hhi(2), &
-                                           box%hlo(1):box%hhi(1))
-        double precision :: abs_max
-
-        abs_max = maxval(dabs(ff(box%lo(3):box%hi(3),   &
-                                 box%lo(2):box%hi(2),   &
-                                 box%lo(1):box%hi(1))))
+        end function get_mean
 
 
-        call MPI_Allreduce(MPI_IN_PLACE, abs_max, 1, MPI_DOUBLE, MPI_MAX, comm_world, mpi_err)
+        function get_rms(ff) result(rms)
+            double precision, intent(in) :: ff(box%hlo(3):box%hhi(3), &
+                                               box%hlo(2):box%hhi(2), &
+                                               box%hlo(1):box%hhi(1))
+            double precision :: rms
 
-    end function get_abs_max)
+            rms = f12 * sum(ff(0, :, :) + ff(nz, :, :)) &
+                      + sum(ff(1:nz-1, :, :))
+
+            call MPI_Allreduce(MPI_IN_PLACE, rms, 1, MPI_DOUBLE, MPI_SUM, comm_world, mpi_err)
+
+            rms = dsqrt(rms / dble(ncell))
+
+        end function get_rms
+
+        function get_abs_max(ff) result(abs_max)
+            double precision, intent(in) :: ff(box%hlo(3):box%hhi(3), &
+                                               box%hlo(2):box%hhi(2), &
+                                               box%hlo(1):box%hhi(1))
+            double precision :: abs_max
+
+            abs_max = maxval(dabs(ff(box%lo(3):box%hi(3),   &
+                                     box%lo(2):box%hi(2),   &
+                                     box%lo(1):box%hi(1))))
+
+
+            call MPI_Allreduce(MPI_IN_PLACE, abs_max, 1, MPI_DOUBLE, MPI_MAX, comm_world, mpi_err)
+
+        end function get_abs_max
 
 end module field_ops
