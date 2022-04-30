@@ -55,7 +55,6 @@ program test_mpi_parcel_init_3d
     n_parcels = nbgx * nbgy * nbgz * ncell
     call parcel_alloc(n_parcels)
 
-
     !--------------------------------------------------------
     ! Define a gridded field "tbuoyg" (this can be arbitrary):
     facx = two * pi / extent(1)
@@ -75,6 +74,8 @@ program test_mpi_parcel_init_3d
             enddo
         enddo
     enddo
+
+    call field_halo_swap(tbuoyg)
 
     !---------------------------------------------------------
     !Initialise parcel volume positions and volume fractions:
