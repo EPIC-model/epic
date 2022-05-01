@@ -36,7 +36,7 @@ unittests_PROGRAMS = 				\
 	test_mpi_parcel_init_3d			\
 	test_fft_3d				\
 	test_fft_2_3d				\
-	test_trilinear				\
+	test_mpi_trilinear			\
 	test_laplace_correction_3d		\
 	test_gradient_correction_3d		\
 	test_parcel_correction_3d		\
@@ -90,8 +90,8 @@ test_fft_3d_LDADD = libcombi.la
 test_fft_2_3d_SOURCES = test_fft_2_3d.f90
 test_fft_2_3d_LDADD = libcombi.la
 
-test_trilinear_SOURCES = test_trilinear.f90
-test_trilinear_LDADD = libcombi.la
+test_mpi_trilinear_SOURCES = test_mpi_trilinear.f90
+test_mpi_trilinear_LDADD = libcombi.la
 
 test_laplace_correction_3d_SOURCES = test_laplace_correction_3d.f90
 test_laplace_correction_3d_LDADD = libcombi.la

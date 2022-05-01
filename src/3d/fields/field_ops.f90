@@ -23,6 +23,19 @@ module field_ops
         end function get_mean
 
 
+        function get_sum(ff) result(res)
+            double precision, intent(in) :: ff(box%hlo(3):box%hhi(3), &
+                                               box%hlo(2):box%hhi(2), &
+                                               box%hlo(1):box%hhi(1))
+            double precision :: res
+
+            res = sum(ff(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+
+            call MPI_Allreduce(MPI_IN_PLACE, res, 1, MPI_DOUBLE, MPI_SUM, comm_world, mpi_err)
+
+        end function get_sum
+
+
         function get_rms(ff) result(rms)
             double precision, intent(in) :: ff(box%hlo(3):box%hhi(3), &
                                                box%hlo(2):box%hhi(2), &

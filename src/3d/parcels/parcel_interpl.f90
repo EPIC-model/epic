@@ -109,6 +109,7 @@ module parcel_interpl
         ! It also updates the scalar fields:
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
+        ! Precondition: The parcel must assigned to the correct MPI process.
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
             double precision  :: points(3, 4)
@@ -156,8 +157,6 @@ module parcel_interpl
                                               pvol, parcels%B(:, n), n, l_reuse)
 
                 call get_index(parcels%position(:, n), i, j, k)
-                i = mod(i + nx, nx)
-                j = mod(j + ny, ny)
                 nparg(k, j, i) = nparg(k, j, i) + 1
                 if (parcels%volume(n) <= vmin) then
                     nsparg(k, j, i) = nsparg(k, j, i) + 1
@@ -165,8 +164,7 @@ module parcel_interpl
 
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
-                    ! ensure point is within the domain
-                    call apply_periodic_bc(points(:, p))
+
                     call get_index(points(:, p), i, j, k)
 
                     if (p == 1) then
@@ -224,7 +222,6 @@ module parcel_interpl
             !$omp end parallel
 
             call field_halo_swap(volg)
-            call field_halo_swap(vortg)
             call field_halo_swap(vortg)
             call field_halo_swap(tbuoyg)
 
