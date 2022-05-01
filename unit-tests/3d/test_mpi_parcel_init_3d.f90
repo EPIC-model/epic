@@ -7,19 +7,20 @@ program test_mpi_parcel_init_3d
     use unit_test
     use mpi_communicator
     use field_mpi
-    use constants, only : pi, zero, one, two, four, f12, f13, f23, f32
+    use constants, only : pi, zero, one, two, four, five, f12, f13, f23, f32
     use parcel_container
     use parcel_init, only : gen_parcel_scalar_attr, unit_test_parcel_init_alloc, init_timer
     use parcel_interpl, only : par2grid, par2grid_timer
     use parcel_ellipsoid, only : get_abc
     use fields, only : tbuoyg, field_default
-    use parameters, only : update_parameters, dx, ncell, nx, ny, nz, lower, vcell
+    use field_ops, only : get_rms, get_abs_max
+    use parameters, only : update_parameters, dx, nx, ny, nz, lower, vcell
     use timer
     implicit none
 
     double precision  :: xg, yg, zg, facx, facy, facz, argx, argy, argz, v0
-    integer :: i, ix, iy, iz, mx, my, mz
-    double precision :: rms, rmserr, error
+    integer :: i, j, k, ix, iy, iz, l
+    double precision :: rms, rmserr, error, corner(3), im(3)
     logical          :: passed = .true.
     double precision, allocatable :: workg(:, :, :)
     double precision :: tol = 1.0d-9
@@ -33,6 +34,8 @@ program test_mpi_parcel_init_3d
                                    dzf = one / dble(nbgz)
 
     call mpi_comm_initialise
+
+    call parse_command_line
 
     passed = (mpi_err == 0)
 
@@ -52,7 +55,7 @@ program test_mpi_parcel_init_3d
     !Maximum number of parcels:
 
     !Total number of parcels:
-    n_parcels = nbgx * nbgy * nbgz * ncell
+    n_parcels = nbgx * nbgy * nbgz * nz * (box%hi(1) - box%lo(1) + 1) * (box%hi(2) - box%lo(2) + 1)
     call parcel_alloc(n_parcels)
 
     !--------------------------------------------------------
@@ -80,28 +83,33 @@ program test_mpi_parcel_init_3d
     !---------------------------------------------------------
     !Initialise parcel volume positions and volume fractions:
     v0 = dxf * dyf * dzf * vcell
-    i = 0
+    l = 1
+
+    im(1) = one / dble(nbgx)
+    im(2) = one / dble(nbgy)
+    im(3) = one / dble(nbgz)
+
     do iz = 0, nz-1
         do iy = box%lo(2), box%hi(2)
             do ix = box%lo(1), box%hi(1)
-                do mz = 1, nbgz
-                    do my = 1, nbgy
-                        do mx = 1, nbgx
-                            i = i + 1
-                            parcels%position(1, i) = lower(1) + dx(1) * (dble(ix) + dxf * (dble(mx) - f12))
-                            parcels%position(2, i) = lower(2) + dx(2) * (dble(iy) + dyf * (dble(my) - f12))
-                            parcels%position(3, i) = lower(3) + dx(3) * (dble(iz) + dzf * (dble(mz) - f12))
-                            parcels%volume(i) = v0
-                            parcels%B(:, i) = zero
-                            parcels%B(1, i) = get_abc(v0) ** f23
-                            parcels%B(4, i) = parcels%B(1, i)
+                corner = lower + dble((/ix, iy, iz/)) * dx
+                do k = 1, nbgz
+                    do j = 1, nbgy
+                        do i = 1, nbgx
+                            parcels%position(1, l) = corner(1) + dx(1) * (dble(i) - f12) * im(1)
+                            parcels%position(2, l) = corner(2) + dx(2) * (dble(j) - f12) * im(2)
+                            parcels%position(3, l) = corner(3) + dx(3) * (dble(k) - f12) * im(3)
+                            parcels%volume(l) = v0
+                            parcels%B(:, l) = zero
+                            parcels%B(1, l) = get_abc(v0) ** f23
+                            parcels%B(4, l) = parcels%B(1, l)
+                            l = l + 1
                         enddo
                     enddo
                 enddo
             enddo
         enddo
     enddo
-
 
     ! Prepare for "gen_parcel_scalar_attr"
     call unit_test_parcel_init_alloc
@@ -119,23 +127,17 @@ program test_mpi_parcel_init_3d
     allocate(workg(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     workg = tbuoyg
 
-    call mpi_comm_finalise
-    stop
-
     call par2grid
 
     ! Compute max and rms errors:
 
     ! Rms value of original field
-    rms = dsqrt((f12 * sum(workg(0, :, :) ** 2 + workg(nz, :, :) ** 2) + &
-                       sum(workg(1:nz-1, :, :) ** 2)) / dble(ncell))
-
+    rms = get_rms(workg)
 
     workg = tbuoyg - workg
 
     ! Rms error in reconstruction
-    rmserr = dsqrt((f12 * sum(workg(0, :, :) ** 2 + workg(nz, :, :) ** 2) + &
-                          sum(workg(1:nz-1, :, :) ** 2)) / dble(ncell))
+    rmserr = get_rms(workg)
 
     error = max(error, rmserr)
 
@@ -143,8 +145,9 @@ program test_mpi_parcel_init_3d
     error = max(error, rmserr / rms)
 
     ! Maximum error
-    error = max(error, maxval(dabs(workg(0:nz, :, :))))
+    error = max(error, get_abs_max(workg))
 
+    passed = (passed .and. (error < four * tol))
 
     call parcel_dealloc
 
@@ -155,7 +158,7 @@ program test_mpi_parcel_init_3d
     passed = (passed .and. (mpi_err == 0))
 
     if (mpi_rank == mpi_master) then
-        call print_result_dp('Test parcel initialisation 3D', error, atol=two * tol)
+        call print_result_logical('Test parcel initialisation 3D', passed)
     endif
 
 end program test_mpi_parcel_init_3d

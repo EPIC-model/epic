@@ -133,7 +133,7 @@ module parcel_init
             im = one / dble(n_per_dim)
 
             l = 1
-            do iz = box%lo(3), box%hi(3)-1
+            do iz = 0, nz-1
                 do iy = box%lo(2), box%hi(2)
                     do ix = box%lo(1), box%hi(1)
                         corner = lower + dble((/ix, iy, iz/)) * dx
@@ -346,9 +346,8 @@ module parcel_init
             ! (divide by ncell since lower and upper edge weights are halved)
             avg_field = get_mean(field)
 
-            resi(0:nz, :, :) = (field(0:nz, :, :) - avg_field) ** 2
-
-            call field_halo_fill(resi)
+            resi(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) = &
+                (field(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) - avg_field) ** 2
 
             rms = get_rms(resi)
 

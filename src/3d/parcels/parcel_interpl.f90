@@ -11,6 +11,7 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use fields
+    use field_mpi, only : field_halo_swap
     use physics, only : ft_cor, f_cor, glat, lambda_c, q_0
     use omp_lib
     implicit none
@@ -222,6 +223,11 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
+            call field_halo_swap(volg)
+            call field_halo_swap(vortg)
+            call field_halo_swap(vortg)
+            call field_halo_swap(tbuoyg)
+
             ! apply free slip boundary condition
             volg(0,  :, :) = two * volg(0,  :, :)
             volg(nz, :, :) = two * volg(nz, :, :)
@@ -237,6 +243,7 @@ module parcel_interpl
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
 
 #ifndef ENABLE_DRY_MODE
+            call field_halo_swap(dbuoyg)
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
             dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
             dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)
@@ -382,17 +389,17 @@ module parcel_interpl
 
             call get_weights(xyz, ii(1), jj(1), kk(1), ww)
 
-            ii(1) = mod(ii(1) + nx, nx)
-            jj(1) = mod(jj(1) + ny, ny)
+!             ii(1) = mod(ii(1) + nx, nx)
+!             jj(1) = mod(jj(1) + ny, ny)
 
             ! (i+1, j, k)
-            ii(2) = mod(ii(1) + 1 + nx, nx)
+            ii(2) = ii(1) + 1 !             ii(2) = mod(ii(1) + 1 + nx, nx)
             jj(2) = jj(1)
             kk(2) = kk(1)
 
             ! (i, j+1, k)
             ii(3) = ii(1)
-            jj(3) = mod(jj(1) + 1 + ny, ny)
+            jj(3) = jj(1) + 1 !             jj(3) = mod(jj(1) + 1 + ny, ny)
             kk(3) = kk(1)
 
             ! (i+1, j+1, k)
