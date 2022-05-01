@@ -12,9 +12,12 @@ module parcel_init
                            extent, lower, nx, ny, nz,   &
                            max_num_parcels
     use timer, only : start_timer, stop_timer
-    use field_mpi, only : field_halo_fill
+    use field_mpi, only : field_halo_fill, field_halo_swap
+    use field_ops, only : get_mean, get_rms, get_abs_max
     use omp_lib
+    use mpi_communicator
     use mpi_layout, only : box
+    use mpi_utils, only : mpi_print
     implicit none
 
     integer :: init_timer
@@ -131,8 +134,8 @@ module parcel_init
 
             l = 1
             do iz = 0, nz-1
-                do iy = 0, ny-1
-                    do ix = 0, nx-1
+                do iy = box%lo(2), box%hi(2)
+                    do ix = box%lo(1), box%hi(1)
                         corner = lower + dble((/ix, iy, iz/)) * dx
                         do k = 1, n_per_dim
                             do j = 1, n_per_dim
@@ -174,7 +177,7 @@ module parcel_init
             double precision              :: rsum
             integer                       :: l, n
 
-            allocate(resi(0:nz, 0:ny-1, 0:nx-1))
+            allocate(resi(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
             allocate(apar(n_parcels))
             allocate(weights(ngp, n_parcels))
             allocate(is(ngp, n_parcels))
@@ -199,6 +202,8 @@ module parcel_init
                 enddo
             enddo
             !$omp end parallel do
+
+            call field_halo_swap(resi)
 
             !Double edge values at iz = 0 and nz:
             resi(0,  :, :) = two * resi(0,  :, :)
@@ -322,30 +327,30 @@ module parcel_init
 
         ! Generates the parcel attribute "par" from the field values provided
         ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)
+        ! Precondition: The halo grid points of the field input must be filled.
         subroutine gen_parcel_scalar_attr(field, tol, par)
-            double precision, intent(in)  :: field(-1:nz+1, 0:ny-1, 0:nx-1)
+            double precision, intent(in)  :: field(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision, intent(in)  :: tol
             double precision, intent(out) :: par(:)
-            double precision :: resi(0:nz, 0:ny-1, 0:nx-1)
+            double precision :: resi(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision :: rms, rtol, rerr, rsum, fsum, avg_field
             integer          :: l, n
 
 #ifdef ENABLE_VERBOSE
                 if (verbose) then
-                    print *, 'Generate parcel attribute'
+                    call mpi_print('Generate parcel attribute')
                 endif
 #endif
 
             ! Compute mean field value:
-            ! (divide by ncell since lower and upper edge weights are halved)
-            avg_field = (f12 * sum(field(0, :, :) + field(nz, :, :)) &
-                             + sum(field(1:nz-1, :, :))) / dble(ncell)
+            avg_field = get_mean(field)
 
-            resi(0:nz, :, :) = (field(0:nz, :, :) - avg_field) ** 2
+            resi(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) = &
+                (field(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) - avg_field) ** 2
 
-            rms = dsqrt((f12 * sum(resi(0, :, :) + resi(nz, :, :)) &
-                             + sum(resi(1:nz-1, :, :))) / dble(ncell))
-
+            ! "resi" is already squared, we only need to get the mean and apply the square root
+            ! to get the rms
+            rms = dsqrt(get_mean(resi))
 
             if (rms == zero) then
                 !$omp parallel default(shared)
@@ -386,6 +391,8 @@ module parcel_init
                     enddo
                 enddo
 
+                call field_halo_swap(resi)
+
                 resi(0, :, :)    = two * resi(0, :, :)
                 resi(nz, :, :)   = two * resi(nz, :, :)
                 resi(0:nz, :, :) = field(0:nz, :, :) - resi(0:nz, :, :)
@@ -402,10 +409,10 @@ module parcel_init
                 !$omp end parallel do
 
                 !Compute maximum error:
-                rerr = maxval(dabs(resi))
+                rerr = get_abs_max(resi)
 
 #ifdef ENABLE_VERBOSE
-                if (verbose) then
+                if (verbose .and. (mpi_rank == mpi_master)) then
                     print *, ' Max abs error = ', rerr
                 endif
 #endif

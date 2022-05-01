@@ -57,8 +57,8 @@ module fields
 
             call mpi_layout_init(nx, ny, nz)
 
-            hlo = box%hlo(3)
-            hhi = box%hhi(3)
+            hlo = box%hlo
+            hhi = box%hhi
 
             allocate(velog(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 3))
             allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 5))
