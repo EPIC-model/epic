@@ -3,8 +3,10 @@
 !
 !         This unit test checks the trilinear interpolation par2grid
 ! =============================================================================
-program test_trilinear
+program test_mpi_trilinear
     use unit_test
+    use mpi_communicator
+    use field_mpi
     use constants, only : pi, zero, one, f12, f23, f32
     use parcel_container
     use parcel_interpl, only : par2grid, par2grid_timer
@@ -17,6 +19,8 @@ program test_trilinear
     double precision :: error
     integer          :: ix, iy, iz, i, j, k, l, n_per_dim
     double precision :: im, corner(3)
+
+    call mpi_comm_initialise
 
     nx = 32
     ny = 32
@@ -32,7 +36,7 @@ program test_trilinear
 
     n_per_dim = 3
 
-    n_parcels = n_per_dim ** 3 * nx *ny *nz
+    n_parcels = n_per_dim ** 3 * nz * (box%hi(1) - box%lo(1) + 1) * (box%hi(2) - box%lo(2) + 1)
     call parcel_alloc(n_parcels)
 
 
@@ -40,8 +44,8 @@ program test_trilinear
 
     l = 1
     do iz = 0, nz-1
-        do iy = 0, ny-1
-            do ix = 0, nx-1
+        do iy = box%lo(2), box%hi(2)
+            do ix = box%lo(1), box%hi(1)
                 corner = lower + dble((/ix, iy, iz/)) * dx
                 do k = 1, n_per_dim
                     do j = 1, n_per_dim
@@ -71,6 +75,8 @@ program test_trilinear
 
     error = abs(sum(volg(0:nz, :, :)) - dble(ngrid) * vcell)
 
-    call print_result_dp('Test trilinear (par2grid)', error, atol=dble(3.0e-14))
+    call mpi_comm_finalise
 
-end program test_trilinear
+    call print_result_dp('Test MPI trilinear (par2grid)', error, atol=dble(3.0e-14))
+
+end program test_mpi_trilinear
