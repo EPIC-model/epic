@@ -223,7 +223,6 @@ module parcel_interpl
 
             call field_halo_swap(volg)
             call field_halo_swap(vortg)
-            call field_halo_swap(vortg)
             call field_halo_swap(tbuoyg)
 
             ! apply free slip boundary condition

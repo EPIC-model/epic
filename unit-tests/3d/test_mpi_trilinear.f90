@@ -77,7 +77,7 @@ program test_mpi_trilinear
 
     call par2grid
 
-    error = abs(get_sum(volg)) - dble(ngrid) * vcell
+    error = abs(get_sum(volg) - dble(ngrid) * vcell)
 
     passed = (passed .and. (error < dble(3.0e-14)))
 
