@@ -343,13 +343,14 @@ module parcel_init
 #endif
 
             ! Compute mean field value:
-            ! (divide by ncell since lower and upper edge weights are halved)
             avg_field = get_mean(field)
 
             resi(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) = &
                 (field(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) - avg_field) ** 2
 
-            rms = get_rms(resi)
+            ! "resi" is already squared, we only need to get the mean and apply the square root
+            ! to get the rms
+            rms = dsqrt(get_mean(resi))
 
             if (rms == zero) then
                 !$omp parallel default(shared)

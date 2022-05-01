@@ -13,6 +13,7 @@ module field_ops
                                                box%hlo(1):box%hhi(1))
             double precision :: mean
 
+            ! (divide by ncell since lower and upper edge weights are halved)
             mean = (f12 * sum(ff(0,      box%lo(2):box%hi(2), box%lo(1):box%hi(1))  &
                             + ff(nz,     box%lo(2):box%hi(2), box%lo(1):box%hi(1))) &
                         + sum(ff(1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))) / dble(ncell)

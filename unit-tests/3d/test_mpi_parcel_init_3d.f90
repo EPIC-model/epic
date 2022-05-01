@@ -147,7 +147,7 @@ program test_mpi_parcel_init_3d
     ! Maximum error
     error = max(error, get_abs_max(workg))
 
-    passed = (passed .and. (error < four * tol))
+    passed = (passed .and. (error < two * tol))
 
     call parcel_dealloc
 
