@@ -10,6 +10,8 @@ module parcel_split_mod
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
     use timer, only : start_timer, stop_timer
     use omp_lib
+    use mpi_layout only : is_contained
+    use fields, only : get_index
     implicit none
 
     double precision, parameter :: dh = f12 * dsqrt(three / five)
@@ -32,13 +34,15 @@ module parcel_split_mod
             double precision                           :: D(3), V(3, 3)
             integer                                    :: last_index
             integer                                    :: n, n_thread_loc
+            integer                                    :: pid(2 * n_parcels), i, j, k
+            integer, allocatable                       :: invalid(:)
 
             call start_timer(split_timer)
 
             last_index = n_parcels
 
             !$omp parallel default(shared)
-            !$omp do private(n, B, vol, lam, D, V, n_thread_loc)
+            !$omp do private(n, B, vol, lam, D, V, n_thread_loc, i, j, k)
             do n = 1, last_index
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
@@ -47,6 +51,8 @@ module parcel_split_mod
 
                 ! evaluate maximum aspect ratio (a2 >= b2 >= c2)
                 lam = get_aspect_ratio(D)
+
+                pid(n) = 0
 
                 if (lam <= threshold .and. vol <= vmax) then
                     cycle
@@ -61,7 +67,6 @@ module parcel_split_mod
                 parcels%B(4, n) = B(4) - f34 * D(1) * V(2, 1) ** 2
                 parcels%B(5, n) = B(5) - f34 * D(1) * V(2, 1) * V(3, 1)
 
-
                 parcels%volume(n) = f12 * vol
 
                 !$omp critical
@@ -70,7 +75,6 @@ module parcel_split_mod
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
                 !$omp end critical
-
 
                 parcels%B(:, n_thread_loc) = parcels%B(:, n)
 
@@ -91,9 +95,29 @@ module parcel_split_mod
 
                 call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
 
+                ! save index of parcels that left the domain
+
+                ! check if child parcels left the domain
+                call get_index(parcels%position(:, n), i, j, k)
+                if (.not. is_contained(i, j)) then
+                    pid(n) = n
+                endif
+                call get_index(parcels%position(:, n_thread_loc), i, j, k)
+                if (.not. is_contained(i, j)) then
+                    pid(n_thread_loc) = n_thread_loc
+                endif
+
+
             enddo
             !$omp end do
             !$omp end parallel
+
+            ! find all invalid parcels and send them to the proper process;
+            ! delete them afterwards
+            invalid = pack(pid(1:n_parcels), pid(1:n_parcels) /= 0)
+
+            call parcel_halo_swap(invalid)
+
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
