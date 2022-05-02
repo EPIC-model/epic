@@ -28,59 +28,69 @@ module parcel_mpi
 
     contains
 
-        subroutine parcel_halo_swap
-            integer :: n_total_sends
+        subroutine parcel_halo_swap(pindex)
+            integer, optional, intent(in) :: pindex(:)
+            integer                       :: n_total_sends
+            type(MPI_Request)             :: request
 
             call allocate_buffers
 
             ! figure out where parcels should go
-            call locate_parcels
+            call locate_parcels(pindex)
 
             ! tell your neighbours the number of receiving parcels
-            call MPI_Send(n_sends(NB_NORTH), 1, MPI_INT, neighbour%north, NORTH_TAG, &
-                          comm_cart, mpi_err)
+            call MPI_Isend(n_sends(NB_NORTH), 1, MPI_INT, neighbour%north, NORTH_TAG, &
+                           comm_cart, request, mpi_err)
+            call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_SOUTH), 1, MPI_INT, neighbour%south, NORTH_TAG, &
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
-            call MPI_Send(n_sends(NB_SOUTH), 1, MPI_INT, neighbour%south, SOUTH_TAG, &
-                          comm_cart, mpi_err)
+            call MPI_Isend(n_sends(NB_SOUTH), 1, MPI_INT, neighbour%south, SOUTH_TAG, &
+                           comm_cart, request, mpi_err)
+            call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_NORTH), 1, MPI_INT, neighbour%north, SOUTH_TAG, &
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
-            call MPI_Send(n_sends(NB_WEST), 1, MPI_INT, neighbour%west, WEST_TAG, &
-                          comm_cart, mpi_err)
+            call MPI_Isend(n_sends(NB_WEST), 1, MPI_INT, neighbour%west, WEST_TAG, &
+                           comm_cart, request, mpi_err)
+            call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_EAST), 1, MPI_INT, neighbour%east, WEST_TAG, &
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
-            call MPI_Send(n_sends(NB_EAST), 1, MPI_INT, neighbour%east, EAST_TAG, &
-                          comm_cart, mpi_err)
+            call MPI_Isend(n_sends(NB_EAST), 1, MPI_INT, neighbour%east, EAST_TAG, &
+                           comm_cart, request, mpi_err)
+            call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_WEST), 1, MPI_INT, neighbour%west, EAST_TAG, &
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
-            call MPI_Send(n_sends(NB_NORTHWEST), 1, MPI_INT, neighbour%northwest, NORTHWEST_TAG, &
-                          comm_cart, mpi_err)
+            call MPI_Isend(n_sends(NB_NORTHWEST), 1, MPI_INT, neighbour%northwest, NORTHWEST_TAG, &
+                           comm_cart, request, mpi_err)
+            call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_SOUTHEAST), 1, MPI_INT, neighbour%southeast, NORTHWEST_TAG, &
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
-            call MPI_Send(n_sends(NB_SOUTHEAST), 1, MPI_INT, neighbour%southeast, SOUTHEAST_TAG, &
-                          comm_cart, mpi_err)
+            call MPI_Isend(n_sends(NB_SOUTHEAST), 1, MPI_INT, neighbour%southeast, SOUTHEAST_TAG, &
+                           comm_cart, request, mpi_err)
+            call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_NORTHWEST), 1, MPI_INT, neighbour%northwest, SOUTHEAST_TAG, &
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
-            call MPI_Send(n_sends(NB_NORTHEAST), 1, MPI_INT, neighbour%northeast, NORTHEAST_TAG, &
-                          comm_cart, mpi_err)
+            call MPI_Isend(n_sends(NB_NORTHEAST), 1, MPI_INT, neighbour%northeast, NORTHEAST_TAG, &
+                           comm_cart, request, mpi_err)
+            call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_SOUTHWEST), 1, MPI_INT, neighbour%southwest, NORTHEAST_TAG, &
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
-            call MPI_Send(n_sends(NB_SOUTHWEST), 1, MPI_INT, neighbour%southwest, SOUTHWEST_TAG, &
-                          comm_cart, mpi_err)
+            call MPI_Isend(n_sends(NB_SOUTHWEST), 1, MPI_INT, neighbour%southwest, SOUTHWEST_TAG, &
+                           comm_cart, request, mpi_err)
+            call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_NORTHEAST), 1, MPI_INT, neighbour%northeast, SOUTHWEST_TAG, &
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
@@ -128,6 +138,7 @@ module parcel_mpi
             integer, intent(in)           :: dest, source
             double precision, allocatable :: sendbuf(:), recvbuf(:)
             integer                       :: send_size, recv_size
+            type(MPI_Request)             :: request
 
             send_size = n_par_attrib * sendcount
             recv_size = n_par_attrib * recvcount
@@ -137,7 +148,8 @@ module parcel_mpi
 
             call pack_parcels(pid, sendcount, sendbuf)
 
-            call MPI_Send(sendbuf, send_size, MPI_DOUBLE, dest, tag, comm_cart, mpi_err)
+            call MPI_Isend(sendbuf, send_size, MPI_DOUBLE, dest, tag, comm_cart, request, mpi_err)
+            call MPI_Request_free(request)
 
             call MPI_Recv(recvbuf, recv_size, MPI_DOUBLE, source, tag, &
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
@@ -150,15 +162,28 @@ module parcel_mpi
         end subroutine exchange_parcels
 
 
-        subroutine locate_parcels
-            integer              :: i, j, k, n, nb, m, iv
+        subroutine locate_parcels(pindex)
+            integer, optional, intent(in) :: pindex(:)
+            integer                       :: i, j, k, n, nb, m, iv, np, l
 
             ! reset the number of sends
             n_sends(:) = 0
 
+            np = n_parcels
+
+            if (present(pindex)) then
+                np = size(pindex)
+            endif
+
             iv = 1
-            do n = 1, n_parcels
-                call get_index(parcels%position(:, n), i, j, k)
+            do n = 1, np
+
+                l = n
+                if (present(pindex)) then
+                    l = pindex(n)
+                endif
+
+                call get_index(parcels%position(:, l), i, j, k)
 
                 nb = get_neighbour(i, j)
 
@@ -168,33 +193,33 @@ module parcel_mpi
                         cycle
                     case (NB_NORTH)
                         m = n_sends(nb) + 1
-                        north_buf(m) = n
+                        north_buf(m) = l
                     case (NB_SOUTH)
                         m = n_sends(nb) + 1
-                        south_buf(m) = n
+                        south_buf(m) = l
                     case (NB_WEST)
                         m = n_sends(nb) + 1
-                        west_buf(m) = n
+                        west_buf(m) = l
                     case (NB_EAST)
                         m = n_sends(nb) + 1
-                        east_buf(m) = n
+                        east_buf(m) = l
                     case (NB_NORTHWEST)
                         m = n_sends(nb) + 1
-                        northwest_buf(m) = n
+                        northwest_buf(m) = l
                     case (NB_NORTHEAST)
                         m = n_sends(nb) + 1
-                        northeast_buf(m) = n
+                        northeast_buf(m) = l
                     case (NB_SOUTHWEST)
                         m = n_sends(nb) + 1
-                        southwest_buf(m) = n
+                        southwest_buf(m) = l
                     case (NB_SOUTHEAST)
                         m = n_sends(nb) + 1
-                        southeast_buf(m) = n
+                        southeast_buf(m) = l
                     case default
                         call mpi_exit_on_error("locate_parcels: Parcel was not assigned properly.")
                 end select
 
-                invalid(iv) = n
+                invalid(iv) = l
                 n_sends(nb) = n_sends(nb) + 1
                 iv = iv + 1
             enddo
