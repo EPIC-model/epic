@@ -5,7 +5,7 @@ module parcel_split_mod
     use options, only : verbose
     use constants, only : pi, three, five, f12, f34
     use parameters, only : vmax
-    use parcel_container, only : parcel_container_type, n_parcels
+    use parcel_container, only : parcel_container_type, n_parcels, n_total_parcels
     use parcel_bc, only : apply_reflective_bc
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
     use timer, only : start_timer, stop_timer
@@ -34,6 +34,9 @@ module parcel_split_mod
             integer                                    :: n, n_thread_loc
             integer                                    :: pid(2 * n_parcels)
             integer, allocatable                       :: invalid(:)
+#ifdef ENABLE_VERBOSE
+            integer                                    :: orig_num = n_total_parcels
+#endif
 
             call start_timer(split_timer)
 
@@ -110,13 +113,17 @@ module parcel_split_mod
             ! delete them on *this* MPI process
             call parcel_halo_swap(invalid)
 
+            ! after this operation the root MPI process knows the new
+            ! number of parcels in the simulation
+            n_total_parcels = n_parcels
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+
 #ifdef ENABLE_VERBOSE
-            if (verbose) then
+            if (verbose .and. (mpi_rank == mpi_master)) then
                 print "(a36, i0, a3, i0)", &
-                      "no. parcels before and after split: ", last_index, "...", n_parcels
+                      "no. parcels before and after split: ", orig_num, "...", n_total_parcels
             endif
 #endif
-
             call stop_timer(split_timer)
 
         end subroutine parcel_split
