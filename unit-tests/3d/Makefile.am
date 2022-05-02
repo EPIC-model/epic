@@ -42,7 +42,7 @@ unittests_PROGRAMS = 				\
 	test_parcel_correction_3d		\
 	test_ellipsoid_merge_1			\
 	test_ellipsoid_merge_2			\
-	test_grid2par				\
+	test_mpi_grid2par			\
 	test_ellipsoid_reflection		\
 	test_free_slip_3d			\
 	test_vor2vel				\
@@ -111,8 +111,8 @@ test_ellipsoid_merge_2_LDADD = libcombi.la
 test_ellipsoid_reflection_SOURCES = test_ellipsoid_reflection.f90
 test_ellipsoid_reflection_LDADD = libcombi.la
 
-test_grid2par_SOURCES = test_grid2par.f90
-test_grid2par_LDADD = libcombi.la
+test_mpi_grid2par_SOURCES = test_mpi_grid2par.f90
+test_mpi_grid2par_LDADD = libcombi.la
 
 test_free_slip_3d_SOURCES = test_free_slip_3d.f90
 test_free_slip_3d_LDADD = libcombi.la

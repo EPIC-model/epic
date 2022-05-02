@@ -3,8 +3,11 @@
 !
 !                       This unit test checks grid2par
 ! =============================================================================
-program test_trilinear
+program test_mpi_grid2par
     use unit_test
+    use mpi_communicator
+    use mpi_collectives
+    use field_mpi
     use constants, only : pi, zero, one, two, three, four, five, f12, f23
     use parcel_container
     use parcel_interpl, only : grid2par, grid2par_timer
@@ -18,6 +21,11 @@ program test_trilinear
     integer                       :: ix, iy, iz, i, j, k, l, n_per_dim
     double precision              :: im, corner(3)
     double precision, allocatable :: vel(:, :), vortend(:, :), vgrad(:, :)
+    logical                       :: passed = .true.
+
+    call mpi_comm_initialise
+
+    passed = (passed .and. (mpi_err == 0))
 
     nx = 32
     ny = 32
@@ -33,7 +41,7 @@ program test_trilinear
 
     n_per_dim = 3
 
-    n_parcels = n_per_dim ** 3 * nx *ny *nz
+    n_parcels = n_per_dim ** 3 * nz * (box%hi(1) - box%lo(1) + 1) * (box%hi(2) - box%lo(2) + 1)
     call parcel_alloc(n_parcels)
 
     allocate(vel(3, n_parcels))
@@ -45,8 +53,8 @@ program test_trilinear
 
     l = 1
     do iz = 0, nz-1
-        do iy = 0, ny-1
-            do ix = 0, nx-1
+        do iy = box%lo(2), box%hi(2)
+            do ix = box%lo(1), box%hi(1)
                 corner = lower + dble((/ix, iy, iz/)) * dx
                 do k = 1, n_per_dim
                     do j = 1, n_per_dim
@@ -64,13 +72,13 @@ program test_trilinear
 
     parcels%volume = vcell / dble(n_per_dim ** 3)
 
-    parcels%B(:, :) = zero
+    parcels%B(:, 1:n_parcels) = zero
 
     ! b11
-    parcels%B(1, :) = get_abc(parcels%volume(1:n_parcels)) ** f23
+    parcels%B(1, 1:n_parcels) = get_abc(parcels%volume(1:n_parcels)) ** f23
 
     ! b22
-    parcels%B(4, :) = parcels%B(1, :)
+    parcels%B(4, 1:n_parcels) = parcels%B(1, 1:n_parcels)
 
     velog(:, :, :, 1) = one
     velog(:, :, :, 2) = two
@@ -96,10 +104,22 @@ program test_trilinear
     do l = 1, 5
         error = max(error, maxval(dabs(vgrad(l, 1:n_parcels) - dble(l))))
     enddo
-    call print_result_dp('Test grid2par', error, atol=dble(1.0e-14))
+
+    call mpi_blocking_reduce(error, MPI_MAX)
+
+    passed = (passed .and. (error < dble(1.0e-14)))
 
     deallocate(vel)
     deallocate(vortend)
     deallocate(vgrad)
 
-end program test_trilinear
+    call mpi_comm_finalise
+
+    passed = (passed .and. (mpi_err == 0))
+
+    if (mpi_rank == mpi_master) then
+        call print_result_logical('Test MPI grid2par', passed)
+    endif
+
+
+end program test_mpi_grid2par

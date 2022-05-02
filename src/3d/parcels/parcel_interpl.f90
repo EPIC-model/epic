@@ -109,7 +109,7 @@ module parcel_interpl
         ! It also updates the scalar fields:
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
-        ! Precondition: The parcel must assigned to the correct MPI process.
+        ! @pre The parcel must assigned to the correct MPI process.
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
             double precision  :: points(3, 4)
@@ -292,6 +292,8 @@ module parcel_interpl
         ! @param[inout] vgrad is the parcel strain
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
+        ! @pre The parcel must assigned to the correct MPI process and the halo of fields must be
+        !      filled correctly.
         subroutine grid2par(vel, vortend, vgrad, add)
             double precision,     intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
@@ -327,9 +329,6 @@ module parcel_interpl
             do n = 1, n_parcels
 
                 vgrad(:, n) = zero
-
-                ! ensure point is within the domain
-                call apply_periodic_bc(parcels%position(:, n))
 
                 ! get interpolation weights and mesh indices
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
