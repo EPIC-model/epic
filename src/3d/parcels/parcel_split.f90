@@ -10,8 +10,6 @@ module parcel_split_mod
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
     use timer, only : start_timer, stop_timer
     use omp_lib
-    use mpi_layout only : is_contained
-    use fields, only : get_index
     implicit none
 
     double precision, parameter :: dh = f12 * dsqrt(three / five)
@@ -34,7 +32,7 @@ module parcel_split_mod
             double precision                           :: D(3), V(3, 3)
             integer                                    :: last_index
             integer                                    :: n, n_thread_loc
-            integer                                    :: pid(2 * n_parcels), i, j, k
+            integer                                    :: pid(2 * n_parcels)
             integer, allocatable                       :: invalid(:)
 
             call start_timer(split_timer)
@@ -42,7 +40,7 @@ module parcel_split_mod
             last_index = n_parcels
 
             !$omp parallel default(shared)
-            !$omp do private(n, B, vol, lam, D, V, n_thread_loc, i, j, k)
+            !$omp do private(n, B, vol, lam, D, V, n_thread_loc)
             do n = 1, last_index
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
@@ -95,16 +93,10 @@ module parcel_split_mod
 
                 call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
 
-                ! check if child parcels left the domain
-                call get_index(parcels%position(:, n), i, j, k)
-                if (.not. is_contained(i, j)) then
-                    pid(n) = n
-                endif
-                call get_index(parcels%position(:, n_thread_loc), i, j, k)
-                if (.not. is_contained(i, j)) then
-                    pid(n_thread_loc) = n_thread_loc
-                endif
-
+                ! save parcel indices of child parcels for the
+                ! halo swap routine
+                pid(n) = n
+                pid(n_thread_loc) = n_thread_loc
             enddo
             !$omp end do
             !$omp end parallel
