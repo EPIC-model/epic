@@ -95,8 +95,6 @@ module parcel_split_mod
 
                 call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
 
-                ! save index of parcels that left the domain
-
                 ! check if child parcels left the domain
                 call get_index(parcels%position(:, n), i, j, k)
                 if (.not. is_contained(i, j)) then
@@ -107,17 +105,17 @@ module parcel_split_mod
                     pid(n_thread_loc) = n_thread_loc
                 endif
 
-
             enddo
             !$omp end do
             !$omp end parallel
 
-            ! find all invalid parcels and send them to the proper process;
-            ! delete them afterwards
+            ! find all invalid parcels (i.e. parcels that left the sub-domain
+            ! owned by *this* MPI process)
             invalid = pack(pid(1:n_parcels), pid(1:n_parcels) /= 0)
 
+            ! send the invalid parcels to the proper MPI process;
+            ! delete them on *this* MPI process
             call parcel_halo_swap(invalid)
-
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
