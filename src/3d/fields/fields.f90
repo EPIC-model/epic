@@ -115,6 +115,19 @@ module fields
             k = floor((pos(3) - lower(3)) * dxi(3))
         end subroutine get_index
 
+        pure function is_contained(pos) result(l_contained)
+            double precision, intent(in) :: pos(3)
+            integer                      :: i, j, k
+            logical                      :: l_contained
+
+            call get_index(pos, i, j, k)
+
+            l_contained = ((i > box%hlo(1))   .and. &
+                           (i < box%hhi(1)-1) .and. &
+                           (j > box%hlo(2))   .and. &
+                           (j < box%hhi(2)-1))
+        end function
+
 
         ! Do periodic shift of the index
         ! @param[inout] ii zonal grid point indices

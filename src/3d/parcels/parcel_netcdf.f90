@@ -3,7 +3,13 @@ module parcel_netcdf
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
-    use parcel_container, only : parcels, n_parcels, n_total_parcels
+    use parcel_container, only : parcels            &
+                               , n_parcels          &
+                               , n_total_parcels    &
+                               , parcel_dealloc     &
+                               , parcel_alloc       &
+                               , parcel_delete      &
+                               , parcel_resize
     use parameters, only : nx, ny, nz, extent, lower, max_num_parcels
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
@@ -11,7 +17,8 @@ module parcel_netcdf
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
     use mpi_communicator
-    use mpi_utils, only : mpi_exit_on_error
+    use mpi_utils, only : mpi_exit_on_error, mpi_print
+    use fields, only : is_contained
     implicit none
 
     integer :: parcel_io_timer
@@ -325,7 +332,10 @@ module parcel_netcdf
             character(*),     intent(in) :: fname
             logical                      :: l_valid = .false.
             integer                      :: cnt(2), start(2)
-            integer                      :: remaining, start_index, num_indices, end_index
+            integer                      :: start_index, num_indices, end_index
+            logical                      :: l_rejection = .false.
+            integer, allocatable         :: invalid(:)
+            integer                      :: n, m, n_total
 
             call start_timer(parcel_io_timer)
 
@@ -355,25 +365,18 @@ module parcel_netcdf
                 n_parcels = end_index - start_index
 
             else
-                n_parcels = n_total_parcels / mpi_size
-                remaining = n_total_parcels - n_parcels * mpi_size
-                start_index = n_parcels * mpi_rank
+                call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
+                call mpi_print("         Be aware that this operation causes a high memory usage!")
+                l_rejection = .true.
+                start_index = 1
+                n_parcels = n_total_parcels
 
-                if (mpi_rank < remaining) then
-                    n_parcels = n_parcels + 1
-                endif
-
-                ! all MPI ranks < remaining get an additional parcel;
-                ! hence, we must shift the start indices accordingly
-                start_index = start_index + min(remaining, mpi_rank)
-
-                ! FIXME
-                call mpi_exit_on_error("This is not yet supported! See issue #371")
-
+                call parcel_dealloc
+                call parcel_alloc(n_total_parcels)
             endif
 
 
-            if (n_parcels > max_num_parcels) then
+            if ((n_parcels > max_num_parcels) .and. (.not. l_rejection)) then
                 print *, "Number of parcels exceeds limit of", &
                           max_num_parcels, ". Exiting."
                 stop
@@ -492,6 +495,41 @@ module parcel_netcdf
             endif
 
             call close_netcdf_file(ncid)
+
+
+            if (l_rejection) then
+                ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
+                ! not belonging to its domain
+
+                allocate(invalid(0:n_parcels))
+
+                m = 1
+                do n = 1, n_parcels
+                    if (is_contained(parcels%position(:, n))) then
+                        cycle
+                    endif
+
+                    invalid(m) = n
+
+                    m = m + 1
+                enddo
+
+                ! remove last increment
+                m = m - 1
+
+                call parcel_delete(invalid(0:m), n_del=m)
+
+                deallocate(invalid)
+
+                call parcel_resize(old_size=n_parcels, new_size=max_num_parcels)
+
+                ! verify result
+                n_total = n_parcels
+                call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INT, MPI_SUM, comm_world, mpi_err)
+                if (n_total_parcels .ne. n_total) then
+                    call mpi_exit_on_error("Local number of parcels does not sum up to total number!")
+                endif
+            endif
 
             call stop_timer(parcel_io_timer)
 

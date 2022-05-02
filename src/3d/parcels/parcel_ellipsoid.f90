@@ -15,7 +15,6 @@ module parcel_ellipsoid
                         , three &
                         , five  &
                         , seven
-    use parameters, only : max_num_parcels
     use jacobi
     implicit none
 
@@ -32,12 +31,19 @@ module parcel_ellipsoid
 
     contains
 
-        subroutine parcel_ellipsoid_allocate
-            allocate(Vetas(3, max_num_parcels))
-            allocate(Vtaus(3, max_num_parcels))
+        subroutine parcel_ellipsoid_allocate(num)
+            integer, intent(in) :: num
+
+            allocate(Vetas(3, num))
+            allocate(Vtaus(3, num))
         end subroutine parcel_ellipsoid_allocate
 
         subroutine parcel_ellipsoid_deallocate
+
+            if (.not. allocated(Vetas)) then
+                return
+            endif
+
             deallocate(Vetas)
             deallocate(Vtaus)
         end subroutine parcel_ellipsoid_deallocate
