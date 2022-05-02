@@ -10,6 +10,9 @@ module parcel_split_mod
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
     use timer, only : start_timer, stop_timer
     use omp_lib
+    use mpi_communicator, only : mpi_rank, mpi_master, MPI_SUM
+    use mpi_collectives, only : mpi_blocking_reduce
+    use parcel_mpi, only : parcel_halo_swap
     implicit none
 
     double precision, parameter :: dh = f12 * dsqrt(three / five)
@@ -35,7 +38,9 @@ module parcel_split_mod
             integer                                    :: pid(2 * n_parcels)
             integer, allocatable                       :: invalid(:)
 #ifdef ENABLE_VERBOSE
-            integer                                    :: orig_num = n_total_parcels
+            integer                                    :: orig_num
+
+            orig_num = n_total_parcels
 #endif
 
             call start_timer(split_timer)
