@@ -101,8 +101,9 @@ module parcel_split_mod
             !$omp end do
             !$omp end parallel
 
-            ! find all invalid parcels (i.e. parcels that left the sub-domain
-            ! owned by *this* MPI process)
+            ! all entries in "pid" that are non-zero are indices of
+            ! child parcels; remove all zero entries such that
+            ! we can do a halo swap
             invalid = pack(pid(1:n_parcels), pid(1:n_parcels) /= 0)
 
             ! send the invalid parcels to the proper MPI process;
