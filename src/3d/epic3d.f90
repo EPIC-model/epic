@@ -14,7 +14,7 @@ program epic3d
                                   lapl_corr_timer,        &
                                   grad_corr_timer
     use parcel_diagnostics, only : init_parcel_diagnostics, &
-                                   parcel_stats_timer
+                                   parcel_stats_timer, xi_bar, eta_bar
     use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
     use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
     use fields
@@ -142,6 +142,11 @@ program epic3d
                 endif
 #endif
                 call ls_rk4_step(t)
+
+                !!!
+                parcels%vorticity(1, 1:n_parcels) = parcels%vorticity(1, 1:n_parcels) - xi_bar
+                parcels%vorticity(2, 1:n_parcels) = parcels%vorticity(2, 1:n_parcels) - eta_bar
+                !!!
 
                 call merge_parcels(parcels)
 
