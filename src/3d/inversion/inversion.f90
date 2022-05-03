@@ -134,12 +134,12 @@ module inversion_mod
             ! compute the velocity gradient tensor
             call vel2vgrad(svelog, velgradg)
 
-            ! use symmetry in u and v and anti-symmetry in w to fill z grid points outside domain:
-            velog(-1, :, :, 1)   =  velog(1, :, :, 1) ! u
-            velog(-1, :, :, 2)   =  velog(1, :, :, 2) ! v
-            velog(-1, :, :, 3)   = -velog(1, :, :, 3) ! w
-            velog(nz+1, :, :, 1) =  velog(nz-1, :, :, 1) ! u
-            velog(nz+1, :, :, 2) =  velog(nz-1, :, :, 2) ! v
+            ! use extrapolation in u and v and anti-symmetry in w to fill z grid points outside domain:
+            velog(-1, :, :, 1) =  two * velog(0, :, :, 1) - velog(1, :, :, 1) ! u
+            velog(-1, :, :, 2) =  two * velog(0, :, :, 2) - velog(1, :, :, 2) ! v
+            velog(-1, :, :, 3) = -velog(1, :, :, 3) ! w
+            velog(nz+1, :, :, 1) = two * velog(nz, :, :, 1) - velog(nz-1, :, :, 1) ! u
+            velog(nz+1, :, :, 2) = two * velog(nz, :, :, 2) - velog(nz-1, :, :, 2) ! v
             velog(nz+1, :, :, 3) = -velog(nz-1, :, :, 3) ! w
 
             call stop_timer(vor2vel_timer)
