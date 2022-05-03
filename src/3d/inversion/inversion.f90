@@ -195,11 +195,10 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Compute the gridded vorticity tendency:
-        subroutine vorticity_tendency(vortg, velog, tbuoyg, velgradg, vtend)
+        subroutine vorticity_tendency(vortg, velog, tbuoyg, vtend)
             double precision, intent(in)  :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(in)  :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(in)  :: tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1)
-            double precision, intent(in)  :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
             double precision, intent(out) :: vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision              :: f(-1:nz+1, 0:ny-1, 0:nx-1, 3)
 
@@ -223,25 +222,6 @@ module inversion_mod
             f(:, : , :, 3) = vortg(:, :, :, 3) * velog(:, :, :, 3)
 
             call divergence(f, vtend(0:nz, :, :, 3))
-
-            ! Fill boundary values:
-            ! \omegax * du/dx + \omegay * dv/dx (where dv/dx = \omegaz + du/dy)
-            vtend(0, :, :, 1) = vortg(0, :, :, 1) * velgradg(0, :, :, 1) &
-                              + vortg(0, :, :, 2) * (vortg(0, :, :, 3 ) + velgradg(0, :, :, 2))
-
-            vtend(nz, :, :, 1) = vortg(nz, :, :, 1) * velgradg(nz, :, :, 1) &
-                               + vortg(nz, :, :, 2) * (vortg(nz, :, :, 3 ) + velgradg(nz, :, :, 2))
-
-            ! \omegax * du/dy + \omegay * dv/dy
-            vtend(0, :, :, 2) = vortg(0, :, :, 1) * velgradg(0, :, :, 2) &
-                              + vortg(0, :, :, 2) * velgradg(0, :, :, 3)
-
-            vtend(nz, :, :, 2) = vortg(nz, :, :, 1) * velgradg(nz, :, :, 2) &
-                               + vortg(nz, :, :, 2) * velgradg(nz, :, :, 3)
-
-            ! - \omegaz * (du/dx + dv/dy)
-            vtend(0,  :, :, 3) = - vortg(0,  :, :, 3) * (velgradg(0,  :, :, 1) + velgradg(0,  :, :, 3))
-            vtend(nz, :, :, 3) = - vortg(nz, :, :, 3) * (velgradg(nz, :, :, 1) + velgradg(nz, :, :, 3))
 
             ! Extrapolate to halo grid points
             vtend(-1,   :, :, :) = two * vtend(0,  :, :, :) - vtend(1,    :, :, :)
