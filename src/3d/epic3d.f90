@@ -2,7 +2,7 @@
 !                       EPIC3D - Elliptical Parcel-in-Cell
 ! =============================================================================
 program epic3d
-    use constants, only : zero
+    use constants, only : zero, one
     use timer
     use parcel_container
     use parcel_bc
@@ -131,6 +131,7 @@ program epic3d
 #endif
             double precision :: t = zero    ! current time
             integer          :: cor_iter    ! iterator for parcel correction
+            double precision :: dxi_bar, deta_bar, fvsum
 
             t = time%initial
 
@@ -144,8 +145,15 @@ program epic3d
                 call ls_rk4_step(t)
 
                 !!!
-                parcels%vorticity(1, 1:n_parcels) = parcels%vorticity(1, 1:n_parcels) - xi_bar
-                parcels%vorticity(2, 1:n_parcels) = parcels%vorticity(2, 1:n_parcels) - eta_bar
+                dxi_bar = -xi_bar
+                deta_bar = -eta_bar
+                fvsum = one / sum(parcels%volume(1:n_parcels))
+
+                dxi_bar = dxi_bar + sum(parcels%vorticity(1, 1:n_parcels) * parcels%volume(1:n_parcels))
+                deta_bar = deta_bar + sum(parcels%vorticity(2, 1:n_parcels) * parcels%volume(1:n_parcels))
+
+                parcels%vorticity(1, 1:n_parcels) = parcels%vorticity(1, 1:n_parcels) - dxi_bar
+                parcels%vorticity(2, 1:n_parcels) = parcels%vorticity(2, 1:n_parcels) - deta_bar
                 !!!
 
                 call merge_parcels(parcels)
