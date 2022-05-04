@@ -10,7 +10,10 @@
 !    xi(x, y, z) = alpha * u(x, y, z)
 !   eta(x, y, z) = alpha * v(x, y, z)
 !  zeta(x, y, z) = alpha * w(x, y, z)
-!  We us k = l = 2 and m = 1
+!  We use k = l = 2 and m = 1. For this setting the theoertical vorticity
+!  tendency is
+!        omega*grad(u) = (3/8)sin(2 theta) (ii + jj) - (3/2)sin(2 z) kk
+!  where ii, jj and kk are the unit vectors and theta = 2(x+y)
 ! =============================================================================
 program test_vtend
     use unit_test
@@ -18,7 +21,7 @@ program test_vtend
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use fields, only : vortg, velog, vtend, tbuoyg, field_default
     use inversion_utils, only : init_fft, fftxyp2s
-    use inversion_mod, only : vor2vel, vor2vel_timer
+    use inversion_mod, only : vor2vel, vor2vel_timer, vorticity_tendency, vtend_timer
     use timer
     implicit none
 
@@ -26,8 +29,10 @@ program test_vtend
     double precision, allocatable :: vtend_ref(:, :, :, :)
     integer                       :: ix, iy, iz
     double precision              :: x, y, z, k, l, m, alpha, fk2l2
+    double precision              :: cosmz, sinmz, sinkxly, coskxly
 
     call register_timer('vorticity', vor2vel_timer)
+    call register_timer('vtend', vtend_timer)
 
     nx = 64
     ny = 64
@@ -42,7 +47,7 @@ program test_vtend
     alpha = dsqrt(k ** 2 + l ** 2 + m ** 2)
     fk2l2 = alpha / dble(k ** 2 + l ** 2)
 
-    allocate(vtend_ref(-1:nz+1, 0:ny-1, 0:nx-1, 5))
+    allocate(vtend_ref(-1:nz+1, 0:ny-1, 0:nx-1, 3))
 
     call update_parameters
 
@@ -69,6 +74,11 @@ program test_vtend
                 vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 1)
                 vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 2)
                 vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 3)
+
+                ! reference solution
+                vtend_ref(iz, iy, ix, 1) = 3.0d0 / 8.0d0 * sinkxly
+                vtend_ref(iz, iy, ix, 2) = 3.0d0 / 8.0d0 * sinkxly
+                vtend_ref(iz, iy, ix, 3) = - 3.0d0 / 2.0d0 * dsin(2.0d0 * z)
             enddo
         enddo
     enddo
@@ -77,7 +87,7 @@ program test_vtend
 
     call vorticity_tendency(vortg, velog, tbuoyg, vtend)
 
-!     error = maxval(dabs(velog_ref(0:nz, :, :, :) - velog(0:nz, :, :, :)))
+    error = maxval(dabs(vtend_ref(0:nz, :, :, :) - vtend(0:nz, :, :, :)))
 
     call print_result_dp('Test vorticity tendency', error, atol=4.0e-7)
 
