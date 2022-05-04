@@ -2,7 +2,7 @@
 !                              Field diagnostics
 ! =============================================================================
 module field_diagnostics
-    use constants, only : f12
+    use constants, only : f12, f14
     use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
     use fields
     use timer, only : start_timer, stop_timer
@@ -43,8 +43,12 @@ module field_diagnostics
 
             avg_nspar = sum(nsparg(0:nz-1, :)) * ncelli
 
-            keg = f12 * sum(volg(0:nz, :) * (velog(0:nz, :, 1) ** 2     &
-                                           + velog(0:nz, :, 2) ** 2))
+            keg = f12 * sum(volg(1:nz-1, :) * ( velog(1:nz-1, :, 1) ** 2    &
+                                              + velog(1:nz-1, :, 2) ** 2))  &
+                + f14 * sum(volg(0,  :) * ( velog(0 , :, 1) ** 2    &
+                                          + velog(0 , :, 2) ** 2))  &
+                + f14 * sum(volg(nz, :) * ( velog(nz, :, 1) ** 2    &
+                                          + velog(nz, :, 2) ** 2))
 
 #ifndef NDEBUG
             max_vol_sym_err = maxval(dabs(sym_volg(0:nz, :)))
