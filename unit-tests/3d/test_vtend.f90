@@ -72,8 +72,8 @@ program test_vtend
 
                 ! vorticity
                 vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 1)
-                vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 2)
-                vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 3)
+                vortg(iz, iy, ix, 2) = alpha * velog(iz, iy, ix, 2)
+                vortg(iz, iy, ix, 3) = alpha * velog(iz, iy, ix, 3)
 
                 ! reference solution
                 vtend_ref(iz, iy, ix, 1) = 3.0d0 / 8.0d0 * sinkxly
