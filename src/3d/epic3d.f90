@@ -149,8 +149,8 @@ program epic3d
                 deta_bar = -eta_bar
                 fvsum = one / sum(parcels%volume(1:n_parcels))
 
-                dxi_bar = dxi_bar + sum(parcels%vorticity(1, 1:n_parcels) * parcels%volume(1:n_parcels))
-                deta_bar = deta_bar + sum(parcels%vorticity(2, 1:n_parcels) * parcels%volume(1:n_parcels))
+                dxi_bar = dxi_bar + sum(parcels%vorticity(1, 1:n_parcels) * parcels%volume(1:n_parcels)) * fvsum
+                deta_bar = deta_bar + sum(parcels%vorticity(2, 1:n_parcels) * parcels%volume(1:n_parcels)) * fvsum
 
                 parcels%vorticity(1, 1:n_parcels) = parcels%vorticity(1, 1:n_parcels) - dxi_bar
                 parcels%vorticity(2, 1:n_parcels) = parcels%vorticity(2, 1:n_parcels) - deta_bar
