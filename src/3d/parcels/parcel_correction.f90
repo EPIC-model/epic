@@ -41,6 +41,7 @@ module parcel_correction
             call start_timer(vort_corr_timer)
 
             vsum = zero
+            vor_bar = zero
 
             !$omp parallel default(shared)
             !$omp do private(n) reduction(+: vor_bar, vsum)
