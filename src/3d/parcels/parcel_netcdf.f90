@@ -543,6 +543,6 @@ module parcel_netcdf
                 print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
                 stop
             endif
-        end subroutine
+        end subroutine read_chunk
 
 end module parcel_netcdf
