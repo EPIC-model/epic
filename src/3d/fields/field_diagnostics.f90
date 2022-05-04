@@ -38,9 +38,16 @@ module field_diagnostics
 
             avg_nspar = sum(nsparg(0:nz-1, :, :)) * ncelli
 
-            keg = f12 * sum(volg(0:nz, :, :) * (velog(0:nz, :, :, 1) ** 2   &
-                                              + velog(0:nz, :, :, 2) ** 2   &
-                                              + velog(0:nz, :, :, 3) ** 2))
+            ! use half weights for boundary grid points
+            keg = f12 * sum(volg(1:nz-1, :, :) * ( velog(1:nz-1, :, :, 1) ** 2   &
+                                                 + velog(1:nz-1, :, :, 2) ** 2   &
+                                                 + velog(1:nz-1, :, :, 3) ** 2)) &
+                + f14 * volg(0,  :, :) * ( velog(0,  :, :, 1) ** 2               &
+                                         + velog(0,  :, :, 2) ** 2               &
+                                         + velog(0,  :, :, 3) ** 2)              &
+                + f14 * volg(nz, :, :) * ( velog(nz, :, :, 1) ** 2               &
+                                         + velog(nz, :, :, 2) ** 2               &
+                                         + velog(nz, :, :, 3) ** 2)
 
             call stop_timer(field_stats_timer)
 
