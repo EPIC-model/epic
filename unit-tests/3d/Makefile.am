@@ -29,6 +29,7 @@ unittests_PROGRAMS = 				\
 	test_jacobi_3				\
 	test_jacobi_4				\
 	test_ellipsoid_split 			\
+	test_ellipsoid_split_merge		\
 	test_parcel_init_3d			\
 	test_fft_3d				\
 	test_fft_2_3d				\
@@ -69,6 +70,9 @@ test_jacobi_4_LDADD = libcombi.la
 
 test_ellipsoid_split_SOURCES = test_ellipsoid_split.f90
 test_ellipsoid_split_LDADD = libcombi.la
+
+test_ellipsoid_split_merge_SOURCES = test_ellipsoid_split_merge.f90
+test_ellipsoid_split_merge_LDADD = libcombi.la
 
 test_parcel_init_3d_SOURCES = test_parcel_init_3d.f90
 test_parcel_init_3d_LDADD = libcombi.la
