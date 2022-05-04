@@ -384,7 +384,7 @@ module parcel_netcdf
                 ! not belonging to its domain
                 allocate(invalid(0:end_index))
 
-                do while(end_index < n_total_parcels)
+                do while(end_index <= n_total_parcels)
 
                     call read_chunk(start_index, end_index)
 
