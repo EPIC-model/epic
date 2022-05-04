@@ -17,16 +17,19 @@ module parcel_correction
     private
 
     integer :: lapl_corr_timer, &
-               grad_corr_timer
+               grad_corr_timer, &
+               vort_corr_timer
 
     ! initial volume-weighted vorticity mean
-    double precision :: vor_bar
+    double precision :: vor_bar(3)
 
     public :: init_parcel_correction, &
               apply_laplace,          &
               apply_gradient,         &
+              apply_vortcor,          &
               lapl_corr_timer,        &
-              grad_corr_timer
+              grad_corr_timer,        &
+              vort_corr_timer
 
     contains
 
@@ -34,6 +37,8 @@ module parcel_correction
         subroutine init_parcel_correction
             integer          :: n
             double precision :: vsum
+
+            call start_timer(vort_corr_timer)
 
             vsum = zero
 
@@ -48,6 +53,8 @@ module parcel_correction
 
             vor_bar = vor_bar / vsum
 
+            call stop_timer(vort_corr_timer)
+
         end subroutine init_parcel_correction
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -57,6 +64,8 @@ module parcel_correction
         subroutine apply_vortcor
             integer          :: n
             double precision :: dvor(3), vsum
+
+            call start_timer(vort_corr_timer)
 
             vsum = zero
             dvor = - vor_bar
@@ -79,6 +88,8 @@ module parcel_correction
             enddo
             !$omp end do
             !$omp end parallel
+
+            call stop_timer(vort_corr_timer)
         end subroutine apply_vortcor
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

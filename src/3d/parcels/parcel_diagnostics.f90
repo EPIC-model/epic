@@ -42,7 +42,7 @@ module parcel_diagnostics
         subroutine init_parcel_diagnostics
             integer          :: ii(n_parcels), n
             double precision :: b(n_parcels)
-            double precision :: gam, zmean, vsum
+            double precision :: gam, zmean
 
             call start_timer(parcel_stats_timer)
 
