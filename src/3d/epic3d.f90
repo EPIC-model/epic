@@ -14,7 +14,8 @@ program epic3d
                                   apply_vortcor,          &
                                   lapl_corr_timer,        &
                                   grad_corr_timer,        &
-                                  vort_corr_timer
+                                  vort_corr_timer,        &
+                                  init_parcel_correction
     use parcel_diagnostics, only : init_parcel_diagnostics, &
                                    parcel_stats_timer
     use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
