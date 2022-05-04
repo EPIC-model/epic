@@ -17,7 +17,7 @@
 ! =============================================================================
 program test_vtend
     use unit_test
-    use constants, only : zero, one, two, four, pi, twopi, f12
+    use constants, only : one, two, pi, f12
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use fields, only : vortg, velog, vtend, tbuoyg, field_default
     use inversion_utils, only : init_fft, fftxyp2s
@@ -38,8 +38,8 @@ program test_vtend
     ny = 64
     nz = 64
 
-    lower  = (/-pi, -pi, -f12 * pi/)
-    extent =  (/twopi, twopi, twopi/)
+    lower  = -f12 * pi * (/one, one, one/)
+    extent =  pi * (/one, one, one/)
 
     k = two
     l = two
@@ -88,6 +88,8 @@ program test_vtend
     call vorticity_tendency(vortg, velog, tbuoyg, vtend)
 
     error = maxval(dabs(vtend_ref(0:nz, :, :, :) - vtend(0:nz, :, :, :)))
+
+    print *, error
 
     call print_result_dp('Test vorticity tendency', error, atol=4.0e-7)
 
