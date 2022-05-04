@@ -201,7 +201,6 @@ module inversion_mod
             double precision, intent(in)  :: tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1)
             double precision, intent(out) :: vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision              :: f(-1:nz+1, 0:ny-1, 0:nx-1, 3)
-            double precision              :: xi_avg, eta_avg
 
             call start_timer(vtend_timer)
 
@@ -223,19 +222,6 @@ module inversion_mod
             f(:, : , :, 3) = vortg(:, :, :, 3) * velog(:, :, :, 3)
 
             call divergence(f, vtend(0:nz, :, :, 3))
-
-            ! Subtract x-y-average
-            xi_avg  = sum(vtend(0, :, :, 1)) / dble(nx * ny)
-            eta_avg = sum(vtend(0, :, :, 2)) / dble(nx * ny)
-
-            vtend(0, :, :, 1) = vtend(0, :, :, 1) - xi_avg
-            vtend(0, :, :, 2) = vtend(0, :, :, 2) - eta_avg
-
-            xi_avg  = sum(vtend(nz, :, :, 1)) / dble(nx * ny)
-            eta_avg = sum(vtend(nz, :, :, 2)) / dble(nx * ny)
-
-            vtend(nz, :, :, 1) = vtend(nz, :, :, 1) - xi_avg
-            vtend(nz, :, :, 2) = vtend(nz, :, :, 2) - eta_avg
 
             ! Extrapolate to halo grid points
             vtend(-1,   :, :, :) = two * vtend(0,  :, :, :) - vtend(1,    :, :, :)
