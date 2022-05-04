@@ -1,7 +1,7 @@
 ! =============================================================================
 !                       Test ellipsoid split and merge
 !
-!         This unit test splits and ellispoid and the merges it again. The
+!         This unit test splits an ellispoid and the merges it again. The
 !         initial and final ellispoid should be the same. The ellipsoid
 !         is centred at the origin and the orientation is varied.
 ! =============================================================================
