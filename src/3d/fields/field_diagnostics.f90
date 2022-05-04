@@ -42,12 +42,12 @@ module field_diagnostics
             keg = f12 * sum(volg(1:nz-1, :, :) * ( velog(1:nz-1, :, :, 1) ** 2   &
                                                  + velog(1:nz-1, :, :, 2) ** 2   &
                                                  + velog(1:nz-1, :, :, 3) ** 2)) &
-                + f14 * volg(0,  :, :) * ( velog(0,  :, :, 1) ** 2               &
-                                         + velog(0,  :, :, 2) ** 2               &
-                                         + velog(0,  :, :, 3) ** 2)              &
-                + f14 * volg(nz, :, :) * ( velog(nz, :, :, 1) ** 2               &
-                                         + velog(nz, :, :, 2) ** 2               &
-                                         + velog(nz, :, :, 3) ** 2)
+                + f14 * sum(volg(0,  :, :) * ( velog(0,  :, :, 1) ** 2           &
+                                             + velog(0,  :, :, 2) ** 2           &
+                                             + velog(0,  :, :, 3) ** 2))         &
+                + f14 * sum(volg(nz, :, :) * ( velog(nz, :, :, 1) ** 2           &
+                                             + velog(nz, :, :, 2) ** 2           &
+                                             + velog(nz, :, :, 3) ** 2))
 
             call stop_timer(field_stats_timer)
 
