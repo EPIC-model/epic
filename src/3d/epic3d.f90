@@ -15,7 +15,7 @@ program epic3d
                                   lapl_corr_timer,        &
                                   grad_corr_timer
     use parcel_diagnostics, only : init_parcel_diagnostics, &
-                                   parcel_stats_timer, xi_bar, eta_bar
+                                   parcel_stats_timer
     use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
     use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
     use fields
