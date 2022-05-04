@@ -56,9 +56,6 @@ module parcel_container
 
     type(parcel_container_type) parcels
 
-    private :: alloc_container
-
-
     contains
 
         ! Obtain the difference between two zonal coordinates
@@ -140,87 +137,39 @@ module parcel_container
 
         end subroutine parcel_replace
 
-        subroutine alloc_container(cont, num)
-            type(parcel_container_type), intent(inout) :: cont
-            integer, intent(in)                        :: num
-
-            allocate(cont%position(3, num))
-            allocate(cont%vorticity(3, num))
-            allocate(cont%B(5, num))
-            allocate(cont%volume(num))
-            allocate(cont%buoyancy(num))
-#ifndef ENABLE_DRY_MODE
-            allocate(cont%humidity(num))
-#endif
-        end subroutine alloc_container
-
-        subroutine dealloc_container(cont)
-            type(parcel_container_type), intent(inout) :: cont
-
-            if (.not. allocated(cont%position)) then
-                return
-            endif
-
-            deallocate(cont%position)
-            deallocate(cont%vorticity)
-            deallocate(cont%B)
-            deallocate(cont%volume)
-            deallocate(cont%buoyancy)
-#ifndef ENABLE_DRY_MODE
-            deallocate(cont%humidity)
-#endif
-        end subroutine dealloc_container
-
         ! Allocate parcel memory
         ! @param[in] num number of parcels
         subroutine parcel_alloc(num)
             integer, intent(in) :: num
 
-            call alloc_container(parcels, num)
-
+            allocate(parcels%position(3, num))
+            allocate(parcels%vorticity(3, num))
+            allocate(parcels%B(5, num))
+            allocate(parcels%volume(num))
+            allocate(parcels%buoyancy(num))
+#ifndef ENABLE_DRY_MODE
+            allocate(parcels%humidity(num))
+#endif
             call parcel_ellipsoid_allocate(num)
         end subroutine parcel_alloc
 
         ! Deallocate parcel memory
         subroutine parcel_dealloc
 
-            call dealloc_container(parcels)
-            call parcel_ellipsoid_deallocate
-        end subroutine parcel_dealloc
-
-        subroutine parcel_resize(old_size, new_size)
-            integer, intent(in)         :: old_size, new_size
-            type(parcel_container_type) :: swap
-
-            if (old_size > new_size) then
-                call mpi_exit_on_error("parcel_resize: New container size smaller than old size!")
+            if (.not. allocated(parcels%position)) then
+                return
             endif
 
-            call alloc_container(swap, old_size)
-
-            swap%position  = parcels%position(:, 1:old_size)
-            swap%vorticity = parcels%vorticity(:, 1:old_size)
-            swap%B         = parcels%B(:, 1:old_size)
-            swap%volume    = parcels%volume(1:old_size)
-            swap%buoyancy  = parcels%buoyancy(1:old_size)
+            deallocate(parcels%position)
+            deallocate(parcels%vorticity)
+            deallocate(parcels%B)
+            deallocate(parcels%volume)
+            deallocate(parcels%buoyancy)
 #ifndef ENABLE_DRY_MODE
-            swap%humidity  = parcels%humidity(1:old_size)
+            deallocate(parcels%humidity)
 #endif
-
-            call parcel_dealloc
-
-            call parcel_alloc(new_size)
-
-            parcels%position(:, 1:old_size)  = swap%position(:, 1:old_size)
-            parcels%vorticity(:, 1:old_size) = swap%vorticity(:, 1:old_size)
-            parcels%B(:, 1:old_size)         = swap%B(:, 1:old_size)
-            parcels%volume(1:old_size)       = swap%volume(1:old_size)
-            parcels%buoyancy(1:old_size)     = swap%buoyancy(1:old_size)
-#ifndef ENABLE_DRY_MODE
-            parcels%humidity(1:old_size)     = swap%humidity(1:old_size)
-#endif
-            call dealloc_container(swap)
-        end subroutine parcel_resize
+            call parcel_ellipsoid_deallocate
+        end subroutine parcel_dealloc
 
         ! Serialize all parcel attributes into a single buffer
         subroutine parcel_serialize(n, buffer)
