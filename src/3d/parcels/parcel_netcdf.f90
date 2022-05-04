@@ -45,7 +45,8 @@ module parcel_netcdf
                x_vor_id, y_vor_id, z_vor_id,            &
                b11_id, b12_id, b13_id, b22_id, b23_id,  &
                vol_id, buo_id, t_dim_id, t_axis_id,     &
-               restart_time, mpi_dim_id
+               restart_time, mpi_dim_id,                &
+               read_chunk
 
 #ifndef ENABLE_DRY_MODE
     private :: hum_id
@@ -330,12 +331,10 @@ module parcel_netcdf
 
         subroutine read_netcdf_parcels(fname)
             character(*),     intent(in) :: fname
-            logical                      :: l_valid = .false.
-            integer                      :: cnt(2), start(2)
             integer                      :: start_index, num_indices, end_index
-            logical                      :: l_rejection = .false.
             integer, allocatable         :: invalid(:)
             integer                      :: n, m, n_total
+            integer                      :: start(2)
 
             call start_timer(parcel_io_timer)
 
@@ -364,28 +363,82 @@ module parcel_netcdf
 
                 n_parcels = end_index - start_index
 
+                if (n_parcels > max_num_parcels) then
+                    print *, "Number of parcels exceeds limit of", &
+                            max_num_parcels, ". Exiting."
+                    call MPI_Abort(comm_world, -1, mpi_err)
+                endif
+
+                ! we need to increase the start_index by 1
+                ! since the starting index in Fortran is 1 and not 0.
+                call read_chunk(1 + start_index, n_parcels)
             else
+                !
+                ! READ PARCELS WITH REJECTION METHOD
+                ! (reject all parcels that are not part of
+                !  the sub-domain owned by *this* MPI rank)
+                !
                 call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
-                call mpi_print("         Be aware that this operation causes a high memory usage!")
-                l_rejection = .true.
                 start_index = 1
-                n_parcels = n_total_parcels
+                end_index = min(max_num_parcels, n_total_parcels)
+                n_parcels = end_index
 
-                call parcel_dealloc
-                call parcel_alloc(n_total_parcels)
+                ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
+                ! not belonging to its domain
+                allocate(invalid(0:end_index))
+
+                do while(end_index < n_total_parcels)
+
+                    call read_chunk(start_index, end_index)
+
+                    m = 1
+                    do n = start_index, end_index
+                        if (is_contained(parcels%position(:, n))) then
+                            cycle
+                        endif
+
+                        invalid(m) = n
+
+                        m = m + 1
+                    enddo
+
+                    ! remove last increment
+                    m = m - 1
+
+                    ! updates the variable n_parcels
+                    call parcel_delete(invalid(0:m), n_del=m)
+
+                    start_index = 1 + end_index
+                    end_index = min(end_index + max_num_parcels, n_total_parcels)
+                enddo
+
+                deallocate(invalid)
+
             endif
 
+            call close_netcdf_file(ncid)
 
-            if ((n_parcels > max_num_parcels) .and. (.not. l_rejection)) then
-                print *, "Number of parcels exceeds limit of", &
-                          max_num_parcels, ". Exiting."
-                stop
+            ! verify result
+            n_total = n_parcels
+            call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INT, MPI_SUM, comm_world, mpi_err)
+            if (n_total_parcels .ne. n_total) then
+                call mpi_exit_on_error("Local number of parcels does not sum up to total number!")
             endif
 
-            ! we need to increase the start_index by 1
-            ! since the starting index in Fortran is 1 and not 0.
-            start = (/ 1 + start_index, 1 /)
-            cnt   = (/ n_parcels,       1 /)
+            call stop_timer(parcel_io_timer)
+
+        end subroutine read_netcdf_parcels
+
+
+        ! This subroutine assumes the NetCDF file to be open.
+        subroutine read_chunk(first, last)
+            integer, intent(in) :: first, last
+            logical             :: l_valid = .false.
+            integer             :: cnt(2), start(2)
+
+
+            start = (/ first, 1 /)
+            cnt   = (/ last,  1 /)
 
             ! Be aware that the starting index of buffer_1d and buffer_2d
             ! is 0; hence, the range is 0:n_parcels-1 in contrast to the
@@ -493,46 +546,6 @@ module parcel_netcdf
                 print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
                 stop
             endif
-
-            call close_netcdf_file(ncid)
-
-
-            if (l_rejection) then
-                ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
-                ! not belonging to its domain
-
-                allocate(invalid(0:n_parcels))
-
-                m = 1
-                do n = 1, n_parcels
-                    if (is_contained(parcels%position(:, n))) then
-                        cycle
-                    endif
-
-                    invalid(m) = n
-
-                    m = m + 1
-                enddo
-
-                ! remove last increment
-                m = m - 1
-
-                call parcel_delete(invalid(0:m), n_del=m)
-
-                deallocate(invalid)
-
-                call parcel_resize(old_size=n_parcels, new_size=max_num_parcels)
-
-                ! verify result
-                n_total = n_parcels
-                call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INT, MPI_SUM, comm_world, mpi_err)
-                if (n_total_parcels .ne. n_total) then
-                    call mpi_exit_on_error("Local number of parcels does not sum up to total number!")
-                endif
-            endif
-
-            call stop_timer(parcel_io_timer)
-
-        end subroutine read_netcdf_parcels
+        end subroutine
 
 end module parcel_netcdf
