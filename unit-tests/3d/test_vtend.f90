@@ -60,15 +60,15 @@ program test_vtend
                 sinkxly = dsin(k * x + l * y)
                 coskxly = dcos(k * x + l * y)
 
-                ! vorticity
-                vortg(iz, iy, ix, 1) = fk2l2 * (k * m * sinmz - l * alpha * cosmz) * sinkxly
-                vortg(iz, iy, ix, 2) = fk2l2 * (l * m * sinmz + k * alpha * cosmz) * sinkxly
-                vortg(iz, iy, ix, 3) = alpha * cosmz * coskxly
-
                 ! velocity
-                velog(iz, iy, ix, 1) = alpha * vortg(iz, iy, ix, 1)
-                velog(iz, iy, ix, 1) = alpha * vortg(iz, iy, ix, 2)
-                velog(iz, iy, ix, 1) = alpha * vortg(iz, iy, ix, 3)
+                velog(iz, iy, ix, 1) = fk2l2 * (k * m * sinmz - l * alpha * cosmz) * sinkxly
+                velog(iz, iy, ix, 2) = fk2l2 * (l * m * sinmz + k * alpha * cosmz) * sinkxly
+                velog(iz, iy, ix, 3) = alpha * cosmz * coskxly
+
+                ! vorticity
+                vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 1)
+                vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 2)
+                vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 3)
             enddo
         enddo
     enddo
