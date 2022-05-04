@@ -73,6 +73,7 @@ program test_ellipsoid_split_merge
 
             call merge_parcels(parcels)
 
+            ! we should get original parcel
             call check_result
         enddo
     enddo
