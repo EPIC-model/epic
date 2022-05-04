@@ -254,11 +254,9 @@ module inversion_mod
             div = div + df
 
             ! calculate df/dz with central differencing
-            do i = 1, nz-1
+            do i = 0, nz
                 df(i, 0:ny-1, 0:nx-1) = f12 * dxi(3) * (f(i+1, 0:ny-1, 0:nx-1, 3) - f(i-1, 0:ny-1, 0:nx-1, 3))
             enddo
-            df(0,  0:ny-1, 0:nx-1) = f12 * dxi(3) * (f(1,    0:ny-1, 0:nx-1, 3) - f(-1,   0:ny-1, 0:nx-1, 3))
-            df(nz, 0:ny-1, 0:nx-1) = f12 * dxi(3) * (f(nz+1, 0:ny-1, 0:nx-1, 3) - f(nz-1, 0:ny-1, 0:nx-1, 3))
 
             div = div + df
 
