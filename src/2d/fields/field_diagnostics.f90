@@ -43,6 +43,7 @@ module field_diagnostics
 
             avg_nspar = sum(nsparg(0:nz-1, :)) * ncelli
 
+            ! use half weights for boundary grid points
             keg = f12 * sum(volg(1:nz-1, :) * ( velog(1:nz-1, :, 1) ** 2    &
                                               + velog(1:nz-1, :, 2) ** 2))  &
                 + f14 * sum(volg(0,  :) * ( velog(0 , :, 1) ** 2    &
