@@ -2,7 +2,7 @@
 !                       EPIC3D - Elliptical Parcel-in-Cell
 ! =============================================================================
 program epic3d
-    use constants, only : zero, one
+    use constants, only : zero
     use timer
     use parcel_container
     use parcel_bc
@@ -11,6 +11,7 @@ program epic3d
     use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
     use parcel_correction, only : apply_laplace,          &
                                   apply_gradient,         &
+                                  apply_vortcor,          &
                                   lapl_corr_timer,        &
                                   grad_corr_timer
     use parcel_diagnostics, only : init_parcel_diagnostics, &
@@ -117,6 +118,8 @@ program epic3d
                 call init_parcel_diagnostics
             endif
 
+            call init_parcel_correction
+
             call field_default
 
             call setup_output_files
@@ -131,7 +134,6 @@ program epic3d
 #endif
             double precision :: t = zero    ! current time
             integer          :: cor_iter    ! iterator for parcel correction
-            double precision :: dxi_bar, deta_bar, fvsum
 
             t = time%initial
 
@@ -144,17 +146,7 @@ program epic3d
 #endif
                 call ls_rk4_step(t)
 
-                !!!
-                dxi_bar = -xi_bar
-                deta_bar = -eta_bar
-                fvsum = one / sum(parcels%volume(1:n_parcels))
-
-                dxi_bar = dxi_bar + sum(parcels%vorticity(1, 1:n_parcels) * parcels%volume(1:n_parcels)) * fvsum
-                deta_bar = deta_bar + sum(parcels%vorticity(2, 1:n_parcels) * parcels%volume(1:n_parcels)) * fvsum
-
-                parcels%vorticity(1, 1:n_parcels) = parcels%vorticity(1, 1:n_parcels) - dxi_bar
-                parcels%vorticity(2, 1:n_parcels) = parcels%vorticity(2, 1:n_parcels) - deta_bar
-                !!!
+                call apply_vortcor
 
                 call merge_parcels(parcels)
 

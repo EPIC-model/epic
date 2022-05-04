@@ -36,8 +36,6 @@ module parcel_diagnostics
     ! rms vorticity
     double precision :: rms_zeta(3)
 
-    double precision :: xi_bar, eta_bar
-
     contains
 
         ! Compute the reference potential energy
@@ -56,25 +54,13 @@ module parcel_diagnostics
             gam = one / (extent(1) * extent(2))
             zmean = gam * parcels%volume(ii(1))
 
-            xi_bar = parcels%vorticity(1, 1) * parcels%volume(1)
-            eta_bar = parcels%vorticity(2, 1) * parcels%volume(1)
-            vsum = parcels%volume(1)
-
             peref = - b(1) * parcels%volume(ii(1)) * zmean
             do n = 2, n_parcels
                 zmean = zmean + gam * (parcels%volume(ii(n-1)) + parcels%volume(ii(n)))
 
                 peref = peref &
                       - b(n) * parcels%volume(ii(n)) * zmean
-
-                xi_bar = xi_bar + parcels%vorticity(1, n) * parcels%volume(n)
-                eta_bar = eta_bar + parcels%vorticity(2, n) * parcels%volume(n)
-                vsum = vsum + parcels%volume(n)
             enddo
-
-            xi_bar = xi_bar / vsum
-            eta_bar = eta_bar / vsum
-
 
             call stop_timer(parcel_stats_timer)
         end subroutine init_parcel_diagnostics
