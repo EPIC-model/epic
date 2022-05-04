@@ -6,10 +6,7 @@ module parcel_netcdf
     use parcel_container, only : parcels            &
                                , n_parcels          &
                                , n_total_parcels    &
-                               , parcel_dealloc     &
-                               , parcel_alloc       &
-                               , parcel_delete      &
-                               , parcel_resize
+                               , parcel_delete
     use parameters, only : nx, ny, nz, extent, lower, max_num_parcels
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
