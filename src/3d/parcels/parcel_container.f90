@@ -6,7 +6,6 @@ module parcel_container
     use options, only : verbose
     use parameters, only : extent, hli, center, lower, upper
     use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
-    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     integer :: n_parcels        ! local number of parcels
