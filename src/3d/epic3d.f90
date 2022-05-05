@@ -149,7 +149,7 @@ program epic3d
 #endif
                 call ls_rk4_step(t)
 
-                call apply_vortcor
+!                 call apply_vortcor
 
                 call merge_parcels(parcels)
 
