@@ -55,7 +55,6 @@ program test_vtend
         do il = 1, 3
             l = dble(il)
             do im = 1, 3, 2
-                print *, im
                 m = dble(im)
 
                 alpha = dsqrt(k ** 2 + l ** 2 + m ** 2)
@@ -91,10 +90,9 @@ program test_vtend
                     enddo
                 enddo
 
-
                 call vorticity_tendency(vortg, velog, tbuoyg, vtend)
 
-                error = maxval(dabs(vtend_ref(0:nz, :, :, :) - vtend(0:nz, :, :, :)))
+                error = max(error, maxval(dabs(vtend_ref(0:nz, :, :, :) - vtend(0:nz, :, :, :))))
             enddo
         enddo
     enddo
