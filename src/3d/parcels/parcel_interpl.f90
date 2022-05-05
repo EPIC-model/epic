@@ -346,9 +346,6 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
-            ! make mean vorticity tendency zero
-            vortend(:, 1:n_parcels) = vortend(:, 1:n_parcels) - sum(vortend(:, 1:n_parcels)) / dble(n_parcels)
-
             call stop_timer(grid2par_timer)
 
         end subroutine grid2par
