@@ -313,8 +313,8 @@ module parcel_diagnostics_netcdf
             call write_netcdf_scalar(ncid, rms_y_vor_id, rms_zeta(2), n_writes)
             call write_netcdf_scalar(ncid, rms_z_vor_id, rms_zeta(3), n_writes)
             call write_netcdf_scalar(ncid, x_vor_bar_id, vor_bar(1), n_writes)
-            call write_netcdf_scalar(ncid, y_vor_bar_id, vor_bar(1), n_writes)
-            call write_netcdf_scalar(ncid, z_vor_bar_id, vor_bar(1), n_writes)
+            call write_netcdf_scalar(ncid, y_vor_bar_id, vor_bar(2), n_writes)
+            call write_netcdf_scalar(ncid, z_vor_bar_id, vor_bar(3), n_writes)
 
             ! increment counter
             n_writes = n_writes + 1
