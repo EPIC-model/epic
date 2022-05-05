@@ -10,14 +10,14 @@
 !    xi(x, y, z) = alpha * u(x, y, z)
 !   eta(x, y, z) = alpha * v(x, y, z)
 !  zeta(x, y, z) = alpha * w(x, y, z)
-!  We use k = l = 2 and m = 1. For this setting the theoertical vorticity
-!  tendency is
-!        omega*grad(u) = (3/8)sin(2 theta) (ii + jj) - (3/2)sin(2 z) kk
-!  where ii, jj and kk are the unit vectors and theta = 2(x+y)
+!  For this setting the theoretical vorticity tendency is
+!  vtend(z, y, x, 1) = alpha*k*m**2 * (k^2+l^2)^(-1)*sin(k*x+l*y)*cos(k*x+l*y)
+!  vtend(z, y, x, 2) = alpha*l*m**2 * (k^2+l^2)^(-1)*sin(k*x+l*y)*cos(k*x+l*y)
+!  vtend(z, y, x, 3) = -alpha * m * sin(m*z) * cos(m*z)
 ! =============================================================================
 program test_vtend
     use unit_test
-    use constants, only : one, two, pi, f12
+    use constants, only : one, two, pi, f12, f34, three
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use fields, only : vortg, velog, vtend, tbuoyg, field_default
     use inversion_utils, only : init_fft, fftxyp2s
@@ -27,25 +27,20 @@ program test_vtend
 
     double precision              :: error
     double precision, allocatable :: vtend_ref(:, :, :, :)
-    integer                       :: ix, iy, iz
-    double precision              :: x, y, z, k, l, m, alpha, fk2l2
+    integer                       :: ix, iy, iz, ik, il, im
+    double precision              :: x, y, z, alpha, fk2l2, k, l, m
     double precision              :: cosmz, sinmz, sinkxly, coskxly
 
     call register_timer('vorticity', vor2vel_timer)
     call register_timer('vtend', vtend_timer)
 
-    nx = 64
-    ny = 64
-    nz = 64
+    nx = 128
+    ny = 128
+    nz = 128
 
     lower  = -f12 * pi * (/one, one, one/)
     extent =  pi * (/one, one, one/)
 
-    k = two
-    l = two
-    m = one
-    alpha = dsqrt(k ** 2 + l ** 2 + m ** 2)
-    fk2l2 = alpha / dble(k ** 2 + l ** 2)
 
     allocate(vtend_ref(-1:nz+1, 0:ny-1, 0:nx-1, 3))
 
@@ -53,45 +48,58 @@ program test_vtend
 
     call field_default
 
-    do ix = 0, nx-1
-        x = lower(1) + ix * dx(1)
-        do iy = 0, ny-1
-            y = lower(2) + iy * dx(2)
-            do iz = -1, nz+1
-                z = lower(3) + iz * dx(3)
+    call init_fft
 
-                cosmz = dcos(m * z)
-                sinmz = dsin(m * z)
-                sinkxly = dsin(k * x + l * y)
-                coskxly = dcos(k * x + l * y)
+    do ik = 1, 3
+        k = dble(ik)
+        do il = 1, 3
+            l = dble(il)
+            do im = 1, 3, 2
+                print *, im
+                m = dble(im)
 
-                ! velocity
-                velog(iz, iy, ix, 1) = fk2l2 * (k * m * sinmz - l * alpha * cosmz) * sinkxly
-                velog(iz, iy, ix, 2) = fk2l2 * (l * m * sinmz + k * alpha * cosmz) * sinkxly
-                velog(iz, iy, ix, 3) = alpha * cosmz * coskxly
+                alpha = dsqrt(k ** 2 + l ** 2 + m ** 2)
+                fk2l2 = one / dble(k ** 2 + l ** 2)
 
-                ! vorticity
-                vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 1)
-                vortg(iz, iy, ix, 2) = alpha * velog(iz, iy, ix, 2)
-                vortg(iz, iy, ix, 3) = alpha * velog(iz, iy, ix, 3)
+                do ix = 0, nx-1
+                    x = lower(1) + ix * dx(1)
+                    do iy = 0, ny-1
+                        y = lower(2) + iy * dx(2)
+                        do iz = -1, nz+1
+                            z = lower(3) + iz * dx(3)
 
-                ! reference solution
-                vtend_ref(iz, iy, ix, 1) = 3.0d0 / 8.0d0 * dsin(4.0d0 * x + 4.0d0 * y)
-                vtend_ref(iz, iy, ix, 2) = vtend_ref(iz, iy, ix, 1)
-                vtend_ref(iz, iy, ix, 3) = - 3.0d0 / 2.0d0 * dsin(2.0d0 * z)
+                            cosmz = dcos(m * z)
+                            sinmz = dsin(m * z)
+                            sinkxly = dsin(k * x + l * y)
+                            coskxly = dcos(k * x + l * y)
+
+                            ! velocity
+                            velog(iz, iy, ix, 1) = fk2l2 * (k * m * sinmz - l * alpha * cosmz) * sinkxly
+                            velog(iz, iy, ix, 2) = fk2l2 * (l * m * sinmz + k * alpha * cosmz) * sinkxly
+                            velog(iz, iy, ix, 3) = cosmz * coskxly
+
+                            ! vorticity
+                            vortg(iz, iy, ix, 1) = alpha * velog(iz, iy, ix, 1)
+                            vortg(iz, iy, ix, 2) = alpha * velog(iz, iy, ix, 2)
+                            vortg(iz, iy, ix, 3) = alpha * velog(iz, iy, ix, 3)
+
+                            ! reference solution
+                            vtend_ref(iz, iy, ix, 1) = alpha * k * m ** 2 * fk2l2 * sinkxly * coskxly
+                            vtend_ref(iz, iy, ix, 2) = alpha * l * m ** 2 * fk2l2 * sinkxly * coskxly
+                            vtend_ref(iz, iy, ix, 3) = -alpha * m * sinmz * cosmz
+                        enddo
+                    enddo
+                enddo
+
+
+                call vorticity_tendency(vortg, velog, tbuoyg, vtend)
+
+                error = maxval(dabs(vtend_ref(0:nz, :, :, :) - vtend(0:nz, :, :, :)))
             enddo
         enddo
     enddo
 
-    call init_fft
-
-    call vorticity_tendency(vortg, velog, tbuoyg, vtend)
-
-    error = maxval(dabs(vtend_ref(0:nz, :, :, :) - vtend(0:nz, :, :, :)))
-
-    print *, error
-
-    call print_result_dp('Test vorticity tendency', error, atol=4.0e-7)
+    call print_result_dp('Test vorticity tendency', error, atol=5.0e-2)
 
     deallocate(vtend_ref)
 
