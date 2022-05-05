@@ -1,7 +1,7 @@
 module inversion_mod
     use inversion_utils
     use parameters, only : nx, ny, nz, dxi
-    use physics, only : ft_cor, f_cor
+    use physics, only : f_cor
     use constants, only : zero, two, f12
     use timer, only : start_timer, stop_timer
     implicit none
@@ -205,21 +205,21 @@ module inversion_mod
             call start_timer(vtend_timer)
 
             ! Eqs. 10 and 11 of MPIC paper
-            f(:, : , :, 1) = vortg(:, :, :, 1) * velog(:, :, :, 1)
-            f(:, : , :, 2) = vortg(:, :, :, 2) * velog(:, :, :, 1) + tbuoyg
-            f(:, : , :, 3) = vortg(:, :, :, 3) * velog(:, :, :, 1)
+            f(:, : , :, 1) = (vortg(:, :, :, 1) + f_cor(1)) * velog(:, :, :, 1)
+            f(:, : , :, 2) = (vortg(:, :, :, 2) + f_cor(2)) * velog(:, :, :, 1) + tbuoyg
+            f(:, : , :, 3) = (vortg(:, :, :, 3) + f_cor(3)) * velog(:, :, :, 1)
 
             call divergence(f, vtend(0:nz, :, :, 1))
 
-            f(:, : , :, 1) = vortg(:, :, :, 1) * velog(:, :, :, 2) - tbuoyg
-            f(:, : , :, 2) = vortg(:, :, :, 2) * velog(:, :, :, 2)
-            f(:, : , :, 3) = vortg(:, :, :, 3) * velog(:, :, :, 2)
+            f(:, : , :, 1) = (vortg(:, :, :, 1) + f_cor(1)) * velog(:, :, :, 2) - tbuoyg
+            f(:, : , :, 2) = (vortg(:, :, :, 2) + f_cor(2)) * velog(:, :, :, 2)
+            f(:, : , :, 3) = (vortg(:, :, :, 3) + f_cor(3)) * velog(:, :, :, 2)
 
             call divergence(f, vtend(0:nz, :, :, 2))
 
-            f(:, : , :, 1) = vortg(:, :, :, 1) * velog(:, :, :, 3)
-            f(:, : , :, 2) = vortg(:, :, :, 2) * velog(:, :, :, 3)
-            f(:, : , :, 3) = vortg(:, :, :, 3) * velog(:, :, :, 3)
+            f(:, : , :, 1) = (vortg(:, :, :, 1) + f_cor(1)) * velog(:, :, :, 3)
+            f(:, : , :, 2) = (vortg(:, :, :, 2) + f_cor(2)) * velog(:, :, :, 3)
+            f(:, : , :, 3) = (vortg(:, :, :, 3) + f_cor(3)) * velog(:, :, :, 3)
 
             call divergence(f, vtend(0:nz, :, :, 3))
 
