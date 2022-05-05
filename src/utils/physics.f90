@@ -82,7 +82,7 @@ module physics
     ! MPIC specific
     double precision, protected :: glati
 
-    ! Coriolis frequency, planetary vorticity
+    ! Coriolis frequency (all three components)
     double precision, protected :: f_cor(3)
 
     interface print_physical_quantity
@@ -155,9 +155,9 @@ module physics
                 lat_ref = lat_degrees * deg2rad
                 f_cor(1) = zero
                 f_cor(2) = two * ang_vel * dcos(lat_ref)
-                f_cor(3)  = two * ang_vel * dsin(lat_ref)
+                f_cor(3) = two * ang_vel * dsin(lat_ref)
             else
-                f_cor  = zero
+                f_cor = zero
             endif
         end subroutine update_physical_quantities
 
@@ -218,8 +218,8 @@ module physics
             call print_physical_quantity('planetary angular velocity', ang_vel, 'rad/s')
             call print_physical_quantity('saturation specific humidity at ground level', q_0)
             call print_physical_quantity('coriolis', l_coriolis)
-            call print_physical_quantity('coriolis frequency', f_cor(3), '1/s')
-            call print_physical_quantity('planetary vorticity', f_cor(2), '1/s')
+            call print_physical_quantity('vertical Coriolis frequency', f_cor(3), '1/s')
+            call print_physical_quantity('horizontal component of the Coriolis frequency', f_cor(2), '1/s')
             call print_physical_quantity('latitude degrees', lat_degrees, 'deg')
             call print_physical_quantity('scale height', height_c, 'm')
             call print_physical_quantity('inverse scale height', lambda_c, '1/m')
