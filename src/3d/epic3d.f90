@@ -11,8 +11,11 @@ program epic3d
     use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
     use parcel_correction, only : apply_laplace,          &
                                   apply_gradient,         &
+                                  apply_vortcor,          &
                                   lapl_corr_timer,        &
-                                  grad_corr_timer
+                                  grad_corr_timer,        &
+                                  vort_corr_timer,        &
+                                  init_parcel_correction
     use parcel_diagnostics, only : init_parcel_diagnostics, &
                                    parcel_stats_timer
     use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
@@ -64,6 +67,7 @@ program epic3d
             call register_timer('parcel merge', merge_timer)
             call register_timer('laplace correction', lapl_corr_timer)
             call register_timer('gradient correction', grad_corr_timer)
+            call register_timer('net vorticity correction', vort_corr_timer)
             call register_timer('parcel initialisation', init_timer)
             call register_timer('parcel diagnostics', parcel_stats_timer)
             call register_timer('parcel I/O', parcel_io_timer)
@@ -117,6 +121,8 @@ program epic3d
                 call init_parcel_diagnostics
             endif
 
+            call init_parcel_correction
+
             call field_default
 
             call setup_output_files
@@ -142,6 +148,8 @@ program epic3d
                 endif
 #endif
                 call ls_rk4_step(t)
+
+                call apply_vortcor
 
                 call merge_parcels(parcels)
 

@@ -11,7 +11,7 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use fields
-    use physics, only : ft_cor, f_cor, glat, lambda_c, q_0
+    use physics, only : glat, lambda_c, q_0
     use omp_lib
     implicit none
 
@@ -251,6 +251,10 @@ module parcel_interpl
             do p = 1, 3
                 vortg(0:nz, :, :, p) = vortg(0:nz, :, :, p) / volg(0:nz, :, :)
             enddo
+
+            ! use symmetry to fill halo grid points
+            vortg(-1,   :, :, :) = vortg(1,    :, :, :)
+            vortg(nz+1, :, :, :) = vortg(nz-1, :, :, :)
 
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0:nz, :, :) = dbuoyg(0:nz, :, :) / volg(0:nz, :, :)
