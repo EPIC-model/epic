@@ -76,8 +76,8 @@ program test_vtend
                 vortg(iz, iy, ix, 3) = alpha * velog(iz, iy, ix, 3)
 
                 ! reference solution
-                vtend_ref(iz, iy, ix, 1) = 3.0d0 / 8.0d0 * sinkxly
-                vtend_ref(iz, iy, ix, 2) = 3.0d0 / 8.0d0 * sinkxly
+                vtend_ref(iz, iy, ix, 1) = 3.0d0 / 8.0d0 * dsin(4.0d0 * x + 4.0d0 * y)
+                vtend_ref(iz, iy, ix, 2) = vtend_ref(iz, iy, ix, 1)
                 vtend_ref(iz, iy, ix, 3) = - 3.0d0 / 2.0d0 * dsin(2.0d0 * z)
             enddo
         enddo
