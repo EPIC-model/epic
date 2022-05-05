@@ -215,7 +215,7 @@ module parcel_diagnostics_netcdf
                                        std_name='',                             &
                                        unit='1',                                &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
+                                       dimids=(/t_dim_id/),                           &
                                        varid=x_vor_bar_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
@@ -224,7 +224,7 @@ module parcel_diagnostics_netcdf
                                        std_name='',                             &
                                        unit='1',                                &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
+                                       dimids=(/t_dim_id/),                           &
                                        varid=y_vor_bar_id)
 
         call define_netcdf_dataset(ncid=ncid,                               &
@@ -233,7 +233,7 @@ module parcel_diagnostics_netcdf
                                        std_name='',                             &
                                        unit='1',                                &
                                        dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
+                                       dimids=(/t_dim_id/),                           &
                                        varid=z_vor_bar_id)
 
             call close_definition(ncid)
