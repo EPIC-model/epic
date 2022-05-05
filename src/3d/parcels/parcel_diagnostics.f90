@@ -34,7 +34,7 @@ module parcel_diagnostics
     double precision :: sum_vol
 
     ! rms vorticity
-    double precision :: rms_zeta(3)
+    double precision :: rms_zeta(3), vor_bar(3)
 
     contains
 
@@ -94,11 +94,12 @@ module parcel_diagnostics
             std_lam = zero
             std_vol = zero
             sum_vol = zero
+            vor_bar = zero
 
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta)
+            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, vor_bar)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
@@ -134,6 +135,7 @@ module parcel_diagnostics
                 !$omp end critical
 #endif
                 rms_zeta = rms_zeta + vol * parcels%vorticity(:, n) ** 2
+                vor_bar = vor_bar + parcels%vorticity(:, n) * vol
 
             enddo
             !$omp end do
@@ -146,6 +148,7 @@ module parcel_diagnostics
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
 
             rms_zeta = dsqrt(rms_zeta / sum_vol)
+            vor_bar = vor_bar / sum_vol
 
             avg_vol = sum_vol / dble(n_parcels)
             std_vol = dsqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))

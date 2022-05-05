@@ -24,7 +24,8 @@ module parcel_diagnostics_netcdf
                           pe_id, ke_id, te_id, npar_id, nspar_id,   &
                           rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
                           avg_lam_id, std_lam_id,                   &
-                          avg_vol_id, std_vol_id, sum_vol_id
+                          avg_vol_id, std_vol_id, sum_vol_id,       &
+                          x_vor_bar_id, y_vor_bar_id, z_vor_bar_id
     double precision   :: restart_time
 
     integer :: parcel_stats_io_timer
@@ -208,6 +209,33 @@ module parcel_diagnostics_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=rms_z_vor_id)
 
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='x_vor_bar',                        &
+                                       long_name='parcel x-vor bar',            &
+                                       std_name='',                             &
+                                       unit='1',                                &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=x_vor_bar_id)
+
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='y_vor_bar',                        &
+                                       long_name='parcel y-vor bar',            &
+                                       std_name='',                             &
+                                       unit='1',                                &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=y_vor_bar_id)
+
+        call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='z_vor_bar',                        &
+                                       long_name='parcel z-vor bar',            &
+                                       std_name='',                             &
+                                       unit='1',                                &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=z_vor_bar_id)
+
             call close_definition(ncid)
 
         end subroutine create_netcdf_parcel_stats_file
@@ -245,6 +273,10 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 'z_rms_vorticity', rms_z_vor_id)
 
+            call get_var_id(ncid, 'x_vor_bar', x_vor_bar_id)
+            call get_var_id(ncid, 'y_vor_bar', y_vor_bar_id)
+            call get_var_id(ncid, 'z_vor_bar', z_vor_bar_id)
+
         end subroutine read_netcdf_parcel_stats_content
 
         ! Write a step in the parcel diagnostic file.
@@ -280,6 +312,9 @@ module parcel_diagnostics_netcdf
             call write_netcdf_scalar(ncid, rms_x_vor_id, rms_zeta(1), n_writes)
             call write_netcdf_scalar(ncid, rms_y_vor_id, rms_zeta(2), n_writes)
             call write_netcdf_scalar(ncid, rms_z_vor_id, rms_zeta(3), n_writes)
+            call write_netcdf_scalar(ncid, x_vor_bar_id, vor_bar(1), n_writes)
+            call write_netcdf_scalar(ncid, y_vor_bar_id, vor_bar(1), n_writes)
+            call write_netcdf_scalar(ncid, z_vor_bar_id, vor_bar(1), n_writes)
 
             ! increment counter
             n_writes = n_writes + 1
