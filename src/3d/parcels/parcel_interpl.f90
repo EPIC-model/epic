@@ -296,6 +296,7 @@ module parcel_interpl
             double precision,     intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
             integer                             :: n, l
+            double precision :: vsum
 
             call start_timer(grid2par_timer)
 
@@ -347,9 +348,10 @@ module parcel_interpl
             !$omp end parallel
 
             ! make mean vorticity tendency zero
-            vortend(1, 1:n_parcels) = vortend(1, 1:n_parcels) - sum(vortend(1, 1:n_parcels)) / dble(n_parcels)
-            vortend(2, 1:n_parcels) = vortend(2, 1:n_parcels) - sum(vortend(2, 1:n_parcels)) / dble(n_parcels)
-            vortend(3, 1:n_parcels) = vortend(3, 1:n_parcels) - sum(vortend(3, 1:n_parcels)) / dble(n_parcels)
+            vsum = parcels%volume(1:n_parcels)
+            vortend(1, 1:n_parcels) = vortend(1, 1:n_parcels) - sum(vortend(1, 1:n_parcels)) / vsum
+            vortend(2, 1:n_parcels) = vortend(2, 1:n_parcels) - sum(vortend(2, 1:n_parcels)) / vsum
+            vortend(3, 1:n_parcels) = vortend(3, 1:n_parcels) - sum(vortend(3, 1:n_parcels)) / vsum
 
             call stop_timer(grid2par_timer)
 
