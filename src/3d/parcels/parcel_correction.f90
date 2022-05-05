@@ -115,12 +115,13 @@ module parcel_correction
 
             call diverge(phi, ud(0:nz, :, :), vd(0:nz, :, :), wd(0:nz, :, :))
 
-            ! use symmetry to fill z grid lines outside domain:
-            ud(-1, :, :)   =  ud(1, :, :)
-            vd(-1, :, :)   =  vd(1, :, :)
+            ! use extrapolation to fill z grid lines outside domain:
+            ! (anti-symmetry in w is equal to extrapolation)
+            ud(-1, :, :)   =  two * ud(0, :, :) - ud(1, :, :)
+            vd(-1, :, :)   =  two * vd(0, :, :) - vd(1, :, :)
             wd(-1, :, :)   = -wd(1, :, :)
-            ud(nz+1, :, :) =  ud(nz-1, :, :)
-            vd(nz+1, :, :) =  vd(nz-1, :, :)
+            ud(nz+1, :, :) =  two * ud(nz, :, :) - ud(nz-1, :, :)
+            vd(nz+1, :, :) =  two * vd(nz, :, :) - vd(nz-1, :, :)
             wd(nz+1, :, :) = -wd(nz-1, :, :)
 
             !------------------------------------------------------------------
