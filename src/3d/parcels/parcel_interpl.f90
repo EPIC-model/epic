@@ -348,10 +348,10 @@ module parcel_interpl
             !$omp end parallel
 
             ! make mean vorticity tendency zero
-            vsum = parcels%volume(1:n_parcels)
-            vortend(1, 1:n_parcels) = vortend(1, 1:n_parcels) - sum(vortend(1, 1:n_parcels)) / vsum
-            vortend(2, 1:n_parcels) = vortend(2, 1:n_parcels) - sum(vortend(2, 1:n_parcels)) / vsum
-            vortend(3, 1:n_parcels) = vortend(3, 1:n_parcels) - sum(vortend(3, 1:n_parcels)) / vsum
+            vsum = sum(parcels%volume(1:n_parcels))
+            vortend(1, 1:n_parcels) = vortend(1, 1:n_parcels) - sum(vortend(1, 1:n_parcels) * parcels%volume(1:n_parcels)) / vsum
+            vortend(2, 1:n_parcels) = vortend(2, 1:n_parcels) - sum(vortend(2, 1:n_parcels) * parcels%volume(1:n_parcels)) / vsum
+            vortend(3, 1:n_parcels) = vortend(3, 1:n_parcels) - sum(vortend(3, 1:n_parcels) * parcels%volume(1:n_parcels)) / vsum
 
             call stop_timer(grid2par_timer)
 
