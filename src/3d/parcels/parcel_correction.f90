@@ -40,6 +40,8 @@ module parcel_correction
 
             call start_timer(vort_corr_timer)
 
+            call init_fft
+
             vsum = zero
             vor_bar = zero
 
