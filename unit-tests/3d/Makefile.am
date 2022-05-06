@@ -34,6 +34,7 @@ unittests_PROGRAMS = 				\
 	test_jacobi_4				\
 	test_ellipsoid_split 			\
 	test_mpi_parcel_init_3d			\
+	test_ellipsoid_split_merge		\
 	test_fft_3d				\
 	test_fft_2_3d				\
 	test_mpi_trilinear			\
@@ -47,6 +48,7 @@ unittests_PROGRAMS = 				\
 	test_free_slip_3d			\
 	test_vor2vel				\
 	test_velgradg				\
+	test_vtend				\
 	test_lapinv0_1				\
 	test_lapinv0_2				\
 	test_lapinv1				\
@@ -84,6 +86,9 @@ test_ellipsoid_split_LDADD = libcombi.la
 
 test_mpi_parcel_init_3d_SOURCES = test_mpi_parcel_init_3d.f90
 test_mpi_parcel_init_3d_LDADD = libcombi.la
+
+test_ellipsoid_split_merge_SOURCES = test_ellipsoid_split_merge.f90
+test_ellipsoid_split_merge_LDADD = libcombi.la
 
 test_fft_3d_SOURCES = test_fft_3d.f90
 test_fft_3d_LDADD = libcombi.la
@@ -123,6 +128,9 @@ test_vor2vel_LDADD = libcombi.la
 
 test_velgradg_SOURCES = test_velgradg.f90
 test_velgradg_LDADD = libcombi.la
+
+test_vtend_SOURCES = test_vtend.f90
+test_vtend_LDADD = libcombi.la
 
 test_lapinv0_1_SOURCES = test_lapinv0_1.f90
 test_lapinv0_1_LDADD = libcombi.la

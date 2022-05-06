@@ -75,7 +75,7 @@ program test_vor2vel_2
 
     error = maxval(dabs(velog_ref(0:nz, :, :, :) - velog(0:nz, :, :, :)))
 
-    call print_result_dp('Test inversion (vorticity)', error, atol=4.0e-7)
+    call print_result_dp('Test inversion (vorticity)', error, atol=2.0e-3)
 
     deallocate(velog_ref)
 

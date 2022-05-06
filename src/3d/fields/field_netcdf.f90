@@ -21,7 +21,7 @@ module field_netcdf
 
     integer            :: x_vel_id, y_vel_id, z_vel_id, &
                           x_vor_id, y_vor_id, z_vor_id, &
-                          tbuoy_id, n_writes
+                          tbuoy_id, vol_id, n_writes
 #ifndef ENABLE_DRY_MODE
     integer            :: dbuoy_id, lbuoy_id
 #endif
@@ -33,7 +33,7 @@ module field_netcdf
                coord_ids, t_axis_id,            &
                x_vel_id, y_vel_id, z_vel_id,    &
                x_vor_id, y_vor_id, z_vor_id,    &
-               tbuoy_id,                        &
+               tbuoy_id, vol_id,                &
                n_writes, restart_time
 #ifndef ENABLE_DRY_MODE
     private :: dbuoy_id, lbuoy_id
@@ -174,6 +174,16 @@ module field_netcdf
                                        dimids=dimids,                       &
                                        varid=lbuoy_id)
 #endif
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='volume',                       &
+                                       long_name='volume',                  &
+                                       std_name='',                         &
+                                       unit='m^3',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=vol_id)
+
             call close_definition(ncid)
 
             call close_netcdf_file(ncid)
@@ -219,6 +229,7 @@ module field_netcdf
 
             call get_var_id(ncid, 'liquid_water_content', lbuoy_id)
 #endif
+            call get_var_id(ncid, 'volume', vol_id)
         end subroutine read_netcdf_field_content
 
         ! Write a step in the field file.
@@ -283,6 +294,10 @@ module field_netcdf
                                                              - dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))),  &
                                       start, cnt)
 #endif
+
+            call write_netcdf_dataset(ncid, vol_id, volg(0:nz, 0:ny-1, 0:nx-1), &
+                                      start, cnt)
+
             ! increment counter
             n_writes = n_writes + 1
 

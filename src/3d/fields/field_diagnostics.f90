@@ -3,7 +3,7 @@
 ! =============================================================================
 module field_diagnostics
     use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
-    use constants, only : f12
+    use constants, only : f12, f14
     use fields
     use timer, only : start_timer, stop_timer
     use mpi_layout, only : box
@@ -53,11 +53,19 @@ module field_diagnostics
 
             field_stats(IDX_AVG_NSPAR) = sum(nsparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1))) * ncelli
 
-            field_stats(IDX_KEG) = f12 * sum( volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)) *         &
-                                            (velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1) ** 2   &
-                                           + velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2) ** 2   &
-                                           + velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3) ** 2))
-
+            ! use half weights for boundary grid points
+            field_stats(IDX_KEG) = f12 * sum( volg(1:nz-1, lo(2):hi(2), lo(1):hi(1))           &
+                                          * (velog(1:nz-1, lo(2):hi(2), lo(1):hi(1), 1) ** 2   &
+                                           + velog(1:nz-1, lo(2):hi(2), lo(1):hi(1), 2) ** 2   &
+                                           + velog(1:nz-1, lo(2):hi(2), lo(1):hi(1), 3) ** 2)) &
+                                 + f14 * sum(volg( 0,  lo(2):hi(2), lo(1):hi(1))               &
+                                          * (velog(0,  lo(2):hi(2), lo(1):hi(1), 1) ** 2       &
+                                           + velog(0,  lo(2):hi(2), lo(1):hi(1), 2) ** 2       &
+                                           + velog(0,  lo(2):hi(2), lo(1):hi(1), 3) ** 2))     &
+                                 + f14 * sum( volg(nz, lo(2):hi(2), lo(1):hi(1))               &
+                                          * (velog(nz, lo(2):hi(2), lo(1):hi(1), 1) ** 2       &
+                                           + velog(nz, lo(2):hi(2), lo(1):hi(1), 2) ** 2       &
+                                           + velog(nz, lo(2):hi(2), lo(1):hi(1), 3) ** 2))
 
             !
             ! do communication

@@ -19,6 +19,9 @@ module inversion_utils
     !Horizontal wavenumbers:
     double precision, allocatable :: rkx(:), hrkx(:), rky(:), hrky(:)
 
+    ! Note k2l2i = 1/(k^2+l^2) (except k = l = 0, then k2l2i(0, 0) = 0)
+    double precision, allocatable :: k2l2i(:, :)
+
     !Quantities needed in FFTs:
     double precision, allocatable :: xtrig(:), ytrig(:)
     integer :: xfactors(5), yfactors(5)
@@ -51,7 +54,8 @@ module inversion_utils
             , xfactors  &
             , yfactors  &
             , xtrig     &
-            , ytrig
+            , ytrig     &
+            , k2l2i
 
     contains
 
@@ -88,6 +92,7 @@ module inversion_utils
             allocate(ksq(nx, ny))
             allocate(skx(nx))
             allocate(sky(ny))
+            allocate(k2l2i(nx, ny))
 
             allocate(etdh(nz-1, nx, ny))
             allocate(htdh(nz-1, nx, ny))
@@ -134,6 +139,10 @@ module inversion_utils
                     ksq(kx, ky) = rkx(kx) ** 2 + rky(ky) ** 2
                 enddo
             enddo
+
+            ksq(1, 1) = one
+            k2l2i = one / ksq
+            ksq(1, 1) = zero
 
             !--------------------------------------------------------------------
             ! Define Hou and Li filter:
