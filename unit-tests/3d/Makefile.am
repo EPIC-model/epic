@@ -60,6 +60,7 @@ unittests_PROGRAMS = 				\
 	test_mpi_parcel_diagnostics		\
 	test_mpi_parcel_write			\
 	test_mpi_parcel_read			\
+	test_mpi_parcel_read_rejection		\
 	test_mpi_parcel_halo_swap		\
 	test_mpi_parcel_split
 
@@ -164,6 +165,9 @@ test_mpi_parcel_write_LDADD = libcombi.la
 
 test_mpi_parcel_read_SOURCES = test_mpi_parcel_read.f90
 test_mpi_parcel_read_LDADD = libcombi.la
+
+test_mpi_parcel_read_rejection_SOURCES = test_mpi_parcel_read_rejection.f90
+test_mpi_parcel_read_rejection_LDADD = libcombi.la
 
 test_mpi_parcel_halo_swap_SOURCES = test_mpi_parcel_halo_swap.f90
 test_mpi_parcel_halo_swap_LDADD = libcombi.la

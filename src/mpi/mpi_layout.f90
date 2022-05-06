@@ -137,16 +137,6 @@ module mpi_layout
             l_east = (i > box%hi(1))
         end function
 
-        pure function is_contained(i, j) result(l_contained)
-            integer, intent(in) :: i, j
-            logical             :: l_contained
-
-            l_contained = ((i > box%hlo(1))   .and. &
-                           (i < box%hhi(1)-1) .and. &
-                           (j > box%hlo(2))   .and. &
-                           (j < box%hhi(2)-1))
-        end function
-
         pure function get_neighbour(i, j) result(nb)
             integer, intent(in) :: i, j
             integer             :: nb

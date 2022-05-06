@@ -1,92 +1,185 @@
-module parcel_netcdf
-    use constants, only : one
-    use netcdf_utils
-    use netcdf_writer
-    use netcdf_reader
-    use parcel_container, only : parcels            &
-                               , n_parcels          &
-                               , n_total_parcels    &
-                               , parcel_delete
-    use parameters, only : nx, ny, nz, extent, lower, max_num_parcels
-    use config, only : package_version, cf_version
-    use timer, only : start_timer, stop_timer
-    use iomanip, only : zfill
-    use options, only : write_netcdf_options
-    use physics, only : write_physical_quantities
+! =============================================================================
+!          Test parallel parcel reading using the rejection method.
+!
+!   If a parcel file does not contain the start_index dataset,
+!   all MPI ranks read all parcels, but reject parcels that do not
+!   belong to the sub-domain owned by the rank.
+! =============================================================================
+program test_mpi_parcel_read_rejection
+    use unit_test
+    use options, only : parcel
+    use constants, only : zero, f12
+    use parcel_container
+    use parcel_netcdf
     use mpi_communicator
-    use mpi_utils, only : mpi_exit_on_error, mpi_print
-    use fields, only : is_contained
+    use mpi_layout
+    use fields, only : field_alloc
+    use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, max_num_parcels
+    use timer
     implicit none
 
-    integer :: parcel_io_timer
+    logical            :: passed = .true.
+    integer, parameter :: n_per_dim = 2
+    double precision   :: res
+    integer            :: i, j, k, l, ix, iy, iz, n_parcels_before
+    double precision   :: im, corner(3)
+    double precision   :: x_sum, y_sum, z_sum
 
-    integer :: n_writes = 1
-    character(len=512) :: ncbasename
-
-    character(len=512) :: ncfname
     integer            :: ncid
     integer            :: npar_dim_id, vol_id, buo_id,      &
                           x_pos_id, y_pos_id, z_pos_id,     &
                           x_vor_id, y_vor_id, z_vor_id,     &
                           b11_id, b12_id, b13_id,           &
-                          b22_id, b23_id, start_id,         &
+                          b22_id, b23_id,                   &
                           t_axis_id, t_dim_id, mpi_dim_id
-    double precision   :: restart_time
-
 #ifndef ENABLE_DRY_MODE
     integer :: hum_id
 #endif
 
-    private :: ncid, ncfname, n_writes, npar_dim_id,    &
-               x_pos_id, y_pos_id, z_pos_id, start_id,  &
-               x_vor_id, y_vor_id, z_vor_id,            &
-               b11_id, b12_id, b13_id, b22_id, b23_id,  &
-               vol_id, buo_id, t_dim_id, t_axis_id,     &
-               restart_time, mpi_dim_id,                &
-               read_chunk
+    character(len=512) :: ncbasename
+
+    character(len=512) :: ncfname
+
+    call mpi_comm_initialise
+
+    passed = (passed .and. (mpi_err == 0))
+
+    nx = 32
+    ny = 32
+    nz = 32
+    lower  = zero
+    extent =  one
+
+    ! needed for max_num_parcels
+    parcel%min_vratio = 40.d0
+    parcel%size_factor = 1
+
+    call update_parameters
+
+    ! calls mpi_layout_init internally
+    call field_alloc
+
+    call register_timer('parcel I/O', parcel_io_timer)
+
+    !
+    ! write parcels first
+    !
+
+    n_parcels = n_per_dim ** 3 * nz * (box%hi(2)-box%lo(2)+1) * (box%hi(1)-box%lo(1)+1)
+    n_parcels_before = n_parcels
+    n_total_parcels = n_per_dim ** 3 * nz * ny * nx
+    call parcel_alloc(max_num_parcels)
+
+    im = one / dble(n_per_dim)
+
+    l = 1
+    do iz = 0, nz-1
+        do iy = box%lo(2), box%hi(2)
+            do ix = box%lo(1), box%hi(1)
+                corner = lower + dble((/ix, iy, iz/)) * dx
+                do k = 1, n_per_dim
+                    do j = 1, n_per_dim
+                        do i = 1, n_per_dim
+                            parcels%position(1, l) = corner(1) + dx(1) * (dble(i) - f12) * im
+                            parcels%position(2, l) = corner(2) + dx(2) * (dble(j) - f12) * im
+                            parcels%position(3, l) = corner(3) + dx(3) * (dble(k) - f12) * im
+                            l = l + 1
+                        enddo
+                    enddo
+                enddo
+            enddo
+        enddo
+    enddo
+
+    ! we cannot check individual positions since the order of the parcels can be arbitrary
+    x_sum = sum(parcels%position(1, 1:n_parcels))
+    y_sum = sum(parcels%position(2, 1:n_parcels))
+    z_sum = sum(parcels%position(3, 1:n_parcels))
+
+    parcels%B(:, 1:n_parcels) = mpi_rank + 1
+    parcels%volume(1:n_parcels) = mpi_rank + 1
+    parcels%vorticity(:, 1:n_parcels) = mpi_rank + 1
+    parcels%buoyancy(1:n_parcels) = mpi_rank + 1
 
 #ifndef ENABLE_DRY_MODE
-    private :: hum_id
+    parcels%humidity(1:n_parcels) = mpi_rank + 1
 #endif
 
-    private :: ncbasename
+    call create_file('nctest')
+
+    passed = (passed .and. (ncerr == 0))
+
+    call write_parcels(t = 10.0d0)
+
+    passed = (passed .and. (ncerr == 0))
+
+    !
+    ! read parcels now
+    !
+
+    parcels%position = 0
+    parcels%B = 0
+    parcels%volume = 0
+    parcels%vorticity = 0
+    parcels%buoyancy = 0
+#ifndef ENABLE_DRY_MODE
+    parcels%humidity = 0
+#endif
+
+    call read_netcdf_parcels('nctest_0000000001_parcels.nc')
+
+    passed = (passed .and. (n_parcels == n_parcels_before))
+
+    if (passed) then
+        res = dble(mpi_rank + 1)
+
+        passed = (passed .and. (abs(sum(parcels%position(1, 1:n_parcels)) - x_sum) == zero))
+        passed = (passed .and. (abs(sum(parcels%position(2, 1:n_parcels)) - y_sum) == zero))
+        passed = (passed .and. (abs(sum(parcels%position(3, 1:n_parcels)) - z_sum) == zero))
+        passed = (passed .and. (maxval(abs(parcels%B(1, 1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%B(2, 1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%B(3, 1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%B(4, 1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%B(5, 1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%volume(1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%vorticity(1, 1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%vorticity(2, 1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%vorticity(3, 1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%buoyancy(1:n_parcels) - res)) == zero))
+#ifndef ENABLE_DRY_MODE
+        passed = (passed .and. (maxval(abs(parcels%humidity(1:n_parcels) - res)) == zero))
+#endif
+    endif
+
+    call parcel_dealloc
+
+    call delete_netcdf_file(ncfname='nctest_0000000001_parcels.nc')
+
+    passed = (passed .and. (ncerr == 0))
+
+    if (mpi_rank == mpi_master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    else
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    endif
+
+    if (mpi_rank == mpi_master) then
+        call print_result_logical('Test MPI parcel read', passed)
+    endif
+
+    call mpi_comm_finalise
 
 
     contains
-
-        ! Create the parcel file.
-        ! @param[in] basename of the file
-        ! @param[in] overwrite the file
-        subroutine create_netcdf_parcel_file(basename, overwrite, l_restart)
+        subroutine create_file(basename)
             character(*), intent(in)  :: basename
-            logical,      intent(in)  :: overwrite
-            logical,      intent(in)  :: l_restart
-            logical                   :: l_exist
             integer                   :: dimids(2)
 
-            ncfname =  basename // '_' // zfill(n_writes) // '_parcels.nc'
+            ncfname =  basename // '_' // zfill(1) // '_parcels.nc'
 
             ncbasename = basename
 
-            restart_time = -one
-
-            if (l_restart) then
-                ! find the last parcel file in order to set "n_writes" properly
-                call exist_netcdf_file(ncfname, l_exist)
-                do while (l_exist)
-                    n_writes = n_writes + 1
-                    ncfname =  basename // '_' // zfill(n_writes) // '_parcels.nc'
-                    call exist_netcdf_file(ncfname, l_exist)
-                    if (l_exist) then
-                        call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
-                        call get_time(ncid, restart_time)
-                        call close_netcdf_file(ncid)
-                    endif
-                enddo
-                return
-            endif
-
-            call create_netcdf_file(ncfname, overwrite, ncid)
+            call create_netcdf_file(ncfname, .true., ncid)
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
@@ -141,15 +234,6 @@ module parcel_netcdf
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
                                        varid=z_pos_id)
-
-            call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='start_index',                  &
-                                       long_name='MPI rank start index',    &
-                                       std_name='',                         &
-                                       unit='1',                            &
-                                       dtype=NF90_INT,                      &
-                                       dimids=(/mpi_dim_id/),               &
-                                       varid=start_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
                                        name='B11',                              &
@@ -256,24 +340,14 @@ module parcel_netcdf
 
             call close_netcdf_file(ncid)
 
-        end subroutine create_netcdf_parcel_file
+        end subroutine create_file
 
-        ! Write parcels of the current time step into the parcel file.
-        ! @param[in] t is the time
-        subroutine write_netcdf_parcels(t)
+
+        subroutine write_parcels(t)
             double precision, intent(in) :: t
             integer                      :: cnt(2), start(2)
             integer                      :: recvcounts(mpi_size)
             integer                      :: sendbuf(mpi_size), start_index
-
-            call start_timer(parcel_io_timer)
-
-            if (t <= restart_time) then
-                call stop_timer(parcel_io_timer)
-                return
-            endif
-
-            call create_netcdf_parcel_file(trim(ncbasename), .true., .false.)
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
@@ -296,8 +370,6 @@ module parcel_netcdf
             start = (/ start_index, 1 /)
             cnt   = (/ n_parcels,   1 /)
 
-            call write_netcdf_dataset(ncid, start_id, (/start_index/), start=(/1+mpi_rank, 1/), cnt=(/1, 1/))
-
             call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, z_pos_id, parcels%position(3, 1:n_parcels), start, cnt)
@@ -319,233 +391,8 @@ module parcel_netcdf
 #ifndef ENABLE_DRY_MODE
             call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:n_parcels), start, cnt)
 #endif
-            ! increment counter
-            n_writes = n_writes + 1
-
             call close_netcdf_file(ncid)
 
-            call stop_timer(parcel_io_timer)
+        end subroutine write_parcels
 
-        end subroutine write_netcdf_parcels
-
-        subroutine read_netcdf_parcels(fname)
-            character(*),     intent(in) :: fname
-            integer                      :: start_index, num_indices, end_index
-            integer, allocatable         :: invalid(:)
-            integer                      :: n, m, n_total, pid
-            integer                      :: start(2)
-
-            call start_timer(parcel_io_timer)
-
-            call open_netcdf_file(fname, NF90_NOWRITE, ncid)
-
-            call get_num_parcels(ncid, n_total_parcels)
-
-            if (has_dataset(ncid, 'start_index')) then
-                call get_dimension_size(ncid, 'mpi_size', num_indices)
-
-                if (num_indices .ne. mpi_size) then
-                    call mpi_exit_on_error("The number of MPI ranks disagree!")
-                endif
-
-                if (mpi_rank < mpi_size - 1) then
-                    ! we must add +1 since the start index is 1
-                    call read_netcdf_dataset(ncid, 'start_index', start, (/mpi_rank + 1/), (/2/))
-                    start_index = start(1)
-                    ! we must subtract 1, otherwise rank reads the first parcel of rank+1
-                    end_index = start(2) - 1
-                else
-                    ! the last MPI rank must only read the start index
-                    call read_netcdf_dataset(ncid, 'start_index', start, (/num_indices/), (/1/))
-                    start_index = start(1)
-                    end_index = n_total_parcels
-                endif
-
-                n_parcels = end_index - start_index + 1
-
-                if (n_parcels > max_num_parcels) then
-                    print *, "Number of parcels exceeds limit of", &
-                            max_num_parcels, ". Exiting."
-                    call MPI_Abort(comm_world, -1, mpi_err)
-                endif
-
-                call read_chunk(start_index, end_index, 1)
-            else
-                !
-                ! READ PARCELS WITH REJECTION METHOD
-                ! (reject all parcels that are not part of
-                !  the sub-domain owned by *this* MPI rank)
-                !
-                call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
-                start_index = 1
-                end_index = min(max_num_parcels, n_total_parcels)
-                n_parcels = end_index
-                pid = 1
-
-                ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
-                ! not belonging to its domain
-                allocate(invalid(0:end_index))
-
-                do while (start_index <= end_index)
-
-                    call read_chunk(start_index, end_index, pid)
-
-                    m = 1
-                    do n = pid, n_parcels
-                        if (is_contained(parcels%position(:, n))) then
-                            cycle
-                        endif
-
-                        invalid(m) = n
-
-                        m = m + 1
-                    enddo
-
-                    ! remove last increment
-                    m = m - 1
-
-                    ! updates the variable n_parcels
-                    call parcel_delete(invalid(0:m), n_del=m)
-
-                    start_index = 1 + end_index
-                    end_index = min(end_index + max_num_parcels, n_total_parcels)
-                    pid = n_parcels + 1
-                    n_parcels = n_parcels + end_index - start_index + 1
-                enddo
-
-                deallocate(invalid)
-
-            endif
-
-            call close_netcdf_file(ncid)
-
-            ! verify result
-            n_total = n_parcels
-            call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INT, MPI_SUM, comm_world, mpi_err)
-            if (n_total_parcels .ne. n_total) then
-                call mpi_exit_on_error("Local number of parcels does not sum up to total number!")
-            endif
-
-            call stop_timer(parcel_io_timer)
-
-        end subroutine read_netcdf_parcels
-
-
-        ! This subroutine assumes the NetCDF file to be open.
-        subroutine read_chunk(first, last, pfirst)
-            integer, intent(in) :: first, last, pfirst
-            logical             :: l_valid = .false.
-            integer             :: cnt(2), start(2)
-            integer             :: num, plast
-
-            num = last - first + 1
-            plast = pfirst + num - 1
-
-            start = (/ first, 1 /)
-            cnt   = (/ num,   1 /)
-
-            if (has_dataset(ncid, 'B11')) then
-                call read_netcdf_dataset(ncid, 'B11', parcels%B(1, pfirst:plast), start, cnt)
-            else
-                print *, "The parcel shape component B11 must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(ncid, 'B12')) then
-                call read_netcdf_dataset(ncid, 'B12', parcels%B(2, pfirst:plast), start, cnt)
-            else
-                print *, "The parcel shape component B12 must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(ncid, 'B13')) then
-                call read_netcdf_dataset(ncid, 'B13', parcels%B(3, pfirst:plast), start, cnt)
-            else
-                print *, "The parcel shape component B13 must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(ncid, 'B22')) then
-                call read_netcdf_dataset(ncid, 'B22', parcels%B(4, pfirst:plast), start, cnt)
-            else
-                print *, "The parcel shape component B22 must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(ncid, 'B23')) then
-                call read_netcdf_dataset(ncid, 'B23', parcels%B(5, pfirst:plast), start, cnt)
-            else
-                print *, "The parcel shape component B23 must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(ncid, 'x_position')) then
-                call read_netcdf_dataset(ncid, 'x_position', &
-                                         parcels%position(1, pfirst:plast), start, cnt)
-            else
-                print *, "The parcel x position must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(ncid, 'y_position')) then
-                call read_netcdf_dataset(ncid, 'y_position', &
-                                         parcels%position(2, pfirst:plast), start, cnt)
-            else
-                print *, "The parcel y position must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(ncid, 'z_position')) then
-                call read_netcdf_dataset(ncid, 'z_position', &
-                                         parcels%position(3, pfirst:plast), start, cnt)
-            else
-                print *, "The parcel z position must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(ncid, 'volume')) then
-                call read_netcdf_dataset(ncid, 'volume', &
-                                         parcels%volume(pfirst:plast), start, cnt)
-            else
-                print *, "The parcel volume must be present! Exiting."
-                stop
-            endif
-
-            if (has_dataset(ncid, 'x_vorticity')) then
-                l_valid = .true.
-                call read_netcdf_dataset(ncid, 'x_vorticity', &
-                                         parcels%vorticity(1, pfirst:plast), start, cnt)
-            endif
-
-            if (has_dataset(ncid, 'y_vorticity')) then
-                call read_netcdf_dataset(ncid, 'y_vorticity', &
-                                         parcels%vorticity(2, pfirst:plast), start, cnt)
-            endif
-
-            if (has_dataset(ncid, 'z_vorticity')) then
-                l_valid = .true.
-                call read_netcdf_dataset(ncid, 'z_vorticity', &
-                                         parcels%vorticity(3, pfirst:plast), start, cnt)
-            endif
-
-            if (has_dataset(ncid, 'buoyancy')) then
-                l_valid = .true.
-                call read_netcdf_dataset(ncid, 'buoyancy', &
-                                         parcels%buoyancy(pfirst:plast), start, cnt)
-            endif
-
-#ifndef ENABLE_DRY_MODE
-            if (has_dataset(ncid, 'humidity')) then
-                l_valid = .true.
-                call read_netcdf_dataset(ncid, 'humidity', &
-                                         parcels%humidity(pfirst:plast), start, cnt)
-            endif
-#endif
-
-            if (.not. l_valid) then
-                print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
-                stop
-            endif
-        end subroutine read_chunk
-
-end module parcel_netcdf
+end program test_mpi_parcel_read_rejection

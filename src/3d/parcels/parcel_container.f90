@@ -55,7 +55,6 @@ module parcel_container
 
     type(parcel_container_type) parcels
 
-
     contains
 
         ! Obtain the difference between two zonal coordinates
@@ -150,11 +149,16 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             allocate(parcels%humidity(num))
 #endif
-            call parcel_ellipsoid_allocate
+            call parcel_ellipsoid_allocate(num)
         end subroutine parcel_alloc
 
         ! Deallocate parcel memory
         subroutine parcel_dealloc
+
+            if (.not. allocated(parcels%position)) then
+                return
+            endif
+
             deallocate(parcels%position)
             deallocate(parcels%vorticity)
             deallocate(parcels%B)
