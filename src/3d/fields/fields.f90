@@ -122,10 +122,10 @@ module fields
 
             call get_index(pos, i, j, k)
 
-            l_contained = ((i > box%hlo(1))   .and. &
-                           (i < box%hhi(1)-1) .and. &
-                           (j > box%hlo(2))   .and. &
-                           (j < box%hhi(2)-1))
+            l_contained = ((i >= box%lo(1))  .and. &
+                           (i <= box%hi(1))  .and. &
+                           (j >= box%lo(2))  .and. &
+                           (j <= box%hi(2)))
         end function
 
 
