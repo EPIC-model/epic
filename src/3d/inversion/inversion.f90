@@ -18,7 +18,7 @@ module inversion_mod
         ! gradient tensor (velgradg).  Note: the
         ! vorticity is modified to be solenoidal and spectrally filtered.
         subroutine vor2vel(vortg,  velog,  velgradg)
-            double precision, intent(in)    :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+            double precision, intent(inout) :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out)   :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out)   :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
             double precision                :: svelog(0:nz, 0:nx-1, 0:ny-1, 3)
@@ -26,35 +26,109 @@ module inversion_mod
                                              , bs(0:nz, 0:nx-1, 0:ny-1) &
                                              , cs(0:nz, 0:nx-1, 0:ny-1)
             double precision                :: ds(0:nz, 0:nx-1, 0:ny-1) &
-                                             , es(0:nz, 0:nx-1, 0:ny-1)
+                                             , es(0:nz, 0:nx-1, 0:ny-1) &
+                                             , fs(0:nz, 0:nx-1, 0:ny-1)
             double precision                :: ubar(0:nz), vbar(0:nz)
             double precision                :: uavg, vavg
             integer                         :: iz
 
             call start_timer(vor2vel_timer)
 
-            ! Copy vorticity to velocity field to perform FFT transforms
-            ! (FFT transforms overwrite the input array)
-            velog = vortg
-
             !------------------------------------------------------------------
-            !Convert vorticity to semi-spectral space as (as, bs, cs): (velog is overwritten in this operation)
-            call fftxyp2s(velog(0:nz, :, :, 1), as)
-            call fftxyp2s(velog(0:nz, :, :, 2), bs)
-            call fftxyp2s(velog(0:nz, :, :, 3), cs)
+            !Convert vorticity to semi-spectral space as (as, bs, cs): (vortg is overwritten in this operation)
+            call fftxyp2s(vortg(0:nz, :, :, 1), as)
+            call fftxyp2s(vortg(0:nz, :, :, 2), bs)
+            call fftxyp2s(vortg(0:nz, :, :, 3), cs)
 
-            !-------------------------------------------------------------
-            ! Apply 2D Hou and Li filter:
-            !$omp parallel shared(as, bs, cs, filt, nz) private(iz) default(none)
+            !Add -grad(lambda) where Laplace(lambda) = div(vortg) to
+            !enforce the solenoidal condition on the vorticity field:
+            call diffx(as, ds)
+            call diffy(bs, es)
+            call diffz(cs, fs)
+
+            ! ADDED
+            ! Set vertical boundary values to zero
+            fs(0,  :, :) = zero
+            fs(nz, :, :) = zero
+            ! ADDED
+
+            !Form div(vortg):
+            !$omp parallel
+            !$omp workshare
+            fs = ds + es + fs
+            !$omp end workshare
+            !$omp end parallel
+
+            !Remove horizontally-averaged part (plays no role):
+            fs(:, 0, 0) = zero
+
+            !Invert Lap(lambda) = div(vortg) assuming dlambda/dz = 0 at the
+            !boundaries (store solution lambda in fs):
+            call lapinv1(fs)
+
+            !Filter lambda:
+            !$omp parallel shared(fs, filt, nz) private(iz)  default(none)
             !$omp do
             do iz = 0, nz
-                as(iz, :, :) = filt * as(iz, :, :)
-                bs(iz, :, :) = filt * bs(iz, :, :)
-                cs(iz, :, :) = filt * cs(iz, :, :)
+                fs(iz, :, :) = filt * fs(iz, :, :)
             enddo
             !$omp end do
             !$omp end parallel
 
+            !Subtract grad(lambda) to enforce div(vortg) = 0:
+            call diffx(fs, ds)
+            !$omp parallel
+            !$omp workshare
+            as = as - ds
+            !$omp end workshare
+            !$omp end parallel
+
+            call diffy(fs, ds)
+            !$omp parallel
+            !$omp workshare
+            bs = bs - ds
+            !$omp end workshare
+            !$omp end parallel
+
+            call diffz(fs, ds)
+
+            ! ADDED
+            ! Set vertical boundary values to zero
+            ds(0,  :, :) = zero
+            ds(nz, :, :) = zero
+            ! ADDED
+
+            !$omp parallel
+            !$omp workshare
+            cs = cs - ds
+            !$omp end workshare
+            !$omp end parallel
+            !Ensure horizontal average of vertical vorticity is zero:
+            cs(:, 0, 0) = zero
+
+            !Compute spectrally filtered vorticity in physical space:
+            !$omp parallel shared(ds, es, fs, as, bs, cs, filt, nz) private(iz) default(none)
+            !$omp do
+            do iz = 0, nz
+                ds(iz, :, :) = filt * as(iz, :, :)
+                es(iz, :, :) = filt * bs(iz, :, :)
+                fs(iz, :, :) = filt * cs(iz, :, :)
+            enddo
+            !$omp end do
+            !$omp end parallel
+
+            !Return corrected vorticity to physical space:
+            call fftxys2p(ds, vortg(0:nz, :, :, 1))
+            call fftxys2p(es, vortg(0:nz, :, :, 2))
+            call fftxys2p(fs, vortg(0:nz, :, :, 3))
+
+            ! ==========================================================
+            as = ds
+            bs = es
+            cs = fs
+            !! IF WE KEEP THE SOLENOIDAL CORRECTION THEN REPLACE
+            !! as WITH ds ETC., IN THE SUBSEQUENT CODDE.
+            ! ==========================================================
 
             !Define horizontally-averaged flow by integrating horizontal vorticity:
             ubar(0) = zero
