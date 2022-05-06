@@ -291,8 +291,10 @@ module parcel_netcdf
 
             ! we need to increase the start_index by 1
             ! since the starting index in Fortran is 1 and not 0.
-            start = (/ 1 + start_index, 1 /)
-            cnt   = (/ n_parcels,       1 /)
+            start_index = start_index + 1
+
+            start = (/ start_index, 1 /)
+            cnt   = (/ n_parcels,   1 /)
 
             call write_netcdf_dataset(ncid, start_id, (/start_index/), start=(/1+mpi_rank, 1/), cnt=(/1, 1/))
 
@@ -330,7 +332,7 @@ module parcel_netcdf
             character(*),     intent(in) :: fname
             integer                      :: start_index, num_indices, end_index
             integer, allocatable         :: invalid(:)
-            integer                      :: n, m, n_total
+            integer                      :: n, m, n_total, pid
             integer                      :: start(2)
 
             call start_timer(parcel_io_timer)
@@ -358,7 +360,7 @@ module parcel_netcdf
                     end_index = n_total_parcels
                 endif
 
-                n_parcels = end_index - start_index
+                n_parcels = end_index - start_index + 1
 
                 if (n_parcels > max_num_parcels) then
                     print *, "Number of parcels exceeds limit of", &
@@ -366,9 +368,7 @@ module parcel_netcdf
                     call MPI_Abort(comm_world, -1, mpi_err)
                 endif
 
-                ! we need to increase the start_index by 1
-                ! since the starting index in Fortran is 1 and not 0.
-                call read_chunk(1 + start_index, n_parcels)
+                call read_chunk(start_index, n_parcels, 1)
             else
                 !
                 ! READ PARCELS WITH REJECTION METHOD
@@ -379,6 +379,7 @@ module parcel_netcdf
                 start_index = 1
                 end_index = min(max_num_parcels, n_total_parcels)
                 n_parcels = end_index
+                pid = 1
 
                 ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
                 ! not belonging to its domain
@@ -386,10 +387,10 @@ module parcel_netcdf
 
                 do while(end_index <= n_total_parcels)
 
-                    call read_chunk(start_index, end_index)
+                    call read_chunk(start_index, end_index, pid)
 
                     m = 1
-                    do n = start_index, end_index
+                    do n = pid, end_index - start_index + 1
                         if (is_contained(parcels%position(:, n))) then
                             cycle
                         endif
@@ -407,6 +408,7 @@ module parcel_netcdf
 
                     start_index = 1 + end_index
                     end_index = min(end_index + max_num_parcels, n_total_parcels)
+                    pid = n_parcels + 1
                 enddo
 
                 deallocate(invalid)
@@ -428,49 +430,47 @@ module parcel_netcdf
 
 
         ! This subroutine assumes the NetCDF file to be open.
-        subroutine read_chunk(first, last)
-            integer, intent(in) :: first, last
+        subroutine read_chunk(first, last, pid)
+            integer, intent(in) :: first, last, pid
             logical             :: l_valid = .false.
             integer             :: cnt(2), start(2)
+            integer             :: num
 
+            num = last - first + 1
 
             start = (/ first, 1 /)
-            cnt   = (/ last,  1 /)
-
-            ! Be aware that the starting index of buffer_1d and buffer_2d
-            ! is 0; hence, the range is 0:n_parcels-1 in contrast to the
-            ! parcel container where it is 1:n_parcels.
+            cnt   = (/ num,   1 /)
 
             if (has_dataset(ncid, 'B11')) then
-                call read_netcdf_dataset(ncid, 'B11', parcels%B(1, 1:n_parcels), start, cnt)
+                call read_netcdf_dataset(ncid, 'B11', parcels%B(1, pid:pid+num), start, cnt)
             else
                 print *, "The parcel shape component B11 must be present! Exiting."
                 stop
             endif
 
             if (has_dataset(ncid, 'B12')) then
-                call read_netcdf_dataset(ncid, 'B12', parcels%B(2, 1:n_parcels), start, cnt)
+                call read_netcdf_dataset(ncid, 'B12', parcels%B(2, pid:pid+num), start, cnt)
             else
                 print *, "The parcel shape component B12 must be present! Exiting."
                 stop
             endif
 
             if (has_dataset(ncid, 'B13')) then
-                call read_netcdf_dataset(ncid, 'B13', parcels%B(3, 1:n_parcels), start, cnt)
+                call read_netcdf_dataset(ncid, 'B13', parcels%B(3, pid:pid+num), start, cnt)
             else
                 print *, "The parcel shape component B13 must be present! Exiting."
                 stop
             endif
 
             if (has_dataset(ncid, 'B22')) then
-                call read_netcdf_dataset(ncid, 'B22', parcels%B(4, 1:n_parcels), start, cnt)
+                call read_netcdf_dataset(ncid, 'B22', parcels%B(4, pid:pid+num), start, cnt)
             else
                 print *, "The parcel shape component B22 must be present! Exiting."
                 stop
             endif
 
             if (has_dataset(ncid, 'B23')) then
-                call read_netcdf_dataset(ncid, 'B23', parcels%B(5, 1:n_parcels), start, cnt)
+                call read_netcdf_dataset(ncid, 'B23', parcels%B(5, pid:pid+num), start, cnt)
             else
                 print *, "The parcel shape component B23 must be present! Exiting."
                 stop
@@ -478,7 +478,7 @@ module parcel_netcdf
 
             if (has_dataset(ncid, 'x_position')) then
                 call read_netcdf_dataset(ncid, 'x_position', &
-                                         parcels%position(1, 1:n_parcels), start, cnt)
+                                         parcels%position(1, pid:pid+num), start, cnt)
             else
                 print *, "The parcel x position must be present! Exiting."
                 stop
@@ -486,7 +486,7 @@ module parcel_netcdf
 
             if (has_dataset(ncid, 'y_position')) then
                 call read_netcdf_dataset(ncid, 'y_position', &
-                                         parcels%position(2, 1:n_parcels), start, cnt)
+                                         parcels%position(2, pid:pid+num), start, cnt)
             else
                 print *, "The parcel y position must be present! Exiting."
                 stop
@@ -494,7 +494,7 @@ module parcel_netcdf
 
             if (has_dataset(ncid, 'z_position')) then
                 call read_netcdf_dataset(ncid, 'z_position', &
-                                         parcels%position(3, 1:n_parcels), start, cnt)
+                                         parcels%position(3, pid:pid+num), start, cnt)
             else
                 print *, "The parcel z position must be present! Exiting."
                 stop
@@ -502,7 +502,7 @@ module parcel_netcdf
 
             if (has_dataset(ncid, 'volume')) then
                 call read_netcdf_dataset(ncid, 'volume', &
-                                         parcels%volume(1:n_parcels), start, cnt)
+                                         parcels%volume(pid:pid+num), start, cnt)
             else
                 print *, "The parcel volume must be present! Exiting."
                 stop
@@ -511,31 +511,31 @@ module parcel_netcdf
             if (has_dataset(ncid, 'x_vorticity')) then
                 l_valid = .true.
                 call read_netcdf_dataset(ncid, 'x_vorticity', &
-                                         parcels%vorticity(1, 1:n_parcels), start, cnt)
+                                         parcels%vorticity(1, pid:pid+num), start, cnt)
             endif
 
             if (has_dataset(ncid, 'y_vorticity')) then
                 call read_netcdf_dataset(ncid, 'y_vorticity', &
-                                         parcels%vorticity(2, 1:n_parcels), start, cnt)
+                                         parcels%vorticity(2, pid:pid+num), start, cnt)
             endif
 
             if (has_dataset(ncid, 'z_vorticity')) then
                 l_valid = .true.
                 call read_netcdf_dataset(ncid, 'z_vorticity', &
-                                         parcels%vorticity(3, 1:n_parcels), start, cnt)
+                                         parcels%vorticity(3, pid:pid+num), start, cnt)
             endif
 
             if (has_dataset(ncid, 'buoyancy')) then
                 l_valid = .true.
                 call read_netcdf_dataset(ncid, 'buoyancy', &
-                                         parcels%buoyancy(1:n_parcels), start, cnt)
+                                         parcels%buoyancy(pid:pid+num), start, cnt)
             endif
 
 #ifndef ENABLE_DRY_MODE
             if (has_dataset(ncid, 'humidity')) then
                 l_valid = .true.
                 call read_netcdf_dataset(ncid, 'humidity', &
-                                         parcels%humidity(1:n_parcels), start, cnt)
+                                         parcels%humidity(pid:pid+num), start, cnt)
             endif
 #endif
 
