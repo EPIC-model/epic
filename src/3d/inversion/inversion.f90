@@ -66,15 +66,6 @@ module inversion_mod
             !boundaries (store solution lambda in fs):
             call lapinv1(fs)
 
-            !Filter lambda:
-            !$omp parallel shared(fs, filt, nz) private(iz)  default(none)
-            !$omp do
-            do iz = 0, nz
-                fs(iz, :, :) = filt * fs(iz, :, :)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
             !Subtract grad(lambda) to enforce div(vortg) = 0:
             call diffx(fs, ds)
             !$omp parallel
@@ -117,11 +108,6 @@ module inversion_mod
             !$omp end do
             !$omp end parallel
 
-            !Return corrected vorticity to physical space:
-            call fftxys2p(ds, vortg(0:nz, :, :, 1))
-            call fftxys2p(es, vortg(0:nz, :, :, 2))
-            call fftxys2p(fs, vortg(0:nz, :, :, 3))
-
             ! ==========================================================
             as = ds
             bs = es
@@ -129,6 +115,12 @@ module inversion_mod
             !! IF WE KEEP THE SOLENOIDAL CORRECTION THEN REPLACE
             !! as WITH ds ETC., IN THE SUBSEQUENT CODDE.
             ! ==========================================================
+
+            !Return corrected vorticity to physical space:
+            call fftxys2p(ds, vortg(0:nz, :, :, 1))
+            call fftxys2p(es, vortg(0:nz, :, :, 2))
+            call fftxys2p(fs, vortg(0:nz, :, :, 3))
+
 
             !Define horizontally-averaged flow by integrating horizontal vorticity:
             ubar(0) = zero
