@@ -46,17 +46,13 @@ module inversion_mod
             call diffy(bs, es)
             call diffz(cs, fs)
 
-            ! ADDED
-            ! Set vertical boundary values to zero
-            fs(0,  :, :) = zero
-            fs(nz, :, :) = zero
-            ! ADDED
-
             !Form div(vortg):
-            !$omp parallel
-            !$omp workshare
-            fs = ds + es + fs
-            !$omp end workshare
+            !$omp parallel shared(ds, es, fs, as, bs, cs, filt, nz) private(iz)
+            !$omp do
+            do iz = 1, nz-1
+               fs(iz, :, :) = k2l2i * (ds(iz, :, :) + es(iz, :, :) + fs(iz, :, :))
+            enddo
+            !$omp end do
             !$omp end parallel
 
             !Remove horizontally-averaged part (plays no role):
