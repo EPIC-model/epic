@@ -65,14 +65,14 @@ module inversion_mod
             call diffx(fs, ds)
             !$omp parallel
             !$omp workshare
-            as = as - ds
+            as = as + ds
             !$omp end workshare
             !$omp end parallel
 
             call diffy(fs, ds)
             !$omp parallel
             !$omp workshare
-            bs = bs - ds
+            bs = bs + ds
             !$omp end workshare
             !$omp end parallel
 
