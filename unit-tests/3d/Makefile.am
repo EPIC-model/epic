@@ -39,7 +39,7 @@ unittests_PROGRAMS = 				\
 	test_fft_2_3d				\
 	test_mpi_trilinear			\
 	test_laplace_correction_3d		\
-	test_gradient_correction_3d		\
+	test_mpi_gradient_correction_3d		\
 	test_parcel_correction_3d		\
 	test_ellipsoid_merge_1			\
 	test_ellipsoid_merge_2			\
@@ -103,8 +103,8 @@ test_mpi_trilinear_LDADD = libcombi.la
 test_laplace_correction_3d_SOURCES = test_laplace_correction_3d.f90
 test_laplace_correction_3d_LDADD = libcombi.la
 
-test_gradient_correction_3d_SOURCES = test_gradient_correction_3d.f90
-test_gradient_correction_3d_LDADD = libcombi.la
+test_mpi_gradient_correction_3d_SOURCES = test_mpi_gradient_correction_3d.f90
+test_mpi_gradient_correction_3d_LDADD = libcombi.la
 
 test_parcel_correction_3d_SOURCES = test_parcel_correction_3d.f90
 test_parcel_correction_3d_LDADD = libcombi.la

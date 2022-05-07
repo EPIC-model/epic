@@ -12,6 +12,7 @@ module parcel_correction
     use parcel_container
     use timer, only : start_timer, stop_timer
     use fields, only : volg
+    use mpi_layout, only : box
     implicit none
 
     private
@@ -155,7 +156,7 @@ module parcel_correction
             double precision,  intent(in) :: prefactor
             double precision,  intent(in) :: max_compression
             logical, optional, intent(in) :: l_reuse
-            double precision              :: phi(0:nz, 0:ny-1, 0:nx-1)
+            double precision              :: phi(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision              :: weights(ngp)
             double precision              :: xs, ys, zs, xf, yf, zf, lim_x, lim_y, lim_z
             integer                       :: n, is(ngp), js(ngp), ks(ngp)

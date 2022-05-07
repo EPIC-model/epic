@@ -3,6 +3,7 @@ module unit_test
 
     ! abolute tolerance
     double precision, parameter :: atol_m = dble(1.0e-15)
+    logical                     :: verbose = .false.
 
     private :: atol_m
 
@@ -51,7 +52,6 @@ module unit_test
             integer           :: i
             character(len=32) :: arg
             character(len=32) :: testname
-            logical           :: verbose = .false.
 
             testname = ''
             i = 0
