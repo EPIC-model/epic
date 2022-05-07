@@ -47,7 +47,7 @@ module inversion_mod
             call diffz(cs, fs)
 
             !Form div(vortg):
-            !$omp parallel shared(ds, es, fs, as, bs, cs, filt, nz) private(iz)
+            !$omp parallel shared(ds, es, fs, k2l2i, nz) private(iz)
             !$omp do
             do iz = 1, nz-1
                fs(iz, :, :) = k2l2i * (ds(iz, :, :) + es(iz, :, :) + fs(iz, :, :))
