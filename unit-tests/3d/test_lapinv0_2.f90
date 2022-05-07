@@ -5,7 +5,6 @@
 ! =============================================================================
 program test_lapinv0_2
     use unit_test
-    use options, only : verbose
     use constants, only : zero, one, two, pi, twopi, f12
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent, ncell
     use inversion_utils, only : init_fft, fftxyp2s, fftxys2p
