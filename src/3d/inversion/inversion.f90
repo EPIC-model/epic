@@ -62,10 +62,6 @@ module inversion_mod
             !Remove horizontally-averaged part (plays no role):
             fs(:, 0, 0) = zero
 
-            !Invert Lap(lambda) = div(vortg) assuming dlambda/dz = 0 at the
-            !boundaries (store solution lambda in fs):
-            call lapinv1(fs)
-
             !Subtract grad(lambda) to enforce div(vortg) = 0:
             call diffx(fs, ds)
             !$omp parallel
@@ -80,22 +76,6 @@ module inversion_mod
             bs = bs - ds
             !$omp end workshare
             !$omp end parallel
-
-            call diffz(fs, ds)
-
-            ! ADDED
-            ! Set vertical boundary values to zero
-            ds(0,  :, :) = zero
-            ds(nz, :, :) = zero
-            ! ADDED
-
-            !$omp parallel
-            !$omp workshare
-            cs = cs - ds
-            !$omp end workshare
-            !$omp end parallel
-            !Ensure horizontal average of vertical vorticity is zero:
-            cs(:, 0, 0) = zero
 
             !Compute spectrally filtered vorticity in physical space:
             !$omp parallel shared(ds, es, fs, as, bs, cs, filt, nz) private(iz) default(none)
