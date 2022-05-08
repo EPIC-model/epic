@@ -6,6 +6,8 @@ module mpi_layout
     type box_type
         integer :: lo(3),  hi(3)
         integer :: hlo(3), hhi(3)
+        integer :: ncell
+        integer :: nx, ny, nz
     end type box_type
 
     integer, parameter  :: NB_NONE      = 0, &
@@ -71,6 +73,10 @@ module mpi_layout
             call set_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))
             box%lo(3) = 0
             box%hi(3) = nz
+            box%nx = box%hi(1) - box%lo(1)
+            box%ny = box%hi(2) - box%lo(2)
+            box%nz = nz
+            box%ncell = box%nx * box%ny * box%nz
 
             ! box including asymmetric halo
             box%hlo(1:2) = box%lo(1:2) - 1

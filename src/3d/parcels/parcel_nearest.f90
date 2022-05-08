@@ -6,6 +6,7 @@ module parcel_nearest
     use parcel_container, only : parcels, n_parcels, get_delx, get_dely
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
+    use mpi_layout, only : box
     use timer, only : start_timer, stop_timer
 
     implicit none
@@ -16,7 +17,8 @@ module parcel_nearest
 
     !Used for searching for possible parcel merger:
     integer, allocatable :: nppc(:), kc1(:), kc2(:)
-    integer, allocatable :: loca(:)
+    integer, allocatable :: lloca(:)
+    integer, allocatable :: gloca(:)
     integer, allocatable :: node(:)
 
     ! Logicals used to determine which mergers are executed
@@ -37,8 +39,11 @@ module parcel_nearest
 
     !Other variables:
     double precision:: delx, dely, delz, dsq, dsqmin, x_small, y_small, z_small
-    integer :: ic, is, ijk, k, m, j, n
+    integer :: ic, is, k, m, j, n
+    integer :: lijk ! local ijk index
+    integer :: gijk ! global ijk index
     integer :: ix, iy, iz, ix0, iy0, iz0
+    integer :: n_halo_small(8)  ! number of small parcels in halo regions
 
     public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer
 
@@ -60,10 +65,11 @@ module parcel_nearest
             call start_timer(merge_nearest_timer)
 
             if (.not. allocated(nppc)) then
-                allocate(nppc(ncell))
-                allocate(kc1(ncell))
-                allocate(kc2(ncell))
-                allocate(loca(max_num_parcels))
+                allocate(nppc(box%ncell))
+                allocate(kc1(box%ncell))
+                allocate(kc2(box%ncell))
+                allocate(lloca(max_num_parcels))
+                allocate(gloca(max_num_parcels))
                 allocate(node(max_num_parcels))
                 allocate(l_leaf(max_num_parcels))
                 allocate(l_available(max_num_parcels))
@@ -79,7 +85,7 @@ module parcel_nearest
 
             !---------------------------------------------------------------------
             ! Initialise search:
-            nppc = 0 !nppc(ijk) will contain the number of parcels in grid cell ijk
+            nppc = 0 !nppc(lijk) will contain the number of parcels in grid cell gijk
 
             ! Bin parcels in cells:
             ! Form list of small parcels:
@@ -89,23 +95,29 @@ module parcel_nearest
                 iz = int(dxi(3) * (parcels%position(3, n) - lower(3)))
 
                 ! Cell index of parcel:
-                ijk = 1 + ix + nx * iy + nx * ny * iz !This runs from 1 to ncell
+                gijk = 1 + ix +     nx * iy +     nx *     ny * iz
+                lijk = 1 + ix + box%nx * iy + box%nx * box%ny * iz !This runs from 1 to box%ncell
 
                 ! Accumulate number of parcels in this grid cell:
-                nppc(ijk) = nppc(ijk) + 1
+                nppc(lijk) = nppc(lijk) + 1
 
                 ! Store grid cell that this parcel is in:
-                loca(n) = ijk
+                lloca(n) = lijk
+                gloca(n) = gijk
 
                 if (parcels%volume(n) < vmin) then
                     nmerge = nmerge + 1
                 endif
             enddo
 
+            call MPI_Allreduce(MPI_IN_PLACE, nmerge, 1, MPI_INTEGER, MPI_SUM, comm_world, mpi_err)
+
             if (nmerge == 0) then
                 call stop_timer(merge_nearest_timer)
                 return
             endif
+
+            call collect_from_neighbours
 
             ! allocate arrays
             allocate(isma(0:nmerge))
@@ -114,20 +126,20 @@ module parcel_nearest
             isma = 0
             iclo = 0
 
-            ! Find arrays kc1(ijk) & kc2(ijk) which indicate the parcels in grid cell ijk
-            ! through n = node(k), for k = kc1(ijk), kc2(ijk):
+            ! Find arrays kc1(lijk) & kc2(lijk) which indicate the parcels in grid cell lijk
+            ! through n = node(k), for k = kc1(lijk), kc2(lijk):
             kc1(1) = 1
-            do ijk = 1, ncell-1
-                kc1(ijk+1) = kc1(ijk) + nppc(ijk)
+            do lijk = 1, box%ncell-1
+                kc1(lijk+1) = kc1(lijk) + nppc(lijk)
             enddo
 
             kc2 = kc1 - 1
             j = 0
             do n = 1, n_parcels
-                ijk = loca(n)
-                k = kc2(ijk) + 1
+                lijk = lloca(n)
+                k = kc2(lijk) + 1
                 node(k) = n
-                kc2(ijk) = k
+                kc2(lijk) = k
 
                 if (parcels%volume(n) < vmin) then
                     j = j + 1
@@ -152,9 +164,9 @@ module parcel_nearest
                 y_small = parcels%position(2, is)
                 z_small = parcels%position(3, is)
                 ! Parcel "is" is small and should be merged; find closest other:
-                ix0 = mod(nint(dxi(1) * (x_small - lower(1))), nx) ! ranges from 0 to nx-1
-                iy0 = mod(nint(dxi(2) * (y_small - lower(2))), ny)
-                iz0 = nint(dxi(3) * (z_small - lower(3)))          ! ranges from 0 to nz
+                ix0 = nint(dxi(1) * (x_small - lower(1))) ! ranges from 0 to nx
+                iy0 = nint(dxi(2) * (y_small - lower(2))) ! ranges from 0 to ny
+                iz0 = nint(dxi(3) * (z_small - lower(3))) ! ranges from 0 to nz
 
                 ! Grid point (ix0, iy0, iz0) is closest to parcel "is"
 
@@ -162,13 +174,13 @@ module parcel_nearest
                 ic = 0
 
                 ! Loop over 8 cells surrounding (ix0, iy0, iz0):
-                do iz = max(0, iz0-1), min(nz-1, iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
+                do iz = max(0, iz0-1), min(box%nz-1, iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
                     do iy = iy0-1, iy0
                         do ix = ix0-1, ix0
-                            ! Cell index (accounting for x and y periodicity):
-                            ijk = 1 + mod(nx + ix, nx) + nx * mod(ny + iy, ny) + nx * ny * iz
+                            ! Cell index:
+                            gijk = 1 + mod(nx + ix, nx) + nx * mod(ny + iy, ny) + nx * ny * iz
                             ! Search small parcels for closest other:
-                            do k = kc1(ijk), kc2(ijk)
+                            do k = kc1(gijk), kc2(gijk)
                                 n = node(k)
                                 if (n .ne. is) then
                                     delz = parcels%position(3, n) - z_small
@@ -367,5 +379,48 @@ module parcel_nearest
             call stop_timer(merge_tree_resolve_timer)
 
         end subroutine find_nearest
+
+        subroutine collect_from_neighbours
+
+            ! Identify if parcel in boundary region (which is the halo region of neighbours)
+            do iz = box%lo(3), box%hi(3)
+                do ix = box%lo(1), box%hi(1)
+                    ! north
+                    lijk = 1 + ix + box%nx * box%hi(2) + box%nx * box%ny * iz
+                    n_halo_small(1) = n_halo_small(1) + nppc(lijk)
+
+                    ! south
+                    lijk = 1 + ix + box%nx * box%lo(2) + box%nx * box%ny * iz
+                    n_halo_small(2) = n_halo_small(2) + nppc(lijk)
+                enddo
+
+                do iy = box%lo(2), box%hi(2)
+                    ! west
+                    lijk = 1 + box%lo(1) + box%nx * iy + box%nx * box%ny * iz
+                    n_halo_small(3) = n_halo_small(3) + nppc(lijk)
+
+                    ! east
+                    lijk = 1 + box%hi(1) + box%nx * iy + box%nx * box%ny * iz
+                    n_halo_small(4) = n_halo_small(4) + nppc(lijk)
+                enddo
+
+                ! north-west
+                lijk = 1 + box%lo(1) + box%nx * box%hi(2) + box%nx * box%ny * iz
+                n_halo_small(5) = n_halo_small(5) + nppc(lijk)
+
+                ! north-east
+                lijk = 1 + box%hi(1) + box%nx * box%hi(2) + box%nx * box%ny * iz
+                n_halo_small(6) = n_halo_small(6) + nppc(lijk)
+
+                ! south-west
+                lijk = 1 + box%lo(1) + box%nx * box%lo(2) + box%nx * box%ny * iz
+                n_halo_small(7) = n_halo_small(7) + nppc(lijk)
+
+                ! south-east
+                lijk = 1 + box%hi(1) + box%nx * box%lo(2) + box%nx * box%ny * iz
+                n_halo_small(8) = n_halo_small(8) + nppc(lijk)
+            enddo
+
+        end subroutine collect_from_neighbours
 
 end module parcel_nearest
