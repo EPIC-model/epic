@@ -6,7 +6,8 @@ module parcel_nearest
     use parcel_container, only : parcels, n_parcels, get_delx, get_dely
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
-    use mpi_layout, only : box
+    use mpi_communicator
+    use mpi_layout
     use timer, only : start_timer, stop_timer
 
     implicit none
@@ -43,7 +44,7 @@ module parcel_nearest
     integer :: lijk ! local ijk index
     integer :: gijk ! global ijk index
     integer :: ix, iy, iz, ix0, iy0, iz0
-    integer :: n_halo_small(8)  ! number of small parcels in halo regions
+!     integer :: n_halo_small(8)  ! number of small parcels in halo regions
 
     public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer
 
@@ -381,46 +382,83 @@ module parcel_nearest
         end subroutine find_nearest
 
         subroutine collect_from_neighbours
+            integer :: n_sends(8)
+            integer :: n_recvs(8)
 
             ! Identify if parcel in boundary region (which is the halo region of neighbours)
             do iz = box%lo(3), box%hi(3)
                 do ix = box%lo(1), box%hi(1)
                     ! north
                     lijk = 1 + ix + box%nx * box%hi(2) + box%nx * box%ny * iz
-                    n_halo_small(1) = n_halo_small(1) + nppc(lijk)
+                    n_sends(1) = n_sends(1) + nppc(lijk)
 
                     ! south
                     lijk = 1 + ix + box%nx * box%lo(2) + box%nx * box%ny * iz
-                    n_halo_small(2) = n_halo_small(2) + nppc(lijk)
+                    n_sends(2) = n_sends(2) + nppc(lijk)
                 enddo
 
                 do iy = box%lo(2), box%hi(2)
                     ! west
                     lijk = 1 + box%lo(1) + box%nx * iy + box%nx * box%ny * iz
-                    n_halo_small(3) = n_halo_small(3) + nppc(lijk)
+                    n_sends(3) = n_sends(3) + nppc(lijk)
 
                     ! east
                     lijk = 1 + box%hi(1) + box%nx * iy + box%nx * box%ny * iz
-                    n_halo_small(4) = n_halo_small(4) + nppc(lijk)
+                    n_sends(4) = n_sends(4) + nppc(lijk)
                 enddo
 
                 ! north-west
                 lijk = 1 + box%lo(1) + box%nx * box%hi(2) + box%nx * box%ny * iz
-                n_halo_small(5) = n_halo_small(5) + nppc(lijk)
+                n_sends(5) = n_sends(5) + nppc(lijk)
 
                 ! north-east
                 lijk = 1 + box%hi(1) + box%nx * box%hi(2) + box%nx * box%ny * iz
-                n_halo_small(6) = n_halo_small(6) + nppc(lijk)
+                n_sends(6) = n_sends(6) + nppc(lijk)
 
                 ! south-west
                 lijk = 1 + box%lo(1) + box%nx * box%lo(2) + box%nx * box%ny * iz
-                n_halo_small(7) = n_halo_small(7) + nppc(lijk)
+                n_sends(7) = n_sends(7) + nppc(lijk)
 
                 ! south-east
                 lijk = 1 + box%hi(1) + box%nx * box%lo(2) + box%nx * box%ny * iz
-                n_halo_small(8) = n_halo_small(8) + nppc(lijk)
+                n_sends(8) = n_sends(8) + nppc(lijk)
             enddo
 
+            ! tell your neighbours the number of small parcels in the halo
+            call send_to_neighbour(n_sends(NB_NORTH), n_recvs(NB_SOUTH), &
+                                   neighbour%north, neighbour%south, NORTH_TAG)
+
+            call send_to_neighbour(n_sends(NB_SOUTH), n_recvs(NB_NORTH), &
+                                  neighbour%south, neighbour%north, SOUTH_TAG)
+
+            call send_to_neighbour(n_sends(NB_WEST), n_recvs(NB_EAST), &
+                                   neighbour%west, neighbour%east, WEST_TAG)
+
+            call send_to_neighbour(n_sends(NB_EAST), n_recvs(NB_WEST), &
+                                  neighbour%east, neighbour%west, EAST_TAG)
+
+            call send_to_neighbour(n_sends(NB_NORTHWEST), n_recvs(NB_SOUTHEAST), &
+                                   neighbour%northwest, neighbour%southeast, NORTHWEST_TAG)
+
+            call send_to_neighbour(n_sends(NB_SOUTHEAST), n_recvs(NB_NORTHWEST), &
+                                   neighbour%southeast, neighbour%northwest, SOUTHEAST_TAG)
+
+            call send_to_neighbour(n_sends(NB_NORTHEAST), n_recvs(NB_SOUTHWEST), &
+                                   neighbour%northeast, neighbour%southwest, NORTHEAST_TAG)
+
+            call send_to_neighbour(n_sends(NB_SOUTHWEST), n_recvs(NB_NORTHEAST), &
+                                   neighbour%southwest, neighbour%northeast, SOUTHWEST_TAG)
+
         end subroutine collect_from_neighbours
+
+        subroutine send_to_neighbour(sendbuf, recvbuf, dest, source, tag)
+            integer,          intent(in)  :: sendbuf
+            integer,          intent(out) :: recvbuf
+            integer,          intent(in)  :: dest, source, tag
+            type(MPI_Request)             :: request
+            call MPI_Isend(sendbuf, 1, MPI_INT, dest, tag, comm_cart, request, mpi_err)
+            call MPI_Request_free(request)
+            call MPI_Recv(recvbuf, 1, MPI_INT, source, tag, comm_cart, MPI_STATUS_IGNORE, mpi_err)
+        end subroutine send_to_neighbour
 
 end module parcel_nearest
