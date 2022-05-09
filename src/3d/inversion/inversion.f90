@@ -100,6 +100,9 @@ module inversion_mod
             call fftxys2p(es, vortg(0:nz, :, :, 2))
             call fftxys2p(fs, vortg(0:nz, :, :, 3))
 
+            ! use symmetry to fill halo grid points
+            vortg(-1,   :, :, :) = vortg(1,    :, :, :)
+            vortg(nz+1, :, :, :) = vortg(nz-1, :, :, :)
 
             !Define horizontally-averaged flow by integrating horizontal vorticity:
             ubar(0) = zero
