@@ -1,0 +1,118 @@
+! =============================================================================
+!                       Test the vorticity tendency
+!
+!  This unit test checks the calculation of the vorticity tendency using the
+!  Beltrami flow:
+!     u(x, y, z) = (k^2 + l^2)^(-1) * [k*m*sin(mz) - l*alpha*cos(m*z) * sin(k*x + l*y)]
+!     v(x, y, z) = (k^2 + l^2)^(-1) * [l*m*sin(mz) + k*alpha*cos(m*z) * sin(k*x + l*y)]
+!     w(x, y, z) = cos(m*z) * cos(k*x + l*y)
+!  The vorticity of this flow is
+!    xi(x, y, z) = alpha * u(x, y, z)
+!   eta(x, y, z) = alpha * v(x, y, z)
+!  zeta(x, y, z) = alpha * w(x, y, z)
+!  For this setting the theoretical vorticity tendency is
+!  vtend(z, y, x, 1) = alpha*k*m**2 * (k^2+l^2)^(-1)*sin(k*x+l*y)*cos(k*x+l*y)
+!  vtend(z, y, x, 2) = alpha*l*m**2 * (k^2+l^2)^(-1)*sin(k*x+l*y)*cos(k*x+l*y)
+!  vtend(z, y, x, 3) = -alpha * m * sin(m*z) * cos(m*z)
+! =============================================================================
+program test_vtend
+    use unit_test
+    use constants, only : one, two, pi, f12, f34, three
+    use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
+    use fields, only : vortg, velog, vtend, tbuoyg, velgradg, field_default
+    use inversion_utils, only : init_fft, fftxyp2s
+    use inversion_mod, only : vor2vel, vor2vel_timer, vorticity_tendency, vtend_timer
+    use field_netcdf
+    use timer
+    implicit none
+
+    double precision, allocatable :: vtend_ref(:, :, :, :), velog_ref(:, :, :, :)
+    integer                       :: ix, iy, iz
+    double precision              :: x, y, z, alpha, fk2l2, k, l, m
+    double precision              :: cosmz, sinmz, sinkxly, coskxly
+
+    call register_timer('vorticity', vor2vel_timer)
+    call register_timer('vtend', vtend_timer)
+    call register_timer('field io', field_io_timer)
+
+    nx = 128
+    ny = 128
+    nz = 128
+
+    lower  = -f12 * pi * (/one, one, one/)
+    extent =  pi * (/one, one, one/)
+
+
+    allocate(vtend_ref(-1:nz+1, 0:ny-1, 0:nx-1, 3))
+    allocate(velog_ref(-1:nz+1, 0:ny-1, 0:nx-1, 3))
+
+    call update_parameters
+
+    call field_default
+
+    call init_fft
+
+    k = two
+    l = two
+    m = one
+
+    alpha = dsqrt(k ** 2 + l ** 2 + m ** 2)
+    fk2l2 = one / dble(k ** 2 + l ** 2)
+
+    do ix = 0, nx-1
+        x = lower(1) + ix * dx(1)
+        do iy = 0, ny-1
+            y = lower(2) + iy * dx(2)
+            do iz = -1, nz+1
+                z = lower(3) + iz * dx(3)
+
+                cosmz = dcos(m * z)
+                sinmz = dsin(m * z)
+                sinkxly = dsin(k * x + l * y)
+                coskxly = dcos(k * x + l * y)
+
+                ! velocity
+                velog_ref(iz, iy, ix, 1) = fk2l2 * (k * m * sinmz - l * alpha * cosmz) * sinkxly
+                velog_ref(iz, iy, ix, 2) = fk2l2 * (l * m * sinmz + k * alpha * cosmz) * sinkxly
+                velog_ref(iz, iy, ix, 3) = cosmz * coskxly
+
+                ! vorticity
+                vortg(iz, iy, ix, 1) = alpha * velog_ref(iz, iy, ix, 1)
+                vortg(iz, iy, ix, 2) = alpha * velog_ref(iz, iy, ix, 2)
+                vortg(iz, iy, ix, 3) = alpha * velog_ref(iz, iy, ix, 3)
+
+!                 velgradg(iz, iy, ix, 1) = k * fk2l2 * (k * m * sinmz - l * alpha * cosmz) * coskxly
+!                 velgradg(iz, iy, ix, 2) = l * fk2l2 * (k * m * sinmz - l * alpha * cosmz) * coskxly
+!                 velgradg(iz, iy, ix, 3) = l * fk2l2 * (l * m * sinmz + k * alpha * cosmz) * coskxly
+!                 velgradg(iz, iy, ix, 4) = -k * cosmz * sinkxly
+!                 velgradg(iz, iy, ix, 5) = -l * cosmz * sinkxly
+
+                ! reference solution
+                vtend_ref(iz, iy, ix, 1) = alpha * k * m ** 2 * fk2l2 * sinkxly * coskxly
+                vtend_ref(iz, iy, ix, 2) = alpha * l * m ** 2 * fk2l2 * sinkxly * coskxly
+                vtend_ref(iz, iy, ix, 3) = -alpha * m * sinmz * cosmz
+            enddo
+        enddo
+    enddo
+
+
+    call vor2vel(vortg,  velog,  velgradg)
+!     vortg(-1, :, :, 1) = vortg( 1, :, :, 1)
+!     vortg(-1, :, :, 2) = vortg( 1, :, :, 2)
+!     vortg(-1, :, :, 3) = vortg( 1, :, :, 3)
+
+!     vortg(nz+1, :, :, 1) = vortg(nz-1, :, :, 1)
+!     vortg(nz+1, :, :, 2) = vortg(nz-1, :, :, 2)
+!     vortg(nz+1, :, :, 3) = vortg(nz-1, :, :, 3)
+
+    call vorticity_tendency(vortg, velog, tbuoyg, velgradg, vtend)
+
+    vtend(0:nz, :, :, :) = vtend_ref(0:nz, :, :, :) - vtend(0:nz, :, :, :)
+    velog(0:nz, :, :, :) = velog_ref(0:nz, :, :, :) - velog(0:nz, :, :, :)
+
+    call create_netcdf_field_file('vtend_vort_symmetric', .true., .false.)
+    call write_netcdf_fields(zero)
+
+    deallocate(vtend_ref)
+
+end program test_vtend
