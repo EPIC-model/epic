@@ -41,7 +41,7 @@ module rk4_utils
             dvdx = vorticity(3) + dudy
 
             ! dv/dz = dw/dy - \omegax
-            dvdz = dvdy - vorticity(1)
+            dvdz = dwdy - vorticity(1)
 
             ! dw/dz = - (du/dx + dv/dy)
             dwdz = - (dudx + dvdy)
