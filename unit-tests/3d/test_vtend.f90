@@ -19,7 +19,7 @@ program test_vtend
     use unit_test
     use constants, only : one, two, pi, f12, f34, three
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use fields, only : vortg, velog, vtend, tbuoyg, field_default
+    use fields, only : vortg, velog, vtend, velgradg, tbuoyg, field_default
     use inversion_utils, only : init_fft, fftxyp2s
     use inversion_mod, only : vor2vel, vor2vel_timer, vorticity_tendency, vtend_timer
     use timer
@@ -82,6 +82,13 @@ program test_vtend
                             vortg(iz, iy, ix, 2) = alpha * velog(iz, iy, ix, 2)
                             vortg(iz, iy, ix, 3) = alpha * velog(iz, iy, ix, 3)
 
+                            ! velocity gradient tensor
+                            velgradg(iz, iy, ix, 1) = k * fk2l2 * (k * m * sinmz - l * alpha * cosmz) * coskxly
+                            velgradg(iz, iy, ix, 2) = l * fk2l2 * (k * m * sinmz - l * alpha * cosmz) * coskxly
+                            velgradg(iz, iy, ix, 3) = l * fk2l2 * (l * m * sinmz + k * alpha * cosmz) * coskxly
+                            velgradg(iz, iy, ix, 4) = -k * cosmz * sinkxly
+                            velgradg(iz, iy, ix, 5) = -l * cosmz * sinkxly
+
                             ! reference solution
                             vtend_ref(iz, iy, ix, 1) = alpha * k * m ** 2 * fk2l2 * sinkxly * coskxly
                             vtend_ref(iz, iy, ix, 2) = alpha * l * m ** 2 * fk2l2 * sinkxly * coskxly
@@ -90,7 +97,7 @@ program test_vtend
                     enddo
                 enddo
 
-                call vorticity_tendency(vortg, velog, tbuoyg, vtend)
+                call vorticity_tendency(vortg, velog, tbuoyg, velgradg, vtend)
 
                 error = max(error, maxval(dabs(vtend_ref(0:nz, :, :, :) - vtend(0:nz, :, :, :))))
             enddo
