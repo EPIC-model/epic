@@ -18,8 +18,8 @@ module field_netcdf
     integer            :: coord_ids(3)  ! = (x, y, z)
     integer            :: t_axis_id
 
-    integer            :: x_vel_id, y_vel_id, z_vel_id,      &
-                          x_vor_id, y_vor_id, z_vor_id,      &
+    integer            :: x_vel_id, y_vel_id, z_vel_id, &
+                          x_vor_id, y_vor_id, z_vor_id, &
                           tbuoy_id, vol_id, n_writes
 
 #ifdef ENABLE_DIAGNOSE
