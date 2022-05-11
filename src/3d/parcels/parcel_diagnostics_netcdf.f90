@@ -85,7 +85,7 @@ module parcel_diagnostics_netcdf
                 name='pe',                                                  &
                 long_name='potential energy',                               &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^5/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=pe_id)
@@ -95,7 +95,7 @@ module parcel_diagnostics_netcdf
                 name='ke',                                                  &
                 long_name='kinetic energy',                                 &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^5/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=ke_id)
@@ -105,7 +105,7 @@ module parcel_diagnostics_netcdf
                 name='te',                                                  &
                 long_name='total energy',                                   &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^5/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=te_id)
