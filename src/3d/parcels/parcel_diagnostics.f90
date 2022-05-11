@@ -22,6 +22,9 @@ module parcel_diagnostics
     ! ke    : kinetic energy
     double precision :: peref, pe, ke
 
+    ! psi : enstrophy
+    double precision :: psi
+
     integer :: n_small
 
     ! avg_lam : mean aspect ratio over all parcels
@@ -70,7 +73,7 @@ module parcel_diagnostics
         subroutine calculate_parcel_diagnostics(velocity)
             double precision :: velocity(:, :)
             integer          :: n
-            double precision :: b, z, vel(3), vol, zmin
+            double precision :: b, z, vel(3), vol, zmin, vor(3)
             double precision :: evals(3), lam, lsum, l2sum, v2sum
 
             call start_timer(parcel_stats_timer)
@@ -78,6 +81,7 @@ module parcel_diagnostics
             ! reset
             ke = zero
             pe = zero
+            psi = zero
 
             lsum = zero
             l2sum = zero
@@ -97,11 +101,12 @@ module parcel_diagnostics
 
 
             !$omp parallel default(shared)
-            !$omp do private(n, vel, vol, b, z, evals, lam) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta)
+            !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
+            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, psi)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
+                vor = parcels%vorticity(:, n)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
                 z   = parcels%position(3, n) - zmin
@@ -111,6 +116,9 @@ module parcel_diagnostics
 
                 ! potential energy
                 pe = pe - b * z * vol
+
+                ! enstrophy
+                psi = psi + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
 
                 evals = get_eigenvalues(parcels%B(:, n), parcels%volume(n))
                 lam = get_aspect_ratio(evals)
@@ -133,7 +141,7 @@ module parcel_diagnostics
                 endif
                 !$omp end critical
 #endif
-                rms_zeta = rms_zeta + vol * parcels%vorticity(:, n) ** 2
+                rms_zeta = rms_zeta + vol * vor ** 2
 
             enddo
             !$omp end do
@@ -141,6 +149,7 @@ module parcel_diagnostics
 
             ke = f12 * ke
             pe = pe - peref
+            psi = f12 * psi
 
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
