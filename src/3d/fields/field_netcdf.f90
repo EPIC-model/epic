@@ -23,7 +23,8 @@ module field_netcdf
                           tbuoy_id, vol_id, n_writes
 
 #ifdef ENABLE_DIAGNOSE
-    integer            :: x_vtend_id, y_vtend_id, z_vtend_id
+    integer            :: x_vtend_id, y_vtend_id, z_vtend_id, &
+                          nparg_id, nsparg_id
 #endif
 
 #ifndef ENABLE_DRY_MODE
@@ -41,7 +42,8 @@ module field_netcdf
                n_writes, restart_time
 
 #ifdef ENABLE_DIAGNOSE
-    private :: x_vtend_id, y_vtend_id, z_vtend_id
+    private :: x_vtend_id, y_vtend_id, z_vtend_id, &
+               nparg_id, nsparg_id
 #endif
 
 #ifndef ENABLE_DRY_MODE
@@ -154,6 +156,24 @@ module field_netcdf
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
                                        varid=z_vtend_id)
+
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='nparg',                            &
+                                       long_name='number of parcels per cell',  &
+                                       std_name='',                             &
+                                       unit='1',                                &
+                                       dtype=NF90_INT,                          &
+                                       dimids=dimids,                           &
+                                       varid=nparg_id)
+
+            call define_netcdf_dataset(ncid=ncid,                                    &
+                                       name='nsparg',                                &
+                                       long_name='number of small parcels per cell', &
+                                       std_name='',                                  &
+                                       unit='1',                                     &
+                                       dtype=NF90_INT,                               &
+                                       dimids=dimids,                                &
+                                       varid=nsparg_id)
 #endif
 
             call define_netcdf_dataset(ncid=ncid,                           &
@@ -257,6 +277,10 @@ module field_netcdf
             call get_var_id(ncid, 'y_vtend', y_vtend_id)
 
             call get_var_id(ncid, 'z_vtend', z_vtend_id)
+
+            call get_var_id(ncid, 'nparg', nparg_id)
+
+            call get_var_id(ncid, 'nsparg', nsparg_id)
 #endif
 
             call get_var_id(ncid, 'x_vorticity', x_vor_id)
@@ -318,6 +342,11 @@ module field_netcdf
             call write_netcdf_dataset(ncid, y_vtend_id, vtend(0:nz, 0:ny-1, 0:nx-1, 2), &
                                       start, cnt)
             call write_netcdf_dataset(ncid, z_vtend_id, vtend(0:nz, 0:ny-1, 0:nx-1, 3), &
+                                      start, cnt)
+
+            call write_netcdf_dataset(ncid, nparg_id, nparg(0:nz, 0:ny-1, 0:nx-1), &
+                                      start, cnt)
+            call write_netcdf_dataset(ncid, nsparg_id, nparg(0:nz, 0:ny-1, 0:nx-1), &
                                       start, cnt)
 #endif
 
