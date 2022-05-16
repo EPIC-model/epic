@@ -153,6 +153,7 @@ module parcel_interpl
             volg = zero
             nparg = zero
             nsparg = zero
+            humg = zero
 #ifndef ENABLE_DRY_MODE
             dbuoyg = zero
 #endif
@@ -170,12 +171,12 @@ module parcel_interpl
 
 #ifndef ENABLE_DRY_MODE
                 ! liquid water content
-                h_c = parcels%humidity(n) &
-                    - h_0 * dexp(lam_c * (lower(2) - parcels%position(2, n)))
-                h_c = max(zero, h_c)
+!                 h_c = parcels%humidity(n) &
+!                     - h_0 * dexp(lam_c * (lower(2) - parcels%position(2, n)))
+!                 h_c = max(zero, h_c)
 
                 ! total buoyancy (including effects of latent heating)
-                btot = parcels%buoyancy(n) + glat * h_c
+                btot = parcels%buoyancy(n) !+ glat * h_c
 #else
                 btot = parcels%buoyancy(n)
 #endif
@@ -215,6 +216,9 @@ module parcel_interpl
                                              + weight * btot
                         volg(js(l), is(l)) = volg(js(l), is(l)) &
                                            + weight
+
+                        humg(js(l), is(l)) = humg(js(l), is(l)) &
+                                             + weight * parcels%humidity(n)
                     enddo
                 enddo
             enddo
@@ -241,6 +245,11 @@ module parcel_interpl
             dbuoyg(1,    :) = dbuoyg(1,    :) + dbuoyg(-1,   :)
             dbuoyg(nz-1, :) = dbuoyg(nz-1, :) + dbuoyg(nz+1, :)
 #endif
+            humg(0,  :) = two * humg(0,  :)
+            humg(nz, :) = two * humg(nz, :)
+            humg(1,    :) = humg(1,    :) + humg(-1,   :)
+            humg(nz-1, :) = humg(nz-1, :) + humg(nz+1, :)
+
             tbuoyg(0,  :) = two * tbuoyg(0,  :)
             tbuoyg(nz, :) = two * tbuoyg(nz, :)
             tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
@@ -257,6 +266,8 @@ module parcel_interpl
             dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)
 #endif
             tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
+
+            humg(0:nz, :) = humg(0:nz, :) / volg(0:nz, :)
 
             ! extrapolate to halo grid points (needed to compute
             ! z derivative used for the time step)

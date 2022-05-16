@@ -25,7 +25,7 @@ program epic2d
 #ifndef NDEBUG
     use parcel_interpl, only : sym_vol2grid_timer
 #endif
-    use parcel_init, only : init_parcels, read_parcels, init_timer
+    use parcel_tg_init, only : init_tg_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
     use h5_utils, only : initialise_hdf5, finalise_hdf5, open_h5_file, close_h5_file
     use h5_reader, only : get_file_type, get_num_steps, get_time
@@ -90,26 +90,10 @@ program epic2d
 
             call parcel_alloc(max_num_parcels)
 
-            if (l_restart) then
-                call open_h5_file(restart_file, H5F_ACC_RDONLY_F, h5handle)
-                call get_file_type(h5handle, file_type)
-                call get_num_steps(h5handle, n_steps)
-                call get_time(h5handle, n_steps - 1, time%initial)
-                call close_h5_file(h5handle)
+            time%initial = zero ! make sure user cannot start at arbitrary time
 
-                if (file_type == 'fields') then
-                    call init_parcels(restart_file, field_tol)
-                else if (file_type == 'parcels') then
-                    call read_parcels(restart_file, n_steps - 1)
-                else
-                    print *, 'Restart file must be of type "fields" or "parcels".'
-                    stop
-                endif
-            else
-                time%initial = zero ! make sure user cannot start at arbitrary time
-
-                call init_parcels(field_file, field_tol)
-            endif
+            ! We initialize the TG test case
+            call init_tg_parcels
 
             call ls_rk4_alloc(max_num_parcels)
 

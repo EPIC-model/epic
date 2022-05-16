@@ -21,6 +21,7 @@ epic2d_SOURCES = 				\
 	parcels/parcel_split.f90		\
 	parcels/parcel_diagnostics.f90		\
 	parcels/parcel_interpl.f90 		\
+	parcels/parcel_tg_init.f90		\
 	parcels/parcel_init.f90			\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_hdf5.f90			\
