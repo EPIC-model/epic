@@ -32,6 +32,7 @@ unittests_PROGRAMS = 				\
 	test_ellipsoid_split_merge		\
 	test_parcel_init_3d			\
 	test_fft_3d				\
+	test_fft_3d_sphere       		\
 	test_fft_2_3d				\
 	test_trilinear				\
 	test_laplace_correction_3d		\
@@ -80,6 +81,9 @@ test_parcel_init_3d_LDADD = libcombi.la
 
 test_fft_3d_SOURCES = test_fft_3d.f90
 test_fft_3d_LDADD = libcombi.la
+
+test_fft_3d_sphere_SOURCES = test_fft_3d_sphere.f90
+test_fft_3d_sphere_LDADD = libcombi.la
 
 test_fft_2_3d_SOURCES = test_fft_2_3d.f90
 test_fft_2_3d_LDADD = libcombi.la
