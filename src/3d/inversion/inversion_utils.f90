@@ -3,6 +3,7 @@ module inversion_utils
     use parameters, only : nx, ny, nz, dx, dxi, extent, upper, lower
     use stafft
     use sta2dfft
+    use deriv1d, only : init_deriv
     implicit none
 
     private
@@ -60,9 +61,22 @@ module inversion_utils
             , hdzi      &
             , xfactors  &
             , yfactors  &
+            , zfactors  &
             , xtrig     &
             , ytrig     &
-            , k2l2i
+            , ztrig     &
+            , rkx       &
+            , rky       &
+            , rkz       &
+            , k2l2i     &
+            , green     &
+            , rkzi      &
+            , thetap    &
+            , thetam    &
+            , dthetap   &
+            , dthetam   &
+            , gambot    &
+            , gamtop
 
     public :: field_combine_semi_spectral   &
             , field_combine_physical        &

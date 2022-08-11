@@ -67,9 +67,9 @@ module utils
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep
-            call vor2vel(vortg, velog, velgradg)
+            call vor2vel
 
-            call vorticity_tendency(vortg, velog, tbuoyg, vtend)
+            call vorticity_tendency
 
             call grid2par(velocity, vorticity, strain)
 

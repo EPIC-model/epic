@@ -4,6 +4,7 @@ module inversion_mod
     use physics, only : f_cor
     use constants, only : zero, two, f12
     use sta2dfft, only : dct, dst
+    use fields
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -20,22 +21,28 @@ module inversion_mod
 !         ! vorticity is modified to be solenoidal and spectrally filtered.
 
         ! Given the vorticity vector field (svor) in spectral space, this
-        ! returns the associated velocity field (vel) as well as vorticity
-        ! in physical space (vor)
+        ! returns the associated velocity field (velog) as well as vorticity
+        ! in physical space (vortg)
         subroutine vor2vel!(vortg,  velog,  velgradg)
 !             double precision, intent(in)    :: vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3)
 !             double precision, intent(out)   :: velog(-1:nz+1, 0:ny-1, 0:nx-1, 3)
 !             double precision, intent(out)   :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
-!             double precision                :: svelog(0:nz, 0:nx-1, 0:ny-1, 3)
             double precision :: as(0:nz, 0:nx-1, 0:ny-1)         ! semi-spectral
             double precision :: bs(0:nz, 0:nx-1, 0:ny-1)         ! semi-spectral
             double precision :: ds(0:nz, 0:nx-1, 0:ny-1)         ! semi-spectral
             double precision :: es(0:nz, 0:nx-1, 0:ny-1)         ! semi-spectral
             double precision :: cs(0:nz, 0:nx-1, 0:ny-1)         ! semi-spectral
             double precision :: ubar(0:nz), vbar(0:nz)
+            double precision :: svel(0:nz, 0:nx-1, 0:ny-1, 3)    ! velocity in semi-spectral space
             integer          :: iz, nc, kx, ky, kz
 
             call start_timer(vor2vel_timer)
+
+            !----------------------------------------------------------
+            ! Decompose initial vorticity:
+            do nc = 1, 3
+                call field_decompose_physical(vortg(0:nz, :, :, nc), svor(:, :, :, nc))
+            enddo
 
             !----------------------------------------------------------
             ! Enforce solenoidality
@@ -78,9 +85,11 @@ module inversion_mod
             svor(:, 0, 0, 2) = vbar
 
             !----------------------------------------------------------
-            !Combine vorticity in physical space:
+            ! Combine vorticity in physical space:
             do nc = 1, 3
-                call field_combine_physical(svor(:, :, :, nc), vor(:, :, :, nc))
+                call field_combine_physical(svor(:, :, :, nc), vortg(0:nz, :, :, nc))
+                ! Linear extrapolation to halo cells -- FIXME may not be needed
+                vortg(-1, :, :, nc) =  two * vortg(0, :, :, nc) - vortg(1, :, :, nc)
             enddo
 
             !----------------------------------------------------------
@@ -184,7 +193,7 @@ module inversion_mod
             !$omp end parallel workshare
 
             !Get "u" in physical space:
-            call fftxys2p(as, vel(:, :, :, 1))
+            call fftxys2p(as, velog(0:nz, :, :, 1))
 
             !-------------------------------------------------------
             !Find y velocity component "v":
@@ -206,7 +215,7 @@ module inversion_mod
             !$omp end parallel workshare
 
             !Get "v" in physical space:
-            call fftxys2p(as, vel(:, :, :, 2))
+            call fftxys2p(as, velog(0:nz, :, :, 2))
 
             !-------------------------------------------------------
             !Store spectral form of "w":
@@ -215,12 +224,12 @@ module inversion_mod
             !$omp end parallel workshare
 
             !Get "w" in physical space:
-            call fftxys2p(ds, vel(:, :, :, 3))
+            call fftxys2p(ds, velog(0:nz, :, :, 3))
 
-            =================================================================================
+            !=================================================================================
 
             ! compute the velocity gradient tensor
-            call vel2vgrad(svelog, velgradg)
+            call vel2vgrad(svel)!, velgradg)
 
             ! use extrapolation in u and v and anti-symmetry in w to fill z grid points outside domain:
             velog(-1, :, :, 1) =  two * velog(0, :, :, 1) - velog(1, :, :, 1) ! u
@@ -237,19 +246,19 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Compute the gridded velocity gradient tensor
-        subroutine vel2vgrad(svelog, velgradg)
-            double precision, intent(in)  :: svelog(0:nz, 0:nx-1, 0:ny-1, 3)
-            double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
+        subroutine vel2vgrad(svel)!, velgradg)
+            double precision, intent(in)  :: svel(0:nz, 0:nx-1, 0:ny-1, 3)
+!             double precision, intent(out) :: velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5)
             double precision              :: ds(0:nz, 0:nx-1, 0:ny-1) ! spectral derivatives
 
             ! x component:
-            call diffx(svelog(:, :, :, 1), ds)         ! u_x = du/dx in spectral space
+            call diffx(svel(:, :, :, 1), ds)         ! u_x = du/dx in spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, 1)) ! u_x in physical space
 
-            call diffy(svelog(:, :, :, 1), ds)         ! u_y = du/dy in spectral space
+            call diffy(svel(:, :, :, 1), ds)         ! u_y = du/dy in spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, 2)) ! u_y in physical space
 
-            call diffx(svelog(:, :, :, 3), ds)         ! w_x = dw/dx in spectral space
+            call diffx(svel(:, :, :, 3), ds)         ! w_x = dw/dx in spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, 4)) ! w_x in physical space
 
             ! use extrapolation in du/dx and du/dy to fill z grid points outside domain:
@@ -263,10 +272,10 @@ module inversion_mod
             velgradg(nz+1, :, :, 4) = -velgradg(nz-1, :, :, 4) ! upper boundary dw/dx
 
             ! y & z components:
-            call diffy(svelog(:, :, :, 2), ds)         ! v_y = dv/dy in spectral space
+            call diffy(svel(:, :, :, 2), ds)         ! v_y = dv/dy in spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, 3)) ! v_y in physical space
 
-            call diffy(svelog(:, :, :, 3), ds)         ! w_y = dw/dy in spectral space
+            call diffy(svel(:, :, :, 3), ds)         ! w_y = dw/dy in spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, 5)) ! w_y in physical space
 
             ! use extrapolation in dv/dy to fill z grid points outside domain:
@@ -284,12 +293,13 @@ module inversion_mod
 
         ! Compute the gridded vorticity tendency:
         subroutine vorticity_tendency
-            double precision :: fp(0:nz, 0:ny-1, 0:nx-1)    ! physical space
+            double precision :: fp(0:nz, 0:ny-1, 0:nx-1)    ! physical space ! FIXME -1:nz+1
             double precision :: gp(0:nz, 0:ny-1, 0:nx-1)    ! physical space
             double precision :: p(0:nz, 0:nx-1, 0:ny-1)     ! mixed spectral space
             double precision :: q(0:nz, 0:nx-1, 0:ny-1)     ! mixed spectral space
             double precision :: r(0:nz, 0:nx-1, 0:ny-1)     ! mixed spectral space
             integer          :: nc
+            double precision :: svorts(0:nz, 0:nx-1, 0:ny-1, 3)    ! FIXME vorticity source
 
             call start_timer(vtend_timer)
 
@@ -297,7 +307,7 @@ module inversion_mod
             ! First store absolute vorticity in physical space:
             do nc = 1, 3
                 !$omp parallel workshare
-                vor(:, :, :, nc) = vor(:, :, :, nc) + f_cor(nc)
+                vortg(:, :, :, nc) = vortg(:, :, :, nc) + f_cor(nc)
                 !$omp end parallel workshare
             enddo
 
@@ -312,7 +322,7 @@ module inversion_mod
 
             ! r = u * eta - v * xi + b
             !$omp parallel workshare
-            fp = vel(:, :, :, 1) * vor(:, :, :, 2) - vel(:, :, :, 2) * vor(:, :, :, 1)
+            fp = velog(:, :, :, 1) * vortg(:, :, :, 2) - velog(:, :, :, 2) * vortg(:, :, :, 1)
 #ifdef ENABLE_BUOYANCY
             fp = fp + buoy
 #endif
@@ -321,7 +331,7 @@ module inversion_mod
 
             ! q = w * xi - u * zeta
             !$omp parallel workshare
-            fp = vel(:, :, :, 3) * vor(:, :, :, 1) - vel(:, :, :, 1) * vor(:, :, :, 3)
+            fp = velog(:, :, :, 3) * vortg(:, :, :, 1) - velog(:, :, :, 1) * vortg(:, :, :, 3)
             !$omp end parallel workshare
             call field_decompose_physical(fp, q)
 
@@ -335,7 +345,7 @@ module inversion_mod
 
             ! p = v * zeta - w * eta
             !$omp parallel workshare
-            fp = vel(:, :, :, 2) * vor(:, :, :, 3) - vel(:, :, :, 3) * vor(:, :, :, 2)
+            fp = velog(:, :, :, 2) * vortg(:, :, :, 3) - velog(:, :, :, 3) * vortg(:, :, :, 2)
             !$omp end parallel workshare
             call field_decompose_physical(fp, p)
 
