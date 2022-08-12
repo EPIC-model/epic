@@ -48,34 +48,34 @@ module inversion_utils
 
     logical :: is_initialised = .false.
 
-    public :: init_fft  &
-            , diffx     &
-            , diffy     &
-            , diffz     &
-            , lapinv1   &
-            , vertint   &
-            , fftxyp2s  &
-            , fftxys2p  &
-            , dz2       &
-            , filt      &
-            , hdzi      &
-            , xfactors  &
-            , yfactors  &
-            , zfactors  &
-            , xtrig     &
-            , ytrig     &
-            , ztrig     &
-            , rkx       &
-            , rky       &
-            , rkz       &
-            , k2l2i     &
-            , green     &
-            , rkzi      &
-            , thetap    &
-            , thetam    &
-            , dthetap   &
-            , dthetam   &
-            , gambot    &
+    public :: init_inversion  &
+            , diffx           &
+            , diffy           &
+            , diffz           &
+            , lapinv1         &
+            , vertint         &
+            , fftxyp2s        &
+            , fftxys2p        &
+            , dz2             &
+            , filt            &
+            , hdzi            &
+            , xfactors        &
+            , yfactors        &
+            , zfactors        &
+            , xtrig           &
+            , ytrig           &
+            , ztrig           &
+            , rkx             &
+            , rky             &
+            , rkz             &
+            , k2l2i           &
+            , green           &
+            , rkzi            &
+            , thetap          &
+            , thetam          &
+            , dthetap         &
+            , dthetam         &
+            , gambot          &
             , gamtop
 
     public :: field_combine_semi_spectral   &
@@ -90,6 +90,12 @@ module inversion_utils
         subroutine init_inversion
             integer          :: kx, ky, iz, kz
             double precision :: z, zm(0:nz), zp(0:nz)
+
+            if (is_initialised) then
+                return
+            endif
+
+            is_initialised = .true.
 
             call init_fft
 
@@ -213,12 +219,6 @@ module inversion_utils
             double precision              :: skx(0:nx-1), sky(0:ny-1), skz(0:nz)
             integer                       :: iz, isub, ib_sub, ie_sub
 
-            if (is_initialised) then
-                return
-            endif
-
-            is_initialised = .true.
-
             dz = dx(3)
             dzi = dxi(3)
             dz6  = f16 * dx(3)
@@ -316,10 +316,6 @@ module inversion_utils
             !Ensure filter does not change domain mean:
             filt(:, 0, 0) = one
 
-            ! ================================================================================
-            ! FIXME: The code below is used for lapinv1 which is
-            ! used for the parcel Laplace correction.
-
             !-----------------------------------------------------------------------
             ! Fixed coefficients used in the tridiagonal problems:
             a0 = -two * dzisq - k2l2
@@ -351,7 +347,6 @@ module inversion_utils
             etdv(:, 1, 1) = zero
 
             deallocate(a0)
-            ! ================================================================================
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -514,8 +509,8 @@ module inversion_utils
         !Calculates df/dz for a field f using 2nd-order differencing.
         !Here fs = f, ds = df/dz.
         subroutine diffz(fs, ds)
-            double precision, intent(in)  :: fs(0:nz, nx, ny)
-            double precision, intent(out) :: ds(0:nz, nx, ny)
+            double precision, intent(in)  :: fs(0:nz, 0:ny-1, 0:nx-1)
+            double precision, intent(out) :: ds(0:nz, 0:ny-1, 0:nx-1)
             integer                       :: iz
 
             ! Linear extrapolation at the boundaries:
