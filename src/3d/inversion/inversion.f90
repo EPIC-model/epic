@@ -20,13 +20,14 @@ module inversion_mod
         ! and the velocity gradient tensor (velgradg) in physical space (vortg)
         ! Note: the vorticity is modified to be solenoidal and spectrally filtered.
         subroutine vor2vel
-            double precision :: as(0:nz, 0:nx-1, 0:ny-1)         ! semi-spectral
-            double precision :: bs(0:nz, 0:nx-1, 0:ny-1)         ! semi-spectral
-            double precision :: ds(0:nz, 0:nx-1, 0:ny-1)         ! semi-spectral
-            double precision :: es(0:nz, 0:nx-1, 0:ny-1)         ! semi-spectral
-            double precision :: cs(0:nz, 0:nx-1, 0:ny-1)         ! semi-spectral
+            double precision :: as(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
+            double precision :: bs(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
+            double precision :: ds(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
+            double precision :: es(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
+            double precision :: cs(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
             double precision :: ubar(0:nz), vbar(0:nz)
-            double precision :: svel(0:nz, 0:nx-1, 0:ny-1, 3)    ! velocity in semi-spectral space
+            double precision :: svel(0:nz, 0:nx-1, 0:ny-1, 3)   ! velocity in semi-spectral space
+            double precision :: svor(0:nz, 0:nx-1, 0:ny-1, 3)   ! vorticity in mixed spectral space
             integer          :: iz, nc, kx, ky, kz
 
             call start_timer(vor2vel_timer)

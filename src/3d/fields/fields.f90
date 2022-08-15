@@ -17,7 +17,6 @@ module fields
     double precision, allocatable, dimension(:, :, :, :) :: &
         velog,     &   ! velocity vector field (u, v, w)
         vortg,     &   ! vorticity vector field (\omegax, \omegay, \omegaz)
-        svor,      &   ! full-spectral vorticity for 1:nz-1, semi-spectral for iz = 0 and iz = nz
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
                        ! ordering: du/dx, du/dy,
@@ -63,7 +62,6 @@ module fields
 #endif
 
             allocate(vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3))
-            allocate(svor(0:nz, 0:nx-1, 0:ny-1, 3))
 
             allocate(vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3))
 
@@ -86,7 +84,6 @@ module fields
             velgradg = zero
             volg     = zero
             vortg    = zero
-            svor     = zero
             vtend    = zero
             tbuoyg   = zero
 #ifndef ENABLE_DRY_MODE
