@@ -78,9 +78,9 @@ module ls_rk4
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep
-            call vor2vel(vortg, velog, velgradg)
+            call vor2vel
 
-            call vorticity_tendency(vortg, velog, tbuoyg, vtend)
+            call vorticity_tendency
 
             ! update the time step
             dt = get_time_step(t)
@@ -144,9 +144,9 @@ module ls_rk4
 
                 call stop_timer(rk4_timer)
             else
-                call vor2vel(vortg, velog, velgradg)
+                call vor2vel
 
-                call vorticity_tendency(vortg, velog, tbuoyg, vtend)
+                call vorticity_tendency
 
                 call grid2par_add(delta_pos, delta_vor, strain)
 
