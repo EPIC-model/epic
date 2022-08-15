@@ -292,69 +292,57 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine vorticity_tendency
-            double precision :: f(-1:nz+1, 0:ny-1, 0:nx-1, 3)
+            double precision :: b(0:nz, 0:ny-1, 0:nx-1)
+            double precision :: bs(0:nz, 0:nx-1, 0:ny-1) ! spectral buoyancy
+            double precision :: ds(0:nz, 0:nx-1, 0:ny-1) ! spectral derivatives
+            double precision :: db(0:nz, 0:ny-1, 0:nx-1) ! buoyancy derivatives
 
             call start_timer(vtend_timer)
 
-            ! Eqs. 10 and 11 of MPIC paper
-            f(:, : , :, 1) = (vortg(:, :, :, 1) + f_cor(1)) * velog(:, :, :, 1)
-            f(:, : , :, 2) = (vortg(:, :, :, 2) + f_cor(2)) * velog(:, :, :, 1) + tbuoyg
-            f(:, : , :, 3) = (vortg(:, :, :, 3) + f_cor(3)) * velog(:, :, :, 1)
+            ! copy buoyancy
+            b = tbuoyg(0:nz, :, :)
 
-            call divergence(f, vtend(0:nz, :, :, 1))
+            ! Compute spectral buoyancy (bs):
+            call fftxyp2s(b, bs)
 
-            f(:, : , :, 1) = (vortg(:, :, :, 1) + f_cor(1)) * velog(:, :, :, 2) - tbuoyg
-            f(:, : , :, 2) = (vortg(:, :, :, 2) + f_cor(2)) * velog(:, :, :, 2)
-            f(:, : , :, 3) = (vortg(:, :, :, 3) + f_cor(3)) * velog(:, :, :, 2)
+            call diffy(bs, ds)                      ! b_y = db/dy in spectral space
+            call fftxys2p(ds, db)                   ! db = b_y in physical space
 
-            call divergence(f, vtend(0:nz, :, :, 2))
+            !$omp parallel
+            !$omp workshare
+            vtend(0:nz, :, :, 1) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 1) & ! \omegax * du/dx
+                                 + (vortg(0:nz, :, :, 2) + f_cor(2))                         &
+                                    * (vortg(0:nz, :, :, 3) + velgradg(0:nz, :, :, 2)) & ! \omegay * dv/dx
+                                 + (vortg(0:nz, :, :, 3) + f_cor(3)) * velgradg(0:nz, :, :, 4) & ! \omegaz * dw/dx
+                                 + db                                                          ! db/dy
+            !$omp end workshare
+            !$omp end parallel
 
-            f(:, : , :, 1) = (vortg(:, :, :, 1) + f_cor(1)) * velog(:, :, :, 3)
-            f(:, : , :, 2) = (vortg(:, :, :, 2) + f_cor(2)) * velog(:, :, :, 3)
-            f(:, : , :, 3) = (vortg(:, :, :, 3) + f_cor(3)) * velog(:, :, :, 3)
+            call diffx(bs, ds)                      ! b_x = db/dx in spectral space
+            call fftxys2p(ds, db)                   ! db = b_x in physical space
 
-            call divergence(f, vtend(0:nz, :, :, 3))
+            !$omp parallel
+            !$omp workshare
+            vtend(0:nz, :, :, 2) =  vortg(0:nz, :, :, 1)             * velgradg(0:nz, :, :, 2) & ! \omegax * du/dy
+                                 + (vortg(0:nz, :, :, 2) + f_cor(2)) * velgradg(0:nz, :, :, 3) & ! \omegay * dv/dy
+                                 + (vortg(0:nz, :, :, 3) + f_cor(3)) * velgradg(0:nz, :, :, 5) & ! \omegaz * dw/dy
+                                 - db                                                          ! dbdx
 
-            !-------------------------------------------------------
-            ! Extrapolate to halo grid points:
-            !$omp parallel workshare
+            vtend(0:nz, :, :, 3) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 4) & ! \omegax * dw/dx
+                                 + (vortg(0:nz, :, :, 2) + f_cor(2)) * velgradg(0:nz, :, :, 5) & ! \omegay * dw/dy
+                                 - (vortg(0:nz, :, :, 3) + f_cor(3))  *                         &
+                                         (velgradg(0:nz, :, :, 1) + velgradg(0:nz, :, :, 3))   ! \omegaz * dw/dz
+
+            !$omp end workshare
+            !$omp end parallel
+
+            ! Extrapolate to halo grid points
             vtend(-1,   :, :, :) = two * vtend(0,  :, :, :) - vtend(1,    :, :, :)
             vtend(nz+1, :, :, :) = two * vtend(nz, :, :, :) - vtend(nz-1, :, :, :)
-            !$omp end parallel workshare
+
+            call stop_timer(vtend_timer)
+
         end subroutine vorticity_tendency
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine divergence(f, div)
-            double precision, intent(in)  :: f(-1:nz+1, 0:ny-1, 0:nx-1, 3)
-            double precision, intent(out) :: div(0:nz, 0:ny-1, 0:nx-1)
-            double precision              :: df(0:nz, 0:ny-1, 0:nx-1)
-            integer                       :: i
-
-            ! calculate df/dx with central differencing
-            do i = 1, nx-2
-                div(0:nz, 0:ny-1, i) = f12 * dxi(1) * (f(0:nz, 0:ny-1, i+1, 1) - f(0:nz, 0:ny-1, i-1, 1))
-            enddo
-            div(0:nz, 0:ny-1, 0)    = f12 * dxi(1) * (f(0:nz, 0:ny-1, 1, 1) - f(0:nz, 0:ny-1, nx-1, 1))
-            div(0:nz, 0:ny-1, nx-1) = f12 * dxi(1) * (f(0:nz, 0:ny-1, 0, 1) - f(0:nz, 0:ny-1, nx-2, 1))
-
-            ! calculate df/dy with central differencing
-            do i = 1, ny-2
-                df(0:nz, i, 0:nx-1) = f12 * dxi(2) * (f(0:nz, i+1, 0:nx-1, 2) - f(0:nz, i-1, 0:nx-1, 2))
-            enddo
-            df(0:nz, 0,    0:nx-1) = f12 * dxi(2) * (f(0:nz, 1, 0:nx-1, 2) - f(0:nz, ny-1, 0:nx-1, 2))
-            df(0:nz, ny-1, 0:nx-1) = f12 * dxi(2) * (f(0:nz, 0, 0:nx-1, 2) - f(0:nz, ny-2, 0:nx-1, 2))
-
-            div = div + df
-
-            ! calculate df/dz with central differencing
-            do i = 0, nz
-                df(i, 0:ny-1, 0:nx-1) = f12 * dxi(3) * (f(i+1, 0:ny-1, 0:nx-1, 3) - f(i-1, 0:ny-1, 0:nx-1, 3))
-            enddo
-
-            div = div + df
-
-        end subroutine divergence
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
