@@ -291,89 +291,54 @@ module inversion_mod
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Compute the gridded vorticity tendency:
         subroutine vorticity_tendency
-            double precision :: fp(0:nz, 0:ny-1, 0:nx-1)        ! physical space
-            double precision :: gp(0:nz, 0:ny-1, 0:nx-1)        ! physical space
-            double precision :: p(0:nz, 0:nx-1, 0:ny-1)         ! mixed spectral space
-            double precision :: q(0:nz, 0:nx-1, 0:ny-1)         ! mixed spectral space
-            double precision :: r(0:nz, 0:nx-1, 0:ny-1)         ! mixed spectral space
-            double precision :: svorts(0:nz, 0:nx-1, 0:ny-1, 3) ! vorticity source in mixed spectral space
-            integer          :: nc
+            double precision :: b(0:nz, 0:ny-1, 0:nx-1)
+            double precision :: bs(0:nz, 0:nx-1, 0:ny-1) ! spectral buoyancy
+            double precision :: ds(0:nz, 0:nx-1, 0:ny-1) ! spectral derivatives
+            double precision :: db(0:nz, 0:ny-1, 0:nx-1) ! buoyancy derivatives
 
             call start_timer(vtend_timer)
 
-            !-------------------------------------------------------
-            ! First store absolute vorticity in physical space:
-            do nc = 1, 3
-                !$omp parallel workshare
-                vortg(:, :, :, nc) = vortg(:, :, :, nc) + f_cor(nc)
-                !$omp end parallel workshare
-            enddo
+            ! copy buoyancy
+            b = tbuoyg(0:nz, :, :)
 
-            !-------------------------------------------------------
-            ! Tendency in flux form:
-            !   dxi/dt  = dr/dy - dq/dz
-            !   deta/dt = dp/dz - dr/dx
-            !  dzeta/dt = dq/dx - dp/dy
+            ! Compute spectral buoyancy (bs):
+            call fftxyp2s(b, bs)
 
-            ! r = u * eta - v * xi + b
-            !$omp parallel workshare
-            fp = velog(0:nz, :, :, 1) * vortg(0:nz, :, :, 2) &
-               - velog(0:nz, :, :, 2) * vortg(0:nz, :, :, 1) &
-               + tbuoyg(0:nz, :, :)
-            !$omp end parallel workshare
-            call field_decompose_physical(fp, r)
+            call diffy(bs, ds)                      ! b_y = db/dy in spectral space
+            call fftxys2p(ds, db)                   ! db = b_y in physical space
 
-            ! q = w * xi - u * zeta
-            !$omp parallel workshare
-            fp = velog(0:nz, :, :, 3) * vortg(0:nz, :, :, 1) &
-               - velog(0:nz, :, :, 1) * vortg(0:nz, :, :, 3)
-            !$omp end parallel workshare
-            call field_decompose_physical(fp, q)
+            !$omp parallel
+            !$omp workshare
+            vtend(0:nz, :, :, 1) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 1) & ! \omegax * du/dx
+                                 + (vortg(0:nz, :, :, 2) + f_cor(2))                         &
+                                    * (vortg(0:nz, :, :, 3) + velgradg(0:nz, :, :, 2)) & ! \omegay * dv/dx
+                                 + (vortg(0:nz, :, :, 3) + f_cor(3)) * velgradg(0:nz, :, :, 4) & ! \omegaz * dw/dx
+                                 + db                                                          ! db/dy
+            !$omp end workshare
+            !$omp end parallel
 
-            ! dxi/dt  = dr/dy - dq/dz
-            call diffy(r, svorts(:, :, :, 1))
-            call diffz(fp, gp)
-            call field_decompose_physical(gp, p)
-            !$omp parallel workshare
-            svorts(:, :, :, 1) = svorts(:, :, :, 1) - p     ! here: p = dq/dz
-            !$omp end parallel workshare
+            call diffx(bs, ds)                      ! b_x = db/dx in spectral space
+            call fftxys2p(ds, db)                   ! db = b_x in physical space
 
-            ! p = v * zeta - w * eta
-            !$omp parallel workshare
-            fp = velog(0:nz, :, :, 2) * vortg(0:nz, :, :, 3) &
-               - velog(0:nz, :, :, 3) * vortg(0:nz, :, :, 2)
-            !$omp end parallel workshare
-            call field_decompose_physical(fp, p)
+            !$omp parallel
+            !$omp workshare
+            vtend(0:nz, :, :, 2) =  vortg(0:nz, :, :, 1)             * velgradg(0:nz, :, :, 2) & ! \omegax * du/dy
+                                 + (vortg(0:nz, :, :, 2) + f_cor(2)) * velgradg(0:nz, :, :, 3) & ! \omegay * dv/dy
+                                 + (vortg(0:nz, :, :, 3) + f_cor(3)) * velgradg(0:nz, :, :, 5) & ! \omegaz * dw/dy
+                                 - db                                                          ! dbdx
 
-            ! deta/dt = dp/dz - dr/dx
-            call diffx(r, svorts(:, :, :, 2))
-            call diffz(fp, gp)
-            call field_decompose_physical(gp, r)
-            !$omp parallel workshare
-            svorts(:, :, :, 2) = r - svorts(:, :, :, 2)     ! here: r = dp/dz
-            !$omp end parallel workshare
+            vtend(0:nz, :, :, 3) =  vortg(0:nz, :, :, 1)           * velgradg(0:nz, :, :, 4) & ! \omegax * dw/dx
+                                 + (vortg(0:nz, :, :, 2) + f_cor(2)) * velgradg(0:nz, :, :, 5) & ! \omegay * dw/dy
+                                 - (vortg(0:nz, :, :, 3) + f_cor(3))  *                         &
+                                         (velgradg(0:nz, :, :, 1) + velgradg(0:nz, :, :, 3))   ! \omegaz * dw/dz
 
-            ! dzeta/dt = dq/dx - dp/dy
-            call diffx(q, svorts(:, :, :, 3))
-            call diffy(p, r)                                ! here: r = dp/dy
-            !$omp parallel workshare
-            svorts(:, :, :, 3) = svorts(:, :, :, 3) - r
-            !$omp end parallel workshare
+            !$omp end workshare
+            !$omp end parallel
 
-            !-------------------------------------------------------
-            ! Get vorticity tendency in physical space:
-            do nc = 1, 3
-                call field_combine_physical(svorts(:, :, :, nc), vtend(0:nz, :, :, nc))
-            enddo
-
-            !-------------------------------------------------------
-            ! Extrapolate to halo grid points:
-            !$omp parallel workshare
+            ! Extrapolate to halo grid points
             vtend(-1,   :, :, :) = two * vtend(0,  :, :, :) - vtend(1,    :, :, :)
             vtend(nz+1, :, :, :) = two * vtend(nz, :, :, :) - vtend(nz-1, :, :, :)
-            !$omp end parallel workshare
 
             call stop_timer(vtend_timer)
 
