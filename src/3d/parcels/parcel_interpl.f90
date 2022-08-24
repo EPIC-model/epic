@@ -231,8 +231,6 @@ module parcel_interpl
             ! apply free slip boundary condition
             volg(0,  :, :) = two * volg(0,  :, :)
             volg(nz, :, :) = two * volg(nz, :, :)
-            !volg(0,  :, :) = 3.0d0 * volg(0,  :, :) - 0.5d0 * volg(1,  :, :)
-            !volg(nz, :, :) = 3.0d0 * volg(nz, :, :) - 0.5d0 * volg(nz-1,  :, :)
 
             ! free slip boundary condition is reflective with mirror
             ! axis at the physical domain
@@ -242,9 +240,6 @@ module parcel_interpl
             vortg(0,  :, :, :) = two * vortg(0,  :, :, :)
             vortg(nz, :, :, :) = two * vortg(nz, :, :, :)
 
-            !vortg(0,  :, :, :) = 3.0d0 * vortg(0,  :, :, :) - 0.5d0 * vortg(1,  :, :, :)
-            !vortg(nz, :, :, :) = 3.0d0 * vortg(nz, :, :, :) - 0.5d0 * vortg(nz-1,  :, :, :)
-            
             vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
 
@@ -266,8 +261,6 @@ module parcel_interpl
 
             vortg(-1,   :, :, :) = two * vortg(0,  :, :, :) - vortg(1, :, :, :)
             vortg(nz+1, :, :, :) = two * vortg(nz, :, :, :) - vortg(nz-1, :, :, :)
-!            vortg(-1,   :, :, 3) = -vortg(1,    :, :, 3)
-!            vortg(nz+1, :, :, 3) = -vortg(nz-1, :, :, 3)
 
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0:nz, :, :) = dbuoyg(0:nz, :, :) / volg(0:nz, :, :)
@@ -295,31 +288,6 @@ module parcel_interpl
             endif
 
             call stop_timer(par2grid_timer)
-
-        !    kk = two
-        !    ll = two
-        !    mm = one
-        !    alpha = dsqrt(kk ** 2 + ll ** 2 + mm ** 2)
-        !    fk2l2 = one / dble(kk ** 2 + ll ** 2)
-        !    do ix = 0, nx-1
-        !       x = lower(1) + ix * dx(1)
-        !       do iy = 0, ny-1
-        !          y = lower(2) + iy * dx(2)
-        !          do iz = -1, nz+1
-        !             z = lower(3) + iz * dx(3)
-        !!             
-        !             cosmz = dcos(mm * z)
-        !             sinmz = dsin(mm * z)
-        !             sinkxly = dsin(kk * x + ll * y)
-        !             coskxly = dcos(kk * x + ll * y)
-        !             
-        !             ! exact vorticity
-        !             vortg(iz, iy, ix, 1) = alpha* fk2l2 * (kk*mm * sinmz - ll*alpha * cosmz) * sinkxly
-        !             vortg(iz, iy, ix, 2) = alpha* fk2l2 * (ll*mm * sinmz + kk*alpha * cosmz) * sinkxly
-        !             vortg(iz, iy, ix, 3) = alpha* cosmz * coskxly
-        !          enddo
-        !       enddo
-        !    enddo
 
         end subroutine par2grid
 
