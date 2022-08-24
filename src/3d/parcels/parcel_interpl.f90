@@ -3,7 +3,7 @@
 ! interpolation.
 ! =============================================================================
 module parcel_interpl
-    use constants, only : zero, one, two, f14
+    use constants, only : zero, one, two, f14, pi
     use timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin
     use options, only : parcel
@@ -113,6 +113,10 @@ module parcel_interpl
             double precision  :: points(3, 4)
             integer           :: n, p, l, i, j, k, i_stored, j_stored, k_stored
             double precision  :: pvol, weight, btot
+            double precision  :: kk, ll, mm, fk2l2, alpha, x, y, z
+            double precision  :: cosmz,  sinmz, sinkxly, coskxly
+            integer :: ix, iy, iz
+
 #ifndef ENABLE_DRY_MODE
             double precision  :: q_c
 #endif
@@ -140,17 +144,17 @@ module parcel_interpl
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
-#ifndef ENABLE_DRY_MODE
-                ! liquid water content
-                q_c = parcels%humidity(n) &
-                    - q_0 * dexp(lambda_c * (lower(3) - parcels%position(3, n)))
-                q_c = max(zero, q_c)
+!#ifndef ENABLE_DRY_MODE
+!                ! liquid water content
+!                q_c = parcels%humidity(n) &
+!                    - q_0 * dexp(lambda_c * (lower(3) - parcels%position(3, n)))
+!                q_c = max(zero, q_c)
 
                 ! total buoyancy (including effects of latent heating)
-                btot = parcels%buoyancy(n) + glat * q_c
-#else
+!                btot = parcels%buoyancy(n) + glat * q_c
+!#else
                 btot = parcels%buoyancy(n)
-#endif
+!#endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               pvol, parcels%B(:, n), n, l_reuse)
 
@@ -168,13 +172,14 @@ module parcel_interpl
                     call apply_periodic_bc(points(:, p))
                     call get_index(points(:, p), i, j, k)
 
-                    if (p == 1) then
-                      ! first parcel point, reset weights
-                      call trilinear(points(:, p), is, js, ks, weights)
-                    elseif ((i == i_stored) .and. (j == j_stored) .and. (k == k_stored)) then
-                      ! if point is in same grid cell, just add to weights
-                      call trilinear_weights_add(points(:, p), i, j, k, weights)
-                    else
+!                    if (p == 1) then
+!                      ! first parcel point, reset weights
+                    call trilinear(points(:, p), is, js, ks, weights)
+                    !points(:, p), is, js, ks, weights)
+                    !elseif ((i == i_stored) .and. (j == j_stored) .and. (k == k_stored)) then
+                    !  ! if point is in same grid cell, just add to weights
+                    !  call trilinear_weights_add(points(:, p), i, j, k, weights)
+                    !else
                       ! if point is in different grid cell, save previously stored
                       ! weights first
                       ! loop over grid points which are part of the interpolation
@@ -186,38 +191,39 @@ module parcel_interpl
                         vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
                                                       + weight * parcels%vorticity(:, n)
 
-#ifndef ENABLE_DRY_MODE
-                        dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
-                                                    + weight * parcels%buoyancy(n)
-#endif
+!#ifndef ENABLE_DRY_MODE
+!                        dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
+!                                                    + weight * parcels%buoyancy(n)
+!#endif
                         tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
                                                     + weight * btot
                         volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
                                                   + weight
                       enddo
-                      call trilinear(points(:, p), is, js, ks, weights)
-                   endif
-                   i_stored = i
-                   j_stored = j
-                   k_stored = k
+                     ! call trilinear(points(:, p), is, js, ks, weights)
+                   !endif
+!                   i_stored = i
+!                   j_stored = j
+!                   k_stored = k
                 enddo
                 ! save contibutions at end of points loop
-                do l = 1, ngp
-
-                  weight = f14 * weights(l) * pvol
-
-                  vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
-                                                + weight * parcels%vorticity(:, n)
-
-#ifndef ENABLE_DRY_MODE
-                  dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
-                                              + weight * parcels%buoyancy(n)
-#endif
-                  tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
-                                              + weight * btot
-                  volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                            + weight
-                enddo
+                !do l = 1, ngp
+!
+!                  weight = f14 * weights(l) * pvol
+!
+!                  vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
+!                                                + weight * parcels%vorticity(:, n)
+!
+!#ifndef ENABLE_DRY_MODE
+!                  dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
+!                                              + weight * parcels%buoyancy(n)
+!#endif
+!
+!                  tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
+!                                              + weight * btot
+!                  volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
+!                                            + weight
+!                enddo
             enddo
             !$omp end do
             !$omp end parallel
@@ -225,6 +231,8 @@ module parcel_interpl
             ! apply free slip boundary condition
             volg(0,  :, :) = two * volg(0,  :, :)
             volg(nz, :, :) = two * volg(nz, :, :)
+            !volg(0,  :, :) = 3.0d0 * volg(0,  :, :) - 0.5d0 * volg(1,  :, :)
+            !volg(nz, :, :) = 3.0d0 * volg(nz, :, :) - 0.5d0 * volg(nz-1,  :, :)
 
             ! free slip boundary condition is reflective with mirror
             ! axis at the physical domain
@@ -233,6 +241,10 @@ module parcel_interpl
 
             vortg(0,  :, :, :) = two * vortg(0,  :, :, :)
             vortg(nz, :, :, :) = two * vortg(nz, :, :, :)
+
+            !vortg(0,  :, :, :) = 3.0d0 * vortg(0,  :, :, :) - 0.5d0 * vortg(1,  :, :, :)
+            !vortg(nz, :, :, :) = 3.0d0 * vortg(nz, :, :, :) - 0.5d0 * vortg(nz-1,  :, :, :)
+            
             vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
 
@@ -252,9 +264,10 @@ module parcel_interpl
                 vortg(0:nz, :, :, p) = vortg(0:nz, :, :, p) / volg(0:nz, :, :)
             enddo
 
-            ! use symmetry to fill halo grid points
-            vortg(-1,   :, :, :) = vortg(1,    :, :, :)
-            vortg(nz+1, :, :, :) = vortg(nz-1, :, :, :)
+            vortg(-1,   :, :, :) = two * vortg(0,  :, :, :) - vortg(1, :, :, :)
+            vortg(nz+1, :, :, :) = two * vortg(nz, :, :, :) - vortg(nz-1, :, :, :)
+!            vortg(-1,   :, :, 3) = -vortg(1,    :, :, 3)
+!            vortg(nz+1, :, :, 3) = -vortg(nz-1, :, :, 3)
 
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0:nz, :, :) = dbuoyg(0:nz, :, :) / volg(0:nz, :, :)
@@ -283,6 +296,31 @@ module parcel_interpl
 
             call stop_timer(par2grid_timer)
 
+        !    kk = two
+        !    ll = two
+        !    mm = one
+        !    alpha = dsqrt(kk ** 2 + ll ** 2 + mm ** 2)
+        !    fk2l2 = one / dble(kk ** 2 + ll ** 2)
+        !    do ix = 0, nx-1
+        !       x = lower(1) + ix * dx(1)
+        !       do iy = 0, ny-1
+        !          y = lower(2) + iy * dx(2)
+        !          do iz = -1, nz+1
+        !             z = lower(3) + iz * dx(3)
+        !!             
+        !             cosmz = dcos(mm * z)
+        !             sinmz = dsin(mm * z)
+        !             sinkxly = dsin(kk * x + ll * y)
+        !             coskxly = dcos(kk * x + ll * y)
+        !             
+        !             ! exact vorticity
+        !             vortg(iz, iy, ix, 1) = alpha* fk2l2 * (kk*mm * sinmz - ll*alpha * cosmz) * sinkxly
+        !             vortg(iz, iy, ix, 2) = alpha* fk2l2 * (ll*mm * sinmz + kk*alpha * cosmz) * sinkxly
+        !             vortg(iz, iy, ix, 3) = alpha* cosmz * coskxly
+        !          enddo
+        !       enddo
+        !    enddo
+
         end subroutine par2grid
 
 
@@ -293,9 +331,12 @@ module parcel_interpl
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
         subroutine grid2par(vel, vortend, vgrad, add)
-            double precision,     intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
+          double precision,     intent(inout) :: vel(3, n_parcels), &
+                                                 vortend(3, n_parcels), &
+                                                 vgrad(5, n_parcels) 
             logical, optional, intent(in)       :: add
             integer                             :: n, l
+            !           double precision :: vsum
 
             call start_timer(grid2par_timer)
 
@@ -322,11 +363,11 @@ module parcel_interpl
                 !$omp end parallel
             endif
 
-            !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, ks, weights)
+            !omp parallel default(private) shared(vgrad, vel, vortend, velog, velgradg, vtend)
+            !omp do private(n, l, is, js, ks, weights)
             do n = 1, n_parcels
 
-                vgrad(:, n) = zero
+               vgrad(:, n) = zero
 
                 ! ensure point is within the domain
                 call apply_periodic_bc(parcels%position(:, n))
@@ -336,15 +377,15 @@ module parcel_interpl
 
                 ! loop over grid points which are part of the interpolation
                 do l = 1, ngp
-                    vel(:, n) = vel(:, n) + weights(l) * velog(ks(l), js(l), is(l), :)
+                   vel(:, n) = vel(:, n) + weights(l) * velog(ks(l), js(l), is(l), :)
 
                     vgrad(:, n) = vgrad(:, n) + weights(l) * velgradg(ks(l), js(l), is(l), :)
 
                     vortend(:, n) = vortend(:, n) + weights(l) * vtend(ks(l), js(l), is(l), :)
                 enddo
             enddo
-            !$omp end do
-            !$omp end parallel
+            !omp end do
+            !omp end parallel
 
             call stop_timer(grid2par_timer)
 
@@ -370,7 +411,7 @@ module parcel_interpl
         ! @param[out] jj meridional grid points for interpolation
         ! @param[out] kk vertical grid points for interpolation
         ! @param[out] ww interpolation weights
-        pure subroutine trilinear(pos, ii, jj, kk, ww)
+        subroutine trilinear(pos, ii, jj, kk, ww)
             double precision, intent(in)  :: pos(3)
             integer,          intent(out) :: ii(ngp), jj(ngp), kk(ngp)
             double precision, intent(out) :: ww(ngp)
@@ -426,7 +467,7 @@ module parcel_interpl
 
         end subroutine trilinear
 
-        pure subroutine trilinear_weights_add(pos, i, j, k, ww)
+        subroutine trilinear_weights_add(pos, i, j, k, ww)
             double precision, intent(in)    :: pos(3)
             double precision, intent(inout) :: ww(ngp)
             integer,          intent(in)    :: i, j, k
@@ -437,7 +478,7 @@ module parcel_interpl
         end subroutine trilinear_weights_add
 
 
-        pure subroutine get_weights(xyz, i, j, k, ww)
+        subroutine get_weights(xyz, i, j, k, ww)
             double precision, intent(in)    :: xyz(3)
             double precision, intent(inout) :: ww(ngp)
             integer,          intent(in)    :: i, j, k
@@ -454,19 +495,31 @@ module parcel_interpl
             pz = xyz(3) - dble(k)
             pzc = one - pz
 
+            if (px < 0.0d0) then
+               print *, "Error in px"
+            endif
+
+            if (py < 0.0d0) then
+               print *, "Error in py"
+            endif
+
+            if (pz < 0.0d0) then
+               print *, "Error in pz"
+            endif
+
             w00 = pyc * pxc
             w10 = pyc * px
             w01 = py * pxc
             w11 = py * px
 
-            ww(1) = ww(1) + pzc * w00
-            ww(2) = ww(2) + pzc * w10
-            ww(3) = ww(3) + pzc * w01
-            ww(4) = ww(4) + pzc * w11
-            ww(5) = ww(5) + pz * w00
-            ww(6) = ww(6) + pz * w10
-            ww(7) = ww(7) + pz * w01
-            ww(8) = ww(8) + pz * w11
+            ww(1) =  ww(1) + pzc * w00  !w000
+            ww(2) =  ww(2) + pzc * w10  !w100
+            ww(3) =  ww(3) + pzc * w01  !w010
+            ww(4) =  ww(4) + pzc * w11  !w110
+            ww(5) =  ww(5) + pz * w00   !w001
+            ww(6) =  ww(6) + pz * w10   !w101
+            ww(7) =  ww(7) + pz * w01   !w011
+            ww(8) =  ww(8) + pz * w11   !w111
 
         end subroutine get_weights
 

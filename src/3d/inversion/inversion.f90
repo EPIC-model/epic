@@ -83,8 +83,6 @@ module inversion_mod
             ! Combine vorticity in physical space:
             do nc = 1, 3
                 call field_combine_physical(svor(:, :, :, nc), vortg(0:nz, :, :, nc))
-                ! Linear extrapolation to halo cells -- FIXME may not be needed
-                vortg(-1, :, :, nc) =  two * vortg(0, :, :, nc) - vortg(1, :, :, nc)
             enddo
 
             !----------------------------------------------------------
@@ -329,25 +327,39 @@ module inversion_mod
             double precision, intent(in)  :: f(-1:nz+1, 0:ny-1, 0:nx-1, 3)
             double precision, intent(out) :: div(0:nz, 0:ny-1, 0:nx-1)
             double precision              :: df(0:nz, 0:ny-1, 0:nx-1)
+            double precision              :: ds(0:nz, 0:nx-1, 0:ny-1)
+            double precision              :: dds(0:nz, 0:nx-1, 0:ny-1)
             integer                       :: i
 
-            ! calculate df/dx with central differencing
-            do i = 1, nx-2
-                div(0:nz, 0:ny-1, i) = f12 * dxi(1) * (f(0:nz, 0:ny-1, i+1, 1) - f(0:nz, 0:ny-1, i-1, 1))
-            enddo
-            div(0:nz, 0:ny-1, 0)    = f12 * dxi(1) * (f(0:nz, 0:ny-1, 1, 1) - f(0:nz, 0:ny-1, nx-1, 1))
-            div(0:nz, 0:ny-1, nx-1) = f12 * dxi(1) * (f(0:nz, 0:ny-1, 0, 1) - f(0:nz, 0:ny-1, nx-2, 1))
+!            ! calculate df/dx with central differencing
+!            do i = 1, nx-2
+!                div(0:nz, 0:ny-1, i) = f12 * dxi(1) * (f(0:nz, 0:ny-1, i+1, 1) - f(0:nz, 0:ny-1, i-1, 1))
+!            enddo
+!            div(0:nz, 0:ny-1, 0)    = f12 * dxi(1) * (f(0:nz, 0:ny-1, 1, 1) - f(0:nz, 0:ny-1, nx-1, 1))
+!            div(0:nz, 0:ny-1, nx-1) = f12 * dxi(1) * (f(0:nz, 0:ny-1, 0, 1) - f(0:nz, 0:ny-1, nx-2, 1))
 
-            ! calculate df/dy with central differencing
-            do i = 1, ny-2
-                df(0:nz, i, 0:nx-1) = f12 * dxi(2) * (f(0:nz, i+1, 0:nx-1, 2) - f(0:nz, i-1, 0:nx-1, 2))
-            enddo
-            df(0:nz, 0,    0:nx-1) = f12 * dxi(2) * (f(0:nz, 1, 0:nx-1, 2) - f(0:nz, ny-1, 0:nx-1, 2))
-            df(0:nz, ny-1, 0:nx-1) = f12 * dxi(2) * (f(0:nz, 0, 0:nx-1, 2) - f(0:nz, ny-2, 0:nx-1, 2))
 
+            df = f(0:nz, :, :, 1)
+            call fftxyp2s(df, ds)
+            call diffx(ds, dds)
+            call fftxys2p(dds, div)
+
+            df = f(0:nz, :, :, 2)
+            call fftxyp2s(df, ds)
+            call diffy(ds, dds)
+            call fftxys2p(dds, df)
             div = div + df
+            
+!            ! calculate df/dy with central differencing
+!!            do i = 1, ny-2
+!                df(0:nz, i, 0:nx-1) = f12 * dxi(2) * (f(0:nz, i+1, 0:nx-1, 2) - f(0:nz, i-1, 0:nx-1, 2))
+!            enddo
+!            df(0:nz, 0,    0:nx-1) = f12 * dxi(2) * (f(0:nz, 1, 0:nx-1, 2) - f(0:nz, ny-1, 0:nx-1, 2))
+!            df(0:nz, ny-1, 0:nx-1) = f12 * dxi(2) * (f(0:nz, 0, 0:nx-1, 2) - f(0:nz, ny-2, 0:nx-1, 2))
+!            div = div + df
 
             ! calculate df/dz with central differencing
+!            call diffz(f(0:nz, :, :, 3), df)
             do i = 0, nz
                 df(i, 0:ny-1, 0:nx-1) = f12 * dxi(3) * (f(i+1, 0:ny-1, 0:nx-1, 3) - f(i-1, 0:ny-1, 0:nx-1, 3))
             enddo

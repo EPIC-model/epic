@@ -305,6 +305,7 @@ module inversion_utils
 
             do ky = 0, ny-1
                do kx = 0, nx-1
+                     !filt(:, kx, ky) = dexp(skx(kx) + sky(ky))
                   filt(0,  kx, ky) = dexp(skx(kx) + sky(ky))
                   filt(nz, kx, ky) = filt(0, kx, ky)
                   do kz = 1, nz-1
