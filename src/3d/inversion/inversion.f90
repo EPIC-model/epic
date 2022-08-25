@@ -377,14 +377,12 @@ module inversion_mod
             double precision, intent(out)    :: ud(0:nz, ny, nx), vd(0:nz, ny, nx), wd(0:nz, ny, nx)
             double precision                 :: ds(0:nz, nx, ny)
             double precision                 :: us(0:nz, nx, ny), vs(0:nz, nx, ny), ws(0:nz, nx, ny)
-            double precision                 :: wbar(0:nz)
 
             !------------------------------------------------------------------
             ! Convert phi to spectral space (in x & y) as ds:
             call fftxyp2s(div, ds)
 
-            ! Compute the x & y-independent part of ds by integration:
-            call vertint(ds(:, 1, 1), wbar)
+            ds(:, 1, 1) = zero
 
             ! Invert Laplace's operator semi-spectrally with compact differences:
             call lapinv1(ds)
@@ -407,9 +405,6 @@ module inversion_mod
             ! Set vertical boundary values to zero
             ws(0,  :, :) = zero
             ws(nz, :, :) = zero
-
-            ! Add on the x and y-independent part of wd:
-            ws(:, 1, 1) = ws(:, 1, 1) + wbar
 
             ! Reverse FFT to define z velocity component wd:
             call fftxys2p(ws, wd)
