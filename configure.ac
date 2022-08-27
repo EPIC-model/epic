@@ -25,6 +25,8 @@ AC_CONFIG_FILES([
     models/2d/Makefile
     models/3d/Makefile
     analyse/Makefile
+    analyse/2d/Makefile
+    analyse/3d/Makefile
     unit-tests/Makefile
     unit-tests/2d/Makefile
     unit-tests/3d/Makefile
