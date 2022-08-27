@@ -22,20 +22,21 @@ module parcel_diagnostics
     ! peref : potential energy reference (only correct on MPI root)
     double precision :: peref
 
-    integer, parameter :: IDX_PE       =  1, & ! potential energy
-                          IDX_KE       =  2, & ! kinetic energy
-                          IDX_N_SMALL  =  3, & ! number of small parcels (V_i < V_min)
-                          IDX_AVG_LAM  =  4, & ! mean aspect ratio over all parcels
-                          IDX_AVG_VOL  =  5, & ! mean volume over all parcels
-                          IDX_STD_LAM  =  6, & ! standard deviation of aspect ratio
-                          IDX_STD_VOL  =  7, & ! standard deviation of volume
-                          IDX_SUM_VOL  =  8, & ! total volume
-                          IDX_RMS_XI   =  9, & ! rms value of x-vorticity
-                          IDX_RMS_ETA  = 10, & ! rms value of y-vorticity
-                          IDX_RMS_ZETA = 11, & ! rms value of z-vorticity
-                          IDX_NTOT_PAR = 12    ! total number of parcels
+    integer, parameter :: IDX_PE        =  1, & ! potential energy
+                          IDX_KE        =  2, & ! kinetic energy
+                          IDX_N_SMALL   =  3, & ! number of small parcels (V_i < V_min)
+                          IDX_AVG_LAM   =  4, & ! mean aspect ratio over all parcels
+                          IDX_AVG_VOL   =  5, & ! mean volume over all parcels
+                          IDX_STD_LAM   =  6, & ! standard deviation of aspect ratio
+                          IDX_STD_VOL   =  7, & ! standard deviation of volume
+                          IDX_SUM_VOL   =  8, & ! total volume
+                          IDX_RMS_XI    =  9, & ! rms value of x-vorticity
+                          IDX_RMS_ETA   = 10, & ! rms value of y-vorticity
+                          IDX_RMS_ZETA  = 11, & ! rms value of z-vorticity
+                          IDX_NTOT_PAR  = 12, & ! total number of parcels
+                          IDX_ENSTROPHY = 13    ! enstrophy
 
-    double precision :: parcel_stats(IDX_NTOT_PAR)
+    double precision :: parcel_stats(IDX_ENSTROPHY)
 
     contains
 
@@ -76,10 +77,9 @@ module parcel_diagnostics
         subroutine calculate_parcel_diagnostics(velocity)
             double precision :: velocity(:, :)
             integer          :: n
-            double precision :: b, z, vel(3), vol, zmin
+            double precision :: b, z, vel(3), vol, zmin, vor(3)
             double precision :: evals(3), lam
             double precision :: ntoti
-
 
             call start_timer(parcel_stats_timer)
 
@@ -91,11 +91,12 @@ module parcel_diagnostics
             parcel_stats(IDX_NTOT_PAR) = dble(n_parcels)
 
             !$omp parallel default(shared)
-            !$omp do private(n, vel, vol, b, z, evals, lam) &
+            !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
             !$omp& reduction(+: parcel_stats)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
+                vor = parcels%vorticity(:, n)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
                 z   = parcels%position(3, n) - zmin
@@ -105,6 +106,10 @@ module parcel_diagnostics
 
                 ! potential energy
                 parcel_stats(IDX_PE) = parcel_stats(IDX_PE) - b * z * vol
+
+                ! enstrophy
+                parcel_stats(IDX_ENSTROPHY) = parcel_stats(IDX_ENSTROPHY) &
+                                            + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
 
                 evals = get_eigenvalues(parcels%B(:, n), parcels%volume(n))
                 lam = get_aspect_ratio(evals)
@@ -142,6 +147,7 @@ module parcel_diagnostics
 
             parcel_stats(IDX_KE) = f12 * parcel_stats(IDX_KE)
             parcel_stats(IDX_PE) = parcel_stats(IDX_PE) - peref
+            parcel_stats(IDX_ENSTROPHY) = f12 * parcel_stats(IDX_ENSTROPHY)
 
             parcel_stats(IDX_AVG_LAM) = parcel_stats(IDX_AVG_LAM) * ntoti
             parcel_stats(IDX_STD_LAM) = dsqrt(abs(parcel_stats(IDX_STD_LAM) * ntoti &

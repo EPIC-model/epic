@@ -23,7 +23,8 @@ module parcel_diagnostics_netcdf
     integer            :: t_axis_id, t_dim_id, n_writes,                                &
                           peref_id, pe_id, ke_id, te_id, npar_id, nspar_id,             &
                           rms_x_vor_id, rms_y_vor_id, rms_z_vor_id,                     &
-                          avg_lam_id, std_lam_id, avg_vol_id, std_vol_id, sum_vol_id
+                          avg_lam_id, std_lam_id, avg_vol_id, std_vol_id, sum_vol_id,   &
+                          psi_id
     double precision   :: restart_time
 
     integer :: parcel_stats_io_timer
@@ -88,7 +89,7 @@ module parcel_diagnostics_netcdf
                 name='pe',                                                  &
                 long_name='potential energy',                               &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^5/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=pe_id)
@@ -108,7 +109,7 @@ module parcel_diagnostics_netcdf
                 name='ke',                                                  &
                 long_name='kinetic energy',                                 &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^5/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=ke_id)
@@ -118,10 +119,20 @@ module parcel_diagnostics_netcdf
                 name='te',                                                  &
                 long_name='total energy',                                   &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^5/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=te_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='psi',                                                 &
+                long_name='enstrophy',                                      &
+                std_name='',                                                &
+                unit='m^3/s^2',                                             &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=psi_id)
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
@@ -244,6 +255,8 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 'te', te_id)
 
+            call get_var_id(ncid, 'psi', psi_id)
+
             call get_var_id(ncid, 'n_parcels', npar_id)
 
             call get_var_id(ncid, 'n_small_parcel', nspar_id)
@@ -309,6 +322,7 @@ module parcel_diagnostics_netcdf
             call write_netcdf_scalar(ncid, rms_x_vor_id, parcel_stats(IDX_RMS_XI), n_writes)
             call write_netcdf_scalar(ncid, rms_y_vor_id, parcel_stats(IDX_RMS_ETA), n_writes)
             call write_netcdf_scalar(ncid, rms_z_vor_id, parcel_stats(IDX_RMS_ZETA), n_writes)
+            call write_netcdf_scalar(ncid, psi_id, parcel_stats(IDX_ENSTROPHY), n_writes)
 
             ! increment counter
             n_writes = n_writes + 1

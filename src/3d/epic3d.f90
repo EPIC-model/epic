@@ -25,7 +25,7 @@ program epic3d
     use field_diagnostics, only : field_stats_timer
     use field_diagnostics_netcdf, only : field_stats_io_timer
     use inversion_mod, only : vor2vel_timer, vtend_timer
-    use inversion_utils, only : init_fft
+    use inversion_utils, only : init_inversion
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_parcels, init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
@@ -120,7 +120,7 @@ program epic3d
 
             call ls_rk4_alloc(max_num_parcels)
 
-            call init_fft
+            call init_inversion
 
             if (output%write_parcel_stats) then
                 call init_parcel_diagnostics
