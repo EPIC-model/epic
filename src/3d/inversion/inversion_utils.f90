@@ -47,8 +47,10 @@ module inversion_utils
     integer :: nwx, nwy, nxp2, nyp2
 
     logical :: is_initialised = .false.
+    logical :: is_fft_initialised = .false.
 
     public :: init_inversion  &
+            , init_fft        &
             , diffx           &
             , diffy           &
             , diffz           &
@@ -217,6 +219,12 @@ module inversion_utils
             integer                       :: kx, ky, kz
             double precision              :: skx(0:nx-1), sky(0:ny-1), skz(0:nz)
             integer                       :: iz, isub, ib_sub, ie_sub
+
+            if (is_fft_initialised) then
+                return
+            endif
+
+            is_fft_initialised = .true.
 
             dz = dx(3)
             dzi = dxi(3)
