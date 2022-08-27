@@ -90,6 +90,7 @@ module parcel_interpl
             !$omp end parallel
 
             ! apply free slip boundary condition
+            !$omp parallel workshare
             volg(0,  :, :) = two * volg(0,  :, :)
             volg(nz, :, :) = two * volg(nz, :, :)
 
@@ -97,7 +98,7 @@ module parcel_interpl
             ! axis at the physical domain
             volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
             volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
-
+            !$omp end parallel workshare
         end subroutine vol2grid
 
 
@@ -113,10 +114,6 @@ module parcel_interpl
             double precision  :: points(3, 4)
             integer           :: n, p, l, i, j, k, i_stored, j_stored, k_stored
             double precision  :: pvol, weight, btot
-            double precision  :: kk, ll, mm, fk2l2, alpha, x, y, z
-            double precision  :: cosmz,  sinmz, sinkxly, coskxly
-            integer :: ix, iy, iz
-
 #ifndef ENABLE_DRY_MODE
             double precision  :: q_c
 #endif
@@ -228,6 +225,7 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
+            !$omp parallel workshare
             ! apply free slip boundary condition
             volg(0,  :, :) = two * volg(0,  :, :)
             volg(nz, :, :) = two * volg(nz, :, :)
@@ -239,9 +237,12 @@ module parcel_interpl
 
             vortg(0,  :, :, :) = two * vortg(0,  :, :, :)
             vortg(nz, :, :, :) = two * vortg(nz, :, :, :)
+            !$omp end parallel workshare
 
+            !$omp parallel workshare
             vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
+            !$omp end parallel workshare
 
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
@@ -259,6 +260,7 @@ module parcel_interpl
                 vortg(0:nz, :, :, p) = vortg(0:nz, :, :, p) / volg(0:nz, :, :)
             enddo
 
+            !$omp parallel workshare
             vortg(-1,   :, :, :) = two * vortg(0,  :, :, :) - vortg(1, :, :, :)
             vortg(nz+1, :, :, :) = two * vortg(nz, :, :, :) - vortg(nz-1, :, :, :)
 
@@ -280,6 +282,7 @@ module parcel_interpl
 
             nsparg(0,    :, :) = nsparg(0,    :, :) + nsparg(-1, :, :)
             nsparg(nz-1, :, :) = nsparg(nz-1, :, :) + nsparg(nz, :, :)
+            !$omp end parallel workshare
 
             ! sanity check
             if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then
