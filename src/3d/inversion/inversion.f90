@@ -250,7 +250,7 @@ module inversion_mod
 
             ! x component:
             call diffx(svel(:, :, :, I_X), ds)           ! u_x = du/dx in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_X)) ! u_x in physical space
+            call fftxys2p(ds, velgradg(0:nz, :, :, I_DUDX)) ! u_x in physical space
 
             call diffy(svel(:, :, :, I_X), ds)              ! u_y = du/dy in semi-spectral space
             call fftxys2p(ds, velgradg(0:nz, :, :, I_DUDY)) ! u_y in physical space
