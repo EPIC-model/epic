@@ -367,7 +367,7 @@ module parcel_interpl
         ! @param[inout] vel is the parcel velocity
         ! @param[inout] vortend is the parcel vorticity tendency
         ! @param[inout] vgrad is the parcel strain
-        subroutine grid2par_add(vel, vortend, vgrad)
+        pure subroutine grid2par_add(vel, vortend, vgrad)
             double precision, intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
 
             call grid2par(vel, vortend, vgrad, add=.true.)
@@ -381,7 +381,7 @@ module parcel_interpl
         ! @param[out] jj meridional grid points for interpolation
         ! @param[out] kk vertical grid points for interpolation
         ! @param[out] ww interpolation weights
-        subroutine trilinear(pos, ii, jj, kk, ww)
+        pure subroutine trilinear(pos, ii, jj, kk, ww)
             double precision, intent(in)  :: pos(3)
             integer,          intent(out) :: ii(ngp), jj(ngp), kk(ngp)
             double precision, intent(out) :: ww(ngp)
@@ -437,7 +437,7 @@ module parcel_interpl
 
         end subroutine trilinear
 
-        subroutine trilinear_weights_add(pos, i, j, k, ww)
+        pure subroutine trilinear_weights_add(pos, i, j, k, ww)
             double precision, intent(in)    :: pos(3)
             double precision, intent(inout) :: ww(ngp)
             integer,          intent(in)    :: i, j, k
@@ -448,7 +448,7 @@ module parcel_interpl
         end subroutine trilinear_weights_add
 
 
-        subroutine get_weights(xyz, i, j, k, ww)
+        pure subroutine get_weights(xyz, i, j, k, ww)
             double precision, intent(in)    :: xyz(3)
             double precision, intent(inout) :: ww(ngp)
             integer,          intent(in)    :: i, j, k
