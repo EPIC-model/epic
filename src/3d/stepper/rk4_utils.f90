@@ -2,7 +2,7 @@ module rk4_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parcel_container, only : I_B11, I_B12, I_B13, I_B22, I_B23
     use parcel_ellipsoid, only : get_B33
-    use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY_I_DVDY, I_DWDX, I_DWDY
+    use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
     use jacobi, only : jacobi_eigenvalues
