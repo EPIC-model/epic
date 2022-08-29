@@ -16,7 +16,7 @@ module fields
     ! and from 0 to ny-1 in y
     double precision, allocatable, dimension(:, :, :, :) :: &
         velog,     &   ! velocity vector field (u, v, w)
-        vortg,     &   ! vorticity vector field (\omegax, \omegay, \omegaz)
+        vortg,     &   ! vorticity vector field (\xi, \eta, \zeta)
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
                        ! ordering: du/dx, du/dy,
@@ -25,9 +25,9 @@ module fields
                        ! the derivatives dv/dx, du/dz, dv/dz and dw/dz
                        ! are calculated on the fly with vorticity
                        ! or the assumption of incompressibility (du/dx + dv/dy + dw/dz = 0):
-                       !    dv/dx = \omegaz + du/dy
-                       !    du/dz = \omegay + dw/dx
-                       !    dv/dz = dw/dy - \omegax
+                       !    dv/dx = \zeta + du/dy
+                       !    du/dz = \eta + dw/dx
+                       !    dv/dz = dw/dy - \xi
                        !    dw/dz = - (du/dx + dv/dy)
 
     double precision, allocatable, dimension(:, :, :) :: &
@@ -43,6 +43,16 @@ module fields
     integer, allocatable, dimension(:, :, :) :: &
         nparg,     &   ! number of parcels per grid box
         nsparg         ! number of small parcels per grid box
+
+
+    integer, parameter :: I_X    = 1 & ! index for x-components of fields
+                        , I_Y    = 2 & ! index for y-components of fields
+                        , I_Z    = 3 & ! index for z-components of fields
+                        , I_DUDX = 1 & ! index for du/dx strain component
+                        , I_DUDY = 2 & ! index for du/dy strain component
+                        , I_DVDY = 3 & ! index for dv/dy strain component
+                        , I_DWDX = 4 & ! index for dw/dx strain component
+                        , I_DWDY = 5   ! index for dw/dy strain component
 
     contains
 
