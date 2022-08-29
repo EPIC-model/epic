@@ -3,6 +3,7 @@
 !     and functions.
 ! =============================================================================
 module fields
+    use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parameters, only : dx, dxi, extent, lower, nx, ny, nz
     use constants, only : zero
     implicit none
@@ -44,10 +45,8 @@ module fields
         nparg,     &   ! number of parcels per grid box
         nsparg         ! number of small parcels per grid box
 
-
-    integer, parameter :: I_X    = 1 & ! index for x-components of fields
-                        , I_Y    = 2 & ! index for y-components of fields
-                        , I_Z    = 3 & ! index for z-components of fields
+    ! velocity strain indices
+    integer, parameter ::
                         , I_DUDX = 1 & ! index for du/dx strain component
                         , I_DUDY = 2 & ! index for du/dy strain component
                         , I_DVDY = 3 & ! index for dv/dy strain component
@@ -62,7 +61,7 @@ module fields
                 return
             endif
 
-            allocate(velog(-1:nz+1, 0:ny-1, 0:nx-1, 3))
+            allocate(velog(-1:nz+1, 0:ny-1, 0:nx-1, n_dim))
             allocate(velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5))
 
             allocate(volg(-1:nz+1, 0:ny-1, 0:nx-1))
@@ -71,9 +70,9 @@ module fields
             allocate(sym_volg(-1:nz+1, 0:ny-1, 0:nx-1))
 #endif
 
-            allocate(vortg(-1:nz+1, 0:ny-1, 0:nx-1, 3))
+            allocate(vortg(-1:nz+1, 0:ny-1, 0:nx-1, n_dim))
 
-            allocate(vtend(-1:nz+1, 0:ny-1, 0:nx-1, 3))
+            allocate(vtend(-1:nz+1, 0:ny-1, 0:nx-1, n_dim))
 
             allocate(tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1))
 
@@ -109,12 +108,12 @@ module fields
         ! @param[out] i lower, zonal cell index
         ! @param[out] j lower, vertical cell index
         pure subroutine get_index(pos, i, j, k)
-            double precision, intent(in)  :: pos(3)
+            double precision, intent(in)  :: pos(n_dim)
             integer,          intent(out) :: i, j, k
 
-            i = floor((pos(1) - lower(1)) * dxi(1))
-            j = floor((pos(2) - lower(2)) * dxi(2))
-            k = floor((pos(3) - lower(3)) * dxi(3))
+            i = floor((pos(I_X) - lower(I_X)) * dxi(I_X))
+            j = floor((pos(I_Y) - lower(I_Y)) * dxi(I_Y))
+            k = floor((pos(I_Z) - lower(I_Z)) * dxi(I_Z))
         end subroutine get_index
 
 
@@ -143,11 +142,11 @@ module fields
         ! @param[out] pos position of (i, j, k) in the domain
         pure subroutine get_position(i, j, k, pos)
             integer,          intent(in)  :: i, j, k
-            double precision, intent(out) :: pos(3)
+            double precision, intent(out) :: pos(n_dim)
 
-            pos(1) = lower(1) + i * dx(1)
-            pos(2) = lower(2) + j * dx(2)
-            pos(3) = lower(3) + k * dx(3)
+            pos(I_X) = lower(I_X) + i * dx(I_X)
+            pos(I_Y) = lower(I_Y) + j * dx(I_Y)
+            pos(I_Z) = lower(I_Z) + k * dx(I_Z)
 
         end subroutine get_position
 

@@ -1,4 +1,5 @@
 module rk4_utils
+    use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parcel_container, only : I_B11, I_B12, I_B13, I_B22, I_B23
     use parcel_ellipsoid, only : get_B33
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY_I_DVDY, I_DWDX, I_DWDY
@@ -22,7 +23,7 @@ module rk4_utils
         function get_dBdt(Bin, S, vorticity, volume) result(Bout)
             double precision, intent(in) :: Bin(I_B23)
             double precision, intent(in) :: S(5)
-            double precision, intent(in) :: vorticity(3)
+            double precision, intent(in) :: vorticity(n_dim)
             double precision, intent(in) :: volume
             double precision             :: Bout(5), B33
             double precision             :: dudz, dvdx, dvdz, dwdz
@@ -77,7 +78,7 @@ module rk4_utils
             use options, only : time
             double precision, intent(in) :: t
             double precision             :: dt
-            double precision             :: gmax, bmax, strain(3, 3), D(3)
+            double precision             :: gmax, bmax, strain(n_dim, n_dim), D(n_dim)
             double precision             :: gradb(0:nz, 0:ny-1, 0:nx-1)
             double precision             :: db2(0:nz, 0:ny-1, 0:nx-1)
             integer                      :: ix, iy, iz

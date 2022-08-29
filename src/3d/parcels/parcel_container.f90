@@ -28,12 +28,6 @@ module parcel_container
 
     type(parcel_container_type) parcels
 
-    integer, parameter :: I_B11 = 1 & ! index for B11 matrix component
-                        , I_B12 = 2 & ! index for B12 matrix component
-                        , I_B13 = 3 & ! index for B13 matrix component
-                        , I_B22 = 4 & ! index for B22 matrix component
-                        , I_B23 = 5   ! index for B23 matrix component
-
     contains
 
         ! Obtain the difference between two zonal coordinates

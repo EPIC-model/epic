@@ -1,4 +1,5 @@
 module inversion_mod
+    use dimensions, only : n_dim, I_X, I_Y, I_Z
     use inversion_utils
     use parameters, only : nx, ny, nz, dxi
     use physics, only : f_cor
@@ -26,15 +27,15 @@ module inversion_mod
             double precision :: es(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
             double precision :: cs(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
             double precision :: ubar(0:nz), vbar(0:nz)
-            double precision :: svel(0:nz, 0:nx-1, 0:ny-1, 3)   ! velocity in semi-spectral space
-            double precision :: svor(0:nz, 0:nx-1, 0:ny-1, 3)   ! vorticity in mixed spectral space
+            double precision :: svel(0:nz, 0:nx-1, 0:ny-1, n_dim) ! velocity in semi-spectral space
+            double precision :: svor(0:nz, 0:nx-1, 0:ny-1, n_dim) ! vorticity in mixed spectral space
             integer          :: iz, nc, kx, ky, kz
 
             call start_timer(vor2vel_timer)
 
             !----------------------------------------------------------
             ! Decompose initial vorticity and filter spectrally:
-            do nc = 1, 3
+            do nc = 1, n_dim
                 call field_decompose_physical(vortg(0:nz, :, :, nc), svor(:, :, :, nc))
                 svor(:, :, :, nc) = filt * svor(:, :, :, nc)
             enddo
@@ -81,7 +82,7 @@ module inversion_mod
 
             !----------------------------------------------------------
             ! Combine vorticity in physical space:
-            do nc = 1, 3
+            do nc = 1, n_dim
                 call field_combine_physical(svor(:, :, :, nc), vortg(0:nz, :, :, nc))
                 ! Linear extrapolation to halo cells -- FIXME may not be needed
                 vortg(-1, :, :, nc) =  two * vortg(0, :, :, nc) - vortg(1, :, :, nc)
@@ -244,8 +245,8 @@ module inversion_mod
 
         ! Compute the gridded velocity gradient tensor
         subroutine vel2vgrad(svel)
-            double precision, intent(in) :: svel(0:nz, 0:nx-1, 0:ny-1, 3) ! velocity in semi-spectral space
-            double precision             :: ds(0:nz, 0:nx-1, 0:ny-1) ! semi-spectral derivatives
+            double precision, intent(in) :: svel(0:nz, 0:nx-1, 0:ny-1, n_dim) ! velocity in semi-spectral space
+            double precision             :: ds(0:nz, 0:nx-1, 0:ny-1)          ! semi-spectral derivatives
 
             ! x component:
             call diffx(svel(:, :, :, I_X), ds)           ! u_x = du/dx in semi-spectral space
@@ -311,9 +312,9 @@ module inversion_mod
             !$omp parallel
             !$omp workshare
             vtend(0:nz, :, :, I_X) =  vortg(0:nz, :, :, I_X) * velgradg(0:nz, :, :, I_DUDX)    & ! \xi * du/dx
-                                   + (vortg(0:nz, :, :, I_Y) + f_cor(2))                       &
+                                   + (vortg(0:nz, :, :, I_Y) + f_cor(I_Y))                     &
                                         * (vortg(0:nz, :, :, I_Z) + velgradg(0:nz, :, :, I_Y)) & ! \eta * dv/dx
-                                   + (vortg(0:nz, :, :, I_Z) + f_cor(3))                       &
+                                   + (vortg(0:nz, :, :, I_Z) + f_cor(I_Z))                     &
                                         * velgradg(0:nz, :, :, I_DWDX)                         & ! \zeta * dw/dx
                                    + db                                                          ! db/dy
             !$omp end workshare
@@ -325,16 +326,16 @@ module inversion_mod
             !$omp parallel
             !$omp workshare
             vtend(0:nz, :, :, I_Y) =  vortg(0:nz, :, :, I_X) * velgradg(0:nz, :, :, I_Y) & ! \xi * du/dy
-                                   + (vortg(0:nz, :, :, I_Y) + f_cor(2))                 &
+                                   + (vortg(0:nz, :, :, I_Y) + f_cor(I_Y))               &
                                         * velgradg(0:nz, :, :, I_DVDY)                   & ! \eta * dv/dy
-                                   + (vortg(0:nz, :, :, I_Z) + f_cor(3))                 &
+                                   + (vortg(0:nz, :, :, I_Z) + f_cor(I_Z))               &
                                         * velgradg(0:nz, :, :, I_DWDY)                   & ! \zeta * dw/dy
                                    - db                                                    ! dbdx
 
             vtend(0:nz, :, :, I_Z) =  vortg(0:nz, :, :, I_X) * velgradg(0:nz, :, :, I_DWDX) & ! \xi * dw/dx
-                                   + (vortg(0:nz, :, :, I_Y) + f_cor(2))                    &
+                                   + (vortg(0:nz, :, :, I_Y) + f_cor(I_Y))                  &
                                         * velgradg(0:nz, :, :, I_DWDY)                      & ! \eta * dw/dy
-                                   - (vortg(0:nz, :, :, I_Z) + f_cor(3))  *                 &
+                                   - (vortg(0:nz, :, :, I_Z) + f_cor(I_Z))  *               &
                                     (velgradg(0:nz, :, :, I_DUDX) + velgradg(0:nz, :, :, I_DVDY)) ! \zeta * dw/dz
 
             !$omp end workshare
