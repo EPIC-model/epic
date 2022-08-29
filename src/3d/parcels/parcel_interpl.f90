@@ -333,8 +333,8 @@ module parcel_interpl
                 !$omp end parallel
             endif
 
-            !omp parallel default(private) shared(vgrad, vel, vortend, velog, velgradg, vtend)
-            !omp do private(n, l, is, js, ks, weights)
+            !$omp parallel default(private) shared(vgrad, vel, vortend, velog, velgradg, vtend)
+            !$omp do private(n, l, is, js, ks, weights)
             do n = 1, n_parcels
 
                vgrad(:, n) = zero
@@ -354,8 +354,8 @@ module parcel_interpl
                     vortend(:, n) = vortend(:, n) + weights(l) * vtend(ks(l), js(l), is(l), :)
                 enddo
             enddo
-            !omp end do
-            !omp end parallel
+            !$omp end do
+            !$omp end parallel
 
             call stop_timer(grid2par_timer)
 
