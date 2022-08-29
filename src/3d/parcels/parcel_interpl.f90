@@ -141,17 +141,17 @@ module parcel_interpl
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
-!#ifndef ENABLE_DRY_MODE
-!                ! liquid water content
-!                q_c = parcels%humidity(n) &
-!                    - q_0 * dexp(lambda_c * (lower(3) - parcels%position(3, n)))
-!                q_c = max(zero, q_c)
+#ifndef ENABLE_DRY_MODE
+                ! liquid water content
+                q_c = parcels%humidity(n) &
+                    - q_0 * dexp(lambda_c * (lower(3) - parcels%position(3, n)))
+                q_c = max(zero, q_c)
 
                 ! total buoyancy (including effects of latent heating)
-!                btot = parcels%buoyancy(n) + glat * q_c
-!#else
+                btot = parcels%buoyancy(n) + glat * q_c
+#else
                 btot = parcels%buoyancy(n)
-!#endif
+#endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               pvol, parcels%B(:, n), n, l_reuse)
 
@@ -169,58 +169,57 @@ module parcel_interpl
                     call apply_periodic_bc(points(:, p))
                     call get_index(points(:, p), i, j, k)
 
-!                    if (p == 1) then
-!                      ! first parcel point, reset weights
-                    call trilinear(points(:, p), is, js, ks, weights)
-                    !points(:, p), is, js, ks, weights)
-                    !elseif ((i == i_stored) .and. (j == j_stored) .and. (k == k_stored)) then
-                    !  ! if point is in same grid cell, just add to weights
-                    !  call trilinear_weights_add(points(:, p), i, j, k, weights)
-                    !else
-                      ! if point is in different grid cell, save previously stored
-                      ! weights first
-                      ! loop over grid points which are part of the interpolation
-                      ! the weight is a quarter due to 4 points per ellipsoid
-                      do l = 1, ngp
+                    if (p == 1) then
+                        ! first parcel point, reset weights
+                        call trilinear(points(:, p), is, js, ks, weights)
+                    elseif ((i == i_stored) .and. (j == j_stored) .and. (k == k_stored)) then
+                        ! if point is in same grid cell, just add to weights
+                        call trilinear_weights_add(points(:, p), i, j, k, weights)
+                    else
+                        ! if point is in different grid cell, save previously stored
+                        ! weights first
+                        ! loop over grid points which are part of the interpolation
+                        ! the weight is a quarter due to 4 points per ellipsoid
+                        do l = 1, ngp
 
-                        weight = f14 * weights(l) * pvol
+                            weight = f14 * weights(l) * pvol
 
-                        vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
-                                                      + weight * parcels%vorticity(:, n)
+                            vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
+                                                          + weight * parcels%vorticity(:, n)
 
-!#ifndef ENABLE_DRY_MODE
-!                        dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
-!                                                    + weight * parcels%buoyancy(n)
-!#endif
-                        tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
-                                                    + weight * btot
-                        volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                                  + weight
-                      enddo
-                     ! call trilinear(points(:, p), is, js, ks, weights)
-                   !endif
-!                   i_stored = i
-!                   j_stored = j
-!                   k_stored = k
+#ifndef ENABLE_DRY_MODE
+                            dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
+                                                        + weight * parcels%buoyancy(n)
+#endif
+                            tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
+                                                        + weight * btot
+                            volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
+                                                      + weight
+                        enddo
+                        call trilinear(points(:, p), is, js, ks, weights)
+                    endif
+                    i_stored = i
+                    j_stored = j
+                    k_stored = k
                 enddo
                 ! save contibutions at end of points loop
-                !do l = 1, ngp
-!
-!                  weight = f14 * weights(l) * pvol
-!
-!                  vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
-!                                                + weight * parcels%vorticity(:, n)
-!
-!#ifndef ENABLE_DRY_MODE
-!                  dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
-!                                              + weight * parcels%buoyancy(n)
-!#endif
-!
-!                  tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
-!                                              + weight * btot
-!                  volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-!                                            + weight
-!                enddo
+                do l = 1, ngp
+
+                    weight = f14 * weights(l) * pvol
+
+                    vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
+                                                  + weight * parcels%vorticity(:, n)
+
+#ifndef ENABLE_DRY_MODE
+                    dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
+                                                + weight * parcels%buoyancy(n)
+#endif
+
+                    tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
+                                                + weight * btot
+                    volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
+                                              + weight
+                enddo
             enddo
             !$omp end do
             !$omp end parallel
@@ -242,7 +241,6 @@ module parcel_interpl
             !$omp parallel workshare
             vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
-            !$omp end parallel workshare
 
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
@@ -254,6 +252,7 @@ module parcel_interpl
             tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
             tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
             tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
+            !$omp end parallel workshare
 
             ! exclude halo cells to avoid division by zero
             do p = 1, 3
