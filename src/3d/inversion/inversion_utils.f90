@@ -49,6 +49,7 @@ module inversion_utils
     logical :: is_initialised = .false.
 
     public :: init_inversion  &
+            , init_fft        &
             , diffx           &
             , diffy           &
             , diffz           &
