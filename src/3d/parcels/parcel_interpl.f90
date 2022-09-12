@@ -314,8 +314,9 @@ module parcel_interpl
           double precision,     intent(inout) :: vel(3, n_parcels), &
                                                  vortend(3, n_parcels), &
                                                  vgrad(5, n_parcels)
-            logical, optional, intent(in)       :: add
-            integer                             :: n, l
+          logical, optional, intent(in)       :: add
+          double precision :: points(3, 4)
+            integer                             :: n, l, p
             !           double precision :: vsum
 
             call start_timer(grid2par_timer)
@@ -344,23 +345,28 @@ module parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, ks, weights)
+            !$omp do private(n, l, p, is, js, ks, weights)
             do n = 1, n_parcels
 
                vgrad(:, n) = zero
 
-                ! ensure point is within the domain
-                call apply_periodic_bc(parcels%position(:, n))
+               points = get_ellipsoid_points(parcels%position(:, n), &
+                                             parcels%volume(n), parcels%B(:, n), n)
 
-                ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(:, n), is, js, ks, weights)
+               do p = 1, 4
+                  ! ensure point is within the domain
+                  call apply_periodic_bc(points(:, p))
 
-                ! loop over grid points which are part of the interpolation
-                do l = 1, ngp
-                    vel(:, n) = vel(:, n) + weights(l) * velog(ks(l), js(l), is(l), :)
-                    vgrad(:, n) = vgrad(:, n) + weights(l) * velgradg(ks(l), js(l), is(l), :)
-                    vortend(:, n) = vortend(:, n) + weights(l) * vtend(ks(l), js(l), is(l), :)
-                enddo
+                  ! get interpolation weights and mesh indices
+                  call trilinear(points(:, p), is, js, ks, weights)
+
+                  ! loop over grid points which are part of the interpolation
+                  do l = 1, ngp
+                     vel(:, n) = vel(:, n) + f14 * weights(l) * velog(ks(l), js(l), is(l), :)
+                     vgrad(:, n) = vgrad(:, n) + f14 * weights(l) * velgradg(ks(l), js(l), is(l), :)
+                     vortend(:, n) = vortend(:, n) + f14 * weights(l) * vtend(ks(l), js(l), is(l), :)
+                  enddo
+               enddo
             enddo
             !$omp end do
             !$omp end parallel
