@@ -37,6 +37,9 @@ module parameters
     ! domain size
     double precision :: extent(3)
 
+    ! inverse domain size
+    double precision :: extenti(3)
+
     ! domain centre
     double precision :: center(3)
 
@@ -68,6 +71,8 @@ module parameters
         double precision :: msr
 
         upper = lower + extent
+
+        extenti = one / extent
 
         dx = extent / dble((/nx, ny, nz/))
         dxi = one / dx;
