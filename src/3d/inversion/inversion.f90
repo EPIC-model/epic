@@ -6,7 +6,6 @@ module inversion_mod
     use constants, only : zero, two, f12
     use sta2dfft, only : dct, dst
     use fields
-    use options, only : l_flux
     use timer, only : start_timer, stop_timer
     implicit none
 

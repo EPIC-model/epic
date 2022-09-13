@@ -9,8 +9,6 @@ module options
     ! global options
     !
 
-    logical :: l_flux = .false.
-
     ! print more info if true
     logical :: verbose = .false.
 
