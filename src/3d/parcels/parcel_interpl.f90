@@ -345,7 +345,7 @@ module parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, l, p, is, js, ks, weights)
+            !$omp do private(n, l, p, points, is, js, ks, weights)
             do n = 1, n_parcels
 
                vgrad(:, n) = zero

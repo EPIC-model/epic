@@ -324,8 +324,8 @@ module inversion_mod
             call spectral_diffz(ds, dds)
             call field_combine_physical(dds, ddf) ! ddf = du/dz
 
-            ! du/dz = \omegay + dw/dx
-            ddf = vortg(0:nz, :, :, 2) + velgradg(0:nz, :, :, 4)
+!            ! du/dz = \omegay + dw/dx
+!            ddf = vortg(0:nz, :, :, 2) + velgradg(0:nz, :, :, 4)
 
             !$omp parallel 
             !$omp workshare
@@ -345,7 +345,7 @@ module inversion_mod
             call field_combine_physical(dds, ddf) ! ddf = dv/dz
 
             ! dv/dz = dw/dy - \omegax
-            ddf = velgradg(0:nz, :, :, 5) - vortg(0:nz, :, :, 1)
+ !           ddf = velgradg(0:nz, :, :, 5) - vortg(0:nz, :, :, 1)
             
             !$omp parallel
             !$omp workshare
@@ -356,13 +356,13 @@ module inversion_mod
             !$omp end workshare
             !$omp end parallel
 
-!            ! dw/dz
-!            call field_decompose_physical(velog(0:nz, :, :, 3), ds)
-!            call spectral_diffz(ds, dds)
-            !            call field_combine_physical(dds, ddf) ! ddf = dw/dz
+            ! dw/dz
+            call field_decompose_physical(velog(0:nz, :, :, 3), ds)
+            call spectral_diffz(ds, dds)
+            call field_combine_physical(dds, ddf) ! ddf = dw/dz
 
             ! dw/dz = - du/dx - dv/dy
-            ddf = - velgradg(0:nz, :, :, 1) - velgradg(0:nz, :, :, 3)
+!            ddf = - velgradg(0:nz, :, :, 1) - velgradg(0:nz, :, :, 3)
 
             !$omp parallel
             !$omp workshare
