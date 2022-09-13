@@ -293,7 +293,7 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine vorticity_tendency
-            double precision :: f(-1:nz+1, 0:ny-1, 0:nx-1, ndim)
+            double precision :: f(-1:nz+1, 0:ny-1, 0:nx-1, n_dim)
 
             call start_timer(vtend_timer)
 
@@ -322,15 +322,16 @@ module inversion_mod
             vtend(-1,   :, :, :) = two * vtend(0,  :, :, :) - vtend(1,    :, :, :)
             vtend(nz+1, :, :, :) = two * vtend(nz, :, :, :) - vtend(nz-1, :, :, :)
             !$omp end parallel workshare
-        end subroutine vorticity_tendency_flux
+        end subroutine vorticity_tendency
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! Note: f is overwritten
         subroutine divergence(f, div)
-            double precision, intent(in)  :: f(-1:nz+1, 0:ny-1, 0:nx-1, ndim)
-            double precision, intent(out) :: div(0:nz, 0:ny-1, 0:nx-1)
-            double precision              :: fs(0:nz, 0:nx-1, 0:ny-1)
-            double precision              :: ds(0:nz, 0:nx-1, 0:ny-1)
+            double precision, intent(inout) :: f(-1:nz+1, 0:ny-1, 0:nx-1, n_dim)
+            double precision, intent(out)   :: div(0:nz, 0:ny-1, 0:nx-1)
+            double precision                :: fs(0:nz, 0:nx-1, 0:ny-1)
+            double precision                :: ds(0:nz, 0:nx-1, 0:ny-1)
 
             ! calculate df1/dx
             call fftxyp2s(f(0:nz, :, :, I_X), fs)
@@ -348,7 +349,7 @@ module inversion_mod
             ! calculate df3/dz
             call field_decompose_physical(f(0:nz, :, :, I_Z), fs)
             call diffz(fs, ds)
-            call field_combine_physical(dds, f(0:nz, :, :, I_Z))
+            call field_combine_physical(ds, f(0:nz, :, :, I_Z))
 
             ! div = df1/dx + df2/dy + df3/dz
             div = div + f(0:nz, :, :, I_Z)

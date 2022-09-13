@@ -54,6 +54,7 @@ module inversion_utils
             , diffx           &
             , diffy           &
             , diffz           &
+            , central_diffz   &
             , lapinv1         &
             , fftxyp2s        &
             , fftxys2p        &
