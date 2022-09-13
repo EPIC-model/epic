@@ -296,10 +296,89 @@ module inversion_mod
           if (l_flux) then
              call vorticity_tendency_flux
           else
-             call vorticity_tendency_ogradu
+             call vorticity_tendency_ogradu_diffz
+!             call vorticity_tendency_ogradu
           endif
         end subroutine vorticity_tendency
 
+
+        subroutine vorticity_tendency_ogradu_diffz
+            double precision :: b(0:nz, 0:ny-1, 0:nx-1)
+            double precision :: bs(0:nz, 0:nx-1, 0:ny-1) ! spectral buoyancy
+            double precision :: ds(0:nz, 0:nx-1, 0:ny-1) ! spectral derivatives
+            double precision :: db(0:nz, 0:ny-1, 0:nx-1) ! buoyancy derivatives
+            double precision :: dds(0:nz, 0:nx-1, 0:ny-1)
+            double precision :: ddf(0:nz, 0:ny-1, 0:nx-1)
+            call start_timer(vtend_timer)
+
+            ! copy buoyancy
+            b = tbuoyg(0:nz, :, :)
+            
+            ! Compute spectral buoyancy (bs):
+            call fftxyp2s(b, bs)
+            call diffy(bs, ds)                      ! b_y = db/dy in spectral space
+            call fftxys2p(ds, db)                   ! db = b_y in physical space
+
+            ! du/dz
+            call field_decompose_physical(velog(0:nz, :, :, 1), ds)
+            call spectral_diffz(ds, dds)
+            call field_combine_physical(dds, ddf) ! ddf = du/dz
+
+            ! du/dz = \omegay + dw/dx
+            ddf = vortg(0:nz, :, :, 2) + velgradg(0:nz, :, :, 4)
+
+            !$omp parallel 
+            !$omp workshare
+            vtend(0:nz, :, :, 1) =  vortg(0:nz, :, :, 1)             * velgradg(0:nz, :, :, 1) & ! \omegax * du/dx
+                                 + (vortg(0:nz, :, :, 2) + f_cor(2)) * velgradg(0:nz, :, :, 2) & ! \omegay * du/dy
+                                 + (vortg(0:nz, :, :, 3) + f_cor(3)) * ddf           !          & ! \omegaz * du/dz
+!                                 + db                                                            ! db/dy
+            !$omp end workshare
+            !$omp end parallel
+            call diffx(bs, ds)                      ! b_x = db/dx in spectral space
+            call fftxys2p(ds, db)                   ! db = b_x in physical space
+
+
+            ! dv/dz
+            call field_decompose_physical(velog(0:nz, :, :, 2), ds)
+            call spectral_diffz(ds, dds)
+            call field_combine_physical(dds, ddf) ! ddf = dv/dz
+
+            ! dv/dz = dw/dy - \omegax
+            ddf = velgradg(0:nz, :, :, 5) - vortg(0:nz, :, :, 1)
+            
+            !$omp parallel
+            !$omp workshare
+            vtend(0:nz, :, :, 2) =  vortg(0:nz, :, :, 1)             * (vortg(0:nz, :, :, 3) + velgradg(0:nz, :, :, 2)) & ! \omegax * dv/dx (dv/dx = du/dy + \omegaz)
+                                 + (vortg(0:nz, :, :, 2) + f_cor(2)) * velgradg(0:nz, :, :, 3) & ! \omegay * dv/dy
+                                 + (vortg(0:nz, :, :, 3) + f_cor(3)) * ddf                   !  & ! \omegaz * dv/dz
+                                ! - db
+            !$omp end workshare
+            !$omp end parallel
+
+!            ! dw/dz
+!            call field_decompose_physical(velog(0:nz, :, :, 3), ds)
+!            call spectral_diffz(ds, dds)
+            !            call field_combine_physical(dds, ddf) ! ddf = dw/dz
+
+            ! dw/dz = - du/dx - dv/dy
+            ddf = - velgradg(0:nz, :, :, 1) - velgradg(0:nz, :, :, 3)
+
+            !$omp parallel
+            !$omp workshare
+            vtend(0:nz, :, :, 3) =  vortg(0:nz, :, :, 1)             * velgradg(0:nz, :, :, 4) & ! \omegax * dw/dx
+                                 + (vortg(0:nz, :, :, 2) + f_cor(2)) * velgradg(0:nz, :, :, 5) & ! \omegay * dw/dy
+                                 + (vortg(0:nz, :, :, 3) + f_cor(3)) * ddf                       ! \omegaz * dw/dz (dw/dz = - du/dx - dv/dy)
+            !$omp end workshare
+            !$omp end parallel
+            
+            ! Extrapolate to halo grid points
+            vtend(-1,   :, :, :) = two * vtend(0,  :, :, :) - vtend(1,    :, :, :)
+            vtend(nz+1, :, :, :) = two * vtend(nz, :, :, :) - vtend(nz-1, :, :, :)
+            
+            call stop_timer(vtend_timer)
+
+        end subroutine vorticity_tendency_ogradu_diffz
 
         subroutine vorticity_tendency_ogradu
             double precision :: b(0:nz, 0:ny-1, 0:nx-1)
