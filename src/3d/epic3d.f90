@@ -149,7 +149,7 @@ program epic3d
                 endif
 #endif
                 call apply_vortcor
-                
+
                 call ls_rk4_step(t)
 
                 !call apply_vortcor
@@ -192,7 +192,7 @@ program epic3d
 
     ! Get the file name provided via the command line
     subroutine parse_command_line
-        use options, only : filename, l_restart, restart_file, l_flux
+        use options, only : filename, l_restart, restart_file
 #ifdef ENABLE_VERBOSE
         use options, only : verbose
 #endif
@@ -220,9 +220,6 @@ program epic3d
                 i = i + 1
                 call get_command_argument(i, arg)
                 restart_file = trim(arg)
-             else if (arg == '--flux') then
-                l_flux = .true.
-                print *, "Tendency in flux form."
 #ifdef ENABLE_VERBOSE
             else if (arg == '--verbose') then
                 verbose = .true.

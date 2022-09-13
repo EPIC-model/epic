@@ -29,14 +29,14 @@ module ls_rk4
     double precision, allocatable, dimension(:) :: &
         delta_vor      ! vorticity integration
 
-    double precision, parameter :: &
+    double precision, parameter, dimension(5) :: &
         cas = (/- 567301805773.0_dp/1357537059087.0_dp,  &
                 -2404267990393.0_dp/2016746695238.0_dp,  &
                 -3550918686646.0_dp/2091501179385.0_dp,  &
                 -1275806237668.0_dp/842570457699.0_dp,   &
                 0.0/) !dummy value, not actually used
 
-    double precision, parameter :: &
+    double precision, parameter, dimension(5) :: &
         cbs =  (/1432997174477.0_dp/9575080441755.0_dp,  &
                  5161836677717.0_dp/13612068292357.0_dp, &
                  1720146321549.0_dp/2090206949498.0_dp,  &

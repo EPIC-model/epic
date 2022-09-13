@@ -54,6 +54,7 @@ module inversion_utils
             , diffx           &
             , diffy           &
             , diffz           &
+            , central_diffz   &
             , lapinv1         &
             , fftxyp2s        &
             , fftxys2p        &
@@ -515,8 +516,8 @@ module inversion_utils
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         !Calculates df/dz for a field f using 2nd-order differencing.
-        !Here fs = f, ds = df/dz.
-        subroutine diffz(fs, ds)
+        !Here fs = f, ds = df/dz. In semi-spectral space.
+        subroutine central_diffz(fs, ds)
             double precision, intent(in)  :: fs(0:nz, 0:ny-1, 0:nx-1)
             double precision, intent(out) :: ds(0:nz, 0:ny-1, 0:nx-1)
             integer                       :: iz
@@ -536,7 +537,55 @@ module inversion_utils
             enddo
             !$omp end parallel do
 
-        end subroutine
+        end subroutine central_diffz
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        !Calculates df/dz for a field f in mixed-spectral space
+        !Here fs = f, ds = df/dz. Both fields are in mixed-spectral space.
+        subroutine diffz(fs, ds)
+            double precision, intent(in)  :: fs(0:nz, 0:nx-1, 0:ny-1) ! f in mixed-spectral space
+            double precision, intent(out) :: ds(0:nz, 0:nx-1, 0:ny-1) ! derivative linear part
+            double precision              :: as(0:nz, 0:nx-1, 0:ny-1) ! derivative sine-part
+            integer                       :: kx, ky, kz, iz
+
+            !Calculate the boundary contributions of the derivative (ds) in semi-spectral space:
+            !$omp parallel do private(iz)  default(shared)
+            do iz = 0, nz
+                ds(iz, :, :) = fs(0, :, :) * dthetam(iz, :, :) + fs(nz, :, :) * dthetap(iz, :, :)
+            enddo
+            !$omp end parallel do
+
+            ! Calculate d/dz of this sine series:
+            !$omp parallel workshare
+            as(0, :, :) = zero
+            !$omp end parallel workshare
+            !$omp parallel do private(kz)  default(shared)
+            do kz = 1, nz-1
+                as(kz, :, :) = rkz(kz) * fs(kz, :, :)
+            enddo
+            !$omp end parallel do
+            !$omp parallel workshare
+            as(nz, :, :) = zero
+            !$omp end parallel workshare
+
+            !FFT these quantities back to semi-spectral space:
+            !$omp parallel do collapse(2) private(kx, ky)
+            do ky = 0, ny-1
+                do kx = 0, nx-1
+                    call dct(1, nz, as(0:nz, kx, ky), ztrig, zfactors)
+                enddo
+            enddo
+            !$omp end parallel do
+
+            ! Combine vertical derivative (es) given the sine and linear parts:
+            !omp parallel workshare
+            ds = ds + as
+            !omp end parallel workshare
+
+            call field_decompose_semi_spectral(ds)
+
+          end subroutine diffz
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

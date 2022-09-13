@@ -46,8 +46,7 @@ module fields
         nsparg         ! number of small parcels per grid box
 
     ! velocity strain indices
-    integer, parameter ::
-                        , I_DUDX = 1 & ! index for du/dx strain component
+    integer, parameter :: I_DUDX = 1 & ! index for du/dx strain component
                         , I_DUDY = 2 & ! index for du/dy strain component
                         , I_DVDY = 3 & ! index for dv/dy strain component
                         , I_DWDX = 4 & ! index for dw/dx strain component
