@@ -28,7 +28,6 @@ module parcel_container
 
     type(parcel_container_type) parcels
 
-
     contains
 
         ! Obtain the difference between two zonal coordinates
