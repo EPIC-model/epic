@@ -27,28 +27,74 @@ module parcel_nearest
     ! make the algorithm less readable
     logical, allocatable :: l_leaf(:)
     logical, allocatable :: l_available(:)
-    logical, allocatable :: l_first_merged(:) ! indicates parcels merged in first stage
+    logical, allocatable :: l_merged(:) ! indicates parcels merged in first stage
 
 #ifndef NDEBUG
     ! Logicals that are only needed for sanity checks
-    logical, allocatable :: l_merged(:)! SANITY CHECK ONLY
-    logical, allocatable :: l_small(:) ! SANITY CHECK ONLY
-    logical, allocatable :: l_close(:) ! SANITY CHECK ONLY
+    logical, allocatable :: l_is_merged(:) ! SANITY CHECK ONLY
+    logical, allocatable :: l_small(:)     ! SANITY CHECK ONLY
+    logical, allocatable :: l_close(:)     ! SANITY CHECK ONLY
 #endif
 
     logical :: l_continue_iteration, l_do_merge
 
     !Other variables:
     double precision:: delx, dely, delz, dsq, dsqmin, x_small, y_small, z_small
-    integer :: ic, is, k, m, j, n
+    integer :: ic, is, rc, k, m, j, n
     integer :: lijk ! local ijk index
     integer :: gijk ! global ijk index
     integer :: ix, iy, iz, ix0, iy0, iz0
 !     integer :: n_halo_small(8)  ! number of small parcels in halo regions
 
+    type(MPI_Win) :: win_merged, win_avail, win_leaf
+
+#ifndef NDEBUG
+    type(MPI_Win) :: win_is_merged, win_small, win_close
+#endif
+
     public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer
 
     contains
+
+        subroutine nearest_allocate
+            integer, parameter :: disp = 1
+            integer (KIND=MPI_ADDRESS_KIND) :: length
+
+            if (.not. allocated(nppc)) then
+                allocate(nppc(box%ncell))
+                allocate(kc1(box%ncell))
+                allocate(kc2(box%ncell))
+                allocate(lloca(max_num_parcels))
+                allocate(gloca(max_num_parcels))
+                allocate(node(max_num_parcels))
+                allocate(l_leaf(max_num_parcels))
+                allocate(l_available(max_num_parcels))
+                allocate(l_merged(max_num_parcels))
+
+                length = sizeof(l_do_merge) * max_num_parcels
+                call MPI_Win_create(l_leaf, length, 1, MPI_INFO_NULL, comm_world, win_leaf, mpi_err)
+                call MPI_Win_create(l_available, length, 1, MPI_INFO_NULL, comm_world, win_avail, mpi_err)
+                call MPI_Win_create(l_merged, length, 1, MPI_INFO_NULL, comm_world, win_merged, mpi_err)
+
+#ifndef NDEBUG
+                allocate(l_is_merged(max_num_parcels))
+                allocate(l_small(max_num_parcels))
+                allocate(l_close(max_num_parcels))
+
+                !     MPI_Win_create(base, size, disp_unit, info, comm, win, ierror)
+                !     TYPE(*), DIMENSION(..), ASYNCHRONOUS :: base
+                !     INTEGER(KIND=MPI_ADDRESS_KIND), INTENT(IN) :: size
+                !     INTEGER, INTENT(IN) :: disp_unit
+                !     TYPE(MPI_Info), INTENT(IN) :: info
+                !     TYPE(MPI_Comm), INTENT(IN) :: comm
+                !     TYPE(MPI_Win), INTENT(OUT) :: win
+                !     INTEGER, OPTIONAL, INTENT(OUT) :: ierror
+                call MPI_Win_create(l_is_merged, length, 1, MPI_INFO_NULL, comm_world, win_is_merged, mpi_err)
+                call MPI_Win_create(l_small, length, 1, MPI_INFO_NULL, comm_world, win_small, mpi_err)
+                call MPI_Win_create(l_close, length, 1, MPI_INFO_NULL, comm_world, win_close, mpi_err)
+#endif
+            endif
+        end subroutine nearest_allocate
 
         ! @param[out] isma indices of small parcels
         ! @param[out] iclo indices of close parcels
@@ -61,26 +107,12 @@ module parcel_nearest
         subroutine find_nearest(isma, iclo, nmerge)
             integer, allocatable, intent(out) :: isma(:)
             integer, allocatable, intent(out) :: iclo(:)
-            integer, intent(out) :: nmerge
+            integer,              intent(out) :: nmerge
+            integer, allocatable              :: rclo(:)
 
             call start_timer(merge_nearest_timer)
 
-            if (.not. allocated(nppc)) then
-                allocate(nppc(box%ncell))
-                allocate(kc1(box%ncell))
-                allocate(kc2(box%ncell))
-                allocate(lloca(max_num_parcels))
-                allocate(gloca(max_num_parcels))
-                allocate(node(max_num_parcels))
-                allocate(l_leaf(max_num_parcels))
-                allocate(l_available(max_num_parcels))
-                allocate(l_first_merged(max_num_parcels))
-#ifndef NDEBUG
-                allocate(l_merged(max_num_parcels))
-                allocate(l_small(max_num_parcels))
-                allocate(l_close(max_num_parcels))
-#endif
-            endif
+            call nearest_allocate
 
             nmerge = 0
 
@@ -123,9 +155,11 @@ module parcel_nearest
             ! allocate arrays
             allocate(isma(0:nmerge))
             allocate(iclo(nmerge))
+            allocate(rclo(nmerge))
 
             isma = 0
             iclo = 0
+            rclo = -1
 
             ! Find arrays kc1(lijk) & kc2(lijk) which indicate the parcels in grid cell lijk
             ! through n = node(k), for k = kc1(lijk), kc2(lijk):
@@ -147,7 +181,7 @@ module parcel_nearest
                     isma(j) = n
                 endif
 #ifndef NDEBUG
-                l_merged(n)=.false.! SANITY CHECK ONLY
+                l_is_merged(n)=.false.! SANITY CHECK ONLY
                 l_small(n)=.false. ! SANITY CHECK ONLY
                 l_close(n)=.false. ! SANITY CHECK ONLY
 #endif
@@ -210,8 +244,8 @@ module parcel_nearest
                 ! Store the index of the parcel to be potentially merged with:
                 isma(m) = is
                 iclo(m) = ic
-                l_first_merged(is)=.false.
-                l_first_merged(ic)=.false.
+                l_merged(is)=.false.
+                l_merged(ic)=.false.
             enddo
 
 #ifndef NDEBUG
@@ -220,6 +254,20 @@ module parcel_nearest
 #endif
 
             call stop_timer(merge_nearest_timer)
+
+            call resolve_tree(isma, iclo, rclo, nmerge)
+
+        end subroutine find_nearest
+
+
+        subroutine resolve_tree(isma, iclo, rclo, nmerge)
+            integer, intent(inout)         :: isma(:)
+            integer, intent(inout)         :: iclo(:)
+            integer, intent(inout)         :: rclo(:)
+            integer, intent(inout)         :: nmerge
+            logical                        :: l_helper
+            integer(KIND=MPI_ADDRESS_KIND) :: icm
+
             call start_timer(merge_tree_resolve_timer)
 
             ! First implementation of iterative algorithm
@@ -228,112 +276,222 @@ module parcel_nearest
             ! But going for more readable implementation here first.
 
             ! First, iterative, stage
-            l_continue_iteration=.true.
+            l_continue_iteration = .true.
+
             do while(l_continue_iteration)
-              l_continue_iteration=.false.
-              ! reset relevant properties for candidate mergers
-              do m = 1, nmerge
-                is = isma(m)
-                ! only consider links that still may be merging
-                ! reset relevant properties
-                if(.not. l_first_merged(is)) then
-                  ic = iclo(m)
-                  l_leaf(is)=.true.
-                  l_available(ic)=.true.
-                end if
-              end do
-              ! determine leaf parcels
-              do m = 1, nmerge
-                is = isma(m)
-                if(.not. l_first_merged(is)) then
-                  ic = iclo(m)
-                  l_leaf(ic)=.false.
-                end if
-              end do
-              ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
-              ! filter out parcels that are "unavailable" for merging
-              do m = 1, nmerge
-                is = isma(m)
-                if(.not. l_first_merged(is)) then
-                   if(.not. l_leaf(is)) then
-                     ic = iclo(m)
-                     l_available(ic)=.false.
-                   end if
-                end if
-              end do
-              ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
-              ! identify mergers in this iteration
-              do m = 1, nmerge
-                is = isma(m)
-                if(.not. l_first_merged(is)) then
-                  ic = iclo(m)
-                  if(l_leaf(is) .and. l_available(ic)) then
-                    l_continue_iteration=.true. ! merger means continue iteration
-                    l_first_merged(is)=.true.
-                    l_first_merged(ic)=.true.
-                  end if
-                end if
-              end do
-              ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
-            end do
+                l_continue_iteration = .false.
+                ! reset relevant properties for candidate mergers
+
+                call MPI_Win_fence(0, win_avail, mpi_err)
+
+                do m = 1, nmerge
+                    is = isma(m)
+                    ! only consider links that still may be merging
+                    ! reset relevant properties
+                    if (.not. l_merged(is)) then
+                        ic = iclo(m)
+                        rc = rclo(m)
+                        l_leaf(is) = .true.
+
+                        if (rc == mpi_rank) then
+                            l_available(ic) = .true.
+                        else
+                            !     MPI_Put(origin_addr, origin_count, origin_datatype, target_rank,
+                            !         target_disp, target_count, target_datatype, win, ierror)
+                            !     TYPE(*), DIMENSION(..), INTENT(IN), ASYNCHRONOUS :: origin_addr
+                            !     INTEGER, INTENT(IN) :: origin_count, target_rank, target_count
+                            !     TYPE(MPI_Datatype), INTENT(IN) :: origin_datatype, target_datatype
+                            !     INTEGER(KIND=MPI_ADDRESS_KIND), INTENT(IN) :: target_disp
+                            !     TYPE(MPI_Win), INTENT(IN) :: win
+                            !     INTEGER, OPTIONAL, INTENT(OUT) :: ierror
+                            l_helper = .true.
+                            icm = ic
+                            call MPI_Put(l_helper, 1, MPI_LOGICAL, rc, icm, max_num_parcels, &
+                                         MPI_LOGICAL, win_avail, mpi_err)
+                        endif
+                    endif
+                enddo
+
+                call MPI_Win_fence(0, win_avail, mpi_err)
+
+                call MPI_Win_fence(0, win_leaf, mpi_err)
+
+                ! determine leaf parcels
+                do m = 1, nmerge
+                    is = isma(m)
+                    if (.not. l_merged(is)) then
+                        ic = iclo(m)
+                        rc = rclo(m)
+
+                        if (rc == mpi_rank) then
+                            l_leaf(ic) = .false.
+                        else
+                            l_helper = .false.
+                            icm = ic
+                            call MPI_Put(l_helper, 1, MPI_LOGICAL, rc, icm, max_num_parcels, &
+                                         MPI_LOGICAL, win_leaf, mpi_err)
+                        endif
+                    endif
+                enddo
+
+                call MPI_Win_fence(0, win_leaf, mpi_err)
+
+                call MPI_Win_fence(0, win_avail, mpi_err)
+
+                ! filter out parcels that are "unavailable" for merging
+                do m = 1, nmerge
+                    is = isma(m)
+                    if (.not. l_merged(is)) then
+                        if (.not. l_leaf(is)) then
+                            ic = iclo(m)
+                            rc = rclo(m)
+
+                            if (rc == mpi_rank) then
+                                l_available(ic) = .false.
+                            else
+                                l_helper = .false.
+                                icm = ic
+                                call MPI_Put(l_helper, 1, MPI_LOGICAL, rc, icm, max_num_parcels, &
+                                             MPI_LOGICAL, win_avail, mpi_err)
+                            endif
+                        endif
+                    endif
+                enddo
+
+                call MPI_Win_fence(0, win_avail, mpi_err)
+
+                call MPI_Win_fence(0, win_merged, mpi_err)
+
+                ! identify mergers in this iteration
+                do m = 1, nmerge
+                    is = isma(m)
+                    if (.not. l_merged(is)) then
+                        ic = iclo(m)
+                        rc = rclo(m)
+
+                        l_helper = .false.
+                        if (rc == mpi_rank) then
+                            l_helper = l_available(ic)
+                        else
+                            !     MPI_Get(origin_addr, origin_count, origin_datatype, target_rank,
+                            !         target_disp, target_count, target_datatype, win, ierror)
+                            !     TYPE(*), DIMENSION(..), ASYNCHRONOUS :: origin_addr
+                            !     INTEGER, INTENT(IN) :: origin_count, target_rank, target_count
+                            !     TYPE(MPI_Datatype), INTENT(IN) :: origin_datatype, target_datatype
+                            !     INTEGER(KIND=MPI_ADDRESS_KIND), INTENT(IN) :: target_disp
+                            !     TYPE(MPI_Win), INTENT(IN) :: win
+                            !     INTEGER, OPTIONAL, INTENT(OUT) :: ierror
+                            icm = ic
+                            call MPI_Get(l_helper, 1, MPI_LOGICAL, rc, icm, max_num_parcels, &
+                                         MPI_LOGICAL, win_avail, mpi_err)
+                        endif
+
+                        if (l_leaf(is) .and. l_helper) then
+                            l_continue_iteration = .true. ! merger means continue iteration
+                            l_merged(is) = .true.
+
+                            if (rc == mpi_rank) then
+                                l_merged(ic) = .true.
+                            else
+                                l_helper = .true.
+                                icm = ic
+                                call MPI_Put(l_helper, 1, MPI_LOGICAL, rc, icm, max_num_parcels, &
+                                             MPI_LOGICAL, win_merged, mpi_err)
+                            endif
+                        endif
+                    endif
+                enddo
+
+                call MPI_Win_fence(0, win_merged, mpi_err)
+
+                ! Performance improvement: We actually only need to synchronize with neighbours
+                call MPI_Allreduce(MPI_IN_PLACE, l_continue_iteration, 1, MPI_LOGICAL, &
+                                   MPI_LOR, comm_world, mpi_err)
+            enddo
+
+
+            call MPI_Win_fence(0, win_avail, mpi_err)
 
             ! Second stage, related to dual links
             do m = 1, nmerge
-              is = isma(m)
-              if(.not. l_first_merged(is)) then
-                if(l_leaf(is)) then ! set in last iteration of stage 1
-                  ic = iclo(m)
-                  l_available(ic)=.true.
-                end if
-              end if
-            end do
+                is = isma(m)
+                if (.not. l_merged(is)) then
+                    if (l_leaf(is)) then ! set in last iteration of stage 1
+                        ic = iclo(m)
+                        rc = rclo(m)
 
-            ! PARALLEL: COMMUNICATION WILL BE NEEDED HERE
+                        if (rc == mpi_rank) then
+                            l_available(ic) = .true.
+                        else
+                            l_helper = .true.
+                            icm = ic
+                            call MPI_Put(l_helper, 1, MPI_LOGICAL, rc, icm, max_num_parcels, &
+                                         MPI_LOGICAL, win_avail, mpi_err)
+                        endif
+                    endif
+                endif
+            enddo
+
+            call MPI_Win_fence(0, win_avail, mpi_err)
+
+            call MPI_Win_fence(0, win_avail, mpi_err)
 
             ! Second stage (hard to parallelise with openmp?)
-            j=0
+            j = 0
             do m = 1, nmerge
-              is = isma(m)
-              ic = iclo(m)
-              l_do_merge=.false.
-              if(l_first_merged(is) .and. l_leaf(is)) then
-                ! previously identified mergers: keep
-                l_do_merge=.true.
+                is = isma(m)
+                ic = iclo(m)
+                rc = rclo(m)
+                l_do_merge = .false.
+                if (l_merged(is) .and. l_leaf(is)) then
+                    ! previously identified mergers: keep
+                    l_do_merge = .true.
 #ifndef NDEBUG
-                ! sanity check on first stage mergers
-                ! parcel cannot be both initiator and receiver in stage 1
-                if(l_leaf(ic)) then
-                  write(*,*) 'first stage error'
-                endif
+                    ! sanity check on first stage mergers
+                    ! parcel cannot be both initiator and receiver in stage 1
+                    if (l_leaf(ic)) then
+                        write(*,*) 'first stage error'
+                    endif
 #endif
-              elseif(.not. l_first_merged(is)) then
-                if(l_leaf(is)) then
-                  ! links from leafs
-                  l_do_merge=.true.
-                elseif(.not. l_available(is)) then
-                  ! Above means parcels that have been made 'available' do not keep outgoing links
-                  if(l_available(ic)) then
-                    ! merge this parcel into ic along with the leaf parcels
-                    l_do_merge=.true.
-                  else
-                    ! isolated dual link
-                    ! Don't keep current link
-                    ! But make small parcel available so other parcel can merge with it
-                    ! THIS NEEDS THINKING ABOUT A PARALLEL IMPLEMENTATION
-                    ! This could be based on the other parcel being outside the domain
-                    ! And a "processor order"
-                    l_available(is)=.true.
-                  endif
-                endif
+                elseif (.not. l_merged(is)) then
+                    if (l_leaf(is)) then
+                        ! links from leafs
+                        l_do_merge = .true.
+                    elseif (.not. l_available(is)) then
+                        ! Above means parcels that have been made 'available' do not keep outgoing links
+
+                        if (rc == mpi_rank) then
+                            l_helper = l_available(ic)
+                        else
+                            call MPI_Get(l_helper, 1, MPI_LOGICAL, rc, icm, max_num_parcels, &
+                                         MPI_LOGICAL, win_avail, mpi_err)
+                        endif
+
+                        if (l_helper) then
+                            ! merge this parcel into ic along with the leaf parcels
+                            l_do_merge = .true.
+                        else
+                            ! isolated dual link
+                            ! Don't keep current link
+                            ! But make small parcel available so other parcel can merge with it
+                            ! THIS NEEDS THINKING ABOUT A PARALLEL IMPLEMENTATION
+                            ! This could be based on the other parcel being outside the domain
+                            ! And a "processor order"
+                            l_available(is) = .true.
+                        endif
+                    endif
               endif
 
-              if(l_do_merge) then
+              call MPI_Win_fence(0, win_avail, mpi_err)
+
+              if (l_do_merge) then
                    j = j + 1
                    isma(j) = is
                    iclo(j) = ic
+                   rclo(j) = rc
 #ifndef NDEBUG
-                   l_merged(is)=.true.
-                   l_merged(ic)=.true.
+                   l_is_merged(is)=.true.
+                   l_is_merged(ic)=.true.
                    l_small(is)=.true.
                    l_close(ic)=.true.
 #endif
@@ -356,8 +514,8 @@ module parcel_nearest
 
             ! 1. CHECK RESULTING MERGERS
             do m = 1, nmerge
-              if(.not. l_merged(isma(m))) write(*,*) 'merge_error: isma(m) not merged, m=', m
-              if(.not. l_merged(iclo(m))) write(*,*) 'merge_error: iclo(m) not merged, m=', m
+              if(.not. l_is_merged(isma(m))) write(*,*) 'merge_error: isma(m) not merged, m=', m
+              if(.not. l_is_merged(iclo(m))) write(*,*) 'merge_error: iclo(m) not merged, m=', m
               if(.not. l_small(isma(m))) write(*,*) 'merge_error: isma(m) not marked as small, m=', m
               if(.not. l_close(iclo(m))) write(*,*) 'merge_error: iclo(m) not marked as close, m=', m
               if(l_close(isma(m))) write(*,*) 'merge_error: isma(m) both small and close, m=', m
@@ -367,19 +525,20 @@ module parcel_nearest
             ! 2. CHECK MERGING PARCELS
             do n = 1, n_parcels
               if (parcels%volume(n) < vmin) then
-                if(.not. l_merged(n)) write(*,*) 'merge_error: parcel n not merged (should be), n=', n
+                if(.not. l_is_merged(n)) write(*,*) 'merge_error: parcel n not merged (should be), n=', n
                 if(.not. (l_small(n) .or. l_close(n))) write(*,*) 'merge_error: parcel n not small or close (should be), n=', n
                 if(l_small(n) .and. l_close(n)) write(*,*) 'merge_error: parcel n both small and close, n=', n
               else
                 if(l_small(n)) write(*,*) 'merge_error: parcel n small (should not be), n=', n
-                if(l_merged(n) .and. (.not. l_close(n))) write(*,*) 'merge_error: parcel n merged (should not be), n=', n
+                if(l_is_merged(n) .and. (.not. l_close(n))) write(*,*) 'merge_error: parcel n merged (should not be), n=', n
               end if
             enddo
 #endif
 
             call stop_timer(merge_tree_resolve_timer)
 
-        end subroutine find_nearest
+        end subroutine resolve_tree
+
 
         subroutine collect_from_neighbours
             integer :: n_sends(8)
