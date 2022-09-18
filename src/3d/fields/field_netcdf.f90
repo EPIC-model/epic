@@ -1,5 +1,5 @@
 module field_netcdf
-    use constants, only : one
+    use constants, only : one, two
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader

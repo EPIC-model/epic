@@ -1,6 +1,7 @@
 module rk4_utils
-    use parcel_ellipsoid, only : get_B33
-    use fields, only : velgradg, tbuoyg, vortg
+    use dimensions, only : n_dim, I_X, I_Y, I_Z
+    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
+    use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
     use jacobi, only : jacobi_eigenvalues
@@ -19,61 +20,53 @@ module rk4_utils
         ! @param[in] volume is the parcel volume
         ! @returns dB/dt in Bout
         function get_dBdt(Bin, S, vorticity, volume) result(Bout)
-            double precision, intent(in) :: Bin(5)
+            double precision, intent(in) :: Bin(I_B23)
             double precision, intent(in) :: S(5)
-            double precision, intent(in) :: vorticity(3)
+            double precision, intent(in) :: vorticity(n_dim)
             double precision, intent(in) :: volume
             double precision             :: Bout(5), B33
-            double precision             :: dudx, dudy, dudz, &
-                                            dvdx, dvdy, dvdz, &
-                                            dwdx, dwdy, dwdz
+            double precision             :: dudz, dvdx, dvdz, dwdz
 
-            dudx = S(1)
-            dudy = S(2)
-            dvdy = S(3)
-            dwdx = S(4)
-            dwdy = S(5)
+            ! du/dz = \eta + dw/dx
+            dudz = vorticity(I_Y) + S(I_DWDX)
 
-            ! du/dz = \omegay + dw/dx
-            dudz = vorticity(2) + dwdx
+            ! dv/dx \zeta + du/dy
+            dvdx = vorticity(I_Z) + S(I_DUDY)
 
-            ! dv/dx \omegaz + du/dy
-            dvdx = vorticity(3) + dudy
-
-            ! dv/dz = dw/dy - \omegax
-            dvdz = dwdy - vorticity(1)
+            ! dv/dz = dw/dy - \xi
+            dvdz = S(I_DWDY) - vorticity(I_X)
 
             ! dw/dz = - (du/dx + dv/dy)
-            dwdz = - (dudx + dvdy)
+            dwdz = - (S(I_DUDX) + S(I_DVDY))
 
             B33 = get_B33(Bin, volume)
 
             ! dB11/dt = 2 * (du/dx * B11 + du/dy * B12 + du/dz * B13)
-            Bout(1) = two * (dudx * Bin(1) + dudy * Bin(2) + dudz * Bin(3))
+            Bout(I_B11) = two * (S(I_DUDX) * Bin(I_B11) + S(I_DUDY) * Bin(I_B12) + dudz * Bin(I_B13))
 
             ! dB12/dt =
-            Bout(2) = dvdx * Bin(1) & !   dv/dx * B11
-                    - dwdz * Bin(2) & ! - dw/dz * B12
-                    + dvdz * Bin(3) & ! + dv/dz * B13
-                    + dudy * Bin(4) & ! + du/dy * B22
-                    + dudz * Bin(5)   ! + du/dz * B23
+            Bout(I_B12) = dvdx      * Bin(I_B11) & !   dv/dx * B11
+                        - dwdz      * Bin(I_B12) & ! - dw/dz * B12
+                        + dvdz      * Bin(I_B13) & ! + dv/dz * B13
+                        + S(I_DUDY) * Bin(I_B22) & ! + du/dy * B22
+                        + dudz      * Bin(I_B23)   ! + du/dz * B23
 
             ! dB13/dt =
-            Bout(3) = dwdx * Bin(1) & !   dw/dx * B11
-                    + dwdy * Bin(2) & ! + dw/dy * B12
-                    - dvdy * Bin(3) & ! - dv/dy * B13
-                    + dudy * Bin(5) & ! + du/dy * B23
-                    + dudz * B33      ! + du/dz * B33
+            Bout(I_B13) = S(I_DWDX) * Bin(I_B11) & !   dw/dx * B11
+                        + S(I_DWDY) * Bin(I_B12) & ! + dw/dy * B12
+                        - S(I_DVDY) * Bin(I_B13) & ! - dv/dy * B13
+                        + S(I_DUDY) * Bin(I_B23) & ! + du/dy * B23
+                        + dudz      * B33         ! + du/dz * B33
 
             ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
-            Bout(4) = two * (dvdx * Bin(2) + dvdy * Bin(4) + dvdz * Bin(5))
+            Bout(I_B22) = two * (dvdx * Bin(I_B12) + S(I_DVDY) * Bin(I_B22) + dvdz * Bin(I_B23))
 
             ! dB23/dt =
-            Bout(5) = dwdx * Bin(2) & !   dw/dx * B12
-                    + dvdx * Bin(3) & ! + dv/dx * B13
-                    + dwdy * Bin(4) & ! + dw/dy * B22
-                    - dudx * Bin(5) & ! - du/dx * B23
-                    + dvdz * B33      ! + dv/dz * B33
+            Bout(I_B23) = S(I_DWDX) * Bin(I_B12) & !   dw/dx * B12
+                        + dvdx      * Bin(I_B13) & ! + dv/dx * B13
+                        + S(I_DWDY) * Bin(I_B22) & ! + dw/dy * B22
+                        - S(I_DUDX) * Bin(I_B23) & ! - du/dx * B23
+                        + dvdz      * B33          ! + dv/dz * B33
         end function get_dBdt
 
         ! Estimate a suitable time step based on the velocity strain
@@ -84,7 +77,7 @@ module rk4_utils
             use options, only : time
             double precision, intent(in) :: t
             double precision             :: dt
-            double precision             :: gmax, bmax, strain(3, 3), D(3)
+            double precision             :: gmax, bmax, strain(n_dim, n_dim), D(n_dim)
             double precision             :: gradb(0:nz, 0:ny-1, 0:nx-1)
             double precision             :: db2(0:nz, 0:ny-1, 0:nx-1)
             integer                      :: ix, iy, iz
@@ -111,9 +104,9 @@ module rk4_utils
                         ! The derivatives dv/dx, du/dz, dv/dz and dw/dz are calculated
                         ! with vorticity or the assumption of incompressibility
                         ! (du/dx + dv/dy + dw/dz = 0):
-                        !    dv/dx = \omegaz + du/dy
-                        !    du/dz = \omegay + dw/dx
-                        !    dv/dz = dw/dy - \omegax
+                        !    dv/dx = \zeta + du/dy
+                        !    du/dz = \eta + dw/dx
+                        !    dv/dz = dw/dy - \xi
                         !    dw/dz = - (du/dx + dv/dy)
                         !
                         !                         /  2 * u_x  u_y + v_x u_z + w_x\
@@ -121,17 +114,17 @@ module rk4_utils
                         !                         \u_z + w_x  v_z + w_y   2 * w_z/
                         !
                         ! S11 = du/dx
-                        ! S12 = 1/2 * (du/dy + dv/dx) = 1/2 * (2 * du/dy + \omegaz) = du/dy + 1/2 * \omegaz
-                        ! S13 = 1/2 * (du/dz + dw/dx) = 1/2 * (\omegay + 2 * dw/dx) = 1/2 * \omegay + dw/dx
+                        ! S12 = 1/2 * (du/dy + dv/dx) = 1/2 * (2 * du/dy + \zeta) = du/dy + 1/2 * \zeta
+                        ! S13 = 1/2 * (du/dz + dw/dx) = 1/2 * (\eta + 2 * dw/dx) = 1/2 * \eta + dw/dx
                         ! S22 = dv/dy
-                        ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \omegax) = dw/dy - 1/2 * \omegax
+                        ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \xi) = dw/dy - 1/2 * \xi
                         ! S33 = dw/dz = - (du/dx + dv/dy)
-                        strain(1, 1) = velgradg(iz, iy, ix, 1)                              ! S11
-                        strain(1, 2) = velgradg(iz, iy, ix, 2) + f12 * vortg(iz, iy, ix, 3) ! S12
-                        strain(1, 3) = velgradg(iz, iy, ix, 4) + f12 * vortg(iz, iy, ix, 2) ! S13
-                        strain(2, 2) = velgradg(iz, iy, ix, 3)                              ! S22
-                        strain(2, 3) = velgradg(iz, iy, ix, 5) - f12 * vortg(iz, iy, ix, 1) ! S23
-                        strain(3, 3) = -(velgradg(iz, iy, ix, 1) + velgradg(iz, iy, ix, 3)) ! S33
+                        strain(1, 1) = velgradg(iz, iy, ix, I_DUDX)                                   ! S11
+                        strain(1, 2) = velgradg(iz, iy, ix, I_DUDY) + f12 * vortg(iz, iy, ix, I_Z)    ! S12
+                        strain(1, 3) = velgradg(iz, iy, ix, I_DWDX) + f12 * vortg(iz, iy, ix, I_Y)    ! S13
+                        strain(2, 2) = velgradg(iz, iy, ix, I_DVDY)                                   ! S22
+                        strain(2, 3) = velgradg(iz, iy, ix, I_DWDY) - f12 * vortg(iz, iy, ix, I_X)    ! S23
+                        strain(3, 3) = -(velgradg(iz, iy, ix, I_DUDX) + velgradg(iz, iy, ix, I_DVDY)) ! S33
 
                         ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
@@ -148,25 +141,25 @@ module rk4_utils
             !
 
             ! db/dx inner part
-            gradb(:, :, 1:nx-2) = f12 * dxi(1) * (tbuoyg(0:nz, :, 2:nx-1) - tbuoyg(0:nz, :, 0:nx-3))
+            gradb(:, :, 1:nx-2) = f12 * dxi(I_X) * (tbuoyg(0:nz, :, 2:nx-1) - tbuoyg(0:nz, :, 0:nx-3))
 
             ! db/dx boundary grid points (make use of periodicity)
-            gradb(:, :, 0)    = f12 * dxi(1) * (tbuoyg(0:nz, :, 1) - tbuoyg(0:nz, :, nx-1))
-            gradb(:, :, nx-1) = f12 * dxi(1) * (tbuoyg(0:nz, :, 0) - tbuoyg(0:nz, :, nx-2))
+            gradb(:, :, 0)    = f12 * dxi(I_X) * (tbuoyg(0:nz, :, 1) - tbuoyg(0:nz, :, nx-1))
+            gradb(:, :, nx-1) = f12 * dxi(I_X) * (tbuoyg(0:nz, :, 0) - tbuoyg(0:nz, :, nx-2))
 
             db2 = gradb ** 2
 
             ! db/dy inner part
-            gradb(:, 1:ny-2, :) = f12 * dxi(2) * (tbuoyg(0:nz, 2:ny-1, :) - tbuoyg(0:nz, 0:ny-3, :))
+            gradb(:, 1:ny-2, :) = f12 * dxi(I_Y) * (tbuoyg(0:nz, 2:ny-1, :) - tbuoyg(0:nz, 0:ny-3, :))
 
             ! db/dy boundary grid points (make use of periodicity)
-            gradb(:, 0, :)    = f12 * dxi(2) * (tbuoyg(0:nz, 1, :) - tbuoyg(0:nz, ny-1, :))
-            gradb(:, ny-1, :) = f12 * dxi(2) * (tbuoyg(0:nz, 0, :) - tbuoyg(0:nz, ny-2, :))
+            gradb(:, 0, :)    = f12 * dxi(I_Y) * (tbuoyg(0:nz, 1, :) - tbuoyg(0:nz, ny-1, :))
+            gradb(:, ny-1, :) = f12 * dxi(I_Y) * (tbuoyg(0:nz, 0, :) - tbuoyg(0:nz, ny-2, :))
 
             db2 = db2 + gradb ** 2
 
             ! db/dz
-            gradb = f12 * dxi(3) * (tbuoyg(1:nz+1, :, :) - tbuoyg(-1:nz-1, :, :))
+            gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1, :, :) - tbuoyg(-1:nz-1, :, :))
 
             bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)

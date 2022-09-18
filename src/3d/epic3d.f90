@@ -142,6 +142,7 @@ program epic3d
 #endif
             double precision :: t = zero    ! current time
             integer          :: cor_iter    ! iterator for parcel correction
+            integer :: n_orig
 
             t = time%initial
 
@@ -152,11 +153,19 @@ program epic3d
                     print "(a15, f0.4)", "time:          ", t
                 endif
 #endif
-                call ls_rk4_step(t)
-
                 call apply_vortcor
 
+                call ls_rk4_step(t)
+
+                !call apply_vortcor
+
+                n_orig = n_parcels
+
                 call merge_parcels(parcels)
+
+                if (n_orig > n_parcels) then
+                   print *, "Merged parcels at time", t
+                endif
 
                 call parcel_split(parcels, parcel%lambda_max)
 
@@ -165,10 +174,11 @@ program epic3d
                     call apply_gradient(parcel%gradient_pref, parcel%max_compression, .true.)
                 enddo
 
-            enddo
+             enddo
 
             ! write final step (we only write if we really advanced in time)
-            if (t > time%initial) then
+             if (t > time%initial) then
+                call apply_vortcor
                 call write_last_step(t)
             endif
 

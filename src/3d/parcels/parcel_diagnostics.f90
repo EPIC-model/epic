@@ -75,7 +75,7 @@ module parcel_diagnostics
 
         ! Calculate all parcel related diagnostics
         subroutine calculate_parcel_diagnostics(velocity)
-            double precision :: velocity(:, :)
+            double precision, intent(in) :: velocity(:, :)
             integer          :: n
             double precision :: b, z, vel(3), vol, zmin, vor(3)
             double precision :: evals(3), lam

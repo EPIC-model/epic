@@ -47,13 +47,15 @@ module inversion_utils
     integer :: nwx, nwy, nxp2, nyp2
 
     logical :: is_initialised = .false.
+    logical :: is_fft_initialised = .false.
 
     public :: init_inversion  &
+            , init_fft        &
             , diffx           &
             , diffy           &
             , diffz           &
+            , central_diffz   &
             , lapinv1         &
-            , vertint         &
             , fftxyp2s        &
             , fftxys2p        &
             , dz2             &
@@ -219,6 +221,12 @@ module inversion_utils
             double precision              :: skx(0:nx-1), sky(0:ny-1), skz(0:nz)
             integer                       :: iz, isub, ib_sub, ie_sub
 
+            if (is_fft_initialised) then
+                return
+            endif
+
+            is_fft_initialised = .true.
+
             dz = dx(3)
             dzi = dxi(3)
             dz6  = f16 * dx(3)
@@ -305,6 +313,7 @@ module inversion_utils
 
             do ky = 0, ny-1
                do kx = 0, nx-1
+                     !filt(:, kx, ky) = dexp(skx(kx) + sky(ky))
                   filt(0,  kx, ky) = dexp(skx(kx) + sky(ky))
                   filt(nz, kx, ky) = filt(0, kx, ky)
                   do kz = 1, nz-1
@@ -507,8 +516,8 @@ module inversion_utils
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         !Calculates df/dz for a field f using 2nd-order differencing.
-        !Here fs = f, ds = df/dz.
-        subroutine diffz(fs, ds)
+        !Here fs = f, ds = df/dz. In semi-spectral space.
+        subroutine central_diffz(fs, ds)
             double precision, intent(in)  :: fs(0:nz, 0:ny-1, 0:nx-1)
             double precision, intent(out) :: ds(0:nz, 0:ny-1, 0:nx-1)
             integer                       :: iz
@@ -528,7 +537,55 @@ module inversion_utils
             enddo
             !$omp end parallel do
 
-        end subroutine
+        end subroutine central_diffz
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        !Calculates df/dz for a field f in mixed-spectral space
+        !Here fs = f, ds = df/dz. Both fields are in mixed-spectral space.
+        subroutine diffz(fs, ds)
+            double precision, intent(in)  :: fs(0:nz, 0:nx-1, 0:ny-1) ! f in mixed-spectral space
+            double precision, intent(out) :: ds(0:nz, 0:nx-1, 0:ny-1) ! derivative linear part
+            double precision              :: as(0:nz, 0:nx-1, 0:ny-1) ! derivative sine-part
+            integer                       :: kx, ky, kz, iz
+
+            !Calculate the boundary contributions of the derivative (ds) in semi-spectral space:
+            !$omp parallel do private(iz)  default(shared)
+            do iz = 0, nz
+                ds(iz, :, :) = fs(0, :, :) * dthetam(iz, :, :) + fs(nz, :, :) * dthetap(iz, :, :)
+            enddo
+            !$omp end parallel do
+
+            ! Calculate d/dz of this sine series:
+            !$omp parallel workshare
+            as(0, :, :) = zero
+            !$omp end parallel workshare
+            !$omp parallel do private(kz)  default(shared)
+            do kz = 1, nz-1
+                as(kz, :, :) = rkz(kz) * fs(kz, :, :)
+            enddo
+            !$omp end parallel do
+            !$omp parallel workshare
+            as(nz, :, :) = zero
+            !$omp end parallel workshare
+
+            !FFT these quantities back to semi-spectral space:
+            !$omp parallel do collapse(2) private(kx, ky)
+            do ky = 0, ny-1
+                do kx = 0, nx-1
+                    call dct(1, nz, as(0:nz, kx, ky), ztrig, zfactors)
+                enddo
+            enddo
+            !$omp end parallel do
+
+            ! Combine vertical derivative (es) given the sine and linear parts:
+            !omp parallel workshare
+            ds = ds + as
+            !omp end parallel workshare
+
+            call field_decompose_semi_spectral(ds)
+
+          end subroutine diffz
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -575,39 +632,6 @@ module inversion_utils
 
              !Zero horizontal wavenumber in x & y treated separately:
              fs(:, 1, 1) = zero
-        end subroutine
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        !Finds f by integrating df/dz = d, ensuring f = 0 at the boundaries
-        !using trapezoidal rule.  Here ds = df/dz and fs = f.
-        subroutine vertint(ds, fs)
-            double precision, intent(in)  :: ds(0:nz)
-            double precision, intent(out) :: fs(0:nz)
-            double precision              :: c
-            integer                       :: iz
-
-            ! set lower boundary value
-            fs(0)  = zero
-
-            do iz = 1, nz
-                fs(iz) = fs(iz-1) + dz2 * (ds(iz) + ds(iz-1))
-            enddo
-
-            ! shift to adjust f(nz) to be zero
-            c = fs(nz) / dble(nz)
-
-            !$omp parallel private(iz)
-            !$omp do
-            do iz = 1, nz-1
-                fs(iz) = fs(iz) - c * dble(iz)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            ! set upper boundary value
-            fs(nz)  = zero
-
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

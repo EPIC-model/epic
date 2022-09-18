@@ -27,17 +27,19 @@ module ls_rk4
         delta_b,   &   ! B matrix integration
         delta_vor      ! vorticity integration
 
-    double precision, parameter :: &
-        ca1 = - 567301805773.0_dp/1357537059087.0_dp,  &
-        ca2 = -2404267990393.0_dp/2016746695238.0_dp,  &
-        ca3 = -3550918686646.0_dp/2091501179385.0_dp,  &
-        ca4 = -1275806237668.0_dp/842570457699.0_dp,   &
-        ca5 = 0.0,   &  !dummy value, not actually used
-        cb1 =  1432997174477.0_dp/9575080441755.0_dp,  &
-        cb2 =  5161836677717.0_dp/13612068292357.0_dp, &
-        cb3 =  1720146321549.0_dp/2090206949498.0_dp,  &
-        cb4 =  3134564353537.0_dp/4481467310338.0_dp,  &
-        cb5 =  2277821191437.0_dp/14882151754819.0_dp
+    double precision, parameter, dimension(5) :: &
+        cas = (/- 567301805773.0_dp/1357537059087.0_dp,  &
+                -2404267990393.0_dp/2016746695238.0_dp,  &
+                -3550918686646.0_dp/2091501179385.0_dp,  &
+                -1275806237668.0_dp/842570457699.0_dp,   &
+                0.0/) !dummy value, not actually used
+
+    double precision, parameter, dimension(5) :: &
+        cbs =  (/1432997174477.0_dp/9575080441755.0_dp,  &
+                 5161836677717.0_dp/13612068292357.0_dp, &
+                 1720146321549.0_dp/2090206949498.0_dp,  &
+                 3134564353537.0_dp/4481467310338.0_dp,  &
+                 2277821191437.0_dp/14882151754819.0_dp/)
 
     contains
 
@@ -73,6 +75,7 @@ module ls_rk4
         subroutine ls_rk4_step(t)
             double precision, intent(inout) :: t
             double precision                :: dt
+            integer                         :: n
 
             call par2grid((t > time%initial))
 
@@ -93,19 +96,11 @@ module ls_rk4
 
             call write_step(t)
 
-            call ls_rk4_substep(ca1, cb1, dt, 1)
-
-            call par2grid
-            call ls_rk4_substep(ca2, cb2, dt, 2)
-
-            call par2grid
-            call ls_rk4_substep(ca3, cb3, dt, 3)
-
-            call par2grid
-            call ls_rk4_substep(ca4, cb4, dt, 4)
-
-            call par2grid
-            call ls_rk4_substep(ca5, cb5, dt, 5)
+            do n = 1, 4
+                call ls_rk4_substep(dt, n)
+                call par2grid
+            enddo
+            call ls_rk4_substep(dt, 5)
 
             call start_timer(rk4_timer)
             call apply_parcel_bc(parcels%position, parcels%B)
@@ -120,17 +115,16 @@ module ls_rk4
 
 
         ! Do a ls-RK-4 substep.
-        ! @param[in] ca is a numerical coefficient
-        ! @param[in] cb is a numerical coefficient
         ! @param[in] dt is the time step
         ! @param[in] step is the number of the substep (1 to 5)
-        subroutine ls_rk4_substep(ca, cb, dt, step)
-            double precision, intent(in) :: ca
-            double precision, intent(in) :: cb
+        subroutine ls_rk4_substep(dt, step)
             double precision, intent(in) :: dt
             integer,          intent(in) :: step
+            double precision             :: ca, cb
             integer                      :: n
 
+            ca = cas(step)
+            cb = cbs(step)
 
             if (step == 1) then
                 call start_timer(rk4_timer)
