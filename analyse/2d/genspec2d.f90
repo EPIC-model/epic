@@ -171,8 +171,7 @@ program genspec
         end subroutine dealloc_arrays
 
         subroutine read_data
-            double precision :: buffer(nz+1, nx)
-            integer          :: ncid, cnt(3), start(3), n_steps
+            integer :: ncid, cnt(3), start(3), n_steps
 
             call open_netcdf_file(trim(filename), NF90_NOWRITE, ncid)
 
@@ -183,11 +182,11 @@ program genspec
                 stop
             endif
 
-            cnt  =  (/ nz+1, nx, 1    /)
-            start = (/ 1,    1,  step /)
+            cnt  =  (/ nx, nz+1, 1    /)
+            start = (/ 1,  1,    step /)
 
             if (has_dataset(ncid, trim(dset))) then
-                call read_netcdf_dataset(ncid, trim(dset), buffer, &
+                call read_netcdf_dataset(ncid, trim(dset), pp, &
                                          start=start, cnt=cnt)
             else
                 print *, "Error: No dataset '" // trim(dset) // "' in the file."

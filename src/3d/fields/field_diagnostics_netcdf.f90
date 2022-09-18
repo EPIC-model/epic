@@ -145,7 +145,7 @@ module field_diagnostics_netcdf
                 name='ke',                                                  &
                 long_name='kinetic energy',                                 &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^5/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=keg_id)

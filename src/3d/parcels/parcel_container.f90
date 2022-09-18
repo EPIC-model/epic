@@ -4,7 +4,7 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use parameters, only : extent, hli, center, lower, upper
+    use parameters, only : extent, extenti, center, lower, upper
     use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
     implicit none
 
@@ -80,7 +80,7 @@ module parcel_container
             endif
 #endif
             ! works across periodic edge
-            delx = delx - extent(1) * dble(int(delx * hli(1)))
+            delx = delx - extent(1) * dble(nint(delx * extenti(1)))
         end function get_delx
 
         ! Obtain the difference between two meridional coordinates
@@ -106,7 +106,7 @@ module parcel_container
             endif
 #endif
             ! works across periodic edge
-            dely = dely - extent(2) * dble(int(dely * hli(2)))
+            dely = dely - extent(2) * dble(nint(dely * extenti(2)))
         end function get_dely
 
 

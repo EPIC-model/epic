@@ -2,7 +2,7 @@
 !       Module with divergent flow and gradient correction
 !===================================================================
 module parcel_correction
-    use inversion_utils, only : init_fft
+    use inversion_utils, only : init_inversion
     use inversion_mod, only : diverge
     use parcel_interpl, only : trilinear, ngp, vol2grid
     use parcel_bc
@@ -41,7 +41,7 @@ module parcel_correction
 
             call start_timer(vort_corr_timer)
 
-            call init_fft
+            call init_inversion
 
             vsum = zero
             vor_bar = zero
