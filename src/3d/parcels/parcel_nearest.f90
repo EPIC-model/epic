@@ -2,12 +2,14 @@
 !               Finds the parcels nearest every "small" parcel
 !==============================================================================
 module parcel_nearest
+    use dimensions, only : n_dim
     use constants, only : pi, f12
     use parcel_container, only : parcels, n_parcels, get_delx, get_dely
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
     use mpi_communicator
     use mpi_layout
+    use parcel_mpi
     use timer, only : start_timer, stop_timer
 
     implicit none
@@ -40,11 +42,13 @@ module parcel_nearest
 
     !Other variables:
     double precision:: delx, dely, delz, dsq, dsqmin, x_small, y_small, z_small
-    integer :: ic, is, rc, k, m, j, n
+    integer :: ic, is, rc, k, m, j
     integer :: lijk ! local ijk index
     integer :: gijk ! global ijk index
-    integer :: ix, iy, iz, ix0, iy0, iz0
 !     integer :: n_halo_small(8)  ! number of small parcels in halo regions
+
+    integer :: n_small_to_neighbours(8)
+    integer :: n_small_neighbours
 
     type(MPI_Win) :: win_merged, win_avail, win_leaf
 
@@ -98,23 +102,29 @@ module parcel_nearest
 
         ! @param[out] isma indices of small parcels
         ! @param[out] iclo indices of close parcels
-        ! @param[out] nmerge the array size of isma and iclo
+        ! @param[out] n_local_merge number of merges
         ! @post
         !   - isma must be sorted in ascending order
         !   - isma and iclo must be filled contiguously
         !   - parcel indices in isma cannot be in iclo, and vice-versa
         !   - the m-th entry in isma relates to the m-th entry in iclo
-        subroutine find_nearest(isma, iclo, nmerge)
+        subroutine find_nearest(isma, iclo, n_local_merge)
             integer, allocatable, intent(out) :: isma(:)
             integer, allocatable, intent(out) :: iclo(:)
-            integer,              intent(out) :: nmerge
+            integer,              intent(out) :: n_local_merge
             integer, allocatable              :: rclo(:)
+            integer                           :: n_global_merge
+            integer                           :: ix, iy, iz, ix0, iy0, iz0
+            integer                           :: n
 
             call start_timer(merge_nearest_timer)
 
             call nearest_allocate
 
-            nmerge = 0
+            n_local_merge = 0
+            n_global_merge = 0
+            n_small_neighbours = 0 ! number of received small parcels from neighbours
+            n_small_to_neighbours(:) = 0
 
             !---------------------------------------------------------------------
             ! Initialise search:
@@ -123,8 +133,8 @@ module parcel_nearest
             ! Bin parcels in cells:
             ! Form list of small parcels:
             do n = 1, n_parcels
-                ix = mod(int(dxi(1) * (parcels%position(1, n) - lower(1))), nx)
-                iy = mod(int(dxi(2) * (parcels%position(2, n) - lower(2))), ny)
+                ix = int(dxi(1) * (parcels%position(1, n) - lower(1)))
+                iy = int(dxi(2) * (parcels%position(2, n) - lower(2)))
                 iz = min(int(dxi(3) * (parcels%position(3, n) - lower(3))), nz-1)
 
                 ! Cell index of parcel:
@@ -139,23 +149,73 @@ module parcel_nearest
                 gloca(n) = gijk
 
                 if (parcels%volume(n) < vmin) then
-                    nmerge = nmerge + 1
+                    n_local_merge = n_local_merge + 1
+
+                    ! If in halo region add to proper location in
+                    ! n_small_to_neighbours array. Also, fill send
+                    ! buffers with parcel index.
+                    call locate_small_parcel(n, ix, iy)
                 endif
             enddo
 
-            call MPI_Allreduce(MPI_IN_PLACE, nmerge, 1, MPI_INTEGER, MPI_SUM, comm_world, mpi_err)
+            call MPI_Allreduce(n_local_merge, n_global_merge, 1, MPI_INTEGER, MPI_SUM, comm_world, mpi_err)
 
-            if (nmerge == 0) then
+            if (n_global_merge == 0) then
                 call stop_timer(merge_nearest_timer)
                 return
             endif
 
-            call collect_from_neighbours
+            ! send small parcels to neighbours
+            call send_small_to_neighbours(north_buf, neighbour%north, neighbour%south, &
+                                          NORTH_TAG, NB_NORTH, NB_SOUTH)
+
+            call send_small_to_neighbours(east_buf, neighbour%east, neighbour%west, &
+                                          EAST_TAG, NB_EAST, NB_WEST)
+
+            call send_small_to_neighbours(south_buf, neighbour%south, neighbour%north, &
+                                          SOUTH_TAG, NB_SOUTH, NB_NORTH)
+
+            call send_small_to_neighbours(west_buf, neighbour%west, neighbour%east, &
+                                          WEST_TAG, NB_WEST, NB_EAST)
+
+            call send_small_to_neighbours(northwest_buf, neighbour%northwest, neighbour%northeast, &
+                                          NORTHWEST_TAG, NB_NORTHWEST, NB_NORTHEAST)
+
+            call send_small_to_neighbours(northeast_buf, neighbour%northeast, neighbour%northwest, &
+                                          NORTHEAST_TAG, NB_NORTHEAST, NB_NORTHWEST)
+
+            call send_small_to_neighbours(southwest_buf, neighbour%southwest, neighbour%southeast, &
+                                          SOUTHWEST_TAG, NB_SOUTHWEST, NB_SOUTHEAST)
+
+            call send_small_to_neighbours(southeast_buf, neighbour%southeast, neighbour%southwest, &
+                                          SOUTHEAST_TAG, NB_SOUTHEAST, NB_SOUTHWEST)
+
+
+            if ((n_local_merge == 0) .and. (n_small_neighbours > 0)) then
+                ! This rank has no local small parcels. To be not involved in any merging,
+                ! it must send all its close parcels to its neighbours owning the small
+                ! parcel. Although this rank is not involved in any merging, it must nevertheless
+                ! call the tree resolving routine as there is global synchronisation taking place.
+
+!                 call send_close_to_neighbours
+
+                call resolve_tree(isma, iclo, rclo, n_local_merge)
+
+                return
+
+            else if (n_local_merge + n_small_neighbours == 0) then
+                ! This rank is involved in no merging process. Nevertheless, it must
+                ! call the tree resolving routine as there is global synchronisation taking place
+                call resolve_tree(isma, iclo, rclo, n_local_merge)
+
+                return
+            endif
 
             ! allocate arrays
-            allocate(isma(0:nmerge))
-            allocate(iclo(nmerge))
-            allocate(rclo(nmerge))
+            allocate(isma(0:n_local_merge + n_small_neighbours))
+            allocate(iclo(n_local_merge + n_small_neighbours))
+            allocate(rclo(n_local_merge + n_small_neighbours))
+
 
             isma = 0
             iclo = 0
@@ -193,7 +253,7 @@ module parcel_nearest
 
             ! SB: do not use temporary (j) index here, so we will be able to parallelise.
             ! Rather, stop if no nearest parcel found  in surrounding grid boxes
-            do m = 1, nmerge
+            do m = 1, n_local_merge
                 is = isma(m)
                 x_small = parcels%position(1, is)
                 y_small = parcels%position(2, is)
@@ -250,23 +310,26 @@ module parcel_nearest
 
 #ifndef NDEBUG
             write(*,*) 'start merging, nmerge='
-            write(*,*) nmerge
+            write(*,*) n_local_merge
 #endif
 
             call stop_timer(merge_nearest_timer)
 
-            call resolve_tree(isma, iclo, rclo, nmerge)
+            call resolve_tree(isma, iclo, rclo, n_local_merge)
 
         end subroutine find_nearest
 
 
-        subroutine resolve_tree(isma, iclo, rclo, nmerge)
+        subroutine resolve_tree(isma, iclo, rclo, n_local_merge)
             integer, intent(inout)         :: isma(:)
             integer, intent(inout)         :: iclo(:)
             integer, intent(inout)         :: rclo(:)
-            integer, intent(inout)         :: nmerge
+            integer, intent(inout)         :: n_local_merge
             logical                        :: l_helper
             integer(KIND=MPI_ADDRESS_KIND) :: icm
+#ifndef NDEBUG
+            integer                        :: n
+#endif
 
             call start_timer(merge_tree_resolve_timer)
 
@@ -284,7 +347,7 @@ module parcel_nearest
 
                 call MPI_Win_fence(0, win_avail, mpi_err)
 
-                do m = 1, nmerge
+                do m = 1, n_local_merge
                     is = isma(m)
                     ! only consider links that still may be merging
                     ! reset relevant properties
@@ -317,7 +380,7 @@ module parcel_nearest
                 call MPI_Win_fence(0, win_leaf, mpi_err)
 
                 ! determine leaf parcels
-                do m = 1, nmerge
+                do m = 1, n_local_merge
                     is = isma(m)
                     if (.not. l_merged(is)) then
                         ic = iclo(m)
@@ -339,7 +402,7 @@ module parcel_nearest
                 call MPI_Win_fence(0, win_avail, mpi_err)
 
                 ! filter out parcels that are "unavailable" for merging
-                do m = 1, nmerge
+                do m = 1, n_local_merge
                     is = isma(m)
                     if (.not. l_merged(is)) then
                         if (.not. l_leaf(is)) then
@@ -363,7 +426,7 @@ module parcel_nearest
                 call MPI_Win_fence(0, win_merged, mpi_err)
 
                 ! identify mergers in this iteration
-                do m = 1, nmerge
+                do m = 1, n_local_merge
                     is = isma(m)
                     if (.not. l_merged(is)) then
                         ic = iclo(m)
@@ -413,7 +476,7 @@ module parcel_nearest
             call MPI_Win_fence(0, win_avail, mpi_err)
 
             ! Second stage, related to dual links
-            do m = 1, nmerge
+            do m = 1, n_local_merge
                 is = isma(m)
                 if (.not. l_merged(is)) then
                     if (l_leaf(is)) then ! set in last iteration of stage 1
@@ -438,7 +501,7 @@ module parcel_nearest
 
             ! Second stage (hard to parallelise with openmp?)
             j = 0
-            do m = 1, nmerge
+            do m = 1, n_local_merge
                 is = isma(m)
                 ic = iclo(m)
                 rc = rclo(m)
@@ -497,23 +560,23 @@ module parcel_nearest
 #endif
               end if
             end do
-            nmerge = j
+            n_local_merge = j
 
 #ifndef NDEBUG
             write(*,*) 'after second stage, nmerge='
-            write(*,*) nmerge
+            write(*,*) n_local_merge
             write(*,*) 'finished'
 
             ! MORE SANITY CHECKS
             ! CHECK ISMA ORDER
-            do m = 1, nmerge
+            do m = 1, n_local_merge
               if(.not. (isma(m)>isma(m-1))) then
                 write(*,*) 'isma order broken'
               end if
             end do
 
             ! 1. CHECK RESULTING MERGERS
-            do m = 1, nmerge
+            do m = 1, n_local_merge
               if(.not. l_is_merged(isma(m))) write(*,*) 'merge_error: isma(m) not merged, m=', m
               if(.not. l_is_merged(iclo(m))) write(*,*) 'merge_error: iclo(m) not merged, m=', m
               if(.not. l_small(isma(m))) write(*,*) 'merge_error: isma(m) not marked as small, m=', m
@@ -539,85 +602,120 @@ module parcel_nearest
 
         end subroutine resolve_tree
 
+        subroutine locate_small_parcel(n, ix, iy)
+            integer, intent(in) :: n, ix, iy
+            integer             :: m
 
-        subroutine collect_from_neighbours
-            integer :: n_sends(8)
-            integer :: n_recvs(8)
+            ! check lower x-direction
+            if (ix == box%lo(1)) then
 
-            ! Identify if parcel in boundary region (which is the halo region of neighbours)
-            do iz = box%lo(3), box%hi(3)
-                do ix = box%lo(1), box%hi(1)
-                    ! north
-                    lijk = 1 + ix + box%nx * box%hi(2) + box%nx * box%ny * iz
-                    n_sends(1) = n_sends(1) + nppc(lijk)
+                if (iy == box%lo(2)) then     ! check southwest corner
+                    ! neighbours: west, south and southwest
+                    m = n_small_to_neighbours(NB_SOUTH) + 1
+                    south_buf(m) = n
+                    n_small_to_neighbours(NB_SOUTH) = m
 
-                    ! south
-                    lijk = 1 + ix + box%nx * box%lo(2) + box%nx * box%ny * iz
-                    n_sends(2) = n_sends(2) + nppc(lijk)
-                enddo
+                    m = n_small_to_neighbours(NB_SOUTHWEST) + 1
+                    southwest_buf(m) = n
+                    n_small_to_neighbours(NB_SOUTHWEST) = m
 
-                do iy = box%lo(2), box%hi(2)
-                    ! west
-                    lijk = 1 + box%lo(1) + box%nx * iy + box%nx * box%ny * iz
-                    n_sends(3) = n_sends(3) + nppc(lijk)
+                else if (iy == box%hi(2)) then
+                    ! neighbours: west, north and northwest
+                    m = n_small_to_neighbours(NB_NORTH) + 1
+                    north_buf(m) = n
+                    n_small_to_neighbours(NB_NORTH) = m
 
-                    ! east
-                    lijk = 1 + box%hi(1) + box%nx * iy + box%nx * box%ny * iz
-                    n_sends(4) = n_sends(4) + nppc(lijk)
-                enddo
+                    m = n_small_to_neighbours(NB_NORTHWEST) + 1
+                    northwest_buf(m) = n
+                    n_small_to_neighbours(NB_NORTHWEST) = m
+                endif
 
-                ! north-west
-                lijk = 1 + box%lo(1) + box%nx * box%hi(2) + box%nx * box%ny * iz
-                n_sends(5) = n_sends(5) + nppc(lijk)
+                ! neighbour: west
+                m = n_small_to_neighbours(NB_WEST) + 1
+                west_buf(m) = n
+                n_small_to_neighbours(NB_WEST) = m
+            endif
 
-                ! north-east
-                lijk = 1 + box%hi(1) + box%nx * box%hi(2) + box%nx * box%ny * iz
-                n_sends(6) = n_sends(6) + nppc(lijk)
+            ! check upper x-direction (use >= as a parcel might be directly on the cell edge)
+            if (ix >= box%hi(1)) then
 
-                ! south-west
-                lijk = 1 + box%lo(1) + box%nx * box%lo(2) + box%nx * box%ny * iz
-                n_sends(7) = n_sends(7) + nppc(lijk)
+                if (iy == box%lo(2)) then     ! check southeast corner
+                    ! neighbours: east, south and southeast
+                    m = n_small_to_neighbours(NB_SOUTH) + 1
+                    south_buf(m) = n
+                    n_small_to_neighbours(NB_SOUTH) = m
 
-                ! south-east
-                lijk = 1 + box%hi(1) + box%nx * box%lo(2) + box%nx * box%ny * iz
-                n_sends(8) = n_sends(8) + nppc(lijk)
+                    m = n_small_to_neighbours(NB_SOUTHEAST) + 1
+                    southeast_buf(m) = n
+                    n_small_to_neighbours(NB_SOUTHEAST) = m
+
+                else if (iy == box%hi(2)) then
+                    ! neighbours: east, north and northeast
+                    m = n_small_to_neighbours(NB_NORTH) + 1
+                    north_buf(m) = n
+                    n_small_to_neighbours(NB_NORTH) = m
+
+                    m = n_small_to_neighbours(NB_NORTHEAST) + 1
+                    northeast_buf(m) = n
+                    n_small_to_neighbours(NB_NORTHEAST) = m
+                endif
+
+                ! neighbours: east
+                m = n_small_to_neighbours(NB_EAST) + 1
+                east_buf(m) = n
+                n_small_to_neighbours(NB_EAST) = m
+            endif
+
+        end subroutine locate_small_parcel
+
+        ! Send position attribute of small parcels in boundary region
+        ! to neighbours. We only need to send the position as this is the
+        ! only attribute needed to figure out with whom a parcel might merge.
+        subroutine send_small_to_neighbours(pid, dest, source, tag, sendloc, recvloc)
+            integer,                      intent(in) :: pid(:)
+            integer, intent(in)                      :: dest, source, tag
+            integer, intent(in)                      :: sendloc, recvloc
+            double precision, allocatable            :: sendbuf(:), recvbuf(:)
+            integer                                  :: send_size, recv_size
+            integer                                  :: n, i, j, sendcount, recvcount, k
+            type(MPI_Request)                        :: request
+
+            sendcount = n_small_to_neighbours(sendloc)
+            recvcount = n_small_to_neighbours(recvloc)
+
+            send_size = n_dim * n_small_to_neighbours(sendloc)
+            recv_size = n_dim * n_small_to_neighbours(recvloc)
+
+            allocate(sendbuf(send_size))
+            allocate(recvbuf(recv_size))
+
+            ! pack parcel positions to send buffer
+            do n = 1, sendcount
+                i = 1 + (n-1) * n_dim
+                j = n * n_dim
+                sendbuf(i:j) = parcels%position(:, pid(n))
             enddo
 
-            ! tell your neighbours the number of small parcels in the halo
-            call send_to_neighbour(n_sends(NB_NORTH), n_recvs(NB_SOUTH), &
-                                   neighbour%north, neighbour%south, NORTH_TAG)
-
-            call send_to_neighbour(n_sends(NB_SOUTH), n_recvs(NB_NORTH), &
-                                  neighbour%south, neighbour%north, SOUTH_TAG)
-
-            call send_to_neighbour(n_sends(NB_WEST), n_recvs(NB_EAST), &
-                                   neighbour%west, neighbour%east, WEST_TAG)
-
-            call send_to_neighbour(n_sends(NB_EAST), n_recvs(NB_WEST), &
-                                  neighbour%east, neighbour%west, EAST_TAG)
-
-            call send_to_neighbour(n_sends(NB_NORTHWEST), n_recvs(NB_SOUTHEAST), &
-                                   neighbour%northwest, neighbour%southeast, NORTHWEST_TAG)
-
-            call send_to_neighbour(n_sends(NB_SOUTHEAST), n_recvs(NB_NORTHWEST), &
-                                   neighbour%southeast, neighbour%northwest, SOUTHEAST_TAG)
-
-            call send_to_neighbour(n_sends(NB_NORTHEAST), n_recvs(NB_SOUTHWEST), &
-                                   neighbour%northeast, neighbour%southwest, NORTHEAST_TAG)
-
-            call send_to_neighbour(n_sends(NB_SOUTHWEST), n_recvs(NB_NORTHEAST), &
-                                   neighbour%southwest, neighbour%northeast, SOUTHWEST_TAG)
-
-        end subroutine collect_from_neighbours
-
-        subroutine send_to_neighbour(sendbuf, recvbuf, dest, source, tag)
-            integer,          intent(in)  :: sendbuf
-            integer,          intent(out) :: recvbuf
-            integer,          intent(in)  :: dest, source, tag
-            type(MPI_Request)             :: request
-            call MPI_Isend(sendbuf, 1, MPI_INT, dest, tag, comm_cart, request, mpi_err)
+            call MPI_Isend(sendbuf, send_size, MPI_DOUBLE, dest, tag, comm_cart, request, mpi_err)
             call MPI_Request_free(request)
-            call MPI_Recv(recvbuf, 1, MPI_INT, source, tag, comm_cart, MPI_STATUS_IGNORE, mpi_err)
-        end subroutine send_to_neighbour
+
+            call MPI_Recv(recvbuf, recv_size, MPI_DOUBLE, source, tag, &
+                          comm_cart, MPI_STATUS_IGNORE, mpi_err)
+
+
+            ! unpack parcel positions to recv buffer
+            do n = 1, recvcount
+                i = 1 + (n-1) * n_dim
+                j = n * n_dim
+                k = n_parcels + n
+                parcels%position(:, k) = recvbuf(i:j)
+            enddo
+
+            n_small_neighbours = n_small_neighbours + recvcount
+
+            deallocate(sendbuf)
+            deallocate(recvbuf)
+
+        end subroutine send_small_to_neighbours
 
 end module parcel_nearest

@@ -24,7 +24,17 @@ module parcel_mpi
     integer :: n_sends(8)
     integer :: n_recvs(8)
 
-    public :: parcel_halo_swap
+    public :: parcel_halo_swap  &
+            , pack_parcels      &
+            , unpack_parcels    &
+            , north_buf         &
+            , south_buf         &
+            , west_buf          &
+            , east_buf          &
+            , northwest_buf     &
+            , northeast_buf     &
+            , southwest_buf     &
+            , southeast_buf
 
     contains
 
