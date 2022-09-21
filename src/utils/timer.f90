@@ -20,7 +20,10 @@ module timer
 
     integer :: n_timers = 0
 
-    private :: n_timers
+    character(7) :: time_unit = 'seconds'
+    character(4) :: call_unit = 'one'
+
+    private :: n_timers, time_unit, select_units
 
     contains
         subroutine register_timer(name, handle)
@@ -72,18 +75,27 @@ module timer
             integer          :: n
             double precision :: frac
 
-            write (*, '("|-------------------------------------------------------------|")')
-            write (*, '("|            Function            | #Calls |   Total  |  % of  |")')
-            write (*, '("|              name              |        |   time   |  time  |")')
-            write (*, '("|-------------------------------------------------------------|")')
+            call select_units
 
             frac = hundred / timings(1)%wall_time
 
+            write (*, '("|---------------------------------------------------------------|")')
+            write (*, '("|            Function            | #Calls | Total time |  % of  |")')
+
+            if (call_unit == 'one') then
+                write (*, '("|              name              |        | in '//time_unit//' |  time  |")')
+            else
+                write (*, '("|              name              | in '//call_unit// &
+                            '| in '//time_unit//' |  time  |")')
+            endif
+
+            write (*, '("|---------------------------------------------------------------|")')
+
             do n = 1, n_timers
-                write(*,"('|',a,'|', i8,'|', f9.3,'s', '| ', f6.2,'%','|')") &
+                write(*,"('|',a,'|', i8,'|', f12.3, '| ', f6.2,'%','|')") &
                 timings(n)%name, timings(n)%n_calls, timings(n)%wall_time, frac * timings(n)%wall_time
             enddo
-            write (*, '("|-------------------------------------------------------------|")')
+            write (*, '("|---------------------------------------------------------------|")')
         end subroutine print_timer
 
         subroutine write_time_to_csv(fname)
@@ -95,8 +107,6 @@ module timer
             logical                     :: exists = .false.
             character(len=3)            :: status = 'new'
 
-            frac = hundred / timings(1)%wall_time
-
             csv = trim(fname) // '.csv'
 
             ! check whether file exists
@@ -106,9 +116,18 @@ module timer
                 status = 'old'
             endif
 
+            call select_units
+
+            frac = hundred / timings(1)%wall_time
+
             open(unit=1234, file=csv, status=status)
 
-            write(1234, '("function name,#calls,total time,percentage")')
+            if (call_unit == 'one') then
+                write(1234, '("function name,#calls,total time in ' //time_unit//',percentage")')
+            else
+                write(1234, '("function name,#calls in '//call_unit//',total time in '//time_unit//',percentage")')
+            endif
+
             do n = 1, n_timers
                 write(s1, '(i8)') timings(n)%n_calls
                 write(s2, '(f9.3)') timings(n)%wall_time
@@ -119,5 +138,38 @@ module timer
             close(1234)
 
         end subroutine write_time_to_csv
+
+        subroutine select_units
+            double precision :: max_wall_time
+            integer          :: max_n_calls
+
+            ! go from seconds to minutes (24 hours = 86400 seconds)
+            max_wall_time = maxval(timings(1:n_timers)%wall_time)
+            if ((max_wall_time > 86400.0d0) .and. (time_unit == 'seconds')) then
+                time_unit = 'minutes'
+                timings(1:n_timers)%wall_time = timings(1:n_timers)%wall_time / 60.0d0
+            endif
+
+            ! go from minutes to hours (7 days = 10080 minutes)
+            max_wall_time = maxval(timings(:)%wall_time)
+            if ((max_wall_time > 10080.0d0) .and. (time_unit == 'minutes')) then
+                time_unit = 'hours'
+                timings(1:n_timers)%wall_time = timings(1:n_timers)%wall_time / 60.0d0
+            endif
+
+            ! go from hours to days (1 year = 8760 hours)
+            max_wall_time = maxval(timings(:)%wall_time)
+            if ((max_wall_time > 8760.d0) .and. (time_unit == 'hours')) then
+                time_unit = 'days'
+                timings(1:n_timers)%wall_time = timings(1:n_timers)%wall_time / 24.0d0
+            endif
+
+            max_n_calls = maxval(timings(1:n_timers)%n_calls)
+            if ((max_n_calls > 1e6) .and. (call_unit == 'one')) then
+                call_unit = 'kilo'
+                timings(1:n_timers)%n_calls = timings(1:n_timers)%n_calls / 1e3
+            endif
+
+        end subroutine select_units
 
 end module timer
