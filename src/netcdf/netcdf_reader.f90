@@ -6,6 +6,8 @@
 ! =============================================================================
 module netcdf_reader
     use netcdf_utils
+    use netcdf_dimensions
+    use config
     implicit none
 
     interface read_netcdf_dataset
@@ -74,7 +76,7 @@ module netcdf_reader
             integer, intent(out) :: n_steps
             integer              :: dimid
 
-            ncerr = nf90_inq_dimid(ncid, 't', dimid)
+            ncerr = nf90_inq_dimid(ncid, t_dim_name, dimid)
             call check_netcdf_error("Reading time dimension id failed.")
             ncerr = nf90_inquire_dimension(ncid, dimid, len=n_steps)
             call check_netcdf_error("Reading time failed.")
@@ -88,10 +90,10 @@ module netcdf_reader
 
             call get_num_steps(ncid, n_steps)
 
-            if (has_dataset(ncid, 't')) then
+            if (has_dataset(ncid, t_dim_name)) then
                 start(1) = n_steps
                 cnt(1) = 1
-                ncerr = nf90_inq_varid(ncid, 't', varid)
+                ncerr = nf90_inq_varid(ncid, t_dim_name, varid)
                 call check_netcdf_error("Reading time id failed.")
                 ncerr = nf90_get_var(ncid, varid, values, start=start, count=cnt)
                 t = values(1)
@@ -108,7 +110,7 @@ module netcdf_reader
             character(*), intent(out) :: file_type
 
             if (.not. has_attribute(ncid, 'file_type')) then
-                print *, 'Not a proper EPIC NetCDF file.'
+                print *, 'Not a proper '//package//' NetCDF file.'
                 stop
             endif
 
