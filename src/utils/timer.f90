@@ -166,8 +166,8 @@ module timer
 
             max_n_calls = maxval(timings(1:n_timers)%n_calls)
             if ((max_n_calls > 1e6) .and. (call_unit == 'one')) then
-                call_unit = 'mega'
-                timings(1:n_timers)%n_calls = timings(1:n_timers)%n_calls / 1e6
+                call_unit = 'kilo'
+                timings(1:n_timers)%n_calls = timings(1:n_timers)%n_calls / 1e3
             endif
 
         end subroutine select_units
