@@ -140,6 +140,17 @@ module parameters
 
         l_bndry_zeta_zero(:) = (rms_bndry(:) < thres * rms_interior + epsilon(rms_interior))
 
+#if defined(ENABLE_VERBOSE) || !defined(NDEBUG)
+        if (l_bndry_zeta_zero(1)) then
+            print *, "WARNING: This simulation will keep the gridded vertical"
+            print *, "         vorticity component zero at the lower boundary."
+        endif
+
+        if (l_bndry_zeta_zero(2)) then
+            print *, "WARNING: This simulation will keep the gridded vertical"
+            print *, "         vorticity component zero at the upper boundary."
+        endif
+#endif
     end subroutine set_zeta_boundary_flag
 
 
