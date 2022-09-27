@@ -5,6 +5,9 @@
 module parameters
     use options, only : allow_larger_anisotropy, parcel
     use constants
+    use netcdf_reader
+    use netcdf_utils
+    use netcdf_writer
     implicit none
 
     ! mesh spacing
@@ -152,6 +155,36 @@ module parameters
         endif
 #endif
     end subroutine set_zeta_boundary_flag
+
+
+    subroutine read_zeta_boundary_flag(ncid)
+        integer, intent(in)     :: ncid
+        integer                 :: grp_ncid
+        character(*), parameter :: name = 'parameters'
+
+        ncerr = nf90_inq_ncid(ncid, 'parameters', grp_ncid)
+
+        call check_netcdf_error("Faild to open NetCDF group '" // name // "'.")
+
+        call read_netcdf_attribute(grp_ncid, 'l_lower_boundry_zeta_zero', l_bndry_zeta_zero(1))
+        call read_netcdf_attribute(grp_ncid, 'l_upper_boundry_zeta_zero', l_bndry_zeta_zero(2))
+
+    end subroutine read_zeta_boundary_flag
+
+
+    subroutine write_zeta_boundary_flag(ncid)
+        integer, intent(in)     :: ncid
+        integer                 :: grp_ncid
+        character(*), parameter :: name = 'parameters'
+
+        ncerr = nf90_def_grp(ncid, name, grp_ncid)
+
+        call check_netcdf_error("Faild to create NetCDF group '" // name // "'.")
+
+        call write_netcdf_attribute(grp_ncid, 'l_lower_boundry_zeta_zero', l_bndry_zeta_zero(1))
+        call write_netcdf_attribute(grp_ncid, 'l_upper_boundry_zeta_zero', l_bndry_zeta_zero(2))
+
+    end subroutine write_zeta_boundary_flag
 
 
     subroutine set_mesh_spacing(ext, nc)

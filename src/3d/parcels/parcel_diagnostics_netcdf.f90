@@ -8,7 +8,7 @@ module parcel_diagnostics_netcdf
     use netcdf_reader
     use parcel_container, only : parcels, n_parcels
     use parcel_diagnostics
-    use parameters, only : lower, extent, nx, ny, nz
+    use parameters, only : lower, extent, nx, ny, nz, write_zeta_boundary_flag
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
@@ -75,6 +75,8 @@ module parcel_diagnostics_netcdf
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
 
             call write_physical_quantities(ncid)
+
+            call write_zeta_boundary_flag(ncid)
 
             call write_netcdf_options(ncid)
 

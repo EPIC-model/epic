@@ -4,7 +4,7 @@ module parcel_netcdf
     use netcdf_writer
     use netcdf_reader
     use parcel_container, only : parcels, n_parcels
-    use parameters, only : nx, ny, nz, extent, lower, max_num_parcels
+    use parameters, only : nx, ny, nz, extent, lower, max_num_parcels, write_zeta_boundary_flag
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
@@ -90,6 +90,8 @@ module parcel_netcdf
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
 
             call write_physical_quantities(ncid)
+
+            call write_zeta_boundary_flag(ncid)
 
             call write_netcdf_options(ncid)
 

@@ -8,6 +8,7 @@ module field_netcdf
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities, glati
+    use parameters, only : write_zeta_boundary_flag
     implicit none
 
     integer :: field_io_timer
@@ -89,6 +90,8 @@ module field_netcdf
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
 
             call write_physical_quantities(ncid)
+
+            call write_zeta_boundary_flag(ncid)
 
             call write_netcdf_options(ncid)
 
@@ -315,7 +318,7 @@ module field_netcdf
 !            k = two
 !            l = two
 !            m = one
-!            
+!
 !            alpha = dsqrt(k ** 2 + l ** 2 + m ** 2)
 !            fk2l2 = one / dble(k ** 2 + l ** 2)
 !
@@ -325,22 +328,22 @@ module field_netcdf
 !                  y = lower(2) + iy * dx(2)
 !                  do iz = -1, nz+1
 !                     z = lower(3) + iz * dx(3)
-!                     
+!
 !                     cosmz = dcos(m * z)
 !                     sinmz = dsin(m * z)
 !                     sinkxly = dsin(k * x + l * y)
 !                     coskxly = dcos(k * x + l * y)
-!                     
+!
 !                     ! velocity
 !                     velog_ref(iz, iy, ix, 1) = fk2l2 * (k * m * sinmz - l * alpha * cosmz) * sinkxly
 !                     velog_ref(iz, iy, ix, 2) = fk2l2 * (l * m * sinmz + k * alpha * cosmz) * sinkxly
 !                     velog_ref(iz, iy, ix, 3) = cosmz * coskxly
-!                     
+!
 !                     ! vorticity
 !                     vortg_ref(iz, iy, ix, 1) = alpha * velog_ref(iz, iy, ix, 1)
 !                     vortg_ref(iz, iy, ix, 2) = alpha * velog_ref(iz, iy, ix, 2)
 !                     vortg_ref(iz, iy, ix, 3) = alpha * velog_ref(iz, iy, ix, 3)
-!                     
+!
 !                     ! reference solution
 !                     vtend_ref(iz, iy, ix, 1) = alpha * k * m ** 2 * fk2l2 * sinkxly * coskxly
 !                     vtend_ref(iz, iy, ix, 2) = alpha * l * m ** 2 * fk2l2 * sinkxly * coskxly
@@ -375,7 +378,7 @@ module field_netcdf
 !            velog = velog - velog_ref
 !            vortg = vortg - vortg_ref
 !            vtend = vtend - vtend_ref
-            
+
             call write_netcdf_dataset(ncid, x_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 1), &
                                       start, cnt)
             call write_netcdf_dataset(ncid, y_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 2), &

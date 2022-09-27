@@ -3,7 +3,7 @@
 !            (see https://doi.org/10.5194/gmd-10-3145-2017)
 ! =============================================================================
 module ls_rk4
-    use options, only : parcel, time, zeta_tol
+    use options, only : parcel, time, zeta_tol, l_restart
     use dimensions, only : I_Z
     use parcel_container
     use parcel_bc
@@ -82,7 +82,7 @@ module ls_rk4
 
             ! we must check if zeta must be kept zero
             ! on a vertical boundary
-            if (dabs(t - time%initial) < epsilon(t)) then
+            if ((.not. l_restart) .and. (dabs(t - time%initial) < epsilon(t))) then
                 call set_zeta_boundary_flag(vortg(:, :, :, I_Z), zeta_tol)
             endif
 
