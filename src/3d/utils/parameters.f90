@@ -144,14 +144,14 @@ module parameters
         l_bndry_zeta_zero(:) = (rms_bndry(:) < thres * rms_interior + epsilon(rms_interior))
 
 #if defined(ENABLE_VERBOSE) || !defined(NDEBUG)
-        if (l_bndry_zeta_zero(1)) then
-            print *, "WARNING: This simulation will keep the gridded vertical"
-            print *, "         vorticity component zero at the lower boundary."
+        if (.not. l_bndry_zeta_zero(1)) then
+            print *, "WARNING: This simulation will not ensure that the gridded vertical"
+            print *, "         vorticity component is zero at the lower boundary."
         endif
 
-        if (l_bndry_zeta_zero(2)) then
-            print *, "WARNING: This simulation will keep the gridded vertical"
-            print *, "         vorticity component zero at the upper boundary."
+        if (.not. l_bndry_zeta_zero(2)) then
+            print *, "WARNING: This simulation will not ensure that the gridded vertical"
+            print *, "         vorticity component is zero at the upper boundary."
         endif
 #endif
     end subroutine set_zeta_boundary_flag
@@ -162,13 +162,13 @@ module parameters
         integer                 :: grp_ncid
         character(*), parameter :: name = 'parameters'
 
-        ncerr = nf90_inq_ncid(ncid, 'parameters', grp_ncid)
+        ncerr = nf90_inq_ncid(ncid, name, grp_ncid)
 
         if (ncerr == 0) then
             call read_netcdf_attribute(grp_ncid, 'l_lower_boundry_zeta_zero', l_bndry_zeta_zero(1))
             call read_netcdf_attribute(grp_ncid, 'l_upper_boundry_zeta_zero', l_bndry_zeta_zero(2))
         else
-            print *, "WARNING: Could not find a 'paramters' group in the provided"
+            print *, "WARNING: Could not find a '" // name // "' group in the provided"
             print *, "         NetCDF file."
         endif
 
