@@ -25,6 +25,13 @@ module options
     character(len=512)  :: field_file = ''
     double precision    :: field_tol  = 1.0d-10
 
+    ! the rms of the boundary zeta must be smaller than
+    ! this threshold times the rms of the interior
+    ! zeta in order to keep zeta = 0 and dzeta/dt = 0
+    ! on the boundary;
+    ! each boundary is checked independently
+    double precision :: zeta_tol = 1.0e-3
+
     !
     ! output options
     !
