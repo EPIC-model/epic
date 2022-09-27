@@ -164,10 +164,14 @@ module parameters
 
         ncerr = nf90_inq_ncid(ncid, 'parameters', grp_ncid)
 
-        call check_netcdf_error("Faild to open NetCDF group '" // name // "'.")
+        if (ncerr == 0) then
+            call read_netcdf_attribute(grp_ncid, 'l_lower_boundry_zeta_zero', l_bndry_zeta_zero(1))
+            call read_netcdf_attribute(grp_ncid, 'l_upper_boundry_zeta_zero', l_bndry_zeta_zero(2))
+        else
+            print *, "WARNING: Could not find a 'paramters' group in the provided"
+            print *, "         NetCDF file."
+        endif
 
-        call read_netcdf_attribute(grp_ncid, 'l_lower_boundry_zeta_zero', l_bndry_zeta_zero(1))
-        call read_netcdf_attribute(grp_ncid, 'l_upper_boundry_zeta_zero', l_bndry_zeta_zero(2))
 
     end subroutine read_zeta_boundary_flag
 
