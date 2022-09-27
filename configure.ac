@@ -337,6 +337,7 @@ AM_CONDITIONAL([ENABLE_UNIT_TESTS], [test "$ENABLE_UNIT_TESTS" = "yes"])
 AC_MSG_CHECKING([whether we build unit tests])
 if test "x$ENABLE_UNIT_TESTS" = "xyes"; then
     AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_UNIT_TESTS"
 else
     AC_MSG_RESULT([no])
 fi

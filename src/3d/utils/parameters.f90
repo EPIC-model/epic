@@ -8,60 +8,70 @@ module parameters
     implicit none
 
     ! mesh spacing
-    double precision :: dx(3)
+    double precision, protected :: dx(3)
 
     ! inverse mesh spacing
-    double precision :: dxi(3)
+    double precision, protected :: dxi(3)
 
     ! grid cell volume, really area in 2D:
-    double precision :: vcell
+    double precision, protected :: vcell
 
     ! inverse grid cell volume
-    double precision :: vcelli
+    double precision, protected :: vcelli
 
     ! number of grid cells in each dimension
     integer :: nx, ny, nz
 
     ! total number of grid cells
-    integer :: ncell
+    integer, protected :: ncell
 
     ! inverse of total number of grid cells
-    double precision :: ncelli
+    double precision, protected :: ncelli
+
+    ! total number of grid cells in horizontal plane (x, y)
+    integer, protected :: nhcell
+
+    ! inverse of total number of grid cells in horizontal plane (x, y)
+    double precision, protected :: nhcelli
 
     ! total number of grid points
-    integer :: ngrid
+    integer, protected :: ngrid
 
     ! inverse of total number of grid points
-    double precision :: ngridi
+    double precision, protected :: ngridi
 
     ! domain size
     double precision :: extent(3)
 
     ! inverse domain size
-    double precision :: extenti(3)
+    double precision, protected :: extenti(3)
 
     ! domain centre
-    double precision :: center(3)
+    double precision, protected :: center(3)
 
     ! domain half widths values
-    double precision :: hl(3)
+    double precision, protected :: hl(3)
 
-    double precision :: hli(3)
+    double precision, protected :: hli(3)
 
     ! domain origin
     double precision :: lower(3)
 
     ! domain upper boundary
-    double precision :: upper(3)
+    double precision, protected :: upper(3)
 
     ! minimum volume
-    double precision :: vmin
+    double precision, protected :: vmin
 
     ! maximum volume
-    double precision :: vmax
+    double precision, protected :: vmax
 
     ! maximum number of allowed parcels
-    integer :: max_num_parcels
+    integer, protected :: max_num_parcels
+
+    ! specifies if zeta is kept zero on a boundary;
+    ! this also makes sure that dzeta/dt = 0 on a boundary
+    logical, protected :: l_bndry_zeta_zero(2)
 
     contains
 
@@ -96,7 +106,10 @@ module parameters
         vcell = product(dx)
         vcelli = one / vcell
 
-        ncell = nx * ny * nz
+        nhcell = nx * ny
+        nhcelli = one / dble(nhcell)
+
+        ncell = nhcell * nz
         ncelli = one / dble(ncell)
 
         ! due to x periodicity it is only nx
@@ -114,4 +127,40 @@ module parameters
         max_num_parcels = int(nx * ny * nz * parcel%min_vratio * parcel%size_factor)
 
     end subroutine update_parameters
+
+
+    subroutine set_zeta_boundary_flag(zeta, thres)
+        double precision, intent(in) :: zeta(-1:nz+1, 0:ny-1, 0:nx-1)
+        double precision, intent(in) :: thres
+        double precision :: rms_bndry(2), rms_interior
+
+        rms_interior = dsqrt(sum(zeta(1:nz-1, :, :) ** 2) * nhcelli / (nz-1))
+        rms_bndry(1) = dsqrt(sum(zeta(0,      :, :) ** 2) * nhcelli)
+        rms_bndry(2) = dsqrt(sum(zeta(nz,     :, :) ** 2) * nhcelli)
+
+        l_bndry_zeta_zero(:) = (rms_bndry(:) < thres * (epsilon(rms_interior) + rms_interior))
+
+    end subroutine set_zeta_boundary_flag
+
+
+    subroutine set_mesh_spacing(ext, nc)
+        double precision, intent(in) :: ext(3)
+        integer,          intent(in) :: nc(3)
+        dx = ext / dble(nc)
+    end subroutine set_mesh_spacing
+
+
+#ifdef ENABLE_UNIT_TESTS
+    subroutine set_vmin(val)
+        double precision, intent(in) :: val
+        vmin = val
+    end subroutine set_vmin
+
+
+    subroutine set_vmax(val)
+        double precision, intent(in) :: val
+        vmax = val
+    end subroutine set_vmax
+#endif
+
 end module parameters
