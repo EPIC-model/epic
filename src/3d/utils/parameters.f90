@@ -138,7 +138,7 @@ module parameters
         rms_bndry(1) = dsqrt(sum(zeta(0,      :, :) ** 2) * nhcelli)
         rms_bndry(2) = dsqrt(sum(zeta(nz,     :, :) ** 2) * nhcelli)
 
-        l_bndry_zeta_zero(:) = (rms_bndry(:) < thres * (epsilon(rms_interior) + rms_interior))
+        l_bndry_zeta_zero(:) = (rms_bndry(:) < thres * rms_interior + epsilon(rms_interior))
 
     end subroutine set_zeta_boundary_flag
 
