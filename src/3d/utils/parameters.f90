@@ -183,7 +183,7 @@ module parameters
 
         ncerr = nf90_def_grp(ncid, name, grp_ncid)
 
-        call check_netcdf_error("Faild to create NetCDF group '" // name // "'.")
+        call check_netcdf_error("Failed to create NetCDF group '" // name // "'.")
 
         call write_netcdf_attribute(grp_ncid, 'l_lower_boundry_zeta_zero', l_bndry_zeta_zero(1))
         call write_netcdf_attribute(grp_ncid, 'l_upper_boundry_zeta_zero', l_bndry_zeta_zero(2))
