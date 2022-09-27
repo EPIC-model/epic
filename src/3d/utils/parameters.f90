@@ -172,7 +172,6 @@ module parameters
             print *, "         NetCDF file."
         endif
 
-
     end subroutine read_zeta_boundary_flag
 
 
