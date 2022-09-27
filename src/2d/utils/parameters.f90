@@ -37,6 +37,9 @@ module parameters
     ! domain size
     double precision :: extent(2)
 
+    ! inverse of domain size
+    double precision :: extenti(2)
+
     ! domain centre
     double precision :: center(2)
 
@@ -67,6 +70,8 @@ module parameters
     subroutine update_parameters
 
         upper = lower + extent
+
+        extenti = one / extent
 
         dx = extent / dble((/nx, nz/))
         dxi = one / dx;
