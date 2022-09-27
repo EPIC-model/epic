@@ -17,6 +17,7 @@ module parcel_split_mod
     private :: dh
 
     integer :: split_timer
+    integer :: n_par_split = 0! number of parcel splits since last write
 
     contains
 
@@ -94,6 +95,8 @@ module parcel_split_mod
             enddo
             !$omp end do
             !$omp end parallel
+
+            n_par_split = n_par_split + n_parcels - last_index
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then

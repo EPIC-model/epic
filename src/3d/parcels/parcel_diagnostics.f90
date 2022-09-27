@@ -8,6 +8,8 @@ module parcel_diagnostics
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipsoid
     use omp_lib
+    use parcel_split_mod, only : n_par_split
+    use parcel_merge, only : n_par_merge
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -38,6 +40,9 @@ module parcel_diagnostics
 
     ! rms vorticity
     double precision :: rms_zeta(3)
+
+    integer :: n_parcel_splits
+    integer :: n_parcel_merges
 
     contains
 
@@ -159,8 +164,14 @@ module parcel_diagnostics
             avg_vol = sum_vol / dble(n_parcels)
             std_vol = dsqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))
 
+            n_parcel_splits = n_par_split
+            n_par_split = 0
+
+            n_parcel_merges = n_par_merge
+            n_par_merge = 0
+
             call stop_timer(parcel_stats_timer)
 
-        end subroutine calculate_parcel_diagnostics
+          end subroutine calculate_parcel_diagnostics
 
 end module parcel_diagnostics

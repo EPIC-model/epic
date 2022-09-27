@@ -25,7 +25,7 @@ module parcel_diagnostics_netcdf
                           rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
                           avg_lam_id, std_lam_id,                   &
                           avg_vol_id, std_vol_id, sum_vol_id,       &
-                          psi_id
+                          psi_id, n_par_split_id, n_par_merge_id
 
     double precision   :: restart_time
 
@@ -220,6 +220,26 @@ module parcel_diagnostics_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=rms_z_vor_id)
 
+            call define_netcdf_dataset(                                      &
+                 ncid=ncid,                                                  &
+                 name='n_parcel_splits',                                     &
+                 long_name='number of parcel splits since last time',        &
+                 std_name='',                                                &
+                 unit='1',                                                   &
+                 dtype=NF90_DOUBLE,                                          &
+                 dimids=(/t_dim_id/),                                        &
+                 varid=n_par_split_id)
+            
+            call define_netcdf_dataset(                                      &
+                 ncid=ncid,                                                  &
+                 name='n_parcel_merges',                                     &
+                 long_name='number of parcel merges since last time',        &
+                 std_name='',                                                &
+                 unit='1',                                                   &
+                 dtype=NF90_DOUBLE,                                          &
+                 dimids=(/t_dim_id/),                                        &
+                 varid=n_par_merge_id)
+            
             call close_definition(ncid)
 
         end subroutine create_netcdf_parcel_stats_file
@@ -259,6 +279,10 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 'z_rms_vorticity', rms_z_vor_id)
 
+            call get_var_id(ncid, 'n_parcel_splits', n_par_split_id)
+
+            call get_var_id(ncid, 'n_parcel_merges', n_par_merge_id)
+
         end subroutine read_netcdf_parcel_stats_content
 
         ! Write a step in the parcel diagnostic file.
@@ -295,6 +319,8 @@ module parcel_diagnostics_netcdf
             call write_netcdf_scalar(ncid, rms_x_vor_id, rms_zeta(1), n_writes)
             call write_netcdf_scalar(ncid, rms_y_vor_id, rms_zeta(2), n_writes)
             call write_netcdf_scalar(ncid, rms_z_vor_id, rms_zeta(3), n_writes)
+            call write_netcdf_scalar(ncid, n_par_split_id, n_parcel_splits, n_writes)
+            call write_netcdf_scalar(ncid, n_par_merge_id, n_parcel_merges, n_writes)
 
             ! increment counter
             n_writes = n_writes + 1
