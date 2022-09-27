@@ -6,7 +6,6 @@
 ! =============================================================================
 module netcdf_reader
     use netcdf_utils
-    use netcdf_dimensions
     use config
     implicit none
 
@@ -76,7 +75,7 @@ module netcdf_reader
             integer, intent(out) :: n_steps
             integer              :: dimid
 
-            ncerr = nf90_inq_dimid(ncid, t_dim_name, dimid)
+            ncerr = nf90_inq_dimid(ncid, netcdf_dims(4), dimid)
             call check_netcdf_error("Reading time dimension id failed.")
             ncerr = nf90_inquire_dimension(ncid, dimid, len=n_steps)
             call check_netcdf_error("Reading time failed.")
@@ -90,10 +89,10 @@ module netcdf_reader
 
             call get_num_steps(ncid, n_steps)
 
-            if (has_dataset(ncid, t_dim_name)) then
+            if (has_dataset(ncid, netcdf_dims(4))) then
                 start(1) = n_steps
                 cnt(1) = 1
-                ncerr = nf90_inq_varid(ncid, t_dim_name, varid)
+                ncerr = nf90_inq_varid(ncid, netcdf_dims(4), varid)
                 call check_netcdf_error("Reading time id failed.")
                 ncerr = nf90_get_var(ncid, varid, values, start=start, count=cnt)
                 t = values(1)
