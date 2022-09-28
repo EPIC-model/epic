@@ -170,6 +170,14 @@ module parameters
         integer                 :: grp_ncid
         character(*), parameter :: name = 'parameters'
 
+        if (boundary%l_ignore_bndry_zeta_flag) then
+            l_bndry_zeta_zero(:) = .false.
+            print *, "WARNING: You allow the gridded vertical vorticity component"
+            print *, "         at the boundaries to develop non-zero values."
+            print *, "         Stop your simulation if this is not your intention."
+            return
+        endif
+
         ncerr = nf90_inq_ncid(ncid, name, grp_ncid)
 
         if (ncerr == 0) then
