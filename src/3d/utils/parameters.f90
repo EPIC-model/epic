@@ -3,7 +3,7 @@
 ! simulation.
 ! =============================================================================
 module parameters
-    use options, only : allow_larger_anisotropy, parcel
+    use options, only : allow_larger_anisotropy, parcel, boundary
     use constants
     use netcdf_reader
     use netcdf_utils
@@ -132,16 +132,24 @@ module parameters
     end subroutine update_parameters
 
 
-    subroutine set_zeta_boundary_flag(zeta, thres)
+    subroutine set_zeta_boundary_flag(zeta)
         double precision, intent(in) :: zeta(-1:nz+1, 0:ny-1, 0:nx-1)
-        double precision, intent(in) :: thres
-        double precision :: rms_bndry(2), rms_interior
+        double precision             :: rms_bndry(2), rms_interior, thres
 
-        rms_interior = dsqrt(sum(zeta(1:nz-1, :, :) ** 2) * nhcelli / (nz-1))
-        rms_bndry(1) = dsqrt(sum(zeta(0,      :, :) ** 2) * nhcelli)
-        rms_bndry(2) = dsqrt(sum(zeta(nz,     :, :) ** 2) * nhcelli)
+        if (boundary%l_ignore_bndry_zeta_flag) then
+            l_bndry_zeta_zero(:) = .false.
+            print *, "WARNING: You allow the gridded vertical vorticity component"
+            print *, "         at the boundaries to develop non-zero values."
+            print *, "         Stop your simulation if this is not your intention."
+        else
+            rms_interior = dsqrt(sum(zeta(1:nz-1, :, :) ** 2) * nhcelli / (nz-1))
+            rms_bndry(1) = dsqrt(sum(zeta(0,      :, :) ** 2) * nhcelli)
+            rms_bndry(2) = dsqrt(sum(zeta(nz,     :, :) ** 2) * nhcelli)
 
-        l_bndry_zeta_zero(:) = (rms_bndry(:) < thres * rms_interior + epsilon(rms_interior))
+            thres = boundary%zeta_tol * rms_interior + epsilon(rms_interior)
+
+            l_bndry_zeta_zero(:) = (rms_bndry(:) < thres)
+        endif
 
 #if defined(ENABLE_VERBOSE) || !defined(NDEBUG)
         if (.not. l_bndry_zeta_zero(1)) then
