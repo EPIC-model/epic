@@ -91,8 +91,6 @@ module parcel_netcdf
 
             call write_physical_quantities(ncid)
 
-            call write_zeta_boundary_flag(ncid)
-
             call write_netcdf_options(ncid)
 
             ! define dimensions
@@ -253,6 +251,9 @@ module parcel_netcdf
             call create_netcdf_parcel_file(trim(ncbasename), .true., .false.)
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
+
+            ! we must write the boundary flag here
+            call write_zeta_boundary_flag(ncid)
 
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, 1)

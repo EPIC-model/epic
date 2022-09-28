@@ -91,8 +91,6 @@ module field_netcdf
 
             call write_physical_quantities(ncid)
 
-            call write_zeta_boundary_flag(ncid)
-
             call write_netcdf_options(ncid)
 
             ! define dimensions
@@ -320,6 +318,7 @@ module field_netcdf
 
             if (n_writes == 1) then
                 call write_netcdf_axis_3d(ncid, dimids(1:3), lower, dx, (/nx, ny, nz/))
+                call write_zeta_boundary_flag(ncid)
             endif
 
             ! write time

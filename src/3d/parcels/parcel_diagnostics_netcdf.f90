@@ -76,8 +76,6 @@ module parcel_diagnostics_netcdf
 
             call write_physical_quantities(ncid)
 
-            call write_zeta_boundary_flag(ncid)
-
             call write_netcdf_options(ncid)
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
@@ -276,6 +274,10 @@ module parcel_diagnostics_netcdf
             endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
+
+            if (n_writes == 1) then
+                call write_zeta_boundary_flag(ncid)
+            endif
 
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
