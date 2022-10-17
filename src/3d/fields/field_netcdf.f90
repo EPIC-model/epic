@@ -82,7 +82,7 @@ module field_netcdf
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='fields',           &
                                    cf_version=cf_version)
 
@@ -94,7 +94,7 @@ module field_netcdf
 
             ! define dimensions
             call define_netcdf_spatial_dimensions_3d(ncid=ncid,                &
-                                                     ncells=(/nx, ny, nz/),    &
+                                                     ngps=(/nx, ny, nz+1/),    &
                                                      dimids=dimids(1:3),       &
                                                      axids=coord_ids)
 
@@ -315,7 +315,7 @@ module field_netcdf
 !            k = two
 !            l = two
 !            m = one
-!            
+!
 !            alpha = dsqrt(k ** 2 + l ** 2 + m ** 2)
 !            fk2l2 = one / dble(k ** 2 + l ** 2)
 !
@@ -325,22 +325,22 @@ module field_netcdf
 !                  y = lower(2) + iy * dx(2)
 !                  do iz = -1, nz+1
 !                     z = lower(3) + iz * dx(3)
-!                     
+!
 !                     cosmz = dcos(m * z)
 !                     sinmz = dsin(m * z)
 !                     sinkxly = dsin(k * x + l * y)
 !                     coskxly = dcos(k * x + l * y)
-!                     
+!
 !                     ! velocity
 !                     velog_ref(iz, iy, ix, 1) = fk2l2 * (k * m * sinmz - l * alpha * cosmz) * sinkxly
 !                     velog_ref(iz, iy, ix, 2) = fk2l2 * (l * m * sinmz + k * alpha * cosmz) * sinkxly
 !                     velog_ref(iz, iy, ix, 3) = cosmz * coskxly
-!                     
+!
 !                     ! vorticity
 !                     vortg_ref(iz, iy, ix, 1) = alpha * velog_ref(iz, iy, ix, 1)
 !                     vortg_ref(iz, iy, ix, 2) = alpha * velog_ref(iz, iy, ix, 2)
 !                     vortg_ref(iz, iy, ix, 3) = alpha * velog_ref(iz, iy, ix, 3)
-!                     
+!
 !                     ! reference solution
 !                     vtend_ref(iz, iy, ix, 1) = alpha * k * m ** 2 * fk2l2 * sinkxly * coskxly
 !                     vtend_ref(iz, iy, ix, 2) = alpha * l * m ** 2 * fk2l2 * sinkxly * coskxly
@@ -375,7 +375,7 @@ module field_netcdf
 !            velog = velog - velog_ref
 !            vortg = vortg - vortg_ref
 !            vtend = vtend - vtend_ref
-            
+
             call write_netcdf_dataset(ncid, x_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 1), &
                                       start, cnt)
             call write_netcdf_dataset(ncid, y_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 2), &
