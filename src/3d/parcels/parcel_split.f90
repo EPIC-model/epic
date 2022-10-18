@@ -18,6 +18,9 @@ module parcel_split_mod
 
     integer :: split_timer
 
+    ! number of parcel splits (is reset in every write step)
+    integer :: n_parcel_splits = 0
+
     contains
 
         ! Split large parcels (volumes larger than vmax) or
@@ -94,6 +97,8 @@ module parcel_split_mod
             enddo
             !$omp end do
             !$omp end parallel
+
+            n_parcel_splits = n_parcel_splits + n_parcels - last_index
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then

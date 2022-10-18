@@ -17,7 +17,10 @@ module parcel_merge
 
     implicit none
 
-    integer:: merge_timer
+    integer :: merge_timer
+
+    ! number of parcel merges (is reset in every write step)
+    integer :: n_parcel_merges = 0
 
     private :: geometric_merge, &
                do_group_merge,  &
@@ -36,6 +39,8 @@ module parcel_merge
 
             ! find parcels to merge
             call find_nearest(isma, iclo, n_merge)
+
+            n_parcel_merges = n_parcel_merges + n_merge
 
             call start_timer(merge_timer)
 
