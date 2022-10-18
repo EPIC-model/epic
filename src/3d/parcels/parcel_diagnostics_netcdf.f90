@@ -8,6 +8,8 @@ module parcel_diagnostics_netcdf
     use netcdf_reader
     use parcel_container, only : parcels, n_parcels
     use parcel_diagnostics
+    use parcel_split_mod, only : n_parcel_splits
+    use parcel_merge, only : n_parcel_merges
     use parameters, only : lower, extent, nx, ny, nz
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
@@ -229,7 +231,7 @@ module parcel_diagnostics_netcdf
                  dtype=NF90_DOUBLE,                                          &
                  dimids=(/t_dim_id/),                                        &
                  varid=n_par_split_id)
-            
+
             call define_netcdf_dataset(                                      &
                  ncid=ncid,                                                  &
                  name='n_parcel_merges',                                     &
@@ -239,7 +241,7 @@ module parcel_diagnostics_netcdf
                  dtype=NF90_DOUBLE,                                          &
                  dimids=(/t_dim_id/),                                        &
                  varid=n_par_merge_id)
-            
+
             call close_definition(ncid)
 
         end subroutine create_netcdf_parcel_stats_file
@@ -324,6 +326,10 @@ module parcel_diagnostics_netcdf
 
             ! increment counter
             n_writes = n_writes + 1
+
+            ! reset counters for parcel operations
+            n_parcel_splits = 0
+            n_parcel_merges = 0
 
             call close_netcdf_file(ncid)
 
