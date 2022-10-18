@@ -161,6 +161,6 @@ module parcel_diagnostics
 
             call stop_timer(parcel_stats_timer)
 
-          end subroutine calculate_parcel_diagnostics
+        end subroutine calculate_parcel_diagnostics
 
 end module parcel_diagnostics
