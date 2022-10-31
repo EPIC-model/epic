@@ -1,4 +1,5 @@
-!> This Pencil FFT performs 3D forward and backwards FFTs using pencil decomposition. It uses FFTE for the actual FFT kernel
+!> This Pencil FFT performs 3D forward and backwards FFTs using pencil decomposition. 
+!! Borrowed from PMPIC but uses STAFFT (instead of FFTE) for the FFT kernel
 !! and this module contains all the data decomposition around this. There is no FFT required in Z, so this performs FFTs in
 !! Y and X (in that order forward and reversed backwards.) The data decomposition is the complex aspect, there is the concept of
 !! forward and backwards transformations. Forward transformations will go from pencil Z to Y to X and the backwards transformations
@@ -6,15 +7,18 @@
 !! Note that we use quite a lot of buffer space here, this could be cut down if Y=X dimensions so some optimisation on memory
 !! could be done there in that case
 module pencil_fft_mod
-  use, intrinsic :: iso_c_binding
-  use datadefn_mod, only : DEFAULT_PRECISION, PRECISION_TYPE
-  use grids_mod, only : X_INDEX, Y_INDEX, Z_INDEX, global_grid_type
-  use state_mod, only : model_state_type
-  use mpi, only : MPI_DOUBLE_COMPLEX, MPI_INT, MPI_COMM_SELF, mpi_wtime
-  use timer_mod, only: register_routine_for_timing, timer_start, timer_stop
-  use omp_lib
-  use ffte_mod, only: ffte_r2c, ffte_c2r, ffte_init, ffte_finalise, ffte_check_factors
-  use optionsdatabase_mod, only: options_get_logical
+  !use, intrinsic :: iso_c_binding
+  use constants
+  use stafft
+  use sta2dfft
+  use datatypes, only : DEFAULT_PRECISION, PRECISION_TYPE
+  !use grids_mod, only : X_INDEX, Y_INDEX, Z_INDEX, global_grid_type
+  !use state_mod, only : model_state_type
+  !use mpi, only : MPI_DOUBLE_COMPLEX, MPI_INT, MPI_COMM_SELF, mpi_wtime
+  !use timer_mod, only: register_routine_for_timing, timer_start, timer_stop
+  !use omp_lib
+  !use ffte_mod, only: ffte_r2c, ffte_c2r, ffte_init, ffte_finalise, ffte_check_factors
+  !use optionsdatabase_mod, only: options_get_logical
   implicit none
 
 #ifndef TEST_MODE
