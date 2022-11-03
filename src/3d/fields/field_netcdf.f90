@@ -83,7 +83,7 @@ module field_netcdf
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='fields',           &
                                    cf_version=cf_version)
 
@@ -95,7 +95,7 @@ module field_netcdf
 
             ! define dimensions
             call define_netcdf_spatial_dimensions_3d(ncid=ncid,                &
-                                                     ncells=(/nx, ny, nz/),    &
+                                                     ngps=(/nx, ny, nz+1/),    &
                                                      dimids=dimids(1:3),       &
                                                      axids=coord_ids)
 

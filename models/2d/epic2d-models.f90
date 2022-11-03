@@ -50,14 +50,14 @@ program epic2d_models
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='fields',           &
                                    cf_version=cf_version)
 
             call write_netcdf_box(ncid, lower, extent, box%ncells)
 
             call define_netcdf_spatial_dimensions_2d(ncid=ncid,            &
-                                                     ncells=box%ncells,    &
+                                                     ngps=(/nx, nz+1/),    &
                                                      dimids=dimids(1:2),   &
                                                      axids=axids(1:2))
 

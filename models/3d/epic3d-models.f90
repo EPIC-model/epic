@@ -51,13 +51,15 @@ program epic3d_models
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='fields',           &
                                    cf_version=cf_version)
 
-            call define_netcdf_spatial_dimensions_3d(ncid=ncid,            &
-                                                     ncells=box%ncells,    &
-                                                     dimids=dimids(1:3),   &
+            call write_netcdf_box(ncid, lower, extent, box%ncells)
+
+            call define_netcdf_spatial_dimensions_3d(ncid=ncid,             &
+                                                     ngps=(/nx, ny, nz+1/), &
+                                                     dimids=dimids(1:3),    &
                                                      axids=axids(1:3))
 
             call define_netcdf_temporal_dimension(ncid, dimids(4), axids(4))
