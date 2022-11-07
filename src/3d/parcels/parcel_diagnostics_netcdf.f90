@@ -8,9 +8,9 @@ module parcel_diagnostics_netcdf
     use netcdf_reader
     use parcel_container, only : parcels, n_parcels
     use parcel_diagnostics
+    use parameters, only : lower, extent, nx, ny, nz, write_zeta_boundary_flag
     use parcel_split_mod, only : n_parcel_splits
     use parcel_merge, only : n_parcel_merges
-    use parameters, only : lower, extent, nx, ny, nz
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
@@ -300,6 +300,10 @@ module parcel_diagnostics_netcdf
             endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
+
+            if (n_writes == 1) then
+                call write_zeta_boundary_flag(ncid)
+            endif
 
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)

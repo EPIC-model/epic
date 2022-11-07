@@ -5,7 +5,7 @@
 module parcel_interpl
     use constants, only : zero, one, two, f14, pi
     use timer, only : start_timer, stop_timer
-    use parameters, only : nx, nz, vmin
+    use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
@@ -232,6 +232,16 @@ module parcel_interpl
             do p = 1, 3
                 vortg(0:nz, :, :, p) = vortg(0:nz, :, :, p) / volg(0:nz, :, :)
             enddo
+
+            !-------------------------------------------------------
+            ! Set zeta = 0 on the boundary if required:
+            if (l_bndry_zeta_zero(1)) then
+                vortg(0, :, :, I_Z) = zero
+            endif
+
+            if (l_bndry_zeta_zero(2)) then
+                vortg(nz, :, :, I_Z) = zero
+            endif
 
             !$omp parallel workshare
             vortg(-1,   :, :, :) = two * vortg(0,  :, :, :) - vortg(1, :, :, :)
