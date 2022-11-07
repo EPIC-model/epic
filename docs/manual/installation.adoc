@@ -45,7 +45,7 @@ in your terminal. You then create a build directory and configure EPIC
 ----
 $ mkdir build
 $ cd build
-$ ../configure ..
+$ ../configure
 ----
 The most important configure options are given in <<tab_configure_options>>. You can also append the flag `--help`
 to see all available options.
