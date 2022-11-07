@@ -59,6 +59,11 @@ class nc_fields:
             else:
                 RuntimeError("Shape must be of 2 or 3 dimensions")
 
+            time = self._ncfile.createVariable(varname='t',
+                                               datatype='f8',
+                                               dimensions=('t'))
+            time[0] = 0.0
+
 
         if self._ndims == 2:
             var = self._ncfile.createVariable(varname=name,

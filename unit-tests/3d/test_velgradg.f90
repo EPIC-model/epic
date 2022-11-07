@@ -96,7 +96,7 @@ program test_velgradg
     call fftxyp2s(velog(0:nz, :, :, 2), svelog(:, :, :, 2))
     call fftxyp2s(velog(0:nz, :, :, 3), svelog(:, :, :, 3))
 
-    call vel2vgrad(svelog, velgradg)
+    call vel2vgrad(svelog)
 
     error = maxval(dabs(velgradg(0:nz, :, :, :) - strain(0:nz, :, :, :)))
 
