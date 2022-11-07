@@ -13,7 +13,7 @@ program test_ellipsoid_split_merge
     use parcel_merge, only : merge_parcels, merge_timer
     use parcel_nearest
     use parcel_split_mod, only : parcel_split, split_timer
-    use parameters, only : update_parameters, nx, ny, nz, extent, lower, vmax, vmin
+    use parameters, only : update_parameters, nx, ny, nz, extent, lower, set_vmax, set_vmin, vmin
     use timer
     implicit none
 
@@ -39,10 +39,10 @@ program test_ellipsoid_split_merge
     c2 = (abc / ab) ** 2
 
     ! set vmin to initial parcel volume
-    vmin = four / three * abc * pi
+    call set_vmin(four / three * abc * pi)
 
     ! set vmax to half the initial volume
-    vmax = f12 * vmin
+    call set_vmax(f12 * vmin)
 
     call register_timer('parcel split', split_timer)
     call register_timer('parcel merge', merge_timer)

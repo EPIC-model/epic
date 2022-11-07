@@ -33,6 +33,7 @@ program epic3d
                       setup_restart, setup_domain_and_parameters
     use parameters, only : max_num_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
+    use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     implicit none
 
     integer          :: epic_timer
@@ -88,6 +89,9 @@ program epic3d
 
             call start_timer(epic_timer)
 
+            ! set axis and dimension names for the NetCDF output
+            call set_netcdf_dimensions((/'x', 'y', 'z', 't'/))
+            call set_netcdf_axes((/'X', 'Y', 'Z', 'T'/))
 
             ! parse the config file
             call read_config_file

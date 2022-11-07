@@ -12,7 +12,7 @@ AC_FC_SRCEXT(f90)
 FCFLAGS="-std=f2018 -fdefault-real-8 -fdefault-double-8 -cpp -fPIC -mcmodel=large"
 
 AC_CONFIG_MACRO_DIRS([m4])
-AC_CONFIG_HEADERS([src/utils/config.h])
+AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
@@ -388,6 +388,7 @@ AM_CONDITIONAL([ENABLE_UNIT_TESTS], [test "$ENABLE_UNIT_TESTS" = "yes"])
 AC_MSG_CHECKING([whether we build unit tests])
 if test "x$ENABLE_UNIT_TESTS" = "xyes"; then
     AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_UNIT_TESTS"
 else
     AC_MSG_RESULT([no])
 fi

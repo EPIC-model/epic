@@ -3,6 +3,7 @@ Matthias Frey (Univ. of St Andrews); David G. Dritschel (Univ. of St Andrews); S
 v@VERSION@
 :version-label: Version
 :page-layout: default
+:stem: latexmath
 :toc: left
 :sectnums:
 

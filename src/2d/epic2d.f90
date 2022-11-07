@@ -33,6 +33,7 @@ program epic2d
     use utils, only : write_last_step, setup_output_files,       &
                       setup_restart, setup_domain_and_parameters
     use parameters, only : max_num_parcels
+    use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     implicit none
 
     integer          :: epic_timer
@@ -85,6 +86,10 @@ program epic2d
 #endif
 
             call start_timer(epic_timer)
+
+            ! set axis and dimension names for the NetCDF output
+            call set_netcdf_dimensions((/'x', 'z', 't'/))
+            call set_netcdf_axes((/'X', 'Z', 'T'/))
 
             ! parse the config file
             call read_config_file

@@ -10,6 +10,6 @@ asciidoctor intro.adoc --destination-dir=../html
 
 # 22 March 2022
 # https://discuss.asciidoctor.org/Diagrams-referenced-by-URL-in-PDF-td4623.html
-asciidoctor-pdf -a allow-uri-read intro.adoc --destination-dir=../pdf
+asciidoctor-pdf -r asciidoctor-mathematical -a allow-uri-read intro.adoc --destination-dir=../pdf
 
 sed -i "s:$version:@VERSION@:g" intro.adoc

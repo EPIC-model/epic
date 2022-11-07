@@ -6,7 +6,7 @@ program epic3d_models
     use robert_3d
     use moist_3d
     use constants, only : pi, zero
-    use parameters, only : nx, ny, nz, dx, lower, extent
+    use parameters, only : nx, ny, nz, dx, lower, extent, set_mesh_spacing
     use netcdf_utils
     use netcdf_writer
     use config, only : package_version, cf_version
@@ -44,22 +44,22 @@ program epic3d_models
 
             call create_netcdf_file(ncfname, .false., ncid)
 
-            dx = box%extent / dble(box%ncells)
+            call set_mesh_spacing(box%extent, box%ncells)
             nx = box%ncells(1)
             ny = box%ncells(2)
             nz = box%ncells(3)
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='fields',           &
                                    cf_version=cf_version)
 
             call write_netcdf_box(ncid, lower, extent, box%ncells)
 
-            call define_netcdf_spatial_dimensions_3d(ncid=ncid,            &
-                                                     ncells=box%ncells,    &
-                                                     dimids=dimids(1:3),   &
+            call define_netcdf_spatial_dimensions_3d(ncid=ncid,             &
+                                                     ngps=(/nx, ny, nz+1/), &
+                                                     dimids=dimids(1:3),    &
                                                      axids=axids(1:3))
 
             call define_netcdf_temporal_dimension(ncid, dimids(4), axids(4))
@@ -68,7 +68,7 @@ program epic3d_models
                 ! make origin and extent always a multiple of pi
                 box%origin = pi * box%origin
                 box%extent = pi * box%extent
-                dx = dx * pi
+                call set_mesh_spacing(box%extent, box%ncells)
             endif
 
             ! write box
