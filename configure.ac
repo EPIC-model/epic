@@ -12,7 +12,7 @@ AC_FC_SRCEXT(f90)
 FCFLAGS="-std=f2008 -fdefault-real-8 -fdefault-double-8 -cpp -fPIC -mcmodel=large"
 
 AC_CONFIG_MACRO_DIRS([m4])
-AC_CONFIG_HEADERS([src/utils/config.h])
+AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
