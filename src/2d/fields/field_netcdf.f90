@@ -78,7 +78,7 @@ module field_netcdf
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='fields',           &
                                    cf_version=cf_version)
             call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
@@ -89,7 +89,7 @@ module field_netcdf
 
             ! define dimensions
             call define_netcdf_spatial_dimensions_2d(ncid=ncid,            &
-                                                     ncells=(/nx, nz/),    &
+                                                     ngps=(/nx, nz+1/),    &
                                                      dimids=dimids(1:2),   &
                                                      axids=coord_ids)
 

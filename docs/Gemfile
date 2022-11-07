@@ -19,6 +19,12 @@ group :jekyll_plugins do
   gem "jekyll-feed", "~> 0.12"
 end
 
+# 25 March 2022
+# https://github.com/asciidoctor/asciidoctor-mathematical
+# sudo apt-get install cmake
+# sudo apt-get install bison flex libffi-dev libxml2-dev libgdk-pixbuf2.0-dev libcairo2-dev libpango1.0-dev fonts-lyx
+gem "asciidoctor-mathematical"
+
 # Windows and JRuby does not include zoneinfo files, so bundle the tzinfo-data gem
 # and associated library.
 platforms :mingw, :x64_mingw, :mswin, :jruby do

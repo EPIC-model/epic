@@ -194,7 +194,7 @@ module physics
 
             ncerr = nf90_def_grp(ncid, name, grp_ncid)
 
-            call check_netcdf_error("Faild to create NetCDF group '" // name // "'.")
+            call check_netcdf_error("Failed to create NetCDF group '" // name // "'.")
 
             call write_netcdf_attribute(grp_ncid, 'standard_gravity', gravity)
             call write_netcdf_attribute(grp_ncid, 'latent_heat_of_vaporization', L_v)

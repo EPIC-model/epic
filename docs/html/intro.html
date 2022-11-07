@@ -554,7 +554,7 @@ calling</p>
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">$ mkdir build
 $ cd build
-$ ../configure ..</code></pre>
+$ ../configure</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -652,7 +652,19 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 <div class="sect1">
 <h2 id="_model">3. Model</h2>
 <div class="sectionbody">
-
+<div class="stemblock">
+<div class="content">
+\[\begin{align}
+    \label{eq:progu}
+    &amp; \frac{\mathrm{D}\boldsymbol{u}}{\mathrm{D} t}+2\Omega\,\hat{\boldsymbol{e}}_z\times\boldsymbol{u}
+        = -\frac{\nabla p}{\rho_0}+b\,\hat{\boldsymbol{e}}_z \,, \\
+    \label{eq:progb}
+    &amp; \frac{\mathrm{D} b_l}{\mathrm{D} t} = 0 \,, \\
+    \label{eq:progq}
+    &amp; \frac{\mathrm{D} q}{\mathrm{D} t} = 0 \,,
+\end{align}\]
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -663,8 +675,8 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 <table class="tableblock frame-all grid-all stretch">
 <caption class="title">Table 2. EPIC input options and their default values.</caption>
 <colgroup>
-<col style="width: 22.2222%;">
 <col style="width: 11.1111%;">
+<col style="width: 22.2222%;">
 <col style="width: 66.6667%;">
 </colgroup>
 <thead>
@@ -678,7 +690,7 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">field_file</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">n/a</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">NetCDF Input field file</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NetCDF input field file</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">field_tol</p></td>
@@ -752,12 +764,12 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">parcel%min_vratio</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">40</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">40 (2D) or 68 (3D)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Minimum ratio of grid cell volume / parcel volume</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">parcel%max_vratio</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">2.89</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2.89 (2D) or 4.913 (3D)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Maximum ratio of grid cell volume / parcel volume</p></td>
 </tr>
 <tr>
@@ -816,7 +828,24 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 <div class="sect1">
 <h2 id="_citation">6. Citation</h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>Please cite the two-dimensional EPIC model using</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>@article{Frey2022,
+    title = {EPIC: The Elliptical Parcel-In-Cell method},
+    journal = {Journal of Computational Physics: X},
+    volume = {14},
+    pages = {100109},
+    year = {2022},
+    issn = {2590-0552},
+    doi = {https://doi.org/10.1016/j.jcpx.2022.100109},
+    url = {https://www.sciencedirect.com/science/article/pii/S2590055222000051},
+    author = {Matthias Frey and David Dritschel and Steven B\"oing}
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>

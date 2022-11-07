@@ -1,7 +1,7 @@
 module inversion_mod
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use inversion_utils
-    use parameters, only : nx, ny, nz, dxi
+    use parameters, only : nx, ny, nz, dxi, l_bndry_zeta_zero
     use physics, only : f_cor
     use constants, only : zero, two, f12
     use sta2dfft, only : dct, dst
@@ -314,6 +314,16 @@ module inversion_mod
             f(:, : , :, I_Z) = (vortg(:, :, :, I_Z) + f_cor(I_Z)) * velog(:, :, :, I_Z)
 
             call divergence(f, vtend(0:nz, :, :, I_Z))
+
+            !-------------------------------------------------------
+            ! Set dzeta/dt = 0 on the boundary if required:
+            if (l_bndry_zeta_zero(1)) then
+                vtend(0, :, :, I_Z) = zero
+            endif
+
+            if (l_bndry_zeta_zero(2)) then
+                vtend(nz, :, :, I_Z) = zero
+            endif
 
             !-------------------------------------------------------
             ! Extrapolate to halo grid points:

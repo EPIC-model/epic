@@ -8,7 +8,9 @@ module parcel_diagnostics_netcdf
     use netcdf_reader
     use parcel_container, only : parcels, n_parcels
     use parcel_diagnostics
-    use parameters, only : lower, extent, nx, ny, nz
+    use parameters, only : lower, extent, nx, ny, nz, write_zeta_boundary_flag
+    use parcel_split_mod, only : n_parcel_splits
+    use parcel_merge, only : n_parcel_merges
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
@@ -24,7 +26,7 @@ module parcel_diagnostics_netcdf
                           peref_id, pe_id, ke_id, te_id, npar_id, nspar_id,             &
                           rms_x_vor_id, rms_y_vor_id, rms_z_vor_id,                     &
                           avg_lam_id, std_lam_id, avg_vol_id, std_vol_id, sum_vol_id,   &
-                          psi_id
+                          psi_id, n_par_split_id, n_par_merge_id
     double precision   :: restart_time
 
     integer :: parcel_stats_io_timer
@@ -72,7 +74,7 @@ module parcel_diagnostics_netcdf
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='parcel_stats',     &
                                    cf_version=cf_version)
 
@@ -234,6 +236,26 @@ module parcel_diagnostics_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=rms_z_vor_id)
 
+            call define_netcdf_dataset(                                      &
+                 ncid=ncid,                                                  &
+                 name='n_parcel_splits',                                     &
+                 long_name='number of parcel splits since last time',        &
+                 std_name='',                                                &
+                 unit='1',                                                   &
+                 dtype=NF90_DOUBLE,                                          &
+                 dimids=(/t_dim_id/),                                        &
+                 varid=n_par_split_id)
+
+            call define_netcdf_dataset(                                      &
+                 ncid=ncid,                                                  &
+                 name='n_parcel_merges',                                     &
+                 long_name='number of parcel merges since last time',        &
+                 std_name='',                                                &
+                 unit='1',                                                   &
+                 dtype=NF90_DOUBLE,                                          &
+                 dimids=(/t_dim_id/),                                        &
+                 varid=n_par_merge_id)
+
             call close_definition(ncid)
 
             call close_netcdf_file(ncid, l_single=.true.)
@@ -277,6 +299,10 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 'z_rms_vorticity', rms_z_vor_id)
 
+            call get_var_id(ncid, 'n_parcel_splits', n_par_split_id)
+
+            call get_var_id(ncid, 'n_parcel_merges', n_par_merge_id)
+
         end subroutine read_netcdf_parcel_stats_content
 
         ! Write a step in the parcel diagnostic file.
@@ -296,6 +322,10 @@ module parcel_diagnostics_netcdf
             endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid, l_single=.true.)
+
+            if (n_writes == 1) then
+                call write_zeta_boundary_flag(ncid)
+            endif
 
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
@@ -323,9 +353,15 @@ module parcel_diagnostics_netcdf
             call write_netcdf_scalar(ncid, rms_y_vor_id, parcel_stats(IDX_RMS_ETA), n_writes)
             call write_netcdf_scalar(ncid, rms_z_vor_id, parcel_stats(IDX_RMS_ZETA), n_writes)
             call write_netcdf_scalar(ncid, psi_id, parcel_stats(IDX_ENSTROPHY), n_writes)
+            call write_netcdf_scalar(ncid, n_par_split_id, parcel_stats(IDX_NSPLITS), n_writes)
+            call write_netcdf_scalar(ncid, n_par_merge_id, parcel_stats(IDX_NMERGES), n_writes)
 
             ! increment counter
             n_writes = n_writes + 1
+
+            ! reset counters for parcel operations
+            n_parcel_splits = 0
+            n_parcel_merges = 0
 
             call close_netcdf_file(ncid, l_single=.true.)
 

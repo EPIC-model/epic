@@ -25,6 +25,27 @@ module options
     character(len=512)  :: field_file = ''
     double precision    :: field_tol  = 1.0d-10
 
+
+    type bndry_info
+        ! the rms of the boundary zeta must be smaller than
+        ! this threshold times the rms of the interior
+        ! zeta in order to keep zeta = 0 and dzeta/dt = 0
+        ! on the boundary;
+        ! each boundary is checked independently
+        double precision :: zeta_tol = 1.0e-3
+
+        ! this option is enabled, it makes the code to ignore the
+        ! zeta boundary flag; hence a simulation can develop a
+        ! non-zero vertical vorticity component (zeta) on both
+        ! boundaries. A warning is printed to the standard
+        ! output if it is enabled.
+        ! WARNING: You need to be aware of the consequences
+        !          on the physics when enabling this option!
+        logical :: l_ignore_bndry_zeta_flag = .false.
+    end type bndry_info
+
+    type(bndry_info) :: boundary
+
     !
     ! output options
     !
@@ -85,7 +106,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, field_tol, output, parcel, time
+            namelist /EPIC/ field_file, field_tol, boundary, output, parcel, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -125,6 +146,10 @@ module options
 #endif
             call write_netcdf_attribute(ncid, "field_file", field_file)
             call write_netcdf_attribute(ncid, "field_tol", field_tol)
+
+            call write_netcdf_attribute(ncid, "zeta_tol", boundary%zeta_tol)
+            call write_netcdf_attribute(ncid, "l_ignore_bndry_zeta_flag", &
+                                        boundary%l_ignore_bndry_zeta_flag)
 
             call write_netcdf_attribute(ncid, "allow_larger_anisotropy", &
                                                allow_larger_anisotropy)
