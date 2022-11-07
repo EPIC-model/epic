@@ -123,8 +123,8 @@ test_ellipsoid_reflection_LDADD = libcombi.la
 test_mpi_grid2par_SOURCES = test_mpi_grid2par.f90
 test_mpi_grid2par_LDADD = libcombi.la
 
-test_par2grid_SOURCES = test_par2grid.f90
-test_par2grid_LDADD = libcombi.la
+# test_par2grid_SOURCES = test_par2grid.f90
+# test_par2grid_LDADD = libcombi.la
 
 test_free_slip_3d_SOURCES = test_free_slip_3d.f90
 test_free_slip_3d_LDADD = libcombi.la
