@@ -82,6 +82,7 @@ module netcdf_reader
         subroutine get_num_steps(ncid, n_steps)
             integer, intent(in)  :: ncid
             integer, intent(out) :: n_steps
+            integer              :: dimid
 
             ncerr = nf90_inq_dimid(ncid, netcdf_dims(4), dimid)
             call check_netcdf_error("Reading time dimension id failed.")

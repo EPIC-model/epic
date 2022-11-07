@@ -7,6 +7,8 @@ module parcel_diagnostics
     use parameters, only : extent, lower, vcell, vmin, nx, nz
     use parcel_container, only : parcels, n_parcels, n_total_parcels
     use parcel_ellipsoid
+    use parcel_split_mod, only : n_parcel_splits
+    use parcel_merge, only : n_parcel_merges
     use omp_lib
     use timer, only : start_timer, stop_timer
     use mpi_communicator
@@ -34,9 +36,11 @@ module parcel_diagnostics
                           IDX_RMS_ETA   = 10, & ! rms value of y-vorticity
                           IDX_RMS_ZETA  = 11, & ! rms value of z-vorticity
                           IDX_NTOT_PAR  = 12, & ! total number of parcels
-                          IDX_ENSTROPHY = 13    ! enstrophy
+                          IDX_ENSTROPHY = 13, & ! enstrophy
+                          IDX_NSPLITS   = 14, & ! number of parcel splits since last write
+                          IDX_NMERGES   = 15    ! number of parcel merges since last write
 
-    double precision :: parcel_stats(IDX_ENSTROPHY)
+    double precision :: parcel_stats(IDX_NMERGES)
 
     contains
 
@@ -139,6 +143,9 @@ module parcel_diagnostics
             enddo
             !$omp end do
             !$omp end parallel
+
+            parcel_stats(IDX_NSPLITS) = n_parcel_splits
+            parcel_stats(IDX_NMERGES) = n_parcel_merges
 
             call mpi_blocking_reduce(parcel_stats, MPI_SUM)
 
