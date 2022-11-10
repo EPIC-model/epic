@@ -13,6 +13,8 @@ class nc_reader:
         # either a field or parcel file
         self._nctype = None
 
+        self._is_compressible = False
+
     def open(self, fname):
         if not os.path.exists(fname):
             raise IOError("File '" + fname + "' does not exist.")
@@ -83,7 +85,6 @@ class nc_reader:
         return np.array(self._ncfile.variables[name])
 
     def get_dataset(self, step, name, indices=None):
-
         if not name in self._ncfile.variables.keys():
             raise IOError("Dataset '" + name + "' unknown.")
 
@@ -93,22 +94,20 @@ class nc_reader:
 
         if self.is_parcel_file and name == 't':
             # parcel files store the time as a global attribute
-            step = step + 1
             self._load_parcel_file(step)
-            return self._ncfile.variables[name]
+            return np.array(self._ncfile.variables[name]).squeeze()
 
         if self.is_parcel_file:
-            step = step + 1
             self._load_parcel_file(step)
             if indices is not None:
-                return self._ncfile.variables[name][indices, ...]
+                return np.array(self._ncfile.variables[name]).squeeze()[indices, ...]
             else:
-                return np.array(self._ncfile.variables[name])
+                return np.array(self._ncfile.variables[name]).squeeze()
         else:
             if indices is not None:
-                return self._ncfile.variables[name][step, ...][indices, ...]
+                return np.array(self._ncfile.variables[name][step, ...]).squeeze()[indices, ...]
             else:
-                return np.array(self._ncfile.variables[name][step, ...])
+                return np.array(self._ncfile.variables[name][step, ...]).squeeze()
 
     def get_dataset_attribute(self, name, attr):
         if not name in self._ncfile.variables.keys():
@@ -163,8 +162,10 @@ class nc_reader:
         V = self.get_dataset(step, "volume", indices=indices)
         B11 = self.get_dataset(step, "B11", indices=indices)
         B12 = self.get_dataset(step, "B12", indices=indices)
-
-        B22 = self._get_B22(B11, B12, V)
+        if self._is_compressible:
+            B22 = self.get_dataset(step, "B22", indices=indices)
+        else:
+            B22 = self._get_B22(B11, B12, V)
         a2 = self._get_eigenvalue(B11, B12, B22)
         angle = self._get_angle(B11, B12, B22, a2)
 
@@ -185,10 +186,17 @@ class nc_reader:
         V = self.get_dataset(step, "volume", indices=indices)
         B11 = self.get_dataset(step, "B11", indices=indices)
         B12 = self.get_dataset(step, "B12", indices=indices)
-        B22 = self._get_B22(B11, B12, V)
+        if self._is_compressible:
+            B22 = self.get_dataset(step, "B22", indices=indices)
+        else:
+            B22 = self._get_B22(B11, B12, V)
         a2 = self._get_eigenvalue(B11, B12, B22)
         angle = self._get_angle(B11, B12, B22, a2)
+        #print("bye")
+        #exit()
         b2 = (V / np.pi) ** 2 / a2
+        #print(x_pos.shape, z_pos.shape, a2.shape, b2.shape, angle.shape)
+        #exit()
         return (
             x_pos[:],
             z_pos[:],
@@ -203,7 +211,10 @@ class nc_reader:
         V = self.get_dataset(step, "volume", indices=indices)
         B11 = self.get_dataset(step, "B11", indices=indices)
         B12 = self.get_dataset(step, "B12", indices=indices)
-        B22 = self._get_B22(B11, B12, V)
+        if self._is_compressible:
+            B22 = self.get_dataset(step, "B22", indices=indices)
+        else:
+            B22 = self._get_B22(B11, B12, V)
         a2 = self._get_eigenvalue(B11, B12, B22)
         return a2 / V * np.pi
 
@@ -215,7 +226,6 @@ class nc_reader:
 
     def _get_eigenvector(self, a2, B11, B12, B22):
         evec = np.array([a2 - B22, B12])
-
         for i in range(evec.shape[1]):
             if abs(evec[0, i]) + abs(evec[1, i]) == 0.0:
                 if B11[i] > B22[i]:
@@ -235,6 +245,7 @@ class nc_reader:
         return str(step).zfill(10)
 
     def _load_parcel_file(self, step):
+        step = step + 1
         if self._loaded_step == step:
             return
         self._loaded_step = step
