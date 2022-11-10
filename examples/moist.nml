@@ -16,6 +16,7 @@
  moist%z_m        = 5000
  moist%r_plume    = 800
  moist%e_values   = 0.3, -0.4, 0.5
+ moist%r_smooth_frac = 0.8
 /
 
 &PHYSICS

@@ -16,6 +16,7 @@ module constants
     double precision, parameter :: eight    = 8.0d0
     double precision, parameter :: nine     = 9.0d0
     double precision, parameter :: ten      = 10.0d0
+    double precision, parameter :: fifteen  = 15.0d0
     double precision, parameter :: hundred  = ten ** 2
     double precision, parameter :: thousand = ten ** 3
 
