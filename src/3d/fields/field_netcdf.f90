@@ -317,7 +317,7 @@ module field_netcdf
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             if (n_writes == 1) then
-                call write_netcdf_axis_3d(ncid, dimids(1:3), lower, dx, (/nx, ny, nz/))
+                call write_netcdf_axis_3d(ncid, dimids(1:3), lower, dx, (/nx, ny, nz+1/))
                 call write_zeta_boundary_flag(ncid)
             endif
 
