@@ -140,7 +140,9 @@ try:
                     )
                     humidity[iparcel] = h_pl
                 elif r2 <= radsq:
+                    # relative position on smoothed edge of bubble
                     r_edge=(np.sqrt(r2)-r_plume*r_smooth_frac)/(r_plume*(1.0-r_smooth_frac))
+                    # use fifth order smoothstep function on edge
                     buoyancy[iparcel] = b_pl * (
                         1.0
                         + e_values[0] * rpos1 * rpos2
