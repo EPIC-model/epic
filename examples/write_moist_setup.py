@@ -36,6 +36,9 @@ try:
     c_p = 1000.0
     r_smooth_frac=0.8
 
+    l_lower_boundry_zeta_zero='true'
+    l_upper_boundry_zeta_zero='true'
+
     parcels_per_dim = ngrid * n_par_res
     tuple_origin = (0, 0, 0)
     tuple_extent = (6280., 6280., 6280.)
@@ -189,6 +192,9 @@ try:
     ncp.add_physical_quantity('saturation_specific_humidity_at_ground_level', q0)
     ncp.add_physical_quantity('temperature_at_sea_level', theta_0)
     ncp.add_physical_quantity('scale_height', height_c)
+
+    ncp.add_parameter('l_lower_boundry_zeta_zero', l_lower_boundry_zeta_zero)
+    ncp.add_parameter('l_upper_boundry_zeta_zero', l_upper_boundry_zeta_zero)
 
     ncp.close()
 except Exception as ex:
