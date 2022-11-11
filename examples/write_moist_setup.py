@@ -34,6 +34,7 @@ try:
     gravity = 10.0
     L_v = 2.5e6
     c_p = 1000.0
+    r_smooth_frac=0.8
 
     parcels_per_dim = ngrid * n_par_res
     tuple_origin = (0, 0, 0)
@@ -130,7 +131,7 @@ try:
                 rpos2 = pos[1] - centre[1]
                 rpos3 = pos[2] - r_plume
                 r2 = rpos1 ** 2 + rpos2 ** 2 + rpos3 ** 2
-                if r2 <= radsq:
+                if r2 <= radsq*r_smooth_frac*r_smooth_frac:
                     buoyancy[iparcel] = b_pl * (
                         1.0
                         + e_values[0] * rpos1 * rpos2
@@ -138,6 +139,17 @@ try:
                         + e_values[2] * rpos2 * rpos3
                     )
                     humidity[iparcel] = h_pl
+                elif r2 <= radsq:
+                    # relative position on smoothed edge of bubble
+                    r_edge=(np.sqrt(r2)-r_plume*r_smooth_frac)/(r_plume*(1.0-r_smooth_frac))
+                    # use fifth order smoothstep function on edge
+                    buoyancy[iparcel] = b_pl * (
+                        1.0
+                        + e_values[0] * rpos1 * rpos2
+                        + e_values[1] * rpos1 * rpos3
+                        + e_values[2] * rpos2 * rpos3
+                    ) * (1.0-(6.0*r_edge**5-15.0*r_edge**4+10.0*r_edge**3))
+                    humidity[iparcel] = h_pl*(1.0+(mu-1.0)*(6.0*r_edge**5-15.0*r_edge**4+10.0*r_edge**3))
                 else:
                     if pos[2] < z_b:
                         # Mixed layer
