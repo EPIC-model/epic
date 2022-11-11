@@ -36,8 +36,8 @@ try:
     c_p = 1000.0
     r_smooth_frac=0.8
 
-    l_lower_boundry_zeta_zero=True
-    l_upper_boundry_zeta_zero=True
+    l_lower_boundry_zeta_zero='true'
+    l_upper_boundry_zeta_zero='true'
 
     parcels_per_dim = ngrid * n_par_res
     tuple_origin = (0, 0, 0)
