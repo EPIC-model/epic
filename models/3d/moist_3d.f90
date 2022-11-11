@@ -154,7 +154,9 @@ module moist_3d
                                                          + moist%e_values(3) * rpos2 * rpos3)
                             humg(k, j, i) = h_pl
                         elseif (r2 <= radsq) then
+                            ! relative position on smoothed edge of the bubble
                             r_edge=(sqrt(r2)-moist%r_plume*moist%r_smooth_frac)/(moist%r_plume*(1.0-moist%r_smooth_frac))
+                            ! use fifth order smoothstep function on edge
                             buoyg(k, j, i) = b_pl * (one + moist%e_values(1) * rpos1 * rpos2  &
                                                          + moist%e_values(2) * rpos1 * rpos3  &
                                                          + moist%e_values(3) * rpos2 * rpos3) &
