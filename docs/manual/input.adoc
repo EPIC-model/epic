@@ -135,5 +135,66 @@ except Exception as err:
 ```
 
 === NetCDF Parcel File
+Instead of gridded fields, a simulation can also be started with a parcel distribution. A parcel NetCDF file must
+contain the parcel shape components, their volume and position as well as either the vorticity components or
+buoyancy. In non-dry mode, parcels further carry humidity. As for the gridded fields, we provide Python tools to
+write such NetCDF files. Note that EPIC can only be started with parcels via the restart interface (see <<sec_restarting>>).
 
+.Example of writing a parcel file that can be parsed by EPIC.
+```Python
+#!/usr/bin/env python
+from tools.nc_parcels import nc_parcels
+
+try:
+
+    # domain
+    origin = ...
+    extent = ...
+    ncells = ...
+
+
+    ncp = nc_parcels()
+
+    ncp.open('example_parcels.nc')
+
+    ncp.add_box(origin, textent, ncells)
+
+    # initialise parcel attributes with some meaningful input
+    ...
+
+    # write parcel attributes
+    ncp.add_dataset('x_position', position[:, 0], unit='m')
+    ncp.add_dataset('y_position', position[:, 1], unit='m')
+    ncp.add_dataset('z_position', position[:, 2], unit='m')
+
+    ncp.add_dataset('buoyancy', buoyancy, unit='m/s^2')
+
+    ncp.add_dataset('humidity', humidity, unit='1')
+
+    ncp.add_dataset('volume', volume, unit='m^3')
+
+    ncp.add_dataset('x_vorticity', vorticity[:, 0], unit='1/s')
+    ncp.add_dataset('y_vorticity', vorticity[:, 1], unit='1/s')
+    ncp.add_dataset('z_vorticity', vorticity[:, 2], unit='1/s')
+
+    ncp.add_dataset('B11', B[:, 0], unit='m^2')
+    ncp.add_dataset('B12', B[:, 1], unit='m^2')
+    ncp.add_dataset('B13', B[:, 2], unit='m^2')
+    ncp.add_dataset('B22', B[:, 3], unit='m^2')
+    ncp.add_dataset('B23', B[:, 4], unit='m^2')
+
+    ncp.close()
+
+except Exception as ex:
+    print(ex)
+```
+
+[#sec_restarting]
 === Restarting
+In order to restart EPIC use the restart option as follows
+----
+$ epic2d --config input.config --restart input.nc
+$ epic3d --config input.config --restart input.nc
+----
+where `input.nc` is either a gridded field or parcel file. If the field file contains multiple time steps, the last
+step is taken.

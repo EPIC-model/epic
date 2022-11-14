@@ -465,7 +465,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_configuration_file">4.1. Configuration File</a></li>
 <li><a href="#_netcdf_field_file">4.2. NetCDF Field File</a></li>
 <li><a href="#_netcdf_parcel_file">4.3. NetCDF Parcel File</a></li>
-<li><a href="#_restarting">4.4. Restarting</a></li>
+<li><a href="#sec_restarting">4.4. Restarting</a></li>
 </ul>
 </li>
 <li><a href="#_output">5. Output</a></li>
@@ -942,11 +942,78 @@ except Exception as err:
 </div>
 <div class="sect2">
 <h3 id="_netcdf_parcel_file">4.3. NetCDF Parcel File</h3>
+<div class="paragraph">
+<p>Instead of gridded fields, a simulation can also be started with a parcel distribution. A parcel NetCDF file must
+contain the parcel shape components, their volume and position as well as either the vorticity components or
+buoyancy. In non-dry mode, parcels further carry humidity. As for the gridded fields, we provide Python tools to
+write such NetCDF files. Note that EPIC can only be started with parcels via the restart interface (see <a href="#sec_restarting">Restarting</a>).</p>
+</div>
+<div class="listingblock">
+<div class="title">Example of writing a parcel file that can be parsed by EPIC.</div>
+<div class="content">
+<pre class="highlight"><code class="language-Python" data-lang="Python">#!/usr/bin/env python
+from tools.nc_parcels import nc_parcels
 
+try:
+
+    # domain
+    origin = ...
+    extent = ...
+    ncells = ...
+
+
+    ncp = nc_parcels()
+
+    ncp.open('example_parcels.nc')
+
+    ncp.add_box(origin, textent, ncells)
+
+    # initialise parcel attributes with some meaningful input
+    ...
+
+    # write parcel attributes
+    ncp.add_dataset('x_position', position[:, 0], unit='m')
+    ncp.add_dataset('y_position', position[:, 1], unit='m')
+    ncp.add_dataset('z_position', position[:, 2], unit='m')
+
+    ncp.add_dataset('buoyancy', buoyancy, unit='m/s^2')
+
+    ncp.add_dataset('humidity', humidity, unit='1')
+
+    ncp.add_dataset('volume', volume, unit='m^3')
+
+    ncp.add_dataset('x_vorticity', vorticity[:, 0], unit='1/s')
+    ncp.add_dataset('y_vorticity', vorticity[:, 1], unit='1/s')
+    ncp.add_dataset('z_vorticity', vorticity[:, 2], unit='1/s')
+
+    ncp.add_dataset('B11', B[:, 0], unit='m^2')
+    ncp.add_dataset('B12', B[:, 1], unit='m^2')
+    ncp.add_dataset('B13', B[:, 2], unit='m^2')
+    ncp.add_dataset('B22', B[:, 3], unit='m^2')
+    ncp.add_dataset('B23', B[:, 4], unit='m^2')
+
+    ncp.close()
+
+except Exception as ex:
+    print(ex)</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
-<h3 id="_restarting">4.4. Restarting</h3>
-
+<h3 id="sec_restarting">4.4. Restarting</h3>
+<div class="paragraph">
+<p>In order to restart EPIC use the restart option as follows</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ epic2d --config input.config --restart input.nc
+$ epic3d --config input.config --restart input.nc</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>where <code>input.nc</code> is either a gridded field or parcel file. If the field file contains multiple time steps, the last
+step is taken.</p>
+</div>
 </div>
 </div>
 </div>
@@ -983,7 +1050,7 @@ except Exception as err:
 <div id="footer">
 <div id="footer-text">
 Version 0.12.3<br>
-Last updated 2022-11-14 10:55:34 UTC
+Last updated 2022-11-14 13:46:50 UTC
 </div>
 </div>
 <script type="text/x-mathjax-config">
