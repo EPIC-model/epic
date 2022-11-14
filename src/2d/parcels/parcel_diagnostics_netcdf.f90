@@ -76,7 +76,7 @@ module parcel_diagnostics_netcdf
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='parcel_stats',     &
                                    cf_version=cf_version)
 
@@ -272,7 +272,7 @@ module parcel_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='xzb_bar',                                             &
-                long_name='buoyancy-weighted correlation in xz,             &
+                long_name='buoyancy-weighted correlation in xz',            &
                 std_name='',                                                &
                 unit='m^2',                                                 &
                 dtype=NF90_DOUBLE,                                          &
@@ -323,7 +323,7 @@ module parcel_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='xzv_bar',                                             &
-                long_name='vorticity-weighted correlation in xz,            &
+                long_name='vorticity-weighted correlation in xz',           &
                 std_name='',                                                &
                 unit='m^2',                                                 &
                 dtype=NF90_DOUBLE,                                          &

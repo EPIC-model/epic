@@ -31,7 +31,8 @@ program test_gradient_correction_3d
 
     call parse_command_line
 
-    call register_timer('gradient correction', lapl_corr_timer)
+    call register_timer('gradient correction', grad_corr_timer)
+    call register_timer('vorticity correction', vort_corr_timer)
 
 
     nx = 16

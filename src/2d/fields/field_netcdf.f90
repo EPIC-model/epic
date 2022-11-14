@@ -21,10 +21,10 @@ module field_netcdf
 
     integer             :: x_vel_id, z_vel_id, vor_id, &
                            tbuo_id, n_writes
-#ifdef ENABLE_DIAGNOSE
 #ifndef ENABLE_DRY_MODE
     integer             :: dbuo_id
 #endif
+#ifdef ENABLE_DIAGNOSE
     integer             :: vol_id, npar_id
 #endif
 #ifndef NDEBUG
@@ -36,10 +36,10 @@ module field_netcdf
                coord_ids, t_axis_id,                &
                x_vel_id, z_vel_id, vor_id, tbuo_id, &
                n_writes, restart_time
-#ifdef ENABLE_DIAGNOSE
 #ifndef ENABLE_DRY_MODE
     private :: dbuo_id
 #endif
+#ifdef ENABLE_DIAGNOSE
     private :: vol_id, npar_id
 #endif
 #ifndef NDEBUG
@@ -78,7 +78,7 @@ module field_netcdf
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='fields',           &
                                    cf_version=cf_version)
             call write_netcdf_box(ncid, lower, extent, (/nx, nz/))
@@ -89,7 +89,7 @@ module field_netcdf
 
             ! define dimensions
             call define_netcdf_spatial_dimensions_2d(ncid=ncid,            &
-                                                     ncells=(/nx, nz/),    &
+                                                     ngps=(/nx, nz+1/),    &
                                                      dimids=dimids(1:2),   &
                                                      axids=coord_ids)
 
@@ -134,7 +134,6 @@ module field_netcdf
                                        dimids=dimids,                       &
                                        varid=tbuo_id)
 #else
-#ifdef ENABLE_DIAGNOSE
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='total_buoyancy',               &
                                        long_name='total buoyancy',          &
@@ -152,7 +151,6 @@ module field_netcdf
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
                                        varid=dbuo_id)
-#endif
 #endif
 
 #ifdef ENABLE_DIAGNOSE
@@ -215,11 +213,9 @@ module field_netcdf
 #ifdef ENABLE_DRY_MODE
             call get_var_id(ncid, 'buoyancy',tbuo_id)
 #else
-#ifdef ENABLE_DIAGNOSE
             call get_var_id(ncid, 'total_buoyancy', tbuo_id)
 
             call get_var_id(ncid, 'dry_buoyancy', dbuo_id)
-#endif
 #endif
 
 #ifdef ENABLE_DIAGNOSE
@@ -276,11 +272,11 @@ module field_netcdf
                                       start, cnt)
 
 
-#ifdef ENABLE_DIAGNOSE
 #ifndef ENABLE_DRY_MODE
             call write_netcdf_dataset(ncid, dbuo_id, dbuoyg(0:nz, 0:nx-1), &
                                       start, cnt)
 #endif
+#ifdef ENABLE_DIAGNOSE
             call write_netcdf_dataset(ncid, vol_id, volg(0:nz, 0:nx-1))
 
             call write_netcdf_dataset(ncid, npar_id, nparg(0:nz-1, :))

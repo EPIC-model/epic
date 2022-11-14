@@ -15,7 +15,7 @@ program test_vor2vel_2
     use unit_test
     use constants, only : zero, one, two, four, pi, twopi, f12
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use fields, only : vortg, velog, velgradg, field_alloc
+    use fields, only : vortg, velog, field_alloc
     use inversion_utils, only : init_fft, fftxyp2s
     use inversion_mod, only : vor2vel, vor2vel_timer
     use timer
@@ -71,11 +71,11 @@ program test_vor2vel_2
 
     call init_fft
 
-    call vor2vel(vortg, velog, velgradg)
+    call vor2vel
 
     error = maxval(dabs(velog_ref(0:nz, :, :, :) - velog(0:nz, :, :, :)))
 
-    call print_result_dp('Test inversion (vorticity)', error, atol=4.0e-7)
+    call print_result_dp('Test inversion (vorticity)', error, atol=2.0e-3)
 
     deallocate(velog_ref)
 

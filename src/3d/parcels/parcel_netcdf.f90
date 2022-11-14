@@ -4,7 +4,7 @@ module parcel_netcdf
     use netcdf_writer
     use netcdf_reader
     use parcel_container, only : parcels, n_parcels
-    use parameters, only : nx, ny, nz, extent, lower, max_num_parcels
+    use parameters, only : nx, ny, nz, extent, lower, max_num_parcels, write_zeta_boundary_flag
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
@@ -83,7 +83,7 @@ module parcel_netcdf
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='parcels',          &
                                    cf_version=cf_version)
 
@@ -251,6 +251,9 @@ module parcel_netcdf
             call create_netcdf_parcel_file(trim(ncbasename), .true., .false.)
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
+
+            ! we must write the boundary flag here
+            call write_zeta_boundary_flag(ncid)
 
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, 1)

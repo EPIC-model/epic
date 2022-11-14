@@ -1,5 +1,5 @@
 module field_netcdf
-    use constants, only : one
+    use constants, only : one, two
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
@@ -8,6 +8,7 @@ module field_netcdf
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities, glati
+    use parameters, only : write_zeta_boundary_flag
     implicit none
 
     integer :: field_io_timer
@@ -20,7 +21,13 @@ module field_netcdf
 
     integer            :: x_vel_id, y_vel_id, z_vel_id, &
                           x_vor_id, y_vor_id, z_vor_id, &
-                          tbuoy_id, n_writes
+                          tbuoy_id, vol_id, n_writes
+
+#ifdef ENABLE_DIAGNOSE
+    integer            :: x_vtend_id, y_vtend_id, z_vtend_id, &
+                          nparg_id, nsparg_id
+#endif
+
 #ifndef ENABLE_DRY_MODE
     integer            :: dbuoy_id, lbuoy_id
 #endif
@@ -32,8 +39,14 @@ module field_netcdf
                coord_ids, t_axis_id,            &
                x_vel_id, y_vel_id, z_vel_id,    &
                x_vor_id, y_vor_id, z_vor_id,    &
-               tbuoy_id,                        &
+               tbuoy_id, vol_id,                &
                n_writes, restart_time
+
+#ifdef ENABLE_DIAGNOSE
+    private :: x_vtend_id, y_vtend_id, z_vtend_id, &
+               nparg_id, nsparg_id
+#endif
+
 #ifndef ENABLE_DRY_MODE
     private :: dbuoy_id, lbuoy_id
 #endif
@@ -70,7 +83,7 @@ module field_netcdf
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='fields',           &
                                    cf_version=cf_version)
 
@@ -82,7 +95,7 @@ module field_netcdf
 
             ! define dimensions
             call define_netcdf_spatial_dimensions_3d(ncid=ncid,                &
-                                                     ncells=(/nx, ny, nz/),    &
+                                                     ngps=(/nx, ny, nz+1/),    &
                                                      dimids=dimids(1:3),       &
                                                      axids=coord_ids)
 
@@ -117,6 +130,52 @@ module field_netcdf
                                        dimids=dimids,                       &
                                        varid=z_vel_id)
 
+#ifdef ENABLE_DIAGNOSE
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='x_vtend',                      &
+                                       long_name='x vorticity tendency',    &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=x_vtend_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='y_vtend',                      &
+                                       long_name='y vorticity tendency',    &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=y_vtend_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='z_vtend',                      &
+                                       long_name='z vorticity tendency',    &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=z_vtend_id)
+
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='nparg',                            &
+                                       long_name='number of parcels per cell',  &
+                                       std_name='',                             &
+                                       unit='1',                                &
+                                       dtype=NF90_INT,                          &
+                                       dimids=dimids,                           &
+                                       varid=nparg_id)
+
+            call define_netcdf_dataset(ncid=ncid,                                    &
+                                       name='nsparg',                                &
+                                       long_name='number of small parcels per cell', &
+                                       std_name='',                                  &
+                                       unit='1',                                     &
+                                       dtype=NF90_INT,                               &
+                                       dimids=dimids,                                &
+                                       varid=nsparg_id)
+#endif
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='x_vorticity',                  &
@@ -173,6 +232,16 @@ module field_netcdf
                                        dimids=dimids,                       &
                                        varid=lbuoy_id)
 #endif
+
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='volume',                       &
+                                       long_name='volume',                  &
+                                       std_name='',                         &
+                                       unit='m^3',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=vol_id)
+
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_file
@@ -203,6 +272,18 @@ module field_netcdf
 
             call get_var_id(ncid, 'z_velocity', z_vel_id)
 
+#ifdef ENABLE_DIAGNOSE
+            call get_var_id(ncid, 'x_vtend', x_vtend_id)
+
+            call get_var_id(ncid, 'y_vtend', y_vtend_id)
+
+            call get_var_id(ncid, 'z_vtend', z_vtend_id)
+
+            call get_var_id(ncid, 'nparg', nparg_id)
+
+            call get_var_id(ncid, 'nsparg', nsparg_id)
+#endif
+
             call get_var_id(ncid, 'x_vorticity', x_vor_id)
 
             call get_var_id(ncid, 'y_vorticity', y_vor_id)
@@ -216,6 +297,7 @@ module field_netcdf
 
             call get_var_id(ncid, 'liquid_water_content', lbuoy_id)
 #endif
+            call get_var_id(ncid, 'volume', vol_id)
         end subroutine read_netcdf_field_content
 
         ! Write a step in the field file.
@@ -236,6 +318,7 @@ module field_netcdf
 
             if (n_writes == 1) then
                 call write_netcdf_axis_3d(ncid, dimids(1:3), lower, dx, (/nx, ny, nz/))
+                call write_zeta_boundary_flag(ncid)
             endif
 
             ! write time
@@ -248,12 +331,27 @@ module field_netcdf
             !
             ! write fields (do not write halo cells)
             !
+
             call write_netcdf_dataset(ncid, x_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 1), &
                                       start, cnt)
             call write_netcdf_dataset(ncid, y_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 2), &
                                       start, cnt)
             call write_netcdf_dataset(ncid, z_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 3), &
                                       start, cnt)
+
+#ifdef ENABLE_DIAGNOSE
+            call write_netcdf_dataset(ncid, x_vtend_id, vtend(0:nz, 0:ny-1, 0:nx-1, 1), &
+                                      start, cnt)
+            call write_netcdf_dataset(ncid, y_vtend_id, vtend(0:nz, 0:ny-1, 0:nx-1, 2), &
+                                      start, cnt)
+            call write_netcdf_dataset(ncid, z_vtend_id, vtend(0:nz, 0:ny-1, 0:nx-1, 3), &
+                                      start, cnt)
+
+            call write_netcdf_dataset(ncid, nparg_id, nparg(0:nz, 0:ny-1, 0:nx-1), &
+                                      start, cnt)
+            call write_netcdf_dataset(ncid, nsparg_id, nparg(0:nz, 0:ny-1, 0:nx-1), &
+                                      start, cnt)
+#endif
 
             call write_netcdf_dataset(ncid, x_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 1), &
                                       start, cnt)
@@ -273,6 +371,10 @@ module field_netcdf
                                                              - dbuoyg(0:nz, 0:ny-1, 0:nx-1)),   &
                                       start, cnt)
 #endif
+
+            call write_netcdf_dataset(ncid, vol_id, volg(0:nz, 0:ny-1, 0:nx-1), &
+                                      start, cnt)
+
             ! increment counter
             n_writes = n_writes + 1
 

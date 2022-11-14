@@ -33,6 +33,7 @@ program test_parcel_correction_3d
 
     call register_timer('laplace correction', lapl_corr_timer)
     call register_timer('gradient correction', grad_corr_timer)
+    call register_timer('vorticity correction', vort_corr_timer)
 
 
     nx = 16

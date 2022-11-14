@@ -1,20 +1,20 @@
 ! =============================================================================
-!                       Test subroutine diffz1
+!                       Test subroutine diffz
 !
-!  This unit test checks the subroutine diffz1 using the
+!  This unit test checks the subroutine diffz using the
 !  function:
 !               cos(k * x) * sin(l * y) * cos(m * z)
 !  where k = 2pi/L_x, l = 2pi/L_y and m = pi/L_z and where x, y and z all start
 !  at 0 (one could start at -pi for x and y just as well).
-!  The subroutine diffz1 should return
+!  The subroutine diffz should return
 !               - m * cos(k * x) * sin(l * y) * sin(m * z)
 ! =============================================================================
-program test_diffz1
+program test_diffz
     use unit_test
     use constants, only : zero, one, two, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use inversion_utils, only : init_fft
-    use inversion_mod, only : diffz1
+    use inversion_mod, only : diffz
     implicit none
 
     double precision              :: error
@@ -57,14 +57,18 @@ program test_diffz1
 
     call init_fft
 
-    call diffz1(fs, ds)
+    call diffz(fs, ds)
+
+    ! we need to explicitly set to zero
+    ds(0,  :, :) = zero
+    ds(nz, :, :) = zero
 
     error = maxval(dabs(ds - ref_sol))
 
-    call print_result_dp('Test inversion (diffz1)', error, atol=1.0e-7)
+    call print_result_dp('Test inversion (diffz)', error, atol=5.0e-4)
 
     deallocate(fs)
     deallocate(ds)
     deallocate(ref_sol)
 
-end program test_diffz1
+end program test_diffz

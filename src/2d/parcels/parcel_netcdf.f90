@@ -77,7 +77,7 @@ module parcel_netcdf
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='parcels',          &
                                    cf_version=cf_version)
 

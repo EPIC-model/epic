@@ -8,10 +8,10 @@ module utils
     use parcel_diagnostics_netcdf
     use parcel_diagnostics
     use parcel_container, only : n_parcels
-    use inversion_mod, only : vor2vel, buoyancy_derivatives
+    use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
-    use parameters, only : lower, extent, update_parameters
+    use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag
     use physics, only : read_physical_quantities, print_physical_quantities
     implicit none
 
@@ -67,9 +67,9 @@ module utils
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep
-            call vor2vel(vortg, velog, velgradg)
+            call vor2vel
 
-            call buoyancy_derivatives(tbuoyg, dbdx, dbdy)
+            call vorticity_tendency
 
             call grid2par(velocity, vorticity, strain)
 
@@ -148,6 +148,7 @@ module utils
 
             call get_netcdf_box(ncid, lower, extent, ncells)
             call read_physical_quantities(ncid)
+            call read_zeta_boundary_flag(ncid)
 
             call close_netcdf_file(ncid)
 
