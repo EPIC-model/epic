@@ -1,9 +1,22 @@
 == Input
+To run an EPIC simulation users must provide a <<sec_config_file>> and a field file in NetCDF format. The latter
+is listed inside the configuration file under the option `field_file`. You then simply type
+----
+$ epic2d --config input.config
+$ epic3d --config input.config
+----
+in the terminal to start a simulation.
+
 
 === Configuration File
+[#sec_config_file, reftext=Configuration file]
+A configuration file contains user-defined rutime options. Almost all parameters
+have default values that may be adapted to the number of spatial dimensions. The list of options and their
+recommended values are given in <<tab_configure_file>>.
 
 
 .EPIC input options and their default values.
+[#tab_configure_file, reftext=Table {counter:tab-cnt}]
 [cols="1,2,6"]
 |===
 |Parameter                  |Default                |Description
@@ -38,75 +51,88 @@
 |===
 
 === NetCDF Field File
+The field file contains initial scalar fields and vector field components of a simulation. A list of supported
+fields in 2D and 3D is found in <<tab_supported_input_fields>>. You can either write
+your own tool to generate such files or use our provided Python scripts. Below you can find an example where the
+vorticity field of a Taylor-Green flow in 2D is initialised and written to a file.
 
-// ## How to write an EPIC input field file
-// EPIC parses a NetCDF file containing all fields to initialise the parcels. You can simply generate the input fields with Python and write them with the provided tools. Below you can find an example where the vorticity field of a Taylor-Green flow is initialised and written to a file.
-// ```Python
-// #!/usr/bin/env python
-// #
-// # Example of writing a field file that can be parsed by EPIC.
-// #
-// from tools.nc_fields import nc_fields
-// import numpy as np
-//
-// try:
-//     ncf = nc_fields()
-//
-//     ncf.open('taylor_green.nc')
-//
-//     # velocity field:
-//     # u(x, z) = A * cos(ax + d) * sin(bz + e)
-//     # w(x, z) = B * sin(ax + d) * cos(bz + e)
-//
-//     # vorticity:
-//     # zeta = (B * a - A * b) * cos(ax + d) * cos(bz + e)
-//
-//     # amplitudes
-//     A = 0.5
-//     B = -1.0
-//
-//     # frequencies
-//     a = 2.0
-//     b = 1.0
-//
-//     # phases
-//     d = 0.5 * np.pi
-//     e = 0.0
-//
-//     # number of cells
-//     nx = 32
-//     nz = 32
-//
-//     # domain origin
-//     origin = (-0.5 * np.pi, -0.5 * np.pi)
-//
-//     # domain extent
-//     extent = (np.pi, np.pi)
-//
-//     # mesh spacings
-//     dx = extent[0] / nx
-//     dz = extent[1] / nz
-//
-//     vorticity = np.zeros((nz+1, nx))
-//
-//     # ranges from 0 to nx-1
-//     for i in range(nx):
-//         # ranges from 0 to nz
-//         for j in range(nz+1):
-//             x = origin[0] + i * dx
-//             z = origin[1] + j * dz
-//             vorticity[j, i] = (B * a - A * b) * np.cos(a * x + d) * np.cos(b * z + e)
-//
-//     # write all provided fields
-//     ncf.add_field('vorticity', vorticity, unit='1/s')
-//
-//     ncf.add_box(origin, extent, [nx, nz])
-//
-//     ncf.close()
-//
-// except Exception as err:
-//     print(err)
-// ```
+.Supported input fields.
+[#tab_supported_input_fields, reftext=Table {counter:tab-cnt}]
+[cols="2,1,7"]
+|===
+|Field name     |Unit   |Description
+
+|x_vorticity    |1/s    |Zonal vorticity component (3D only)
+|y_vorticity    |1/s    |Meridional vorticity component (3D only)
+|z_vorticity    |1/s    |Vertical vorticity component (field name in 2D: vorticity)
+|buoyancy       |m/s^2  |Buoyancy field
+|humidity       |-      |Humidity field (3D only)
+|===
+
+.Example of writing a field file that can be parsed by EPIC.
+```Python
+#!/usr/bin/env python
+from tools.nc_fields import nc_fields
+import numpy as np
+
+try:
+    ncf = nc_fields()
+
+    ncf.open('taylor_green.nc')
+
+    # velocity field:
+    # u(x, z) = A * cos(ax + d) * sin(bz + e)
+    # w(x, z) = B * sin(ax + d) * cos(bz + e)
+
+    # vorticity:
+    # zeta = (B * a - A * b) * cos(ax + d) * cos(bz + e)
+
+    # amplitudes
+    A = 0.5
+    B = -1.0
+
+    # frequencies
+    a = 2.0
+    b = 1.0
+
+    # phases
+    d = 0.5 * np.pi
+    e = 0.0
+
+    # number of cells
+    nx = 32
+    nz = 32
+
+    # domain origin
+    origin = (-0.5 * np.pi, -0.5 * np.pi)
+
+    # domain extent
+    extent = (np.pi, np.pi)
+
+    # mesh spacings
+    dx = extent[0] / nx
+    dz = extent[1] / nz
+
+    vorticity = np.zeros((nz+1, nx))
+
+    # ranges from 0 to nx-1
+    for i in range(nx):
+        # ranges from 0 to nz
+        for j in range(nz+1):
+            x = origin[0] + i * dx
+            z = origin[1] + j * dz
+            vorticity[j, i] = (B * a - A * b) * np.cos(a * x + d) * np.cos(b * z + e)
+
+    # write all provided fields
+    ncf.add_field('vorticity', vorticity, unit='1/s')
+
+    ncf.add_box(origin, extent, [nx, nz])
+
+    ncf.close()
+
+except Exception as err:
+    print(err)
+```
 
 === NetCDF Parcel File
 

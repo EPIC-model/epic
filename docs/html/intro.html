@@ -670,9 +670,27 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 <div class="sect1">
 <h2 id="_input">4. Input</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>To run an EPIC simulation users must provide a <a href="#sec_config_file">Configuration file</a> and a field file in NetCDF format. The latter
+is listed inside the configuration file under the option <code>field_file</code>. You then simply type</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ epic2d --config input.config
+$ epic3d --config input.config</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>in the terminal to start a simulation.</p>
+</div>
 <div class="sect2">
 <h3 id="_configuration_file">4.1. Configuration File</h3>
-<table class="tableblock frame-all grid-all stretch">
+<div id="sec_config_file" class="paragraph">
+<p>A configuration file contains user-defined rutime options. Almost all parameters
+have default values that may be adapted to the number of spatial dimensions. The list of options and their
+recommended values are given in <a href="#tab_configure_file">Table 2</a>.</p>
+</div>
+<table id="tab_configure_file" class="tableblock frame-all grid-all stretch">
 <caption class="title">Table 2. EPIC input options and their default values.</caption>
 <colgroup>
 <col style="width: 11.1111%;">
@@ -807,7 +825,120 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_netcdf_field_file">4.2. NetCDF Field File</h3>
+<div class="paragraph">
+<p>The field file contains initial scalar fields and vector field components of a simulation. A list of supported
+fields in 2D and 3D is found in <a href="#tab_supported_input_fields">Table 3</a>. You can either write
+your own tool to generate such files or use our provided Python scripts. Below you can find an example where the
+vorticity field of a Taylor-Green flow in 2D is initialised and written to a file.</p>
+</div>
+<table id="tab_supported_input_fields" class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 3. Supported input fields.</caption>
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 10%;">
+<col style="width: 70%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field name</th>
+<th class="tableblock halign-left valign-top">Unit</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x_vorticity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1/s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Zonal vorticity component (3D only)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">y_vorticity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1/s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Meridional vorticity component (3D only)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">z_vorticity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1/s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vertical vorticity component (field name in 2D: vorticity)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">buoyancy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">m/s^2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Buoyancy field</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">humidity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Humidity field (3D only)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="listingblock">
+<div class="title">Example of writing a field file that can be parsed by EPIC.</div>
+<div class="content">
+<pre class="highlight"><code class="language-Python" data-lang="Python">#!/usr/bin/env python
+from tools.nc_fields import nc_fields
+import numpy as np
 
+try:
+    ncf = nc_fields()
+
+    ncf.open('taylor_green.nc')
+
+    # velocity field:
+    # u(x, z) = A * cos(ax + d) * sin(bz + e)
+    # w(x, z) = B * sin(ax + d) * cos(bz + e)
+
+    # vorticity:
+    # zeta = (B * a - A * b) * cos(ax + d) * cos(bz + e)
+
+    # amplitudes
+    A = 0.5
+    B = -1.0
+
+    # frequencies
+    a = 2.0
+    b = 1.0
+
+    # phases
+    d = 0.5 * np.pi
+    e = 0.0
+
+    # number of cells
+    nx = 32
+    nz = 32
+
+    # domain origin
+    origin = (-0.5 * np.pi, -0.5 * np.pi)
+
+    # domain extent
+    extent = (np.pi, np.pi)
+
+    # mesh spacings
+    dx = extent[0] / nx
+    dz = extent[1] / nz
+
+    vorticity = np.zeros((nz+1, nx))
+
+    # ranges from 0 to nx-1
+    for i in range(nx):
+        # ranges from 0 to nz
+        for j in range(nz+1):
+            x = origin[0] + i * dx
+            z = origin[1] + j * dz
+            vorticity[j, i] = (B * a - A * b) * np.cos(a * x + d) * np.cos(b * z + e)
+
+    # write all provided fields
+    ncf.add_field('vorticity', vorticity, unit='1/s')
+
+    ncf.add_box(origin, extent, [nx, nz])
+
+    ncf.close()
+
+except Exception as err:
+    print(err)</code></pre>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_netcdf_parcel_file">4.3. NetCDF Parcel File</h3>
@@ -829,7 +960,7 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 <h2 id="_citation">6. Citation</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Please cite the two-dimensional EPIC model using</p>
+<p>Please cite the two-dimensional EPIC model with</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -852,7 +983,7 @@ export PYTHONPATH=$PREFIX/bin:$PYTHONPATH</code></pre>
 <div id="footer">
 <div id="footer-text">
 Version 0.12.1<br>
-Last updated 2022-11-07 17:32:37 UTC
+Last updated 2022-11-14 10:53:59 UTC
 </div>
 </div>
 <script type="text/x-mathjax-config">
