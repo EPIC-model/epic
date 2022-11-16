@@ -17,7 +17,9 @@ module field_diagnostics
                         avg_npar,   &       ! average num parcels per cell
                         avg_nspar,  &       ! average num small parcels per cell
                         keg,        &       ! kinetic energy calculated on the grid
-                        eng                 ! enstrophy calculated on the grid
+                        eng,        &       ! enstrophy calculated on the grid
+                        min_buoyg,  &       ! minimum gridded buoyancy value
+                        max_buoyg           ! maximum gridded buoyancy value
     contains
 
         subroutine calculate_field_diagnostics
@@ -38,6 +40,9 @@ module field_diagnostics
             avg_npar = sum(nparg(0:nz-1, :, :)) * ncelli
 
             avg_nspar = sum(nsparg(0:nz-1, :, :)) * ncelli
+
+            min_buoyg = minval(tbuoyg)
+            max_buoyg = maxval(tbuoyg)
 
             ! use half weights for boundary grid points
             keg = f12 * sum(volg(1:nz-1, :, :) * ( velog(1:nz-1, :, :, 1) ** 2   &

@@ -39,6 +39,9 @@ module parcel_diagnostics
     ! rms vorticity
     double precision :: rms_zeta(3)
 
+    ! buoyancy extrema
+    double precision :: bmin, bmax
+
     contains
 
         ! Compute the reference potential energy
@@ -103,6 +106,7 @@ module parcel_diagnostics
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
             !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, psi)
+            !$omp& reduction(max: bmax) reduction(min: bmin)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
@@ -131,6 +135,14 @@ module parcel_diagnostics
 
                 if (vol <= vmin) then
                     n_small = n_small + 1
+                endif
+
+                if (bmax < b) then
+                    bmax = b
+                endif
+
+                if (bmin > b) then
+                    bmin = b
                 endif
 
 #ifndef NDEBUG
