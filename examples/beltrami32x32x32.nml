@@ -1,5 +1,6 @@
 &MODELS
 
+ model      = 'Beltrami'
  ncfname    = 'beltrami_32x32x32.nc'
 
  box%ncells = 32, 32, 32
