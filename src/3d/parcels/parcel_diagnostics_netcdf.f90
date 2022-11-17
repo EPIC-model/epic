@@ -27,7 +27,7 @@ module parcel_diagnostics_netcdf
                           rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
                           avg_lam_id, std_lam_id,                   &
                           avg_vol_id, std_vol_id, sum_vol_id,       &
-                          psi_id, n_par_split_id, n_par_merge_id,   &
+                          en_id, n_par_split_id, n_par_merge_id,    &
                           min_buo_id, max_buo_id
 
     double precision   :: restart_time
@@ -115,13 +115,13 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='psi',                                                 &
+                name='en',                                                  &
                 long_name='enstrophy',                                      &
                 std_name='',                                                &
                 unit='m^3/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
-                varid=psi_id)
+                varid=en_id)
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
@@ -280,7 +280,7 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 'te', te_id)
 
-            call get_var_id(ncid, 'psi', psi_id)
+            call get_var_id(ncid, 'en', en_id)
 
             call get_var_id(ncid, 'n_parcels', npar_id)
 
@@ -339,7 +339,7 @@ module parcel_diagnostics_netcdf
             call write_netcdf_scalar(ncid, pe_id, pe, n_writes)
             call write_netcdf_scalar(ncid, ke_id, ke, n_writes)
             call write_netcdf_scalar(ncid, te_id, ke + pe, n_writes)
-            call write_netcdf_scalar(ncid, psi_id, psi, n_writes)
+            call write_netcdf_scalar(ncid, en_id, en, n_writes)
             call write_netcdf_scalar(ncid, npar_id, n_parcels, n_writes)
             call write_netcdf_scalar(ncid, nspar_id, n_small, n_writes)
             call write_netcdf_scalar(ncid, avg_lam_id, avg_lam, n_writes)

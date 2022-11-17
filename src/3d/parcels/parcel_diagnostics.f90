@@ -22,8 +22,8 @@ module parcel_diagnostics
     ! ke    : kinetic energy
     double precision :: peref, pe, ke
 
-    ! psi : enstrophy
-    double precision :: psi
+    ! en : enstrophy
+    double precision :: en
 
     integer :: n_small
 
@@ -84,7 +84,7 @@ module parcel_diagnostics
             ! reset
             ke = zero
             pe = zero
-            psi = zero
+            en = zero
 
             lsum = zero
             l2sum = zero
@@ -105,7 +105,7 @@ module parcel_diagnostics
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, psi)
+            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, en)
             !$omp& reduction(max: bmax) reduction(min: bmin)
             do n = 1, n_parcels
 
@@ -122,7 +122,7 @@ module parcel_diagnostics
                 pe = pe - b * z * vol
 
                 ! enstrophy
-                psi = psi + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
+                en = en + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
 
                 evals = get_eigenvalues(parcels%B(:, n), parcels%volume(n))
                 lam = get_aspect_ratio(evals)
@@ -161,7 +161,7 @@ module parcel_diagnostics
 
             ke = f12 * ke
             pe = pe - peref
-            psi = f12 * psi
+            en = f12 * en
 
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
