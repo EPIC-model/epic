@@ -36,7 +36,8 @@ module parcel_diagnostics_netcdf
 
     public :: create_netcdf_parcel_stats_file,  &
               write_netcdf_parcel_stats,        &
-              parcel_stats_io_timer
+              parcel_stats_io_timer,            &
+              read_netcdf_peref
 
 
     contains

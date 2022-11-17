@@ -105,7 +105,7 @@ module parcel_diagnostics
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, en)
+            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, en) &
             !$omp& reduction(max: bmax) reduction(min: bmin)
             do n = 1, n_parcels
 

@@ -18,8 +18,9 @@ program epic3d
                                   init_parcel_correction
     use parcel_diagnostics, only : init_parcel_diagnostics, &
                                    parcel_stats_timer
+
     use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
-    use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
+    use parcel_diagnostics_netcdf, only : parcel_stats_io_timer, read_netcdf_peref
     use fields
     use field_netcdf, only : field_io_timer
     use field_diagnostics, only : field_stats_timer
