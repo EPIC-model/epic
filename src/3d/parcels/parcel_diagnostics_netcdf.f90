@@ -267,6 +267,30 @@ module parcel_diagnostics_netcdf
 
         end subroutine create_netcdf_parcel_stats_file
 
+        subroutine read_netcdf_peref(basename, l_exist)
+            character(*), intent(in)  :: basename
+            logical,      intent(out) :: l_exist
+
+            ncfname =  basename // '_parcel_stats.nc'
+
+            call exist_netcdf_file(ncfname, l_exist)
+
+            if (.not. l_exist) then
+                return
+            endif
+
+            call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
+
+            l_exist = has_attribute(ncid, 'peref')
+
+            if (l_exist) then
+                call read_netcdf_attribute(ncid, 'peref', peref)
+            endif
+
+            call close_netcdf_file(ncid)
+
+        end subroutine read_netcdf_peref
+
         ! Pre-condition: Assumes an open file
         subroutine read_netcdf_parcel_stats_content
 
