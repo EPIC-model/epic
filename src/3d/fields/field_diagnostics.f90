@@ -16,7 +16,10 @@ module field_diagnostics
                         min_npar,   &       ! min num parcels per cell
                         avg_npar,   &       ! average num parcels per cell
                         avg_nspar,  &       ! average num small parcels per cell
-                        keg                 ! kinetic energy calculated on the grid
+                        keg,        &       ! kinetic energy calculated on the grid
+                        eng,        &       ! enstrophy calculated on the grid
+                        min_buoyg,  &       ! minimum gridded buoyancy value
+                        max_buoyg           ! maximum gridded buoyancy value
     contains
 
         subroutine calculate_field_diagnostics
@@ -38,6 +41,9 @@ module field_diagnostics
 
             avg_nspar = sum(nsparg(0:nz-1, :, :)) * ncelli
 
+            min_buoyg = minval(tbuoyg)
+            max_buoyg = maxval(tbuoyg)
+
             ! use half weights for boundary grid points
             keg = f12 * sum(volg(1:nz-1, :, :) * ( velog(1:nz-1, :, :, 1) ** 2   &
                                                  + velog(1:nz-1, :, :, 2) ** 2   &
@@ -48,6 +54,16 @@ module field_diagnostics
                 + f14 * sum(volg(nz, :, :) * ( velog(nz, :, :, 1) ** 2           &
                                              + velog(nz, :, :, 2) ** 2           &
                                              + velog(nz, :, :, 3) ** 2))
+
+            eng = f12 * sum(volg(1:nz-1, :, :) * ( vortg(1:nz-1, :, :, 1) ** 2   &
+                                                 + vortg(1:nz-1, :, :, 2) ** 2   &
+                                                 + vortg(1:nz-1, :, :, 3) ** 2)) &
+                + f14 * sum(volg(0,  :, :) * ( vortg(0,  :, :, 1) ** 2           &
+                                             + vortg(0,  :, :, 2) ** 2           &
+                                             + vortg(0,  :, :, 3) ** 2))         &
+                + f14 * sum(volg(nz, :, :) * ( vortg(nz, :, :, 1) ** 2           &
+                                             + vortg(nz, :, :, 2) ** 2           &
+                                             + vortg(nz, :, :, 3) ** 2))
 
             call stop_timer(field_stats_timer)
 

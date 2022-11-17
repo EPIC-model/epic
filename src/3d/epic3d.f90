@@ -141,7 +141,6 @@ program epic3d
 #endif
             double precision :: t = zero    ! current time
             integer          :: cor_iter    ! iterator for parcel correction
-            integer :: n_orig
 
             t = time%initial
 
@@ -156,15 +155,7 @@ program epic3d
 
                 call ls_rk4_step(t)
 
-                !call apply_vortcor
-
-                n_orig = n_parcels
-
                 call merge_parcels(parcels)
-
-                if (n_orig > n_parcels) then
-                   print *, "Merged parcels at time", t
-                endif
 
                 call parcel_split(parcels, parcel%lambda_max)
 

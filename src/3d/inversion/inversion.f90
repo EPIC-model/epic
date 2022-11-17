@@ -51,10 +51,7 @@ module inversion_mod
             ds = as - bs                     ! ds = D
             cs = svor(:, :, :, I_Z)
             !$omp end parallel workshare
-            !call field_combine_semi_spectral(cs)
-            !call diffz(cs, es)                     ! es = E
-            call diffz(cs, es)
-            !call field_decompose_semi_spectral(es)
+            call diffz(cs, es)               ! es = E
 
             ! ubar and vbar are used here to store the mean x and y components of the vorticity
             ubar = svor(:, 0, 0, I_X)
