@@ -61,7 +61,7 @@ program epic3d
                               , restart_file        &
                               , time
             character(len=16) :: file_type
-            logical           :: l_peref
+            logical           :: l_peref = .false.
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
@@ -123,7 +123,9 @@ program epic3d
 
             call init_inversion
 
-            call read_netcdf_peref(trim(output%basename), l_peref)
+            if (l_restart) then
+                call read_netcdf_peref(trim(output%basename), l_peref)
+            endif
 
             if (output%write_parcel_stats .and. (.not. l_peref)) then
                 call init_parcel_diagnostics

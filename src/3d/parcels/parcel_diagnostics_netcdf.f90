@@ -353,6 +353,7 @@ module parcel_diagnostics_netcdf
 
             if (n_writes == 1) then
                 call write_zeta_boundary_flag(ncid)
+                call write_netcdf_attribute(ncid, 'peref', peref)
             endif
 
             ! write time
