@@ -215,10 +215,6 @@ module parcel_interpl
             vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
 
-            ! set \zeta to zero at the boundaries
-            vortg(0,    :, :, 3) = zero
-            vortg(nz,   :, :, 3) = zero
-
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
             dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
