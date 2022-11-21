@@ -49,7 +49,8 @@ unittests_PROGRAMS = 				\
 	test_vtend				\
 	test_lapinv1				\
 	test_diffz0				\
-	test_diffz1
+	test_diffz1				\
+	test_diffz2
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -134,3 +135,6 @@ test_diffz0_LDADD = libcombi.la
 
 test_diffz1_SOURCES = test_diffz1.f90
 test_diffz1_LDADD = libcombi.la
+
+test_diffz2_SOURCES = test_diffz2.f90
+test_diffz2_LDADD = libcombi.la

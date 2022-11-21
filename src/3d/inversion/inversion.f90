@@ -51,7 +51,10 @@ module inversion_mod
             ds = as - bs                     ! ds = D
             cs = svor(:, :, :, I_Z)
             !$omp end parallel workshare
-            call diffz(cs, es)               ! es = E
+!             call diffz(cs, es)               ! es = E
+call field_combine_semi_spectral(cs)
+            call central_diffz(cs, es)                     ! es = E
+            call field_decompose_semi_spectral(es)
 
             ! ubar and vbar are used here to store the mean x and y components of the vorticity
             ubar = svor(:, 0, 0, I_X)
@@ -322,6 +325,12 @@ module inversion_mod
                 vtend(nz, :, :, I_Z) = zero
             endif
 
+!             vtend(0 , :, :, I_X) = zero
+!             vtend(nz, :, :, I_X) = zero
+
+!             vtend(0 , :, :, I_Y) = zero
+!             vtend(nz, :, :, I_Y) = zero
+
             !-------------------------------------------------------
             ! Extrapolate to halo grid points:
             !$omp parallel workshare
@@ -353,9 +362,11 @@ module inversion_mod
             div = div + f(0:nz, :, :, I_Y)
 
             ! calculate df3/dz
-            call field_decompose_physical(f(0:nz, :, :, I_Z), fs)
-            call diffz(fs, ds)
-            call field_combine_physical(ds, f(0:nz, :, :, I_Z))
+!             call field_decompose_physical(f(0:nz, :, :, I_Z), fs)
+!             call diffz(fs, ds)
+!             call field_combine_physical(ds, f(0:nz, :, :, I_Z))
+            call central_diffz(f(0:nz, :, :, I_Z), ds)
+            f(0:nz, :, :, I_Z) = ds
 
             ! div = df1/dx + df2/dy + df3/dz
             div = div + f(0:nz, :, :, I_Z)
@@ -394,7 +405,7 @@ module inversion_mod
             call fftxys2p(vs, vd)
 
             ! Compute z derivative by central differences:
-            call central_diffz(ds, ws)
+            call central_diffz(ds, ws) ! FIXME wrong spaces
 
             ! Set vertical boundary values to zero
             ws(0,  :, :) = zero
