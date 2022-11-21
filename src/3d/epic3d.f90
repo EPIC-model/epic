@@ -16,11 +16,10 @@ program epic3d
                                   grad_corr_timer,        &
                                   vort_corr_timer,        &
                                   init_parcel_correction
-    use parcel_diagnostics, only : init_parcel_diagnostics, &
-                                   parcel_stats_timer
+    use parcel_diagnostics, only : parcel_stats_timer
 
     use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
-    use parcel_diagnostics_netcdf, only : parcel_stats_io_timer, read_netcdf_peref
+    use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
     use fields
     use field_netcdf, only : field_io_timer
     use field_diagnostics, only : field_stats_timer
@@ -122,14 +121,6 @@ program epic3d
             call ls_rk4_alloc(max_num_parcels)
 
             call init_inversion
-
-            if (l_restart) then
-                call read_netcdf_peref(trim(output%basename), l_peref)
-            endif
-
-            if (output%write_parcel_stats .and. (.not. l_peref)) then
-                call init_parcel_diagnostics
-            endif
 
             call init_parcel_correction
 

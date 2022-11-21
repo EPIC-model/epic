@@ -85,6 +85,12 @@ module physics
     ! planetary vorticity (all three components)
     double precision, protected :: f_cor(3)
 
+    ! potential energy reference
+    double precision :: peref
+
+    ! is .true. when 'peref' was read in
+    logical, protected :: l_peref
+
     interface print_physical_quantity
         module procedure :: print_physical_quantity_double
         module procedure :: print_physical_quantity_integer
@@ -177,6 +183,11 @@ module physics
                 call read_netcdf_attribute_default(grp_ncid, 'planetary_vorticity', l_planet_vorticity)
                 call read_netcdf_attribute_default(grp_ncid, 'latitude_degrees', lat_degrees)
                 call read_netcdf_attribute_default(grp_ncid, 'scale_height', height_c)
+
+                l_peref = has_attribute(grp_ncid, 'reference_potential_energy')
+                if (l_peref) then
+                    call read_netcdf_attribute(grp_ncid, 'reference_potential_energy', peref)
+                endif
 #ifdef ENABLE_VERBOSE
             else
                 print *, "WARNING: No physical constants found! EPIC uses default values."
@@ -205,6 +216,7 @@ module physics
             call write_netcdf_attribute(grp_ncid, 'planet_vorticity', l_planet_vorticity)
             call write_netcdf_attribute(grp_ncid, 'latitude_degrees', lat_degrees)
             call write_netcdf_attribute(grp_ncid, 'scale_height', height_c)
+            call write_netcdf_attribute(grp_ncid, 'reference_potential_energy', peref)
 
         end subroutine write_physical_quantities
 
@@ -223,6 +235,7 @@ module physics
             call print_physical_quantity('latitude degrees', lat_degrees, 'deg')
             call print_physical_quantity('scale height', height_c, 'm')
             call print_physical_quantity('inverse scale height', lambda_c, '1/m')
+            call print_physical_quantity('reference potential energy', peref, 'm^5/s^2')
             write(*, *) ''
         end subroutine print_physical_quantities
 

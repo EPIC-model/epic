@@ -12,7 +12,7 @@ module utils
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag
-    use physics, only : read_physical_quantities, print_physical_quantities
+    use physics, only : read_physical_quantities, print_physical_quantities, l_peref
     implicit none
 
     integer :: nfw  = 0    ! number of field writes
@@ -27,6 +27,10 @@ module utils
         ! Create NetCDF files and set the step number
         subroutine setup_output_files
             use options, only : output, l_restart
+
+            if (.not. l_peref) then
+                call calculate_peref
+            endif
 
             if (output%write_parcel_stats) then
                 call create_netcdf_parcel_stats_file(trim(output%basename), &
