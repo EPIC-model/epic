@@ -3,7 +3,6 @@ module utils
     use options, only : field_file          &
                       , field_tol           &
                       , output              &
-                      , read_config_file    &
                       , l_restart           &
                       , restart_file        &
                       , time                &
@@ -190,6 +189,7 @@ module utils
 
         subroutine setup_parcels
             character(len=16) :: file_type
+
             call parcel_alloc(max_num_parcels)
 
             if (l_restart) then
