@@ -181,8 +181,8 @@ module utils
             integer                   :: ncells(2)
 
             ! set axis and dimension names for the NetCDF output
-            call set_netcdf_dimensions((/'x', 'y', 'z', 't'/))
-            call set_netcdf_axes((/'X', 'Y', 'Z', 'T'/))
+            call set_netcdf_dimensions((/'x', 'z', 't'/))
+            call set_netcdf_axes((/'X', 'Z', 'T'/))
 
             if (l_restart) then
                 fname = trim(restart_file)

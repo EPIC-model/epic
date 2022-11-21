@@ -186,7 +186,10 @@ module physics
 
                 l_peref = has_attribute(grp_ncid, 'reference_potential_energy')
                 if (l_peref) then
+                    print *, "Found float attribute 'reference_potential_energy'."
                     call read_netcdf_attribute(grp_ncid, 'reference_potential_energy', peref)
+                else
+                    print *, "No float attribute 'reference_potential_energy'. It will be computed."
                 endif
 #ifdef ENABLE_VERBOSE
             else
