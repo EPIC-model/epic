@@ -42,6 +42,8 @@ module inversion_utils
     double precision, allocatable :: dthetap(:, :, :)   ! dtheta_{+}/dz
     double precision, allocatable :: phim(:, :, :)      ! phi_{-}
     double precision, allocatable :: phip(:, :, :)      ! phi_{+}
+    double precision, allocatable :: dphim(:, :, :)     ! dphi_{-}/dz
+    double precision, allocatable :: dphip(:, :, :)     ! dphi_{+}/dz
 
     double precision :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq, ap
     integer :: nwx, nwy, nxp2, nyp2
@@ -107,6 +109,8 @@ module inversion_utils
 
             allocate(phim(0:nz, 0:nx-1, 0:ny-1))
             allocate(phip(0:nz, 0:nx-1, 0:ny-1))
+            allocate(dphim(0:nz, 0:nx-1, 0:ny-1))
+            allocate(dphip(0:nz, 0:nx-1, 0:ny-1))
             allocate(thetam(0:nz, 0:nx-1, 0:ny-1))
             allocate(thetap(0:nz, 0:nx-1, 0:ny-1))
             allocate(dthetam(0:nz, 0:nx-1, 0:ny-1))
@@ -148,6 +152,9 @@ module inversion_utils
             phim(:, 0, 0) = zm / extent(3)
             phip(:, 0, 0) = zp / extent(3)
 
+            dphim(:, 0, 0) = zero
+            dphip(:, 0, 0) = zero
+
             thetam(:, 0, 0) = zero
             thetap(:, 0, 0) = zero
 
@@ -176,7 +183,7 @@ module inversion_utils
         subroutine set_hyperbolic_functions(kx, ky, zm, zp)
             integer,          intent(in) :: kx, ky
             double precision, intent(in) :: zm(0:nz), zp(0:nz)
-            double precision             :: R(0:nz), Q(0:nz), k2ifac, dphim(0:nz), dphip(0:nz)
+            double precision             :: R(0:nz), Q(0:nz), k2ifac
             double precision             :: ef, em(0:nz), ep(0:nz), Lm(0:nz), Lp(0:nz)
             double precision             :: fac, div, kl
 
@@ -195,8 +202,8 @@ module inversion_utils
             phim(:, kx, ky) = div * (ep - ef * em)
             phip(:, kx, ky) = div * (em - ef * ep)
 
-            dphim = - kl * div * (ep + ef * em)
-            dphip =   kl * div * (em + ef * ep)
+            dphim(:, kx, ky) = - kl * div * (ep + ef * em)
+            dphip(:, kx, ky) =   kl * div * (em + ef * ep)
 
             Q = div * (one + ef**2)
             R = div * two * ef
@@ -204,8 +211,8 @@ module inversion_utils
             thetam(:, kx, ky) = k2ifac * (R * Lm * phip(:, kx, ky) - Q * Lp * phim(:, kx, ky))
             thetap(:, kx, ky) = k2ifac * (R * Lp * phim(:, kx, ky) - Q * Lm * phip(:, kx, ky))
 
-            dthetam(:, kx, ky) = - k2ifac * ((Q * Lp - one) * dphim - R * Lm * dphip)
-            dthetap(:, kx, ky) = - k2ifac * ((Q * Lm - one) * dphip - R * Lp * dphim)
+            dthetam(:, kx, ky) = - k2ifac * ((Q * Lp - one) * dphim(:, kx, ky) - R * Lm * dphip(:, kx, ky))
+            dthetap(:, kx, ky) = - k2ifac * ((Q * Lm - one) * dphip(:, kx, ky) - R * Lp * dphim(:, kx, ky))
 
         end subroutine set_hyperbolic_functions
 
@@ -522,12 +529,18 @@ module inversion_utils
             double precision, intent(out) :: ds(0:nz, 0:ny-1, 0:nx-1)
             integer                       :: iz
 
-            ! Linear extrapolation at the boundaries:
-            ! iz = 0:  (fs(1) - fs(0)) / dz
-            ! iz = nz: (fs(nz) - fs(nz-1)) / dz
-            !$omp parallel workshare
-            ds(0,  :, :) = dzi * (fs(1,    :, :) - fs(0,    :, :))
-            ds(nz, :, :) = dzi * (fs(nz,   :, :) - fs(nz-1, :, :))
+            ! Quadratic extrapolation at boundaries:
+!             !$omp parallel workshare
+            ds(0,  :, :) = hdzi * (four * fs(1,  :, :) - three * fs(0,    :, :) - fs(2, :, :))
+            ds(nz, :, :) = hdzi * (three * fs(nz, :, :) - four * fs(nz-1, :, :) + fs(nz-2, :, :))
+!             !$omp end parallel workshare
+
+!             ! Linear extrapolation at the boundaries:
+!             ! iz = 0:  (fs(1) - fs(0)) / dz
+!             ! iz = nz: (fs(nz) - fs(nz-1)) / dz
+!             !$omp parallel workshare
+!             ds(0,  :, :) = dzi * (fs(1,    :, :) - fs(0,    :, :))
+!             ds(nz, :, :) = dzi * (fs(nz,   :, :) - fs(nz-1, :, :))
             !$omp end parallel workshare
 
             ! central differencing for interior cells
@@ -544,15 +557,15 @@ module inversion_utils
         !Calculates df/dz for a field f in mixed-spectral space
         !Here fs = f, ds = df/dz. Both fields are in mixed-spectral space.
         subroutine diffz(fs, ds)
-            double precision, intent(in)  :: fs(0:nz, 0:nx-1, 0:ny-1) ! f in mixed-spectral space
+            double precision, intent(inout)  :: fs(0:nz, 0:nx-1, 0:ny-1) ! f in mixed-spectral space
             double precision, intent(out) :: ds(0:nz, 0:nx-1, 0:ny-1) ! derivative linear part
             double precision              :: as(0:nz, 0:nx-1, 0:ny-1) ! derivative sine-part
             integer                       :: kx, ky, kz, iz
 
-            !Calculate the boundary contributions of the derivative (ds) in semi-spectral space:
+            !Calculate the derivative of the linear part (ds) in semi-spectral space:
             !$omp parallel do private(iz)  default(shared)
             do iz = 0, nz
-                ds(iz, :, :) = fs(0, :, :) * dthetam(iz, :, :) + fs(nz, :, :) * dthetap(iz, :, :)
+                ds(iz, :, :) = fs(0, :, :) * dphim(iz, :, :) + fs(nz, :, :) * dphip(iz, :, :)
             enddo
             !$omp end parallel do
 
@@ -578,14 +591,14 @@ module inversion_utils
             enddo
             !$omp end parallel do
 
-            ! Combine vertical derivative (es) given the sine and linear parts:
+            ! Combine vertical derivative given the sine (as) and linear (ds) parts:
             !omp parallel workshare
             ds = ds + as
             !omp end parallel workshare
 
             call field_decompose_semi_spectral(ds)
 
-          end subroutine diffz
+        end subroutine diffz
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
