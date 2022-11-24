@@ -525,8 +525,8 @@ module inversion_utils
         !Calculates df/dz for a field f using 2nd-order differencing.
         !Here fs = f, ds = df/dz. In semi-spectral space or physical space.
         subroutine central_diffz(fs, ds)
-            double precision, intent(in)  :: fs(0:nz, :, :)
-            double precision, intent(out) :: ds(0:nz, :, :)
+            double precision, intent(in)  :: fs(0:, 0:, 0:)
+            double precision, intent(out) :: ds(0:, 0:, 0:)
             integer                       :: iz
 
             ! Quadratic extrapolation at boundaries:
@@ -557,7 +557,7 @@ module inversion_utils
         !Calculates df/dz for a field f in mixed-spectral space
         !Here fs = f, ds = df/dz. Both fields are in mixed-spectral space.
         subroutine diffz(fs, ds)
-            double precision, intent(inout)  :: fs(0:nz, 0:nx-1, 0:ny-1) ! f in mixed-spectral space
+            double precision, intent(in)  :: fs(0:nz, 0:nx-1, 0:ny-1) ! f in mixed-spectral space
             double precision, intent(out) :: ds(0:nz, 0:nx-1, 0:ny-1) ! derivative linear part
             double precision              :: as(0:nz, 0:nx-1, 0:ny-1) ! derivative sine-part
             integer                       :: kx, ky, kz, iz
