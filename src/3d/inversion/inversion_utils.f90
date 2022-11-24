@@ -523,17 +523,17 @@ module inversion_utils
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         !Calculates df/dz for a field f using 2nd-order differencing.
-        !Here fs = f, ds = df/dz. In semi-spectral space.
+        !Here fs = f, ds = df/dz. In semi-spectral space or physical space.
         subroutine central_diffz(fs, ds)
-            double precision, intent(in)  :: fs(0:nz, 0:ny-1, 0:nx-1)
-            double precision, intent(out) :: ds(0:nz, 0:ny-1, 0:nx-1)
+            double precision, intent(in)  :: fs(0:nz, :, :)
+            double precision, intent(out) :: ds(0:nz, :, :)
             integer                       :: iz
 
             ! Quadratic extrapolation at boundaries:
-!             !$omp parallel workshare
+            !$omp parallel workshare
             ds(0,  :, :) = hdzi * (four * fs(1,  :, :) - three * fs(0,    :, :) - fs(2, :, :))
             ds(nz, :, :) = hdzi * (three * fs(nz, :, :) - four * fs(nz-1, :, :) + fs(nz-2, :, :))
-!             !$omp end parallel workshare
+            !$omp end parallel workshare
 
 !             ! Linear extrapolation at the boundaries:
 !             ! iz = 0:  (fs(1) - fs(0)) / dz

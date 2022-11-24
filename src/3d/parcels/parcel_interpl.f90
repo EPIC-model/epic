@@ -246,12 +246,6 @@ module parcel_interpl
                 vortg(nz, :, :, I_Z) = zero
             endif
 
-!             vortg(0,  :, :, I_X) = zero
-!             vortg(nz, :, :, I_X) = zero
-
-!             vortg(0,  :, :, I_Y) = zero
-!             vortg(nz, :, :, I_Y) = zero
-
             !$omp parallel workshare
             vortg(-1,   :, :, :) = two * vortg(0,  :, :, :) - vortg(1, :, :, :)
             vortg(nz+1, :, :, :) = two * vortg(nz, :, :, :) - vortg(nz-1, :, :, :)

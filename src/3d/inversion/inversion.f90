@@ -51,8 +51,7 @@ module inversion_mod
             ds = as - bs                     ! ds = D
             cs = svor(:, :, :, I_Z)
             !$omp end parallel workshare
-!             call diffz(cs, es)               ! es = E
-call field_combine_semi_spectral(cs)
+            call field_combine_semi_spectral(cs)
             call central_diffz(cs, es)                     ! es = E
             call field_decompose_semi_spectral(es)
 
@@ -325,12 +324,6 @@ call field_combine_semi_spectral(cs)
                 vtend(nz, :, :, I_Z) = zero
             endif
 
-!             vtend(0 , :, :, I_X) = zero
-!             vtend(nz, :, :, I_X) = zero
-
-!             vtend(0 , :, :, I_Y) = zero
-!             vtend(nz, :, :, I_Y) = zero
-
             !-------------------------------------------------------
             ! Extrapolate to halo grid points:
             !$omp parallel workshare
@@ -362,9 +355,6 @@ call field_combine_semi_spectral(cs)
             div = div + f(0:nz, :, :, I_Y)
 
             ! calculate df3/dz
-!             call field_decompose_physical(f(0:nz, :, :, I_Z), fs)
-!             call diffz(fs, ds)
-!             call field_combine_physical(ds, f(0:nz, :, :, I_Z))
             call central_diffz(f(0:nz, :, :, I_Z), ds)
             f(0:nz, :, :, I_Z) = ds
 
@@ -405,7 +395,7 @@ call field_combine_semi_spectral(cs)
             call fftxys2p(vs, vd)
 
             ! Compute z derivative by central differences:
-            call central_diffz(ds, ws) ! FIXME wrong spaces
+            call central_diffz(ds, ws)
 
             ! Set vertical boundary values to zero
             ws(0,  :, :) = zero
