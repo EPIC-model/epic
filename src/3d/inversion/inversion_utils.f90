@@ -529,18 +529,12 @@ module inversion_utils
             double precision, intent(out) :: ds(0:, 0:, 0:)
             integer                       :: iz
 
-!             ! Quadratic extrapolation at boundaries:
-!             !$omp parallel workshare
-!             ds(0,  :, :) = hdzi * (four * fs(1,  :, :) - three * fs(0,    :, :) - fs(2, :, :))
-!             ds(nz, :, :) = hdzi * (three * fs(nz, :, :) - four * fs(nz-1, :, :) + fs(nz-2, :, :))
-!             !$omp end parallel workshare
-
-             ! Linear extrapolation at the boundaries:
-             ! iz = 0:  (fs(1) - fs(0)) / dz
-             ! iz = nz: (fs(nz) - fs(nz-1)) / dz
-             !$omp parallel workshare
-             ds(0,  :, :) = dzi * (fs(1,    :, :) - fs(0,    :, :))
-             ds(nz, :, :) = dzi * (fs(nz,   :, :) - fs(nz-1, :, :))
+            ! Linear extrapolation at the boundaries:
+            ! iz = 0:  (fs(1) - fs(0)) / dz
+            ! iz = nz: (fs(nz) - fs(nz-1)) / dz
+            !$omp parallel workshare
+            ds(0,  :, :) = dzi * (fs(1,    :, :) - fs(0,    :, :))
+            ds(nz, :, :) = dzi * (fs(nz,   :, :) - fs(nz-1, :, :))
             !$omp end parallel workshare
 
             ! central differencing for interior cells
