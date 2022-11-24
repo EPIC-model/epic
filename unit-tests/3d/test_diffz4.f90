@@ -3,10 +3,10 @@
 !
 !  This unit test checks the subroutine diffz and central_diffz using the
 !  function:
-!               cos(x) cos(y) cos(z)
-!  in a domain of width 2 * pi in x and y, and of height pi (0 < z < pi)
+!               z^2
+!  in a domain of width 2 * pi in x and y, and of height pi (-pi/2 < z < pi/2)
 !  The subroutine diffz and central_diffz should return
-!               - cos(x) cos(y) sin(z)
+!               2z
 ! =============================================================================
 program test_diffz2
     use unit_test
@@ -21,13 +21,13 @@ program test_diffz2
     double precision, allocatable :: fs(:, :, :), fp(:, :, :), &
                                      ds(:, :, :), dp(:, :, :), &
                                      ref_sol(:, :, :)
-    integer                       :: ix, iy, iz
-    double precision              :: x, y, z
+    integer                       :: iz
+    double precision              :: z
 
     nx = 128
     ny = 128
     nz = 64
-    lower  = (/zero, zero, zero/)
+    lower  = (/zero, zero, -f12 * pi/)
     extent =  (/twopi, twopi, pi/)
 
     allocate(fp(0:nz, ny, nx))
@@ -38,16 +38,10 @@ program test_diffz2
 
     call update_parameters
 
-    do ix = 1, nx
-        x = lower(1) + (ix - 1) * dx(1)
-        do iy = 1, ny
-            y = lower(2) + (iy - 1) * dx(2)
-            do iz = 0, nz
-                z = lower(3) + dble(iz) * dx(3)
-                fp(iz, iy, ix) = dcos(x) * dcos(y) * dcos(z)
-                ref_sol(iz, iy, ix) = -dcos(x) * dcos(y) * dsin(z)
-            enddo
-        enddo
+    do iz = 0, nz
+        z = lower(3) + dble(iz) * dx(3)
+        fp(iz, :, :) = z ** 2
+        ref_sol(iz, :, :) = two * z
     enddo
 
     call init_inversion

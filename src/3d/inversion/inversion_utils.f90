@@ -152,8 +152,8 @@ module inversion_utils
             phim(:, 0, 0) = zm / extent(3)
             phip(:, 0, 0) = zp / extent(3)
 
-            dphim(:, 0, 0) = zero
-            dphip(:, 0, 0) = zero
+            dphim(:, 0, 0) = - one / extent(3)
+            dphip(:, 0, 0) =   one / extent(3)
 
             thetam(:, 0, 0) = zero
             thetap(:, 0, 0) = zero
