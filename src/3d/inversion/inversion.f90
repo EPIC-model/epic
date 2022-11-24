@@ -344,22 +344,18 @@ module inversion_mod
             ! calculate df1/dx
             call fftxyp2s(f(0:nz, :, :, I_X), fs)
             call diffx(fs, ds)
-            call fftxys2p(ds, div)
+            call fftxys2p(ds, f(0:nz, :, :, I_X))
 
             ! calculate df2/dy
             call fftxyp2s(f(0:nz, :, :, I_Y), fs)
             call diffy(fs, ds)
             call fftxys2p(ds, f(0:nz, :, :, I_Y))
 
-            ! div = df1/dx + df2/dy
-            div = div + f(0:nz, :, :, I_Y)
-
             ! calculate df3/dz
-            call central_diffz(f(0:nz, :, :, I_Z), ds)
-            f(0:nz, :, :, I_Z) = ds
+            call central_diffz(f(0:nz, :, :, I_Z), div)
 
             ! div = df1/dx + df2/dy + df3/dz
-            div = div + f(0:nz, :, :, I_Z)
+            div = f(0:nz, :, :, I_X) + f(0:nz, :, :, I_Y) + div
 
           end subroutine divergence
 
