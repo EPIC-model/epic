@@ -41,8 +41,8 @@ module field_diagnostics
 
             avg_nspar = sum(nsparg(0:nz-1, :, :)) * ncelli
 
-            min_buoyg = minval(tbuoyg)
-            max_buoyg = maxval(tbuoyg)
+            min_buoyg = minval(tbuoyg(0:nz, :, :))
+            max_buoyg = maxval(tbuoyg(0:nz, :, :))
 
             ! use half weights for boundary grid points
             keg = f12 * sum(volg(1:nz-1, :, :) * ( velog(1:nz-1, :, :, 1) ** 2   &
