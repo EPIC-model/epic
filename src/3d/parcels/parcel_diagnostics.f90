@@ -101,7 +101,8 @@ module parcel_diagnostics
             std_lam = zero
             std_vol = zero
             sum_vol = zero
-
+            bmin = zero
+            bmax = zero
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
