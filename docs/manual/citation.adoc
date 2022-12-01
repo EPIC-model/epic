@@ -1,5 +1,5 @@
 == Citation
-Please cite the two-dimensional EPIC model using
+Please cite the two-dimensional EPIC model with
 ```
 @article{Frey2022,
     title = {EPIC: The Elliptical Parcel-In-Cell method},

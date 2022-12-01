@@ -8,15 +8,15 @@ module parcel_diagnostics
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse
     use omp_lib
+    use physics, only : peref
     use timer, only : start_timer, stop_timer
     implicit none
 
     integer :: parcel_stats_timer
 
-    ! peref : potential energy reference
     ! pe    : potential energy
     ! ke    : kinetic energy
-    double precision :: peref, pe, ke
+    double precision :: pe, ke
 
     integer :: n_small
 
@@ -51,7 +51,7 @@ module parcel_diagnostics
     contains
 
         ! Compute the reference potential energy
-        subroutine init_parcel_diagnostics
+        subroutine calculate_peref
             integer          :: ii(n_parcels), n
             double precision :: b(n_parcels)
             double precision :: gam, zmean
@@ -75,7 +75,7 @@ module parcel_diagnostics
             enddo
 
             call stop_timer(parcel_stats_timer)
-        end subroutine init_parcel_diagnostics
+        end subroutine calculate_peref
 
 
         ! Calculate all parcel related diagnostics

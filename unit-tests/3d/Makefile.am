@@ -61,7 +61,11 @@ unittests_PROGRAMS = 				\
 	test_mpi_parcel_read			\
 	test_mpi_parcel_read_rejection		\
 	test_mpi_parcel_halo_swap		\
-	test_mpi_parcel_split
+	test_mpi_parcel_split			\
+	test_diffz2				\
+	test_diffz3				\
+	test_diffz4				\
+	test_diffz5
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -173,3 +177,15 @@ test_mpi_parcel_halo_swap_LDADD = libcombi.la
 
 test_mpi_parcel_split_SOURCES = test_mpi_parcel_split.f90
 test_mpi_parcel_split_LDADD = libcombi.la
+
+test_diffz2_SOURCES = test_diffz2.f90
+test_diffz2_LDADD = libcombi.la
+
+test_diffz3_SOURCES = test_diffz3.f90
+test_diffz3_LDADD = libcombi.la
+
+test_diffz4_SOURCES = test_diffz4.f90
+test_diffz4_LDADD = libcombi.la
+
+test_diffz5_SOURCES = test_diffz5.f90
+test_diffz5_LDADD = libcombi.la

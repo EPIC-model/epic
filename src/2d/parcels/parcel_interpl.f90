@@ -154,12 +154,13 @@ module parcel_interpl
             nsparg = zero
 #ifndef ENABLE_DRY_MODE
             dbuoyg = zero
+            humg = zero
 #endif
             tbuoyg = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
             !$omp do private(n, p, l, i, j, points, pvol, weight, btot, q_c, is, js, weights) &
-            !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, tbuoyg, volg)
+            !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, humg, tbuoyg, volg)
 #else
             !$omp do private(n, p, l, i, j, points, pvol, weight, btot, is, js, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
@@ -209,6 +210,8 @@ module parcel_interpl
 #ifndef ENABLE_DRY_MODE
                         dbuoyg(js(l), is(l)) = dbuoyg(js(l), is(l)) &
                                              + weight * parcels%buoyancy(n)
+                        humg(js(l), is(l)) = humg(js(l), is(l)) &
+                                             + weight * parcels%humidity(n)
 #endif
                         tbuoyg(js(l), is(l)) = tbuoyg(js(l), is(l)) &
                                              + weight * btot
@@ -239,6 +242,10 @@ module parcel_interpl
             dbuoyg(nz, :) = two * dbuoyg(nz, :)
             dbuoyg(1,    :) = dbuoyg(1,    :) + dbuoyg(-1,   :)
             dbuoyg(nz-1, :) = dbuoyg(nz-1, :) + dbuoyg(nz+1, :)
+            humg(0,  :) = two * humg(0,  :)
+            humg(nz, :) = two * humg(nz, :)
+            humg(1,    :) = humg(1,    :) + humg(-1,   :)
+            humg(nz-1, :) = humg(nz-1, :) + humg(nz+1, :)
 #endif
             tbuoyg(0,  :) = two * tbuoyg(0,  :)
             tbuoyg(nz, :) = two * tbuoyg(nz, :)
@@ -254,6 +261,7 @@ module parcel_interpl
 
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0:nz, :) = dbuoyg(0:nz, :) / volg(0:nz, :)
+            humg(0:nz, :) = humg(0:nz, :) / volg(0:nz, :)
 #endif
             tbuoyg(0:nz, :) = tbuoyg(0:nz, :) / volg(0:nz, :)
 

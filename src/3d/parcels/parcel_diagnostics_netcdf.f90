@@ -22,11 +22,14 @@ module parcel_diagnostics_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: t_axis_id, t_dim_id, n_writes,                                &
-                          peref_id, pe_id, ke_id, te_id, npar_id, nspar_id,             &
-                          rms_x_vor_id, rms_y_vor_id, rms_z_vor_id,                     &
-                          avg_lam_id, std_lam_id, avg_vol_id, std_vol_id, sum_vol_id,   &
-                          psi_id, n_par_split_id, n_par_merge_id
+    integer            :: t_axis_id, t_dim_id, n_writes,            &
+                          pe_id, ke_id, te_id, npar_id, nspar_id,   &
+                          rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
+                          avg_lam_id, std_lam_id,                   &
+                          avg_vol_id, std_vol_id, sum_vol_id,       &
+                          en_id, n_par_split_id, n_par_merge_id,    &
+                          min_buo_id, max_buo_id
+
     double precision   :: restart_time
 
     integer :: parcel_stats_io_timer
@@ -46,7 +49,6 @@ module parcel_diagnostics_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
-            double precision          :: buffer(1)
             integer                   :: start(1), cnt(1)
 
             ncfname =  basename // '_parcel_stats.nc'
@@ -63,8 +65,6 @@ module parcel_diagnostics_netcdf
                 call read_netcdf_parcel_stats_content
                 start = 1
                 cnt = 1
-                call read_netcdf_dataset(ncid, 'peref', buffer, start, cnt)
-                peref = buffer(1)
                 call close_netcdf_file(ncid, l_single=.true.)
                 n_writes = n_writes + 1
                 return
@@ -98,16 +98,6 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='peref',                                               &
-                long_name='reference potential energy',                     &
-                std_name='',                                                &
-                unit='m^4/s^2',                                             &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=peref_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
                 name='ke',                                                  &
                 long_name='kinetic energy',                                 &
                 std_name='',                                                &
@@ -128,13 +118,13 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='psi',                                                 &
+                name='en',                                                  &
                 long_name='enstrophy',                                      &
                 std_name='',                                                &
                 unit='m^3/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
-                varid=psi_id)
+                varid=en_id)
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
@@ -256,6 +246,26 @@ module parcel_diagnostics_netcdf
                  dimids=(/t_dim_id/),                                        &
                  varid=n_par_merge_id)
 
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='min_buoyancy',                                        &
+                long_name='minimum parcel buoyancy',                        &
+                std_name='',                                                &
+                unit='m/s^2',                                               &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=min_buo_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='max_buoyancy',                                        &
+                long_name='maximum parcel buoyancy',                        &
+                std_name='',                                                &
+                unit='m/s^2',                                               &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=max_buo_id)
+
             call close_definition(ncid)
 
             call close_netcdf_file(ncid, l_single=.true.)
@@ -271,13 +281,11 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 'pe', pe_id)
 
-            call get_var_id(ncid, 'peref', peref_id)
-
             call get_var_id(ncid, 'ke', ke_id)
 
             call get_var_id(ncid, 'te', te_id)
 
-            call get_var_id(ncid, 'psi', psi_id)
+            call get_var_id(ncid, 'en', en_id)
 
             call get_var_id(ncid, 'n_parcels', npar_id)
 
@@ -302,6 +310,10 @@ module parcel_diagnostics_netcdf
             call get_var_id(ncid, 'n_parcel_splits', n_par_split_id)
 
             call get_var_id(ncid, 'n_parcel_merges', n_par_merge_id)
+
+            call get_var_id(ncid, 'min_buoyancy', min_buo_id)
+
+            call get_var_id(ncid, 'max_buoyancy', max_buo_id)
 
         end subroutine read_netcdf_parcel_stats_content
 
@@ -333,12 +345,6 @@ module parcel_diagnostics_netcdf
             !
             ! write diagnostics
             !
-
-            ! we only write at t = 0, which happens for n_writes = 1
-            if (n_writes == 1) then
-                call write_netcdf_scalar(ncid, peref_id, peref, n_writes)
-            endif
-
             call write_netcdf_scalar(ncid, pe_id, parcel_stats(IDX_PE), n_writes)
             call write_netcdf_scalar(ncid, ke_id, parcel_stats(IDX_KE), n_writes)
             call write_netcdf_scalar(ncid, te_id, parcel_stats(IDX_KE) + parcel_stats(IDX_PE), n_writes)
@@ -352,9 +358,11 @@ module parcel_diagnostics_netcdf
             call write_netcdf_scalar(ncid, rms_x_vor_id, parcel_stats(IDX_RMS_XI), n_writes)
             call write_netcdf_scalar(ncid, rms_y_vor_id, parcel_stats(IDX_RMS_ETA), n_writes)
             call write_netcdf_scalar(ncid, rms_z_vor_id, parcel_stats(IDX_RMS_ZETA), n_writes)
-            call write_netcdf_scalar(ncid, psi_id, parcel_stats(IDX_ENSTROPHY), n_writes)
+            call write_netcdf_scalar(ncid, en_id, parcel_stats(IDX_ENSTROPHY), n_writes)
             call write_netcdf_scalar(ncid, n_par_split_id, parcel_stats(IDX_NSPLITS), n_writes)
             call write_netcdf_scalar(ncid, n_par_merge_id, parcel_stats(IDX_NMERGES), n_writes)
+            call write_netcdf_scalar(ncid, min_buo_id, parcel_stats(IDX_MIN_BUOY), n_writes)
+            call write_netcdf_scalar(ncid, max_buo_id, parcel_stats(IDX_MAX_BUOY), n_writes)
 
             ! increment counter
             n_writes = n_writes + 1

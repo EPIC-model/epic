@@ -35,6 +35,7 @@ module fields
     double precision, allocatable, dimension(:, :, :) :: &
 #ifndef ENABLE_DRY_MODE
         dbuoyg,    &   ! dry buoyancy (or liquid-water buoyancy)
+        humg,      &   ! humidity
 #endif
         tbuoyg,    &   ! buoyancy
 #ifndef NDEBUG
@@ -85,6 +86,7 @@ module fields
 
 #ifndef ENABLE_DRY_MODE
             allocate(dbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(humg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
             allocate(nparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
@@ -104,6 +106,7 @@ module fields
             tbuoyg   = zero
 #ifndef ENABLE_DRY_MODE
             dbuoyg   = zero
+            humg     = zero
 #endif
             nparg    = zero
             nsparg   = zero
