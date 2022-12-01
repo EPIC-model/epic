@@ -13,18 +13,18 @@ module pencil_fft
     use dimensions
     use stafft
     use sta2dfft
-  use datatypes, only : DEFAULT_PRECISION, PRECISION_TYPE
-  !use grids_mod, only : X_INDEX, Y_INDEX, Z_INDEX, global_grid_type
-  !use state_mod, only : model_state_type
-  !use mpi, only : MPI_DOUBLE_COMPLEX, MPI_INT, MPI_COMM_SELF, mpi_wtime
-  !use timer_mod, only: register_routine_for_timing, timer_start, timer_stop
-  !use omp_lib
-  !use ffte_mod, only: ffte_r2c, ffte_c2r, ffte_init, ffte_finalise, ffte_check_factors
-  !use optionsdatabase_mod, only: options_get_logical
-  implicit none
+    use datatypes, only : DEFAULT_PRECISION, PRECISION_TYPE
+    !use grids_mod, only : X_INDEX, Y_INDEX, Z_INDEX, global_grid_type
+    !use state_mod, only : model_state_type
+    !use mpi, only : MPI_DOUBLE_COMPLEX, MPI_INT, MPI_COMM_SELF, mpi_wtime
+    !use timer_mod, only: register_routine_for_timing, timer_start, timer_stop
+    !use omp_lib
+    !use ffte_mod, only: ffte_r2c, ffte_c2r, ffte_init, ffte_finalise, ffte_check_factors
+    !use optionsdatabase_mod, only: options_get_logical
+    implicit none
 
-  integer :: ffthandle=-1, iffthandle=-1
-  integer :: fftehandle=-1,real2comhandle=-1,transposehandle=-1
+    integer :: ffthandle=-1, iffthandle=-1
+    integer :: fftehandle=-1,real2comhandle=-1,transposehandle=-1
 
     !> Describes a specific pencil transposition, from one pencil decomposition to another
     type pencil_transposition
@@ -52,6 +52,8 @@ module pencil_fft
 
   logical :: l_initialised = .false.
 
+  integer :: ncells(3)
+
   !counters for number of times the fft routines are called and the time spent in them
   integer :: nforward, nback
   double precision :: tforward, tback
@@ -62,7 +64,8 @@ contains
     !> Initialises the pencil FFT functionality, this will create the transposition structures needed
     !! @param current_state The current model state
     !! @returns Size of local dimensions in fourier space for this process
-    subroutine initialise_pencil_fft !(current_state, my_y_start, my_x_start)
+    subroutine initialise_pencil_fft(nx, ny, nz) !(current_state, my_y_start, my_x_start)
+        integer, intent(in) :: nx, ny, nz
         integer :: x_distinct_sizes(mpi_dim_sizes(I_X)), &
                    y_distinct_sizes(mpi_dim_sizes(I_Y))
 !     integer :: initialise_pencil_fft(3)
@@ -71,6 +74,8 @@ contains
         if (l_initialised) then
             return
         endif
+
+        ncells = (/nx, ny, nz/)
 
         if (box%l_parallel(I_X) .and. box%l_parallel(I_Y)) then
             ! Info from https://www.open-mpi.org
@@ -101,7 +106,7 @@ contains
             x_distinct_sizes = box%size(I_X)
         endif
 
-!         call initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
+        call initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
 !     call initialise_buffers()
 !
 !     initialise_pencil_fft=z_from_y_transposition%my_pencil_size
@@ -235,95 +240,106 @@ contains
 !          y_from_x_transposition%my_pencil_size(Z_INDEX)))
 !   end subroutine initialise_buffers
 !
-!     !> Initialises the pencil transpositions, from a pencil in one dimension to that in another
-!     !! @param y_distinct_sizes Y sizes per process
-!     !! @param x_distinct_sizes X sizes per process
-!     subroutine initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
-!         integer, dimension(:), intent(in) :: y_distinct_sizes, x_distinct_sizes
-!         type(pencil_transposition)        :: z_pencil
-!
-!         z_pencil = create_initial_transposition_description(current_state)
-!
-!         ! Transpositions
-!         y_from_z_transposition = &
-!             create_transposition(current_state%global_grid, z_pencil, I_Y, y_distinct_sizes, FORWARD, (/ -1 /))
-!
-!         x_from_y_transposition = create_transposition(current_state%global_grid, y_from_z_transposition, I_X, &
-!                                                       x_distinct_sizes, FORWARD, (/ I_Y /))
-!
-!         y_from_x_transposition=create_transposition(current_state%global_grid, x_from_y_transposition, I_Y, &
-!          normal_to_extended_process_dim_sizes(x_distinct_sizes), BACKWARD, (/ I_Y, I_X /))
-!         z_from_y_transposition=create_transposition(current_state%global_grid, y_from_x_transposition, Z_INDEX, &
-!          normal_to_extended_process_dim_sizes(y_distinct_sizes), BACKWARD, (/ I_Y, I_X /))
-!
-!         y_from_z_2_transposition=create_transposition(current_state%global_grid, z_from_y_transposition, I_Y, &
-!           normal_to_extended_process_dim_sizes(y_distinct_sizes), FORWARD, (/ I_Y, I_X /))
-!         x_from_y_2_transposition=create_transposition(current_state%global_grid, y_from_z_2_transposition, I_X, &
-!           normal_to_extended_process_dim_sizes(x_distinct_sizes), FORWARD, (/ I_Y, I_X /))
-!         y_from_x_2_transposition=create_transposition(current_state%global_grid, x_from_y_2_transposition, I_Y, &
-!          x_distinct_sizes, BACKWARD, (/ I_Y /))
-!         z_from_y_2_transposition=create_transposition(current_state%global_grid, y_from_x_2_transposition, Z_INDEX, &
-!           y_distinct_sizes, BACKWARD, (/ -1 /))
-!     end subroutine initialise_transpositions
-!
-!   !> Creates a specific pencil transposition description. It is maybe more a decomposition description, but the main
-!   !! complexity comes from the transposition from existing decomposition to new decomposition so therefore it is
-!   !! called transposition. The new pencil decomposition depends not only on the dimension to split on, but also the existing
-!   !! pencil decomposition. The new decomposed dimension (i.e. the existing pencil dimension) * other local dimensions is used
-!   !! as the sending size, receiving though requires knowledge about the data size on the source process so others will send
-!   !! their pencil dimension size to this process.
-!   !! @param new_pencil_dim The dimension to use as the new pencil decomposition
-!   !! @param existing_pencil_dim The dimension used in the current decomposition
-!   !! @param existing_pencil_process_layout Number of processes per dimension for the current decomposition
-!   !! @param existing_my_location The current processes block location per dimension for the current decomposition
-!   !! @param existing_pencil_size Pencil size per dimension for the current decomposition
-!   !! @param process_dim_sizes Sizes of the pencil dimension from other processes that is used to calculate receive count
-!   !! @param direction Whether we are transposing forwards or backwards, backwards is just an inverse
-!   !! @param extended_dimensions The dimensions that this process extends from n to (n/2+1)*2 (i.e. result of fft complex->real)
-!   type(pencil_transposition) function create_transposition(global_grid, existing_transposition, new_pencil_dim,&
-!        process_dim_sizes, direction, extended_dimensions)
-!     type(global_grid_type), intent(inout) :: global_grid
-!     type(pencil_transposition), intent(in) :: existing_transposition
-!     integer, dimension(:), intent(in) :: process_dim_sizes
-!     integer, intent(in) :: new_pencil_dim, direction, extended_dimensions(:)
-!
-!     create_transposition%process_decomposition_layout=determine_pencil_process_dimensions(&
-!          new_pencil_dim, existing_transposition%dim, existing_transposition%process_decomposition_layout)
-!
-!     create_transposition%my_process_location=determine_my_pencil_location(new_pencil_dim, &
-!          existing_transposition%dim, existing_transposition%my_process_location)
-!
-!     create_transposition%my_pencil_size=determine_pencil_size(new_pencil_dim, create_transposition%process_decomposition_layout,&
-!          create_transposition%my_process_location, existing_transposition, global_grid, extended_dimensions)
-!
-!     allocate(create_transposition%send_dims(3, create_transposition%process_decomposition_layout(existing_transposition%dim)), &
-!            create_transposition%recv_dims(3, create_transposition%process_decomposition_layout(existing_transposition%dim)))
-!     if (direction == FORWARD) then
-!       call determine_my_process_sizes_per_dim(existing_transposition%dim, &
-!            existing_transposition%my_pencil_size, create_transposition%process_decomposition_layout, &
-!            global_grid, extended_dimensions, create_transposition%send_dims)
-!       call determine_matching_process_dimensions(new_pencil_dim, existing_transposition%dim, process_dim_sizes, &
-!            create_transposition%my_pencil_size, create_transposition%process_decomposition_layout, create_transposition%recv_dims)
-!     else
-!       call determine_my_process_sizes_per_dim(new_pencil_dim, create_transposition%my_pencil_size, &
-!            existing_transposition%process_decomposition_layout, global_grid, extended_dimensions, create_transposition%recv_dims)
-!       call determine_matching_process_dimensions(existing_transposition%dim, new_pencil_dim, process_dim_sizes, &
-!            existing_transposition%my_pencil_size, existing_transposition%process_decomposition_layout, &
-!            create_transposition%send_dims)
-!     end if
-!
-!     allocate(create_transposition%send_sizes(size(create_transposition%send_dims, 2)), &
-!          create_transposition%send_offsets(size(create_transposition%send_sizes)), &
-!          create_transposition%recv_sizes(size(create_transposition%recv_dims, 2)), &
-!          create_transposition%recv_offsets(size(create_transposition%recv_sizes)))
-!
-!     call concatenate_dimension_sizes(create_transposition%send_dims, create_transposition%send_sizes)
-!     call determine_offsets_from_size(create_transposition%send_sizes, create_transposition%send_offsets)
-!
-!     call concatenate_dimension_sizes(create_transposition%recv_dims, create_transposition%recv_sizes)
-!     call determine_offsets_from_size(create_transposition%recv_sizes, create_transposition%recv_offsets)
-!     create_transposition%dim=new_pencil_dim
-!   end function create_transposition
+    !> Initialises the pencil transpositions, from a pencil in one dimension to that in another
+    !! @param y_distinct_sizes Y sizes per process
+    !! @param x_distinct_sizes X sizes per process
+    subroutine initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
+        integer, dimension(:), intent(in) :: y_distinct_sizes, x_distinct_sizes
+        type(pencil_transposition)        :: z_pencil
+
+        z_pencil = create_initial_transposition_description()
+
+        ! Transpositions
+        y_from_z_transposition = create_transposition(z_pencil, I_Y, y_distinct_sizes, FORWARD, (/ -1 /))
+
+        x_from_y_transposition = create_transposition(y_from_z_transposition, I_X, &
+                                                      x_distinct_sizes, FORWARD, (/ I_Y /))
+
+        y_from_x_transposition=create_transposition(x_from_y_transposition, I_Y, &
+         normal_to_extended_process_dim_sizes(x_distinct_sizes), BACKWARD, (/ I_Y, I_X /))
+
+        z_from_y_transposition=create_transposition(y_from_x_transposition, I_Z, &
+         normal_to_extended_process_dim_sizes(y_distinct_sizes), BACKWARD, (/ I_Y, I_X /))
+
+        y_from_z_2_transposition=create_transposition(z_from_y_transposition, I_Y, &
+          normal_to_extended_process_dim_sizes(y_distinct_sizes), FORWARD, (/ I_Y, I_X /))
+
+        x_from_y_2_transposition=create_transposition(y_from_z_2_transposition, I_X, &
+          normal_to_extended_process_dim_sizes(x_distinct_sizes), FORWARD, (/ I_Y, I_X /))
+
+        y_from_x_2_transposition=create_transposition(x_from_y_2_transposition, I_Y, &
+         x_distinct_sizes, BACKWARD, (/ I_Y /))
+
+        z_from_y_2_transposition=create_transposition(y_from_x_2_transposition, I_Z, &
+          y_distinct_sizes, BACKWARD, (/ -1 /))
+    end subroutine initialise_transpositions
+
+    !> Creates a specific pencil transposition description. It is maybe more a decomposition description, but the main
+    !! complexity comes from the transposition from existing decomposition to new decomposition so therefore it is
+    !! called transposition. The new pencil decomposition depends not only on the dimension to split on, but also the existing
+    !! pencil decomposition. The new decomposed dimension (i.e. the existing pencil dimension) * other local dimensions is used
+    !! as the sending size, receiving though requires knowledge about the data size on the source process so others will send
+    !! their pencil dimension size to this process.
+    !! @param new_pencil_dim The dimension to use as the new pencil decomposition
+    !! @param existing_pencil_dim The dimension used in the current decomposition
+    !! @param existing_pencil_process_layout Number of processes per dimension for the current decomposition
+    !! @param existing_my_location The current processes block location per dimension for the current decomposition
+    !! @param existing_pencil_size Pencil size per dimension for the current decomposition
+    !! @param process_dim_sizes Sizes of the pencil dimension from other processes that is used to calculate receive count
+    !! @param direction Whether we are transposing forwards or backwards, backwards is just an inverse
+    !! @param extended_dimensions The dimensions that this process extends from n to (n/2+1)*2 (i.e. result of fft complex->real)
+    type(pencil_transposition) function create_transposition(existing_transposition,           &
+                                                             new_pencil_dim, process_dim_sizes, direction,  &
+                                                             extended_dimensions)
+        type(pencil_transposition), intent(in) :: existing_transposition
+        integer, dimension(:), intent(in) :: process_dim_sizes
+        integer, intent(in) :: new_pencil_dim, direction, extended_dimensions(:)
+
+        create_transposition%process_decomposition_layout=determine_pencil_process_dimensions(&
+            new_pencil_dim, existing_transposition%dim, existing_transposition%process_decomposition_layout)
+
+        create_transposition%my_process_location=determine_my_pencil_location(new_pencil_dim, &
+            existing_transposition%dim, existing_transposition%my_process_location)
+
+        create_transposition%my_pencil_size=determine_pencil_size(new_pencil_dim, &
+            create_transposition%process_decomposition_layout,&
+            create_transposition%my_process_location, existing_transposition, extended_dimensions)
+
+        allocate(create_transposition%send_dims(3, &
+            create_transposition%process_decomposition_layout(existing_transposition%dim)), &
+            create_transposition%recv_dims(3, &
+            create_transposition%process_decomposition_layout(existing_transposition%dim)))
+
+        if (direction == FORWARD) then
+            call determine_my_process_sizes_per_dim(existing_transposition%dim, &
+                existing_transposition%my_pencil_size, create_transposition%process_decomposition_layout, &
+                extended_dimensions, create_transposition%send_dims)
+            call determine_matching_process_dimensions(new_pencil_dim, existing_transposition%dim, &
+            process_dim_sizes, &
+                create_transposition%my_pencil_size, create_transposition%process_decomposition_layout, &
+                create_transposition%recv_dims)
+        else
+            call determine_my_process_sizes_per_dim(new_pencil_dim, create_transposition%my_pencil_size, &
+                existing_transposition%process_decomposition_layout, extended_dimensions,  &
+                create_transposition%recv_dims)
+            call determine_matching_process_dimensions(existing_transposition%dim, new_pencil_dim, &
+            process_dim_sizes, &
+            existing_transposition%my_pencil_size, existing_transposition%process_decomposition_layout, &
+            create_transposition%send_dims)
+        endif
+
+        allocate(create_transposition%send_sizes(size(create_transposition%send_dims, 2)), &
+            create_transposition%send_offsets(size(create_transposition%send_sizes)), &
+            create_transposition%recv_sizes(size(create_transposition%recv_dims, 2)), &
+            create_transposition%recv_offsets(size(create_transposition%recv_sizes)))
+
+        call concatenate_dimension_sizes(create_transposition%send_dims, create_transposition%send_sizes)
+        call determine_offsets_from_size(create_transposition%send_sizes, create_transposition%send_offsets)
+
+        call concatenate_dimension_sizes(create_transposition%recv_dims, create_transposition%recv_sizes)
+        call determine_offsets_from_size(create_transposition%recv_sizes, create_transposition%recv_offsets)
+        create_transposition%dim=new_pencil_dim
+    end function create_transposition
 !
 !   !> Performs the transposition and forward FFT in the y dimension then converts back to real numbers. The Y size is
 !   !! (n/2+1)*2 due to the complex to real transformation after the FFT.
@@ -615,224 +631,222 @@ contains
 !
 !   end subroutine rearrange_data_for_sending
 !
-!   !> Determines the number of elements to on my process per dimension which either need to be sent to (forwards transformation) or
-!   !! received from (backwards) each target process (in the row or column)
-!   !! This depends on the existing pencil decomposition, as effectively we are breaking that contigulity and
-!   !! decomposing it into n blocks in that dimension now (provided by new_pencil_procs_per_dim)
-!   !! @param existing_pencil_dim The pencil dimension that we are transforming from
-!   !! @param existing_pencil_size Existing pencil decomposition sizes per dimension
-!   !! @param new_pencil_procs_per_dim For the target decomposition the number of processes per dimension
-!   !! @param global_grid Description of the global grid which we use for sizing information
-!   !! @param extended_dimensions List of dimensions where we extend from n to n+2 (i.e. result of FFT complex-> real transformation)
-!   subroutine determine_my_process_sizes_per_dim(existing_pencil_dim, existing_pencil_size, new_pencil_procs_per_dim, &
-!        global_grid, extended_dimensions, specific_sizes_per_dim)
-!     integer, intent(in) :: existing_pencil_dim, existing_pencil_size(:), new_pencil_procs_per_dim(:), extended_dimensions(:)
-!     type(global_grid_type), intent(inout) :: global_grid
-!     integer, dimension(:,:), intent(inout) :: specific_sizes_per_dim
+    !> Determines the number of elements to on my process per dimension which either need to be sent to (forwards transformation) or
+    !! received from (backwards) each target process (in the row or column)
+    !! This depends on the existing pencil decomposition, as effectively we are breaking that contigulity and
+    !! decomposing it into n blocks in that dimension now (provided by new_pencil_procs_per_dim)
+    !! @param existing_pencil_dim The pencil dimension that we are transforming from
+    !! @param existing_pencil_size Existing pencil decomposition sizes per dimension
+    !! @param new_pencil_procs_per_dim For the target decomposition the number of processes per dimension
+    !! @param global_grid Description of the global grid which we use for sizing information
+    !! @param extended_dimensions List of dimensions where we extend from n to n+2 (i.e. result of FFT complex-> real transformation)
+    subroutine determine_my_process_sizes_per_dim(existing_pencil_dim, existing_pencil_size, &
+                                                  new_pencil_procs_per_dim, &
+                                                extended_dimensions, specific_sizes_per_dim)
+        integer, intent(in) :: existing_pencil_dim, existing_pencil_size(:), new_pencil_procs_per_dim(:)
+        integer, intent(in) :: extended_dimensions(:)
+        integer, dimension(:,:), intent(inout) :: specific_sizes_per_dim
+        integer :: i, split_size, split_remainder, j, s
+
+        do i=1,3
+            if (i == existing_pencil_dim) then
+                s = ncells(i)
+                if (is_extended_dimension(i, extended_dimensions)) then
+                    s = s + 2
+                endif
+                split_size = s / new_pencil_procs_per_dim(i)
+                split_remainder = s - split_size * new_pencil_procs_per_dim(i)
+                do j = 1, new_pencil_procs_per_dim(existing_pencil_dim)
+                    specific_sizes_per_dim(i,j) = merge(split_size+1, split_size, j .le. split_remainder)
+                enddo
+            else
+                specific_sizes_per_dim(i,:) = existing_pencil_size(i)
+            endif
+        enddo
+    end subroutine determine_my_process_sizes_per_dim
+
+    !> Simple helper function to deduce send or receive offsets from the sizes
+    !! @param source_sizes Sizes that we are using to build the offsets
+    subroutine determine_offsets_from_size(source_sizes, determined_offsets)
+        integer, intent(in) :: source_sizes(:)
+        integer, dimension(:), intent(inout) :: determined_offsets
+
+        integer :: i
+
+        determined_offsets(1) = 0
+        do i = 2, size(source_sizes)
+            determined_offsets(i) = determined_offsets(i-1) + source_sizes(i-1)
+        enddo
+    end subroutine determine_offsets_from_size
 !
-!     integer :: i, split_size, split_remainder, j, s
+    !> Determines the number of processes in each dimension for the target decomposition. This depends heavily
+    !! on the existing decomposition, as we basically contiguise our pencil dimension and decompose the existing
+    !! pencil dimension. The third dimension remains unchanged
+    !! @param new_pencil_dim New pencil dimension
+    !! @param existing_pencil_dim Current decomposition pencil dimension
+    !! @param existing_pencil_procs Current decomposition process layout
+    function determine_pencil_process_dimensions(new_pencil_dim, existing_pencil_dim, existing_pencil_procs)
+        integer, intent(in) :: new_pencil_dim, existing_pencil_dim, existing_pencil_procs(3)
+        integer             :: determine_pencil_process_dimensions(3)
+        integer             :: i
+
+        do i = 1, 3
+            if (i == new_pencil_dim) then
+                determine_pencil_process_dimensions(i) = 1
+            else if (i == existing_pencil_dim) then
+                determine_pencil_process_dimensions(i) = existing_pencil_procs(new_pencil_dim)
+            else
+                determine_pencil_process_dimensions(i) = existing_pencil_procs(i)
+            endif
+        enddo
+    end function determine_pencil_process_dimensions
+
+    !> Determines my location for each dimension in the new pencil decomposition. I.e. which block I am
+    !! operating on
+    !! @param new_pencil_dim New pencil decomposition dimension
+    !! @param existing_pencil_dim Current pencil dimension
+    !! @param existing_locations Location for the current decomposition
+    function determine_my_pencil_location(new_pencil_dim, existing_pencil_dim, existing_locations)
+        integer, intent(in) :: new_pencil_dim, existing_pencil_dim, existing_locations(3)
+        integer             :: determine_my_pencil_location(3)
+        integer             :: i
+
+        do i = 1, 3
+            if (i == new_pencil_dim) then
+                determine_my_pencil_location(i) = 1
+            else if (i == existing_pencil_dim) then
+                determine_my_pencil_location(i) = existing_locations(new_pencil_dim)
+            else
+                determine_my_pencil_location(i) = existing_locations(i)
+            endif
+        enddo
+    end function determine_my_pencil_location
+
+    !> Concatenates sizes in multiple dimensions for each target process (in a row or column) into a product of
+    !! that. This represents all the dimension sizes per process
+    !! @param dims The sizes, per dimension and per process that we will fold into target process
+    subroutine concatenate_dimension_sizes(dims, concatenated_dim_sizes)
+        integer, dimension(:,:), intent(in) :: dims
+        integer, dimension(:), intent(inout) :: concatenated_dim_sizes
+        integer :: i
+
+        do i = 1,size(dims, 2)
+            concatenated_dim_sizes(i) = product(dims(:, i))
+        enddo
+    end subroutine concatenate_dimension_sizes
 !
-!     do i=1,3
-!       if (i == existing_pencil_dim) then
-!         s=global_grid%size(i)
-!         if (is_extended_dimension(i, extended_dimensions)) s=s+2
-!         split_size = s / new_pencil_procs_per_dim(i)
-!         split_remainder = s - split_size * new_pencil_procs_per_dim(i)
-!         do j=1,new_pencil_procs_per_dim(existing_pencil_dim)
-!           specific_sizes_per_dim(i,j)=merge(split_size+1, split_size, j .le. split_remainder)
-!         end do
-!       else
-!         specific_sizes_per_dim(i,:) = existing_pencil_size(i)
-!       end if
-!     end do
-!   end subroutine determine_my_process_sizes_per_dim
-!
-!   !> Simple helper function to deduce send or receive offsets from the sizes
-!   !! @param source_sizes Sizes that we are using to build the offsets
-!   subroutine determine_offsets_from_size(source_sizes, determined_offsets)
-!     integer, intent(in) :: source_sizes(:)
-!     integer, dimension(:), intent(inout) :: determined_offsets
-!
-!     integer :: i
-!
-!     determined_offsets(1)=0
-!     do i=2,size(source_sizes)
-!       determined_offsets(i)=determined_offsets(i-1)+source_sizes(i-1)
-!     end do
-!   end subroutine determine_offsets_from_size
-!
-!   !> Determines the number of processes in each dimension for the target decomposition. This depends heavily
-!   !! on the existing decomposition, as we basically contiguise our pencil dimension and decompose the existing
-!   !! pencil dimension. The third dimension remains unchanged
-!   !! @param new_pencil_dim New pencil dimension
-!   !! @param existing_pencil_dim Current decomposition pencil dimension
-!   !! @param existing_pencil_procs Current decomposition process layout
-!   function determine_pencil_process_dimensions(new_pencil_dim, existing_pencil_dim, existing_pencil_procs)
-!     integer, intent(in) :: new_pencil_dim, existing_pencil_dim, existing_pencil_procs(3)
-!     integer :: determine_pencil_process_dimensions(3)
-!
-!     integer :: i
-!
-!     do i=1,3
-!       if (i == new_pencil_dim) then
-!         determine_pencil_process_dimensions(i)=1
-!       else if (i == existing_pencil_dim) then
-!         determine_pencil_process_dimensions(i)=existing_pencil_procs(new_pencil_dim)
-!       else
-!         determine_pencil_process_dimensions(i)=existing_pencil_procs(i)
-!       end if
-!     end do
-!   end function determine_pencil_process_dimensions
-!
-!   !> Determines my location for each dimension in the new pencil decomposition. I.e. which block I am
-!   !! operating on
-!   !! @param new_pencil_dim New pencil decomposition dimension
-!   !! @param existing_pencil_dim Current pencil dimension
-!   !! @param existing_locations Location for the current decomposition
-!   function determine_my_pencil_location(new_pencil_dim, existing_pencil_dim, existing_locations)
-!     integer, intent(in) :: new_pencil_dim, existing_pencil_dim, existing_locations(3)
-!     integer :: determine_my_pencil_location(3)
-!
-!     integer :: i
-!
-!     do i=1,3
-!       if (i == new_pencil_dim) then
-!         determine_my_pencil_location(i)=1
-!       else if (i == existing_pencil_dim) then
-!         determine_my_pencil_location(i)=existing_locations(new_pencil_dim)
-!       else
-!         determine_my_pencil_location(i)=existing_locations(i)
-!       end if
-!     end do
-!   end function determine_my_pencil_location
-!
-!   !> Concatenates sizes in multiple dimensions for each target process (in a row or column) into a product of
-!   !! that. This represents all the dimension sizes per process
-!   !! @param dims The sizes, per dimension and per process that we will fold into target process
-!   subroutine concatenate_dimension_sizes(dims, concatenated_dim_sizes)
-!     integer, dimension(:,:), intent(in) :: dims
-!     integer, dimension(:), intent(inout) :: concatenated_dim_sizes
-!
-!     integer :: i
-!
-!     do i=1,size(dims, 2)
-!       concatenated_dim_sizes(i)=product(dims(:,i))
-!     end do
-!   end subroutine concatenate_dimension_sizes
-!
-!   !> Determines the sizes per dimension on the matching process either to receive from (forward transposition) or send to
-!   !! (backwards transposition) each source process. Not only does this depend on the
-!   !! my pencil sizes, but it also depends on the amount of data that the source process has to send over
-!   !! @param new_pencil_dim The dimension for the new pencil decomposition
-!   !! @param existing_pencil_dim Dimension for the existing pencil decomposition
-!   !! @param proc_sizes Size of dimension on the source processes (index in array corresponds to source PID)
-!   !! @param my_pencil_size My (new) pencil size per dimension
-!   !! @param pencil_processes_per_dim The process layout per dimension
-!   subroutine determine_matching_process_dimensions(new_pencil_dim, existing_pencil_dim, proc_sizes, &
-!        my_pencil_size, pencil_processes_per_dim, specific_sizes_per_dim)
-!     integer, intent(in) :: new_pencil_dim, existing_pencil_dim, proc_sizes(:), my_pencil_size(:), pencil_processes_per_dim(:)
-!     integer, dimension(:,:), intent(inout) :: specific_sizes_per_dim
-!
-!     integer :: i, j
-!
-!     do i=1,pencil_processes_per_dim(existing_pencil_dim)
-!       do j=1,3
-!         if (j==new_pencil_dim) then
-!           specific_sizes_per_dim(j, i)=proc_sizes(i)
-!         else
-!           specific_sizes_per_dim(j, i)=my_pencil_size(j)
-!         end if
-!       end do
-!     end do
-!   end subroutine determine_matching_process_dimensions
+    !> Determines the sizes per dimension on the matching process either to receive from (forward transposition) or send to
+    !! (backwards transposition) each source process. Not only does this depend on the
+    !! my pencil sizes, but it also depends on the amount of data that the source process has to send over
+    !! @param new_pencil_dim The dimension for the new pencil decomposition
+    !! @param existing_pencil_dim Dimension for the existing pencil decomposition
+    !! @param proc_sizes Size of dimension on the source processes (index in array corresponds to source PID)
+    !! @param my_pencil_size My (new) pencil size per dimension
+    !! @param pencil_processes_per_dim The process layout per dimension
+    subroutine determine_matching_process_dimensions(new_pencil_dim, existing_pencil_dim, proc_sizes, &
+                                            my_pencil_size, pencil_processes_per_dim, specific_sizes_per_dim)
+        integer, intent(in) :: new_pencil_dim, existing_pencil_dim, proc_sizes(:), my_pencil_size(:)
+        integer, intent(in) :: pencil_processes_per_dim(:)
+        integer, dimension(:,:), intent(inout) :: specific_sizes_per_dim
+        integer :: i, j
+
+        do i = 1, pencil_processes_per_dim(existing_pencil_dim)
+            do j = 1, 3
+                if (j == new_pencil_dim) then
+                    specific_sizes_per_dim(j, i) = proc_sizes(i)
+                else
+                    specific_sizes_per_dim(j, i) = my_pencil_size(j)
+                endif
+            enddo
+        enddo
+    end subroutine determine_matching_process_dimensions
 !
 !   !> Creates an initial transposition representation of the Z pencil that MONC is normally decomposed in. This is then
-!   !! fed into the create transposition procedure which will generate transpositions to other pencils
-!   !! @param current_state The current model state
-!   type(pencil_transposition) function create_initial_transposition_description(current_state)
-!     type(model_state_type), intent(inout) :: current_state
-!
-!     create_initial_transposition_description%dim=Z_INDEX
-!     create_initial_transposition_description%process_decomposition_layout=current_state%parallel%dim_sizes
-!     create_initial_transposition_description%my_process_location=current_state%parallel%my_coords
-!     create_initial_transposition_description%my_pencil_size=current_state%local_grid%size
-!   end function create_initial_transposition_description
-!
-!   !> Deduces the size of my (local) pencil based upon the new decomposition. This depends heavily on the current
-!   !! pencil decomposition, the new pencil dimension is the global size, the existing pencil dimension becomes
-!   !! decomposed based on the number of processes in that dimension. The third dimension remains unchanged.
-!   !! @param new_pencil_dim Dimension for the new pencil decomposition
-!   !! @param pencil_process_layout The processes per dimension layout for the new decomposition
-!   !! @param my_pencil_location My location in the block layout
-!   !! @param existing_pencil_dim Current decomposition dimension
-!   !! @param existing_pencil_size Current decomposition sizes
-!   !! @param global_grid Description of the global grid which we use for sizing information
-!   !! @param extended_dimensions List of dimensions where we extend from n to n+2 (i.e. result of FFT complex-> real transformation)
-!   function determine_pencil_size(new_pencil_dim, pencil_process_layout, my_pencil_location, existing_transposition,&
-!        global_grid, extended_dimensions)
-!
-!     type(pencil_transposition), intent(in) :: existing_transposition
-!     integer, intent(in) :: new_pencil_dim, pencil_process_layout(3), my_pencil_location(3), extended_dimensions(:)
-!     type(global_grid_type), intent(inout) :: global_grid
-!     integer :: determine_pencil_size(3)
-!
-!     integer :: i, split_size, split_remainder, s
-!
-!     do i=1,3
-!       if (i == new_pencil_dim) then
-!         if (is_extended_dimension(i, extended_dimensions)) then
-!           ! If complex and Y dim then /2+1 for the global size
-!           determine_pencil_size(i)=(global_grid%size(new_pencil_dim)/2+1)*2
-!         else
-!           determine_pencil_size(i)=global_grid%size(new_pencil_dim)
-!         end if
-!       else if (i == existing_transposition%dim) then
-!         s=global_grid%size(i)
-!         ! If complex and Y dim then use s/2+1 for the size to split
-!         if (is_extended_dimension(i, extended_dimensions)) s=(s/2+1)*2
-!         split_size=s/pencil_process_layout(i)
-!         split_remainder=s - split_size * pencil_process_layout(i)
-!         determine_pencil_size(i)=merge(split_size+1, split_size, my_pencil_location(i)+1 .le. split_remainder)
-!       else
-!         determine_pencil_size(i)=existing_transposition%my_pencil_size(i)
-!       end if
-!     end do
-!   end function determine_pencil_size
-!
-!   !> Determines whether or not the specific dimension is in the list of extended dimensions
-!   !! @param dimension The dimension to test for
-!   !! @param extended_dimensions Array of dimensions that will be searched
-!   !! @returns Whether the dimension is found in the array
-!   logical function is_extended_dimension(dimension, extended_dimensions)
-!     integer, intent(in) :: dimension, extended_dimensions(:)
-!
-!     integer :: i
-!     do i=1,size(extended_dimensions)
-!       if (extended_dimensions(i) == dimension) then
-!         is_extended_dimension=.true.
-!         return
-!       end if
-!     end do
-!     is_extended_dimension=.false.
-!   end function is_extended_dimension
-!
-!   !> Transforms real process dimension sizes into their real after FFT complex->real transformation. The way this works is that
-!   !! it goes from n to (n/2+1)*2 numbers which is distributed amongst the processes deterministically
-!   !! @param process_dim_sizes Real process dimension sizes
-!   !! @returns The extended process dimension sizes
-!   function normal_to_extended_process_dim_sizes(process_dim_sizes)
-!     integer, dimension(:), intent(in) :: process_dim_sizes
-!     integer, dimension(size(process_dim_sizes)) :: normal_to_extended_process_dim_sizes
-!
-!     integer :: temp_total, split_size, remainder
-!
-!     temp_total=(sum(process_dim_sizes) /2 + 1) * 2
-!     split_size=temp_total/size(process_dim_sizes)
-!     remainder=temp_total - split_size*size(process_dim_sizes)
-!
-!     normal_to_extended_process_dim_sizes=split_size
-!     normal_to_extended_process_dim_sizes(1:remainder)=split_size+1
-!   end function normal_to_extended_process_dim_sizes
+  !! fed into the create transposition procedure which will generate transpositions to other pencils
+  type(pencil_transposition) function create_initial_transposition_description()
+    create_initial_transposition_description%dim=I_Z
+    create_initial_transposition_description%process_decomposition_layout = mpi_dim_sizes
+    create_initial_transposition_description%my_process_location = mpi_coords
+    create_initial_transposition_description%my_pencil_size = box%size
+  end function create_initial_transposition_description
+
+    !> Deduces the size of my (local) pencil based upon the new decomposition. This depends heavily on the current
+    !! pencil decomposition, the new pencil dimension is the global size, the existing pencil dimension becomes
+    !! decomposed based on the number of processes in that dimension. The third dimension remains unchanged.
+    !! @param new_pencil_dim Dimension for the new pencil decomposition
+    !! @param pencil_process_layout The processes per dimension layout for the new decomposition
+    !! @param my_pencil_location My location in the block layout
+    !! @param existing_pencil_dim Current decomposition dimension
+    !! @param existing_pencil_size Current decomposition sizes
+    !! @param global_grid Description of the global grid which we use for sizing information
+    !! @param extended_dimensions List of dimensions where we extend from n to n+2 (i.e. result of FFT complex-> real transformation)
+    function determine_pencil_size(new_pencil_dim, pencil_process_layout, my_pencil_location, &
+                                   existing_transposition, extended_dimensions)
+
+        type(pencil_transposition), intent(in) :: existing_transposition
+        integer, intent(in) :: new_pencil_dim, pencil_process_layout(3), my_pencil_location(3)
+        integer, intent(in) :: extended_dimensions(:)
+        integer :: determine_pencil_size(3)
+        integer :: i, split_size, split_remainder, s
+
+        do i = 1, 3
+            if (i == new_pencil_dim) then
+                if (is_extended_dimension(i, extended_dimensions)) then
+                    ! If complex and Y dim then /2+1 for the global size
+                    determine_pencil_size(i) = (ncells(new_pencil_dim)/2+1)*2
+                else
+                    determine_pencil_size(i) = ncells(new_pencil_dim)
+                endif
+            else if (i == existing_transposition%dim) then
+                s = ncells(i)
+                ! If complex and Y dim then use s/2+1 for the size to split
+                if (is_extended_dimension(i, extended_dimensions)) then
+                    s = (s / 2 + 1) * 2
+                endif
+
+                split_size=s/pencil_process_layout(i)
+                split_remainder=s - split_size * pencil_process_layout(i)
+                determine_pencil_size(i) = merge(split_size+1, split_size, my_pencil_location(i)+1 .le. &
+                                                 split_remainder)
+            else
+                determine_pencil_size(i)=existing_transposition%my_pencil_size(i)
+            endif
+        enddo
+  end function determine_pencil_size
+
+    !> Determines whether or not the specific dimension is in the list of extended dimensions
+    !! @param dimension The dimension to test for
+    !! @param extended_dimensions Array of dimensions that will be searched
+    !! @returns Whether the dimension is found in the array
+    logical function is_extended_dimension(dimension, extended_dimensions)
+        integer, intent(in) :: dimension, extended_dimensions(:)
+
+        integer :: i
+        do i = 1, size(extended_dimensions)
+            if (extended_dimensions(i) == dimension) then
+                is_extended_dimension = .true.
+                return
+            endif
+        enddo
+        is_extended_dimension=.false.
+    end function is_extended_dimension
+
+    !> Transforms real process dimension sizes into their real after FFT complex->real transformation. The way this works is that
+    !! it goes from n to (n/2+1)*2 numbers which is distributed amongst the processes deterministically
+    !! @param process_dim_sizes Real process dimension sizes
+    !! @returns The extended process dimension sizes
+    function normal_to_extended_process_dim_sizes(process_dim_sizes)
+        integer, dimension(:), intent(in) :: process_dim_sizes
+        integer, dimension(size(process_dim_sizes)) :: normal_to_extended_process_dim_sizes
+        integer :: temp_total, split_size, remainder
+
+        temp_total = (sum(process_dim_sizes) / 2 + 1) * 2
+        split_size = temp_total / size(process_dim_sizes)
+        remainder = temp_total - split_size * size(process_dim_sizes)
+
+        normal_to_extended_process_dim_sizes = split_size
+        normal_to_extended_process_dim_sizes(1:remainder) = split_size + 1
+    end function normal_to_extended_process_dim_sizes
 !
 !   !> Converts complex representation to its real data counterpart and is called after each forward FFT.
 !   !! After a r2c FFT, there are n/2+1 complex numbers - which means that there will be more real numbers in Fourier space

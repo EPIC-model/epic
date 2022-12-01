@@ -94,7 +94,7 @@ program epic3d
 
             call init_inversion
 
-            call initialise_pencil_fft
+            call initialise_pencil_fft(nx, ny, nz)
 
             call init_parcel_correction
 

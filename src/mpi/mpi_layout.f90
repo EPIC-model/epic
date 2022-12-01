@@ -13,6 +13,8 @@ module mpi_layout
     ! number of processes in each dimension
     integer :: mpi_dim_sizes(3)
 
+    integer :: mpi_coords(3)
+
     integer, parameter  :: NB_NONE      = 0, &
                            NB_NORTH     = 1, &
                            NB_SOUTH     = 2, &
@@ -75,6 +77,10 @@ module mpi_layout
             !   maxdims -- length of vector coords in the calling program
             !   coords  -- containing the Cartesian coordinates of the specified process
             call MPI_Cart_coords(comm_cart, rank, 2, coords)
+
+            mpi_coords(1) = coords(1)
+            mpi_coords(2) = coords(2)
+            mpi_coords(3) = 0
 
             call set_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
             call set_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))
