@@ -4,7 +4,6 @@
 program epic2d
     use constants, only : zero
     use timer
-!     use field_diagnostics, only : hdf5_field_stat_timer
     use parcel_container
     use parcel_bc
     use parcel_split, only : split_ellipses, split_timer
@@ -15,9 +14,8 @@ program epic2d
                                   apply_gradient,         &
                                   lapl_corr_timer,        &
                                   grad_corr_timer
-    use parcel_diagnostics, only : init_parcel_diagnostics, &
-                                   parcel_stats_timer
-    use parcel_netcdf
+    use parcel_diagnostics, only : parcel_stats_timer
+    use parcel_netcdf, only : parcel_io_timer
     use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
     use fields
     use field_netcdf, only : field_io_timer
@@ -28,12 +26,12 @@ program epic2d
 #ifndef NDEBUG
     use parcel_interpl, only : sym_vol2grid_timer
 #endif
-    use parcel_init, only : init_parcels, init_timer
+    use parcel_init, only : init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
-    use utils, only : write_last_step, setup_output_files,       &
-                      setup_restart, setup_domain_and_parameters
+    use utils, only : write_last_step, setup_output_files        &
+                    , setup_restart, setup_domain_and_parameters &
+                    , setup_parcels
     use parameters, only : max_num_parcels
-    use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     implicit none
 
     integer          :: epic_timer
@@ -53,14 +51,7 @@ program epic2d
     contains
 
         subroutine pre_run
-            use options, only : field_file          &
-                              , field_tol           &
-                              , output              &
-                              , read_config_file    &
-                              , l_restart           &
-                              , restart_file        &
-                              , time
-            character(len=16) :: file_type
+            use options, only : read_config_file
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
@@ -87,48 +78,19 @@ program epic2d
 
             call start_timer(epic_timer)
 
-            ! set axis and dimension names for the NetCDF output
-            call set_netcdf_dimensions((/'x', 'z', 't'/))
-            call set_netcdf_axes((/'X', 'Z', 'T'/))
-
             ! parse the config file
             call read_config_file
 
             ! read domain dimensions
-            if (l_restart) then
-                call setup_domain_and_parameters(trim(restart_file))
-            else
-                call setup_domain_and_parameters(trim(field_file))
-            endif
+            call setup_domain_and_parameters
 
-            call parcel_alloc(max_num_parcels)
-
-            if (l_restart) then
-                call setup_restart(trim(restart_file), time%initial, file_type)
-
-                if (file_type == 'fields') then
-                    call init_parcels(restart_file, field_tol)
-                else if (file_type == 'parcels') then
-                    call read_netcdf_parcels(restart_file)
-                else
-                    print *, 'Restart file must be of type "fields" or "parcels".'
-                    stop
-                endif
-            else
-                time%initial = zero ! make sure user cannot start at arbitrary time
-
-                call init_parcels(field_file, field_tol)
-            endif
+            call setup_parcels
 
             call ls_rk4_alloc(max_num_parcels)
 
             call init_inversion
 
             call init_parcel_correction
-
-            if (output%write_parcel_stats) then
-                call init_parcel_diagnostics
-            endif
 
             call field_default
 

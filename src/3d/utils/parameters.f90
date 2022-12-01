@@ -186,6 +186,9 @@ module parameters
         else
             print *, "WARNING: Could not find a '" // name // "' group in the provided"
             print *, "         NetCDF file."
+            print *, "         Note this will result in the boundary zeta flags being"
+            print *, "         set to false starting with parcels (which could well be"
+            print *, "         undesirable)."
         endif
 
     end subroutine read_zeta_boundary_flag

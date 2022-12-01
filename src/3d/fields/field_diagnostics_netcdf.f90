@@ -22,7 +22,9 @@ module field_diagnostics_netcdf
     integer            :: ncid
     integer            :: t_axis_id, t_dim_id, n_writes,                   &
                           rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
-                          avg_npar_id, avg_nspar_id, keg_id
+                          avg_npar_id, avg_nspar_id, keg_id, eng_id,       &
+                          max_buoy_id, min_buoy_id
+
     double precision   :: restart_time
 
     integer :: field_stats_io_timer
@@ -150,6 +152,36 @@ module field_diagnostics_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=keg_id)
 
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='en',                                                  &
+                long_name='enstrophy',                                      &
+                std_name='',                                                &
+                unit='m^3/s^2',                                             &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=eng_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='min_buoyancy',                                        &
+                long_name='minimum gridded buoyancy',                       &
+                std_name='',                                                &
+                unit='m/s^2',                                               &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=min_buoy_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='max_buoyancy',                                        &
+                long_name='maximum gridded buoyancy',                       &
+                std_name='',                                                &
+                unit='m/s^2',                                               &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=max_buoy_id)
+
             call close_definition(ncid)
 
             call close_netcdf_file(ncid, l_single=.true.)
@@ -176,6 +208,12 @@ module field_diagnostics_netcdf
             call get_var_id(ncid, 'avg_nspar', avg_nspar_id)
 
             call get_var_id(ncid, 'ke', keg_id)
+
+            call get_var_id(ncid, 'en', eng_id)
+
+            call get_var_id(ncid, 'min_buoyancy', min_buoy_id)
+
+            call get_var_id(ncid, 'max_buoyancy', max_buoy_id)
 
         end subroutine read_netcdf_field_stats_content
 
@@ -215,6 +253,9 @@ module field_diagnostics_netcdf
             call write_netcdf_scalar(ncid, avg_npar_id, field_stats(IDX_AVG_NPAR), n_writes)
             call write_netcdf_scalar(ncid, avg_nspar_id, field_stats(IDX_AVG_NSPAR), n_writes)
             call write_netcdf_scalar(ncid, keg_id, field_stats(IDX_KEG), n_writes)
+            call write_netcdf_scalar(ncid, eng_id, field_stats(IDX_ENG), n_writes)
+            call write_netcdf_scalar(ncid, min_buoy_id, field_stats(IDX_MIN_BUOY), n_writes)
+            call write_netcdf_scalar(ncid, max_buoy_id, field_stats(IDX_MAX_BUOY), n_writes)
 
             ! increment counter
             n_writes = n_writes + 1

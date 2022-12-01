@@ -30,7 +30,7 @@ module field_netcdf
 #endif
 
 #ifndef ENABLE_DRY_MODE
-    integer            :: dbuoy_id, lbuoy_id
+    integer            :: dbuoy_id, hum_id, lbuoy_id
 #endif
 
     double precision   :: restart_time
@@ -49,7 +49,7 @@ module field_netcdf
 #endif
 
 #ifndef ENABLE_DRY_MODE
-    private :: dbuoy_id, lbuoy_id
+    private :: dbuoy_id, hum_id, lbuoy_id
 #endif
 
     contains
@@ -225,6 +225,15 @@ module field_netcdf
                                        varid=dbuoy_id)
 
             call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='humidity',                     &
+                                       long_name='specific humidity',       &
+                                       std_name='',                         &
+                                       unit='kg/kg',                        &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=hum_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
                                        name='liquid_water_content',         &
                                        long_name='liquid-water content',    &
                                        std_name='',                         &
@@ -297,6 +306,8 @@ module field_netcdf
 
 #ifndef ENABLE_DRY_MODE
             call get_var_id(ncid, 'dry_buoyancy', dbuoy_id)
+
+            call get_var_id(ncid, 'humidity', hum_id)
 
             call get_var_id(ncid, 'liquid_water_content', lbuoy_id)
 #endif
@@ -378,6 +389,9 @@ module field_netcdf
 
             call write_netcdf_dataset(ncid, lbuoy_id, glati * (tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))    &
                                                              - dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))),  &
+                                      start, cnt)
+
+            call write_netcdf_dataset(ncid, hum_id, humg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
 #endif
 

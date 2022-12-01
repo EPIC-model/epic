@@ -25,8 +25,13 @@ class nc_fields:
 
         self._physical_quantities = {}
 
+        self._parameters = {}
+
     def add_physical_quantity(self, key, value):
         self._physical_quantities[key] = value
+
+    def add_parameter(self, key, value):
+        self._parameters[key] = value
 
     def add_field(self, name, values, dtype='f8', **kwargs):
         """
@@ -92,6 +97,10 @@ class nc_fields:
         if not self._physical_quantities == {}:
             write_nc_parameters(self._ncfile, 'physical_quantities',
                                 self._physical_quantities)
+
+        if not self._parameters == {}:
+            write_nc_parameters(self._ncfile, 'parameters',
+                                self._parameters)
 
         self._ncfile.close()
 

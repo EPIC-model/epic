@@ -10,6 +10,7 @@ module parcel_diagnostics
     use parcel_split_mod, only : n_parcel_splits
     use parcel_merge, only : n_parcel_merges
     use omp_lib
+    use physics, only : peref
     use timer, only : start_timer, stop_timer
     use mpi_communicator
     use mpi_collectives, only : mpi_blocking_reduce
@@ -20,9 +21,6 @@ module parcel_diagnostics
 #ifndef NDEBUG
     double precision, parameter :: thres = thousand * epsilon(zero)
 #endif
-
-    ! peref : potential energy reference (only correct on MPI root)
-    double precision :: peref
 
     integer, parameter :: IDX_PE        =  1, & ! potential energy
                           IDX_KE        =  2, & ! kinetic energy
@@ -38,14 +36,19 @@ module parcel_diagnostics
                           IDX_NTOT_PAR  = 12, & ! total number of parcels
                           IDX_ENSTROPHY = 13, & ! enstrophy
                           IDX_NSPLITS   = 14, & ! number of parcel splits since last write
-                          IDX_NMERGES   = 15    ! number of parcel merges since last write
+                          IDX_NMERGES   = 15, & ! number of parcel merges since last write
+                          IDX_MIN_BUOY  = 16, & ! minimum parcel buoyancy
+                          IDX_MAX_BUOY  = 17    ! maximum parcel buoyancy
 
-    double precision :: parcel_stats(IDX_NMERGES)
+    double precision :: parcel_stats(IDX_MAX_BUOY)
+
+    ! buoyancy extrema
+    double precision :: bmin, bmax
 
     contains
 
         ! Compute the reference potential energy
-        subroutine init_parcel_diagnostics
+        subroutine calculate_peref
             integer          :: ii(n_parcels), n
             double precision :: b(n_parcels)
             double precision :: gam, zmean
@@ -74,7 +77,7 @@ module parcel_diagnostics
             call mpi_blocking_reduce(peref, MPI_SUM)
 
             call stop_timer(parcel_stats_timer)
-        end subroutine init_parcel_diagnostics
+        end subroutine calculate_peref
 
 
         ! Calculate all parcel related diagnostics
@@ -82,13 +85,15 @@ module parcel_diagnostics
             double precision, intent(in) :: velocity(:, :)
             integer          :: n
             double precision :: b, z, vel(3), vol, zmin, vor(3)
+            double precision :: ntoti, bmin, bmax
             double precision :: evals(3), lam
-            double precision :: ntoti
 
             call start_timer(parcel_stats_timer)
 
             ! reset
             parcel_stats = zero
+            bmin = zero
+            bmax = zero
 
             zmin = lower(3)
 
@@ -97,6 +102,7 @@ module parcel_diagnostics
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
             !$omp& reduction(+: parcel_stats)
+            !$omp& reduction(max: bmax) reduction(min: bmin)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
@@ -128,6 +134,14 @@ module parcel_diagnostics
                     parcel_stats(IDX_N_SMALL) = parcel_stats(IDX_N_SMALL) + one
                 endif
 
+                if (bmax < b) then
+                    bmax = b
+                endif
+
+                if (bmin > b) then
+                    bmin = b
+                endif
+
 #ifndef NDEBUG
                 !$omp critical
                 if (abs(get_determinant(parcels%B(:, n), vol) / get_abc(vol) ** 2 - one) > thres) then
@@ -144,10 +158,15 @@ module parcel_diagnostics
             !$omp end do
             !$omp end parallel
 
+            parcel_stats(IDX_MIN_BUOY) = bmin
+            parcel_stats(IDX_MAX_BUOY) = bmax
+
             parcel_stats(IDX_NSPLITS) = n_parcel_splits
             parcel_stats(IDX_NMERGES) = n_parcel_merges
 
-            call mpi_blocking_reduce(parcel_stats, MPI_SUM)
+            call mpi_blocking_reduce(parcel_stats(IDX_PE:IDX_NMERGES), MPI_SUM)
+            call mpi_blocking_reduce(parcel_stats(IDX_MIN_BUOY), MPI_MIN)
+            call mpi_blocking_reduce(parcel_stats(IDX_MAX_BUOY), MPI_MAX)
 
             n_total_parcels = int(parcel_stats(IDX_NTOT_PAR))
             ntoti = one / parcel_stats(IDX_NTOT_PAR)
