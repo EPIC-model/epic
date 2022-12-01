@@ -3,7 +3,7 @@
 ! interpolation.
 ! =============================================================================
 module parcel_interpl
-    use constants, only : zero, one, two, f14, pi
+    use constants, only : zero, one, two, f14, pi, f12, f32
     use timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
     use options, only : parcel
@@ -236,6 +236,12 @@ module parcel_interpl
                 vortg(0:nz, :, :, p) = vortg(0:nz, :, :, p) / volg(0:nz, :, :)
             enddo
 
+            !At boundary extrapolation
+            volg(0,  :, :) = f32 * volg(0,  :, :) - f12 * volg(1, :, :)
+            volg(nz, :, :) = f32 * volg(nz, :, :) - f12 * volg(nz-1, :, :)            
+            vortg(0,  :, :, :) = f32 * vortg(0,  :, :, :) - f12 * vortg(1, :, :, :)
+            vortg(nz, :, :, :) = f32 * vortg(nz, :, :, :) - f12 * vortg(nz-1, :, :, :)            
+
             !-------------------------------------------------------
             ! Set zeta = 0 on the boundary if required:
             if (l_bndry_zeta_zero(1)) then
@@ -255,6 +261,14 @@ module parcel_interpl
             humg(0:nz, :, :) = humg(0:nz, :, :) / volg(0:nz, :, :)
 #endif
             tbuoyg(0:nz, :, :) = tbuoyg(0:nz, :, :) / volg(0:nz, :, :)
+
+            !At boundary extrapolation
+            tbuoyg(0,  :, :) = f32 * humg(0,  :, :) - f12 * humg(1, :, :)
+            tbuoyg(nz, :, :) = f32 * humg(nz, :, :) - f12 * humg(nz-1, :, :)
+            dbuoyg(0,  :, :) = f32 * dbuoyg(0,  :, :) - f12 * dbuoyg(1, :, :)
+            dbuoyg(nz, :, :) = f32 * dbuoyg(nz, :, :) - f12 * dbuoyg(nz-1, :, :)
+            tbuoyg(0,  :, :) = f32 * tbuoyg(0,  :, :) - f12 * tbuoyg(1, :, :)
+            tbuoyg(nz, :, :) = f32 * tbuoyg(nz, :, :) - f12 * tbuoyg(nz-1, :, :)
 
             ! extrapolate to halo grid points (needed to compute
             ! z derivative used for the time step)
