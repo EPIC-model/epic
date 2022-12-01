@@ -6,7 +6,12 @@ module mpi_layout
     type box_type
         integer :: lo(3),  hi(3)
         integer :: hlo(3), hhi(3)
+        logical :: l_parallel(3)
+        integer :: size(3)
     end type box_type
+
+    ! number of processes in each dimension
+    integer :: mpi_dim_sizes(3)
 
     integer, parameter  :: NB_NONE      = 0, &
                            NB_NORTH     = 1, &
@@ -45,6 +50,10 @@ module mpi_layout
             dims = (/0, 0/)
             call MPI_Dims_create(mpi_size, 2, dims, mpi_err)
 
+            mpi_dim_sizes(1) = dims(1)
+            mpi_dim_sizes(2) = dims(2)
+            mpi_dim_sizes(3) = 1
+
             periods = (/.true., .true./)
 
             ! Info from https://www.open-mpi.org
@@ -78,6 +87,9 @@ module mpi_layout
             ! we only need 1 halo layer in vertical direction
             box%hlo(3) = -1
             box%hhi(3) = nz + 1
+
+            box%l_parallel = (box%hi - box%lo < (/nx, ny, nz/))
+            box%size = box%hi - box%lo + 1
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)

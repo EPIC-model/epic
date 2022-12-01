@@ -39,7 +39,7 @@ epic3d_SOURCES = 				\
 
 epic3d_LDADD = 						\
 	$(top_builddir)/src/utils/libepic_utils.la 	\
-	$(top_builddir)/src/fft/libepic_fft.la		\
+	$(top_builddir)/src/fft/libepic_mpi_fft.la	\
 	$(top_builddir)/src/mpi/libepic_mpi.la		\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
