@@ -33,30 +33,32 @@ module pencil_fft
         integer, dimension(:,:), allocatable :: recv_dims, send_dims
     end type pencil_transposition
 
-  integer, parameter :: FORWARD=1, BACKWARD=2   !< Transposition directions
-  type(mpi_comm) :: dim_y_comm, dim_x_comm     !< Communicators for each dimension
-  ! Transpositions from one pencil to another
-  type(pencil_transposition) :: y_from_z_transposition   &
-                              , x_from_y_transposition   &
-                              , y_from_x_transposition   &
-                              , z_from_y_transposition   &
-                              , y_from_z_2_transposition &
-                              , x_from_y_2_transposition &
-                              , y_from_x_2_transposition &
-                              , z_from_y_2_transposition
+    integer, parameter :: FORWARD=1, BACKWARD=2   !< Transposition directions
 
-  ! Temporary buffers used in transposition
-  real(kind=DEFAULT_PRECISION), dimension(:,:,:), contiguous, pointer :: real_buffer1, real_buffer2, real_buffer3, &
-       fft_in_y_buffer , fft_in_x_buffer
-  complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer :: buffer1, buffer2
+    type(mpi_comm) :: dim_y_comm, dim_x_comm     !< Communicators for each dimension
 
-  logical :: l_initialised = .false.
+    ! Transpositions from one pencil to another
+    type(pencil_transposition) :: y_from_z_transposition   &
+                                , x_from_y_transposition   &
+                                , y_from_x_transposition   &
+                                , z_from_y_transposition   &
+                                , y_from_z_2_transposition &
+                                , x_from_y_2_transposition &
+                                , y_from_x_2_transposition &
+                                , z_from_y_2_transposition
 
-  integer :: ncells(3)
+    ! Temporary buffers used in transposition
+    double precision, dimension(:,:,:), contiguous, pointer :: real_buffer1, real_buffer2, real_buffer3, &
+        fft_in_y_buffer , fft_in_x_buffer
+    complex(C_DOUBLE_COMPLEX), dimension(:, :, :), contiguous, pointer :: buffer1, buffer2
 
-  !counters for number of times the fft routines are called and the time spent in them
-  integer :: nforward, nback
-  double precision :: tforward, tback
+    logical :: l_initialised = .false.
+
+    integer :: ncells(3)
+
+    !counters for number of times the fft routines are called and the time spent in them
+    integer :: nforward, nback
+    double precision :: tforward, tback
 
     public initialise_pencil_fft, finalise_pencil_fft !, perform_forward_3dfft, perform_backwards_3dfft
 contains
@@ -107,7 +109,8 @@ contains
         endif
 
         call initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
-!     call initialise_buffers()
+
+        call initialise_buffers
 !
 !     initialise_pencil_fft=z_from_y_transposition%my_pencil_size
 !
@@ -159,8 +162,8 @@ contains
 !   !! @param target_data Frequency domain real representation of the time domain source which is allocated here
 !   subroutine perform_forward_3dfft(current_state, source_data, target_data)
 !     type(model_state_type), target, intent(inout) :: current_state
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(inout) :: source_data
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(out) :: target_data
+!     double precision, dimension(:,:,:), intent(inout) :: source_data
+!     double precision, dimension(:,:,:), intent(out) :: target_data
 !
 !     double precision :: st
 !     !$OMP SINGLE
@@ -195,8 +198,8 @@ contains
 !   !! @param target_data Time domain complex representation of the frequency domain source
 !   subroutine perform_backwards_3dfft(current_state, source_data, target_data)
 !     type(model_state_type), target, intent(inout) :: current_state
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(in) :: source_data
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(out) :: target_data
+!     double precision, dimension(:,:,:), intent(in) :: source_data
+!     double precision, dimension(:,:,:), intent(out) :: target_data
 !
 !     double precision :: st
 !
@@ -220,24 +223,37 @@ contains
 !
 !   end subroutine perform_backwards_3dfft
 !
-!   !> Initialises memory for the buffers used in the FFT
-!   subroutine initialise_buffers()
-!     allocate(buffer1(y_from_z_transposition%my_pencil_size(Y_INDEX)/2+1, y_from_z_transposition%my_pencil_size(X_INDEX), &
-!          y_from_z_transposition%my_pencil_size(Z_INDEX)), &
-!          real_buffer1((y_from_z_transposition%my_pencil_size(Y_INDEX)/2+1)*2, y_from_z_transposition%my_pencil_size(X_INDEX), &
-!          y_from_z_transposition%my_pencil_size(Z_INDEX)), &
-!          buffer2(x_from_y_transposition%my_pencil_size(X_INDEX)/2+1, x_from_y_transposition%my_pencil_size(Z_INDEX), &
-!          x_from_y_transposition%my_pencil_size(Y_INDEX)), &
-!          real_buffer2((x_from_y_transposition%my_pencil_size(X_INDEX)/2+1)*2, x_from_y_transposition%my_pencil_size(Z_INDEX), &
-!          x_from_y_transposition%my_pencil_size(Y_INDEX)), &
-!          fft_in_y_buffer(y_from_z_transposition%my_pencil_size(Y_INDEX), y_from_z_transposition%my_pencil_size(X_INDEX), &
-!          y_from_z_transposition%my_pencil_size(Z_INDEX)), &
-!          fft_in_x_buffer(x_from_y_transposition%my_pencil_size(X_INDEX), x_from_y_transposition%my_pencil_size(Z_INDEX), &
-!          x_from_y_transposition%my_pencil_size(Y_INDEX)), &
-!          real_buffer3(y_from_x_transposition%my_pencil_size(Y_INDEX), y_from_x_transposition%my_pencil_size(X_INDEX), &
-!          y_from_x_transposition%my_pencil_size(Z_INDEX)))
-!   end subroutine initialise_buffers
-!
+    !> Initialises memory for the buffers used in the FFT
+    subroutine initialise_buffers
+        allocate(buffer1(y_from_z_transposition%my_pencil_size(I_Y)/2+1, &
+                         y_from_z_transposition%my_pencil_size(I_X),     &
+                         y_from_z_transposition%my_pencil_size(I_Z)))
+
+        allocate(buffer2(x_from_y_transposition%my_pencil_size(I_X)/2+1, &
+                         x_from_y_transposition%my_pencil_size(I_Z),     &
+                         x_from_y_transposition%my_pencil_size(I_Y)))
+
+        allocate(real_buffer1((y_from_z_transposition%my_pencil_size(I_Y)/2+1)*2,   &
+                               y_from_z_transposition%my_pencil_size(I_X),          &
+                               y_from_z_transposition%my_pencil_size(I_Z)))
+
+        allocate(real_buffer2((x_from_y_transposition%my_pencil_size(I_X)/2+1)*2,   &
+                               x_from_y_transposition%my_pencil_size(I_Z),          &
+                               x_from_y_transposition%my_pencil_size(I_Y)))
+
+        allocate(fft_in_y_buffer(y_from_z_transposition%my_pencil_size(I_Y),    &
+                                 y_from_z_transposition%my_pencil_size(I_X),    &
+                                 y_from_z_transposition%my_pencil_size(I_Z)))
+
+        allocate(fft_in_x_buffer(x_from_y_transposition%my_pencil_size(I_X),    &
+                                 x_from_y_transposition%my_pencil_size(I_Z),    &
+                                 x_from_y_transposition%my_pencil_size(I_Y)))
+
+        allocate(real_buffer3(y_from_x_transposition%my_pencil_size(I_Y),   &
+                              y_from_x_transposition%my_pencil_size(I_X),   &
+                              y_from_x_transposition%my_pencil_size(I_Z)))
+    end subroutine initialise_buffers
+
     !> Initialises the pencil transpositions, from a pencil in one dimension to that in another
     !! @param y_distinct_sizes Y sizes per process
     !! @param x_distinct_sizes X sizes per process
@@ -347,8 +363,8 @@ contains
 !   !! @param real_buffer Output buffer, Y pencil, oriented y,x,z
 !   subroutine transpose_and_forward_fft_in_y(current_state, source_data, buffer, real_buffer)
 !     type(model_state_type), target, intent(inout) :: current_state
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(inout) :: source_data
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:),  intent(out) :: real_buffer
+!     double precision, dimension(:,:,:), intent(inout) :: source_data
+!     double precision, dimension(:,:,:),  intent(out) :: real_buffer
 !     complex(C_DOUBLE_COMPLEX), dimension(:,:,:),  contiguous, pointer, intent(out) :: buffer
 !
 !     ! Transpose globally from Z pencil to Y pencil
@@ -369,8 +385,8 @@ contains
 !   !! @param real_buffer Output buffer, Y pencil, oriented y,x,z
 !   subroutine transpose_and_backward_fft_in_x(current_state, source_data, buffer, real_buffer)
 !     type(model_state_type), target, intent(inout) :: current_state
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(inout) :: source_data
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:),  intent(out) :: real_buffer
+!     double precision, dimension(:,:,:), intent(inout) :: source_data
+!     double precision, dimension(:,:,:),  intent(out) :: real_buffer
 !     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(out) :: buffer
 !
 !     call convert_real_to_complex(source_data, buffer)
@@ -391,7 +407,7 @@ contains
 !   subroutine transpose_and_forward_fft_in_x(current_state, source_data, buffer, real_buffer)
 !     type(model_state_type), target, intent(inout) :: current_state
 !     complex(C_DOUBLE_COMPLEX), dimension(:,:,:),  contiguous, pointer, intent(out) :: buffer
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(inout) :: source_data, real_buffer
+!     double precision, dimension(:,:,:), intent(inout) :: source_data, real_buffer
 !
 !     ! Go from global Y pencil to global X pencil
 !     call transpose_to_pencil(x_from_y_transposition, (/Y_INDEX, X_INDEX, Z_INDEX/), dim_x_comm, FORWARD, &
@@ -412,8 +428,8 @@ contains
 !   !! @param real_buffer Output buffer, Z pencil, oriented z,y,x
 !   subroutine transpose_and_backward_fft_in_y(current_state, source_data, buffer, real_buffer)
 !     type(model_state_type), target, intent(inout) :: current_state
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(inout) :: source_data
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:),  intent(out) :: real_buffer
+!     double precision, dimension(:,:,:), intent(inout) :: source_data
+!     double precision, dimension(:,:,:),  intent(out) :: real_buffer
 !     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(out) :: buffer
 !
 !     call convert_real_to_complex(source_data, buffer)
@@ -439,12 +455,12 @@ contains
 !   subroutine transpose_to_pencil(transposition_description, source_dims, communicator, direction, source_data, target_data)
 !     type(pencil_transposition), intent(in) :: transposition_description
 !     integer, intent(in) :: source_dims(3), communicator, direction
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(in) :: source_data
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(out) :: target_data
+!     double precision, dimension(:,:,:), intent(in) :: source_data
+!     double precision, dimension(:,:,:), intent(out) :: target_data
 !
 !     integer :: ierr
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), allocatable, save :: real_temp
-!     real(kind=DEFAULT_PRECISION), dimension(:), allocatable, save :: real_temp2
+!     double precision, dimension(:,:,:), allocatable, save :: real_temp
+!     double precision, dimension(:), allocatable, save :: real_temp2
 !
 !
 !     !$OMP SINGLE
@@ -484,8 +500,8 @@ contains
 !   subroutine contiguise_data(transposition_description, source_dims, direction, source_real_buffer, target_real_buffer)
 !     integer, intent(in) :: source_dims(3), direction
 !     type(pencil_transposition), intent(in) :: transposition_description
-!     real(kind=DEFAULT_PRECISION), dimension(:), intent(in) :: source_real_buffer
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(out) :: target_real_buffer
+!     double precision, dimension(:), intent(in) :: source_real_buffer
+!     double precision, dimension(:,:,:), intent(out) :: target_real_buffer
 !
 !     integer :: number_blocks, i, j, k, n, index_prefix, index_prefix_dim, block_offset, source_index
 !
@@ -529,7 +545,7 @@ contains
 !   !! @param num_rows The number of FFTs to perform on the next data elements in the source_data
 !   !! @param plan_id Id number of the plan that tracks whether we need to create it or can reuse the existing one
 !   subroutine perform_r2c_fft(source_data, transformed_data, row_size, num_rows, plan_id)
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), contiguous, pointer, intent(inout) :: source_data
+!     double precision, dimension(:,:,:), contiguous, pointer, intent(inout) :: source_data
 !     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(inout) :: transformed_data
 !     integer, intent(in) :: row_size, num_rows, plan_id
 !     integer :: i, j
@@ -576,7 +592,7 @@ contains
 !   !! @param plan_id Id number of the plan that tracks whether we need to create it or can reuse the existing one
 !   subroutine perform_c2r_fft(source_data, transformed_data, row_size, num_rows, plan_id)
 !     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(inout) :: source_data
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), contiguous, pointer, intent(inout) :: transformed_data
+!     double precision, dimension(:,:,:), contiguous, pointer, intent(inout) :: transformed_data
 !     integer, intent(in) :: row_size, num_rows, plan_id
 !     integer :: i,j
 !     double precision :: tstart, tstop
@@ -616,8 +632,8 @@ contains
 !   !! @param real_source Source data to transpose from
 !   !! @param real_target Target data to transpose to
 !   subroutine rearrange_data_for_sending(real_source, real_target)
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(in) :: real_source
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(out) :: real_target
+!     double precision, dimension(:,:,:), intent(in) :: real_source
+!     double precision, dimension(:,:,:), intent(out) :: real_target
 !
 !     integer :: i
 !
@@ -854,7 +870,7 @@ contains
 !   !! @param real_data The real representation is written into here
 !   subroutine convert_complex_to_real(complex_data, real_data)
 !     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), intent(in) :: complex_data
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(out) :: real_data
+!     double precision, dimension(:,:,:), intent(out) :: real_data
 !
 !     integer :: i, j, k
 !
@@ -887,7 +903,7 @@ contains
 !   !! @param real_data The source real data to pack into the complex data, it is oriented Z,Y,X
 !   !! @param complex_data Target complex data which the real data is packaged into
 !   subroutine convert_real_to_complex(real_data, complex_data)
-!     real(kind=DEFAULT_PRECISION), dimension(:,:,:), intent(in) :: real_data
+!     double precision, dimension(:,:,:), intent(in) :: real_data
 !     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(out) :: complex_data
 !
 !     integer :: i, j, k

@@ -149,6 +149,7 @@ program epic3d
             use options, only : output
             call parcel_dealloc
             call ls_rk4_dealloc
+            call finalise_pencil_fft
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)
