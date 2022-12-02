@@ -98,6 +98,11 @@ module parcel_interpl
             ! axis at the physical domain
             volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
             volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
+
+            ! Do volume extrapolation last, to compensate for effective location
+            ! of parcels
+            volg(0,  :, :) = f32 * volg(0,  :, :) - f12 * volg(1, :, :)
+            volg(nz, :, :) = f32 * volg(nz, :, :) - f12 * volg(nz-1, :, :)            
             !$omp end parallel workshare
         end subroutine vol2grid
 
