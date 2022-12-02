@@ -13,18 +13,13 @@ module pencil_fft
     use dimensions
     use stafft
     use sta2dfft
-    use datatypes, only : DEFAULT_PRECISION, PRECISION_TYPE
+!     use datatypes, only : DEFAULT_PRECISION, PRECISION_TYPE
     !use grids_mod, only : X_INDEX, Y_INDEX, Z_INDEX, global_grid_type
     !use state_mod, only : model_state_type
-    !use mpi, only : MPI_DOUBLE_COMPLEX, MPI_INT, MPI_COMM_SELF, mpi_wtime
-    !use timer_mod, only: register_routine_for_timing, timer_start, timer_stop
+    !use mpi, only : MPI_DOUBLE_COMPLEX, MPI_INT, MPI_COMM_SELF
     !use omp_lib
-    !use ffte_mod, only: ffte_r2c, ffte_c2r, ffte_init, ffte_finalise, ffte_check_factors
-    !use optionsdatabase_mod, only: options_get_logical
+    !use ffte_mod, only: ffte_r2c, ffte_c2r, ffte_init, ffte_finalise
     implicit none
-
-    integer :: ffthandle=-1, iffthandle=-1
-    integer :: fftehandle=-1,real2comhandle=-1,transposehandle=-1
 
     !> Describes a specific pencil transposition, from one pencil decomposition to another
     type pencil_transposition
@@ -56,10 +51,6 @@ module pencil_fft
 
     integer :: ncells(3)
 
-    !counters for number of times the fft routines are called and the time spent in them
-    integer :: nforward, nback
-    double precision :: tforward, tback
-
     public initialise_pencil_fft, finalise_pencil_fft !, perform_forward_3dfft, perform_backwards_3dfft
 contains
 
@@ -70,9 +61,7 @@ contains
         integer, intent(in) :: nx, ny, nz
         integer :: x_distinct_sizes(mpi_dim_sizes(I_X)), &
                    y_distinct_sizes(mpi_dim_sizes(I_Y))
-!     integer :: initialise_pencil_fft(3)
-!
-!
+
         if (l_initialised) then
             return
         endif
@@ -111,32 +100,10 @@ contains
         call initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
 
         call initialise_buffers
-!
-!     initialise_pencil_fft=z_from_y_transposition%my_pencil_size
-!
-!
-!     if (iffthandle .eq. -1) call register_routine_for_timing("fft_inv_tot", iffthandle, current_state)
-!     if (ffthandle .eq. -1)  call register_routine_for_timing("fft_fwd_tot", ffthandle, current_state)
-!     if (fftehandle .eq. -1)  call register_routine_for_timing("fft_ffte", fftehandle, current_state)
-!     if (real2comhandle .eq. -1)  call register_routine_for_timing("fft_r2c", real2comhandle, current_state)
-!     if (transposehandle .eq. -1)  call register_routine_for_timing("fft_transp", transposehandle, current_state)
-!
-!
-!     initialised = .true.
-!
-!     !make sure problem size is valid for FFTE (factor of 2, 3 and/or 5)
-!     if (.not. (ffte_check_factors(current_state%global_grid%size(X_INDEX)) .and. &
-!         ffte_check_factors(current_state%global_grid%size(Y_INDEX)))) then
-!       stop "NX and/or NY are the wrong sizes for FFTE"
-!     endif
-!
-!     nforward = 0
-!     nback = 0
-!
-!     tforward = 0.d0
-!     tback = 0d0
 
-  end subroutine initialise_pencil_fft
+        l_initialised = .true.
+
+    end subroutine initialise_pencil_fft
 
     !> Cleans up allocated buffer memory
     subroutine finalise_pencil_fft
@@ -165,13 +132,6 @@ contains
 !     double precision, dimension(:,:,:), intent(inout) :: source_data
 !     double precision, dimension(:,:,:), intent(out) :: target_data
 !
-!     double precision :: st
-!     !$OMP SINGLE
-!     call timer_start(ffthandle)
-!     !$OMP END SINGLE
-!
-!
-!     st=mpi_wtime()
 !     call transpose_and_forward_fft_in_y(current_state, source_data, buffer1, real_buffer1)
 !
 !     call transpose_and_forward_fft_in_x(current_state, real_buffer1, buffer2, real_buffer2)
@@ -183,10 +143,6 @@ contains
 !        real_buffer3, target_data)
 !
 !
-!     !$OMP SINGLE
-!     call timer_stop(ffthandle)
-!     !$OMP END SINGLE
-!     !current_state%comm_time=current_state%comm_time+(mpi_wtime()-st)
 !   end subroutine perform_forward_3dfft
 !
 !   !> Performs a backwards 3D FFT and currently results in target data which is the X, Z, Y oriented pencil
@@ -201,13 +157,6 @@ contains
 !     double precision, dimension(:,:,:), intent(in) :: source_data
 !     double precision, dimension(:,:,:), intent(out) :: target_data
 !
-!     double precision :: st
-!
-!     !$OMP SINGLE
-!     call timer_start(iffthandle)
-!     !$OMP END SINGLE
-!
-!     st=mpi_wtime()
 !     call transpose_to_pencil(y_from_z_2_transposition, (/Z_INDEX, Y_INDEX, X_INDEX/), dim_y_comm, FORWARD, &
 !        source_data, real_buffer3)
 !     call transpose_to_pencil(x_from_y_2_transposition, (/Y_INDEX, X_INDEX, Z_INDEX/), dim_x_comm, FORWARD, &
@@ -215,11 +164,6 @@ contains
 !
 !     call transpose_and_backward_fft_in_x(current_state, real_buffer2, buffer2, real_buffer1)
 !     call transpose_and_backward_fft_in_y(current_state, real_buffer1, buffer1, target_data)
-!     !current_state%comm_time=current_state%comm_time+(mpi_wtime()-st)
-!
-!     !$OMP SINGLE
-!     call timer_stop(iffthandle)
-!     !$OMP END SINGLE
 !
 !   end subroutine perform_backwards_3dfft
 !
@@ -288,20 +232,23 @@ contains
           y_distinct_sizes, BACKWARD, (/ -1 /))
     end subroutine initialise_transpositions
 
-    !> Creates a specific pencil transposition description. It is maybe more a decomposition description, but the main
-    !! complexity comes from the transposition from existing decomposition to new decomposition so therefore it is
-    !! called transposition. The new pencil decomposition depends not only on the dimension to split on, but also the existing
-    !! pencil decomposition. The new decomposed dimension (i.e. the existing pencil dimension) * other local dimensions is used
-    !! as the sending size, receiving though requires knowledge about the data size on the source process so others will send
+    !> Creates a specific pencil transposition description. It is maybe more a decomposition description,
+    !! but the main complexity comes from the transposition from existing decomposition to new decomposition so
+    !! therefore it is called transposition. The new pencil decomposition depends not only on the dimension to
+    !! split on, but also the existing pencil decomposition. The new decomposed dimension (i.e. the existing
+    !! pencil dimension) * other local dimensions is used as the sending size, receiving though requires
+    !! knowledge about the data size on the source process so others will send
     !! their pencil dimension size to this process.
     !! @param new_pencil_dim The dimension to use as the new pencil decomposition
     !! @param existing_pencil_dim The dimension used in the current decomposition
     !! @param existing_pencil_process_layout Number of processes per dimension for the current decomposition
     !! @param existing_my_location The current processes block location per dimension for the current decomposition
     !! @param existing_pencil_size Pencil size per dimension for the current decomposition
-    !! @param process_dim_sizes Sizes of the pencil dimension from other processes that is used to calculate receive count
+    !! @param process_dim_sizes Sizes of the pencil dimension from other processes that is used
+    !!        to calculate receive count
     !! @param direction Whether we are transposing forwards or backwards, backwards is just an inverse
-    !! @param extended_dimensions The dimensions that this process extends from n to (n/2+1)*2 (i.e. result of fft complex->real)
+    !! @param extended_dimensions The dimensions that this process extends from n to (n/2+1)*2
+    !!        (i.e. result of fft complex->real)
     type(pencil_transposition) function create_transposition(existing_transposition,           &
                                                              new_pencil_dim, process_dim_sizes, direction,  &
                                                              extended_dimensions)
@@ -442,101 +389,107 @@ contains
 !        fft_in_y_buffer, real_buffer)
 !   end subroutine transpose_and_backward_fft_in_y
 !
-!   !> Transposes globally to a new pencil decomposition. This goes from the source dimensions a,b,c to b,c,a (forwards) or c,a,b
-!   !! (backwards.) It requires multiple steps, first the local data is transposed to c,b,a regardless of direction.
-!   !! then it is communicated via alltoall, each process then assembles its own b,c,a or c,a,b data via contiguising
-!   !! across blocks as the data layout is nonlinear.
-!   !! @param transposition_description Description of the transposition
-!   !! @param source_dims Dimensions of the current pencil that we wish to transpose from, will go from abc to bca
-!   !! @param communicator The MPI communicator associated with the group of processes who will swap data
-!   !! @param direction Whether this is going forwards or backwards, it makes a difference to the data arrangement
-!   !! @param source_data Source data (abc)
-!   !! @param target_data Target data (bca)
-!   subroutine transpose_to_pencil(transposition_description, source_dims, communicator, direction, source_data, target_data)
-!     type(pencil_transposition), intent(in) :: transposition_description
-!     integer, intent(in) :: source_dims(3), communicator, direction
-!     double precision, dimension(:,:,:), intent(in) :: source_data
-!     double precision, dimension(:,:,:), intent(out) :: target_data
-!
-!     integer :: ierr
-!     double precision, dimension(:,:,:), allocatable, save :: real_temp
-!     double precision, dimension(:), allocatable, save :: real_temp2
-!
-!
-!     !$OMP SINGLE
-!     call timer_start(transposehandle)
-!     allocate(real_temp(size(source_data,3), size(source_data,2), size(source_data,1)), &
-!          real_temp2(product(transposition_description%my_pencil_size)+1))
-!     !$OMP END SINGLE
-!
-!     call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
-!
-!     !$OMP SINGLE
-!     call mpi_alltoallv(real_temp, transposition_description%send_sizes, transposition_description%send_offsets, &
-!          PRECISION_TYPE, real_temp2, transposition_description%recv_sizes, transposition_description%recv_offsets, &
-!          PRECISION_TYPE, communicator, ierr)
-!     !$OMP END SINGLE
-!
-!
-!     call contiguise_data(transposition_description, (/source_dims(3), source_dims(2), source_dims(1)/), direction, &
-!          source_real_buffer=real_temp2, target_real_buffer=target_data)
-!
-!
-!     !$OMP SINGLE
-!     deallocate(real_temp, real_temp2)
-!     call timer_stop(transposehandle)
-!     !$OMP END SINGLE
-!
-!   end subroutine transpose_to_pencil
-!
-!   !> Contiguises from c,b,a to b,c,a (forwards) or c,a,b (backwards) where these are defined by the source_dims argument.
-!   !! It is not as simple as just swapping the required dimensions, as this is after the mpi alltoall and each block lies
-!   !! after the previous block running sequentially in a.
-!   !! @param transposition_description Transposition descriptor
-!   !! @param source_dims Representation a,b,c of source data, will contiguise to b,a,c
-!   !! @param direction Whether we wish to contiguise forwards or backwards
-!   !! @param source_real_buffer Source real data to transform
-!   !! @param target_real_buffer Target real data which is the result of the operation
-!   subroutine contiguise_data(transposition_description, source_dims, direction, source_real_buffer, target_real_buffer)
-!     integer, intent(in) :: source_dims(3), direction
-!     type(pencil_transposition), intent(in) :: transposition_description
-!     double precision, dimension(:), intent(in) :: source_real_buffer
-!     double precision, dimension(:,:,:), intent(out) :: target_real_buffer
-!
-!     integer :: number_blocks, i, j, k, n, index_prefix, index_prefix_dim, block_offset, source_index
-!
-!
-!     number_blocks=size(transposition_description%recv_sizes)
-!     index_prefix=0
-!     block_offset=0
-!     index_prefix_dim=merge(2,1, direction == FORWARD)
-!
-!
-!     do i=1,number_blocks
-!       if (i .ge. 2) then
-!         index_prefix=index_prefix+transposition_description%recv_dims(source_dims(index_prefix_dim), i-1)
-!         block_offset=block_offset+transposition_description%recv_sizes(i-1)
-!       end if
-!       !Transformation is either cba -> bca (forward) or cab (backwards)
-!       !$OMP DO
-!       do j=1, transposition_description%recv_dims(source_dims(3), i) ! a
-!         do k=1, transposition_description%recv_dims(source_dims(1), i) ! c
-!           do n=1, transposition_description%recv_dims(source_dims(2), i) ! b
-!             source_index=block_offset+(j-1)* transposition_description%recv_dims(source_dims(1), i)* &
-!                  transposition_description%recv_dims(source_dims(2), i)+ (n-1)* &
-!                  transposition_description%recv_dims(source_dims(1), i)+k
-!             if (direction == FORWARD) then
-!               target_real_buffer(index_prefix+n, k, j)=source_real_buffer(source_index) ! bca
-!             else
-!               target_real_buffer(index_prefix+k, j, n)=source_real_buffer(source_index) ! cab
-!             end if
-!           end do
-!         end do
-!       end do
-!       !$OMP END DO
-!     end do
-!
-!   end subroutine contiguise_data
+    !> Transposes globally to a new pencil decomposition.
+    !! This goes from the source dimensions a,b,c to b,c,a (forwards) or c,a,b (backwards).
+    !! It requires multiple steps, first the local data is transposed to c,b,a regardless of direction.
+    !! then it is communicated via alltoall, each process then assembles its own b,c,a or c,a,b data via
+    !! contiguising across blocks as the data layout is nonlinear.
+    !! @param transposition_description Description of the transposition
+    !! @param source_dims Dimensions of the current pencil that we wish to transpose from, will go from abc to bca
+    !! @param communicator The MPI communicator associated with the group of processes who will swap data
+    !! @param direction Whether this is going forwards or backwards, it makes a difference to the data arrangement
+    !! @param source_data Source data (abc)
+    !! @param target_data Target data (bca)
+    subroutine transpose_to_pencil(transposition_description, source_dims, communicator, &
+                                   direction, source_data, target_data)
+        type(pencil_transposition), intent(in)  :: transposition_description
+        integer,                    intent(in)  :: source_dims(3), direction
+        type(MPI_Comm),             intent(in)  :: communicator
+        double precision,           intent(in)  :: source_data(:, :, :)
+        double precision,           intent(out) :: target_data(:, :, :)
+        double precision, allocatable, save :: real_temp(:, :, :)
+        double precision, allocatable, save :: real_temp2(:)
+
+
+        !$OMP SINGLE
+        allocate(real_temp(size(source_data,3), size(source_data,2), size(source_data,1)))
+        allocate(real_temp2(product(transposition_description%my_pencil_size)+1))
+        !$OMP END SINGLE
+
+        call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
+
+        !$OMP SINGLE
+        call MPI_Alltoallv(real_temp, transposition_description%send_sizes,                                 &
+                           transposition_description%send_offsets, MPI_DOUBLE_PRECISION, real_temp2,        &
+                           transposition_description%recv_sizes, transposition_description%recv_offsets,    &
+                           MPI_DOUBLE_PRECISION, communicator, mpi_err)
+        !$OMP END SINGLE
+
+
+        call contiguise_data(transposition_description, (/source_dims(3), source_dims(2), source_dims(1)/), &
+                             direction, source_real_buffer=real_temp2, target_real_buffer=target_data)
+
+
+        !$OMP SINGLE
+        deallocate(real_temp, real_temp2)
+        !$OMP END SINGLE
+
+    end subroutine transpose_to_pencil
+
+    !> Contiguises from c,b,a to b,c,a (forwards) or c,a,b (backwards) where these are defined by the
+    !! source_dims argument. It is not as simple as just swapping the required dimensions, as this is
+    !! after the mpi alltoall and each block lies after the previous block running sequentially in a.
+    !! @param transposition_description Transposition descriptor
+    !! @param source_dims Representation a,b,c of source data, will contiguise to b,a,c
+    !! @param direction Whether we wish to contiguise forwards or backwards
+    !! @param source_real_buffer Source real data to transform
+    !! @param target_real_buffer Target real data which is the result of the operation
+    subroutine contiguise_data(transposition_description, source_dims, direction, &
+                               source_real_buffer, target_real_buffer)
+        integer,                    intent(in)  :: source_dims(3), direction
+        type(pencil_transposition), intent(in)  :: transposition_description
+        double precision,           intent(in)  :: source_real_buffer(:)
+        double precision,           intent(out) :: target_real_buffer(:, :, :)
+        integer :: number_blocks, i, j, k, n, index_prefix, index_prefix_dim, block_offset, source_index
+
+
+        number_blocks = size(transposition_description%recv_sizes)
+        index_prefix = 0
+        block_offset = 0
+        index_prefix_dim = merge(2, 1, direction == FORWARD)
+
+
+        do i = 1, number_blocks
+            if (i .ge. 2) then
+                index_prefix = index_prefix &
+                             + transposition_description%recv_dims(source_dims(index_prefix_dim), i-1)
+
+                block_offset = block_offset + transposition_description%recv_sizes(i-1)
+            endif
+
+            !Transformation is either cba -> bca (forward) or cab (backwards)
+            !$OMP DO
+            do j = 1, transposition_description%recv_dims(source_dims(3), i) ! a
+                do k = 1, transposition_description%recv_dims(source_dims(1), i) ! c
+                    do n = 1, transposition_description%recv_dims(source_dims(2), i) ! b
+                        source_index = block_offset                                                     &
+                                    + (j-1) * transposition_description%recv_dims(source_dims(1), i)    &
+                                    * transposition_description%recv_dims(source_dims(2), i)            &
+                                    + (n-1) * transposition_description%recv_dims(source_dims(1), i)    &
+                                    + k
+
+                        if (direction == FORWARD) then
+                            target_real_buffer(index_prefix + n, k, j) = source_real_buffer(source_index) ! bca
+                        else
+                            target_real_buffer(index_prefix + k, j, n) = source_real_buffer(source_index) ! cab
+                        endif
+                    enddo
+                enddo
+            enddo
+        !$OMP END DO
+        enddo
+
+    end subroutine contiguise_data
 !
 !   !> Actually performs a forward real to complex FFT
 !   !! @param source_data Source (real) data in the time domain
@@ -549,14 +502,10 @@ contains
 !     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(inout) :: transformed_data
 !     integer, intent(in) :: row_size, num_rows, plan_id
 !     integer :: i, j
-!     double precision :: tstart, tstop
-!
-!     tstart = MPI_Wtime()
 !
 !     ! if (ffte) then !use FFTE for the FFTs
 !
 !       !$OMP SINGLE
-!       call timer_start(fftehandle)
 !       call ffte_init(row_size)
 !       !$OMP END SINGLE
 !
@@ -573,12 +522,7 @@ contains
 !
 !       !$OMP SINGLE
 !       call ffte_finalise()
-!       call timer_stop(fftehandle)
 !
-!       tstop = mpi_wtime()
-!
-!       nforward = nforward +1
-!       tforward = tforward + (tstop-tstart)
 !       !$OMP END SINGLE
 !
 !
@@ -595,12 +539,8 @@ contains
 !     double precision, dimension(:,:,:), contiguous, pointer, intent(inout) :: transformed_data
 !     integer, intent(in) :: row_size, num_rows, plan_id
 !     integer :: i,j
-!     double precision :: tstart, tstop
-!
-!     tstart = MPI_Wtime()
 !
 !     !$OMP SINGLE
-!     call timer_start(fftehandle)
 !     call ffte_init(row_size)
 !     !$OMP END SINGLE
 !
@@ -617,33 +557,27 @@ contains
 !
 !     !$OMP SINGLE
 !     call ffte_finalise()
-!     call timer_stop(fftehandle)
 !
-!     tstop = mpi_wtime()
-!
-!     nback = nback +1
-!     tback = tback + (tstop-tstart)
 !     !$OMP END SINGLE
 !
 !   end subroutine perform_c2r_fft
 !
-!   !> Rearranges data for sending, transposing a,b,c into c,b,a . This is done as alltoall splits on dimension c
-!   !! so to go from one pencil to another we assume here that a is the existing pencil as it is contiguous
-!   !! @param real_source Source data to transpose from
-!   !! @param real_target Target data to transpose to
-!   subroutine rearrange_data_for_sending(real_source, real_target)
-!     double precision, dimension(:,:,:), intent(in) :: real_source
-!     double precision, dimension(:,:,:), intent(out) :: real_target
-!
-!     integer :: i
-!
-!     !$OMP DO
-!     do i=1, size(real_source,2)
-!       real_target(:,i,:)=transpose(real_source(:,i,:))
-!     end do
-!     !$OMP END DO
-!
-!   end subroutine rearrange_data_for_sending
+    !> Rearranges data for sending, transposing a,b,c into c,b,a . This is done as alltoall splits on dimension c
+    !! so to go from one pencil to another we assume here that a is the existing pencil as it is contiguous
+    !! @param real_source Source data to transpose from
+    !! @param real_target Target data to transpose to
+    subroutine rearrange_data_for_sending(real_source, real_target)
+        double precision, dimension(:, :, :), intent(in)  :: real_source
+        double precision, dimension(:, :, :), intent(out) :: real_target
+        integer :: i
+
+        !$OMP DO
+        do i = 1, size(real_source, 2)
+            real_target(:, i, :) = transpose(real_source(:, i, :))
+        end do
+        !$OMP END DO
+
+    end subroutine rearrange_data_for_sending
 !
     !> Determines the number of elements to on my process per dimension which either need to be sent to (forwards transformation) or
     !! received from (backwards) each target process (in the row or column)
@@ -874,10 +808,6 @@ contains
 !
 !     integer :: i, j, k
 !
-!     !$OMP SINGLE
-!     call timer_start(real2comhandle)
-!     !$OMP END SINGLE
-!
 !     !$OMP DO
 !     do i=1,size(real_data,3)
 !       do j=1,size(real_data,2)
@@ -889,10 +819,6 @@ contains
 !     end do
 !     !$OMP END DO
 !
-!
-!     !$OMP SINGLE
-!     call timer_stop(real2comhandle)
-!     !$OMP END SINGLE
 !
 !   end subroutine convert_complex_to_real
 !
@@ -908,10 +834,6 @@ contains
 !
 !     integer :: i, j, k
 !
-!     !$OMP SINGLE
-!     call timer_start(real2comhandle)
-!     !$OMP END SINGLE
-!
 !     !$OMP WORKSHARE
 !     complex_data(:,:,:)=cmplx(0.0d0, 0.0d0, kind=C_DOUBLE_COMPLEX)
 !     !$OMP END WORKSHARE
@@ -926,9 +848,6 @@ contains
 !     end do
 !     !$OMP END DO
 !
-!     !$OMP SINGLE
-!     call timer_stop(real2comhandle)
-!     !$OMP END SINGLE
 !   end subroutine convert_real_to_complex
 !
 !   !> Determines my global start coordinate in Fourier space.
