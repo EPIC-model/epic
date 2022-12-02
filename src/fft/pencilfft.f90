@@ -1,11 +1,12 @@
 !> This Pencil FFT performs 3D forward and backwards FFTs using pencil decomposition.
 !! Borrowed from PMPIC but uses STAFFT (instead of FFTE) for the FFT kernel
-!! and this module contains all the data decomposition around this. There is no FFT required in Z, so this performs FFTs in
-!! Y and X (in that order forward and reversed backwards.) The data decomposition is the complex aspect, there is the concept of
-!! forward and backwards transformations. Forward transformations will go from pencil Z to Y to X and the backwards transformations
-!! undo these, so go from X to Y to Z.
-!! Note that we use quite a lot of buffer space here, this could be cut down if Y=X dimensions so some optimisation on memory
-!! could be done there in that case
+!! and this module contains all the data decomposition around this. There is no FFT required
+!! in Z, so this performs FFTs in Y and X (in that order forward and reversed backwards).
+!! The data decomposition is the complex aspect, there is the concept of forward and backwards
+!! transformations. Forward transformations will go from pencil Z to Y to X and the backwards
+!! transformations undo these, so go from X to Y to Z.
+!! Note that we use quite a lot of buffer space here, this could be cut down if Y=X dimensions
+!! so some optimisation on memory could be done there in that case
 module pencil_fft
     use mpi_communicator
     use mpi_layout
@@ -13,12 +14,6 @@ module pencil_fft
     use dimensions
     use stafft
     use sta2dfft
-!     use datatypes, only : DEFAULT_PRECISION, PRECISION_TYPE
-    !use grids_mod, only : X_INDEX, Y_INDEX, Z_INDEX, global_grid_type
-    !use state_mod, only : model_state_type
-    !use mpi, only : MPI_DOUBLE_COMPLEX, MPI_INT, MPI_COMM_SELF
-    !use omp_lib
-    !use ffte_mod, only: ffte_r2c, ffte_c2r, ffte_init, ffte_finalise
     implicit none
 
     !> Describes a specific pencil transposition, from one pencil decomposition to another
@@ -51,13 +46,13 @@ module pencil_fft
 
     integer :: ncells(3)
 
-    public initialise_pencil_fft, finalise_pencil_fft !, perform_forward_3dfft, perform_backwards_3dfft
+    public initialise_pencil_fft, finalise_pencil_fft
 contains
 
     !> Initialises the pencil FFT functionality, this will create the transposition structures needed
     !! @param current_state The current model state
     !! @returns Size of local dimensions in fourier space for this process
-    subroutine initialise_pencil_fft(nx, ny, nz) !(current_state, my_y_start, my_x_start)
+    subroutine initialise_pencil_fft(nx, ny, nz)
         integer, intent(in) :: nx, ny, nz
         integer :: x_distinct_sizes(mpi_dim_sizes(I_X)), &
                    y_distinct_sizes(mpi_dim_sizes(I_Y))
@@ -120,53 +115,6 @@ contains
         deallocate(fft_in_y_buffer , fft_in_x_buffer)
     end subroutine finalise_pencil_fft
 
-!   !> Performs a forward 3D FFT and currently results in target data which is the X, Z, Y oriented pencil
-!   !! Note that the source_data here takes no account for the halo, it is up to caller to exclude this.
-!   !! This does no FFT in Z, but transposes to Y, does FFT in Y, then transposes to X and
-!   !! performs an FFT in that dimension. Pencil decomposition is used which has already been set up.
-!   !! @param current_state The current model state
-!   !! @param source_data The source real data to in the time domain
-!   !! @param target_data Frequency domain real representation of the time domain source which is allocated here
-!   subroutine perform_forward_3dfft(current_state, source_data, target_data)
-!     type(model_state_type), target, intent(inout) :: current_state
-!     double precision, dimension(:,:,:), intent(inout) :: source_data
-!     double precision, dimension(:,:,:), intent(out) :: target_data
-!
-!     call transpose_and_forward_fft_in_y(current_state, source_data, buffer1, real_buffer1)
-!
-!     call transpose_and_forward_fft_in_x(current_state, real_buffer1, buffer2, real_buffer2)
-!
-!
-!     call transpose_to_pencil(y_from_x_transposition, (/X_INDEX, Z_INDEX, Y_INDEX/), dim_x_comm, BACKWARD, &
-!          real_buffer2, real_buffer3)
-!     call transpose_to_pencil(z_from_y_transposition, (/Y_INDEX, X_INDEX, Z_INDEX/), dim_y_comm, BACKWARD, &
-!        real_buffer3, target_data)
-!
-!
-!   end subroutine perform_forward_3dfft
-!
-!   !> Performs a backwards 3D FFT and currently results in target data which is the X, Z, Y oriented pencil
-!   !! Note that the source_data here takes no account for the halo, it is up to caller to exclude this.
-!   !! This does no FFT in Z, but transposes to Y, does FFT in Y, then transposes to X and
-!   !! performs an FFT in that dimension. Pencil decomposition is used which has already been set up.
-!   !! @param current_state The current model state
-!   !! @param source_data The source real data to in the frequency domain
-!   !! @param target_data Time domain complex representation of the frequency domain source
-!   subroutine perform_backwards_3dfft(current_state, source_data, target_data)
-!     type(model_state_type), target, intent(inout) :: current_state
-!     double precision, dimension(:,:,:), intent(in) :: source_data
-!     double precision, dimension(:,:,:), intent(out) :: target_data
-!
-!     call transpose_to_pencil(y_from_z_2_transposition, (/Z_INDEX, Y_INDEX, X_INDEX/), dim_y_comm, FORWARD, &
-!        source_data, real_buffer3)
-!     call transpose_to_pencil(x_from_y_2_transposition, (/Y_INDEX, X_INDEX, Z_INDEX/), dim_x_comm, FORWARD, &
-!        real_buffer3, real_buffer2)
-!
-!     call transpose_and_backward_fft_in_x(current_state, real_buffer2, buffer2, real_buffer1)
-!     call transpose_and_backward_fft_in_y(current_state, real_buffer1, buffer1, target_data)
-!
-!   end subroutine perform_backwards_3dfft
-!
     !> Initialises memory for the buffers used in the FFT
     subroutine initialise_buffers
         allocate(buffer1(y_from_z_transposition%my_pencil_size(I_Y)/2+1, &
@@ -301,94 +249,7 @@ contains
         call determine_offsets_from_size(create_transposition%recv_sizes, create_transposition%recv_offsets)
         create_transposition%dim=new_pencil_dim
     end function create_transposition
-!
-!   !> Performs the transposition and forward FFT in the y dimension then converts back to real numbers. The Y size is
-!   !! (n/2+1)*2 due to the complex to real transformation after the FFT.
-!   !! @param current_state The current model state
-!   !! @param source_data Input buffer, Z pencil oriented z,y,x
-!   !! @param buffer Complex buffer which the FFT writes into
-!   !! @param real_buffer Output buffer, Y pencil, oriented y,x,z
-!   subroutine transpose_and_forward_fft_in_y(current_state, source_data, buffer, real_buffer)
-!     type(model_state_type), target, intent(inout) :: current_state
-!     double precision, dimension(:,:,:), intent(inout) :: source_data
-!     double precision, dimension(:,:,:),  intent(out) :: real_buffer
-!     complex(C_DOUBLE_COMPLEX), dimension(:,:,:),  contiguous, pointer, intent(out) :: buffer
-!
-!     ! Transpose globally from Z pencil to Y pencil
-!     call transpose_to_pencil(y_from_z_transposition, (/Z_INDEX, Y_INDEX, X_INDEX/), dim_y_comm, FORWARD, &
-!        source_data, fft_in_y_buffer)
-!
-!     call perform_r2c_fft(fft_in_y_buffer, buffer, y_from_z_transposition%my_pencil_size(Y_INDEX), &
-!          y_from_z_transposition%my_pencil_size(X_INDEX) * y_from_z_transposition%my_pencil_size(Z_INDEX), 1)
-!     call convert_complex_to_real(buffer, real_buffer)
-!   end subroutine transpose_and_forward_fft_in_y
-!
-!   !> Performs the backwards FFT in X and then transposes to Y pencil. The FFT requires complex numbers which are converted to real,
-!   !! so the this real to complex operation is performed first. If n is the logical size of the FFT row, then the input
-!   !! size is n+2, complex number size is n/2+1 and we get n reals out.
-!   !! @param current_state The current model state
-!   !! @param source_data Input buffer, X pencil oriented x,z,y
-!   !! @param buffer Complex buffer which is fed into the FFT
-!   !! @param real_buffer Output buffer, Y pencil, oriented y,x,z
-!   subroutine transpose_and_backward_fft_in_x(current_state, source_data, buffer, real_buffer)
-!     type(model_state_type), target, intent(inout) :: current_state
-!     double precision, dimension(:,:,:), intent(inout) :: source_data
-!     double precision, dimension(:,:,:),  intent(out) :: real_buffer
-!     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(out) :: buffer
-!
-!     call convert_real_to_complex(source_data, buffer)
-!     call perform_c2r_fft(buffer, fft_in_x_buffer, x_from_y_2_transposition%my_pencil_size(X_INDEX)-2, &
-!          x_from_y_2_transposition%my_pencil_size(Y_INDEX) * x_from_y_2_transposition%my_pencil_size(Z_INDEX), 2)
-!
-!     ! Transpose globally from X pencil to Y pencil
-!     call transpose_to_pencil(y_from_x_2_transposition, (/X_INDEX, Z_INDEX, Y_INDEX/), dim_x_comm, BACKWARD, &
-!        fft_in_x_buffer, real_buffer)
-!   end subroutine transpose_and_backward_fft_in_x
-!
-!   !> Performs the transposition and forward FFT in the x dimension. After the FFT the complex space is converted back into
-!   !! real numbers. The X size is (n/2+1)*2 due to this transformation.
-!   !! @param current_state The current model state
-!   !! @param buffer1 Input buffer, Y pencil after the Y dimension FFT oriented y,x,z
-!   !! @param buffer Complex buffer which results from the FFT
-!   !! @param buffer2 Output buffer, X pencil after this X FFT, oriented x,z,y
-!   subroutine transpose_and_forward_fft_in_x(current_state, source_data, buffer, real_buffer)
-!     type(model_state_type), target, intent(inout) :: current_state
-!     complex(C_DOUBLE_COMPLEX), dimension(:,:,:),  contiguous, pointer, intent(out) :: buffer
-!     double precision, dimension(:,:,:), intent(inout) :: source_data, real_buffer
-!
-!     ! Go from global Y pencil to global X pencil
-!     call transpose_to_pencil(x_from_y_transposition, (/Y_INDEX, X_INDEX, Z_INDEX/), dim_x_comm, FORWARD, &
-!        source_data, fft_in_x_buffer)
-!
-!     call perform_r2c_fft(fft_in_x_buffer, buffer, x_from_y_transposition%my_pencil_size(X_INDEX), &
-!          x_from_y_transposition%my_pencil_size(Y_INDEX) * x_from_y_transposition%my_pencil_size(Z_INDEX), 3)
-!
-!     call convert_complex_to_real(buffer, real_buffer)
-!   end subroutine transpose_and_forward_fft_in_x
-!
-!   !> Performs the backwards FFT in Y and then transposes to Z pencil. The FFT requires complex numbers which are converted to real,
-!   !! so the this real to complex operation is performed first. If n is the logical size of the FFT row, then the input
-!   !! size is n+2, complex number size is n/2+1 and we get n reals out.
-!   !! @param current_state The current model state
-!   !! @param source_data Input buffer, Y pencil oriented y,x,z
-!   !! @param buffer Complex buffer which is fed into the FFT
-!   !! @param real_buffer Output buffer, Z pencil, oriented z,y,x
-!   subroutine transpose_and_backward_fft_in_y(current_state, source_data, buffer, real_buffer)
-!     type(model_state_type), target, intent(inout) :: current_state
-!     double precision, dimension(:,:,:), intent(inout) :: source_data
-!     double precision, dimension(:,:,:),  intent(out) :: real_buffer
-!     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(out) :: buffer
-!
-!     call convert_real_to_complex(source_data, buffer)
-!
-!     call perform_c2r_fft(buffer, fft_in_y_buffer,  y_from_x_2_transposition%my_pencil_size(Y_INDEX)-2, &
-!          y_from_x_2_transposition%my_pencil_size(X_INDEX) * y_from_x_2_transposition%my_pencil_size(Z_INDEX), 4)
-!
-!     ! Go from global Y pencil to global Z pencil
-!     call transpose_to_pencil(z_from_y_2_transposition, (/Y_INDEX, X_INDEX, Z_INDEX/), dim_y_comm, BACKWARD, &
-!        fft_in_y_buffer, real_buffer)
-!   end subroutine transpose_and_backward_fft_in_y
-!
+
     !> Transposes globally to a new pencil decomposition.
     !! This goes from the source dimensions a,b,c to b,c,a (forwards) or c,a,b (backwards).
     !! It requires multiple steps, first the local data is transposed to c,b,a regardless of direction.
@@ -490,78 +351,7 @@ contains
         enddo
 
     end subroutine contiguise_data
-!
-!   !> Actually performs a forward real to complex FFT
-!   !! @param source_data Source (real) data in the time domain
-!   !! @param transformed_data Resulting complex data in the frequency domain
-!   !! @param row_size Number of elements for each FFT
-!   !! @param num_rows The number of FFTs to perform on the next data elements in the source_data
-!   !! @param plan_id Id number of the plan that tracks whether we need to create it or can reuse the existing one
-!   subroutine perform_r2c_fft(source_data, transformed_data, row_size, num_rows, plan_id)
-!     double precision, dimension(:,:,:), contiguous, pointer, intent(inout) :: source_data
-!     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(inout) :: transformed_data
-!     integer, intent(in) :: row_size, num_rows, plan_id
-!     integer :: i, j
-!
-!     ! if (ffte) then !use FFTE for the FFTs
-!
-!       !$OMP SINGLE
-!       call ffte_init(row_size)
-!       !$OMP END SINGLE
-!
-!       !$OMP DO private(j)
-!       do i=1,size(source_data,3)
-!         do j=1,size(source_data,2)
-!           call ffte_r2c(source_data(:,j,i),transformed_data(:,j,i),row_size)
-!         enddo
-!       enddo
-!       !$OMP END DO
-!
-!       !make sure all the threads have completed the above do loops before finalising
-!       !$OMP BARRIER
-!
-!       !$OMP SINGLE
-!       call ffte_finalise()
-!
-!       !$OMP END SINGLE
-!
-!
-!   end subroutine perform_r2c_fft
-!
-!   !> Performs the complex to real (backwards) FFT
-!   !! @param source_data Source (complex) data in the frequency domain
-!   !! @param transformed_data Resulting real data in the time domain
-!   !! @param row_size Number of elements for each FFT
-!   !! @param num_rows The number of FFTs to perform on the next data elements in the source_data
-!   !! @param plan_id Id number of the plan that tracks whether we need to create it or can reuse the existing one
-!   subroutine perform_c2r_fft(source_data, transformed_data, row_size, num_rows, plan_id)
-!     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(inout) :: source_data
-!     double precision, dimension(:,:,:), contiguous, pointer, intent(inout) :: transformed_data
-!     integer, intent(in) :: row_size, num_rows, plan_id
-!     integer :: i,j
-!
-!     !$OMP SINGLE
-!     call ffte_init(row_size)
-!     !$OMP END SINGLE
-!
-!     !$OMP DO private(j)
-!     do i=1,size(source_data,3)
-!       do j=1,size(source_data,2)
-!         call ffte_c2r(source_data(:,j,i),transformed_data(:,j,i),row_size)
-!       enddo
-!     enddo
-!     !$OMP END DO
-!
-!     !make sure all the threads have completed the above do loops before finalising
-!     !$OMP BARRIER
-!
-!     !$OMP SINGLE
-!     call ffte_finalise()
-!
-!     !$OMP END SINGLE
-!
-!   end subroutine perform_c2r_fft
-!
+
     !> Rearranges data for sending, transposing a,b,c into c,b,a . This is done as alltoall splits on dimension c
     !! so to go from one pencil to another we assume here that a is the existing pencil as it is contiguous
     !! @param real_source Source data to transpose from
@@ -578,8 +368,9 @@ contains
         !$OMP END DO
 
     end subroutine rearrange_data_for_sending
-!
-    !> Determines the number of elements to on my process per dimension which either need to be sent to (forwards transformation) or
+
+    !> Determines the number of elements to on my process per dimension which either need to be sent
+    !! to (forwards transformation) or
     !! received from (backwards) each target process (in the row or column)
     !! This depends on the existing pencil decomposition, as effectively we are breaking that contigulity and
     !! decomposing it into n blocks in that dimension now (provided by new_pencil_procs_per_dim)
@@ -587,7 +378,8 @@ contains
     !! @param existing_pencil_size Existing pencil decomposition sizes per dimension
     !! @param new_pencil_procs_per_dim For the target decomposition the number of processes per dimension
     !! @param global_grid Description of the global grid which we use for sizing information
-    !! @param extended_dimensions List of dimensions where we extend from n to n+2 (i.e. result of FFT complex-> real transformation)
+    !! @param extended_dimensions List of dimensions where we extend from n to n+2 (i.e. result of
+    !! FFT complex-> real transformation)
     subroutine determine_my_process_sizes_per_dim(existing_pencil_dim, existing_pencil_size, &
                                                   new_pencil_procs_per_dim, &
                                                 extended_dimensions, specific_sizes_per_dim)
@@ -626,7 +418,7 @@ contains
             determined_offsets(i) = determined_offsets(i-1) + source_sizes(i-1)
         enddo
     end subroutine determine_offsets_from_size
-!
+
     !> Determines the number of processes in each dimension for the target decomposition. This depends heavily
     !! on the existing decomposition, as we basically contiguise our pencil dimension and decompose the existing
     !! pencil dimension. The third dimension remains unchanged
@@ -682,8 +474,9 @@ contains
             concatenated_dim_sizes(i) = product(dims(:, i))
         enddo
     end subroutine concatenate_dimension_sizes
-!
-    !> Determines the sizes per dimension on the matching process either to receive from (forward transposition) or send to
+
+    !> Determines the sizes per dimension on the matching process either to receive from
+    !! (forward transposition) or send to
     !! (backwards transposition) each source process. Not only does this depend on the
     !! my pencil sizes, but it also depends on the amount of data that the source process has to send over
     !! @param new_pencil_dim The dimension for the new pencil decomposition
@@ -708,15 +501,16 @@ contains
             enddo
         enddo
     end subroutine determine_matching_process_dimensions
-!
-!   !> Creates an initial transposition representation of the Z pencil that MONC is normally decomposed in. This is then
-  !! fed into the create transposition procedure which will generate transpositions to other pencils
-  type(pencil_transposition) function create_initial_transposition_description()
-    create_initial_transposition_description%dim=I_Z
-    create_initial_transposition_description%process_decomposition_layout = mpi_dim_sizes
-    create_initial_transposition_description%my_process_location = mpi_coords
-    create_initial_transposition_description%my_pencil_size = box%size
-  end function create_initial_transposition_description
+
+    !> Creates an initial transposition representation of the Z pencil
+    !! that MONC is normally decomposed in. This is then
+    !! fed into the create transposition procedure which will generate transpositions to other pencils
+    type(pencil_transposition) function create_initial_transposition_description()
+        create_initial_transposition_description%dim = I_Z
+        create_initial_transposition_description%process_decomposition_layout = mpi_dim_sizes
+        create_initial_transposition_description%my_process_location = mpi_coords
+        create_initial_transposition_description%my_pencil_size = box%size
+    end function create_initial_transposition_description
 
     !> Deduces the size of my (local) pencil based upon the new decomposition. This depends heavily on the current
     !! pencil decomposition, the new pencil dimension is the global size, the existing pencil dimension becomes
@@ -727,7 +521,8 @@ contains
     !! @param existing_pencil_dim Current decomposition dimension
     !! @param existing_pencil_size Current decomposition sizes
     !! @param global_grid Description of the global grid which we use for sizing information
-    !! @param extended_dimensions List of dimensions where we extend from n to n+2 (i.e. result of FFT complex-> real transformation)
+    !! @param extended_dimensions List of dimensions where we extend from n to n+2
+    !! (i.e. result of FFT complex-> real transformation)
     function determine_pencil_size(new_pencil_dim, pencil_process_layout, my_pencil_location, &
                                    existing_transposition, extended_dimensions)
 
@@ -760,7 +555,7 @@ contains
                 determine_pencil_size(i)=existing_transposition%my_pencil_size(i)
             endif
         enddo
-  end function determine_pencil_size
+    end function determine_pencil_size
 
     !> Determines whether or not the specific dimension is in the list of extended dimensions
     !! @param dimension The dimension to test for
@@ -779,7 +574,8 @@ contains
         is_extended_dimension=.false.
     end function is_extended_dimension
 
-    !> Transforms real process dimension sizes into their real after FFT complex->real transformation. The way this works is that
+    !> Transforms real process dimension sizes into their real after FFT complex->real transformation.
+    !! The way this works is that
     !! it goes from n to (n/2+1)*2 numbers which is distributed amongst the processes deterministically
     !! @param process_dim_sizes Real process dimension sizes
     !! @returns The extended process dimension sizes
@@ -795,80 +591,5 @@ contains
         normal_to_extended_process_dim_sizes = split_size
         normal_to_extended_process_dim_sizes(1:remainder) = split_size + 1
     end function normal_to_extended_process_dim_sizes
-!
-!   !> Converts complex representation to its real data counterpart and is called after each forward FFT.
-!   !! After a r2c FFT, there are n/2+1 complex numbers - which means that there will be more real numbers in Fourier space
-!   !! than are provided into the forward FFT call (due to the extra +1). Note that the real size n will always be complex size * 2
-!   !! This always unpacks the complex dimension in the first dimension
-!   !! @param complex_data Complex data in Z,Y,X orientation to be unpacked into its real representation
-!   !! @param real_data The real representation is written into here
-!   subroutine convert_complex_to_real(complex_data, real_data)
-!     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), intent(in) :: complex_data
-!     double precision, dimension(:,:,:), intent(out) :: real_data
-!
-!     integer :: i, j, k
-!
-!     !$OMP DO
-!     do i=1,size(real_data,3)
-!       do j=1,size(real_data,2)
-!         do k=1,size(real_data,1),2
-!           real_data(k,j,i)=real(real(complex_data((k+1)/2,j,i)), kind=DEFAULT_PRECISION)
-!           real_data(k+1,j,i)=real(aimag(complex_data((k+1)/2,j,i)), kind=DEFAULT_PRECISION)
-!         end do
-!       end do
-!     end do
-!     !$OMP END DO
-!
-!
-!   end subroutine convert_complex_to_real
-!
-!   !> Converts reals into their complex representation, this is called for backwards FFTs as we need to feed in complex numbers
-!   !! to force FFTE to do a backwards. It is a relatively simple transformation, as n goes into n/2 complex numbers and as this
-!   !! is the result of the `convert_complex_to_real` procedure, n always divides evenly.
-!   !! This is always applied to the first dimension of the real data
-!   !! @param real_data The source real data to pack into the complex data, it is oriented Z,Y,X
-!   !! @param complex_data Target complex data which the real data is packaged into
-!   subroutine convert_real_to_complex(real_data, complex_data)
-!     double precision, dimension(:,:,:), intent(in) :: real_data
-!     complex(C_DOUBLE_COMPLEX), dimension(:,:,:), contiguous, pointer, intent(out) :: complex_data
-!
-!     integer :: i, j, k
-!
-!     !$OMP WORKSHARE
-!     complex_data(:,:,:)=cmplx(0.0d0, 0.0d0, kind=C_DOUBLE_COMPLEX)
-!     !$OMP END WORKSHARE
-!
-!     !$OMP DO
-!     do i=1,size(real_data,3)
-!       do j=1,size(real_data,2)
-!         do k=1,size(real_data,1),2
-!           complex_data((k+1)/2,j,i)=cmplx(real_data(k,j,i), real_data(k+1,j,i), kind=C_DOUBLE_COMPLEX)
-!         end do
-!       end do
-!     end do
-!     !$OMP END DO
-!
-!   end subroutine convert_real_to_complex
-!
-!   !> Determines my global start coordinate in Fourier space.
-!   !! This is required for cos y and cos x calculation which is fed into the tridiagonal solver. After the forward FFTs,
-!   !! each process has ((n/2+1)/p+r) * 2 elements, where p is the number of processes and r
-!   !! is the uneven process remainder (1 or 0 depending on p). Therefore some processes will have t elements, and some t-2 elements
-!   !! to feed into the solver
-!   !! @param current_state The current model state
-!   !! @param dimension The dimension that we are calculating this for (Y or X)
-!   !! @returns My global start in Fourier space
-!   integer function deduce_my_global_start(current_state, dimension)
-!     type(model_state_type), intent(inout) :: current_state
-!     integer, intent(in) :: dimension
-!
-!     integer complex_size, distributed_size, remainder, larger_nums, smaller_nums
-!
-!     complex_size=(current_state%global_grid%size(dimension)/2+1)*2
-!     distributed_size=complex_size / current_state%parallel%dim_sizes(dimension)
-!     remainder=complex_size - distributed_size * current_state%parallel%dim_sizes(dimension)
-!     larger_nums=min(remainder, current_state%parallel%my_coords(dimension))
-!     smaller_nums=current_state%parallel%my_coords(dimension)-remainder
-!     deduce_my_global_start=((distributed_size+1)*larger_nums + merge(distributed_size*smaller_nums, 0, smaller_nums .gt. 0)) + 1
-!   end function deduce_my_global_start
+
 end module pencil_fft
