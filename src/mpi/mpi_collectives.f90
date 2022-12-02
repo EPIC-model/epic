@@ -18,7 +18,7 @@ module mpi_collectives
 !             double precision,  intent(out), asynchronous :: recvbuf(..)
 !             type(MPI_Op),      intent(in)                :: op
 !             type(MPI_Request)                            :: request
-!             call MPI_Ireduce(sendbuf, recvbuf, size(recvbuf), MPI_DOUBLE, &
+!             call MPI_Ireduce(sendbuf, recvbuf, size(recvbuf), MPI_DOUBLE_PRECISION, &
 !                              op, 0, comm_world, request, mpi_err)
 !         end subroutine mpi_double_ireduce
 
@@ -36,10 +36,10 @@ module mpi_collectives
             type(MPI_Op),     intent(in)    :: op
 
             if (mpi_rank == mpi_master) then
-                call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_DOUBLE, &
+                call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_DOUBLE_PRECISION, &
                                 op, mpi_master, comm_world, mpi_err)
             else
-                call MPI_Reduce(sendbuf, sendbuf, size(sendbuf), MPI_DOUBLE, &
+                call MPI_Reduce(sendbuf, sendbuf, size(sendbuf), MPI_DOUBLE_PRECISION, &
                                 op, mpi_master, comm_world, mpi_err)
             endif
         end subroutine mpi_double_reduce
