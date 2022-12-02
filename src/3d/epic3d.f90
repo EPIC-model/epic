@@ -154,8 +154,9 @@ program epic3d
 #ifdef ENABLE_VERBOSE
         use options, only : verbose
 #endif
-        integer                          :: i
-        character(len=512)               :: arg
+        integer            :: i
+        character(len=512) :: arg
+        logical            :: l_exist
 
         filename = ''
         restart_file = ''
@@ -194,6 +195,13 @@ program epic3d
         if (l_restart .and. (restart_file == '')) then
             print *, 'No restart file provided. Run code with "./epic3d --config [config file]' // &
                      ' --restart [restart file]"'
+            stop
+        endif
+
+        inquire(file=filename, exist=l_exist)
+
+        if (.not. l_exist) then
+            print *, "Configuration file " // trim(filename) // " does not exist."
             stop
         endif
 

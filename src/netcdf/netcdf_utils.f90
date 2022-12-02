@@ -101,6 +101,14 @@ module netcdf_utils
             character(*), intent(in)  :: ncfname
             integer,      intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
             integer,      intent(out) :: ncid
+            logical                   :: l_exist
+
+            inquire(file=ncfname, exist=l_exist)
+
+            if (.not. l_exist) then
+                print *, "Error: NetCDF file " // ncfname // " does not exist."
+                stop
+            endif
 
             ncerr = nf90_open(path = ncfname,       &
                               mode = access_flag,   &
