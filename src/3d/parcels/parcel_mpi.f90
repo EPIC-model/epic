@@ -148,10 +148,10 @@ module parcel_mpi
 
             call pack_parcels(pid, sendcount, sendbuf)
 
-            call MPI_Isend(sendbuf, send_size, MPI_DOUBLE, dest, tag, comm_cart, request, mpi_err)
+            call MPI_Isend(sendbuf, send_size, MPI_DOUBLE_PRECISION, dest, tag, comm_cart, request, mpi_err)
             call MPI_Request_free(request)
 
-            call MPI_Recv(recvbuf, recv_size, MPI_DOUBLE, source, tag, &
+            call MPI_Recv(recvbuf, recv_size, MPI_DOUBLE_PRECISION, source, tag, &
                           comm_cart, MPI_STATUS_IGNORE, mpi_err)
 
             call unpack_parcels(recvcount, recvbuf)
