@@ -135,22 +135,20 @@ contains
 
   end subroutine initialise_pencil_fft
 
-  !> Cleans up allocated buffer memory
-  subroutine finalise_pencil_fft!(monc_communicator)
-!     integer, intent(in) :: monc_communicator
-!     integer :: ierr, i
+    !> Cleans up allocated buffer memory
+    subroutine finalise_pencil_fft
+        if ((dim_y_comm .ne. MPI_COMM_SELF) .and. (dim_y_comm .ne. comm_world)) then
+            call MPI_Comm_free(dim_y_comm, mpi_err)
+        endif
 
+        if ((dim_x_comm .ne. MPI_COMM_SELF) .and. (dim_x_comm .ne. comm_world)) then
+            call MPI_Comm_free(dim_x_comm, mpi_err)
+        endif
 
-!     call MPI_Comm_rank(monc_communicator,i,ierr)
-!     if (i .eq. 0) then
-!       print *, "Total time in forward FFT =",tforward
-!       print *, "Total time in reverse FFT =", tback
-!     endif
-
-!     if (dim_y_comm .ne. MPI_COMM_SELF .and. dim_y_comm .ne. monc_communicator) call mpi_comm_free(dim_y_comm, ierr)
-!     if (dim_x_comm .ne. MPI_COMM_SELF .and. dim_x_comm .ne. monc_communicator) call mpi_comm_free(dim_x_comm, ierr)
-!     deallocate(buffer1, buffer2, real_buffer1, real_buffer2, real_buffer3, fft_in_y_buffer , fft_in_x_buffer)
-  end subroutine finalise_pencil_fft
+        deallocate(buffer1, buffer2)
+        deallocate(real_buffer1, real_buffer2, real_buffer3)
+        deallocate(fft_in_y_buffer , fft_in_x_buffer)
+    end subroutine finalise_pencil_fft
 
 !   !> Performs a forward 3D FFT and currently results in target data which is the X, Z, Y oriented pencil
 !   !! Note that the source_data here takes no account for the halo, it is up to caller to exclude this.
