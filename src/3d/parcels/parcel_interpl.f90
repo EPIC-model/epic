@@ -266,10 +266,12 @@ module parcel_interpl
             tbuoyg(0:nz, :, :) = tbuoyg(0:nz, :, :) / volg(0:nz, :, :)
 
             ! At boundary extrapolation before further extrapolation
+#ifndef ENABLE_DRY_MODE
             humg(0,  :, :) = f32 * humg(0,  :, :) - f12 * humg(1, :, :)
             humg(nz, :, :) = f32 * humg(nz, :, :) - f12 * humg(nz-1, :, :)
             dbuoyg(0,  :, :) = f32 * dbuoyg(0,  :, :) - f12 * dbuoyg(1, :, :)
             dbuoyg(nz, :, :) = f32 * dbuoyg(nz, :, :) - f12 * dbuoyg(nz-1, :, :)
+#endif
             tbuoyg(0,  :, :) = f32 * tbuoyg(0,  :, :) - f12 * tbuoyg(1, :, :)
             tbuoyg(nz, :, :) = f32 * tbuoyg(nz, :, :) - f12 * tbuoyg(nz-1, :, :)
 
