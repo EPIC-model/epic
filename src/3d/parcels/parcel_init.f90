@@ -3,7 +3,7 @@
 ! =============================================================================
 module parcel_init
     use options, only : parcel, output, verbose, field_tol
-    use constants, only : zero, two, one, f12, f13, f23
+    use constants, only : zero, two, one, f12, f13, f23, f32
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipsoid, only : get_abc, get_eigenvalues
     use parcel_split_mod, only : parcel_split
@@ -201,6 +201,8 @@ module parcel_init
             !Double edge values at iz = 0 and nz:
             resi(0,  :, :) = two * resi(0,  :, :)
             resi(nz, :, :) = two * resi(nz, :, :)
+            resi(0,  :, :) = f32 * resi(0,  :, :) - f12 * resi(1,    :, :)
+            resi(nz, :, :) = f32 * resi(nz, :, :) - f12 * resi(nz-1, :, :)
 
             ! Determine local inverse density of parcels (apar)
             !$omp parallel do default(shared) private(l, n, rsum)
@@ -355,6 +357,8 @@ module parcel_init
 
                 resi(0, :, :)    = two * resi(0, :, :)
                 resi(nz, :, :)   = two * resi(nz, :, :)
+                resi(0, :, :)    = f32 * resi(0, :, :)  - f12 * resi(1, :, :)
+                resi(nz, :, :)   = f32 * resi(nz, :, :) - f12 * resi(nz-1, :, :)
                 resi(0:nz, :, :) = field(0:nz, :, :) - resi(0:nz, :, :)
 
                 !Update (volume-weighted) attribute:
