@@ -241,7 +241,7 @@ module parcel_interpl
                 vortg(0:nz, :, :, p) = vortg(0:nz, :, :, p) / volg(0:nz, :, :)
             enddo
 
-            ! At boundary extrapolation
+            ! At boundary extrapolation before further extrapolation
             vortg(0,  :, :, :) = f32 * vortg(0,  :, :, :) - f12 * vortg(1, :, :, :)
             vortg(nz, :, :, :) = f32 * vortg(nz, :, :, :) - f12 * vortg(nz-1, :, :, :)            
 
@@ -265,7 +265,7 @@ module parcel_interpl
 #endif
             tbuoyg(0:nz, :, :) = tbuoyg(0:nz, :, :) / volg(0:nz, :, :)
 
-            ! At boundary extrapolation
+            ! At boundary extrapolation before further extrapolation
             humg(0,  :, :) = f32 * humg(0,  :, :) - f12 * humg(1, :, :)
             humg(nz, :, :) = f32 * humg(nz, :, :) - f12 * humg(nz-1, :, :)
             dbuoyg(0,  :, :) = f32 * dbuoyg(0,  :, :) - f12 * dbuoyg(1, :, :)
