@@ -39,7 +39,7 @@ program test_mpi_pencil
     do ix = box%lo(1), box%hi(1)
         do iy = box%lo(2), box%hi(2)
             do iz = box%lo(3), box%hi(3)
-                values(iz, iy, ix) = iz
+                values(iz, iy, ix) = iy+1
             enddo
         enddo
     enddo
@@ -50,7 +50,15 @@ program test_mpi_pencil
 
     call transpose_to_pencil(y_from_z_transposition, (/I_Z, I_Y, I_X/), dim_y_comm, FORWARD, values, vtrans)
 
-
+    if (mpi_rank == mpi_master) then
+!         do ix = box%lo(1), box%hi(1)
+!             do iy = box%lo(2), box%hi(2)
+                do iy = box%lo(2), box%hi(2)
+                    print *, vtrans(iy, box%lo(1), box%lo(3))
+                enddo
+!             enddo
+!         enddo
+    endif
 
     call finalise_pencil_fft
 
