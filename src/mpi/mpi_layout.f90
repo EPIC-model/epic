@@ -94,7 +94,7 @@ module mpi_layout
             box%hlo(3) = -1
             box%hhi(3) = nz + 1
 
-            box%l_parallel = (box%hi - box%lo < (/nx, ny, nz/))
+            box%l_parallel = (box%hi - box%lo < (/nx-1, ny-1, nz/))
             box%size = box%hi - box%lo + 1
 
             ! Info from https://www.open-mpi.org

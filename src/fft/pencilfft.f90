@@ -57,6 +57,7 @@ contains
         integer :: x_distinct_sizes(mpi_dim_sizes(I_X)), &
                    y_distinct_sizes(mpi_dim_sizes(I_Y))
 
+
         if (l_initialised) then
             return
         endif
@@ -71,8 +72,8 @@ contains
             !   LOGICAL, INTENT(IN) :: remain_dims(*)
             !   TYPE(MPI_Comm), INTENT(OUT) :: newcomm
             !   INTEGER, OPTIONAL, INTENT(OUT) :: ierror
-            call mpi_cart_sub(comm_world, (/.true., .false./), dim_y_comm, mpi_err)
-            call mpi_cart_sub(comm_world, (/.false., .true./), dim_x_comm, mpi_err)
+            call mpi_cart_sub(comm_cart, (/.true., .false./), dim_y_comm, mpi_err)
+            call mpi_cart_sub(comm_cart, (/.false., .true./), dim_x_comm, mpi_err)
             call mpi_allgather(box%size(I_Y), 1, MPI_INT, y_distinct_sizes, 1, MPI_INT, dim_y_comm, mpi_err)
             call mpi_allgather(box%size(I_X), 1, MPI_INT, x_distinct_sizes, 1, MPI_INT, dim_x_comm, mpi_err)
         else if (box%l_parallel(I_Y)) then
