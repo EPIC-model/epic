@@ -10,7 +10,7 @@ program test_mpi_parcel_diagnostics
     use fields, only : field_alloc
     use parcel_container
     use parcel_diagnostics
-    use parameters, only : lower, update_parameters, extent, nx, ny, nz, vcell, dx
+    use parameters, only : lower, update_parameters, extent, nx, ny, nz, vcell, dx, set_vmin
     use timer
     implicit none
 
@@ -35,7 +35,7 @@ program test_mpi_parcel_diagnostics
     call update_parameters
 
     ! set to make all parcels smaller than vmin
-    vmin = vcell
+    call set_vmin(vcell)
 
     ! calls mpi_layout_init internally
     call field_alloc
@@ -76,7 +76,7 @@ program test_mpi_parcel_diagnostics
     velocity(:, 1:n_parcels)  = f12
 
     ! calculates reference potential energy
-    call init_parcel_diagnostics
+    call calculate_peref
 
     call calculate_parcel_diagnostics(velocity)
 

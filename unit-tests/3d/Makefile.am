@@ -22,7 +22,7 @@ libcombi_la_LIBADD = 					\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/mpi/libepic_mpi.la		\
 	$(top_builddir)/src/fft/libepic_fft.la		\
-	$(top_builddir)/src/mpi/libepic_mpi.la		\
+	$(top_builddir)/src/fft/libepic_mpi_fft.la	\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 unittestsdir = $(prefix)/unit-tests
@@ -65,7 +65,8 @@ unittests_PROGRAMS = 				\
 	test_diffz2				\
 	test_diffz3				\
 	test_diffz4				\
-	test_diffz5
+	test_diffz5				\
+	test_mpi_pencil
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -189,3 +190,6 @@ test_diffz4_LDADD = libcombi.la
 
 test_diffz5_SOURCES = test_diffz5.f90
 test_diffz5_LDADD = libcombi.la
+
+test_mpi_pencil_SOURCES = test_mpi_pencil.f90
+test_mpi_pencil_LDADD = libcombi.la

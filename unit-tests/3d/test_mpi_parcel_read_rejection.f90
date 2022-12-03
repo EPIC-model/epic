@@ -182,9 +182,9 @@ program test_mpi_parcel_read_rejection
             call create_netcdf_file(ncfname, .true., ncid)
 
             ! define global attributes
-            call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
-                                   file_type='parcels',          &
+            call write_netcdf_info(ncid=ncid,                       &
+                                   version_tag=package_version,     &
+                                   file_type='parcels',             &
                                    cf_version=cf_version)
 
             call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))

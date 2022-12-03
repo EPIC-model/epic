@@ -7,7 +7,7 @@ program test_mpi_parcel_read
     use unit_test
     use constants, only : zero
     use parcel_container
-    use parameters, only : max_num_parcels
+    use parameters, only : set_max_num_parcels
     use parcel_netcdf
     use mpi_communicator
     use timer
@@ -17,7 +17,7 @@ program test_mpi_parcel_read
     double precision     :: res
     integer              :: n, start_index, n_parcels_before
 
-    max_num_parcels = 100000000
+    call set_max_num_parcels(100000000)
 
     call mpi_comm_initialise
 
