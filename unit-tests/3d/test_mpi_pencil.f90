@@ -8,10 +8,13 @@ program test_mpi_pencil
     use constants, only : zero, one, two, four
     use sta2dfft
     use pencil_fft
+    use dimensions
     use parameters, only : update_parameters, nx, ny, nz, lower, extent
     implicit none
 
-    logical :: passed
+    double precision, allocatable :: values(:, :, :), vtrans(:, :, :)
+    logical                       :: passed
+    integer                       :: ix, iy, iz
 
     call mpi_comm_initialise
 
@@ -27,9 +30,25 @@ program test_mpi_pencil
 
     call mpi_layout_init(nx, ny, nz)
 
+    allocate(values(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+    allocate(vtrans(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), box%hlo(3):box%hhi(3)))
+
+    values(:, :, :) = zero
+    vtrans(:, :, :) = zero
+
+    do ix = box%lo(1), box%hi(1)
+        do iy = box%lo(2), box%hi(2)
+            do iz = box%lo(3), box%hi(3)
+                values(iz, iy, ix) = iz
+            enddo
+        enddo
+    enddo
 
 
     call initialise_pencil_fft(nx, ny, nz)
+
+
+    call transpose_to_pencil(y_from_z_transposition, (/I_Z, I_Y, I_X/), dim_y_comm, FORWARD, values, vtrans)
 
 
 
