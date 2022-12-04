@@ -2,7 +2,7 @@
 !                             Field diagnostics
 ! =============================================================================
 module field_diagnostics
-    use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
+    use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli, vdomaini
     use constants, only : f12, f14
     use fields
     use timer, only : start_timer, stop_timer
@@ -16,8 +16,8 @@ module field_diagnostics
                         min_npar,   &       ! min num parcels per cell
                         avg_npar,   &       ! average num parcels per cell
                         avg_nspar,  &       ! average num small parcels per cell
-                        keg,        &       ! kinetic energy calculated on the grid
-                        eng,        &       ! enstrophy calculated on the grid
+                        keg,        &       ! domain-averaged kinetic energy calculated on the grid
+                        eng,        &       ! domain-averaged enstrophy calculated on the grid
                         min_buoyg,  &       ! minimum gridded buoyancy value
                         max_buoyg           ! maximum gridded buoyancy value
     contains
@@ -55,6 +55,9 @@ module field_diagnostics
                                              + velog(nz, :, :, 2) ** 2           &
                                              + velog(nz, :, :, 3) ** 2))
 
+            ! divide by domain volume to get domain-averaged kinetic energy
+            keg = keg * vdomaini
+
             eng = f12 * sum(volg(1:nz-1, :, :) * ( vortg(1:nz-1, :, :, 1) ** 2   &
                                                  + vortg(1:nz-1, :, :, 2) ** 2   &
                                                  + vortg(1:nz-1, :, :, 3) ** 2)) &
@@ -64,6 +67,9 @@ module field_diagnostics
                 + f14 * sum(volg(nz, :, :) * ( vortg(nz, :, :, 1) ** 2           &
                                              + vortg(nz, :, :, 2) ** 2           &
                                              + vortg(nz, :, :, 3) ** 2))
+
+            ! divide by domain volume to get domain-averaged enstrophy
+            eng = eng * vdomaini
 
             call stop_timer(field_stats_timer)
 

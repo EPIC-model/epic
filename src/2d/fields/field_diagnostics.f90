@@ -3,7 +3,7 @@
 ! =============================================================================
 module field_diagnostics
     use constants, only : f12, f14
-    use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
+    use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli, vdomaini
     use fields
     use timer, only : start_timer, stop_timer
     implicit none
@@ -50,6 +50,9 @@ module field_diagnostics
                                           + velog(0 , :, 2) ** 2))  &
                 + f14 * sum(volg(nz, :) * ( velog(nz, :, 1) ** 2    &
                                           + velog(nz, :, 2) ** 2))
+
+            ! divide by domain volume to get domain-averaged keg
+            keg = keg * vdomaini
 
 #ifndef NDEBUG
             max_vol_sym_err = maxval(dabs(sym_volg(0:nz, :)))
