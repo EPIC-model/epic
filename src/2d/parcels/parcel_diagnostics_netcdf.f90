@@ -91,9 +91,9 @@ module parcel_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='pe',                                                  &
-                long_name='potential energy',                               &
+                long_name='domain-averaged potential energy',               &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=pe_id)
@@ -101,9 +101,9 @@ module parcel_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='ke',                                                  &
-                long_name='kinetic energy',                                 &
+                long_name='domain-averaged kinetic energy',                 &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=ke_id)
@@ -111,9 +111,9 @@ module parcel_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='te',                                                  &
-                long_name='total energy',                                   &
+                long_name='domain-averaged total energy',                   &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=te_id)

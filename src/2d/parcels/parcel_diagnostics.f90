@@ -4,7 +4,7 @@
 module parcel_diagnostics
     use constants, only : zero, one, f12
     use merge_sort
-    use parameters, only : extent, lower, vcell, vmin, nx, nz
+    use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse
     use omp_lib
@@ -14,8 +14,8 @@ module parcel_diagnostics
 
     integer :: parcel_stats_timer
 
-    ! pe    : potential energy
-    ! ke    : kinetic energy
+    ! pe    : domain-averaged potential energy
+    ! ke    : domain-averaged kinetic energy
     double precision :: pe, ke
 
     integer :: n_small
@@ -73,6 +73,9 @@ module parcel_diagnostics
                 peref = peref &
                       - b(n) * parcels%volume(ii(n)) * zmean
             enddo
+
+            ! divide by domain volume to get domain-averaged peref
+            peref = peref * vdomaini
 
             call stop_timer(parcel_stats_timer)
         end subroutine calculate_peref
@@ -150,8 +153,9 @@ module parcel_diagnostics
             !$omp end do
             !$omp end parallel
 
-            ke = f12 * ke
-            pe = pe - peref
+            ! divide by domain volume to get domain-averaged quantities
+            ke = f12 * ke * vdomaini
+            pe = pe * vdomaini - peref
 
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))

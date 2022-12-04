@@ -68,6 +68,9 @@ module parcel_diagnostics
                       - b(n) * parcels%volume(ii(n)) * zmean
             enddo
 
+            ! divide by domain volume to get domain-averaged peref
+            peref = peref * vdomaini
+
             call stop_timer(parcel_stats_timer)
         end subroutine calculate_peref
 
@@ -160,14 +163,10 @@ module parcel_diagnostics
             !$omp end do
             !$omp end parallel
 
-            ke = f12 * ke
-            pe = pe - peref
-            en = f12 * en
-
             ! divide by domain volume to get domain-averaged quantities
-            ke = ke * vdomaini
-            pe = pe * vdomaini
-            en = en * vdomaini
+            ke = f12 * ke * vdomaini
+            pe = pe * vdomaini - peref
+            en = f12 * en * vdomaini
 
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
