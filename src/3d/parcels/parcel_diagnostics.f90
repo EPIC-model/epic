@@ -4,7 +4,7 @@
 module parcel_diagnostics
     use constants, only : zero, one, f12, thousand
     use merge_sort
-    use parameters, only : extent, lower, vcell, vmin, nx, nz
+    use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipsoid
     use omp_lib
@@ -163,6 +163,11 @@ module parcel_diagnostics
             ke = f12 * ke
             pe = pe - peref
             en = f12 * en
+
+            ! divide by domain volume to get domain-averaged quantities
+            ke = ke * vdomaini
+            pe = pe * vdomaini
+            en = en * vdomaini
 
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))

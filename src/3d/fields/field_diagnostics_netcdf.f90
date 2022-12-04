@@ -139,9 +139,9 @@ module field_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='ke',                                                  &
-                long_name='kinetic energy',                                 &
+                long_name='domain-averaged kinetic energy',                 &
                 std_name='',                                                &
-                unit='m^5/s^2',                                             &
+                unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=keg_id)
@@ -149,9 +149,9 @@ module field_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='en',                                                  &
-                long_name='enstrophy',                                      &
+                long_name='domain-averaged enstrophy',                      &
                 std_name='',                                                &
-                unit='m^3/s^2',                                             &
+                unit='1/s^2',                                               &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=eng_id)
