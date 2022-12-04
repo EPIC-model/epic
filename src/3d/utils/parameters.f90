@@ -50,10 +50,10 @@ module parameters
     double precision, protected :: extenti(3)
 
     ! domain volume
-    double precision :: vdomain
+    double precision, protected :: vdomain
 
     ! inverse domain volume
-    double precision :: vdomaini
+    double precision, protected :: vdomaini
 
     ! domain centre
     double precision, protected :: center(3)
