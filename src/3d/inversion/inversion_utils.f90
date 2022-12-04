@@ -656,6 +656,14 @@ module inversion_utils
             nyval = size(fp, 2)
             nxval = size(fp, 3)
 
+            ! 1. Transform from (z, y, x) to (x, z, y) pencil
+            ! 2. Do x transform
+            ! 3. Transform from (x, z, y) to (y, x, z) pencil
+            ! 4. Do y transform
+            ! 5. Transform from (y, x, z) to (z, y, x) pencil
+            ! Note the final ordering is different to non-parallel version!!
+            ! If we do so, we need to change all spectral-space arrays!!
+
             ! Carry out a full x transform first:
             call forfft(nzval * nyval, nxval, fp, xtrig, xfactors)
 
