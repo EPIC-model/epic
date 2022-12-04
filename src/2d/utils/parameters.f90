@@ -61,10 +61,10 @@ module parameters
     double precision, protected :: upper(2)
 
     ! minimum volume
-    double precision :: vmin
+    double precision, protected :: vmin
 
     ! maximum volume
-    double precision :: vmax
+    double precision, protected :: vmax
 
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
@@ -118,4 +118,24 @@ module parameters
         max_num_parcels = int(nx * nz * parcel%min_vratio * parcel%size_factor)
 
     end subroutine update_parameters
+
+        subroutine set_mesh_spacing(ext, nc)
+        double precision, intent(in) :: ext(2)
+        integer,          intent(in) :: nc(2)
+        dx = ext / dble(nc)
+    end subroutine set_mesh_spacing
+
+#ifdef ENABLE_UNIT_TESTS
+    subroutine set_vmin(val)
+        double precision, intent(in) :: val
+        vmin = val
+    end subroutine set_vmin
+
+
+    subroutine set_vmax(val)
+        double precision, intent(in) :: val
+        vmax = val
+    end subroutine set_vmax
+#endif
+
 end module parameters
