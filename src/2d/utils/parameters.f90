@@ -119,7 +119,7 @@ module parameters
 
     end subroutine update_parameters
 
-        subroutine set_mesh_spacing(ext, nc)
+    subroutine set_mesh_spacing(ext, nc)
         double precision, intent(in) :: ext(2)
         integer,          intent(in) :: nc(2)
         dx = ext / dble(nc)
