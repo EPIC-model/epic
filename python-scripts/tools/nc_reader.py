@@ -66,6 +66,10 @@ class nc_reader:
     def is_field_file(self):
         return self._nctype == "fields"
 
+    @property
+    def is_three_dimensional(self):
+        return len(self.get_box_ncells()) == 3
+
     def get_num_steps(self):
         if self.is_parcel_file:
             return self._n_parcel_files
@@ -90,18 +94,26 @@ class nc_reader:
 
     def get_meshgrid(self):
         x = self.get_axis('x')
-        y = self.get_axis('y')
         z = self.get_axis('z')
 
-        xg, yg, zg = np.meshgrid(x, y, z, indexing='ij')
+        if self.is_three_dimensional:
+            y = self.get_axis('y')
 
-        # 13 July 2022
-        # https://stackoverflow.com/questions/1827489/numpy-meshgrid-in-3d
-        assert np.all(xg[:, 0, 0] == x)
-        assert np.all(yg[0, :, 0] == y)
-        assert np.all(zg[0, 0, :] == z)
+            xg, yg, zg = np.meshgrid(x, y, z, indexing='ij')
 
-        return xg, yg, zg
+            # 13 July 2022
+            # https://stackoverflow.com/questions/1827489/numpy-meshgrid-in-3d
+            assert np.all(xg[:, 0, 0] == x)
+            assert np.all(yg[0, :, 0] == y)
+            assert np.all(zg[0, 0, :] == z)
+
+            return xg, yg, zg
+        else:
+            xg, zg = np.meshgrid(x, z, indexing='ij')
+            assert np.all(xg[:, 0] == x)
+            assert np.all(zg[0, :] == z)
+
+            return xg, zg
 
     def get_all(self, name):
         if self.is_parcel_file:
@@ -114,7 +126,7 @@ class nc_reader:
 
     def get_dataset(self, step, name, indices=None, copy_periodic=True):
 
-        if name in self._derived_fields:
+        if name in self._derived_fields and self.is_three_dimensional:
             return self._get_derived_dataset(step, name, copy_periodic)
 
         if not name in self._ncfile.variables.keys():
@@ -144,8 +156,11 @@ class nc_reader:
                 if copy_periodic:
                     fdata = self._copy_periodic_layers(fdata)
 
-                # change ordering from (z, y, x) to (x, y, z)
-                fdata = np.transpose(fdata, axes=[2, 1, 0])
+                if self.is_three_dimensional:
+                    # change ordering from (z, y, x) to (x, y, z)
+                    fdata = np.transpose(fdata, axes=[2, 1, 0])
+                else:
+                    fdata = np.transpose(fdata, axes=[1, 0])
 
                 return fdata
 
@@ -239,8 +254,12 @@ class nc_reader:
         return self._ncfile.dimensions['n_parcels'].size
 
     def get_ellipses(self, step, indices=None):
+        if self.is_three_dimensional:
+            raise IOError("Not a 2-dimensional dataset.")
+
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
+
         x_pos = self.get_dataset(step, "x_position", indices=indices)
         z_pos = self.get_dataset(step, "z_position", indices=indices)
         position = np.empty((len(x_pos), 2))
@@ -266,8 +285,12 @@ class nc_reader:
                                  offsets=position)
 
     def get_ellipses_for_bokeh(self, step, indices=None):
+        if self.is_three_dimensional:
+            raise IOError("Not a 2-dimensional dataset.")
+
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
+
         x_pos = self.get_dataset(step, "x_position", indices=indices)
         z_pos = self.get_dataset(step, "z_position", indices=indices)
         V = self.get_dataset(step, "volume", indices=indices)
@@ -293,8 +316,12 @@ class nc_reader:
         )
 
     def get_aspect_ratio(self, step, indices=None):
+        if self.is_three_dimensional:
+            raise IOError("Not a 2-dimensional dataset.")
+
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
+
         V = self.get_dataset(step, "volume", indices=indices)
         B11 = self.get_dataset(step, "B11", indices=indices)
         B12 = self.get_dataset(step, "B12", indices=indices)
@@ -379,9 +406,15 @@ class nc_reader:
         return ""
 
     def _copy_periodic_layers(self, field):
-        nz, ny, nx = field.shape
-        field_copy = np.empty((nz, ny+1, nx+1))
-        field_copy[:, 0:ny, 0:nx] = field.copy()
-        field_copy[:, ny, :] = field_copy[:, 0, :]
-        field_copy[:, :, nx] = field_copy[:, :, 0]
+        if self.is_three_dimensional:
+            nz, ny, nx = field.shape
+            field_copy = np.empty((nz, ny+1, nx+1))
+            field_copy[:, 0:ny, 0:nx] = field.copy()
+            field_copy[:, ny, :] = field_copy[:, 0, :]
+            field_copy[:, :, nx] = field_copy[:, :, 0]
+        else:
+            nz, nx = field.shape
+            field_copy = np.empty((nz, nx+1))
+            field_copy[:, 0:nx] = field.copy()
+            field_copy[:, nx] = field_copy[:, 0]
         return field_copy
