@@ -55,8 +55,8 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
 
     graph = bpl.figure(
         output_backend="webgl",
-        plot_width=plot_width,
-        plot_height=plot_height,
+        width=plot_width,
+        height=plot_height,
         aspect_ratio=(right - left) / (top - bottom),
         x_range=(left, right),
         y_range=(bottom, top),
