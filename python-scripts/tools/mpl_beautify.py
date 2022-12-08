@@ -2,8 +2,17 @@ import matplotlib as mpl
 from tools.mpl_style import *
 from tools.units import *
 
+def remove_xticks(ax):
+    ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
 
-def add_timestamp(plt, time, xy=(0.75, 1.05), fmt="%.3f"):
+def remove_yticks(ax):
+    ax.tick_params(axis='y', which='both', right=False, left=False)
+
+def add_annotation(ax, label, xy, **kwargs):
+    bbox = dict(boxstyle="round", facecolor="wheat", edgecolor='none')
+    ax.annotate(label, xy=xy, xycoords="axes fraction", bbox=bbox, **kwargs)
+
+def add_timestamp(plt, time, xy=(0.75, 1.05), fmt="%.3f", **kwargs):
     # 29. Dec 2020
     # https://matplotlib.org/3.1.1/gallery/pyplots/annotate_transform.html#sphx-glr-gallery-pyplots-annotate-transform-py
     # https://stackoverflow.com/questions/7045729/automatically-position-text-box-in-matplotlib
@@ -15,7 +24,7 @@ def add_timestamp(plt, time, xy=(0.75, 1.05), fmt="%.3f"):
         label = r"t = \SI{" + fmt % (time) + r"}{" + units["time"] + r"}"
 
     plt.annotate(
-        label, xy=xy, xycoords="axes fraction", bbox=bbox
+        label, xy=xy, xycoords="axes fraction", bbox=bbox, **kwargs
     )
 
 

@@ -5,55 +5,9 @@ import numpy as np
 import os
 import matplotlib.colors as mpl_colors
 
-mpl.rcParams.update({
-    "figure.figsize": (9, 6),
-    "figure.dpi": 200,
-    "font.family": "serif",
-    "font.size": 11,
-    "text.usetex": True,
-    'legend.framealpha': 1.0,
-    'lines.linewidth': 0.75,
-    'grid.color':     'b0b0b0',
-    'grid.linestyle': 'dotted',
-    'grid.linewidth': 0.25,
-    'grid.alpha':     1.0,
-    'text.latex.preamble': "\n".join([
-        r"\usepackage{amsmath}",
-        r"\usepackage[utf8]{inputenc}",
-        r"\usepackage[T1]{fontenc}",
-        r"\usepackage{bm}"
-#        r"\usepackage{siunitx}",
-        ])
-})
-
 # 28 July 2022
 # https://stackoverflow.com/questions/42086276/get-default-line-colour-cycle
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-
-def add_timestamp(plt, time, xy=(0.75, 1.05), fmt="%.2f", **kwargs):
-    bbox = dict(boxstyle="round", facecolor="wheat", edgecolor='none')
-    label = r"$t = " + fmt % (time) + "$"
-    plt.annotate(label, xy=xy, xycoords="axes fraction", bbox=bbox, **kwargs)
-
-def add_annotation(ax, label, xy, **kwargs):
-    bbox = dict(boxstyle="round", facecolor="wheat", edgecolor='none')
-    ax.annotate(label, xy=xy, xycoords="axes fraction", bbox=bbox, **kwargs)
-
-def remove_xticks(ax):
-    ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-
-def remove_yticks(ax):
-    ax.tick_params(axis='y', which='both', right=False, left=False)
-
-# assumes data in ordering (x, y, z)
-def get_max_magnitude(xcomp, ycomp, zcomp, plane, loc):
-    if plane == 'xy':
-        magn = xcomp[:, :, loc] ** 2 + ycomp[:, :, loc] ** 2 + zcomp[:, :, loc] ** 2
-    elif plane == 'xz':
-        magn = xcomp[:, loc, :] ** 2 + ycomp[:, loc, :] ** 2 + zcomp[:, loc, :] ** 2
-    elif plane == 'yz':
-        magn = xcomp[loc, :, :] ** 2 + ycomp[loc, :, :] ** 2 + zcomp[loc, :, :] ** 2
-    return np.sqrt(magn.max())
 
 def get_plane(plane, loc, fdata):
     if plane == 'xy':
@@ -109,7 +63,7 @@ def make_imshow(ax, plane, loc, fdata, ncr,
     else:
         norm = None
 
-        
+
     vmax = kwargs.pop('vmax', None)
     vmin = kwargs.pop('vmin', None)
 
@@ -140,10 +94,10 @@ def make_imshow(ax, plane, loc, fdata, ncr,
 
     yticks = kwargs.pop('yticks', None)
     yticklab = kwargs.pop('yticklab', None)
-    
+
     if not yticks is None and not yticklab is None:
         ax.set_yticks(yticks, yticklab)
-    
+
     ax.set_xlabel(xlab)
     ax.set_ylabel(ylab)
 
@@ -157,59 +111,13 @@ def make_imshow(ax, plane, loc, fdata, ncr,
         clabel = kwargs.pop('clabel', None)
         if not clabel is None:
             cbar.set_label(clabel)
-            
+
         if not cmap_norm == 'symlog' and not cmap_norm == 'log':
             cbar.formatter.set_powerlimits((0, 0))
             # 18 July 2022
             # https://stackoverflow.com/questions/34039396/matplotlib-colorbar-scientific-notation-offset
             cbar.ax.yaxis.set_offset_position('left')
     return im, cbar
-
-def make_mean_profiles(ax, ncr, step, fields, labels, normalise=False, **kwargs):
-    z = ncr.get_all('z')
-    n = len(z)
-    zticks   = np.pi * np.array([-0.5, -0.25, 0.0, 0.25, 0.5])
-    zticklab = [r'$-\pi/2$', r'$-\pi/4$', r'$0$', r'$\pi/4$', r'$\pi/2$']
-
-    xticks = kwargs.pop('xticks', [-1, 0, 1])
-    xlim = kwargs.pop('xlim', [-1.1, 1.1])
-
-    for i, field in enumerate(fields):
-        bar = np.zeros(n)
-        data = ncr.get_dataset(step=step, name=field, copy_periodic=False)
-        bar = data.mean(axis=(0, 1))
-
-        if normalise:
-            bar = bar / bar.max()
-
-        ax.plot(bar, z,
-                color=colors[i],
-                label=labels[i])
-        ax.grid(zorder=-1)
-        #ax.set_aspect(1)
-        ax.set_yticks(ticks=zticks, labels=zticklab)
-        #ax.set_xticks(ticks=xticks)
-        #ax.set_xlim(xlim)
-    return ax
-
-def make_rms_profiles(ax, ncr, step, fields, labels):
-    z = ncr.get_all('z')
-    n = len(z)
-    zticks   = np.pi * np.array([-0.5, -0.25, 0.0, 0.25, 0.5])
-    zticklab = [r'$-\pi/2$', r'$-\pi/4$', r'$0$', r'$\pi/4$', r'$\pi/2$']
-
-    for i, field in enumerate(fields):
-        rms = np.zeros(n)
-        data = ncr.get_dataset(step=step, name=field, copy_periodic=False)
-        rms = np.sqrt((data ** 2).mean(axis=(0, 1)))
-
-        ax.plot(rms, z,
-                color=colors[i],
-                label=labels[i])
-        ax.grid(zorder=-1)
-        ax.set_yticks(ticks=zticks, labels=zticklab)
-    return ax
-
 
 def save_figure(plt, figpath, fignum=1, overwrite=False):
     figname = 'fig' + str(fignum) + '.pdf'

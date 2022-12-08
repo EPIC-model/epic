@@ -16,5 +16,7 @@ nobase_tools_DATA = 			\
 	mpl_beautify.py 		\
 	mpl_style.py			\
 	units.py			\
+	utils.py			\
+	monc_reader.py			\
 	epic_config.py			\
 	__init__.py
