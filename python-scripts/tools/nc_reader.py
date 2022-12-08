@@ -140,6 +140,14 @@ class nc_reader:
             attr = attr.decode()
         return attr
 
+    def get_physical_quantity(self, name):
+        if not name in self._ncfile['physical_quantities'].ncattrs():
+            raise IOError("Physical quantity '" + name + "' unknown.")
+        attr = self._ncfile['physical_quantities'].getncattr(name)
+        if isinstance(attr, np.bytes_):
+            attr = attr.decode()
+        return attr
+
     def get_diagnostic(self, name):
         if not name in self._ncfile.variables.keys():
             raise IOError("Dataset '" + name + "' unknown.")
