@@ -33,7 +33,7 @@ module surface_parcel_split
         ! @param[in] threshold is the largest allowed aspect ratio
         subroutine do_ellipse_split(s_parcels, n_par, threshold)
             type(surface_parcel_container_type), intent(inout) :: s_parcels
-            integer,                             intent(intou) :: n_par
+            integer,                             intent(inout) :: n_par
             double precision,                    intent(in)    :: threshold
             double precision                                   :: B(3)
             double precision                                   :: a2, lam, V

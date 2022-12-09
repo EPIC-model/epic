@@ -12,13 +12,18 @@ module surface_parcel_container
     type surface_parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
             position,   &   ! (x, y)
+            vorticity,  &   ! (xi, eta, zeta)
             B               ! B matrix entries; ordering B(:, 1) = B11, B(:, 2) = B12, B(:, 3) = B22
 
         double precision, allocatable, dimension(:) :: &
-            area
+            area,       &
+#ifndef ENABLE_DRY_MODE
+            humidity,   &
+#endif
+            buoyancy
     end type surface_parcel_container_type
 
-    type(surface_parcel_container_type) up_surf_parcel, lo_surf_parcels
+    type(surface_parcel_container_type) up_surf_parcels, lo_surf_parcels
 
     private :: alloc, dealloc
 
@@ -86,6 +91,7 @@ module surface_parcel_container
 #endif
 
             s_parcels%position(:, n) = s_parcels%position(:, m)
+            s_parcels%vorticity(:, n) = s_parcels%vorticity(:, m)
 
             s_parcels%area(n)  = s_parcels%area(m)
             s_parcels%B(:, n)  = s_parcels%B(:, m)
@@ -96,13 +102,13 @@ module surface_parcel_container
         ! @param[in] num number of parcels
         subroutine surface_parcel_alloc(num)
             integer, intent(in) :: num
-            call alloc(up_surf_parcel, num)
+            call alloc(up_surf_parcels, num)
             call alloc(lo_surf_parcels, num)
         end subroutine surface_parcel_alloc
 
         ! Deallocate parcel memory
         subroutine surface_parcel_dealloc
-            call dealloc(up_surf_parcel)
+            call dealloc(up_surf_parcels)
             call dealloc(lo_surf_parcels)
         end subroutine surface_parcel_dealloc
 
@@ -111,16 +117,26 @@ module surface_parcel_container
             type(surface_parcel_container_type), intent(inout) :: s_parcels
             integer,                             intent(in)    :: num
             allocate(s_parcels%position(2, num))
+            allocate(s_parcels%vorticity(3, num))
             allocate(s_parcels%B(3, num))
             allocate(s_parcels%area(num))
+            allocate(s_parcels%buoyancy(num))
+#ifndef ENABLE_DRY_MODE
+            allocate(s_parcels%humidity(num))
+#endif
         end subroutine alloc
 
         subroutine dealloc(s_parcels)
             type(surface_parcel_container_type), intent(inout) :: s_parcels
 
             deallocate(s_parcels%position)
+            deallocate(s_parcels%vorticity)
             deallocate(s_parcels%B)
             deallocate(s_parcels%area)
+            deallocate(s_parcels%buoyancy)
+#ifndef ENABLE_DRY_MODE
+            deallocate(s_parcels%humidity)
+#endif
         end subroutine dealloc
 
 end module surface_parcel_container

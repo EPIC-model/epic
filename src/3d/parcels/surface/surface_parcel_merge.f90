@@ -50,7 +50,7 @@ module surface_parcel_merge
 
             if (n_merge > 0) then
                 ! merge small parcels into other parcels
-                call geometric_merge(s_parcels, isma, iclo, n_merge)
+                call geometric_merge(s_parcels, n_par, isma, iclo, n_merge)
 
                 ! overwrite invalid parcels
                 call pack_parcels(s_parcels, n_par, isma, n_merge)
@@ -76,17 +76,18 @@ module surface_parcel_merge
         ! @param[out] B22m are the B22 matrix entries of the mergers
         ! @param[out] am are the areas of the mergers
         subroutine do_group_merge(s_parcels, n_par, isma, iclo, n_merge, B11m, B12m, B22m, am)
-            type(parcel_container_type), intent(inout) :: s_parcels
-            integer,                     intent(in)    :: n_par
-            integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: iclo(:)
-            integer,                     intent(in)    :: n_merge
-            integer                                    :: m, ic, is, l, n
-            integer                                    :: loca(n_par)
-            double precision                           :: pos0(2, n_merge)
-            double precision                           :: posm(2, n_merge), delx, amerge, dely, mu
-            double precision,            intent(out)   :: B11m(n_merge), B12m(n_merge), &
-                                                          B22m(n_merge), am(n_merge)
+            type(surface_parcel_container_type), intent(inout) :: s_parcels
+            integer,                             intent(in)    :: n_par
+            integer,                             intent(in)    :: isma(0:)
+            integer,                             intent(in)    :: iclo(:)
+            integer,                             intent(in)    :: n_merge
+            integer                                            :: m, ic, is, l, n
+            integer                                            :: loca(n_par)
+            double precision                                   :: pos0(2, n_merge)
+            double precision                                   :: posm(2, n_merge), delx
+            double precision                                   :: amerge, dely, mu
+            double precision,                    intent(out)   :: B11m(n_merge), B12m(n_merge), &
+                                                                  B22m(n_merge), am(n_merge)
 
             loca = zero
 
@@ -200,18 +201,18 @@ module surface_parcel_merge
         ! @param[in] iclo are the indices of the close parcels
         ! @param[in] n_merge is the array size of isma and iclo
         subroutine geometric_merge(s_parcels, n_par, isma, iclo, n_merge)
-            type(parcel_container_type), intent(inout) :: s_parcels
-            integer,                     intent(in)    :: n_par
-            integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: iclo(:)
-            integer,                     intent(in)    :: n_merge
-            integer                                    :: m, ic, l
-            integer                                    :: loca(n_par)
-            double precision                           :: factor
-            double precision                           :: B11(n_merge), &
-                                                          B12(n_merge), &
-                                                          B22(n_merge), &
-                                                          A(n_merge)
+            type(surface_parcel_container_type), intent(inout) :: s_parcels
+            integer,                            intent(in)     :: n_par
+            integer,                            intent(in)     :: isma(0:)
+            integer,                            intent(in)     :: iclo(:)
+            integer,                            intent(in)     :: n_merge
+            integer                                            :: m, ic, l
+            integer                                            :: loca(n_par)
+            double precision                                   :: factor
+            double precision                                   :: B11(n_merge), &
+                                                                  B12(n_merge), &
+                                                                  B22(n_merge), &
+                                                                  A(n_merge)
 
             call do_group_merge(s_parcels, n_par, isma, iclo, n_merge, B11, B12, B22, A)
 
@@ -251,11 +252,11 @@ module surface_parcel_merge
         !   The above preconditions must be fulfilled so that the
         !   parcel pack algorithm works correctly.
         subroutine pack_parcels(s_parcels, n_par, isma, n_merge)
-            type(parcel_container_type), intent(inout) :: s_parcels
-            integer,                     intent(inout) :: n_par
-            integer, intent(in) :: isma(0:)
-            integer, intent(in) :: n_merge
-            integer             :: k, l, m
+            type(surface_parcel_container_type), intent(inout) :: s_parcels
+            integer,                             intent(inout) :: n_par
+            integer,                             intent(in)    :: isma(0:)
+            integer,                             intent(in)    :: n_merge
+            integer                                            :: k, l, m
 
             ! l points always to the last valid parcel
             l = n_par

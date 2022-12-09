@@ -22,6 +22,12 @@ module parameters
     ! inverse grid cell volume
     double precision, protected :: vcelli
 
+    ! grid cell area:
+    double precision :: acell
+
+    ! inverse grid cell area
+    double precision :: acelli
+
     ! number of grid cells in each dimension
     integer :: nx, ny, nz
 
@@ -75,8 +81,17 @@ module parameters
     ! maximum volume
     double precision, protected :: vmax
 
+    ! minimum area
+    double precision :: amin
+
+    ! maximum area
+    double precision :: amax
+
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
+
+    ! maximum number of allowed surface parcels
+    integer, protected :: max_num_surf_parcels
 
     ! specifies if zeta is kept zero on a boundary;
     ! this also makes sure that dzeta/dt = 0 on a boundary
@@ -115,6 +130,9 @@ module parameters
         vdomain = product(extent)
         vdomaini = one / vdomain
 
+        acell = dx(1) * dx(2)
+        acelli = one / acell
+
         vcell = product(dx)
         vcelli = one / vcell
 
@@ -136,7 +154,12 @@ module parameters
         vmin = vcell / parcel%min_vratio
         vmax = vcell / parcel%max_vratio
 
+        amin = acell / parcel%min_aratio
+        amax = acell / parcel%max_aratio
+
         max_num_parcels = int(nx * ny * nz * parcel%min_vratio * parcel%size_factor)
+
+        max_num_surf_parcels = int(nx * ny * parcel%min_aratio * parcel%size_factor)
 
     end subroutine update_parameters
 

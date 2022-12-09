@@ -4,7 +4,7 @@
 module surface_parcel_nearest
     use constants, only : pi, f12
     use surface_parcel_container, only : surface_parcel_container_type, get_delx, get_dely
-    use parameters, only : dx, dxi, acell, hli, lower, extent, ncell, nx, ny, amin, max_num_parcels
+    use parameters, only : dx, dxi, acell, hli, lower, extent, ncell, nx, ny, amin, max_num_surf_parcels
     use options, only : parcel
     use timer, only : start_timer, stop_timer
 
@@ -65,15 +65,15 @@ module surface_parcel_nearest
                 allocate(nppc(ncell))
                 allocate(kc1(ncell))
                 allocate(kc2(ncell))
-                allocate(loca(max_num_parcels))
-                allocate(node(max_num_parcels))
-                allocate(l_leaf(max_num_parcels))
-                allocate(l_available(max_num_parcels))
-                allocate(l_first_merged(max_num_parcels))
+                allocate(loca(max_num_surf_parcels))
+                allocate(node(max_num_surf_parcels))
+                allocate(l_leaf(max_num_surf_parcels))
+                allocate(l_available(max_num_surf_parcels))
+                allocate(l_first_merged(max_num_surf_parcels))
 #ifndef NDEBUG
-                allocate(l_merged(max_num_parcels))
-                allocate(l_small(max_num_parcels))
-                allocate(l_close(max_num_parcels))
+                allocate(l_merged(max_num_surf_parcels))
+                allocate(l_small(max_num_surf_parcels))
+                allocate(l_close(max_num_surf_parcels))
 #endif
             endif
 

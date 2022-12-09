@@ -3,11 +3,10 @@ module surface_parcel_netcdf
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
-    use surface_parcel_container, only : lo_surf_parcels    &
-                                       , up_surf_parcels    &
-                                       , n_lo_surf_parcels  &
-                                       , n_up_surf_parcels
-    use parameters, only : nx, ny, extent, lower, max_num_parcels
+    use surface_parcel_container, only : surface_parcel_container_type      &
+                                       , lo_surf_parcels, n_lo_surf_parcels &
+                                       , up_surf_parcels, n_up_surf_parcels
+    use parameters, only : nx, ny, extent, lower, max_num_surf_parcels
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
@@ -73,7 +72,7 @@ module surface_parcel_netcdf
                 do while (l_exist)
                     n_writes = n_writes + 1
                     ncfname =  basename // '_' // zfill(n_writes)
-                    ncfname = ncfname // '_' // which // '_surf_parcels.nc'
+                    ncfname = trim(ncfname) // '_' // which // '_surf_parcels.nc'
                     call exist_netcdf_file(ncfname, l_exist)
                     if (l_exist) then
                         call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
@@ -175,11 +174,11 @@ module surface_parcel_netcdf
         ! Write parcels of the current time step into the parcel file.
         ! @param[in] t is the time
         subroutine write_netcdf_parcels(s_parcels, n_par, which, t)
-            type(surface_parcel_container), intent(in) :: s_parcels
-            integer,                        intent(in) :: n_par
-            character(2),                   intent(in) :: which
-            double precision,               intent(in) :: t
-            integer                                    :: cnt(2), start(2)
+            type(surface_parcel_container_type), intent(in) :: s_parcels
+            integer,                             intent(in) :: n_par
+            character(2),                        intent(in) :: which
+            double precision,                    intent(in) :: t
+            integer                                         :: cnt(2), start(2)
 
             call start_timer(surf_parcel_io_timer)
 
@@ -190,7 +189,8 @@ module surface_parcel_netcdf
 
             call create_netcdf_parcel_file(n_par, which, trim(ncbasename), .true., .false.)
 
-            ncfname = ncbasename // '_' // zfill(n_writes) // '_' // which // '_surf_parcels.nc'
+            ncfname = trim(ncbasename) // '_' // zfill(n_writes)
+            ncfname = trim(ncfname) // '_' // which // '_surf_parcels.nc'
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
@@ -230,9 +230,9 @@ module surface_parcel_netcdf
 !
 !             call get_num_parcels(ncid, n_par)
 !
-!             if (n_par > max_num_parcels) then
+!             if (n_par > max_num_surf_parcels) then
 !                 print *, "Number of parcels exceeds limit of", &
-!                           max_num_parcels, ". Exiting."
+!                           max_num_surf_parcels, ". Exiting."
 !                 stop
 !             endif
 !
