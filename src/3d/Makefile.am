@@ -14,6 +14,14 @@ epic3d_SOURCES = 					\
 	fields/field_diagnostics.f90			\
 	fields/field_netcdf.f90				\
 	fields/field_diagnostics_netcdf.f90		\
+	parcels/parcel_ellipse.f90			\
+	parcels/surface_parcel_container.f90 		\
+	parcels/surface_parcel_bc.f90			\
+	parcels/surface_parcel_nearest.f90		\
+	parcels/surface_parcel_merge.f90		\
+	parcels/surface_parcel_split.f90		\
+	parcels/surface_parcel_interpl.f90 		\
+	parcels/surface_parcel_init.f90			\
 	parcels/parcel_ellipsoid.f90			\
 	parcels/parcel_container.f90 			\
 	parcels/parcel_bc.f90				\
@@ -23,19 +31,11 @@ epic3d_SOURCES = 					\
 	parcels/parcel_diagnostics.f90			\
 	parcels/parcel_interpl.f90 			\
 	parcels/parcel_init.f90				\
-	parcels/surface/parcel_ellipse.f90		\
-	parcels/surface/surface_parcel_container.f90 	\
-	parcels/surface/surface_parcel_bc.f90		\
-	parcels/surface/surface_parcel_nearest.f90	\
-	parcels/surface/surface_parcel_merge.f90	\
-	parcels/surface/surface_parcel_split.f90	\
-	parcels/surface/surface_parcel_interpl.f90 	\
-	parcels/surface/surface_parcel_init.f90		\
 	inversion/inversion_utils.f90			\
 	inversion/inversion.f90				\
 	parcels/parcel_correction.f90			\
 	parcels/parcel_netcdf.f90			\
-	parcels/surface/surface_parcel_netcdf.f90	\
+	parcels/surface_parcel_netcdf.f90		\
 	parcels/parcel_diagnostics_netcdf.f90		\
 	utils/utils.f90					\
 	stepper/rk4_utils.f90				\

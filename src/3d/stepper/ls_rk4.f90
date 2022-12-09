@@ -6,10 +6,15 @@ module ls_rk4
     use options, only : parcel, time, l_restart
     use dimensions, only : I_Z
     use parcel_container
+    use surface_parcel_container
     use parcel_bc
+    use parcel_ellipse, only : get_area
+    use surface_parcel_bc
     use rk4_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
+    use surface_parcel_interpl, only : lo_surf_grid2par, up_surf_grid2par &
+                                     , lo_surf_grid2par_add, up_surf_grid2par_add
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
@@ -26,7 +31,15 @@ module ls_rk4
         delta_pos, &
         strain,    &   ! strain at parcel location
         delta_b,   &   ! B matrix integration
-        delta_vor      ! vorticity integration
+        delta_vor, &   ! vorticity integration
+        lo_surf_delta_pos, &
+        lo_surf_strain,    &
+        lo_surf_delta_b,   &
+        lo_surf_delta_vor, &
+        up_surf_delta_pos, &
+        up_surf_strain,    &
+        up_surf_delta_b,   &
+        up_surf_delta_vor
 
     double precision, parameter, dimension(5) :: &
         cas = (/- 567301805773.0_dp/1357537059087.0_dp,  &
@@ -47,13 +60,24 @@ module ls_rk4
         ! Allocate memory of low-storage RK-4 temporaries.
         ! This memory is deallocated at the end of the simulation.
         ! @param[in] num is the size to allocate
-        subroutine ls_rk4_alloc(num)
+        subroutine ls_rk4_alloc(num, surf_num)
             integer, intent(in) :: num
+            integer, intent(in) :: surf_num
 
             allocate(delta_pos(3, num))
             allocate(delta_vor(3, num))
             allocate(strain(5, num))
             allocate(delta_b(5, num))
+
+            allocate(lo_surf_delta_pos(2, surf_num))
+            allocate(lo_surf_delta_vor(3, surf_num))
+            allocate(lo_surf_strain(4, surf_num))
+            allocate(lo_surf_delta_b(3, surf_num))
+
+            allocate(up_surf_delta_pos(2, surf_num))
+            allocate(up_surf_delta_vor(3, surf_num))
+            allocate(up_surf_strain(4, surf_num))
+            allocate(up_surf_delta_b(3, surf_num))
 
         end subroutine ls_rk4_alloc
 
@@ -64,6 +88,16 @@ module ls_rk4
             deallocate(delta_vor)
             deallocate(strain)
             deallocate(delta_b)
+
+            deallocate(lo_surf_delta_pos)
+            deallocate(lo_surf_delta_vor)
+            deallocate(lo_surf_strain)
+            deallocate(lo_surf_delta_b)
+
+            deallocate(up_surf_delta_pos)
+            deallocate(up_surf_delta_vor)
+            deallocate(up_surf_strain)
+            deallocate(up_surf_delta_b)
 
         end subroutine ls_rk4_dealloc
 
@@ -97,6 +131,9 @@ module ls_rk4
 
             call grid2par(delta_pos, delta_vor, strain)
 
+            call lo_surf_grid2par(lo_surf_delta_pos, lo_surf_delta_vor, lo_surf_strain)
+            call up_surf_grid2par(up_surf_delta_pos, up_surf_delta_vor, up_surf_strain)
+
             call calculate_parcel_diagnostics(delta_pos)
 
             call calculate_field_diagnostics
@@ -111,6 +148,7 @@ module ls_rk4
 
             call start_timer(rk4_timer)
             call apply_parcel_bc(parcels%position, parcels%B)
+            call apply_surface_parcel_bc
             call stop_timer(rk4_timer)
 
             ! we need to subtract 14 calls since we start and stop
@@ -143,6 +181,24 @@ module ls_rk4
                 enddo
                 !$omp end parallel do
 
+                !$omp parallel do default(shared) private(n)
+                do n = 1, n_lo_surf_parcels
+                    lo_surf_delta_b(:, n) = get_dBdt(lo_surf_parcels%B(:, n),           &
+                                                     lo_surf_strain(:, n),              &
+                                                     lo_surf_parcels%vorticity(:, n),   &
+                                                     lo_surf_parcels%area(n))
+                enddo
+                !$omp end parallel do
+
+                !$omp parallel do default(shared) private(n)
+                do n = 1, n_up_surf_parcels
+                    up_surf_delta_b(:, n) = get_dBdt(up_surf_parcels%B(:, n),           &
+                                                     up_surf_strain(:, n),              &
+                                                     up_surf_parcels%vorticity(:, n),   &
+                                                     up_surf_parcels%area(n))
+                enddo
+                !$omp end parallel do
+
                 call stop_timer(rk4_timer)
             else
                 call vor2vel
@@ -151,6 +207,9 @@ module ls_rk4
 
                 call grid2par_add(delta_pos, delta_vor, strain)
 
+                call lo_surf_grid2par_add(lo_surf_delta_pos, lo_surf_delta_vor, lo_surf_strain)
+                call up_surf_grid2par_add(up_surf_delta_pos, up_surf_delta_vor, up_surf_strain)
+
                 call start_timer(rk4_timer)
 
                 !$omp parallel do default(shared) private(n)
@@ -158,6 +217,26 @@ module ls_rk4
                     delta_b(:, n) = delta_b(:, n) &
                                   + get_dBdt(parcels%B(:, n), strain(:, n), &
                                              parcels%vorticity(:, n), parcels%volume(n))
+                enddo
+                !$omp end parallel do
+
+                !$omp parallel do default(shared) private(n)
+                do n = 1, n_lo_surf_parcels
+                    lo_surf_delta_b(:, n) = lo_surf_delta_b(:, n)                       &
+                                          + get_dBdt(lo_surf_parcels%B(:, n),           &
+                                                     lo_surf_strain(:, n),              &
+                                                     lo_surf_parcels%vorticity(:, n),   &
+                                                     lo_surf_parcels%area(n))
+                enddo
+                !$omp end parallel do
+
+                !$omp parallel do default(shared) private(n)
+                do n = 1, n_up_surf_parcels
+                    up_surf_delta_b(:, n) = up_surf_delta_b(:, n)                       &
+                                          + get_dBdt(up_surf_parcels%B(:, n),           &
+                                                     up_surf_strain(:, n),              &
+                                                     up_surf_parcels%vorticity(:, n),   &
+                                                     up_surf_parcels%area(n))
                 enddo
                 !$omp end parallel do
 
@@ -176,6 +255,32 @@ module ls_rk4
             enddo
             !$omp end parallel do
 
+            !$omp parallel do default(shared) private(n)
+            do n = 1, n_lo_surf_parcels
+                lo_surf_parcels%position(:, n) = lo_surf_parcels%position(:, n)     &
+                                               + cb * dt * lo_surf_delta_pos(:, n)
+
+                lo_surf_parcels%vorticity(:, n) = lo_surf_parcels%vorticity(:, n)   &
+                                                + cb * dt * lo_surf_delta_vor(:, n)
+                lo_surf_parcels%B(:, n) = lo_surf_parcels%B(:, n) &
+                                        + cb * dt * lo_surf_delta_b(:, n)
+                lo_surf_parcels%area(n)  = get_area(lo_surf_parcels%B(:, n))
+            enddo
+            !$omp end parallel do
+
+            !$omp parallel do default(shared) private(n)
+            do n = 1, n_up_surf_parcels
+                up_surf_parcels%position(:, n) = up_surf_parcels%position(:, n)     &
+                                               + cb * dt * up_surf_delta_pos(:, n)
+
+                up_surf_parcels%vorticity(:, n) = up_surf_parcels%vorticity(:, n)   &
+                                                + cb * dt * up_surf_delta_vor(:, n)
+                up_surf_parcels%B(:, n) = up_surf_parcels%B(:, n) &
+                                        + cb * dt * up_surf_delta_b(:, n)
+                up_surf_parcels%area(n)  = get_area(up_surf_parcels%B(:, n))
+            enddo
+            !$omp end parallel do
+
             call stop_timer(rk4_timer)
 
             if (step == 5) then
@@ -189,6 +294,22 @@ module ls_rk4
                 delta_pos(:, n) = ca * delta_pos(:, n)
                 delta_vor(:, n) = ca * delta_vor(:, n)
                 delta_b(:, n) = ca * delta_b(:, n)
+            enddo
+            !$omp end parallel do
+
+            !$omp parallel do default(shared) private(n)
+            do n = 1, n_lo_surf_parcels
+                lo_surf_delta_pos(:, n) = ca * lo_surf_delta_pos(:, n)
+                lo_surf_delta_vor(:, n) = ca * lo_surf_delta_vor(:, n)
+                lo_surf_delta_b(:, n) = ca * lo_surf_delta_b(:, n)
+            enddo
+            !$omp end parallel do
+
+            !$omp parallel do default(shared) private(n)
+            do n = 1, n_up_surf_parcels
+                up_surf_delta_pos(:, n) = ca * up_surf_delta_pos(:, n)
+                up_surf_delta_vor(:, n) = ca * up_surf_delta_vor(:, n)
+                up_surf_delta_b(:, n) = ca * up_surf_delta_b(:, n)
             enddo
             !$omp end parallel do
 

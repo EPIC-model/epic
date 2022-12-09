@@ -15,7 +15,7 @@ module surface_parcel_merge
                                        , get_dely
     use parcel_ellipse, only : get_ab
     use options, only : parcel, verbose
-    use parcel_bc
+    use surface_parcel_bc
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -140,14 +140,14 @@ module surface_parcel_merge
                 ! need to sanitise input and output, but first to determine input
                 posm(:, m) = - amerge * posm(:, m)
 
-                call apply_periodic_bc(posm(:, m))
+                call apply_surface_periodic_bc(posm(:, m))
 
                 ! x and y centre of merged parcel, modulo periodicity
                 posm(1, m) = get_delx(pos0(1, m), posm(1, m))
                 posm(2, m) = get_dely(pos0(2, m), posm(2, m))
 
                 ! need to correct position
-                call apply_periodic_bc(posm(:, m))
+                call apply_surface_periodic_bc(posm(:, m))
 
             enddo
 
@@ -235,7 +235,7 @@ module surface_parcel_merge
                     s_parcels%B(2, ic) = B12(l) * factor
                     s_parcels%B(3, ic) = B22(l) * factor
 
-                    call apply_periodic_bc(s_parcels%position(:, ic))
+                    call apply_surface_periodic_bc(s_parcels%position(:, ic))
                 endif
             enddo
 

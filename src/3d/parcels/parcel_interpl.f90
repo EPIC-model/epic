@@ -10,6 +10,7 @@ module parcel_interpl
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
+    use surface_parcel_interpl, only : surface_par2grid
     use fields
     use physics, only : glat, lambda_c, q_0
     use omp_lib
@@ -196,6 +197,8 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
+
+            call surface_par2grid
 
             !$omp parallel workshare
             ! apply free slip boundary condition

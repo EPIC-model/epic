@@ -166,11 +166,11 @@ module surface_parcel_interpl
         ! @param[inout] vgrad is the parcel strain
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
-        subroutine do_grid2par(s_parcels, n_par, which, vel, vgrad, add)
+        subroutine do_grid2par(s_parcels, n_par, which, vel, vor, vgrad, add)
             type(surface_parcel_container_type), intent(inout) :: s_parcels
             integer,                             intent(in)    :: n_par
             character(2),                        intent(in)    :: which
-            double precision,     intent(inout) :: vel(:, :), vgrad(:, :)
+            double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
             double precision                    :: points(2, 2), weight
             integer                             :: n, p, l, k
@@ -189,6 +189,7 @@ module surface_parcel_interpl
                     !$omp do private(n)
                     do n = 1, n_par
                         vel(:, n) = zero
+                        vor(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -198,6 +199,7 @@ module surface_parcel_interpl
                 !$omp do private(n)
                 do n = 1, n_par
                     vel(:, n) = zero
+                    vor(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -230,6 +232,8 @@ module surface_parcel_interpl
 
                         vgrad(:, n) = vgrad(:, n) + weight * velgradg(k, js(l), is(l), :)
 
+                        vor(:, n) = vor(:, n) + weight * vtend(k, js(l), is(l), :)
+
                     enddo
                 enddo
             enddo
@@ -240,18 +244,38 @@ module surface_parcel_interpl
 
         end subroutine do_grid2par
 
+        subroutine lo_surf_grid2par(vel, vor, vgrad)
+            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+
+            call do_grid2par(lo_surf_parcels, n_lo_surf_parcels, 'lo', vel, vor, vgrad)
+
+        end subroutine lo_surf_grid2par
+
+        subroutine up_surf_grid2par(vel, vor, vgrad)
+            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+
+            call do_grid2par(up_surf_parcels, n_up_surf_parcels, 'up', vel, vor, vgrad)
+
+        end subroutine up_surf_grid2par
+
 
         ! Interpolate the gridded quantities to the parcels without resetting
         ! their values to zero before doing grid2par.
         ! @param[inout] vel is the parcel velocity
         ! @param[inout] vgrad is the parcel strain
-        subroutine grid2par_add(vel, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vgrad(:, :)
+        subroutine lo_surf_grid2par_add(vel, vor, vgrad)
+            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
 
-            call do_grid2par(lo_surf_parcels, n_lo_surf_parcels, 'lo', vel, vgrad, add=.true.)
-            call do_grid2par(up_surf_parcels, n_up_surf_parcels, 'up', vel, vgrad, add=.true.)
+            call do_grid2par(lo_surf_parcels, n_lo_surf_parcels, 'lo', vel, vor, vgrad, add=.true.)
 
-        end subroutine grid2par_add
+        end subroutine lo_surf_grid2par_add
+
+        subroutine up_surf_grid2par_add(vel, vor, vgrad)
+            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
+
+            call do_grid2par(up_surf_parcels, n_up_surf_parcels, 'up', vel, vor, vgrad, add=.true.)
+
+        end subroutine up_surf_grid2par_add
 
 
         ! Bi-linear interpolation

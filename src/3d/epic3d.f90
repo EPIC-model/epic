@@ -31,7 +31,13 @@ program epic3d
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_parcels
-    use parameters, only : max_num_parcels
+    use surface_parcel_merge, only : surf_merge_timer
+    use surface_parcel_netcdf, only : surf_parcel_io_timer
+    use surface_parcel_split, only :surf_split_timer
+    use surface_parcel_init, only : surf_init_timer
+    use surface_parcel_interpl, only : surf_par2grid_timer  &
+                                     , surf_grid2par_timer
+    use parameters, only : max_num_parcels, max_num_surf_parcels
     implicit none
 
     integer          :: epic_timer
@@ -73,6 +79,13 @@ program epic3d
             call register_timer('parcel push', rk4_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
+            call register_timer('surface parcel merge', surf_merge_timer)
+            call register_timer('surface parcel I/O', surf_parcel_io_timer)
+            call register_timer('surface parcel split', surf_split_timer)
+            call register_timer('surface parcel init', surf_init_timer)
+            call register_timer('surface par2grid', surf_par2grid_timer)
+            call register_timer('surface grid2par', surf_grid2par_timer)
+
 
             call start_timer(epic_timer)
 
@@ -84,7 +97,7 @@ program epic3d
 
             call setup_parcels
 
-            call ls_rk4_alloc(max_num_parcels)
+            call ls_rk4_alloc(max_num_parcels, max_num_surf_parcels)
 
             call init_inversion
 

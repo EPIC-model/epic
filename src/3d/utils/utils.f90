@@ -13,13 +13,20 @@ module utils
     use field_diagnostics, only : calculate_field_diagnostics
     use parcel_init, only : init_parcels
     use parcel_netcdf
+    use surface_parcel_netcdf
+    use surface_parcel_init, only : init_surface_parcels
     use parcel_diagnostics_netcdf
     use parcel_diagnostics
     use parcel_container, only : n_parcels, parcel_alloc
+    use surface_parcel_container, only : n_lo_surf_parcels  &
+                                       , n_up_surf_parcels  &
+                                       , surface_parcel_alloc
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
-    use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag, max_num_parcels
+    use parameters, only : lower, extent, update_parameters         &
+                         , read_zeta_boundary_flag, max_num_parcels &
+                         , max_num_surf_parcels
     use physics, only : read_physical_quantities, print_physical_quantities, l_peref
     implicit none
 
@@ -73,6 +80,9 @@ module utils
             double precision              :: velocity(3, n_parcels)
             double precision              :: strain(5, n_parcels)
             double precision              :: vorticity(3, n_parcels)
+
+            print *, "ERROR: Missing surface parcels!"
+            stop
 
             call par2grid
 
@@ -191,14 +201,18 @@ module utils
             character(len=16) :: file_type
 
             call parcel_alloc(max_num_parcels)
+            call surface_parcel_alloc(max_num_surf_parcels)
 
             if (l_restart) then
                 call setup_restart(trim(restart_file), time%initial, file_type)
 
                 if (file_type == 'fields') then
                     call init_parcels(restart_file, field_tol)
+                    call init_surface_parcels(restart_file, field_tol)
                 else if (file_type == 'parcels') then
                     call read_netcdf_parcels(restart_file)
+                    print *, "ERROR: We must read surfac parcels as well!"
+                    stop
                 else
                     print *, 'Restart file must be of type "fields" or "parcels".'
                     stop
