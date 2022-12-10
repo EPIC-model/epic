@@ -74,7 +74,8 @@ module options
     !
     type parcel_type
         double precision :: size_factor      = 1.0d0    ! factor to increase max. number of parcels
-        integer          :: n_per_cell       = 9        ! number of parcels per cell (need to be a square)
+        integer          :: n_per_cell       = 8        ! number of parcels per cell (need to be a square)
+        integer          :: n_surf_per_cell  = 9
         double precision :: lambda_max       = four     ! max. ellipse aspect ratio a/b
         double precision :: min_vratio       = 40.0d0   ! minimum ratio of grid cell volume / parcel volume
         integer          :: correction_iters = 2        ! parcel correction iterations
@@ -158,6 +159,7 @@ module options
 
             call write_netcdf_attribute(ncid, "size_factor", parcel%size_factor)
             call write_netcdf_attribute(ncid, "n_per_cell", parcel%n_per_cell)
+            call write_netcdf_attribute(ncid, "n_surf_per_cell", parcel%n_surf_per_cell)
             call write_netcdf_attribute(ncid, "lambda_max", parcel%lambda_max)
             call write_netcdf_attribute(ncid, "min_vratio", parcel%min_vratio)
             call write_netcdf_attribute(ncid, "correction_iters", parcel%correction_iters)

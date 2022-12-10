@@ -63,8 +63,8 @@ module surface_parcel_init
             call start_timer(surf_init_timer)
 
             ! set the number of parcels (see parcels.f90)
-            ! we use "n_per_cell" parcels per grid cell
-            n_par = parcel%n_per_cell * nx * ny
+            ! we use "n_surf_per_cell" parcels per grid cell
+            n_par = parcel%n_surf_per_cell * nx * ny
 
             if (n_par > max_num_surf_parcels) then
                 print *, "Number of parcels exceeds limit of", &
@@ -79,7 +79,7 @@ module surface_parcel_init
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_par
-                s_parcels%area(n) = acell / dble(parcel%n_per_cell)
+                s_parcels%area(n) = acell / dble(parcel%n_surf_per_cell)
             enddo
             !$omp end do
             !$omp end parallel
@@ -110,6 +110,7 @@ module surface_parcel_init
             !$omp do private(n)
             do n = 1, n_par
                 s_parcels%buoyancy(n) = zero
+                s_parcels%vorticity(:, n) = zero
 #ifndef ENABLE_DRY_MODE
                 s_parcels%humidity(n) = zero
 #endif
@@ -132,10 +133,10 @@ module surface_parcel_init
             double precision                                   :: im, corner(2)
 
             ! number of parcels per dimension
-            n_per_dim = int(dsqrt(dble(parcel%n_per_cell)))
-            if (n_per_dim ** 2 .ne. parcel%n_per_cell) then
+            n_per_dim = int(dsqrt(dble(parcel%n_surf_per_cell)))
+            if (n_per_dim ** 2 .ne. parcel%n_surf_per_cell) then
                 print *, "Number of parcels per cell (", &
-                         parcel%n_per_cell, ") not a square."
+                         parcel%n_surf_per_cell, ") not a square."
                 stop
             endif
 

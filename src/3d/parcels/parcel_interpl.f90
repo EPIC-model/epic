@@ -202,16 +202,16 @@ module parcel_interpl
 
             !$omp parallel workshare
             ! apply free slip boundary condition
-            volg(0,  :, :) = two * volg(0,  :, :)
-            volg(nz, :, :) = two * volg(nz, :, :)
+            !volg(0,  :, :) = two * volg(0,  :, :)
+            !volg(nz, :, :) = two * volg(nz, :, :)
 
             ! free slip boundary condition is reflective with mirror
             ! axis at the physical domain
             volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
             volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
 
-            vortg(0,  :, :, :) = two * vortg(0,  :, :, :)
-            vortg(nz, :, :, :) = two * vortg(nz, :, :, :)
+            !vortg(0,  :, :, :) = two * vortg(0,  :, :, :)
+            !vortg(nz, :, :, :) = two * vortg(nz, :, :, :)
             !$omp end parallel workshare
 
             !$omp parallel workshare
@@ -228,8 +228,8 @@ module parcel_interpl
             humg(1,    :, :) = humg(1,    :, :) + humg(-1,   :, :)
             humg(nz-1, :, :) = humg(nz-1, :, :) + humg(nz+1, :, :)
 #endif
-            tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
-            tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
+            !tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
+            !tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
             tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
             tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
             !$omp end parallel workshare

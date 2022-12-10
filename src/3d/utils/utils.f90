@@ -23,6 +23,7 @@ module utils
                                        , surface_parcel_alloc
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
+    use surface_parcel_interpl, only : lo_surf_grid2par, up_surf_grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters         &
                          , read_zeta_boundary_flag, max_num_parcels &
@@ -68,6 +69,9 @@ module utils
                 call create_netcdf_parcel_file(trim(output%basename),    &
                                                output%overwrite,         &
                                                l_restart)
+                call create_netcdf_surface_parcel_files(trim(output%basename),    &
+                                                        output%overwrite,         &
+                                                        l_restart)
             endif
 
         end subroutine setup_output_files
@@ -80,9 +84,12 @@ module utils
             double precision              :: velocity(3, n_parcels)
             double precision              :: strain(5, n_parcels)
             double precision              :: vorticity(3, n_parcels)
-
-            print *, "ERROR: Missing surface parcels!"
-            stop
+            double precision              :: lo_surf_delta_vor(2, n_lo_surf_parcels)
+            double precision              :: lo_vel(2, n_lo_surf_parcels)
+            double precision              :: lo_surf_strain(4, n_lo_surf_parcels)
+            double precision              :: up_surf_delta_vor(2, n_up_surf_parcels)
+            double precision              :: up_vel(2, n_up_surf_parcels)
+            double precision              :: up_surf_strain(4, n_up_surf_parcels)
 
             call par2grid
 
@@ -93,6 +100,10 @@ module utils
             call vorticity_tendency
 
             call grid2par(velocity, vorticity, strain)
+
+            call lo_surf_grid2par(lo_vel, lo_surf_delta_vor, lo_surf_strain)
+            call up_surf_grid2par(up_vel, up_surf_delta_vor, up_surf_strain)
+
 
             call calculate_parcel_diagnostics(velocity)
             call calculate_field_diagnostics
@@ -221,6 +232,7 @@ module utils
                 time%initial = zero ! make sure user cannot start at arbirtrary time
 
                 call init_parcels(field_file, field_tol)
+                call init_surface_parcels(field_file, field_tol)
             endif
         end subroutine setup_parcels
 

@@ -239,7 +239,7 @@ module surface_parcel_interpl
                         ! the weight is halved due to 2 points per ellipse
                         weight = f12 * weights(l)
 
-                        vel(:, n) = vel(:, n) + weight * velog(k, js(l), is(l), :)
+                        vel(:, n) = vel(:, n) + weight * velog(k, js(l), is(l), 1:2)
 
                         ! du/dx
                         vgrad(1, n) = vgrad(1, n) + weight * velgradg(k, js(l), is(l), 1)
