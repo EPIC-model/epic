@@ -99,7 +99,7 @@ module surface_parcel_interpl
             character(2),                        intent(in) :: which
             double precision                                :: points(2, 2)
             integer                                         :: n, p, l, k
-            double precision                                :: weight
+            double precision                                :: weight, btot
 
             call start_timer(surf_par2grid_timer)
 
@@ -109,12 +109,15 @@ module surface_parcel_interpl
             endif
 
             volg(k, :, :) = zero
+            vortg(k, :, :, :) = zero
+            tbuoyg(k, :, :) = zero
+
 !             nparg = zero
 !             nsparg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, i, j, points, weight, is, js, weights) &
-            !$omp& reduction(+:volg)
+            !$omp do private(n, p, l, i, j, points, weight, is, js, weights, btot) &
+            !$omp& reduction(+:volg, vortg, tbuoyg)
             do n = 1, n_par
                 points = get_ellipse_points(s_parcels%position(:, n), &
                                             s_parcels%B(:, n))
@@ -126,6 +129,8 @@ module surface_parcel_interpl
 !                 if (s_parcels%area(n) <= amin) then
 !                     nsparg(j, i) = nsparg(j, i) + 1
 !                 endif
+
+                btot = s_parcels%buoyancy(n)
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
@@ -143,6 +148,12 @@ module surface_parcel_interpl
                         weight = f12 * weights(l) * s_parcels%area(n)
 
                         volg(k, js(l), is(l)) = volg(k, js(l), is(l)) + weight
+
+                        vortg(k, js(l), is(l), :) = vortg(k, js(l), is(l), :) &
+                                                  + weight * s_parcels%vorticity(:, n)
+
+                        tbuoyg(k, js(l), is(l)) = tbuoyg(k, js(l), is(l)) &
+                                                + weight * btot
 
                     enddo
                 enddo
@@ -172,7 +183,7 @@ module surface_parcel_interpl
             character(2),                        intent(in)    :: which
             double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
-            double precision                    :: points(2, 2), weight
+            double precision                    :: points(2, 2), weight, dvdx
             integer                             :: n, p, l, k
 
             call start_timer(surf_grid2par_timer)
@@ -206,7 +217,7 @@ module surface_parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, weight, is, js, weights)
+            !$omp do private(n, p, l, points, weight, is, js, weights, dvdx)
             do n = 1, n_par
 
                 vgrad(:, n) = zero
@@ -230,7 +241,18 @@ module surface_parcel_interpl
 
                         vel(:, n) = vel(:, n) + weight * velog(k, js(l), is(l), :)
 
-                        vgrad(:, n) = vgrad(:, n) + weight * velgradg(k, js(l), is(l), :)
+                        ! du/dx
+                        vgrad(1, n) = vgrad(1, n) + weight * velgradg(k, js(l), is(l), 1)
+
+                        ! du/dy
+                        vgrad(2, n) = vgrad(2, n) + weight * velgradg(k, js(l), is(l), 2)
+
+                        ! dv/dx = \zeta + du/dy
+                        dvdx = vortg(k, js(l), is(l), 3) + velgradg(k, js(l), is(l), 2)
+                        vgrad(3, n) = vgrad(3, n) + weight * dvdx
+
+                        ! dv/dy
+                        vgrad(4, n) = vgrad(4, n) + weight * velgradg(k, js(l), is(l), 3)
 
                         vor(:, n) = vor(:, n) + weight * vtend(k, js(l), is(l), :)
 

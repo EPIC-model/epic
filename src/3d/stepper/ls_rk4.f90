@@ -10,7 +10,7 @@ module ls_rk4
     use parcel_bc
     use parcel_ellipse, only : get_area
     use surface_parcel_bc
-    use rk4_utils, only: get_dBdt, get_time_step
+    use rk4_utils, only: get_dBdt, get_surf_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
     use surface_parcel_interpl, only : lo_surf_grid2par, up_surf_grid2par &
@@ -183,19 +183,15 @@ module ls_rk4
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_lo_surf_parcels
-                    lo_surf_delta_b(:, n) = get_dBdt(lo_surf_parcels%B(:, n),           &
-                                                     lo_surf_strain(:, n),              &
-                                                     lo_surf_parcels%vorticity(:, n),   &
-                                                     lo_surf_parcels%area(n))
+                    lo_surf_delta_b(:, n) = get_surf_dBdt(lo_surf_parcels%B(:, n),           &
+                                                          lo_surf_strain(:, n))
                 enddo
                 !$omp end parallel do
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_up_surf_parcels
-                    up_surf_delta_b(:, n) = get_dBdt(up_surf_parcels%B(:, n),           &
-                                                     up_surf_strain(:, n),              &
-                                                     up_surf_parcels%vorticity(:, n),   &
-                                                     up_surf_parcels%area(n))
+                    up_surf_delta_b(:, n) = get_surf_dBdt(up_surf_parcels%B(:, n),           &
+                                                          up_surf_strain(:, n))
                 enddo
                 !$omp end parallel do
 
@@ -222,21 +218,17 @@ module ls_rk4
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_lo_surf_parcels
-                    lo_surf_delta_b(:, n) = lo_surf_delta_b(:, n)                       &
-                                          + get_dBdt(lo_surf_parcels%B(:, n),           &
-                                                     lo_surf_strain(:, n),              &
-                                                     lo_surf_parcels%vorticity(:, n),   &
-                                                     lo_surf_parcels%area(n))
+                    lo_surf_delta_b(:, n) = lo_surf_delta_b(:, n)                            &
+                                          + get_surf_dBdt(lo_surf_parcels%B(:, n),           &
+                                                          lo_surf_strain(:, n))
                 enddo
                 !$omp end parallel do
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_up_surf_parcels
-                    up_surf_delta_b(:, n) = up_surf_delta_b(:, n)                       &
-                                          + get_dBdt(up_surf_parcels%B(:, n),           &
-                                                     up_surf_strain(:, n),              &
-                                                     up_surf_parcels%vorticity(:, n),   &
-                                                     up_surf_parcels%area(n))
+                    up_surf_delta_b(:, n) = up_surf_delta_b(:, n)                            &
+                                          + get_surf_dBdt(up_surf_parcels%B(:, n),           &
+                                                          up_surf_strain(:, n))
                 enddo
                 !$omp end parallel do
 

@@ -69,6 +69,26 @@ module rk4_utils
                         + dvdz      * B33          ! + dv/dz * B33
         end function get_dBdt
 
+        ! Advance the B matrix.
+        ! @param[in] Bin are the B matrix components of the parcel
+        ! @param[in] S is the local velocity strain
+        ! @returns the updated B matrix components (B11, B12 and B22) in Bout
+        function get_surf_dBdt(Bin, S) result(Bout)
+            double precision, intent(in) :: Bin(3)
+            double precision, intent(in) :: S(4)
+            double precision             :: Bout(3)
+
+            ! B11 = 2 * (dudx * B11 + dudy * B12)
+            Bout(1) = two * (S(1) * Bin(1) + S(2) * Bin(2))
+
+            ! B12 = (du/dx + dv/dy) + B12 + dvdx * B11 + dudy * B22
+            Bout(2) = (S(1) + S(4)) * Bin(2) + S(3) * Bin(1) + S(2) * Bin(3)
+
+            ! B22 = 2 * (dvdx * B12 + dvdy * B22)
+            Bout(3) = two * (S(3) * Bin(2) + S(4) * Bin(3))
+
+        end function get_surf_dBdt
+
         ! Estimate a suitable time step based on the velocity strain
         ! and buoyancy gradient.
         ! @param[in] t is the time
@@ -164,7 +184,9 @@ module rk4_utils
             bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
-            dt = min(time%alpha / gmax, time%alpha / bmax)
+            dt = get_surf_time_step()
+
+            dt = min(time%alpha / gmax, time%alpha / bmax, dt)
 #ifdef ENABLE_VERBOSE
             fname = trim(output%basename) // '_alpha_time_step.asc'
             inquire(file=fname, exist=exists)
@@ -190,5 +212,26 @@ module rk4_utils
                 stop
             endif
         end function get_time_step
+
+        ! Estimate a suitable time step based on the velocity strain
+        ! @param[in] t is the time
+        ! @returns the time step
+        function get_surf_time_step() result(dt)
+            use options, only : time
+            double precision :: dt
+            double precision :: gmax
+
+            ! velocity strain
+            gmax = f12 * dsqrt(maxval((velgradg(0, :, :, 1) - velgradg(0, :, :, 4)) ** 2 + &
+                                      (velgradg(0, :, :, 2) + velgradg(0, :, :, 3)) ** 2))
+            gmax = max(epsilon(gmax), gmax)
+
+            ! upper
+            gmax = f12 * dsqrt(maxval((velgradg(nz, :, :, 1) - velgradg(nz, :, :, 4)) ** 2 + &
+                                      (velgradg(nz, :, :, 2) + velgradg(nz, :, :, 3)) ** 2))
+            gmax = max(epsilon(gmax), gmax)
+
+            dt = time%alpha / gmax
+        end function get_surf_time_step
 
 end module rk4_utils
