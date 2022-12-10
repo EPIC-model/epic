@@ -37,6 +37,8 @@ program epic3d
     use surface_parcel_init, only : surf_init_timer
     use surface_parcel_interpl, only : surf_par2grid_timer  &
                                      , surf_grid2par_timer
+    use surface_parcel_correction, only : surf_lapl_corr_timer &
+                                        , surf_grad_corr_timer
     use parameters, only : max_num_parcels, max_num_surf_parcels
     implicit none
 
@@ -85,6 +87,8 @@ program epic3d
             call register_timer('surface parcel init', surf_init_timer)
             call register_timer('surface par2grid', surf_par2grid_timer)
             call register_timer('surface grid2par', surf_grid2par_timer)
+            call register_timer('surface laplace correction', surf_lapl_corr_timer)
+            call register_timer('surface gradient correction', surf_grad_corr_timer)
 
 
             call start_timer(epic_timer)

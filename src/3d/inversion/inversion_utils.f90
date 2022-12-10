@@ -53,6 +53,9 @@ module inversion_utils
 
     public :: init_inversion  &
             , init_fft        &
+            , lapinv          &
+            , hrkx            &
+            , hrky            &
             , diffx           &
             , diffy           &
             , diffz           &
@@ -364,6 +367,15 @@ module inversion_utils
 
             deallocate(a0)
         end subroutine
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Inverts 2D Laplace's operator on fs in spectral space.
+        !*** Overwrites fs ***
+        pure subroutine lapinv(fs)
+            double precision, intent(inout) :: fs(0:nx-1, 0:ny-1)
+            fs = green(0, :, :) * fs
+        end subroutine lapinv
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

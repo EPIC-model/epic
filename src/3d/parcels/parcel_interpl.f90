@@ -10,7 +10,7 @@ module parcel_interpl
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
-    use surface_parcel_interpl, only : surface_par2grid
+    use surface_parcel_interpl, only : surface_par2grid, area2grid
     use fields
     use physics, only : glat, lambda_c, q_0
     use omp_lib
@@ -90,10 +90,12 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
+            call area2grid
+
             ! apply free slip boundary condition
             !$omp parallel workshare
-            volg(0,  :, :) = two * volg(0,  :, :)
-            volg(nz, :, :) = two * volg(nz, :, :)
+!             volg(0,  :, :) = two * volg(0,  :, :)
+!             volg(nz, :, :) = two * volg(nz, :, :)
 
             ! free slip boundary condition is reflective with mirror
             ! axis at the physical domain

@@ -12,6 +12,8 @@ module parcel_correction
     use parcel_container
     use timer, only : start_timer, stop_timer
     use fields, only : volg
+    use surface_parcel_correction, only : apply_surface_laplace &
+                                        , apply_surface_gradient
     implicit none
 
     private
@@ -106,6 +108,8 @@ module parcel_correction
             double precision              :: weights(ngp)
             integer                       :: n, l, is(ngp), js(ngp), ks(ngp)
 
+            call apply_surface_laplace
+
             call start_timer(lapl_corr_timer)
 
             call vol2grid(l_reuse)
@@ -159,6 +163,8 @@ module parcel_correction
             double precision              :: weights(ngp)
             double precision              :: xs, ys, zs, xf, yf, zf, lim_x, lim_y, lim_z
             integer                       :: n, is(ngp), js(ngp), ks(ngp)
+
+            call apply_surface_gradient(prefactor, max_compression)
 
             call start_timer(grad_corr_timer)
 
