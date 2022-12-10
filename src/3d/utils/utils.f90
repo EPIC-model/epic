@@ -84,10 +84,10 @@ module utils
             double precision              :: velocity(3, n_parcels)
             double precision              :: strain(5, n_parcels)
             double precision              :: vorticity(3, n_parcels)
-            double precision              :: lo_surf_delta_vor(2, n_lo_surf_parcels)
+            double precision              :: lo_surf_delta_vor(3, n_lo_surf_parcels)
             double precision              :: lo_vel(2, n_lo_surf_parcels)
             double precision              :: lo_surf_strain(4, n_lo_surf_parcels)
-            double precision              :: up_surf_delta_vor(2, n_up_surf_parcels)
+            double precision              :: up_surf_delta_vor(3, n_up_surf_parcels)
             double precision              :: up_vel(2, n_up_surf_parcels)
             double precision              :: up_surf_strain(4, n_up_surf_parcels)
 
