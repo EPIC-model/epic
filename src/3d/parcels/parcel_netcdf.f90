@@ -10,6 +10,7 @@ module parcel_netcdf
     use iomanip, only : zfill
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
+    use surface_parcel_netcdf, only : write_netcdf_surface_parcels
     implicit none
 
     integer :: parcel_io_timer
@@ -240,6 +241,8 @@ module parcel_netcdf
         subroutine write_netcdf_parcels(t)
             double precision, intent(in) :: t
             integer                      :: cnt(2), start(2)
+
+            call write_netcdf_surface_parcels(t)
 
             call start_timer(parcel_io_timer)
 

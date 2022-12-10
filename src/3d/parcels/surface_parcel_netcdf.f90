@@ -6,7 +6,7 @@ module surface_parcel_netcdf
     use surface_parcel_container, only : surface_parcel_container_type      &
                                        , lo_surf_parcels, n_lo_surf_parcels &
                                        , up_surf_parcels, n_up_surf_parcels
-    use parameters, only : nx, ny, extent, lower, max_num_surf_parcels
+    use parameters, only : nx, ny, nz, extent, lower, max_num_surf_parcels
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use iomanip, only : zfill
@@ -43,6 +43,7 @@ module surface_parcel_netcdf
 
             call create_netcdf_parcel_file(n_lo_surf_parcels, 'lo', &
                                            basename, overwrite, l_restart)
+            n_writes = 1
             call create_netcdf_parcel_file(n_up_surf_parcels, 'up', &
                                            basename, overwrite, l_restart)
 
@@ -91,7 +92,7 @@ module surface_parcel_netcdf
                                    file_type='surface_parcels',  &
                                    cf_version=cf_version)
 
-            call write_netcdf_box(ncid, lower, extent, (/nx, ny/))
+            call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
 
             call write_physical_quantities(ncid)
 
@@ -169,6 +170,9 @@ module surface_parcel_netcdf
             double precision, intent(in) :: t
             call write_netcdf_parcels(lo_surf_parcels, n_lo_surf_parcels, 'lo', t)
             call write_netcdf_parcels(up_surf_parcels, n_up_surf_parcels, 'up', t)
+
+            ! increment counter
+            n_writes = n_writes + 1
         end subroutine write_netcdf_surface_parcels
 
         ! Write parcels of the current time step into the parcel file.
@@ -210,9 +214,6 @@ module surface_parcel_netcdf
             call write_netcdf_dataset(ncid, b22_id, s_parcels%B(3, 1:n_par), start, cnt)
 
             call write_netcdf_dataset(ncid, area_id, s_parcels%area(1:n_par), start, cnt)
-
-            ! increment counter
-            n_writes = n_writes + 1
 
             call close_netcdf_file(ncid)
 
