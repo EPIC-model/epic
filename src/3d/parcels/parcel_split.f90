@@ -10,6 +10,7 @@ module parcel_split_mod
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
     use timer, only : start_timer, stop_timer
     use omp_lib
+    use surface_parcel_split, only : split_ellipses
     implicit none
 
     double precision, parameter :: dh = f12 * dsqrt(three / five)
@@ -35,6 +36,8 @@ module parcel_split_mod
             double precision                           :: D(3), V(3, 3)
             integer                                    :: last_index
             integer                                    :: n, n_thread_loc
+
+            call split_ellipses(threshold)
 
             call start_timer(split_timer)
 

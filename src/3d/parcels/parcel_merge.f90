@@ -14,7 +14,7 @@ module parcel_merge
     use options, only : parcel, verbose
     use parcel_bc
     use timer, only : start_timer, stop_timer
-
+    use surface_parcel_merge, only : merge_ellipses
     implicit none
 
     integer :: merge_timer
@@ -36,6 +36,8 @@ module parcel_merge
             integer, allocatable, dimension(:)         :: isma
             integer, allocatable, dimension(:)         :: iclo
             integer                                    :: n_merge ! number of merges
+
+            call merge_ellipses
 
             ! find parcels to merge
             call find_nearest(isma, iclo, n_merge)
