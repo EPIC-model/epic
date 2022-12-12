@@ -21,16 +21,26 @@ module surface_parcel_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: npar_dim_id, area_id,          &
+    integer            :: npar_dim_id, area_id, buo_id,  &
                           x_pos_id, y_pos_id,            &
+                          x_vor_id, y_vor_id, z_vor_id,  &
                           b11_id, b12_id, b22_id,        &
                           t_axis_id, t_dim_id
     double precision   :: restart_time
 
+#ifndef ENABLE_DRY_MODE
+    integer :: hum_id
+#endif
+
     private :: ncid, ncfname, n_writes, npar_dim_id,        &
-               x_pos_id, y_pos_id, area_id,                 &
+               x_pos_id, y_pos_id, area_id, buo_id,         &
+               x_vor_id, y_vor_id, z_vor_id,                &
                b11_id, b12_id, b22_id, t_axis_id, t_dim_id, &
                restart_time
+
+#ifndef ENABLE_DRY_MODE
+    private :: hum_id
+#endif
 
     private :: ncbasename, create_netcdf_parcel_file, write_netcdf_parcels
 
@@ -162,6 +172,53 @@ module surface_parcel_netcdf
                                        dimids=dimids,                           &
                                        varid=area_id)
 
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='x_vorticity',                      &
+                                       long_name='x vorticity component',       &
+                                       std_name='',                             &
+                                       unit='1/s',                              &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=x_vor_id)
+
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='y_vorticity',                      &
+                                       long_name='y vorticity component',       &
+                                       std_name='',                             &
+                                       unit='1/s',                              &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=y_vor_id)
+
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='z_vorticity',                      &
+                                       long_name='z vorticity component',       &
+                                       std_name='',                             &
+                                       unit='1/s',                              &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=z_vor_id)
+
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='buoyancy',                         &
+                                       long_name='parcel buoyancy',             &
+                                       std_name='',                             &
+                                       unit='m/s^2',                            &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=buo_id)
+
+#ifndef ENABLE_DRY_MODE
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='humidity',                         &
+                                       long_name='parcel humidity',             &
+                                       std_name='',                             &
+                                       unit='1',                                &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=hum_id)
+#endif
+
             call close_definition(ncid)
 
         end subroutine create_netcdf_parcel_file
@@ -214,6 +271,16 @@ module surface_parcel_netcdf
             call write_netcdf_dataset(ncid, b22_id, s_parcels%B(3, 1:n_par), start, cnt)
 
             call write_netcdf_dataset(ncid, area_id, s_parcels%area(1:n_par), start, cnt)
+
+            call write_netcdf_dataset(ncid, x_vor_id, s_parcels%vorticity(1, 1:n_par), start, cnt)
+            call write_netcdf_dataset(ncid, y_vor_id, s_parcels%vorticity(2, 1:n_par), start, cnt)
+            call write_netcdf_dataset(ncid, z_vor_id, s_parcels%vorticity(3, 1:n_par), start, cnt)
+
+            call write_netcdf_dataset(ncid, buo_id, s_parcels%buoyancy(1:n_par), start, cnt)
+
+#ifndef ENABLE_DRY_MODE
+            call write_netcdf_dataset(ncid, hum_id, s_parcels%humidity(1:n_par), start, cnt)
+#endif
 
             call close_netcdf_file(ncid)
 
