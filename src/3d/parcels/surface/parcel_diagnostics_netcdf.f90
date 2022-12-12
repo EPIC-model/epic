@@ -1,7 +1,7 @@
 ! =============================================================================
 !                      Write parcel diagnostics to NetCDF
 ! =============================================================================
-module parcel_diagnostics_netcdf
+module surface_parcel_diagnostics_netcdf
     use constants, only : one
     use parcel_diagnostics
     use netcdf_utils
@@ -278,4 +278,4 @@ module parcel_diagnostics_netcdf
             call stop_timer(parcel_stats_io_timer)
 
         end subroutine write_netcdf_parcel_stats
-end module parcel_diagnostics_netcdf
+end module surface_parcel_diagnostics_netcdf

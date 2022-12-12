@@ -16,7 +16,8 @@ module utils
     use surface_parcel_netcdf
     use surface_parcel_init, only : init_surface_parcels
     use parcel_diagnostics_netcdf
-    use parcel_diagnostics
+    use parcel_diagnostics, only : calculate_parcel_diagnostics, calculate_peref
+    use surface_parcel_diagnostics, only : calculate_surface_parcel_diagnostics
     use parcel_container, only : n_parcels, parcel_alloc
     use surface_parcel_container, only : n_lo_surf_parcels  &
                                        , n_up_surf_parcels  &
@@ -106,6 +107,13 @@ module utils
 
 
             call calculate_parcel_diagnostics(velocity)
+
+            call calculate_surface_parcel_diagnostics(lo_surf_parcels, n_lo_surf_parcels, &
+                                                      'lo', lo_vel)
+
+            call calculate_surface_parcel_diagnostics(up_surf_parcels, n_up_surf_parcels, &
+                                                      'up', up_vel)
+
             call calculate_field_diagnostics
 
             call write_step(t, .true.)

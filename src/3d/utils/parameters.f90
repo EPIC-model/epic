@@ -61,6 +61,12 @@ module parameters
     ! inverse domain volume
     double precision, protected :: vdomaini
 
+    ! surface area
+    double precision, protected :: asurf
+
+    ! inverse surface area
+    double precision, protected :: asurfi
+
     ! domain centre
     double precision, protected :: center(3)
 
@@ -127,8 +133,12 @@ module parameters
             endif
         endif
 
-        vdomain = product(extent)
+        asurf = extent(1) * extent(2)
+        asurfi = one / asurf
+
+        vdomain = asurf * extent(3)
         vdomaini = one / vdomain
+
 
         acell = dx(1) * dx(2)
         acelli = one / acell

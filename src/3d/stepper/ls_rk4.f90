@@ -18,6 +18,7 @@ module ls_rk4
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
+    use surface_parcel_diagnostics, only : calculate_surface_parcel_diagnostics
     use field_diagnostics, only : calculate_field_diagnostics
     use parameters, only : set_zeta_boundary_flag
     use timer, only : start_timer, stop_timer, timings
@@ -135,6 +136,12 @@ module ls_rk4
             call up_surf_grid2par(up_surf_delta_pos, up_surf_delta_vor, up_surf_strain)
 
             call calculate_parcel_diagnostics(delta_pos)
+
+            call calculate_surface_parcel_diagnostics(lo_surf_parcels, n_lo_surf_parcels, &
+                                                      'lo', lo_surf_delta_pos)
+
+            call calculate_surface_parcel_diagnostics(up_surf_parcels, n_up_surf_parcels, &
+                                                      'up', up_surf_delta_pos)
 
             call calculate_field_diagnostics
 
