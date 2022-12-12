@@ -49,6 +49,12 @@ module parameters
     ! inverse of total number of grid points
     double precision, protected :: ngridi
 
+    ! total number of grid points on a surface
+    integer, protected :: nhgrid
+
+    ! inverse of total number of grid points on a surface
+    double precision, protected :: nhgridi
+
     ! domain size
     double precision :: extent(3)
 
@@ -152,8 +158,12 @@ module parameters
         ncell = nhcell * nz
         ncelli = one / dble(ncell)
 
+
+        nhgrid = nx * ny
+        nhgridi = one / dble(nhgridi)
+
         ! due to x periodicity it is only nx
-        ngrid = nx * ny * (nz + 1)
+        ngrid = nhgrid * (nz + 1)
         ngridi = one / dble(ngrid)
 
         ! domain

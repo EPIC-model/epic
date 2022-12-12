@@ -15,6 +15,7 @@ module parcel_diagnostics_netcdf
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
+    use surface_parcel_diagnostics_netcdf, only : write_netcdf_surface_parcel_stats
     implicit none
 
 
@@ -316,6 +317,8 @@ module parcel_diagnostics_netcdf
         ! @param[in] t is the time
         subroutine write_netcdf_parcel_stats(t)
             double precision, intent(in)    :: t
+
+            call write_netcdf_surface_parcel_stats(t)
 
             call start_timer(parcel_stats_io_timer)
 

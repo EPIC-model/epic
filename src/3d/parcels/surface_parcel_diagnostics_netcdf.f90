@@ -30,8 +30,8 @@ module surface_parcel_diagnostics_netcdf
                           avg_area_id, std_area_id
     double precision   :: restart_time
 
-    public :: create_netcdf_parcel_stats_file,  &
-              write_netcdf_parcel_stats,        &
+    public :: create_netcdf_surface_parcel_stats_files,  &
+              write_netcdf_surface_parcel_stats,         &
               surf_parcel_stats_io_timer
 
 
@@ -42,19 +42,16 @@ module surface_parcel_diagnostics_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
 
-            call create_netcdf_parcel_file(n_lo_surf_parcels, 'lo', &
-                                           basename, overwrite, l_restart)
+            call create_netcdf_parcel_stats_file('lo', basename, overwrite, l_restart)
             n_writes = 1
-            call create_netcdf_parcel_file(n_up_surf_parcels, 'up', &
-                                           basename, overwrite, l_restart)
+            call create_netcdf_parcel_stats_file('up', basename, overwrite, l_restart)
 
         end subroutine create_netcdf_surface_parcel_stats_files
 
         ! Create the parcel diagnostic file.
         ! @param[in] basename of the file
         ! @param[in] overwrite the file
-        subroutine create_netcdf_parcel_stats_file(n_par, which, basename, overwrite, l_restart)
-            integer,      intent(in)  :: n_par
+        subroutine create_netcdf_parcel_stats_file(which, basename, overwrite, l_restart)
             character(2), intent(in)  :: which
             character(*), intent(in)  :: basename
             logical,      intent(in)  :: overwrite
@@ -275,7 +272,7 @@ module surface_parcel_diagnostics_netcdf
             call write_netcdf_scalar(ncid, avg_area_id, avg_area(j), n_writes)
             call write_netcdf_scalar(ncid, std_area_id, std_area(j), n_writes)
             call write_netcdf_scalar(ncid, rms_x_vor_id, rms_xi(j), n_writes)
-            call write_netcdf_scalar(ncid, rms_y_vor_id, rms_eta(), n_writes)
+            call write_netcdf_scalar(ncid, rms_y_vor_id, rms_eta(j), n_writes)
             call write_netcdf_scalar(ncid, rms_z_vor_id, rms_zeta(j), n_writes)
 
 

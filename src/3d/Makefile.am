@@ -37,6 +37,7 @@ epic3d_SOURCES = 					\
 	parcels/surface_parcel_correction.f90		\
 	parcels/parcel_correction.f90			\
 	parcels/surface_parcel_netcdf.f90		\
+	parcels/surface_parcel_diagnostics_netcdf.f90	\
 	parcels/parcel_netcdf.f90			\
 	parcels/parcel_diagnostics_netcdf.f90		\
 	utils/utils.f90					\

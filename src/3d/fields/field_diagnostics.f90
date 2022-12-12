@@ -2,7 +2,7 @@
 !                             Field diagnostics
 ! =============================================================================
 module field_diagnostics
-    use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli, vdomaini
+    use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli, vdomaini, acell, acelli, nhgridi
     use constants, only : f12, f14
     use fields
     use timer, only : start_timer, stop_timer
@@ -19,7 +19,9 @@ module field_diagnostics
                         keg,        &       ! domain-averaged kinetic energy calculated on the grid
                         eng,        &       ! domain-averaged enstrophy calculated on the grid
                         min_buoyg,  &       ! minimum gridded buoyancy value
-                        max_buoyg           ! maximum gridded buoyancy value
+                        max_buoyg,  &       ! maximum gridded buoyancy value
+                        rms_a_lo,   &
+                        rms_a_up
     contains
 
         subroutine calculate_field_diagnostics
@@ -30,6 +32,9 @@ module field_diagnostics
             ! do not take halo cells into account
             sqerrsum = sum((volg(0:nz, :, :) - vcell) ** 2)
             rms_v = dsqrt(sqerrsum * ngridi) * vcelli
+
+            rms_a_lo = dsqrt(sum((volg(0,  :, :) - acell) ** 2) * nhgridi) * acelli
+            rms_a_up = dsqrt(sum((volg(nz, :, :) - acell) ** 2) * nhgridi) * acelli
 
             abserr_v = maxval(abs(volg(0:nz, :, :)  - vcell)) * vcelli
 

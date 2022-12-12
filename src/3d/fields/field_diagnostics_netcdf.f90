@@ -21,7 +21,7 @@ module field_diagnostics_netcdf
     integer            :: t_axis_id, t_dim_id, n_writes,                   &
                           rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
                           avg_npar_id, avg_nspar_id, keg_id, eng_id,       &
-                          max_buoy_id, min_buoy_id
+                          max_buoy_id, min_buoy_id, rms_a_lo_id, rms_a_up_id
 
     double precision   :: restart_time
 
@@ -84,6 +84,26 @@ module field_diagnostics_netcdf
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=rms_v_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='rms_a_lo',                                            &
+                long_name='relative rms area error at lower surface',       &
+                std_name='',                                                &
+                unit='1',                                                   &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=rms_a_lo_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='rms_a_up',                                            &
+                long_name='relative rms area error at upper surface',       &
+                std_name='',                                                &
+                unit='1',                                                   &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=rms_a_up_id)
 
 
             call define_netcdf_dataset(                                     &
@@ -189,6 +209,9 @@ module field_diagnostics_netcdf
 
             call get_var_id(ncid, 'rms_v', rms_v_id)
 
+            call get_var_id(ncid, 'rms_a_lo', rms_a_lo_id)
+            call get_var_id(ncid, 'rms_a_up', rms_a_up_id)
+
             call get_var_id(ncid, 'abserr_v', abserr_v_id)
 
             call get_var_id(ncid, 'max_npar', max_npar_id)
@@ -235,6 +258,8 @@ module field_diagnostics_netcdf
             ! write diagnostics
             !
             call write_netcdf_scalar(ncid, rms_v_id, rms_v, n_writes)
+            call write_netcdf_scalar(ncid, rms_a_lo_id, rms_a_lo, n_writes)
+            call write_netcdf_scalar(ncid, rms_a_up_id, rms_a_up, n_writes)
             call write_netcdf_scalar(ncid, abserr_v_id, abserr_v, n_writes)
             call write_netcdf_scalar(ncid, max_npar_id, max_npar, n_writes)
             call write_netcdf_scalar(ncid, min_npar_id, min_npar, n_writes)

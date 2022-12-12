@@ -16,6 +16,7 @@ module utils
     use surface_parcel_netcdf
     use surface_parcel_init, only : init_surface_parcels
     use parcel_diagnostics_netcdf
+    use surface_parcel_diagnostics_netcdf, only : create_netcdf_surface_parcel_stats_files
     use parcel_diagnostics, only : calculate_parcel_diagnostics, calculate_peref
     use surface_parcel_diagnostics, only : calculate_surface_parcel_diagnostics
     use parcel_container, only : n_parcels, parcel_alloc
@@ -52,6 +53,9 @@ module utils
                 call create_netcdf_parcel_stats_file(trim(output%basename), &
                                                      output%overwrite,      &
                                                      l_restart)
+                call create_netcdf_surface_parcel_stats_files(trim(output%basename),    &
+                                                              output%overwrite,         &
+                                                              l_restart)
             endif
 
             if (output%write_fields) then
