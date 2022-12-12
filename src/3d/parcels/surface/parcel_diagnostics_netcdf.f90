@@ -3,12 +3,12 @@
 ! =============================================================================
 module surface_parcel_diagnostics_netcdf
     use constants, only : one
-    use parcel_diagnostics
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
-    use parcel_container, only : parcels, n_parcels
-    use parcel_diagnostics
+    use surface_parcel_container, only : n_lo_surf_parcels &
+                                       , n_up_surf_parcels
+    use surface_parcel_diagnostics
     use parameters, only : lower, extent, nx, ny
     use config, only : package_version, cf_version
     use omp_lib
@@ -19,35 +19,49 @@ module surface_parcel_diagnostics_netcdf
 
     private
 
-    integer :: parcel_stats_io_timer
+    integer :: surf_parcel_stats_io_timer
 
     character(len=512) :: ncfname
     integer            :: ncid
     integer            :: t_axis_id, t_dim_id, n_writes,            &
-                          pe_id, ke_id, te_id, npar_id, nspar_id,   &
-                          rms_q_id,                                 &
+                          ke_id, npar_id, nspar_id,                 &
+                          rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
                           avg_lam_id, std_lam_id,                   &
-                          avg_area_id, std_area_id,                 &
-                          min_q_id, max_q_id
+                          avg_area_id, std_area_id
     double precision   :: restart_time
 
     public :: create_netcdf_parcel_stats_file,  &
               write_netcdf_parcel_stats,        &
-              parcel_stats_io_timer
+              surf_parcel_stats_io_timer
 
 
     contains
 
+        subroutine create_netcdf_surface_parcel_stats_files(basename, overwrite, l_restart)
+            character(*), intent(in)  :: basename
+            logical,      intent(in)  :: overwrite
+            logical,      intent(in)  :: l_restart
+
+            call create_netcdf_parcel_file(n_lo_surf_parcels, 'lo', &
+                                           basename, overwrite, l_restart)
+            n_writes = 1
+            call create_netcdf_parcel_file(n_up_surf_parcels, 'up', &
+                                           basename, overwrite, l_restart)
+
+        end subroutine create_netcdf_surface_parcel_stats_files
+
         ! Create the parcel diagnostic file.
         ! @param[in] basename of the file
         ! @param[in] overwrite the file
-        subroutine create_netcdf_parcel_stats_file(basename, overwrite, l_restart)
+        subroutine create_netcdf_parcel_stats_file(n_par, which, basename, overwrite, l_restart)
+            integer,      intent(in)  :: n_par
+            character(2), intent(in)  :: which
             character(*), intent(in)  :: basename
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
 
-            ncfname =  basename // '_parcel_stats.nc'
+            ncfname =  basename // '_' // which // '_surf_parcel_stats.nc'
 
             call exist_netcdf_file(ncfname, l_exist)
 
@@ -67,28 +81,18 @@ module surface_parcel_diagnostics_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
-            call write_netcdf_info(ncid=ncid,                    &
-                                   version_tag=package_version,  &
-                                   file_type='parcel_stats',     &
+            call write_netcdf_info(ncid=ncid,                           &
+                                   version_tag=package_version,         &
+                                   file_type='surface_parcel_stats',    &
                                    cf_version=cf_version)
 
-            call write_netcdf_box(ncid, lower, extent, (/nx, ny/))
+            call write_netcdf_box(ncid, lower, extent, (/nx, ny, nz/))
 
             call write_physical_quantities(ncid)
 
             call write_netcdf_options(ncid)
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='pe',                                                  &
-                long_name='potential energy',                               &
-                std_name='',                                                &
-                unit='m^4/s^2',                                             &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=pe_id)
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
@@ -99,16 +103,6 @@ module surface_parcel_diagnostics_netcdf
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=ke_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='te',                                                  &
-                long_name='total energy',                                   &
-                std_name='',                                                &
-                unit='m^4/s^2',                                             &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=te_id)
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
@@ -172,33 +166,33 @@ module surface_parcel_diagnostics_netcdf
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='rms_q',                                               &
-                long_name='root mean square of potential vorticity',        &
+                name='x_rms_vorticity',                                     &
+                long_name='root mean square of x vorticity component',      &
                 std_name='',                                                &
                 unit='1/s',                                                 &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
-                varid=rms_q_id)
+                varid=rms_x_vor_id)
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='min_q',                                               &
-                long_name='minimum parcel potential vorticity',             &
+                name='y_rms_vorticity',                                     &
+                long_name='root mean square of y vorticity component',      &
                 std_name='',                                                &
                 unit='1/s',                                                 &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
-                varid=min_q_id)
+                varid=rms_y_vor_id)
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
-                name='max_q',                                               &
-                long_name='maximum parcel potential vorticity',             &
+                name='z_rms_vorticity',                                     &
+                long_name='root mean square of z vorticity component',      &
                 std_name='',                                                &
                 unit='1/s',                                                 &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
-                varid=max_q_id)
+                varid=rms_z_vor_id)
 
             call close_definition(ncid)
 
@@ -211,11 +205,7 @@ module surface_parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 't', t_axis_id)
 
-            call get_var_id(ncid, 'pe', pe_id)
-
             call get_var_id(ncid, 'ke', ke_id)
-
-            call get_var_id(ncid, 'te', te_id)
 
             call get_var_id(ncid, 'n_parcels', npar_id)
 
@@ -229,23 +219,43 @@ module surface_parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 'std_area', std_area_id)
 
-            call get_var_id(ncid, 'rms_q', rms_q_id)
+            call get_var_id(ncid, 'x_rms_vorticity', rms_x_vor_id)
 
-            call get_var_id(ncid, 'min_q', min_q_id)
+            call get_var_id(ncid, 'y_rms_vorticity', rms_y_vor_id)
 
-            call get_var_id(ncid, 'max_q', max_q_id)
+            call get_var_id(ncid, 'z_rms_vorticity', rms_z_vor_id)
 
         end subroutine read_netcdf_parcel_stats_content
 
+        subroutine write_netcdf_surface_parcel_stats(t)
+            double precision, intent(in) :: t
+
+            call write_netcdf_parcel_stats(n_lo_surf_parcels, 'lo', t)
+            call write_netcdf_parcel_stats(n_up_surf_parcels, 'up', t)
+
+            ! increment counter
+            n_writes = n_writes + 1
+
+        end subroutine write_netcdf_surface_parcel_stats
+
+
         ! Write a step in the parcel diagnostic file.
         ! @param[in] t is the time
-        subroutine write_netcdf_parcel_stats(t)
-            double precision, intent(in)    :: t
+        subroutine write_netcdf_parcel_stats(n_par, which, t)
+            integer,          intent(in) :: n_par
+            character(2),     intent(in) :: which
+            double precision, intent(in) :: t
+            integer                      :: j
 
-            call start_timer(parcel_stats_io_timer)
+            call start_timer(surf_parcel_stats_io_timer)
+
+            j = 1
+            if (which == 'up') then
+                j = 2
+            endif
 
             if (t <= restart_time) then
-                call stop_timer(parcel_stats_io_timer)
+                call stop_timer(surf_parcel_stats_io_timer)
                 return
             endif
 
@@ -257,25 +267,21 @@ module surface_parcel_diagnostics_netcdf
             !
             ! write diagnostics
             !
-            call write_netcdf_scalar(ncid, pe_id, pe, n_writes)
-            call write_netcdf_scalar(ncid, ke_id, ke, n_writes)
-            call write_netcdf_scalar(ncid, te_id, ke + pe, n_writes)
-            call write_netcdf_scalar(ncid, npar_id, n_parcels, n_writes)
-            call write_netcdf_scalar(ncid, nspar_id, n_small, n_writes)
-            call write_netcdf_scalar(ncid, avg_lam_id, avg_lam, n_writes)
-            call write_netcdf_scalar(ncid, std_lam_id, std_lam, n_writes)
-            call write_netcdf_scalar(ncid, avg_area_id, avg_area, n_writes)
-            call write_netcdf_scalar(ncid, std_area_id, std_area, n_writes)
-            call write_netcdf_scalar(ncid, rms_q_id, rms_q, n_writes)
-            call write_netcdf_scalar(ncid, min_q_id, min_q, n_writes)
-            call write_netcdf_scalar(ncid, max_q_id, max_q, n_writes)
+            call write_netcdf_scalar(ncid, ke_id, ke(j), n_writes)
+            call write_netcdf_scalar(ncid, npar_id, n_par, n_writes)
+            call write_netcdf_scalar(ncid, nspar_id, n_small(j), n_writes)
+            call write_netcdf_scalar(ncid, avg_lam_id, avg_lam(j), n_writes)
+            call write_netcdf_scalar(ncid, std_lam_id, std_lam(j), n_writes)
+            call write_netcdf_scalar(ncid, avg_area_id, avg_area(j), n_writes)
+            call write_netcdf_scalar(ncid, std_area_id, std_area(j), n_writes)
+            call write_netcdf_scalar(ncid, rms_x_vor_id, rms_xi(j), n_writes)
+            call write_netcdf_scalar(ncid, rms_y_vor_id, rms_eta(), n_writes)
+            call write_netcdf_scalar(ncid, rms_z_vor_id, rms_zeta(j), n_writes)
 
-            ! increment counter
-            n_writes = n_writes + 1
 
             call close_netcdf_file(ncid)
 
-            call stop_timer(parcel_stats_io_timer)
+            call stop_timer(surf_parcel_stats_io_timer)
 
         end subroutine write_netcdf_parcel_stats
 end module surface_parcel_diagnostics_netcdf
