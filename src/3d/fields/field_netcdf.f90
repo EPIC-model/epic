@@ -22,7 +22,7 @@ module field_netcdf
     integer            :: x_vel_id, y_vel_id, z_vel_id, &
                           x_vor_id, y_vor_id, z_vor_id, &
                           tbuoy_id, vol_id, n_writes,   &
-                          div_id
+                          div_id, div_lo_id
 
 #ifdef ENABLE_DIAGNOSE
     integer            :: x_vtend_id, y_vtend_id, z_vtend_id, &
@@ -41,7 +41,7 @@ module field_netcdf
                x_vel_id, y_vel_id, z_vel_id,    &
                x_vor_id, y_vor_id, z_vor_id,    &
                tbuoy_id, vol_id, div_id,        &
-               n_writes, restart_time
+               n_writes, restart_time, div_lo_id
 
 #ifdef ENABLE_DIAGNOSE
     private :: x_vtend_id, y_vtend_id, z_vtend_id, &
@@ -261,6 +261,15 @@ module field_netcdf
                                        dimids=dimids,                       &
                                        varid=div_id)
 
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='divergence_lo',                &
+                                       long_name='divergence lower bndry',  &
+                                       std_name='',                         &
+                                       unit='1/s',                          &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=div_lo_id)
+
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_file
@@ -321,6 +330,8 @@ module field_netcdf
             call get_var_id(ncid, 'volume', vol_id)
 
             call get_var_id(ncid, 'divergence', div_id)
+
+            call get_var_id(ncid, 'divergence_lo', div_lo_id)
         end subroutine read_netcdf_field_content
 
         ! Write a step in the field file.
@@ -400,6 +411,10 @@ module field_netcdf
                                       start, cnt)
 
             call write_netcdf_dataset(ncid, div_id, velgradg(nz, :, :, 1) + velgradg(nz, :, :, 3), &
+                                      start, cnt)
+
+            call write_netcdf_dataset(ncid, div_lo_id, &
+                                      velgradg(0, :, :, 1) + velgradg(0, :, :, 3), &
                                       start, cnt)
 
             ! increment counter
