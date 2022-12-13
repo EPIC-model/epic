@@ -12,24 +12,24 @@ class pmpic_reader(nc_base_reader):
             return self._ncfile.dimensions['time'].size
         return 1
 
-    def get_box_extent(self, step=0):
-        origin = self.get_box_origin(step)
-        x_top = self.get_dataset(step, 'x_top')
-        y_top = self.get_dataset(step, 'y_top')
-        z_top = self.get_axis(step, 'z')[-1]
+    def get_box_extent(self):
+        origin = self.get_box_origin()
+        x_top = self.get_axis('x')[-1]
+        y_top = self.get_axis('y')[-1]
+        z_top = self.get_axis('z')[-1]
         return np.array([x_top, y_top, z_top]) - origin
 
     def get_box_ncells(self):
-        nx = self._ncfile.dimensions['x'].size
-        ny = self._ncfile.dimensions['y'].size
-        nz = self._ncfile.dimensions['z'].size - 1
+        nx = self._ncfile.dimensions['xp'].size
+        ny = self._ncfile.dimensions['yp'].size
+        nz = self._ncfile.dimensions['zp'].size - 1
         return np.array([nx, ny, nz])
 
-    def get_box_origin(self, step):
-        x_bottom = self.get_dataset(step, 'x_bottom')
-        y_bottom = self.get_dataset(step, 'y_bottom')
-        z_bottom = self.get_axis(step, 'z')[0]
-        return np.array([x_bottom, y_bottom, z_bottom])
+    def get_box_origin(self):
+        x_origin = self.get_axis('x')[0]
+        y_origin = self.get_axis('y')[0]
+        z_origin = self.get_axis('z')[0]
+        return np.array([x_origin, y_origin, z_origin])
 
     def get_axis(self, name):
         if not name in ['x', 'y', 'z']:
