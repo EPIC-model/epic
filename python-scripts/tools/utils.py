@@ -20,7 +20,7 @@ def get_plane(plane, loc, fdata):
 
 # assumes fdata ordering (x, y, z)
 def make_imshow(ax, plane, loc, fdata, ncr,
-                cmap='rainbow4', colorbar=True, cmap_norm=None, **kwargs):
+                cmap=cc.cm['rainbow4'], colorbar=True, cmap_norm=None, **kwargs):
 
     if ncr == None:
         origin = kwargs.get('origin')
@@ -67,7 +67,6 @@ def make_imshow(ax, plane, loc, fdata, ncr,
     vmax = kwargs.pop('vmax', None)
     vmin = kwargs.pop('vmin', None)
 
-    cmap = cc.cm[cmap]
     color_under = kwargs.pop('color_under', 'darkblue')
     color_over = kwargs.pop('color_over', 'orangered')
 
