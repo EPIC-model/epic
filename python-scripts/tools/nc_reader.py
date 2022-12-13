@@ -1,24 +1,20 @@
-import netCDF4 as nc
-import os
+from nc_base_reader import nc_base_reader
 import re
 import numpy as np
 from matplotlib.patches import Ellipse, Circle
 from matplotlib.collections import EllipseCollection
 
 
-class nc_reader:
+class nc_reader(nc_base_reader):
     def __init__(self):
-        self._ncfile = None
-
         # either a field or parcel file
         self._nctype = None
 
         self._is_compressible = False
 
     def open(self, fname):
-        if not os.path.exists(fname):
-            raise IOError("File '" + fname + "' does not exist.")
-        self._ncfile = nc.Dataset(fname, "r", format="NETCDF4")
+        super().open(fname)
+
         self._nctype = self.get_global_attribute("file_type")
 
         # if we read in a parcel file we pre-evaluate the number of
@@ -39,10 +35,6 @@ class nc_reader:
                 if self._basename in ff and '_parcels.nc' in ff:
                     self._n_parcel_files += 1
 
-
-
-    def close(self):
-        self._ncfile.close()
 
     @property
     def is_parcel_file(self):
@@ -75,22 +67,24 @@ class nc_reader:
     def get_box_origin(self):
         return self.get_global_attribute("origin")
 
+    def get_axis(self, name):
+        if not name in ['x', 'y', 'z']:
+            raise ValueError("No axis called '" + name + "'.")
+        axis = self.get_all(name)
+        if name == 'x' or name == 'y':
+            new_axis = np.empty(axis.size + 1)
+            new_axis[0:-1] = axis[:]
+            new_axis[-1] = axis[0]
+            axis = new_axis
+        return axis
+
     def get_all(self, name):
         if self.is_parcel_file:
             raise IOError("This function is not availble for parcel files.")
-
-        if not name in self._ncfile.variables.keys():
-            raise IOError("Dataset '" + name + "' unknown.")
-
-        return np.array(self._ncfile.variables[name])
+        super().get_all(name)
 
     def get_dataset(self, step, name, indices=None):
-        if not name in self._ncfile.variables.keys():
-            raise IOError("Dataset '" + name + "' unknown.")
-
-        nsteps = self.get_num_steps()
-        if step > nsteps - 1:
-            raise ValueError("Dataset has only steps 0 to " + str(nsteps - 1) + ".")
+        super().get_dataset(step, name)
 
         if self.is_parcel_file and name == 't':
             # parcel files store the time as a global attribute
@@ -261,40 +255,3 @@ class nc_reader:
         s = self._get_step_string(step)
         fname = os.path.join(self._dirname, self._basename + '_' + s + '_parcels.nc')
         self._ncfile = nc.Dataset(fname, "r", format="NETCDF4")
-
-    # 18 Feb 2022
-    # https://stackoverflow.com/questions/8450472/how-to-print-a-string-at-a-fixed-width
-    # 19 Feb 2022
-    # https://stackoverflow.com/questions/873327/pythons-most-efficient-way-to-choose-longest-string-in-list
-    def __str__(self):
-        print("=" * 80)
-        # print global attributes
-        print("GLOBAL ATTRIBUTES:")
-        l = len(max(self._ncfile.ncattrs(), key=len))
-        fmt = '{0: <' + str(l) + '}'
-        for key in self._ncfile.ncattrs():
-            print(fmt.format(key), "\t", self._ncfile.getncattr(key))
-        print("-" * 80)
-
-        print("DIMENSIONS:")
-
-        for dim in self._ncfile.dimensions:
-            print("    ", dim, "=", self._ncfile.dimensions[dim].size)
-
-        print("-" * 80)
-
-        print("VARIABLES:")
-        # get first variable name
-        name = list(self._ncfile.variables.keys())[0]
-
-        # get length of longest attribute string
-        l = len(max(self._ncfile.variables[name].ncattrs(), key=len))
-        fmt = '{0: <' + str(l) + '}'
-
-        # print variables and their attributes
-        for var in self._ncfile.variables:
-            print("    ", var)
-            for attr in self._ncfile.variables[var].ncattrs():
-                print("\t", fmt.format(attr), "\t", self._ncfile.variables[var].getncattr(attr))
-        print("=" * 80)
-        return ""
