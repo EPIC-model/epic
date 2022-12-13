@@ -16,9 +16,8 @@ program epic3d
                                   grad_corr_timer,        &
                                   vort_corr_timer,        &
                                   init_parcel_correction
-    use parcel_diagnostics, only : init_parcel_diagnostics, &
-                                   parcel_stats_timer
-    use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
+    use parcel_diagnostics, only : parcel_stats_timer
+    use parcel_netcdf, only : parcel_io_timer
     use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
     use fields
     use field_netcdf, only : field_io_timer
@@ -27,12 +26,12 @@ program epic3d
     use inversion_mod, only : vor2vel_timer, vtend_timer
     use inversion_utils, only : init_inversion
     use parcel_interpl, only : grid2par_timer, par2grid_timer
-    use parcel_init, only : init_parcels, init_timer
+    use parcel_init, only : init_timer
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
-    use utils, only : write_last_step, setup_output_files,       &
-                      setup_restart, setup_domain_and_parameters
+    use utils, only : write_last_step, setup_output_files        &
+                    , setup_restart, setup_domain_and_parameters &
+                    , setup_parcels
     use parameters, only : max_num_parcels
-    use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     implicit none
 
     integer          :: epic_timer
@@ -52,14 +51,7 @@ program epic3d
     contains
 
         subroutine pre_run
-            use options, only : field_file          &
-                              , field_tol           &
-                              , output              &
-                              , read_config_file    &
-                              , l_restart           &
-                              , restart_file        &
-                              , time
-            character(len=16) :: file_type
+            use options, only : read_config_file
 
             call register_timer('epic', epic_timer)
             call register_timer('par2grid', par2grid_timer)
@@ -84,46 +76,17 @@ program epic3d
 
             call start_timer(epic_timer)
 
-            ! set axis and dimension names for the NetCDF output
-            call set_netcdf_dimensions((/'x', 'y', 'z', 't'/))
-            call set_netcdf_axes((/'X', 'Y', 'Z', 'T'/))
-
             ! parse the config file
             call read_config_file
 
             ! read domain dimensions
-            if (l_restart) then
-                call setup_domain_and_parameters(trim(restart_file))
-            else
-                call setup_domain_and_parameters(trim(field_file))
-            endif
+            call setup_domain_and_parameters
 
-            call parcel_alloc(max_num_parcels)
-
-            if (l_restart) then
-                call setup_restart(trim(restart_file), time%initial, file_type)
-
-                if (file_type == 'fields') then
-                    call init_parcels(restart_file, field_tol)
-                else if (file_type == 'parcels') then
-                    call read_netcdf_parcels(restart_file)
-                else
-                    print *, 'Restart file must be of type "fields" or "parcels".'
-                    stop
-                endif
-            else
-                time%initial = zero ! make sure user cannot start at arbirtrary time
-
-                call init_parcels(field_file, field_tol)
-            endif
+            call setup_parcels
 
             call ls_rk4_alloc(max_num_parcels)
 
             call init_inversion
-
-            if (output%write_parcel_stats) then
-                call init_parcel_diagnostics
-            endif
 
             call init_parcel_correction
 
@@ -141,7 +104,6 @@ program epic3d
 #endif
             double precision :: t = zero    ! current time
             integer          :: cor_iter    ! iterator for parcel correction
-            integer :: n_orig
 
             t = time%initial
 
@@ -156,15 +118,7 @@ program epic3d
 
                 call ls_rk4_step(t)
 
-                !call apply_vortcor
-
-                n_orig = n_parcels
-
                 call merge_parcels(parcels)
-
-                if (n_orig > n_parcels) then
-                   print *, "Merged parcels at time", t
-                endif
 
                 call parcel_split(parcels, parcel%lambda_max)
 
@@ -200,8 +154,9 @@ program epic3d
 #ifdef ENABLE_VERBOSE
         use options, only : verbose
 #endif
-        integer                          :: i
-        character(len=512)               :: arg
+        integer            :: i
+        character(len=512) :: arg
+        logical            :: l_exist
 
         filename = ''
         restart_file = ''
@@ -240,6 +195,13 @@ program epic3d
         if (l_restart .and. (restart_file == '')) then
             print *, 'No restart file provided. Run code with "./epic3d --config [config file]' // &
                      ' --restart [restart file]"'
+            stop
+        endif
+
+        inquire(file=filename, exist=l_exist)
+
+        if (.not. l_exist) then
+            print *, "Configuration file " // trim(filename) // " does not exist."
             stop
         endif
 

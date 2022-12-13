@@ -4,10 +4,11 @@
 module parcel_diagnostics
     use constants, only : zero, one, f12, thousand
     use merge_sort
-    use parameters, only : extent, lower, vcell, vmin, nx, nz
+    use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipsoid
     use omp_lib
+    use physics, only : peref
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -17,13 +18,12 @@ module parcel_diagnostics
     double precision, parameter :: thres = thousand * epsilon(zero)
 #endif
 
-    ! peref : potential energy reference
     ! pe    : potential energy
     ! ke    : kinetic energy
-    double precision :: peref, pe, ke
+    double precision :: pe, ke
 
-    ! psi : enstrophy
-    double precision :: psi
+    ! en : enstrophy
+    double precision :: en
 
     integer :: n_small
 
@@ -39,10 +39,13 @@ module parcel_diagnostics
     ! rms vorticity
     double precision :: rms_zeta(3)
 
+    ! buoyancy extrema
+    double precision :: bmin, bmax
+
     contains
 
         ! Compute the reference potential energy
-        subroutine init_parcel_diagnostics
+        subroutine calculate_peref
             integer          :: ii(n_parcels), n
             double precision :: b(n_parcels)
             double precision :: gam, zmean
@@ -65,8 +68,11 @@ module parcel_diagnostics
                       - b(n) * parcels%volume(ii(n)) * zmean
             enddo
 
+            ! divide by domain volume to get domain-averaged peref
+            peref = peref * vdomaini
+
             call stop_timer(parcel_stats_timer)
-        end subroutine init_parcel_diagnostics
+        end subroutine calculate_peref
 
 
         ! Calculate all parcel related diagnostics
@@ -81,7 +87,7 @@ module parcel_diagnostics
             ! reset
             ke = zero
             pe = zero
-            psi = zero
+            en = zero
 
             lsum = zero
             l2sum = zero
@@ -98,11 +104,13 @@ module parcel_diagnostics
             std_lam = zero
             std_vol = zero
             sum_vol = zero
-
+            bmin = zero
+            bmax = zero
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, psi)
+            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, en) &
+            !$omp& reduction(max: bmax) reduction(min: bmin)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
@@ -118,7 +126,7 @@ module parcel_diagnostics
                 pe = pe - b * z * vol
 
                 ! enstrophy
-                psi = psi + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
+                en = en + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
 
                 evals = get_eigenvalues(parcels%B(:, n), parcels%volume(n))
                 lam = get_aspect_ratio(evals)
@@ -131,6 +139,14 @@ module parcel_diagnostics
 
                 if (vol <= vmin) then
                     n_small = n_small + 1
+                endif
+
+                if (bmax < b) then
+                    bmax = b
+                endif
+
+                if (bmin > b) then
+                    bmin = b
                 endif
 
 #ifndef NDEBUG
@@ -147,9 +163,10 @@ module parcel_diagnostics
             !$omp end do
             !$omp end parallel
 
-            ke = f12 * ke
-            pe = pe - peref
-            psi = f12 * psi
+            ! divide by domain volume to get domain-averaged quantities
+            ke = f12 * ke * vdomaini
+            pe = pe * vdomaini - peref
+            en = f12 * en * vdomaini
 
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))

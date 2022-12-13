@@ -20,7 +20,9 @@ module field_diagnostics_netcdf
     integer            :: ncid
     integer            :: t_axis_id, t_dim_id, n_writes,                   &
                           rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
-                          avg_npar_id, avg_nspar_id, keg_id
+                          avg_npar_id, avg_nspar_id, keg_id, eng_id,       &
+                          max_buoy_id, min_buoy_id
+
     double precision   :: restart_time
 
     integer :: field_stats_io_timer
@@ -137,12 +139,42 @@ module field_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='ke',                                                  &
-                long_name='kinetic energy',                                 &
+                long_name='domain-averaged kinetic energy',                 &
                 std_name='',                                                &
-                unit='m^5/s^2',                                             &
+                unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=keg_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='en',                                                  &
+                long_name='domain-averaged enstrophy',                      &
+                std_name='',                                                &
+                unit='1/s^2',                                               &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=eng_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='min_buoyancy',                                        &
+                long_name='minimum gridded buoyancy',                       &
+                std_name='',                                                &
+                unit='m/s^2',                                               &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=min_buoy_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='max_buoyancy',                                        &
+                long_name='maximum gridded buoyancy',                       &
+                std_name='',                                                &
+                unit='m/s^2',                                               &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=max_buoy_id)
 
             call close_definition(ncid)
 
@@ -168,6 +200,12 @@ module field_diagnostics_netcdf
             call get_var_id(ncid, 'avg_nspar', avg_nspar_id)
 
             call get_var_id(ncid, 'ke', keg_id)
+
+            call get_var_id(ncid, 'en', eng_id)
+
+            call get_var_id(ncid, 'min_buoyancy', min_buoy_id)
+
+            call get_var_id(ncid, 'max_buoyancy', max_buoy_id)
 
         end subroutine read_netcdf_field_stats_content
 
@@ -203,6 +241,9 @@ module field_diagnostics_netcdf
             call write_netcdf_scalar(ncid, avg_npar_id, avg_npar, n_writes)
             call write_netcdf_scalar(ncid, avg_nspar_id, avg_nspar, n_writes)
             call write_netcdf_scalar(ncid, keg_id, keg, n_writes)
+            call write_netcdf_scalar(ncid, eng_id, eng, n_writes)
+            call write_netcdf_scalar(ncid, min_buoy_id, min_buoyg, n_writes)
+            call write_netcdf_scalar(ncid, max_buoy_id, max_buoyg, n_writes)
 
             ! increment counter
             n_writes = n_writes + 1
