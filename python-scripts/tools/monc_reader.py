@@ -10,7 +10,7 @@ class monc_reader(nc_base_reader):
         origin = self.get_box_origin(step)
         x_top = self.get_dataset(step, 'x_top')
         y_top = self.get_dataset(step, 'y_top')
-        z_top = self.get_axis(step, 'z')[-1]
+        z_top = self.get_axis('z', step)[-1]
         return np.array([x_top, y_top, z_top]) - origin
 
     def get_box_ncells(self):
@@ -19,10 +19,10 @@ class monc_reader(nc_base_reader):
         nz = self._ncfile.dimensions['z'].size - 1
         return np.array([nx, ny, nz])
 
-    def get_box_origin(self, step):
+    def get_box_origin(self, step=0):
         x_bottom = self.get_dataset(step, 'x_bottom')
         y_bottom = self.get_dataset(step, 'y_bottom')
-        z_bottom = self.get_axis(step, 'z')[0]
+        z_bottom = self.get_axis('z', step)[0]
         return np.array([x_bottom, y_bottom, z_bottom])
 
     def get_axis(self, name, step=0):
