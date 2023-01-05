@@ -3,6 +3,7 @@ import re
 import numpy as np
 from matplotlib.patches import Ellipse, Circle
 from matplotlib.collections import EllipseCollection
+from geometry import ellipsoid, ellipse, xy_plane, xz_plane, yz_plane
 
 
 class nc_reader(nc_base_reader):
@@ -301,6 +302,12 @@ class nc_reader(nc_base_reader):
     def _get_B22(self, B11, B12, V):
         return ((V / np.pi) ** 2 + B12 ** 2) / B11
 
+    def _get_B33(self, B11, B12, B13, B22, B23, V):
+        return ((0.75 * V / np.pi) ** 2 - B13 * (B12 * B23 - B13 * B22) \
+                                        + B11 * B23 ** 2                \
+                                        - B12 * B13 * B23)              \
+                / (B11 * B22 - B12 ** 2)
+
     def _get_eigenvalue(self, B11, B12, B22):
         return 0.5 * (B11 + B22) + np.sqrt(0.25 * (B11 - B22) ** 2 + B12 ** 2)
 
@@ -347,3 +354,191 @@ class nc_reader(nc_base_reader):
             field_copy[:, 0:nx] = field.copy()
             field_copy[:, nx] = field_copy[:, 0]
         return field_copy
+
+    def get_intersection_ellipses(self, step, plane, loc):
+        """
+        Calculates the ellipses from all ellipsoids intersecting
+        with the provided xy-, xz- or yz-plane.
+
+        Parameters
+        ----------
+        plane   'xy', 'xz' or 'yz'
+        loc     grid point
+        """
+        if plane not in ['xy', 'xz', 'yz']:
+            raise ValueError("Specified plane '", plane "' not available.")
+
+        origin = self.get_origin()
+        extent = self.get_box_extent()
+        ncells = self.get_box_ncells()
+
+        dx = extent / ncells
+
+        var = {'yz': 0, 'xz': 1, 'xy': 2}
+        dim = {0: 'x', 1: 'y', 2: 'z'}
+
+        # calculate the position of the plane
+        j = var[plane]
+        p = origin[j] + dx[j] * loc
+
+        if plane == 'xy':
+            pl = xy_plane(z=p)
+        elif plane ==  'xz':
+            pl = xz_plane(y=p)
+        else:
+            pl = yz_plane(x=p)
+
+        # lower and upper position bounds
+        lo = origin[j] + dx[j] * (loc - 1)
+        hi = origin[j] + dx[j] * (loc + 1)
+
+        # get indices of parcels satisfying lo < pos < hi
+        pos = self.get_dataset(step, name=dim[j] + '_position')
+        indices = np.where((pos > lo) & (pos < hi))[0]
+        pos = None
+
+        B11 = self.get_dataset(step, name='B11',        indices=indices)
+        B12 = self.get_dataset(step, name='B12',        indices=indices)
+        B13 = self.get_dataset(step, name='B13',        indices=indices)
+        B22 = self.get_dataset(step, name='B22',        indices=indices)
+        B23 = self.get_dataset(step, name='B23',        indices=indices)
+        V   = self.get_dataset(step, name='volume',     indices=indices)
+        xp  = self.get_dataset(step, name='x_position', indices=indices)
+        yp  = self.get_dataset(step, name='y_position', indices=indices)
+        zp  = self.get_dataset(step, name='z_position', indices=indices)
+        B33 = self._get_B33(B11, B12, B22, B23, V)
+
+        n = len(indices)
+
+        angles = np.empty(n)
+        a = np.empty(n)
+        b = np.empty(n)
+        centres = np.empty((n, 2))
+
+        for i in range(n):
+            B = np.array([[B11, B12, B13],
+                          [B12, B22, B23],
+                          [B13, B23, B33]])
+
+            # calculate inverse of B-matrix: (instead of using np.linalg.inv)
+            D, V = np.linalg.eigh(B)
+            iD = np.diag(1.0 / D)
+            # eigh calculates the eigenvalues in ascending order (c^2, b^2, a^2),
+            # hence, the order in iB is (1/a^2, 1/b^2, 1/c^2) assuming a >= b >= c
+            iB = np.matmul(np.matmul(V, iD), V.transpose())
+
+            # ellipsoid centre:
+            xc = np.array([xp[i], yp[i], zp[i]])
+
+            # create ellipsoid object:
+            elid = ellipsoid(xc, iB)
+
+            # calculate ellipes from intersection:
+            ell = elid.intersect(pl)
+
+            # get semi-major and semi-minor axes:
+            (a[i], b[i]) = ell.semi_axes
+
+            # get ellipse centre:
+            (x0, y0) = ell.centre
+            centres[i, 0] = x0
+            centres[i, 1] = y0
+
+            # get ellipse angle (in degree):
+            angles[i] = np.rad2deg(ell.angle)
+
+        return EllipseCollection(widths=2.0 * a,
+                                 heights=2.0 * b,
+                                 angles=angles,
+                                 units='xy',
+                                 offsets=centres)
+
+    def _calculated_projected_ellipses(self, step, plane, loc):
+        """
+        Calculates 2D projections of the ellipsoids onto either
+        xy-, xz- or yz-plane.
+
+        Parameters
+        ----------
+        plane   'xy', 'xz' or 'yz'
+        loc     grid point
+        """
+        if plane not in ['xy', 'xz', 'yz']:
+            raise ValueError("Specified plane '", plane "' not available.")
+
+        origin = self.get_origin()
+        extent = self.get_box_extent()
+        ncells = self.get_box_ncells()
+
+        dx = extent / ncells
+
+        dim = {0: 'x', 1: 'y', 2: 'z'}
+
+        j = 0
+        if plane == 'xz':
+            j = 1
+        elif plane == 'xy':
+            j = 2
+
+        # lower and upper position bounds
+        lo = origin[j] + dx[j] * (loc - 1)
+        hi = origin[j] + dx[j] * (loc + 1)
+
+        # get indices of parcels satisfying lo < pos < hi
+        pos = self.get_dataset(step, name=dim[j] + '_position')
+        indices = np.where((pos > lo) & (pos < hi))[0]
+        pos = None
+
+
+        B11 = self.get_dataset(step, name='B11',    indices=indices)
+        B12 = self.get_dataset(step, name='B12',    indices=indices)
+        B13 = self.get_dataset(step, name='B13',    indices=indices)
+        B22 = self.get_dataset(step, name='B22',    indices=indices)
+        B23 = self.get_dataset(step, name='B23',    indices=indices)
+        V   = self.get_dataset(step, name='volume', indices=indices)
+        B33 = self._get_B33(B11, B12, B22, B23, V)
+
+        if dim[j] == 'x':
+            # yz-plane
+            B11 = 1.0 / B11
+            B11_proj = B22 - B12 ** 2 * B11
+            B12_proj = B23 - B12 * B13 * B11
+            B22_proj = B33 - B13 ** 2 * B11
+            pos_1 = self.get_dataset(step, name='y_position', indices=indices)
+            pos_2 = self.get_dataset(step, name='z_position', indices=indices)
+        elif dim[j] == 'y':
+            # xz-plane
+            B22 = 1.0 / B22
+            B11_proj = B11 - B12 ** 2 * B22
+            B12_proj = B13 - B12 * B23 * B22
+            B22_proj = B33 - B23 ** 2 * B22
+            pos_1 = self.get_dataset(step, name='x_position', indices=indices)
+            pos_2 = self.get_dataset(step, name='z_position', indices=indices)
+        else:
+            # xy-plane
+            B33 = 1.0 / B33
+            B11_proj = B11 - B13 ** 2 * B33
+            B12_proj = B12 - B13 * B23 * B33
+            B22_proj = B22 - B23 ** 2 * B33
+            pos_1 = self.get_dataset(step, name='x_position', indices=indices)
+            pos_2 = self.get_dataset(step, name='y_position', indices=indices)
+
+        return pos_1, pos_2, B11_proj, B12_proj, B22_proj
+
+
+
+    #def _get_plane(self, data, plane, loc):
+        #"""
+        #Assumes the data in (x, y, z) ordering.
+        #"""
+        #if plane not in ['xy', 'xz', 'yz']:
+            #raise ValueError("Specified plane '", plane "' not available.")
+
+        #if plane == 'xy':
+            #pl_data = data[:, :, loc]
+        #elif plane == 'xz':
+            #pl_data = data[:, loc, :]
+        #else:
+            ##plane = 'yz':
+            #pl_data = data[loc, :, :]
+        #return pl_data

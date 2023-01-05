@@ -7,6 +7,8 @@ toolsdir = $(bindir)/tools
 nobase_tools_DATA = 			\
 	colors.py			\
 	nc_base_reader.py		\
+	geometry.py			\
+	draw.py				\
 	nc_reader.py 			\
 	nc_utils.py			\
 	nc_fields.py			\
