@@ -1,9 +1,11 @@
-from nc_base_reader import nc_base_reader
+import netCDF4 as nc
+from tools.nc_base_reader import nc_base_reader
 import re
 import numpy as np
 from matplotlib.patches import Ellipse, Circle
 from matplotlib.collections import EllipseCollection
-from geometry import ellipsoid, ellipse, xy_plane, xz_plane, yz_plane
+from tools.geometry import ellipsoid, ellipse, xy_plane, xz_plane, yz_plane
+import os
 
 
 class nc_reader(nc_base_reader):
@@ -355,7 +357,7 @@ class nc_reader(nc_base_reader):
             field_copy[:, nx] = field_copy[:, 0]
         return field_copy
 
-    def get_intersection_ellipses(self, step, plane, loc):
+    def get_intersection_ellipses(self, step, plane, loc, use_bokeh=False):
         """
         Calculates the ellipses from all ellipsoids intersecting
         with the provided xy-, xz- or yz-plane.
@@ -366,9 +368,9 @@ class nc_reader(nc_base_reader):
         loc     grid point
         """
         if plane not in ['xy', 'xz', 'yz']:
-            raise ValueError("Specified plane '", plane "' not available.")
+            raise ValueError("Specified plane '", plane, "' not available.")
 
-        origin = self.get_origin()
+        origin = self.get_box_origin()
         extent = self.get_box_extent()
         ncells = self.get_box_ncells()
 
@@ -406,7 +408,7 @@ class nc_reader(nc_base_reader):
         xp  = self.get_dataset(step, name='x_position', indices=indices)
         yp  = self.get_dataset(step, name='y_position', indices=indices)
         zp  = self.get_dataset(step, name='z_position', indices=indices)
-        B33 = self._get_B33(B11, B12, B22, B23, V)
+        B33 = self._get_B33(B11, B12, B13, B22, B23, V)
 
         n = len(indices)
 
@@ -416,9 +418,9 @@ class nc_reader(nc_base_reader):
         centres = np.empty((n, 2))
 
         for i in range(n):
-            B = np.array([[B11, B12, B13],
-                          [B12, B22, B23],
-                          [B13, B23, B33]])
+            B = np.array([[B11[i], B12[i], B13[i]],
+                          [B12[i], B22[i], B23[i]],
+                          [B13[i], B23[i], B33[i]]])
 
             # calculate inverse of B-matrix: (instead of using np.linalg.inv)
             D, V = np.linalg.eigh(B)
@@ -447,11 +449,19 @@ class nc_reader(nc_base_reader):
             # get ellipse angle (in degree):
             angles[i] = np.rad2deg(ell.angle)
 
-        return EllipseCollection(widths=2.0 * a,
-                                 heights=2.0 * b,
-                                 angles=angles,
-                                 units='xy',
-                                 offsets=centres)
+        if use_bokeh:
+            return (
+                centres[:, 0],
+                centres[:, 1],
+                2 * a[:],
+                2 * b[:],
+                angles[:]), indices
+        else:
+            return EllipseCollection(widths=2.0 * a,
+                                     heights=2.0 * b,
+                                     angles=angles,
+                                     units='xy',
+                                     offsets=centres), indices
 
     def _calculated_projected_ellipses(self, step, plane, loc):
         """
@@ -464,9 +474,9 @@ class nc_reader(nc_base_reader):
         loc     grid point
         """
         if plane not in ['xy', 'xz', 'yz']:
-            raise ValueError("Specified plane '", plane "' not available.")
+            raise ValueError("Specified plane '", plane, "' not available.")
 
-        origin = self.get_origin()
+        origin = self.get_box_origin()
         extent = self.get_box_extent()
         ncells = self.get_box_ncells()
 
