@@ -116,7 +116,7 @@ module surface_parcel_interpl
 !             nsparg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, i, j, points, weight, is, js, weights, btot) &
+            !$omp do private(n, p, l, points, weight, is, js, weights, btot) &
             !$omp& reduction(+:volg, vortg, tbuoyg)
             do n = 1, n_par
                 points = get_ellipse_points(s_parcels%position(:, n), &
