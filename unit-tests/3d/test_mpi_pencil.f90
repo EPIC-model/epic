@@ -14,15 +14,15 @@ program test_mpi_pencil
 
     double precision, allocatable :: values(:, :, :), vtrans(:, :, :)
     logical                       :: passed
-    integer                       :: ix, iy, iz
+    integer                       :: iy !ix, iy, iz
 
     call mpi_comm_initialise
 
     passed = (mpi_err == 0)
 
-    nx = 16
-    ny = 32
-    nz = 64
+    nx = 8
+    ny = 16
+    nz = 32
     lower = (/zero, zero, zero/)
     extent = (/one, two, four/)
 
@@ -31,30 +31,41 @@ program test_mpi_pencil
     call mpi_layout_init(nx, ny, nz)
 
     allocate(values(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
-    allocate(vtrans(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), box%hlo(3):box%hhi(3)))
+    allocate(vtrans(box%hlo(2):box%hhi(2), box%hlo(3):box%hhi(3), box%hlo(1):box%hhi(1)))
 
     values(:, :, :) = zero
     vtrans(:, :, :) = zero
 
-    do ix = box%lo(1), box%hi(1)
-        do iy = box%lo(2), box%hi(2)
-            do iz = box%lo(3), box%hi(3)
-                values(iz, iy, ix) = iy+1
+!     print *, box%size
+!     stop
+
+!     do iz = box%lo(3), box%hi(3)
+!         do ix = box%lo(1), box%hi(1)
+            do iy = box%lo(2), box%hi(2)
+                values(:, iy, :) = iy+1
             enddo
-        enddo
-    enddo
+!             write(WRITE_VOR, '(1x,f13.6,6(1x,1p,e14.7))')
+!             write(*, '(8(f1.0))')
+!             print *, values(iz, 0:ny-1, ix)
+!         enddo
+!         print *, ""
+!     enddo
+
+    print *, mpi_rank, "rank", values(1, box%lo(2):box%hi(2), box%lo(1))
 
 
     call initialise_pencil_fft(nx, ny, nz)
 
 
-    call transpose_to_pencil(y_from_z_transposition, (/I_Z, I_Y, I_X/), dim_y_comm, FORWARD, values, vtrans)
+    call transpose_to_pencil(y_from_z_transposition, (/1, 2, 3/), dim_y_comm, FORWARD,        &
+                             values(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
+                             fft_in_y_buffer)
 
     if (mpi_rank == mpi_master) then
 !         do ix = box%lo(1), box%hi(1)
 !             do iy = box%lo(2), box%hi(2)
-                do iy = box%lo(2), box%hi(2)
-                    print *, vtrans(iy, box%lo(1), box%lo(3))
+                do iy = 1, ny
+                    print *, fft_in_y_buffer(iy, 1, 1)
                 enddo
 !             enddo
 !         enddo

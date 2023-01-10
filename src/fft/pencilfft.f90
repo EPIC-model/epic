@@ -16,6 +16,8 @@ module pencil_fft
     use sta2dfft
     implicit none
 
+    integer :: Z_INDEX = 1, Y_INDEX = 2, X_INDEX = 3
+
     !> Describes a specific pencil transposition, from one pencil decomposition to another
     type pencil_transposition
         integer :: my_pencil_size(3), process_decomposition_layout(3), my_process_location(3), dim
@@ -49,8 +51,8 @@ module pencil_fft
     public initialise_pencil_fft, finalise_pencil_fft
 contains
 
-    !> Initialises the pencil FFT functionality, this will create the transposition structures needed
-    !! @param current_state The current model state
+    !> Initialises the pencil FFT functionality, this will create the
+    !> transposition structures needed
     !! @returns Size of local dimensions in fourier space for this process
     subroutine initialise_pencil_fft(nx, ny, nz)
         integer, intent(in) :: nx, ny, nz
@@ -63,6 +65,10 @@ contains
         endif
 
         ncells = (/nx, ny, nz/)
+
+        print *, "Is x parallel?", box%l_parallel(I_X)
+        print *, "Is y parallel?", box%l_parallel(I_Y)
+        print *, "Is z parallel?", box%l_parallel(I_Z)
 
         if (box%l_parallel(I_X) .and. box%l_parallel(I_Y)) then
             ! Info from https://www.open-mpi.org
@@ -118,33 +124,33 @@ contains
 
     !> Initialises memory for the buffers used in the FFT
     subroutine initialise_buffers
-        allocate(buffer1(y_from_z_transposition%my_pencil_size(I_Y)/2+1, &
-                         y_from_z_transposition%my_pencil_size(I_X),     &
-                         y_from_z_transposition%my_pencil_size(I_Z)))
+        allocate(buffer1(y_from_z_transposition%my_pencil_size(Y_INDEX)/2+1, &
+                         y_from_z_transposition%my_pencil_size(X_INDEX),     &
+                         y_from_z_transposition%my_pencil_size(Z_INDEX)))
 
-        allocate(buffer2(x_from_y_transposition%my_pencil_size(I_X)/2+1, &
-                         x_from_y_transposition%my_pencil_size(I_Z),     &
-                         x_from_y_transposition%my_pencil_size(I_Y)))
+        allocate(buffer2(x_from_y_transposition%my_pencil_size(X_INDEX)/2+1, &
+                         x_from_y_transposition%my_pencil_size(Z_INDEX),     &
+                         x_from_y_transposition%my_pencil_size(Y_INDEX)))
 
-        allocate(real_buffer1((y_from_z_transposition%my_pencil_size(I_Y)/2+1)*2,   &
-                               y_from_z_transposition%my_pencil_size(I_X),          &
-                               y_from_z_transposition%my_pencil_size(I_Z)))
+        allocate(real_buffer1((y_from_z_transposition%my_pencil_size(Y_INDEX)/2+1)*2,   &
+                               y_from_z_transposition%my_pencil_size(X_INDEX),          &
+                               y_from_z_transposition%my_pencil_size(Z_INDEX)))
 
-        allocate(real_buffer2((x_from_y_transposition%my_pencil_size(I_X)/2+1)*2,   &
-                               x_from_y_transposition%my_pencil_size(I_Z),          &
-                               x_from_y_transposition%my_pencil_size(I_Y)))
+        allocate(real_buffer2((x_from_y_transposition%my_pencil_size(X_INDEX)/2+1)*2,   &
+                               x_from_y_transposition%my_pencil_size(Z_INDEX),          &
+                               x_from_y_transposition%my_pencil_size(Y_INDEX)))
 
-        allocate(fft_in_y_buffer(y_from_z_transposition%my_pencil_size(I_Y),    &
-                                 y_from_z_transposition%my_pencil_size(I_X),    &
-                                 y_from_z_transposition%my_pencil_size(I_Z)))
+        allocate(fft_in_y_buffer(y_from_z_transposition%my_pencil_size(Y_INDEX),    &
+                                 y_from_z_transposition%my_pencil_size(X_INDEX),    &
+                                 y_from_z_transposition%my_pencil_size(Z_INDEX)))
 
-        allocate(fft_in_x_buffer(x_from_y_transposition%my_pencil_size(I_X),    &
-                                 x_from_y_transposition%my_pencil_size(I_Z),    &
-                                 x_from_y_transposition%my_pencil_size(I_Y)))
+        allocate(fft_in_x_buffer(x_from_y_transposition%my_pencil_size(X_INDEX),    &
+                                 x_from_y_transposition%my_pencil_size(Z_INDEX),    &
+                                 x_from_y_transposition%my_pencil_size(Y_INDEX)))
 
-        allocate(real_buffer3(y_from_x_transposition%my_pencil_size(I_Y),   &
-                              y_from_x_transposition%my_pencil_size(I_X),   &
-                              y_from_x_transposition%my_pencil_size(I_Z)))
+        allocate(real_buffer3(y_from_x_transposition%my_pencil_size(Y_INDEX),   &
+                              y_from_x_transposition%my_pencil_size(X_INDEX),   &
+                              y_from_x_transposition%my_pencil_size(Z_INDEX)))
     end subroutine initialise_buffers
 
     !> Initialises the pencil transpositions, from a pencil in one dimension to that in another
@@ -157,27 +163,27 @@ contains
         z_pencil = create_initial_transposition_description()
 
         ! Transpositions
-        y_from_z_transposition = create_transposition(z_pencil, I_Y, y_distinct_sizes, FORWARD, (/ -1 /))
+        y_from_z_transposition = create_transposition(z_pencil, Y_INDEX, y_distinct_sizes, FORWARD, (/ -1 /))
 
-        x_from_y_transposition = create_transposition(y_from_z_transposition, I_X, &
-                                                      x_distinct_sizes, FORWARD, (/ I_Y /))
+        x_from_y_transposition = create_transposition(y_from_z_transposition, X_INDEX, &
+                                                      x_distinct_sizes, FORWARD, (/ Y_INDEX /))
 
-        y_from_x_transposition=create_transposition(x_from_y_transposition, I_Y, &
-         normal_to_extended_process_dim_sizes(x_distinct_sizes), BACKWARD, (/ I_Y, I_X /))
+        y_from_x_transposition=create_transposition(x_from_y_transposition, Y_INDEX, &
+         normal_to_extended_process_dim_sizes(x_distinct_sizes), BACKWARD, (/ Y_INDEX, X_INDEX /))
 
-        z_from_y_transposition=create_transposition(y_from_x_transposition, I_Z, &
-         normal_to_extended_process_dim_sizes(y_distinct_sizes), BACKWARD, (/ I_Y, I_X /))
+        z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
+         normal_to_extended_process_dim_sizes(y_distinct_sizes), BACKWARD, (/ Y_INDEX, X_INDEX /))
 
-        y_from_z_2_transposition=create_transposition(z_from_y_transposition, I_Y, &
-          normal_to_extended_process_dim_sizes(y_distinct_sizes), FORWARD, (/ I_Y, I_X /))
+        y_from_z_2_transposition=create_transposition(z_from_y_transposition, Y_INDEX, &
+          normal_to_extended_process_dim_sizes(y_distinct_sizes), FORWARD, (/ Y_INDEX, X_INDEX /))
 
-        x_from_y_2_transposition=create_transposition(y_from_z_2_transposition, I_X, &
-          normal_to_extended_process_dim_sizes(x_distinct_sizes), FORWARD, (/ I_Y, I_X /))
+        x_from_y_2_transposition=create_transposition(y_from_z_2_transposition, X_INDEX, &
+          normal_to_extended_process_dim_sizes(x_distinct_sizes), FORWARD, (/ Y_INDEX, X_INDEX /))
 
-        y_from_x_2_transposition=create_transposition(x_from_y_2_transposition, I_Y, &
-         x_distinct_sizes, BACKWARD, (/ I_Y /))
+        y_from_x_2_transposition=create_transposition(x_from_y_2_transposition, Y_INDEX, &
+         x_distinct_sizes, BACKWARD, (/ Y_INDEX /))
 
-        z_from_y_2_transposition=create_transposition(y_from_x_2_transposition, I_Z, &
+        z_from_y_2_transposition=create_transposition(y_from_x_2_transposition, Z_INDEX, &
           y_distinct_sizes, BACKWARD, (/ -1 /))
     end subroutine initialise_transpositions
 
@@ -314,6 +320,9 @@ contains
         double precision,           intent(out) :: target_real_buffer(:, :, :)
         integer :: number_blocks, i, j, k, n, index_prefix, index_prefix_dim, block_offset, source_index
 
+
+        print *, "source", shape(source_real_buffer)
+        print *, "target", shape(target_real_buffer)
 
         number_blocks = size(transposition_description%recv_sizes)
         index_prefix = 0
@@ -507,7 +516,7 @@ contains
     !! that MONC is normally decomposed in. This is then
     !! fed into the create transposition procedure which will generate transpositions to other pencils
     type(pencil_transposition) function create_initial_transposition_description()
-        create_initial_transposition_description%dim = I_Z
+        create_initial_transposition_description%dim = Z_INDEX
         create_initial_transposition_description%process_decomposition_layout = mpi_dim_sizes
         create_initial_transposition_description%my_process_location = mpi_coords
         create_initial_transposition_description%my_pencil_size = box%size
