@@ -40,9 +40,7 @@ module pencil_fft
                                 , z_from_y_2_transposition
 
     ! Temporary buffers used in transposition
-    double precision, dimension(:,:,:), contiguous, pointer :: real_buffer1, real_buffer2, real_buffer3, &
-        fft_in_y_buffer , fft_in_x_buffer
-    complex(C_DOUBLE_COMPLEX), dimension(:, :, :), contiguous, pointer :: buffer1, buffer2
+    double precision, dimension(:,:,:), contiguous, pointer :: fft_in_y_buffer , fft_in_x_buffer
 
     logical :: l_initialised = .false.
 
@@ -117,29 +115,11 @@ contains
             call MPI_Comm_free(dim_x_comm, mpi_err)
         endif
 
-        deallocate(buffer1, buffer2)
-        deallocate(real_buffer1, real_buffer2, real_buffer3)
         deallocate(fft_in_y_buffer , fft_in_x_buffer)
     end subroutine finalise_pencil_fft
 
     !> Initialises memory for the buffers used in the FFT
     subroutine initialise_buffers
-        allocate(buffer1(y_from_z_transposition%my_pencil_size(Y_INDEX)/2+1, &
-                         y_from_z_transposition%my_pencil_size(X_INDEX),     &
-                         y_from_z_transposition%my_pencil_size(Z_INDEX)))
-
-        allocate(buffer2(x_from_y_transposition%my_pencil_size(X_INDEX)/2+1, &
-                         x_from_y_transposition%my_pencil_size(Z_INDEX),     &
-                         x_from_y_transposition%my_pencil_size(Y_INDEX)))
-
-        allocate(real_buffer1((y_from_z_transposition%my_pencil_size(Y_INDEX)/2+1)*2,   &
-                               y_from_z_transposition%my_pencil_size(X_INDEX),          &
-                               y_from_z_transposition%my_pencil_size(Z_INDEX)))
-
-        allocate(real_buffer2((x_from_y_transposition%my_pencil_size(X_INDEX)/2+1)*2,   &
-                               x_from_y_transposition%my_pencil_size(Z_INDEX),          &
-                               x_from_y_transposition%my_pencil_size(Y_INDEX)))
-
         allocate(fft_in_y_buffer(y_from_z_transposition%my_pencil_size(Y_INDEX),    &
                                  y_from_z_transposition%my_pencil_size(X_INDEX),    &
                                  y_from_z_transposition%my_pencil_size(Z_INDEX)))
@@ -148,9 +128,6 @@ contains
                                  x_from_y_transposition%my_pencil_size(Z_INDEX),    &
                                  x_from_y_transposition%my_pencil_size(Y_INDEX)))
 
-        allocate(real_buffer3(y_from_x_transposition%my_pencil_size(Y_INDEX),   &
-                              y_from_x_transposition%my_pencil_size(X_INDEX),   &
-                              y_from_x_transposition%my_pencil_size(Z_INDEX)))
     end subroutine initialise_buffers
 
     !> Initialises the pencil transpositions, from a pencil in one dimension to that in another
@@ -278,13 +255,20 @@ contains
         double precision, allocatable, save :: real_temp(:, :, :)
         double precision, allocatable, save :: real_temp2(:)
 
+        print *, "Tranpose to pencil"
+        print *, "source", shape(source_data) ! z, y, x (a, b, c)
+        print *, "target", shape(target_data)
+
 
         !$OMP SINGLE
         allocate(real_temp(size(source_data,3), size(source_data,2), size(source_data,1)))
         allocate(real_temp2(product(transposition_description%my_pencil_size)+1))
         !$OMP END SINGLE
 
+        ! --> realt_temp is x, y, z (c, b, a)
         call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
+
+!         print *, "rank", mpi_rank, "buffer", real_temp
 
         !$OMP SINGLE
         call MPI_Alltoallv(real_temp, transposition_description%send_sizes,                                 &
@@ -320,7 +304,7 @@ contains
         double precision,           intent(out) :: target_real_buffer(:, :, :)
         integer :: number_blocks, i, j, k, n, index_prefix, index_prefix_dim, block_offset, source_index
 
-
+        print *, "contiguise data"
         print *, "source", shape(source_real_buffer)
         print *, "target", shape(target_real_buffer)
 
