@@ -20,7 +20,10 @@ module pencil_fft
 
     !> Describes a specific pencil transposition, from one pencil decomposition to another
     type pencil_transposition
-        integer :: my_pencil_size(3), process_decomposition_layout(3), my_process_location(3), dim
+        integer :: my_pencil_size(3)
+        integer :: process_decomposition_layout(3)
+        integer :: my_process_location(3)
+        integer :: dim
         integer, dimension(:), allocatable :: send_sizes, send_offsets, recv_sizes, recv_offsets
         integer, dimension(:,:), allocatable :: recv_dims, send_dims
     end type pencil_transposition
@@ -62,7 +65,7 @@ contains
             return
         endif
 
-        ncells = (/nx, ny, nz/)
+        ncells = (/nz, ny, nx/)
 
         print *, "Is x parallel?", box%l_parallel(I_X)
         print *, "Is y parallel?", box%l_parallel(I_Y)
@@ -76,8 +79,8 @@ contains
             !   LOGICAL, INTENT(IN) :: remain_dims(*)
             !   TYPE(MPI_Comm), INTENT(OUT) :: newcomm
             !   INTEGER, OPTIONAL, INTENT(OUT) :: ierror
-            call mpi_cart_sub(comm_cart, (/.true., .false./), dim_y_comm, mpi_err)
-            call mpi_cart_sub(comm_cart, (/.false., .true./), dim_x_comm, mpi_err)
+            call mpi_cart_sub(comm_cart, (/.false., .true./), dim_y_comm, mpi_err)
+            call mpi_cart_sub(comm_cart, (/.true., .false./), dim_x_comm, mpi_err)
             call mpi_allgather(box%size(I_Y), 1, MPI_INT, y_distinct_sizes, 1, MPI_INT, dim_y_comm, mpi_err)
             call mpi_allgather(box%size(I_X), 1, MPI_INT, x_distinct_sizes, 1, MPI_INT, dim_x_comm, mpi_err)
         else if (box%l_parallel(I_Y)) then
@@ -120,6 +123,9 @@ contains
 
     !> Initialises memory for the buffers used in the FFT
     subroutine initialise_buffers
+        print *, "fft_in_y", y_from_z_transposition%my_pencil_size(Y_INDEX), &
+                             y_from_z_transposition%my_pencil_size(X_INDEX), &
+                             y_from_z_transposition%my_pencil_size(Z_INDEX)
         allocate(fft_in_y_buffer(y_from_z_transposition%my_pencil_size(Y_INDEX),    &
                                  y_from_z_transposition%my_pencil_size(X_INDEX),    &
                                  y_from_z_transposition%my_pencil_size(Z_INDEX)))
@@ -501,9 +507,16 @@ contains
     !! fed into the create transposition procedure which will generate transpositions to other pencils
     type(pencil_transposition) function create_initial_transposition_description()
         create_initial_transposition_description%dim = Z_INDEX
-        create_initial_transposition_description%process_decomposition_layout = mpi_dim_sizes
-        create_initial_transposition_description%my_process_location = mpi_coords
-        create_initial_transposition_description%my_pencil_size = box%size
+        create_initial_transposition_description%process_decomposition_layout(X_INDEX) = mpi_dim_sizes(I_X)
+        create_initial_transposition_description%process_decomposition_layout(Y_INDEX) = mpi_dim_sizes(I_Y)
+        create_initial_transposition_description%process_decomposition_layout(Z_INDEX) = mpi_dim_sizes(I_Z)
+        print *, "initial box size", box%size
+        create_initial_transposition_description%my_process_location(X_INDEX) = mpi_coords(I_X)
+        create_initial_transposition_description%my_process_location(Y_INDEX) = mpi_coords(I_Y)
+        create_initial_transposition_description%my_process_location(Z_INDEX) = mpi_coords(I_Z)
+        create_initial_transposition_description%my_pencil_size(X_INDEX) = box%size(I_X)
+        create_initial_transposition_description%my_pencil_size(Y_INDEX) = box%size(I_Y)
+        create_initial_transposition_description%my_pencil_size(Z_INDEX) = box%size(I_Z)
     end function create_initial_transposition_description
 
     !> Deduces the size of my (local) pencil based upon the new decomposition. This depends heavily on the current

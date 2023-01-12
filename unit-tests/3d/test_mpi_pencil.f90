@@ -51,9 +51,6 @@ program test_mpi_pencil
 !         print *, ""
 !     enddo
 
-    print *, mpi_rank, "rank", values(1, box%lo(2):box%hi(2), box%lo(1))
-
-
     call initialise_pencil_fft(nx, ny, nz)
 
 
