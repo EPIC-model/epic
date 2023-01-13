@@ -14,7 +14,7 @@ program test_mpi_pencil
 
     double precision, allocatable :: values(:, :, :), vtrans(:, :, :)
     logical                       :: passed
-    integer                       :: iy !ix, iy, iz
+    integer                       :: ix, iy !ix, iy, iz
 
     call mpi_comm_initialise
 
@@ -67,6 +67,21 @@ program test_mpi_pencil
 !             enddo
 !         enddo
     endif
+
+    fft_in_y_buffer(:, :, :) = zero
+    do ix = 1, size(fft_in_y_buffer, 2)
+        fft_in_y_buffer(:, ix, :) = ix
+    enddo
+
+    call transpose_to_pencil(x_from_y_transposition, (/2, 3, 1/), dim_x_comm, FORWARD, &
+                             fft_in_y_buffer, fft_in_x_buffer)
+
+    if (mpi_rank == mpi_master) then
+        do ix = 1, nx
+            print *, fft_in_x_buffer(ix, 1, 1)
+        enddo
+    endif
+
 
     call finalise_pencil_fft
 

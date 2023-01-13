@@ -149,7 +149,7 @@ contains
         y_from_z_transposition = create_transposition(z_pencil, Y_INDEX, y_distinct_sizes, FORWARD, (/ -1 /))
 
         x_from_y_transposition = create_transposition(y_from_z_transposition, X_INDEX, &
-                                                      x_distinct_sizes, FORWARD, (/ Y_INDEX /))
+                                                      x_distinct_sizes, FORWARD, (/ -1 /))
 
         y_from_x_transposition=create_transposition(x_from_y_transposition, Y_INDEX, &
          normal_to_extended_process_dim_sizes(x_distinct_sizes), BACKWARD, (/ Y_INDEX, X_INDEX /))
