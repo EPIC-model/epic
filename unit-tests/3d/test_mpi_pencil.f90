@@ -69,8 +69,8 @@ program test_mpi_pencil
     endif
 
     fft_in_y_buffer(:, :, :) = zero
-    do ix = 1, size(fft_in_y_buffer, 2)
-        fft_in_y_buffer(:, ix, :) = ix
+    do ix = box%lo(1), box%hi(1)
+        fft_in_y_buffer(:, ix+1-box%lo(1), :) = ix + 1
     enddo
 
     call transpose_to_pencil(x_from_y_transposition, (/2, 3, 1/), dim_x_comm, FORWARD, &
@@ -79,6 +79,21 @@ program test_mpi_pencil
     if (mpi_rank == mpi_master) then
         do ix = 1, nx
             print *, fft_in_x_buffer(ix, 1, 1)
+        enddo
+    endif
+
+    fft_in_y_buffer(:, :, :) = zero
+    fft_in_x_buffer(:, :, :) = zero
+    do iy = 1, size(fft_in_x_buffer, 3)
+        fft_in_x_buffer(:, :, iy) = iy
+    enddo
+
+    call transpose_to_pencil(y_from_x_transposition, (/3, 1, 2/), dim_x_comm, BACKWARD, &
+                            fft_in_x_buffer, fft_in_y_buffer)
+
+    if (mpi_rank == mpi_master) then
+        do iy = 1, ny
+            print *, fft_in_y_buffer(iy, 1, 1)
         enddo
     endif
 

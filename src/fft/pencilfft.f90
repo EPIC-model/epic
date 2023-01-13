@@ -146,28 +146,28 @@ contains
         z_pencil = create_initial_transposition_description()
 
         ! Transpositions
-        y_from_z_transposition = create_transposition(z_pencil, Y_INDEX, y_distinct_sizes, FORWARD, (/ -1 /))
+        y_from_z_transposition = create_transposition(z_pencil, Y_INDEX, y_distinct_sizes, FORWARD)
 
         x_from_y_transposition = create_transposition(y_from_z_transposition, X_INDEX, &
-                                                      x_distinct_sizes, FORWARD, (/ -1 /))
+                                                      x_distinct_sizes, FORWARD)
 
         y_from_x_transposition=create_transposition(x_from_y_transposition, Y_INDEX, &
-         normal_to_extended_process_dim_sizes(x_distinct_sizes), BACKWARD, (/ Y_INDEX, X_INDEX /))
+         x_distinct_sizes, BACKWARD)
 
-        z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
-         normal_to_extended_process_dim_sizes(y_distinct_sizes), BACKWARD, (/ Y_INDEX, X_INDEX /))
+!         z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
+!          y_distinct_sizes, BACKWARD)
 
-        y_from_z_2_transposition=create_transposition(z_from_y_transposition, Y_INDEX, &
-          normal_to_extended_process_dim_sizes(y_distinct_sizes), FORWARD, (/ Y_INDEX, X_INDEX /))
+!         y_from_z_2_transposition=create_transposition(z_from_y_transposition, Y_INDEX, &
+!           y_distinct_sizes, FORWARD)
 
-        x_from_y_2_transposition=create_transposition(y_from_z_2_transposition, X_INDEX, &
-          normal_to_extended_process_dim_sizes(x_distinct_sizes), FORWARD, (/ Y_INDEX, X_INDEX /))
+!         x_from_y_2_transposition=create_transposition(y_from_z_2_transposition, X_INDEX, &
+!           x_distinct_sizes, FORWARD)
 
-        y_from_x_2_transposition=create_transposition(x_from_y_2_transposition, Y_INDEX, &
-         x_distinct_sizes, BACKWARD, (/ Y_INDEX /))
+!         y_from_x_2_transposition=create_transposition(x_from_y_2_transposition, Y_INDEX, &
+!          x_distinct_sizes, BACKWARD)
 
-        z_from_y_2_transposition=create_transposition(y_from_x_2_transposition, Z_INDEX, &
-          y_distinct_sizes, BACKWARD, (/ -1 /))
+!         z_from_y_2_transposition=create_transposition(y_from_x_2_transposition, Z_INDEX, &
+!           y_distinct_sizes, BACKWARD)
     end subroutine initialise_transpositions
 
     !> Creates a specific pencil transposition description. It is maybe more a decomposition description,
@@ -185,14 +185,11 @@ contains
     !! @param process_dim_sizes Sizes of the pencil dimension from other processes that is used
     !!        to calculate receive count
     !! @param direction Whether we are transposing forwards or backwards, backwards is just an inverse
-    !! @param extended_dimensions The dimensions that this process extends from n to (n/2+1)*2
-    !!        (i.e. result of fft complex->real)
     type(pencil_transposition) function create_transposition(existing_transposition,           &
-                                                             new_pencil_dim, process_dim_sizes, direction,  &
-                                                             extended_dimensions)
+                                                             new_pencil_dim, process_dim_sizes, direction)
         type(pencil_transposition), intent(in) :: existing_transposition
         integer, dimension(:), intent(in) :: process_dim_sizes
-        integer, intent(in) :: new_pencil_dim, direction, extended_dimensions(:)
+        integer, intent(in) :: new_pencil_dim, direction
 
         create_transposition%process_decomposition_layout=determine_pencil_process_dimensions(&
             new_pencil_dim, existing_transposition%dim, existing_transposition%process_decomposition_layout)
@@ -202,7 +199,7 @@ contains
 
         create_transposition%my_pencil_size=determine_pencil_size(new_pencil_dim, &
             create_transposition%process_decomposition_layout,&
-            create_transposition%my_process_location, existing_transposition, extended_dimensions)
+            create_transposition%my_process_location, existing_transposition)
 
         allocate(create_transposition%send_dims(3, &
             create_transposition%process_decomposition_layout(existing_transposition%dim)), &
@@ -212,14 +209,14 @@ contains
         if (direction == FORWARD) then
             call determine_my_process_sizes_per_dim(existing_transposition%dim, &
                 existing_transposition%my_pencil_size, create_transposition%process_decomposition_layout, &
-                extended_dimensions, create_transposition%send_dims)
+                create_transposition%send_dims)
             call determine_matching_process_dimensions(new_pencil_dim, existing_transposition%dim, &
             process_dim_sizes, &
                 create_transposition%my_pencil_size, create_transposition%process_decomposition_layout, &
                 create_transposition%recv_dims)
         else
             call determine_my_process_sizes_per_dim(new_pencil_dim, create_transposition%my_pencil_size, &
-                existing_transposition%process_decomposition_layout, extended_dimensions,  &
+                existing_transposition%process_decomposition_layout, &
                 create_transposition%recv_dims)
             call determine_matching_process_dimensions(existing_transposition%dim, new_pencil_dim, &
             process_dim_sizes, &
@@ -378,22 +375,16 @@ contains
     !! @param existing_pencil_size Existing pencil decomposition sizes per dimension
     !! @param new_pencil_procs_per_dim For the target decomposition the number of processes per dimension
     !! @param global_grid Description of the global grid which we use for sizing information
-    !! @param extended_dimensions List of dimensions where we extend from n to n+2 (i.e. result of
-    !! FFT complex-> real transformation)
     subroutine determine_my_process_sizes_per_dim(existing_pencil_dim, existing_pencil_size, &
                                                   new_pencil_procs_per_dim, &
-                                                extended_dimensions, specific_sizes_per_dim)
+                                                  specific_sizes_per_dim)
         integer, intent(in) :: existing_pencil_dim, existing_pencil_size(:), new_pencil_procs_per_dim(:)
-        integer, intent(in) :: extended_dimensions(:)
         integer, dimension(:,:), intent(inout) :: specific_sizes_per_dim
         integer :: i, split_size, split_remainder, j, s
 
         do i=1,3
             if (i == existing_pencil_dim) then
                 s = ncells(i)
-                if (is_extended_dimension(i, extended_dimensions)) then
-                    s = s + 2
-                endif
                 split_size = s / new_pencil_procs_per_dim(i)
                 split_remainder = s - split_size * new_pencil_procs_per_dim(i)
                 do j = 1, new_pencil_procs_per_dim(existing_pencil_dim)
@@ -528,31 +519,19 @@ contains
     !! @param existing_pencil_dim Current decomposition dimension
     !! @param existing_pencil_size Current decomposition sizes
     !! @param global_grid Description of the global grid which we use for sizing information
-    !! @param extended_dimensions List of dimensions where we extend from n to n+2
-    !! (i.e. result of FFT complex-> real transformation)
     function determine_pencil_size(new_pencil_dim, pencil_process_layout, my_pencil_location, &
-                                   existing_transposition, extended_dimensions)
+                                   existing_transposition)
 
         type(pencil_transposition), intent(in) :: existing_transposition
         integer, intent(in) :: new_pencil_dim, pencil_process_layout(3), my_pencil_location(3)
-        integer, intent(in) :: extended_dimensions(:)
         integer :: determine_pencil_size(3)
         integer :: i, split_size, split_remainder, s
 
         do i = 1, 3
             if (i == new_pencil_dim) then
-                if (is_extended_dimension(i, extended_dimensions)) then
-                    ! If complex and Y dim then /2+1 for the global size
-                    determine_pencil_size(i) = (ncells(new_pencil_dim)/2+1)*2
-                else
-                    determine_pencil_size(i) = ncells(new_pencil_dim)
-                endif
+                determine_pencil_size(i) = ncells(new_pencil_dim)
             else if (i == existing_transposition%dim) then
                 s = ncells(i)
-                ! If complex and Y dim then use s/2+1 for the size to split
-                if (is_extended_dimension(i, extended_dimensions)) then
-                    s = (s / 2 + 1) * 2
-                endif
 
                 split_size=s/pencil_process_layout(i)
                 split_remainder=s - split_size * pencil_process_layout(i)
@@ -563,40 +542,5 @@ contains
             endif
         enddo
     end function determine_pencil_size
-
-    !> Determines whether or not the specific dimension is in the list of extended dimensions
-    !! @param dimension The dimension to test for
-    !! @param extended_dimensions Array of dimensions that will be searched
-    !! @returns Whether the dimension is found in the array
-    logical function is_extended_dimension(dimension, extended_dimensions)
-        integer, intent(in) :: dimension, extended_dimensions(:)
-
-        integer :: i
-        do i = 1, size(extended_dimensions)
-            if (extended_dimensions(i) == dimension) then
-                is_extended_dimension = .true.
-                return
-            endif
-        enddo
-        is_extended_dimension=.false.
-    end function is_extended_dimension
-
-    !> Transforms real process dimension sizes into their real after FFT complex->real transformation.
-    !! The way this works is that
-    !! it goes from n to (n/2+1)*2 numbers which is distributed amongst the processes deterministically
-    !! @param process_dim_sizes Real process dimension sizes
-    !! @returns The extended process dimension sizes
-    function normal_to_extended_process_dim_sizes(process_dim_sizes)
-        integer, dimension(:), intent(in) :: process_dim_sizes
-        integer, dimension(size(process_dim_sizes)) :: normal_to_extended_process_dim_sizes
-        integer :: temp_total, split_size, remainder
-
-        temp_total = (sum(process_dim_sizes) / 2 + 1) * 2
-        split_size = temp_total / size(process_dim_sizes)
-        remainder = temp_total - split_size * size(process_dim_sizes)
-
-        normal_to_extended_process_dim_sizes = split_size
-        normal_to_extended_process_dim_sizes(1:remainder) = split_size + 1
-    end function normal_to_extended_process_dim_sizes
 
 end module pencil_fft
