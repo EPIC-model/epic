@@ -656,13 +656,11 @@ module inversion_utils
             nyval = size(fp, 2)
             nxval = size(fp, 3)
 
-            ! 1. Transform from (z, y, x) to (x, z, y) pencil
-            ! 2. Do x transform
-            ! 3. Transform from (x, z, y) to (y, x, z) pencil
+            ! 1. Transform from (z, y, x) to (y, x, z) pencil
+            ! 2. Do y transform
+            ! 3. Transform from (y, x, z) to (x, z, y) pencil
             ! 4. Do y transform
-            ! 5. Transform from (y, x, z) to (z, y, x) pencil
-            ! Note the final ordering is different to non-parallel version!!
-            ! If we do so, we need to change all spectral-space arrays!!
+            ! 5. Swap x and z from (x, z, y) to (z, x, y) pencil
 
             ! Carry out a full x transform first:
             call forfft(nzval * nyval, nxval, fp, xtrig, xfactors)
@@ -690,6 +688,12 @@ module inversion_utils
             double precision, intent(inout):: fs(:, :, :)  !Spectral
             double precision, intent(out)  :: fp(:, :, :)  !Physical
             integer                        :: kx, iy, nzval, nxval, nyval
+
+            ! 1. Swap x and z from (z, x, y) to (x, z, y) pencil
+            ! 2. Do x back-transform
+            ! 3. Transform from (x, z, y) to (y, x, z) pencil
+            ! 4. Do y back-transform
+            ! 5. Transform from (y, x, z) to (z, y, x) pencil
 
             nzval = size(fs, 1)
             nxval = size(fs, 2)
