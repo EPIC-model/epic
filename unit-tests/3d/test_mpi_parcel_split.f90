@@ -32,7 +32,7 @@ program test_mpi_parcel_split
 
     call register_timer('parcel split', split_timer)
 
-    passed = (mpi_err == 0)
+    passed = (comm%err == 0)
 
     nx = 32
     ny = 32
@@ -108,26 +108,26 @@ program test_mpi_parcel_split
     call mpi_blocking_reduce(n_orig_total, MPI_SUM)
 
     parcels%volume(1:n_parcels) = f12 * vcell
-    parcels%vorticity(:, 1:n_parcels) = mpi_rank + 1
-    parcels%buoyancy(1:n_parcels) = mpi_rank + 1
+    parcels%vorticity(:, 1:n_parcels) = comm%rank + 1
+    parcels%buoyancy(1:n_parcels) = comm%rank + 1
 
     call parcel_split(parcels, threshold=four)
 
     passed = (passed .and. (2 * n_orig_local == n_parcels))
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         passed = (passed .and. (2 * n_orig_total == n_total_parcels))
     endif
 
-    if (mpi_rank == mpi_master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI parcel split', passed)
     endif
 

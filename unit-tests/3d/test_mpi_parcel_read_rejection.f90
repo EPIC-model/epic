@@ -42,7 +42,7 @@ program test_mpi_parcel_read_rejection
 
     call mpi_comm_initialise
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
     nx = 32
     ny = 32
@@ -96,13 +96,13 @@ program test_mpi_parcel_read_rejection
     y_sum = sum(parcels%position(2, 1:n_parcels))
     z_sum = sum(parcels%position(3, 1:n_parcels))
 
-    parcels%B(:, 1:n_parcels) = mpi_rank + 1
-    parcels%volume(1:n_parcels) = mpi_rank + 1
-    parcels%vorticity(:, 1:n_parcels) = mpi_rank + 1
-    parcels%buoyancy(1:n_parcels) = mpi_rank + 1
+    parcels%B(:, 1:n_parcels) = comm%rank + 1
+    parcels%volume(1:n_parcels) = comm%rank + 1
+    parcels%vorticity(:, 1:n_parcels) = comm%rank + 1
+    parcels%buoyancy(1:n_parcels) = comm%rank + 1
 
 #ifndef ENABLE_DRY_MODE
-    parcels%humidity(1:n_parcels) = mpi_rank + 1
+    parcels%humidity(1:n_parcels) = comm%rank + 1
 #endif
 
     call create_file('nctest')
@@ -131,7 +131,7 @@ program test_mpi_parcel_read_rejection
     passed = (passed .and. (n_parcels == n_parcels_before))
 
     if (passed) then
-        res = dble(mpi_rank + 1)
+        res = dble(comm%rank + 1)
 
         passed = (passed .and. (abs(sum(parcels%position(1, 1:n_parcels)) - x_sum) == zero))
         passed = (passed .and. (abs(sum(parcels%position(2, 1:n_parcels)) - y_sum) == zero))
@@ -157,13 +157,13 @@ program test_mpi_parcel_read_rejection
 
     passed = (passed .and. (ncerr == 0))
 
-    if (mpi_rank == mpi_master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI parcel read', passed)
     endif
 
@@ -200,8 +200,8 @@ program test_mpi_parcel_read_rejection
                                          dimid=npar_dim_id)
 
             call define_netcdf_dimension(ncid=ncid,                 &
-                                         name='mpi_size',           &
-                                         dimsize=mpi_size,          &
+                                         name='comm%size',           &
+                                         dimsize=comm%size,          &
                                          dimid=mpi_dim_id)
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
@@ -346,8 +346,8 @@ program test_mpi_parcel_read_rejection
         subroutine write_parcels(t)
             double precision, intent(in) :: t
             integer                      :: cnt(2), start(2)
-            integer                      :: recvcounts(mpi_size)
-            integer                      :: sendbuf(mpi_size), start_index
+            integer                      :: recvcounts(comm%size)
+            integer                      :: sendbuf(comm%size), start_index
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
@@ -358,10 +358,10 @@ program test_mpi_parcel_read_rejection
             recvcounts = 1
             start_index = 0
             sendbuf = 0
-            sendbuf(mpi_rank+1:mpi_size) = n_parcels
-            sendbuf(mpi_rank+1) = 0
+            sendbuf(comm%rank+1:comm%size) = n_parcels
+            sendbuf(comm%rank+1) = 0
 
-            call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, comm_world, mpi_err)
+            call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, comm%world, comm%err)
 
             ! we need to increase the start_index by 1
             ! since the starting index in Fortran is 1 and not 0.

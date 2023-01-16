@@ -18,7 +18,7 @@ program test_mpi_pencil
 
     call mpi_comm_initialise
 
-    passed = (mpi_err == 0)
+    passed = (comm%err == 0)
 
     nx = 8
     ny = 16
@@ -58,7 +58,7 @@ program test_mpi_pencil
                              values(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                              fft_in_y_buffer)
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
 !         do ix = box%lo(1), box%hi(1)
 !             do iy = box%lo(2), box%hi(2)
                 do iy = 1, ny
@@ -76,7 +76,7 @@ program test_mpi_pencil
     call transpose_to_pencil(x_from_y_transposition, (/2, 3, 1/), dim_x_comm, FORWARD, &
                              fft_in_y_buffer, fft_in_x_buffer)
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         do ix = 1, nx
             print *, fft_in_x_buffer(ix, 1, 1)
         enddo
@@ -91,7 +91,7 @@ program test_mpi_pencil
     call transpose_to_pencil(y_from_x_transposition, (/3, 1, 2/), dim_x_comm, BACKWARD, &
                             fft_in_x_buffer, fft_in_y_buffer)
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         do iy = 1, ny
             print *, fft_in_y_buffer(iy, 1, 1)
         enddo
@@ -103,9 +103,9 @@ program test_mpi_pencil
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test pencil transposition', passed)
     endif
 
