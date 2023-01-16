@@ -4,6 +4,9 @@ import matplotlib as mpl
 import numpy as np
 import os
 import matplotlib.colors as mpl_colors
+from tools.units import *
+
+units['time'] = None
 
 # 28 July 2022
 # https://stackoverflow.com/questions/42086276/get-default-line-colour-cycle
@@ -54,18 +57,19 @@ def make_imshow(ax, plane, loc, fdata, ncr,
         xlab = r'$y$'
         ylab = r'$z$'
 
+    vmax = kwargs.pop('vmax', None)
+    vmin = kwargs.pop('vmin', None)
+    
     if cmap_norm == 'centered':
         norm = mpl_colors.CenteredNorm(vcenter=0.0)
     elif cmap_norm == 'symlog':
         norm = mpl_colors.SymLogNorm(linthresh=1, base=10)
     elif cmap_norm == 'log':
-        norm = mpl_colors.LogNorm()
+        norm = mpl_colors.LogNorm(vmin=vmin, vmax=vmax)
+        vmin=None
+        vmax=None
     else:
         norm = None
-
-
-    vmax = kwargs.pop('vmax', None)
-    vmin = kwargs.pop('vmin', None)
 
     color_under = kwargs.pop('color_under', 'darkblue')
     color_over = kwargs.pop('color_over', 'orangered')

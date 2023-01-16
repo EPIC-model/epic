@@ -92,7 +92,7 @@ class nc_reader(nc_base_reader):
     def get_all(self, name):
         if self.is_parcel_file:
             raise IOError("This function is not availble for parcel files.")
-        super().get_all(name)
+        return super().get_all(name)
 
     def get_dataset(self, step, name, indices=None, copy_periodic=True):
         super().get_dataset(step, name)

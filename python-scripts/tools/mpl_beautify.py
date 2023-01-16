@@ -9,7 +9,7 @@ def remove_yticks(ax):
     ax.tick_params(axis='y', which='both', right=False, left=False)
 
 def add_annotation(ax, label, xy, **kwargs):
-    bbox = dict(boxstyle="round", facecolor="wheat", edgecolor='none')
+    bbox = dict(boxstyle="round", facecolor="wheat", linewidth=0.5)
     ax.annotate(label, xy=xy, xycoords="axes fraction", bbox=bbox, **kwargs)
 
 def add_timestamp(plt, time, xy=(0.75, 1.05), fmt="%.3f", **kwargs):
@@ -17,11 +17,11 @@ def add_timestamp(plt, time, xy=(0.75, 1.05), fmt="%.3f", **kwargs):
     # https://matplotlib.org/3.1.1/gallery/pyplots/annotate_transform.html#sphx-glr-gallery-pyplots-annotate-transform-py
     # https://stackoverflow.com/questions/7045729/automatically-position-text-box-in-matplotlib
     # https://matplotlib.org/3.1.0/gallery/recipes/placing_text_boxes.html
-    bbox = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+    bbox = dict(boxstyle="round", facecolor="wheat", linewidth=0.5)
 
-    label = r"t = " + fmt % (time)
+    label = r"$t = " + fmt % (time) + r"$"
     if units['time'] is not None:
-        label = r"t = \SI{" + fmt % (time) + r"}{" + units["time"] + r"}"
+        label = r"$t = " + fmt % (time) + r"\mathrm{" + units["time"] + r"}$"
 
     plt.annotate(
         label, xy=xy, xycoords="axes fraction", bbox=bbox, **kwargs
@@ -29,7 +29,7 @@ def add_timestamp(plt, time, xy=(0.75, 1.05), fmt="%.3f", **kwargs):
 
 
 def add_number_of_parcels(plt, num, xy=(0.01, 1.05)):
-    bbox = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+    bbox = dict(boxstyle="round", facecolor="wheat", linewidth=0.5)
     plt.annotate(
         # 4 Feb 2022
         # https://tex.stackexchange.com/questions/375888/to-make-the-numero-sign-would-n-textsuperscript-underline-scriptsize-o-be-a/613930#613930
@@ -41,7 +41,7 @@ def add_number_of_parcels(plt, num, xy=(0.01, 1.05)):
 
 
 def add_box(plt, label, value, unit="", xy=(0.01, 1.05), fmt="%1.3f"):
-    bbox = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+    bbox = dict(boxstyle="round", facecolor="wheat", linewidth=0.5)
 
 
     text = label + " = " + fmt % (value) + unit
