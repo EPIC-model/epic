@@ -57,8 +57,8 @@ contains
     !! @returns Size of local dimensions in fourier space for this process
     subroutine initialise_pencil_fft(nx, ny, nz)
         integer, intent(in) :: nx, ny, nz
-        integer :: x_distinct_sizes(mpi_dim_sizes(I_X)), &
-                   y_distinct_sizes(mpi_dim_sizes(I_Y))
+        integer :: x_distinct_sizes(layout%size(I_X)), &
+                   y_distinct_sizes(layout%size(I_Y))
 
 
         if (l_initialised) then
@@ -67,11 +67,11 @@ contains
 
         ncells = (/nz, ny, nx/)
 
-        print *, "Is x parallel?", box%l_parallel(I_X)
-        print *, "Is y parallel?", box%l_parallel(I_Y)
-        print *, "Is z parallel?", box%l_parallel(I_Z)
+        print *, "Is x parallel?", layout%l_parallel(I_X)
+        print *, "Is y parallel?", layout%l_parallel(I_Y)
+        print *, "Is z parallel?", layout%l_parallel(I_Z)
 
-        if (box%l_parallel(I_X) .and. box%l_parallel(I_Y)) then
+        if (layout%l_parallel(I_X) .and. layout%l_parallel(I_Y)) then
             ! Info from https://www.open-mpi.org
             ! Partitions a communicator into subgroups, which form lower-dimensional Cartesian subgrids.
             ! MPI_Cart_sub(comm, remain_dims, newcomm, ierror)
@@ -83,12 +83,12 @@ contains
             call mpi_cart_sub(comm%cart, (/.true., .false./), dim_x_comm, comm%err)
             call mpi_allgather(box%size(I_Y), 1, MPI_INT, y_distinct_sizes, 1, MPI_INT, dim_y_comm, comm%err)
             call mpi_allgather(box%size(I_X), 1, MPI_INT, x_distinct_sizes, 1, MPI_INT, dim_x_comm, comm%err)
-        else if (box%l_parallel(I_Y)) then
+        else if (layout%l_parallel(I_Y)) then
             dim_y_comm = comm%world
             dim_x_comm = MPI_COMM_SELF
             call mpi_allgather(box%size(I_Y), 1, MPI_INT, y_distinct_sizes, 1, MPI_INT, dim_y_comm, comm%err)
             x_distinct_sizes = box%size(I_X)
-        else if (box%l_parallel(I_X)) then
+        else if (layout%l_parallel(I_X)) then
             dim_y_comm = MPI_COMM_SELF
             dim_x_comm = comm%world
             y_distinct_sizes = box%size(I_Y)
@@ -498,13 +498,13 @@ contains
     !! fed into the create transposition procedure which will generate transpositions to other pencils
     type(pencil_transposition) function create_initial_transposition_description()
         create_initial_transposition_description%dim = Z_INDEX
-        create_initial_transposition_description%process_decomposition_layout(X_INDEX) = mpi_dim_sizes(I_X)
-        create_initial_transposition_description%process_decomposition_layout(Y_INDEX) = mpi_dim_sizes(I_Y)
-        create_initial_transposition_description%process_decomposition_layout(Z_INDEX) = mpi_dim_sizes(I_Z)
+        create_initial_transposition_description%process_decomposition_layout(X_INDEX) = layout%size(I_X)
+        create_initial_transposition_description%process_decomposition_layout(Y_INDEX) = layout%size(I_Y)
+        create_initial_transposition_description%process_decomposition_layout(Z_INDEX) = layout%size(I_Z)
         print *, "initial box size", box%size
-        create_initial_transposition_description%my_process_location(X_INDEX) = mpi_coords(I_X)
-        create_initial_transposition_description%my_process_location(Y_INDEX) = mpi_coords(I_Y)
-        create_initial_transposition_description%my_process_location(Z_INDEX) = mpi_coords(I_Z)
+        create_initial_transposition_description%my_process_location(X_INDEX) = layout%coords(I_X)
+        create_initial_transposition_description%my_process_location(Y_INDEX) = layout%coords(I_Y)
+        create_initial_transposition_description%my_process_location(Z_INDEX) = layout%coords(I_Z)
         create_initial_transposition_description%my_pencil_size(X_INDEX) = box%size(I_X)
         create_initial_transposition_description%my_pencil_size(Y_INDEX) = box%size(I_Y)
         create_initial_transposition_description%my_pencil_size(Z_INDEX) = box%size(I_Z)

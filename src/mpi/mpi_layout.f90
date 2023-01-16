@@ -6,14 +6,14 @@ module mpi_layout
     type box_type
         integer :: lo(3),  hi(3)
         integer :: hlo(3), hhi(3)
-        logical :: l_parallel(3)
         integer :: size(3)
     end type box_type
 
-    ! number of processes in each dimension
-    integer :: mpi_dim_sizes(3)
-
-    integer :: mpi_coords(3)
+    type parallel_layout
+        logical :: l_parallel(3)
+        integer :: size(3)      ! number of processes in each dimension
+        integer :: coords(3)    ! Cartesian coordinates of *this* process
+    end type parallel_layout
 
     integer, parameter  :: NB_NONE      = 0, &
                            NB_NORTH     = 1, &
@@ -32,8 +32,9 @@ module mpi_layout
         integer :: southeast, northeast
     end type neighbour_type
 
-    type(box_type)       :: box
-    type(neighbour_type) :: neighbour
+    type(box_type)        :: box
+    type(neighbour_type)  :: neighbour
+    type(parallel_layout) :: layout
 
     private :: set_local_bounds
 
@@ -52,9 +53,9 @@ module mpi_layout
             dims = (/0, 0/)
             call MPI_Dims_create(comm%size, 2, dims, comm%err)
 
-            mpi_dim_sizes(1) = dims(1)
-            mpi_dim_sizes(2) = dims(2)
-            mpi_dim_sizes(3) = 1
+            layout%size(1) = dims(1)
+            layout%size(2) = dims(2)
+            layout%size(3) = 1
 
             periods = (/.true., .true./)
 
@@ -78,9 +79,9 @@ module mpi_layout
             !   coords  -- containing the Cartesian coordinates of the specified process
             call MPI_Cart_coords(comm%cart, rank, 2, coords)
 
-            mpi_coords(1) = coords(1)
-            mpi_coords(2) = coords(2)
-            mpi_coords(3) = 0
+            layout%coords(1) = coords(1)
+            layout%coords(2) = coords(2)
+            layout%coords(3) = 0
 
             call set_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
             call set_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))
@@ -94,7 +95,7 @@ module mpi_layout
             box%hlo(3) = -1
             box%hhi(3) = nz + 1
 
-            box%l_parallel = (box%hi - box%lo < (/nx-1, ny-1, nz/))
+            layout%l_parallel = (box%hi - box%lo < (/nx-1, ny-1, nz/))
             box%size = box%hi - box%lo + 1
 
             ! Info from https://www.open-mpi.org
