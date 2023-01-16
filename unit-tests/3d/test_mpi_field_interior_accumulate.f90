@@ -22,15 +22,15 @@ program test_field_interior_accumulate
 
     call mpi_comm_initialise
 
-    if (mpi_size > 4) then
-        if (mpi_rank == mpi_master) then
+    if (comm%size > 4) then
+        if (comm%rank == comm%master) then
             print *, "This unit test does not work with more than 4 MPI ranks."
         endif
         call mpi_comm_finalise
         stop
     endif
 
-    passed = (mpi_err == 0)
+    passed = (comm%err == 0)
 
     call mpi_layout_init(nx, ny, nz)
 
@@ -73,17 +73,17 @@ program test_field_interior_accumulate
 
     passed = (passed .and. (diff == zero))
 
-    if (mpi_rank == mpi_master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI field interior accumulate', passed)
     endif
 

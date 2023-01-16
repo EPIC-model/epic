@@ -18,8 +18,8 @@ program test_mpi_netcdf_dataset_2d
 
     call mpi_comm_initialise
 
-    xstart = mpi_rank * nx + 1
-    xend   = (mpi_rank + 1) * nx
+    xstart = comm%rank * nx + 1
+    xend   = (comm%rank + 1) * nx
     ystart = 1
     yend   = ny
 
@@ -30,7 +30,7 @@ program test_mpi_netcdf_dataset_2d
 
     do ix = xstart, xend
         do iy = ystart, yend
-            dset(iy, ix) = mpi_rank
+            dset(iy, ix) = comm%rank
         enddo
     enddo
 
@@ -40,7 +40,7 @@ program test_mpi_netcdf_dataset_2d
 
     passed = (passed .and. (ncerr == 0))
 
-    call define_netcdf_dimension(ncid, "x", mpi_size * nx, dimids(1))
+    call define_netcdf_dimension(ncid, "x", comm%size * nx, dimids(1))
 
     passed = (passed .and. (ncerr == 0))
 
@@ -96,13 +96,13 @@ program test_mpi_netcdf_dataset_2d
 
     passed = (passed .and. (ncerr == 0))
 
-    if (mpi_rank == mpi_master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI netCDF write 2D dataset', passed)
     endif
 

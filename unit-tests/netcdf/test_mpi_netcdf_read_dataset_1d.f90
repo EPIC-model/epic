@@ -21,15 +21,15 @@ program test_mpi_netcdf_read_dataset_1d
 
     call mpi_comm_initialise
 
-    n_parcels = n_local_parcels * mpi_size
+    n_parcels = n_local_parcels * comm%size
 
     allocate(wdset(n_local_parcels))
     allocate(rdset(n_local_parcels))
-    allocate(recvcounts(mpi_size))
-    allocate(n_size(mpi_size))
+    allocate(recvcounts(comm%size))
+    allocate(n_size(comm%size))
 
     do n = 1, n_local_parcels
-        wdset(n) = dble(n_local_parcels * mpi_rank + n)
+        wdset(n) = dble(n_local_parcels * comm%rank + n)
     enddo
 
     call create_netcdf_file(ncfname='nctest.nc', &
@@ -59,10 +59,10 @@ program test_mpi_netcdf_read_dataset_1d
     recvcounts = 1
     recvbuf = 0
     n_size = 0
-    n_size(mpi_rank+1:mpi_size) = n_local_parcels
-    n_size(mpi_rank+1) = 0
+    n_size(comm%rank+1:comm%size) = n_local_parcels
+    n_size(comm%rank+1) = 0
 
-    call MPI_Reduce_scatter(n_size, recvbuf, recvcounts, MPI_INT, MPI_SUM, comm_world, mpi_err)
+    call MPI_Reduce_scatter(n_size, recvbuf, recvcounts, MPI_INT, MPI_SUM, comm%world, comm%err)
 
     ! time step to write [step(2) is the time]
     cnt   = (/ n_local_parcels /)
@@ -105,13 +105,13 @@ program test_mpi_netcdf_read_dataset_1d
 
     passed = (passed .and. (ncerr == 0))
 
-    if (mpi_rank == mpi_master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI netCDF read 1D dataset', passed)
     endif
 

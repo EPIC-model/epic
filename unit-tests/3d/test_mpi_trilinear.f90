@@ -24,7 +24,7 @@ program test_mpi_trilinear
 
     call mpi_comm_initialise
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
     nx = 32
     ny = 32
@@ -83,9 +83,9 @@ program test_mpi_trilinear
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI trilinear (par2grid)', passed)
     endif
 
