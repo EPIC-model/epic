@@ -16,23 +16,23 @@ program test_mpi_parcel_write
 
     call mpi_comm_initialise
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
     call register_timer('parcel I/O', parcel_io_timer)
 
-    n_parcels = 10 + (mpi_rank + 1)
-    n_total_parcels = 11 * mpi_size + (mpi_size * (mpi_size - 1)) / 2
+    n_parcels = 10 + (comm%rank + 1)
+    n_total_parcels = 11 * comm%size + (comm%size * (comm%size - 1)) / 2
 
     call parcel_alloc(n_parcels)
 
-    parcels%position(:, 1:n_parcels) = mpi_rank
-    parcels%B(:, 1:n_parcels) = mpi_rank
-    parcels%volume(1:n_parcels) = mpi_rank
-    parcels%vorticity(:, 1:n_parcels) = mpi_rank
-    parcels%buoyancy(1:n_parcels) = mpi_rank
+    parcels%position(:, 1:n_parcels) = comm%rank
+    parcels%B(:, 1:n_parcels) = comm%rank
+    parcels%volume(1:n_parcels) = comm%rank
+    parcels%vorticity(:, 1:n_parcels) = comm%rank
+    parcels%buoyancy(1:n_parcels) = comm%rank
 
 #ifndef ENABLE_DRY_MODE
-    parcels%humidity(1:n_parcels) = mpi_rank
+    parcels%humidity(1:n_parcels) = comm%rank
 #endif
 
     call create_netcdf_parcel_file('nctest', .true., .false.)
@@ -49,13 +49,13 @@ program test_mpi_parcel_write
 
     passed = (passed .and. (ncerr == 0))
 
-    if (mpi_rank == mpi_master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI parcel write', passed)
     endif
 

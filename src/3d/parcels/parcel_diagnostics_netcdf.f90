@@ -324,7 +324,7 @@ module parcel_diagnostics_netcdf
 
             call start_timer(parcel_stats_io_timer)
 
-            if (mpi_rank > mpi_master) then
+            if (comm%rank > comm%master) then
                 return
             endif
 

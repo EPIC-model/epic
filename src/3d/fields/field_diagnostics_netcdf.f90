@@ -45,7 +45,7 @@ module field_diagnostics_netcdf
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
 
-            if (mpi_rank .ne. mpi_master) then
+            if (comm%rank .ne. comm%master) then
                 return
             endif
 
@@ -225,7 +225,7 @@ module field_diagnostics_netcdf
 
             call start_timer(field_stats_io_timer)
 
-            if (mpi_rank .ne. mpi_master) then
+            if (comm%rank .ne. comm%master) then
                 return
             endif
 

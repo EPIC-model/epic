@@ -412,7 +412,7 @@ module parcel_init
                 rerr = get_abs_max(resi)
 
 #ifdef ENABLE_VERBOSE
-                if (verbose .and. (mpi_rank == mpi_master)) then
+                if (verbose .and. (comm%rank == comm%master)) then
                     print *, ' Max abs error = ', rerr
                 endif
 #endif

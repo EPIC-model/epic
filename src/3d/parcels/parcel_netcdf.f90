@@ -107,8 +107,8 @@ module parcel_netcdf
                                          dimid=npar_dim_id)
 
             call define_netcdf_dimension(ncid=ncid,                 &
-                                         name='mpi_size',           &
-                                         dimsize=mpi_size,          &
+                                         name='comm%size',           &
+                                         dimsize=comm%size,          &
                                          dimid=mpi_dim_id)
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
@@ -263,8 +263,8 @@ module parcel_netcdf
         subroutine write_netcdf_parcels(t)
             double precision, intent(in) :: t
             integer                      :: cnt(2), start(2)
-            integer                      :: recvcounts(mpi_size)
-            integer                      :: sendbuf(mpi_size), start_index
+            integer                      :: recvcounts(comm%size)
+            integer                      :: sendbuf(comm%size), start_index
 
             call start_timer(parcel_io_timer)
 
@@ -287,10 +287,10 @@ module parcel_netcdf
             recvcounts = 1
             start_index = 0
             sendbuf = 0
-            sendbuf(mpi_rank+1:mpi_size) = n_parcels
-            sendbuf(mpi_rank+1) = 0
+            sendbuf(comm%rank+1:comm%size) = n_parcels
+            sendbuf(comm%rank+1) = 0
 
-            call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, comm_world, mpi_err)
+            call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, comm%world, comm%err)
 
             ! we need to increase the start_index by 1
             ! since the starting index in Fortran is 1 and not 0.
@@ -299,7 +299,7 @@ module parcel_netcdf
             start = (/ start_index, 1 /)
             cnt   = (/ n_parcels,   1 /)
 
-            call write_netcdf_dataset(ncid, start_id, (/start_index/), start=(/1+mpi_rank, 1/), cnt=(/1, 1/))
+            call write_netcdf_dataset(ncid, start_id, (/start_index/), start=(/1+comm%rank, 1/), cnt=(/1, 1/))
 
             call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels), start, cnt)
@@ -345,15 +345,15 @@ module parcel_netcdf
             call get_num_parcels(ncid, n_total_parcels)
 
             if (has_dataset(ncid, 'start_index')) then
-                call get_dimension_size(ncid, 'mpi_size', num_indices)
+                call get_dimension_size(ncid, 'comm%size', num_indices)
 
-                if (num_indices .ne. mpi_size) then
+                if (num_indices .ne. comm%size) then
                     call mpi_exit_on_error("The number of MPI ranks disagree!")
                 endif
 
-                if (mpi_rank < mpi_size - 1) then
+                if (comm%rank < comm%size - 1) then
                     ! we must add +1 since the start index is 1
-                    call read_netcdf_dataset(ncid, 'start_index', start, (/mpi_rank + 1/), (/2/))
+                    call read_netcdf_dataset(ncid, 'start_index', start, (/comm%rank + 1/), (/2/))
                     start_index = start(1)
                     ! we must subtract 1, otherwise rank reads the first parcel of rank+1
                     end_index = start(2) - 1
@@ -369,7 +369,7 @@ module parcel_netcdf
                 if (n_parcels > max_num_parcels) then
                     print *, "Number of parcels exceeds limit of", &
                             max_num_parcels, ". Exiting."
-                    call MPI_Abort(comm_world, -1, mpi_err)
+                    call MPI_Abort(comm%world, -1, comm%err)
                 endif
 
                 call read_chunk(start_index, end_index, 1)
@@ -424,7 +424,7 @@ module parcel_netcdf
 
             ! verify result
             n_total = n_parcels
-            call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INT, MPI_SUM, comm_world, mpi_err)
+            call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INT, MPI_SUM, comm%world, comm%err)
             if (n_total_parcels .ne. n_total) then
                 call mpi_exit_on_error("Local number of parcels does not sum up to total number!")
             endif

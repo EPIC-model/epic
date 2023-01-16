@@ -72,7 +72,7 @@ module netcdf_utils
             logical, optional, intent(in)  :: l_single
             logical                        :: l_parallel
 
-            l_parallel = (mpi_size > 1)
+            l_parallel = (comm%size > 1)
 
             if (present(l_single)) then
                 l_parallel = .not. l_single
@@ -94,11 +94,11 @@ module netcdf_utils
                 ncerr = nf90_create(path = ncfname,                         &
                                     cmode = ior(NF90_NETCDF4, NF90_MPIIO),  &
                                     ncid = ncid,                            &
-                                    comm = comm_world%MPI_VAL,              &
+                                    comm = comm%world%MPI_VAL,              &
                                     info = MPI_INFO_NULL%MPI_VAL)
             else
-                ! in single execution mpi_master = mpi_rank = 0
-                if (mpi_master == mpi_rank) then
+                ! in single execution comm%master = comm%rank = 0
+                if (comm%master == comm%rank) then
                     ncerr = nf90_create(path = ncfname,        &
                                         cmode = NF90_NETCDF4,  &
                                         ncid = ncid)
@@ -113,7 +113,7 @@ module netcdf_utils
             character(*), intent(in) :: ncfname
             integer                  :: stat
 
-            if (mpi_rank .ne. mpi_master) then
+            if (comm%rank .ne. comm%master) then
                 return
             endif
 
@@ -136,7 +136,7 @@ module netcdf_utils
             logical, optional, intent(in)  :: l_single
             logical                        :: l_parallel
 
-            l_parallel = (mpi_size > 1)
+            l_parallel = (comm%size > 1)
 
             if (present(l_single)) then
                 l_parallel = .not. l_single
@@ -146,11 +146,11 @@ module netcdf_utils
                 ncerr = nf90_open(path = ncfname,               &
                                   mode = access_flag,           &
                                   ncid = ncid,                  &
-                                  comm = comm_world%MPI_VAL,    &
+                                  comm = comm%world%MPI_VAL,    &
                                   info = MPI_INFO_NULL%MPI_VAL)
             else
-                ! in single execution mpi_master = mpi_rank = 0
-                if (mpi_master == mpi_rank) then
+                ! in single execution comm%master = comm%rank = 0
+                if (comm%master == comm%rank) then
                     ncerr = nf90_open(path = ncfname,     &
                                     mode = access_flag,   &
                                     ncid = ncid)
@@ -168,7 +168,7 @@ module netcdf_utils
             logical, optional, intent(in)  :: l_single
             logical                        :: l_parallel
 
-            l_parallel = (mpi_size > 1)
+            l_parallel = (comm%size > 1)
 
             if (present(l_single)) then
                 l_parallel = (.not. l_single)
@@ -177,7 +177,7 @@ module netcdf_utils
             if (l_parallel) then
                 ncerr = nf90_close(ncid)
             else
-                if (mpi_master == mpi_rank) then
+                if (comm%master == comm%rank) then
                     ncerr = nf90_close(ncid)
                 endif
             endif
@@ -196,7 +196,7 @@ module netcdf_utils
         subroutine check_netcdf_error(msg)
             character(*), intent(in) :: msg
 #ifndef NDEBUG
-            if (ncerr /= nf90_noerr .and. mpi_rank == mpi_master) then
+            if (ncerr /= nf90_noerr .and. comm%rank == comm%master) then
                 print *, msg
                 print *, trim(nf90_strerror(ncerr))
                 stop

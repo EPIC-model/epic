@@ -137,7 +137,7 @@ module netcdf_writer
             integer, intent(in) :: data
             integer, intent(in) :: start
 
-            if (mpi_size > 1) then
+            if (comm%size > 1) then
                 ! 18 April 2022
                 ! see also https://github.com/Unidata/netcdf-fortran/blob/main/examples/F90/simple_xy_par_wr2.f90
                 ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
@@ -158,7 +158,7 @@ module netcdf_writer
             double precision,  intent(in) :: data
             integer,           intent(in) :: start
 
-            if (mpi_size > 1) then
+            if (comm%size > 1) then
                 ! 18 April 2022
                 ! see also https://github.com/Unidata/netcdf-fortran/blob/main/examples/F90/simple_xy_par_wr2.f90
                 ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
@@ -180,7 +180,7 @@ module netcdf_writer
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
 
-            if (mpi_size > 1) then
+            if (comm%size > 1) then
                 ! 18 April 2022
                 ! see also https://github.com/Unidata/netcdf-fortran/blob/main/examples/F90/simple_xy_par_wr2.f90
                 ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
@@ -205,7 +205,7 @@ module netcdf_writer
             ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/)
             ! with map = shape(data)
 
-            if (mpi_size > 1) then
+            if (comm%size > 1) then
                 ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
                 call check_netcdf_error("Failed to set collective.")
             endif
@@ -226,7 +226,7 @@ module netcdf_writer
             integer, optional, intent(in) :: cnt(:)
             integer                       :: map(3)
 
-            if (mpi_size > 1) then
+            if (comm%size > 1) then
                 ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
                 call check_netcdf_error("Failed to set collective.")
             endif
@@ -250,7 +250,7 @@ module netcdf_writer
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
 
-            if (mpi_size > 1) then
+            if (comm%size > 1) then
                 ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
                 call check_netcdf_error("Failed to set collective.")
             endif
@@ -270,7 +270,7 @@ module netcdf_writer
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
 
-            if (mpi_size > 1) then
+            if (comm%size > 1) then
                 ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
                 call check_netcdf_error("Failed to set collective.")
             endif
@@ -296,7 +296,7 @@ module netcdf_writer
 
             map = shape(data)
 
-            if (mpi_size > 1) then
+            if (comm%size > 1) then
                 ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
                 call check_netcdf_error("Failed to set collective.")
             endif

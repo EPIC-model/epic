@@ -40,60 +40,60 @@ module parcel_mpi
 
             ! tell your neighbours the number of receiving parcels
             call MPI_Isend(n_sends(NB_NORTH), 1, MPI_INT, neighbour%north, NORTH_TAG, &
-                           comm_cart, request, mpi_err)
+                           comm%cart, request, comm%err)
             call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_SOUTH), 1, MPI_INT, neighbour%south, NORTH_TAG, &
-                          comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                          comm%cart, MPI_STATUS_IGNORE, comm%err)
 
             call MPI_Isend(n_sends(NB_SOUTH), 1, MPI_INT, neighbour%south, SOUTH_TAG, &
-                           comm_cart, request, mpi_err)
+                           comm%cart, request, comm%err)
             call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_NORTH), 1, MPI_INT, neighbour%north, SOUTH_TAG, &
-                          comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                          comm%cart, MPI_STATUS_IGNORE, comm%err)
 
             call MPI_Isend(n_sends(NB_WEST), 1, MPI_INT, neighbour%west, WEST_TAG, &
-                           comm_cart, request, mpi_err)
+                           comm%cart, request, comm%err)
             call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_EAST), 1, MPI_INT, neighbour%east, WEST_TAG, &
-                          comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                          comm%cart, MPI_STATUS_IGNORE, comm%err)
 
             call MPI_Isend(n_sends(NB_EAST), 1, MPI_INT, neighbour%east, EAST_TAG, &
-                           comm_cart, request, mpi_err)
+                           comm%cart, request, comm%err)
             call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_WEST), 1, MPI_INT, neighbour%west, EAST_TAG, &
-                          comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                          comm%cart, MPI_STATUS_IGNORE, comm%err)
 
             call MPI_Isend(n_sends(NB_NORTHWEST), 1, MPI_INT, neighbour%northwest, NORTHWEST_TAG, &
-                           comm_cart, request, mpi_err)
+                           comm%cart, request, comm%err)
             call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_SOUTHEAST), 1, MPI_INT, neighbour%southeast, NORTHWEST_TAG, &
-                          comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                          comm%cart, MPI_STATUS_IGNORE, comm%err)
 
             call MPI_Isend(n_sends(NB_SOUTHEAST), 1, MPI_INT, neighbour%southeast, SOUTHEAST_TAG, &
-                           comm_cart, request, mpi_err)
+                           comm%cart, request, comm%err)
             call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_NORTHWEST), 1, MPI_INT, neighbour%northwest, SOUTHEAST_TAG, &
-                          comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                          comm%cart, MPI_STATUS_IGNORE, comm%err)
 
             call MPI_Isend(n_sends(NB_NORTHEAST), 1, MPI_INT, neighbour%northeast, NORTHEAST_TAG, &
-                           comm_cart, request, mpi_err)
+                           comm%cart, request, comm%err)
             call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_SOUTHWEST), 1, MPI_INT, neighbour%southwest, NORTHEAST_TAG, &
-                          comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                          comm%cart, MPI_STATUS_IGNORE, comm%err)
 
             call MPI_Isend(n_sends(NB_SOUTHWEST), 1, MPI_INT, neighbour%southwest, SOUTHWEST_TAG, &
-                           comm_cart, request, mpi_err)
+                           comm%cart, request, comm%err)
             call MPI_Request_free(request)
 
             call MPI_Recv(n_recvs(NB_NORTHEAST), 1, MPI_INT, neighbour%northeast, SOUTHWEST_TAG, &
-                          comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                          comm%cart, MPI_STATUS_IGNORE, comm%err)
 
             ! communicate parcels
             call exchange_parcels(north_buf, n_sends(NB_NORTH), neighbour%north, &
@@ -148,11 +148,11 @@ module parcel_mpi
 
             call pack_parcels(pid, sendcount, sendbuf)
 
-            call MPI_Isend(sendbuf, send_size, MPI_DOUBLE_PRECISION, dest, tag, comm_cart, request, mpi_err)
+            call MPI_Isend(sendbuf, send_size, MPI_DOUBLE_PRECISION, dest, tag, comm%cart, request, comm%err)
             call MPI_Request_free(request)
 
             call MPI_Recv(recvbuf, recv_size, MPI_DOUBLE_PRECISION, source, tag, &
-                          comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                          comm%cart, MPI_STATUS_IGNORE, comm%err)
 
             call unpack_parcels(recvcount, recvbuf)
 
