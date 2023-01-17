@@ -19,21 +19,22 @@ module pencil_fft
     integer :: Z_INDEX = 1, Y_INDEX = 2, X_INDEX = 3
 
     !> Describes a specific pencil transposition, from one pencil decomposition to another
-    type pencil_transposition
-        integer :: my_pencil_size(3)
-        integer :: process_decomposition_layout(3)
-        integer :: my_process_location(3)
-        integer :: dim
+    type pencil_layout
+!         integer :: order(3)         ! order of dimensions
+        integer :: pencil_size(3)   ! local pencil size (number of grid points)
+        integer :: size(3)          ! process decomposition layout
+        integer :: coords(3)        ! *this* process location
+        integer :: dim              ! pencil dimension
         integer, dimension(:), allocatable :: send_sizes, send_offsets, recv_sizes, recv_offsets
         integer, dimension(:,:), allocatable :: recv_dims, send_dims
-    end type pencil_transposition
+    end type pencil_layout
 
     integer, parameter :: FORWARD=1, BACKWARD=2   !< Transposition directions
 
     type(mpi_comm) :: dim_y_comm, dim_x_comm     !< Communicators for each dimension
 
     ! Transpositions from one pencil to another
-    type(pencil_transposition) :: y_from_z_transposition   &
+    type(pencil_layout) :: y_from_z_transposition   &
                                 , x_from_y_transposition   &
                                 , y_from_x_transposition   &
                                 , z_from_y_transposition   &
@@ -123,16 +124,13 @@ contains
 
     !> Initialises memory for the buffers used in the FFT
     subroutine initialise_buffers
-        print *, "fft_in_y", y_from_z_transposition%my_pencil_size(Y_INDEX), &
-                             y_from_z_transposition%my_pencil_size(X_INDEX), &
-                             y_from_z_transposition%my_pencil_size(Z_INDEX)
-        allocate(fft_in_y_buffer(y_from_z_transposition%my_pencil_size(Y_INDEX),    &
-                                 y_from_z_transposition%my_pencil_size(X_INDEX),    &
-                                 y_from_z_transposition%my_pencil_size(Z_INDEX)))
+        allocate(fft_in_y_buffer(y_from_z_transposition%pencil_size(Y_INDEX),    &
+                                 y_from_z_transposition%pencil_size(X_INDEX),    &
+                                 y_from_z_transposition%pencil_size(Z_INDEX)))
 
-        allocate(fft_in_x_buffer(x_from_y_transposition%my_pencil_size(X_INDEX),    &
-                                 x_from_y_transposition%my_pencil_size(Z_INDEX),    &
-                                 x_from_y_transposition%my_pencil_size(Y_INDEX)))
+        allocate(fft_in_x_buffer(x_from_y_transposition%pencil_size(X_INDEX),    &
+                                 x_from_y_transposition%pencil_size(Z_INDEX),    &
+                                 x_from_y_transposition%pencil_size(Y_INDEX)))
 
     end subroutine initialise_buffers
 
@@ -141,7 +139,7 @@ contains
     !! @param x_distinct_sizes X sizes per process
     subroutine initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
         integer, dimension(:), intent(in) :: y_distinct_sizes, x_distinct_sizes
-        type(pencil_transposition)        :: z_pencil
+        type(pencil_layout)        :: z_pencil
 
         z_pencil = create_initial_transposition_description()
 
@@ -185,49 +183,60 @@ contains
     !! @param process_dim_sizes Sizes of the pencil dimension from other processes that is used
     !!        to calculate receive count
     !! @param direction Whether we are transposing forwards or backwards, backwards is just an inverse
-    type(pencil_transposition) function create_transposition(existing_transposition,           &
-                                                             new_pencil_dim, process_dim_sizes, direction)
-        type(pencil_transposition), intent(in) :: existing_transposition
+    type(pencil_layout) function create_transposition(existing_transposition,   &
+                                                      new_pencil_dim,           &
+                                                      process_dim_sizes,        &
+                                                      direction)
+        type(pencil_layout),   intent(in) :: existing_transposition
         integer, dimension(:), intent(in) :: process_dim_sizes
-        integer, intent(in) :: new_pencil_dim, direction
+        integer,               intent(in) :: new_pencil_dim, direction
 
-        create_transposition%process_decomposition_layout=determine_pencil_process_dimensions(&
-            new_pencil_dim, existing_transposition%dim, existing_transposition%process_decomposition_layout)
+        create_transposition%size = determine_pencil_process_dimensions(new_pencil_dim,                 &
+                                                                        existing_transposition%dim,     &
+                                                                        existing_transposition%size)
 
-        create_transposition%my_process_location=determine_my_pencil_location(new_pencil_dim, &
-            existing_transposition%dim, existing_transposition%my_process_location)
+        create_transposition%coords = determine_my_pencil_location(new_pencil_dim,                  &
+                                                                   existing_transposition%dim,      &
+                                                                   existing_transposition%coords)
 
-        create_transposition%my_pencil_size=determine_pencil_size(new_pencil_dim, &
-            create_transposition%process_decomposition_layout,&
-            create_transposition%my_process_location, existing_transposition)
+        create_transposition%pencil_size = determine_pencil_size(new_pencil_dim,                &
+                                                                 create_transposition%size,     &
+                                                                 create_transposition%coords,   &
+                                                                 existing_transposition)
 
-        allocate(create_transposition%send_dims(3, &
-            create_transposition%process_decomposition_layout(existing_transposition%dim)), &
-            create_transposition%recv_dims(3, &
-            create_transposition%process_decomposition_layout(existing_transposition%dim)))
+        allocate(create_transposition%send_dims(3, create_transposition%size(existing_transposition%dim)), &
+                 create_transposition%recv_dims(3, create_transposition%size(existing_transposition%dim)))
 
         if (direction == FORWARD) then
-            call determine_my_process_sizes_per_dim(existing_transposition%dim, &
-                existing_transposition%my_pencil_size, create_transposition%process_decomposition_layout, &
-                create_transposition%send_dims)
-            call determine_matching_process_dimensions(new_pencil_dim, existing_transposition%dim, &
-            process_dim_sizes, &
-                create_transposition%my_pencil_size, create_transposition%process_decomposition_layout, &
-                create_transposition%recv_dims)
+            call determine_my_process_sizes_per_dim(existing_transposition%dim,         &
+                                                    existing_transposition%pencil_size, &
+                                                    create_transposition%size,          &
+                                                    create_transposition%send_dims)
+
+            call determine_matching_process_dimensions(new_pencil_dim,                      &
+                                                       existing_transposition%dim,          &
+                                                       process_dim_sizes,                   &
+                                                       create_transposition%pencil_size,    &
+                                                       create_transposition%size,           &
+                                                       create_transposition%recv_dims)
         else
-            call determine_my_process_sizes_per_dim(new_pencil_dim, create_transposition%my_pencil_size, &
-                existing_transposition%process_decomposition_layout, &
-                create_transposition%recv_dims)
-            call determine_matching_process_dimensions(existing_transposition%dim, new_pencil_dim, &
-            process_dim_sizes, &
-            existing_transposition%my_pencil_size, existing_transposition%process_decomposition_layout, &
-            create_transposition%send_dims)
+            call determine_my_process_sizes_per_dim(new_pencil_dim,                     &
+                                                    create_transposition%pencil_size,   &
+                                                    existing_transposition%size,        &
+                                                    create_transposition%recv_dims)
+
+            call determine_matching_process_dimensions(existing_transposition%dim,          &
+                                                       new_pencil_dim,                      &
+                                                       process_dim_sizes,                   &
+                                                       existing_transposition%pencil_size,  &
+                                                       existing_transposition%size,         &
+                                                       create_transposition%send_dims)
         endif
 
         allocate(create_transposition%send_sizes(size(create_transposition%send_dims, 2)), &
-            create_transposition%send_offsets(size(create_transposition%send_sizes)), &
-            create_transposition%recv_sizes(size(create_transposition%recv_dims, 2)), &
-            create_transposition%recv_offsets(size(create_transposition%recv_sizes)))
+                 create_transposition%send_offsets(size(create_transposition%send_sizes)), &
+                 create_transposition%recv_sizes(size(create_transposition%recv_dims, 2)), &
+                 create_transposition%recv_offsets(size(create_transposition%recv_sizes)))
 
         call concatenate_dimension_sizes(create_transposition%send_dims, create_transposition%send_sizes)
         call determine_offsets_from_size(create_transposition%send_sizes, create_transposition%send_offsets)
@@ -250,7 +259,7 @@ contains
     !! @param target_data Target data (bca)
     subroutine transpose_to_pencil(transposition_description, source_dims, communicator, &
                                    direction, source_data, target_data)
-        type(pencil_transposition), intent(in)  :: transposition_description
+        type(pencil_layout), intent(in)  :: transposition_description
         integer,                    intent(in)  :: source_dims(3), direction
         type(MPI_Comm),             intent(in)  :: communicator
         double precision,           intent(in)  :: source_data(:, :, :)
@@ -265,24 +274,30 @@ contains
 
         !$OMP SINGLE
         allocate(real_temp(size(source_data,3), size(source_data,2), size(source_data,1)))
-        allocate(real_temp2(product(transposition_description%my_pencil_size)+1))
+        allocate(real_temp2(product(transposition_description%pencil_size)+1))
         !$OMP END SINGLE
 
         ! --> realt_temp is x, y, z (c, b, a)
         call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
 
-!         print *, "rank", comm%rank, "buffer", real_temp
-
         !$OMP SINGLE
-        call MPI_Alltoallv(real_temp, transposition_description%send_sizes,                                 &
-                           transposition_description%send_offsets, MPI_DOUBLE_PRECISION, real_temp2,        &
-                           transposition_description%recv_sizes, transposition_description%recv_offsets,    &
-                           MPI_DOUBLE_PRECISION, communicator, comm%err)
+        call MPI_Alltoallv(real_temp,                               &
+                           transposition_description%send_sizes,    &
+                           transposition_description%send_offsets,  &
+                           MPI_DOUBLE_PRECISION,                    &
+                           real_temp2,                              &
+                           transposition_description%recv_sizes,    &
+                           transposition_description%recv_offsets,  &
+                           MPI_DOUBLE_PRECISION,                    &
+                           communicator,                            &
+                           comm%err)
         !$OMP END SINGLE
 
-
-        call contiguise_data(transposition_description, (/source_dims(3), source_dims(2), source_dims(1)/), &
-                             direction, source_real_buffer=real_temp2, target_real_buffer=target_data)
+        call contiguise_data(transposition_description,                             &
+                             (/source_dims(3), source_dims(2), source_dims(1)/),    &
+                             direction,                                             &
+                             source_real_buffer=real_temp2,                         &
+                             target_real_buffer=target_data)
 
 
         !$OMP SINGLE
@@ -302,7 +317,7 @@ contains
     subroutine contiguise_data(transposition_description, source_dims, direction, &
                                source_real_buffer, target_real_buffer)
         integer,                    intent(in)  :: source_dims(3), direction
-        type(pencil_transposition), intent(in)  :: transposition_description
+        type(pencil_layout), intent(in)  :: transposition_description
         double precision,           intent(in)  :: source_real_buffer(:)
         double precision,           intent(out) :: target_real_buffer(:, :, :)
         integer :: number_blocks, i, j, k, n, index_prefix, index_prefix_dim, block_offset, source_index
@@ -473,11 +488,11 @@ contains
     !! @param new_pencil_dim The dimension for the new pencil decomposition
     !! @param existing_pencil_dim Dimension for the existing pencil decomposition
     !! @param proc_sizes Size of dimension on the source processes (index in array corresponds to source PID)
-    !! @param my_pencil_size My (new) pencil size per dimension
+    !! @param pencil_size My (new) pencil size per dimension
     !! @param pencil_processes_per_dim The process layout per dimension
     subroutine determine_matching_process_dimensions(new_pencil_dim, existing_pencil_dim, proc_sizes, &
-                                            my_pencil_size, pencil_processes_per_dim, specific_sizes_per_dim)
-        integer, intent(in) :: new_pencil_dim, existing_pencil_dim, proc_sizes(:), my_pencil_size(:)
+                                            pencil_size, pencil_processes_per_dim, specific_sizes_per_dim)
+        integer, intent(in) :: new_pencil_dim, existing_pencil_dim, proc_sizes(:), pencil_size(:)
         integer, intent(in) :: pencil_processes_per_dim(:)
         integer, dimension(:,:), intent(inout) :: specific_sizes_per_dim
         integer :: i, j
@@ -487,7 +502,7 @@ contains
                 if (j == new_pencil_dim) then
                     specific_sizes_per_dim(j, i) = proc_sizes(i)
                 else
-                    specific_sizes_per_dim(j, i) = my_pencil_size(j)
+                    specific_sizes_per_dim(j, i) = pencil_size(j)
                 endif
             enddo
         enddo
@@ -496,18 +511,19 @@ contains
     !> Creates an initial transposition representation of the Z pencil
     !! that MONC is normally decomposed in. This is then
     !! fed into the create transposition procedure which will generate transpositions to other pencils
-    type(pencil_transposition) function create_initial_transposition_description()
+    type(pencil_layout) function create_initial_transposition_description()
         create_initial_transposition_description%dim = Z_INDEX
-        create_initial_transposition_description%process_decomposition_layout(X_INDEX) = layout%size(I_X)
-        create_initial_transposition_description%process_decomposition_layout(Y_INDEX) = layout%size(I_Y)
-        create_initial_transposition_description%process_decomposition_layout(Z_INDEX) = layout%size(I_Z)
+!         create_initial_transposition_description%order = (/Z_INDEX, Y_INDEX, X_INDEX/)
+        create_initial_transposition_description%size(X_INDEX) = layout%size(I_X)
+        create_initial_transposition_description%size(Y_INDEX) = layout%size(I_Y)
+        create_initial_transposition_description%size(Z_INDEX) = layout%size(I_Z)
         print *, "initial box size", box%size
-        create_initial_transposition_description%my_process_location(X_INDEX) = layout%coords(I_X)
-        create_initial_transposition_description%my_process_location(Y_INDEX) = layout%coords(I_Y)
-        create_initial_transposition_description%my_process_location(Z_INDEX) = layout%coords(I_Z)
-        create_initial_transposition_description%my_pencil_size(X_INDEX) = box%size(I_X)
-        create_initial_transposition_description%my_pencil_size(Y_INDEX) = box%size(I_Y)
-        create_initial_transposition_description%my_pencil_size(Z_INDEX) = box%size(I_Z)
+        create_initial_transposition_description%coords(X_INDEX) = layout%coords(I_X)
+        create_initial_transposition_description%coords(Y_INDEX) = layout%coords(I_Y)
+        create_initial_transposition_description%coords(Z_INDEX) = layout%coords(I_Z)
+        create_initial_transposition_description%pencil_size(X_INDEX) = box%size(I_X)
+        create_initial_transposition_description%pencil_size(Y_INDEX) = box%size(I_Y)
+        create_initial_transposition_description%pencil_size(Z_INDEX) = box%size(I_Z)
     end function create_initial_transposition_description
 
     !> Deduces the size of my (local) pencil based upon the new decomposition. This depends heavily on the current
@@ -522,7 +538,7 @@ contains
     function determine_pencil_size(new_pencil_dim, pencil_process_layout, my_pencil_location, &
                                    existing_transposition)
 
-        type(pencil_transposition), intent(in) :: existing_transposition
+        type(pencil_layout), intent(in) :: existing_transposition
         integer, intent(in) :: new_pencil_dim, pencil_process_layout(3), my_pencil_location(3)
         integer :: determine_pencil_size(3)
         integer :: i, split_size, split_remainder, s
@@ -538,9 +554,61 @@ contains
                 determine_pencil_size(i) = merge(split_size+1, split_size, my_pencil_location(i)+1 .le. &
                                                  split_remainder)
             else
-                determine_pencil_size(i)=existing_transposition%my_pencil_size(i)
+                determine_pencil_size(i)=existing_transposition%pencil_size(i)
             endif
         enddo
     end function determine_pencil_size
+
+    subroutine perform_fftxyp2s(fp, fs, xfactors, xtrig, yfactors, ytrig)
+        double precision, intent(inout) :: fp(:, :, :)       !Physical
+        double precision, intent(inout)   :: fs(:, :, :)       !Spectral
+        integer, intent(in) :: xfactors(5), yfactors(5)
+        double precision, intent(in) :: xtrig(:), ytrig(:)
+
+        ! 1. Transform from (z, y, x) to (y, x, z) pencil
+            ! 2. Do y transform
+            ! 3. Transform from (y, x, z) to (x, z, y) pencil
+            ! 4. Do x transform
+            ! 5. Swap x and z from (x, z, y) to (z, x, y) pencil
+
+            call transpose_to_pencil(y_from_z_transposition,    &
+                                        (/1, 2, 3/),               &
+                                        dim_y_comm,                &
+                                        FORWARD,                   &
+                                        fp(box%lo(3):box%hi(3),    &
+                                        box%lo(2):box%hi(2),    &
+                                        box%lo(1):box%hi(1)),   &
+                                        fft_in_y_buffer)
+
+            call forfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer, ytrig, yfactors)
+
+            call transpose_to_pencil(x_from_y_transposition,    &
+                                        (/2, 3, 1/),               &
+                                        dim_x_comm,                &
+                                        FORWARD,                   &
+                                        fft_in_y_buffer,           &
+                                        fft_in_x_buffer)
+
+            call forfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer, xtrig, xfactors)
+
+            fs = zero
+
+    end subroutine perform_fftxyp2s
+
+!     function determine_dimension_order(order, direction) result(new_order)
+!         integer, intent(in) :: order(3)
+!         integer, intent(in) :: direction
+!         integer             :: new_order(3)
+!
+!         if (direction == FORWARD) then
+!             new_order(1) = order(2)
+!             new_order(2) = order(3)
+!             new_order(3) = order(1)
+!         else
+!             new_order(1) = order(3)
+!             new_order(2) = order(1)
+!             new_order(3) = order(2)
+!         endif
+!     end function determine_dimension_order
 
 end module pencil_fft
