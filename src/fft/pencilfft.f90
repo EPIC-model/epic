@@ -41,7 +41,8 @@ module pencil_fft
                                 , y_from_z_2_transposition &
                                 , x_from_y_2_transposition &
                                 , y_from_x_2_transposition &
-                                , z_from_y_2_transposition
+                                , z_from_y_2_transposition &
+                                , z_from_x_transposition
 
     ! Temporary buffers used in transposition
     double precision, dimension(:,:,:), contiguous, pointer :: fft_in_y_buffer , fft_in_x_buffer
@@ -59,14 +60,15 @@ contains
     subroutine initialise_pencil_fft(nx, ny, nz)
         integer, intent(in) :: nx, ny, nz
         integer :: x_distinct_sizes(layout%size(I_X)), &
-                   y_distinct_sizes(layout%size(I_Y))
+                   y_distinct_sizes(layout%size(I_Y)), &
+                   z_distinct_sizes(layout%size(I_Z))
 
 
         if (l_initialised) then
             return
         endif
 
-        ncells = (/nz, ny, nx/)
+        ncells = (/nz+1, ny, nx/)
 
         print *, "Is x parallel?", layout%l_parallel(I_X)
         print *, "Is y parallel?", layout%l_parallel(I_Y)
@@ -101,7 +103,9 @@ contains
             x_distinct_sizes = box%size(I_X)
         endif
 
-        call initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
+        z_distinct_sizes = box%size(I_Z)
+
+        call initialise_transpositions(z_distinct_sizes, y_distinct_sizes, x_distinct_sizes)
 
         call initialise_buffers
 
@@ -137,8 +141,8 @@ contains
     !> Initialises the pencil transpositions, from a pencil in one dimension to that in another
     !! @param y_distinct_sizes Y sizes per process
     !! @param x_distinct_sizes X sizes per process
-    subroutine initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
-        integer, dimension(:), intent(in) :: y_distinct_sizes, x_distinct_sizes
+    subroutine initialise_transpositions(z_distinct_sizes, y_distinct_sizes, x_distinct_sizes)
+        integer, dimension(:), intent(in) :: z_distinct_sizes, y_distinct_sizes, x_distinct_sizes
         type(pencil_layout)        :: z_pencil
 
         z_pencil = create_initial_transposition_description()
@@ -149,11 +153,48 @@ contains
         x_from_y_transposition = create_transposition(y_from_z_transposition, X_INDEX, &
                                                       x_distinct_sizes, FORWARD)
 
+!         z_from_x_transposition = create_transposition(x_from_y_transposition, Z_INDEX, &
+!                                                       z_distinct_sizes, FORWARD)
+!         print *, z_from_x_transposition%size
+!         print *, z_pencil%size
+!         z_from_x_transposition%pencil_size = z_pencil%pencil_size
+!         z_from_x_transposition%coords = z_pencil%coords
+!
+!         call determine_my_process_sizes_per_dim(x_from_y_transposition%dim,         &
+!                                                     x_from_y_transposition%pencil_size, &
+!                                                     z_from_x_transposition%size,          &
+!                                                     z_from_x_transposition%send_dims)
+!
+!             call determine_matching_process_dimensions(Z_INDEX,                      &
+!                                                        x_from_y_transposition%dim,          &
+!                                                        z_distinct_sizes,                   &
+!                                                        z_from_x_transposition%pencil_size,    &
+!                                                        z_from_x_transposition%size,           &
+!                                                        z_from_x_transposition%recv_dims)
+!
+!         deallocate(z_from_x_transposition%send_sizes, z_from_x_transposition%send_offsets)
+!         deallocate(z_from_x_transposition%recv_sizes, z_from_x_transposition%recv_offsets)
+!         allocate(z_from_x_transposition%send_sizes(size(z_from_x_transposition%send_dims, 2)), &
+!                  z_from_x_transposition%send_offsets(size(z_from_x_transposition%send_sizes)), &
+!                  z_from_x_transposition%recv_sizes(size(z_from_x_transposition%recv_dims, 2)), &
+!                  z_from_x_transposition%recv_offsets(size(z_from_x_transposition%recv_sizes)))
+!
+!         call concatenate_dimension_sizes(z_from_x_transposition%send_dims, z_from_x_transposition%send_sizes)
+!         call determine_offsets_from_size(z_from_x_transposition%send_sizes, z_from_x_transposition%send_offsets)
+!
+!         call concatenate_dimension_sizes(z_from_x_transposition%recv_dims, z_from_x_transposition%recv_sizes)
+!         call determine_offsets_from_size(z_from_x_transposition%recv_sizes, z_from_x_transposition%recv_offsets)
+!         z_from_x_transposition%dim=Z_INDEX
+
+        print *, "x_distinct_sizes", x_distinct_sizes
+        print *, "y_distinct_sizes", y_distinct_sizes
+        print *, "z_distinct_sizes", z_distinct_sizes
+
         y_from_x_transposition=create_transposition(x_from_y_transposition, Y_INDEX, &
          x_distinct_sizes, BACKWARD)
 
-!         z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
-!          y_distinct_sizes, BACKWARD)
+        z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
+         y_distinct_sizes, BACKWARD)
 
 !         y_from_z_2_transposition=create_transposition(z_from_y_transposition, Y_INDEX, &
 !           y_distinct_sizes, FORWARD)
@@ -274,11 +315,19 @@ contains
 
         !$OMP SINGLE
         allocate(real_temp(size(source_data,3), size(source_data,2), size(source_data,1)))
-        allocate(real_temp2(product(transposition_description%pencil_size)+1))
+        allocate(real_temp2(product(transposition_description%pencil_size))) !+1))
         !$OMP END SINGLE
 
         ! --> realt_temp is x, y, z (c, b, a)
         call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
+
+!         print *, "transpose_to_pencil after rearrange"
+
+!         print *, "send sizes:", transposition_description%send_sizes
+!         print *, "send offsets:", transposition_description%send_offsets
+!         print *, "recv sizes:", transposition_description%recv_sizes
+!         print *, "recv offsets:", transposition_description%recv_offsets
+
 
         !$OMP SINGLE
         call MPI_Alltoallv(real_temp,                               &
@@ -292,6 +341,8 @@ contains
                            communicator,                            &
                            comm%err)
         !$OMP END SINGLE
+
+!         print *, "transpose_to_pencil after MPI_Alltoallv"
 
         call contiguise_data(transposition_description,                             &
                              (/source_dims(3), source_dims(2), source_dims(1)/),    &
@@ -572,28 +623,84 @@ contains
             ! 5. Swap x and z from (x, z, y) to (z, x, y) pencil
 
             call transpose_to_pencil(y_from_z_transposition,    &
-                                        (/1, 2, 3/),               &
-                                        dim_y_comm,                &
-                                        FORWARD,                   &
-                                        fp(box%lo(3):box%hi(3),    &
-                                        box%lo(2):box%hi(2),    &
-                                        box%lo(1):box%hi(1)),   &
+                                        (/1, 2, 3/),            &
+                                        dim_y_comm,             &
+                                        FORWARD,                &
+                                        fp,                     &
                                         fft_in_y_buffer)
 
             call forfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer, ytrig, yfactors)
 
             call transpose_to_pencil(x_from_y_transposition,    &
-                                        (/2, 3, 1/),               &
-                                        dim_x_comm,                &
-                                        FORWARD,                   &
-                                        fft_in_y_buffer,           &
+                                        (/2, 3, 1/),            &
+                                        dim_x_comm,             &
+                                        FORWARD,                &
+                                        fft_in_y_buffer,        &
                                         fft_in_x_buffer)
 
             call forfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer, xtrig, xfactors)
 
-            fs = zero
+            call transpose_to_pencil(y_from_x_transposition,    &
+                                     (/3, 1, 2/),               &
+                                     dim_x_comm,                &
+                                     BACKWARD,                  &
+                                     fft_in_x_buffer,           &
+                                     fft_in_y_buffer)
+
+            call transpose_to_pencil(z_from_y_transposition,    &
+                                     (/2, 3, 1/),               &
+                                     dim_y_comm,                &
+                                     BACKWARD,                  &
+                                     fft_in_y_buffer,           &
+                                     fs)
 
     end subroutine perform_fftxyp2s
+
+    subroutine perform_fftxys2p(fs, fp, xfactors, xtrig, yfactors, ytrig)
+        double precision, intent(inout) :: fp(:, :, :)       !Physical
+        double precision, intent(inout)   :: fs(:, :, :)       !Spectral
+        integer, intent(in) :: xfactors(5), yfactors(5)
+        double precision, intent(in) :: xtrig(:), ytrig(:)
+
+            ! 1. Transform to x-pencil
+            ! 2. Do x back-transform
+            ! 3. Transform from (x, z, y) to (y, x, z) pencil
+            ! 4. Do y back-transform
+            ! 5. Transform from (y, x, z) to (z, y, x) pencil
+
+            call transpose_to_pencil(y_from_z_transposition,    &
+                                        (/1, 2, 3/),            &
+                                        dim_y_comm,             &
+                                        FORWARD,                &
+                                        fp,                     &
+                                        fft_in_y_buffer)
+
+            call revfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer, ytrig, yfactors)
+
+            call transpose_to_pencil(x_from_y_transposition,    &
+                                        (/2, 3, 1/),            &
+                                        dim_x_comm,             &
+                                        FORWARD,                &
+                                        fft_in_y_buffer,        &
+                                        fft_in_x_buffer)
+
+            call revfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer, xtrig, xfactors)
+
+            call transpose_to_pencil(y_from_x_transposition,    &
+                                     (/3, 1, 2/),               &
+                                     dim_x_comm,                &
+                                     BACKWARD,                  &
+                                     fft_in_x_buffer,           &
+                                     fft_in_y_buffer)
+
+            call transpose_to_pencil(z_from_y_transposition,    &
+                                     (/2, 3, 1/),               &
+                                     dim_y_comm,                &
+                                     BACKWARD,                  &
+                                     fft_in_y_buffer,           &
+                                     fs)
+
+    end subroutine perform_fftxys2p
 
 !     function determine_dimension_order(order, direction) result(new_order)
 !         integer, intent(in) :: order(3)
