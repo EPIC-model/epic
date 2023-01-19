@@ -35,21 +35,16 @@ module pencil_fft
 
     ! Transpositions from one pencil to another
     type(pencil_layout) :: y_from_z_transposition   &
-                                , x_from_y_transposition   &
-                                , y_from_x_transposition   &
-                                , z_from_y_transposition   &
-                                , y_from_z_2_transposition &
-                                , x_from_y_2_transposition &
-                                , y_from_x_2_transposition &
-                                , z_from_y_2_transposition &
-                                , z_from_x_transposition
+                         , x_from_y_transposition   &
+                         , y_from_x_transposition   &
+                         , z_from_y_transposition
 
     ! Temporary buffers used in transposition
     double precision, dimension(:,:,:), contiguous, pointer :: fft_in_y_buffer , fft_in_x_buffer
 
     logical :: l_initialised = .false.
 
-    integer :: ncells(3)
+    integer :: ngrid(3)
 
     public initialise_pencil_fft, finalise_pencil_fft
 contains
@@ -60,19 +55,14 @@ contains
     subroutine initialise_pencil_fft(nx, ny, nz)
         integer, intent(in) :: nx, ny, nz
         integer :: x_distinct_sizes(layout%size(I_X)), &
-                   y_distinct_sizes(layout%size(I_Y)), &
-                   z_distinct_sizes(layout%size(I_Z))
+                   y_distinct_sizes(layout%size(I_Y))
 
 
         if (l_initialised) then
             return
         endif
 
-        ncells = (/nz+1, ny, nx/)
-
-        print *, "Is x parallel?", layout%l_parallel(I_X)
-        print *, "Is y parallel?", layout%l_parallel(I_Y)
-        print *, "Is z parallel?", layout%l_parallel(I_Z)
+        ngrid = (/nz+1, ny, nx/)
 
         if (layout%l_parallel(I_X) .and. layout%l_parallel(I_Y)) then
             ! Info from https://www.open-mpi.org
@@ -103,9 +93,7 @@ contains
             x_distinct_sizes = box%size(I_X)
         endif
 
-        z_distinct_sizes = box%size(I_Z)
-
-        call initialise_transpositions(z_distinct_sizes, y_distinct_sizes, x_distinct_sizes)
+        call initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
 
         call initialise_buffers
 
@@ -141,11 +129,12 @@ contains
     !> Initialises the pencil transpositions, from a pencil in one dimension to that in another
     !! @param y_distinct_sizes Y sizes per process
     !! @param x_distinct_sizes X sizes per process
-    subroutine initialise_transpositions(z_distinct_sizes, y_distinct_sizes, x_distinct_sizes)
-        integer, dimension(:), intent(in) :: z_distinct_sizes, y_distinct_sizes, x_distinct_sizes
+    subroutine initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
+        integer, dimension(:), intent(in) :: y_distinct_sizes, x_distinct_sizes
         type(pencil_layout)        :: z_pencil
 
         z_pencil = create_initial_transposition_description()
+
 
         ! Transpositions
         y_from_z_transposition = create_transposition(z_pencil, Y_INDEX, y_distinct_sizes, FORWARD)
@@ -153,60 +142,12 @@ contains
         x_from_y_transposition = create_transposition(y_from_z_transposition, X_INDEX, &
                                                       x_distinct_sizes, FORWARD)
 
-!         z_from_x_transposition = create_transposition(x_from_y_transposition, Z_INDEX, &
-!                                                       z_distinct_sizes, FORWARD)
-!         print *, z_from_x_transposition%size
-!         print *, z_pencil%size
-!         z_from_x_transposition%pencil_size = z_pencil%pencil_size
-!         z_from_x_transposition%coords = z_pencil%coords
-!
-!         call determine_my_process_sizes_per_dim(x_from_y_transposition%dim,         &
-!                                                     x_from_y_transposition%pencil_size, &
-!                                                     z_from_x_transposition%size,          &
-!                                                     z_from_x_transposition%send_dims)
-!
-!             call determine_matching_process_dimensions(Z_INDEX,                      &
-!                                                        x_from_y_transposition%dim,          &
-!                                                        z_distinct_sizes,                   &
-!                                                        z_from_x_transposition%pencil_size,    &
-!                                                        z_from_x_transposition%size,           &
-!                                                        z_from_x_transposition%recv_dims)
-!
-!         deallocate(z_from_x_transposition%send_sizes, z_from_x_transposition%send_offsets)
-!         deallocate(z_from_x_transposition%recv_sizes, z_from_x_transposition%recv_offsets)
-!         allocate(z_from_x_transposition%send_sizes(size(z_from_x_transposition%send_dims, 2)), &
-!                  z_from_x_transposition%send_offsets(size(z_from_x_transposition%send_sizes)), &
-!                  z_from_x_transposition%recv_sizes(size(z_from_x_transposition%recv_dims, 2)), &
-!                  z_from_x_transposition%recv_offsets(size(z_from_x_transposition%recv_sizes)))
-!
-!         call concatenate_dimension_sizes(z_from_x_transposition%send_dims, z_from_x_transposition%send_sizes)
-!         call determine_offsets_from_size(z_from_x_transposition%send_sizes, z_from_x_transposition%send_offsets)
-!
-!         call concatenate_dimension_sizes(z_from_x_transposition%recv_dims, z_from_x_transposition%recv_sizes)
-!         call determine_offsets_from_size(z_from_x_transposition%recv_sizes, z_from_x_transposition%recv_offsets)
-!         z_from_x_transposition%dim=Z_INDEX
-
-        print *, "x_distinct_sizes", x_distinct_sizes
-        print *, "y_distinct_sizes", y_distinct_sizes
-        print *, "z_distinct_sizes", z_distinct_sizes
-
         y_from_x_transposition=create_transposition(x_from_y_transposition, Y_INDEX, &
          x_distinct_sizes, BACKWARD)
 
         z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
          y_distinct_sizes, BACKWARD)
 
-!         y_from_z_2_transposition=create_transposition(z_from_y_transposition, Y_INDEX, &
-!           y_distinct_sizes, FORWARD)
-
-!         x_from_y_2_transposition=create_transposition(y_from_z_2_transposition, X_INDEX, &
-!           x_distinct_sizes, FORWARD)
-
-!         y_from_x_2_transposition=create_transposition(x_from_y_2_transposition, Y_INDEX, &
-!          x_distinct_sizes, BACKWARD)
-
-!         z_from_y_2_transposition=create_transposition(y_from_x_2_transposition, Z_INDEX, &
-!           y_distinct_sizes, BACKWARD)
     end subroutine initialise_transpositions
 
     !> Creates a specific pencil transposition description. It is maybe more a decomposition description,
@@ -235,6 +176,7 @@ contains
         create_transposition%size = determine_pencil_process_dimensions(new_pencil_dim,                 &
                                                                         existing_transposition%dim,     &
                                                                         existing_transposition%size)
+
 
         create_transposition%coords = determine_my_pencil_location(new_pencil_dim,                  &
                                                                    existing_transposition%dim,      &
@@ -321,14 +263,6 @@ contains
         ! --> realt_temp is x, y, z (c, b, a)
         call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
 
-!         print *, "transpose_to_pencil after rearrange"
-
-!         print *, "send sizes:", transposition_description%send_sizes
-!         print *, "send offsets:", transposition_description%send_offsets
-!         print *, "recv sizes:", transposition_description%recv_sizes
-!         print *, "recv offsets:", transposition_description%recv_offsets
-
-
         !$OMP SINGLE
         call MPI_Alltoallv(real_temp,                               &
                            transposition_description%send_sizes,    &
@@ -341,8 +275,6 @@ contains
                            communicator,                            &
                            comm%err)
         !$OMP END SINGLE
-
-!         print *, "transpose_to_pencil after MPI_Alltoallv"
 
         call contiguise_data(transposition_description,                             &
                              (/source_dims(3), source_dims(2), source_dims(1)/),    &
@@ -450,7 +382,7 @@ contains
 
         do i=1,3
             if (i == existing_pencil_dim) then
-                s = ncells(i)
+                s = ngrid(i)
                 split_size = s / new_pencil_procs_per_dim(i)
                 split_remainder = s - split_size * new_pencil_procs_per_dim(i)
                 do j = 1, new_pencil_procs_per_dim(existing_pencil_dim)
@@ -568,7 +500,6 @@ contains
         create_initial_transposition_description%size(X_INDEX) = layout%size(I_X)
         create_initial_transposition_description%size(Y_INDEX) = layout%size(I_Y)
         create_initial_transposition_description%size(Z_INDEX) = layout%size(I_Z)
-        print *, "initial box size", box%size
         create_initial_transposition_description%coords(X_INDEX) = layout%coords(I_X)
         create_initial_transposition_description%coords(Y_INDEX) = layout%coords(I_Y)
         create_initial_transposition_description%coords(Z_INDEX) = layout%coords(I_Z)
@@ -596,9 +527,9 @@ contains
 
         do i = 1, 3
             if (i == new_pencil_dim) then
-                determine_pencil_size(i) = ncells(new_pencil_dim)
+                determine_pencil_size(i) = ngrid(new_pencil_dim)
             else if (i == existing_transposition%dim) then
-                s = ncells(i)
+                s = ngrid(i)
 
                 split_size=s/pencil_process_layout(i)
                 split_remainder=s - split_size * pencil_process_layout(i)
