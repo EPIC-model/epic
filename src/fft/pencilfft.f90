@@ -20,7 +20,6 @@ module pencil_fft
 
     !> Describes a specific pencil transposition, from one pencil decomposition to another
     type pencil_layout
-!         integer :: order(3)         ! order of dimensions
         integer :: pencil_size(3)   ! local pencil size (number of grid points)
         integer :: size(3)          ! process decomposition layout
         integer :: coords(3)        ! *this* process location
@@ -487,7 +486,6 @@ contains
     !! fed into the create transposition procedure which will generate transpositions to other pencils
     type(pencil_layout) function create_initial_transposition_description()
         create_initial_transposition_description%dim = Z_INDEX
-!         create_initial_transposition_description%order = (/Z_INDEX, Y_INDEX, X_INDEX/)
         create_initial_transposition_description%size(X_INDEX) = layout%size(I_X)
         create_initial_transposition_description%size(Y_INDEX) = layout%size(I_Y)
         create_initial_transposition_description%size(Z_INDEX) = layout%size(I_Z)
@@ -538,11 +536,12 @@ contains
         integer, intent(in) :: xfactors(5), yfactors(5)
         double precision, intent(in) :: xtrig(:), ytrig(:)
 
-        ! 1. Transform from (z, y, x) to (y, x, z) pencil
+            ! 1. Transform from (z, y, x) to (y, x, z) pencil
             ! 2. Do y transform
             ! 3. Transform from (y, x, z) to (x, z, y) pencil
             ! 4. Do x transform
-            ! 5. Swap x and z from (x, z, y) to (z, x, y) pencil
+            ! 5. Transform from (x, z, y) to (y, x, z) pencil
+            ! 6. Transform from (y, x, z) to (z, y, x) pencil
 
             call transpose_to_pencil(y_from_z_transposition,    &
                                         (/1, 2, 3/),            &
@@ -584,11 +583,12 @@ contains
         integer, intent(in) :: xfactors(5), yfactors(5)
         double precision, intent(in) :: xtrig(:), ytrig(:)
 
-            ! 1. Transform to x-pencil
-            ! 2. Do x back-transform
-            ! 3. Transform from (x, z, y) to (y, x, z) pencil
-            ! 4. Do y back-transform
-            ! 5. Transform from (y, x, z) to (z, y, x) pencil
+            ! 1. Transform to (z, y, x) to (y, x, z) pencil
+            ! 2. Do y back-transform
+            ! 3. Transform from (y, x, z) to (x, z, y) pencil
+            ! 4. Do x back-transform
+            ! 5. Transform from (x, z, y) to (y, x, z) pencil
+            ! 6. Transform from (y, x, z) to (z, y, x) pencil
 
             call transpose_to_pencil(y_from_z_transposition,    &
                                         (/1, 2, 3/),            &
@@ -623,21 +623,5 @@ contains
                                      fs)
 
     end subroutine perform_fftxys2p
-
-!     function determine_dimension_order(order, direction) result(new_order)
-!         integer, intent(in) :: order(3)
-!         integer, intent(in) :: direction
-!         integer             :: new_order(3)
-!
-!         if (direction == FORWARD) then
-!             new_order(1) = order(2)
-!             new_order(2) = order(3)
-!             new_order(3) = order(1)
-!         else
-!             new_order(1) = order(3)
-!             new_order(2) = order(1)
-!             new_order(3) = order(2)
-!         endif
-!     end function determine_dimension_order
 
 end module pencil_fft
