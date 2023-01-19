@@ -250,11 +250,6 @@ contains
         double precision, allocatable, save :: real_temp(:, :, :)
         double precision, allocatable, save :: real_temp2(:)
 
-        print *, "Tranpose to pencil"
-        print *, "source", shape(source_data) ! z, y, x (a, b, c)
-        print *, "target", shape(target_data)
-
-
         !$OMP SINGLE
         allocate(real_temp(size(source_data,3), size(source_data,2), size(source_data,1)))
         allocate(real_temp2(product(transposition_description%pencil_size))) !+1))
@@ -304,10 +299,6 @@ contains
         double precision,           intent(in)  :: source_real_buffer(:)
         double precision,           intent(out) :: target_real_buffer(:, :, :)
         integer :: number_blocks, i, j, k, n, index_prefix, index_prefix_dim, block_offset, source_index
-
-        print *, "contiguise data"
-        print *, "source", shape(source_real_buffer)
-        print *, "target", shape(target_real_buffer)
 
         number_blocks = size(transposition_description%recv_sizes)
         index_prefix = 0
