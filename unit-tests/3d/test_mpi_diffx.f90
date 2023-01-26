@@ -7,6 +7,7 @@ program test_mpi_diffx
     use unit_test
     use constants, only : pi, twopi, f12, zero, four, two
     use inversion_utils, only : init_fft, xfactors, xtrig, yfactors, ytrig
+!     use inversion_utils, only : init_fft, fftxyp2s, fftxys2p
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent
     use deriv1d
     use stafft
@@ -16,7 +17,6 @@ program test_mpi_diffx
 
     double precision              :: error = zero
     double precision, allocatable :: fp(:, :, :), &
-                                     dr(:, :, :), &
                                      fs(:, :, :), &
                                      ds(:, :, :)
     integer                       :: i, j, k
@@ -27,7 +27,7 @@ program test_mpi_diffx
 
     passed = (comm%err == 0)
 
-    nx = 32
+    nx = 16
     ny = 32
     nz = 32
     lower = (/-pi, -pi, -pi/)
@@ -38,7 +38,6 @@ program test_mpi_diffx
     call mpi_layout_init(nx, ny, nz)
 
     allocate(fp(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
-    allocate(dr(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(fs(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(ds(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 
@@ -47,7 +46,6 @@ program test_mpi_diffx
     call initialise_pencil_fft(nx, ny, nz)
 
     fp(:, :, :) = zero
-    dr(:, :, :) = zero
 
     ! setup test field
     do i = box%lo(1), box%hi(1)
@@ -68,21 +66,40 @@ program test_mpi_diffx
                           fs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                           xfactors, xtrig, yfactors, ytrig)
 
+!     call fftxyp2s(fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
+!                   fs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+
     fp = zero
 
     call diffx(fs, ds)
 
     ! inverse FFT
-    call perform_fftxys2p(fs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
+    call perform_fftxys2p(ds(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                           fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                           xfactors, xtrig, yfactors, ytrig)
-
-!     do i = 0, nx-1
-!         x = lower(1) + dble(i) * dx(1)
-!         print *, x, fp(0, 0, i), -four * dsin(four * x)
-!     enddo
+!     call fftxys2p(ds(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
+!                   fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
 
+    ! check result test field
+    do i = box%lo(1), box%hi(1)
+        x = lower(1) + dble(i) * dx(1)
+        do j = box%lo(2), box%hi(2)
+            y = lower(2) + dble(j) * dx(2)
+            do k = box%lo(3), box%hi(3)
+                z = lower(3) + dble(k) * dx(3)
+                passed = (passed .and. (fp(k, j, i) - (-four * dsin(four * x)) < 1.0e-12))
+            enddo
+        enddo
+    enddo
+
+!                 print *, fp(k, j, i), -four * dsin(four * x)
+    do i = box%lo(1), box%hi(1)
+        x = lower(1) + dble(i) * dx(1)
+        print *, comm%rank, x, fp(12, 2, i), -four * dsin(four * x)
+    enddo
+
+    print *, "passed", passed
 
 
     call finalise_pencil_fft

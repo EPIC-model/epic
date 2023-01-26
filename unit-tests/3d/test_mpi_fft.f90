@@ -14,7 +14,6 @@ program test_fft_3d
     double precision              :: error = zero
     double precision, allocatable :: fp1(:, :, :), &
                                      fp2(:, :, :), &
-                                     fp(:, :, :),  &
                                      fs(:, :, :)
     integer                       :: i, j, k
     double precision              :: x, y, z
@@ -53,7 +52,7 @@ program test_fft_3d
             do k = box%lo(3), box%hi(3)
                 z = lower(3) + dble(k) * dx(3)
                 fp1(k, j, i) = dcos(four * x) + dsin(y) + dcos(z)
-                fp2(k, j, i) = fp1(k, j, i)
+!                 fp2(k, j, i) = fp1(k, j, i)
             enddo
         enddo
     enddo
@@ -61,10 +60,9 @@ program test_fft_3d
     fs = zero
 
     ! we need to copy since fftxyp2s overwrites *fp*.
-    fp = fp1
 
     ! forward FFT
-    call perform_fftxyp2s(fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
+    call perform_fftxyp2s(fp1(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                           fs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                           xfactors, xtrig, yfactors, ytrig)
 
@@ -76,9 +74,8 @@ program test_fft_3d
 
     call finalise_pencil_fft
 
-    error = maxval(dabs(fp1 - fp2))
-
-    print *, error
+    error = maxval(dabs(fp1(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)) - &
+                        fp2(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
     call mpi_comm_finalise
 

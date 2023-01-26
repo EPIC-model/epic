@@ -36,10 +36,12 @@ module pencil_fft
     type(pencil_layout) :: y_from_z_transposition   &
                          , x_from_y_transposition   &
                          , y_from_x_transposition   &
-                         , z_from_y_transposition
+                         , z_from_y_transposition   &
+                         , x_from_z_transposition   &
+                         , z_from_x_transposition
 
     ! Temporary buffers used in transposition
-    double precision, dimension(:,:,:), contiguous, pointer :: fft_in_y_buffer , fft_in_x_buffer
+    double precision, dimension(:,:,:), contiguous, pointer :: fft_in_y_buffer , fft_in_x_buffer, diff_x_buffer
 
     logical :: l_initialised = .false.
 
@@ -110,7 +112,7 @@ contains
             call MPI_Comm_free(dim_x_comm, comm%err)
         endif
 
-        deallocate(fft_in_y_buffer , fft_in_x_buffer)
+        deallocate(fft_in_y_buffer , fft_in_x_buffer, diff_x_buffer)
     end subroutine finalise_pencil_fft
 
     !> Initialises memory for the buffers used in the FFT
@@ -122,6 +124,10 @@ contains
         allocate(fft_in_x_buffer(x_from_y_transposition%pencil_size(X_INDEX),    &
                                  x_from_y_transposition%pencil_size(Z_INDEX),    &
                                  x_from_y_transposition%pencil_size(Y_INDEX)))
+
+        allocate(diff_x_buffer(x_from_z_transposition%pencil_size(X_INDEX),    &
+                               x_from_z_transposition%pencil_size(Z_INDEX),    &
+                               x_from_z_transposition%pencil_size(Y_INDEX)))
 
     end subroutine initialise_buffers
 
@@ -146,6 +152,9 @@ contains
 
         z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
          y_distinct_sizes, BACKWARD)
+
+!         x_from_z_transposition = create_transposition(z_pencil, X_INDEX, (/33/), BACKWARD)
+!         z_from_x_transposition = create_transposition(x_from_z_transposition, Z_INDEX, x_distinct_sizes, FORWARD)
 
     end subroutine initialise_transpositions
 
@@ -256,6 +265,14 @@ contains
 
         ! --> realt_temp is x, y, z (c, b, a)
         call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
+
+        print *, "transposition_description%send_sizes", transposition_description%send_sizes
+        print *, "transposition_description%send_offsets", transposition_description%send_offsets
+        print *, "transposition_description%recv_sizes", transposition_description%recv_sizes
+        print *, "transposition_description%recv_offsets", transposition_description%recv_offsets
+
+        print *, "source", shape(source_data)
+        print *, "target", shape(target_data)
 
         !$OMP SINGLE
         call MPI_Alltoallv(real_temp,                               &
@@ -449,6 +466,8 @@ contains
         integer, dimension(:), intent(inout) :: concatenated_dim_sizes
         integer :: i
 
+        print *, "dims", dims
+        print *, "size(dims, 2)", size(dims, 2)
         do i = 1,size(dims, 2)
             concatenated_dim_sizes(i) = product(dims(:, i))
         enddo
@@ -535,6 +554,7 @@ contains
         double precision, intent(inout)   :: fs(:, :, :)       !Spectral
         integer, intent(in) :: xfactors(5), yfactors(5)
         double precision, intent(in) :: xtrig(:), ytrig(:)
+        integer :: i, j
 
             ! 1. Transform from (z, y, x) to (y, x, z) pencil
             ! 2. Do y transform
@@ -550,7 +570,11 @@ contains
                                         fp,                     &
                                         fft_in_y_buffer)
 
-            call forfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer, ytrig, yfactors)
+            do i = 1, size(fft_in_y_buffer, 2)
+                do j = 1, size(fft_in_y_buffer, 3)
+                    call forfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer(:, i, j), ytrig, yfactors)
+                enddo
+            enddo
 
             call transpose_to_pencil(x_from_y_transposition,    &
                                         (/2, 3, 1/),            &
@@ -559,7 +583,11 @@ contains
                                         fft_in_y_buffer,        &
                                         fft_in_x_buffer)
 
-            call forfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer, xtrig, xfactors)
+            do i = 1, size(fft_in_x_buffer, 2)
+                do j = 1, size(fft_in_x_buffer, 3)
+                    call forfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer(:, i, j), xtrig, xfactors)
+                enddo
+            enddo
 
             call transpose_to_pencil(y_from_x_transposition,    &
                                      (/3, 1, 2/),               &
@@ -578,10 +606,11 @@ contains
     end subroutine perform_fftxyp2s
 
     subroutine perform_fftxys2p(fs, fp, xfactors, xtrig, yfactors, ytrig)
+        double precision, intent(inout) :: fs(:, :, :)       !Spectral
         double precision, intent(inout) :: fp(:, :, :)       !Physical
-        double precision, intent(inout)   :: fs(:, :, :)       !Spectral
         integer, intent(in) :: xfactors(5), yfactors(5)
         double precision, intent(in) :: xtrig(:), ytrig(:)
+        integer :: i, j
 
             ! 1. Transform to (z, y, x) to (y, x, z) pencil
             ! 2. Do y back-transform
@@ -594,10 +623,8 @@ contains
                                         (/1, 2, 3/),            &
                                         dim_y_comm,             &
                                         FORWARD,                &
-                                        fp,                     &
+                                        fs,                     &
                                         fft_in_y_buffer)
-
-            call revfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer, ytrig, yfactors)
 
             call transpose_to_pencil(x_from_y_transposition,    &
                                         (/2, 3, 1/),            &
@@ -606,7 +633,11 @@ contains
                                         fft_in_y_buffer,        &
                                         fft_in_x_buffer)
 
-            call revfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer, xtrig, xfactors)
+            do i = 1, size(fft_in_x_buffer, 2)
+                do j = 1, size(fft_in_x_buffer, 3)
+                    call revfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer(:, i, j), xtrig, xfactors)
+                enddo
+            enddo
 
             call transpose_to_pencil(y_from_x_transposition,    &
                                      (/3, 1, 2/),               &
@@ -615,12 +646,18 @@ contains
                                      fft_in_x_buffer,           &
                                      fft_in_y_buffer)
 
+            do i = 1, size(fft_in_y_buffer, 2)
+                do j = 1, size(fft_in_y_buffer, 3)
+                    call revfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer(:, i, j), ytrig, yfactors)
+                enddo
+            enddo
+
             call transpose_to_pencil(z_from_y_transposition,    &
                                      (/2, 3, 1/),               &
                                      dim_y_comm,                &
                                      BACKWARD,                  &
                                      fft_in_y_buffer,           &
-                                     fs)
+                                     fp)
 
     end subroutine perform_fftxys2p
 
