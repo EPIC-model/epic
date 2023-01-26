@@ -73,6 +73,7 @@ module inversion_utils
             , ytrig           &
             , ztrig           &
             , rkx             &
+            , hrkx            &
             , rky             &
             , rkz             &
             , k2l2i           &
@@ -655,9 +656,9 @@ module inversion_utils
             double precision, intent(out)   :: fs(:, :, :)       !Spectral
             integer                         :: kx, iy, nzval, nxval, nyval
 
-            if (comm%size > 1) then
+!             if (comm%size > 1) then
 !                 call perform_fftxyp2s(fp, fs, xfactors, xtrig, yfactors, ytrig)
-            else
+!             else
 
                 nzval = size(fp, 1)
                 nyval = size(fp, 2)
@@ -677,7 +678,7 @@ module inversion_utils
 
                 ! Carry out a full y transform on transposed array:
                 call forfft(nzval * nxval, nyval, fs, ytrig, yfactors)
-            endif
+!             endif
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

@@ -36,8 +36,6 @@ module mpi_layout
     type(neighbour_type)  :: neighbour
     type(parallel_layout) :: layout
 
-    private :: set_local_bounds
-
     contains
 
         ! We only distribute x and y.
@@ -83,8 +81,8 @@ module mpi_layout
             layout%coords(2) = coords(2)
             layout%coords(3) = 0
 
-            call set_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
-            call set_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))
+            call get_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
+            call get_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))
             box%lo(3) = 0
             box%hi(3) = nz
 
@@ -205,7 +203,7 @@ module mpi_layout
         end function get_neighbour
 
 
-        subroutine set_local_bounds(nglobal, coords, dims, first, last)
+        subroutine get_local_bounds(nglobal, coords, dims, first, last)
             integer, intent(in)  :: nglobal, coords, dims
             integer, intent(out) :: first, last
             integer              :: nlocal, remaining
@@ -223,6 +221,6 @@ module mpi_layout
 
             last = first + nlocal - 1
 
-        end subroutine set_local_bounds
+        end subroutine get_local_bounds
 
 end module mpi_layout
