@@ -70,6 +70,7 @@ unittests_PROGRAMS = 				\
 	test_mpi_pencil2			\
 	test_mpi_fft				\
 	test_mpi_dst				\
+	test_mpi_reorder			\
 	test_mpi_diffx
 
 dataroot_DATA =		\
@@ -206,6 +207,9 @@ test_mpi_fft_LDADD = libcombi.la
 
 test_mpi_dst_SOURCES = test_mpi_dst.f90
 test_mpi_dst_LDADD = libcombi.la
+
+test_mpi_reorder_SOURCES = test_mpi_reorder.f90
+test_mpi_reorder_LDADD = libcombi.la
 
 test_mpi_diffx_SOURCES = test_mpi_diffx.f90
 test_mpi_diffx_LDADD = libcombi.la

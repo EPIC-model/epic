@@ -96,15 +96,18 @@ program test_mpi_diffx
 !                 print *, fp(k, j, i), -four * dsin(four * x)
     do i = box%lo(1), box%hi(1)
         x = lower(1) + dble(i) * dx(1)
-        print *, comm%rank, x, fp(12, 2, i), -four * dsin(four * x)
+        print *, comm%rank, x, fp(box%lo(3), box%lo(2), i), -four * dsin(four * x)
     enddo
-
-    print *, "passed", passed
-
 
     call finalise_pencil_fft
 
 !     error = maxval(dabs(fp - dr))
+
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    else
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    endif
 
 !     print *, error
 
