@@ -16,8 +16,7 @@ module fft_utils
 
     private :: copy_from_buffer, copy_to_buffer, l_initialised
 
-    type(MPI_type) :: comm_test
-    integer :: rr
+    type(sub_communicator(maxdims=1)) :: x_sub
 
     contains
 
@@ -32,11 +31,17 @@ module fft_utils
             endif
             l_initialised = .true.
 
-            allocate(send_count(comm%size))
-            allocate(send_offset(comm%size))
-            allocate(recv_count(comm%size))
-            allocate(x_recv_count(comm%size))
-            allocate(recv_offset(comm%size))
+            call MPI_Cart_sub(comm%cart, (/.true., .false./), x_sub%comm, comm%err)
+
+            call MPI_Comm_rank(x_sub%comm, x_sub%rank, x_sub%err)
+            call MPI_Comm_size(x_sub%comm, x_sub%size, x_sub%err)
+            call MPI_Cart_coords(x_sub%comm, x_sub%rank, x_sub%maxdims, x_sub%coord, x_sub%err)
+
+            allocate(send_count(x_sub%size))
+            allocate(send_offset(x_sub%size))
+            allocate(recv_count(x_sub%size))
+            allocate(x_recv_count(x_sub%size))
+            allocate(recv_offset(x_sub%size))
 
             allocate(dest(box%lo(1):box%hi(1)))
 
@@ -61,26 +66,21 @@ module fft_utils
             !--------------------------------------------------------------
             ! Determine destination rank and number of elements to send in x
             do i = box%lo(1), box%hi(1)
-                dest(i) = comm%rank
+                dest(i) = x_sub%rank
                 do j = 0, layout%size(1)-1
                     if (i >= rlos(j) .and. i <= rhis(j)) then
-                        call MPI_Cart_rank(comm%cart, (/j, layout%coords(2)/), rank, comm%err)
+!                         call MPI_Cart_rank(comm%cart, (/j, layout%coords(2)/), rank, comm%err)
+                        call MPI_Cart_rank(x_sub%comm, (/j/), rank, comm%err)
                         dest(i) = rank
                     endif
                 enddo
                 j = dest(i)
-                if (.not. comm%rank == j) then
+                if (.not. x_sub%rank == j) then
                     send_count(j+1) = send_count(j+1) + 1
                 endif
             enddo
 
-            cat MPI_Cart_sub(comm%cart, (/.true., .false./), comm_test, comm%err)
-
-            call MPI_Comm_rank(comm_test, rr, comm%err)
-            print *, comm%rank, rr
-!             call MPI_Cart_coords(comm_test, rank, maxdims, coords, ierror)
-
-            print *, comm%rank, "dest", dest
+            print *, x_sub%rank, "dest", dest
 
             !--------------------------------------------------------------
             ! Add y and z dimensions
@@ -98,20 +98,20 @@ module fft_utils
             ! Determine offsets for send and receive buffers
 
             send_offset(1) = 0
-            do i = 2, comm%size
+            do i = 2, x_sub%size
                 send_offset(i) = sum(send_count(1:i-1))
-                recv_offset(comm%size-i+1) = send_offset(i)
+                recv_offset(x_sub%size-i+1) = send_offset(i)
             enddo
 
-            recv_offset(comm%size) = 0
-            do i = comm%size-1, 1, -1
-                recv_offset(i) = sum(recv_count(comm%size:i+1:-1))
+            recv_offset(x_sub%size) = 0
+            do i = x_sub%size-1, 1, -1
+                recv_offset(i) = sum(recv_count(x_sub%size:i+1:-1))
             enddo
 
-            print *, comm%rank, "send_count", send_count
-            print *, comm%rank, "recv_count", recv_count
-            print *, comm%rank, "send_offset", send_offset
-            print *, comm%rank, "recv_offset", recv_offset
+            print *, x_sub%rank, "send_count", send_count
+            print *, x_sub%rank, "recv_count", recv_count
+            print *, x_sub%rank, "send_offset", send_offset
+            print *, x_sub%rank, "recv_offset", recv_offset
 
         end subroutine initialise_fft_diff
 
@@ -125,7 +125,7 @@ module fft_utils
 
             j = 1
             do ix = box%hi(1), box%lo(1), -1
-                if (comm%rank == dest(ix)) then
+                if (x_sub%rank == dest(ix)) then
                     cycle
                 endif
                 do iy = box%lo(2), box%hi(2)
@@ -156,7 +156,7 @@ module fft_utils
 
             n_recvs = sum(x_recv_count)
 
-            print *, comm%rank, "n_recvs", n_recvs
+            print *, x_sub%rank, "n_recvs", n_recvs
 
             half_length = (box%size(1) - n_recvs) / 2
             do i = 0, half_length-1
@@ -169,14 +169,14 @@ module fft_utils
 
             deallocate(buf)
 
-            print *, comm%rank, "hs:", fs(0, 0, :)
+            print *, x_sub%rank, "hs:", fs(0, 0, :)
 
             !--------------------------------------------------------------
             ! Copy from buffer to actual array
 
             j = size(recv_buffer)
             do ix = box%hi(1), box%lo(1), -1
-                if (comm%rank == dest(ix)) then
+                if (x_sub%rank == dest(ix)) then
                     cycle
                 endif
                 do iy = box%hi(2), box%lo(2), -1
@@ -187,7 +187,7 @@ module fft_utils
                 enddo
             enddo
 
-            print *, comm%rank, "fs:", fs(0, 0, :)
+            print *, x_sub%rank, "fs:", fs(0, 0, :)
 
         end subroutine copy_from_buffer
 
@@ -218,8 +218,8 @@ module fft_utils
                                recv_count,              &
                                recv_offset,             &
                                MPI_DOUBLE_PRECISION,    &
-                               comm%cart,               &
-                               comm%err)
+                               x_sub%comm,              &
+                               x_sub%err)
 
             ! we exclude the halo when copying
             call copy_from_buffer(gs(box%lo(3):box%hi(3), &
