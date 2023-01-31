@@ -15,8 +15,9 @@ module parcel_diagnostics
     integer :: parcel_stats_timer
 
     ! pe    : domain-averaged potential energy
+    ! ape   : domain-average available potential energy
     ! ke    : domain-averaged kinetic energy
-    double precision :: pe, ke
+    double precision :: pe, ape, ke
 
     integer :: n_small
 
@@ -92,6 +93,7 @@ module parcel_diagnostics
 
             ! reset
             ke = zero
+            ape = zero
             pe = zero
 
             ! find extrema outside OpenMP loop, we can integrate it later;
@@ -155,7 +157,8 @@ module parcel_diagnostics
 
             ! divide by domain volume to get domain-averaged quantities
             ke = f12 * ke * vdomaini
-            pe = pe * vdomaini - peref
+            pe = pe * vdomaini
+            ape = pe - peref
 
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))
