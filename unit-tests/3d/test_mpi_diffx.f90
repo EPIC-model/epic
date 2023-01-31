@@ -27,9 +27,9 @@ program test_mpi_diffx
 
     passed = (comm%err == 0)
 
-    nx = 16
-    ny = 32
-    nz = 32
+    nx = 64
+    ny = 128
+    nz = 64
     lower = (/-pi, -pi, -pi/)
     extent = (/twopi, twopi, twopi/)
 
@@ -66,9 +66,6 @@ program test_mpi_diffx
                           fs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                           xfactors, xtrig, yfactors, ytrig)
 
-!     call fftxyp2s(fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
-!                   fs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
-
     fp = zero
 
     call diffx(fs, ds)
@@ -77,9 +74,6 @@ program test_mpi_diffx
     call perform_fftxys2p(ds(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                           fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                           xfactors, xtrig, yfactors, ytrig)
-!     call fftxys2p(ds(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
-!                   fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
-
 
     ! check result test field
     do i = box%lo(1), box%hi(1)
@@ -93,13 +87,14 @@ program test_mpi_diffx
         enddo
     enddo
 
-!                 print *, fp(k, j, i), -four * dsin(four * x)
     do i = box%lo(1), box%hi(1)
         x = lower(1) + dble(i) * dx(1)
         print *, comm%rank, x, fp(box%lo(3), box%lo(2), i), -four * dsin(four * x)
     enddo
 
     call finalise_pencil_fft
+
+    print *, "Layout:", layout%l_parallel
 
 !     error = maxval(dabs(fp - dr))
 
