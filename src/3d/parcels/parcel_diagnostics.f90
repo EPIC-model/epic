@@ -128,11 +128,12 @@ module parcel_diagnostics
                 ! kinetic energy
                 ke = ke + (vel(1) ** 2 + vel(2) ** 2 + vel(3) ** 2) * vol
 
-                ! potential energy using sorting approach
-                pe = pe - b * (z - zmin) * vol
-
-                ! calculate APE density
-                ape = ape + ape_den(b, z) * vol
+                if (ape_calculation == 'sorting') then
+                    ! potential energy using sorting approach
+                    pe = pe - b * (z - zmin) * vol
+                else if (ape_calculation == 'ape density') then
+                    ape = ape + ape_den(b, z) * vol
+                endif
 
                 ! enstrophy
                 en = en + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
