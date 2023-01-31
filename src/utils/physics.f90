@@ -93,7 +93,7 @@ module physics
     logical, protected :: l_peref
 
     ! 'none', 'sorting' or 'ape density'
-    character(len=11) :: ape_calculation
+    character(len=11) :: ape_calculation = "none"
 
     interface print_physical_quantity
         module procedure :: print_physical_quantity_double
