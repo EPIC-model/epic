@@ -9,5 +9,6 @@ libepic_utils_la_SOURCES = 	\
 	constants.f90		\
 	timer.f90		\
 	jacobi.f90		\
+	ape_density.f90		\
 	physics.f90
 
