@@ -15,12 +15,10 @@ module mpi_communicator
     type(parallel_communicator) :: comm
 
     type :: sub_communicator
-!         integer, len                :: maxdims ! length of vector coord
-        integer, allocatable        :: coord(:) !dimension(maxdims) :: coord
-        type(MPI_Comm)              :: comm = MPI_COMM_WORLD
-        integer                     :: err = 0
-        integer                     :: rank = 0
-        integer                     :: size = 1
+        type(MPI_Comm) :: comm = MPI_COMM_WORLD
+        integer        :: err = 0
+        integer        :: rank = 0
+        integer        :: size = 1
     end type sub_communicator
 
     contains
