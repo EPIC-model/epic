@@ -375,7 +375,7 @@ module inversion_mod
 
             ds(:, 1, 1) = zero
 
-            ! Invert Laplace's operator semi-spectrally with compact differences:
+            ! Invert Laplace's operator semi-spectrally:
             call lapinv1(ds)
 
             ! Compute x derivative spectrally:
