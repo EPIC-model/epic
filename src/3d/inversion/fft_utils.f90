@@ -4,7 +4,7 @@ module fft_utils
     use constants, only : zero
     use field_mpi, only : field_halo_fill
     use parameters, only : nx, ny
-    use inversion_utils, only : hrkx
+    use inversion_utils, only : hrkx, hrky
     use dimensions, only : I_X, I_Y, I_Z
     implicit none
 
@@ -44,7 +44,7 @@ module fft_utils
 
             call setup_reordering(x_reo, x_comm, I_X, nx)
 
-!             call setup_reordering(y_reo, y_comm, I_Y, ny)
+            call setup_reordering(y_reo, y_comm, I_Y, ny)
 
         end subroutine initialise_diff
 
@@ -57,6 +57,7 @@ module fft_utils
             integer,                           intent(in)    :: ncell
             integer, allocatable                             :: rlos(:), rhis(:)
             integer                                          :: i, j, lo, hi, rank, d
+            logical                                          :: remain_dims(2)
 
             reo%dir = dir
 
@@ -64,7 +65,10 @@ module fft_utils
             ! if dir = 2 --> d = 1, i.e. if dir = I_Y --> d = I_X
             d = mod(dir, 2) + 1
 
-            call MPI_Cart_sub(comm%cart, (/.true., .false./), sub_comm%comm, comm%err)
+            remain_dims(dir) = .true.
+            remain_dims(d) = .false.
+
+            call MPI_Cart_sub(comm%cart, remain_dims, sub_comm%comm, comm%err)
 
             call MPI_Comm_rank(sub_comm%comm, sub_comm%rank, sub_comm%err)
 
@@ -255,7 +259,7 @@ module fft_utils
 
             j = size(y_reo%recv_buffer)
             do iy = box%hi(2), box%lo(2), -1
-                if (y_comm%rank == y_reo%dest(ix)) then
+                if (y_comm%rank == y_reo%dest(iy)) then
                     cycle
                 endif
                 do ix = box%hi(1), box%lo(1), -1
@@ -365,6 +369,49 @@ module fft_utils
                 kxc = nwx! + 1
                 if (kxc >= box%lo(1) .and. kxc <= box%hi(1)) then
                     ds(:, :, kxc) = zero
+                endif
+            endif
+
+        end subroutine
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Given fs in spectral space (at least in x & y), this returns dfs/dy
+        ! (partial derivative).  The result is returned in ds, again
+        ! spectral.  Uses exact form of the derivative in spectral space.
+        subroutine diffy(fs, ds)
+            double precision, intent(in)  :: fs(box%hlo(3):box%hhi(3), &
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: ds(box%hlo(3):box%hhi(3), &
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+            double precision              :: gs(box%hlo(3):box%hhi(3), &
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+            integer                       :: ky, dky, kyc, nwy, nyp2
+            double precision              :: si
+
+            nwy = ny / 2
+            nyp2 = ny + 1
+
+            call reorder(y_reo, y_comm, fs, gs)
+
+            !Carry out differentiation by wavenumber multiplication:
+            if (0 == box%lo(2)) then
+                ds(:, 0, :) = zero
+            endif
+
+            do ky = max(1, box%lo(2)), box%hi(2)
+                dky = min(2 * ky, 2 * (ny - ky))
+                si = merge(1.0d0, -1.0d0, ky >= nwy + 1)
+                ds(:, ky, :)  = si * hrky(dky) * gs(:, ky-1, :)
+            enddo
+
+            if (mod(ny, 2) .eq. 0) then
+                kyc = nwy
+                if (kyc >= box%lo(2) .and. kyc <= box%hi(2)) then
+                    ds(:, kyc, :) = zero
                 endif
             endif
 

@@ -71,7 +71,8 @@ unittests_PROGRAMS = 				\
 	test_mpi_fft				\
 	test_mpi_dst				\
 	test_mpi_reorder			\
-	test_mpi_diffx
+	test_mpi_diffx				\
+	test_mpi_diffy
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -213,3 +214,6 @@ test_mpi_reorder_LDADD = libcombi.la
 
 test_mpi_diffx_SOURCES = test_mpi_diffx.f90
 test_mpi_diffx_LDADD = libcombi.la
+
+test_mpi_diffy_SOURCES = test_mpi_diffy.f90
+test_mpi_diffy_LDADD = libcombi.la

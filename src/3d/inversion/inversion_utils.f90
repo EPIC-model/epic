@@ -75,6 +75,7 @@ module inversion_utils
             , rkx             &
             , hrkx            &
             , rky             &
+            , hrky            &
             , rkz             &
             , k2l2i           &
             , green           &
