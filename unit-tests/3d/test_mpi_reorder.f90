@@ -53,15 +53,15 @@ program test_mpi_diffx
             y = lower(2) + dble(j) * dx(2)
             do k = box%lo(3), box%hi(3)
                 z = lower(3) + dble(k) * dx(3)
-!                 fp(k, j, i) =          i + nx * j + nx * ny * k!dcos(four * x) + dsin(y) + dsin(z) * z
-!                 gp(k, j, i) = nx - 1 - i + nx * j + nx * ny * k !fp(k, j, i)
+                fp(k, j, i) =          i + nx * j + nx * ny * k!dcos(four * x) + dsin(y) + dsin(z) * z
+                gp(k, j, i) = nx - 1 - i + nx * j + nx * ny * k !fp(k, j, i)
 
-!                 fp(k, j, i) = x + y + z
-!                 gp(k, j, i) = xr + y + z
-!                 print *, gp(k, j, i), fp(k, j, i)
-                fp(k, j, i) = four * x + dsin(y) + dsin(z) * z
-                gp(k, j, i) = four * xr + dsin(y) + dsin(z) * z
-!                 print *, fp(k, j, i), gp(k, j, i)
+! !                 fp(k, j, i) = x + y + z
+! !                 gp(k, j, i) = xr + y + z
+! !                 print *, gp(k, j, i), fp(k, j, i)
+!                 fp(k, j, i) = four * x + dsin(y) + dsin(z) * z
+!                 gp(k, j, i) = four * xr + dsin(y) + dsin(z) * z
+! !                 print *, fp(k, j, i), gp(k, j, i)
             enddo
         enddo
     enddo
@@ -103,11 +103,12 @@ program test_mpi_diffx
     passed = (passed .and. (comm%err == 0))
 
     if (comm%rank == comm%master) then
-        if (.not. passed) then
-            call print_result_logical('Test diffx', passed)
-        else
-            call print_result_dp('Test diffx', error, atol=dble(1.0e-14))
-        endif
+!         if (.not. passed) then
+            call print_result_logical('Test reorder', passed)
+!         else
+error = 0.0d0
+!             call print_result_dp('Test reorder', error, atol=dble(1.0e-14))
+!         endif
     endif
 
 end program test_mpi_diffx

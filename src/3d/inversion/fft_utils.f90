@@ -44,7 +44,7 @@ module fft_utils
 
             call setup_reordering(x_reo, x_comm, I_X, nx)
 
-            call setup_reordering(y_reo, y_comm, I_Y, ny)
+!             call setup_reordering(y_reo, y_comm, I_Y, ny)
 
         end subroutine initialise_diff
 
@@ -74,6 +74,8 @@ module fft_utils
             call MPI_Cart_coords(sub_comm%comm, sub_comm%rank, 1, &
                                  sub_comm%coord, sub_comm%err)
 
+            print *, comm%rank, sub_comm%rank, sub_comm%size, sub_comm%coord
+
             allocate(reo%send_recv_count(sub_comm%size))
             allocate(reo%send_offset(sub_comm%size))
             allocate(reo%recv_count(sub_comm%size))
@@ -93,7 +95,7 @@ module fft_utils
                 rlos(i) = ncell - hi - 1
             enddo
 
-            reo%send_recv_count(:) = 0
+            reo%send_recv_count = 0
 
             !--------------------------------------------------------------
             ! Determine destination rank and number of elements to send in x
@@ -101,6 +103,7 @@ module fft_utils
                 reo%dest(i) = sub_comm%rank
                 do j = 0, layout%size(dir)-1
                     if (i >= rlos(j) .and. i <= rhis(j)) then
+!                         print *, sub_comm%rank, sub_comm%coord, j
                         call MPI_Cart_rank(sub_comm%comm, (/j/), rank, comm%err)
                         reo%dest(i) = rank
                     endif
@@ -115,7 +118,6 @@ module fft_utils
             ! Add y and z dimensions
             reo%recv_count = reo%send_recv_count
             reo%send_recv_count = reo%send_recv_count * box%size(d) * box%size(I_Z)
-            reo%recv_count = reo%send_recv_count
 
             deallocate(rlos)
             deallocate(rhis)
