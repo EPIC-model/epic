@@ -5,7 +5,7 @@ module parcel_init
     use options, only : parcel, output, verbose, field_tol
     use constants, only : zero, two, one, f12, f13, f23, f14
     use parcel_container, only : parcels, n_parcels, parcel_alloc
-    use parcel_ellipsoid, only : get_abc, get_eigenvalues, get_ellipsoid_points
+    use parcel_ellipsoid, only : get_abc, get_eigenvalues
     use parcel_split_mod, only : parcel_split
     use parcel_interpl, only : trilinear, ngp
     use parameters, only : dx, vcell, ncell,            &
@@ -146,31 +146,25 @@ module parcel_init
 
 
         subroutine init_from_grids
-            double precision :: points(3, 4)
-            integer          :: n, l, p
+            integer:: n, l
 
             !$omp parallel default(shared)
-            !$omp do private(n, l, p, points, is, js, ks, weights)
+            !$omp do private(n, l, is, js, ks, weights)
             do n = 1, n_parcels
 
-                points = get_ellipsoid_points(parcels%position(:, n), &
-                                              parcels%volume(n), parcels%B(:, n), n)
+                ! get interpolation weights and mesh indices
+                call trilinear(parcels%position(:, n), is, js, ks, weights)
 
-                do p = 1, 4
-                    ! get interpolation weights and mesh indices
-                    call trilinear(points(:, p), is, js, ks, weights)
-
-                    ! loop over grid points which are part of the interpolation
-                    do l = 1, ngp
-                        parcels%vorticity(:, n) = parcels%vorticity(:, n) &
-                                                + f14 * weights(l) * vortg(ks(l), js(l), is(l), :)
-                        parcels%buoyancy(n) = parcels%buoyancy(n) &
-                                            + f14 * weights(l) * tbuoyg(ks(l), js(l), is(l))
+                ! loop over grid points which are part of the interpolation
+                do l = 1, ngp
+                    parcels%vorticity(:, n) = parcels%vorticity(:, n) &
+                                            + weights(l) * vortg(ks(l), js(l), is(l), :)
+                    parcels%buoyancy(n) = parcels%buoyancy(n) &
+                                        + weights(l) * tbuoyg(ks(l), js(l), is(l))
 #ifndef ENABLE_DRY_MODE
-                        parcels%humidity(n) = parcels%humidity(n) &
-                                            + f14 * weights(l) * humg(ks(l), js(l), is(l))
+                    parcels%humidity(n) = parcels%humidity(n) &
+                                        + weights(l) * humg(ks(l), js(l), is(l))
 #endif
-                    enddo
                 enddo
             enddo
             !$omp end do
