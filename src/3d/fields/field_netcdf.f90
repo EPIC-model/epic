@@ -303,7 +303,7 @@ module field_netcdf
 
 #ifndef ENABLE_DRY_MODE
             call get_var_id(ncid, 'dry_buoyancy', dbuoy_id)
-            
+
             call get_var_id(ncid, 'humidity', hum_id)
 
             call get_var_id(ncid, 'liquid_water_content', lbuoy_id)
@@ -395,5 +395,48 @@ module field_netcdf
             call stop_timer(field_io_timer)
 
         end subroutine write_netcdf_fields
+
+
+        subroutine read_netcdf_field_fields(fname, step)
+            character(*), intent(in) :: fname
+            integer,      intent(in) :: step
+            integer                  :: n_steps, ncid, start(4), cnt(4)
+
+            call open_netcdf_file(fname, NF90_NOWRITE, ncid)
+
+            call get_num_steps(ncid, n_steps)
+
+            if ((step < 1) .or. (step > n_steps)) then
+                print *, "Step number out of bounds."
+                error stop
+            endif
+
+            cnt  =  (/ nx, ny, nz+1, 1    /)
+            start = (/ 1,  1,  1,    step /)
+
+            if (has_dataset(ncid, 'x_vorticity')) then
+                call read_netcdf_dataset(ncid, 'x_vorticity', vortg(0:nz, :, :, 1), start, cnt)
+            endif
+
+            if (has_dataset(ncid, 'y_vorticity')) then
+                call read_netcdf_dataset(ncid, 'y_vorticity', vortg(0:nz, :, :, 2), start, cnt)
+            endif
+
+            if (has_dataset(ncid, 'z_vorticity')) then
+                call read_netcdf_dataset(ncid, 'z_vorticity', vortg(0:nz, :, :, 3), start, cnt)
+            endif
+
+            if (has_dataset(ncid, 'buoyancy')) then
+                call read_netcdf_dataset(ncid, 'buoyancy', tbuoyg(0:nz, :, :), start, cnt)
+            endif
+
+#ifndef ENABLE_DRY_MODE
+            if (has_dataset(ncid, 'humidity')) then
+                call read_netcdf_dataset(ncid, 'humidity', humg(0:nz, :, :), start, cnt)
+            endif
+#endif
+            call close_netcdf_file(ncid)
+
+        end subroutine read_netcdf_field_fields
 
 end module field_netcdf

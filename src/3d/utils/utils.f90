@@ -15,7 +15,7 @@ module utils
     use parcel_netcdf
     use parcel_diagnostics_netcdf
     use parcel_diagnostics
-    use parcel_container, only : n_parcels, parcel_alloc
+    use parcel_container, only : n_parcels!, parcel_alloc
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
@@ -187,27 +187,32 @@ module utils
 #endif
         end subroutine setup_domain_and_parameters
 
-        subroutine setup_parcels
+        subroutine setup_fields
             character(len=16) :: file_type
 
-            call parcel_alloc(max_num_parcels)
+            call field_default
 
             if (l_restart) then
                 call setup_restart(trim(restart_file), time%initial, file_type)
 
                 if (file_type == 'fields') then
-                    call init_parcels(restart_file, field_tol)
-                else if (file_type == 'parcels') then
-                    call read_netcdf_parcels(restart_file)
+                    ! FIXME
+!                     call init_parcels(restart_file, field_tol)
                 else
-                    print *, 'Restart file must be of type "fields" or "parcels".'
+                    print *, 'Restart file must be of type "fields".'
                     stop
                 endif
             else
                 time%initial = zero ! make sure user cannot start at arbirtrary time
-
-                call init_parcels(field_file, field_tol)
+                call read_netcdf_field_fields(field_file, 1)
             endif
+
+        end subroutine setup_fields
+
+        subroutine setup_parcels
+
+            call init_parcels
+
         end subroutine setup_parcels
 
 end module utils
