@@ -8,8 +8,9 @@ module parcel_diagnostics
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipsoid
     use omp_lib
-    use physics, only : peref
+    use physics, only : peref, ape_calculation
     use timer, only : start_timer, stop_timer
+    use ape_density, only : ape_den
     implicit none
 
     integer :: parcel_stats_timer
@@ -18,9 +19,9 @@ module parcel_diagnostics
     double precision, parameter :: thres = thousand * epsilon(zero)
 #endif
 
-    ! pe    : potential energy
+    ! ape   : available potential energy
     ! ke    : kinetic energy
-    double precision :: pe, ke
+    double precision :: ape, ke
 
     ! en : enstrophy
     double precision :: en
@@ -49,6 +50,11 @@ module parcel_diagnostics
             integer          :: ii(n_parcels), n
             double precision :: b(n_parcels)
             double precision :: gam, zmean
+
+            if (.not. ape_calculation == "sorting") then
+                peref = zero
+                return
+            endif
 
             call start_timer(parcel_stats_timer)
 
@@ -79,15 +85,16 @@ module parcel_diagnostics
         subroutine calculate_parcel_diagnostics(velocity)
             double precision, intent(in) :: velocity(:, :)
             integer          :: n
-            double precision :: b, z, vel(3), vol, zmin, vor(3)
+            double precision :: b, z, vel(3), vol, zmin, vor(3), pe
             double precision :: evals(3), lam, lsum, l2sum, v2sum
 
             call start_timer(parcel_stats_timer)
 
             ! reset
             ke = zero
-            pe = zero
+            ape = zero
             en = zero
+            pe = zero
 
             lsum = zero
             l2sum = zero
@@ -109,21 +116,25 @@ module parcel_diagnostics
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, en) &
-            !$omp& reduction(max: bmax) reduction(min: bmin)
+            !$omp& reduction(+: ke, ape, lsum, l2sum, sum_vol, v2sum, n_small, rms_zeta, en) &
+            !$omp& reduction(-: pe) reduction(max: bmax) reduction(min: bmin)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
                 vor = parcels%vorticity(:, n)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
-                z   = parcels%position(3, n) - zmin
+                z   = parcels%position(3, n)
 
                 ! kinetic energy
                 ke = ke + (vel(1) ** 2 + vel(2) ** 2 + vel(3) ** 2) * vol
 
-                ! potential energy
-                pe = pe - b * z * vol
+                if (ape_calculation == 'sorting') then
+                    ! potential energy using sorting approach
+                    pe = pe - b * (z - zmin) * vol
+                else if (ape_calculation == 'ape density') then
+                    ape = ape + ape_den(b, z) * vol
+                endif
 
                 ! enstrophy
                 en = en + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
@@ -165,7 +176,13 @@ module parcel_diagnostics
 
             ! divide by domain volume to get domain-averaged quantities
             ke = f12 * ke * vdomaini
-            pe = pe * vdomaini - peref
+
+            if (ape_calculation == 'sorting') then
+                ape = pe * vdomaini - peref
+            else if (ape_calculation == 'ape density') then
+                ape = ape * vdomaini
+            endif
+
             en = f12 * en * vdomaini
 
             avg_lam = lsum / dble(n_parcels)
