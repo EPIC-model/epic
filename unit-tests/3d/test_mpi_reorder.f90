@@ -11,7 +11,7 @@ program test_mpi_diffx
     use stafft
     use mpi_communicator
     use mpi_layout
-    use fft_utils, only : reorder
+    use fft_utils, only : reorder, x_reo, x_comm
     implicit none
 
     double precision              :: error = zero
@@ -66,7 +66,8 @@ program test_mpi_diffx
         enddo
     enddo
 
-    call reorder(fp, hp)
+    call reorder(x_reo, x_comm, fp, hp)
+!     call reorder(fp, hp)
 
     print *, "Reordering:", maxval(gp(box%lo(3):box%hi(3), &
                                       box%lo(2):box%hi(2), &

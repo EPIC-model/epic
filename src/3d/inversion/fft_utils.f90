@@ -27,8 +27,8 @@ module fft_utils
                l_initialised,           &
                setup_reordering
 
-    type(sub_communicator(maxdims=1)) :: x_comm
-    type(sub_communicator(maxdims=1)) :: y_comm
+    type(sub_communicator) :: x_comm
+    type(sub_communicator) :: y_comm
 
     type(reorder_type) :: x_reo
     type(reorder_type) :: y_reo
@@ -52,7 +52,7 @@ module fft_utils
 
         subroutine setup_reordering(reo, sub_comm, dir, ncell)
             type(reorder_type),                intent(inout) :: reo
-            type(sub_communicator(maxdims=1)), intent(inout) :: sub_comm
+            type(sub_communicator), intent(inout) :: sub_comm
             integer,                           intent(in)    :: dir
             integer,                           intent(in)    :: ncell
             integer, allocatable                             :: rlos(:), rhis(:)
@@ -70,7 +70,8 @@ module fft_utils
 
             call MPI_Comm_size(sub_comm%comm, sub_comm%size, sub_comm%err)
 
-            call MPI_Cart_coords(sub_comm%comm, sub_comm%rank, sub_comm%maxdims, &
+            allocate(sub_comm%coord(1))
+            call MPI_Cart_coords(sub_comm%comm, sub_comm%rank, 1, &
                                  sub_comm%coord, sub_comm%err)
 
             allocate(reo%send_recv_count(sub_comm%size))
@@ -169,13 +170,11 @@ module fft_utils
                                                 box%lo(1):box%hi(1))
             integer                       :: ix, iy, iz
             integer                       :: i, j, k, half_length, n_recvs
-            double precision, allocatable :: buf(:, :)
+            double precision              :: buf(box%lo(3):box%hi(3), box%lo(2):box%hi(2))
 
 
             !--------------------------------------------------------------
             ! Revert array locally
-
-            allocate(buf(box%lo(3):box%hi(3), box%lo(2):box%hi(2)))
 
             n_recvs = sum(x_reo%recv_count)
 
@@ -187,8 +186,6 @@ module fft_utils
                 fs(:, :, j) = fs(:, :, k)
                 fs(:, :, k) = buf
             enddo
-
-            deallocate(buf)
 
             !--------------------------------------------------------------
             ! Copy from buffer to actual array
@@ -241,15 +238,13 @@ module fft_utils
                                                 box%lo(1):box%hi(1))
             integer                       :: ix, iy, iz
             integer                       :: i, j, k, half_length, n_recvs
-            double precision, allocatable :: buf(:, :)
+            double precision              :: buf(box%lo(3):box%hi(3), box%lo(1):box%hi(1))
 
 
             !--------------------------------------------------------------
             ! Revert array locally
 
-            allocate(buf(box%lo(3):box%hi(3), box%lo(1):box%hi(1)))
-
-            n_recvs = sum(x_reo%recv_count)
+            n_recvs = sum(y_reo%recv_count)
 
             half_length = (box%size(2) - n_recvs) / 2
             do i = 0, half_length-1
@@ -259,8 +254,6 @@ module fft_utils
                 fs(:, j, :) = fs(:, k, :)
                 fs(:, k, :) = buf
             enddo
-
-            deallocate(buf)
 
             !--------------------------------------------------------------
             ! Copy from buffer to actual array
@@ -284,7 +277,7 @@ module fft_utils
 
         subroutine reorder(reo, sub_comm, fs, gs)
             type(reorder_type),                intent(inout) :: reo
-            type(sub_communicator(maxdims=1)), intent(inout) :: sub_comm
+            type(sub_communicator), intent(inout) :: sub_comm
             double precision,                  intent(in)    :: fs(box%hlo(3):box%hhi(3), &
                                                                    box%hlo(2):box%hhi(2), &
                                                                    box%hlo(1):box%hhi(1))
