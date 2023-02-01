@@ -7,7 +7,7 @@ program test_parcel_init_3d
     use unit_test
     use constants, only : pi, zero, one, two, four, f12, f13, f23, f32
     use parcel_container
-    use parcel_init, only : init_timer, init_parcels
+    use parcel_init, only : init_timer, parcel_default, init_parcels_from_grids
     use parcel_interpl, only : par2grid, par2grid_timer
     use parcel_ellipsoid, only : get_abc
     use fields, only : tbuoyg, field_default
@@ -70,7 +70,7 @@ program test_parcel_init_3d
 
     !---------------------------
     ! Generate parcel attribute:
-    call init_parcels
+    call parcel_default
 
     !---------------------------------------------------------
     !Initialise parcel volume positions and volume fractions:
@@ -96,6 +96,8 @@ program test_parcel_init_3d
             enddo
         enddo
     enddo
+
+    call init_parcels_from_grids
 
     !
     ! check result

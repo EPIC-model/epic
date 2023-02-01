@@ -397,7 +397,7 @@ module field_netcdf
         end subroutine write_netcdf_fields
 
 
-        subroutine read_netcdf_field_fields(fname, step)
+        subroutine read_netcdf_fields(fname, step)
             character(*), intent(in) :: fname
             integer,      intent(in) :: step
             integer                  :: n_steps, lid, start(4), cnt(4), st
@@ -441,6 +441,6 @@ module field_netcdf
 #endif
             call close_netcdf_file(lid)
 
-        end subroutine read_netcdf_field_fields
+        end subroutine read_netcdf_fields
 
 end module field_netcdf

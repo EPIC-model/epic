@@ -2,7 +2,7 @@
 !               This module initializes parcel default values.
 ! =============================================================================
 module parcel_init
-    use options, only : parcel, output, verbose, field_tol
+    use options, only : parcel
     use constants, only : zero, two, one, f12, f13, f23, f14
     use parcel_container, only : parcels, n_parcels, parcel_alloc
     use parcel_ellipsoid, only : get_abc, get_eigenvalues
@@ -25,13 +25,13 @@ module parcel_init
 
     private :: weights, is, js, ks
 
-    private :: init_refine, init_from_grids
+    private :: init_refine
 
     contains
 
         ! Allocate parcel container and sets values for parcel attributes
-        ! using gridded data.
-        subroutine init_parcels
+        ! to their default values.
+        subroutine parcel_default
             double precision             :: lam, l23
             integer                      :: n
 
@@ -84,11 +84,21 @@ module parcel_init
 
             call init_refine(lam)
 
-            call init_from_grids
+            !$omp parallel default(shared)
+            !$omp do private(n)
+            do n = 1, n_parcels
+                parcels%vorticity(:, n) = zero
+                parcels%buoyancy(n) = zero
+#ifndef ENABLE_DRY_MODE
+                parcels%humidity(n) = zero
+#endif
+            enddo
+            !$omp end do
+            !$omp end parallel
 
             call stop_timer(init_timer)
 
-        end subroutine init_parcels
+        end subroutine parcel_default
 
 
         ! Position parcels regularly in the domain.
@@ -145,8 +155,10 @@ module parcel_init
         end subroutine init_refine
 
 
-        subroutine init_from_grids
+        subroutine init_parcels_from_grids
             integer:: n, l
+
+            call start_timer(init_timer)
 
             !$omp parallel default(shared)
             !$omp do private(n, l, is, js, ks, weights)
@@ -169,6 +181,9 @@ module parcel_init
             enddo
             !$omp end do
             !$omp end parallel
-        end subroutine init_from_grids
+
+            call stop_timer(init_timer)
+
+        end subroutine init_parcels_from_grids
 
 end module parcel_init
