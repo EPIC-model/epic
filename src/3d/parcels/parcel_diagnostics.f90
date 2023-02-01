@@ -94,6 +94,7 @@ module parcel_diagnostics
             ke = zero
             ape = zero
             en = zero
+            pe = zero
 
             lsum = zero
             l2sum = zero
