@@ -400,42 +400,44 @@ module field_netcdf
         subroutine read_netcdf_field_fields(fname, step)
             character(*), intent(in) :: fname
             integer,      intent(in) :: step
-            integer                  :: n_steps, ncid, start(4), cnt(4)
+            integer                  :: n_steps, lid, start(4), cnt(4), st
 
-            call open_netcdf_file(fname, NF90_NOWRITE, ncid)
+            call open_netcdf_file(fname, NF90_NOWRITE, lid)
 
-            call get_num_steps(ncid, n_steps)
+            call get_num_steps(lid, n_steps)
 
-            if ((step < 1) .or. (step > n_steps)) then
+            if (step == -1) then
+                st = n_steps
+            else if ((step == 0) .or. (step > n_steps)) then
                 print *, "Step number out of bounds."
                 error stop
             endif
 
-            cnt  =  (/ nx, ny, nz+1, 1    /)
-            start = (/ 1,  1,  1,    step /)
+            cnt  =  (/ nx, ny, nz+1, 1  /)
+            start = (/ 1,  1,  1,    st /)
 
-            if (has_dataset(ncid, 'x_vorticity')) then
-                call read_netcdf_dataset(ncid, 'x_vorticity', vortg(0:nz, :, :, 1), start, cnt)
+            if (has_dataset(lid, 'x_vorticity')) then
+                call read_netcdf_dataset(lid, 'x_vorticity', vortg(0:nz, :, :, 1), start, cnt)
             endif
 
-            if (has_dataset(ncid, 'y_vorticity')) then
-                call read_netcdf_dataset(ncid, 'y_vorticity', vortg(0:nz, :, :, 2), start, cnt)
+            if (has_dataset(lid, 'y_vorticity')) then
+                call read_netcdf_dataset(lid, 'y_vorticity', vortg(0:nz, :, :, 2), start, cnt)
             endif
 
-            if (has_dataset(ncid, 'z_vorticity')) then
-                call read_netcdf_dataset(ncid, 'z_vorticity', vortg(0:nz, :, :, 3), start, cnt)
+            if (has_dataset(lid, 'z_vorticity')) then
+                call read_netcdf_dataset(lid, 'z_vorticity', vortg(0:nz, :, :, 3), start, cnt)
             endif
 
-            if (has_dataset(ncid, 'buoyancy')) then
-                call read_netcdf_dataset(ncid, 'buoyancy', tbuoyg(0:nz, :, :), start, cnt)
+            if (has_dataset(lid, 'buoyancy')) then
+                call read_netcdf_dataset(lid, 'buoyancy', tbuoyg(0:nz, :, :), start, cnt)
             endif
 
 #ifndef ENABLE_DRY_MODE
-            if (has_dataset(ncid, 'humidity')) then
-                call read_netcdf_dataset(ncid, 'humidity', humg(0:nz, :, :), start, cnt)
+            if (has_dataset(lid, 'humidity')) then
+                call read_netcdf_dataset(lid, 'humidity', humg(0:nz, :, :), start, cnt)
             endif
 #endif
-            call close_netcdf_file(ncid)
+            call close_netcdf_file(lid)
 
         end subroutine read_netcdf_field_fields
 

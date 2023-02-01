@@ -30,8 +30,7 @@ program epic3d
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
-                    , setup_parcels                              &
-                    , setup_fields
+                    , setup_fields_and_parcels
     use parameters, only : max_num_parcels
     implicit none
 
@@ -83,9 +82,7 @@ program epic3d
             ! read domain dimensions
             call setup_domain_and_parameters
 
-            call setup_fields
-
-            call setup_parcels
+            call setup_fields_and_parcels
 
             call ls_rk4_alloc(max_num_parcels)
 
