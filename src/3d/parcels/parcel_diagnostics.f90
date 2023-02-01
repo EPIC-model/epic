@@ -63,7 +63,7 @@ module parcel_diagnostics
             ! sort buoyancy in ascending order
             call msort(b, ii)
 
-            gam = one / (extent(1) * extent(2))
+            gam = f12 / (extent(1) * extent(2))
             zmean = gam * parcels%volume(ii(1))
 
             peref = - b(1) * parcels%volume(ii(1)) * zmean
