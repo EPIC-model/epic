@@ -406,9 +406,11 @@ module field_netcdf
 
             call get_num_steps(lid, n_steps)
 
-            if (step == -1) then
+            st = step
+
+            if (st == -1) then
                 st = n_steps
-            else if ((step == 0) .or. (step > n_steps)) then
+            else if ((st == 0) .or. (st > n_steps)) then
                 print *, "Step number out of bounds."
                 error stop
             endif
