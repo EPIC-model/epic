@@ -1,7 +1,8 @@
 module sta3dfft
-    use fft_pencil, only : perform_fftxyp2s, perform_fftxys2p
+!     use fft_pencil, only : perform_fftxyp2s, perform_fftxys2p
     use mpi_layout
     use stafft, only : dct, dst
+    use constants, only : zero, one
 !     use sta2dfft
 !     use deriv1d, only : init_deriv
     implicit none
@@ -15,24 +16,29 @@ module sta3dfft
 
     integer :: nwx, nwy, nxp2, nyp2
 
+    integer :: nx, ny, nz
+
     logical :: is_fft_initialised = .false.
 
-    private :: is_fft_initialised
+    private :: is_fft_initialised, nx, ny, nz
 
     contains
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine init_fft(nx, ny, nz, lx, ly, lz)
-            integer,          intent(in) :: nx, ny, nz
+        subroutine init_fft(lx, ly, lz)
             double precision, intent(in) :: lx, ly, lz
-            integer                      :: kx, ky, kz
+            integer                      :: kx, ky!, kz
 
             if (is_fft_initialised) then
                 return
             endif
 
             is_fft_initialised = .true.
+
+            nx = box%global_ncells(1)
+            ny = box%global_ncells(2)
+            nz = box%global_ncells(3)
 
 !             dz = dx(3)
 !             dzi = dxi(3)
@@ -68,7 +74,6 @@ module sta3dfft
                 rkx(nx-kx) = hrkx(2 * kx)
             enddo
             rkx(nwx) = hrkx(nx)
-            rkxmax = hrkx(nx)
 
             !Define y wavenumbers:
             rky(0) = zero
@@ -77,7 +82,6 @@ module sta3dfft
                 rky(ny-ky) = hrky(2 * ky)
             enddo
             rky(nwy) = hrky(ny)
-            rkymax = hrky(ny)
 
             !Define z wavenumbers:
             rkz(0) = zero
@@ -158,19 +162,19 @@ module sta3dfft
             ! Carry out a full inverse x transform:
             call revfft(nzval * nyval, nxval, fp, xtrig, xfactors)
         end subroutine
+
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine stzp2s(fs, ztrig, zfactors)
-            double precision, intent(in) :: fs(box%hlo(3), box%hhi(3), &
-                                               box%hlo(2), box%hhi(2), &
-                                               box%hlo(1), box%hhi(1))
-            double precision, intent(in) :: ztrig(:)
-            integer,          intent(in) :: zfactors(5)
-            integer                      :: kx, ky
+        subroutine stzp2s(fs)
+            double precision, intent(inout) :: fs(box%hlo(3):box%hhi(3), &
+                                                  box%hlo(2):box%hhi(2), &
+                                                  box%hlo(1):box%hhi(1))
+            integer                         :: kx, ky
 
             !$omp parallel do collapse(2) private(kx, ky)
             do kx = box%lo(1), box%hi(1)
                 do ky = box%lo(2), box%hi(2)
+!                     fs(1:nz, ky, kx) = zero !FIXME ask David
                     call dst(1, nz, fs(1:nz, ky, kx), ztrig, zfactors)
                 enddo
             enddo
@@ -179,18 +183,16 @@ module sta3dfft
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine ctzp2s(fs, ztrig, zfactors)
-            double precision, intent(in) :: fs(box%hlo(3), box%hhi(3), &
-                                               box%hlo(2), box%hhi(2), &
-                                               box%hlo(1), box%hhi(1))
-            double precision, intent(in) :: ztrig(:)
-            integer,          intent(in) :: zfactors(5)
+        subroutine ctzp2s(fs)
+            double precision, intent(inout) :: fs(box%hlo(3):box%hhi(3), &
+                                                  box%hlo(2):box%hhi(2), &
+                                                  box%hlo(1):box%hhi(1))
             integer                      :: kx, ky
 
             !$omp parallel do collapse(2) private(kx, ky)
             do kx = box%lo(1), box%hi(1)
                 do ky = box%lo(2), box%hi(2)
-                    call dct(1, nz, fs(1:nz, ky, kx), ztrig, zfactors)
+                    call dct(1, nz, fs(0:nz, ky, kx), ztrig, zfactors)
                 enddo
             enddo
             !$omp end parallel do

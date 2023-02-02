@@ -6,7 +6,7 @@ module inversion_utils
     use deriv1d, only : init_deriv
     use mpi_layout
     use mpi_communicator
-!     use pencilfft, only : perform_fftxyp2s
+    use sta3dfft, only : rkx, rky, rkz, fftxyp2s, fftxys2p
     implicit none
 
     private
@@ -48,30 +48,14 @@ module inversion_utils
 
     public :: init_inversion  &
             , init_fft        &
-            , diffx           &
-            , diffy           &
             , diffz           &
             , central_diffz   &
             , lapinv1         &
-            , fftxyp2s        &
-            , fftxys2p        &
             , dz2             &
             , filt            &
             , hdzi            &
-            , xfactors        &
-            , yfactors        &
-            , zfactors        &
-            , xtrig           &
-            , ytrig           &
-            , ztrig           &
-            , rkx             &
-            , hrkx            &
-            , rky             &
-            , hrky            &
-            , rkz             &
             , k2l2i           &
             , green           &
-            , rkzi            &
             , thetap          &
             , thetam          &
             , dthetap         &
@@ -219,17 +203,10 @@ module inversion_utils
         !coefficients, etc).
         subroutine init_fft
             double precision, allocatable :: a0(:, :)
-            double precision              :: rkxmax, rkymax, rksqmax
             double precision              :: kxmaxi, kymaxi, kzmaxi
             integer                       :: kx, ky, kz
             double precision              :: skx(0:nx-1), sky(0:ny-1), skz(0:nz)
             integer                       :: iz, isub, ib_sub, ie_sub
-
-            if (is_fft_initialised) then
-                return
-            endif
-
-            is_fft_initialised = .true.
 
             dz = dx(3)
             dzi = dxi(3)
@@ -238,10 +215,6 @@ module inversion_utils
             dz24 = f124 * dx(3)
             dzisq = dxi(3) ** 2
             hdzi = f12 * dxi(3)
-            nwx = nx / 2
-            nwy = ny / 2
-            nyp2 = ny + 2
-            nxp2 = nx + 2
 
             allocate(k2l2i(0:nx-1, 0:ny-1))
             allocate(k2l2(0:nx-1, 0:ny-1))
@@ -251,48 +224,8 @@ module inversion_utils
             allocate(a0(nx, ny))
             allocate(etdv(0:nz, nx, ny))
             allocate(htdv(0:nz, nx, ny))
-            allocate(rkx(0:nx-1))
-            allocate(hrkx(nx))
-            allocate(rky(0:ny-1))
-            allocate(hrky(ny))
-            allocate(rkz(0:nz))
-            allocate(rkzi(1:nz-1))
-            allocate(xtrig(2 * nx))
-            allocate(ytrig(2 * ny))
-            allocate(ztrig(2 * nz))
 
             nxsub = nx / nsubs_tri
-
-            !----------------------------------------------------------------------
-            ! Initialise FFTs and wavenumber arrays:
-            call init2dfft(nx, ny, extent(1), extent(2), xfactors, yfactors, xtrig, ytrig, hrkx, hrky)
-            call initfft(nz, zfactors, ztrig)
-
-            !Define x wavenumbers:
-            rkx(0) = zero
-            do kx = 1, nwx-1
-                rkx(kx)    = hrkx(2 * kx)
-                rkx(nx-kx) = hrkx(2 * kx)
-            enddo
-            rkx(nwx) = hrkx(nx)
-            rkxmax = hrkx(nx)
-
-            !Define y wavenumbers:
-            rky(0) = zero
-            do ky = 1, nwy-1
-                rky(ky)    = hrky(2 * ky)
-                rky(ny-ky) = hrky(2 * ky)
-            enddo
-            rky(nwy) = hrky(ny)
-            rkymax = hrky(ny)
-
-            !Define z wavenumbers:
-            rkz(0) = zero
-            call init_deriv(nz, extent(3), rkz(1:nz))
-            rkzi(1:nz-1) = one / rkz(1:nz-1)
-
-            !Squared maximum total wavenumber:
-            rksqmax = rkxmax ** 2 + rkymax ** 2
 
             !Squared wavenumber array (used in tridiagonal solve):
             do ky = 0, ny-1
@@ -384,7 +317,7 @@ module inversion_utils
                                                                          ! out: full-spectral (1:nz-1),
                                                                          !      semi-spectral at iz = 0 and iz = nz
             double precision                :: sfctop(0:nx-1, 0:ny-1)
-            integer                         :: iz, kx, ky
+            integer                         :: iz
 
             ! subtract harmonic part
             !$omp parallel do
@@ -398,13 +331,7 @@ module inversion_utils
             !$omp end parallel workshare
 
             ! transform interior to fully spectral
-            !$omp parallel do collapse(2)
-            do ky = 0, ny-1
-                do kx = 0, nx-1
-                    call dst(1, nz, sfc(1:nz, kx, ky), ztrig, zfactors)
-                enddo
-            enddo
-            !$omp end parallel do
+            !call stzp2s(sfc) !FIXME enable
 
             !$omp parallel workshare
             sfc(nz, :, :) = sfctop
@@ -436,21 +363,14 @@ module inversion_utils
                                                                         !     semi-spectral at iz = 0 and iz = nz
                                                                         ! out: complete field (semi-spectral space)
             double precision                :: sftop(0:nx-1, 0:ny-1)
-            integer                         :: iz, kx, ky
+            integer                         :: iz
 
             ! transform sf(1:nz-1, :, :) to semi-spectral space (sine transform) as the array sf:
             !$omp parallel workshare
             sftop = sf(nz, :, :)
             !$omp end parallel workshare
 
-            !$omp parallel do collapse(2)
-            do ky = 0, ny-1
-                do kx = 0, nx-1
-                    sf(nz, kx, ky) = zero
-                    call dst(1, nz, sf(1:nz, kx, ky), ztrig, zfactors)
-                enddo
-            enddo
-            !$omp end parallel do
+            ! call stzp2s(sf) !FIXME enable
 
             !$omp parallel workshare
             sf(nz, :, :) = sftop
@@ -499,7 +419,7 @@ module inversion_utils
             double precision, intent(in)  :: fs(0:nz, 0:nx-1, 0:ny-1) ! f in mixed-spectral space
             double precision, intent(out) :: ds(0:nz, 0:nx-1, 0:ny-1) ! derivative linear part
             double precision              :: as(0:nz, 0:nx-1, 0:ny-1) ! derivative sine-part
-            integer                       :: kx, ky, kz, iz
+            integer                       :: kz, iz
 
             !Calculate the derivative of the linear part (ds) in semi-spectral space:
             !$omp parallel do private(iz)  default(shared)
@@ -522,13 +442,7 @@ module inversion_utils
             !$omp end parallel workshare
 
             !FFT these quantities back to semi-spectral space:
-            !$omp parallel do collapse(2) private(kx, ky)
-            do ky = 0, ny-1
-                do kx = 0, nx-1
-                    call dct(1, nz, as(0:nz, kx, ky), ztrig, zfactors)
-                enddo
-            enddo
-            !$omp end parallel do
+!             call ctzp2s(as) !FIXME enable
 
             ! Combine vertical derivative given the sine (as) and linear (ds) parts:
             !omp parallel workshare
