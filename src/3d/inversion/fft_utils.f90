@@ -299,7 +299,7 @@ module fft_utils
                                                 box%lo(2):box%hi(2), &
                                                 box%lo(1):box%hi(1)))
                 case default
-                    ! FIXME
+                    call mpi_exit_on_error("Only reordering in x and y supported."
             end select
 
             call MPI_alltoallv(reo%send_buffer,         &
@@ -324,7 +324,7 @@ module fft_utils
                                                   box%lo(2):box%hi(2), &
                                                   box%lo(1):box%hi(1)))
                 case default
-                    ! FIXME
+                    call mpi_exit_on_error("Only reordering in x and y supported."
             end select
 
             call field_halo_fill(gs)
