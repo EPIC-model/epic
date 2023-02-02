@@ -148,12 +148,14 @@ module sta3dfft
             ! 5. Transform from (x, z, y) to (y, x, z) pencil
             ! 6. Transform from (y, x, z) to (z, y, x) pencil
 
-            call transpose_to_pencil(y_from_z_transposition,    &
-                                        (/1, 2, 3/),            &
-                                        dim_y_comm,             &
-                                        FORWARD,                &
-                                        fp,                     &
-                                        fft_in_y_buffer)
+            call transpose_to_pencil(y_from_z_transposition,  &
+                                     (/1, 2, 3/),             &
+                                     dim_y_comm,              &
+                                     FORWARD,                 &
+                                     fp(box%lo(3):box%hi(3),  &
+                                        box%lo(2):box%hi(2),  &
+                                        box%lo(1):box%hi(1)), &
+                                     fft_in_y_buffer)
 
             do i = 1, size(fft_in_y_buffer, 2)
                 do j = 1, size(fft_in_y_buffer, 3)
@@ -161,12 +163,12 @@ module sta3dfft
                 enddo
             enddo
 
-            call transpose_to_pencil(x_from_y_transposition,    &
-                                        (/2, 3, 1/),            &
-                                        dim_x_comm,             &
-                                        FORWARD,                &
-                                        fft_in_y_buffer,        &
-                                        fft_in_x_buffer)
+            call transpose_to_pencil(x_from_y_transposition, &
+                                     (/2, 3, 1/),            &
+                                     dim_x_comm,             &
+                                     FORWARD,                &
+                                     fft_in_y_buffer,        &
+                                     fft_in_x_buffer)
 
             do i = 1, size(fft_in_x_buffer, 2)
                 do j = 1, size(fft_in_x_buffer, 3)
@@ -181,12 +183,14 @@ module sta3dfft
                                      fft_in_x_buffer,           &
                                      fft_in_y_buffer)
 
-            call transpose_to_pencil(z_from_y_transposition,    &
-                                     (/2, 3, 1/),               &
-                                     dim_y_comm,                &
-                                     BACKWARD,                  &
-                                     fft_in_y_buffer,           &
-                                     fs)
+            call transpose_to_pencil(z_from_y_transposition,  &
+                                     (/2, 3, 1/),             &
+                                     dim_y_comm,              &
+                                     BACKWARD,                &
+                                     fft_in_y_buffer,         &
+                                     fs(box%lo(3):box%hi(3),  &
+                                        box%lo(2):box%hi(2),  &
+                                        box%lo(1):box%hi(1)))
 
         end subroutine fftxyp2s
 
