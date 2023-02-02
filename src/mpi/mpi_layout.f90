@@ -7,6 +7,7 @@ module mpi_layout
         integer :: lo(3),  hi(3)
         integer :: hlo(3), hhi(3)
         integer :: size(3)
+        integer :: global_ncells(3)
     end type box_type
 
     type parallel_layout
@@ -95,6 +96,8 @@ module mpi_layout
 
             layout%l_parallel = (box%hi - box%lo < (/nx-1, ny-1, nz/))
             box%size = box%hi - box%lo + 1
+
+            box%global_ncells = (/nx, ny, nz/)
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)

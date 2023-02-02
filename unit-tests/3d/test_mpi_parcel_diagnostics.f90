@@ -6,7 +6,6 @@ program test_mpi_parcel_diagnostics
     use unit_test
     use mpi_communicator
     use mpi_layout
-    use field_mpi
     use fields, only : field_alloc
     use parcel_container
     use parcel_diagnostics

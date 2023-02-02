@@ -17,18 +17,12 @@ module inversion_utils
     ! Tridiagonal arrays for the vertical vorticity component:
     double precision, allocatable :: etdv(:, :, :), htdv(:, :, :)
 
-    ! Wavenumbers:
-    double precision, allocatable :: rkx(:), hrkx(:), rky(:), hrky(:), rkz(:), rkzi(:)
-
     ! Note k2l2i = 1/(k^2+l^2) (except k = l = 0, then k2l2i(0, 0) = 0)
     double precision, allocatable :: k2l2i(:, :)
 
     ! Note k2l2 = k^2+l^2
     double precision, allocatable :: k2l2(:, :)
 
-    !Quantities needed in FFTs:
-    double precision, allocatable :: xtrig(:), ytrig(:), ztrig(:)
-    integer :: xfactors(5), yfactors(5), zfactors(5)
     integer, parameter :: nsubs_tri = 8 !number of blocks for openmp
     integer :: nxsub
 
@@ -49,10 +43,8 @@ module inversion_utils
     double precision, allocatable :: dphip(:, :, :)     ! dphi_{+}/dz
 
     double precision :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq, ap
-    integer :: nwx, nwy, nxp2, nyp2
 
     logical :: is_initialised = .false.
-    logical :: is_fft_initialised = .false.
 
     public :: init_inversion  &
             , init_fft        &
@@ -475,58 +467,6 @@ module inversion_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Given fs in spectral space (at least in x & y), this returns dfs/dx
-        ! (partial derivative).  The result is returned in ds, again
-        ! spectral.  Uses exact form of the derivative in spectral space.
-        subroutine diffx(fs, ds)
-            double precision, intent(in)  :: fs(0:nz, nx, ny)
-            double precision, intent(out) :: ds(0:nz, nx, ny)
-            integer                       :: kx, dkx, kxc
-
-            !Carry out differentiation by wavenumber multiplication:
-            ds(:, 1, :) = zero
-            do kx = 2, nx - nwx
-                dkx = 2 * (kx - 1)
-                kxc = nxp2 - kx
-                ds(:, kx,  :) = -hrkx(dkx) * fs(:,kxc,:)
-                ds(:, kxc, :) =  hrkx(dkx) * fs(:,kx ,:)
-            enddo
-
-            if (mod(nx, 2) .eq. 0) then
-                kxc = nwx + 1
-                ds(:, kxc, :) = zero
-            endif
-        end subroutine
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Given fs in spectral space (at least in x & y), this returns dfs/dy
-        ! (partial derivative).  The result is returned in ds, again
-        ! spectral.  Uses exact form of the derivative in spectral space.
-        subroutine diffy(fs,ds)
-            double precision, intent(in)  :: fs(0:nz, nx, ny)
-            double precision, intent(out) :: ds(0:nz, nx, ny)
-            double precision              :: fac
-            integer                       :: ky, kyc
-
-            !Carry out differentiation by wavenumber multiplication:
-            ds(:, :, 1) = zero
-
-            do ky = 2, ny - nwy
-                kyc = nyp2 - ky
-                fac = hrky(2 * (ky - 1))
-                ds(:, :, ky) = -fac * fs(:, :, kyc)
-                ds(:, :, kyc) = fac * fs(:, : , ky)
-            enddo
-
-            if (mod(ny, 2) .eq. 0) then
-                kyc = nwy + 1
-                ds(:, :, kyc) = zero
-            endif
-        end subroutine
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
         !Calculates df/dz for a field f using 2nd-order differencing.
         !Here fs = f, ds = df/dz. In semi-spectral space or physical space.
         subroutine central_diffz(fs, ds)
@@ -644,79 +584,6 @@ module inversion_utils
 
              !Zero horizontal wavenumber in x & y treated separately:
              fs(:, 1, 1) = zero
-        end subroutine
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Computes a 2D FFT (in x & y) of a 3D array fp in physical space
-        ! and returns the result as fs in spectral space (in x & y).
-        ! Only FFTs over the x and y directions are performed.
-        ! *** fp is destroyed upon exit ***
-        subroutine fftxyp2s(fp, fs)
-            double precision, intent(inout) :: fp(:, :, :)       !Physical
-            double precision, intent(out)   :: fs(:, :, :)       !Spectral
-            integer                         :: kx, iy, nzval, nxval, nyval
-
-!             if (comm%size > 1) then
-!                 call perform_fftxyp2s(fp, fs, xfactors, xtrig, yfactors, ytrig)
-!             else
-
-                nzval = size(fp, 1)
-                nyval = size(fp, 2)
-                nxval = size(fp, 3)
-
-                ! Carry out a full x transform first:
-                call forfft(nzval * nyval, nxval, fp, xtrig, xfactors)
-
-                ! Transpose array:
-                !$omp parallel do collapse(2) shared(fs, fp) private(kx, iy)
-                do kx = 1, nxval
-                    do iy = 1, nyval
-                        fs(:, kx, iy) = fp(:, iy, kx)
-                    enddo
-                enddo
-                !$omp end parallel do
-
-                ! Carry out a full y transform on transposed array:
-                call forfft(nzval * nxval, nyval, fs, ytrig, yfactors)
-!             endif
-        end subroutine
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Computes an *inverse* 2D FFT (in x & y) of a 3D array fs in spectral
-        ! space and returns the result as fp in physical space (in x & y).
-        ! Only inverse FFTs over the x and y directions are performed.
-        ! *** fs is destroyed upon exit ***
-        subroutine fftxys2p(fs, fp)
-            double precision, intent(inout):: fs(:, :, :)  !Spectral
-            double precision, intent(out)  :: fp(:, :, :)  !Physical
-            integer                        :: kx, iy, nzval, nxval, nyval
-
-            ! 1. Swap x and z from (z, x, y) to (x, z, y) pencil
-            ! 2. Do x back-transform
-            ! 3. Transform from (x, z, y) to (y, x, z) pencil
-            ! 4. Do y back-transform
-            ! 5. Transform from (y, x, z) to (z, y, x) pencil
-
-            nzval = size(fs, 1)
-            nxval = size(fs, 2)
-            nyval = size(fs, 3)
-
-            ! Carry out a full inverse y transform first:
-            call revfft(nzval * nxval, nyval, fs, ytrig, yfactors)
-
-            ! Transpose array:
-            !$omp parallel do collapse(2) shared(fs, fp) private(kx, iy)
-            do kx = 1, nxval
-                do iy = 1, nyval
-                    fp(:, iy, kx) = fs(:, kx, iy)
-                enddo
-            enddo
-            !$omp end parallel do
-
-            ! Carry out a full inverse x transform:
-            call revfft(nzval * nyval, nxval, fp, xtrig, xfactors)
         end subroutine
 
 end module inversion_utils

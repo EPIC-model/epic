@@ -7,7 +7,7 @@
 !! transformations undo these, so go from X to Y to Z.
 !! Note that we use quite a lot of buffer space here, this could be cut down if Y=X dimensions
 !! so some optimisation on memory could be done there in that case
-module pencil_fft
+module fft_pencil
     use mpi_communicator
     use mpi_layout
     use constants
@@ -661,4 +661,4 @@ contains
 
     end subroutine perform_fftxys2p
 
-end module pencil_fft
+end module fft_pencil

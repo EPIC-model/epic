@@ -6,7 +6,7 @@
 program test_mpi_parcel_init_3d
     use unit_test
     use mpi_communicator
-    use field_mpi
+    use mpi_halo
     use constants, only : pi, zero, one, two, four, five, f12, f13, f23, f32
     use parcel_container
     use parcel_init, only : gen_parcel_scalar_attr, unit_test_parcel_init_alloc, init_timer
@@ -78,7 +78,7 @@ program test_mpi_parcel_init_3d
         enddo
     enddo
 
-    call field_halo_swap(tbuoyg)
+    call halo_swap(tbuoyg)
 
     !---------------------------------------------------------
     !Initialise parcel volume positions and volume fractions:

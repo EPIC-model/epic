@@ -6,7 +6,6 @@ program test_mpi_field_diagnostics
     use unit_test
     use mpi_communicator
     use mpi_layout
-    use field_mpi
     use fields
     use field_diagnostics
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, vcell, vcelli, ngrid

@@ -1,11 +1,8 @@
-module fft_utils
+module mpi_reverse
     use mpi_communicator
     use mpi_layout
-    use constants, only : zero
-    use field_mpi, only : field_halo_fill
-    use parameters, only : nx, ny
-    use inversion_utils, only : hrkx, hrky
-    use dimensions, only : I_X, I_Y, I_Z
+    use mpi_utils, only : mpi_exit_on_error
+    use mpi_halo, only : halo_fill
     implicit none
 
     type :: reorder_type
@@ -13,19 +10,21 @@ module fft_utils
         integer, allocatable          :: dest(:)                        ! destination rank
         integer, allocatable          :: send_recv_count(:)
         integer, allocatable          :: recv_count(:)                  ! number of receives of
-                                                                        ! the reordering dimension
+                                                                        ! the reversing dimension
         integer, allocatable          :: send_offset(:), recv_offset(:)
         double precision, allocatable :: send_buffer(:), recv_buffer(:)
     end type reorder_type
 
-    logical :: l_initialised = .false.
+    logical :: l_initialised_x = .false.
+    logical :: l_initialised_y = .false.
 
     private :: copy_from_buffer_in_x,   &
                copy_to_buffer_in_x,     &
                copy_from_buffer_in_y,   &
                copy_to_buffer_in_y,     &
-               l_initialised,           &
-               setup_reordering
+               l_initialised_x,         &
+               l_initialised_y,         &
+               setup_reversing
 
     type(sub_communicator) :: x_comm
     type(sub_communicator) :: y_comm
@@ -35,34 +34,20 @@ module fft_utils
 
     contains
 
-        subroutine initialise_diff
-
-            if (l_initialised) then
-                return
-            endif
-            l_initialised = .true.
-
-            call setup_reordering(x_reo, x_comm, I_X, nx)
-
-            call setup_reordering(y_reo, y_comm, I_Y, ny)
-
-        end subroutine initialise_diff
-
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine setup_reordering(reo, sub_comm, dir, ncell)
+        subroutine setup_reversing(reo, sub_comm, dir)
             type(reorder_type),                intent(inout) :: reo
             type(sub_communicator), intent(inout) :: sub_comm
             integer,                           intent(in)    :: dir
-            integer,                           intent(in)    :: ncell
             integer, allocatable                             :: rlos(:), rhis(:)
             integer                                          :: i, j, lo, hi, rank, d
             logical                                          :: remain_dims(2)
 
             reo%dir = dir
 
-            ! if dir = 1 --> d = 2, i.e. if dir = I_X --> d = I_Y
-            ! if dir = 2 --> d = 1, i.e. if dir = I_Y --> d = I_X
+            ! if dir = 1 --> d = 2, i.e. if dir = x --> d = y
+            ! if dir = 2 --> d = 1, i.e. if dir = y --> d = y
             d = mod(dir, 2) + 1
 
             remain_dims(dir) = .true.
@@ -88,9 +73,9 @@ module fft_utils
             allocate(rlos(0:layout%size(dir)-1))
             allocate(rhis(0:layout%size(dir)-1))
             do i = 0, layout%size(dir)-1
-                call get_local_bounds(ncell, i, layout%size(dir), lo, hi)
-                rhis(i) = ncell - lo - 1
-                rlos(i) = ncell - hi - 1
+                call get_local_bounds(box%global_ncells(dir), i, layout%size(dir), lo, hi)
+                rhis(i) = box%global_ncells(dir) - lo - 1
+                rlos(i) = box%global_ncells(dir) - hi - 1
             enddo
 
             reo%send_recv_count = 0
@@ -114,7 +99,7 @@ module fft_utils
             !--------------------------------------------------------------
             ! Add y and z dimensions
             reo%recv_count = reo%send_recv_count
-            reo%send_recv_count = reo%send_recv_count * box%size(d) * box%size(I_Z)
+            reo%send_recv_count = reo%send_recv_count * box%size(d) * box%size(3)
 
             deallocate(rlos)
             deallocate(rhis)
@@ -136,7 +121,7 @@ module fft_utils
                 reo%recv_offset(i) = sum(reo%send_recv_count(sub_comm%size:i+1:-1))
             enddo
 
-        end subroutine setup_reordering
+        end subroutine setup_reversing
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -274,147 +259,82 @@ module fft_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine reorder(reo, sub_comm, fs, gs)
-            type(reorder_type),                intent(inout) :: reo
-            type(sub_communicator), intent(inout) :: sub_comm
-            double precision,                  intent(in)    :: fs(box%hlo(3):box%hhi(3), &
-                                                                   box%hlo(2):box%hhi(2), &
-                                                                   box%hlo(1):box%hhi(1))
-            double precision,                  intent(out)   :: gs(box%hlo(3):box%hhi(3), &
-                                                                   box%hlo(2):box%hhi(2), &
-                                                                   box%hlo(1):box%hhi(1))
+        subroutine reverse_x(fs, gs)
+            double precision, intent(in)  :: fs(box%hlo(3):box%hhi(3), &
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: gs(box%hlo(3):box%hhi(3), &
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+
+            if (.not. l_initialised_x) then
+                call setup_reversing(x_reo, x_comm, 1)
+                l_initialised_x = .true.
+            endif
 
             gs = fs
 
-            call initialise_diff
+            call copy_to_buffer_in_x(fs(box%lo(3):box%hi(3), &
+                                        box%lo(2):box%hi(2), &
+                                        box%lo(1):box%hi(1)))
 
-            ! we exclude the halo when copying
-            select case (reo%dir)
-                case (I_X)
-                    call copy_to_buffer_in_x(fs(box%lo(3):box%hi(3), &
-                                                box%lo(2):box%hi(2), &
-                                                box%lo(1):box%hi(1)))
-                case (I_Y)
-                    call copy_to_buffer_in_y(fs(box%lo(3):box%hi(3), &
-                                                box%lo(2):box%hi(2), &
-                                                box%lo(1):box%hi(1)))
-                case default
-                    call mpi_exit_on_error("Only reordering in x and y supported."
-            end select
-
-            call MPI_alltoallv(reo%send_buffer,         &
-                               reo%send_recv_count,     &
-                               reo%send_offset,         &
+            call MPI_alltoallv(x_reo%send_buffer,       &
+                               x_reo%send_recv_count,   &
+                               x_reo%send_offset,       &
                                MPI_DOUBLE_PRECISION,    &
-                               reo%recv_buffer,         &
-                               reo%send_recv_count,     &
-                               reo%recv_offset,         &
+                               x_reo%recv_buffer,       &
+                               x_reo%send_recv_count,   &
+                               x_reo%recv_offset,       &
                                MPI_DOUBLE_PRECISION,    &
-                               sub_comm%comm,           &
-                               sub_comm%err)
+                               x_comm%comm,             &
+                               x_comm%err)
 
-            ! we exclude the halo when copying
-            select case (reo%dir)
-                case (I_X)
-                    call copy_from_buffer_in_x(gs(box%lo(3):box%hi(3), &
-                                                  box%lo(2):box%hi(2), &
-                                                  box%lo(1):box%hi(1)))
-                case (I_Y)
-                    call copy_from_buffer_in_y(gs(box%lo(3):box%hi(3), &
-                                                  box%lo(2):box%hi(2), &
-                                                  box%lo(1):box%hi(1)))
-                case default
-                    call mpi_exit_on_error("Only reordering in x and y supported."
-            end select
+            call copy_from_buffer_in_x(gs(box%lo(3):box%hi(3), &
+                                          box%lo(2):box%hi(2), &
+                                          box%lo(1):box%hi(1)))
 
-            call field_halo_fill(gs)
+            call halo_fill(gs)
 
-        end subroutine reorder
+        end subroutine reverse_x
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Given fs in spectral space (at least in x & y), this returns dfs/dx
-        ! (partial derivative).  The result is returned in ds, again
-        ! spectral.  Uses exact form of the derivative in spectral space.
-        subroutine diffx(fs, ds)
+        subroutine reverse_y(fs, gs)
             double precision, intent(in)  :: fs(box%hlo(3):box%hhi(3), &
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
-            double precision, intent(out) :: ds(box%hlo(3):box%hhi(3), &
+            double precision, intent(out) :: gs(box%hlo(3):box%hhi(3), &
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
-            double precision              :: gs(box%hlo(3):box%hhi(3), &
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
-            integer                       :: kx, dkx, kxc, nwx, nxp2
-            double precision              :: si
 
-            nwx = nx / 2
-            nxp2 = nx + 1
-
-            call reorder(x_reo, x_comm, fs, gs)
-
-            !Carry out differentiation by wavenumber multiplication:
-            if (0 == box%lo(1)) then
-                ds(:, :, 0) = zero
+            if (.not. l_initialised_y) then
+                call setup_reversing(y_reo, y_comm, 2)
+                l_initialised_y = .true.
             endif
 
-            do kx = max(1, box%lo(1)), box%hi(1)
-                dkx = min(2 * kx, 2 * (nx - kx))
-                si = merge(1.0d0, -1.0d0, kx >= nwx + 1)
-                ds(:, :, kx)  = si * hrkx(dkx) * gs(:, :, kx-1)
-            enddo
+            gs = fs
 
-            if (mod(nx, 2) .eq. 0) then
-                kxc = nwx! + 1
-                if (kxc >= box%lo(1) .and. kxc <= box%hi(1)) then
-                    ds(:, :, kxc) = zero
-                endif
-            endif
+            call copy_to_buffer_in_y(fs(box%lo(3):box%hi(3), &
+                                        box%lo(2):box%hi(2), &
+                                        box%lo(1):box%hi(1)))
 
-        end subroutine
+            call MPI_alltoallv(y_reo%send_buffer,       &
+                               y_reo%send_recv_count,   &
+                               y_reo%send_offset,       &
+                               MPI_DOUBLE_PRECISION,    &
+                               y_reo%recv_buffer,       &
+                               y_reo%send_recv_count,   &
+                               y_reo%recv_offset,       &
+                               MPI_DOUBLE_PRECISION,    &
+                               y_comm%comm,             &
+                               y_comm%err)
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+            call copy_from_buffer_in_y(gs(box%lo(3):box%hi(3), &
+                                          box%lo(2):box%hi(2), &
+                                          box%lo(1):box%hi(1)))
 
-        ! Given fs in spectral space (at least in x & y), this returns dfs/dy
-        ! (partial derivative).  The result is returned in ds, again
-        ! spectral.  Uses exact form of the derivative in spectral space.
-        subroutine diffy(fs, ds)
-            double precision, intent(in)  :: fs(box%hlo(3):box%hhi(3), &
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
-            double precision, intent(out) :: ds(box%hlo(3):box%hhi(3), &
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
-            double precision              :: gs(box%hlo(3):box%hhi(3), &
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
-            integer                       :: ky, dky, kyc, nwy, nyp2
-            double precision              :: si
+            call halo_fill(gs)
 
-            nwy = ny / 2
-            nyp2 = ny + 1
+        end subroutine reverse_y
 
-            call reorder(y_reo, y_comm, fs, gs)
-
-            !Carry out differentiation by wavenumber multiplication:
-            if (0 == box%lo(2)) then
-                ds(:, 0, :) = zero
-            endif
-
-            do ky = max(1, box%lo(2)), box%hi(2)
-                dky = min(2 * ky, 2 * (ny - ky))
-                si = merge(1.0d0, -1.0d0, ky >= nwy + 1)
-                ds(:, ky, :)  = si * hrky(dky) * gs(:, ky-1, :)
-            enddo
-
-            if (mod(ny, 2) .eq. 0) then
-                kyc = nwy
-                if (kyc >= box%lo(2) .and. kyc <= box%hi(2)) then
-                    ds(:, kyc, :) = zero
-                endif
-            endif
-
-        end subroutine
-
-end module fft_utils
+end module mpi_reverse

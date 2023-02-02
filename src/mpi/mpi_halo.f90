@@ -1,5 +1,4 @@
-module field_mpi
-    use constants, only : zero
+module mpi_halo
     use mpi_layout
     use mpi_communicator
     implicit none
@@ -32,27 +31,27 @@ module field_mpi
 
         logical :: l_allocated = .false.
 
-        public :: field_halo_reset,          &
-                  field_halo_fill,           &
-                  field_interior_accumulate, &
-                  field_halo_swap
+        public :: halo_reset,          &
+                  halo_fill,           &
+                  interior_accumulate, &
+                  halo_swap
 
     contains
 
-        subroutine field_halo_reset(data)
+        subroutine halo_reset(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
 
-            data(box%lo(3):box%hi(3), box%hlo(2):box%hhi(2),   box%hlo(1))              = zero    ! west halo
-            data(box%lo(3):box%hi(3), box%hlo(2):box%hhi(2),   box%hhi(1)-1:box%hhi(1)) = zero    ! east halo
-            data(box%lo(3):box%hi(3), box%hlo(2),              box%lo(1):box%hi(1))     = zero    ! south halo
-            data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))     = zero    ! north halo
+            data(box%lo(3):box%hi(3), box%hlo(2):box%hhi(2),   box%hlo(1))              = 0.0d0     ! west halo
+            data(box%lo(3):box%hi(3), box%hlo(2):box%hhi(2),   box%hhi(1)-1:box%hhi(1)) = 0.0d0     ! east halo
+            data(box%lo(3):box%hi(3), box%hlo(2),              box%lo(1):box%hi(1))     = 0.0d0     ! south halo
+            data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))     = 0.0d0     ! north halo
 
-        end subroutine field_halo_reset
+        end subroutine halo_reset
 
 
-        subroutine field_halo_fill(data)
+        subroutine halo_fill(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
@@ -63,10 +62,10 @@ module field_mpi
 
             call copy_from_buffers_to_halo(data, .false.)
 
-        end subroutine field_halo_fill
+        end subroutine halo_fill
 
 
-        subroutine field_interior_accumulate(data)
+        subroutine interior_accumulate(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
@@ -80,10 +79,10 @@ module field_mpi
             ! all interior grid points have the correct value
             call copy_from_buffers_to_interior(data, .true.)
 
-        end subroutine field_interior_accumulate
+        end subroutine interior_accumulate
 
 
-        subroutine field_halo_swap(data)
+        subroutine halo_swap(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
@@ -92,11 +91,11 @@ module field_mpi
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_interior_accumulate(data)
+            call interior_accumulate(data)
 
-            call field_halo_fill(data)
+            call halo_fill(data)
 
-        end subroutine field_halo_swap
+        end subroutine halo_swap
 
 
         subroutine halo_to_interior_communication
@@ -459,4 +458,4 @@ module field_mpi
 
         end subroutine copy_from_buffers_to_interior
 
-end module field_mpi
+end module mpi_halo
