@@ -1,12 +1,15 @@
 module inversion_utils
     use constants
     use parameters, only : nx, ny, nz, dx, dxi, extent, upper, lower
-    use stafft
-    use sta2dfft
-    use deriv1d, only : init_deriv
     use mpi_layout
     use mpi_communicator
-    use sta3dfft, only : rkx, rky, rkz, fftxyp2s, fftxys2p
+    use sta3dfft, only : initialise_fft &
+                       , finalise_fft   &
+                       , rkx            &
+                       , rky            &
+                       , rkz            &
+                       , fftxyp2s       &
+                       , fftxys2p
     implicit none
 
     private
@@ -46,21 +49,21 @@ module inversion_utils
 
     logical :: is_initialised = .false.
 
-    public :: init_inversion  &
-            , init_fft        &
-            , diffz           &
-            , central_diffz   &
-            , lapinv1         &
-            , dz2             &
-            , filt            &
-            , hdzi            &
-            , k2l2i           &
-            , green           &
-            , thetap          &
-            , thetam          &
-            , dthetap         &
-            , dthetam         &
-            , gambot          &
+    public :: init_inversion        &
+            , finalise_inversion    &
+            , diffz                 &
+            , central_diffz         &
+            , lapinv1               &
+            , dz2                   &
+            , filt                  &
+            , hdzi                  &
+            , k2l2i                 &
+            , green                 &
+            , thetap                &
+            , thetam                &
+            , dthetap               &
+            , dthetam               &
+            , gambot                &
             , gamtop
 
     public :: field_combine_semi_spectral   &
@@ -73,8 +76,12 @@ module inversion_utils
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine init_inversion
-            integer          :: kx, ky, iz, kz
-            double precision :: z, zm(0:nz), zp(0:nz)
+            double precision, allocatable :: a0(:, :)
+            double precision              :: kxmaxi, kymaxi, kzmaxi
+            double precision              :: skx(0:nx-1), sky(0:ny-1), skz(0:nz)
+            integer                       :: isub, ib_sub, ie_sub
+            integer                       :: kx, ky, iz, kz
+            double precision              :: z, zm(0:nz), zp(0:nz)
 
             if (is_initialised) then
                 return
@@ -82,7 +89,7 @@ module inversion_utils
 
             is_initialised = .true.
 
-            call init_fft
+            call initialise_fft(extent)
 
             allocate(green(0:nz, 0:nx-1, 0:ny-1))
             allocate(gamtop(0:nz))
@@ -156,57 +163,7 @@ module inversion_utils
             !$omp end parallel do
             !Here gambot is the complement of gamtop.
 
-        end subroutine init_inversion
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! for kx > 0 and ky >= 0 or kx >= 0 and ky > 0
-        subroutine set_hyperbolic_functions(kx, ky, zm, zp)
-            integer,          intent(in) :: kx, ky
-            double precision, intent(in) :: zm(0:nz), zp(0:nz)
-            double precision             :: R(0:nz), Q(0:nz), k2ifac
-            double precision             :: ef, em(0:nz), ep(0:nz), Lm(0:nz), Lp(0:nz)
-            double precision             :: fac, div, kl
-
-            kl = dsqrt(k2l2(kx, ky))
-            fac = kl * extent(3)
-            ef = dexp(- fac)
-            div = one / (one - ef**2)
-            k2ifac = f12 * k2l2i(kx, ky)
-
-            Lm = kl * zm
-            Lp = kl * zp
-
-            ep = dexp(- Lp)
-            em = dexp(- Lm)
-
-            phim(:, kx, ky) = div * (ep - ef * em)
-            phip(:, kx, ky) = div * (em - ef * ep)
-
-            dphim(:, kx, ky) = - kl * div * (ep + ef * em)
-            dphip(:, kx, ky) =   kl * div * (em + ef * ep)
-
-            Q = div * (one + ef**2)
-            R = div * two * ef
-
-            thetam(:, kx, ky) = k2ifac * (R * Lm * phip(:, kx, ky) - Q * Lp * phim(:, kx, ky))
-            thetap(:, kx, ky) = k2ifac * (R * Lp * phim(:, kx, ky) - Q * Lm * phip(:, kx, ky))
-
-            dthetam(:, kx, ky) = - k2ifac * ((Q * Lp - one) * dphim(:, kx, ky) - R * Lm * dphip(:, kx, ky))
-            dthetap(:, kx, ky) = - k2ifac * ((Q * Lm - one) * dphip(:, kx, ky) - R * Lp * dphim(:, kx, ky))
-
-        end subroutine set_hyperbolic_functions
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        !Initialises this module (FFTs, x & y wavenumbers, tri-diagonal
-        !coefficients, etc).
-        subroutine init_fft
-            double precision, allocatable :: a0(:, :)
-            double precision              :: kxmaxi, kymaxi, kzmaxi
-            integer                       :: kx, ky, kz
-            double precision              :: skx(0:nx-1), sky(0:ny-1), skz(0:nz)
-            integer                       :: iz, isub, ib_sub, ie_sub
 
             dz = dx(3)
             dzi = dxi(3)
@@ -293,7 +250,72 @@ module inversion_utils
             etdv(:, 1, 1) = zero
 
             deallocate(a0)
-        end subroutine
+
+        end subroutine init_inversion
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine finalise_inversion
+            deallocate(green)
+            deallocate(gamtop)
+            deallocate(gambot)
+            deallocate(phim)
+            deallocate(phip)
+            deallocate(dphim)
+            deallocate(dphip)
+            deallocate(thetam)
+            deallocate(thetap)
+            deallocate(dthetam)
+            deallocate(dthetap)
+
+            deallocate(k2l2i)
+            deallocate(k2l2)
+            deallocate(filt)
+            deallocate(etdv)
+            deallocate(htdv)
+
+            call finalise_fft
+
+        end subroutine finalise_inversion
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! for kx > 0 and ky >= 0 or kx >= 0 and ky > 0
+        subroutine set_hyperbolic_functions(kx, ky, zm, zp)
+            integer,          intent(in) :: kx, ky
+            double precision, intent(in) :: zm(0:nz), zp(0:nz)
+            double precision             :: R(0:nz), Q(0:nz), k2ifac
+            double precision             :: ef, em(0:nz), ep(0:nz), Lm(0:nz), Lp(0:nz)
+            double precision             :: fac, div, kl
+
+            kl = dsqrt(k2l2(kx, ky))
+            fac = kl * extent(3)
+            ef = dexp(- fac)
+            div = one / (one - ef**2)
+            k2ifac = f12 * k2l2i(kx, ky)
+
+            Lm = kl * zm
+            Lp = kl * zp
+
+            ep = dexp(- Lp)
+            em = dexp(- Lm)
+
+            phim(:, kx, ky) = div * (ep - ef * em)
+            phip(:, kx, ky) = div * (em - ef * ep)
+
+            dphim(:, kx, ky) = - kl * div * (ep + ef * em)
+            dphip(:, kx, ky) =   kl * div * (em + ef * ep)
+
+            Q = div * (one + ef**2)
+            R = div * two * ef
+
+            thetam(:, kx, ky) = k2ifac * (R * Lm * phip(:, kx, ky) - Q * Lp * phim(:, kx, ky))
+            thetap(:, kx, ky) = k2ifac * (R * Lp * phim(:, kx, ky) - Q * Lm * phip(:, kx, ky))
+
+            dthetam(:, kx, ky) = - k2ifac * ((Q * Lp - one) * dphim(:, kx, ky) - R * Lm * dphip(:, kx, ky))
+            dthetap(:, kx, ky) = - k2ifac * ((Q * Lm - one) * dphip(:, kx, ky) - R * Lp * dphim(:, kx, ky))
+
+        end subroutine set_hyperbolic_functions
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -331,7 +353,7 @@ module inversion_utils
             !$omp end parallel workshare
 
             ! transform interior to fully spectral
-            !call stzp2s(sfc) !FIXME enable
+            !call fftsine(sfc) !FIXME enable
 
             !$omp parallel workshare
             sfc(nz, :, :) = sfctop
@@ -370,7 +392,7 @@ module inversion_utils
             sftop = sf(nz, :, :)
             !$omp end parallel workshare
 
-            ! call stzp2s(sf) !FIXME enable
+            ! call fftsine(sf) !FIXME enable
 
             !$omp parallel workshare
             sf(nz, :, :) = sftop
@@ -442,7 +464,7 @@ module inversion_utils
             !$omp end parallel workshare
 
             !FFT these quantities back to semi-spectral space:
-!             call ctzp2s(as) !FIXME enable
+!             call fftcosine(as) !FIXME enable
 
             ! Combine vertical derivative given the sine (as) and linear (ds) parts:
             !omp parallel workshare
