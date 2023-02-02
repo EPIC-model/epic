@@ -7,7 +7,7 @@ program test_mpi_pencil2
     use unit_test
     use constants, only : zero, one, two, four
     use sta2dfft
-    use pencil_fft
+    use fft_pencil
     use dimensions
     use parameters, only : update_parameters, nx, ny, nz, lower, extent
     implicit none

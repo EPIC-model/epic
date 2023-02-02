@@ -3,10 +3,10 @@
 !
 !       This unit test checks the FFT module with reference solutions.
 ! =============================================================================
-program test_mpi_fft_3d
+program test_mpi_dst
     use unit_test
     use constants, only : pi, twopi, f12, zero, four, two
-    use sta3dfft, only : initialise_fft, finalise_fft, fftxyp2s, fftxys2p
+    use sta3dfft, only : initialise_fft, finalise_fft, fftxyp2s, fftxys2p, fftsine
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent
     use mpi_communicator
     use mpi_layout
@@ -34,6 +34,8 @@ program test_mpi_fft_3d
 
     call mpi_layout_init(nx, ny, nz)
 
+    print *, box%lo(3), box%hi(3)
+
     allocate(fp1(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(fp2(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(fs(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
@@ -50,8 +52,8 @@ program test_mpi_fft_3d
             y = lower(2) + dble(j) * dx(2)
             do k = box%lo(3), box%hi(3)
                 z = lower(3) + dble(k) * dx(3)
-                fp1(k, j, i) = dcos(four * x) + dsin(y) + dcos(z)
-!                 fp2(k, j, i) = fp1(k, j, i)
+                fp1(k, j, i) = dcos(four * x) + dsin(y) + dsin(z)
+                fp2(k, j, i) = fp1(k, j, i)
             enddo
         enddo
     enddo
@@ -61,6 +63,12 @@ program test_mpi_fft_3d
     ! forward FFT
     call fftxyp2s(fp1, fs)
 
+    ! do a sine transform in z
+    call fftsine(fs)
+
+    ! do a sine transform in z
+    call fftsine(fs)
+
     ! inverse FFT
     call fftxys2p(fs, fp2)
 
@@ -68,6 +76,8 @@ program test_mpi_fft_3d
 
     error = maxval(dabs(fp1(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)) - &
                         fp2(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
+
+    print *, error
 
     call mpi_comm_finalise
 
@@ -81,4 +91,4 @@ program test_mpi_fft_3d
         endif
     endif
 
-end program test_mpi_fft_3d
+end program test_mpi_dst

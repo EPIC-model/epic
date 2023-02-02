@@ -6,13 +6,10 @@
 program test_mpi_diffx
     use unit_test
     use constants, only : pi, twopi, f12, zero, four, two
-    use inversion_utils, only : init_fft, xfactors, xtrig, yfactors, ytrig
-!     use inversion_utils, only : init_fft, fftxyp2s, fftxys2p
+    use sta3dfft, only : initialise_fft, finalise_fft, diffx, fftxyp2s, fftxys2p
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent
-    use deriv1d
-    use stafft
-    use fft_utils, only : diffx
-    use pencil_fft
+    use mpi_communicator
+    use mpi_layout
     implicit none
 
     double precision              :: error = zero
@@ -41,9 +38,7 @@ program test_mpi_diffx
     allocate(fs(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(ds(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 
-    call init_fft
-
-    call initialise_pencil_fft(nx, ny, nz)
+    call initialise_fft(extent)
 
     fp(:, :, :) = zero
 
@@ -62,18 +57,14 @@ program test_mpi_diffx
     fs = zero
 
     ! forward FFT
-    call perform_fftxyp2s(fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
-                          fs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
-                          xfactors, xtrig, yfactors, ytrig)
+    call fftxyp2s(fp, fs)
 
     fp = zero
 
     call diffx(fs, ds)
 
     ! inverse FFT
-    call perform_fftxys2p(ds(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
-                          fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
-                          xfactors, xtrig, yfactors, ytrig)
+    call fftxys2p(ds, fp)
 
     ! check result test field
     do i = box%lo(1), box%hi(1)
@@ -92,7 +83,7 @@ program test_mpi_diffx
         print *, comm%rank, x, fp(box%lo(3), box%lo(2), i), -four * dsin(four * x)
     enddo
 
-    call finalise_pencil_fft
+    call finalise_fft
 
     print *, "Layout:", layout%l_parallel
 

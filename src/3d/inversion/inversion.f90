@@ -5,7 +5,7 @@ module inversion_mod
     use physics, only : f_cor
     use constants, only : zero, two, f12
     use sta2dfft, only : dct, dst
-    use sta3dfft, only : rkz, rkzi, ztrig, zfactors
+    use sta3dfft, only : rkz, rkzi, ztrig, zfactors, diffx, diffy, fftxyp2s, fftxys2p
     use fields
     use timer, only : start_timer, stop_timer
     implicit none

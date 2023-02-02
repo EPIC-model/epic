@@ -1,11 +1,15 @@
 module sta3dfft
-!     use fft_pencil, only : perform_fftxyp2s, perform_fftxys2p
     use mpi_layout
+    use mpi_reverse, only : reverse_x, reverse_y
     use stafft, only : dct, dst
     use constants, only : zero, one
-!     use sta2dfft
-!     use deriv1d, only : init_deriv
+    use stafft
+    use sta2dfft
+    use deriv1d, only : init_deriv
+    use fft_pencil
     implicit none
+
+    private
 
     ! Wavenumbers:
     double precision, allocatable :: rkx(:), hrkx(:), rky(:), hrky(:), rkz(:), rkzi(:)
@@ -14,20 +18,37 @@ module sta3dfft
     double precision, allocatable :: xtrig(:), ytrig(:), ztrig(:)
     integer :: xfactors(5), yfactors(5), zfactors(5)
 
-    integer :: nwx, nwy, nxp2, nyp2
+    integer :: nwx, nwy
 
     integer :: nx, ny, nz
 
     logical :: is_fft_initialised = .false.
 
-    private :: is_fft_initialised, nx, ny, nz
+    public :: initialise_fft &
+            , finalise_fft   &
+            , diffx          &
+            , diffy          &
+            , fftxyp2s       &
+            , fftxys2p       &
+            , fftsine        &
+            , fftcosine      &
+            , rkx            &
+            , rky            &
+            , rkz            &
+            , rkzi           &
+            , zfactors       &
+            , ztrig          &
+            , xfactors       &
+            , xtrig          &
+            , yfactors       &
+            , ytrig
 
     contains
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine init_fft(lx, ly, lz)
-            double precision, intent(in) :: lx, ly, lz
+        subroutine initialise_fft(extent)
+            double precision, intent(in) :: extent(3)
             integer                      :: kx, ky!, kz
 
             if (is_fft_initialised) then
@@ -40,6 +61,8 @@ module sta3dfft
             ny = box%global_ncells(2)
             nz = box%global_ncells(3)
 
+            call initialise_pencil_fft(nx, ny, nz)
+
 !             dz = dx(3)
 !             dzi = dxi(3)
 !             dz6  = f16 * dx(3)
@@ -47,10 +70,9 @@ module sta3dfft
 !             dz24 = f124 * dx(3)
 !             dzisq = dxi(3) ** 2
 !             hdzi = f12 * dxi(3)
-!             nwx = nx / 2
-!             nwy = ny / 2
-!             nyp2 = ny + 2
-!             nxp2 = nx + 2
+
+            nwx = nx / 2
+            nwy = ny / 2
 
             allocate(rkx(0:nx-1))
             allocate(hrkx(nx))
@@ -64,7 +86,7 @@ module sta3dfft
 
             !----------------------------------------------------------------------
             ! Initialise FFTs and wavenumber arrays:
-            call init2dfft(nx, ny, lx, ly, xfactors, yfactors, xtrig, ytrig, hrkx, hrky)
+            call init2dfft(nx, ny, extent(1), extent(2), xfactors, yfactors, xtrig, ytrig, hrkx, hrky)
             call initfft(nz, zfactors, ztrig)
 
             !Define x wavenumbers:
@@ -85,10 +107,24 @@ module sta3dfft
 
             !Define z wavenumbers:
             rkz(0) = zero
-            call init_deriv(nz, lz, rkz(1:nz))
+            call init_deriv(nz, extent(3), rkz(1:nz))
             rkzi(1:nz-1) = one / rkz(1:nz-1)
 
-        end subroutine init_fft
+        end subroutine initialise_fft
+
+        subroutine finalise_fft
+            deallocate(rkx)
+            deallocate(hrkx)
+            deallocate(rky)
+            deallocate(hrky)
+            deallocate(rkz)
+            deallocate(rkzi)
+            deallocate(xtrig)
+            deallocate(ytrig)
+            deallocate(ztrig)
+
+            call finalise_pencil_fft
+        end subroutine finalise_fft
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -97,34 +133,62 @@ module sta3dfft
         ! Only FFTs over the x and y directions are performed.
         ! *** fp is destroyed upon exit ***
         subroutine fftxyp2s(fp, fs)
-            double precision, intent(inout) :: fp(:, :, :)       !Physical
-            double precision, intent(out)   :: fs(:, :, :)       !Spectral
-            integer                         :: kx, iy, nzval, nxval, nyval
+            double precision, intent(in)  :: fp(box%hlo(3):box%hhi(3), & !Physical
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: fs(box%hlo(3):box%hhi(3), & !Spectral
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+            integer                       :: i, j
 
-!             if (comm%size > 1) then
-!                 call perform_fftxyp2s(fp, fs, xfactors, xtrig, yfactors, ytrig)
-!             else
+            ! 1. Transform from (z, y, x) to (y, x, z) pencil
+            ! 2. Do y transform
+            ! 3. Transform from (y, x, z) to (x, z, y) pencil
+            ! 4. Do x transform
+            ! 5. Transform from (x, z, y) to (y, x, z) pencil
+            ! 6. Transform from (y, x, z) to (z, y, x) pencil
 
-                nzval = size(fp, 1)
-                nyval = size(fp, 2)
-                nxval = size(fp, 3)
+            call transpose_to_pencil(y_from_z_transposition,    &
+                                        (/1, 2, 3/),            &
+                                        dim_y_comm,             &
+                                        FORWARD,                &
+                                        fp,                     &
+                                        fft_in_y_buffer)
 
-                ! Carry out a full x transform first:
-                call forfft(nzval * nyval, nxval, fp, xtrig, xfactors)
-
-                ! Transpose array:
-                !$omp parallel do collapse(2) shared(fs, fp) private(kx, iy)
-                do kx = 1, nxval
-                    do iy = 1, nyval
-                        fs(:, kx, iy) = fp(:, iy, kx)
-                    enddo
+            do i = 1, size(fft_in_y_buffer, 2)
+                do j = 1, size(fft_in_y_buffer, 3)
+                    call forfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer(:, i, j), ytrig, yfactors)
                 enddo
-                !$omp end parallel do
+            enddo
 
-                ! Carry out a full y transform on transposed array:
-                call forfft(nzval * nxval, nyval, fs, ytrig, yfactors)
-!             endif
-        end subroutine
+            call transpose_to_pencil(x_from_y_transposition,    &
+                                        (/2, 3, 1/),            &
+                                        dim_x_comm,             &
+                                        FORWARD,                &
+                                        fft_in_y_buffer,        &
+                                        fft_in_x_buffer)
+
+            do i = 1, size(fft_in_x_buffer, 2)
+                do j = 1, size(fft_in_x_buffer, 3)
+                    call forfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer(:, i, j), xtrig, xfactors)
+                enddo
+            enddo
+
+            call transpose_to_pencil(y_from_x_transposition,    &
+                                     (/3, 1, 2/),               &
+                                     dim_x_comm,                &
+                                     BACKWARD,                  &
+                                     fft_in_x_buffer,           &
+                                     fft_in_y_buffer)
+
+            call transpose_to_pencil(z_from_y_transposition,    &
+                                     (/2, 3, 1/),               &
+                                     dim_y_comm,                &
+                                     BACKWARD,                  &
+                                     fft_in_y_buffer,           &
+                                     fs)
+
+        end subroutine fftxyp2s
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -133,39 +197,70 @@ module sta3dfft
         ! Only inverse FFTs over the x and y directions are performed.
         ! *** fs is destroyed upon exit ***
         subroutine fftxys2p(fs, fp)
-            double precision, intent(inout):: fs(:, :, :)  !Spectral
-            double precision, intent(out)  :: fp(:, :, :)  !Physical
-            integer                        :: kx, iy, nzval, nxval, nyval
+            double precision, intent(in)  :: fs(box%hlo(3):box%hhi(3), & !Spectral
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: fp(box%hlo(3):box%hhi(3), & !Physical
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+            integer                       :: i, j
 
-            ! 1. Swap x and z from (z, x, y) to (x, z, y) pencil
-            ! 2. Do x back-transform
-            ! 3. Transform from (x, z, y) to (y, x, z) pencil
-            ! 4. Do y back-transform
-            ! 5. Transform from (y, x, z) to (z, y, x) pencil
+            ! 1. Transform to (z, y, x) to (y, x, z) pencil
+            ! 2. Do y back-transform
+            ! 3. Transform from (y, x, z) to (x, z, y) pencil
+            ! 4. Do x back-transform
+            ! 5. Transform from (x, z, y) to (y, x, z) pencil
+            ! 6. Transform from (y, x, z) to (z, y, x) pencil
 
-            nzval = size(fs, 1)
-            nxval = size(fs, 2)
-            nyval = size(fs, 3)
+            call transpose_to_pencil(y_from_z_transposition,  &
+                                     (/1, 2, 3/),             &
+                                     dim_y_comm,              &
+                                     FORWARD,                 &
+                                     fs(box%lo(3):box%hi(3),  &
+                                        box%lo(2):box%hi(2),  &
+                                        box%lo(1):box%hi(1)), &
+                                     fft_in_y_buffer)
 
-            ! Carry out a full inverse y transform first:
-            call revfft(nzval * nxval, nyval, fs, ytrig, yfactors)
+            call transpose_to_pencil(x_from_y_transposition, &
+                                     (/2, 3, 1/),            &
+                                     dim_x_comm,             &
+                                     FORWARD,                &
+                                     fft_in_y_buffer,        &
+                                     fft_in_x_buffer)
 
-            ! Transpose array:
-            !$omp parallel do collapse(2) shared(fs, fp) private(kx, iy)
-            do kx = 1, nxval
-                do iy = 1, nyval
-                    fp(:, iy, kx) = fs(:, kx, iy)
+            do i = 1, size(fft_in_x_buffer, 2)
+                do j = 1, size(fft_in_x_buffer, 3)
+                    call revfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer(:, i, j), xtrig, xfactors)
                 enddo
             enddo
-            !$omp end parallel do
 
-            ! Carry out a full inverse x transform:
-            call revfft(nzval * nyval, nxval, fp, xtrig, xfactors)
-        end subroutine
+            call transpose_to_pencil(y_from_x_transposition, &
+                                     (/3, 1, 2/),            &
+                                     dim_x_comm,             &
+                                     BACKWARD,               &
+                                     fft_in_x_buffer,        &
+                                     fft_in_y_buffer)
+
+            do i = 1, size(fft_in_y_buffer, 2)
+                do j = 1, size(fft_in_y_buffer, 3)
+                    call revfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer(:, i, j), ytrig, yfactors)
+                enddo
+            enddo
+
+            call transpose_to_pencil(z_from_y_transposition,  &
+                                     (/2, 3, 1/),             &
+                                     dim_y_comm,              &
+                                     BACKWARD,                &
+                                     fft_in_y_buffer,         &
+                                     fp(box%lo(3):box%hi(3),  &
+                                        box%lo(2):box%hi(2),  &
+                                        box%lo(1):box%hi(1)))
+
+        end subroutine fftxys2p
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine stzp2s(fs)
+        subroutine fftsine(fs)
             double precision, intent(inout) :: fs(box%hlo(3):box%hhi(3), &
                                                   box%hlo(2):box%hhi(2), &
                                                   box%hlo(1):box%hhi(1))
@@ -179,11 +274,11 @@ module sta3dfft
                 enddo
             enddo
             !$omp end parallel do
-        end subroutine stzp2s
+        end subroutine fftsine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine ctzp2s(fs)
+        subroutine fftcosine(fs)
             double precision, intent(inout) :: fs(box%hlo(3):box%hhi(3), &
                                                   box%hlo(2):box%hhi(2), &
                                                   box%hlo(1):box%hhi(1))
@@ -197,7 +292,7 @@ module sta3dfft
             enddo
             !$omp end parallel do
 
-        end subroutine ctzp2s
+        end subroutine fftcosine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -214,11 +309,9 @@ module sta3dfft
             double precision              :: gs(box%hlo(3):box%hhi(3), &
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
-            integer                       :: kx, dkx, kxc, nwx, nxp2
+            integer                       :: kx, dkx
             double precision              :: si
 
-            nwx = nx / 2
-            nxp2 = nx + 1
 
             call reverse_x(fs, gs)
 
@@ -234,9 +327,8 @@ module sta3dfft
             enddo
 
             if (mod(nx, 2) .eq. 0) then
-                kxc = nwx! + 1
-                if (kxc >= box%lo(1) .and. kxc <= box%hi(1)) then
-                    ds(:, :, kxc) = zero
+                if (nwx >= box%lo(1) .and. nwx <= box%hi(1)) then
+                    ds(:, :, nwx) = zero
                 endif
             endif
 
@@ -257,11 +349,8 @@ module sta3dfft
             double precision              :: gs(box%hlo(3):box%hhi(3), &
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
-            integer                       :: ky, dky, kyc, nwy, nyp2
+            integer                       :: ky, dky
             double precision              :: si
-
-            nwy = ny / 2
-            nyp2 = ny + 1
 
             call reverse_y(fs, gs)
 
@@ -277,9 +366,8 @@ module sta3dfft
             enddo
 
             if (mod(ny, 2) .eq. 0) then
-                kyc = nwy
-                if (kyc >= box%lo(2) .and. kyc <= box%hi(2)) then
-                    ds(:, kyc, :) = zero
+                if (nwy >= box%lo(2) .and. nwy <= box%hi(2)) then
+                    ds(:, nwy, :) = zero
                 endif
             endif
 

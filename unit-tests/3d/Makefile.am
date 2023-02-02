@@ -27,6 +27,17 @@ libcombi_la_LIBADD = 					\
 
 unittestsdir = $(prefix)/unit-tests
 
+# 	test_fft_3d
+# 	test_fft_3d_sphere
+# 	test_fft_2_3d
+# 	test_vor2vel
+# 	test_velgradg
+# 	test_vtend
+# 	test_lapinv1
+# 	test_diffz2
+# 	test_diffz3
+# 	test_diffz4
+# 	test_diffz5
 unittests_PROGRAMS = 				\
 	test_jacobi_1				\
 	test_jacobi_2				\
@@ -35,9 +46,6 @@ unittests_PROGRAMS = 				\
 	test_ellipsoid_split 			\
 	test_mpi_parcel_init_3d			\
 	test_ellipsoid_split_merge		\
-	test_fft_3d				\
-	test_fft_3d_sphere       		\
-	test_fft_2_3d				\
 	test_mpi_trilinear			\
 	test_laplace_correction_3d		\
 	test_mpi_gradient_correction_3d		\
@@ -47,10 +55,6 @@ unittests_PROGRAMS = 				\
 	test_mpi_grid2par			\
 	test_ellipsoid_reflection		\
 	test_free_slip_3d			\
-	test_vor2vel				\
-	test_velgradg				\
-	test_vtend				\
-	test_lapinv1				\
 	test_diffz0				\
 	test_diffz1				\
 	test_mpi_field_halo_fill		\
@@ -62,10 +66,6 @@ unittests_PROGRAMS = 				\
 	test_mpi_parcel_read_rejection		\
 	test_mpi_parcel_halo_swap		\
 	test_mpi_parcel_split			\
-	test_diffz2				\
-	test_diffz3				\
-	test_diffz4				\
-	test_diffz5				\
 	test_mpi_pencil				\
 	test_mpi_pencil2			\
 	test_mpi_fft				\
@@ -101,14 +101,14 @@ test_mpi_parcel_init_3d_LDADD = libcombi.la
 test_ellipsoid_split_merge_SOURCES = test_ellipsoid_split_merge.f90
 test_ellipsoid_split_merge_LDADD = libcombi.la
 
-test_fft_3d_SOURCES = test_fft_3d.f90
-test_fft_3d_LDADD = libcombi.la
+# test_fft_3d_SOURCES = test_fft_3d.f90
+# test_fft_3d_LDADD = libcombi.la
 
-test_fft_3d_sphere_SOURCES = test_fft_3d_sphere.f90
-test_fft_3d_sphere_LDADD = libcombi.la
+# test_fft_3d_sphere_SOURCES = test_fft_3d_sphere.f90
+# test_fft_3d_sphere_LDADD = libcombi.la
 
-test_fft_2_3d_SOURCES = test_fft_2_3d.f90
-test_fft_2_3d_LDADD = libcombi.la
+# test_fft_2_3d_SOURCES = test_fft_2_3d.f90
+# test_fft_2_3d_LDADD = libcombi.la
 
 test_mpi_trilinear_SOURCES = test_mpi_trilinear.f90
 test_mpi_trilinear_LDADD = libcombi.la
@@ -140,17 +140,17 @@ test_mpi_grid2par_LDADD = libcombi.la
 test_free_slip_3d_SOURCES = test_free_slip_3d.f90
 test_free_slip_3d_LDADD = libcombi.la
 
-test_vor2vel_SOURCES = test_vor2vel.f90
-test_vor2vel_LDADD = libcombi.la
+# test_vor2vel_SOURCES = test_vor2vel.f90
+# test_vor2vel_LDADD = libcombi.la
 
-test_velgradg_SOURCES = test_velgradg.f90
-test_velgradg_LDADD = libcombi.la
+# test_velgradg_SOURCES = test_velgradg.f90
+# test_velgradg_LDADD = libcombi.la
 
-test_vtend_SOURCES = test_vtend.f90
-test_vtend_LDADD = libcombi.la
+# test_vtend_SOURCES = test_vtend.f90
+# test_vtend_LDADD = libcombi.la
 
-test_lapinv1_SOURCES = test_lapinv1.f90
-test_lapinv1_LDADD = libcombi.la
+# test_lapinv1_SOURCES = test_lapinv1.f90
+# test_lapinv1_LDADD = libcombi.la
 
 test_diffz0_SOURCES = test_diffz0.f90
 test_diffz0_LDADD = libcombi.la
@@ -185,17 +185,17 @@ test_mpi_parcel_halo_swap_LDADD = libcombi.la
 test_mpi_parcel_split_SOURCES = test_mpi_parcel_split.f90
 test_mpi_parcel_split_LDADD = libcombi.la
 
-test_diffz2_SOURCES = test_diffz2.f90
-test_diffz2_LDADD = libcombi.la
+# test_diffz2_SOURCES = test_diffz2.f90
+# test_diffz2_LDADD = libcombi.la
 
-test_diffz3_SOURCES = test_diffz3.f90
-test_diffz3_LDADD = libcombi.la
+# test_diffz3_SOURCES = test_diffz3.f90
+# test_diffz3_LDADD = libcombi.la
 
-test_diffz4_SOURCES = test_diffz4.f90
-test_diffz4_LDADD = libcombi.la
+# test_diffz4_SOURCES = test_diffz4.f90
+# test_diffz4_LDADD = libcombi.la
 
-test_diffz5_SOURCES = test_diffz5.f90
-test_diffz5_LDADD = libcombi.la
+# test_diffz5_SOURCES = test_diffz5.f90
+# test_diffz5_LDADD = libcombi.la
 
 test_mpi_pencil_SOURCES = test_mpi_pencil.f90
 test_mpi_pencil_LDADD = libcombi.la

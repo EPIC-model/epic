@@ -33,7 +33,7 @@ program epic3d
                     , setup_parcels
     use parameters, only : max_num_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
-    use pencil_fft, only : initialise_pencil_fft, finalise_pencil_fft
+    use fft_pencil, only : initialise_pencil_fft, finalise_pencil_fft
     implicit none
 
     integer          :: epic_timer

@@ -37,12 +37,12 @@ module mpi_reverse
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine setup_reversing(reo, sub_comm, dir)
-            type(reorder_type),                intent(inout) :: reo
+            type(reorder_type),     intent(inout) :: reo
             type(sub_communicator), intent(inout) :: sub_comm
-            integer,                           intent(in)    :: dir
-            integer, allocatable                             :: rlos(:), rhis(:)
-            integer                                          :: i, j, lo, hi, rank, d
-            logical                                          :: remain_dims(2)
+            integer,                intent(in)    :: dir
+            integer, allocatable                  :: rlos(:), rhis(:)
+            integer                               :: i, j, lo, hi, rank, d
+            logical                               :: remain_dims(2)
 
             reo%dir = dir
 

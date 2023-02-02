@@ -3,7 +3,7 @@
 !
 !       This unit test checks the diffx and diffy subroutines.
 ! =============================================================================
-program test_mpi_diffx
+program test_mpi_reverse
     use unit_test
     use constants, only : pi, twopi, f12, zero, four, two
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent, upper
@@ -11,7 +11,7 @@ program test_mpi_diffx
     use stafft
     use mpi_communicator
     use mpi_layout
-    use fft_utils, only : reorder, x_reo, x_comm
+    use mpi_reverse, only : reverse_x
     implicit none
 
     double precision              :: error = zero
@@ -66,7 +66,7 @@ program test_mpi_diffx
         enddo
     enddo
 
-    call reorder(x_reo, x_comm, fp, hp)
+    call reverse_x(fp, hp)
 !     call reorder(fp, hp)
 
     print *, "Reordering:", maxval(gp(box%lo(3):box%hi(3), &
@@ -111,4 +111,4 @@ error = 0.0d0
 !         endif
     endif
 
-end program test_mpi_diffx
+end program test_mpi_reverse
