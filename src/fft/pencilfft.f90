@@ -20,7 +20,6 @@ module pencil_fft
 
     !> Describes a specific pencil transposition, from one pencil decomposition to another
     type pencil_layout
-!         integer :: order(3)         ! order of dimensions
         integer :: pencil_size(3)   ! local pencil size (number of grid points)
         integer :: size(3)          ! process decomposition layout
         integer :: coords(3)        ! *this* process location
@@ -35,20 +34,18 @@ module pencil_fft
 
     ! Transpositions from one pencil to another
     type(pencil_layout) :: y_from_z_transposition   &
-                                , x_from_y_transposition   &
-                                , y_from_x_transposition   &
-                                , z_from_y_transposition   &
-                                , y_from_z_2_transposition &
-                                , x_from_y_2_transposition &
-                                , y_from_x_2_transposition &
-                                , z_from_y_2_transposition
+                         , x_from_y_transposition   &
+                         , y_from_x_transposition   &
+                         , z_from_y_transposition   &
+                         , x_from_z_transposition   &
+                         , z_from_x_transposition
 
     ! Temporary buffers used in transposition
-    double precision, dimension(:,:,:), contiguous, pointer :: fft_in_y_buffer , fft_in_x_buffer
+    double precision, dimension(:,:,:), contiguous, pointer :: fft_in_y_buffer , fft_in_x_buffer, diff_x_buffer
 
     logical :: l_initialised = .false.
 
-    integer :: ncells(3)
+    integer :: ngrid(3)
 
     public initialise_pencil_fft, finalise_pencil_fft
 contains
@@ -66,11 +63,7 @@ contains
             return
         endif
 
-        ncells = (/nz, ny, nx/)
-
-        print *, "Is x parallel?", layout%l_parallel(I_X)
-        print *, "Is y parallel?", layout%l_parallel(I_Y)
-        print *, "Is z parallel?", layout%l_parallel(I_Z)
+        ngrid = (/nz+1, ny, nx/)
 
         if (layout%l_parallel(I_X) .and. layout%l_parallel(I_Y)) then
             ! Info from https://www.open-mpi.org
@@ -119,7 +112,7 @@ contains
             call MPI_Comm_free(dim_x_comm, comm%err)
         endif
 
-        deallocate(fft_in_y_buffer , fft_in_x_buffer)
+        deallocate(fft_in_y_buffer , fft_in_x_buffer, diff_x_buffer)
     end subroutine finalise_pencil_fft
 
     !> Initialises memory for the buffers used in the FFT
@@ -132,6 +125,10 @@ contains
                                  x_from_y_transposition%pencil_size(Z_INDEX),    &
                                  x_from_y_transposition%pencil_size(Y_INDEX)))
 
+        allocate(diff_x_buffer(x_from_z_transposition%pencil_size(X_INDEX),    &
+                               x_from_z_transposition%pencil_size(Z_INDEX),    &
+                               x_from_z_transposition%pencil_size(Y_INDEX)))
+
     end subroutine initialise_buffers
 
     !> Initialises the pencil transpositions, from a pencil in one dimension to that in another
@@ -143,6 +140,7 @@ contains
 
         z_pencil = create_initial_transposition_description()
 
+
         ! Transpositions
         y_from_z_transposition = create_transposition(z_pencil, Y_INDEX, y_distinct_sizes, FORWARD)
 
@@ -152,20 +150,12 @@ contains
         y_from_x_transposition=create_transposition(x_from_y_transposition, Y_INDEX, &
          x_distinct_sizes, BACKWARD)
 
-!         z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
-!          y_distinct_sizes, BACKWARD)
+        z_from_y_transposition=create_transposition(y_from_x_transposition, Z_INDEX, &
+         y_distinct_sizes, BACKWARD)
 
-!         y_from_z_2_transposition=create_transposition(z_from_y_transposition, Y_INDEX, &
-!           y_distinct_sizes, FORWARD)
+!         x_from_z_transposition = create_transposition(z_pencil, X_INDEX, (/33/), BACKWARD)
+!         z_from_x_transposition = create_transposition(x_from_z_transposition, Z_INDEX, x_distinct_sizes, FORWARD)
 
-!         x_from_y_2_transposition=create_transposition(y_from_z_2_transposition, X_INDEX, &
-!           x_distinct_sizes, FORWARD)
-
-!         y_from_x_2_transposition=create_transposition(x_from_y_2_transposition, Y_INDEX, &
-!          x_distinct_sizes, BACKWARD)
-
-!         z_from_y_2_transposition=create_transposition(y_from_x_2_transposition, Z_INDEX, &
-!           y_distinct_sizes, BACKWARD)
     end subroutine initialise_transpositions
 
     !> Creates a specific pencil transposition description. It is maybe more a decomposition description,
@@ -194,6 +184,7 @@ contains
         create_transposition%size = determine_pencil_process_dimensions(new_pencil_dim,                 &
                                                                         existing_transposition%dim,     &
                                                                         existing_transposition%size)
+
 
         create_transposition%coords = determine_my_pencil_location(new_pencil_dim,                  &
                                                                    existing_transposition%dim,      &
@@ -267,18 +258,21 @@ contains
         double precision, allocatable, save :: real_temp(:, :, :)
         double precision, allocatable, save :: real_temp2(:)
 
-        print *, "Tranpose to pencil"
-        print *, "source", shape(source_data) ! z, y, x (a, b, c)
-        print *, "target", shape(target_data)
-
-
         !$OMP SINGLE
         allocate(real_temp(size(source_data,3), size(source_data,2), size(source_data,1)))
-        allocate(real_temp2(product(transposition_description%pencil_size)+1))
+        allocate(real_temp2(product(transposition_description%pencil_size))) !+1))
         !$OMP END SINGLE
 
         ! --> realt_temp is x, y, z (c, b, a)
         call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
+
+        print *, "transposition_description%send_sizes", transposition_description%send_sizes
+        print *, "transposition_description%send_offsets", transposition_description%send_offsets
+        print *, "transposition_description%recv_sizes", transposition_description%recv_sizes
+        print *, "transposition_description%recv_offsets", transposition_description%recv_offsets
+
+        print *, "source", shape(source_data)
+        print *, "target", shape(target_data)
 
         !$OMP SINGLE
         call MPI_Alltoallv(real_temp,                               &
@@ -321,10 +315,6 @@ contains
         double precision,           intent(in)  :: source_real_buffer(:)
         double precision,           intent(out) :: target_real_buffer(:, :, :)
         integer :: number_blocks, i, j, k, n, index_prefix, index_prefix_dim, block_offset, source_index
-
-        print *, "contiguise data"
-        print *, "source", shape(source_real_buffer)
-        print *, "target", shape(target_real_buffer)
 
         number_blocks = size(transposition_description%recv_sizes)
         index_prefix = 0
@@ -399,7 +389,7 @@ contains
 
         do i=1,3
             if (i == existing_pencil_dim) then
-                s = ncells(i)
+                s = ngrid(i)
                 split_size = s / new_pencil_procs_per_dim(i)
                 split_remainder = s - split_size * new_pencil_procs_per_dim(i)
                 do j = 1, new_pencil_procs_per_dim(existing_pencil_dim)
@@ -476,6 +466,8 @@ contains
         integer, dimension(:), intent(inout) :: concatenated_dim_sizes
         integer :: i
 
+        print *, "dims", dims
+        print *, "size(dims, 2)", size(dims, 2)
         do i = 1,size(dims, 2)
             concatenated_dim_sizes(i) = product(dims(:, i))
         enddo
@@ -513,11 +505,9 @@ contains
     !! fed into the create transposition procedure which will generate transpositions to other pencils
     type(pencil_layout) function create_initial_transposition_description()
         create_initial_transposition_description%dim = Z_INDEX
-!         create_initial_transposition_description%order = (/Z_INDEX, Y_INDEX, X_INDEX/)
         create_initial_transposition_description%size(X_INDEX) = layout%size(I_X)
         create_initial_transposition_description%size(Y_INDEX) = layout%size(I_Y)
         create_initial_transposition_description%size(Z_INDEX) = layout%size(I_Z)
-        print *, "initial box size", box%size
         create_initial_transposition_description%coords(X_INDEX) = layout%coords(I_X)
         create_initial_transposition_description%coords(Y_INDEX) = layout%coords(I_Y)
         create_initial_transposition_description%coords(Z_INDEX) = layout%coords(I_Z)
@@ -545,9 +535,9 @@ contains
 
         do i = 1, 3
             if (i == new_pencil_dim) then
-                determine_pencil_size(i) = ncells(new_pencil_dim)
+                determine_pencil_size(i) = ngrid(new_pencil_dim)
             else if (i == existing_transposition%dim) then
-                s = ncells(i)
+                s = ngrid(i)
 
                 split_size=s/pencil_process_layout(i)
                 split_remainder=s - split_size * pencil_process_layout(i)
@@ -564,51 +554,111 @@ contains
         double precision, intent(inout)   :: fs(:, :, :)       !Spectral
         integer, intent(in) :: xfactors(5), yfactors(5)
         double precision, intent(in) :: xtrig(:), ytrig(:)
+        integer :: i, j
 
-        ! 1. Transform from (z, y, x) to (y, x, z) pencil
+            ! 1. Transform from (z, y, x) to (y, x, z) pencil
             ! 2. Do y transform
             ! 3. Transform from (y, x, z) to (x, z, y) pencil
             ! 4. Do x transform
-            ! 5. Swap x and z from (x, z, y) to (z, x, y) pencil
+            ! 5. Transform from (x, z, y) to (y, x, z) pencil
+            ! 6. Transform from (y, x, z) to (z, y, x) pencil
 
             call transpose_to_pencil(y_from_z_transposition,    &
-                                        (/1, 2, 3/),               &
-                                        dim_y_comm,                &
-                                        FORWARD,                   &
-                                        fp(box%lo(3):box%hi(3),    &
-                                        box%lo(2):box%hi(2),    &
-                                        box%lo(1):box%hi(1)),   &
+                                        (/1, 2, 3/),            &
+                                        dim_y_comm,             &
+                                        FORWARD,                &
+                                        fp,                     &
                                         fft_in_y_buffer)
 
-            call forfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer, ytrig, yfactors)
+            do i = 1, size(fft_in_y_buffer, 2)
+                do j = 1, size(fft_in_y_buffer, 3)
+                    call forfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer(:, i, j), ytrig, yfactors)
+                enddo
+            enddo
 
             call transpose_to_pencil(x_from_y_transposition,    &
-                                        (/2, 3, 1/),               &
-                                        dim_x_comm,                &
-                                        FORWARD,                   &
-                                        fft_in_y_buffer,           &
+                                        (/2, 3, 1/),            &
+                                        dim_x_comm,             &
+                                        FORWARD,                &
+                                        fft_in_y_buffer,        &
                                         fft_in_x_buffer)
 
-            call forfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer, xtrig, xfactors)
+            do i = 1, size(fft_in_x_buffer, 2)
+                do j = 1, size(fft_in_x_buffer, 3)
+                    call forfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer(:, i, j), xtrig, xfactors)
+                enddo
+            enddo
 
-            fs = zero
+            call transpose_to_pencil(y_from_x_transposition,    &
+                                     (/3, 1, 2/),               &
+                                     dim_x_comm,                &
+                                     BACKWARD,                  &
+                                     fft_in_x_buffer,           &
+                                     fft_in_y_buffer)
+
+            call transpose_to_pencil(z_from_y_transposition,    &
+                                     (/2, 3, 1/),               &
+                                     dim_y_comm,                &
+                                     BACKWARD,                  &
+                                     fft_in_y_buffer,           &
+                                     fs)
 
     end subroutine perform_fftxyp2s
 
-!     function determine_dimension_order(order, direction) result(new_order)
-!         integer, intent(in) :: order(3)
-!         integer, intent(in) :: direction
-!         integer             :: new_order(3)
-!
-!         if (direction == FORWARD) then
-!             new_order(1) = order(2)
-!             new_order(2) = order(3)
-!             new_order(3) = order(1)
-!         else
-!             new_order(1) = order(3)
-!             new_order(2) = order(1)
-!             new_order(3) = order(2)
-!         endif
-!     end function determine_dimension_order
+    subroutine perform_fftxys2p(fs, fp, xfactors, xtrig, yfactors, ytrig)
+        double precision, intent(inout) :: fs(:, :, :)       !Spectral
+        double precision, intent(inout) :: fp(:, :, :)       !Physical
+        integer, intent(in) :: xfactors(5), yfactors(5)
+        double precision, intent(in) :: xtrig(:), ytrig(:)
+        integer :: i, j
+
+            ! 1. Transform to (z, y, x) to (y, x, z) pencil
+            ! 2. Do y back-transform
+            ! 3. Transform from (y, x, z) to (x, z, y) pencil
+            ! 4. Do x back-transform
+            ! 5. Transform from (x, z, y) to (y, x, z) pencil
+            ! 6. Transform from (y, x, z) to (z, y, x) pencil
+
+            call transpose_to_pencil(y_from_z_transposition,    &
+                                        (/1, 2, 3/),            &
+                                        dim_y_comm,             &
+                                        FORWARD,                &
+                                        fs,                     &
+                                        fft_in_y_buffer)
+
+            call transpose_to_pencil(x_from_y_transposition,    &
+                                        (/2, 3, 1/),            &
+                                        dim_x_comm,             &
+                                        FORWARD,                &
+                                        fft_in_y_buffer,        &
+                                        fft_in_x_buffer)
+
+            do i = 1, size(fft_in_x_buffer, 2)
+                do j = 1, size(fft_in_x_buffer, 3)
+                    call revfft(1, size(fft_in_x_buffer, 1), fft_in_x_buffer(:, i, j), xtrig, xfactors)
+                enddo
+            enddo
+
+            call transpose_to_pencil(y_from_x_transposition,    &
+                                     (/3, 1, 2/),               &
+                                     dim_x_comm,                &
+                                     BACKWARD,                  &
+                                     fft_in_x_buffer,           &
+                                     fft_in_y_buffer)
+
+            do i = 1, size(fft_in_y_buffer, 2)
+                do j = 1, size(fft_in_y_buffer, 3)
+                    call revfft(1, size(fft_in_y_buffer, 1), fft_in_y_buffer(:, i, j), ytrig, yfactors)
+                enddo
+            enddo
+
+            call transpose_to_pencil(z_from_y_transposition,    &
+                                     (/2, 3, 1/),               &
+                                     dim_y_comm,                &
+                                     BACKWARD,                  &
+                                     fft_in_y_buffer,           &
+                                     fp)
+
+    end subroutine perform_fftxys2p
 
 end module pencil_fft

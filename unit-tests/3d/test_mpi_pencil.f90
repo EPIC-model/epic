@@ -84,6 +84,7 @@ program test_mpi_pencil
 
     fft_in_y_buffer(:, :, :) = zero
     fft_in_x_buffer(:, :, :) = zero
+    print *, "rank", comm%rank, "size", size(fft_in_x_buffer, 3)
     do iy = 1, size(fft_in_x_buffer, 3)
         fft_in_x_buffer(:, :, iy) = iy
     enddo
@@ -91,12 +92,24 @@ program test_mpi_pencil
     call transpose_to_pencil(y_from_x_transposition, (/3, 1, 2/), dim_x_comm, BACKWARD, &
                             fft_in_x_buffer, fft_in_y_buffer)
 
+    call MPI_Barrier(comm%world)
     if (comm%rank == comm%master) then
         do iy = 1, ny
             print *, fft_in_y_buffer(iy, 1, 1)
         enddo
     endif
 
+!     print *, "Z from X"
+!
+!     call transpose_to_pencil(z_from_x_transposition, (/3, 1, 2/), comm%cart, FORWARD, &
+!                             fft_in_x_buffer,                                           &
+!                             values(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+!
+!     if (comm%rank == comm%master) then
+!         do iy = box%lo(3), box%hi(3)
+!             print *, values(iy, 1, 1)
+!         enddo
+!     endif
 
     call finalise_pencil_fft
 

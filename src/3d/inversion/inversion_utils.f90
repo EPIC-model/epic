@@ -4,6 +4,9 @@ module inversion_utils
     use stafft
     use sta2dfft
     use deriv1d, only : init_deriv
+    use mpi_layout
+    use mpi_communicator
+!     use pencilfft, only : perform_fftxyp2s
     implicit none
 
     private
@@ -70,7 +73,9 @@ module inversion_utils
             , ytrig           &
             , ztrig           &
             , rkx             &
+            , hrkx            &
             , rky             &
+            , hrky            &
             , rkz             &
             , k2l2i           &
             , green           &
@@ -652,30 +657,29 @@ module inversion_utils
             double precision, intent(out)   :: fs(:, :, :)       !Spectral
             integer                         :: kx, iy, nzval, nxval, nyval
 
-            nzval = size(fp, 1)
-            nyval = size(fp, 2)
-            nxval = size(fp, 3)
+!             if (comm%size > 1) then
+!                 call perform_fftxyp2s(fp, fs, xfactors, xtrig, yfactors, ytrig)
+!             else
 
-            ! 1. Transform from (z, y, x) to (y, x, z) pencil
-            ! 2. Do y transform
-            ! 3. Transform from (y, x, z) to (x, z, y) pencil
-            ! 4. Do y transform
-            ! 5. Swap x and z from (x, z, y) to (z, x, y) pencil
+                nzval = size(fp, 1)
+                nyval = size(fp, 2)
+                nxval = size(fp, 3)
 
-            ! Carry out a full x transform first:
-            call forfft(nzval * nyval, nxval, fp, xtrig, xfactors)
+                ! Carry out a full x transform first:
+                call forfft(nzval * nyval, nxval, fp, xtrig, xfactors)
 
-            ! Transpose array:
-            !$omp parallel do collapse(2) shared(fs, fp) private(kx, iy)
-            do kx = 1, nxval
-                do iy = 1, nyval
-                    fs(:, kx, iy) = fp(:, iy, kx)
+                ! Transpose array:
+                !$omp parallel do collapse(2) shared(fs, fp) private(kx, iy)
+                do kx = 1, nxval
+                    do iy = 1, nyval
+                        fs(:, kx, iy) = fp(:, iy, kx)
+                    enddo
                 enddo
-            enddo
-            !$omp end parallel do
+                !$omp end parallel do
 
-            ! Carry out a full y transform on transposed array:
-            call forfft(nzval * nxval, nyval, fs, ytrig, yfactors)
+                ! Carry out a full y transform on transposed array:
+                call forfft(nzval * nxval, nyval, fs, ytrig, yfactors)
+!             endif
         end subroutine
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

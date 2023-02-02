@@ -66,7 +66,13 @@ unittests_PROGRAMS = 				\
 	test_diffz3				\
 	test_diffz4				\
 	test_diffz5				\
-	test_mpi_pencil
+	test_mpi_pencil				\
+	test_mpi_pencil2			\
+	test_mpi_fft				\
+	test_mpi_dst				\
+	test_mpi_reorder			\
+	test_mpi_diffx				\
+	test_mpi_diffy
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -193,3 +199,21 @@ test_diffz5_LDADD = libcombi.la
 
 test_mpi_pencil_SOURCES = test_mpi_pencil.f90
 test_mpi_pencil_LDADD = libcombi.la
+
+test_mpi_pencil2_SOURCES = test_mpi_pencil2.f90
+test_mpi_pencil2_LDADD = libcombi.la
+
+test_mpi_fft_SOURCES = test_mpi_fft.f90
+test_mpi_fft_LDADD = libcombi.la
+
+test_mpi_dst_SOURCES = test_mpi_dst.f90
+test_mpi_dst_LDADD = libcombi.la
+
+test_mpi_reorder_SOURCES = test_mpi_reorder.f90
+test_mpi_reorder_LDADD = libcombi.la
+
+test_mpi_diffx_SOURCES = test_mpi_diffx.f90
+test_mpi_diffx_LDADD = libcombi.la
+
+test_mpi_diffy_SOURCES = test_mpi_diffy.f90
+test_mpi_diffy_LDADD = libcombi.la
