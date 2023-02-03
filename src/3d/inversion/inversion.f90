@@ -129,10 +129,10 @@ module inversion_mod
 
             !FFT these quantities back to semi-spectral space:
             !$omp parallel do collapse(2) private(kx, ky)
-            do ky = 0, ny-1
-                do kx = 0, nx-1
-                    call dct(1, nz, as(0:nz, kx, ky), ztrig, zfactors)
-                    call dst(1, nz, ds(1:nz, kx, ky), ztrig, zfactors)
+            do kx = box%lo(1), box%hi(1)
+                do ky = box%lo(2), box%hi(2)
+                    call dct(1, nz, as(0:nz, ky, kx), ztrig, zfactors)
+                    call dst(1, nz, ds(1:nz, ky, kx), ztrig, zfactors)
                 enddo
             enddo
             !$omp end parallel do
@@ -244,8 +244,13 @@ module inversion_mod
 
         ! Compute the gridded velocity gradient tensor
         subroutine vel2vgrad(svel)
-            double precision, intent(in) :: svel(0:nz, 0:nx-1, 0:ny-1, n_dim) ! velocity in semi-spectral space
-            double precision             :: ds(0:nz, 0:nx-1, 0:ny-1)          ! semi-spectral derivatives
+            double precision, intent(in) :: svel(0:nz,                  &
+                                                 box%hlo(2):box%hhi(2), &
+                                                 box%hlo(1):box%hhi(1), &
+                                                 n_dim) ! velocity in semi-spectral space
+            double precision             :: ds(0:nz,                    &
+                                               box%hlo(2):box%hhi(2),   &
+                                               box%hlo(1):box%hhi(1)) ! semi-spectral derivatives
 
             ! x component:
             call diffx(svel(:, :, :, I_X), ds)           ! u_x = du/dx in semi-spectral space
@@ -292,7 +297,7 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine vorticity_tendency
-            double precision :: f(-1:nz+1, 0:ny-1, 0:nx-1, n_dim)
+            double precision :: f(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim)
 
             call start_timer(vtend_timer)
 
@@ -337,10 +342,10 @@ module inversion_mod
 
         ! Note: f is overwritten
         subroutine divergence(f, div)
-            double precision, intent(inout) :: f(-1:nz+1, 0:ny-1, 0:nx-1, n_dim)
-            double precision, intent(out)   :: div(0:nz, 0:ny-1, 0:nx-1)
-            double precision                :: fs(0:nz, 0:nx-1, 0:ny-1)
-            double precision                :: ds(0:nz, 0:nx-1, 0:ny-1)
+            double precision, intent(inout) :: f(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim)
+            double precision, intent(out)   :: div(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision                :: fs(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision                :: ds(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
 
             ! calculate df1/dx
             call fftxyp2s(f(0:nz, :, :, I_X), fs)
@@ -365,16 +370,23 @@ module inversion_mod
         ! Computes a divergent flow field (ud, vd, wd) = grad(phi) where
         ! Lap(phi) = div (given).
         subroutine diverge(div,  ud, vd, wd)
-            double precision, intent(inout)  :: div(0:nz, ny, nx)
-            double precision, intent(out)    :: ud(0:nz, ny, nx), vd(0:nz, ny, nx), wd(0:nz, ny, nx)
-            double precision                 :: ds(0:nz, nx, ny)
-            double precision                 :: us(0:nz, nx, ny), vs(0:nz, nx, ny), ws(0:nz, nx, ny)
+            double precision, intent(inout)  :: div(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out)    :: ud(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                                vd(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                                wd(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision                 :: ds(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision                 :: us(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                                vs(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                                ws(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
 
             !------------------------------------------------------------------
             ! Convert phi to spectral space (in x & y) as ds:
             call fftxyp2s(div, ds)
 
-            ds(:, 1, 1) = zero
+            if ((1 >= box%lo(1)) .and. (1 <= box%hi(1)) &
+                (1 >= box%lo(2)) .and. (1 <= box%hi(2))) then
+                ds(:, 1, 1) = zero
+            endif
 
             ! Invert Laplace's operator semi-spectrally with compact differences:
             call lapinv1(ds)
