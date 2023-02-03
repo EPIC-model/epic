@@ -11,7 +11,7 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use fields
-    use mpi_halo, only : halo_swap
+    use field_mpi, only : field_halo_swap
     use physics, only : glat, lambda_c, q_0
     use omp_lib
     implicit none
@@ -89,7 +89,7 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
-            call halo_swap(volg)
+            call field_halo_swap(volg)
 
             ! apply free slip boundary condition
             volg(0,  :, :) = two * volg(0,  :, :)
@@ -196,9 +196,9 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
-            call halo_swap(volg)
-            call halo_swap(vortg)
-            call halo_swap(tbuoyg)
+            call field_halo_swap(volg)
+            call field_halo_swap(vortg)
+            call field_halo_swap(tbuoyg)
 
             ! apply free slip boundary condition
             volg(0,  :, :) = two * volg(0,  :, :)
@@ -215,7 +215,7 @@ module parcel_interpl
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
 
 #ifndef ENABLE_DRY_MODE
-            call halo_swap(dbuoyg)
+            call field_halo_swap(dbuoyg)
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
             dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
             dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)

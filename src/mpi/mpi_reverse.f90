@@ -2,7 +2,6 @@ module mpi_reverse
     use mpi_communicator
     use mpi_layout
     use mpi_utils, only : mpi_exit_on_error
-!     use mpi_halo, only : halo_fill
     implicit none
 
     private

@@ -3,7 +3,7 @@
 !
 !   This unit test checks filling the field halo. Each grid point
 !   (including halo) is assigned the value of the rank number + 1. After
-!   the call "halo_fill", the halo values should be assigned
+!   the call "field_halo_fill", the halo values should be assigned
 !   the value of the neighbour rank + 1 owning the halo grid point as
 !   interior grid point.
 ! =============================================================================
@@ -12,7 +12,7 @@ program test_field_halo_fill
     use unit_test
     use mpi_communicator
     use mpi_layout
-    use mpi_halo
+    use field_mpi
     implicit none
 
     integer, parameter            :: nx = 8, ny = 10, nz = 4
@@ -30,7 +30,7 @@ program test_field_halo_fill
 
     values(:, :, :) = dble(comm%rank + 1)
 
-    call halo_fill(values)
+    call field_halo_fill(values)
 
 
     !

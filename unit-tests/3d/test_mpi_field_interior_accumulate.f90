@@ -12,7 +12,7 @@ program test_field_interior_accumulate
     use unit_test
     use mpi_communicator
     use mpi_layout
-    use mpi_halo
+    use field_mpi
     implicit none
 
     integer, parameter            :: nx = 10, ny = 10, nz = 0
@@ -38,7 +38,7 @@ program test_field_interior_accumulate
 
     values(:, :, :) = one
 
-    call interior_accumulate(values)
+    call field_interior_accumulate(values)
 
     !
     ! check results
