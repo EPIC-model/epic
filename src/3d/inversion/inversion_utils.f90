@@ -83,6 +83,7 @@ module inversion_utils
                                              skz(0:nz)
             integer                       :: kx, ky, iz, kz
             double precision              :: z, zm(0:nz), zp(0:nz)
+            double precision              :: phip00(0:nz)
 
             if (is_initialised) then
                 return
@@ -126,9 +127,9 @@ module inversion_utils
             !----------------------------------------------------------
             !Define Hou and Li filter (2D and 3D):
             kxmaxi = one / maxval(rkx)
-            skx = -36.d0 * (kxmaxi * rkx) ** 36
+            skx = -36.d0 * (kxmaxi * rkx(box%lo(1):box%hi(1))) ** 36
             kymaxi = one/maxval(rky)
-            sky = -36.d0 * (kymaxi * rky) ** 36
+            sky = -36.d0 * (kymaxi * rky(box%lo(2):box%hi(2))) ** 36
             kzmaxi = one/maxval(rkz)
             skz = -36.d0 * (kzmaxi * rkz) ** 36
 
@@ -183,16 +184,18 @@ module inversion_utils
             !Hyperbolic functions used for solutions of Laplace's equation:
             do kx = box%lo(1), box%hi(1)
                 do ky = max(1, box%lo(2)), box%hi(2)
-                    print *, "kx, ky", kx, ky
                     call set_hyperbolic_functions(kx, ky, zm, zp)
                 enddo
             enddo
 
             ! ky = 0
-            do kx = max(1, box%lo(1)), box%hi(1)
-                call set_hyperbolic_functions(kx, 0, zm, zp)
-            enddo
+            if (box%lo(2) == 0) then
+                do kx = max(1, box%lo(1)), box%hi(1)
+                    call set_hyperbolic_functions(kx, 0, zm, zp)
+                enddo
+            endif
 
+            phip00 = zero
             if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
                 !$omp parallel workshare
                 ! kx = ky = 0
@@ -207,13 +210,19 @@ module inversion_utils
 
                 dthetam(:, 0, 0) = zero
                 dthetap(:, 0, 0) = zero
+
+                phip00 = phip(:, 0, 0)
                 !$omp end parallel workshare
             endif
 
             !---------------------------------------------------------------------
             !Define gamtop as the integral of phip(iz, 0, 0) with zero average:
+
+            call MPI_Allreduce(MPI_IN_PLACE, phip00, nz+1, MPI_DOUBLE_PRECISION, &
+                               MPI_SUM, comm%world, comm%err)
+
             !$omp parallel workshare
-            gamtop = f12 * extent(3) * (phip(:, 0, 0) ** 2 - f13)
+            gamtop = f12 * extent(3) * (phip00 ** 2 - f13)
             !$omp end parallel workshare
 
             !$omp parallel do
@@ -333,7 +342,7 @@ module inversion_utils
         ! sf  - full-spectral (1:nz-1), semi-spectral at iz = 0 and iz = nz
         ! cfc - copy of complete field (physical space)
         subroutine field_decompose_physical(fc, sf)
-            double precision, intent(in)  :: fc(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(in)  :: fc(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision, intent(out) :: sf(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
 
             call fftxyp2s(fc, sf)
@@ -385,7 +394,7 @@ module inversion_utils
         ! sfc - complete field (semi-spectral space)
         subroutine field_combine_physical(sf, fc)
             double precision, intent(in)  :: sf(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-            double precision, intent(out) :: fc(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: fc(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision              :: sfc(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
 
             sfc = sf
@@ -414,7 +423,7 @@ module inversion_utils
             !$omp parallel do collapse(2)
             do kx = box%lo(1), box%hi(1)
                 do ky = box%lo(2), box%hi(2)
-                    sf(nz, kx, ky) = zero
+                    sf(nz, ky, kx) = zero
                     call dst(1, nz, sf(1:nz, ky, kx), ztrig, zfactors)
                 enddo
             enddo

@@ -13,13 +13,13 @@ program test_mpi_diffz0
     use unit_test
     use constants, only : zero, one, two, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use inversion_mod, only : diffz, init_inversion
+    use inversion_mod, only : diffz, init_inversion, field_decompose_physical, field_combine_physical
     use mpi_communicator
     use mpi_layout
     implicit none
 
     double precision              :: error
-    double precision, allocatable :: fs(:, :, :), ds(:, :, :), &
+    double precision, allocatable :: fp(:, :, :), dp(:, :, :), fs(:, :, :), ds(:, :, :), &
                                      ref_sol(:, :, :)
     integer                       :: ix, iy, iz
     double precision              :: x, y, z, k, l, m, prefactor
@@ -39,9 +39,11 @@ program test_mpi_diffz0
 
     call mpi_layout_init(nx, ny, nz)
 
+    allocate(fp(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+    allocate(dp(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(fs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
     allocate(ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
-    allocate(ref_sol(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+    allocate(ref_sol(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 
     k = twopi / extent(1)
     l = twopi / extent(2)
@@ -49,27 +51,30 @@ program test_mpi_diffz0
 
     prefactor = - one / (k ** 2 + l ** 2 + m ** 2)
 
+    dp = zero
+    ref_sol = zero
+
     do ix = box%lo(1), box%hi(1)
-        x = lower(1) + (ix - 1) * dx(1)
+        x = lower(1) + ix * dx(1)
         do iy = box%lo(2), box%hi(2)
-            y = lower(2) + (iy - 1) * dx(2)
+            y = lower(2) + iy * dx(2)
             do iz = 0, nz
                 z = lower(3) + iz * dx(3)
-
-                fs(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dsin(m * z)
+                fp(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dsin(m * z)
                 ref_sol(iz, iy, ix) = m * dcos(k * x) * dsin(l * y) * dcos(m * z)
-
             enddo
         enddo
     enddo
 
     call init_inversion
 
+    call field_decompose_physical(fp, fs)
     call diffz(fs, ds)
+    call field_combine_physical(ds, dp)
 
-    error = maxval(dabs(ds - ref_sol))
+    error = maxval(dabs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
+                 - ref_sol(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
-    print *, "error:", error
 
     if (comm%rank == comm%master) then
         call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
@@ -77,14 +82,22 @@ program test_mpi_diffz0
         call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
-!     print *, error
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    else
+        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    endif
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (comm%err == 0) .and. (error < 2.6e-5))
+    passed = (passed .and. (comm%err == 0) .and. (error < 1.7e-13))
 
-    call print_result_logical('Test MPI diffz', passed)
+    if (comm%rank == comm%master) then
+        call print_result_logical('Test MPI diffz', passed)
+    endif
 
+    deallocate(fp)
+    deallocate(dp)
     deallocate(fs)
     deallocate(ds)
     deallocate(ref_sol)
