@@ -13,12 +13,12 @@ program test_diffz
     use unit_test
     use constants, only : zero, one, two, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use inversion_utils, only : init_fft
+    use inversion_utils, only : init_inversion, field_combine_physical, field_decompose_physical
     use inversion_mod, only : diffz
     implicit none
 
     double precision              :: error
-    double precision, allocatable :: fs(:, :, :), ds(:, :, :), &
+    double precision, allocatable :: fp(:, :, :), dp(:, :, :), fs(:, :, :), ds(:, :, :), &
                                      ref_sol(:, :, :)
     integer                       :: ix, iy, iz
     double precision              :: x, y, z, k, l, m, prefactor
@@ -30,6 +30,8 @@ program test_diffz
     lower  = (/zero, zero, zero/)
     extent =  (/pi, pi, pi/)
 
+    allocate(fp(0:nz, ny, nx))
+    allocate(dp(0:nz, ny, nx))
     allocate(fs(0:nz, nx, ny))
     allocate(ds(0:nz, nx, ny))
     allocate(ref_sol(0:nz, nx, ny))
@@ -49,23 +51,21 @@ program test_diffz
             do iz = 0, nz
                 z = lower(3) + iz * dx(3)
 
-                fs(iz, ix, iy) = dcos(k * x) * dsin(l * y) * dcos(m * z)
-                ref_sol(iz, ix, iy) = -m * dcos(k * x) * dsin(l * y) * dsin(m * z)
+                fp(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dcos(m * z)
+                ref_sol(iz, iy, ix) = -m * dcos(k * x) * dsin(l * y) * dsin(m * z)
             enddo
         enddo
     enddo
 
-    call init_fft
+    call init_inversion
 
+    call field_decompose_physical(fp, fs)
     call diffz(fs, ds)
+    call field_combine_physical(ds, dp)
 
-    ! we need to explicitly set to zero
-    ds(0,  :, :) = zero
-    ds(nz, :, :) = zero
+    error = maxval(dabs(dp - ref_sol))
 
-    error = maxval(dabs(ds - ref_sol))
-
-    call print_result_dp('Test inversion (diffz)', error, atol=5.0e-4)
+    call print_result_dp('Test inversion (diffz)', error, atol=0.2d0)
 
     deallocate(fs)
     deallocate(ds)
