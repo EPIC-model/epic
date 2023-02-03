@@ -11,7 +11,8 @@ module inversion_utils
                        , fftxyp2s       &
                        , fftxys2p       &
                        , fftsine        &
-                       , fftcosine
+                       , fftcosine, zfactors, ztrig
+    use stafft, only : dst
     implicit none
 
     private
@@ -348,12 +349,12 @@ module inversion_utils
         subroutine field_decompose_semi_spectral(sfc)
             double precision, intent(inout) :: sfc(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision                :: sfctop(box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-            integer                         :: iz
+            integer                         :: iz, kx, ky
 
             ! subtract harmonic part
             !$omp parallel do
             do iz = 1, nz-1
-                sfc(iz, :, :) = sfc(iz, :, :) - (sfc(0,  :, :) * phim(iz, :, :)+ sfc(nz, :, :) * phip(iz, :, :))
+                sfc(iz, :, :) = sfc(iz, :, :) - (sfc(0, :, :) * phim(iz, :, :) + sfc(nz, :, :) * phip(iz, :, :))
             enddo
             !$omp end parallel do
 
@@ -362,7 +363,14 @@ module inversion_utils
             !$omp end parallel workshare
 
             ! transform interior to fully spectral
-            call fftsine(sfc)
+            !$omp parallel do collapse(2)
+            do kx = box%lo(1), box%hi(1)
+                do ky = box%lo(2), box%hi(2)
+                    call dst(1, nz, sfc(1:nz, ky, kx), ztrig, zfactors)
+                enddo
+            enddo
+            !$omp end parallel do
+!             call fftsine(sfc)
 
             !$omp parallel workshare
             sfc(nz, :, :) = sfctop
@@ -396,14 +404,22 @@ module inversion_utils
         subroutine field_combine_semi_spectral(sf)
             double precision, intent(inout) :: sf(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision                :: sftop(box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-            integer                         :: iz
+            integer                         :: iz, kx, ky
 
             ! transform sf(1:nz-1, :, :) to semi-spectral space (sine transform) as the array sf:
             !$omp parallel workshare
             sftop = sf(nz, :, :)
             !$omp end parallel workshare
 
-            call fftsine(sf)
+            !$omp parallel do collapse(2)
+            do kx = box%lo(1), box%hi(1)
+                do ky = box%lo(2), box%hi(2)
+                    sf(nz, kx, ky) = zero
+                    call dst(1, nz, sf(1:nz, ky, kx), ztrig, zfactors)
+                enddo
+            enddo
+            !$omp end parallel do
+!             call fftsine(sf)
 
             !$omp parallel workshare
             sf(nz, :, :) = sftop
@@ -412,7 +428,7 @@ module inversion_utils
             ! add harmonic part to sfc:
             !$omp parallel do
             do iz = 1, nz-1
-                sf(iz, :, :) = sf(iz, :, :) + sf(0,  :, :) * phim(iz, :, :) + sf(nz, :, :) * phip(iz, :, :)
+                sf(iz, :, :) = sf(iz, :, :) + sf(0, :, :) * phim(iz, :, :) + sf(nz, :, :) * phip(iz, :, :)
             enddo
             !$omp end parallel do
 

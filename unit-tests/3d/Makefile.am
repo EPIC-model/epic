@@ -34,7 +34,6 @@ unittestsdir = $(prefix)/unit-tests
 # 	test_velgradg
 # 	test_vtend
 # 	test_lapinv1
-# 	test_diffz0
 # 	test_diffz1
 # 	test_diffz2
 # 	test_diffz3
@@ -72,7 +71,8 @@ unittests_PROGRAMS = 				\
 	test_mpi_dst				\
 	test_mpi_reorder			\
 	test_mpi_diffx				\
-	test_mpi_diffy
+	test_mpi_diffy				\
+	test_mpi_diffz0
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -152,9 +152,6 @@ test_free_slip_3d_LDADD = libcombi.la
 # test_lapinv1_SOURCES = test_lapinv1.f90
 # test_lapinv1_LDADD = libcombi.la
 
-# test_diffz0_SOURCES = test_diffz0.f90
-# test_diffz0_LDADD = libcombi.la
-
 # test_diffz1_SOURCES = test_diffz1.f90
 # test_diffz1_LDADD = libcombi.la
 
@@ -217,3 +214,6 @@ test_mpi_diffx_LDADD = libcombi.la
 
 test_mpi_diffy_SOURCES = test_mpi_diffy.f90
 test_mpi_diffy_LDADD = libcombi.la
+
+test_mpi_diffz0_SOURCES = test_mpi_diffz0.f90
+test_mpi_diffz0_LDADD = libcombi.la
