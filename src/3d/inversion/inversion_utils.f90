@@ -9,7 +9,9 @@ module inversion_utils
                        , rky            &
                        , rkz            &
                        , fftxyp2s       &
-                       , fftxys2p
+                       , fftxys2p       &
+                       , fftsine        &
+                       , fftcosine
     implicit none
 
     private
@@ -21,29 +23,29 @@ module inversion_utils
     double precision, allocatable :: etdv(:, :, :), htdv(:, :, :)
 
     ! Note k2l2i = 1/(k^2+l^2) (except k = l = 0, then k2l2i(0, 0) = 0)
-    double precision, allocatable :: k2l2i(:, :)
+    double precision, protected, allocatable :: k2l2i(:, :)
 
     ! Note k2l2 = k^2+l^2
-    double precision, allocatable :: k2l2(:, :)
+    double precision, protected, allocatable :: k2l2(:, :)
 
     integer, parameter :: nsubs_tri = 8 !number of blocks for openmp
     integer :: nxsub
 
-    double precision, allocatable :: green(:, :, :)
+    double precision, protected, allocatable :: green(:, :, :)
 
     !De-aliasing filter:
-    double precision, allocatable :: filt(:, :, :)
+    double precision, protected, allocatable :: filt(:, :, :)
 
-    double precision, allocatable :: gamtop(:), gambot(:)
+    double precision, protected, allocatable :: gamtop(:), gambot(:)
 
-    double precision, allocatable :: thetam(:, :, :)    ! theta_{-}
-    double precision, allocatable :: thetap(:, :, :)    ! theta_{+}
-    double precision, allocatable :: dthetam(:, :, :)   ! dtheta_{-}/dz
-    double precision, allocatable :: dthetap(:, :, :)   ! dtheta_{+}/dz
-    double precision, allocatable :: phim(:, :, :)      ! phi_{-}
-    double precision, allocatable :: phip(:, :, :)      ! phi_{+}
-    double precision, allocatable :: dphim(:, :, :)     ! dphi_{-}/dz
-    double precision, allocatable :: dphip(:, :, :)     ! dphi_{+}/dz
+    double precision, protected, allocatable :: thetam(:, :, :)    ! theta_{-}
+    double precision, protected, allocatable :: thetap(:, :, :)    ! theta_{+}
+    double precision, protected, allocatable :: dthetam(:, :, :)   ! dtheta_{-}/dz
+    double precision, protected, allocatable :: dthetap(:, :, :)   ! dtheta_{+}/dz
+    double precision, protected, allocatable :: phim(:, :, :)      ! phi_{-}
+    double precision, protected, allocatable :: phip(:, :, :)      ! phi_{+}
+    double precision, protected, allocatable :: dphim(:, :, :)     ! dphi_{-}/dz
+    double precision, protected, allocatable :: dphip(:, :, :)     ! dphi_{+}/dz
 
     double precision :: dz, dzi, dz2, dz6, dz24, hdzi, dzisq, ap
 
@@ -91,18 +93,18 @@ module inversion_utils
 
             call initialise_fft(extent)
 
-            allocate(green(0:nz, 0:nx-1, 0:ny-1))
+            allocate(green(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
             allocate(gamtop(0:nz))
             allocate(gambot(0:nz))
 
-            allocate(phim(0:nz, 0:nx-1, 0:ny-1))
-            allocate(phip(0:nz, 0:nx-1, 0:ny-1))
-            allocate(dphim(0:nz, 0:nx-1, 0:ny-1))
-            allocate(dphip(0:nz, 0:nx-1, 0:ny-1))
-            allocate(thetam(0:nz, 0:nx-1, 0:ny-1))
-            allocate(thetap(0:nz, 0:nx-1, 0:ny-1))
-            allocate(dthetam(0:nz, 0:nx-1, 0:ny-1))
-            allocate(dthetap(0:nz, 0:nx-1, 0:ny-1))
+            allocate(phim(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(phip(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(dphim(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(dphip(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(thetam(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(thetap(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(dthetam(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(dthetap(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 
             !---------------------------------------------------------------------
             !Define Green function
@@ -173,21 +175,24 @@ module inversion_utils
             dzisq = dxi(3) ** 2
             hdzi = f12 * dxi(3)
 
-            allocate(k2l2i(0:nx-1, 0:ny-1))
-            allocate(k2l2(0:nx-1, 0:ny-1))
+            allocate(k2l2i(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(k2l2(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 
-            allocate(filt(0:nz, 0:nx-1, 0:ny-1))
+            allocate(filt(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+
+            ! ---------------------
+            ! FIXME
 
             allocate(a0(nx, ny))
-            allocate(etdv(0:nz, nx, ny))
-            allocate(htdv(0:nz, nx, ny))
+            allocate(etdv(0:nz, nx, ny))    ! FIXME
+            allocate(htdv(0:nz, nx, ny))    ! FIXME
 
             nxsub = nx / nsubs_tri
 
             !Squared wavenumber array (used in tridiagonal solve):
             do ky = 0, ny-1
                 do kx = 0, nx-1
-                    k2l2(kx, ky) = rkx(kx) ** 2 + rky(ky) ** 2
+                    k2l2(ky, kx) = rkx(kx) ** 2 + rky(ky) ** 2
                 enddo
             enddo
 
@@ -207,11 +212,11 @@ module inversion_utils
 
             do ky = 0, ny-1
                do kx = 0, nx-1
-                     !filt(:, kx, ky) = dexp(skx(kx) + sky(ky))
-                  filt(0,  kx, ky) = dexp(skx(kx) + sky(ky))
-                  filt(nz, kx, ky) = filt(0, kx, ky)
+                     !filt(:, ky, kx) = dexp(skx(kx) + sky(ky))
+                  filt(0,  ky, kx) = dexp(skx(kx) + sky(ky))
+                  filt(nz, ky, kx) = filt(0, ky, kx)
                   do kz = 1, nz-1
-                     filt(kz, kx, ky) = filt(0, kx, ky) * dexp(skz(kz))
+                     filt(kz, ky, kx) = filt(0, ky, kx) * dexp(skz(kz))
                   enddo
                enddo
             enddo
@@ -288,11 +293,11 @@ module inversion_utils
             double precision             :: ef, em(0:nz), ep(0:nz), Lm(0:nz), Lp(0:nz)
             double precision             :: fac, div, kl
 
-            kl = dsqrt(k2l2(kx, ky))
+            kl = dsqrt(k2l2(ky, kx))
             fac = kl * extent(3)
             ef = dexp(- fac)
             div = one / (one - ef**2)
-            k2ifac = f12 * k2l2i(kx, ky)
+            k2ifac = f12 * k2l2i(ky, kx)
 
             Lm = kl * zm
             Lp = kl * zp
@@ -300,30 +305,32 @@ module inversion_utils
             ep = dexp(- Lp)
             em = dexp(- Lm)
 
-            phim(:, kx, ky) = div * (ep - ef * em)
-            phip(:, kx, ky) = div * (em - ef * ep)
+            phim(:, ky, kx) = div * (ep - ef * em)
+            phip(:, ky, kx) = div * (em - ef * ep)
 
-            dphim(:, kx, ky) = - kl * div * (ep + ef * em)
-            dphip(:, kx, ky) =   kl * div * (em + ef * ep)
+            dphim(:, ky, kx) = - kl * div * (ep + ef * em)
+            dphip(:, ky, kx) =   kl * div * (em + ef * ep)
 
             Q = div * (one + ef**2)
             R = div * two * ef
 
-            thetam(:, kx, ky) = k2ifac * (R * Lm * phip(:, kx, ky) - Q * Lp * phim(:, kx, ky))
-            thetap(:, kx, ky) = k2ifac * (R * Lp * phim(:, kx, ky) - Q * Lm * phip(:, kx, ky))
+            thetam(:, ky, kx) = k2ifac * (R * Lm * phip(:, ky, kx) - Q * Lp * phim(:, ky, kx))
+            thetap(:, ky, kx) = k2ifac * (R * Lp * phim(:, ky, kx) - Q * Lm * phip(:, ky, kx))
 
-            dthetam(:, kx, ky) = - k2ifac * ((Q * Lp - one) * dphim(:, kx, ky) - R * Lm * dphip(:, kx, ky))
-            dthetap(:, kx, ky) = - k2ifac * ((Q * Lm - one) * dphip(:, kx, ky) - R * Lp * dphim(:, kx, ky))
+            dthetam(:, ky, kx) = - k2ifac * ((Q * Lp - one) * dphim(:, ky, kx) - R * Lm * dphip(:, ky, kx))
+            dthetap(:, ky, kx) = - k2ifac * ((Q * Lm - one) * dphip(:, ky, kx) - R * Lp * dphim(:, ky, kx))
 
         end subroutine set_hyperbolic_functions
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! fc  - complete field (physical space)
+        ! sf  - full-spectral (1:nz-1), semi-spectral at iz = 0 and iz = nz
+        ! cfc - copy of complete field (physical space)
         subroutine field_decompose_physical(fc, sf)
-            double precision, intent(in)  :: fc(0:nz, 0:ny-1, 0:nx-1)    ! complete field (physical space)
-            double precision, intent(out) :: sf(0:nz, 0:nx-1, 0:ny-1)    ! full-spectral (1:nz-1),
-                                                                         ! semi-spectral at iz = 0 and iz = nz
-            double precision              :: cfc(0:nz, 0:ny-1, 0:nx-1)   ! copy of complete field (physical space)
+            double precision, intent(in)  :: fc(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: sf(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision              :: cfc(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
 
             cfc = fc
             call fftxyp2s(cfc, sf)
@@ -334,11 +341,11 @@ module inversion_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! in : complete field (semi-spectral space)
+        ! out: full-spectral (1:nz-1), semi-spectral at iz = 0 and iz = nz
         subroutine field_decompose_semi_spectral(sfc)
-            double precision, intent(inout) :: sfc(0:nz, 0:nx-1, 0:ny-1) ! in : complete field (semi-spectral space)
-                                                                         ! out: full-spectral (1:nz-1),
-                                                                         !      semi-spectral at iz = 0 and iz = nz
-            double precision                :: sfctop(0:nx-1, 0:ny-1)
+            double precision, intent(inout) :: sfc(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision                :: sfctop(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             integer                         :: iz
 
             ! subtract harmonic part
@@ -353,7 +360,7 @@ module inversion_utils
             !$omp end parallel workshare
 
             ! transform interior to fully spectral
-            !call fftsine(sfc) !FIXME enable
+            call fftsine(sfc)
 
             !$omp parallel workshare
             sfc(nz, :, :) = sfctop
@@ -363,11 +370,13 @@ module inversion_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! sf  - full-spectral (1:nz-1), semi-spectral at iz = 0 and iz = nz
+        ! fc  - complete field (physical space)
+        ! sfc - complete field (semi-spectral space)
         subroutine field_combine_physical(sf, fc)
-            double precision, intent(in)  :: sf(0:nz, 0:nx-1, 0:ny-1)    ! full-spectral (1:nz-1),
-                                                                         ! semi-spectral at iz = 0 and iz = nz
-            double precision, intent(out) :: fc(0:nz, 0:ny-1, 0:nx-1)    ! complete field (physical space)
-            double precision              :: sfc(0:nz, 0:nx-1, 0:ny-1)   ! complete field (semi-spectral space)
+            double precision, intent(in)  :: sf(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: fc(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision              :: sfc(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
 
             sfc = sf
 
@@ -380,11 +389,11 @@ module inversion_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! in : full-spectral (1:nz-1), semi-spectral at iz = 0 and iz = nz
+        ! out: complete field (semi-spectral space)
         subroutine field_combine_semi_spectral(sf)
-            double precision, intent(inout) :: sf(0:nz, 0:nx-1, 0:ny-1) ! in: full-spectral (1:nz-1),
-                                                                        !     semi-spectral at iz = 0 and iz = nz
-                                                                        ! out: complete field (semi-spectral space)
-            double precision                :: sftop(0:nx-1, 0:ny-1)
+            double precision, intent(inout) :: sf(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision                :: sftop(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             integer                         :: iz
 
             ! transform sf(1:nz-1, :, :) to semi-spectral space (sine transform) as the array sf:
@@ -392,7 +401,7 @@ module inversion_utils
             sftop = sf(nz, :, :)
             !$omp end parallel workshare
 
-            ! call fftsine(sf) !FIXME enable
+            call fftsine(sf)
 
             !$omp parallel workshare
             sf(nz, :, :) = sftop
@@ -412,8 +421,8 @@ module inversion_utils
         !Calculates df/dz for a field f using 2nd-order differencing.
         !Here fs = f, ds = df/dz. In semi-spectral space or physical space.
         subroutine central_diffz(fs, ds)
-            double precision, intent(in)  :: fs(0:, 0:, 0:)
-            double precision, intent(out) :: ds(0:, 0:, 0:)
+            double precision, intent(in)  :: fs(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: ds(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             integer                       :: iz
 
             ! Linear extrapolation at the boundaries:
@@ -437,10 +446,13 @@ module inversion_utils
 
         !Calculates df/dz for a field f in mixed-spectral space
         !Here fs = f, ds = df/dz. Both fields are in mixed-spectral space.
+        ! fs - mixed-spectral space
+        ! ds - derivative linear part
+        ! as - derivative sine part
         subroutine diffz(fs, ds)
-            double precision, intent(in)  :: fs(0:nz, 0:nx-1, 0:ny-1) ! f in mixed-spectral space
-            double precision, intent(out) :: ds(0:nz, 0:nx-1, 0:ny-1) ! derivative linear part
-            double precision              :: as(0:nz, 0:nx-1, 0:ny-1) ! derivative sine-part
+            double precision, intent(in)  :: fs(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: ds(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision              :: as(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             integer                       :: kz, iz
 
             !Calculate the derivative of the linear part (ds) in semi-spectral space:
@@ -464,7 +476,7 @@ module inversion_utils
             !$omp end parallel workshare
 
             !FFT these quantities back to semi-spectral space:
-!             call fftcosine(as) !FIXME enable
+            call fftcosine(as)
 
             ! Combine vertical derivative given the sine (as) and linear (ds) parts:
             !omp parallel workshare
@@ -477,6 +489,7 @@ module inversion_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        !FIXME
         !Inverts Laplace's operator on fs in semi-spectral space.
         !Here dfs/dz = 0 on the z boundaries.
         !Uses 2nd-order differencing
