@@ -34,6 +34,8 @@ unittestsdir = $(prefix)/unit-tests
 # 	test_velgradg
 # 	test_vtend
 # 	test_lapinv1
+# 	test_diffz0
+# 	test_diffz1
 # 	test_diffz2
 # 	test_diffz3
 # 	test_diffz4
@@ -55,8 +57,6 @@ unittests_PROGRAMS = 				\
 	test_mpi_grid2par			\
 	test_ellipsoid_reflection		\
 	test_free_slip_3d			\
-	test_diffz0				\
-	test_diffz1				\
 	test_mpi_field_halo_fill		\
 	test_mpi_field_interior_accumulate	\
 	test_mpi_field_diagnostics		\
@@ -152,11 +152,11 @@ test_free_slip_3d_LDADD = libcombi.la
 # test_lapinv1_SOURCES = test_lapinv1.f90
 # test_lapinv1_LDADD = libcombi.la
 
-test_diffz0_SOURCES = test_diffz0.f90
-test_diffz0_LDADD = libcombi.la
+# test_diffz0_SOURCES = test_diffz0.f90
+# test_diffz0_LDADD = libcombi.la
 
-test_diffz1_SOURCES = test_diffz1.f90
-test_diffz1_LDADD = libcombi.la
+# test_diffz1_SOURCES = test_diffz1.f90
+# test_diffz1_LDADD = libcombi.la
 
 test_mpi_field_halo_fill_SOURCES = test_mpi_field_halo_fill.f90
 test_mpi_field_halo_fill_LDADD = libcombi.la

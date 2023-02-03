@@ -16,4 +16,8 @@ module mpi_tags
                           NORTHWEST_TAG = 2005,  &
                           NORTHEAST_TAG = 2006,  &
                           SOUTHEAST_TAG = 2007
+
+    integer, parameter :: REVERSE_LO_TAG = 3000, &
+                          REVERSE_HI_TAG = 3001
+
 end module mpi_tags
