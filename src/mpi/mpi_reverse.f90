@@ -132,17 +132,15 @@ module mpi_reverse
                 allocate(reo%hi_buffer(box%size(3), box%size(2)))
                 allocate(reo%hi_halo_buffer(box%size(3), box%size(2), 2))
                 allocate(reo%lo_halo_buffer(box%size(3), box%size(2)))
-
-                call MPI_Cart_shift(sub_comm%comm, 0, 1, reo%lo_rank, reo%hi_rank, sub_comm%err)
-!             else
-!                 ! if in y direction
-!                 allocate(reo%south_buffer(box%size(3), 2, box%size(1)))
-!                 allocate(reo%north_buffer(box%size(3), box%size(1)))
-!                 allocate(reo%north_halo_buffer(box%size(3), 2, box%size(1)))
-!                 allocate(reo%south_halo_buffer(box%size(3), box%size(1)))
-
-!                 call MPI_Cart_shift(sub_comm%comm, 1, 1, south_rank, north_rank, sub_comm%err)
+             else
+                ! if in y direction
+                allocate(reo%lo_buffer(box%size(3), 2, box%size(1)))
+                allocate(reo%hi_buffer(box%size(3), box%size(1)))
+                allocate(reo%hi_halo_buffer(box%size(3), 2, box%size(1)))
+                allocate(reo%lo_halo_buffer(box%size(3), box%size(1)))
             endif
+
+            call MPI_Cart_shift(sub_comm%comm, 0, 1, reo%lo_rank, reo%hi_rank, sub_comm%err)
 
         end subroutine initialise_reversing
 
@@ -150,7 +148,7 @@ module mpi_reverse
 
         subroutine copy_to_buffer_in_x(fs)
             double precision, intent(in) :: fs(box%lo(3):box%hi(3),   &
-                                               box%hlo(2):box%hhi(2), &
+                                               box%lo(2):box%hi(2),   &
                                                box%hlo(1):box%hhi(1))
             integer                      :: ix, iy, iz, j
 
@@ -173,7 +171,7 @@ module mpi_reverse
 
         subroutine copy_from_buffer_in_x(fs)
             double precision, intent(out) :: fs(box%lo(3):box%hi(3),   &
-                                                box%hlo(2):box%hhi(2), &
+                                                box%lo(2):box%hi(2),   &
                                                 box%hlo(1):box%hhi(1))
             integer                       :: ix, iy, iz
             integer                       :: i, j, k, half_length, n_recvs
@@ -189,9 +187,9 @@ module mpi_reverse
             do i = 0, half_length-1
                 j = box%lo(1) + i
                 k = box%hi(1) - n_recvs - i
-                buf = fs(:, box%lo(2):box%hi(2), j)
-                fs(:, box%lo(2):box%hi(2), j) = fs(:, box%lo(2):box%hi(2), k)
-                fs(:, box%lo(2):box%hi(2), k) = buf
+                buf = fs(:, :, j)
+                fs(:, :, j) = fs(:, :, k)
+                fs(:, :, k) = buf
             enddo
 
             !--------------------------------------------------------------
@@ -219,7 +217,7 @@ module mpi_reverse
         subroutine copy_to_buffer_in_y(fs)
             double precision, intent(in) :: fs(box%lo(3):box%hi(3),   &
                                                box%hlo(2):box%hhi(2), &
-                                               box%hlo(1):box%hhi(1))
+                                               box%lo(1):box%hi(1))
             integer                      :: ix, iy, iz, j
 
             j = 1
@@ -242,7 +240,7 @@ module mpi_reverse
         subroutine copy_from_buffer_in_y(fs)
             double precision, intent(out) :: fs(box%lo(3):box%hi(3),   &
                                                 box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+                                                box%lo(1):box%hi(1))
             integer                       :: ix, iy, iz
             integer                       :: i, j, k, half_length, n_recvs
             double precision              :: buf(box%lo(3):box%hi(3), box%lo(1):box%hi(1))
@@ -257,9 +255,9 @@ module mpi_reverse
             do i = 0, half_length-1
                 j = box%lo(2) + i
                 k = box%hi(2) - n_recvs - i
-                buf = fs(:, j, box%lo(1):box%hi(1))
-                fs(:, j, box%lo(1):box%hi(1)) = fs(:, k, box%lo(1):box%hi(1))
-                fs(:, k, box%lo(1):box%hi(1)) = buf
+                buf = fs(:, j, :)
+                fs(:, j, :) = fs(:, k, :)
+                fs(:, k, :) = buf
             enddo
 
             !--------------------------------------------------------------
@@ -283,11 +281,11 @@ module mpi_reverse
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine reverse_x(fs, gs)
-            double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & ! 0:nz
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+            double precision, intent(in)  :: fs(box%lo(3):box%hi(3), & ! 0:nz
+                                                box%lo(2):box%hi(2), &
+                                                box%lo(1):box%hi(1))
             double precision, intent(out) :: gs(box%lo(3):box%hi(3),   & ! 0:nz
-                                                box%hlo(2):box%hhi(2), &
+                                                box%lo(2):box%hi(2),   &
                                                 box%hlo(1):box%hhi(1))
 
             if (.not. l_initialised_x) then
@@ -295,9 +293,9 @@ module mpi_reverse
                 l_initialised_x = .true.
             endif
 
-            gs = fs
+            gs(:, :, box%lo(1):box%hi(1)) = fs
 
-            call copy_to_buffer_in_x(fs)
+            call copy_to_buffer_in_x(gs)
 
             call MPI_alltoallv(x_reo%send_buffer,       &
                                x_reo%send_recv_count,   &
@@ -320,20 +318,20 @@ module mpi_reverse
 
         subroutine reverse_y(fs, gs)
             double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & ! 0:nz
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+                                                box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
             double precision, intent(out) :: gs(box%lo(3):box%hi(3),   & ! 0:nz
                                                 box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+                                                box%lo(1):box%hi(1))
 
             if (.not. l_initialised_y) then
                 call initialise_reversing(y_reo, y_comm, 2)
                 l_initialised_y = .true.
             endif
 
-            gs = fs
+            gs(:, box%lo(2):box%hi(2), :) = fs
 
-            call copy_to_buffer_in_y(fs)
+            call copy_to_buffer_in_y(gs)
 
             call MPI_alltoallv(y_reo%send_buffer,       &
                                y_reo%send_recv_count,   &
@@ -356,18 +354,18 @@ module mpi_reverse
 
         subroutine halo_x_fill(gs)
             double precision, intent(inout) :: gs(box%lo(3):box%hi(3),   & ! 0:nz
-                                                  box%hlo(2):box%hhi(2), &
+                                                  box%lo(2):box%hi(2),   &
                                                   box%hlo(1):box%hhi(1))
 
             ! copy from interior to buffers
-            x_reo%lo_buffer = gs(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))
-            x_reo%hi_buffer = gs(box%lo(3):box%hi(3), box%hi(2),             box%lo(1):box%hi(1))
+            x_reo%lo_buffer = gs(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))
+            x_reo%hi_buffer = gs(:, box%hi(2),             box%lo(1):box%hi(1))
 
             call communicate_halo(x_reo, x_comm)
 
             ! copy from buffers to halo
-            gs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) = x_reo%hi_halo_buffer
-            gs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1)) = x_reo%lo_halo_buffer
+            gs(:, :, box%hhi(1)-1:box%hhi(1)) = x_reo%hi_halo_buffer
+            gs(:, :, box%hlo(1)) = x_reo%lo_halo_buffer
 
         end subroutine halo_x_fill
 
@@ -376,17 +374,17 @@ module mpi_reverse
         subroutine halo_y_fill(gs)
             double precision, intent(inout) :: gs(box%lo(3):box%hi(3),   & ! 0:nz
                                                   box%hlo(2):box%hhi(2), &
-                                                  box%hlo(1):box%hhi(1))
+                                                  box%lo(1):box%hi(1))
 
             ! copy from interior to buffers
-            y_reo%lo_buffer = gs(box%lo(3):box%hi(3), box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1)
-            y_reo%hi_buffer = gs(box%lo(3):box%hi(3), box%lo(2):box%hi(2),   box%hi(1))
+            y_reo%lo_buffer = gs(:, box%lo(2):box%lo(2)+1, :)
+            y_reo%hi_buffer = gs(:, box%hi(2),             :)
 
             call communicate_halo(y_reo, y_comm)
 
             ! copy from buffers to halo
-            gs(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) = y_reo%hi_halo_buffer
-            gs(box%lo(3):box%hi(3), box%hlo(2), box%lo(1):box%hi(1)) = y_reo%lo_halo_buffer
+            gs(:, box%hhi(2)-1:box%hhi(2), :) = y_reo%hi_halo_buffer
+            gs(:, box%hlo(2), :) = y_reo%lo_halo_buffer
 
         end subroutine halo_y_fill
 

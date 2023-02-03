@@ -131,8 +131,8 @@ module sta3dfft
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
             double precision, intent(out) :: fs(box%lo(3):box%hi(3),   & !Spectral
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+                                                box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
             integer                       :: i, j
 
             ! 1. Transform from (z, y, x) to (y, x, z) pencil
@@ -182,9 +182,7 @@ module sta3dfft
                                      dim_y_comm,              &
                                      BACKWARD,                &
                                      fft_in_y_buffer,         &
-                                     fs(box%lo(3):box%hi(3),  &
-                                        box%lo(2):box%hi(2),  &
-                                        box%lo(1):box%hi(1)))
+                                     fs)
 
         end subroutine fftxyp2s
 
@@ -196,8 +194,8 @@ module sta3dfft
         ! *** fs is destroyed upon exit ***
         subroutine fftxys2p(fs, fp)
             double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & !Spectral
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+                                                box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
             double precision, intent(out) :: fp(box%hlo(3):box%hhi(3), & !Physical
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
@@ -210,13 +208,11 @@ module sta3dfft
             ! 5. Transform from (x, z, y) to (y, x, z) pencil
             ! 6. Transform from (y, x, z) to (z, y, x) pencil
 
-            call transpose_to_pencil(y_from_z_transposition,  &
-                                     (/1, 2, 3/),             &
-                                     dim_y_comm,              &
-                                     FORWARD,                 &
-                                     fs(box%lo(3):box%hi(3),  &
-                                        box%lo(2):box%hi(2),  &
-                                        box%lo(1):box%hi(1)), &
+            call transpose_to_pencil(y_from_z_transposition, &
+                                     (/1, 2, 3/),            &
+                                     dim_y_comm,             &
+                                     FORWARD,                &
+                                     fs,                     &
                                      fft_in_y_buffer)
 
             call transpose_to_pencil(x_from_y_transposition, &
@@ -259,9 +255,9 @@ module sta3dfft
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine fftsine(fs)
-            double precision, intent(inout) :: fs(box%lo(3):box%hi(3),   &  ! 0:nz
-                                                  box%hlo(2):box%hhi(2), &
-                                                  box%hlo(1):box%hhi(1))
+            double precision, intent(inout) :: fs(box%lo(3):box%hi(3), &  ! 0:nz
+                                                  box%lo(2):box%hi(2), &
+                                                  box%lo(1):box%hi(1))
             integer                         :: kx, ky
 
             !$omp parallel do collapse(2) private(kx, ky)
@@ -277,10 +273,10 @@ module sta3dfft
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine fftcosine(fs)
-            double precision, intent(inout) :: fs(box%lo(3):box%hi(3),   & ! 0:nz
-                                                  box%hlo(2):box%hhi(2), &
-                                                  box%hlo(1):box%hhi(1))
-            integer                      :: kx, ky
+            double precision, intent(inout) :: fs(box%lo(3):box%hi(3), & ! 0:nz
+                                                  box%lo(2):box%hi(2), &
+                                                  box%lo(1):box%hi(1))
+            integer                         :: kx, ky
 
             !$omp parallel do collapse(2) private(kx, ky)
             do kx = box%lo(1), box%hi(1)
@@ -297,15 +293,16 @@ module sta3dfft
         ! Given fs in spectral space (at least in x & y), this returns dfs/dx
         ! (partial derivative).  The result is returned in ds, again
         ! spectral.  Uses exact form of the derivative in spectral space.
+        ! Note: gs must have halo in x due to the reordering algorithm.
         subroutine diffx(fs, ds)
             double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & ! 0:nz
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+                                                box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
             double precision, intent(out) :: ds(box%lo(3):box%hi(3),   & ! 0:nz
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+                                                box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
             double precision              :: gs(box%lo(3):box%hi(3),   & ! 0:nz
-                                                box%hlo(2):box%hhi(2), &
+                                                box%lo(2):box%hi(2),   &
                                                 box%hlo(1):box%hhi(1))
             integer                       :: kx, dkx
             double precision              :: si
@@ -337,16 +334,17 @@ module sta3dfft
         ! Given fs in spectral space (at least in x & y), this returns dfs/dy
         ! (partial derivative).  The result is returned in ds, again
         ! spectral.  Uses exact form of the derivative in spectral space.
+        ! Note: gs must have halo in y due to the reordering algorithm.
         subroutine diffy(fs, ds)
             double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & ! 0:nz
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+                                                box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
             double precision, intent(out) :: ds(box%lo(3):box%hi(3),   & ! 0:nz
-                                                box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+                                                box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
             double precision              :: gs(box%lo(3):box%hi(3),   & ! 0:nz
                                                 box%hlo(2):box%hhi(2), &
-                                                box%hlo(1):box%hhi(1))
+                                                box%lo(1):box%hi(1))
             integer                       :: ky, dky
             double precision              :: si
 

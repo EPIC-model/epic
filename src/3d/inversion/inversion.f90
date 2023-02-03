@@ -22,13 +22,13 @@ module inversion_mod
         ! and the velocity gradient tensor (velgradg) in physical space (vortg)
         ! Note: the vorticity is modified to be solenoidal and spectrally filtered.
         subroutine vor2vel
-            double precision :: as(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))          ! semi-spectral
-            double precision :: bs(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))          ! semi-spectral
-            double precision :: ds(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))          ! semi-spectral
-            double precision :: es(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))          ! semi-spectral
-            double precision :: cs(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))          ! semi-spectral
-            double precision :: svel(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim) ! semi-spectral
-            double precision :: svor(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim) ! mixed spectral
+            double precision :: as(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
+            double precision :: bs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
+            double precision :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
+            double precision :: es(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
+            double precision :: cs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
+            double precision :: svel(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), n_dim) ! semi-spectral
+            double precision :: svor(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), n_dim) ! mixed spectral
             double precision :: ubar(0:nz), vbar(0:nz)
             integer          :: iz, nc, kx, ky, kz
 
@@ -297,7 +297,7 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine vorticity_tendency
-            double precision :: f(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim)
+            double precision :: f(-1:nz+1, box%lo(2):box%hi(2), box%lo(1):box%hi(1), n_dim)
 
             call start_timer(vtend_timer)
 
@@ -344,8 +344,8 @@ module inversion_mod
         subroutine divergence(f, div)
             double precision, intent(inout) :: f(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim)
             double precision, intent(out)   :: div(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
-            double precision                :: fs(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
-            double precision                :: ds(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision                :: fs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
+            double precision                :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
 
             ! calculate df1/dx
             call fftxyp2s(f(0:nz, :, :, I_X), fs)
@@ -374,10 +374,10 @@ module inversion_mod
             double precision, intent(out)    :: ud(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
                                                 vd(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
                                                 wd(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
-            double precision                 :: ds(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
-            double precision                 :: us(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                                vs(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                                ws(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision                 :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
+            double precision                 :: us(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
+                                                vs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
+                                                ws(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
 
             !------------------------------------------------------------------
             ! Convert phi to spectral space (in x & y) as ds:
