@@ -383,7 +383,7 @@ module inversion_mod
             ! Convert phi to spectral space (in x & y) as ds:
             call fftxyp2s(div, ds)
 
-            if ((1 >= box%lo(1)) .and. (1 <= box%hi(1)) &
+            if ((1 >= box%lo(1)) .and. (1 <= box%hi(1)) .and. &
                 (1 >= box%lo(2)) .and. (1 <= box%hi(2))) then
                 ds(:, 1, 1) = zero
             endif
