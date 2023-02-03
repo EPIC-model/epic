@@ -12,11 +12,11 @@ module sta3dfft
     private
 
     ! Wavenumbers:
-    double precision, allocatable :: rkx(:), hrkx(:), rky(:), hrky(:), rkz(:), rkzi(:)
+    double precision, protected, allocatable :: rkx(:), hrkx(:), rky(:), hrky(:), rkz(:), rkzi(:)
 
     !Quantities needed in FFTs:
-    double precision, allocatable :: xtrig(:), ytrig(:), ztrig(:)
-    integer :: xfactors(5), yfactors(5), zfactors(5)
+    double precision, protected, allocatable :: xtrig(:), ytrig(:), ztrig(:)
+    integer,          protected              :: xfactors(5), yfactors(5), zfactors(5)
 
     integer :: nwx, nwy
 
@@ -63,14 +63,6 @@ module sta3dfft
 
             call initialise_pencil_fft(nx, ny, nz)
 
-!             dz = dx(3)
-!             dzi = dxi(3)
-!             dz6  = f16 * dx(3)
-!             dz2  = f12 * dx(3)
-!             dz24 = f124 * dx(3)
-!             dzisq = dxi(3) ** 2
-!             hdzi = f12 * dxi(3)
-
             nwx = nx / 2
             nwy = ny / 2
 
@@ -113,15 +105,17 @@ module sta3dfft
         end subroutine initialise_fft
 
         subroutine finalise_fft
-            deallocate(rkx)
-            deallocate(hrkx)
-            deallocate(rky)
-            deallocate(hrky)
-            deallocate(rkz)
-            deallocate(rkzi)
-            deallocate(xtrig)
-            deallocate(ytrig)
-            deallocate(ztrig)
+            if (allocated(rkx)) then
+                deallocate(rkx)
+                deallocate(hrkx)
+                deallocate(rky)
+                deallocate(hrky)
+                deallocate(rkz)
+                deallocate(rkzi)
+                deallocate(xtrig)
+                deallocate(ytrig)
+                deallocate(ztrig)
+            endif
 
             call finalise_pencil_fft
         end subroutine finalise_fft
@@ -136,7 +130,7 @@ module sta3dfft
             double precision, intent(in)  :: fp(box%hlo(3):box%hhi(3), & !Physical
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
-            double precision, intent(out) :: fs(box%hlo(3):box%hhi(3), & !Spectral
+            double precision, intent(out) :: fs(box%lo(3):box%hi(3),   & !Spectral
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
             integer                       :: i, j
@@ -201,7 +195,7 @@ module sta3dfft
         ! Only inverse FFTs over the x and y directions are performed.
         ! *** fs is destroyed upon exit ***
         subroutine fftxys2p(fs, fp)
-            double precision, intent(in)  :: fs(box%hlo(3):box%hhi(3), & !Spectral
+            double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & !Spectral
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
             double precision, intent(out) :: fp(box%hlo(3):box%hhi(3), & !Physical
@@ -265,7 +259,7 @@ module sta3dfft
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine fftsine(fs)
-            double precision, intent(inout) :: fs(box%hlo(3):box%hhi(3), &
+            double precision, intent(inout) :: fs(box%lo(3):box%hi(3),   &  ! 0:nz
                                                   box%hlo(2):box%hhi(2), &
                                                   box%hlo(1):box%hhi(1))
             integer                         :: kx, ky
@@ -283,7 +277,7 @@ module sta3dfft
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine fftcosine(fs)
-            double precision, intent(inout) :: fs(box%hlo(3):box%hhi(3), &
+            double precision, intent(inout) :: fs(box%lo(3):box%hi(3),   & ! 0:nz
                                                   box%hlo(2):box%hhi(2), &
                                                   box%hlo(1):box%hhi(1))
             integer                      :: kx, ky
@@ -304,13 +298,13 @@ module sta3dfft
         ! (partial derivative).  The result is returned in ds, again
         ! spectral.  Uses exact form of the derivative in spectral space.
         subroutine diffx(fs, ds)
-            double precision, intent(in)  :: fs(box%hlo(3):box%hhi(3), &
+            double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & ! 0:nz
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
-            double precision, intent(out) :: ds(box%hlo(3):box%hhi(3), &
+            double precision, intent(out) :: ds(box%lo(3):box%hi(3),   & ! 0:nz
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
-            double precision              :: gs(box%hlo(3):box%hhi(3), &
+            double precision              :: gs(box%lo(3):box%hi(3),   & ! 0:nz
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
             integer                       :: kx, dkx
@@ -344,13 +338,13 @@ module sta3dfft
         ! (partial derivative).  The result is returned in ds, again
         ! spectral.  Uses exact form of the derivative in spectral space.
         subroutine diffy(fs, ds)
-            double precision, intent(in)  :: fs(box%hlo(3):box%hhi(3), &
+            double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & ! 0:nz
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
-            double precision, intent(out) :: ds(box%hlo(3):box%hhi(3), &
+            double precision, intent(out) :: ds(box%lo(3):box%hi(3),   & ! 0:nz
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
-            double precision              :: gs(box%hlo(3):box%hhi(3), &
+            double precision              :: gs(box%lo(3):box%hi(3),   & ! 0:nz
                                                 box%hlo(2):box%hhi(2), &
                                                 box%hlo(1):box%hhi(1))
             integer                       :: ky, dky

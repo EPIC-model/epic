@@ -36,7 +36,7 @@ program test_mpi_fft_3d
 
     allocate(fp1(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(fp2(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
-    allocate(fs(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+    allocate(fs(box%lo(3):box%hi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 
     call initialise_fft(extent)
 
