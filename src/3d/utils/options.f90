@@ -23,7 +23,6 @@ module options
 
     ! field input file
     character(len=512)  :: field_file = ''
-    double precision    :: field_tol  = 1.0d-10
 
 
     type bndry_info
@@ -107,7 +106,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, field_tol, boundary, output, parcel, time
+            namelist /EPIC/ field_file, boundary, output, parcel, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -146,7 +145,6 @@ module options
             call write_netcdf_attribute(ncid, "verbose", verbose)
 #endif
             call write_netcdf_attribute(ncid, "field_file", field_file)
-            call write_netcdf_attribute(ncid, "field_tol", field_tol)
 
             call write_netcdf_attribute(ncid, "zeta_tol", boundary%zeta_tol)
             call write_netcdf_attribute(ncid, "l_ignore_bndry_zeta_flag", &

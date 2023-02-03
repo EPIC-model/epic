@@ -1,7 +1,6 @@
 module utils
     use constants, only : one
     use options, only : field_file          &
-                      , field_tol           &
                       , output              &
                       , l_restart           &
                       , restart_file        &
