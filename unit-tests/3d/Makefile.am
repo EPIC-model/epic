@@ -65,14 +65,13 @@ unittests_PROGRAMS = 				\
 	test_mpi_diffz2				\
 	test_mpi_diffz3				\
  	test_mpi_diffz4				\
- 	test_mpi_diffz5
-# 	test_fft_3d
-# 	test_fft_3d_sphere
-# 	test_fft_2_3d
-# 	test_vor2vel
-# 	test_velgradg
-# 	test_vtend
-# 	test_lapinv1
+ 	test_mpi_diffz5				\
+ 	test_mpi_fft0				\
+ 	test_mpi_fft1
+# 	test_mpi_vor2vel
+# 	test_mpi_velgradg
+# 	test_mpi_vtend
+# 	test_mpi_lapinv1
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -100,15 +99,6 @@ test_mpi_parcel_init_3d_LDADD = libcombi.la
 
 test_ellipsoid_split_merge_SOURCES = test_ellipsoid_split_merge.f90
 test_ellipsoid_split_merge_LDADD = libcombi.la
-
-# test_fft_3d_SOURCES = test_fft_3d.f90
-# test_fft_3d_LDADD = libcombi.la
-
-# test_fft_3d_sphere_SOURCES = test_fft_3d_sphere.f90
-# test_fft_3d_sphere_LDADD = libcombi.la
-
-# test_fft_2_3d_SOURCES = test_fft_2_3d.f90
-# test_fft_2_3d_LDADD = libcombi.la
 
 test_mpi_trilinear_SOURCES = test_mpi_trilinear.f90
 test_mpi_trilinear_LDADD = libcombi.la
@@ -139,18 +129,6 @@ test_mpi_grid2par_LDADD = libcombi.la
 
 test_free_slip_3d_SOURCES = test_free_slip_3d.f90
 test_free_slip_3d_LDADD = libcombi.la
-
-# test_vor2vel_SOURCES = test_vor2vel.f90
-# test_vor2vel_LDADD = libcombi.la
-
-# test_velgradg_SOURCES = test_velgradg.f90
-# test_velgradg_LDADD = libcombi.la
-
-# test_vtend_SOURCES = test_vtend.f90
-# test_vtend_LDADD = libcombi.la
-
-# test_lapinv1_SOURCES = test_lapinv1.f90
-# test_lapinv1_LDADD = libcombi.la
 
 test_mpi_field_halo_fill_SOURCES = test_mpi_field_halo_fill.f90
 test_mpi_field_halo_fill_LDADD = libcombi.la
@@ -217,3 +195,21 @@ test_mpi_diffz4_LDADD = libcombi.la
 
 test_mpi_diffz5_SOURCES = test_mpi_diffz5.f90
 test_mpi_diffz5_LDADD = libcombi.la
+
+test_mpi_fft0_SOURCES = test_mpi_fft0.f90
+test_mpi_fft0_LDADD = libcombi.la
+
+test_mpi_fft1_SOURCES = test_mpi_fft1.f90
+test_mpi_fft1_LDADD = libcombi.la
+
+# test_mpi_vor2vel_SOURCES = test_mpi_vor2vel.f90
+# test_mpi_vor2vel_LDADD = libcombi.la
+
+# test_mpi_velgradg_SOURCES = test_mpi_velgradg.f90
+# test_mpi_velgradg_LDADD = libcombi.la
+
+# test_mpi_vtend_SOURCES = test_mpi_vtend.f90
+# test_mpi_vtend_LDADD = libcombi.la
+
+# test_mpi_lapinv1_SOURCES = test_mpi_lapinv1.f90
+# test_mpi_lapinv1_LDADD = libcombi.la
