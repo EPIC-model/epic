@@ -27,17 +27,6 @@ libcombi_la_LIBADD = 					\
 
 unittestsdir = $(prefix)/unit-tests
 
-# 	test_fft_3d
-# 	test_fft_3d_sphere
-# 	test_fft_2_3d
-# 	test_vor2vel
-# 	test_velgradg
-# 	test_vtend
-# 	test_lapinv1
-# 	test_diffz2
-# 	test_diffz3
-# 	test_diffz4
-# 	test_diffz5
 unittests_PROGRAMS = 				\
 	test_jacobi_1				\
 	test_jacobi_2				\
@@ -72,7 +61,18 @@ unittests_PROGRAMS = 				\
 	test_mpi_diffx				\
 	test_mpi_diffy				\
 	test_mpi_diffz0				\
-	test_mpi_diffz1
+	test_mpi_diffz1				\
+	test_mpi_diffz2				\
+	test_mpi_diffz3				\
+ 	test_mpi_diffz4				\
+ 	test_mpi_diffz5
+# 	test_fft_3d
+# 	test_fft_3d_sphere
+# 	test_fft_2_3d
+# 	test_vor2vel
+# 	test_velgradg
+# 	test_vtend
+# 	test_lapinv1
 
 dataroot_DATA =		\
 	numpy_eigh.py 	\
@@ -206,14 +206,14 @@ test_mpi_diffz0_LDADD = libcombi.la
 test_mpi_diffz1_SOURCES = test_mpi_diffz1.f90
 test_mpi_diffz1_LDADD = libcombi.la
 
-# test_mpi_diffz2_SOURCES = test_mpi_diffz2.f90
-# test_mpi_diffz2_LDADD = libcombi.la
+test_mpi_diffz2_SOURCES = test_mpi_diffz2.f90
+test_mpi_diffz2_LDADD = libcombi.la
 
-# test_mpi_diffz3_SOURCES = test_mpi_diffz3.f90
-# test_mpi_diffz3_LDADD = libcombi.la
+test_mpi_diffz3_SOURCES = test_mpi_diffz3.f90
+test_mpi_diffz3_LDADD = libcombi.la
 
-# test_mpi_diffz4_SOURCES = test_mpi_diffz4.f90
-# test_mpi_diffz4_LDADD = libcombi.la
+test_mpi_diffz4_SOURCES = test_mpi_diffz4.f90
+test_mpi_diffz4_LDADD = libcombi.la
 
-# test_mpi_diffz5_SOURCES = test_mpi_diffz5.f90
-# test_mpi_diffz5_LDADD = libcombi.la
+test_mpi_diffz5_SOURCES = test_mpi_diffz5.f90
+test_mpi_diffz5_LDADD = libcombi.la
