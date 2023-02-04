@@ -5,5 +5,6 @@ libepic_mpi_la_SOURCES = 	\
 	mpi_utils.f90		\
 	mpi_p2p.f90		\
 	mpi_collectives.f90	\
-	mpi_layout.f90
+	mpi_layout.f90		\
+	mpi_reverse.f90
 

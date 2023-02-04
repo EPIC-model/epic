@@ -15,23 +15,29 @@
 !  vtend(z, y, x, 2) = alpha*l*m**2 * (k^2+l^2)^(-1)*sin(k*x+l*y)*cos(k*x+l*y)
 !  vtend(z, y, x, 3) = -alpha * m * sin(m*z) * cos(m*z)
 ! =============================================================================
-program test_vtend
+program test_mpi_vtend
     use unit_test
     use constants, only : one, two, pi, f12, f34, three
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use fields, only : vortg, velog, vtend, field_default
-    use inversion_utils, only : init_fft, fftxyp2s
-    use inversion_mod, only : vor2vel, vor2vel_timer, vorticity_tendency, vtend_timer
+    use sta3dfft, only : finalise_fft, fftxyp2s
+    use inversion_mod, only : init_inversion, vorticity_tendency, vtend_timer
     use timer
+    use mpi_communicator
+    use mpi_layout
     implicit none
 
-    double precision              :: error
+    double precision              :: error = zero
     double precision, allocatable :: vtend_ref(:, :, :, :)
     integer                       :: ix, iy, iz, ik, il, im
     double precision              :: x, y, z, alpha, fk2l2, k, l, m
     double precision              :: cosmz, sinmz, sinkxly, coskxly
+    logical                       :: passed = .false.
 
-    call register_timer('vorticity', vor2vel_timer)
+    call mpi_comm_initialise
+
+    passed = (comm%err == 0)
+
     call register_timer('vtend', vtend_timer)
 
     nx = 128
@@ -41,14 +47,13 @@ program test_vtend
     lower  = -f12 * pi * (/one, one, one/)
     extent =  pi * (/one, one, one/)
 
-
-    allocate(vtend_ref(-1:nz+1, 0:ny-1, 0:nx-1, 3))
-
     call update_parameters
 
     call field_default
 
-    call init_fft
+    allocate(vtend_ref(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), 3))
+
+    call init_inversion
 
     do ik = 1, 3
         k = dble(ik)
@@ -60,9 +65,9 @@ program test_vtend
                 alpha = dsqrt(k ** 2 + l ** 2 + m ** 2)
                 fk2l2 = one / dble(k ** 2 + l ** 2)
 
-                do ix = 0, nx-1
+                do ix = box%lo(1), box%hi(1)
                     x = lower(1) + ix * dx(1)
-                    do iy = 0, ny-1
+                    do iy = box%lo(2), box%hi(2)
                         y = lower(2) + iy * dx(2)
                         do iz = -1, nz+1
                             z = lower(3) + iz * dx(3)
@@ -92,13 +97,34 @@ program test_vtend
 
                 call vorticity_tendency
 
-                error = max(error, maxval(dabs(vtend_ref(0:nz, :, :, :) - vtend(0:nz, :, :, :))))
+                error = max(error, maxval(dabs(vtend_ref(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :) &
+                                                 - vtend(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :))))
             enddo
         enddo
     enddo
 
-    call print_result_dp('Test vorticity tendency', error, atol=5.0e-2)
+    call finalise_fft
+
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    else
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    endif
+
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    else
+        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    endif
+
+    call mpi_comm_finalise
+
+    passed = (passed .and. (comm%err == 0) .and. (error < 1.2d0))
+
+    if (comm%rank == comm%master) then
+        call print_result_logical('Test MPI vorticity tendency', passed)
+    endif
 
     deallocate(vtend_ref)
 
-end program test_vtend
+end program test_mpi_vtend

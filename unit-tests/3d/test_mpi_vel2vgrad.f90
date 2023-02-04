@@ -28,20 +28,28 @@
 !  16 November 2021
 !  https://en.wikipedia.org/wiki/Taylor%E2%80%93Green_vortex
 ! =============================================================================
-program test_velgradg
+program test_mpi_vel2vgrad
     use unit_test
     use constants, only : zero, one, two, four, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use fields, only : vortg, velog, velgradg, field_alloc
-    use inversion_utils, only : init_fft, fftxyp2s
+    use fields, only : vortg, velog, velgradg, field_default
+    use inversion_utils, only : init_inversion
     use inversion_mod, only : vel2vgrad
+    use sta3dfft, only : fftxyp2s, finalise_fft
     use timer
+    use mpi_communicator
+    use mpi_layout
     implicit none
 
     double precision              :: error
     double precision, allocatable :: strain(:, :, :, :), svelog(:, :, :, :)
     integer                       :: ix, iy, iz
     double precision              :: x, y, z, AA, BB, CC, a, b, c
+    logical                       :: passed = .false.
+
+    call mpi_comm_initialise
+
+    passed = (comm%err == 0)
 
     nx = 32
     ny = 64
@@ -56,16 +64,18 @@ program test_velgradg
     CC =  one
     c  = -one
 
-    allocate(strain(-1:nz+1, 0:ny-1, 0:nx-1, 5))
-    allocate(svelog(0:nz, 0:nx-1, 0:ny-1, 3))
-
     call update_parameters
 
-    call field_alloc
+    call field_default
 
-    do ix = 0, nx-1
+    allocate(strain(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), 5))
+    allocate(svelog(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), 3))
+
+    call init_inversion
+
+    do ix = box%lo(1), box%hi(1)
         x = lower(1) + ix * dx(1)
-        do iy = 0, ny-1
+        do iy = box%lo(2), box%hi(2)
             y = lower(2) + iy * dx(2)
             do iz = 0, nz
                 z = lower(3) + iz * dx(3)
@@ -90,19 +100,38 @@ program test_velgradg
         enddo
     enddo
 
-    call init_fft
-
-    call fftxyp2s(velog(0:nz, :, :, 1), svelog(:, :, :, 1))
-    call fftxyp2s(velog(0:nz, :, :, 2), svelog(:, :, :, 2))
-    call fftxyp2s(velog(0:nz, :, :, 3), svelog(:, :, :, 3))
+    call fftxyp2s(velog(:, :, :, 1), svelog(:, :, :, 1))
+    call fftxyp2s(velog(:, :, :, 2), svelog(:, :, :, 2))
+    call fftxyp2s(velog(:, :, :, 3), svelog(:, :, :, 3))
 
     call vel2vgrad(svelog)
 
-    error = maxval(dabs(velgradg(0:nz, :, :, :) - strain(0:nz, :, :, :)))
+    call finalise_fft
 
-    call print_result_dp('Test inversion (velocity gradient tensor)', error, atol=2.0e-14)
+    error = maxval(dabs(velgradg(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :)   &
+                        - strain(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :)))
+
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    else
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    endif
+
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    else
+        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    endif
+
+    call mpi_comm_finalise
+
+    passed = (passed .and. (comm%err == 0) .and. (error < dble(2.0e-14)))
+
+    if (comm%rank == comm%master) then
+        call print_result_logical('Test MPI vel2vgrad', passed)
+    endif
 
     deallocate(strain)
     deallocate(svelog)
 
-end program test_velgradg
+end program test_mpi_vel2vgrad

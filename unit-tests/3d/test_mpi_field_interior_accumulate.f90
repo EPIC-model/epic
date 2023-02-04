@@ -8,7 +8,7 @@
 !   n+1, where n is the number of processes that share the grid point.
 ! =============================================================================
 program test_field_interior_accumulate
-    use constants, only : one, two, four
+    use constants, only : zero, one, two, four
     use unit_test
     use mpi_communicator
     use mpi_layout

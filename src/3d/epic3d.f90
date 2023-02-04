@@ -33,6 +33,7 @@ program epic3d
                     , setup_parcels
     use parameters, only : max_num_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
+    use fft_pencil, only : initialise_pencil_fft, finalise_pencil_fft
     implicit none
 
     integer          :: epic_timer
@@ -93,6 +94,8 @@ program epic3d
 
             call init_inversion
 
+            call initialise_pencil_fft(nx, ny, nz)
+
             call init_parcel_correction
 
             call field_default
@@ -146,6 +149,7 @@ program epic3d
             use options, only : output
             call parcel_dealloc
             call ls_rk4_dealloc
+            call finalise_pencil_fft
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)

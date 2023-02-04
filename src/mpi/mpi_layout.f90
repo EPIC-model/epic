@@ -1,12 +1,20 @@
 module mpi_layout
     use mpi_f08
-    use mpi_communicator, only : mpi_size, mpi_rank, mpi_err, comm_world, comm_cart
+    use mpi_communicator, only : comm
     implicit none
 
     type box_type
         integer :: lo(3),  hi(3)
         integer :: hlo(3), hhi(3)
+        integer :: size(3)
+        integer :: global_ncells(3)
     end type box_type
+
+    type parallel_layout
+        logical :: l_parallel(3)
+        integer :: size(3)      ! number of processes in each dimension
+        integer :: coords(3)    ! Cartesian coordinates of *this* process
+    end type parallel_layout
 
     integer, parameter  :: NB_NONE      = 0, &
                            NB_NORTH     = 1, &
@@ -25,10 +33,9 @@ module mpi_layout
         integer :: southeast, northeast
     end type neighbour_type
 
-    type(box_type)       :: box
-    type(neighbour_type) :: neighbour
-
-    private :: set_local_bounds
+    type(box_type)        :: box
+    type(neighbour_type)  :: neighbour
+    type(parallel_layout) :: layout
 
     contains
 
@@ -43,21 +50,25 @@ module mpi_layout
 
             ! create slabs, z-direction keeps 1 processor
             dims = (/0, 0/)
-            call MPI_Dims_create(mpi_size, 2, dims, mpi_err)
+            call MPI_Dims_create(comm%size, 2, dims, comm%err)
+
+            layout%size(1) = dims(1)
+            layout%size(2) = dims(2)
+            layout%size(3) = 1
 
             periods = (/.true., .true./)
 
             ! Info from https://www.open-mpi.org
-            ! MPI_Cart_create(comm_old, ndims, dims, periods, reorder, comm_cart, ierror)
+            ! MPI_Cart_create(comm_old, ndims, dims, periods, reorder, comm%cart, ierror)
             !   comm_old -- input communicator
             !   ndims    -- number of dimensions of Cartesian grid
             !   dims     -- number of processes in each dimension
             !   periods  -- grid is periodic (true) or not (false) in each dimension
             !   reorder  -- ranking may be reordered (true) or not (false) (logical)
-            call MPI_Cart_create(comm_world, 2, dims, periods, .false., comm_cart, mpi_err)
+            call MPI_Cart_create(comm%world, 2, dims, periods, .false., comm%cart, comm%err)
 
             ! Get MPI rank of corners of local box
-            call MPI_Comm_rank(comm_cart, rank, mpi_err)
+            call MPI_Comm_rank(comm%cart, rank, comm%err)
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_coords(comm, rank, maxdims, coords, ierror)
@@ -65,10 +76,14 @@ module mpi_layout
             !   rank    -- rank of a process within group of comm
             !   maxdims -- length of vector coords in the calling program
             !   coords  -- containing the Cartesian coordinates of the specified process
-            call MPI_Cart_coords(comm_cart, rank, 2, coords)
+            call MPI_Cart_coords(comm%cart, rank, 2, coords)
 
-            call set_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
-            call set_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))
+            layout%coords(1) = coords(1)
+            layout%coords(2) = coords(2)
+            layout%coords(3) = 0
+
+            call get_local_bounds(nx, coords(1), dims(1), box%lo(1), box%hi(1))
+            call get_local_bounds(ny, coords(2), dims(2), box%lo(2), box%hi(2))
             box%lo(3) = 0
             box%hi(3) = nz
 
@@ -79,6 +94,11 @@ module mpi_layout
             box%hlo(3) = -1
             box%hhi(3) = nz + 1
 
+            layout%l_parallel = (box%hi - box%lo < (/nx-1, ny-1, nz/))
+            box%size = box%hi - box%lo + 1
+
+            box%global_ncells = (/nx, ny, nz/)
+
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)
             !   comm        -- communicator with Cartesian structure
@@ -86,8 +106,8 @@ module mpi_layout
             !   disp        -- displacement ( > 0: upward shift, < 0: downward shift) (integer)
             !   rank_source -- rank of source process (integer)
             !   rank_dest   -- rank of destination process (integer)
-            call MPI_Cart_shift(comm_cart, 0, 1, neighbour%west,  neighbour%east, mpi_err)
-            call MPI_Cart_shift(comm_cart, 1, 1, neighbour%south, neighbour%north, mpi_err)
+            call MPI_Cart_shift(comm%cart, 0, 1, neighbour%west,  neighbour%east, comm%err)
+            call MPI_Cart_shift(comm%cart, 1, 1, neighbour%south, neighbour%north, comm%err)
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_rank(comm, coords, rank)
@@ -96,16 +116,16 @@ module mpi_layout
             !   rank   -- rank of specified process
 
             ! lower left corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)-1/), neighbour%southwest, mpi_err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)-1, coords(2)-1/), neighbour%southwest, comm%err)
 
             ! upper left corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)-1, coords(2)+1/), neighbour%northwest, mpi_err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)-1, coords(2)+1/), neighbour%northwest, comm%err)
 
             ! upper right corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)+1/), neighbour%northeast, mpi_err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)+1, coords(2)+1/), neighbour%northeast, comm%err)
 
             ! lower right corner
-            call MPI_Cart_rank(comm_cart, (/coords(1)+1, coords(2)-1/), neighbour%southeast, mpi_err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)+1, coords(2)-1/), neighbour%southeast, comm%err)
 
         end subroutine mpi_layout_init
 
@@ -186,7 +206,7 @@ module mpi_layout
         end function get_neighbour
 
 
-        subroutine set_local_bounds(nglobal, coords, dims, first, last)
+        subroutine get_local_bounds(nglobal, coords, dims, first, last)
             integer, intent(in)  :: nglobal, coords, dims
             integer, intent(out) :: first, last
             integer              :: nlocal, remaining
@@ -204,6 +224,6 @@ module mpi_layout
 
             last = first + nlocal - 1
 
-        end subroutine set_local_bounds
+        end subroutine get_local_bounds
 
 end module mpi_layout

@@ -5,6 +5,7 @@ module inversion_mod
     use physics, only : f_cor
     use constants, only : zero, two, f12
     use sta2dfft, only : dct, dst
+    use sta3dfft, only : rkz, rkzi, ztrig, zfactors, diffx, diffy, fftxyp2s, fftxys2p
     use fields
     use timer, only : start_timer, stop_timer
     implicit none
@@ -21,14 +22,14 @@ module inversion_mod
         ! and the velocity gradient tensor (velgradg) in physical space (vortg)
         ! Note: the vorticity is modified to be solenoidal and spectrally filtered.
         subroutine vor2vel
-            double precision :: as(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
-            double precision :: bs(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
-            double precision :: ds(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
-            double precision :: es(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
-            double precision :: cs(0:nz, 0:nx-1, 0:ny-1)        ! semi-spectral
+            double precision :: as(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
+            double precision :: bs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
+            double precision :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
+            double precision :: es(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
+            double precision :: cs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
+            double precision :: svel(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), n_dim) ! semi-spectral
+            double precision :: svor(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), n_dim) ! mixed spectral
             double precision :: ubar(0:nz), vbar(0:nz)
-            double precision :: svel(0:nz, 0:nx-1, 0:ny-1, n_dim) ! velocity in semi-spectral space
-            double precision :: svor(0:nz, 0:nx-1, 0:ny-1, n_dim) ! vorticity in mixed spectral space
             integer          :: iz, nc, kx, ky, kz
 
             call start_timer(vor2vel_timer)
@@ -36,7 +37,7 @@ module inversion_mod
             !----------------------------------------------------------
             ! Decompose initial vorticity and filter spectrally:
             do nc = 1, n_dim
-                call field_decompose_physical(vortg(0:nz, :, :, nc), svor(:, :, :, nc))
+                call field_decompose_physical(vortg(:, :, :, nc), svor(:, :, :, nc))
                 svor(:, :, :, nc) = filt * svor(:, :, :, nc)
             enddo
 
@@ -56,8 +57,10 @@ module inversion_mod
             call field_decompose_semi_spectral(es)
 
             ! ubar and vbar are used here to store the mean x and y components of the vorticity
-            ubar = svor(:, 0, 0, I_X)
-            vbar = svor(:, 0, 0, I_Y)
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                ubar = svor(:, 0, 0, I_X)
+                vbar = svor(:, 0, 0, I_Y)
+            endif
 
             call diffx(es, svor(:, :, :, I_X)) ! E_x
             call diffy(ds, cs)               ! cs = D_y
@@ -77,13 +80,15 @@ module inversion_mod
             !$omp end parallel do
 
             ! bring back the mean x and y components of the vorticity
-            svor(:, 0, 0, I_X) = ubar
-            svor(:, 0, 0, I_Y) = vbar
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                svor(:, 0, 0, I_X) = ubar
+                svor(:, 0, 0, I_Y) = vbar
+            endif
 
             !----------------------------------------------------------
             ! Combine vorticity in physical space:
             do nc = 1, n_dim
-                call field_combine_physical(svor(:, :, :, nc), vortg(0:nz, :, :, nc))
+                call field_combine_physical(svor(:, :, :, nc), vortg(:, :, :, nc))
             enddo
 
             !----------------------------------------------------------
@@ -128,10 +133,10 @@ module inversion_mod
 
             !FFT these quantities back to semi-spectral space:
             !$omp parallel do collapse(2) private(kx, ky)
-            do ky = 0, ny-1
-                do kx = 0, nx-1
-                    call dct(1, nz, as(0:nz, kx, ky), ztrig, zfactors)
-                    call dst(1, nz, ds(1:nz, kx, ky), ztrig, zfactors)
+            do kx = box%lo(1), box%hi(1)
+                do ky = box%lo(2), box%hi(2)
+                    call dct(1, nz, as(0:nz, ky, kx), ztrig, zfactors)
+                    call dst(1, nz, ds(1:nz, ky, kx), ztrig, zfactors)
                 enddo
             enddo
             !$omp end parallel do
@@ -152,20 +157,22 @@ module inversion_mod
             !Define horizontally-averaged flow by integrating the horizontal vorticity:
 
             !First integrate the sine series in svor(1:nz-1, 0, 0, I_X & I_Y):
-            ubar(0) = zero
-            vbar(0) = zero
-            ubar(1:nz-1) = -rkzi * svor(1:nz-1, 0, 0, I_Y)
-            vbar(1:nz-1) =  rkzi * svor(1:nz-1, 0, 0, I_X)
-            ubar(nz) = zero
-            vbar(nz) = zero
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                ubar(0) = zero
+                vbar(0) = zero
+                ubar(1:nz-1) = -rkzi * svor(1:nz-1, 0, 0, I_Y)
+                vbar(1:nz-1) =  rkzi * svor(1:nz-1, 0, 0, I_X)
+                ubar(nz) = zero
+                vbar(nz) = zero
 
-            !Transform to semi-spectral space as a cosine series:
-            call dct(1, nz, ubar, ztrig, zfactors)
-            call dct(1, nz, vbar, ztrig, zfactors)
+                !Transform to semi-spectral space as a cosine series:
+                call dct(1, nz, ubar, ztrig, zfactors)
+                call dct(1, nz, vbar, ztrig, zfactors)
 
-            !Add contribution from the linear function connecting the boundary values:
-            ubar = ubar + svor(nz, 0, 0, I_Y) * gamtop - svor(0, 0, 0, I_Y) * gambot
-            vbar = vbar - svor(nz, 0, 0, I_X) * gamtop + svor(0, 0, 0, I_X) * gambot
+                !Add contribution from the linear function connecting the boundary values:
+                ubar = ubar + svor(nz, 0, 0, I_Y) * gamtop - svor(0, 0, 0, I_Y) * gambot
+                vbar = vbar - svor(nz, 0, 0, I_X) * gamtop + svor(0, 0, 0, I_X) * gambot
+            endif
 
             !-------------------------------------------------------
             !Find x velocity component "u":
@@ -179,7 +186,9 @@ module inversion_mod
             !$omp end parallel do
 
             !Add horizontally-averaged flow:
-            as(:, 0, 0) = ubar
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                as(:, 0, 0) = ubar
+            endif
 
             !Store spectral form of "u":
             !$omp parallel workshare
@@ -187,7 +196,7 @@ module inversion_mod
             !$omp end parallel workshare
 
             !Get "u" in physical space:
-            call fftxys2p(as, velog(0:nz, :, :, I_X))
+            call fftxys2p(as, velog(:, :, :, I_X))
 
             !-------------------------------------------------------
             !Find y velocity component "v":
@@ -201,7 +210,9 @@ module inversion_mod
             !$omp end parallel do
 
             !Add horizontally-averaged flow:
-            as(:, 0, 0) = vbar
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                as(:, 0, 0) = vbar
+            endif
 
             !Store spectral form of "v":
             !$omp parallel workshare
@@ -209,7 +220,7 @@ module inversion_mod
             !$omp end parallel workshare
 
             !Get "v" in physical space:
-            call fftxys2p(as, velog(0:nz, :, :, I_Y))
+            call fftxys2p(as, velog(:, :, :, I_Y))
 
             !-------------------------------------------------------
             !Store spectral form of "w":
@@ -218,7 +229,7 @@ module inversion_mod
             !$omp end parallel workshare
 
             !Get "w" in physical space:
-            call fftxys2p(ds, velog(0:nz, :, :, I_Z))
+            call fftxys2p(ds, velog(:, :, :, I_Z))
 
             !=================================================================================
 
@@ -243,18 +254,23 @@ module inversion_mod
 
         ! Compute the gridded velocity gradient tensor
         subroutine vel2vgrad(svel)
-            double precision, intent(in) :: svel(0:nz, 0:nx-1, 0:ny-1, n_dim) ! velocity in semi-spectral space
-            double precision             :: ds(0:nz, 0:nx-1, 0:ny-1)          ! semi-spectral derivatives
+            double precision, intent(in) :: svel(box%lo(3):box%hi(3), & ! 0:nz
+                                                 box%lo(2):box%hi(2), &
+                                                 box%lo(1):box%hi(1), &
+                                                 n_dim) ! velocity in semi-spectral space
+            double precision             :: ds(box%lo(3):box%hi(3), & ! 0:nz
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%hi(1)) ! semi-spectral derivatives
 
             ! x component:
             call diffx(svel(:, :, :, I_X), ds)           ! u_x = du/dx in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_DUDX)) ! u_x in physical space
+            call fftxys2p(ds, velgradg(:, :, :, I_DUDX)) ! u_x in physical space
 
             call diffy(svel(:, :, :, I_X), ds)              ! u_y = du/dy in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_DUDY)) ! u_y in physical space
+            call fftxys2p(ds, velgradg(:, :, :, I_DUDY)) ! u_y in physical space
 
             call diffx(svel(:, :, :, I_Z), ds)              ! w_x = dw/dx in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_DWDX)) ! w_x in physical space
+            call fftxys2p(ds, velgradg(:, :, :, I_DWDX)) ! w_x in physical space
 
             ! use extrapolation in du/dx and du/dy to fill z grid points outside domain:
             !$omp parallel workshare
@@ -270,10 +286,10 @@ module inversion_mod
 
             ! y & z components:
             call diffy(svel(:, :, :, I_Y), ds)              ! v_y = dv/dy in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_DVDY)) ! v_y in physical space
+            call fftxys2p(ds, velgradg(:, :, :, I_DVDY)) ! v_y in physical space
 
             call diffy(svel(:, :, :, I_Z), ds)              ! w_y = dw/dy in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_DWDY)) ! w_y in physical space
+            call fftxys2p(ds, velgradg(:, :, :, I_DWDY)) ! w_y in physical space
 
             !$omp parallel workshare
             ! use extrapolation in dv/dy to fill z grid points outside domain:
@@ -291,7 +307,7 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine vorticity_tendency
-            double precision :: f(-1:nz+1, 0:ny-1, 0:nx-1, n_dim)
+            double precision :: f(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim)
 
             call start_timer(vtend_timer)
 
@@ -336,23 +352,24 @@ module inversion_mod
 
         ! Note: f is overwritten
         subroutine divergence(f, div)
-            double precision, intent(inout) :: f(-1:nz+1, 0:ny-1, 0:nx-1, n_dim)
-            double precision, intent(out)   :: div(0:nz, 0:ny-1, 0:nx-1)
-            double precision                :: fs(0:nz, 0:nx-1, 0:ny-1)
-            double precision                :: ds(0:nz, 0:nx-1, 0:ny-1)
+            double precision, intent(inout) :: f(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim)
+            double precision, intent(out)   :: div(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision                :: fs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
+            double precision                :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
 
             ! calculate df1/dx
-            call fftxyp2s(f(0:nz, :, :, I_X), fs)
+            call fftxyp2s(f(:, :, :, I_X), fs)
             call diffx(fs, ds)
-            call fftxys2p(ds, f(0:nz, :, :, I_X))
+            call fftxys2p(ds, f(:, :, :, I_X))
 
             ! calculate df2/dy
-            call fftxyp2s(f(0:nz, :, :, I_Y), fs)
+            call fftxyp2s(f(:, :, :, I_Y), fs)
             call diffy(fs, ds)
-            call fftxys2p(ds, f(0:nz, :, :, I_Y))
+            call fftxys2p(ds, f(:, :, :, I_Y))
 
             ! calculate df3/dz
-            call central_diffz(f(0:nz, :, :, I_Z), div)
+            call central_diffz(f(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), I_Z), &
+                             div(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
             ! div = df1/dx + df2/dy + df3/dz
             div = f(0:nz, :, :, I_X) + f(0:nz, :, :, I_Y) + div
@@ -364,16 +381,23 @@ module inversion_mod
         ! Computes a divergent flow field (ud, vd, wd) = grad(phi) where
         ! Lap(phi) = div (given).
         subroutine diverge(div,  ud, vd, wd)
-            double precision, intent(inout)  :: div(0:nz, ny, nx)
-            double precision, intent(out)    :: ud(0:nz, ny, nx), vd(0:nz, ny, nx), wd(0:nz, ny, nx)
-            double precision                 :: ds(0:nz, nx, ny)
-            double precision                 :: us(0:nz, nx, ny), vs(0:nz, nx, ny), ws(0:nz, nx, ny)
+            double precision, intent(inout)  :: div(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out)    :: ud(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                                vd(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                                wd(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision                 :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
+            double precision                 :: us(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
+                                                vs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
+                                                ws(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
 
             !------------------------------------------------------------------
             ! Convert phi to spectral space (in x & y) as ds:
             call fftxyp2s(div, ds)
 
-            ds(:, 1, 1) = zero
+            if ((1 >= box%lo(1)) .and. (1 <= box%hi(1)) .and. &
+                (1 >= box%lo(2)) .and. (1 <= box%hi(2))) then
+                ds(:, 1, 1) = zero
+            endif
 
             ! Invert Laplace's operator semi-spectrally with compact differences:
             call lapinv1(ds)

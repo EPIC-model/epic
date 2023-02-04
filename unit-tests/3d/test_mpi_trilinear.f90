@@ -6,9 +6,9 @@
 program test_mpi_trilinear
     use unit_test
     use mpi_communicator
-    use field_mpi
     use constants, only : pi, zero, one, f12, f23, f32
     use parcel_container
+    use mpi_layout
     use parcel_interpl, only : par2grid, par2grid_timer
     use parcel_ellipsoid, only : get_abc
     use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz, ngrid
