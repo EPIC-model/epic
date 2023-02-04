@@ -358,8 +358,8 @@ module mpi_reverse
                                                   box%hlo(1):box%hhi(1))
 
             ! copy from interior to buffers
-            x_reo%lo_buffer = gs(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))
-            x_reo%hi_buffer = gs(:, box%hi(2),             box%lo(1):box%hi(1))
+            x_reo%lo_buffer = gs(:, :, box%lo(1):box%lo(1)+1)
+            x_reo%hi_buffer = gs(:, :, box%hi(1))
 
             call communicate_halo(x_reo, x_comm)
 
