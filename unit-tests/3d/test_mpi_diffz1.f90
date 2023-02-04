@@ -3,13 +3,13 @@
 !
 !  This unit test checks the subroutine diffz using the
 !  function:
-!               cos(k * x) * sin(l * y) * sin(m * z)
+!               cos(k * x) * sin(l * y) * cos(m * z)
 !  where k = 2pi/L_x, l = 2pi/L_y and m = pi/L_z and where x, y and z all start
 !  at 0 (one could start at -pi for x and y just as well).
 !  The subroutine diffz should return
-!               m * cos(k * x) * sin(l * y) * cos(m * z)
+!               - m * cos(k * x) * sin(l * y) * sin(m * z)
 ! =============================================================================
-program test_mpi_diffz0
+program test_mpi_diffz1
     use unit_test
     use constants, only : zero, one, two, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
@@ -30,11 +30,12 @@ program test_mpi_diffz0
 
     passed = (comm%err == 0)
 
-    nx = 32
+    ! doubling nx, ny, nz reduces the error by a factor 16
+    nx = 64
     ny = 64
-    nz = 128
+    nz = 64
     lower  = (/zero, zero, zero/)
-    extent =  (/pi, twopi, two * twopi/)
+    extent =  (/pi, pi, pi/)
 
     call update_parameters
 
@@ -61,8 +62,8 @@ program test_mpi_diffz0
             y = lower(2) + iy * dx(2)
             do iz = 0, nz
                 z = lower(3) + iz * dx(3)
-                fp(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dsin(m * z)
-                ref_sol(iz, iy, ix) = m * dcos(k * x) * dsin(l * y) * dcos(m * z)
+                fp(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dcos(m * z)
+                ref_sol(iz, iy, ix) = -m * dcos(k * x) * dsin(l * y) * dsin(m * z)
             enddo
         enddo
     enddo
@@ -75,7 +76,6 @@ program test_mpi_diffz0
 
     error = maxval(dabs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
                  - ref_sol(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
-
 
     if (comm%rank == comm%master) then
         call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
@@ -94,7 +94,8 @@ program test_mpi_diffz0
     passed = (passed .and. (comm%err == 0) .and. (error < 1.7e-13))
 
     if (comm%rank == comm%master) then
-        call print_result_logical('Test MPI diffz0', passed)
+        call print_result_logical('Test MPI diffz1', passed)
+        print *, error
     endif
 
     deallocate(fp)
@@ -103,4 +104,4 @@ program test_mpi_diffz0
     deallocate(ds)
     deallocate(ref_sol)
 
-end program test_mpi_diffz0
+end program test_mpi_diffz1
