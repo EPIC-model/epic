@@ -36,20 +36,9 @@ program test_mpi_pencil
     values(:, :, :) = zero
     vtrans(:, :, :) = zero
 
-!     print *, box%size
-!     stop
-
-!     do iz = box%lo(3), box%hi(3)
-!         do ix = box%lo(1), box%hi(1)
-            do iy = box%lo(2), box%hi(2)
-                values(:, iy, :) = iy+1
-            enddo
-!             write(WRITE_VOR, '(1x,f13.6,6(1x,1p,e14.7))')
-!             write(*, '(8(f1.0))')
-!             print *, values(iz, 0:ny-1, ix)
-!         enddo
-!         print *, ""
-!     enddo
+    do iy = box%lo(2), box%hi(2)
+        values(:, iy, :) = iy+1
+    enddo
 
     call initialise_pencil_fft(nx, ny, nz)
 
@@ -59,13 +48,9 @@ program test_mpi_pencil
                              fft_in_y_buffer)
 
     if (comm%rank == comm%master) then
-!         do ix = box%lo(1), box%hi(1)
-!             do iy = box%lo(2), box%hi(2)
-                do iy = 1, ny
-                    print *, fft_in_y_buffer(iy, 1, 1)
-                enddo
-!             enddo
-!         enddo
+            do iy = 1, ny
+                print *, fft_in_y_buffer(iy, 1, 1)
+            enddo
     endif
 
     fft_in_y_buffer(:, :, :) = zero
@@ -84,7 +69,6 @@ program test_mpi_pencil
 
     fft_in_y_buffer(:, :, :) = zero
     fft_in_x_buffer(:, :, :) = zero
-    print *, "rank", comm%rank, "size", size(fft_in_x_buffer, 3)
     do iy = 1, size(fft_in_x_buffer, 3)
         fft_in_x_buffer(:, :, iy) = iy
     enddo
@@ -98,18 +82,6 @@ program test_mpi_pencil
             print *, fft_in_y_buffer(iy, 1, 1)
         enddo
     endif
-
-!     print *, "Z from X"
-!
-!     call transpose_to_pencil(z_from_x_transposition, (/3, 1, 2/), comm%cart, FORWARD, &
-!                             fft_in_x_buffer,                                           &
-!                             values(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
-!
-!     if (comm%rank == comm%master) then
-!         do iy = box%lo(3), box%hi(3)
-!             print *, values(iy, 1, 1)
-!         enddo
-!     endif
 
     call finalise_pencil_fft
 

@@ -129,7 +129,6 @@ program test_mpi_vel2vgrad
 
     if (comm%rank == comm%master) then
         call print_result_logical('Test MPI vel2vgrad', passed)
-        print *, error
     endif
 
     deallocate(strain)

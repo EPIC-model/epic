@@ -101,7 +101,6 @@ program test_mpi_vor2vel
 
     if (comm%rank == comm%master) then
         call print_result_logical('Test MPI vor2vel', passed)
-        print *, error
     endif
 
     deallocate(velog_ref)

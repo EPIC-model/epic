@@ -53,8 +53,6 @@ unittests_PROGRAMS = 				\
 	test_mpi_parcel_read_rejection		\
 	test_mpi_parcel_halo_swap		\
 	test_mpi_parcel_split			\
-	test_mpi_pencil				\
-	test_mpi_pencil2			\
 	test_mpi_fft				\
 	test_mpi_dst				\
 	test_mpi_reverse_x			\
@@ -157,12 +155,6 @@ test_mpi_parcel_halo_swap_LDADD = libcombi.la
 
 test_mpi_parcel_split_SOURCES = test_mpi_parcel_split.f90
 test_mpi_parcel_split_LDADD = libcombi.la
-
-test_mpi_pencil_SOURCES = test_mpi_pencil.f90
-test_mpi_pencil_LDADD = libcombi.la
-
-test_mpi_pencil2_SOURCES = test_mpi_pencil2.f90
-test_mpi_pencil2_LDADD = libcombi.la
 
 test_mpi_fft_SOURCES = test_mpi_fft.f90
 test_mpi_fft_LDADD = libcombi.la

@@ -18,7 +18,7 @@ program test_mpi_dst
                                      fs(:, :, :)
     integer                       :: i, j, k
     double precision              :: x, y, z
-    logical                       :: passed
+    logical                       :: passed = .false.
 
     call mpi_comm_initialise
 
@@ -34,11 +34,9 @@ program test_mpi_dst
 
     call mpi_layout_init(nx, ny, nz)
 
-    print *, box%lo(3), box%hi(3)
-
     allocate(fp1(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(fp2(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
-    allocate(fs(box%lo(3):box%hi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+    allocate(fs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
     call initialise_fft(extent)
 
@@ -52,7 +50,7 @@ program test_mpi_dst
             y = lower(2) + dble(j) * dx(2)
             do k = box%lo(3), box%hi(3)
                 z = lower(3) + dble(k) * dx(3)
-                fp1(k, j, i) = dcos(four * x) + dsin(y) + dsin(z)
+                fp1(k, j, i) = dcos(four * x) * dsin(y) * dsin(z)
                 fp2(k, j, i) = fp1(k, j, i)
             enddo
         enddo
@@ -70,25 +68,25 @@ program test_mpi_dst
     call fftsine(fs)
 
     ! inverse FFT
-    call fftxys2p(fs, fp2)
+    call fftxys2p(fs, fp1)
 
     call finalise_fft
 
     error = maxval(dabs(fp1(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)) - &
                         fp2(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
-    print *, error
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    else
+        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    endif
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (comm%err == 0) .and. (error < dble(1.0e-14)))
 
     if (comm%rank == comm%master) then
-        if (.not. passed) then
-            call print_result_logical('Test FFT 2D transform', passed)
-        else
-            call print_result_dp('Test FFT 2D transform', error, atol=dble(1.0e-14))
-        endif
+        call print_result_logical('Test MPI sine transform (fftsine)', passed)
     endif
 
 end program test_mpi_dst
