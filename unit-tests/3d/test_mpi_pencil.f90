@@ -119,7 +119,7 @@ program test_mpi_pencil
     passed = (passed .and. (comm%err == 0))
 
     if (comm%rank == comm%master) then
-        call print_result_logical('Test pencil transposition', passed)
+        call print_result_logical('Test MPI pencil transposition', passed)
     endif
 
 

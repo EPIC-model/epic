@@ -122,7 +122,7 @@ program test_mpi_vtend
     passed = (passed .and. (comm%err == 0) .and. (error < 1.2d0))
 
     if (comm%rank == comm%master) then
-        call print_result_logical('Test vorticity tendency', passed)
+        call print_result_logical('Test MPI vorticity tendency', passed)
     endif
 
     deallocate(vtend_ref)

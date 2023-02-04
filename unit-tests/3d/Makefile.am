@@ -68,9 +68,9 @@ unittests_PROGRAMS = 				\
  	test_mpi_diffz5				\
  	test_mpi_fft0				\
  	test_mpi_fft1				\
- 	test_mpi_velgradg			\
+ 	test_mpi_vor2vel			\
+ 	test_mpi_vel2vgrad			\
 	test_mpi_vtend
-# 	test_mpi_vor2vel
 # 	test_mpi_lapinv1
 
 dataroot_DATA =		\
@@ -202,11 +202,11 @@ test_mpi_fft0_LDADD = libcombi.la
 test_mpi_fft1_SOURCES = test_mpi_fft1.f90
 test_mpi_fft1_LDADD = libcombi.la
 
-# test_mpi_vor2vel_SOURCES = test_mpi_vor2vel.f90
-# test_mpi_vor2vel_LDADD = libcombi.la
+test_mpi_vor2vel_SOURCES = test_mpi_vor2vel.f90
+test_mpi_vor2vel_LDADD = libcombi.la
 
-test_mpi_velgradg_SOURCES = test_mpi_velgradg.f90
-test_mpi_velgradg_LDADD = libcombi.la
+test_mpi_vel2vgrad_SOURCES = test_mpi_vel2vgrad.f90
+test_mpi_vel2vgrad_LDADD = libcombi.la
 
 test_mpi_vtend_SOURCES = test_mpi_vtend.f90
 test_mpi_vtend_LDADD = libcombi.la

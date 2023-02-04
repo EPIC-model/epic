@@ -104,7 +104,7 @@ program test_mpi_reverse
 
     if (comm%rank == comm%master) then
 !         if (.not. passed) then
-            call print_result_logical('Test reorder', passed)
+            call print_result_logical('Test MPI reorder', passed)
 !         else
 error = 0.0d0
 !             call print_result_dp('Test reorder', error, atol=dble(1.0e-14))

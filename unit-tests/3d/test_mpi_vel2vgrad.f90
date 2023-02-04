@@ -28,7 +28,7 @@
 !  16 November 2021
 !  https://en.wikipedia.org/wiki/Taylor%E2%80%93Green_vortex
 ! =============================================================================
-program test_mpi_velgradg
+program test_mpi_vel2vgrad
     use unit_test
     use constants, only : zero, one, two, four, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
@@ -128,11 +128,11 @@ program test_mpi_velgradg
     passed = (passed .and. (comm%err == 0) .and. (error < dble(2.0e-14)))
 
     if (comm%rank == comm%master) then
-        call print_result_logical('Test inversion (velocity gradient tensor)', passed)
+        call print_result_logical('Test MPI vel2vgrad', passed)
         print *, error
     endif
 
     deallocate(strain)
     deallocate(svelog)
 
-end program test_mpi_velgradg
+end program test_mpi_vel2vgrad

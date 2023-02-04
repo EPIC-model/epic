@@ -37,7 +37,7 @@ module inversion_mod
             !----------------------------------------------------------
             ! Decompose initial vorticity and filter spectrally:
             do nc = 1, n_dim
-                call field_decompose_physical(vortg(0:nz, :, :, nc), svor(:, :, :, nc))
+                call field_decompose_physical(vortg(:, :, :, nc), svor(:, :, :, nc))
                 svor(:, :, :, nc) = filt * svor(:, :, :, nc)
             enddo
 
@@ -57,8 +57,10 @@ module inversion_mod
             call field_decompose_semi_spectral(es)
 
             ! ubar and vbar are used here to store the mean x and y components of the vorticity
-            ubar = svor(:, 0, 0, I_X)
-            vbar = svor(:, 0, 0, I_Y)
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                ubar = svor(:, 0, 0, I_X)
+                vbar = svor(:, 0, 0, I_Y)
+            endif
 
             call diffx(es, svor(:, :, :, I_X)) ! E_x
             call diffy(ds, cs)               ! cs = D_y
@@ -78,13 +80,15 @@ module inversion_mod
             !$omp end parallel do
 
             ! bring back the mean x and y components of the vorticity
-            svor(:, 0, 0, I_X) = ubar
-            svor(:, 0, 0, I_Y) = vbar
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                svor(:, 0, 0, I_X) = ubar
+                svor(:, 0, 0, I_Y) = vbar
+            endif
 
             !----------------------------------------------------------
             ! Combine vorticity in physical space:
             do nc = 1, n_dim
-                call field_combine_physical(svor(:, :, :, nc), vortg(0:nz, :, :, nc))
+                call field_combine_physical(svor(:, :, :, nc), vortg(:, :, :, nc))
             enddo
 
             !----------------------------------------------------------
@@ -153,20 +157,22 @@ module inversion_mod
             !Define horizontally-averaged flow by integrating the horizontal vorticity:
 
             !First integrate the sine series in svor(1:nz-1, 0, 0, I_X & I_Y):
-            ubar(0) = zero
-            vbar(0) = zero
-            ubar(1:nz-1) = -rkzi * svor(1:nz-1, 0, 0, I_Y)
-            vbar(1:nz-1) =  rkzi * svor(1:nz-1, 0, 0, I_X)
-            ubar(nz) = zero
-            vbar(nz) = zero
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                ubar(0) = zero
+                vbar(0) = zero
+                ubar(1:nz-1) = -rkzi * svor(1:nz-1, 0, 0, I_Y)
+                vbar(1:nz-1) =  rkzi * svor(1:nz-1, 0, 0, I_X)
+                ubar(nz) = zero
+                vbar(nz) = zero
 
-            !Transform to semi-spectral space as a cosine series:
-            call dct(1, nz, ubar, ztrig, zfactors)
-            call dct(1, nz, vbar, ztrig, zfactors)
+                !Transform to semi-spectral space as a cosine series:
+                call dct(1, nz, ubar, ztrig, zfactors)
+                call dct(1, nz, vbar, ztrig, zfactors)
 
-            !Add contribution from the linear function connecting the boundary values:
-            ubar = ubar + svor(nz, 0, 0, I_Y) * gamtop - svor(0, 0, 0, I_Y) * gambot
-            vbar = vbar - svor(nz, 0, 0, I_X) * gamtop + svor(0, 0, 0, I_X) * gambot
+                !Add contribution from the linear function connecting the boundary values:
+                ubar = ubar + svor(nz, 0, 0, I_Y) * gamtop - svor(0, 0, 0, I_Y) * gambot
+                vbar = vbar - svor(nz, 0, 0, I_X) * gamtop + svor(0, 0, 0, I_X) * gambot
+            endif
 
             !-------------------------------------------------------
             !Find x velocity component "u":
@@ -180,7 +186,9 @@ module inversion_mod
             !$omp end parallel do
 
             !Add horizontally-averaged flow:
-            as(:, 0, 0) = ubar
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                as(:, 0, 0) = ubar
+            endif
 
             !Store spectral form of "u":
             !$omp parallel workshare
@@ -188,7 +196,7 @@ module inversion_mod
             !$omp end parallel workshare
 
             !Get "u" in physical space:
-            call fftxys2p(as, velog(0:nz, :, :, I_X))
+            call fftxys2p(as, velog(:, :, :, I_X))
 
             !-------------------------------------------------------
             !Find y velocity component "v":
@@ -202,7 +210,9 @@ module inversion_mod
             !$omp end parallel do
 
             !Add horizontally-averaged flow:
-            as(:, 0, 0) = vbar
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                as(:, 0, 0) = vbar
+            endif
 
             !Store spectral form of "v":
             !$omp parallel workshare
@@ -210,7 +220,7 @@ module inversion_mod
             !$omp end parallel workshare
 
             !Get "v" in physical space:
-            call fftxys2p(as, velog(0:nz, :, :, I_Y))
+            call fftxys2p(as, velog(:, :, :, I_Y))
 
             !-------------------------------------------------------
             !Store spectral form of "w":
@@ -219,7 +229,7 @@ module inversion_mod
             !$omp end parallel workshare
 
             !Get "w" in physical space:
-            call fftxys2p(ds, velog(0:nz, :, :, I_Z))
+            call fftxys2p(ds, velog(:, :, :, I_Z))
 
             !=================================================================================
 
