@@ -34,7 +34,7 @@ program test_diffz
     allocate(dp(0:nz, ny, nx))
     allocate(fs(0:nz, nx, ny))
     allocate(ds(0:nz, nx, ny))
-    allocate(ref_sol(0:nz, nx, ny))
+    allocate(ref_sol(0:nz, ny, nx))
 
     call update_parameters
 
@@ -50,7 +50,6 @@ program test_diffz
             y = lower(2) + (iy - 1) * dx(2)
             do iz = 0, nz
                 z = lower(3) + iz * dx(3)
-
                 fp(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dcos(m * z)
                 ref_sol(iz, iy, ix) = -m * dcos(k * x) * dsin(l * y) * dsin(m * z)
             enddo
@@ -67,6 +66,8 @@ program test_diffz
 
     call print_result_dp('Test inversion (diffz)', error, atol=0.2d0)
 
+    deallocate(fp)
+    deallocate(dp)
     deallocate(fs)
     deallocate(ds)
     deallocate(ref_sol)

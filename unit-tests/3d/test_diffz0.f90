@@ -33,7 +33,7 @@ program test_diffz
     allocate(dp(0:nz, ny, nx))
     allocate(fs(0:nz, nx, ny))
     allocate(ds(0:nz, nx, ny))
-    allocate(ref_sol(0:nz, nx, ny))
+    allocate(ref_sol(0:nz, ny, nx))
 
     call update_parameters
 
@@ -65,9 +65,7 @@ program test_diffz
 
     error = maxval(dabs(dp - ref_sol))
 
-    print *, error
-
-    call print_result_dp('Test inversion (diffz)', error, atol=0.5d0)
+    call print_result_dp('Test inversion (diffz)', error, atol=1.5e-13)
 
     deallocate(fs)
     deallocate(ds)
