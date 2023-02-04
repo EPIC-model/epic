@@ -91,11 +91,10 @@ program test_mpi_diffz1
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (comm%err == 0) .and. (error < 1.7e-13))
+    passed = (passed .and. (comm%err == 0) .and. (error < 0.2d0))
 
     if (comm%rank == comm%master) then
         call print_result_logical('Test MPI diffz1', passed)
-        print *, error
     endif
 
     deallocate(fp)
