@@ -266,14 +266,6 @@ contains
         ! --> realt_temp is x, y, z (c, b, a)
         call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
 
-        print *, "transposition_description%send_sizes", transposition_description%send_sizes
-        print *, "transposition_description%send_offsets", transposition_description%send_offsets
-        print *, "transposition_description%recv_sizes", transposition_description%recv_sizes
-        print *, "transposition_description%recv_offsets", transposition_description%recv_offsets
-
-        print *, "source", shape(source_data)
-        print *, "target", shape(target_data)
-
         !$OMP SINGLE
         call MPI_Alltoallv(real_temp,                               &
                            transposition_description%send_sizes,    &
@@ -466,8 +458,6 @@ contains
         integer, dimension(:), intent(inout) :: concatenated_dim_sizes
         integer :: i
 
-        print *, "dims", dims
-        print *, "size(dims, 2)", size(dims, 2)
         do i = 1,size(dims, 2)
             concatenated_dim_sizes(i) = product(dims(:, i))
         enddo
