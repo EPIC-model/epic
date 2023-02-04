@@ -297,7 +297,7 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine vorticity_tendency
-            double precision :: f(-1:nz+1, box%lo(2):box%hi(2), box%lo(1):box%hi(1), n_dim)
+            double precision :: f(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim)
 
             call start_timer(vtend_timer)
 
@@ -348,17 +348,18 @@ module inversion_mod
             double precision                :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
 
             ! calculate df1/dx
-            call fftxyp2s(f(0:nz, :, :, I_X), fs)
+            call fftxyp2s(f(:, :, :, I_X), fs)
             call diffx(fs, ds)
-            call fftxys2p(ds, f(0:nz, :, :, I_X))
+            call fftxys2p(ds, f(:, :, :, I_X))
 
             ! calculate df2/dy
-            call fftxyp2s(f(0:nz, :, :, I_Y), fs)
+            call fftxyp2s(f(:, :, :, I_Y), fs)
             call diffy(fs, ds)
-            call fftxys2p(ds, f(0:nz, :, :, I_Y))
+            call fftxys2p(ds, f(:, :, :, I_Y))
 
             ! calculate df3/dz
-            call central_diffz(f(0:nz, :, :, I_Z), div)
+            call central_diffz(f(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), I_Z), &
+                             div(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
             ! div = df1/dx + df2/dy + df3/dz
             div = f(0:nz, :, :, I_X) + f(0:nz, :, :, I_Y) + div
