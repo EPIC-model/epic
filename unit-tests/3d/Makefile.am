@@ -57,7 +57,8 @@ unittests_PROGRAMS = 				\
 	test_mpi_pencil2			\
 	test_mpi_fft				\
 	test_mpi_dst				\
-	test_mpi_reorder			\
+	test_mpi_reverse_x			\
+	test_mpi_reverse_y			\
 	test_mpi_diffx				\
 	test_mpi_diffy				\
 	test_mpi_diffz0				\
@@ -169,8 +170,11 @@ test_mpi_fft_LDADD = libcombi.la
 test_mpi_dst_SOURCES = test_mpi_dst.f90
 test_mpi_dst_LDADD = libcombi.la
 
-test_mpi_reorder_SOURCES = test_mpi_reorder.f90
-test_mpi_reorder_LDADD = libcombi.la
+test_mpi_reverse_x_SOURCES = test_mpi_reverse_x.f90
+test_mpi_reverse_x_LDADD = libcombi.la
+
+test_mpi_reverse_y_SOURCES = test_mpi_reverse_y.f90
+test_mpi_reverse_y_LDADD = libcombi.la
 
 test_mpi_diffx_SOURCES = test_mpi_diffx.f90
 test_mpi_diffx_LDADD = libcombi.la

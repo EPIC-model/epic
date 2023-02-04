@@ -1,20 +1,19 @@
 ! =============================================================================
-!                       Test horizontal spectral differentiation
+!                       Test MPI reverse_y subroutine
 !
-!       This unit test checks the diffx and diffy subroutines.
+!       This unit test checks the reverse algorithm used in diffy.
 ! =============================================================================
-program test_mpi_reverse
+program test_mpi_reverse_y
     use unit_test
-    use constants, only : pi, twopi, f12, zero, four, two
+    use constants, only : zero, one
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent, upper
     use deriv1d
     use stafft
     use mpi_communicator
     use mpi_layout
-    use mpi_reverse, only : reverse_x
+    use mpi_reverse, only : reverse_y
     implicit none
 
-    double precision              :: error = zero
     double precision, allocatable :: fp(:, :, :), &
                                      gp(:, :, :), &
                                      hp(:, :, :)
@@ -29,9 +28,8 @@ program test_mpi_reverse
     nx = 8
     ny = 8
     nz = 8
-    lower = (/-pi, -pi, -pi/)
-!     extent = (/nx, ny, nz/)
-    extent = (/twopi, twopi, twopi/)
+    lower = (/zero, zero, zero/)
+    extent = (/one, one, one/)
 
     call update_parameters
 
@@ -39,7 +37,7 @@ program test_mpi_reverse
 
     allocate(fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
     allocate(gp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1):box%hhi(1)))
-    allocate(hp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1):box%hhi(1)))
+    allocate(hp(box%lo(3):box%hi(3), box%hlo(2):box%hhi(2), box%lo(1):box%hi(1)))
 
     fp(:, :, :) = zero
     gp(:, :, :) = zero
@@ -53,42 +51,22 @@ program test_mpi_reverse
             y = lower(2) + dble(j) * dx(2)
             do k = box%lo(3), box%hi(3)
                 z = lower(3) + dble(k) * dx(3)
-                fp(k, j, i) =          i + nx * j + nx * ny * k!dcos(four * x) + dsin(y) + dsin(z) * z
-                gp(k, j, i) = nx - 1 - i + nx * j + nx * ny * k !fp(k, j, i)
-
-! !                 fp(k, j, i) = x + y + z
-! !                 gp(k, j, i) = xr + y + z
-! !                 print *, gp(k, j, i), fp(k, j, i)
-!                 fp(k, j, i) = four * x + dsin(y) + dsin(z) * z
-!                 gp(k, j, i) = four * xr + dsin(y) + dsin(z) * z
-! !                 print *, fp(k, j, i), gp(k, j, i)
+                fp(k, j, i) = i + nx *            j + nx * ny * k
+                gp(k, j, i) = i + nx * (ny - 1 - j) + nx * ny * k
             enddo
         enddo
     enddo
 
-    call reverse_x(fp, hp)
-!     call reorder(fp, hp)
-
-    print *, "Reordering:", maxval(gp(box%lo(3):box%hi(3), &
-                                      box%lo(2):box%hi(2), &
-                                      box%lo(1):box%hi(1)) &
-                                 - hp(box%lo(3):box%hi(3), &
-                                      box%lo(2):box%hi(2), &
-                                      box%lo(1):box%hi(1)))
-
-!     print *, comm%rank, "gp:", gp(box%lo(3), box%lo(2), box%lo(1):box%hi(1))
-!     print *, comm%rank, "hp:", hp(box%lo(3), box%lo(2), box%lo(1):box%hi(1))
+    call reverse_y(fp, hp)
 
    !  check result test field
     do i = box%lo(1), box%hi(1)
         do j = box%lo(2), box%hi(2)
             do k = box%lo(3), box%hi(3)
-                print *, comm%rank, i, j, k, gp(k, j, i), hp(k, j, i), (gp(k, j, i) == hp(k, j, i))
                 passed = (passed .and. (gp(k, j, i) - hp(k, j, i) < 1.0e-14))
             enddo
         enddo
     enddo
-
 
     if (comm%rank == comm%master) then
         call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
@@ -96,19 +74,12 @@ program test_mpi_reverse
         call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
-    print *, "passed", passed
-
     call mpi_comm_finalise
 
     passed = (passed .and. (comm%err == 0))
 
     if (comm%rank == comm%master) then
-!         if (.not. passed) then
-            call print_result_logical('Test MPI reorder', passed)
-!         else
-error = 0.0d0
-!             call print_result_dp('Test reorder', error, atol=dble(1.0e-14))
-!         endif
+            call print_result_logical('Test MPI reverse_y', passed)
     endif
 
-end program test_mpi_reverse
+end program test_mpi_reverse_y

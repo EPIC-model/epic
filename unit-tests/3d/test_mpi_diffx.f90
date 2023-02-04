@@ -1,7 +1,7 @@
 ! =============================================================================
-!                       Test horizontal spectral differentiation
+!                     Test horizontal spectral differentiation
 !
-!       This unit test checks the diffx and diffy subroutines.
+!                   This unit test checks the diffx soubroutine.
 ! =============================================================================
 program test_mpi_diffx
     use unit_test
@@ -12,7 +12,6 @@ program test_mpi_diffx
     use mpi_layout
     implicit none
 
-    double precision              :: error = zero
     double precision, allocatable :: fp(:, :, :), &
                                      fs(:, :, :), &
                                      ds(:, :, :)
@@ -78,16 +77,7 @@ program test_mpi_diffx
         enddo
     enddo
 
-    do i = box%lo(1), box%hi(1)
-        x = lower(1) + dble(i) * dx(1)
-        print *, comm%rank, x, fp(box%lo(3), box%lo(2), i), -four * dsin(four * x)
-    enddo
-
     call finalise_fft
-
-    print *, "Layout:", layout%l_parallel
-
-!     error = maxval(dabs(fp - dr))
 
     if (comm%rank == comm%master) then
         call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
@@ -95,18 +85,12 @@ program test_mpi_diffx
         call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
-!     print *, error
-
     call mpi_comm_finalise
 
     passed = (passed .and. (comm%err == 0))
 
     if (comm%rank == comm%master) then
-        if (.not. passed) then
-            call print_result_logical('Test diffx', passed)
-        else
-            call print_result_dp('Test diffx', error, atol=dble(1.0e-14))
-        endif
+        call print_result_logical('Test MPI diffx', passed)
     endif
 
 end program test_mpi_diffx
