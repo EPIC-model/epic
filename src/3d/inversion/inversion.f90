@@ -244,23 +244,23 @@ module inversion_mod
 
         ! Compute the gridded velocity gradient tensor
         subroutine vel2vgrad(svel)
-            double precision, intent(in) :: svel(0:nz,                  &
-                                                 box%hlo(2):box%hhi(2), &
-                                                 box%hlo(1):box%hhi(1), &
+            double precision, intent(in) :: svel(box%lo(3):box%hi(3), & ! 0:nz
+                                                 box%lo(2):box%hi(2), &
+                                                 box%lo(1):box%hi(1), &
                                                  n_dim) ! velocity in semi-spectral space
-            double precision             :: ds(0:nz,                    &
-                                               box%hlo(2):box%hhi(2),   &
-                                               box%hlo(1):box%hhi(1)) ! semi-spectral derivatives
+            double precision             :: ds(box%lo(3):box%hi(3), & ! 0:nz
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%hi(1)) ! semi-spectral derivatives
 
             ! x component:
             call diffx(svel(:, :, :, I_X), ds)           ! u_x = du/dx in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_DUDX)) ! u_x in physical space
+            call fftxys2p(ds, velgradg(:, :, :, I_DUDX)) ! u_x in physical space
 
             call diffy(svel(:, :, :, I_X), ds)              ! u_y = du/dy in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_DUDY)) ! u_y in physical space
+            call fftxys2p(ds, velgradg(:, :, :, I_DUDY)) ! u_y in physical space
 
             call diffx(svel(:, :, :, I_Z), ds)              ! w_x = dw/dx in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_DWDX)) ! w_x in physical space
+            call fftxys2p(ds, velgradg(:, :, :, I_DWDX)) ! w_x in physical space
 
             ! use extrapolation in du/dx and du/dy to fill z grid points outside domain:
             !$omp parallel workshare
@@ -276,10 +276,10 @@ module inversion_mod
 
             ! y & z components:
             call diffy(svel(:, :, :, I_Y), ds)              ! v_y = dv/dy in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_DVDY)) ! v_y in physical space
+            call fftxys2p(ds, velgradg(:, :, :, I_DVDY)) ! v_y in physical space
 
             call diffy(svel(:, :, :, I_Z), ds)              ! w_y = dw/dy in semi-spectral space
-            call fftxys2p(ds, velgradg(0:nz, :, :, I_DWDY)) ! w_y in physical space
+            call fftxys2p(ds, velgradg(:, :, :, I_DWDY)) ! w_y in physical space
 
             !$omp parallel workshare
             ! use extrapolation in dv/dy to fill z grid points outside domain:
