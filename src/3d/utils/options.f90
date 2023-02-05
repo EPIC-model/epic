@@ -23,7 +23,6 @@ module options
 
     ! field input file
     character(len=512)  :: field_file = ''
-    double precision    :: field_tol  = 1.0d-10
 
 
     type bndry_info
@@ -74,7 +73,7 @@ module options
     !
     type parcel_type
         double precision :: size_factor      = 1.0d0    ! factor to increase max. number of parcels
-        integer          :: n_per_cell       = 9        ! number of parcels per cell (need to be a square)
+        integer          :: n_per_cell       = 8        ! number of parcels per cell (need to be a cube)
         double precision :: lambda_max       = four     ! max. ellipse aspect ratio a/b
         double precision :: min_vratio       = 40.0d0   ! minimum ratio of grid cell volume / parcel volume
         integer          :: correction_iters = 2        ! parcel correction iterations
@@ -107,7 +106,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, field_tol, boundary, output, parcel, time
+            namelist /EPIC/ field_file, boundary, output, parcel, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -146,7 +145,6 @@ module options
             call write_netcdf_attribute(ncid, "verbose", verbose)
 #endif
             call write_netcdf_attribute(ncid, "field_file", field_file)
-            call write_netcdf_attribute(ncid, "field_tol", field_tol)
 
             call write_netcdf_attribute(ncid, "zeta_tol", boundary%zeta_tol)
             call write_netcdf_attribute(ncid, "l_ignore_bndry_zeta_flag", &

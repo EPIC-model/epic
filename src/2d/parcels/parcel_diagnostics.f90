@@ -8,15 +8,17 @@ module parcel_diagnostics
     use parcel_container, only : parcels, n_parcels
     use parcel_ellipse
     use omp_lib
-    use physics, only : peref
+    use physics, only : peref, ape_calculation
     use timer, only : start_timer, stop_timer
+    use ape_density, only : ape_den
     implicit none
 
     integer :: parcel_stats_timer
 
     ! pe    : domain-averaged potential energy
+    ! ape   : domain-average available potential energy
     ! ke    : domain-averaged kinetic energy
-    double precision :: pe, ke
+    double precision :: pe, ape, ke
 
     integer :: n_small
 
@@ -92,6 +94,7 @@ module parcel_diagnostics
 
             ! reset
             ke = zero
+            ape = zero
             pe = zero
 
             ! find extrema outside OpenMP loop, we can integrate it later;
@@ -119,19 +122,24 @@ module parcel_diagnostics
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, eval, lam, B22) &
-            !$omp& reduction(+: ke, pe, lsum, l2sum, vsum, v2sum, n_small, rms_zeta)
+            !$omp& reduction(+: ke, ape, lsum, l2sum, vsum, v2sum, n_small, rms_zeta) &
+            !$omp& reduction(-: pe)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
-                z   = parcels%position(2, n) - zmin
+                z   = parcels%position(2, n)
 
                 ! kinetic energy
                 ke = ke + (vel(1) ** 2 + vel(2) ** 2) * vol
 
-                ! potential energy
-                pe = pe - b * z * vol
+                if (ape_calculation == 'sorting') then
+                    ! potential energy using sorting approach
+                    pe = pe - b * (z - zmin) * vol
+                else if (ape_calculation == 'ape density') then
+                    ape = ape + ape_den(b, z) * vol
+                endif
 
                 B22 = get_B22(parcels%B(1, n), parcels%B(2, n), vol)
                 eval = get_eigenvalue(parcels%B(1, n), parcels%B(2, n), B22)
@@ -155,7 +163,12 @@ module parcel_diagnostics
 
             ! divide by domain volume to get domain-averaged quantities
             ke = f12 * ke * vdomaini
-            pe = pe * vdomaini - peref
+
+            if (ape_calculation == 'sorting') then
+                ape = pe * vdomaini - peref
+            else if (ape_calculation == 'ape density') then
+                ape = ape * vdomaini
+            endif
 
             avg_lam = lsum / dble(n_parcels)
             std_lam = dsqrt(abs(l2sum / dble(n_parcels) - avg_lam ** 2))

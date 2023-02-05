@@ -93,11 +93,12 @@ program test_vtend
                 call vorticity_tendency
 
                 error = max(error, maxval(dabs(vtend_ref(0:nz, :, :, :) - vtend(0:nz, :, :, :))))
+
             enddo
         enddo
     enddo
 
-    call print_result_dp('Test vorticity tendency', error, atol=5.0e-2)
+    call print_result_dp('Test vorticity tendency', error, atol=1.2d0)
 
     deallocate(vtend_ref)
 

@@ -11,16 +11,16 @@ module field_diagnostics_netcdf
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
-    use physics, only : write_physical_quantities
+    use physics, only : write_physical_quantities, ape_calculation
     implicit none
 
     private
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: t_axis_id, t_dim_id, n_writes,                   &
-                          rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
-                          avg_npar_id, avg_nspar_id, keg_id, eng_id,       &
+    integer            :: t_axis_id, t_dim_id, n_writes,                      &
+                          rms_v_id, abserr_v_id, max_npar_id, min_npar_id,    &
+                          avg_npar_id, avg_nspar_id, keg_id, eng_id, apeg_id, &
                           max_buoy_id, min_buoy_id
 
     double precision   :: restart_time
@@ -146,6 +146,18 @@ module field_diagnostics_netcdf
                 dimids=(/t_dim_id/),                                        &
                 varid=keg_id)
 
+            if (ape_calculation == 'ape density') then
+                call define_netcdf_dataset(                                 &
+                    ncid=ncid,                                              &
+                    name='ape',                                             &
+                    long_name='domain-averaged available potential energy', &
+                    std_name='',                                            &
+                    unit='m^2/s^2',                                         &
+                    dtype=NF90_DOUBLE,                                      &
+                    dimids=(/t_dim_id/),                                    &
+                    varid=apeg_id)
+            endif
+
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='en',                                                  &
@@ -201,6 +213,10 @@ module field_diagnostics_netcdf
 
             call get_var_id(ncid, 'ke', keg_id)
 
+            if (ape_calculation == 'ape density') then
+                call get_var_id(ncid, 'ape', apeg_id)
+            endif
+
             call get_var_id(ncid, 'en', eng_id)
 
             call get_var_id(ncid, 'min_buoyancy', min_buoy_id)
@@ -241,6 +257,9 @@ module field_diagnostics_netcdf
             call write_netcdf_scalar(ncid, avg_npar_id, avg_npar, n_writes)
             call write_netcdf_scalar(ncid, avg_nspar_id, avg_nspar, n_writes)
             call write_netcdf_scalar(ncid, keg_id, keg, n_writes)
+            if (ape_calculation == 'ape density') then
+                call write_netcdf_scalar(ncid, apeg_id, apeg, n_writes)
+            endif
             call write_netcdf_scalar(ncid, eng_id, eng, n_writes)
             call write_netcdf_scalar(ncid, min_buoy_id, min_buoyg, n_writes)
             call write_netcdf_scalar(ncid, max_buoy_id, max_buoyg, n_writes)

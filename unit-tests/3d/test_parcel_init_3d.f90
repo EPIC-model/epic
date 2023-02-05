@@ -7,11 +7,12 @@ program test_parcel_init_3d
     use unit_test
     use constants, only : pi, zero, one, two, four, f12, f13, f23, f32
     use parcel_container
-    use parcel_init, only : gen_parcel_scalar_attr, unit_test_parcel_init_alloc, init_timer
+    use parcel_init, only : init_timer, parcel_default, init_parcels_from_grids
     use parcel_interpl, only : par2grid, par2grid_timer
     use parcel_ellipsoid, only : get_abc
     use fields, only : tbuoyg, field_default
     use parameters, only : update_parameters, dx, ncell, nx, ny, nz, lower, vcell
+    use options, only : parcel
     use timer
     implicit none
 
@@ -19,7 +20,7 @@ program test_parcel_init_3d
     integer :: i, ix, iy, iz, mx, my, mz
     double precision :: rms, rmserr, error
     double precision, allocatable :: workg(:, :, :)
-    double precision :: tol = 1.0d-9
+    double precision :: tol = 6.0d-2
 
      !Number of parcels per grid box = nbgx*nbgz
     integer, parameter :: nbgx = 2, nbgy = nbgx, nbgz = nbgx
@@ -29,9 +30,9 @@ program test_parcel_init_3d
                                    dyf = one / dble(nbgy), &
                                    dzf = one / dble(nbgz)
 
-    nx = 64
-    ny = 64
-    nz = 32
+    nx = 128
+    ny = 128
+    nz = 64
     lower = (/-four, -four, -two/)
     extent = (/8.0d0, 8.0d0, four/)
 
@@ -42,12 +43,10 @@ program test_parcel_init_3d
 
     call field_default
 
-    !Maximum number of parcels:
+    parcel%n_per_cell = 8
 
     !Total number of parcels:
     n_parcels = nbgx * nbgy * nbgz * ncell
-    call parcel_alloc(n_parcels)
-
 
     !--------------------------------------------------------
     ! Define a gridded field "tbuoyg" (this can be arbitrary):
@@ -68,6 +67,10 @@ program test_parcel_init_3d
             enddo
         enddo
     enddo
+
+    !---------------------------
+    ! Generate parcel attribute:
+    call parcel_default
 
     !---------------------------------------------------------
     !Initialise parcel volume positions and volume fractions:
@@ -94,13 +97,7 @@ program test_parcel_init_3d
         enddo
     enddo
 
-
-    ! Prepare for "gen_parcel_scalar_attr"
-    call unit_test_parcel_init_alloc
-
-    !---------------------------
-    ! Generate parcel attribute:
-    call gen_parcel_scalar_attr(tbuoyg, tol, parcels%buoyancy)
+    call init_parcels_from_grids
 
     !
     ! check result
@@ -134,7 +131,7 @@ program test_parcel_init_3d
     ! Maximum error
     error = max(error, maxval(dabs(workg(0:nz, :, :))))
 
-    call print_result_dp('Test parcel initialisation 3D', error, atol=two * tol)
+    call print_result_dp('Test parcel initialisation 3D', error, atol=tol)
 
     call parcel_dealloc
 

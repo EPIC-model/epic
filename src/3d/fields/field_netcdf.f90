@@ -303,7 +303,7 @@ module field_netcdf
 
 #ifndef ENABLE_DRY_MODE
             call get_var_id(ncid, 'dry_buoyancy', dbuoy_id)
-            
+
             call get_var_id(ncid, 'humidity', hum_id)
 
             call get_var_id(ncid, 'liquid_water_content', lbuoy_id)
@@ -395,5 +395,52 @@ module field_netcdf
             call stop_timer(field_io_timer)
 
         end subroutine write_netcdf_fields
+
+
+        subroutine read_netcdf_fields(fname, step)
+            character(*), intent(in) :: fname
+            integer,      intent(in) :: step
+            integer                  :: n_steps, lid, start(4), cnt(4), st
+
+            call open_netcdf_file(fname, NF90_NOWRITE, lid)
+
+            call get_num_steps(lid, n_steps)
+
+            st = step
+
+            if (st == -1) then
+                st = n_steps
+            else if ((st == 0) .or. (st > n_steps)) then
+                print *, "Step number out of bounds."
+                error stop
+            endif
+
+            cnt  =  (/ nx, ny, nz+1, 1  /)
+            start = (/ 1,  1,  1,    st /)
+
+            if (has_dataset(lid, 'x_vorticity')) then
+                call read_netcdf_dataset(lid, 'x_vorticity', vortg(0:nz, :, :, 1), start, cnt)
+            endif
+
+            if (has_dataset(lid, 'y_vorticity')) then
+                call read_netcdf_dataset(lid, 'y_vorticity', vortg(0:nz, :, :, 2), start, cnt)
+            endif
+
+            if (has_dataset(lid, 'z_vorticity')) then
+                call read_netcdf_dataset(lid, 'z_vorticity', vortg(0:nz, :, :, 3), start, cnt)
+            endif
+
+            if (has_dataset(lid, 'buoyancy')) then
+                call read_netcdf_dataset(lid, 'buoyancy', tbuoyg(0:nz, :, :), start, cnt)
+            endif
+
+#ifndef ENABLE_DRY_MODE
+            if (has_dataset(lid, 'humidity')) then
+                call read_netcdf_dataset(lid, 'humidity', humg(0:nz, :, :), start, cnt)
+            endif
+#endif
+            call close_netcdf_file(lid)
+
+        end subroutine read_netcdf_fields
 
 end module field_netcdf
