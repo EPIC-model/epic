@@ -8,6 +8,7 @@ module inversion_mod
     use sta3dfft, only : rkz, rkzi, ztrig, zfactors, diffx, diffy, fftxyp2s, fftxys2p
     use fields
     use timer, only : start_timer, stop_timer
+    use field_mpi, only : field_halo_fill
     implicit none
 
     integer :: vor2vel_timer,   &
@@ -408,11 +409,17 @@ module inversion_mod
             ! Reverse FFT to define x velocity component ud:
             call fftxys2p(us, ud)
 
+            ! Fill halo grid points
+            call field_halo_fill(ud)
+
             ! Compute y derivative spectrally:
             call diffy(ds, vs)
 
             ! Reverse FFT to define y velocity component vd:
             call fftxys2p(vs, vd)
+
+            ! Fill halo grid points
+            call field_halo_fill(vd)
 
             ! Compute z derivative by central differences:
             call central_diffz(ds, ws)
@@ -424,6 +431,9 @@ module inversion_mod
             ! Reverse FFT to define z velocity component wd:
             call fftxys2p(ws, wd)
 
-        end subroutine
+            ! Fill halo grid points
+            call field_halo_fill(wd)
+
+        end subroutine diverge
 
 end module inversion_mod

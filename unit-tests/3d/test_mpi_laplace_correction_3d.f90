@@ -101,7 +101,7 @@ program test_mpi_laplace_correction_3d
     if (verbose .and. (comm%rank == comm%master)) then
         write(*,*) 'test laplace correction'
         write(*,*) 'iteration, average error, max absolute error'
-        write(*,*) 0, init_error, maxval(abs(volg(0:nz, :, :) / vcell - one))
+        write(*,*) 0, init_error, max_err
     endif
 
     call init_parcel_correction
