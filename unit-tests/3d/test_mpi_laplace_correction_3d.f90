@@ -5,8 +5,9 @@
 !         the parcels with a small deviation from the optimal position.
 !         It then performs 20 relaxation steps.
 ! =============================================================================
-program test_laplace_correction_3d
+program test_mpi_laplace_correction_3d
     use unit_test
+    use mpi_communicator
     use options, only : parcel
     use constants, only : pi, one, zero, f14, f23, f32, two, four, f12
     use parcel_container, only : n_parcels, parcels, parcel_alloc
@@ -18,18 +19,25 @@ program test_laplace_correction_3d
     use parcel_ellipsoid, only : get_abc
     use parcel_init, only : init_regular_positions
     use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz
-    use fields, only : volg
+    use fields, only : volg, field_default
+    use field_ops
     use timer
     implicit none
 
-    double precision :: final_error, init_error, val, tmp
+    logical :: passed = .true.
+    double precision :: final_error, init_error, max_err, val, tmp
     integer :: i, n, sk
     integer, allocatable :: seed(:)
     double precision, parameter :: dev = 0.005d0
+    integer :: lo(3), hi(3)
+
+    call mpi_comm_initialise
+
+    passed = (comm%err == 0)
 
     call random_seed(size=sk)
     allocate(seed(1:sk))
-    seed(:) = 42
+    seed(:) = comm%rank
     call random_seed(put=seed)
 
     call parse_command_line
@@ -47,10 +55,13 @@ program test_laplace_correction_3d
 
     call update_parameters
 
-    allocate(volg(-1:nz+1, 0:ny-1, 0:nx-1))
+    call field_default
 
-    n_parcels = 27*nx*ny*nz
-    call parcel_alloc(n_parcels)
+    lo = box%lo
+    hi = box%hi
+
+    n_parcels = 27*nz*(hi(1) - lo(1) + 1) * (hi(2) - lo(2) + 1)
+    call parcel_alloc(n_parcels + 1000)
 
     parcel%n_per_cell = 27
     call init_regular_positions
@@ -81,9 +92,13 @@ program test_laplace_correction_3d
 
     call vol2grid
 
-    init_error = sum(abs(volg(0:nz, :, :) / vcell - one)) / (nx * ny * (nz+1))
+    volg(0:nz, lo(2):hi(2), lo(1):hi(1)) = abs(volg(0:nz, lo(2):hi(2), lo(1):hi(1)) / vcell - one)
 
-    if (verbose) then
+    init_error = get_sum(volg) / (nx * ny * (nz+1))
+
+    max_err = get_abs_max(volg)
+
+    if (verbose .and. (comm%rank == comm%master)) then
         write(*,*) 'test laplace correction'
         write(*,*) 'iteration, average error, max absolute error'
         write(*,*) 0, init_error, maxval(abs(volg(0:nz, :, :) / vcell - one))
@@ -95,18 +110,30 @@ program test_laplace_correction_3d
         call apply_laplace
         if (verbose) then
             call vol2grid
-            write(*,*) i, sum(abs(volg(0:nz, :, :) / vcell - one)) / (nx * ny * (nz+1)), &
-                          maxval(abs(volg(0:nz, :, :) / vcell - one))
+            volg(0:nz, lo(2):hi(2), lo(1):hi(1)) = abs(volg(0:nz, lo(2):hi(2), lo(1):hi(1)) / vcell - one)
+            final_error = get_sum(volg) / (nx * ny * (nz+1))
+            max_err = get_abs_max(volg)
+            if (comm%rank == comm%master) then
+                write(*,*) i, final_error, max_err
+            endif
         endif
     enddo
 
     call vol2grid
 
-    final_error = sum(abs(volg(0:nz, :, :) / vcell - one)) / (nx * ny * (nz+1))
+    volg(0:nz, lo(2):hi(2), lo(1):hi(1)) = abs(volg(0:nz, lo(2):hi(2), lo(1):hi(1)) / vcell - one)
 
-    call print_result_dp('Test laplace correction 3D', final_error, init_error)
+    final_error = get_sum(volg) / (nx * ny * (nz+1))
 
-    deallocate(volg)
+    passed = (passed .and. (final_error < init_error))
 
-end program test_laplace_correction_3d
+    call mpi_comm_finalise
+
+    passed = (passed .and. (comm%err == 0))
+
+    if (comm%rank == comm%master) then
+        call print_result_logical('Test MPI laplace correction 3D', passed)
+    endif
+
+end program test_mpi_laplace_correction_3d
 

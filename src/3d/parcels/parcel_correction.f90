@@ -14,6 +14,7 @@ module parcel_correction
     use fields, only : volg
     use mpi_layout, only : box
     use mpi_communicator
+    use parcel_mpi, only : parcel_halo_swap
     implicit none
 
     private
@@ -117,10 +118,10 @@ module parcel_correction
 
         subroutine apply_laplace(l_reuse)
             logical, optional, intent(in) :: l_reuse
-            double precision              :: phi(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hli(1)), &
-                                              ud(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hli(1)), &
-                                              vd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hli(1)), &
-                                              wd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hli(1))
+            double precision              :: phi(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                              ud(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                              vd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                              wd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision              :: weights(ngp)
             integer                       :: n, l, is(ngp), js(ngp), ks(ngp)
 
@@ -164,6 +165,8 @@ module parcel_correction
             enddo
             !$omp end do
             !$omp end parallel
+
+            call parcel_halo_swap
 
             call stop_timer(lapl_corr_timer)
 
