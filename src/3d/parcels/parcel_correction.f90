@@ -13,6 +13,7 @@ module parcel_correction
     use timer, only : start_timer, stop_timer
     use fields, only : volg
     use mpi_layout, only : box
+    use mpi_communicator
     implicit none
 
     private
@@ -38,6 +39,7 @@ module parcel_correction
         subroutine init_parcel_correction
             integer          :: n
             double precision :: vsum
+            double precision :: buf(4)
 
             call start_timer(vort_corr_timer)
 
@@ -55,6 +57,13 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
+            buf(1) = vsum
+            buf(2:4) = vor_bar
+            call MPI_Allreduce(MPI_IN_PLACE, buf, 4, MPI_DOUBLE_PRECISION, &
+                               MPI_SUM, comm%world, comm%err)
+            vsum = buf(1)
+            vor_bar = buf(2:4)
+
             vor_bar = vor_bar / vsum
 
             call stop_timer(vort_corr_timer)
@@ -68,6 +77,7 @@ module parcel_correction
         subroutine apply_vortcor
             integer          :: n
             double precision :: dvor(3), vsum
+            double precision :: buf(4)
 
             call start_timer(vort_corr_timer)
 
@@ -82,6 +92,13 @@ module parcel_correction
             enddo
             !$omp end do
             !$omp end parallel
+
+            buf(1) = vsum
+            buf(2:4) = dvor
+            call MPI_Allreduce(MPI_IN_PLACE, buf, 4, MPI_DOUBLE_PRECISION, &
+                               MPI_SUM, comm%world, comm%err)
+            vsum = buf(1)
+            dvor = buf(2:4)
 
             dvor = dvor / vsum
 
@@ -100,10 +117,10 @@ module parcel_correction
 
         subroutine apply_laplace(l_reuse)
             logical, optional, intent(in) :: l_reuse
-            double precision              :: phi(0:nz, 0:ny-1, 0:nx-1),   &
-                                            ud(-1:nz+1, 0:ny-1, 0:nx-1), &
-                                            vd(-1:nz+1, 0:ny-1, 0:nx-1), &
-                                            wd(-1:nz+1, 0:ny-1, 0:nx-1)
+            double precision              :: phi(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hli(1)), &
+                                              ud(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hli(1)), &
+                                              vd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hli(1)), &
+                                              wd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hli(1))
             double precision              :: weights(ngp)
             integer                       :: n, l, is(ngp), js(ngp), ks(ngp)
 
@@ -112,9 +129,9 @@ module parcel_correction
             call vol2grid(l_reuse)
 
             ! form divergence field
-            phi = volg(0:nz, :, :) * vcelli - one
+            phi = volg * vcelli - one
 
-            call diverge(phi, ud(0:nz, :, :), vd(0:nz, :, :), wd(0:nz, :, :))
+            call diverge(phi, ud, vd, wd)
 
             ! use extrapolation to fill z grid lines outside domain:
             ! (anti-symmetry in w is equal to extrapolation)

@@ -381,10 +381,10 @@ module inversion_mod
         ! Computes a divergent flow field (ud, vd, wd) = grad(phi) where
         ! Lap(phi) = div (given).
         subroutine diverge(div,  ud, vd, wd)
-            double precision, intent(inout)  :: div(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
-            double precision, intent(out)    :: ud(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                                vd(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                                wd(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(inout)  :: div(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out)    :: ud(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                                vd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                                wd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision                 :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision                 :: us(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                                                 vs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
