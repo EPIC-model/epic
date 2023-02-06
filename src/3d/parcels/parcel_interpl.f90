@@ -40,12 +40,11 @@ module parcel_interpl
             double precision              :: points(3, 4)
             integer                       :: n, p, l
             double precision              :: pvol
-            integer :: i, j, k, i_stored, j_stored, k_stored
 
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pvol, is, js, ks, i, j, k, i_stored, j_stored, k_stored, weights) &
+            !$omp do private(n, p, l, points, pvol, is, js, ks, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -54,36 +53,15 @@ module parcel_interpl
                                               pvol, parcels%B(:, n),  &
                                               n, l_reuse)
 
-
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
 
-                    call get_index(points(:, p), i, j, k)
+                    call trilinear(points(:, p), is, js, ks, weights)
 
-                    if (p == 1) then
-                      call trilinear(points(:, p), is, js, ks, weights)
-                    elseif ((i == i_stored) .and. (j == j_stored) .and. (k == k_stored)) then
-                      ! if point is in same grid cell, just add to weights
-                      call trilinear_weights_add(points(:, p), i, j, k, weights)
-                    else
-                      ! if point is in different grid cell, save previously stored
-                      ! weights first
-                      ! loop over grid points which are part of the interpolation
-                      ! the weight is a quarter due to 4 points per ellipsoid
-                      do l = 1, ngp
-                          volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                                    + f14 * weights(l) * pvol
-                      enddo
-                      call trilinear(points(:, p), is, js, ks, weights)
-                    endif
-                    i_stored = i
-                    j_stored = j
-                    k_stored = k
-                enddo
-                ! save contibutions at end of points loop
-                do l = 1, ngp
-                    volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                              + f14 * weights(l) * pvol
+                    do l = 1, ngp
+                        volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
+                                                  + f14 * weights(l) * pvol
+                    enddo
                 enddo
             enddo
             !$omp end do
@@ -166,8 +144,6 @@ module parcel_interpl
 
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
-
-                    call get_index(points(:, p), i, j, k)
 
                     call trilinear(points(:, p), is, js, ks, weights)
 

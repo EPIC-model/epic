@@ -8,6 +8,7 @@ module inversion_mod
     use sta3dfft, only : rkz, rkzi, ztrig, zfactors, diffx, diffy, fftxyp2s, fftxys2p
     use fields
     use timer, only : start_timer, stop_timer
+    use field_mpi, only : field_halo_fill
     implicit none
 
     integer :: vor2vel_timer,   &
@@ -381,10 +382,10 @@ module inversion_mod
         ! Computes a divergent flow field (ud, vd, wd) = grad(phi) where
         ! Lap(phi) = div (given).
         subroutine diverge(div,  ud, vd, wd)
-            double precision, intent(inout)  :: div(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
-            double precision, intent(out)    :: ud(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                                vd(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                                wd(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(inout)  :: div(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out)    :: ud(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                                vd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
+                                                wd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision                 :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision                 :: us(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                                                 vs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
@@ -408,11 +409,17 @@ module inversion_mod
             ! Reverse FFT to define x velocity component ud:
             call fftxys2p(us, ud)
 
+            ! Fill halo grid points
+            call field_halo_fill(ud)
+
             ! Compute y derivative spectrally:
             call diffy(ds, vs)
 
             ! Reverse FFT to define y velocity component vd:
             call fftxys2p(vs, vd)
+
+            ! Fill halo grid points
+            call field_halo_fill(vd)
 
             ! Compute z derivative by central differences:
             call central_diffz(ds, ws)
@@ -424,6 +431,9 @@ module inversion_mod
             ! Reverse FFT to define z velocity component wd:
             call fftxys2p(ws, wd)
 
-        end subroutine
+            ! Fill halo grid points
+            call field_halo_fill(wd)
+
+        end subroutine diverge
 
 end module inversion_mod

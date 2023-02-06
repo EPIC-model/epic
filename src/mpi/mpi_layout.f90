@@ -133,28 +133,32 @@ module mpi_layout
             integer, intent(in) :: j
             logical             :: l_north
 
-            l_north = (j > box%hi(2))
+            ! also checks periodicity with j < box%hlo(2)
+            l_north = ((j == box%hi(2)+1) .or. (j < box%hlo(2)))
         end function
 
         pure function is_south(j) result(l_south)
             integer, intent(in) :: j
             logical             :: l_south
 
-            l_south = (j < box%lo(2))
+            ! also checks periodicity with j > box%hhi(2)
+            l_south = ((j == box%hlo(2)) .or. (j > box%hi(2)+1))
         end function
 
         pure function is_west(i) result(l_west)
             integer, intent(in) :: i
             logical             :: l_west
 
-            l_west = (i == box%hlo(1))
+            ! also checks periodicity with i > box%hhi(1)
+            l_west = ((i == box%hlo(1)) .or. (i > box%hi(1)+1))
         end function
 
         pure function is_east(i) result(l_east)
             integer, intent(in) :: i
             logical             :: l_east
 
-            l_east = (i > box%hi(1))
+            ! also checks periodicity with i < box%hlo(1)
+            l_east = ((i == box%hi(1)+1) .or. (i < box%hlo(1)))
         end function
 
         pure function get_neighbour(i, j) result(nb)
