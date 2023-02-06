@@ -14,7 +14,7 @@ program test_mpi_grid2par
     use parcel_ellipsoid, only : get_abc
     use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz
     use fields, only : velog, vortg, velgradg, field_alloc
-    use timer
+    use mpi_timer
     implicit none
 
     double precision              :: error

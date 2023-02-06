@@ -21,7 +21,7 @@ program test_mpi_gradient_correction_3d
     use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz
     use fields, only : volg, field_default
     use field_ops
-    use timer
+    use mpi_timer
     implicit none
 
     logical :: passed = .true.
@@ -127,7 +127,6 @@ program test_mpi_gradient_correction_3d
 
     passed = (passed .and. (final_error < init_error))
 
-
     call mpi_comm_finalise
 
     passed = (passed .and. (comm%err == 0))
@@ -135,6 +134,7 @@ program test_mpi_gradient_correction_3d
     if (comm%rank == comm%master) then
         call print_result_logical('Test MPI gradient correction 3D', passed)
     endif
+
 
 end program test_mpi_gradient_correction_3d
 

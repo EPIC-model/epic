@@ -10,7 +10,7 @@ program test_mpi_parcel_diagnostics
     use parcel_container
     use parcel_diagnostics
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, vcell, dx, set_vmin
-    use timer
+    use mpi_timer
     implicit none
 
     logical                       :: passed = .true.

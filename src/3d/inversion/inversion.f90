@@ -7,7 +7,7 @@ module inversion_mod
     use sta2dfft, only : dct, dst
     use sta3dfft, only : rkz, rkzi, ztrig, zfactors, diffx, diffy, fftxyp2s, fftxys2p
     use fields
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use field_mpi, only : field_halo_fill
     implicit none
 

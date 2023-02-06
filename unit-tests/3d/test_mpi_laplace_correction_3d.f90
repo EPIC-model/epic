@@ -21,7 +21,7 @@ program test_mpi_laplace_correction_3d
     use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz
     use fields, only : volg, field_default
     use field_ops
-    use timer
+    use mpi_timer
     implicit none
 
     logical :: passed = .true.

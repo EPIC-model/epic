@@ -9,7 +9,7 @@ program test_mpi_parcel_write
     use parcel_container
     use parcel_netcdf
     use mpi_communicator
-    use timer
+    use mpi_timer
     implicit none
 
     logical :: passed = .true.

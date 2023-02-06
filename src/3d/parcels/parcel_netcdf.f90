@@ -9,7 +9,7 @@ module parcel_netcdf
                                , parcel_delete
     use parameters, only : nx, ny, nz, extent, lower, max_num_parcels, write_zeta_boundary_flag
     use config, only : package_version, cf_version
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use iomanip, only : zfill
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities

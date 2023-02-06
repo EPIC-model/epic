@@ -14,7 +14,7 @@ module parcel_merge
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
     use parcel_bc
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
 
     implicit none
 

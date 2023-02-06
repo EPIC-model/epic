@@ -9,7 +9,7 @@ program test_mpi_field_diagnostics
     use fields
     use field_diagnostics
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, vcell, vcelli, ngrid
-    use timer
+    use mpi_timer
     implicit none
 
     logical :: passed = .true.

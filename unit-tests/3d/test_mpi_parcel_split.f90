@@ -17,7 +17,7 @@ program test_mpi_parcel_split
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, vcell, set_vmax
     use mpi_collectives
     use parcel_split_mod, only : parcel_split, split_timer
-    use timer
+    use mpi_timer
     implicit none
 
     logical          :: passed = .true.

@@ -17,12 +17,12 @@
 ! =============================================================================
 program test_mpi_vtend
     use unit_test
-    use constants, only : one, two, pi, f12, f34, three
+    use constants, only : zero, one, two, pi, f12, f34, three
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use fields, only : vortg, velog, vtend, field_default
     use sta3dfft, only : finalise_fft, fftxyp2s
     use inversion_mod, only : init_inversion, vorticity_tendency, vtend_timer
-    use timer
+    use mpi_timer
     use mpi_communicator
     use mpi_layout
     implicit none

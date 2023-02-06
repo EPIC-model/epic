@@ -10,7 +10,7 @@ module parcel_correction
     use constants
     use parameters, only : vcelli, nx, ny, nz, dx
     use parcel_container
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use fields, only : volg
     use mpi_layout, only : box
     use mpi_communicator

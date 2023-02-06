@@ -8,7 +8,7 @@ module parcel_split_mod
     use parcel_container, only : parcel_container_type, n_parcels, n_total_parcels
     use parcel_bc, only : apply_reflective_bc
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use omp_lib
     use mpi_communicator, only : comm, MPI_SUM
     use mpi_collectives, only : mpi_blocking_reduce

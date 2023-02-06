@@ -12,7 +12,7 @@ module parcel_diagnostics_netcdf
     use parcel_split_mod, only : n_parcel_splits
     use parcel_merge, only : n_parcel_merges
     use config, only : package_version, cf_version
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
     implicit none

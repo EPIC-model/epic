@@ -15,7 +15,7 @@ module ls_rk4
     use parcel_diagnostics, only : calculate_parcel_diagnostics
     use field_diagnostics, only : calculate_field_diagnostics
     use parameters, only : set_zeta_boundary_flag
-    use timer, only : start_timer, stop_timer, timings
+    use mpi_timer, only : start_timer, stop_timer, timings
     implicit none
 
     integer, parameter :: dp=kind(zero)           ! double precision
