@@ -18,7 +18,8 @@ module utils
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
-    use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag
+    use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
+                         , set_zeta_boundary_flag
     use physics, only : read_physical_quantities, print_physical_quantities, l_peref
     implicit none
 
@@ -209,6 +210,10 @@ module utils
                 time%initial = zero ! make sure user cannot start at arbirtrary time
                 call read_netcdf_fields(field_file, -1)
                 call init_parcels_from_grids
+
+                ! we must check if zeta must be kept zero
+                ! on a vertical boundary
+                call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
             endif
 
         end subroutine setup_fields_and_parcels
