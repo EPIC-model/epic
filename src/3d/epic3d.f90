@@ -3,7 +3,7 @@
 ! =============================================================================
 program epic3d
     use constants, only : zero
-    use timer
+    use mpi_timer
     use parcel_container
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer

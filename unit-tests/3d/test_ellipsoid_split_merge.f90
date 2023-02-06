@@ -14,7 +14,7 @@ program test_ellipsoid_split_merge
     use parcel_nearest
     use parcel_split_mod, only : parcel_split, split_timer
     use parameters, only : update_parameters, nx, ny, nz, extent, lower, set_vmax, set_vmin, vmin
-    use timer
+    use mpi_timer
     implicit none
 
     double precision, parameter :: lam = five

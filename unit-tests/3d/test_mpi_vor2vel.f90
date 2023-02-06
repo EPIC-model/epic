@@ -18,7 +18,7 @@ program test_mpi_vor2vel
     use fields, only : vortg, velog, field_default
     use inversion_utils, only : init_inversion
     use inversion_mod, only : vor2vel, vor2vel_timer
-    use timer
+    use mpi_timer
     use mpi_communicator
     use mpi_layout
     implicit none

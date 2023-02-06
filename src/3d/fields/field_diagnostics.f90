@@ -5,7 +5,7 @@ module field_diagnostics
     use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli
     use constants, only : f12, f14
     use fields
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use mpi_layout, only : box
     use mpi_communicator
     use mpi_collectives, only : mpi_blocking_reduce

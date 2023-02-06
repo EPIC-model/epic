@@ -15,7 +15,7 @@ program test_mpi_parcel_read_rejection
     use mpi_layout
     use fields, only : field_alloc
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, max_num_parcels
-    use timer
+    use mpi_timer
     implicit none
 
     logical            :: passed = .true.

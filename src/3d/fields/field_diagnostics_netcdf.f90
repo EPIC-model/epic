@@ -11,7 +11,7 @@ module field_diagnostics_netcdf
     use constants, only : one
     use parameters, only : lower, extent, nx, ny, nz, write_zeta_boundary_flag
     use config, only : package_version, cf_version
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
     implicit none

@@ -11,7 +11,7 @@ module parcel_init
     use parameters, only : dx, vcell, ncell,            &
                            extent, lower, nx, ny, nz,   &
                            max_num_parcels
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use field_mpi, only : field_halo_fill, field_halo_swap
     use field_ops, only : get_mean, get_rms, get_abs_max
     use omp_lib

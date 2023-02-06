@@ -4,7 +4,7 @@
 ! =============================================================================
 module parcel_interpl
     use constants, only : zero, one, two, f14
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels

@@ -10,7 +10,7 @@ program test_mpi_parcel_read
     use parameters, only : set_max_num_parcels
     use parcel_netcdf
     use mpi_communicator
-    use timer
+    use mpi_timer
     implicit none
 
     logical              :: passed = .true.

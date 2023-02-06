@@ -14,7 +14,7 @@ program test_mpi_trilinear
     use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz, ngrid
     use fields, only : volg, field_alloc
     use field_ops, only : get_sum
-    use timer
+    use mpi_timer
     implicit none
 
     double precision :: error

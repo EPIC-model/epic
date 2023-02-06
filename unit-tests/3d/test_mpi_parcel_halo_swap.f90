@@ -14,7 +14,7 @@ program test_mpi_parcel_halo_swap
     use parcel_mpi
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx
     use mpi_collectives
-    use timer
+    use mpi_timer
     implicit none
 
     logical :: passed = .true.

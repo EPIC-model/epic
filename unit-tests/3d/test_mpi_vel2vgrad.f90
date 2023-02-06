@@ -36,7 +36,7 @@ program test_mpi_vel2vgrad
     use inversion_utils, only : init_inversion
     use inversion_mod, only : vel2vgrad
     use sta3dfft, only : fftxyp2s, finalise_fft
-    use timer
+    use mpi_timer
     use mpi_communicator
     use mpi_layout
     implicit none

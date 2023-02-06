@@ -11,7 +11,7 @@ module parcel_diagnostics
     use parcel_merge, only : n_parcel_merges
     use omp_lib
     use physics, only : peref
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use mpi_communicator
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
