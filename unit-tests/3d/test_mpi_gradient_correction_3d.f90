@@ -22,6 +22,7 @@ program test_mpi_gradient_correction_3d
     use fields, only : volg, field_default
     use field_ops
     use parcel_bc
+    use parcel_mpi
     use mpi_timer
     implicit none
 
@@ -45,7 +46,6 @@ program test_mpi_gradient_correction_3d
 
     call register_timer('gradient correction', grad_corr_timer)
     call register_timer('vorticity correction', vort_corr_timer)
-
 
     nx = 32
     ny = 32
@@ -95,6 +95,8 @@ program test_mpi_gradient_correction_3d
         call apply_periodic_bc(parcels%position(:, n))
         call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
     enddo
+
+    call parcel_halo_swap
 
     volg = zero
 

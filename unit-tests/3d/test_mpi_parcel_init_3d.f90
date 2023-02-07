@@ -55,10 +55,6 @@ program test_mpi_parcel_init_3d
 
     parcel%n_per_cell = 8
 
-    !Total number of parcels:
-    n_parcels = nbgx * nbgy * nbgz * nz * (box%hi(1) - box%lo(1) + 1) * (box%hi(2) - box%lo(2) + 1)
-    call parcel_alloc(n_parcels)
-
     !--------------------------------------------------------
     ! Define a gridded field "tbuoyg" (this can be arbitrary):
     facx = two * pi / extent(1)

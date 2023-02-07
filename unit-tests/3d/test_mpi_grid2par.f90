@@ -121,5 +121,4 @@ program test_mpi_grid2par
         call print_result_logical('Test MPI grid2par', passed)
     endif
 
-
 end program test_mpi_grid2par

@@ -142,8 +142,8 @@ module utils
             call get_time(ncid, t)
             call close_netcdf_file(ncid)
 
-            ! set counters (we nee to increment by 1 since
-            ! we want to write the next time
+            ! set counters (we need to increment by 1 since
+            ! we want to write the next time)
             nfw = int(t / output%field_freq) + 1
             npw = int(t / output%parcel_freq) + 1
             nspw = int(t / output%parcel_stats_freq) + 1

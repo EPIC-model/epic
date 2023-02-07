@@ -202,7 +202,7 @@ module netcdf_writer
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
 
-            ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/)
+            ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/))
             ! with map = shape(data)
 
             if (comm%size > 1) then
@@ -275,7 +275,7 @@ module netcdf_writer
                 call check_netcdf_error("Failed to set collective.")
             endif
 
-            ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/)
+            ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/))
             ! with map = shape(data)
 
             ! write data

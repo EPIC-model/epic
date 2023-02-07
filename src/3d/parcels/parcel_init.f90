@@ -45,7 +45,7 @@ module parcel_init
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
-            n_parcels = parcel%n_per_cell * ncell
+!             n_parcels = parcel%n_per_cell * box%ncell
 
             if (n_parcels > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", &
