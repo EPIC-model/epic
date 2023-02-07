@@ -8,60 +8,66 @@ module parameters
     implicit none
 
     ! mesh spacing
-    double precision :: dx(2)
+    double precision, protected :: dx(2)
 
     ! inverse mesh spacing
-    double precision :: dxi(2)
+    double precision, protected :: dxi(2)
 
     ! grid cell volume, really area in 2D:
-    double precision :: vcell
+    double precision, protected :: vcell
 
     ! inverse grid cell volume
-    double precision :: vcelli
+    double precision, protected :: vcelli
 
     ! number of grid cells in each dimension
     integer :: nx, nz
 
     ! total number of grid cells
-    integer :: ncell
+    integer, protected :: ncell
 
     ! inverse of total number of grid cells
-    double precision :: ncelli
+    double precision, protected :: ncelli
 
     ! total number of grid points
-    integer :: ngrid
+    integer, protected :: ngrid
 
     ! inverse of total number of grid points
-    double precision :: ngridi
+    double precision, protected :: ngridi
 
     ! domain size
     double precision :: extent(2)
 
     ! inverse of domain size
-    double precision :: extenti(2)
+    double precision, protected :: extenti(2)
+
+    ! domain volume
+    double precision, protected :: vdomain
+
+    ! inverse domain volume
+    double precision, protected :: vdomaini
 
     ! domain centre
-    double precision :: center(2)
+    double precision, protected :: center(2)
 
     ! domain half widths values
-    double precision :: hl(2)
+    double precision, protected :: hl(2)
 
-    double precision :: hli(2)
+    double precision, protected :: hli(2)
 
     ! domain origin
     double precision :: lower(2)
 
     ! domain upper boundary
-    double precision :: upper(2)
+    double precision, protected :: upper(2)
 
     ! minimum volume
-    double precision :: vmin
+    double precision, protected :: vmin
 
     ! maximum volume
-    double precision :: vmax
+    double precision, protected :: vmax
 
     ! maximum number of allowed parcels
-    integer :: max_num_parcels
+    integer, protected :: max_num_parcels
 
     contains
 
@@ -88,6 +94,9 @@ module parameters
             endif
         endif
 
+        vdomain = product(extent)
+        vdomaini = one / vdomain
+
         vcell = product(dx)
         vcelli = one / vcell
 
@@ -109,4 +118,24 @@ module parameters
         max_num_parcels = int(nx * nz * parcel%min_vratio * parcel%size_factor)
 
     end subroutine update_parameters
+
+    subroutine set_mesh_spacing(ext, nc)
+        double precision, intent(in) :: ext(2)
+        integer,          intent(in) :: nc(2)
+        dx = ext / dble(nc)
+    end subroutine set_mesh_spacing
+
+#ifdef ENABLE_UNIT_TESTS
+    subroutine set_vmin(val)
+        double precision, intent(in) :: val
+        vmin = val
+    end subroutine set_vmin
+
+
+    subroutine set_vmax(val)
+        double precision, intent(in) :: val
+        vmax = val
+    end subroutine set_vmax
+#endif
+
 end module parameters

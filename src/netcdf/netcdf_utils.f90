@@ -135,8 +135,16 @@ module netcdf_utils
             integer,           intent(out) :: ncid
             logical, optional, intent(in)  :: l_single
             logical                        :: l_parallel
+            logical                        :: l_exist
 
             l_parallel = (comm%size > 1)
+
+            call exist_netcdf_file(ncfname, l_exist)
+
+            if (.not. l_exist) then
+                print *, "Error: NetCDF file " // ncfname // " does not exist."
+                stop
+            endif
 
             if (present(l_single)) then
                 l_parallel = .not. l_single

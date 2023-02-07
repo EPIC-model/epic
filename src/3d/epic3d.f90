@@ -30,7 +30,7 @@ program epic3d
     use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
-                    , setup_parcels
+                    , setup_fields_and_parcels
     use parameters, only : max_num_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
     use fft_pencil, only : initialise_pencil_fft, finalise_pencil_fft
@@ -88,7 +88,7 @@ program epic3d
             ! read domain dimensions
             call setup_domain_and_parameters
 
-            call setup_parcels
+            call setup_fields_and_parcels
 
             call ls_rk4_alloc(max_num_parcels)
 
@@ -97,8 +97,6 @@ program epic3d
             call initialise_pencil_fft(nx, ny, nz)
 
             call init_parcel_correction
-
-            call field_default
 
             call setup_output_files
 
@@ -163,8 +161,9 @@ program epic3d
 #ifdef ENABLE_VERBOSE
         use options, only : verbose
 #endif
-        integer                          :: i
-        character(len=512)               :: arg
+        integer            :: i
+        character(len=512) :: arg
+        logical            :: l_exist
 
         filename = ''
         restart_file = ''
@@ -203,6 +202,13 @@ program epic3d
         if (l_restart .and. (restart_file == '')) then
             print *, 'No restart file provided. Run code with "./epic3d --config [config file]' // &
                      ' --restart [restart file]"'
+            stop
+        endif
+
+        inquire(file=filename, exist=l_exist)
+
+        if (.not. l_exist) then
+            print *, "Configuration file " // trim(filename) // " does not exist."
             stop
         endif
 

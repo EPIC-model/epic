@@ -11,7 +11,7 @@ module field_diagnostics_netcdf
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
-    use physics, only : write_physical_quantities
+    use physics, only : write_physical_quantities, ape_calculation
     implicit none
 
     private
@@ -20,7 +20,7 @@ module field_diagnostics_netcdf
     integer             :: ncid
     integer             :: t_axis_id, t_dim_id, n_writes,                   &
                            rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
-                           avg_npar_id, avg_nspar_id, keg_id
+                           avg_npar_id, avg_nspar_id, keg_id, apeg_id
     double precision    :: restart_time
 #ifndef NDEBUG
     integer             :: max_sym_vol_err_id
@@ -140,12 +140,24 @@ module field_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='ke',                                                  &
-                long_name='kinetic energy',                                 &
+                long_name='domain-averaged kinetic energy',                 &
                 std_name='',                                                &
-                unit='m^4/s^2',                                             &
+                unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=keg_id)
+
+            if (ape_calculation == 'ape density') then
+                call define_netcdf_dataset(                                 &
+                    ncid=ncid,                                              &
+                    name='ape',                                             &
+                    long_name='domain-averaged available potential energy', &
+                    std_name='',                                            &
+                    unit='m^2/s^2',                                         &
+                    dtype=NF90_DOUBLE,                                      &
+                    dimids=(/t_dim_id/),                                    &
+                    varid=apeg_id)
+            endif
 
 #ifndef NDEBUG
             call define_netcdf_dataset(                                     &
@@ -184,6 +196,10 @@ module field_diagnostics_netcdf
 
             call get_var_id(ncid, 'ke', keg_id)
 
+            if (ape_calculation == 'ape density') then
+                call get_var_id(ncid, 'ape', apeg_id)
+            endif
+
 #ifndef NDEBUG
             call get_var_id(ncid, 'max_sym_vol_err', max_sym_vol_err_id)
 #endif
@@ -218,6 +234,9 @@ module field_diagnostics_netcdf
             call write_netcdf_scalar(ncid, avg_npar_id, avg_npar, n_writes)
             call write_netcdf_scalar(ncid, avg_nspar_id, avg_nspar, n_writes)
             call write_netcdf_scalar(ncid, keg_id, keg, n_writes)
+            if (ape_calculation == 'ape density') then
+                call write_netcdf_scalar(ncid, apeg_id, apeg, n_writes)
+            endif
 #ifndef NDEBUG
             call write_netcdf_scalar(ncid, max_sym_vol_err_id, max_vol_sym_err, n_writes)
 #endif

@@ -1,7 +1,6 @@
 module utils
     use constants, only : one
     use options, only : field_file          &
-                      , field_tol           &
                       , output              &
                       , l_restart           &
                       , restart_file        &
@@ -11,15 +10,16 @@ module utils
     use field_netcdf
     use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
-    use parcel_init, only : init_parcels
+    use parcel_init, only : parcel_default, init_parcels_from_grids
     use parcel_netcdf
     use parcel_diagnostics_netcdf
     use parcel_diagnostics
-    use parcel_container, only : n_parcels, parcel_alloc
+    use parcel_container, only : n_parcels
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
-    use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag, max_num_parcels
+    use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
+                         , set_zeta_boundary_flag
     use physics, only : read_physical_quantities, print_physical_quantities, l_peref
     implicit none
 
@@ -187,16 +187,19 @@ module utils
 #endif
         end subroutine setup_domain_and_parameters
 
-        subroutine setup_parcels
+        ! Reads always the last time step of a field file.
+        subroutine setup_fields_and_parcels
             character(len=16) :: file_type
 
-            call parcel_alloc(max_num_parcels)
+            call field_default
+
+            call parcel_default
 
             if (l_restart) then
                 call setup_restart(trim(restart_file), time%initial, file_type)
 
                 if (file_type == 'fields') then
-                    call init_parcels(restart_file, field_tol)
+                    call read_netcdf_fields(trim(restart_file), -1)
                 else if (file_type == 'parcels') then
                     call read_netcdf_parcels(restart_file)
                 else
@@ -205,9 +208,14 @@ module utils
                 endif
             else
                 time%initial = zero ! make sure user cannot start at arbirtrary time
+                call read_netcdf_fields(field_file, -1)
+                call init_parcels_from_grids
 
-                call init_parcels(field_file, field_tol)
+                ! we must check if zeta must be kept zero
+                ! on a vertical boundary
+                call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
             endif
-        end subroutine setup_parcels
+
+        end subroutine setup_fields_and_parcels
 
 end module utils
