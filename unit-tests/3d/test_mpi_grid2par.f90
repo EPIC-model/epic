@@ -7,7 +7,7 @@ program test_mpi_grid2par
     use unit_test
     use mpi_communicator
     use mpi_collectives
-    use mpi_halo
+    use mpi_layout
     use constants, only : pi, zero, one, two, three, four, five, f12, f23
     use parcel_container
     use parcel_interpl, only : grid2par, grid2par_timer
