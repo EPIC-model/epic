@@ -61,7 +61,7 @@ program test_mpi_laplace_correction_3d
     lo = box%lo
     hi = box%hi
 
-    n_parcels = 8*nz*(hi(1) - lo(1) + 1) * (hi(2) - lo(2) + 1)
+    n_parcels = 8*box%ncell
     call parcel_alloc(n_parcels + 1000)
 
     parcel%n_per_cell = 8
