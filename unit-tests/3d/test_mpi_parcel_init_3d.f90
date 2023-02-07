@@ -40,9 +40,9 @@ program test_mpi_parcel_init_3d
 
     passed = (comm%err == 0)
 
-    nx = 64
-    ny = 64
-    nz = 32
+    nx = 128
+    ny = 128
+    nz = 64
     lower = (/-four, -four, -two/)
     extent = (/8.0d0, 8.0d0, four/)
 
