@@ -33,29 +33,28 @@ program test_mpi_parcel_pack
     n_parcels = 1000
     call parcel_alloc(n_parcels)
 
-    do m = 1, 100
-
-        ! initialise parcels
-        do n = 1, n_parcels
-            a = dble(n-1) * 100.0d0
-            parcels%position(1, n) = 1.0d0 + a
-            parcels%position(2, n) = 2.0d0 + a
-            parcels%position(3, n) = 3.0d0 + a
-            parcels%vorticity(1, n) = 4.0d0 + a
-            parcels%vorticity(2, n) = 5.0d0 + a
-            parcels%vorticity(3, n) = 6.0d0 + a
-            parcels%B(1, n) = 7.0d0 + a
-            parcels%B(2, n) = 8.0d0 + a
-            parcels%B(3, n) = 9.0d0 + a
-            parcels%B(4, n) = 10.0d0 + a
-            parcels%B(5, n) = 11.0d0 + a
-            parcels%volume(n) = 12.0d0 + a
-            parcels%buoyancy(n) = 13.0d0 + a
+    ! initialise parcels
+    do n = 1, n_parcels
+        a = dble(n-1) * 100.0d0
+        parcels%position(1, n) = 1.0d0 + a
+        parcels%position(2, n) = 2.0d0 + a
+        parcels%position(3, n) = 3.0d0 + a
+        parcels%vorticity(1, n) = 4.0d0 + a
+        parcels%vorticity(2, n) = 5.0d0 + a
+        parcels%vorticity(3, n) = 6.0d0 + a
+        parcels%B(1, n) = 7.0d0 + a
+        parcels%B(2, n) = 8.0d0 + a
+        parcels%B(3, n) = 9.0d0 + a
+        parcels%B(4, n) = 10.0d0 + a
+        parcels%B(5, n) = 11.0d0 + a
+        parcels%volume(n) = 12.0d0 + a
+        parcels%buoyancy(n) = 13.0d0 + a
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(n) = 14.0d0 + a
+        parcels%humidity(n) = 14.0d0 + a
 #endif
-        enddo
+    enddo
 
+    do m = 1, 100
         ! randomly select parcels to pack
         pid = -1
         do k = 1, n_pack
