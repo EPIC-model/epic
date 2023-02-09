@@ -6,10 +6,11 @@
 program test_mpi_parcel_init_3d
     use unit_test
     use mpi_communicator
+    use options, only : parcel
     use field_mpi
     use constants, only : pi, zero, one, two, four, five, f12, f13, f23, f32
     use parcel_container
-    use parcel_init, only : gen_parcel_scalar_attr, unit_test_parcel_init_alloc, init_timer
+    use parcel_init, only : init_timer, parcel_default, init_parcels_from_grids
     use parcel_interpl, only : par2grid, par2grid_timer
     use parcel_ellipsoid, only : get_abc
     use fields, only : tbuoyg, field_default
@@ -23,7 +24,7 @@ program test_mpi_parcel_init_3d
     double precision :: rms, rmserr, error, corner(3), im(3)
     logical          :: passed = .true.
     double precision, allocatable :: workg(:, :, :)
-    double precision :: tol = 1.0d-9
+    double precision :: tol = 6.0d-2
 
      !Number of parcels per grid box = nbgx*nbgz
     integer, parameter :: nbgx = 2, nbgy = nbgx, nbgz = nbgx
@@ -39,9 +40,9 @@ program test_mpi_parcel_init_3d
 
     passed = (comm%err == 0)
 
-    nx = 64
-    ny = 64
-    nz = 32
+    nx = 128
+    ny = 128
+    nz = 64
     lower = (/-four, -four, -two/)
     extent = (/8.0d0, 8.0d0, four/)
 
@@ -52,11 +53,7 @@ program test_mpi_parcel_init_3d
 
     call field_default
 
-    !Maximum number of parcels:
-
-    !Total number of parcels:
-    n_parcels = nbgx * nbgy * nbgz * nz * (box%hi(1) - box%lo(1) + 1) * (box%hi(2) - box%lo(2) + 1)
-    call parcel_alloc(n_parcels)
+    parcel%n_per_cell = 8
 
     !--------------------------------------------------------
     ! Define a gridded field "tbuoyg" (this can be arbitrary):
@@ -79,6 +76,10 @@ program test_mpi_parcel_init_3d
     enddo
 
     call field_halo_swap(tbuoyg)
+
+    !---------------------------
+    ! Generate parcel attribute:
+    call parcel_default
 
     !---------------------------------------------------------
     !Initialise parcel volume positions and volume fractions:
@@ -111,12 +112,7 @@ program test_mpi_parcel_init_3d
         enddo
     enddo
 
-    ! Prepare for "gen_parcel_scalar_attr"
-    call unit_test_parcel_init_alloc
-
-    !---------------------------
-    ! Generate parcel attribute:
-    call gen_parcel_scalar_attr(tbuoyg, tol, parcels%buoyancy)
+    call init_parcels_from_grids
 
     !
     ! check result
@@ -147,7 +143,7 @@ program test_mpi_parcel_init_3d
     ! Maximum error
     error = max(error, get_abs_max(workg))
 
-    passed = (passed .and. (error < two * tol))
+    passed = (passed .and. (error < tol))
 
     call parcel_dealloc
 

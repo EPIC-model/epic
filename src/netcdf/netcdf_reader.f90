@@ -27,17 +27,19 @@ module netcdf_reader
         module procedure :: read_netcdf_attrib_default_integer
         module procedure :: read_netcdf_attrib_default_double
         module procedure :: read_netcdf_attrib_default_logical
+        module procedure :: read_netcdf_attrib_default_character
     end interface read_netcdf_attribute_default
 
-    private :: read_netcdf_attrib_integer,          &
-               read_netcdf_attrib_double,           &
-               read_netcdf_attrib_character,        &
-               read_netcdf_attrib_logical,          &
-               read_netcdf_attrib_default_integer,  &
-               read_netcdf_attrib_default_double,   &
-               read_netcdf_attrib_default_logical,  &
-               read_netcdf_dataset_1d,              &
-               read_netcdf_dataset_2d,              &
+    private :: read_netcdf_attrib_integer,           &
+               read_netcdf_attrib_double,            &
+               read_netcdf_attrib_character,         &
+               read_netcdf_attrib_logical,           &
+               read_netcdf_attrib_default_integer,   &
+               read_netcdf_attrib_default_double,    &
+               read_netcdf_attrib_default_logical,   &
+               read_netcdf_attrib_default_character, &
+               read_netcdf_dataset_1d,               &
+               read_netcdf_dataset_2d,               &
                read_netcdf_dataset_3d
 
     contains
@@ -354,5 +356,22 @@ module netcdf_reader
             endif
 
         end subroutine read_netcdf_attrib_default_logical
+
+
+        subroutine read_netcdf_attrib_default_character(ncid, name, val)
+            integer,      intent(in)     :: ncid
+            character(*), intent(in)     :: name
+            character(*), intent(inout)  :: val
+
+            if (has_attribute(ncid, name)) then
+                call read_netcdf_attrib_character(ncid, name, val)
+#ifdef ENABLE_VERBOSE
+                print *, "Found character attribute '" // name // "'."
+            else
+                print *, "WARNING: Using default value of '" // name // "'."
+#endif
+            endif
+
+        end subroutine read_netcdf_attrib_default_character
 
 end module netcdf_reader

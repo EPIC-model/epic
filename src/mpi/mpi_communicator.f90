@@ -24,7 +24,16 @@ module mpi_communicator
     contains
 
         subroutine mpi_comm_initialise
+#ifdef ENABLE_OPENMP
+            integer :: provided
+            call MPI_Init_thread(MPI_THREAD_SERIALIZED, provided, comm%err)
+
+            if (.not. provided == MPI_THREAD_SERIALIZED) then
+                stop
+            endif
+#else
             call MPI_Init(comm%err)
+#endif
             call MPI_Comm_size(comm%world, comm%size, comm%err)
             call MPI_Comm_rank(comm%world, comm%rank, comm%err)
             call MPI_Comm_size(comm%world, comm%size, comm%err)

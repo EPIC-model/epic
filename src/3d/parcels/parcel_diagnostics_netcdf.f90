@@ -14,7 +14,7 @@ module parcel_diagnostics_netcdf
     use config, only : package_version, cf_version
     use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
-    use physics, only : write_physical_quantities
+    use physics, only : write_physical_quantities, ape_calculation
     implicit none
 
 
@@ -23,7 +23,7 @@ module parcel_diagnostics_netcdf
     character(len=512) :: ncfname
     integer            :: ncid
     integer            :: t_axis_id, t_dim_id, n_writes,            &
-                          pe_id, ke_id, te_id, npar_id, nspar_id,   &
+                          ape_id, ke_id, te_id, npar_id, nspar_id,  &
                           rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
                           avg_lam_id, std_lam_id,                   &
                           avg_vol_id, std_vol_id, sum_vol_id,       &
@@ -86,22 +86,24 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
 
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='pe',                                                  &
-                long_name='potential energy',                               &
-                std_name='',                                                &
-                unit='m^5/s^2',                                             &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=pe_id)
+            if (.not. ape_calculation == 'none') then
+                call define_netcdf_dataset(                                 &
+                    ncid=ncid,                                              &
+                    name='ape',                                             &
+                    long_name='domain-averaged available potential energy', &
+                    std_name='',                                            &
+                    unit='m^2/s^2',                                         &
+                    dtype=NF90_DOUBLE,                                      &
+                    dimids=(/t_dim_id/),                                    &
+                    varid=ape_id)
+            endif
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='ke',                                                  &
-                long_name='kinetic energy',                                 &
+                long_name='domain-averaged kinetic energy',                 &
                 std_name='',                                                &
-                unit='m^5/s^2',                                             &
+                unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=ke_id)
@@ -109,9 +111,9 @@ module parcel_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='te',                                                  &
-                long_name='total energy',                                   &
+                long_name='domain-averaged total energy',                   &
                 std_name='',                                                &
-                unit='m^5/s^2',                                             &
+                unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=te_id)
@@ -119,9 +121,9 @@ module parcel_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='en',                                                  &
-                long_name='enstrophy',                                      &
+                long_name='domain-averaged enstrophy',                      &
                 std_name='',                                                &
-                unit='m^3/s^2',                                             &
+                unit='1/s^2',                                               &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=en_id)
@@ -279,7 +281,9 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 't', t_axis_id)
 
-            call get_var_id(ncid, 'pe', pe_id)
+            if (.not. ape_calculation == 'none') then
+                call get_var_id(ncid, 'ape', ape_id)
+            endif
 
             call get_var_id(ncid, 'ke', ke_id)
 
@@ -345,9 +349,11 @@ module parcel_diagnostics_netcdf
             !
             ! write diagnostics
             !
-            call write_netcdf_scalar(ncid, pe_id, parcel_stats(IDX_PE), n_writes)
+            if (.not. ape_calculation == 'none') then
+                call write_netcdf_scalar(ncid, ape_id, parcel_stats(IDX_APE), n_writes)
+            endif
             call write_netcdf_scalar(ncid, ke_id, parcel_stats(IDX_KE), n_writes)
-            call write_netcdf_scalar(ncid, te_id, parcel_stats(IDX_KE) + parcel_stats(IDX_PE), n_writes)
+            call write_netcdf_scalar(ncid, te_id, parcel_stats(IDX_KE) + parcel_stats(IDX_APE), n_writes)
             call write_netcdf_scalar(ncid, npar_id, int(parcel_stats(IDX_NTOT_PAR)), n_writes)
             call write_netcdf_scalar(ncid, nspar_id, int(parcel_stats(IDX_N_SMALL)), n_writes)
             call write_netcdf_scalar(ncid, avg_lam_id, parcel_stats(IDX_AVG_LAM), n_writes)

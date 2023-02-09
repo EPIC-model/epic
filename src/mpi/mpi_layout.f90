@@ -8,6 +8,7 @@ module mpi_layout
         integer :: hlo(3), hhi(3)
         integer :: size(3)
         integer :: global_ncells(3)
+        integer :: ncell
     end type box_type
 
     type parallel_layout
@@ -96,6 +97,7 @@ module mpi_layout
 
             layout%l_parallel = (box%hi - box%lo < (/nx-1, ny-1, nz/))
             box%size = box%hi - box%lo + 1
+            box%ncell = box%size(1) * box%size(2) * (box%size(3) - 1)
 
             box%global_ncells = (/nx, ny, nz/)
 

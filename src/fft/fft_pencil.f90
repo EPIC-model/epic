@@ -260,7 +260,7 @@ contains
 
         !$OMP SINGLE
         allocate(real_temp(size(source_data,3), size(source_data,2), size(source_data,1)))
-        allocate(real_temp2(product(transposition_description%pencil_size))) !+1))
+        allocate(real_temp2(product(transposition_description%pencil_size)))
         !$OMP END SINGLE
 
         ! --> realt_temp is x, y, z (c, b, a)

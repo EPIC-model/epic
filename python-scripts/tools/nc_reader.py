@@ -15,6 +15,14 @@ class nc_reader:
 
         self._is_compressible = False
 
+        self._derived_fields = [
+            'vorticity_magnitude',
+            'helicity',
+            'enstrophy',
+            'cross_helicity_magnitude',
+            'kinetic_energy'
+        ]
+
     def open(self, fname):
         if not os.path.exists(fname):
             raise IOError("File '" + fname + "' does not exist.")
@@ -39,8 +47,6 @@ class nc_reader:
                 if self._basename in ff and '_parcels.nc' in ff:
                     self._n_parcel_files += 1
 
-
-
     def close(self):
         self._ncfile.close()
 
@@ -60,6 +66,10 @@ class nc_reader:
     def is_field_file(self):
         return self._nctype == "fields"
 
+    @property
+    def is_three_dimensional(self):
+        return len(self.get_box_ncells()) == 3
+
     def get_num_steps(self):
         if self.is_parcel_file:
             return self._n_parcel_files
@@ -75,6 +85,36 @@ class nc_reader:
     def get_box_origin(self):
         return self.get_global_attribute("origin")
 
+    def get_axis(self, name):
+        axis = self.get_all(name)
+        if name == 'x' or name == 'y':
+            # copy periodic grid point
+            axis = np.append(axis, abs(axis[0]))
+        return
+
+    def get_meshgrid(self):
+        x = self.get_axis('x')
+        z = self.get_axis('z')
+
+        if self.is_three_dimensional:
+            y = self.get_axis('y')
+
+            xg, yg, zg = np.meshgrid(x, y, z, indexing='ij')
+
+            # 13 July 2022
+            # https://stackoverflow.com/questions/1827489/numpy-meshgrid-in-3d
+            assert np.all(xg[:, 0, 0] == x)
+            assert np.all(yg[0, :, 0] == y)
+            assert np.all(zg[0, 0, :] == z)
+
+            return xg, yg, zg
+        else:
+            xg, zg = np.meshgrid(x, z, indexing='ij')
+            assert np.all(xg[:, 0] == x)
+            assert np.all(zg[0, :] == z)
+
+            return xg, zg
+
     def get_all(self, name):
         if self.is_parcel_file:
             raise IOError("This function is not availble for parcel files.")
@@ -84,7 +124,11 @@ class nc_reader:
 
         return np.array(self._ncfile.variables[name])
 
-    def get_dataset(self, step, name, indices=None):
+    def get_dataset(self, step, name, indices=None, copy_periodic=True):
+
+        if name in self._derived_fields and self.is_three_dimensional:
+            return self._get_derived_dataset(step, name, copy_periodic)
+
         if not name in self._ncfile.variables.keys():
             raise IOError("Dataset '" + name + "' unknown.")
 
@@ -107,7 +151,65 @@ class nc_reader:
             if indices is not None:
                 return np.array(self._ncfile.variables[name][step, ...]).squeeze()[indices, ...]
             else:
-                return np.array(self._ncfile.variables[name][step, ...]).squeeze()
+                fdata = np.array(self._ncfile.variables[name][step, ...]).squeeze()
+
+                if copy_periodic:
+                    fdata = self._copy_periodic_layers(fdata)
+
+                if self.is_three_dimensional:
+                    # change ordering from (z, y, x) to (x, y, z)
+                    fdata = np.transpose(fdata, axes=[2, 1, 0])
+                else:
+                    fdata = np.transpose(fdata, axes=[1, 0])
+
+                return fdata
+
+    def _get_derived_dataset(self, step, name, copy_periodic):
+        if name == 'vorticity_magnitude':
+            x_vor = self.get_dataset(step=step, name='x_vorticity', copy_periodic=copy_periodic)
+            y_vor = self.get_dataset(step=step, name='y_vorticity', copy_periodic=copy_periodic)
+            z_vor = self.get_dataset(step=step, name='z_vorticity', copy_periodic=copy_periodic)
+            return np.sqrt(x_vor ** 2 + y_vor ** 2 + z_vor ** 2)
+        if name == 'helicity':
+            u = self.get_dataset(step=step, name='x_velocity', copy_periodic=copy_periodic)
+            v = self.get_dataset(step=step, name='y_velocity', copy_periodic=copy_periodic)
+            w = self.get_dataset(step=step, name='z_velocity', copy_periodic=copy_periodic)
+            xi = self.get_dataset(step=step, name='x_vorticity', copy_periodic=copy_periodic)
+            eta = self.get_dataset(step=step, name='y_vorticity', copy_periodic=copy_periodic)
+            zeta = self.get_dataset(step=step, name='z_vorticity', copy_periodic=copy_periodic)
+            return u * xi + v * eta + w * zeta
+        if name == 'cross_helicity_magnitude':
+            u = self.get_dataset(step=step, name='x_velocity', copy_periodic=copy_periodic)
+            nx, ny, nz = u.shape
+            uvec = np.zeros((nx, ny, nz, 3))
+            ovec = np.zeros((nx, ny, nz, 3))
+            uvec[:, :, :, 0] = u
+            uvec[:, :, :, 1] = self.get_dataset(step=step, name='y_velocity',
+                                                copy_periodic=copy_periodic)
+            uvec[:, :, :, 2] = self.get_dataset(step=step, name='z_velocity',
+                                                copy_periodic=copy_periodic)
+            ovec[:, :, :, 0] = self.get_dataset(step=step, name='x_vorticity',
+                                                copy_periodic=copy_periodic)
+            ovec[:, :, :, 1] = self.get_dataset(step=step, name='y_vorticity',
+                                                copy_periodic=copy_periodic)
+            ovec[:, :, :, 2] = self.get_dataset(step=step, name='z_vorticity',
+                                                copy_periodic=copy_periodic)
+            ch = np.cross(uvec, ovec)
+            x_ch = ch[:, :, :, 0]
+            y_ch = ch[:, :, :, 1]
+            z_ch = ch[:, :, :, 2]
+            return np.sqrt(x_ch ** 2 + y_ch  ** 2 + z_ch ** 2)
+
+        if name == 'kinetic_energy':
+            u = self.get_dataset(step=step, name='x_velocity', copy_periodic=copy_periodic)
+            v = self.get_dataset(step=step, name='y_velocity', copy_periodic=copy_periodic)
+            w = self.get_dataset(step=step, name='z_velocity', copy_periodic=copy_periodic)
+            return 0.5 * (u ** 2 + v ** 2 + w ** 2)
+        if name == 'enstrophy':
+            xi = self.get_dataset(step=step, name='x_vorticity', copy_periodic=copy_periodic)
+            eta = self.get_dataset(step=step, name='y_vorticity', copy_periodic=copy_periodic)
+            zeta = self.get_dataset(step=step, name='z_vorticity', copy_periodic=copy_periodic)
+            return 0.5 * (xi ** 2 + eta ** 2 + zeta ** 2)
 
     def get_dataset_attribute(self, name, attr):
         if not name in self._ncfile.variables.keys():
@@ -152,8 +254,12 @@ class nc_reader:
         return self._ncfile.dimensions['n_parcels'].size
 
     def get_ellipses(self, step, indices=None):
+        if self.is_three_dimensional:
+            raise IOError("Not a 2-dimensional dataset.")
+
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
+
         x_pos = self.get_dataset(step, "x_position", indices=indices)
         z_pos = self.get_dataset(step, "z_position", indices=indices)
         position = np.empty((len(x_pos), 2))
@@ -179,8 +285,12 @@ class nc_reader:
                                  offsets=position)
 
     def get_ellipses_for_bokeh(self, step, indices=None):
+        if self.is_three_dimensional:
+            raise IOError("Not a 2-dimensional dataset.")
+
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
+
         x_pos = self.get_dataset(step, "x_position", indices=indices)
         z_pos = self.get_dataset(step, "z_position", indices=indices)
         V = self.get_dataset(step, "volume", indices=indices)
@@ -206,8 +316,12 @@ class nc_reader:
         )
 
     def get_aspect_ratio(self, step, indices=None):
+        if self.is_three_dimensional:
+            raise IOError("Not a 2-dimensional dataset.")
+
         if not self.is_parcel_file:
             raise IOError("Not a parcel output file.")
+
         V = self.get_dataset(step, "volume", indices=indices)
         B11 = self.get_dataset(step, "B11", indices=indices)
         B12 = self.get_dataset(step, "B12", indices=indices)
@@ -290,3 +404,17 @@ class nc_reader:
                 print("\t", fmt.format(attr), "\t", self._ncfile.variables[var].getncattr(attr))
         print("=" * 80)
         return ""
+
+    def _copy_periodic_layers(self, field):
+        if self.is_three_dimensional:
+            nz, ny, nx = field.shape
+            field_copy = np.empty((nz, ny+1, nx+1))
+            field_copy[:, 0:ny, 0:nx] = field.copy()
+            field_copy[:, ny, :] = field_copy[:, 0, :]
+            field_copy[:, :, nx] = field_copy[:, :, 0]
+        else:
+            nz, nx = field.shape
+            field_copy = np.empty((nz, nx+1))
+            field_copy[:, 0:nx] = field.copy()
+            field_copy[:, nx] = field_copy[:, 0]
+        return field_copy

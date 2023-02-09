@@ -160,7 +160,7 @@ module parcel_interpl
                         dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
                                                     + weight * parcels%buoyancy(n)
                         humg(ks(l), js(l), is(l)) = humg(ks(l), js(l), is(l)) &
-                                                    + weight * parcels%humidity(n)
+                                                  + weight * parcels%humidity(n)
 #endif
                         tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
                                                     + weight * btot
@@ -173,7 +173,9 @@ module parcel_interpl
             !$omp end parallel
 
             call field_halo_swap(volg)
-            call field_halo_swap(vortg)
+            call field_halo_swap(vortg(:, :, :, I_X))
+            call field_halo_swap(vortg(:, :, :, I_Y))
+            call field_halo_swap(vortg(:, :, :, I_Z))
             call field_halo_swap(tbuoyg)
 
             ! apply free slip boundary condition
@@ -244,6 +246,7 @@ module parcel_interpl
 
             nsparg(0,    :, :) = nsparg(0,    :, :) + nsparg(-1, :, :)
             nsparg(nz-1, :, :) = nsparg(nz-1, :, :) + nsparg(nz, :, :)
+            !$omp end parallel workshare
 
             ! sanity check
             if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then

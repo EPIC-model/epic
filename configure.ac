@@ -407,7 +407,7 @@ AM_CONDITIONAL([ENABLE_OPENMP], [test "$ENABLE_OPENMP" = "yes"])
 AC_MSG_CHECKING([whether we are enabling OpenMP])
 if test "x$ENABLE_OPENMP" = "xyes"; then
     AC_MSG_RESULT([yes])
-    FCFLAGS="$FCFLAGS -fopenmp"
+    FCFLAGS="$FCFLAGS -fopenmp -DENABLE_OPENMP"
 else
     AC_MSG_RESULT([no])
 fi
