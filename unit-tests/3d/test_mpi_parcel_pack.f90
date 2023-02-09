@@ -102,7 +102,6 @@ program test_mpi_parcel_pack
         deallocate(buffer)
     enddo
 
-
     if (comm%rank == comm%master) then
         call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     else
