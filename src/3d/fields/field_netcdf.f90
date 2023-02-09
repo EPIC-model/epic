@@ -465,23 +465,23 @@ module field_netcdf
             endif
 
             if (has_dataset(lid, 'buoyancy')) then
-                call read_netcdf_dataset(lid,                        &
-                                         'buoyancy',                 &
-                                         tbuoyg(box%lo(3):box%hi(3), &
-                                                box%lo(2):box%hi(2), &
-                                                box%lo(1):box%lo(1), &
-                                         start,                      &
+                call read_netcdf_dataset(lid,                         &
+                                         'buoyancy',                  &
+                                         tbuoyg(box%lo(3):box%hi(3),  &
+                                                box%lo(2):box%hi(2),  &
+                                                box%lo(1):box%lo(1)), &
+                                         start,                       &
                                          cnt)
             endif
 
 #ifndef ENABLE_DRY_MODE
             if (has_dataset(lid, 'humidity')) then
-                call read_netcdf_dataset(lid,                      &
-                                         'humidity',               &
-                                         humg(box%lo(3):box%hi(3), &
-                                              box%lo(2):box%hi(2), &
-                                              box%lo(1):box%lo(1), &
-                                         start,                    &
+                call read_netcdf_dataset(lid,                       &
+                                         'humidity',                &
+                                         humg(box%lo(3):box%hi(3),  &
+                                              box%lo(2):box%hi(2),  &
+                                              box%lo(1):box%lo(1)), &
+                                         start,                     &
                                          cnt)
             endif
 #endif
