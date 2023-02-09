@@ -426,28 +426,63 @@ module field_netcdf
                 error stop
             endif
 
-            cnt  =  (/ nx, ny, nz+1, 1  /)
-            start = (/ 1,  1,  1,    st /)
+            start(1:3) = box%lo + 1      ! need to add 1 since start must begin with index 1
+            cnt(1:3) = box%size
+            cnt(4) = 1
+            start(4) = st
 
             if (has_dataset(lid, 'x_vorticity')) then
-                call read_netcdf_dataset(lid, 'x_vorticity', vortg(0:nz, :, :, 1), start, cnt)
+                call read_netcdf_dataset(lid,                       &
+                                         'x_vorticity',             &
+                                         vortg(box%lo(3):box%hi(3), &
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%lo(1), &
+                                               1),                  &
+                                         start,                     &
+                                         cnt)
             endif
 
             if (has_dataset(lid, 'y_vorticity')) then
-                call read_netcdf_dataset(lid, 'y_vorticity', vortg(0:nz, :, :, 2), start, cnt)
+                call read_netcdf_dataset(lid,                       &
+                                         'y_vorticity',             &
+                                         vortg(box%lo(3):box%hi(3), &
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%lo(1), &
+                                               2),                  &
+                                         start,                     &
+                                         cnt)
             endif
 
             if (has_dataset(lid, 'z_vorticity')) then
-                call read_netcdf_dataset(lid, 'z_vorticity', vortg(0:nz, :, :, 3), start, cnt)
+                call read_netcdf_dataset(lid,                       &
+                                         'z_vorticity',             &
+                                         vortg(box%lo(3):box%hi(3), &
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%lo(1), &
+                                               3),                  &
+                                         start,                     &
+                                         cnt)
             endif
 
             if (has_dataset(lid, 'buoyancy')) then
-                call read_netcdf_dataset(lid, 'buoyancy', tbuoyg(0:nz, :, :), start, cnt)
+                call read_netcdf_dataset(lid,                        &
+                                         'buoyancy',                 &
+                                         tbuoyg(box%lo(3):box%hi(3), &
+                                                box%lo(2):box%hi(2), &
+                                                box%lo(1):box%lo(1), &
+                                         start,                      &
+                                         cnt)
             endif
 
 #ifndef ENABLE_DRY_MODE
             if (has_dataset(lid, 'humidity')) then
-                call read_netcdf_dataset(lid, 'humidity', humg(0:nz, :, :), start, cnt)
+                call read_netcdf_dataset(lid,                      &
+                                         'humidity',               &
+                                         humg(box%lo(3):box%hi(3), &
+                                              box%lo(2):box%hi(2), &
+                                              box%lo(1):box%lo(1), &
+                                         start,                    &
+                                         cnt)
             endif
 #endif
             call close_netcdf_file(lid)
