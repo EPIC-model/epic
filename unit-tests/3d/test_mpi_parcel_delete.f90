@@ -31,7 +31,7 @@ program test_mpi_parcel_delete
     seed(:) = comm%rank
     call random_seed(put=seed)
 
-    do m = 1, 1
+    do m = 1, 100
         n_parcels = 1000
         call parcel_alloc(n_parcels)
 
@@ -95,21 +95,21 @@ program test_mpi_parcel_delete
                 a = dble(i-1) * 100.0d0
 
                 ! Note: x-posiiton is sorted that is why we access with n and not ii(n)
-                passed = (passed .and. (parcels%position(1, n) - (1.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%position(2, ii(n)) - (2.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%position(3, ii(n)) - (3.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%vorticity(1, ii(n)) - (4.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%vorticity(2, ii(n)) - (5.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%vorticity(3, ii(n)) - (6.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%B(1, ii(n)) - (7.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%B(2, ii(n)) - (8.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%B(3, ii(n)) - (9.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%B(4, ii(n)) - (10.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%B(5, ii(n)) - (11.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%volume(ii(n)) - (12.0d0 + a) < 1.0e-14))
-                passed = (passed .and. (parcels%buoyancy(ii(n)) - (13.0d0 + a) < 1.0e-14))
+                passed = (passed .and. (parcels%position(1, n) - (1.0d0 + a) == zero))
+                passed = (passed .and. (parcels%position(2, ii(n)) - (2.0d0 + a) == zero))
+                passed = (passed .and. (parcels%position(3, ii(n)) - (3.0d0 + a) == zero))
+                passed = (passed .and. (parcels%vorticity(1, ii(n)) - (4.0d0 + a) == zero))
+                passed = (passed .and. (parcels%vorticity(2, ii(n)) - (5.0d0 + a) == zero))
+                passed = (passed .and. (parcels%vorticity(3, ii(n)) - (6.0d0 + a) == zero))
+                passed = (passed .and. (parcels%B(1, ii(n)) - (7.0d0 + a) == zero))
+                passed = (passed .and. (parcels%B(2, ii(n)) - (8.0d0 + a) == zero))
+                passed = (passed .and. (parcels%B(3, ii(n)) - (9.0d0 + a) == zero))
+                passed = (passed .and. (parcels%B(4, ii(n)) - (10.0d0 + a) == zero))
+                passed = (passed .and. (parcels%B(5, ii(n)) - (11.0d0 + a) == zero))
+                passed = (passed .and. (parcels%volume(ii(n)) - (12.0d0 + a) == zero))
+                passed = (passed .and. (parcels%buoyancy(ii(n)) - (13.0d0 + a) == zero))
 #ifndef ENABLE_DRY_MODE
-                passed = (passed .and. (parcels%humidity(ii(n)) - (14.0d0 + a) < 1.0e-14))
+                passed = (passed .and. (parcels%humidity(ii(n)) - (14.0d0 + a) == zero))
 #endif
                 i = i + 1
             endif
