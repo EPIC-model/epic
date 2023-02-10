@@ -400,6 +400,9 @@ module field_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! See https://fortran-lang.org/en/learn/best_practices/multidim_arrays/
+        ! about pointer with lower rank pointer to higher rank array
+        ! (accessed 10 Feb 2023)
         subroutine get_halo_buffer_ptr(dir, buf_ptr)
             integer,                                 intent(in)  :: dir
             double precision, dimension(:), pointer, intent(out) :: buf_ptr
