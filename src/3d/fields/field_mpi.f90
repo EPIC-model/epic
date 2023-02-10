@@ -6,24 +6,24 @@ module field_mpi
     implicit none
 
         double precision, contiguous, dimension(:, :, :), pointer :: west_buf,           &
-                                                                                south_buf,          &
-                                                                                southwest_buf,      &
-                                                                                east_halo_buf,      &
-                                                                                north_halo_buf,     &
-                                                                                northeast_halo_buf
+                                                                     south_buf,          &
+                                                                     southwest_buf,      &
+                                                                     east_halo_buf,      &
+                                                                     north_halo_buf,     &
+                                                                     northeast_halo_buf
 
 
         double precision, contiguous, dimension(:, :), pointer :: east_buf,             &
-                                                                              north_buf,            &
-                                                                              southeast_buf,        &
-                                                                              northwest_buf,        &
-                                                                              west_halo_buf,        &
-                                                                              south_halo_buf,       &
-                                                                              northwest_halo_buf,   &
-                                                                              southeast_halo_buf
+                                                                  north_buf,            &
+                                                                  southeast_buf,        &
+                                                                  northwest_buf,        &
+                                                                  west_halo_buf,        &
+                                                                  south_halo_buf,       &
+                                                                  northwest_halo_buf,   &
+                                                                  southeast_halo_buf
 
         double precision, contiguous, dimension(:), pointer :: northeast_buf,       &
-                                                                           southwest_halo_buf
+                                                               southwest_halo_buf
 
         logical :: l_allocated = .false.
 
