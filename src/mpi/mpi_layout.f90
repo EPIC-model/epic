@@ -17,25 +17,23 @@ module mpi_layout
         integer :: coords(3)    ! Cartesian coordinates of *this* process
     end type parallel_layout
 
-    integer, parameter  :: NB_NONE      = 0, &
-                           NB_NORTH     = 1, &
-                           NB_SOUTH     = 2, &
-                           NB_WEST      = 3, &
-                           NB_EAST      = 4, &
-                           NB_NORTHWEST = 5, &
-                           NB_NORTHEAST = 6, &
-                           NB_SOUTHWEST = 7, &
-                           NB_SOUTHEAST = 8
+    integer, parameter  :: MPI_NONE      = 0, &
+                           MPI_NORTH     = 1, &
+                           MPI_SOUTH     = 2, &
+                           MPI_WEST      = 3, &
+                           MPI_EAST      = 4, &
+                           MPI_NORTHWEST = 5, &
+                           MPI_NORTHEAST = 6, &
+                           MPI_SOUTHWEST = 7, &
+                           MPI_SOUTHEAST = 8
 
     type neighbour_type
-        integer :: west, east
-        integer :: south, north
-        integer :: southwest, northwest
-        integer :: southeast, northeast
+        integer          :: rank
+        integer          :: lo(2), hi(2)
     end type neighbour_type
 
     type(box_type)        :: box
-    type(neighbour_type)  :: neighbour
+    type(neighbour_type)  :: neighbours(8)
     type(parallel_layout) :: layout
 
     contains
@@ -108,8 +106,8 @@ module mpi_layout
             !   disp        -- displacement ( > 0: upward shift, < 0: downward shift) (integer)
             !   rank_source -- rank of source process (integer)
             !   rank_dest   -- rank of destination process (integer)
-            call MPI_Cart_shift(comm%cart, 0, 1, neighbour%west,  neighbour%east, comm%err)
-            call MPI_Cart_shift(comm%cart, 1, 1, neighbour%south, neighbour%north, comm%err)
+            call MPI_Cart_shift(comm%cart, 0, 1, neighbours(MPI_WEST)%rank,  neighbours(MPI_EAST)%rank, comm%err)
+            call MPI_Cart_shift(comm%cart, 1, 1, neighbours(MPI_SOUTH)%rank, neighbours(MPI_NORTH)%rank, comm%err)
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_rank(comm, coords, rank)
@@ -118,97 +116,89 @@ module mpi_layout
             !   rank   -- rank of specified process
 
             ! lower left corner
-            call MPI_Cart_rank(comm%cart, (/coords(1)-1, coords(2)-1/), neighbour%southwest, comm%err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)-1, coords(2)-1/), neighbours(MPI_SOUTHWEST)%rank, comm%err)
 
             ! upper left corner
-            call MPI_Cart_rank(comm%cart, (/coords(1)-1, coords(2)+1/), neighbour%northwest, comm%err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)-1, coords(2)+1/), neighbours(MPI_NORTHWEST)%rank, comm%err)
 
             ! upper right corner
-            call MPI_Cart_rank(comm%cart, (/coords(1)+1, coords(2)+1/), neighbour%northeast, comm%err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)+1, coords(2)+1/), neighbours(MPI_NORTHEAST)%rank, comm%err)
 
             ! lower right corner
-            call MPI_Cart_rank(comm%cart, (/coords(1)+1, coords(2)-1/), neighbour%southeast, comm%err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)+1, coords(2)-1/), neighbours(MPI_SOUTHEAST)%rank, comm%err)
+
+            ! Obtain limits of neighbours:
+            call MPI_Cart_coords(comm%cart, neighbours(MPI_WEST)%rank, 2, coords, comm%err)
+            call get_local_bounds(nx, coords(1), dims(1), neighbours(MPI_WEST)%lo(1), neighbours(MPI_WEST)%hi(1))
+            neighbours(MPI_WEST)%lo(2) = box%lo(2)
+            neighbours(MPI_WEST)%hi(2) = box%hi(2)
+
+            call MPI_Cart_coords(comm%cart, neighbours(MPI_EAST)%rank, 2, coords, comm%err)
+            call get_local_bounds(nx, coords(1), dims(1), neighbours(MPI_EAST)%lo(1), neighbours(MPI_EAST)%hi(1))
+            neighbours(MPI_EAST)%lo(2) = box%lo(2)
+            neighbours(MPI_EAST)%hi(2) = box%hi(2)
+
+            neighbours(MPI_SOUTH)%lo(1) = box%lo(1)
+            neighbours(MPI_SOUTH)%hi(1) = box%hi(1)
+            call MPI_Cart_coords(comm%cart, neighbours(MPI_SOUTH)%rank, 2, coords, comm%err)
+            call get_local_bounds(ny, coords(2), dims(2), neighbours(MPI_SOUTH)%lo(2), neighbours(MPI_SOUTH)%hi(2))
+
+            neighbours(MPI_NORTH)%lo(1) = box%lo(1)
+            neighbours(MPI_NORTH)%hi(1) = box%hi(1)
+            call MPI_Cart_coords(comm%cart, neighbours(MPI_NORTH)%rank, 2, coords, comm%err)
+            call get_local_bounds(ny, coords(2), dims(2), neighbours(MPI_NORTH)%lo(2), neighbours(MPI_NORTH)%hi(2))
+
+            neighbours(MPI_SOUTHWEST)%lo(1) = neighbours(MPI_WEST)%lo(1)
+            neighbours(MPI_SOUTHWEST)%hi(1) = neighbours(MPI_WEST)%hi(1)
+            neighbours(MPI_SOUTHWEST)%lo(2) = neighbours(MPI_SOUTH)%lo(2)
+            neighbours(MPI_SOUTHWEST)%hi(2) = neighbours(MPI_SOUTH)%hi(2)
+
+            neighbours(MPI_NORTHWEST)%lo(1) = neighbours(MPI_WEST)%lo(1)
+            neighbours(MPI_NORTHWEST)%hi(1) = neighbours(MPI_WEST)%hi(1)
+            neighbours(MPI_NORTHWEST)%lo(2) = neighbours(MPI_NORTH)%lo(2)
+            neighbours(MPI_NORTHWEST)%hi(2) = neighbours(MPI_NORTH)%hi(2)
+
+            neighbours(MPI_SOUTHEAST)%lo(1) = neighbours(MPI_EAST)%lo(1)
+            neighbours(MPI_SOUTHEAST)%hi(1) = neighbours(MPI_EAST)%hi(1)
+            neighbours(MPI_SOUTHEAST)%lo(2) = neighbours(MPI_SOUTH)%lo(2)
+            neighbours(MPI_SOUTHEAST)%hi(2) = neighbours(MPI_SOUTH)%hi(2)
+
+            neighbours(MPI_NORTHEAST)%lo(1) = neighbours(MPI_EAST)%lo(1)
+            neighbours(MPI_NORTHEAST)%hi(1) = neighbours(MPI_EAST)%hi(1)
+            neighbours(MPI_NORTHEAST)%lo(2) = neighbours(MPI_NORTH)%lo(2)
+            neighbours(MPI_NORTHEAST)%hi(2) = neighbours(MPI_NORTH)%hi(2)
 
         end subroutine mpi_layout_init
 
-        pure function is_north(j) result(l_north)
-            integer, intent(in) :: j
-            logical             :: l_north
+        pure function is_neighbour(i, j, dir) result(l_inside)
+            integer, intent(in) :: i, j, dir
+            logical             :: l_inside
 
-            ! also checks periodicity with j < box%hlo(2)
-            l_north = ((j == box%hi(2)+1) .or. (j < box%hlo(2)))
-        end function
-
-        pure function is_south(j) result(l_south)
-            integer, intent(in) :: j
-            logical             :: l_south
-
-            ! also checks periodicity with j > box%hhi(2)
-            l_south = ((j == box%hlo(2)) .or. (j > box%hi(2)+1))
-        end function
-
-        pure function is_west(i) result(l_west)
-            integer, intent(in) :: i
-            logical             :: l_west
-
-            ! also checks periodicity with i > box%hhi(1)
-            l_west = ((i == box%hlo(1)) .or. (i > box%hi(1)+1))
-        end function
-
-        pure function is_east(i) result(l_east)
-            integer, intent(in) :: i
-            logical             :: l_east
-
-            ! also checks periodicity with i < box%hlo(1)
-            l_east = ((i == box%hi(1)+1) .or. (i < box%hlo(1)))
-        end function
+            l_inside = ((i >= neighbours(dir)%lo(1)) .and. &
+                        (i <= neighbours(dir)%hi(1)) .and. &
+                        (j >= neighbours(dir)%lo(2)) .and. &
+                        (j <= neighbours(dir)%hi(2)))
+        end function is_neighbour
 
         pure function get_neighbour(i, j) result(nb)
             integer, intent(in) :: i, j
-            integer             :: nb
+            integer             :: nb, n
 
-            nb = NB_NONE
+            nb = MPI_NONE
 
-            if (is_north(j)) then
-                ! check if northwest, north or northeast
-                if (is_west(i)) then
-                    nb = NB_NORTHWEST
-                    return
-                else if (is_east(i)) then
-                    nb = NB_NORTHEAST
-                    return
+            if ((i >= box%lo(1)) .and. &
+                (i <= box%hi(1)) .and. &
+                (j >= box%lo(2)) .and. &
+                (j <= box%hi(2))) then
+                return
+            endif
+
+            do n = 1, 8
+                if (is_neighbour(i, j, n)) then
+                    nb = n
+                    exit
                 endif
-
-                nb = NB_NORTH
-                return
-            endif
-
-            if (is_south(j)) then
-                ! check if southwest, south or southeast
-                if (is_west(i)) then
-                    nb = NB_SOUTHWEST
-                    return
-                else if (is_east(i)) then
-                    nb = NB_SOUTHEAST
-                    return
-                endif
-
-                nb = NB_SOUTH
-                return
-            endif
-
-            ! if none of the above is true, the owner can only be
-            ! either neighbour west or east or the rank itself
-            if (is_west(i)) then
-                nb = NB_WEST
-                return
-            endif
-
-            if (is_east(i)) then
-                nb = NB_EAST
-                return
-            endif
-
+            enddo
         end function get_neighbour
 
 

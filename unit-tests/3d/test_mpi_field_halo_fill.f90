@@ -38,44 +38,44 @@ program test_field_halo_fill
     !
 
     ! check west halo
-    diff = sum(abs(dble(neighbour%west + 1) - values(box%lo(3):box%hi(3), &
-                                                     box%lo(2):box%hi(2), &
-                                                     box%hlo(1))))
+    diff = sum(abs(dble(neighbours(MPI_WEST)%rank + 1) - values(box%lo(3):box%hi(3), &
+                                                               box%lo(2):box%hi(2), &
+                                                               box%hlo(1))))
 
     ! check the east halo
-    diff = diff + sum(abs(dble(neighbour%east + 1) - values(box%lo(3):box%hi(3),       &
-                                                            box%lo(2):box%hi(2),       &
-                                                            box%hhi(1)-1:box%hhi(1))))
+    diff = diff + sum(abs(dble(neighbours(MPI_EAST)%rank + 1) - values(box%lo(3):box%hi(3),       &
+                                                                      box%lo(2):box%hi(2),       &
+                                                                      box%hhi(1)-1:box%hhi(1))))
 
     ! check the south halo
-    diff = diff + sum(abs(dble(neighbour%south + 1) - values(box%lo(3):box%hi(3),      &
-                                                             box%hlo(2),               &
-                                                             box%lo(1):box%hi(1))))
+    diff = diff + sum(abs(dble(neighbours(MPI_SOUTH)%rank + 1) - values(box%lo(3):box%hi(3),      &
+                                                                       box%hlo(2),               &
+                                                                       box%lo(1):box%hi(1))))
 
     ! check the north halo
-    diff = diff + sum(abs(dble(neighbour%north + 1) - values(box%lo(3):box%hi(3),      &
-                                                             box%hhi(2)-1:box%hhi(2),  &
-                                                             box%lo(1):box%hi(1))))
+    diff = diff + sum(abs(dble(neighbours(MPI_NORTH)%rank + 1) - values(box%lo(3):box%hi(3),      &
+                                                                       box%hhi(2)-1:box%hhi(2),  &
+                                                                       box%lo(1):box%hi(1))))
 
     ! check the southwest halo
-    diff = diff + sum(abs(dble(neighbour%southwest + 1) - values(box%lo(3):box%hi(3),  &
-                                                                 box%hlo(2),           &
-                                                                 box%hlo(1))))
+    diff = diff + sum(abs(dble(neighbours(MPI_SOUTHWEST)%rank + 1) - values(box%lo(3):box%hi(3),  &
+                                                                           box%hlo(2),           &
+                                                                           box%hlo(1))))
 
     ! check the northwest halo
-    diff = diff + sum(abs(dble(neighbour%northwest + 1) - values(box%lo(3):box%hi(3),       &
-                                                                 box%hhi(2)-1:box%hhi(2),   &
-                                                                 box%hlo(1))))
+    diff = diff + sum(abs(dble(neighbours(MPI_NORTHWEST)%rank + 1) - values(box%lo(3):box%hi(3),       &
+                                                                           box%hhi(2)-1:box%hhi(2),   &
+                                                                           box%hlo(1))))
 
     ! check the northeast halo
-    diff = diff + sum(abs(dble(neighbour%northeast + 1) - values(box%lo(3):box%hi(3),       &
-                                                                 box%hhi(2)-1:box%hhi(2),   &
-                                                                 box%hhi(1)-1:box%hhi(1))))
+    diff = diff + sum(abs(dble(neighbours(MPI_NORTHEAST)%rank + 1) - values(box%lo(3):box%hi(3),       &
+                                                                           box%hhi(2)-1:box%hhi(2),   &
+                                                                           box%hhi(1)-1:box%hhi(1))))
 
     ! check the southeast halo
-    diff = diff + sum(abs(dble(neighbour%southeast + 1) - values(box%lo(3):box%hi(3),       &
-                                                                 box%hlo(2),                &
-                                                                 box%hhi(1)-1:box%hhi(1))))
+    diff = diff + sum(abs(dble(neighbours(MPI_SOUTHEAST)%rank + 1) - values(box%lo(3):box%hi(3),       &
+                                                                           box%hlo(2),                &
+                                                                           box%hhi(1)-1:box%hhi(1))))
 
     passed = (passed .and. (diff == zero))
 
