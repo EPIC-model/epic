@@ -1,6 +1,7 @@
 module mpi_layout
     use mpi_f08
     use mpi_communicator, only : comm
+    use mpi_tags
     implicit none
 
     type box_type
@@ -16,16 +17,6 @@ module mpi_layout
         integer :: size(3)      ! number of processes in each dimension
         integer :: coords(3)    ! Cartesian coordinates of *this* process
     end type parallel_layout
-
-    integer, parameter  :: MPI_NONE      = 0, &
-                           MPI_NORTH     = 1, &
-                           MPI_SOUTH     = 2, &
-                           MPI_WEST      = 3, &
-                           MPI_EAST      = 4, &
-                           MPI_NORTHWEST = 5, &
-                           MPI_NORTHEAST = 6, &
-                           MPI_SOUTHWEST = 7, &
-                           MPI_SOUTHEAST = 8
 
     type neighbour_type
         integer          :: rank

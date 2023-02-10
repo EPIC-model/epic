@@ -1,21 +1,24 @@
 module mpi_tags
-    integer, parameter :: HALO_WEST_TAG      = 1000,  &
-                          HALO_EAST_TAG      = 1001,  &
-                          HALO_SOUTH_TAG     = 1002,  &
-                          HALO_NORTH_TAG     = 1003,  &
-                          HALO_SOUTHWEST_TAG = 1004,  &
-                          HALO_NORTHWEST_TAG = 1005,  &
-                          HALO_NORTHEAST_TAG = 1006,  &
-                          HALO_SOUTHEAST_TAG = 1007
+    implicit none
 
-    integer, parameter :: NEIGHBOUR_TAG(8) = (/2000,    &
-                                               2001,    &
-                                               2002,    &
-                                               2003,    &
-                                               2004,    &
-                                               2005,    &
-                                               2006,    &
-                                               2007/)
+    integer, parameter  :: MPI_NONE      = 0, &
+                           MPI_NORTH     = 1, &
+                           MPI_SOUTH     = 2, &
+                           MPI_WEST      = 3, &
+                           MPI_EAST      = 4, &
+                           MPI_NORTHWEST = 5, &
+                           MPI_NORTHEAST = 6, &
+                           MPI_SOUTHWEST = 7, &
+                           MPI_SOUTHEAST = 8
+
+    integer, parameter :: NEIGHBOUR_TAG(8) = (/MPI_NORTH,       &
+                                               MPI_SOUTH,       &
+                                               MPI_WEST,        &
+                                               MPI_EAST,        &
+                                               MPI_NORTHWEST,   &
+                                               MPI_NORTHEAST,   &
+                                               MPI_SOUTHWEST,   &
+                                               MPI_SOUTHEAST/)
 
     integer, parameter :: REVERSE_LO_TAG = 3000, &
                           REVERSE_HI_TAG = 3001

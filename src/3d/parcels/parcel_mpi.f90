@@ -1,6 +1,6 @@
 module parcel_mpi
     use mpi_layout
-    use mpi_utils, only : mpi_exit_on_error
+    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_message
     use mpi_tags
     use fields, only : get_index
     use merge_sort, only : msort
@@ -38,51 +38,36 @@ module parcel_mpi
             integer,          dimension(:), pointer, intent(out) :: pid_ptr
             double precision, dimension(:), pointer, intent(out) :: buf_ptr
 
-                if (dir .eq. MPI_NORTH) then
+            select case (dir)
+                case (MPI_NORTH)
                     pid_ptr => north_pid
                     buf_ptr => north_buf
-                else if (dir .eq. MPI_NORTHEAST) then
-                    pid_ptr => northeast_pid
-                    buf_ptr => northeast_buf
-                else if (dir .eq. MPI_EAST) then
-                    pid_ptr => east_pid
-                    buf_ptr => east_buf
-                else if (dir .eq. MPI_SOUTHEAST) then
-                    pid_ptr => southeast_pid
-                    buf_ptr => southeast_buf
-                else if (dir .eq. MPI_SOUTH) then
+                case (MPI_SOUTH)
                     pid_ptr => south_pid
                     buf_ptr => south_buf
-                else if (dir .eq. MPI_SOUTHWEST) then
-                    pid_ptr => southwest_pid
-                    buf_ptr => southwest_buf
-                else if (dir .eq. MPI_WEST) then
+                case (MPI_WEST)
                     pid_ptr => west_pid
                     buf_ptr => west_buf
-                else if (dir .eq. MPI_NORTHWEST) then
+                case (MPI_EAST)
+                    pid_ptr => east_pid
+                    buf_ptr => east_buf
+                case (MPI_NORTHWEST)
                     pid_ptr => northwest_pid
                     buf_ptr => northwest_buf
-                endif
+                case (MPI_NORTHEAST)
+                    pid_ptr => northeast_pid
+                    buf_ptr => northeast_buf
+                case (MPI_SOUTHWEST)
+                    pid_ptr => southwest_pid
+                    buf_ptr => southwest_buf
+                case (MPI_SOUTHEAST)
+                    pid_ptr => southeast_pid
+                    buf_ptr => southeast_buf
+                case default
+                    call mpi_exit_on_error("get_buffer_ptr: No valid direction.")
+            end select
+
         end subroutine get_buffer_ptr
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine check_for_message(tag, recv_size, source)
-            integer, intent(out) :: recv_size, tag, source
-            type(MPI_Status)     :: status
-
-            call MPI_probe(MPI_ANY_SOURCE,  &
-                           MPI_ANY_TAG,     &
-                           comm%cart,       &
-                           status,          &
-                           comm%err)
-
-            source = status%MPI_SOURCE
-            tag = status%MPI_TAG
-
-            call MPI_get_count(status, MPI_DOUBLE_PRECISION, recv_size, comm%err)
-
-        end subroutine check_for_message
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -126,7 +111,7 @@ module parcel_mpi
             do n = 1, 8
 
                 ! check for incoming messages
-                call check_for_message(tag, recv_size, source)
+                call mpi_check_for_message(tag, recv_size, source)
 
                 allocate(recvbuf(recv_size))
 
