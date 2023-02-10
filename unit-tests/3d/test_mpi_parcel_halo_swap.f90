@@ -40,6 +40,8 @@ program test_mpi_parcel_halo_swap
     n_total = 4 * comm%size * (comm%size + 1)
     call parcel_alloc(2 * n_total)
 
+    n_total_parcels = n_total
+
     do n = 1, comm%rank + 1
         ! place parcels in southwest halo
         parcels%position(1, n) = (box%hlo(1) + f12) * dx(1)
@@ -103,7 +105,6 @@ program test_mpi_parcel_halo_swap
     if (comm%rank == comm%master) then
         passed = (passed .and. (n_total_verify == n_total))
     endif
-
 
     n_local_verify = (neighbours(MPI_WEST)%rank+1)      &
                    + (neighbours(MPI_EAST)%rank+1)      &

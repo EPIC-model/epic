@@ -2,7 +2,10 @@ module parcel_mpi
     use mpi_layout
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_message
     use mpi_tags
-    use fields, only : get_index
+#ifndef NDEBUG
+    use mpi_collectives, only : mpi_blocking_reduce
+#endif
+    use fields, only : get_index_periodic
     use merge_sort, only : msort
     use parameters, only : vmin, vcell, nz
     use parcel_container, only : n_par_attrib       &
@@ -10,6 +13,9 @@ module parcel_mpi
                                , parcel_unpack      &
                                , parcel_delete      &
                                , n_parcels          &
+#ifndef NDEBUG
+                               , n_total_parcels    &
+#endif
                                , parcels
     implicit none
 
@@ -138,6 +144,7 @@ module parcel_mpi
                             send_statuses,      &
                             comm%err)
 
+
             ! delete parcel that we sent
             n_total_sends = sum(n_sends)
             call parcel_delete(invalid, n_total_sends)
@@ -145,6 +152,14 @@ module parcel_mpi
             call deallocate_pid_buffers
 
             call deallocate_send_buffers
+
+#ifndef NDEBUG
+            n = n_parcels
+            call mpi_blocking_reduce(n, MPI_SUM)
+            if ((comm%rank == comm%master) .and. (.not. n == n_total_parcels)) then
+                call mpi_exit_on_error("parcel_halo_swap: We lost parcels.")
+            endif
+#endif
 
         end subroutine parcel_halo_swap
 
@@ -171,7 +186,7 @@ module parcel_mpi
                     l = pindex(n)
                 endif
 
-                call get_index(parcels%position(:, l), i, j, k)
+                call get_index_periodic(parcels%position(:, l), i, j, k)
 
                 nb = get_neighbour(i, j)
 
