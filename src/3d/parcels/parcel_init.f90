@@ -4,7 +4,7 @@
 module parcel_init
     use options, only : parcel
     use constants, only : zero, two, one, f12, f13, f23, f14
-    use parcel_container, only : parcels, n_parcels, parcel_alloc
+    use parcel_container, only : parcels, n_parcels, n_total_parcels, parcel_alloc
     use parcel_ellipsoid, only : get_abc, get_eigenvalues
     use parcel_split_mod, only : parcel_split
     use parcel_interpl, only : trilinear, ngp
@@ -17,6 +17,7 @@ module parcel_init
     use mpi_communicator
     use mpi_layout, only : box
     use mpi_utils, only : mpi_print
+    use mpi_collectives, only : mpi_blocking_reduce
     use fields
     implicit none
 
@@ -51,6 +52,11 @@ module parcel_init
                 print *, "Number of parcels exceeds limit of", &
                           max_num_parcels, ". Exiting."
                 stop
+            endif
+
+            n_total_parcels = n_parcels
+            if (comm%size > 1) then
+                call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
             endif
 
             call init_regular_positions

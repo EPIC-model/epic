@@ -6,6 +6,8 @@ module parcel_container
     use options, only : verbose
     use parameters, only : extent, extenti, center, lower, upper
     use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
+    use mpi_communicator
+    use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
     integer :: n_parcels        ! local number of parcels
@@ -166,6 +168,13 @@ module parcel_container
 
             if (.not. allocated(parcels%position)) then
                 return
+            endif
+
+            n_parcels = 0
+
+            n_total_parcels = 0
+            if (comm%size > 1) then
+                call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
             endif
 
             deallocate(parcels%position)
