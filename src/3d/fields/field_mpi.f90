@@ -103,7 +103,7 @@ module field_mpi
             integer                                 :: send_size, recv_size
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
-            integer                                 :: tag, source, nb, n
+            integer                                 :: tag, source, n
 
             do n = 1, 8
                 call get_halo_buffer_ptr(n, sendbuf)
@@ -125,9 +125,13 @@ module field_mpi
                 ! check for incoming messages
                 call mpi_check_for_message(tag, recv_size, source)
 
-                nb = map_tag_to_neighbour(tag)
-
-                call get_interior_buffer_ptr(nb, recvbuf)
+                call get_interior_buffer_ptr(tag, recvbuf)
+#ifndef NDEBUG
+                if (.not. recv_size == size(recvbuf)) then
+                    print *, "Receive buffer and receive count do not match.", recv_size, size(recvbuf), tag
+                    error stop
+                endif
+#endif
 
                 call MPI_Recv(recvbuf,                  &
                               recv_size,                &
@@ -153,7 +157,7 @@ module field_mpi
             integer                                 :: send_size, recv_size
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
-            integer                                 :: tag, source, nb, n
+            integer                                 :: tag, source, n
 
             do n = 1, 8
                 call get_interior_buffer_ptr(n, sendbuf)
@@ -175,9 +179,15 @@ module field_mpi
                 ! check for incoming messages
                 call mpi_check_for_message(tag, recv_size, source)
 
-                nb = map_tag_to_neighbour(tag)
+                call get_halo_buffer_ptr(tag, recvbuf)
 
-                call get_halo_buffer_ptr(nb, recvbuf)
+#ifndef NDEBUG
+                if (.not. recv_size == size(recvbuf)) then
+                    print *, "Receive buffer and receive count do not match."
+                    error stop
+                endif
+#endif
+
 
                 call MPI_Recv(recvbuf,                  &
                               recv_size,                &
@@ -329,8 +339,29 @@ module field_mpi
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
             logical,          intent(in)    :: l_add
+!             integer :: ylen, zlen, i, j, k
 
             if (l_add) then
+
+!                     ylen = box%hi(2)-box%lo(2)+1
+!                     zlen = box%hhi(3)-box%hlo(3)+1
+
+!                     do i = 1, 2
+!                         do j = 1, ylen
+!                             do k = 1, zlen
+!                                 print *, comm%rank, i, j, k, west_buf(k, j, i)
+!                             enddo
+!                         enddo
+!                     enddo
+
+!                     do i = box%lo(1), box%lo(1)+1
+!                         do j = box%lo(2), box%hi(2)
+!                             do k = box%hlo(3), box%hhi(3)
+!                                 print *, comm%rank, i, j, k, data(k, j, i)
+!                             enddo
+! !                         enddo
+!                     enddo
+
                 data(:, box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) &
                     = data(:, box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) + west_buf
 
@@ -429,35 +460,5 @@ module field_mpi
             end select
 
         end subroutine get_halo_buffer_ptr
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Example: If the north neighbour sends, then we must return south.
-        function map_tag_to_neighbour(tag) result(nb)
-            integer, intent(in) :: tag
-            integer             :: nb
-
-            select case (tag)
-                case (MPI_NORTH)
-                    nb = MPI_SOUTH
-                case (MPI_SOUTH)
-                    nb = MPI_NORTH
-                case (MPI_WEST)
-                    nb = MPI_EAST
-                case (MPI_EAST)
-                    nb = MPI_WEST
-                case (MPI_NORTHWEST)
-                    nb = MPI_SOUTHEAST
-                case (MPI_NORTHEAST)
-                    nb = MPI_SOUTHWEST
-                case (MPI_SOUTHWEST)
-                    nb = MPI_NORTHEAST
-                case (MPI_SOUTHEAST)
-                    nb = MPI_NORTHWEST
-                case default
-                    call mpi_exit_on_error("map_tag_to_neighbour: No valid neighbour tag.")
-            end select
-
-        end function map_tag_to_neighbour
 
 end module field_mpi

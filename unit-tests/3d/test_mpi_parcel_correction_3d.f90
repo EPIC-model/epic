@@ -10,7 +10,7 @@ program test_parcel_correction_3d
     use mpi_communicator
     use options, only : parcel
     use constants, only : pi, one, zero, f14, f23, f32, two, four, f12, f18
-    use parcel_container, only : n_parcels, parcels, parcel_alloc
+    use parcel_container, only : n_parcels, parcels, n_total_parcels, parcel_alloc
     use parcel_correction, only : apply_laplace             &
                                 , apply_gradient            &
                                 , lapl_corr_timer           &
@@ -25,6 +25,7 @@ program test_parcel_correction_3d
     use field_ops
     use parcel_bc
     use parcel_mpi
+    use mpi_collectives, only : mpi_blocking_reduce
     use mpi_timer
     implicit none
 
@@ -66,6 +67,9 @@ program test_parcel_correction_3d
 
     n_parcels = 8*nz*(hi(1) - lo(1) + 1) * (hi(2) - lo(2) + 1)
     call parcel_alloc(n_parcels + 1000)
+
+    n_total_parcels = n_parcels
+    call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
 
     parcel%n_per_cell = 8
     call init_regular_positions
