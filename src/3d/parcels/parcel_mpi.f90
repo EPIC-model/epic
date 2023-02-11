@@ -1,6 +1,6 @@
 module parcel_mpi
     use mpi_layout
-    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_message
+    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_message, mpi_check_for_error
     use mpi_tags
 #ifndef NDEBUG
     use mpi_collectives, only : mpi_blocking_reduce
@@ -112,6 +112,8 @@ module parcel_mpi
                                comm%cart,               &
                                requests(n),             &
                                comm%err)
+
+                call mpi_check_for_error("in MPI_Isend of parcel_mpi::parcel_halo_swap.")
             enddo
 
             do n = 1, 8
@@ -130,6 +132,8 @@ module parcel_mpi
                               recv_status,              &
                               comm%err)
 
+                call mpi_check_for_error("in MPI_Recv of parcel_mpi::parcel_halo_swap.")
+
                 recvcount = recv_size / n_par_attrib
 
                 if (recvcount > 0) then
@@ -144,6 +148,7 @@ module parcel_mpi
                             send_statuses,      &
                             comm%err)
 
+            call mpi_check_for_error("in MPI_Waitall of parcel_mpi::parcel_halo_swap.")
 
             ! delete parcel that we sent
             n_total_sends = sum(n_sends)
