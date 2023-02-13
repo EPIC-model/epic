@@ -2,7 +2,7 @@ module field_mpi
     use constants, only : zero
     use mpi_layout
     use mpi_communicator
-    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_message
+    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_message, mpi_check_for_error
     implicit none
 
         double precision, contiguous, dimension(:, :, :), pointer :: west_buf,           &
@@ -99,72 +99,71 @@ module field_mpi
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine halo_to_interior_communication
-            double precision, dimension(:), pointer :: sendbuf, recvbuf
-            integer                                 :: send_size, recv_size
+            double precision, dimension(:), pointer :: send_buf, recv_buf
+            integer                                 :: send_size!, recv_size
             type(MPI_Request)                       :: requests(8)
-            type(MPI_Status)                        :: recv_status, send_statuses(8)
-            integer                                 :: tag, source, n
+            type(MPI_Status)                        :: send_statuses(8)
+            integer                                 :: tag, n
 
             do n = 1, 8
-                call get_halo_buffer_ptr(n, sendbuf)
 
-                send_size = size(sendbuf)
+                tag = NEIGHBOUR_TAG(n)
 
-                call MPI_Isend(sendbuf,                 &
-                               send_size,               &
+                call get_interior_buffer_ptr(tag, recv_buf)
+
+                call MPI_Irecv(recv_buf,                &
+                               size(recv_buf),          &
                                MPI_DOUBLE_PRECISION,    &
-                               neighbours(n)%rank,      &
-                               NEIGHBOUR_TAG(n),        &
+                               neighbours(tag)%rank,    &
+                               tag,                     &
                                comm%cart,               &
                                requests(n),             &
                                comm%err)
+
+                call mpi_check_for_error("in MPI_Irecv of field_mpi::halo_to_interior_communication.")
             enddo
 
             do n = 1, 8
 
-                ! check for incoming messages
-                call mpi_check_for_message(tag, recv_size, source)
+                call get_halo_buffer_ptr(n, send_buf)
 
-                call get_interior_buffer_ptr(tag, recvbuf)
-#ifndef NDEBUG
-                if (.not. recv_size == size(recvbuf)) then
-                    print *, "Receive buffer and receive count do not match.", recv_size, size(recvbuf), tag
-                    error stop
-                endif
-#endif
+                send_size = size(send_buf)
 
-                call MPI_Recv(recvbuf,                  &
-                              recv_size,                &
-                              MPI_DOUBLE_PRECISION,     &
-                              source,                   &
-                              tag,                      &
-                              comm%cart,                &
-                              recv_status,              &
+                call MPI_Send(send_buf,                &
+                              send_size,               &
+                              MPI_DOUBLE_PRECISION,    &
+                              neighbours(n)%rank,      &
+                              NEIGHBOUR_TAG(n),        &
+                              comm%cart,               &
                               comm%err)
+
+                call mpi_check_for_error("in MPI_Isend of field_mpi::halo_to_interior_communication.")
             enddo
 
             call MPI_Waitall(8,                 &
                             requests,           &
                             send_statuses,      &
                             comm%err)
+
+            call mpi_check_for_error("in MPI_Waitall of field_mpi::halo_to_interior_communication.")
 
         end subroutine halo_to_interior_communication
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine interior_to_halo_communication
-            double precision, dimension(:), pointer :: sendbuf, recvbuf
+            double precision, dimension(:), pointer :: send_buf, recv_buf
             integer                                 :: send_size, recv_size
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
             integer                                 :: tag, source, n
 
             do n = 1, 8
-                call get_interior_buffer_ptr(n, sendbuf)
+                call get_interior_buffer_ptr(n, send_buf)
 
-                send_size = size(sendbuf)
+                send_size = size(send_buf)
 
-                call MPI_Isend(sendbuf,                 &
+                call MPI_Isend(send_buf,                &
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
@@ -172,6 +171,8 @@ module field_mpi
                                comm%cart,               &
                                requests(n),             &
                                comm%err)
+
+                call mpi_check_for_error("in MPI_Isend of field_mpi::interior_to_halo_communication.")
             enddo
 
             do n = 1, 8
@@ -179,17 +180,16 @@ module field_mpi
                 ! check for incoming messages
                 call mpi_check_for_message(tag, recv_size, source)
 
-                call get_halo_buffer_ptr(tag, recvbuf)
+                call get_halo_buffer_ptr(tag, recv_buf)
 
 #ifndef NDEBUG
-                if (.not. recv_size == size(recvbuf)) then
+                if (.not. recv_size == size(recv_buf)) then
                     print *, "Receive buffer and receive count do not match."
                     error stop
                 endif
 #endif
 
-
-                call MPI_Recv(recvbuf,                  &
+                call MPI_Recv(recv_buf,                 &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               source,                   &
@@ -197,12 +197,16 @@ module field_mpi
                               comm%cart,                &
                               recv_status,              &
                               comm%err)
+
+                call mpi_check_for_error("in MPI_Recv of field_mpi::interior_to_halo_communication.")
             enddo
 
             call MPI_Waitall(8,                 &
                             requests,           &
                             send_statuses,      &
                             comm%err)
+
+            call mpi_check_for_error("in MPI_Waitall of field_mpi::interior_to_halo_communication.")
 
         end subroutine interior_to_halo_communication
 
@@ -215,25 +219,28 @@ module field_mpi
             ylen = box%hi(2)-box%lo(2)+1
             zlen = box%hhi(3)-box%hlo(3)+1
 
-            ! in the context of the sender process
             allocate(west_buf(zlen, ylen, 2))
-            allocate(east_buf(zlen, ylen))
-            allocate(south_buf(zlen, 2, xlen))
-            allocate(north_buf(zlen, xlen))
-
-            allocate(northeast_buf(zlen))
-            allocate(southeast_buf(zlen, 2))
-            allocate(southwest_buf(zlen, 2, 2))
-            allocate(northwest_buf(zlen, 2))
-
             allocate(east_halo_buf(zlen, ylen, 2))
+
+            allocate(east_buf(zlen, ylen))
             allocate(west_halo_buf(zlen, ylen))
+
+            allocate(south_buf(zlen, 2, xlen))
             allocate(north_halo_buf(zlen, 2, xlen))
+
+            allocate(north_buf(zlen, xlen))
             allocate(south_halo_buf(zlen, xlen))
 
+            allocate(northeast_buf(zlen))
             allocate(southwest_halo_buf(zlen))
+
+            allocate(southeast_buf(zlen, 2))
             allocate(northwest_halo_buf(zlen, 2))
+
+            allocate(southwest_buf(zlen, 2, 2))
             allocate(northeast_halo_buf(zlen, 2, 2))
+
+            allocate(northwest_buf(zlen, 2))
             allocate(southeast_halo_buf(zlen, 2))
 
         end subroutine allocate_buffers

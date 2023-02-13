@@ -27,6 +27,10 @@ module mpi_utils
             integer, intent(out) :: recv_size, tag, source
             type(MPI_Status)     :: status
 
+            status%MPI_SOURCE = -1
+            status%MPI_TAG = -1
+            status%MPI_ERROR = 0
+
             call MPI_probe(MPI_ANY_SOURCE,  &
                            MPI_ANY_TAG,     &
                            comm%cart,       &
@@ -38,6 +42,9 @@ module mpi_utils
             source = status%MPI_SOURCE
             tag = status%MPI_TAG
 
+            comm%err = status%MPI_ERROR
+            call mpi_check_for_error("in MPI_Status of mpi_utils::mpi_check_for_message.")
+
             recv_size = 0
             call MPI_get_count(status, MPI_DOUBLE_PRECISION, recv_size, comm%err)
 
@@ -48,7 +55,7 @@ module mpi_utils
         subroutine mpi_check_for_error(msg)
             character(*), intent(in) :: msg
 #ifndef NDEBUG
-            if (.not. comm%err == 0) then
+            if (.not. comm%err == MPI_SUCCESS) then
                 call mpi_exit_on_error(msg)
             endif
 #endif
