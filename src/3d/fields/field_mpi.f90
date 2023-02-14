@@ -100,9 +100,8 @@ module field_mpi
 
         subroutine halo_to_interior_communication
             double precision, dimension(:), pointer :: send_buf, recv_buf
-            integer                                 :: send_size!, recv_size
             type(MPI_Request)                       :: requests(8)
-            type(MPI_Status)                        :: send_statuses(8)
+            type(MPI_Status)                        :: statuses(8)
             integer                                 :: tag, n
 
             do n = 1, 8
@@ -127,23 +126,21 @@ module field_mpi
 
                 call get_halo_buffer_ptr(n, send_buf)
 
-                send_size = size(send_buf)
-
                 call MPI_Send(send_buf,                &
-                              send_size,               &
+                              size(send_buf),          &
                               MPI_DOUBLE_PRECISION,    &
                               neighbours(n)%rank,      &
                               NEIGHBOUR_TAG(n),        &
                               comm%cart,               &
                               comm%err)
 
-                call mpi_check_for_error("in MPI_Isend of field_mpi::halo_to_interior_communication.")
+                call mpi_check_for_error("in MPI_Send of field_mpi::halo_to_interior_communication.")
             enddo
 
-            call MPI_Waitall(8,                 &
-                            requests,           &
-                            send_statuses,      &
-                            comm%err)
+            call MPI_Waitall(8,         &
+                             requests,  &
+                             statuses,  &
+                             comm%err)
 
             call mpi_check_for_error("in MPI_Waitall of field_mpi::halo_to_interior_communication.")
 
@@ -153,58 +150,47 @@ module field_mpi
 
         subroutine interior_to_halo_communication
             double precision, dimension(:), pointer :: send_buf, recv_buf
-            integer                                 :: send_size, recv_size
             type(MPI_Request)                       :: requests(8)
-            type(MPI_Status)                        :: recv_status, send_statuses(8)
-            integer                                 :: tag, source, n
+            type(MPI_Status)                        :: statuses(8)
+            integer                                 :: tag, n
 
             do n = 1, 8
-                call get_interior_buffer_ptr(n, send_buf)
 
-                send_size = size(send_buf)
+                tag = NEIGHBOUR_TAG(n)
 
-                call MPI_Isend(send_buf,                &
-                               send_size,               &
+                call get_halo_buffer_ptr(tag, recv_buf)
+
+                call MPI_Irecv(recv_buf,                &
+                               size(recv_buf),          &
                                MPI_DOUBLE_PRECISION,    &
-                               neighbours(n)%rank,      &
-                               NEIGHBOUR_TAG(n),        &
+                               neighbours(tag)%rank,    &
+                               tag,                     &
                                comm%cart,               &
                                requests(n),             &
                                comm%err)
 
-                call mpi_check_for_error("in MPI_Isend of field_mpi::interior_to_halo_communication.")
+                call mpi_check_for_error("in MPI_Irecv of field_mpi::interior_to_halo_communication.")
             enddo
+
 
             do n = 1, 8
+                call get_interior_buffer_ptr(n, send_buf)
 
-                ! check for incoming messages
-                call mpi_check_for_message(tag, recv_size, source)
-
-                call get_halo_buffer_ptr(tag, recv_buf)
-
-#ifndef NDEBUG
-                if (.not. recv_size == size(recv_buf)) then
-                    print *, "Receive buffer and receive count do not match."
-                    error stop
-                endif
-#endif
-
-                call MPI_Recv(recv_buf,                 &
-                              recv_size,                &
-                              MPI_DOUBLE_PRECISION,     &
-                              source,                   &
-                              tag,                      &
-                              comm%cart,                &
-                              recv_status,              &
+                call MPI_Send(send_buf,                &
+                              size(send_buf),          &
+                              MPI_DOUBLE_PRECISION,    &
+                              neighbours(n)%rank,      &
+                              NEIGHBOUR_TAG(n),        &
+                              comm%cart,               &
                               comm%err)
 
-                call mpi_check_for_error("in MPI_Recv of field_mpi::interior_to_halo_communication.")
+                call mpi_check_for_error("in MPI_Send of field_mpi::interior_to_halo_communication.")
             enddo
 
-            call MPI_Waitall(8,                 &
-                            requests,           &
-                            send_statuses,      &
-                            comm%err)
+            call MPI_Waitall(8,         &
+                             requests,  &
+                             statuses,  &
+                             comm%err)
 
             call mpi_check_for_error("in MPI_Waitall of field_mpi::interior_to_halo_communication.")
 
