@@ -40,6 +40,8 @@ program test_mpi_parcel_halo_swap
     n_total = 4 * comm%size * (comm%size + 1)
     call parcel_alloc(2 * n_total)
 
+    n_total_parcels = n_total
+
     do n = 1, comm%rank + 1
         ! place parcels in southwest halo
         parcels%position(1, n) = (box%hlo(1) + f12) * dx(1)
@@ -104,15 +106,14 @@ program test_mpi_parcel_halo_swap
         passed = (passed .and. (n_total_verify == n_total))
     endif
 
-
-    n_local_verify = (neighbour%west+1)      &
-                   + (neighbour%east+1)      &
-                   + (neighbour%north+1)     &
-                   + (neighbour%south+1)     &
-                   + (neighbour%northeast+1) &
-                   + (neighbour%northwest+1) &
-                   + (neighbour%southeast+1) &
-                   + (neighbour%southwest+1)
+    n_local_verify = (neighbours(MPI_WEST)%rank+1)      &
+                   + (neighbours(MPI_EAST)%rank+1)      &
+                   + (neighbours(MPI_NORTH)%rank+1)     &
+                   + (neighbours(MPI_SOUTH)%rank+1)     &
+                   + (neighbours(MPI_NORTHEAST)%rank+1) &
+                   + (neighbours(MPI_NORTHWEST)%rank+1) &
+                   + (neighbours(MPI_SOUTHEAST)%rank+1) &
+                   + (neighbours(MPI_SOUTHWEST)%rank+1)
 
 
     passed = (passed .and. (n_parcels == n_local_verify))
@@ -120,14 +121,14 @@ program test_mpi_parcel_halo_swap
     if (passed) then
         n_total = int(sum(parcels%volume(1:n_parcels)))
 
-        n_expected = (neighbour%west+1) ** 2      &
-                   + (neighbour%east+1) ** 2      &
-                   + (neighbour%north+1) ** 2     &
-                   + (neighbour%south+1) ** 2     &
-                   + (neighbour%northeast+1) ** 2 &
-                   + (neighbour%northwest+1) ** 2 &
-                   + (neighbour%southeast+1) ** 2 &
-                   + (neighbour%southwest+1) ** 2
+        n_expected = (neighbours(MPI_WEST)%rank+1) ** 2      &
+                   + (neighbours(MPI_EAST)%rank+1) ** 2      &
+                   + (neighbours(MPI_NORTH)%rank+1) ** 2     &
+                   + (neighbours(MPI_SOUTH)%rank+1) ** 2     &
+                   + (neighbours(MPI_NORTHEAST)%rank+1) ** 2 &
+                   + (neighbours(MPI_NORTHWEST)%rank+1) ** 2 &
+                   + (neighbours(MPI_SOUTHEAST)%rank+1) ** 2 &
+                   + (neighbours(MPI_SOUTHWEST)%rank+1) ** 2
 
         passed = (passed .and. (n_expected == n_total))
     endif

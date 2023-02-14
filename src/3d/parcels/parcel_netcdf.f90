@@ -14,7 +14,7 @@ module parcel_netcdf
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
     use mpi_communicator
-    use mpi_utils, only : mpi_exit_on_error, mpi_print
+    use mpi_utils, only : mpi_exit_on_error, mpi_print, mpi_check_for_error
     use fields, only : is_contained
     implicit none
 
@@ -292,6 +292,8 @@ module parcel_netcdf
 
             call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, comm%world, comm%err)
 
+            call mpi_check_for_error("in MPI_Reduce_scatter of parcel_netcdf::write_netcdf_parcels.")
+
             ! we need to increase the start_index by 1
             ! since the starting index in Fortran is 1 and not 0.
             start_index = start_index + 1
@@ -370,6 +372,7 @@ module parcel_netcdf
                     print *, "Number of parcels exceeds limit of", &
                             max_num_parcels, ". Exiting."
                     call MPI_Abort(comm%world, -1, comm%err)
+                    call mpi_check_for_error("in MPI_Abort of parcel_netcdf::read_netcdf_parcels.")
                 endif
 
                 call read_chunk(start_index, end_index, 1)
@@ -425,6 +428,7 @@ module parcel_netcdf
             ! verify result
             n_total = n_parcels
             call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INT, MPI_SUM, comm%world, comm%err)
+            call mpi_check_for_error("in MPI_Allreduce of parcel_netcdf::read_netcdf_parcels.")
             if (n_total_parcels .ne. n_total) then
                 call mpi_exit_on_error("Local number of parcels does not sum up to total number!")
             endif

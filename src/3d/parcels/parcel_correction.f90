@@ -15,6 +15,7 @@ module parcel_correction
     use mpi_layout, only : box
     use mpi_communicator
     use parcel_mpi, only : parcel_halo_swap
+    use mpi_utils, only : mpi_check_for_error
     implicit none
 
     private
@@ -62,6 +63,9 @@ module parcel_correction
             buf(2:4) = vor_bar
             call MPI_Allreduce(MPI_IN_PLACE, buf, 4, MPI_DOUBLE_PRECISION, &
                                MPI_SUM, comm%world, comm%err)
+
+            call mpi_check_for_error("in MPI_Allreduce of parcel_correction::init_parcel_correction.")
+
             vsum = buf(1)
             vor_bar = buf(2:4)
 
@@ -98,6 +102,8 @@ module parcel_correction
             buf(2:4) = dvor
             call MPI_Allreduce(MPI_IN_PLACE, buf, 4, MPI_DOUBLE_PRECISION, &
                                MPI_SUM, comm%world, comm%err)
+
+            call mpi_check_for_error("in MPI_Allreduce of parcel_correction::apply_vortcor.")
             vsum = buf(1)
             dvor = buf(2:4)
 

@@ -94,6 +94,8 @@ module fields
 
         end subroutine field_alloc
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Reset fields to zero
         subroutine field_default
             call field_alloc
@@ -112,11 +114,14 @@ module fields
             nsparg   = zero
         end subroutine
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Get the lower index of the cell the parcel is in.
         ! This subroutine does not take x periodicity into account.
         ! @param[in] pos position of the parcel
         ! @param[out] i lower, zonal cell index
-        ! @param[out] j lower, vertical cell index
+        ! @param[out] j lower, meridional cell index
+        ! @param[out] k lower, vertical cell index
         pure subroutine get_index(pos, i, j, k)
             double precision, intent(in)  :: pos(n_dim)
             integer,          intent(out) :: i, j, k
@@ -125,6 +130,33 @@ module fields
             j = floor((pos(I_Y) - lower(I_Y)) * dxi(I_Y))
             k = floor((pos(I_Z) - lower(I_Z)) * dxi(I_Z))
         end subroutine get_index
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Get the lower index of the cell the parcel is in including
+        ! a periodic shift in x and y.
+        ! This subroutine does not take x periodicity into account.
+        ! @param[in] pos position of the parcel
+        ! @param[out] i lower, zonal cell index
+        ! @param[out] j lower, meridional cell index
+        ! @param[out] k lower, vertical cell index
+        pure subroutine get_index_periodic(pos, i, j, k)
+            double precision, intent(in)  :: pos(n_dim)
+            integer,          intent(out) :: i, j, k
+
+            call get_index(pos, i, j, k)
+
+            ! account for x / y periodicity:
+            ! -1          --> nx-1 / ny-1
+            !  0          --> 0
+            ! nx+1 / ny+1 --> 1
+            ! nx / ny     --> 0
+            ! nx-1 / ny-1 --> nx-1 / ny-1
+            i = mod(i + nx, nx)
+            j = mod(j + ny, ny)
+        end subroutine get_index_periodic
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         pure function is_contained(pos) result(l_contained)
             double precision, intent(in) :: pos(3)
@@ -139,24 +171,7 @@ module fields
                            (j <= box%hi(2)))
         end function
 
-
-        ! Do periodic shift of the index
-        ! @param[inout] ii zonal grid point indices
-        ! @param[inout] jj meridional grid point indices
-        elemental pure subroutine periodic_index_shift(ii, jj)
-            integer, intent(inout) :: ii, jj
-
-            ! account for x / y periodicity:
-            ! -1          --> nx-1 / ny-1
-            !  0          --> 0
-            ! nx+1 / ny+1 --> 1
-            ! nx / ny     --> 0
-            ! nx-1 / ny-1 --> nx-1 / ny-1
-            ii = mod(ii + nx, nx)
-            jj = mod(jj + ny, ny)
-
-        end subroutine periodic_index_shift
-
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Get the coordinate of a grid point (i, j, k).
         ! @param[in] i zonal cell index
