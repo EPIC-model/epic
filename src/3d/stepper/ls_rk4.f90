@@ -3,7 +3,8 @@
 !            (see https://doi.org/10.5194/gmd-10-3145-2017)
 ! =============================================================================
 module ls_rk4
-    use options, only : parcel, time
+    use options, only : parcel, time, l_restart
+    use dimensions, only : I_Z
     use parcel_container
     use parcel_bc
     use rk4_utils, only: get_dBdt, get_time_step
@@ -13,8 +14,7 @@ module ls_rk4
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
     use field_diagnostics, only : calculate_field_diagnostics
-    use parameters, only : nx, nz
-    use timer, only : start_timer, stop_timer, timings
+    use mpi_timer, only : start_timer, stop_timer, timings
     implicit none
 
     integer, parameter :: dp=kind(zero)           ! double precision

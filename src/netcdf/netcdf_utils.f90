@@ -6,12 +6,60 @@
 module netcdf_utils
     use netcdf
     use mpi_communicator
+    use config, only : package
     implicit none
 
     ! netCDF error if non-zero
     integer :: ncerr = 0
 
+    character(1), protected :: netcdf_dims(4) = (/'x', 'y', 'z', 't'/)
+    character(1), protected :: netcdf_axes(4) = (/'X', 'Y', 'Z', 'T'/)
+
+    character(*), parameter :: version_name = package // '_version'
+
     contains
+
+        ! This subroutine takes an array of length 3 or 4
+        ! single characters defining the dimension names.
+        ! The last entry always defines the time dimension.
+        subroutine set_netcdf_dimensions(dim_names)
+            character(1), intent(in) :: dim_names(:)
+
+            if ((size(dim_names) < 3) .or. (size(dim_names) > 4)) then
+                print *, "Invalid number of dimensions. Exiting."
+                stop
+            endif
+
+            netcdf_dims(1:2) = dim_names(1:2)
+
+            if (size(dim_names) == 3) then
+                netcdf_dims(4) = dim_names(3)
+            else
+                netcdf_dims(3:4) = dim_names(3:4)
+            endif
+
+        end subroutine set_netcdf_dimensions
+
+        ! This subroutine takes an array of length 3 or 4
+        ! single characters defining the axis names.
+        ! The last entry always defines the time axis.
+        subroutine set_netcdf_axes(axis_names)
+            character(1), intent(in) :: axis_names(:)
+
+            if ((size(axis_names) < 3) .or. (size(axis_names) > 4)) then
+                print *, "Invalid number of axes. Exiting."
+                stop
+            endif
+
+            netcdf_axes(1:2) = axis_names(1:2)
+
+            if (size(axis_names) == 3) then
+                netcdf_axes(4) = axis_names(3)
+            else
+                netcdf_axes(3:4) = axis_names(3:4)
+            endif
+
+        end subroutine set_netcdf_axes
 
         ! If the logical argument 'l_single = .true.', the file
         ! is created by the root MPI rank with MPI size > 1. The argument
@@ -24,7 +72,7 @@ module netcdf_utils
             logical, optional, intent(in)  :: l_single
             logical                        :: l_parallel
 
-            l_parallel = (mpi_size > 1)
+            l_parallel = (comm%size > 1)
 
             if (present(l_single)) then
                 l_parallel = .not. l_single
@@ -46,11 +94,11 @@ module netcdf_utils
                 ncerr = nf90_create(path = ncfname,                         &
                                     cmode = ior(NF90_NETCDF4, NF90_MPIIO),  &
                                     ncid = ncid,                            &
-                                    comm = comm_world%MPI_VAL,              &
+                                    comm = comm%world%MPI_VAL,              &
                                     info = MPI_INFO_NULL%MPI_VAL)
             else
-                ! in single execution mpi_master = mpi_rank = 0
-                if (mpi_master == mpi_rank) then
+                ! in single execution comm%master = comm%rank = 0
+                if (comm%master == comm%rank) then
                     ncerr = nf90_create(path = ncfname,        &
                                         cmode = NF90_NETCDF4,  &
                                         ncid = ncid)
@@ -65,7 +113,7 @@ module netcdf_utils
             character(*), intent(in) :: ncfname
             integer                  :: stat
 
-            if (mpi_rank .ne. mpi_master) then
+            if (comm%rank .ne. comm%master) then
                 return
             endif
 
@@ -87,8 +135,16 @@ module netcdf_utils
             integer,           intent(out) :: ncid
             logical, optional, intent(in)  :: l_single
             logical                        :: l_parallel
+            logical                        :: l_exist
 
-            l_parallel = (mpi_size > 1)
+            l_parallel = (comm%size > 1)
+
+            call exist_netcdf_file(ncfname, l_exist)
+
+            if (.not. l_exist) then
+                print *, "Error: NetCDF file " // ncfname // " does not exist."
+                stop
+            endif
 
             if (present(l_single)) then
                 l_parallel = .not. l_single
@@ -98,11 +154,11 @@ module netcdf_utils
                 ncerr = nf90_open(path = ncfname,               &
                                   mode = access_flag,           &
                                   ncid = ncid,                  &
-                                  comm = comm_world%MPI_VAL,    &
+                                  comm = comm%world%MPI_VAL,    &
                                   info = MPI_INFO_NULL%MPI_VAL)
             else
-                ! in single execution mpi_master = mpi_rank = 0
-                if (mpi_master == mpi_rank) then
+                ! in single execution comm%master = comm%rank = 0
+                if (comm%master == comm%rank) then
                     ncerr = nf90_open(path = ncfname,     &
                                     mode = access_flag,   &
                                     ncid = ncid)
@@ -120,7 +176,7 @@ module netcdf_utils
             logical, optional, intent(in)  :: l_single
             logical                        :: l_parallel
 
-            l_parallel = (mpi_size > 1)
+            l_parallel = (comm%size > 1)
 
             if (present(l_single)) then
                 l_parallel = (.not. l_single)
@@ -129,7 +185,7 @@ module netcdf_utils
             if (l_parallel) then
                 ncerr = nf90_close(ncid)
             else
-                if (mpi_master == mpi_rank) then
+                if (comm%master == comm%rank) then
                     ncerr = nf90_close(ncid)
                 endif
             endif
@@ -148,7 +204,7 @@ module netcdf_utils
         subroutine check_netcdf_error(msg)
             character(*), intent(in) :: msg
 #ifndef NDEBUG
-            if (ncerr /= nf90_noerr .and. mpi_rank == mpi_master) then
+            if (ncerr /= nf90_noerr .and. comm%rank == comm%master) then
                 print *, msg
                 print *, trim(nf90_strerror(ncerr))
                 stop

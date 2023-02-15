@@ -4,8 +4,8 @@
 ! =============================================================================
 module parcel_interpl
     use constants, only : zero, one, two, f14
-    use timer, only : start_timer, stop_timer
-    use parameters, only : nx, nz, vmin
+    use mpi_timer, only : start_timer, stop_timer
+    use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
@@ -40,12 +40,11 @@ module parcel_interpl
             double precision              :: points(3, 4)
             integer                       :: n, p, l
             double precision              :: pvol
-            integer :: i, j, k, i_stored, j_stored, k_stored
 
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pvol, is, js, ks, i, j, k, i_stored, j_stored, k_stored, weights) &
+            !$omp do private(n, p, l, points, pvol, is, js, ks, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -54,36 +53,15 @@ module parcel_interpl
                                               pvol, parcels%B(:, n),  &
                                               n, l_reuse)
 
-
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
 
-                    call get_index(points(:, p), i, j, k)
+                    call trilinear(points(:, p), is, js, ks, weights)
 
-                    if (p == 1) then
-                      call trilinear(points(:, p), is, js, ks, weights)
-                    elseif ((i == i_stored) .and. (j == j_stored) .and. (k == k_stored)) then
-                      ! if point is in same grid cell, just add to weights
-                      call trilinear_weights_add(points(:, p), i, j, k, weights)
-                    else
-                      ! if point is in different grid cell, save previously stored
-                      ! weights first
-                      ! loop over grid points which are part of the interpolation
-                      ! the weight is a quarter due to 4 points per ellipsoid
-                      do l = 1, ngp
-                          volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                                    + f14 * weights(l) * pvol
-                      enddo
-                      call trilinear(points(:, p), is, js, ks, weights)
-                    endif
-                    i_stored = i
-                    j_stored = j
-                    k_stored = k
-                enddo
-                ! save contibutions at end of points loop
-                do l = 1, ngp
-                    volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                              + f14 * weights(l) * pvol
+                    do l = 1, ngp
+                        volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
+                                                  + f14 * weights(l) * pvol
+                    enddo
                 enddo
             enddo
             !$omp end do
@@ -114,7 +92,7 @@ module parcel_interpl
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
             double precision  :: points(3, 4)
-            integer           :: n, p, l, i, j, k, i_stored, j_stored, k_stored
+            integer           :: n, p, l, i, j, k
             double precision  :: pvol, weight, btot
 #ifndef ENABLE_DRY_MODE
             double precision  :: q_c
@@ -128,15 +106,16 @@ module parcel_interpl
             nsparg = zero
 #ifndef ENABLE_DRY_MODE
             dbuoyg = zero
+            humg = zero
 #endif
             tbuoyg = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, j, k, i_stored, j_stored, k_stored, points, pvol, weight, btot, q_c) &
+            !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot, q_c) &
             !$omp& private( is, js, ks, weights) &
-            !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, tbuoyg, volg)
+            !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, humg, tbuoyg, volg)
 #else
-            !$omp do private(n, p, l, i, j, k, i_stored, j_stored, k_stored, points, pvol, weight, btot) &
+            !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
@@ -166,20 +145,11 @@ module parcel_interpl
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
 
-                    call get_index(points(:, p), i, j, k)
+                    call trilinear(points(:, p), is, js, ks, weights)
 
-                    if (p == 1) then
-                      ! first parcel point, reset weights
-                      call trilinear(points(:, p), is, js, ks, weights)
-                    elseif ((i == i_stored) .and. (j == j_stored) .and. (k == k_stored)) then
-                      ! if point is in same grid cell, just add to weights
-                      call trilinear_weights_add(points(:, p), i, j, k, weights)
-                    else
-                      ! if point is in different grid cell, save previously stored
-                      ! weights first
-                      ! loop over grid points which are part of the interpolation
-                      ! the weight is a quarter due to 4 points per ellipsoid
-                      do l = 1, ngp
+                    ! loop over grid points which are part of the interpolation
+                    ! the weight is a quarter due to 4 points per ellipsoid
+                    do l = 1, ngp
 
                         weight = f14 * weights(l) * pvol
 
@@ -189,41 +159,23 @@ module parcel_interpl
 #ifndef ENABLE_DRY_MODE
                         dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
                                                     + weight * parcels%buoyancy(n)
+                        humg(ks(l), js(l), is(l)) = humg(ks(l), js(l), is(l)) &
+                                                  + weight * parcels%humidity(n)
 #endif
                         tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
                                                     + weight * btot
                         volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
                                                   + weight
-                      enddo
-                      call trilinear(points(:, p), is, js, ks, weights)
-                   endif
-                   i_stored = i
-                   j_stored = j
-                   k_stored = k
-                enddo
-                ! save contibutions at end of points loop
-                do l = 1, ngp
-
-                  weight = f14 * weights(l) * pvol
-
-                  vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
-                                                + weight * parcels%vorticity(:, n)
-
-#ifndef ENABLE_DRY_MODE
-                  dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
-                                              + weight * parcels%buoyancy(n)
-#endif
-                  tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
-                                              + weight * btot
-                  volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                            + weight
+                    enddo
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
 
             call field_halo_swap(volg)
-            call field_halo_swap(vortg)
+            call field_halo_swap(vortg(:, :, :, I_X))
+            call field_halo_swap(vortg(:, :, :, I_Y))
+            call field_halo_swap(vortg(:, :, :, I_Z))
             call field_halo_swap(tbuoyg)
 
             ! apply free slip boundary condition
@@ -246,6 +198,10 @@ module parcel_interpl
             dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
             dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)
             dbuoyg(nz-1, :, :) = dbuoyg(nz-1, :, :) + dbuoyg(nz+1, :, :)
+            humg(0,  :, :) = two * humg(0,  :, :)
+            humg(nz, :, :) = two * humg(nz, :, :)
+            humg(1,    :, :) = humg(1,    :, :) + humg(-1,   :, :)
+            humg(nz-1, :, :) = humg(nz-1, :, :) + humg(nz+1, :, :)
 #endif
             tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
             tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
@@ -257,12 +213,23 @@ module parcel_interpl
                 vortg(0:nz, :, :, p) = vortg(0:nz, :, :, p) / volg(0:nz, :, :)
             enddo
 
-            ! use symmetry to fill halo grid points
-            vortg(-1,   :, :, :) = vortg(1,    :, :, :)
-            vortg(nz+1, :, :, :) = vortg(nz-1, :, :, :)
+            !-------------------------------------------------------
+            ! Set zeta = 0 on the boundary if required:
+            if (l_bndry_zeta_zero(1)) then
+                vortg(0, :, :, I_Z) = zero
+            endif
+
+            if (l_bndry_zeta_zero(2)) then
+                vortg(nz, :, :, I_Z) = zero
+            endif
+
+            !$omp parallel workshare
+            vortg(-1,   :, :, :) = two * vortg(0,  :, :, :) - vortg(1, :, :, :)
+            vortg(nz+1, :, :, :) = two * vortg(nz, :, :, :) - vortg(nz-1, :, :, :)
 
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0:nz, :, :) = dbuoyg(0:nz, :, :) / volg(0:nz, :, :)
+            humg(0:nz, :, :) = humg(0:nz, :, :) / volg(0:nz, :, :)
 #endif
             tbuoyg(0:nz, :, :) = tbuoyg(0:nz, :, :) / volg(0:nz, :, :)
 
@@ -279,6 +246,7 @@ module parcel_interpl
 
             nsparg(0,    :, :) = nsparg(0,    :, :) + nsparg(-1, :, :)
             nsparg(nz-1, :, :) = nsparg(nz-1, :, :) + nsparg(nz, :, :)
+            !$omp end parallel workshare
 
             ! sanity check
             if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then

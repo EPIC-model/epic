@@ -4,11 +4,15 @@
 module parcel_diagnostics
     use constants, only : zero, one, f12, thousand
     use merge_sort
-    use parameters, only : extent, lower, vcell, vmin, nx, nz
+    use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
     use parcel_container, only : parcels, n_parcels, n_total_parcels
     use parcel_ellipsoid
+    use parcel_split_mod, only : n_parcel_splits
+    use parcel_merge, only : n_parcel_merges
     use omp_lib
-    use timer, only : start_timer, stop_timer
+    use physics, only : peref, ape_calculation
+    use ape_density, only : ape_den
+    use mpi_timer, only : start_timer, stop_timer
     use mpi_communicator
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
@@ -19,10 +23,7 @@ module parcel_diagnostics
     double precision, parameter :: thres = thousand * epsilon(zero)
 #endif
 
-    ! peref : potential energy reference (only correct on MPI root)
-    double precision :: peref
-
-    integer, parameter :: IDX_PE        =  1, & ! potential energy
+    integer, parameter :: IDX_APE       =  1, & ! available potential energy
                           IDX_KE        =  2, & ! kinetic energy
                           IDX_N_SMALL   =  3, & ! number of small parcels (V_i < V_min)
                           IDX_AVG_LAM   =  4, & ! mean aspect ratio over all parcels
@@ -34,17 +35,26 @@ module parcel_diagnostics
                           IDX_RMS_ETA   = 10, & ! rms value of y-vorticity
                           IDX_RMS_ZETA  = 11, & ! rms value of z-vorticity
                           IDX_NTOT_PAR  = 12, & ! total number of parcels
-                          IDX_ENSTROPHY = 13    ! enstrophy
+                          IDX_ENSTROPHY = 13, & ! enstrophy
+                          IDX_NSPLITS   = 14, & ! number of parcel splits since last write
+                          IDX_NMERGES   = 15, & ! number of parcel merges since last write
+                          IDX_MIN_BUOY  = 16, & ! minimum parcel buoyancy
+                          IDX_MAX_BUOY  = 17    ! maximum parcel buoyancy
 
-    double precision :: parcel_stats(IDX_ENSTROPHY)
+    double precision :: parcel_stats(IDX_MAX_BUOY)
 
     contains
 
         ! Compute the reference potential energy
-        subroutine init_parcel_diagnostics
+        subroutine calculate_peref
             integer          :: ii(n_parcels), n
             double precision :: b(n_parcels)
             double precision :: gam, zmean
+
+            if (.not. ape_calculation == "sorting") then
+                peref = zero
+                return
+            endif
 
             call start_timer(parcel_stats_timer)
 
@@ -53,7 +63,7 @@ module parcel_diagnostics
             ! sort buoyancy in ascending order
             call msort(b, ii)
 
-            gam = one / (extent(1) * extent(2))
+            gam = f12 / (extent(1) * extent(2))
 
             ! initially all parcels have the same volume,
             ! hence, this is valid on each MPI rank
@@ -69,22 +79,27 @@ module parcel_diagnostics
 
             call mpi_blocking_reduce(peref, MPI_SUM)
 
+            ! divide by domain volume to get domain-averaged peref
+            peref = peref * vdomaini
+
             call stop_timer(parcel_stats_timer)
-        end subroutine init_parcel_diagnostics
+        end subroutine calculate_peref
 
 
         ! Calculate all parcel related diagnostics
         subroutine calculate_parcel_diagnostics(velocity)
             double precision, intent(in) :: velocity(:, :)
             integer          :: n
-            double precision :: b, z, vel(3), vol, zmin, vor(3)
+            double precision :: b, z, vel(3), vol, zmin, vor(3), pe
+            double precision :: ntoti, bmin, bmax
             double precision :: evals(3), lam
-            double precision :: ntoti
 
             call start_timer(parcel_stats_timer)
 
             ! reset
             parcel_stats = zero
+            bmin = zero
+            bmax = zero
 
             zmin = lower(3)
 
@@ -92,20 +107,25 @@ module parcel_diagnostics
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
-            !$omp& reduction(+: parcel_stats)
+            !$omp& reduction(+: parcel_stats) reduction(-: pe) &
+            !$omp& reduction(max: bmax) reduction(min: bmin)
             do n = 1, n_parcels
 
                 vel = velocity(:, n)
                 vor = parcels%vorticity(:, n)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
-                z   = parcels%position(3, n) - zmin
+                z   = parcels%position(3, n)
 
                 ! kinetic energy
                 parcel_stats(IDX_KE) = parcel_stats(IDX_KE) + (vel(1) ** 2 + vel(2) ** 2 + vel(3) ** 2) * vol
 
-                ! potential energy
-                parcel_stats(IDX_PE) = parcel_stats(IDX_PE) - b * z * vol
+                if (ape_calculation == 'sorting') then
+                    ! potential energy using sorting approach
+                    pe = pe - b * (z - zmin) * vol
+                else if (ape_calculation == 'ape density') then
+                    parcel_stats(IDX_APE) = parcel_stats(IDX_APE) + ape_den(b, z) * vol
+                endif
 
                 ! enstrophy
                 parcel_stats(IDX_ENSTROPHY) = parcel_stats(IDX_ENSTROPHY) &
@@ -124,6 +144,14 @@ module parcel_diagnostics
                     parcel_stats(IDX_N_SMALL) = parcel_stats(IDX_N_SMALL) + one
                 endif
 
+                if (bmax < b) then
+                    bmax = b
+                endif
+
+                if (bmin > b) then
+                    bmin = b
+                endif
+
 #ifndef NDEBUG
                 !$omp critical
                 if (abs(get_determinant(parcels%B(:, n), vol) / get_abc(vol) ** 2 - one) > thres) then
@@ -140,14 +168,27 @@ module parcel_diagnostics
             !$omp end do
             !$omp end parallel
 
-            call mpi_blocking_reduce(parcel_stats, MPI_SUM)
+            parcel_stats(IDX_MIN_BUOY) = bmin
+            parcel_stats(IDX_MAX_BUOY) = bmax
+
+            parcel_stats(IDX_NSPLITS) = n_parcel_splits
+            parcel_stats(IDX_NMERGES) = n_parcel_merges
+
+            call mpi_blocking_reduce(parcel_stats(IDX_APE:IDX_NMERGES), MPI_SUM)
+            call mpi_blocking_reduce(parcel_stats(IDX_MIN_BUOY), MPI_MIN)
+            call mpi_blocking_reduce(parcel_stats(IDX_MAX_BUOY), MPI_MAX)
 
             n_total_parcels = int(parcel_stats(IDX_NTOT_PAR))
             ntoti = one / parcel_stats(IDX_NTOT_PAR)
 
-            parcel_stats(IDX_KE) = f12 * parcel_stats(IDX_KE)
-            parcel_stats(IDX_PE) = parcel_stats(IDX_PE) - peref
-            parcel_stats(IDX_ENSTROPHY) = f12 * parcel_stats(IDX_ENSTROPHY)
+            ! divide by domain volume to get domain-averaged quantities
+            parcel_stats(IDX_KE) = f12 * parcel_stats(IDX_KE) * vdomaini
+            if (ape_calculation == 'sorting') then
+                parcel_stats(IDX_APE) = pe * vdomaini - peref
+            else if (ape_calculation == 'ape density') then
+                parcel_stats(IDX_APE) = parcel_stats(IDX_APE) * vdomaini
+            endif
+            parcel_stats(IDX_ENSTROPHY) = f12 * parcel_stats(IDX_ENSTROPHY)* vdomaini
 
             parcel_stats(IDX_AVG_LAM) = parcel_stats(IDX_AVG_LAM) * ntoti
             parcel_stats(IDX_STD_LAM) = dsqrt(abs(parcel_stats(IDX_STD_LAM) * ntoti &

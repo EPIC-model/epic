@@ -2,33 +2,28 @@ module field_mpi
     use constants, only : zero
     use mpi_layout
     use mpi_communicator
+    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error
     implicit none
 
-        double precision, allocatable, dimension(:, :, :) :: west_buf,          &
-                                                             south_buf,         &
-                                                             southwest_buf,     &
-                                                             east_halo_buf,     &
-                                                             north_halo_buf,    &
-                                                             northeast_halo_buf
+        double precision, contiguous, dimension(:, :, :), pointer :: west_buf,           &
+                                                                     south_buf,          &
+                                                                     southwest_buf,      &
+                                                                     east_halo_buf,      &
+                                                                     north_halo_buf,     &
+                                                                     northeast_halo_buf
 
 
-        double precision, allocatable, dimension(:, :) :: east_buf,             &
-                                                          north_buf,            &
-                                                          southeast_buf,        &
-                                                          northwest_buf,        &
-                                                          west_halo_buf,        &
-                                                          south_halo_buf,       &
-                                                          northwest_halo_buf,   &
-                                                          southeast_halo_buf
+        double precision, contiguous, dimension(:, :), pointer :: east_buf,             &
+                                                                  north_buf,            &
+                                                                  southeast_buf,        &
+                                                                  northwest_buf,        &
+                                                                  west_halo_buf,        &
+                                                                  south_halo_buf,       &
+                                                                  northwest_halo_buf,   &
+                                                                  southeast_halo_buf
 
-        double precision, allocatable, dimension(:) :: northeast_buf,       &
-                                                       southwest_halo_buf
-
-        integer :: west_size, east_size, north_size, south_size
-        integer :: southwest_size, southeast_size, northwest_size, northeast_size
-
-        integer :: west_halo_size, east_halo_size, north_halo_size, south_halo_size
-        integer :: southwest_halo_size, southeast_halo_size, northwest_halo_size, northeast_halo_size
+        double precision, contiguous, dimension(:), pointer :: northeast_buf,       &
+                                                               southwest_halo_buf
 
         logical :: l_allocated = .false.
 
@@ -44,13 +39,14 @@ module field_mpi
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
 
-            data(box%lo(3):box%hi(3), box%hlo(2):box%hhi(2),   box%hlo(1))              = zero    ! west halo
-            data(box%lo(3):box%hi(3), box%hlo(2):box%hhi(2),   box%hhi(1)-1:box%hhi(1)) = zero    ! east halo
-            data(box%lo(3):box%hi(3), box%hlo(2),              box%lo(1):box%hi(1))     = zero    ! south halo
-            data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))     = zero    ! north halo
+            data(:, box%hlo(2):box%hhi(2),   box%hlo(1))              = zero  ! west halo
+            data(:, box%hlo(2):box%hhi(2),   box%hhi(1)-1:box%hhi(1)) = zero  ! east halo
+            data(:, box%hlo(2),              box%lo(1):box%hi(1))     = zero  ! south halo
+            data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))     = zero  ! north halo
 
         end subroutine field_halo_reset
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine field_halo_fill(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
@@ -65,6 +61,7 @@ module field_mpi
 
         end subroutine field_halo_fill
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine field_interior_accumulate(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
@@ -82,6 +79,7 @@ module field_mpi
 
         end subroutine field_interior_accumulate
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine field_halo_swap(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
@@ -98,233 +96,142 @@ module field_mpi
 
         end subroutine field_halo_swap
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine halo_to_interior_communication
-            type(MPI_Request) :: request
+            double precision, dimension(:), pointer :: send_buf, recv_buf
+            type(MPI_Request)                       :: requests(8)
+            type(MPI_Status)                        :: statuses(8)
+            integer                                 :: tag, n
 
-            ! send east halo to west buffer
-            call MPI_Isend(east_halo_buf, east_halo_size, MPI_DOUBLE, neighbour%east, &
-                          HALO_EAST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
+            do n = 1, 8
 
-            call MPI_Recv(west_buf, west_size, MPI_DOUBLE, neighbour%west, &
-                          HALO_EAST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                tag = NEIGHBOUR_TAG(n)
 
+                call get_interior_buffer_ptr(tag, recv_buf)
 
+                call MPI_Irecv(recv_buf,                &
+                               size(recv_buf),          &
+                               MPI_DOUBLE_PRECISION,    &
+                               neighbours(tag)%rank,    &
+                               tag,                     &
+                               comm%cart,               &
+                               requests(n),             &
+                               comm%err)
 
-            ! send west halo to east buffer
-            call MPI_Isend(west_halo_buf, west_halo_size, MPI_DOUBLE, neighbour%west, &
-                           HALO_WEST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
+                call mpi_check_for_error("in MPI_Irecv of field_mpi::halo_to_interior_communication.")
+            enddo
 
-            call MPI_Recv(east_buf, east_size, MPI_DOUBLE, neighbour%east, &
-                          HALO_WEST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
+            do n = 1, 8
 
+                call get_halo_buffer_ptr(n, send_buf)
 
+                call MPI_Send(send_buf,                &
+                              size(send_buf),          &
+                              MPI_DOUBLE_PRECISION,    &
+                              neighbours(n)%rank,      &
+                              NEIGHBOUR_TAG(n),        &
+                              comm%cart,               &
+                              comm%err)
 
-            ! send north halo to south buffer
-            call MPI_Isend(north_halo_buf, north_halo_size, MPI_DOUBLE, neighbour%north, &
-                           HALO_NORTH_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
+                call mpi_check_for_error("in MPI_Send of field_mpi::halo_to_interior_communication.")
+            enddo
 
-            call MPI_Recv(south_buf, south_size, MPI_DOUBLE, neighbour%south, &
-                          HALO_NORTH_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
+            call MPI_Waitall(8,         &
+                             requests,  &
+                             statuses,  &
+                             comm%err)
 
+            call mpi_check_for_error("in MPI_Waitall of field_mpi::halo_to_interior_communication.")
 
-            ! send south halo to north buffer
-            ! receive north buffer into south halo
-            call MPI_Isend(south_halo_buf, south_halo_size, MPI_DOUBLE, neighbour%south, &
-                           HALO_SOUTH_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            call MPI_Recv(north_buf, north_size, MPI_DOUBLE, neighbour%north, &
-                          HALO_SOUTH_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
-
-
-
-            ! send southwest halo to northeast buffer
-            call MPI_Isend(southwest_halo_buf, southwest_halo_size, MPI_DOUBLE, neighbour%southwest, &
-                           HALO_SOUTHWEST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            call MPI_Recv(northeast_buf, northeast_size, MPI_DOUBLE, neighbour%northeast, &
-                          HALO_SOUTHWEST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
-
-
-            ! send northwest halo to southeast buffer
-            call MPI_Isend(northwest_halo_buf, northwest_halo_size, MPI_DOUBLE, neighbour%northwest, &
-                           HALO_NORTHWEST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            call MPI_Recv(southeast_buf, southeast_size, MPI_DOUBLE, neighbour%southeast, &
-                          HALO_NORTHWEST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
-
-            ! send southwest buffer to northeast halo
-            call MPI_Isend(northeast_halo_buf, northeast_halo_size, MPI_DOUBLE, neighbour%northeast, &
-                           HALO_NORTHEAST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            call MPI_Recv(southwest_buf, southwest_size, MPI_DOUBLE, neighbour%southwest, &
-                          HALO_NORTHEAST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
-
-            ! send northwest buffer to southeast halo
-            call MPI_Isend(southeast_halo_buf, southeast_halo_size, MPI_DOUBLE, neighbour%southeast, &
-                           HALO_SOUTHEAST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            call MPI_Recv(northwest_buf, northwest_size, MPI_DOUBLE, neighbour%northwest, &
-                          HALO_SOUTHEAST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
         end subroutine halo_to_interior_communication
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine interior_to_halo_communication
-            type(MPI_Request) :: request
+            double precision, dimension(:), pointer :: send_buf, recv_buf
+            type(MPI_Request)                       :: requests(8)
+            type(MPI_Status)                        :: statuses(8)
+            integer                                 :: tag, n
 
-            ! send west buffer to east halo
-            call MPI_Isend(west_buf, west_size, MPI_DOUBLE, neighbour%west, &
-                           HALO_EAST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
+            do n = 1, 8
 
-            ! receive west buffer to east halo (left to right)
-            call MPI_Recv(east_halo_buf, east_halo_size, MPI_DOUBLE, neighbour%east, &
-                          HALO_EAST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                tag = NEIGHBOUR_TAG(n)
 
+                call get_halo_buffer_ptr(tag, recv_buf)
 
+                call MPI_Irecv(recv_buf,                &
+                               size(recv_buf),          &
+                               MPI_DOUBLE_PRECISION,    &
+                               neighbours(tag)%rank,    &
+                               tag,                     &
+                               comm%cart,               &
+                               requests(n),             &
+                               comm%err)
 
-
-            ! send east buffer to west halo
-            call MPI_Isend(east_buf, east_size, MPI_DOUBLE, neighbour%east, &
-                           HALO_WEST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            ! receive east buffer into west halo (right to left)
-            call MPI_Recv(west_halo_buf, west_halo_size, MPI_DOUBLE, neighbour%west, &
-                          HALO_WEST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
-
-
-
-            ! send south buffer to north halo
-            call MPI_Isend(south_buf, south_size, MPI_DOUBLE, neighbour%south, &
-                           HALO_NORTH_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            ! receive south buffer into north halo
-            call MPI_Recv(north_halo_buf, north_halo_size, MPI_DOUBLE, neighbour%north, &
-                          HALO_NORTH_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
+                call mpi_check_for_error("in MPI_Irecv of field_mpi::interior_to_halo_communication.")
+            enddo
 
 
+            do n = 1, 8
+                call get_interior_buffer_ptr(n, send_buf)
 
+                call MPI_Send(send_buf,                &
+                              size(send_buf),          &
+                              MPI_DOUBLE_PRECISION,    &
+                              neighbours(n)%rank,      &
+                              NEIGHBOUR_TAG(n),        &
+                              comm%cart,               &
+                              comm%err)
 
-            ! send north buffer to south halo
-            call MPI_Isend(north_buf, north_size, MPI_DOUBLE, neighbour%north, &
-                           HALO_SOUTH_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
+                call mpi_check_for_error("in MPI_Send of field_mpi::interior_to_halo_communication.")
+            enddo
 
-            ! receive north buffer into south halo
-            call MPI_Recv(south_halo_buf, south_halo_size, MPI_DOUBLE, neighbour%south, &
-                          HALO_SOUTH_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
+            call MPI_Waitall(8,         &
+                             requests,  &
+                             statuses,  &
+                             comm%err)
 
-
-
-
-            ! send northeast buffer to southwest halo
-            call MPI_Isend(northeast_buf, northeast_size, MPI_DOUBLE, neighbour%northeast, &
-                           HALO_SOUTHWEST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            ! receive northeast buffer into southwest halo
-            call MPI_Recv(southwest_halo_buf, southwest_halo_size, MPI_DOUBLE, neighbour%southwest, &
-                          HALO_SOUTHWEST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
-
-
-
-
-            ! send southeast buffer to northwest halo
-            call MPI_Isend(southeast_buf, southeast_size, MPI_DOUBLE, neighbour%southeast, &
-                           HALO_NORTHWEST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            ! receive southeast buffer into northwest halo
-            call MPI_Recv(northwest_halo_buf, northwest_halo_size, MPI_DOUBLE, neighbour%northwest, &
-                          HALO_NORTHWEST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
-
-
-
-
-            ! send southwest buffer to northeast halo
-            call MPI_Isend(southwest_buf, southwest_size, MPI_DOUBLE, neighbour%southwest, &
-                           HALO_NORTHEAST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            ! receive southwest buffer into northeast halo
-            call MPI_Recv(northeast_halo_buf, northeast_halo_size, MPI_DOUBLE, neighbour%northeast, &
-                           HALO_NORTHEAST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
-
-
-
-
-            ! send northwest buffer to southeast halo
-            call MPI_Isend(northwest_buf, northwest_size, MPI_DOUBLE, neighbour%northwest, &
-                           HALO_SOUTHEAST_TAG, comm_cart, request, mpi_err)
-            call MPI_Request_free(request)
-
-            ! receive northwest buffer into southeast halo
-            call MPI_Recv(southeast_halo_buf, southeast_halo_size, MPI_DOUBLE, neighbour%southeast, &
-                          HALO_SOUTHEAST_TAG, comm_cart, MPI_STATUS_IGNORE, mpi_err)
+            call mpi_check_for_error("in MPI_Waitall of field_mpi::interior_to_halo_communication.")
 
         end subroutine interior_to_halo_communication
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine allocate_buffers
             integer :: zlen, ylen, xlen
 
             xlen = box%hi(1)-box%lo(1)+1
             ylen = box%hi(2)-box%lo(2)+1
-            zlen = box%hi(3)-box%lo(3)+1
+            zlen = box%hhi(3)-box%hlo(3)+1
 
-            ! in the context of the sender process
             allocate(west_buf(zlen, ylen, 2))
-            allocate(east_buf(zlen, ylen))
-            allocate(south_buf(zlen, 2, xlen))
-            allocate(north_buf(zlen, xlen))
-
-            allocate(northeast_buf(zlen))
-            allocate(southeast_buf(zlen, 2))
-            allocate(southwest_buf(zlen, 2, 2))
-            allocate(northwest_buf(zlen, 2))
-
-            west_size  = size(west_buf)
-            east_size  = size(east_buf)
-            south_size = size(south_buf)
-            north_size = size(north_buf)
-
-            northeast_size = size(northeast_buf)
-            northwest_size = size(northwest_buf)
-            southeast_size = size(southeast_buf)
-            southwest_size = size(southwest_buf)
-
-
             allocate(east_halo_buf(zlen, ylen, 2))
+
+            allocate(east_buf(zlen, ylen))
             allocate(west_halo_buf(zlen, ylen))
+
+            allocate(south_buf(zlen, 2, xlen))
             allocate(north_halo_buf(zlen, 2, xlen))
+
+            allocate(north_buf(zlen, xlen))
             allocate(south_halo_buf(zlen, xlen))
 
+            allocate(northeast_buf(zlen))
             allocate(southwest_halo_buf(zlen))
+
+            allocate(southeast_buf(zlen, 2))
             allocate(northwest_halo_buf(zlen, 2))
+
+            allocate(southwest_buf(zlen, 2, 2))
             allocate(northeast_halo_buf(zlen, 2, 2))
+
+            allocate(northwest_buf(zlen, 2))
             allocate(southeast_halo_buf(zlen, 2))
 
-            west_halo_size  = size(west_halo_buf)
-            east_halo_size  = size(east_halo_buf)
-            south_halo_size = size(south_halo_buf)
-            north_halo_size = size(north_halo_buf)
-
-            northeast_halo_size = size(northeast_halo_buf)
-            northwest_halo_size = size(northwest_halo_buf)
-            southeast_halo_size = size(southeast_halo_buf)
-            southwest_halo_size = size(southwest_halo_buf)
-
         end subroutine allocate_buffers
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine copy_from_interior_to_buffers(data)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
@@ -336,17 +243,19 @@ module field_mpi
                 call allocate_buffers
             endif
 
-            west_buf  = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1)
-            east_buf  = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2),   box%hi(1))
-            south_buf = data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))
-            north_buf = data(box%lo(3):box%hi(3), box%hi(2),             box%lo(1):box%hi(1))
+            west_buf  = data(:, box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1)
+            east_buf  = data(:, box%lo(2):box%hi(2),   box%hi(1))
+            south_buf = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))
+            north_buf = data(:, box%hi(2),             box%lo(1):box%hi(1))
 
-            northeast_buf = data(box%lo(3):box%hi(3), box%hi(2),             box%hi(1))
-            southeast_buf = data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%hi(1))
-            southwest_buf = data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1)
-            northwest_buf = data(box%lo(3):box%hi(3), box%hi(2),             box%lo(1):box%lo(1)+1)
+            northeast_buf = data(:, box%hi(2),             box%hi(1))
+            southeast_buf = data(:, box%lo(2):box%lo(2)+1, box%hi(1))
+            southwest_buf = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1)
+            northwest_buf = data(:, box%hi(2),             box%lo(1):box%lo(1)+1)
 
         end subroutine copy_from_interior_to_buffers
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine copy_from_halo_to_buffers(data)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
@@ -358,16 +267,18 @@ module field_mpi
                 call allocate_buffers
             endif
 
-            east_halo_buf = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1))
-            west_halo_buf = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1))
-            north_halo_buf = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))
-            south_halo_buf = data(box%lo(3):box%hi(3), box%hlo(2), box%lo(1):box%hi(1))
-            southwest_halo_buf = data(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1))
-            northwest_halo_buf = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1))
-            northeast_halo_buf = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1))
-            southeast_halo_buf = data(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1))
+            east_halo_buf = data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1))
+            west_halo_buf = data(:, box%lo(2):box%hi(2), box%hlo(1))
+            north_halo_buf = data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))
+            south_halo_buf = data(:, box%hlo(2), box%lo(1):box%hi(1))
+            southwest_halo_buf = data(:, box%hlo(2), box%hlo(1))
+            northwest_halo_buf = data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1))
+            northeast_halo_buf = data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1))
+            southeast_halo_buf = data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1))
 
         end subroutine copy_from_halo_to_buffers
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine copy_from_buffers_to_halo(data, l_add)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
@@ -377,86 +288,170 @@ module field_mpi
 
             if (l_add) then
 
-                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) &
-                    = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) + east_halo_buf
+                data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) &
+                    = data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) + east_halo_buf
 
-                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1)) &
-                    = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1)) + west_halo_buf
+                data(:, box%lo(2):box%hi(2), box%hlo(1)) &
+                    = data(:, box%lo(2):box%hi(2), box%hlo(1)) + west_halo_buf
 
-                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) &
-                    = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) + north_halo_buf
+                data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) &
+                    = data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) + north_halo_buf
 
-                data(box%lo(3):box%hi(3), box%hlo(2), box%lo(1):box%hi(1)) &
-                    = data(box%lo(3):box%hi(3), box%hlo(2), box%lo(1):box%hi(1)) + south_halo_buf
+                data(:, box%hlo(2), box%lo(1):box%hi(1)) &
+                    = data(:, box%hlo(2), box%lo(1):box%hi(1)) + south_halo_buf
 
-                data(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1)) &
-                    = data(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1)) + southwest_halo_buf
+                data(:, box%hlo(2), box%hlo(1)) &
+                    = data(:, box%hlo(2), box%hlo(1)) + southwest_halo_buf
 
-                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1)) &
-                    = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1)) + northwest_halo_buf
+                data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1)) &
+                    = data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1)) + northwest_halo_buf
 
-                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) &
-                    = data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) &
+                data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) &
+                    = data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) &
                     + northeast_halo_buf
 
-                data(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1)) &
-                    = data(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1)) + southeast_halo_buf
+                data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1)) &
+                    = data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1)) + southeast_halo_buf
             else
-                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) = east_halo_buf
-                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1)) = west_halo_buf
-                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) = north_halo_buf
-                data(box%lo(3):box%hi(3), box%hlo(2), box%lo(1):box%hi(1)) = south_halo_buf
-                data(box%lo(3):box%hi(3), box%hlo(2), box%hlo(1)) = southwest_halo_buf
-                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hlo(1)) = northwest_halo_buf
-                data(box%lo(3):box%hi(3), box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) = northeast_halo_buf
-                data(box%lo(3):box%hi(3), box%hlo(2), box%hhi(1)-1:box%hhi(1)) = southeast_halo_buf
+                data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) = east_halo_buf
+                data(:, box%lo(2):box%hi(2), box%hlo(1)) = west_halo_buf
+                data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) = north_halo_buf
+                data(:, box%hlo(2), box%lo(1):box%hi(1)) = south_halo_buf
+                data(:, box%hlo(2), box%hlo(1)) = southwest_halo_buf
+                data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1)) = northwest_halo_buf
+                data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) = northeast_halo_buf
+                data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1)) = southeast_halo_buf
             endif
 
         end subroutine copy_from_buffers_to_halo
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine copy_from_buffers_to_interior(data, l_add)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
             logical,          intent(in)    :: l_add
+!             integer :: ylen, zlen, i, j, k
 
             if (l_add) then
-                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) &
-                    = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) + west_buf
 
-                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hi(1)) &
-                    = data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hi(1)) + east_buf
+!                     ylen = box%hi(2)-box%lo(2)+1
+!                     zlen = box%hhi(3)-box%hlo(3)+1
 
-                data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1)) &
-                    = data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1)) + south_buf
+!                     do i = 1, 2
+!                         do j = 1, ylen
+!                             do k = 1, zlen
+!                                 print *, comm%rank, i, j, k, west_buf(k, j, i)
+!                             enddo
+!                         enddo
+!                     enddo
 
-                data(box%lo(3):box%hi(3), box%hi(2), box%lo(1):box%hi(1)) &
-                    = data(box%lo(3):box%hi(3), box%hi(2), box%lo(1):box%hi(1)) + north_buf
+!                     do i = box%lo(1), box%lo(1)+1
+!                         do j = box%lo(2), box%hi(2)
+!                             do k = box%hlo(3), box%hhi(3)
+!                                 print *, comm%rank, i, j, k, data(k, j, i)
+!                             enddo
+! !                         enddo
+!                     enddo
 
-                data(box%lo(3):box%hi(3), box%hi(2), box%hi(1)) &
-                    = data(box%lo(3):box%hi(3), box%hi(2), box%hi(1)) + northeast_buf
+                data(:, box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) &
+                    = data(:, box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) + west_buf
 
-                data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%hi(1)) &
-                    = data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%hi(1)) + southeast_buf
+                data(:, box%lo(2):box%hi(2), box%hi(1)) &
+                    = data(:, box%lo(2):box%hi(2), box%hi(1)) + east_buf
 
-                data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) &
-                    = data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) + southwest_buf
+                data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1)) &
+                    = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1)) + south_buf
 
-                data(box%lo(3):box%hi(3), box%hi(2), box%lo(1):box%lo(1)+1) &
-                    = data(box%lo(3):box%hi(3), box%hi(2), box%lo(1):box%lo(1)+1) + northwest_buf
+                data(:, box%hi(2), box%lo(1):box%hi(1)) &
+                    = data(:, box%hi(2), box%lo(1):box%hi(1)) + north_buf
+
+                data(:, box%hi(2), box%hi(1)) &
+                    = data(:, box%hi(2), box%hi(1)) + northeast_buf
+
+                data(:, box%lo(2):box%lo(2)+1, box%hi(1)) &
+                    = data(:, box%lo(2):box%lo(2)+1, box%hi(1)) + southeast_buf
+
+                data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) &
+                    = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) + southwest_buf
+
+                data(:, box%hi(2), box%lo(1):box%lo(1)+1) &
+                    = data(:, box%hi(2), box%lo(1):box%lo(1)+1) + northwest_buf
 
             else
-                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1) = west_buf
-                data(box%lo(3):box%hi(3), box%lo(2):box%hi(2),   box%hi(1))             = east_buf
-                data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))   = south_buf
-                data(box%lo(3):box%hi(3), box%hi(2),             box%lo(1):box%hi(1))   = north_buf
+                data(:, box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1) = west_buf
+                data(:, box%lo(2):box%hi(2),   box%hi(1))             = east_buf
+                data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))   = south_buf
+                data(:, box%hi(2),             box%lo(1):box%hi(1))   = north_buf
 
-                data(box%lo(3):box%hi(3), box%hi(2),             box%hi(1))             = northeast_buf
-                data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%hi(1))             = southeast_buf
-                data(box%lo(3):box%hi(3), box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) = southwest_buf
-                data(box%lo(3):box%hi(3), box%hi(2),             box%lo(1):box%lo(1)+1) = northwest_buf
+                data(:, box%hi(2),             box%hi(1))             = northeast_buf
+                data(:, box%lo(2):box%lo(2)+1, box%hi(1))             = southeast_buf
+                data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) = southwest_buf
+                data(:, box%hi(2),             box%lo(1):box%lo(1)+1) = northwest_buf
             endif
 
         end subroutine copy_from_buffers_to_interior
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine get_interior_buffer_ptr(dir, buf_ptr)
+            integer,                                 intent(in)  :: dir
+            double precision, dimension(:), pointer, intent(out) :: buf_ptr
+
+            select case (dir)
+                case (MPI_NORTH)
+                    buf_ptr(1:size(north_buf)) => north_buf
+                case (MPI_SOUTH)
+                    buf_ptr(1:size(south_buf)) => south_buf
+                case (MPI_WEST)
+                    buf_ptr(1:size(west_buf)) => west_buf
+                case (MPI_EAST)
+                    buf_ptr(1:size(east_buf)) => east_buf
+                case (MPI_NORTHWEST)
+                    buf_ptr(1:size(northwest_buf)) => northwest_buf
+                case (MPI_NORTHEAST)
+                    buf_ptr(1:size(northeast_buf)) => northeast_buf
+                case (MPI_SOUTHWEST)
+                    buf_ptr(1:size(southwest_buf)) => southwest_buf
+                case (MPI_SOUTHEAST)
+                    buf_ptr(1:size(southeast_buf)) => southeast_buf
+                case default
+                    call mpi_exit_on_error("get_interior_buffer_ptr: No valid direction.")
+            end select
+
+        end subroutine get_interior_buffer_ptr
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! See https://fortran-lang.org/en/learn/best_practices/multidim_arrays/
+        ! about pointer with lower rank pointer to higher rank array
+        ! (accessed 10 Feb 2023)
+        subroutine get_halo_buffer_ptr(dir, buf_ptr)
+            integer,                                 intent(in)  :: dir
+            double precision, dimension(:), pointer, intent(out) :: buf_ptr
+
+            select case (dir)
+                case (MPI_NORTH)
+                    buf_ptr(1:size(north_halo_buf)) => north_halo_buf
+                case (MPI_SOUTH)
+                    buf_ptr(1:size(south_halo_buf)) => south_halo_buf
+                case (MPI_WEST)
+                    buf_ptr(1:size(west_halo_buf)) => west_halo_buf
+                case (MPI_EAST)
+                    buf_ptr(1:size(east_halo_buf)) => east_halo_buf
+                case (MPI_NORTHWEST)
+                    buf_ptr(1:size(northwest_halo_buf)) => northwest_halo_buf
+                case (MPI_NORTHEAST)
+                    buf_ptr(1:size(northeast_halo_buf)) => northeast_halo_buf
+                case (MPI_SOUTHWEST)
+                    buf_ptr(1:size(southwest_halo_buf)) => southwest_halo_buf
+                case (MPI_SOUTHEAST)
+                    buf_ptr(1:size(southeast_halo_buf)) => southeast_halo_buf
+                case default
+                    call mpi_exit_on_error("get_halo_buffer_ptr: No valid direction.")
+            end select
+
+        end subroutine get_halo_buffer_ptr
 
 end module field_mpi

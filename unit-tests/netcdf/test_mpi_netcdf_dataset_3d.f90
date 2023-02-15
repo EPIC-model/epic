@@ -6,7 +6,7 @@
 program test_mpi_netcdf_dataset_3d
     use unit_test
     use netcdf_writer
-    use mpi_communicator, only : comm_world, mpi_err, mpi_comm_initialise, mpi_comm_finalise, comm_cart
+    use mpi_communicator, only : comm, mpi_comm_initialise, mpi_comm_finalise
     implicit none
 
     integer, parameter   :: nx = 10, ny = 8, nz = 5
@@ -24,15 +24,15 @@ program test_mpi_netcdf_dataset_3d
 
     ! create slabs, z-direction keeps 1 processor
     dims = (/0, 0/)
-    call MPI_Dims_create(mpi_size, 2, dims, mpi_err)
+    call MPI_Dims_create(comm%size, 2, dims, comm%err)
 
     periods = (/.true., .true./)
 
-    call MPI_Cart_create(comm_world, 2, dims, periods, .false., comm_cart, mpi_err)
+    call MPI_Cart_create(comm%world, 2, dims, periods, .false., comm%cart, comm%err)
 
-    call MPI_Comm_rank(comm_cart, rank, mpi_err)
+    call MPI_Comm_rank(comm%cart, rank, comm%err)
 
-    call MPI_Cart_coords(comm_cart, rank, 2, coords)
+    call MPI_Cart_coords(comm%cart, rank, 2, coords)
 
     call set_local_bounds(nx, coords(1), dims(1), lo(1), hi(1))
     call set_local_bounds(ny, coords(2), dims(2), lo(2), hi(2))
@@ -44,7 +44,7 @@ program test_mpi_netcdf_dataset_3d
     do ix = lo(1), hi(1)
         do iy = lo(2), hi(2)
             do iz = lo(3), hi(3)
-                dset(iz, iy, ix) = mpi_rank
+                dset(iz, iy, ix) = comm%rank
             enddo
         enddo
     enddo
@@ -118,13 +118,13 @@ program test_mpi_netcdf_dataset_3d
 
     passed = (passed .and. (ncerr == 0))
 
-    if (mpi_rank == mpi_master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI netCDF write 3D datasets', passed)
     endif
 

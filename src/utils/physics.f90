@@ -39,6 +39,7 @@ module physics
     use netcdf_utils
     use netcdf_writer
     use iso_fortran_env, only : IOSTAT_END
+    use ape_density, only : l_ape_density
     implicit none
 
     ![m/s**2] standard gravity (i.e. at 45° latitude and mean sea level):
@@ -84,6 +85,15 @@ module physics
 
     ! planetary vorticity (all three components)
     double precision, protected :: f_cor(3)
+
+    ! domain-averaged potential energy reference
+    double precision :: peref
+
+    ! is .true. when 'peref' was read in
+    logical, protected :: l_peref
+
+    ! 'none', 'sorting' or 'ape density'
+    character(len=11) :: ape_calculation = "sorting"
 
     interface print_physical_quantity
         module procedure :: print_physical_quantity_double
@@ -177,6 +187,31 @@ module physics
                 call read_netcdf_attribute_default(grp_ncid, 'planetary_vorticity', l_planet_vorticity)
                 call read_netcdf_attribute_default(grp_ncid, 'latitude_degrees', lat_degrees)
                 call read_netcdf_attribute_default(grp_ncid, 'scale_height', height_c)
+                call read_netcdf_attribute_default(grp_ncid, 'ape_calculation', ape_calculation)
+
+                l_peref = .false.
+                select case (trim(ape_calculation))
+                    case ('sorting')
+                        l_peref = has_attribute(grp_ncid, 'reference_potential_energy')
+                        if (l_peref) then
+                            print *, "Found float attribute 'reference_potential_energy'."
+                            call read_netcdf_attribute(grp_ncid, 'reference_potential_energy', peref)
+                        else
+                            print *, "No float attribute 'reference_potential_energy'. It will be computed."
+                        endif
+                    case ('ape density')
+                        if (.not. l_ape_density) then
+                            print *, "In order to use the APE calculation, you must provide"
+                            print *, "the APE density function in utils/ape_density.f90"
+                            error stop
+                        endif
+                            print *, "APE calculation using APE density function."
+                    case default
+                        print *, "WARNING: No APE calculated!"
+                        ape_calculation = 'none'
+                    end select
+
+
 #ifdef ENABLE_VERBOSE
             else
                 print *, "WARNING: No physical constants found! EPIC uses default values."
@@ -194,7 +229,7 @@ module physics
 
             ncerr = nf90_def_grp(ncid, name, grp_ncid)
 
-            call check_netcdf_error("Faild to create NetCDF group '" // name // "'.")
+            call check_netcdf_error("Failed to create NetCDF group '" // name // "'.")
 
             call write_netcdf_attribute(grp_ncid, 'standard_gravity', gravity)
             call write_netcdf_attribute(grp_ncid, 'latent_heat_of_vaporization', L_v)
@@ -205,6 +240,10 @@ module physics
             call write_netcdf_attribute(grp_ncid, 'planet_vorticity', l_planet_vorticity)
             call write_netcdf_attribute(grp_ncid, 'latitude_degrees', lat_degrees)
             call write_netcdf_attribute(grp_ncid, 'scale_height', height_c)
+            if (l_peref) then
+                call write_netcdf_attribute(grp_ncid, 'reference_potential_energy', peref)
+            endif
+            call write_netcdf_attribute(grp_ncid, 'ape_calculation', ape_calculation)
 
         end subroutine write_physical_quantities
 
@@ -223,6 +262,10 @@ module physics
             call print_physical_quantity('latitude degrees', lat_degrees, 'deg')
             call print_physical_quantity('scale height', height_c, 'm')
             call print_physical_quantity('inverse scale height', lambda_c, '1/m')
+            if (l_peref) then
+                call print_physical_quantity('reference potential energy', peref, 'm^2/s^2')
+            endif
+            call print_physical_quantity('APE calculation', ape_calculation)
             write(*, *) ''
         end subroutine print_physical_quantities
 

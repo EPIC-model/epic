@@ -5,10 +5,11 @@ module field_netcdf
     use netcdf_reader
     use fields
     use config, only : package_version, cf_version
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities, glati
     use mpi_layout, only : box
+    use parameters, only : write_zeta_boundary_flag
     implicit none
 
     integer :: field_io_timer
@@ -29,7 +30,7 @@ module field_netcdf
 #endif
 
 #ifndef ENABLE_DRY_MODE
-    integer            :: dbuoy_id, lbuoy_id
+    integer            :: dbuoy_id, hum_id, lbuoy_id
 #endif
 
     double precision   :: restart_time
@@ -48,7 +49,7 @@ module field_netcdf
 #endif
 
 #ifndef ENABLE_DRY_MODE
-    private :: dbuoy_id, lbuoy_id
+    private :: dbuoy_id, hum_id, lbuoy_id
 #endif
 
     contains
@@ -83,7 +84,7 @@ module field_netcdf
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='fields',           &
                                    cf_version=cf_version)
 
@@ -95,7 +96,7 @@ module field_netcdf
 
             ! define dimensions
             call define_netcdf_spatial_dimensions_3d(ncid=ncid,                &
-                                                     ncells=(/nx, ny, nz/),    &
+                                                     ngps=(/nx, ny, nz+1/),    &
                                                      dimids=dimids(1:3),       &
                                                      axids=coord_ids)
 
@@ -224,6 +225,15 @@ module field_netcdf
                                        varid=dbuoy_id)
 
             call define_netcdf_dataset(ncid=ncid,                           &
+                                       name='humidity',                     &
+                                       long_name='specific humidity',       &
+                                       std_name='',                         &
+                                       unit='kg/kg',                        &
+                                       dtype=NF90_DOUBLE,                   &
+                                       dimids=dimids,                       &
+                                       varid=hum_id)
+
+            call define_netcdf_dataset(ncid=ncid,                           &
                                        name='liquid_water_content',         &
                                        long_name='liquid-water content',    &
                                        std_name='',                         &
@@ -297,6 +307,8 @@ module field_netcdf
 #ifndef ENABLE_DRY_MODE
             call get_var_id(ncid, 'dry_buoyancy', dbuoy_id)
 
+            call get_var_id(ncid, 'humidity', hum_id)
+
             call get_var_id(ncid, 'liquid_water_content', lbuoy_id)
 #endif
             call get_var_id(ncid, 'volume', vol_id)
@@ -320,7 +332,8 @@ module field_netcdf
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
             if (n_writes == 1) then
-                call write_netcdf_axis_3d(ncid, dimids(1:3), lower, dx, (/nx, ny, nz/))
+                call write_netcdf_axis_3d(ncid, dimids(1:3), lower, dx, (/nx, ny, nz+1/))
+                call write_zeta_boundary_flag(ncid)
             endif
 
             ! write time
@@ -377,6 +390,9 @@ module field_netcdf
             call write_netcdf_dataset(ncid, lbuoy_id, glati * (tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))    &
                                                              - dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))),  &
                                       start, cnt)
+
+            call write_netcdf_dataset(ncid, hum_id, humg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
+                                      start, cnt)
 #endif
 
             call write_netcdf_dataset(ncid, vol_id, volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
@@ -390,5 +406,87 @@ module field_netcdf
             call stop_timer(field_io_timer)
 
         end subroutine write_netcdf_fields
+
+
+        subroutine read_netcdf_fields(fname, step)
+            character(*), intent(in) :: fname
+            integer,      intent(in) :: step
+            integer                  :: n_steps, lid, start(4), cnt(4), st
+
+            call open_netcdf_file(fname, NF90_NOWRITE, lid)
+
+            call get_num_steps(lid, n_steps)
+
+            st = step
+
+            if (st == -1) then
+                st = n_steps
+            else if ((st == 0) .or. (st > n_steps)) then
+                print *, "Step number out of bounds."
+                error stop
+            endif
+
+            start(1:3) = box%lo + 1      ! need to add 1 since start must begin with index 1
+            cnt(1:3) = box%size
+            cnt(4) = 1
+            start(4) = st
+
+            if (has_dataset(lid, 'x_vorticity')) then
+                call read_netcdf_dataset(lid,                       &
+                                         'x_vorticity',             &
+                                         vortg(box%lo(3):box%hi(3), &
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%lo(1), &
+                                               1),                  &
+                                         start,                     &
+                                         cnt)
+            endif
+
+            if (has_dataset(lid, 'y_vorticity')) then
+                call read_netcdf_dataset(lid,                       &
+                                         'y_vorticity',             &
+                                         vortg(box%lo(3):box%hi(3), &
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%lo(1), &
+                                               2),                  &
+                                         start,                     &
+                                         cnt)
+            endif
+
+            if (has_dataset(lid, 'z_vorticity')) then
+                call read_netcdf_dataset(lid,                       &
+                                         'z_vorticity',             &
+                                         vortg(box%lo(3):box%hi(3), &
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%lo(1), &
+                                               3),                  &
+                                         start,                     &
+                                         cnt)
+            endif
+
+            if (has_dataset(lid, 'buoyancy')) then
+                call read_netcdf_dataset(lid,                         &
+                                         'buoyancy',                  &
+                                         tbuoyg(box%lo(3):box%hi(3),  &
+                                                box%lo(2):box%hi(2),  &
+                                                box%lo(1):box%lo(1)), &
+                                         start,                       &
+                                         cnt)
+            endif
+
+#ifndef ENABLE_DRY_MODE
+            if (has_dataset(lid, 'humidity')) then
+                call read_netcdf_dataset(lid,                       &
+                                         'humidity',                &
+                                         humg(box%lo(3):box%hi(3),  &
+                                              box%lo(2):box%hi(2),  &
+                                              box%lo(1):box%lo(1)), &
+                                         start,                     &
+                                         cnt)
+            endif
+#endif
+            call close_netcdf_file(lid)
+
+        end subroutine read_netcdf_fields
 
 end module field_netcdf

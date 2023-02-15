@@ -3,6 +3,7 @@ module field_ops
     use mpi_layout
     use constants, only : f12
     use parameters, only : nz, ncell
+    use mpi_utils, only : mpi_check_for_error
     implicit none
 
     contains
@@ -18,7 +19,9 @@ module field_ops
                             + ff(nz,     box%lo(2):box%hi(2), box%lo(1):box%hi(1))) &
                         + sum(ff(1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))) / dble(ncell)
 
-            call MPI_Allreduce(MPI_IN_PLACE, mean, 1, MPI_DOUBLE, MPI_SUM, comm_world, mpi_err)
+            call MPI_Allreduce(MPI_IN_PLACE, mean, 1, MPI_DOUBLE_PRECISION, MPI_SUM, comm%world, comm%err)
+
+            call mpi_check_for_error("in MPI_Allreduce of field_ops::get_mean.")
 
         end function get_mean
 
@@ -31,7 +34,9 @@ module field_ops
 
             res = sum(ff(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
-            call MPI_Allreduce(MPI_IN_PLACE, res, 1, MPI_DOUBLE, MPI_SUM, comm_world, mpi_err)
+            call MPI_Allreduce(MPI_IN_PLACE, res, 1, MPI_DOUBLE_PRECISION, MPI_SUM, comm%world, comm%err)
+
+            call mpi_check_for_error("in MPI_Allreduce of field_ops::get_sum.")
 
         end function get_sum
 
@@ -46,7 +51,9 @@ module field_ops
                            + ff(nz,     box%lo(2):box%hi(2), box%lo(1):box%hi(1)) ** 2) &
                        + sum(ff(1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) ** 2)) / dble(ncell)
 
-            call MPI_Allreduce(MPI_IN_PLACE, rms, 1, MPI_DOUBLE, MPI_SUM, comm_world, mpi_err)
+            call MPI_Allreduce(MPI_IN_PLACE, rms, 1, MPI_DOUBLE_PRECISION, MPI_SUM, comm%world, comm%err)
+
+            call mpi_check_for_error("in MPI_Allreduce of field_ops::get_rms.")
 
             rms = dsqrt(rms)
 
@@ -63,7 +70,9 @@ module field_ops
                                      box%lo(1):box%hi(1))))
 
 
-            call MPI_Allreduce(MPI_IN_PLACE, abs_max, 1, MPI_DOUBLE, MPI_MAX, comm_world, mpi_err)
+            call MPI_Allreduce(MPI_IN_PLACE, abs_max, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%world, comm%err)
+
+            call mpi_check_for_error("in MPI_Allreduce of field_ops::get_abs_max.")
 
         end function get_abs_max
 

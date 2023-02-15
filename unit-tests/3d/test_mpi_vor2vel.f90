@@ -11,20 +11,27 @@
 !              eta = (c * A - a * C) * cos(a * x) * sin(b * y) * cos(c * z)
 !             zeta = (a * B - b * A) * cos(a * x) * cos(b * y) * sin(c * z)
 ! =============================================================================
-program test_vor2vel_2
+program test_mpi_vor2vel
     use unit_test
     use constants, only : zero, one, two, four, pi, twopi, f12
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use fields, only : vortg, velog, field_alloc
-    use inversion_utils, only : init_fft, fftxyp2s
+    use fields, only : vortg, velog, field_default
+    use inversion_utils, only : init_inversion
     use inversion_mod, only : vor2vel, vor2vel_timer
-    use timer
+    use mpi_timer
+    use mpi_communicator
+    use mpi_layout
     implicit none
 
     double precision              :: error
     double precision, allocatable :: velog_ref(:, :, :, :)
     integer                       :: ix, iy, iz
     double precision              :: x, y, z, AA, BB, CC, a, b, c
+    logical                       :: passed = .false.
+
+    call mpi_comm_initialise
+
+    passed = (comm%err == 0)
 
     call register_timer('vorticity', vor2vel_timer)
 
@@ -42,15 +49,15 @@ program test_vor2vel_2
     b = one
     c = one
 
-    allocate(velog_ref(-1:nz+1, 0:ny-1, 0:nx-1, 3))
-
     call update_parameters
 
-    call field_alloc
+    call field_default
 
-    do ix = 0, nx-1
+    allocate(velog_ref(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), 3))
+
+    do ix = box%lo(1), box%hi(1)
         x = lower(1) + ix * dx(1)
-        do iy = 0, ny-1
+        do iy = box%lo(2), box%hi(2)
             y = lower(2) + iy * dx(2)
             do iz = -1, nz+1
                 z = lower(3) + iz * dx(3)
@@ -69,14 +76,33 @@ program test_vor2vel_2
         enddo
     enddo
 
-    call init_fft
+    call init_inversion
 
     call vor2vel
 
-    error = maxval(dabs(velog_ref(0:nz, :, :, :) - velog(0:nz, :, :, :)))
+    error = maxval(dabs(velog_ref(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :) &
+                          - velog(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :)))
 
-    call print_result_dp('Test inversion (vorticity)', error, atol=2.0e-3)
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    else
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    endif
+
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    else
+        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    endif
+
+    call mpi_comm_finalise
+
+    passed = (passed .and. (comm%err == 0) .and. (error < dble(1.0e-14)))
+
+    if (comm%rank == comm%master) then
+        call print_result_logical('Test MPI vor2vel', passed)
+    endif
 
     deallocate(velog_ref)
 
-end program test_vor2vel_2
+end program test_mpi_vor2vel

@@ -1,1 +1,15 @@
 == Citation
+Please cite the two-dimensional EPIC model with
+```
+@article{Frey2022,
+    title = {EPIC: The Elliptical Parcel-In-Cell method},
+    journal = {Journal of Computational Physics: X},
+    volume = {14},
+    pages = {100109},
+    year = {2022},
+    issn = {2590-0552},
+    doi = {https://doi.org/10.1016/j.jcpx.2022.100109},
+    url = {https://www.sciencedirect.com/science/article/pii/S2590055222000051},
+    author = {Matthias Frey and David Dritschel and Steven B\"oing}
+}
+```

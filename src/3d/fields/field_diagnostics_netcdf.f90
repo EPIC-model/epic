@@ -9,20 +9,22 @@ module field_diagnostics_netcdf
     use netcdf_writer
     use netcdf_reader
     use constants, only : one
-    use parameters, only : lower, extent, nx, ny, nz
+    use parameters, only : lower, extent, nx, ny, nz, write_zeta_boundary_flag
     use config, only : package_version, cf_version
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
-    use physics, only : write_physical_quantities
+    use physics, only : write_physical_quantities, ape_calculation
     implicit none
 
     private
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: t_axis_id, t_dim_id, n_writes,                   &
-                          rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
-                          avg_npar_id, avg_nspar_id, keg_id
+    integer            :: t_axis_id, t_dim_id, n_writes,                      &
+                          rms_v_id, abserr_v_id, max_npar_id, min_npar_id,    &
+                          avg_npar_id, avg_nspar_id, keg_id, eng_id, apeg_id, &
+                          max_buoy_id, min_buoy_id
+
     double precision   :: restart_time
 
     integer :: field_stats_io_timer
@@ -43,7 +45,7 @@ module field_diagnostics_netcdf
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
 
-            if (mpi_rank .ne. mpi_master) then
+            if (comm%rank .ne. comm%master) then
                 return
             endif
 
@@ -67,7 +69,7 @@ module field_diagnostics_netcdf
             call create_netcdf_file(ncfname, overwrite, ncid, l_single=.true.)
 
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='field_stats',      &
                                    cf_version=cf_version)
 
@@ -143,12 +145,54 @@ module field_diagnostics_netcdf
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
                 name='ke',                                                  &
-                long_name='kinetic energy',                                 &
+                long_name='domain-averaged kinetic energy',                 &
                 std_name='',                                                &
-                unit='m^5/s^2',                                             &
+                unit='m^2/s^2',                                             &
                 dtype=NF90_DOUBLE,                                          &
                 dimids=(/t_dim_id/),                                        &
                 varid=keg_id)
+
+            if (ape_calculation == 'ape density') then
+                call define_netcdf_dataset(                                 &
+                    ncid=ncid,                                              &
+                    name='ape',                                             &
+                    long_name='domain-averaged available potential energy', &
+                    std_name='',                                            &
+                    unit='m^2/s^2',                                         &
+                    dtype=NF90_DOUBLE,                                      &
+                    dimids=(/t_dim_id/),                                    &
+                    varid=apeg_id)
+            endif
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='en',                                                  &
+                long_name='domain-averaged enstrophy',                      &
+                std_name='',                                                &
+                unit='1/s^2',                                               &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=eng_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='min_buoyancy',                                        &
+                long_name='minimum gridded buoyancy',                       &
+                std_name='',                                                &
+                unit='m/s^2',                                               &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=min_buoy_id)
+
+            call define_netcdf_dataset(                                     &
+                ncid=ncid,                                                  &
+                name='max_buoyancy',                                        &
+                long_name='maximum gridded buoyancy',                       &
+                std_name='',                                                &
+                unit='m/s^2',                                               &
+                dtype=NF90_DOUBLE,                                          &
+                dimids=(/t_dim_id/),                                        &
+                varid=max_buoy_id)
 
             call close_definition(ncid)
 
@@ -177,6 +221,16 @@ module field_diagnostics_netcdf
 
             call get_var_id(ncid, 'ke', keg_id)
 
+            if (ape_calculation == 'ape density') then
+                call get_var_id(ncid, 'ape', apeg_id)
+            endif
+
+            call get_var_id(ncid, 'en', eng_id)
+
+            call get_var_id(ncid, 'min_buoyancy', min_buoy_id)
+
+            call get_var_id(ncid, 'max_buoyancy', max_buoy_id)
+
         end subroutine read_netcdf_field_stats_content
 
         ! Write a step in the field diagnostic file.
@@ -187,7 +241,7 @@ module field_diagnostics_netcdf
 
             call start_timer(field_stats_io_timer)
 
-            if (mpi_rank .ne. mpi_master) then
+            if (comm%rank .ne. comm%master) then
                 return
             endif
 
@@ -197,6 +251,10 @@ module field_diagnostics_netcdf
             endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid, l_single=.true.)
+
+            if (n_writes == 1) then
+                call write_zeta_boundary_flag(ncid)
+            endif
 
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
@@ -211,6 +269,12 @@ module field_diagnostics_netcdf
             call write_netcdf_scalar(ncid, avg_npar_id, field_stats(IDX_AVG_NPAR), n_writes)
             call write_netcdf_scalar(ncid, avg_nspar_id, field_stats(IDX_AVG_NSPAR), n_writes)
             call write_netcdf_scalar(ncid, keg_id, field_stats(IDX_KEG), n_writes)
+            if (ape_calculation == 'ape density') then
+                call write_netcdf_scalar(ncid, apeg_id, field_stats(IDX_APEG), n_writes)
+            endif
+            call write_netcdf_scalar(ncid, eng_id, field_stats(IDX_ENG), n_writes)
+            call write_netcdf_scalar(ncid, min_buoy_id, field_stats(IDX_MIN_BUOY), n_writes)
+            call write_netcdf_scalar(ncid, max_buoy_id, field_stats(IDX_MAX_BUOY), n_writes)
 
             ! increment counter
             n_writes = n_writes + 1

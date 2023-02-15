@@ -14,11 +14,14 @@ module parcel_merge
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
     use parcel_bc
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
 
     implicit none
 
-    integer:: merge_timer
+    integer :: merge_timer
+
+    ! number of parcel merges (is reset in every write step)
+    integer :: n_parcel_merges = 0
 
     private :: geometric_merge, &
                do_group_merge
@@ -36,6 +39,8 @@ module parcel_merge
 
             ! find parcels to merge
             call find_nearest(isma, iclo, n_merge)
+
+            n_parcel_merges = n_parcel_merges + n_merge
 
             call start_timer(merge_timer)
 

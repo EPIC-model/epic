@@ -1,1 +1,14 @@
+:stem: latexmath
 == Model
+[stem]
+++++
+\begin{align}
+    \label{eq:progu}
+    & \frac{\mathrm{D}\boldsymbol{u}}{\mathrm{D} t}+2\Omega\,\hat{\boldsymbol{e}}_z\times\boldsymbol{u}
+        = -\frac{\nabla p}{\rho_0}+b\,\hat{\boldsymbol{e}}_z \,, \\
+    \label{eq:progb}
+    & \frac{\mathrm{D} b_l}{\mathrm{D} t} = 0 \,, \\
+    \label{eq:progq}
+    & \frac{\mathrm{D} q}{\mathrm{D} t} = 0 \,,
+\end{align}
+++++

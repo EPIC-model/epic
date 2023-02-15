@@ -3,34 +3,54 @@ module mpi_communicator
     use mpi_tags
     implicit none
 
-    type(MPI_Comm), parameter :: comm_world = MPI_COMM_WORLD
-    type(MPI_Comm)            :: comm_cart
-    integer                   :: mpi_err = 0
-    integer                   :: mpi_rank = 0
-    integer                   :: mpi_size = 1
-    integer, parameter        :: mpi_master = 0
+    type :: parallel_communicator
+        type(MPI_Comm) :: world = MPI_COMM_WORLD
+        type(MPI_Comm) :: cart
+        integer        :: err = 0
+        integer        :: rank = 0
+        integer        :: size = 1
+        integer        :: master = 0
+    end type parallel_communicator
+
+    type(parallel_communicator) :: comm
+
+    type :: sub_communicator
+        type(MPI_Comm) :: comm = MPI_COMM_WORLD
+        integer        :: err = 0
+        integer        :: rank = 0
+        integer        :: size = 1
+    end type sub_communicator
 
     contains
 
         subroutine mpi_comm_initialise
-            call MPI_Init(mpi_err)
-            call MPI_Comm_size(comm_world, mpi_size, mpi_err)
-            call MPI_Comm_rank(comm_world, mpi_rank, mpi_err)
-            call MPI_Comm_size(comm_world, mpi_size, mpi_err)
+#ifdef ENABLE_OPENMP
+            integer :: provided
+            call MPI_Init_thread(MPI_THREAD_SERIALIZED, provided, comm%err)
+
+            if (.not. provided == MPI_THREAD_SERIALIZED) then
+                stop
+            endif
+#else
+            call MPI_Init(comm%err)
+#endif
+            call MPI_Comm_size(comm%world, comm%size, comm%err)
+            call MPI_Comm_rank(comm%world, comm%rank, comm%err)
+            call MPI_Comm_size(comm%world, comm%size, comm%err)
         end subroutine mpi_comm_initialise
 
         subroutine mpi_comm_finalise
             logical :: flag
-            call MPI_Initialized(flag, mpi_err)
+            call MPI_Initialized(flag, comm%err)
 
             if (flag) then
-                call MPI_Finalize(mpi_err)
+                call MPI_Finalize(comm%err)
             endif
 
-            call MPI_Finalized(flag, mpi_err)
+            call MPI_Finalized(flag, comm%err)
 
             if (.not. flag) then
-                call MPI_Abort(comm_world, -1, mpi_err)
+                call MPI_Abort(comm%world, -1, comm%err)
             endif
         end subroutine mpi_comm_finalise
 end module mpi_communicator

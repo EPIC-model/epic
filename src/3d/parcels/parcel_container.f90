@@ -6,6 +6,8 @@ module parcel_container
     use options, only : verbose
     use parameters, only : extent, extenti, center, lower, upper
     use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
+    use mpi_communicator
+    use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
     integer :: n_parcels        ! local number of parcels
@@ -73,7 +75,8 @@ module parcel_container
 
             delx = x1 - x2
 #ifndef NDEBUG
-            if ((x1 < lower(1)) .or. (x2 < lower(1)) .or. (x1 > upper(1)) .or. (x2 > upper(1))) then
+            if ((x1 < lower(1)) .or. (x2 < lower(1)) .or. &
+                (x1 > upper(1)) .or. (x2 > upper(1))) then
                 write(*,*) 'point outside domain was fed into get_delx'
                 write(*,*) 'x1, x2, lower(1), upper(1)'
                 write(*,*) x1, x2, lower(1), upper(1)
@@ -82,6 +85,8 @@ module parcel_container
             ! works across periodic edge
             delx = delx - extent(1) * dble(nint(delx * extenti(1)))
         end function get_delx
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the difference between two meridional coordinates
         ! across periodic edges
@@ -99,7 +104,8 @@ module parcel_container
 
             dely = y1 - y2
 #ifndef NDEBUG
-            if ((y1 < lower(2)) .or. (y2 < lower(2)) .or. (y1 > upper(2)) .or. (y2 > upper(2))) then
+            if ((y1 < lower(2)) .or. (y2 < lower(2)) .or. &
+                (y1 > upper(2)) .or. (y2 > upper(2))) then
                 write(*,*) 'point outside domain was fed into get_dely'
                 write(*,*) 'y1, y2, lower(2), upper(2)'
                 write(*,*) y1, y2, lower(2), upper(2)
@@ -109,6 +115,7 @@ module parcel_container
             dely = dely - extent(2) * dble(nint(dely * extenti(2)))
         end function get_dely
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Overwrite parcel n with parcel m
         ! @param[in] n index of parcel to be replaced
@@ -136,6 +143,8 @@ module parcel_container
 
         end subroutine parcel_replace
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Allocate parcel memory
         ! @param[in] num number of parcels
         subroutine parcel_alloc(num)
@@ -152,11 +161,20 @@ module parcel_container
             call parcel_ellipsoid_allocate(num)
         end subroutine parcel_alloc
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Deallocate parcel memory
         subroutine parcel_dealloc
 
             if (.not. allocated(parcels%position)) then
                 return
+            endif
+
+            n_parcels = 0
+
+            n_total_parcels = 0
+            if (comm%size > 1) then
+                call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
             endif
 
             deallocate(parcels%position)
@@ -169,6 +187,8 @@ module parcel_container
 #endif
             call parcel_ellipsoid_deallocate
         end subroutine parcel_dealloc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Serialize all parcel attributes into a single buffer
         subroutine parcel_serialize(n, buffer)
@@ -185,6 +205,8 @@ module parcel_container
 #endif
         end subroutine parcel_serialize
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Deserialize all parcel attributes from a single buffer
         subroutine parcel_deserialize(n, buffer)
             integer,          intent(in) :: n
@@ -200,6 +222,39 @@ module parcel_container
 #endif
         end subroutine parcel_deserialize
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_pack(pid, num, buffer)
+            integer,          intent(in)  :: pid(:)
+            integer,          intent(in)  :: num
+            double precision, intent(out) :: buffer(:)
+            integer                       :: n, i, j
+
+            do n = 1, num
+                i = 1 + (n-1) * n_par_attrib
+                j = n * n_par_attrib
+                call parcel_serialize(pid(n), buffer(i:j))
+            enddo
+        end subroutine parcel_pack
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_unpack(num, buffer)
+            integer,          intent(in) :: num
+            double precision, intent(in) :: buffer(:)
+            integer                      :: n, i, j
+
+            do n = 1, num
+                i = 1 + (n-1) * n_par_attrib
+                j = n * n_par_attrib
+                call parcel_deserialize(n_parcels + n, buffer(i:j))
+            enddo
+
+            n_parcels = n_parcels + num
+
+        end subroutine parcel_unpack
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! This algorithm replaces invalid parcels with valid parcels
         ! from the end of the container

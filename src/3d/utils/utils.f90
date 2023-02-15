@@ -1,9 +1,16 @@
 module utils
     use constants, only : one
-    use options, only : output, verbose
+    use options, only : field_file          &
+                      , output              &
+                      , l_restart           &
+                      , restart_file        &
+                      , time                &
+                      , verbose
+    use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     use field_netcdf
     use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
+    use parcel_init, only : parcel_default, init_parcels_from_grids
     use parcel_netcdf
     use parcel_diagnostics_netcdf
     use parcel_diagnostics
@@ -11,8 +18,9 @@ module utils
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
-    use parameters, only : lower, extent, update_parameters
-    use physics, only : read_physical_quantities, print_physical_quantities
+    use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
+                         , set_zeta_boundary_flag
+    use physics, only : read_physical_quantities, print_physical_quantities, l_peref
     implicit none
 
     integer :: nfw  = 0    ! number of field writes
@@ -26,7 +34,10 @@ module utils
 
         ! Create NetCDF files and set the step number
         subroutine setup_output_files
-            use options, only : output, l_restart
+
+            if (.not. l_peref) then
+                call calculate_peref
+            endif
 
             if (output%write_parcel_stats) then
                 call create_netcdf_parcel_stats_file(trim(output%basename), &
@@ -131,23 +142,34 @@ module utils
             call get_time(ncid, t)
             call close_netcdf_file(ncid)
 
-            ! set counters (we nee to increment by 1 since
-            ! we want to write the next time
+            ! set counters (we need to increment by 1 since
+            ! we want to write the next time)
             nfw = int(t / output%field_freq) + 1
             npw = int(t / output%parcel_freq) + 1
             nspw = int(t / output%parcel_stats_freq) + 1
             nsfw = int(t / output%field_stats_freq) + 1
         end subroutine setup_restart
 
-        subroutine setup_domain_and_parameters(fname)
-            character(*), intent(in) :: fname
-            integer                  :: ncid
-            integer                  :: ncells(3)
+        subroutine setup_domain_and_parameters
+            character(:), allocatable :: fname
+            integer                   :: ncid
+            integer                   :: ncells(3)
+
+            ! set axis and dimension names for the NetCDF output
+            call set_netcdf_dimensions((/'x', 'y', 'z', 't'/))
+            call set_netcdf_axes((/'X', 'Y', 'Z', 'T'/))
+
+            if (l_restart) then
+                fname = trim(restart_file)
+            else
+                fname = trim(field_file)
+            endif
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
             call get_netcdf_box(ncid, lower, extent, ncells)
             call read_physical_quantities(ncid)
+            call read_zeta_boundary_flag(ncid)
 
             call close_netcdf_file(ncid)
 
@@ -164,5 +186,36 @@ module utils
             endif
 #endif
         end subroutine setup_domain_and_parameters
+
+        ! Reads always the last time step of a field file.
+        subroutine setup_fields_and_parcels
+            character(len=16) :: file_type
+
+            call field_default
+
+            call parcel_default
+
+            if (l_restart) then
+                call setup_restart(trim(restart_file), time%initial, file_type)
+
+                if (file_type == 'fields') then
+                    call read_netcdf_fields(trim(restart_file), -1)
+                else if (file_type == 'parcels') then
+                    call read_netcdf_parcels(restart_file)
+                else
+                    print *, 'Restart file must be of type "fields" or "parcels".'
+                    stop
+                endif
+            else
+                time%initial = zero ! make sure user cannot start at arbirtrary time
+                call read_netcdf_fields(field_file, -1)
+                call init_parcels_from_grids
+
+                ! we must check if zeta must be kept zero
+                ! on a vertical boundary
+                call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
+            endif
+
+        end subroutine setup_fields_and_parcels
 
 end module utils

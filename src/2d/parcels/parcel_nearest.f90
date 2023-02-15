@@ -84,8 +84,8 @@ module parcel_nearest
             ! Bin parcels in cells:
             ! Form list of small parcels:
             do n = 1, n_parcels
-                ix = int(dxi(1) * (parcels%position(1, n) - lower(1)))
-                iz = int(dxi(2) * (parcels%position(2, n) - lower(2)))
+                ix = mod(int(dxi(1) * (parcels%position(1, n) - lower(1))), nx)
+                iz = min(int(dxi(2) * (parcels%position(2, n) - lower(2))), nz-1)
 
                 ! Cell index of parcel:
                 ij = 1 + ix + nx * iz !This runs from 1 to ncell

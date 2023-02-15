@@ -7,14 +7,14 @@ program test_mpi_grid2par
     use unit_test
     use mpi_communicator
     use mpi_collectives
-    use field_mpi
+    use mpi_layout
     use constants, only : pi, zero, one, two, three, four, five, f12, f23
     use parcel_container
     use parcel_interpl, only : grid2par, grid2par_timer
     use parcel_ellipsoid, only : get_abc
     use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz
     use fields, only : velog, vortg, velgradg, field_alloc
-    use timer
+    use mpi_timer
     implicit none
 
     double precision              :: error
@@ -25,7 +25,7 @@ program test_mpi_grid2par
 
     call mpi_comm_initialise
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
     nx = 32
     ny = 32
@@ -115,11 +115,10 @@ program test_mpi_grid2par
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI grid2par', passed)
     endif
-
 
 end program test_mpi_grid2par

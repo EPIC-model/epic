@@ -18,8 +18,8 @@ module mpi_collectives
 !             double precision,  intent(out), asynchronous :: recvbuf(..)
 !             type(MPI_Op),      intent(in)                :: op
 !             type(MPI_Request)                            :: request
-!             call MPI_Ireduce(sendbuf, recvbuf, size(recvbuf), MPI_DOUBLE, &
-!                              op, 0, comm_world, request, mpi_err)
+!             call MPI_Ireduce(sendbuf, recvbuf, size(recvbuf), MPI_DOUBLE_PRECISION, &
+!                              op, 0, comm%world, request, comm%err)
 !         end subroutine mpi_double_ireduce
 
 !         subroutine mpi_integer_ireduce(sendbuf, recvbuf, op)
@@ -28,19 +28,19 @@ module mpi_collectives
 !             type(MPI_Op),      intent(in)                :: op
 !             type(MPI_Request)                            :: request
 !             call MPI_Ireduce(sendbuf, recvbuf, size(recvbuf), MPI_INT, &
-!                              op, 0, comm_world, request, mpi_err)
+!                              op, 0, comm%world, request, comm%err)
 !         end subroutine mpi_integer_ireduce
 
         subroutine mpi_double_reduce(sendbuf, op)
             double precision, intent(inout) :: sendbuf(..)
             type(MPI_Op),     intent(in)    :: op
 
-            if (mpi_rank == mpi_master) then
-                call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_DOUBLE, &
-                                op, mpi_master, comm_world, mpi_err)
+            if (comm%rank == comm%master) then
+                call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_DOUBLE_PRECISION, &
+                                op, comm%master, comm%world, comm%err)
             else
-                call MPI_Reduce(sendbuf, sendbuf, size(sendbuf), MPI_DOUBLE, &
-                                op, mpi_master, comm_world, mpi_err)
+                call MPI_Reduce(sendbuf, sendbuf, size(sendbuf), MPI_DOUBLE_PRECISION, &
+                                op, comm%master, comm%world, comm%err)
             endif
         end subroutine mpi_double_reduce
 
@@ -48,12 +48,12 @@ module mpi_collectives
             integer,      intent(inout) :: sendbuf(..)
             type(MPI_Op), intent(in)    :: op
 
-            if (mpi_rank == mpi_master) then
+            if (comm%rank == comm%master) then
                 call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_INT, &
-                                op, mpi_master, comm_world, mpi_err)
+                                op, comm%master, comm%world, comm%err)
             else
                 call MPI_Reduce(sendbuf, sendbuf, size(sendbuf), MPI_INT, &
-                                op, mpi_master, comm_world, mpi_err)
+                                op, comm%master, comm%world, comm%err)
             endif
         end subroutine mpi_integer_reduce
 

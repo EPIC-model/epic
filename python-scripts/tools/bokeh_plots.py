@@ -9,7 +9,6 @@ from tools.units import *
 import numpy as np
 from scipy import interpolate
 
-
 def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
     no_xaxis = kwargs.pop("no_xaxis", False)
     no_yaxis = kwargs.pop("no_yaxis", False)
@@ -45,8 +44,8 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
             plot_width = np.nanmin([1920, int(1080 * (right - left) / (top - bottom))])
             plot_height = np.nanmin([1080, int(1920 * (top - bottom) / (right - left))])
 
-    x_axis_label = get_label("$$x$$", units["position"], is_bokeh=True)
-    y_axis_label = get_label("$$y$$", units["position"], is_bokeh=True)
+    x_axis_label = get_label("x", units["position"], is_bokeh=True)
+    y_axis_label = get_label("y", units["position"], is_bokeh=True)
 
     if no_xlabel:
         x_axis_label = " "
@@ -56,8 +55,8 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
 
     graph = bpl.figure(
         output_backend="webgl",
-        plot_width=plot_width,
-        plot_height=plot_height,
+        width=plot_width,
+        height=plot_height,
         aspect_ratio=(right - left) / (top - bottom),
         x_range=(left, right),
         y_range=(bottom, top),
@@ -313,7 +312,6 @@ def _bokeh_plot_parcels(ncreader, step, coloring, vmin, vmax, **kwargs):
 
     x, y, width, height, angle = ncreader.get_ellipses_for_bokeh(step)
 
-
     if norm:
         vmin = -1.0
         vmax = 1.0
@@ -407,6 +405,7 @@ def bokeh_plot(fname, step, show=False, fmt="png", coloring="vorticity", **kwarg
         raise ValueError("Step number cannot be negative.")
 
     saveas = coloring + "_step_" + str(step).zfill(len(str(nsteps)))
+
 
     if ncreader.is_parcel_file:
         if coloring == "aspect-ratio":

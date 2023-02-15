@@ -10,8 +10,7 @@ module parcel_nearest
     use mpi_communicator
     use mpi_layout
     use parcel_mpi
-    use timer, only : start_timer, stop_timer
-
+    use mpi_timer, only : start_timer, stop_timer
     implicit none
 
     integer:: merge_nearest_timer, merge_tree_resolve_timer
@@ -139,7 +138,7 @@ module parcel_nearest
 
                 ! Cell index of parcel:
                 gijk = 1 + ix +     nx * iy +     nx *     ny * iz
-                lijk = 1 + ix + box%nx * iy + box%nx * box%ny * iz !This runs from 1 to box%ncell
+                lijk = 1 + ix + box%size(1) * iy + box%size(1) * box%size(2) * iz !This runs from 1 to box%ncell
 
                 ! Accumulate number of parcels in this grid cell:
                 nppc(lijk) = nppc(lijk) + 1

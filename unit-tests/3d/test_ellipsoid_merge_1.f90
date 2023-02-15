@@ -15,7 +15,7 @@ program test_ellipsoid_merge_1
     use parameters, only : update_parameters, lower, extent, nx, ny, nz
     use parcel_ellipsoid
     use parcel_nearest
-    use timer
+    use mpi_timer
     implicit none
 
     double precision :: a1b1c1, a2b2c2, error

@@ -1,4 +1,4 @@
-AC_INIT([epic], [0.12.3], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
+AC_INIT([epic], [0.12.4], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
@@ -12,7 +12,7 @@ AC_FC_SRCEXT(f90)
 FCFLAGS="-std=f2018 -fdefault-real-8 -fdefault-double-8 -cpp -fPIC -mcmodel=large -fall-intrinsics"
 
 AC_CONFIG_MACRO_DIRS([m4])
-AC_CONFIG_HEADERS([src/utils/config.h])
+AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
@@ -388,6 +388,7 @@ AM_CONDITIONAL([ENABLE_UNIT_TESTS], [test "$ENABLE_UNIT_TESTS" = "yes"])
 AC_MSG_CHECKING([whether we build unit tests])
 if test "x$ENABLE_UNIT_TESTS" = "xyes"; then
     AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_UNIT_TESTS"
 else
     AC_MSG_RESULT([no])
 fi
@@ -406,7 +407,7 @@ AM_CONDITIONAL([ENABLE_OPENMP], [test "$ENABLE_OPENMP" = "yes"])
 AC_MSG_CHECKING([whether we are enabling OpenMP])
 if test "x$ENABLE_OPENMP" = "xyes"; then
     AC_MSG_RESULT([yes])
-    FCFLAGS="$FCFLAGS -fopenmp"
+    FCFLAGS="$FCFLAGS -fopenmp -DENABLE_OPENMP"
 else
     AC_MSG_RESULT([no])
 fi

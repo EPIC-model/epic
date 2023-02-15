@@ -6,18 +6,17 @@ program test_mpi_field_diagnostics
     use unit_test
     use mpi_communicator
     use mpi_layout
-    use field_mpi
     use fields
     use field_diagnostics
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, vcell, vcelli, ngrid
-    use timer
+    use mpi_timer
     implicit none
 
     logical :: passed = .true.
 
     call mpi_comm_initialise
 
-    passed = (mpi_err == 0)
+    passed = (comm%err == 0)
 
     call register_timer('field stats', field_stats_timer)
 
@@ -39,7 +38,7 @@ program test_mpi_field_diagnostics
 
     call calculate_field_diagnostics
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         passed = (passed .and. (dabs(field_stats(IDX_RMS_V) - vcelli) == zero))
         passed = (passed .and. (dabs(field_stats(IDX_ABSERR_V) - vcelli) == zero))
         passed = (passed .and. (field_stats(IDX_MAX_NPAR) == one))
@@ -51,9 +50,9 @@ program test_mpi_field_diagnostics
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI field diagnostics', passed)
     endif
 

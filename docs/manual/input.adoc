@@ -1,113 +1,200 @@
 == Input
+To run an EPIC simulation users must provide a <<sec_config_file>> and a field file in NetCDF format. The latter
+is listed inside the configuration file under the option `field_file`. You then simply type
+----
+$ epic2d --config input.config
+$ epic3d --config input.config
+----
+in the terminal to start a simulation.
+
 
 === Configuration File
+[#sec_config_file, reftext=Configuration file]
+A configuration file contains user-defined rutime options. Almost all parameters
+have default values that may be adapted to the number of spatial dimensions. The list of options and their
+recommended values are given in <<tab_configure_file>>.
 
 
 .EPIC input options and their default values.
-[cols="2,1,6"]
+[#tab_configure_file, reftext=Table {counter:tab-cnt}]
+[cols="1,2,6"]
 |===
-|Parameter                  |Default    |Description
+|Parameter                  |Default                |Description
 
-|field_file                 |n/a        |NetCDF Input field file
-|field_tol                  |1.0d-10    |Tolerance for parcel generation from field file
+|field_file                 |n/a                    |NetCDF input field file
+|field_tol                  |1.0d-10                |Tolerance for parcel generation from field file
 
-|output%field_freq          |1          |Write after these many seconds to the field NetCDF file
-|output%parcel_freq         |1          |Write after these many seconds to the parcel NetCDF file
-|output%parcel_stats_freq   |1          |Write after these many seconds to parcel stats NetCDF file
-|output%field_stats_freq    |1          |Write after these many seconds to the field stats NetCDF file
-|output%write_fields        |.true.     |Enable / disable field dump
-|output%write_parcels       |.true.     |Enable / disable parcel dump
-|output%write_parcel_stats  |.true.     |Enable / disable parcel statistics
-|output%write_field_stats   |.true.     |Enable / disable field statistics
-|output%overwrite           |.false.    |Replace existing NetCDF files
-|output%basename            |n/a        |NetCDF output base name
+|output%field_freq          |1                      |Write after these many seconds to the field NetCDF file
+|output%parcel_freq         |1                      |Write after these many seconds to the parcel NetCDF file
+|output%parcel_stats_freq   |1                      |Write after these many seconds to parcel stats NetCDF file
+|output%field_stats_freq    |1                      |Write after these many seconds to the field stats NetCDF file
+|output%write_fields        |.true.                 |Enable / disable field dump
+|output%write_parcels       |.true.                 |Enable / disable parcel dump
+|output%write_parcel_stats  |.true.                 |Enable / disable parcel statistics
+|output%write_field_stats   |.true.                 |Enable / disable field statistics
+|output%overwrite           |.false.                |Replace existing NetCDF files
+|output%basename            |n/a                    |NetCDF output base name
 
-|parcel%size_factor         |1          |Factor to increase max. number of parcels
-|parcel%n_per_cell          |9          |Initial number of parcels per cell
-|parcel%lambda_max          |4          |Maximum parcel aspect ratio
-|parcel%min_vratio          |40         |Minimum ratio of grid cell volume / parcel volume
-|parcel%max_vratio          |2.89       |Maximum ratio of grid cell volume / parcel volume
-|parcel%correction_iters    |2          |How many parcel correction iterations
-|parcel%gradient_pref       |1.8        |Gradient correction prefactor
-|parcel%max_compression     |0.5        |Gradient correction maximum compression
+|parcel%size_factor         |1                      |Factor to increase max. number of parcels
+|parcel%n_per_cell          |9                      |Initial number of parcels per cell
+|parcel%lambda_max          |4                      |Maximum parcel aspect ratio
+|parcel%min_vratio          |40 (2D) or 68 (3D)     |Minimum ratio of grid cell volume / parcel volume
+|parcel%max_vratio          |2.89 (2D) or 4.913 (3D)|Maximum ratio of grid cell volume / parcel volume
+|parcel%correction_iters    |2                      |How many parcel correction iterations
+|parcel%gradient_pref       |1.8                    |Gradient correction prefactor
+|parcel%max_compression     |0.5                    |Gradient correction maximum compression
 
-|time%limit                 |0.0        |Time limit (s)
-|time%alpha                 |0.2        |Scaling factor for the strain and buoyancy gradient time step
-|time%precise_stop          |.false.    |Stop exactly at the time limit
+|time%limit                 |0.0                    |Time limit (s)
+|time%alpha                 |0.2                    |Scaling factor for the strain and buoyancy gradient time step
+|time%precise_stop          |.false.                |Stop exactly at the time limit
 
 |===
 
 === NetCDF Field File
+The field file contains initial scalar fields and vector field components of a simulation. A list of supported
+fields in 2D and 3D is found in <<tab_supported_input_fields>>. You can either write
+your own tool to generate such files or use our provided Python scripts. Below you can find an example where the
+vorticity field of a Taylor-Green flow in 2D is initialised and written to a file.
 
-// ## How to write an EPIC input field file
-// EPIC parses a NetCDF file containing all fields to initialise the parcels. You can simply generate the input fields with Python and write them with the provided tools. Below you can find an example where the vorticity field of a Taylor-Green flow is initialised and written to a file.
-// ```Python
-// #!/usr/bin/env python
-// #
-// # Example of writing a field file that can be parsed by EPIC.
-// #
-// from tools.nc_fields import nc_fields
-// import numpy as np
-//
-// try:
-//     ncf = nc_fields()
-//
-//     ncf.open('taylor_green.nc')
-//
-//     # velocity field:
-//     # u(x, z) = A * cos(ax + d) * sin(bz + e)
-//     # w(x, z) = B * sin(ax + d) * cos(bz + e)
-//
-//     # vorticity:
-//     # zeta = (B * a - A * b) * cos(ax + d) * cos(bz + e)
-//
-//     # amplitudes
-//     A = 0.5
-//     B = -1.0
-//
-//     # frequencies
-//     a = 2.0
-//     b = 1.0
-//
-//     # phases
-//     d = 0.5 * np.pi
-//     e = 0.0
-//
-//     # number of cells
-//     nx = 32
-//     nz = 32
-//
-//     # domain origin
-//     origin = (-0.5 * np.pi, -0.5 * np.pi)
-//
-//     # domain extent
-//     extent = (np.pi, np.pi)
-//
-//     # mesh spacings
-//     dx = extent[0] / nx
-//     dz = extent[1] / nz
-//
-//     vorticity = np.zeros((nz+1, nx))
-//
-//     # ranges from 0 to nx-1
-//     for i in range(nx):
-//         # ranges from 0 to nz
-//         for j in range(nz+1):
-//             x = origin[0] + i * dx
-//             z = origin[1] + j * dz
-//             vorticity[j, i] = (B * a - A * b) * np.cos(a * x + d) * np.cos(b * z + e)
-//
-//     # write all provided fields
-//     ncf.add_field('vorticity', vorticity, unit='1/s')
-//
-//     ncf.add_box(origin, extent, [nx, nz])
-//
-//     ncf.close()
-//
-// except Exception as err:
-//     print(err)
-// ```
+.Supported input fields.
+[#tab_supported_input_fields, reftext=Table {counter:tab-cnt}]
+[cols="2,1,7"]
+|===
+|Field name     |Unit   |Description
+
+|x_vorticity    |1/s    |Zonal vorticity component (3D only)
+|y_vorticity    |1/s    |Meridional vorticity component (3D only)
+|z_vorticity    |1/s    |Vertical vorticity component (field name in 2D: vorticity)
+|buoyancy       |m/s^2  |Buoyancy field
+|humidity       |-      |Humidity field (3D only)
+|===
+
+.Example of writing a field file that can be parsed by EPIC.
+```Python
+#!/usr/bin/env python
+from tools.nc_fields import nc_fields
+import numpy as np
+
+try:
+    ncf = nc_fields()
+
+    ncf.open('taylor_green.nc')
+
+    # velocity field:
+    # u(x, z) = A * cos(ax + d) * sin(bz + e)
+    # w(x, z) = B * sin(ax + d) * cos(bz + e)
+
+    # vorticity:
+    # zeta = (B * a - A * b) * cos(ax + d) * cos(bz + e)
+
+    # amplitudes
+    A = 0.5
+    B = -1.0
+
+    # frequencies
+    a = 2.0
+    b = 1.0
+
+    # phases
+    d = 0.5 * np.pi
+    e = 0.0
+
+    # number of cells
+    nx = 32
+    nz = 32
+
+    # domain origin
+    origin = (-0.5 * np.pi, -0.5 * np.pi)
+
+    # domain extent
+    extent = (np.pi, np.pi)
+
+    # mesh spacings
+    dx = extent[0] / nx
+    dz = extent[1] / nz
+
+    vorticity = np.zeros((nz+1, nx))
+
+    # ranges from 0 to nx-1
+    for i in range(nx):
+        # ranges from 0 to nz
+        for j in range(nz+1):
+            x = origin[0] + i * dx
+            z = origin[1] + j * dz
+            vorticity[j, i] = (B * a - A * b) * np.cos(a * x + d) * np.cos(b * z + e)
+
+    # write all provided fields
+    ncf.add_field('vorticity', vorticity, unit='1/s')
+
+    ncf.add_box(origin, extent, [nx, nz])
+
+    ncf.close()
+
+except Exception as err:
+    print(err)
+```
 
 === NetCDF Parcel File
+Instead of gridded fields, a simulation can also be started with a parcel distribution. A parcel NetCDF file must
+contain the parcel shape components, their volume and position as well as either the vorticity components or
+buoyancy. In non-dry mode, parcels further carry humidity. As for the gridded fields, we provide Python tools to
+write such NetCDF files. Note that EPIC can only be started with parcels via the restart interface (see <<sec_restarting>>).
 
+.Example of writing a parcel file that can be parsed by EPIC.
+```Python
+#!/usr/bin/env python
+from tools.nc_parcels import nc_parcels
+
+try:
+
+    # domain
+    origin = ...
+    extent = ...
+    ncells = ...
+
+
+    ncp = nc_parcels()
+
+    ncp.open('example_parcels.nc')
+
+    ncp.add_box(origin, textent, ncells)
+
+    # initialise parcel attributes with some meaningful input
+    ...
+
+    # write parcel attributes
+    ncp.add_dataset('x_position', position[:, 0], unit='m')
+    ncp.add_dataset('y_position', position[:, 1], unit='m')
+    ncp.add_dataset('z_position', position[:, 2], unit='m')
+
+    ncp.add_dataset('buoyancy', buoyancy, unit='m/s^2')
+
+    ncp.add_dataset('humidity', humidity, unit='1')
+
+    ncp.add_dataset('volume', volume, unit='m^3')
+
+    ncp.add_dataset('x_vorticity', vorticity[:, 0], unit='1/s')
+    ncp.add_dataset('y_vorticity', vorticity[:, 1], unit='1/s')
+    ncp.add_dataset('z_vorticity', vorticity[:, 2], unit='1/s')
+
+    ncp.add_dataset('B11', B[:, 0], unit='m^2')
+    ncp.add_dataset('B12', B[:, 1], unit='m^2')
+    ncp.add_dataset('B13', B[:, 2], unit='m^2')
+    ncp.add_dataset('B22', B[:, 3], unit='m^2')
+    ncp.add_dataset('B23', B[:, 4], unit='m^2')
+
+    ncp.close()
+
+except Exception as ex:
+    print(ex)
+```
+
+[#sec_restarting]
 === Restarting
+In order to restart EPIC use the restart option as follows
+----
+$ epic2d --config input.config --restart input.nc
+$ epic3d --config input.config --restart input.nc
+----
+where `input.nc` is either a gridded field or parcel file. If the field file contains multiple time steps, the last
+step is taken.

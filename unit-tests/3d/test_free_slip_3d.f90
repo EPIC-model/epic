@@ -19,7 +19,7 @@ program test_free_slip_3d
     use parcel_interpl, only : vol2grid
     use parameters, only : lower, extent, update_parameters, vcell, dx, nx, ny, nz, ngrid
     use fields, only : volg
-    use timer
+    use mpi_timer
     implicit none
 
     integer :: i, j, k, l, kk, jj, ii

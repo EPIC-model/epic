@@ -4,7 +4,7 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use parameters, only : extent, hli, center, lower, upper
+    use parameters, only : extent, extenti, center, lower, upper
     implicit none
 
     integer :: n_parcels
@@ -51,7 +51,7 @@ module parcel_container
             endif
 #endif
             ! works across periodic edge
-            delx = delx - extent(1) * dble(int(delx * hli(1)))
+            delx = delx - extent(1) * dble(nint(delx * extenti(1)))
         end function get_delx
 
 

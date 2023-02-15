@@ -11,38 +11,26 @@ import os
 projfac = 4  # Subgrid zoom factor
 r_limit_fac = 3.0
 #r_limit_fac = 1.0  # Alternative: individual ellipsoid visualisation
-len_condense = 1000.0
-q_scale = 0.015
-nthreads = 1
+nthreads = 12
 set_num_threads(nthreads)
 
 parser = argparse.ArgumentParser()
-
 parser.add_argument("input_file_name", type=str)
-parser.add_argument("time_step", type=int)
 args = parser.parse_args()
 input_file_name = args.input_file_name
-time_step = args.time_step
-
 file_root, file_ext = os.path.splitext(input_file_name)
 
-if not (file_ext == ".hdf5"):
-    raise argparse.ArgumentTypeError('Argument filename must end on ".hdf5"')
+if not (file_ext == ".nc"):
+    raise argparse.ArgumentTypeError('Argument filename must end on ".nc"')
 
 ds_nc = nc.Dataset(input_file_name)
 
-# set up time array
-tstep_keys = []
-for key in ds_nc.groups.keys():
-    if "step#" in key:
-        tstep_keys.append(key)
-
-ds_ts = ds_nc.groups[tstep_keys[time_step]]
-
 # set up spatial arrays
-extent = ds_nc.groups["box"].extent
-origin = ds_nc.groups["box"].origin
-ncells = ds_nc.groups["box"].ncells
+extent = ds_nc.extent
+origin = ds_nc.origin
+ncells = ds_nc.ncells
+len_condense = ds_nc.groups['physical_quantities'].scale_height
+q_scale = ds_nc.groups['physical_quantities'].saturation_specific_humidity_at_ground_level
 
 # initialisation
 nx = ncells[0]
@@ -206,16 +194,16 @@ def add_fields(
                     )
 
 
-h = ds_ts.variables["humidity"][:]
-x = ds_ts.variables["position"][:, 0]
-y = ds_ts.variables["position"][:, 1]
-z = ds_ts.variables["position"][:, 2]
-vol = ds_ts.variables["volume"][:]
-bb1 = ds_ts.variables["B"][:, 0]
-bb2 = ds_ts.variables["B"][:, 1]
-bb3 = ds_ts.variables["B"][:, 2]
-bb4 = ds_ts.variables["B"][:, 3]
-bb5 = ds_ts.variables["B"][:, 4]
+h = ds_nc.variables["humidity"][0,:]
+x = ds_nc.variables["x_position"][0,:]
+y = ds_nc.variables["y_position"][0,:]
+z = ds_nc.variables["z_position"][0,:]
+vol = ds_nc.variables["volume"][0,:]
+bb1 = ds_nc.variables["B11"][0,:]
+bb2 = ds_nc.variables["B12"][0,:]
+bb3 = ds_nc.variables["B13"][0,:]
+bb4 = ds_nc.variables["B22"][0,:]
+bb5 = ds_nc.variables["B23"][0,:]
 
 # Local domain min and max values
 xminval = np.nanmin(x)
@@ -328,5 +316,5 @@ def write_field(field, field_name, out_file, mode):
     ncfile.close()
 
 
-write_field(xyz_field, "hh", file_root + "_g3_" + str(time_step) + ".nc", "w")
-write_field(xyz_volg, "hl", file_root + "_g3_" + str(time_step) + ".nc", "a")
+write_field(xyz_field, "hh", file_root + "_g3.nc", "w")
+write_field(xyz_volg, "hl", file_root + "_g3.nc", "a")

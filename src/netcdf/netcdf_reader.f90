@@ -6,6 +6,7 @@
 ! =============================================================================
 module netcdf_reader
     use netcdf_utils
+    use config
     implicit none
 
     interface read_netcdf_dataset
@@ -26,17 +27,19 @@ module netcdf_reader
         module procedure :: read_netcdf_attrib_default_integer
         module procedure :: read_netcdf_attrib_default_double
         module procedure :: read_netcdf_attrib_default_logical
+        module procedure :: read_netcdf_attrib_default_character
     end interface read_netcdf_attribute_default
 
-    private :: read_netcdf_attrib_integer,          &
-               read_netcdf_attrib_double,           &
-               read_netcdf_attrib_character,        &
-               read_netcdf_attrib_logical,          &
-               read_netcdf_attrib_default_integer,  &
-               read_netcdf_attrib_default_double,   &
-               read_netcdf_attrib_default_logical,  &
-               read_netcdf_dataset_1d,              &
-               read_netcdf_dataset_2d,              &
+    private :: read_netcdf_attrib_integer,           &
+               read_netcdf_attrib_double,            &
+               read_netcdf_attrib_character,         &
+               read_netcdf_attrib_logical,           &
+               read_netcdf_attrib_default_integer,   &
+               read_netcdf_attrib_default_double,    &
+               read_netcdf_attrib_default_logical,   &
+               read_netcdf_attrib_default_character, &
+               read_netcdf_dataset_1d,               &
+               read_netcdf_dataset_2d,               &
                read_netcdf_dataset_3d
 
     contains
@@ -81,8 +84,12 @@ module netcdf_reader
         subroutine get_num_steps(ncid, n_steps)
             integer, intent(in)  :: ncid
             integer, intent(out) :: n_steps
+            integer              :: dimid
 
-            call get_dimension_size(ncid, 't', n_steps)
+            ncerr = nf90_inq_dimid(ncid, netcdf_dims(4), dimid)
+            call check_netcdf_error("Reading time dimension id failed.")
+            ncerr = nf90_inquire_dimension(ncid, dimid, len=n_steps)
+            call check_netcdf_error("Reading time failed.")
         end subroutine get_num_steps
 
         subroutine get_time(ncid, t)
@@ -93,10 +100,10 @@ module netcdf_reader
 
             call get_num_steps(ncid, n_steps)
 
-            if (has_dataset(ncid, 't')) then
+            if (has_dataset(ncid, netcdf_dims(4))) then
                 start(1) = n_steps
                 cnt(1) = 1
-                ncerr = nf90_inq_varid(ncid, 't', varid)
+                ncerr = nf90_inq_varid(ncid, netcdf_dims(4), varid)
                 call check_netcdf_error("Reading time id failed.")
                 ncerr = nf90_get_var(ncid, varid, values, start=start, count=cnt)
                 t = values(1)
@@ -113,7 +120,7 @@ module netcdf_reader
             character(*), intent(out) :: file_type
 
             if (.not. has_attribute(ncid, 'file_type')) then
-                print *, 'Not a proper EPIC NetCDF file.'
+                print *, 'Not a proper '//package//' NetCDF file.'
                 stop
             endif
 
@@ -349,5 +356,22 @@ module netcdf_reader
             endif
 
         end subroutine read_netcdf_attrib_default_logical
+
+
+        subroutine read_netcdf_attrib_default_character(ncid, name, val)
+            integer,      intent(in)     :: ncid
+            character(*), intent(in)     :: name
+            character(*), intent(inout)  :: val
+
+            if (has_attribute(ncid, name)) then
+                call read_netcdf_attrib_character(ncid, name, val)
+#ifdef ENABLE_VERBOSE
+                print *, "Found character attribute '" // name // "'."
+            else
+                print *, "WARNING: Using default value of '" // name // "'."
+#endif
+            endif
+
+        end subroutine read_netcdf_attrib_default_character
 
 end module netcdf_reader

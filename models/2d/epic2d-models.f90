@@ -6,7 +6,7 @@ program epic2d_models
     use straka_2d
     use robert_2d
     use constants, only : pi, zero
-    use parameters, only : nx, nz, dx, lower, extent
+    use parameters, only : nx, nz, dx, lower, extent, set_mesh_spacing
     use netcdf_utils
     use netcdf_writer
     use config, only : package_version, cf_version
@@ -44,20 +44,20 @@ program epic2d_models
 
             call create_netcdf_file(ncfname, .false., ncid)
 
-            dx = box%extent / dble(box%ncells)
+            call set_mesh_spacing(box%extent, box%ncells)
             nx = box%ncells(1)
             nz = box%ncells(2)
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
-                                   epic_version=package_version, &
+                                   version_tag=package_version,  &
                                    file_type='fields',           &
                                    cf_version=cf_version)
 
             call write_netcdf_box(ncid, lower, extent, box%ncells)
 
             call define_netcdf_spatial_dimensions_2d(ncid=ncid,            &
-                                                     ncells=box%ncells,    &
+                                                     ngps=(/nx, nz+1/),    &
                                                      dimids=dimids(1:2),   &
                                                      axids=axids(1:2))
 
@@ -67,7 +67,7 @@ program epic2d_models
                 ! make origin and extent always a multiple of pi
                 box%origin = pi * box%origin
                 box%extent = pi * box%extent
-                dx = dx * pi
+                call set_mesh_spacing(box%extent, box%ncells)
             endif
 
             ! write box

@@ -36,7 +36,7 @@ class BokehAnimation:
 
         bar = progressbar.ProgressBar(maxval=nsteps).start()
         i = 0
-        for step in range(nsteps):
+        for step in range(0, nsteps):
 
             t = self.ncreader.get_dataset(step, "t")
             if t < tmin:

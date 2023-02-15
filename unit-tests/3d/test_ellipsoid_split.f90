@@ -10,8 +10,8 @@ program test_ellipsoid_split
     use parcel_container
     use parcel_ellipsoid, only : get_B33
     use parcel_split_mod, only : parcel_split, split_timer
-    use parameters, only : update_parameters, nx, ny, nz, extent, lower, vmax
-    use timer
+    use parameters, only : update_parameters, nx, ny, nz, extent, lower, set_vmax
+    use mpi_timer
     implicit none
 
     double precision, parameter :: lam = five
@@ -27,7 +27,7 @@ program test_ellipsoid_split
     lower = (/-five, -five, -five/)
     call update_parameters
 
-    vmax = one
+    call set_vmax(one)
 
     call register_timer('parcel split', split_timer)
 

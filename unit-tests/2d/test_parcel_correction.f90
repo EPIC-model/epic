@@ -95,13 +95,13 @@ program test_parcel_correction
 
     init_error = sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1))
 
-    if (verbose) then
+    if (l_verbose) then
         open(unit=12, file='test_parcel_correction.asc', status='replace')
         write(12,*) '# iteration, average error, max absolute error'
         write(12,*) 0, init_error, maxval(abs(volg(0:nz, 0:nx-1) / vcell - one))
     endif
 
-    if (verbose) then
+    if (l_verbose) then
         open(unit=1235, file='initial_parcel_corr.asc', status='replace')
         write(1235, *) '# x, y volume B11, B22'
         do n = 1, n_parcels
@@ -116,13 +116,13 @@ program test_parcel_correction
         call apply_laplace
         call vol2grid
         call apply_gradient(1.80d0,0.5d0)
-        if (verbose) then
+        if (l_verbose) then
             call vol2grid
             write(12, *) i, sum(abs(volg(0:nz, 0:nx-1) / vcell - one)) / (nx * (nz+1)), &
                             maxval(abs(volg(0:nz, 0:nx-1) / vcell - one))
         endif
 
-        if (verbose .and. (i == 2)) then
+        if (l_verbose .and. (i == 2)) then
             open(unit=1236, file='two_iter_parcel_corr.asc', status='replace')
             write(1236, *) '# x, y volume B11, B22'
             do n = 1, n_parcels
@@ -133,7 +133,7 @@ program test_parcel_correction
 
     enddo
 
-    if (verbose) then
+    if (l_verbose) then
         close(12)
     endif
 

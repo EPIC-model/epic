@@ -7,21 +7,21 @@ program test_mpi_parcel_read
     use unit_test
     use constants, only : zero
     use parcel_container
-    use parameters, only : max_num_parcels
+    use parameters, only : set_max_num_parcels
     use parcel_netcdf
     use mpi_communicator
-    use timer
+    use mpi_timer
     implicit none
 
     logical              :: passed = .true.
     double precision     :: res
     integer              :: n, start_index, n_parcels_before
 
-    max_num_parcels = 100000000
+    call set_max_num_parcels(100000000)
 
     call mpi_comm_initialise
 
-    passed = (passed .and. (mpi_err == 0))
+    passed = (passed .and. (comm%err == 0))
 
     call register_timer('parcel I/O', parcel_io_timer)
 
@@ -29,15 +29,15 @@ program test_mpi_parcel_read
     ! write parcels first
     !
 
-    n_parcels = 10 + (mpi_rank + 1)
+    n_parcels = 10 + (comm%rank + 1)
     n_parcels_before = n_parcels
-    n_total_parcels = 11 * mpi_size + (mpi_size * (mpi_size - 1)) / 2
+    n_total_parcels = 11 * comm%size + (comm%size * (comm%size - 1)) / 2
 
     call parcel_alloc(n_total_parcels)
 
     ! fill with 1 to n_total_parcels
     start_index = 0
-    do n = 0, mpi_rank-1
+    do n = 0, comm%rank-1
         start_index = start_index + 10 + (n + 1)
     enddo
 
@@ -106,13 +106,13 @@ program test_mpi_parcel_read
 
     passed = (passed .and. (ncerr == 0))
 
-    if (mpi_rank == mpi_master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+    if (comm%rank == comm%master) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, mpi_master, comm_world, mpi_err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
 
-    if (mpi_rank == mpi_master) then
+    if (comm%rank == comm%master) then
         call print_result_logical('Test MPI parcel read', passed)
     endif
 
