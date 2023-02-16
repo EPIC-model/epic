@@ -8,11 +8,11 @@ class plane:
         d = - self.point.dot(self.normal)
         self.plane = np.array([self.normal[0], self.normal[1], self.normal[2], d])
         self.name = 'arbitrary-plane'
-        print("Plane: ax + by + cz + d = 0")
-        print('a:', self.plane[0])
-        print('b:', self.plane[1])
-        print('c:', self.plane[2])
-        print('d:', self.plane[3])
+        #print("Plane: ax + by + cz + d = 0")
+        #print('a:', self.plane[0])
+        #print('b:', self.plane[1])
+        #print('c:', self.plane[2])
+        #print('d:', self.plane[3])
 
 
 class xy_plane(plane):
@@ -58,17 +58,17 @@ class ellipsoid:
                + 2.0 * A[0, 2] * xc[0] * xc[2] + A[1, 1] * xc[1]**2 \
                + 2.0 * A[1, 2] * xc[1] * xc[2] + A[2, 2] * xc[2]**2 \
                - 1.0
-        print("Ellipsoid: Ax**2 + Bxy + Cxz + Dy**2 + Eyz + Fz**2 + Gx + Hy + Iz + J = 0")
-        print('A:', self.A)
-        print('B:', self.B)
-        print('C:', self.C)
-        print('D:', self.D)
-        print('E:', self.E)
-        print('F:', self.F)
-        print('G:', self.G)
-        print('H:', self.H)
-        print('I:', self.I)
-        print('J:', self.J)
+        #print("Ellipsoid: Ax**2 + Bxy + Cxz + Dy**2 + Eyz + Fz**2 + Gx + Hy + Iz + J = 0")
+        #print('A:', self.A)
+        #print('B:', self.B)
+        #print('C:', self.C)
+        #print('D:', self.D)
+        #print('E:', self.E)
+        #print('F:', self.F)
+        #print('G:', self.G)
+        #print('H:', self.H)
+        #print('I:', self.I)
+        #print('J:', self.J)
 
     def intersect(self, pl):
         a = pl.plane[0]

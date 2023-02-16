@@ -20,7 +20,8 @@ class nc_reader(nc_base_reader):
             'helicity',
             'enstrophy',
             'cross_helicity_magnitude',
-            'kinetic_energy'
+            'kinetic_energy',
+            'liquid_water_content'
         ]
 
     def open(self, fname):
@@ -95,7 +96,13 @@ class nc_reader(nc_base_reader):
         return super().get_all(name)
 
     def get_dataset(self, step, name, indices=None, copy_periodic=True):
-        super().get_dataset(step, name)
+
+        if not name in self._ncfile.variables.keys():
+            if name in self._derived_fields:
+                return self._get_derived_dataset(step, name, copy_periodic)
+
+        if not self.is_parcel_file:
+            super().get_dataset(step, name)
 
         if self.is_parcel_file and name == 't':
             # parcel files store the time as a global attribute
@@ -171,6 +178,19 @@ class nc_reader(nc_base_reader):
             eta = self.get_dataset(step=step, name='y_vorticity', copy_periodic=copy_periodic)
             zeta = self.get_dataset(step=step, name='z_vorticity', copy_periodic=copy_periodic)
             return 0.5 * (xi ** 2 + eta ** 2 + zeta ** 2)
+
+        if name == 'liquid_water_content':
+            h = self.get_dataset(step=step, name='humidity', copy_periodic=copy_periodic)
+            _, _, z = self.get_meshgrid()
+            if not copy_periodic:
+                nx, ny, nz = z.shape
+                z = z[0:nx-1, 0:ny-1, :]
+            len_condense = self.get_physical_quantity('scale_height')
+            q_scale = self.get_physical_quantity('saturation_specific_humidity_at_ground_level')
+            hl = (h / q_scale - np.exp(-z / len_condense))
+            hl = hl * (hl > 0.0)
+            return hl
+
 
     def get_dataset_attribute(self, name, attr):
         if not name in self._ncfile.variables.keys():
@@ -357,7 +377,7 @@ class nc_reader(nc_base_reader):
             field_copy[:, nx] = field_copy[:, 0]
         return field_copy
 
-    def get_intersection_ellipses(self, step, plane, loc, use_bokeh=False):
+    def calculate_intersection_ellipses(self, step, plane, loc):
         """
         Calculates the ellipses from all ellipsoids intersecting
         with the provided xy-, xz- or yz-plane.
@@ -449,6 +469,13 @@ class nc_reader(nc_base_reader):
             # get ellipse angle (in degree):
             angles[i] = np.rad2deg(ell.angle)
 
+        return centres, a, b, angles, indices
+
+    
+    def get_intersection_ellipses(self, step, plane, loc, use_bokeh=False):
+
+        centres, a, b, angles, indices = calculate_intersection_ellipses(step, plane, loc)
+        
         if use_bokeh:
             return (
                 centres[:, 0],
