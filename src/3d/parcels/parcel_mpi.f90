@@ -30,26 +30,19 @@ module parcel_mpi
     integer, allocatable, dimension(:) :: invalid
 
     ! we have 8 neighbours
-    integer :: n_sends(8)
+    integer :: n_parcel_sends(8)
 
-    public :: parcel_halo_swap  &
-            , pack_parcels      &
-            , unpack_parcels    &
-            , north_buf         &
-            , south_buf         &
-            , west_buf          &
-            , east_buf          &
-            , northwest_buf     &
-            , northeast_buf     &
-            , southwest_buf     &
-            , southeast_buf
+    public :: parcel_halo_swap,                 &
+              parcel_send,                      &
+              allocate_parcel_id_buffers,       &
+              deallocate_parcel_id_buffers
 
     contains
 
         ! We follow here PMPIC
         ! https://github.com/EPCCed/pmpic/blob/master/model_core/src/parcels/haloswap.F90
         ! git sha: 4a77642ef82096a770324f5f1dc587ce121065ab
-        subroutine get_buffer_ptr(dir, pid_ptr, buf_ptr)
+        subroutine get_parcel_buffer_ptr(dir, pid_ptr, buf_ptr)
             integer,                                 intent(in)  :: dir
             integer,          dimension(:), pointer, intent(out) :: pid_ptr
             double precision, dimension(:), pointer, intent(out) :: buf_ptr
@@ -80,10 +73,10 @@ module parcel_mpi
                     pid_ptr => southeast_pid
                     buf_ptr => southeast_buf
                 case default
-                    call mpi_exit_on_error("get_buffer_ptr: No valid direction.")
+                    call mpi_exit_on_error("get_parcel_buffer_ptr: No valid direction.")
             end select
 
-        end subroutine get_buffer_ptr
+        end subroutine get_parcel_buffer_ptr
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -98,20 +91,20 @@ module parcel_mpi
             integer                                 :: tag, source, recvcount
             integer                                 :: recv_size, send_size
 
-            call allocate_pid_buffers
+            call allocate_parcel_id_buffers
 
             ! figure out where parcels go
             call locate_parcels(pindex)
 
-            call allocate_send_buffers
+            call allocate_parcel_buffers(n_par_attrib)
 
             do n = 1, 8
-                call get_buffer_ptr(n, pid, sendbuf)
+                call get_parcel_buffer_ptr(n, pid, sendbuf)
 
-                send_size = n_sends(n) * n_par_attrib
+                send_size = n_parcel_sends(n) * n_par_attrib
 
-                if (n_sends(n) > 0) then
-                    call parcel_pack(pid, n_sends(n), sendbuf)
+                if (n_parcel_sends(n) > 0) then
+                    call parcel_pack(pid, n_parcel_sends(n), sendbuf)
                 endif
 
                 call MPI_Isend(sendbuf,                 &
@@ -144,6 +137,10 @@ module parcel_mpi
 
                 call mpi_check_for_error("in MPI_Recv of parcel_mpi::parcel_halo_swap.")
 
+                if (mod(recv_size, n_par_attrib) /= 0) then
+                    call mpi_exit_on_error("parcel_mpi::parcel_halo_swap: Receiving wrong count.")
+                endif
+
                 recvcount = recv_size / n_par_attrib
 
                 if (recvcount > 0) then
@@ -161,12 +158,12 @@ module parcel_mpi
             call mpi_check_for_error("in MPI_Waitall of parcel_mpi::parcel_halo_swap.")
 
             ! delete parcel that we sent
-            n_total_sends = sum(n_sends)
+            n_total_sends = sum(n_parcel_sends)
             call parcel_delete(invalid, n_total_sends)
 
-            call deallocate_pid_buffers
+            call deallocate_parcel_id_buffers
 
-            call deallocate_send_buffers
+            call deallocate_parcel_buffers
 
 #ifndef NDEBUG
             n = n_parcels
@@ -185,7 +182,7 @@ module parcel_mpi
             integer                       :: i, j, k, n, nb, m, iv, np, l
 
             ! reset the number of sends
-            n_sends(:) = 0
+            n_parcel_sends(:) = 0
 
             np = n_parcels
 
@@ -210,35 +207,35 @@ module parcel_mpi
                         ! do nothing
                         cycle
                     case (MPI_NORTH)
-                        m = n_sends(nb) + 1
+                        m = n_parcel_sends(nb) + 1
                         north_pid(m) = l
                     case (MPI_SOUTH)
-                        m = n_sends(nb) + 1
+                        m = n_parcel_sends(nb) + 1
                         south_pid(m) = l
                     case (MPI_WEST)
-                        m = n_sends(nb) + 1
+                        m = n_parcel_sends(nb) + 1
                         west_pid(m) = l
                     case (MPI_EAST)
-                        m = n_sends(nb) + 1
+                        m = n_parcel_sends(nb) + 1
                         east_pid(m) = l
                     case (MPI_NORTHWEST)
-                        m = n_sends(nb) + 1
+                        m = n_parcel_sends(nb) + 1
                         northwest_pid(m) = l
                     case (MPI_NORTHEAST)
-                        m = n_sends(nb) + 1
+                        m = n_parcel_sends(nb) + 1
                         northeast_pid(m) = l
                     case (MPI_SOUTHWEST)
-                        m = n_sends(nb) + 1
+                        m = n_parcel_sends(nb) + 1
                         southwest_pid(m) = l
                     case (MPI_SOUTHEAST)
-                        m = n_sends(nb) + 1
+                        m = n_parcel_sends(nb) + 1
                         southeast_pid(m) = l
                     case default
                         call mpi_exit_on_error("locate_parcels: Parcel was not assigned properly.")
                 end select
 
                 invalid(iv) = l
-                n_sends(nb) = n_sends(nb) + 1
+                n_parcel_sends(nb) = n_parcel_sends(nb) + 1
                 iv = iv + 1
             enddo
 
@@ -246,8 +243,10 @@ module parcel_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine allocate_pid_buffers
+        subroutine allocate_parcel_id_buffers
             integer :: nc, ub, n_max
+
+            n_parcel_sends(:) = 0
 
             ! upper bound (ub) of parcels per cell
             ub = ceiling(vcell / vmin)
@@ -279,11 +278,11 @@ module parcel_mpi
             !       However, this first array element is never assigned any value.
             allocate(invalid(0:n_max * ub))
 
-        end subroutine allocate_pid_buffers
+        end subroutine allocate_parcel_id_buffers
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine deallocate_pid_buffers
+        subroutine deallocate_parcel_id_buffers
             deallocate(north_pid)
             deallocate(south_pid)
             deallocate(west_pid)
@@ -295,24 +294,26 @@ module parcel_mpi
             deallocate(southeast_pid)
 
             deallocate(invalid)
-        end subroutine deallocate_pid_buffers
+        end subroutine deallocate_parcel_id_buffers
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine allocate_send_buffers
-            allocate(north_buf(n_sends(MPI_NORTH) * n_par_attrib))
-            allocate(northeast_buf(n_sends(MPI_NORTHEAST) * n_par_attrib))
-            allocate(east_buf(n_sends(MPI_EAST) * n_par_attrib))
-            allocate(southeast_buf(n_sends(MPI_SOUTHEAST) * n_par_attrib))
-            allocate(south_buf(n_sends(MPI_SOUTH) * n_par_attrib))
-            allocate(southwest_buf(n_sends(MPI_SOUTHWEST) * n_par_attrib))
-            allocate(west_buf(n_sends(MPI_WEST) * n_par_attrib))
-            allocate(northwest_buf(n_sends(MPI_NORTHWEST) * n_par_attrib))
-        end subroutine allocate_send_buffers
+        subroutine allocate_parcel_buffers(n_attributes)
+            integer, intent(in) :: n_attributes
+
+            allocate(north_buf(n_parcel_sends(MPI_NORTH) * n_attributes))
+            allocate(northeast_buf(n_parcel_sends(MPI_NORTHEAST) * n_attributes))
+            allocate(east_buf(n_parcel_sends(MPI_EAST) * n_attributes))
+            allocate(southeast_buf(n_parcel_sends(MPI_SOUTHEAST) * n_attributes))
+            allocate(south_buf(n_parcel_sends(MPI_SOUTH) * n_attributes))
+            allocate(southwest_buf(n_parcel_sends(MPI_SOUTHWEST) * n_attributes))
+            allocate(west_buf(n_parcel_sends(MPI_WEST) * n_attributes))
+            allocate(northwest_buf(n_parcel_sends(MPI_NORTHWEST) * n_attributes))
+        end subroutine allocate_parcel_buffers
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine deallocate_send_buffers
+        subroutine deallocate_parcel_buffers
             deallocate(north_buf)
             deallocate(northeast_buf)
             deallocate(east_buf)
@@ -321,6 +322,105 @@ module parcel_mpi
             deallocate(southwest_buf)
             deallocate(west_buf)
             deallocate(northwest_buf)
-        end subroutine deallocate_send_buffers
+        end subroutine deallocate_parcel_buffers
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! This subroutine is used in the parcel nearest module.
+        ! Send position of small parcels in boundary region to neighbours
+        subroutine parcel_send(n_received)
+            integer,                    intent(out) :: n_received
+            integer,          dimension(:), pointer :: pid
+            double precision, dimension(:), pointer :: sendbuf
+            double precision, allocatable           :: recvbuf(:)
+            type(MPI_Request)                       :: requests(8)
+            type(MPI_Status)                        :: recv_status, send_statuses(8)
+            integer                                 :: recv_size, send_size
+            integer                                 :: tag, source, recvcount, n!, k, i ,j, l
+
+            n_received = 0
+
+            ! we only send parcel position
+            call allocate_parcel_buffers(n_par_attrib)
+
+            do n = 1, 8
+
+                call get_parcel_buffer_ptr(n, pid, sendbuf)
+
+                send_size = n_parcel_sends(n) * n_par_attrib
+
+                if (n_parcel_sends(n) > 0) then
+                    call parcel_pack(pid, n_parcel_sends(n), sendbuf)
+!                     ! pack parcel positions to send buffer
+!                     do l = 1, n_parcel_sends(n)
+!                         i = 1 + (l-1) * 3
+!                         j = l * 3
+!                         sendbuf(i:j) = parcels%position(:, pid(l))
+!                     enddo
+                endif
+
+                call MPI_Isend(sendbuf,                 &
+                               send_size,               &
+                               MPI_DOUBLE_PRECISION,    &
+                               neighbours(n)%rank,      &
+                               NEIGHBOUR_TAG(n),        &
+                               comm%cart,               &
+                               requests(n),             &
+                               comm%err)
+
+                call mpi_check_for_error("in MPI_Isend of parcel_mpi::parcel_send.")
+            enddo
+
+            do n = 1, 8
+
+                ! check for incoming messages
+                call mpi_check_for_message(tag, recv_size, source)
+
+                allocate(recvbuf(recv_size))
+
+                call MPI_Recv(recvbuf,                  &
+                              recv_size,                &
+                              MPI_DOUBLE_PRECISION,     &
+                              source,                   &
+                              tag,                      &
+                              comm%cart,                &
+                              recv_status,              &
+                              comm%err)
+
+                call mpi_check_for_error("in MPI_Recv of parcel_mpi::parcel_send.")
+
+                if (mod(recv_size, n_par_attrib) /= 0) then
+                    call mpi_exit_on_error("parcel_mpi::parcel_send: Receiving wrong count.")
+                endif
+
+                recvcount = recv_size / n_par_attrib
+
+                if (recvcount > 0) then
+!                     ! unpack parcel positions to recv buffer
+!                     do l = 1, recvcount
+!                         i = 1 + (l-1) * 3
+!                         j = l * 3
+!                         k = n_parcels + l
+!                         parcels%position(:, k) = recvbuf(i:j)
+!                     enddo
+                    ! Note: parcel_unpack inrements n_parcels
+                    call parcel_unpack(recvcount, recvbuf)
+                    n_received = n_received + recvcount
+                endif
+
+                deallocate(recvbuf)
+            enddo
+
+            call MPI_Waitall(8,                 &
+                            requests,           &
+                            send_statuses,      &
+                            comm%err)
+
+            call mpi_check_for_error("in MPI_Waitall of parcel_mpi::parcel_send.")
+
+
+            call deallocate_parcel_buffers
+
+        end subroutine parcel_send
 
 end module parcel_mpi

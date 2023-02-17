@@ -32,7 +32,7 @@ program test_mpi_dst
 
     call update_parameters
 
-    call mpi_layout_init(nx, ny, nz)
+    call mpi_layout_init(lower, extent, nx, ny, nz)
 
     allocate(fp1(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(fp2(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))

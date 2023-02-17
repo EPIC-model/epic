@@ -64,7 +64,7 @@ module fields
                 return
             endif
 
-            call mpi_layout_init(nx, ny, nz)
+            call mpi_layout_init(lower, extent, nx, ny, nz)
 
             hlo = box%hlo
             hhi = box%hhi
@@ -117,7 +117,7 @@ module fields
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Get the lower index of the cell the parcel is in.
-        ! This subroutine does not take x periodicity into account.
+        ! This subroutine does not take x nor y periodicity into account.
         ! @param[in] pos position of the parcel
         ! @param[out] i lower, zonal cell index
         ! @param[out] j lower, meridional cell index
@@ -135,7 +135,6 @@ module fields
 
         ! Get the lower index of the cell the parcel is in including
         ! a periodic shift in x and y.
-        ! This subroutine does not take x periodicity into account.
         ! @param[in] pos position of the parcel
         ! @param[out] i lower, zonal cell index
         ! @param[out] j lower, meridional cell index

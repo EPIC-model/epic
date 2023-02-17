@@ -57,9 +57,9 @@ module sta3dfft
 
             is_fft_initialised = .true.
 
-            nx = box%global_ncells(1)
-            ny = box%global_ncells(2)
-            nz = box%global_ncells(3)
+            nx = box%global_size(1)
+            ny = box%global_size(2)
+            nz = box%global_size(3)
 
             call initialise_pencil_fft(nx, ny, nz)
 

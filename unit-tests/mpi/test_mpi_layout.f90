@@ -10,6 +10,8 @@ program test_mpi_layout
     implicit none
 
     integer, parameter            :: nx = 32, ny = 32, nz = 32
+    double precision, parameter   :: lower(3) = (/0.0d0, 0.0d0, 0.0d0/)
+    double precision, parameter   :: extent(3) = (/1.0d0, 1.0d0, 1.0d0/)
     double precision, allocatable :: data(:, :, :)
     double precision              :: sendbuf, recvbuf
     logical                       :: passed = .false.
@@ -24,7 +26,7 @@ program test_mpi_layout
 
     passed = (comm%err == 0)
 
-    call mpi_layout_init(nx, ny, nz)
+    call mpi_layout_init(lower, extent, nx, ny, nz)
 
     allocate(data(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 

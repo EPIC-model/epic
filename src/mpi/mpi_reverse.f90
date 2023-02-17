@@ -75,9 +75,9 @@ module mpi_reverse
             allocate(rlos(0:layout%size(dir)-1))
             allocate(rhis(0:layout%size(dir)-1))
             do i = 0, layout%size(dir)-1
-                call get_local_bounds(box%global_ncells(dir), i, layout%size(dir), lo, hi)
-                rhis(i) = box%global_ncells(dir) - lo - 1
-                rlos(i) = box%global_ncells(dir) - hi - 1
+                call get_local_bounds(box%global_size(dir), i, layout%size(dir), lo, hi)
+                rhis(i) = box%global_size(dir) - lo - 1
+                rlos(i) = box%global_size(dir) - hi - 1
             enddo
 
             reo%send_recv_count = 0

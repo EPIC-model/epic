@@ -5,11 +5,16 @@ module mpi_layout
     implicit none
 
     type box_type
-        integer :: lo(3),  hi(3)
-        integer :: hlo(3), hhi(3)
-        integer :: size(3)
-        integer :: global_ncells(3)
-        integer :: ncell
+        integer          :: lo(3),  hi(3)       ! lower and upper grid point
+        integer          :: hlo(3), hhi(3)      ! lower and upper halo grid point
+        integer          :: size(3)             ! number of grid points excluding halo
+        integer          :: halo_size(3)        ! number of grid points including halo
+        double precision :: lower(3)            ! origin of *this* subdomain excluding halo
+        double precision :: halo_lower(3)       ! origin of *this* subdomain including halo
+        double precision :: extent(3)           ! local domain extent excluding haloe
+        integer          :: global_size(3)    ! global number of cell (excluding halo)
+        integer          :: ncell               ! number of cells excluding halo
+        integer          :: halo_ncell          ! number of cells including halo
     end type box_type
 
     type parallel_layout
@@ -27,16 +32,28 @@ module mpi_layout
     type(neighbour_type)  :: neighbours(8)
     type(parallel_layout) :: layout
 
+    logical :: l_layout_initialised = .false.
+
+    private :: l_layout_initialised
+
     contains
 
         ! We only distribute x and y.
         ! Each process owns all grid points in z-direction.
-        subroutine mpi_layout_init(nx, ny, nz)
-            integer, intent(in) :: nx, ny, nz
-            integer             :: dims(2)
-            integer             :: coords(2)
-            integer             :: rank ! we do not reorder the rank numbers, so this is unused!
-            logical             :: periods(2)
+        subroutine mpi_layout_init(lower, extent, nx, ny, nz)
+            double precision, intent(in) :: lower(3), extent(3)
+            integer, intent(in)          :: nx, ny, nz
+            integer                      :: dims(2)
+            integer                      :: coords(2)
+            integer                      :: rank ! we do not reorder the rank numbers,
+                                                 ! so this is unused!
+            logical                      :: periods(2)
+            double precision             :: dx(3)
+
+            if (l_layout_initialised) then
+                return
+            endif
+            l_layout_initialised = .true.
 
             ! create slabs, z-direction keeps 1 processor
             dims = (/0, 0/)
@@ -86,9 +103,15 @@ module mpi_layout
 
             layout%l_parallel = (box%hi - box%lo < (/nx-1, ny-1, nz/))
             box%size = box%hi - box%lo + 1
+            box%halo_size = box%hhi - box%hlo + 1
             box%ncell = box%size(1) * box%size(2) * (box%size(3) - 1)
+            box%halo_ncell = box%halo_size(1) * box%halo_size(2) * (box%halo_size(3) - 1)
 
-            box%global_ncells = (/nx, ny, nz/)
+            box%global_size = (/nx, ny, nz/)
+            dx = extent / dble(box%global_size)
+            box%lower = lower(3) + dx * dble(box%lo)
+            box%halo_lower = box%lower - dx
+            box%extent = dx * box%size
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)
@@ -97,8 +120,15 @@ module mpi_layout
             !   disp        -- displacement ( > 0: upward shift, < 0: downward shift) (integer)
             !   rank_source -- rank of source process (integer)
             !   rank_dest   -- rank of destination process (integer)
-            call MPI_Cart_shift(comm%cart, 0, 1, neighbours(MPI_WEST)%rank,  neighbours(MPI_EAST)%rank, comm%err)
-            call MPI_Cart_shift(comm%cart, 1, 1, neighbours(MPI_SOUTH)%rank, neighbours(MPI_NORTH)%rank, comm%err)
+            call MPI_Cart_shift(comm%cart, 0, 1,            &
+                                neighbours(MPI_WEST)%rank,  &
+                                neighbours(MPI_EAST)%rank,  &
+                                comm%err)
+
+            call MPI_Cart_shift(comm%cart, 1, 1,            &
+                                neighbours(MPI_SOUTH)%rank, &
+                                neighbours(MPI_NORTH)%rank, &
+                                comm%err)
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_rank(comm, coords, rank)
@@ -107,37 +137,49 @@ module mpi_layout
             !   rank   -- rank of specified process
 
             ! lower left corner
-            call MPI_Cart_rank(comm%cart, (/coords(1)-1, coords(2)-1/), neighbours(MPI_SOUTHWEST)%rank, comm%err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)-1, coords(2)-1/), &
+                               neighbours(MPI_SOUTHWEST)%rank, comm%err)
 
             ! upper left corner
-            call MPI_Cart_rank(comm%cart, (/coords(1)-1, coords(2)+1/), neighbours(MPI_NORTHWEST)%rank, comm%err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)-1, coords(2)+1/), &
+                               neighbours(MPI_NORTHWEST)%rank, comm%err)
 
             ! upper right corner
-            call MPI_Cart_rank(comm%cart, (/coords(1)+1, coords(2)+1/), neighbours(MPI_NORTHEAST)%rank, comm%err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)+1, coords(2)+1/), &
+                               neighbours(MPI_NORTHEAST)%rank, comm%err)
 
             ! lower right corner
-            call MPI_Cart_rank(comm%cart, (/coords(1)+1, coords(2)-1/), neighbours(MPI_SOUTHEAST)%rank, comm%err)
+            call MPI_Cart_rank(comm%cart, (/coords(1)+1, coords(2)-1/), &
+                               neighbours(MPI_SOUTHEAST)%rank, comm%err)
 
             ! Obtain limits of neighbours:
             call MPI_Cart_coords(comm%cart, neighbours(MPI_WEST)%rank, 2, coords, comm%err)
-            call get_local_bounds(nx, coords(1), dims(1), neighbours(MPI_WEST)%lo(1), neighbours(MPI_WEST)%hi(1))
+            call get_local_bounds(nx, coords(1), dims(1),       &
+                                  neighbours(MPI_WEST)%lo(1),   &
+                                  neighbours(MPI_WEST)%hi(1))
             neighbours(MPI_WEST)%lo(2) = box%lo(2)
             neighbours(MPI_WEST)%hi(2) = box%hi(2)
 
             call MPI_Cart_coords(comm%cart, neighbours(MPI_EAST)%rank, 2, coords, comm%err)
-            call get_local_bounds(nx, coords(1), dims(1), neighbours(MPI_EAST)%lo(1), neighbours(MPI_EAST)%hi(1))
+            call get_local_bounds(nx, coords(1), dims(1),       &
+                                  neighbours(MPI_EAST)%lo(1),   &
+                                  neighbours(MPI_EAST)%hi(1))
             neighbours(MPI_EAST)%lo(2) = box%lo(2)
             neighbours(MPI_EAST)%hi(2) = box%hi(2)
 
             neighbours(MPI_SOUTH)%lo(1) = box%lo(1)
             neighbours(MPI_SOUTH)%hi(1) = box%hi(1)
             call MPI_Cart_coords(comm%cart, neighbours(MPI_SOUTH)%rank, 2, coords, comm%err)
-            call get_local_bounds(ny, coords(2), dims(2), neighbours(MPI_SOUTH)%lo(2), neighbours(MPI_SOUTH)%hi(2))
+            call get_local_bounds(ny, coords(2), dims(2),       &
+                                  neighbours(MPI_SOUTH)%lo(2),  &
+                                  neighbours(MPI_SOUTH)%hi(2))
 
             neighbours(MPI_NORTH)%lo(1) = box%lo(1)
             neighbours(MPI_NORTH)%hi(1) = box%hi(1)
             call MPI_Cart_coords(comm%cart, neighbours(MPI_NORTH)%rank, 2, coords, comm%err)
-            call get_local_bounds(ny, coords(2), dims(2), neighbours(MPI_NORTH)%lo(2), neighbours(MPI_NORTH)%hi(2))
+            call get_local_bounds(ny, coords(2), dims(2),       &
+                                  neighbours(MPI_NORTH)%lo(2),  &
+                                  neighbours(MPI_NORTH)%hi(2))
 
             neighbours(MPI_SOUTHWEST)%lo(1) = neighbours(MPI_WEST)%lo(1)
             neighbours(MPI_SOUTHWEST)%hi(1) = neighbours(MPI_WEST)%hi(1)
@@ -171,6 +213,8 @@ module mpi_layout
                         (j <= neighbours(dir)%hi(2)))
         end function is_neighbour
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         pure function get_neighbour(i, j) result(nb)
             integer, intent(in) :: i, j
             integer             :: nb, n
@@ -192,6 +236,7 @@ module mpi_layout
             enddo
         end function get_neighbour
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine get_local_bounds(nglobal, coords, dims, first, last)
             integer, intent(in)  :: nglobal, coords, dims
@@ -212,5 +257,18 @@ module mpi_layout
             last = first + nlocal - 1
 
         end subroutine get_local_bounds
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        pure function get_neighbour_from_rank(rank) result(nb)
+            integer, intent(in) :: rank
+            integer             :: nb
+
+            do nb = 1, 8
+                if (rank == neighbours(nb)%rank) then
+                    exit
+                endif
+            enddo
+        end function get_neighbour_from_rank
 
 end module mpi_layout
