@@ -414,9 +414,9 @@ class nc_reader(nc_base_reader):
         lo = origin[j] + dx[j] * (loc - 1)
         hi = origin[j] + dx[j] * (loc + 1)
 
-        # get indices of parcels satisfying lo < pos < hi
+        # get indices of parcels satisfying lo <= pos <= hi
         pos = self.get_dataset(step, name=dim[j] + '_position')
-        indices = np.where((pos > lo) & (pos < hi))[0]
+        indices = np.where((pos >= lo) & (pos <= hi))[0]
         pos = None
 
         B11 = self.get_dataset(step, name='B11',        indices=indices)
@@ -490,7 +490,7 @@ class nc_reader(nc_base_reader):
                                      units='xy',
                                      offsets=centres), indices
 
-    def _calculated_projected_ellipses(self, step, plane, loc):
+    def calculate_projected_ellipses(self, step, plane, loc):
         """
         Calculates 2D projections of the ellipsoids onto either
         xy-, xz- or yz-plane.
@@ -523,7 +523,7 @@ class nc_reader(nc_base_reader):
 
         # get indices of parcels satisfying lo < pos < hi
         pos = self.get_dataset(step, name=dim[j] + '_position')
-        indices = np.where((pos > lo) & (pos < hi))[0]
+        indices = np.where((pos >= lo) & (pos <= hi))[0]
         pos = None
 
 
@@ -533,7 +533,7 @@ class nc_reader(nc_base_reader):
         B22 = self.get_dataset(step, name='B22',    indices=indices)
         B23 = self.get_dataset(step, name='B23',    indices=indices)
         V   = self.get_dataset(step, name='volume', indices=indices)
-        B33 = self._get_B33(B11, B12, B22, B23, V)
+        B33 = self._get_B33(B11, B12, B13, B22, B23, V)
 
         if dim[j] == 'x':
             # yz-plane
@@ -560,7 +560,8 @@ class nc_reader(nc_base_reader):
             pos_1 = self.get_dataset(step, name='x_position', indices=indices)
             pos_2 = self.get_dataset(step, name='y_position', indices=indices)
 
-        return pos_1, pos_2, B11_proj, B12_proj, B22_proj
+        V_proj = np.pi * np.sqrt(B22_proj * B11_proj - B12_proj ** 2)
+        return pos_1, pos_2, B11_proj, B12_proj, V_proj, indices
 
 
 

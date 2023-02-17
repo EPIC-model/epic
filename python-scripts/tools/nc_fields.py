@@ -38,6 +38,13 @@ class nc_fields:
     def add_parameter(self, key, value):
         self._parameters[key] = value
 
+    def add_axis(self, axis, values):
+        if axis == 'x' or axis == 'y' or axis == 'z':
+            var = self._ncfile.createVariable(varname=axis,
+                                              datatype='f8',                                            
+                                              dimensions=(axis))
+            var[:] = values[:]
+
     def add_field(self, name, values, dtype='f8', **kwargs):
         """
         Add a field dataset.

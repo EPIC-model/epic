@@ -85,7 +85,8 @@ def make_imshow(ax, plane, loc, fdata, ncr,
                    vmax=vmax,
                    cmap=cmap,
                    norm=norm,
-                   interpolation='bilinear',
+                   interpolation=kwargs.pop('interpolation', 'bilinear'),
+                   interpolation_stage=kwargs.pop('interpolation_stage', 'data'),
                    origin='lower',
                    extent=[imin, imax, jmin, jmax])
 
