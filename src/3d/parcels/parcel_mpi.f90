@@ -32,10 +32,29 @@ module parcel_mpi
     ! we have 8 neighbours
     integer :: n_parcel_sends(8)
 
-    public :: parcel_halo_swap,                 &
-              parcel_send,                      &
-              allocate_parcel_id_buffers,       &
-              deallocate_parcel_id_buffers
+    public :: parcel_halo_swap,             &
+              n_parcel_sends,               &
+              north_pid,                    &
+              south_pid,                    &
+              west_pid,                     &
+              east_pid,                     &
+              northwest_pid,                &
+              northeast_pid,                &
+              southwest_pid,                &
+              southeast_pid,                &
+              north_buf,                    &
+              south_buf,                    &
+              west_buf,                     &
+              east_buf,                     &
+              northwest_buf,                &
+              northeast_buf,                &
+              southwest_buf,                &
+              southeast_buf,                &
+              allocate_parcel_buffers,      &
+              deallocate_parcel_buffers,    &
+              allocate_parcel_id_buffers,   &
+              deallocate_parcel_id_buffers, &
+              get_parcel_buffer_ptr
 
     contains
 
@@ -73,7 +92,8 @@ module parcel_mpi
                     pid_ptr => southeast_pid
                     buf_ptr => southeast_buf
                 case default
-                    call mpi_exit_on_error("get_parcel_buffer_ptr: No valid direction.")
+                    call mpi_exit_on_error(&
+                        "in parcel_mpi::get_parcel_buffer_ptr: No valid direction.")
             end select
 
         end subroutine get_parcel_buffer_ptr
@@ -323,104 +343,5 @@ module parcel_mpi
             deallocate(west_buf)
             deallocate(northwest_buf)
         end subroutine deallocate_parcel_buffers
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! This subroutine is used in the parcel nearest module.
-        ! Send position of small parcels in boundary region to neighbours
-        subroutine parcel_send(n_received)
-            integer,                    intent(out) :: n_received
-            integer,          dimension(:), pointer :: pid
-            double precision, dimension(:), pointer :: sendbuf
-            double precision, allocatable           :: recvbuf(:)
-            type(MPI_Request)                       :: requests(8)
-            type(MPI_Status)                        :: recv_status, send_statuses(8)
-            integer                                 :: recv_size, send_size
-            integer                                 :: tag, source, recvcount, n!, k, i ,j, l
-
-            n_received = 0
-
-            ! we only send parcel position
-            call allocate_parcel_buffers(n_par_attrib)
-
-            do n = 1, 8
-
-                call get_parcel_buffer_ptr(n, pid, sendbuf)
-
-                send_size = n_parcel_sends(n) * n_par_attrib
-
-                if (n_parcel_sends(n) > 0) then
-                    call parcel_pack(pid, n_parcel_sends(n), sendbuf)
-!                     ! pack parcel positions to send buffer
-!                     do l = 1, n_parcel_sends(n)
-!                         i = 1 + (l-1) * 3
-!                         j = l * 3
-!                         sendbuf(i:j) = parcels%position(:, pid(l))
-!                     enddo
-                endif
-
-                call MPI_Isend(sendbuf,                 &
-                               send_size,               &
-                               MPI_DOUBLE_PRECISION,    &
-                               neighbours(n)%rank,      &
-                               NEIGHBOUR_TAG(n),        &
-                               comm%cart,               &
-                               requests(n),             &
-                               comm%err)
-
-                call mpi_check_for_error("in MPI_Isend of parcel_mpi::parcel_send.")
-            enddo
-
-            do n = 1, 8
-
-                ! check for incoming messages
-                call mpi_check_for_message(tag, recv_size, source)
-
-                allocate(recvbuf(recv_size))
-
-                call MPI_Recv(recvbuf,                  &
-                              recv_size,                &
-                              MPI_DOUBLE_PRECISION,     &
-                              source,                   &
-                              tag,                      &
-                              comm%cart,                &
-                              recv_status,              &
-                              comm%err)
-
-                call mpi_check_for_error("in MPI_Recv of parcel_mpi::parcel_send.")
-
-                if (mod(recv_size, n_par_attrib) /= 0) then
-                    call mpi_exit_on_error("parcel_mpi::parcel_send: Receiving wrong count.")
-                endif
-
-                recvcount = recv_size / n_par_attrib
-
-                if (recvcount > 0) then
-!                     ! unpack parcel positions to recv buffer
-!                     do l = 1, recvcount
-!                         i = 1 + (l-1) * 3
-!                         j = l * 3
-!                         k = n_parcels + l
-!                         parcels%position(:, k) = recvbuf(i:j)
-!                     enddo
-                    ! Note: parcel_unpack inrements n_parcels
-                    call parcel_unpack(recvcount, recvbuf)
-                    n_received = n_received + recvcount
-                endif
-
-                deallocate(recvbuf)
-            enddo
-
-            call MPI_Waitall(8,                 &
-                            requests,           &
-                            send_statuses,      &
-                            comm%err)
-
-            call mpi_check_for_error("in MPI_Waitall of parcel_mpi::parcel_send.")
-
-
-            call deallocate_parcel_buffers
-
-        end subroutine parcel_send
 
 end module parcel_mpi
