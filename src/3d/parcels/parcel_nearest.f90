@@ -893,7 +893,11 @@ module parcel_nearest
                             ! THIS NEEDS THINKING ABOUT A PARALLEL IMPLEMENTATION
                             ! This could be based on the other parcel being outside the domain
                             ! And a "processor order"
-                            l_available(is) = .true.
+                            if (comm%rank <= rc) then
+                                ! The MPI rank with lower number makes its parcel
+                                ! available.
+                                l_available(is) = .true.
+                            endif
                         endif
                     endif
                 endif
