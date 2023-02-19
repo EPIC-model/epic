@@ -354,7 +354,7 @@ module parcel_nearest
             ! Note: If the closest parcel is a small parcel on another MPI rank,
             !       we must check if this remote parcel is not sent elsewhere.
             !       FIXME Double-check: This might actually never happen.
-            call gather_remote_parcels(n_local_small, rclo, isma)
+            call gather_remote_parcels(n_local_small, rclo, iclo, isma)
 
             call deallocate_parcel_id_buffers
 
@@ -1196,15 +1196,21 @@ module parcel_nearest
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine gather_remote_parcels(n_local_small, rclo, isma)
+        subroutine gather_remote_parcels(n_local_small, rclo, iclo, isma)
             integer,                     intent(in) :: n_local_small
             integer,                     intent(in) :: rclo(:)       ! MPI rank of closest parcel
+            integer,                     intent(in) :: iclo(:)
             integer,                     intent(in) :: isma(0:)
             integer,          dimension(:), pointer :: send_pid
-            double precision, dimension(:), pointer :: send_buf      ! Is actually unused here.
-            integer             :: m, rc, is, n, iv
+            double precision, dimension(:), pointer :: send_buf
+            double precision                        :: buffer(n_par_attrib)
+            integer, parameter                      :: l
+            integer                                 :: m, rc, ic, is, n, iv, i, j
 
-            call allocate_parcel_buffers(n_par_attrib)
+            ! We must send all parcel attributes (n_par_attrib) plus
+            ! the index of the close parcel ic (1)
+            l = n_par_attrib+1
+            call allocate_parcel_buffers(l)
 
             n_parcel_sends = 0
 
@@ -1213,6 +1219,7 @@ module parcel_nearest
             iv = 1
             do m = 1, n_local_small
                 rc = rclo(m)
+                ic = iclo(m)
                 is = isma(m)
 
                 if (.not. rc == comm%rank) then
@@ -1223,19 +1230,30 @@ module parcel_nearest
                     call get_parcel_buffer_ptr(n, send_pid, send_buf)
                     n_parcel_sends(n) = n_parcel_sends(n) + 1
 
+                    call parcel_serialize(is, buffer)
+                    j = l * iv
+                    i = j - l + 1
+                    send_buf(i:j-1) = buffer
+                    send_buf(j) = dble(ic)
+
                     n = n_parcel_sends(n)
                     send_pid(n) = is
                     invalid(iv) = is
                     iv = iv + 1
+
+                    isma(m) = -1
                 endif
             enddo
 
-            call communicate_parcels
+            !FIXME we must generalise this
+!             call communicate_parcels
 
             call deallocate_parcel_buffers
 
             !FIXME We must update isma, iclo and n_local_small on both
             ! MPI ranks (sender and receiver).
+            n_local_small = count(isma(1:) /= -1)
+            isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
 
         end subroutine gather_remote_parcels
 
