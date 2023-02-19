@@ -10,6 +10,7 @@ module parcel_nearest
     use mpi_communicator
     use mpi_layout
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error, mpi_check_for_message
+    use iso_c_binding, only : c_sizeof
     use parcel_mpi, only : n_parcel_sends               &
                          , north_pid                    &
                          , south_pid                    &
@@ -48,13 +49,13 @@ module parcel_nearest
     ! make the algorithm less readable
     logical, allocatable :: l_leaf(:)
     logical, allocatable :: l_available(:)
-    logical, allocatable :: l_first_merged(:) ! indicates parcels merged in first stage
+    logical, allocatable :: l_merged(:)    ! indicates parcels merged in first stage
 
 #ifndef NDEBUG
     ! Logicals that are only needed for sanity checks
-    logical, allocatable :: l_merged(:)! SANITY CHECK ONLY
-    logical, allocatable :: l_small(:) ! SANITY CHECK ONLY
-    logical, allocatable :: l_close(:) ! SANITY CHECK ONLY
+    logical, allocatable :: l_is_merged(:) ! SANITY CHECK ONLY
+    logical, allocatable :: l_small(:)     ! SANITY CHECK ONLY
+    logical, allocatable :: l_close(:)     ! SANITY CHECK ONLY
 #endif
 
     integer              :: n_neighbour_small(8)  ! number of small parcels received
@@ -65,11 +66,20 @@ module parcel_nearest
 
     logical :: l_continue_iteration, l_do_merge
 
+    type(MPI_Win) :: win_merged, win_avail, win_leaf
+
+#ifndef NDEBUG
+    type(MPI_Win) :: win_is_merged, win_small, win_close
+#endif
+
     public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer
 
     contains
 
         subroutine nearest_allocate
+            integer (KIND=MPI_ADDRESS_KIND) :: win_size
+            integer, parameter              :: disp_unit = c_sizeof(l_do_merge) ! size of logical in bytes
+
             if (.not. allocated(nppc)) then
                 allocate(nppc(box%halo_ncell))
                 allocate(kc1(box%halo_ncell))
@@ -78,13 +88,73 @@ module parcel_nearest
                 allocate(node(max_num_parcels))
                 allocate(l_leaf(max_num_parcels))
                 allocate(l_available(max_num_parcels))
-                allocate(l_first_merged(max_num_parcels))
-#ifndef NDEBUG
                 allocate(l_merged(max_num_parcels))
+
+                ! size of RMA window in bytes
+                win_size = disp_unit * max_num_parcels
+
+                !     MPI_Win_create(base, size, disp_unit, info, comm, win, ierror)
+                !     TYPE(*), DIMENSION(..), ASYNCHRONOUS :: base
+                !     INTEGER(KIND=MPI_ADDRESS_KIND), INTENT(IN) :: size
+                !     INTEGER, INTENT(IN) :: disp_unit
+                !     TYPE(MPI_Info), INTENT(IN) :: info
+                !     TYPE(MPI_Comm), INTENT(IN) :: comm
+                !     TYPE(MPI_Win), INTENT(OUT) :: win
+                !     INTEGER, OPTIONAL, INTENT(OUT) :: ierror
+                call MPI_Win_create(l_leaf,         &
+                                    win_size,       &
+                                    disp_unit,      &
+                                    MPI_INFO_NULL,  &
+                                    comm%world,     &
+                                    win_leaf,       &
+                                    comm%err)
+                call MPI_Win_create(l_available,    &
+                                    win_size,       &
+                                    disp_unit,      &
+                                    MPI_INFO_NULL,  &
+                                    comm%world,     &
+                                    win_avail,      &
+                                    comm%err)
+                call MPI_Win_create(l_merged,       &
+                                    win_size,       &
+                                    disp_unit,      &
+                                    MPI_INFO_NULL,  &
+                                    comm%world,     &
+                                    win_merged,     &
+                                    comm%err)
+
+#ifndef NDEBUG
+                allocate(l_is_merged(max_num_parcels))
                 allocate(l_small(max_num_parcels))
                 allocate(l_close(max_num_parcels))
+
+                call MPI_Win_create(l_is_merged,    &
+                                    win_size,       &
+                                    disp_unit,      &
+                                    MPI_INFO_NULL,  &
+                                    comm%world,     &
+                                    win_is_merged,  &
+                                    comm%err)
+                call MPI_Win_create(l_small,        &
+                                    win_size,       &
+                                    disp_unit,      &
+                                    MPI_INFO_NULL,  &
+                                    comm%world,     &
+                                    win_small,      &
+                                    comm%err)
+                call MPI_Win_create(l_close,        &
+                                    win_size,       &
+                                    disp_unit,      &
+                                    MPI_INFO_NULL,  &
+                                    comm%world,     &
+                                    win_close,      &
+                                    comm%err)
 #endif
             endif
+                ! We must store the parcel index and the merge index *m*
+                ! of each small parcel. We do not need to a llocate the
+                ! invalid buffer, therefore the second argument is .false.
+                call allocate_parcel_id_buffers(2, .false.)
         end subroutine nearest_allocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -98,17 +168,15 @@ module parcel_nearest
                 deallocate(node)
                 deallocate(l_leaf)
                 deallocate(l_available)
-                deallocate(l_first_merged)
-#ifndef NDEBUG
                 deallocate(l_merged)
+#ifndef NDEBUG
+                deallocate(l_is_merged)
                 deallocate(l_small)
                 deallocate(l_close)
 #endif
+            endif
 
-                ! We must store the parcel index and the merge index *m*
-                ! of each small parcel. We do not need to a llocate the
-                ! invalid buffer, therefore the second argument is .false.
-                call allocate_parcel_id_buffers(2, .false.)
+            call deallocate_parcel_id_buffers
         end subroutine nearest_deallocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -245,7 +313,7 @@ module parcel_nearest
                     isma(j) = n
                 endif
 #ifndef NDEBUG
-                l_merged(n) = .false.! SANITY CHECK ONLY
+                l_is_merged(n) = .false.! SANITY CHECK ONLY
                 l_small(n) = .false. ! SANITY CHECK ONLY
                 l_close(n) = .false. ! SANITY CHECK ONLY
 #endif
@@ -378,8 +446,8 @@ module parcel_nearest
                 isma(m) = is
                 iclo(m) = ic
                 dclo(m) = dsqmin
-                l_first_merged(is) = .false.
-                l_first_merged(ic) = .false.
+                l_merged(is) = .false.
+                l_merged(ic) = .false.
             enddo
 
             ! Update isma, iclo and rclo with indices of remote parcels:
@@ -521,161 +589,161 @@ module parcel_nearest
             ! First, iterative, stage
             l_continue_iteration=.true.
             do while(l_continue_iteration)
-              l_continue_iteration=.false.
-              ! reset relevant properties for candidate mergers
-              do m = 1, n_local_small
-                is = isma(m)
-                ! only consider links that still may be merging
-                ! reset relevant properties
-                if(.not. l_first_merged(is)) then
-                  ic = iclo(m)
-                  l_leaf(is)=.true.
-                  l_available(ic)=.true.
-                end if
-              end do
-              ! determine leaf parcels
-              do m = 1, n_local_small
-                is = isma(m)
-                if(.not. l_first_merged(is)) then
-                  ic = iclo(m)
-                  l_leaf(ic)=.false.
-                end if
-              end do
-              ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
-              ! filter out parcels that are "unavailable" for merging
-              do m = 1, n_local_small
-                is = isma(m)
-                if(.not. l_first_merged(is)) then
-                   if(.not. l_leaf(is)) then
-                     ic = iclo(m)
-                     l_available(ic)=.false.
-                   end if
-                end if
-              end do
-              ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
-              ! identify mergers in this iteration
-              do m = 1, n_local_small
-                is = isma(m)
-                if(.not. l_first_merged(is)) then
-                  ic = iclo(m)
-                  if(l_leaf(is) .and. l_available(ic)) then
-                    l_continue_iteration=.true. ! merger means continue iteration
-                    l_first_merged(is)=.true.
-                    l_first_merged(ic)=.true.
-                  end if
-                end if
-              end do
-              ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
-            end do
+                l_continue_iteration=.false.
+                ! reset relevant properties for candidate mergers
+                do m = 1, n_local_small
+                    is = isma(m)
+                    ! only consider links that still may be merging
+                    ! reset relevant properties
+                    if (.not. l_merged(is)) then
+                        ic = iclo(m)
+                        l_leaf(is) = .true.
+                        l_available(ic) = .true.
+                    endif
+                enddo
+                ! determine leaf parcels
+                do m = 1, n_local_small
+                    is = isma(m)
+                    if (.not. l_merged(is)) then
+                        ic = iclo(m)
+                        l_leaf(ic) = .false.
+                    endif
+                enddo
+                ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
+                ! filter out parcels that are "unavailable" for merging
+                do m = 1, n_local_small
+                    is = isma(m)
+                    if (.not. l_merged(is)) then
+                        if (.not. l_leaf(is)) then
+                            ic = iclo(m)
+                            l_available(ic) = .false.
+                        endif
+                    endif
+                enddo
+                ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
+                ! identify mergers in this iteration
+                do m = 1, n_local_small
+                    is = isma(m)
+                    if (.not. l_merged(is)) then
+                        ic = iclo(m)
+                        if (l_leaf(is) .and. l_available(ic)) then
+                            l_continue_iteration = .true. ! merger means continue iteration
+                            l_merged(is) = .true.
+                            l_merged(ic) = .true.
+                        endif
+                    endif
+                enddo
+                ! PARALLEL COMMUNICATION WILL BE NEEDED HERE
+                enddo
 
-            ! Second stage, related to dual links
-            do m = 1, n_local_small
-              is = isma(m)
-              if(.not. l_first_merged(is)) then
-                if(l_leaf(is)) then ! set in last iteration of stage 1
-                  ic = iclo(m)
-                  l_available(ic)=.true.
-                end if
-              end if
-            end do
+                ! Second stage, related to dual links
+                do m = 1, n_local_small
+                    is = isma(m)
+                    if (.not. l_merged(is)) then
+                        if (l_leaf(is)) then ! set in last iteration of stage 1
+                            ic = iclo(m)
+                            l_available(ic) = .true.
+                        endif
+                    endif
+                enddo
 
-            ! PARALLEL: COMMUNICATION WILL BE NEEDED HERE
+                ! PARALLEL: COMMUNICATION WILL BE NEEDED HERE
 
-            ! Second stage (hard to parallelise with openmp?)
-            j=0
-            do m = 1, n_local_small
-              is = isma(m)
-              ic = iclo(m)
-              l_do_merge=.false.
-              if(l_first_merged(is) .and. l_leaf(is)) then
-                ! previously identified mergers: keep
-                l_do_merge=.true.
+                ! Second stage (hard to parallelise with openmp?)
+                j = 0
+                do m = 1, n_local_small
+                    is = isma(m)
+                    ic = iclo(m)
+                    l_do_merge = .false.
+                    if (l_merged(is) .and. l_leaf(is)) then
+                        ! previously identified mergers: keep
+                        l_do_merge=.true.
 #ifndef NDEBUG
-                ! sanity check on first stage mergers
-                ! parcel cannot be both initiator and receiver in stage 1
-                if(l_leaf(ic)) then
-                  write(*,*) 'first stage error'
-                endif
+                        ! sanity check on first stage mergers
+                        ! parcel cannot be both initiator and receiver in stage 1
+                        if (l_leaf(ic)) then
+                            write(*,*) 'first stage error'
+                        endif
 #endif
-              elseif(.not. l_first_merged(is)) then
-                if(l_leaf(is)) then
-                  ! links from leafs
-                  l_do_merge=.true.
-                elseif(.not. l_available(is)) then
-                  ! Above means parcels that have been made 'available' do not keep outgoing links
-                  if(l_available(ic)) then
-                    ! merge this parcel into ic along with the leaf parcels
-                    l_do_merge=.true.
-                  else
-                    ! isolated dual link
-                    ! Don't keep current link
-                    ! But make small parcel available so other parcel can merge with it
-                    ! THIS NEEDS THINKING ABOUT A PARALLEL IMPLEMENTATION
-                    ! This could be based on the other parcel being outside the domain
-                    ! And a "processor order"
-                    l_available(is)=.true.
-                  endif
-                endif
-              endif
+                    elseif (.not. l_merged(is)) then
+                        if (l_leaf(is)) then
+                            ! links from leafs
+                            l_do_merge = .true.
+                        elseif (.not. l_available(is)) then
+                            ! Above means parcels that have been made 'available' do not keep outgoing links
+                            if (l_available(ic)) then
+                                ! merge this parcel into ic along with the leaf parcels
+                                l_do_merge = .true.
+                            else
+                                ! isolated dual link
+                                ! Don't keep current link
+                                ! But make small parcel available so other parcel can merge with it
+                                ! THIS NEEDS THINKING ABOUT A PARALLEL IMPLEMENTATION
+                                ! This could be based on the other parcel being outside the domain
+                                ! And a "processor order"
+                                l_available(is) = .true.
+                            endif
+                        endif
+                    endif
 
-              if(l_do_merge) then
-                   j = j + 1
-                   isma(j) = is
-                   iclo(j) = ic
+                    if (l_do_merge) then
+                        j = j + 1
+                        isma(j) = is
+                        iclo(j) = ic
 #ifndef NDEBUG
-                   l_merged(is)=.true.
-                   l_merged(ic)=.true.
-                   l_small(is)=.true.
-                   l_close(ic)=.true.
+                        l_is_merged(is) = .true.
+                        l_is_merged(ic) = .true.
+                        l_small(is) = .true.
+                        l_close(ic) = .true.
 #endif
-              end if
-            end do
-            n_local_small = j
+                    endif
+                enddo
+                n_local_small = j
 
 #ifndef NDEBUG
-            write(*,*) 'after second stage, n_local_small='
-            write(*,*) n_local_small
-            write(*,*) 'finished'
+                write(*,*) 'after second stage, n_local_small='
+                write(*,*) n_local_small
+                write(*,*) 'finished'
 
-            ! MORE SANITY CHECKS
-            ! CHECK ISMA ORDER
-            do m = 1, n_local_small
-              if(.not. (isma(m)>isma(m-1))) then
-                write(*,*) 'isma order broken'
-              end if
-            end do
+                ! MORE SANITY CHECKS
+                ! CHECK ISMA ORDER
+                do m = 1, n_local_small
+                    if (.not. (isma(m) > isma(m-1))) then
+                        write(*,*) 'isma order broken'
+                    endif
+                enddo
 
-            ! 1. CHECK RESULTING MERGERS
-            do m = 1, n_local_small
-              if(.not. l_merged(isma(m))) write(*,*) 'merge_error: isma(m) not merged, m=', m
-              if(.not. l_merged(iclo(m))) write(*,*) 'merge_error: iclo(m) not merged, m=', m
-              if(.not. l_small(isma(m))) write(*,*) 'merge_error: isma(m) not marked as small, m=', m
-              if(.not. l_close(iclo(m))) write(*,*) 'merge_error: iclo(m) not marked as close, m=', m
-              if(l_close(isma(m))) write(*,*) 'merge_error: isma(m) both small and close, m=', m
-              if(l_small(iclo(m))) write(*,*) 'merge_error: iclo(m) both small and close, m=', m
-            end do
+                ! 1. CHECK RESULTING MERGERS
+                do m = 1, n_local_small
+                    if (.not. l_is_merged(isma(m))) write(*,*) 'merge_error: isma(m) not merged, m=', m
+                    if (.not. l_is_merged(iclo(m))) write(*,*) 'merge_error: iclo(m) not merged, m=', m
+                    if (.not. l_small(isma(m))) write(*,*) 'merge_error: isma(m) not marked as small, m=', m
+                    if (.not. l_close(iclo(m))) write(*,*) 'merge_error: iclo(m) not marked as close, m=', m
+                    if (l_close(isma(m))) write(*,*) 'merge_error: isma(m) both small and close, m=', m
+                    if (l_small(iclo(m))) write(*,*) 'merge_error: iclo(m) both small and close, m=', m
+                enddo
 
-            ! 2. CHECK MERGING PARCELS
-            do n = 1, n_parcels
-                if (parcels%volume(n) < vmin) then
-                    if (.not. l_merged(n)) then
-                        write(*,*) 'merge_error: parcel n not merged (should be), n=', n
+                ! 2. CHECK MERGING PARCELS
+                do n = 1, n_parcels
+                    if (parcels%volume(n) < vmin) then
+                        if (.not. l_is_merged(n)) then
+                            write(*,*) 'merge_error: parcel n not merged (should be), n=', n
+                        endif
+                        if (.not. (l_small(n) .or. l_close(n))) then
+                            write(*,*) 'merge_error: parcel n not small or close (should be), n=', n
+                        endif
+                        if (l_small(n) .and. l_close(n)) then
+                            write(*,*) 'merge_error: parcel n both small and close, n=', n
+                        endif
+                    else
+                        if (l_small(n)) then
+                            write(*,*) 'merge_error: parcel n small (should not be), n=', n
+                        endif
+                        if (l_is_merged(n) .and. (.not. l_close(n))) then
+                            write(*,*) 'merge_error: parcel n merged (should not be), n=', n
+                        endif
                     endif
-                    if (.not. (l_small(n) .or. l_close(n))) then
-                        write(*,*) 'merge_error: parcel n not small or close (should be), n=', n
-                    endif
-                    if(l_small(n) .and. l_close(n)) then
-                        write(*,*) 'merge_error: parcel n both small and close, n=', n
-                    endif
-                else
-                    if (l_small(n)) then
-                        write(*,*) 'merge_error: parcel n small (should not be), n=', n
-                    endif
-                    if (l_merged(n) .and. (.not. l_close(n))) then
-                        write(*,*) 'merge_error: parcel n merged (should not be), n=', n
-                    endif
-                endif
-            enddo
+                enddo
 #endif
             call stop_timer(merge_tree_resolve_timer)
         end subroutine resolve_tree
@@ -765,7 +833,6 @@ module parcel_nearest
         subroutine send_small_parcel_bndry_info(n_local_small)
             integer ,                    intent(in) :: n_local_small
             integer,          dimension(:), pointer :: send_ptr
-            integer,          dimension(:), pointer :: send_m_index
             double precision, dimension(:), pointer :: send_buf
             double precision, allocatable           :: recv_buf(:)
             type(MPI_Request)                       :: requests(8)

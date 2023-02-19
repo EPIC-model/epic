@@ -298,7 +298,7 @@ module parcel_mpi
             allocate(southwest_pid(nc * ub * n_ids))
             allocate(southeast_pid(nc * ub * n_ids))
 
-            if (l_invalid)
+            if (l_invalid) then
                 ! Note: This buffer needs to have start index 0 because of the parcel delete routine.
                 !       However, this first array element is never assigned any value.
                 allocate(invalid(0:n_max * ub * n_ids))
