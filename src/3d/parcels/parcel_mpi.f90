@@ -111,7 +111,9 @@ module parcel_mpi
             integer                                 :: tag, source, recvcount
             integer                                 :: recv_size, send_size
 
-            call allocate_parcel_id_buffers
+            ! We only must store the parcelel indices (therefore 1) and
+            ! also allocate the buffer for invalid parcels. (therefore .true.)
+            call allocate_parcel_id_buffers(1, .true.)
 
             ! figure out where parcels go
             call locate_parcels(pindex)
@@ -263,8 +265,10 @@ module parcel_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine allocate_parcel_id_buffers
-            integer :: nc, ub, n_max
+        subroutine allocate_parcel_id_buffers(n_ids, l_invalid)
+            integer, intent(in) :: n_ids
+            logical, intent(in) :: l_invalid
+            integer             :: nc, ub, n_max
 
             n_parcel_sends(:) = 0
 
@@ -275,28 +279,30 @@ module parcel_mpi
             nc = (box%hi(1) - box%lo(1) + 1) * nz
             n_max = 2 * nc
 
-            allocate(north_pid(nc * ub))
-            allocate(south_pid(nc * ub))
+            allocate(north_pid(nc * ub * n_ids))
+            allocate(south_pid(nc * ub * n_ids))
 
             ! number of cells sharing with west and east neighbour
             nc = (box%hi(2) - box%lo(2) + 1) * nz
             n_max = n_max + 2 * nc
 
-            allocate(west_pid(nc * ub))
-            allocate(east_pid(nc * ub))
+            allocate(west_pid(nc * ub * n_ids))
+            allocate(east_pid(nc * ub * n_ids))
 
             ! number of cells sharing with corner neighbours
             nc = nz
             n_max = n_max + 4 * nc
 
-            allocate(northwest_pid(nc * ub))
-            allocate(northeast_pid(nc * ub))
-            allocate(southwest_pid(nc * ub))
-            allocate(southeast_pid(nc * ub))
+            allocate(northwest_pid(nc * ub * n_ids))
+            allocate(northeast_pid(nc * ub * n_ids))
+            allocate(southwest_pid(nc * ub * n_ids))
+            allocate(southeast_pid(nc * ub * n_ids))
 
-            ! Note: This buffer needs to have start index 0 because of the parcel delete routine.
-            !       However, this first array element is never assigned any value.
-            allocate(invalid(0:n_max * ub))
+            if (l_invalid)
+                ! Note: This buffer needs to have start index 0 because of the parcel delete routine.
+                !       However, this first array element is never assigned any value.
+                allocate(invalid(0:n_max * ub * n_ids))
+            endif
 
         end subroutine allocate_parcel_id_buffers
 
@@ -313,7 +319,9 @@ module parcel_mpi
             deallocate(southwest_pid)
             deallocate(southeast_pid)
 
-            deallocate(invalid)
+            if (allocated(invalid)) then
+                deallocate(invalid)
+            endif
         end subroutine deallocate_parcel_id_buffers
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
