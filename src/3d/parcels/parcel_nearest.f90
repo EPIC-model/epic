@@ -898,7 +898,7 @@ module parcel_nearest
                     endif
                 endif
 
-                call MPI_Win_fence(0, win_avail, comm%serr)
+                call MPI_Win_fence(0, win_avail, comm%err)
 
                 call mpi_check_for_error(&
                     "in MPI_Win_fence of parcel_nearest::resolve_tree.")
@@ -907,6 +907,7 @@ module parcel_nearest
                     j = j + 1
                     isma(j) = is
                     iclo(j) = ic
+                    rclo(j) = rc
 #ifndef NDEBUG
                     l_is_merged(is) = .true.
                     l_is_merged(ic) = .true.
