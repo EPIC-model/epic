@@ -1234,6 +1234,9 @@ module parcel_nearest
 
             call deallocate_parcel_buffers
 
+            !FIXME We must update isma, iclo and n_local_small on both
+            ! MPI ranks (sender and receiver).
+
         end subroutine gather_remote_parcels
 
 end module parcel_nearest
