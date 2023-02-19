@@ -50,11 +50,13 @@ module parcel_mpi
               northeast_buf,                &
               southwest_buf,                &
               southeast_buf,                &
+              invalid,                      &
               allocate_parcel_buffers,      &
               deallocate_parcel_buffers,    &
               allocate_parcel_id_buffers,   &
               deallocate_parcel_id_buffers, &
-              get_parcel_buffer_ptr
+              get_parcel_buffer_ptr,        &
+              communicate_parcels
 
     contains
 
@@ -102,6 +104,27 @@ module parcel_mpi
 
         subroutine parcel_halo_swap(pindex)
             integer, optional, intent(in)           :: pindex(:)
+
+            ! We only must store the parcel indices (therefore 1) and
+            ! also allocate the buffer for invalid parcels. (therefore .true.)
+            call allocate_parcel_id_buffers(1, .true.)
+
+            ! figure out where parcels go
+            call locate_parcels(pindex)
+
+            call allocate_parcel_buffers(n_par_attrib)
+
+            call communicate_parcels
+
+            call deallocate_parcel_id_buffers
+
+            call deallocate_parcel_buffers
+
+        end subroutine parcel_halo_swap
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine communicate_parcels
             integer,          dimension(:), pointer :: pid
             double precision, dimension(:), pointer :: sendbuf
             double precision, allocatable           :: recvbuf(:)
@@ -110,15 +133,6 @@ module parcel_mpi
             integer                                 :: n_total_sends, n
             integer                                 :: tag, source, recvcount
             integer                                 :: recv_size, send_size
-
-            ! We only must store the parcelel indices (therefore 1) and
-            ! also allocate the buffer for invalid parcels. (therefore .true.)
-            call allocate_parcel_id_buffers(1, .true.)
-
-            ! figure out where parcels go
-            call locate_parcels(pindex)
-
-            call allocate_parcel_buffers(n_par_attrib)
 
             do n = 1, 8
                 call get_parcel_buffer_ptr(n, pid, sendbuf)
@@ -183,10 +197,6 @@ module parcel_mpi
             n_total_sends = sum(n_parcel_sends)
             call parcel_delete(invalid, n_total_sends)
 
-            call deallocate_parcel_id_buffers
-
-            call deallocate_parcel_buffers
-
 #ifndef NDEBUG
             n = n_parcels
             call mpi_blocking_reduce(n, MPI_SUM)
@@ -194,8 +204,7 @@ module parcel_mpi
                 call mpi_exit_on_error("parcel_halo_swap: We lost parcels.")
             endif
 #endif
-
-        end subroutine parcel_halo_swap
+        end subroutine communicate_parcels
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

@@ -3,7 +3,7 @@
 !==============================================================================
 module parcel_nearest
     use constants, only : zero !pi, f12
-    use parcel_container, only : parcels, n_parcels, get_delx, get_dely
+    use parcel_container, only : parcels, n_parcels, get_delx, get_dely, n_par_attrib
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
     use timer, only : start_timer, stop_timer
@@ -28,11 +28,13 @@ module parcel_nearest
                          , northeast_buf                &
                          , southwest_buf                &
                          , southeast_buf                &
+                         , invalid                      &
                          , allocate_parcel_buffers      &
                          , deallocate_parcel_buffers    &
                          , allocate_parcel_id_buffers   &
                          , deallocate_parcel_id_buffers &
-                         , get_parcel_buffer_ptr
+                         , get_parcel_buffer_ptr        &
+                         , communicate_parcels
     implicit none
 
     integer:: merge_nearest_timer, merge_tree_resolve_timer
@@ -151,10 +153,6 @@ module parcel_nearest
                                     comm%err)
 #endif
             endif
-                ! We must store the parcel index and the merge index *m*
-                ! of each small parcel. We do not need to a llocate the
-                ! invalid buffer, therefore the second argument is .false.
-                call allocate_parcel_id_buffers(2, .false.)
         end subroutine nearest_allocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -175,8 +173,6 @@ module parcel_nearest
                 deallocate(l_close)
 #endif
             endif
-
-            call deallocate_parcel_id_buffers
         end subroutine nearest_deallocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -201,6 +197,11 @@ module parcel_nearest
             call start_timer(merge_nearest_timer)
 
             call nearest_allocate
+
+            ! We must store the parcel index and the merge index *m*
+            ! of each small parcel. We do not need to allocate the
+            ! invalid buffer, therefore the second argument is .false.
+            call allocate_parcel_id_buffers(2, .false.)
 
             !---------------------------------------------------------------------
             ! Initialise search:
@@ -230,6 +231,7 @@ module parcel_nearest
 
             if (n_global_small == 0) then
                 call nearest_deallocate
+                call deallocate_parcel_id_buffers
                 call stop_timer(merge_nearest_timer)
                 return
             endif
@@ -339,12 +341,22 @@ module parcel_nearest
             ! Figure out the mergers:
             call resolve_tree(isma, iclo, rclo, n_local_small)
 
+            call deallocate_parcel_id_buffers
+
+            ! We must store the parcel index of each small parcel.
+            ! We need to allocate the invalid buffer, therefore
+            ! the second argument is .true.
+            call allocate_parcel_id_buffers(1, .true.)
+
             !---------------------------------------------------------------------
             ! We perform the actual merging locally. We must therefore send all
             ! necessary remote parcels to *this* MPI rank.
             ! Note: If the closest parcel is a small parcel on another MPI rank,
-            !       we must check if this remot parcel is not sent elsewhere.
-            call gather_remote_parcels
+            !       we must check if this remote parcel is not sent elsewhere.
+            !       FIXME Double-check: This might actually never happen.
+            call gather_remote_parcels(n_local_small, rclo, isma)
+
+            call deallocate_parcel_id_buffers
 
             call nearest_deallocate
 
@@ -1184,7 +1196,43 @@ module parcel_nearest
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine gather_remote_parcels
+        subroutine gather_remote_parcels(n_local_small, rclo, isma)
+            integer,                     intent(in) :: n_local_small
+            integer,                     intent(in) :: rclo(:)       ! MPI rank of closest parcel
+            integer,                     intent(in) :: isma(0:)
+            integer,          dimension(:), pointer :: send_pid
+            double precision, dimension(:), pointer :: send_buf      ! Is actually unused here.
+            integer             :: m, rc, is, n, iv
+
+            call allocate_parcel_buffers(n_par_attrib)
+
+            n_parcel_sends = 0
+
+            !------------------------------------------------------------------
+            ! Figure out which small parcels we need to send:
+            iv = 1
+            do m = 1, n_local_small
+                rc = rclo(m)
+                is = isma(m)
+
+                if (.not. rc == comm%rank) then
+                    ! The closest parcel to this smalll parcel *is*
+                    ! is on another MPI rank. We must send this parcel
+                    ! to that rank.
+                    n = get_neighbour_from_rank(comm%rank)
+                    call get_parcel_buffer_ptr(n, send_pid, send_buf)
+                    n_parcel_sends(n) = n_parcel_sends(n) + 1
+
+                    n = n_parcel_sends(n)
+                    send_pid(n) = is
+                    invalid(iv) = is
+                    iv = iv + 1
+                endif
+            enddo
+
+            call communicate_parcels
+
+            call deallocate_parcel_buffers
 
         end subroutine gather_remote_parcels
 

@@ -262,10 +262,11 @@ module mpi_layout
 
         pure function get_neighbour_from_rank(rank) result(nb)
             integer, intent(in) :: rank
-            integer             :: nb
+            integer             :: n, nb
 
-            do nb = 1, 8
-                if (rank == neighbours(nb)%rank) then
+            do n = 1, 8
+                if (rank == neighbours(n)%rank) then
+                    nb = n
                     exit
                 endif
             enddo
