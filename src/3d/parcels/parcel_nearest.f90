@@ -495,7 +495,7 @@ module parcel_nearest
             type(MPI_Request)                       :: request
             type(MPI_Status)                        :: recv_status, send_status
             integer                                 :: recv_size, send_size
-            integer                                 :: tag, source, recvcount, n, l, i, m
+            integer                                 :: tag, source, recv_count, n, l, i, m
             integer, parameter                      :: n_entries = 3
 
 
@@ -537,7 +537,7 @@ module parcel_nearest
                         "parcel_nearest::find_closest_parcel_globally: Receiving wrong count.")
                 endif
 
-                recvcount = recv_size / n_entries
+                recv_count = recv_size / n_entries
 
                 allocate(recv_buf(recv_size))
 
@@ -555,7 +555,7 @@ module parcel_nearest
 
                 call MPI_Wait(request, send_status, comm%err)
 
-                do l = 1, recvcount
+                do l = 1, recv_count
                     i = 1 + (l-1) * n_entries
                     m = nint(recv_buf(i))
                     if (dclo(m) > recv_buf(i+1)) then
@@ -1072,7 +1072,7 @@ module parcel_nearest
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
             integer                                 :: recv_size, send_size
-            integer                                 :: tag, source, recvcount, n, i ,j, l, m, pid
+            integer                                 :: tag, source, recv_count, n, i ,j, l, m, pid
             integer, parameter                      :: n_entries = 5
             integer, allocatable                    :: tmp_rank(:), tmp_pid(:), tmp_m_index(:)
 
@@ -1143,10 +1143,10 @@ module parcel_nearest
                         "parcel_nearest::send_small_parcel_bndry_info: Receiving wrong count.")
                 endif
 
-                recvcount = recv_size / n_entries
+                recv_count = recv_size / n_entries
 
                 i = n_local_small + 1
-                j = n_local_small + size(remote_small_rank) + recvcount
+                j = n_local_small + size(remote_small_rank) + recv_count
                 allocate(tmp_rank(i:j))
                 allocate(tmp_pid(i:j))
                 allocate(tmp_m_index(i:j))
@@ -1154,9 +1154,9 @@ module parcel_nearest
                 deallocate(remote_small_rank)
                 deallocate(remote_m_index)
 
-                if (recvcount > 0) then
+                if (recv_count > 0) then
                     ! unpack parcel position and parcel index to recv buffer
-                    do l = 1, recvcount
+                    do l = 1, recv_count
                         i = 1 + (l-1) * n_entries
                         j = sum(n_neighbour_small) + n_parcels + l
                         parcels%position(:, j) = recv_buf(i:i+3)
@@ -1164,7 +1164,7 @@ module parcel_nearest
                         tmp_rank(j) = source
                         tmp_m_index(j) = nint(recv_buf(i+5))
                     enddo
-                    n_neighbour_small(source) = n_neighbour_small(source) + recvcount
+                    n_neighbour_small(source) = n_neighbour_small(source) + recv_count
                 endif
 
                 ! *move_alloc* deallocates tmp_pid and tmp_rank
@@ -1197,20 +1197,24 @@ module parcel_nearest
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine gather_remote_parcels(n_local_small, rclo, iclo, isma)
-            integer,                     intent(in) :: n_local_small
-            integer,                     intent(in) :: rclo(:)       ! MPI rank of closest parcel
-            integer,                     intent(in) :: iclo(:)
-            integer,                     intent(in) :: isma(0:)
-            integer,          dimension(:), pointer :: send_pid
-            double precision, dimension(:), pointer :: send_buf
-            double precision                        :: buffer(n_par_attrib)
-            integer, parameter                      :: l
-            integer                                 :: m, rc, ic, is, n, iv, i, j
+            integer,                     intent(inout) :: n_local_small
+            integer,                     intent(in)    :: rclo(:)       ! MPI rank of closest parcel
+            integer,                     intent(inout) :: iclo(:)
+            integer,                     intent(inout) :: isma(0:)
+            integer,          dimension(:), pointer    :: send_pid
+            double precision, dimension(:), pointer    :: send_buf
+            double precision, allocatable              :: recv_buf(:)
+            type(MPI_Request)                          :: requests(8)
+            type(MPI_Status)                           :: recv_status, send_statuses(8)
+            integer                                    :: tag, source, recv_count
+            integer                                    :: recv_size, send_size
+            double precision                           :: buffer(n_par_attrib)
+            integer                                    :: m, rc, ic, is, n, iv, i, j, k
+            integer, parameter                         :: n_entries = n_par_attrib + 1
 
             ! We must send all parcel attributes (n_par_attrib) plus
             ! the index of the close parcel ic (1)
-            l = n_par_attrib+1
-            call allocate_parcel_buffers(l)
+            call allocate_parcel_buffers(n_entries)
 
             n_parcel_sends = 0
 
@@ -1226,13 +1230,15 @@ module parcel_nearest
                     ! The closest parcel to this smalll parcel *is*
                     ! is on another MPI rank. We must send this parcel
                     ! to that rank.
-                    n = get_neighbour_from_rank(comm%rank)
+                    call get_index_periodic(parcels%position(:, ic), i, j, k)
+                    n = get_neighbour(i, j)
+
                     call get_parcel_buffer_ptr(n, send_pid, send_buf)
                     n_parcel_sends(n) = n_parcel_sends(n) + 1
 
                     call parcel_serialize(is, buffer)
-                    j = l * iv
-                    i = j - l + 1
+                    j = n_entries * iv
+                    i = j - n_entries + 1
                     send_buf(i:j-1) = buffer
                     send_buf(j) = dble(ic)
 
@@ -1241,20 +1247,116 @@ module parcel_nearest
                     invalid(iv) = is
                     iv = iv + 1
 
+                    ! Mark this as invalid
                     isma(m) = -1
+                    iclo(m) = -1
                 endif
             enddo
 
-            !FIXME we must generalise this
-!             call communicate_parcels
+            !------------------------------------------------------------------
+            ! Communicate parcels:
+            do n = 1, 8
+                call get_parcel_buffer_ptr(n, send_pid, send_buf)
+
+                send_size = n_parcel_sends(n) * n_entries
+
+                call MPI_Isend(send_buf,                &
+                               send_size,               &
+                               MPI_DOUBLE_PRECISION,    &
+                               neighbours(n)%rank,      &
+                               NEIGHBOUR_TAG(n),        &
+                               comm%cart,               &
+                               requests(n),             &
+                               comm%err)
+
+                call mpi_check_for_error(&
+                    "in MPI_Isend of parcel_nearest::gather_remote_parcels.")
+
+            enddo
+
+            do n = 1, 8
+                ! check for incoming messages
+                call mpi_check_for_message(tag, recv_size, source)
+
+                allocate(recv_buf(recv_size))
+
+                call MPI_Recv(recv_buf,                 &
+                              recv_size,                &
+                              MPI_DOUBLE_PRECISION,     &
+                              source,                   &
+                              tag,                      &
+                              comm%cart,                &
+                              recv_status,              &
+                              comm%err)
+
+                call mpi_check_for_error(&
+                    "in MPI_Recv of parcel_nearest::gather_remote_parcels.")
+
+                if (mod(recv_size, n_entries) /= 0) then
+                    call mpi_exit_on_error(&
+                        "parcel_nearest::gather_remote_parcels: Receiving wrong count.")
+                endif
+
+                recv_count = recv_size / n_entries
+
+                ! Set the current value of the *m* index to
+                ! its current maximum value (excluding small
+                ! parcel received earlier from other MPI ranks.
+                m = n_local_small
+                do k = 1, recv_count
+                    ! We receive a small parcel;
+                    ! append it to the container with index
+                    ! "n_parcels+1"
+                    n_parcels = n_parcels + 1
+                    j = n_entries * k
+                    i = j - n_entries + 1
+                    buffer = recv_buf(i:j-1)
+                    call parcel_deserialize(n_parcels, buffer)
+
+                    ! Add the small parcel to isma and
+                    ! its closest parcel to iclo
+                    ic = nint(recv_buf(j))
+                    m = m + 1
+                    iclo(m) = ic
+                    isma(m) = n_parcels
+                enddo
+                ! The last value of *m* is our new number of
+                ! small parcels. However, this still includes
+                ! invalid entries in isma and iclo that we will
+                ! remove next.
+                n_local_small = m
+
+                deallocate(recv_buf)
+            enddo
+
+            call MPI_Waitall(8,                 &
+                            requests,           &
+                            send_statuses,      &
+                            comm%err)
+
+            call mpi_check_for_error(&
+                "in MPI_Waitall of parcel_nearest::gather_remote_parcels.")
+
+            ! delete parcel that we sent
+            n = sum(n_parcel_sends)
+            call parcel_delete(invalid, n)
 
             call deallocate_parcel_buffers
 
-            !FIXME We must update isma, iclo and n_local_small on both
-            ! MPI ranks (sender and receiver).
+            ! We must now remove all invalid entries in isma and
+            ! iclo and also update the value of n_local_small:
             n_local_small = count(isma(1:) /= -1)
             isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
+            iclo(1:n_local_small) = pack(iclo, iclo /= -1)
 
+#ifndef NDEBUG
+            n = n_parcels
+            call mpi_blocking_reduce(n, MPI_SUM)
+            if ((comm%rank == comm%master) .and. (.not. n == n_total_parcels)) then
+                call mpi_exit_on_error(&
+                    "in parcel_nearest::gather_remote_parcels: We lost parcels.")
+            endif
+#endif
         end subroutine gather_remote_parcels
 
 end module parcel_nearest

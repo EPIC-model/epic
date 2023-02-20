@@ -258,18 +258,4 @@ module mpi_layout
 
         end subroutine get_local_bounds
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        pure function get_neighbour_from_rank(rank) result(nb)
-            integer, intent(in) :: rank
-            integer             :: n, nb
-
-            do n = 1, 8
-                if (rank == neighbours(n)%rank) then
-                    nb = n
-                    exit
-                endif
-            enddo
-        end function get_neighbour_from_rank
-
 end module mpi_layout

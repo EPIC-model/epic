@@ -126,24 +126,24 @@ module parcel_mpi
 
         subroutine communicate_parcels
             integer,          dimension(:), pointer :: pid
-            double precision, dimension(:), pointer :: sendbuf
-            double precision, allocatable           :: recvbuf(:)
+            double precision, dimension(:), pointer :: send_buf
+            double precision, allocatable           :: recv_buf(:)
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
             integer                                 :: n_total_sends, n
-            integer                                 :: tag, source, recvcount
+            integer                                 :: tag, source, recv_count
             integer                                 :: recv_size, send_size
 
             do n = 1, 8
-                call get_parcel_buffer_ptr(n, pid, sendbuf)
+                call get_parcel_buffer_ptr(n, pid, send_buf)
 
                 send_size = n_parcel_sends(n) * n_par_attrib
 
                 if (n_parcel_sends(n) > 0) then
-                    call parcel_pack(pid, n_parcel_sends(n), sendbuf)
+                    call parcel_pack(pid, n_parcel_sends(n), send_buf)
                 endif
 
-                call MPI_Isend(sendbuf,                 &
+                call MPI_Isend(send_buf,                &
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
@@ -152,7 +152,7 @@ module parcel_mpi
                                requests(n),             &
                                comm%err)
 
-                call mpi_check_for_error("in MPI_Isend of parcel_mpi::parcel_halo_swap.")
+                call mpi_check_for_error("in MPI_Isend of parcel_mpi::communicate_parcels.")
             enddo
 
             do n = 1, 8
@@ -160,9 +160,9 @@ module parcel_mpi
                 ! check for incoming messages
                 call mpi_check_for_message(tag, recv_size, source)
 
-                allocate(recvbuf(recv_size))
+                allocate(recv_buf(recv_size))
 
-                call MPI_Recv(recvbuf,                  &
+                call MPI_Recv(recv_buf,                 &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               source,                   &
@@ -171,19 +171,19 @@ module parcel_mpi
                               recv_status,              &
                               comm%err)
 
-                call mpi_check_for_error("in MPI_Recv of parcel_mpi::parcel_halo_swap.")
+                call mpi_check_for_error("in MPI_Recv of parcel_mpi::communicate_parcels.")
 
                 if (mod(recv_size, n_par_attrib) /= 0) then
-                    call mpi_exit_on_error("parcel_mpi::parcel_halo_swap: Receiving wrong count.")
+                    call mpi_exit_on_error("parcel_mpi::communicate_parcels: Receiving wrong count.")
                 endif
 
-                recvcount = recv_size / n_par_attrib
+                recv_count = recv_size / n_par_attrib
 
-                if (recvcount > 0) then
-                    call parcel_unpack(recvcount, recvbuf)
+                if (recv_count > 0) then
+                    call parcel_unpack(recv_count, recv_buf)
                 endif
 
-                deallocate(recvbuf)
+                deallocate(recv_buf)
             enddo
 
             call MPI_Waitall(8,                 &
@@ -191,7 +191,7 @@ module parcel_mpi
                             send_statuses,      &
                             comm%err)
 
-            call mpi_check_for_error("in MPI_Waitall of parcel_mpi::parcel_halo_swap.")
+            call mpi_check_for_error("in MPI_Waitall of parcel_mpi::communicate_parcels.")
 
             ! delete parcel that we sent
             n_total_sends = sum(n_parcel_sends)
@@ -201,7 +201,8 @@ module parcel_mpi
             n = n_parcels
             call mpi_blocking_reduce(n, MPI_SUM)
             if ((comm%rank == comm%master) .and. (.not. n == n_total_parcels)) then
-                call mpi_exit_on_error("parcel_halo_swap: We lost parcels.")
+                call mpi_exit_on_error(&
+                    "in parcel_mpi::communicate_parcels: We lost parcels.")
             endif
 #endif
         end subroutine communicate_parcels
