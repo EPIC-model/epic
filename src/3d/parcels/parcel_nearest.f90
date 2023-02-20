@@ -1,16 +1,27 @@
 !==============================================================================
-!               Finds the parcels nearest every "small" parcel
+!               Finds the parcels nearest to every "small" parcel
 !==============================================================================
 module parcel_nearest
-    use constants, only : zero !pi, f12
-    use parcel_container, only : parcels, n_parcels, get_delx, get_dely, n_par_attrib
-    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, ny, nz, vmin, max_num_parcels
+    use constants, only : zero
+    use parcel_container, only : parcels            &
+                               , n_parcels          &
+                               , get_delx           &
+                               , get_dely           &
+                               , n_par_attrib       &
+                               , n_total_parcels    &
+                               , parcel_serialize   &
+                               , parcel_deserialize &
+                               , parcel_delete
+    use parameters, only : dx, dxi, vcell, hli, lower, extent       &
+                         , ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
     use timer, only : start_timer, stop_timer
     use mpi_communicator
     use mpi_layout
+    use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error, mpi_check_for_message
     use iso_c_binding, only : c_sizeof
+    use fields, only : get_index_periodic
     use parcel_mpi, only : n_parcel_sends               &
                          , north_pid                    &
                          , south_pid                    &
@@ -33,8 +44,7 @@ module parcel_nearest
                          , deallocate_parcel_buffers    &
                          , allocate_parcel_id_buffers   &
                          , deallocate_parcel_id_buffers &
-                         , get_parcel_buffer_ptr        &
-                         , communicate_parcels
+                         , get_parcel_buffer_ptr
     implicit none
 
     integer:: merge_nearest_timer, merge_tree_resolve_timer
@@ -159,6 +169,18 @@ module parcel_nearest
 
         subroutine nearest_deallocate
             if (allocated(nppc)) then
+                call MPI_Win_free(win_leaf, comm%err)
+                call mpi_check_for_error(&
+                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
+
+                call MPI_Win_free(win_avail, comm%err)
+                call mpi_check_for_error(&
+                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
+
+                call MPI_Win_free(win_merged, comm%err)
+                call mpi_check_for_error(&
+                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
+
                 deallocate(nppc)
                 deallocate(kc1)
                 deallocate(kc2)
@@ -168,10 +190,22 @@ module parcel_nearest
                 deallocate(l_available)
                 deallocate(l_merged)
 #ifndef NDEBUG
+                call MPI_Win_free(win_is_merged, comm%err)
+                call mpi_check_for_error(&
+                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
+                call MPI_Win_free(win_small, comm%err)
+                call mpi_check_for_error(&
+                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
+
+                call MPI_Win_free(win_close, comm%err)
+                call mpi_check_for_error(&
+                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
+
                 deallocate(l_is_merged)
                 deallocate(l_small)
                 deallocate(l_close)
 #endif
+
             endif
         end subroutine nearest_deallocate
 
@@ -227,7 +261,16 @@ module parcel_nearest
                 endif
             enddo
 
-            call MPI_Allreduce(n_local_small, n_global_small, 1, MPI_INTEGER, MPI_SUM, comm%world, comm%err)
+            call MPI_Allreduce(n_local_small,   &
+                               n_global_small,  &
+                               1,               &
+                               MPI_INTEGER,     &
+                               MPI_SUM,         &
+                               comm%world,      &
+                               comm%err)
+
+            call mpi_check_for_error(&
+                    "in MPI_Allreduce of parcel_nearest::find_nearest.")
 
             if (n_global_small == 0) then
                 call nearest_deallocate
