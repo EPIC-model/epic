@@ -13,7 +13,8 @@ AM_LDFLAGS =						\
 	$(top_builddir)/src/3d/parcels/*.o 		\
 	$(top_builddir)/src/3d/utils/*.o		\
 	$(top_builddir)/src/3d/fields/*.o		\
-	$(top_builddir)/src/3d/inversion/*.o
+	$(top_builddir)/src/3d/inversion/*.o		\
+	$(top_builddir)/src/3d/stepper/*.o
 
 noinst_LTLIBRARIES = libcombi.la
 libcombi_la_SOURCES =
@@ -27,7 +28,7 @@ libcombi_la_LIBADD = 					\
 mpitests_PROGRAMS =			\
 	test_moving_parcels
 
-test_moving_parcels_SOURCES = test_moving_parcels.f90
+test_moving_parcels_SOURCES = test_utils.f90 test_moving_parcels.f90
 test_moving_parcels_LDADD = libcombi.la
 
 
