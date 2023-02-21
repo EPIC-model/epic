@@ -36,7 +36,7 @@ class nc_reader(nc_base_reader):
             basename = os.path.basename(fname)
             # 14 Feb 2022
             # https://stackoverflow.com/questions/15340582/python-extract-pattern-matches
-            p = re.compile("(.*)_(\d*)_parcels.nc")
+            p = re.compile(r"(.*)_(\d*)_parcels.nc")
             result = p.search(basename)
             self._basename = result.group(1)
             self._dirname = os.path.dirname(fname)
@@ -436,12 +436,15 @@ class nc_reader(nc_base_reader):
         a = np.empty(n)
         b = np.empty(n)
         centres = np.empty((n, 2))
+        ind = np.empty(n, dtype=int)
 
+        j = 0
         for i in range(n):
             B = np.array([[B11[i], B12[i], B13[i]],
                           [B12[i], B22[i], B23[i]],
                           [B13[i], B23[i], B33[i]]])
-
+            
+            #print("parcel", i)
             # calculate inverse of B-matrix: (instead of using np.linalg.inv)
             D, V = np.linalg.eigh(B)
             iD = np.diag(1.0 / D)
@@ -459,17 +462,23 @@ class nc_reader(nc_base_reader):
             ell = elid.intersect(pl)
 
             # get semi-major and semi-minor axes:
-            (a[i], b[i]) = ell.semi_axes
+            (a[j], b[j]) = ell.semi_axes
+
+            if a[j] == 0.0 and b[j] == 0:
+                continue
 
             # get ellipse centre:
             (x0, y0) = ell.centre
-            centres[i, 0] = x0
-            centres[i, 1] = y0
+            centres[j, 0] = x0
+            centres[j, 1] = y0
 
             # get ellipse angle (in degree):
-            angles[i] = np.rad2deg(ell.angle)
+            angles[j] = np.rad2deg(ell.angle)
+            ind[j] = int(indices[i])
 
-        return centres, a, b, angles, indices
+            j = j+1
+
+        return centres[0:j], a[0:j], b[0:j], angles[0:j], ind[0:j]
 
     
     def get_intersection_ellipses(self, step, plane, loc, use_bokeh=False):

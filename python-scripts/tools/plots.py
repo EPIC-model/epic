@@ -698,7 +698,7 @@ def plot_center_of_mass(fnames, figure="save", fmt="png", dset="buoyancy", **kwa
         tag_name = "b"
     elif dset == "vorticity":
         tag = "w"
-        tag_name = "\zeta"
+        tag_name = r"\zeta"
     else:
         raise ValueError("Dataset must be 'buoyancy' or 'vorticity'.")
 

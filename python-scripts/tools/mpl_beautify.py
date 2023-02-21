@@ -46,7 +46,7 @@ def add_box(plt, label, value, unit="", xy=(0.01, 1.05), fmt="%1.3f"):
 
     text = label + " = " + fmt % (value) + unit
     if not unit == "":
-        text = label + " = \SI{" + fmt % (value) + r"}{" + unit + r"}"
+        text = label + r" = \SI{" + fmt % (value) + r"}{" + unit + r"}"
 
     plt.annotate(
         text, xy=xy, xycoords="axes fraction", bbox=bbox
@@ -59,4 +59,4 @@ def get_autopct(pct, allvals):
     import numpy as np
 
     absolute = pct / 100.0 * np.sum(allvals)
-    return "{:.2f}$\%$\n({:.1f} s)".format(pct, absolute)
+    return r"{:.2f}$\%$\n({:.1f} s)".format(pct, absolute)

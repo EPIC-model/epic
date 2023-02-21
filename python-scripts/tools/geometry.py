@@ -58,17 +58,17 @@ class ellipsoid:
                + 2.0 * A[0, 2] * xc[0] * xc[2] + A[1, 1] * xc[1]**2 \
                + 2.0 * A[1, 2] * xc[1] * xc[2] + A[2, 2] * xc[2]**2 \
                - 1.0
-        #print("Ellipsoid: Ax**2 + Bxy + Cxz + Dy**2 + Eyz + Fz**2 + Gx + Hy + Iz + J = 0")
-        #print('A:', self.A)
-        #print('B:', self.B)
-        #print('C:', self.C)
-        #print('D:', self.D)
-        #print('E:', self.E)
-        #print('F:', self.F)
-        #print('G:', self.G)
-        #print('H:', self.H)
-        #print('I:', self.I)
-        #print('J:', self.J)
+#        print("Ellipsoid: Ax**2 + Bxy + Cxz + Dy**2 + Eyz + Fz**2 + Gx + Hy + Iz + J = 0")
+#        print('A:', self.A)
+#        print('B:', self.B)
+#        print('C:', self.C)
+#        print('D:', self.D)
+#        print('E:', self.E)
+#        print('F:', self.F)
+#        print('G:', self.G)
+#        print('H:', self.H)
+#        print('I:', self.I)
+#        print('J:', self.J)
 
     def intersect(self, pl):
         a = pl.plane[0]
@@ -98,9 +98,9 @@ class ellipsoid:
             ell.A = A - B * a / b + D * a**2 / b**2
             ell.B = C - B * c / b - E * a / b + 2.0 * a * c * D / b**2
             ell.C = F - E * c / b + D * c**2 / b**2
-            ell.D = - B * d / b + 2.0 * d * a * D / b**2 + G - H * a / b
-            ell.E = - E * d / b + 2.0 * d * c * D / b**2 + I - H * c / b
-            ell.F = - H * d / b + J + D * d**2 / b**2
+            ell.D = G - B * d / b - H * a / b + 2.0 * d * a * D / b**2
+            ell.E = I - E * d / b - H * c / b + 2.0 * d * c * D / b**2
+            ell.F = J - H * d / b + D * d**2 / b**2
         elif not a == 0 and pl.name == 'yz-plane':
             ell.A = D - B * b / a + A * b**2 / a**2
             ell.B = E - B * c / a - C * b / a + 2.0 * b * c * A / a**2
@@ -150,6 +150,8 @@ class ellipse:
         denom = self.B**2 - 4.0 * self.A * self.C
         A = self.A * self.E**2 + self.C * self.D**2 - self.B * self.D * self.E + denom * self.F
         B = self.A + self.C + np.sqrt((self.A - self.C)**2 + self.B**2)
+        if A * B < 0:
+            return (0.0, 0.0)
         a = - np.sqrt(2.0 * A * B) / denom
         B = self.A + self.C - np.sqrt((self.A - self.C)**2 + self.B**2)
         b = - np.sqrt(2.0 * A * B) / denom
