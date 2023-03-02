@@ -4,7 +4,7 @@ import re
 import numpy as np
 from matplotlib.patches import Ellipse, Circle
 from matplotlib.collections import EllipseCollection
-from tools.geometry import ellipsoid, ellipse, xy_plane, xz_plane, yz_plane
+from tools.geometry import xy_plane, xz_plane, yz_plane
 import os
 
 
@@ -291,11 +291,7 @@ class nc_reader(nc_base_reader):
             B22 = self._get_B22(B11, B12, V)
         a2 = self._get_eigenvalue(B11, B12, B22)
         angle = self._get_angle(B11, B12, B22, a2)
-        #print("bye")
-        #exit()
         b2 = (V / np.pi) ** 2 / a2
-        #print(x_pos.shape, z_pos.shape, a2.shape, b2.shape, angle.shape)
-        #exit()
         return (
             x_pos[:],
             z_pos[:],
@@ -432,72 +428,160 @@ class nc_reader(nc_base_reader):
 
         n = len(indices)
 
-        angles = np.empty(n)
-        a = np.empty(n)
-        b = np.empty(n)
+        B11e = np.empty(n)
+        B12e = np.empty(n)
+        area = np.empty(n)
         centres = np.empty((n, 2))
         ind = np.empty(n, dtype=int)
+
+        # calculate the rotation matrix R that aligns the normal vector of the
+        # plane with the z-axis (note: R^-1 = R^T). We use Rodrigues' rotation
+        # formula:
+        z = np.array([0.0, 0.0, 1.0])
+        w = np.cross(pl.normal, z)
+        c = np.dot(pl.normal, z)
+        s = np.sqrt(1.0 - c**2)
+        W = np.array([[0.0, -w[2], w[1]],
+                      [w[2], 0.0, -w[0]],
+                      [-w[1], w[0], 0.0]])
+        W2 = np.matmul(W, W)
+        R = np.eye(3) + W * s + W2 * (1.0 - c)
+        iR = np.transpose(R)
+        z = None
+
+        # new location of plane
+        p_aligned = np.matmul(R, pl.point)
+        zplane = p_aligned[2]
 
         j = 0
         for i in range(n):
             B = np.array([[B11[i], B12[i], B13[i]],
                           [B12[i], B22[i], B23[i]],
                           [B13[i], B23[i], B33[i]]])
-            
-            #print("parcel", i)
+
             # calculate inverse of B-matrix: (instead of using np.linalg.inv)
-            D, V = np.linalg.eigh(B)
-            iD = np.diag(1.0 / D)
-            # eigh calculates the eigenvalues in ascending order (c^2, b^2, a^2),
-            # hence, the order in iB is (1/a^2, 1/b^2, 1/c^2) assuming a >= b >= c
-            iB = np.matmul(np.matmul(V, iD), V.transpose())
+            iB = self._invert3x3(B)
 
             # ellipsoid centre:
             xc = np.array([xp[i], yp[i], zp[i]])
 
-            # create ellipsoid object:
-            elid = ellipsoid(xc, iB)
+            # rotate ellipsoid and centre:
+            iB = np.matmul(R, np.matmul(iB, iR))
+            xc = np.matmul(R, xc)
 
-            # calculate ellipes from intersection:
-            ell = elid.intersect(pl)
+            # After rotation we make the origin (0, 0, 0) the centre of the ellipsoid
+            # --> xc = (0, 0, 0), we must therefore shift the plane:
+            z = zplane - xc[2]
 
-            # get semi-major and semi-minor axes:
-            (a[j], b[j]) = ell.semi_axes
+            # Calculate the centre of the ellipse (in 3D space):
+            xo = np.zeros(3)
+            xo[0] = (iB[1, 2] * iB[0, 1] * z - iB[0, 2] * iB[1, 1] * z) / (iB[1, 1] * iB[0, 0] - iB[0, 1]**2)
+            xo[1] = (iB[0, 2] * iB[0, 1] * z - iB[1, 2] * iB[0, 0] * z) / (iB[1, 1] * iB[0, 0] - iB[0, 1]**2)
+            xo[2] = z
 
-            if a[j] == 0.0 and b[j] == 0:
+            # Calculate scaling factor
+            detiB2x2 = (iB[0, 0] * iB[1, 1] - iB[0, 1] ** 2)
+            A = np.array([[iB[0, 0], iB[0, 1], iB[0, 2] * z],
+                          [iB[0, 1], iB[1, 1], iB[1, 2] * z],
+                          [iB[0, 2] * z, iB[1, 2] * z, iB[2, 2] * z**2 - 1]])
+            iS = - detiB2x2 / np.linalg.det(A)
+
+            # Check if we actually have an intersection:
+            if detiB2x2 < 0.0 or iS == 0.0 or iS / iB[0, 0] < 0.0 or iS / iB[1, 1] < 0.0:
                 continue
 
-            # get ellipse centre:
-            (x0, y0) = ell.centre
-            centres[j, 0] = x0
-            centres[j, 1] = y0
+            # Transform centre back to original coordinate system:
+            xo = xo + xc
+            xo = np.matmul(iR, xo)
 
-            # get ellipse angle (in degree):
-            angles[j] = np.rad2deg(ell.angle)
-            ind[j] = int(indices[i])
 
-            j = j+1
+            B2x2 = np.zeros((2,2))
+            detiB2x2  = detiB2x2 * iS
+            B2x2[0, 0] =  iB[1, 1] / detiB2x2
+            B2x2[0, 1] = -iB[0, 1] / detiB2x2
+            B2x2[1, 1] =  iB[0, 0] / detiB2x2
 
-        return centres[0:j], a[0:j], b[0:j], angles[0:j], ind[0:j]
+            B3x3 = np.array([[B2x2[0, 0], B2x2[0, 1], 0.0],
+                             [B2x2[0, 1], B2x2[1, 1], 0.0],
+                             [0.0, 0.0, 1.0]])
+            B3x3 = np.matmul(iR, np.matmul(B3x3, R))
+            B2x2[0, 0] = B3x3[0, 0]
+            B2x2[0, 1] = B3x3[0, 1]
+            B2x2[1, 0] = B3x3[0, 1]
+            B2x2[1, 1] = B3x3[1, 1]
 
-    
+
+            if plane == 'xy':
+                centres[j, 0] = xo[0]
+                centres[j, 1] = xo[1]
+            elif plane == 'xz':
+                centres[j, 0] = xo[0]
+                centres[j, 1] = xo[2]
+
+                B2x2[0, 0] = B3x3[0, 0]
+                B2x2[0, 1] = B3x3[0, 2]
+                B2x2[1, 1] = B3x3[2, 2]
+            elif plane == 'yz':
+                centres[j, 0] = xo[1]
+                centres[j, 1] = xo[2]
+                B2x2[0, 0] = B3x3[1, 1]
+                B2x2[0, 1] = B3x3[1, 2]
+                B2x2[1, 1] = B3x3[2, 2]
+
+            B11e[j] = B2x2[0, 0]
+            B12e[j] = B2x2[0, 1]
+            area[j] = np.pi * np.sqrt(B2x2[1, 1] * B2x2[0, 0] - B2x2[0, 1] ** 2)
+            ind[j] = indices[i]
+            j = j + 1
+
+        return centres[0:j], B11e[0:j], B12e[0:j], area[0:j], ind[0:j]
+
+
+    def _invert3x3(self, A):
+        # 28 Feb 2023
+        # https://en.wikipedia.org/wiki/Invertible_matrix
+        iA = np.zeros((3, 3))
+
+        iA[0, 0] = A[1, 1] * A[2, 2] - A[1 ,2] ** 2
+        iA[0, 1] = A[0, 2] * A[1, 2] - A[0, 1] * A[2, 2]
+        iA[0, 2] = A[0, 1] * A[1, 2] - A[0, 2] * A[1, 1]
+
+        iA[1, 0] = iA[0, 1]
+        iA[1, 1] = A[0, 0] * A[2, 2] - A[0, 2] ** 2
+        iA[1, 2] = A[0, 2] * A[0, 1] - A[0, 0] * A[1, 2]
+
+        iA[2, 0] = iA[0, 2]
+        iA[2, 1] = iA[1, 2]
+        iA[2, 2] = A[0, 0] * A[1, 1] - A[0, 1] ** 2
+
+        detA = A[0, 0] * iA[0, 0] + A[0, 1] * iA[0, 1] + A[0, 2] * iA[0, 2]
+
+        return iA / detA
+
+
     def get_intersection_ellipses(self, step, plane, loc, use_bokeh=False):
 
-        centres, a, b, angles, indices = calculate_intersection_ellipses(step, plane, loc)
-        
+        centres, B11, B12, V, indices = calculate_intersection_ellipses(step, plane, loc)
+
+        B22 = self._get_B22(B11, B12, V)
+        a2 = self._get_eigenvalue(B11, B12, B22)
+        angle = self._get_angle(B11, B12, B22, a2)
+        b2 = (V / np.pi) ** 2 / a2
+
         if use_bokeh:
             return (
                 centres[:, 0],
                 centres[:, 1],
-                2 * a[:],
-                2 * b[:],
-                angles[:]), indices
+                2 * np.sqrt(a2[:]),
+                2 * np.sqrt(b2[:]),
+                angle[:]), indices
         else:
-            return EllipseCollection(widths=2.0 * a,
-                                     heights=2.0 * b,
-                                     angles=angles,
+            return EllipseCollection(widths=2.0 * np.sqrt(a2),
+                                     heights=2.0 * np.sqrt(b2),
+                                     angles=angle,
                                      units='xy',
                                      offsets=centres), indices
+
 
     def calculate_projected_ellipses(self, step, plane, loc):
         """
