@@ -459,14 +459,11 @@ class nc_reader(nc_base_reader):
                           [B12[i], B22[i], B23[i]],
                           [B13[i], B23[i], B33[i]]])
 
-            # calculate inverse of B-matrix: (instead of using np.linalg.inv)
-            iB = self._invert3x3(B)
-
             # ellipsoid centre:
             xc = np.array([xp[i], yp[i], zp[i]])
 
             # rotate ellipsoid and centre:
-            iB = np.matmul(R, np.matmul(iB, iR))
+            B = np.matmul(R, np.matmul(B, iR))
             xc = np.matmul(R, xc)
 
             # After rotation we make the origin (0, 0, 0) the centre of the ellipsoid
@@ -475,31 +472,25 @@ class nc_reader(nc_base_reader):
 
             # Calculate the centre of the ellipse (in 3D space):
             xo = np.zeros(3)
-            xo[0] = (iB[1, 2] * iB[0, 1] * z - iB[0, 2] * iB[1, 1] * z) / (iB[1, 1] * iB[0, 0] - iB[0, 1]**2)
-            xo[1] = (iB[0, 2] * iB[0, 1] * z - iB[1, 2] * iB[0, 0] * z) / (iB[1, 1] * iB[0, 0] - iB[0, 1]**2)
+            xo[0] = B[0, 2] / B[2, 2] * z
+            xo[1] = B[1, 2] / B[2, 2] * z
             xo[2] = z
 
-            # Calculate scaling factor
-            detiB2x2 = (iB[0, 0] * iB[1, 1] - iB[0, 1] ** 2)
-            A = np.array([[iB[0, 0], iB[0, 1], iB[0, 2] * z],
-                          [iB[0, 1], iB[1, 1], iB[1, 2] * z],
-                          [iB[0, 2] * z, iB[1, 2] * z, iB[2, 2] * z**2 - 1]])
-            iS = - detiB2x2 / np.linalg.det(A)
-
-            # Check if we actually have an intersection:
-            if detiB2x2 < 0.0 or iS == 0.0 or iS / iB[0, 0] < 0.0 or iS / iB[1, 1] < 0.0:
+            if B[2, 2] < z0 ** 2:
                 continue
 
             # Transform centre back to original coordinate system:
             xo = xo + xc
             xo = np.matmul(iR, xo)
 
+            S = 1.0 - z ** 2 / B[2, 2]
+
 
             B2x2 = np.zeros((2,2))
-            detiB2x2  = detiB2x2 * iS
-            B2x2[0, 0] =  iB[1, 1] / detiB2x2
-            B2x2[0, 1] = -iB[0, 1] / detiB2x2
-            B2x2[1, 1] =  iB[0, 0] / detiB2x2
+            B2x2[0, 0] = (B[0, 0] * B[2, 2] - B[0, 2] ** 2) * S / B[2, 2]
+            B2x2[0, 1] = (B[0, 1] * B[2, 2] - B[0, 2] * B[1, 2])  * S / B[2, 2]
+            B2x2[1, 0] = B2x2[0, 1]
+            B2x2[1, 1] = (B[1, 1] * B[2, 2] - B[1, 2] ** 2) * S / B[2, 2]
 
             B3x3 = np.array([[B2x2[0, 0], B2x2[0, 1], 0.0],
                              [B2x2[0, 1], B2x2[1, 1], 0.0],
@@ -535,28 +526,6 @@ class nc_reader(nc_base_reader):
             j = j + 1
 
         return centres[0:j], B11e[0:j], B12e[0:j], area[0:j], ind[0:j]
-
-
-    def _invert3x3(self, A):
-        # 28 Feb 2023
-        # https://en.wikipedia.org/wiki/Invertible_matrix
-        iA = np.zeros((3, 3))
-
-        iA[0, 0] = A[1, 1] * A[2, 2] - A[1 ,2] ** 2
-        iA[0, 1] = A[0, 2] * A[1, 2] - A[0, 1] * A[2, 2]
-        iA[0, 2] = A[0, 1] * A[1, 2] - A[0, 2] * A[1, 1]
-
-        iA[1, 0] = iA[0, 1]
-        iA[1, 1] = A[0, 0] * A[2, 2] - A[0, 2] ** 2
-        iA[1, 2] = A[0, 2] * A[0, 1] - A[0, 0] * A[1, 2]
-
-        iA[2, 0] = iA[0, 2]
-        iA[2, 1] = iA[1, 2]
-        iA[2, 2] = A[0, 0] * A[1, 1] - A[0, 1] ** 2
-
-        detA = A[0, 0] * iA[0, 0] + A[0, 1] * iA[0, 1] + A[0, 2] * iA[0, 2]
-
-        return iA / detA
 
 
     def get_intersection_ellipses(self, step, plane, loc, use_bokeh=False):
