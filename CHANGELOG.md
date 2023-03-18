@@ -1,3 +1,41 @@
+## EPIC version 0.12.4
+* [Fix field reading in 2D genspec and add 3D genspec](https://github.com/matt-frey/epic/pull/346
+* [Divergence form and nearest parcel fix](https://github.com/matt-frey/epic/pull/399
+* [Rename RK4 constants](https://github.com/matt-frey/epic/pull/401
+* [Use named indices for n-rank arrays](https://github.com/matt-frey/epic/pull/400
+* [Clean up flux form code](https://github.com/matt-frey/epic/pull/402
+* [Unreadable timings](https://github.com/matt-frey/epic/pull/405
+* [Apply nearest fix in 2d](https://github.com/matt-frey/epic/pull/403
+* [Generalise NetCDF dimension and axis names](https://github.com/matt-frey/epic/pull/406
+* [Monitor number of splits and merges](https://github.com/matt-frey/epic/pull/407
+* [Clean up par2grid](https://github.com/matt-frey/epic/pull/409
+* [Zeta zero on boundary](https://github.com/matt-frey/epic/pull/408
+* [Fix compilation with config.f90](https://github.com/matt-frey/epic/pull/410
+* [Update the manual](https://github.com/matt-frey/epic/pull/411
+* [Fix python scripts due to NetCDF interface](https://github.com/matt-frey/epic/pull/412
+* [Fix writing z axis to NetCDF](https://github.com/matt-frey/epic/pull/413
+* [Changes to moist setup: shorter run, smooth edge bubble](https://github.com/matt-frey/epic/pull/414
+* [Humidity diagnostics](https://github.com/matt-frey/epic/pull/415
+* [Sgs diagnostics](https://github.com/matt-frey/epic/pull/416
+* [Restarts with zeta flags](https://github.com/matt-frey/epic/pull/417
+* [Update requirements.txt](https://github.com/matt-frey/epic/pull/418
+* [Update the input section of the manual](https://github.com/matt-frey/epic/pull/419
+* [Add more statistics](https://github.com/matt-frey/epic/pull/420
+* [Fix parcel interpolation](https://github.com/matt-frey/epic/pull/423
+* [Use central differencing in solenoidal correction and tendency calculation](https://github.com/matt-frey/epic/pull/425
+* [Peref in NetCDF output](https://github.com/matt-frey/epic/pull/422
+* [Linear extrapolation central diffz](https://github.com/matt-frey/epic/pull/426
+* [Fix buoyancy extrema calculation](https://github.com/matt-frey/epic/pull/427
+* [Check if file exists](https://github.com/matt-frey/epic/pull/430
+* [Domain averaged quantities in 2D and 3D and protected parameters in 2D](https://github.com/matt-frey/epic/pull/431
+* [Update python scripts](https://github.com/matt-frey/epic/pull/432
+* [Setting 3D default n per cell to 8 (a cube)](https://github.com/matt-frey/epic/pull/434
+* [Add missing factor 1/2 to peref calculation](https://github.com/matt-frey/epic/pull/437
+* [Fix verbose mode and update initialisation in parcel correction unit tests](https://github.com/matt-frey/epic/pull/435
+* [APE calculation](https://github.com/matt-frey/epic/pull/440
+* [Initialise parcels like grid2par](https://github.com/matt-frey/epic/pull/441
+* [Add 3d setups](https://github.com/matt-frey/epic/pull/433
+
 ## EPIC version 0.12.3
 * [make variables private for safety](https://github.com/matt-frey/epic/pull/359)
 * [calculate KE on the grid](https://github.com/matt-frey/epic/pull/358)
