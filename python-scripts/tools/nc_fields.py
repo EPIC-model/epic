@@ -27,11 +27,23 @@ class nc_fields:
 
         self._parameters = {}
 
+        self._time = 0.0
+
+    def set_time(self, time):
+        self._time = time
+
     def add_physical_quantity(self, key, value):
         self._physical_quantities[key] = value
 
     def add_parameter(self, key, value):
         self._parameters[key] = value
+
+    def add_axis(self, axis, values):
+        if axis == 'x' or axis == 'y' or axis == 'z':
+            var = self._ncfile.createVariable(varname=axis,
+                                              datatype='f8',                                            
+                                              dimensions=(axis))
+            var[:] = values[:]
 
     def add_field(self, name, values, dtype='f8', **kwargs):
         """
@@ -67,7 +79,7 @@ class nc_fields:
             time = self._ncfile.createVariable(varname='t',
                                                datatype='f8',
                                                dimensions=('t'))
-            time[0] = 0.0
+            time[0] = self._time
 
 
         if self._ndims == 2:
