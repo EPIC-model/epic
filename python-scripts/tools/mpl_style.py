@@ -15,7 +15,7 @@ mpl.rcParams.update({
         r"\usepackage{amsmath}",
         r"\usepackage[utf8]{inputenc}",
         r"\usepackage[T1]{fontenc}",
-        r"\usepackage{bm}",
+        r"\usepackage{bm}"
         ])
 })
 
