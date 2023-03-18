@@ -14,7 +14,6 @@ module ls_rk4
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
     use field_diagnostics, only : calculate_field_diagnostics
-    use parameters, only : set_zeta_boundary_flag
     use timer, only : start_timer, stop_timer, timings
     implicit none
 
@@ -79,12 +78,6 @@ module ls_rk4
             integer                         :: n
 
             call par2grid((t > time%initial))
-
-            ! we must check if zeta must be kept zero
-            ! on a vertical boundary
-            if ((.not. l_restart) .and. (dabs(t - time%initial) < epsilon(t))) then
-                call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
-            endif
 
             ! need to be called in order to set initial time step;
             ! this is also needed for the first ls-rk4 substep
