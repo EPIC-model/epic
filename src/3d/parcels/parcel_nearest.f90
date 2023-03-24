@@ -59,15 +59,15 @@ module parcel_nearest
     ! Logicals used to determine which mergers are executed
     ! Integers above could be reused for this, but this would
     ! make the algorithm less readable
-    logical, allocatable :: l_leaf(:)
-    logical, allocatable :: l_available(:)
-    logical, allocatable :: l_merged(:)    ! indicates parcels merged in first stage
+    logical, allocatable, asynchronous :: l_leaf(:)
+    logical, allocatable, asynchronous :: l_available(:)
+    logical, allocatable, asynchronous :: l_merged(:)    ! indicates parcels merged in first stage
 
 #ifndef NDEBUG
     ! Logicals that are only needed for sanity checks
-    logical, allocatable :: l_is_merged(:) ! SANITY CHECK ONLY
-    logical, allocatable :: l_small(:)     ! SANITY CHECK ONLY
-    logical, allocatable :: l_close(:)     ! SANITY CHECK ONLY
+    logical, allocatable, asynchronous :: l_is_merged(:) ! SANITY CHECK ONLY
+    logical, allocatable, asynchronous :: l_small(:)     ! SANITY CHECK ONLY
+    logical, allocatable, asynchronous :: l_close(:)     ! SANITY CHECK ONLY
 #endif
 
     integer              :: n_neighbour_small(8)  ! number of small parcels received
@@ -721,6 +721,8 @@ module parcel_nearest
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! https://github.com/mpi-forum/mpi-forum-historic/issues/413
+        ! https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node294.htm
         subroutine resolve_tree(isma, iclo, rclo, n_local_small)
             integer, intent(inout)         :: isma(0:)
             integer, intent(inout)         :: iclo(:)
