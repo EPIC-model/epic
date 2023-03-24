@@ -280,7 +280,7 @@ module parcel_mpi
             logical, intent(in) :: l_invalid
             integer             :: nc, ub, n_max
 
-            n_parcel_sends(:) = 0
+            n_parcel_sends = 0
 
             ! upper bound (ub) of parcels per cell
             ub = ceiling(vcell / vmin)

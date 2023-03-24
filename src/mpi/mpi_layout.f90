@@ -258,4 +258,21 @@ module mpi_layout
 
         end subroutine get_local_bounds
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! As multiple neighbours can have the same rank number,
+        ! we cannot uniquely assign a neighbour. We just return
+        ! the first neighbour tag we find.
+        pure function get_neighbour_from_rank(r) result(nb)
+            integer, intent(in) :: r
+            integer             :: n, nb
+
+            do n = 1, 8
+                if (r == neighbours(n)%rank) then
+                    nb = n
+                    exit
+                endif
+            enddo
+        end function get_neighbour_from_rank
+
 end module mpi_layout

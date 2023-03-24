@@ -449,19 +449,12 @@ module parcel_nearest
 
             call deallocate_parcel_id_buffers
 
-            ! We must store the parcel index of each small parcel.
-            ! We need to allocate the invalid buffer, therefore
-            ! the second argument is .true.
-            call allocate_parcel_id_buffers(1, .true.)
-
             !---------------------------------------------------------------------
             ! We perform the actual merging locally. We must therefore send all
             ! necessary remote parcels to *this* MPI rank.
             ! Note: It cannot happen that the closest parcel is a small parcel
             !       on another MPI rank that is sent elsewhere.
             call gather_remote_parcels(n_local_small, rclo, iclo, isma)
-
-            call deallocate_parcel_id_buffers
 
             call nearest_deallocate
 
@@ -1607,7 +1600,7 @@ module parcel_nearest
 
         subroutine gather_remote_parcels(n_local_small, rclo, iclo, isma)
             integer,                     intent(inout) :: n_local_small
-            integer,                     intent(in)    :: rclo(:)       ! MPI rank of closest parcel
+            integer,                     intent(inout) :: rclo(:)       ! MPI rank of closest parcel
             integer,                     intent(inout) :: iclo(:)
             integer,                     intent(inout) :: isma(0:)
             integer,          dimension(:), pointer    :: send_pid
@@ -1620,40 +1613,66 @@ module parcel_nearest
             double precision                           :: buffer(n_par_attrib)
             integer                                    :: m, rc, ic, is, n, iv, i, j, k
             integer, parameter                         :: n_entries = n_par_attrib + 1
-
-
-            ! We must send all parcel attributes (n_par_attrib) plus
-            ! the index of the close parcel ic (1)
-            call allocate_parcel_buffers(n_entries)
-
-            n_parcel_sends = 0
-
-            print *, comm%rank, "gather parcels"
+            integer                                    :: n_bytes
+            integer, asynchronous                      :: n_parcel_recvs(8)
+            type(MPI_Win)                              :: win_neighbour
+            integer(KIND=MPI_ADDRESS_KIND)             :: win_size, offset
 
             !------------------------------------------------------------------
-            ! Figure out which small parcels we need to send:
-            iv = 1
+            ! Figure out how many parcels we send to our neighbours:
+            ! We must store the parcel index of each small parcel.
+            ! We need to allocate the invalid buffer, therefore
+            ! the second argument is .true.
+            call allocate_parcel_id_buffers(1, .true.)
             do m = 1, n_local_small
                 rc = rclo(m)
-                ic = iclo(m)
+                if (comm%rank /= rc) then
+                    n = get_neighbour_from_rank(rc)
+                    n_parcel_sends(n) = n_parcel_sends(n) + 1
+                endif
+            enddo
+
+            !------------------------------------------------------------------
+            ! We must send all parcel attributes (n_par_attrib) plus
+            ! the index of the close parcel ic (1)
+            ! (this routine uses n_parcel_sends)
+            call allocate_parcel_buffers(n_entries)
+
+            !------------------------------------------------------------------
+            ! Figure out how many parcels we receive from our neighbours
+            ! and fill all buffers:
+            call MPI_Sizeof(m, n_bytes, comm%err)
+            win_size = 8 * n_bytes
+            call MPI_Win_create(n_parcel_recvs,   &
+                                win_size,         &
+                                n_bytes,          &
+                                MPI_INFO_NULL,    &
+                                comm%world,       &
+                                win_neighbour,    &
+                                comm%err)
+
+            n_parcel_recvs = 0
+            iv = 1
+            do m = 1, n_local_small
                 is = isma(m)
-
-                print *, comm%rank, is, ic, rc
-
-                if (.not. rc == comm%rank) then
+                ic = iclo(m)
+                rc = rclo(m)
+                if (comm%rank /= rc) then
                     ! The closest parcel to this smalll parcel *is*
                     ! is on another MPI rank. We must send this parcel
                     ! to that rank.
-                    call get_index_periodic(parcels%position(:, ic), i, j, k)
-                    n = get_neighbour(i, j)
+
+                    n = get_neighbour_from_rank(rc)
+
+                    print *, comm%rank, "neighbour", n
 
                     call get_parcel_buffer_ptr(n, send_pid, send_buf)
-                    n_parcel_sends(n) = n_parcel_sends(n) + 1
 
                     call parcel_serialize(is, buffer)
-                    j = n_entries * iv
-                    i = j - n_entries + 1
-                    send_buf(i:j-1) = buffer
+                    j = n_entries * iv   ! 15, 30, 45, 60
+                    i = j - n_entries + 1 ! 1, 16, 31
+                    print *, comm%rank, "i, j", i, j, shape(buffer)
+                    send_buf(i:j-1) = buffer  ! 1:15
                     send_buf(j) = dble(ic)
 
                     n = n_parcel_sends(n)
@@ -1664,8 +1683,39 @@ module parcel_nearest
                     ! Mark this as invalid
                     isma(m) = -1
                     iclo(m) = -1
+                    rclo(m) = -1
                 endif
             enddo
+
+            call MPI_Win_lock_all(0, win_neighbour, comm%err)
+
+            do n = 1, 8
+                offset = n - 1
+                call MPI_Put(n_parcel_sends(n),    &
+                             1,                    &
+                             MPI_INTEGER,          &
+                             neighbours(n)%rank,   &
+                             offset,               &
+                             1,                    &
+                             MPI_INTEGER,          &
+                             win_neighbour,        &
+                             comm%err)
+            enddo
+
+            call mpi_check_for_error(&
+                "in MPI_Put of parcel_nearest::resolve_tree.")
+
+            call MPI_Win_unlock_all(win_neighbour, comm%err)
+
+            call MPI_Win_sync(win_neighbour, comm%err)
+
+            call MPI_Win_free(win_neighbour, comm%err)
+
+            print *, comm%rank, "sends", n_parcel_sends
+            print *, comm%rank, "recvs", n_parcel_recvs
+
+
+            print *, comm%rank, "gather parcels"
 
             !------------------------------------------------------------------
             ! Communicate parcels:
@@ -1757,6 +1807,7 @@ module parcel_nearest
             n = sum(n_parcel_sends)
             call parcel_delete(invalid, n)
 
+            call deallocate_parcel_id_buffers
             call deallocate_parcel_buffers
 
             ! We must now remove all invalid entries in isma and
@@ -1764,6 +1815,7 @@ module parcel_nearest
             n_local_small = count(isma(1:) /= -1)
             isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
             iclo(1:n_local_small) = pack(iclo, iclo /= -1)
+            rclo(1:n_local_small) = pack(rclo, rclo /= -1)
 
 #ifndef NDEBUG
             n = n_parcels
