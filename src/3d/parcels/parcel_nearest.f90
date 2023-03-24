@@ -723,6 +723,7 @@ module parcel_nearest
 
         ! https://github.com/mpi-forum/mpi-forum-historic/issues/413
         ! https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node294.htm
+        ! https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node279.htm
         subroutine resolve_tree(isma, iclo, rclo, n_local_small)
             integer, intent(inout)         :: isma(0:)
             integer, intent(inout)         :: iclo(:)
@@ -763,30 +764,10 @@ module parcel_nearest
                 call MPI_Win_sync(win_avail, comm%err)
                 call MPI_Win_sync(win_leaf, comm%err)
 
-                ! start MPI one-sided communication for l_available
-                call MPI_Win_fence(0, win_avail, comm%err)
-
-                call mpi_check_for_error(&
-                    "in MPI_Win_fence of parcel_nearest::resolve_tree.")
-
-                call MPI_Win_fence(MPI_MODE_NOPUT, win_merged, comm%err)
-
                 do m = 1, n_local_small
                     is = isma(m)
                     ! only consider links that still may be merging
                     ! reset relevant properties
-
-                    ism = is
-                    call MPI_Get(l_merged(is),      &
-                                 1,                 &
-                                 MPI_LOGICAL,       &
-                                 comm%rank,         &
-                                 ism,               &
-                                 1,                 &
-                                 MPI_LOGICAL,       &
-                                 win_merged,        &
-                                 comm%err)
-
                     if (.not. l_merged(is)) then
                         ic = iclo(m)
                         rc = rclo(m)
@@ -795,6 +776,7 @@ module parcel_nearest
                         if (rc == comm%rank) then
                             l_available(ic) = .true.
                         else
+                            call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, comm%err)
                             !     MPI_Put(origin_addr, origin_count, origin_datatype, target_rank,
                             !         target_disp, target_count, target_datatype, win, ierror)
                             !     TYPE(*), DIMENSION(..), INTENT(IN), ASYNCHRONOUS :: origin_addr
@@ -804,7 +786,7 @@ module parcel_nearest
                             !     TYPE(MPI_Win), INTENT(IN) :: win
                             !     INTEGER, OPTIONAL, INTENT(OUT) :: ierror
                             l_helper = .true.
-                            icm = ic
+                            icm = ic - 1 ! starts at 0
                             print *, comm%rank, "put win_avail", ic, rc
                             call MPI_Put(l_helper,          &
                                          1,                 &
@@ -817,45 +799,20 @@ module parcel_nearest
                                          comm%err)
                             call mpi_check_for_error(&
                                 "in MPI_Put of parcel_nearest::resolve_tree.")
+
+                            call MPI_Win_unlock(rc, win_avail, comm%err)
                         endif
                     endif
                 enddo
 
-                ! finish MPI one-sided communication for l_available
-                call MPI_Win_fence(0, win_avail, comm%err)
-
-                call mpi_check_for_error(&
-                    "in MPI_Win_fence of parcel_nearest::resolve_tree.")
-
-                call MPI_Win_fence(0, win_merged, comm%err)
-
                 ! synchronize the private and public window copies
                 call MPI_Win_sync(win_avail, comm%err)
 
-                ! start MPI one-sided communication for l_leaf
-                call MPI_Win_fence(0, win_leaf, comm%err)
-
-                call mpi_check_for_error(&
-                    "in MPI_Win_fence of parcel_nearest::resolve_tree.")
-
                 print *, comm%rank, "determine leaf parcels."
-
-                call MPI_Win_fence(MPI_MODE_NOPUT, win_merged, comm%err)
 
                 ! determine leaf parcels
                 do m = 1, n_local_small
                     is = isma(m)
-
-                    ism = is
-                    call MPI_Get(l_merged(is),      &
-                                 1,                 &
-                                 MPI_LOGICAL,       &
-                                 comm%rank,         &
-                                 ism,               &
-                                 1,                 &
-                                 MPI_LOGICAL,       &
-                                 win_merged,        &
-                                 comm%err)
 
                     if (.not. l_merged(is)) then
                         ic = iclo(m)
@@ -864,8 +821,9 @@ module parcel_nearest
                         if (rc == comm%rank) then
                             l_leaf(ic) = .false.
                         else
+                            call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_leaf, comm%err)
                             l_helper = .false.
-                            icm = ic
+                            icm = ic - 1
                             print *, comm%rank, "put win_leaf", ic, rc
                             call MPI_Put(l_helper,          &
                                          1,                 &
@@ -878,56 +836,21 @@ module parcel_nearest
                                          comm%err)
                             call mpi_check_for_error(&
                                 "in MPI_Put of parcel_nearest::resolve_tree.")
-
+                            call MPI_Win_unlock(rc, win_leaf, comm%err)
                         endif
                     endif
                 enddo
-
-                call MPI_Win_fence(0, win_merged, comm%err)
-
-                ! finish MPI one-sided communication for l_leaf
-                call MPI_Win_fence(0, win_leaf, comm%err)
 
                 ! synchronize the private and public window copies
                 call MPI_Win_sync(win_leaf, comm%err)
 
                 print *, comm%rank, "determine leaf parcels. Done."
 
-                ! start MPI one-sided communication for l_available
-                call MPI_Win_fence(0, win_avail, comm%err)
-
-                call mpi_check_for_error(&
-                    "in MPI_Win_fence of parcel_nearest::resolve_tree.")
-
                 print *, comm%rank, "filter out parcels that are 'unavailable' for merging."
-
-
-                call MPI_Win_fence(MPI_MODE_NOPUT, win_merged, comm%err)
-                call MPI_Win_fence(MPI_MODE_NOPUT, win_leaf, comm%err)
 
                 ! filter out parcels that are "unavailable" for merging
                 do m = 1, n_local_small
                     is = isma(m)
-
-                    ism = is
-                    call MPI_Get(l_merged(is),      &
-                                 1,                 &
-                                 MPI_LOGICAL,       &
-                                 comm%rank,         &
-                                 ism,               &
-                                 1,                 &
-                                 MPI_LOGICAL,       &
-                                 win_merged,        &
-                                 comm%err)
-                    call MPI_Get(l_leaf(is),        &
-                                 1,                 &
-                                 MPI_LOGICAL,       &
-                                 comm%rank,         &
-                                 ism,               &
-                                 1,                 &
-                                 MPI_LOGICAL,       &
-                                 win_leaf,          &
-                                 comm%err)
 
                     print *, comm%rank, is, "l_merged", l_merged(is), "l_leaf", l_leaf(is)
 
@@ -939,8 +862,9 @@ module parcel_nearest
                             if (rc == comm%rank) then
                                 l_available(ic) = .false.
                             else
+                                call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, comm%err)
                                 l_helper = .false.
-                                icm = ic
+                                icm = ic - 1
                                 print *, comm%rank, "put 2 win_avail", ic, rc
                                 call MPI_Put(l_helper,          &
                                              1,                 &
@@ -953,56 +877,20 @@ module parcel_nearest
                                              comm%err)
                                 call mpi_check_for_error(&
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
+                                call MPI_Win_unlock(rc, win_avail, comm%err)
                             endif
                         endif
                     endif
                 enddo
-
-                ! finish MPI one-sided communication for l_available
-                call MPI_Win_fence(0, win_avail, comm%err)
-
-                call mpi_check_for_error(&
-                     "in MPI_Win_fence of parcel_nearest::resolve_tree.")
-
-                call MPI_Win_fence(0, win_merged, comm%err)
-                call MPI_Win_fence(0, win_leaf, comm%err)
 
                 ! synchronize the private and public window copies
                 call MPI_Win_sync(win_avail, comm%err)
 
                 print *, comm%rank, "filter out parcels that are 'unavailable' for merging. Done."
 
-                ! start MPI one-sided communication for l_merged
-                call MPI_Win_fence(0, win_merged, comm%err)
-
-                call mpi_check_for_error(&
-                    "in MPI_Win_fence of parcel_nearest::resolve_tree.")
-
-                ! start MPI one-sided communication for l_available
-                ! Note: we only *get* data, so we pass MPI_MODE_NOPUT
-                !       to optimize communication
-                call MPI_Win_fence(MPI_MODE_NOPUT, win_avail, comm%err)
-
-                call MPI_Win_fence(MPI_MODE_NOPUT, win_leaf, comm%err)
-
-                call mpi_check_for_error(&
-                    "in MPI_Win_fence of parcel_nearest::resolve_tree.")
-
-
                 ! identify mergers in this iteration
                 do m = 1, n_local_small
                     is = isma(m)
-
-                    ism = is
-                    call MPI_Get(l_merged(is),      &
-                                 1,                 &
-                                 MPI_LOGICAL,       &
-                                 comm%rank,         &
-                                 ism,               &
-                                 1,                 &
-                                 MPI_LOGICAL,       &
-                                 win_merged,        &
-                                 comm%err)
 
                     if (.not. l_merged(is)) then
                         ic = iclo(m)
@@ -1012,6 +900,7 @@ module parcel_nearest
                         if (rc == comm%rank) then
                             l_helper = l_available(ic)
                         else
+                            call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, comm%err)
                             !     MPI_Get(origin_addr, origin_count, origin_datatype, target_rank,
                             !         target_disp, target_count, target_datatype, win, ierror)
                             !     TYPE(*), DIMENSION(..), ASYNCHRONOUS :: origin_addr
@@ -1020,7 +909,7 @@ module parcel_nearest
                             !     INTEGER(KIND=MPI_ADDRESS_KIND), INTENT(IN) :: target_disp
                             !     TYPE(MPI_Win), INTENT(IN) :: win
                             !     INTEGER, OPTIONAL, INTENT(OUT) :: ierror
-                            icm = ic
+                            icm = ic - 1
                             call MPI_Get(l_helper,          &
                                          1,                 &
                                          MPI_LOGICAL,       &
@@ -1033,18 +922,8 @@ module parcel_nearest
                             call mpi_check_for_error(&
                                     "in MPI_Get of parcel_nearest::resolve_tree.")
 
+                            call MPI_Win_unlock(rc, win_avail, comm%err)
                         endif
-
-                        ism = is
-                        call MPI_Get(l_leaf(is),       &
-                                     1,                 &
-                                     MPI_LOGICAL,       &
-                                     comm%rank,         &
-                                     ism,               &
-                                     1,                 &
-                                     MPI_LOGICAL,       &
-                                     win_leaf,          &
-                                     comm%err)
 
                         if (l_leaf(is) .and. l_helper) then
                             l_continue_iteration = .true. ! merger means continue iteration
@@ -1053,8 +932,10 @@ module parcel_nearest
                             if (rc == comm%rank) then
                                 l_merged(ic) = .true.
                             else
+                                call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_merged, comm%err)
+
                                 l_helper = .true.
-                                icm = ic
+                                icm = ic - 1
                                 print *, comm%rank, "put win_merged", ic, icm
                                 call MPI_Put(l_helper,          &
                                             1,                  &
@@ -1067,29 +948,11 @@ module parcel_nearest
                                             comm%err)
                                 call mpi_check_for_error(&
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
+                                call MPI_Win_unlock(rc, win_merged, comm%err)
                             endif
                         endif
                     endif
                 enddo
-
-                ! finish MPI one-sided communication for l_merged
-                call MPI_Win_fence(0, win_merged, comm%err)
-
-                call mpi_check_for_error(&
-                    "in MPI_Win_fence of parcel_nearest::resolve_tree.")
-
-
-                ! finish MPI one-sided communication for l_available
-                call MPI_Win_fence(0, win_avail, comm%err)
-                call MPI_Win_fence(0, win_leaf, comm%err)
-
-                call mpi_check_for_error(&
-                    "in MPI_Win_fence of parcel_nearest::resolve_tree.")
-
-
-                ! synchronize the private and public window copies
-                call MPI_Win_sync(win_merged, comm%err)
-                call MPI_Win_sync(win_avail, comm%err)
 
                 ! Performance improvement: We actually only need to synchronize with neighbours
                 call MPI_Allreduce(MPI_IN_PLACE,            &
@@ -1104,8 +967,12 @@ module parcel_nearest
                     "in MPI_Allreduce of parcel_nearest::resolve_tree.")
             enddo
 
+            ! synchronize the private and public window copies
+            call MPI_Win_sync(win_merged, comm%err)
+            call MPI_Win_sync(win_avail, comm%err)
+            call MPI_Win_sync(win_leaf, comm%err)
 
-            call MPI_Barrier(comm%world, comm%err)
+
             print *, comm%rank, "Second stage, related to dual links"
 
 
