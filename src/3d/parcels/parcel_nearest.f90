@@ -262,7 +262,7 @@ module parcel_nearest
 
                 call parcel_to_local_cell_index(n, ix, iy)
 
-                print *, "located parcel in", n, ix, iy
+!                 print *, "located parcel in", n, ix, iy
 
                 if (parcels%volume(n) < vmin) then
                     n_local_small = n_local_small + 1
@@ -293,8 +293,9 @@ module parcel_nearest
                 return
             endif
 
-            print *, "n_local_small", n_local_small
-            print *, "n_global_small", n_global_small
+            print *, comm%rank, "n_local_small", n_local_small
+            print *, comm%rank, "n_global_small", n_global_small
+            print *, comm%rank, "n_parcel_sends", n_parcel_sends
 
             !---------------------------------------------------------------------
             ! Communicate position of small parcels:
@@ -801,6 +802,8 @@ module parcel_nearest
                 ! synchronize the private and public window copies
                 call MPI_Win_sync(win_avail, comm%err)
 
+                call MPI_Barrier(comm%world, comm%err)
+
                 print *, comm%rank, "determine leaf parcels."
 
                 ! determine leaf parcels
@@ -836,6 +839,8 @@ module parcel_nearest
 
                 ! synchronize the private and public window copies
                 call MPI_Win_sync(win_leaf, comm%err)
+
+                call MPI_Barrier(comm%world, comm%err)
 
                 print *, comm%rank, "determine leaf parcels. Done."
 
@@ -878,6 +883,8 @@ module parcel_nearest
 
                 ! synchronize the private and public window copies
                 call MPI_Win_sync(win_avail, comm%err)
+
+                call MPI_Barrier(comm%world, comm%err)
 
                 print *, comm%rank, "filter out parcels that are 'unavailable' for merging. Done."
 
@@ -1364,7 +1371,7 @@ module parcel_nearest
                     southwest_pid(2*k-1) = n
                     southwest_pid(2*k) = m
                     n_parcel_sends(MPI_SOUTHWEST) = k
-                    print *, "add parcel", n, "to south-west"
+                    print *, comm%rank, "add parcel", n, "to south-west"
 
                 else if (iy == box%hi(2)+1) then
                     ! parcel in northwest corner with
@@ -1373,10 +1380,10 @@ module parcel_nearest
                     northwest_pid(2*k-1) = n
                     northwest_pid(2*k) = m
                     n_parcel_sends(MPI_NORTHWEST) = k
-                    print *, "add parcel", n, "to north-west"
+                    print *, comm%rank, "add parcel", n, "to north-west"
                 endif
 
-                print *, "add parcel", n, "to west"
+                print *, comm%rank, "add parcel", n, "to west"
 
                 ! neighbour: west
                 k = n_parcel_sends(MPI_WEST) + 1
@@ -1395,7 +1402,7 @@ module parcel_nearest
                     southeast_pid(2*k-1) = n
                     southeast_pid(2*k) = m
                     n_parcel_sends(MPI_SOUTHEAST) = k
-                    print *, "add parcel", n, "to south-east"
+                    print *, comm%rank, "add parcel", n, "to south-east"
 
                 else if (iy == box%hi(2)+1) then
                     ! parcel in northeast corner with
@@ -1404,7 +1411,7 @@ module parcel_nearest
                     northeast_pid(2*k-1) = n
                     northeast_pid(2*k) = m
                     n_parcel_sends(MPI_NORTHEAST) = k
-                    print *, "add parcel", n, "to north-east"
+                    print *, comm%rank, "add parcel", n, "to north-east"
                 endif
 
                 ! neighbours: east
@@ -1413,7 +1420,7 @@ module parcel_nearest
                 east_pid(2*k) = m
                 n_parcel_sends(MPI_EAST) = k
 
-                print *, "add parcel", n, "to east"
+                print *, comm%rank, "add parcel", n, "to east"
             endif
 
             if (iy == box%lo(2)) then
@@ -1422,7 +1429,7 @@ module parcel_nearest
                 south_pid(2*k) = m
                 n_parcel_sends(MPI_SOUTH) = k
 
-                print *, "add parcel", n, "to south"
+                print *, comm%rank, "add parcel", n, "to south"
             endif
 
             if (iy == box%hi(2)+1) then
@@ -1431,7 +1438,7 @@ module parcel_nearest
                 north_pid(2*k) = m
                 n_parcel_sends(MPI_NORTH) = k
 
-                print *, "add parcel", n, "to north"
+                print *, comm%rank, "add parcel", n, "to north"
             endif
         end subroutine locate_parcel_in_boundary_cell
 
@@ -1478,7 +1485,7 @@ module parcel_nearest
                          send_buf(i:i+2) = parcels%position(:, pid)
                          send_buf(i+3) = dble(pid)
                          send_buf(i+4) = dble(m)
-                         print *, "send parcel position", pid, "to neighbour", n
+!                          print *, "send parcel position", pid, "to neighbour", n
                      enddo
                 endif
 
