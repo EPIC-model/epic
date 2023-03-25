@@ -262,7 +262,7 @@ module parcel_nearest
 
                 call parcel_to_local_cell_index(n, ix, iy)
 
-!                 print *, "located parcel in", n, ix, iy
+!                 print *, comm%rank, "located parcel in", n, parcels%buoyancy(n), ix, iy
 
                 if (parcels%volume(n) < vmin) then
                     n_local_small = n_local_small + 1
@@ -270,7 +270,7 @@ module parcel_nearest
                     ! If a small parcel is in a boundary cell, a duplicate must
                     ! be sent to the neighbour rank. This call checks if the parcel
                     ! must be sent and fills the send buffers.
-                    call nearest_grid_point(n, ix, iy)
+                    call nearest_global_grid_point(n, ix, iy)
                     call locate_parcel_in_boundary_cell(n_local_small, n, ix, iy)
                 endif
             enddo
@@ -335,10 +335,10 @@ module parcel_nearest
                 ! Now we can safely assign the local cell index:
                 call parcel_to_local_cell_index(n, ix, iy)
 
-!                 print *, comm%rank, "remote parcel", n, ix, iy
+
+                print *, comm%rank, "remote parcel", n, ix, iy
 
             enddo
-
 
             print *, comm%rank, "n_local_small", n_local_small, "n_remote_small", n_remote_small
 
@@ -416,6 +416,9 @@ module parcel_nearest
             print *, comm%rank, "find globally, iclo", iclo
             print *, comm%rank, "find globally, rclo", rclo
 
+            call MPI_Barrier(comm%world, comm%err)
+            stop
+
 #ifndef NDEBUG
             write(*,*) 'start merging, n_local_small='
             write(*,*) n_local_small
@@ -491,13 +494,16 @@ module parcel_nearest
 
 !         !!@pre Assumes a parcel is in the local domain including halo cells
 !         !      (in x and y).
-        subroutine nearest_grid_point(n, ix, iy)
+        subroutine nearest_global_grid_point(n, ix, iy)
             integer, intent(in)  :: n
             integer, intent(out) :: ix, iy
 !             integer              :: iz, ijk
 
             ix =     nint(dxi(1) * (parcels%position(1, n) - lower(1)))
             iy =     nint(dxi(2) * (parcels%position(2, n) - lower(2)))
+
+
+            print *, comm%rank, "nearest grid point", n, parcels%buoyancy(n), ix, iy
 !             iz = min(nint(dxi(3) * (parcels%position(3, n) - box%lower(3))), nz-1)
 
 !             ! Cell index of parcel:
@@ -511,7 +517,7 @@ module parcel_nearest
 !             ! Store grid cell that this parcel is in:
 !             loca(n) = ijk
 
-        end subroutine nearest_grid_point
+        end subroutine nearest_global_grid_point
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -1477,16 +1483,16 @@ module parcel_nearest
                 send_size = n_parcel_sends(n) * n_entries
 
                 if (n_parcel_sends(n) > 0) then
-                     ! pack parcel position and parcel index to send buffer
-                     do l = 1, n_parcel_sends(n)
-                         i = 1 + (l-1) * n_entries
-                         pid = send_ptr(2*l-1)
-                         m   = send_ptr(2*l)
-                         send_buf(i:i+2) = parcels%position(:, pid)
-                         send_buf(i+3) = dble(pid)
-                         send_buf(i+4) = dble(m)
-!                          print *, "send parcel position", pid, "to neighbour", n
-                     enddo
+                    print *, comm%rank,"send",n_parcel_sends(n),"to neighbour",n,"with rank",neighbours(n)%rank
+                    ! pack parcel position and parcel index to send buffer
+                    do l = 1, n_parcel_sends(n)
+                        i = 1 + (l-1) * n_entries
+                        pid = send_ptr(2*l-1)
+                        m   = send_ptr(2*l)
+                        send_buf(i:i+2) = parcels%position(:, pid)
+                        send_buf(i+3) = dble(pid)
+                        send_buf(i+4) = dble(m)
+                    enddo
                 endif
 
                 call MPI_Isend(send_buf,                &
@@ -1521,13 +1527,6 @@ module parcel_nearest
                 call mpi_check_for_error(&
                     "in MPI_Recv of parcel_nearest::send_small_parcel_bndry_info.")
 
-                print *, "send_small_parcel_bndry_info: recv_size", recv_size
-
-!                 if (source == comm%rank) then
-!                     deallocate(recv_buf)
-!                     cycle
-!                 endif
-
                 if (mod(recv_size, n_entries) /= 0) then
                     call mpi_exit_on_error(&
                         "parcel_nearest::send_small_parcel_bndry_info: Receiving wrong count.")
@@ -1535,7 +1534,7 @@ module parcel_nearest
 
                 recv_count = recv_size / n_entries
 
-                print *, "receive", recv_count, "parcels from neighbour", tag
+                print *, comm%rank,"recv",recv_count,"from neighbour",tag,"with rank",neighbours(tag)%rank
 
 
                 i = n_parcels+1
@@ -1582,13 +1581,6 @@ module parcel_nearest
             enddo
 
             n_remote_small = sum(n_neighbour_small)
-
-!             print *, remote_m_index
-!             stop
-
-!             allocate(remote_small_pid(n_local_small+1:n_local_small+n_remote_small))
-!             allocate(remote_small_rank(n_local_small+1:n_local_small+n_remote_small))
-!             allocate(remote_m_index(n_local_small+1:n_local_small+n_remote_small))
 
             call MPI_Waitall(8,                 &
                             requests,           &
