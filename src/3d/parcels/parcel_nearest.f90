@@ -1618,6 +1618,7 @@ module parcel_nearest
             integer, asynchronous                      :: n_parcel_recvs(8)
             type(MPI_Win)                              :: win_neighbour
             integer(KIND=MPI_ADDRESS_KIND)             :: win_size, offset
+            integer                                    :: n_registered(8)
 
             !------------------------------------------------------------------
             ! Figure out how many parcels we send to our neighbours:
@@ -1625,13 +1626,19 @@ module parcel_nearest
             ! We need to allocate the invalid buffer, therefore
             ! the second argument is .true.
             call allocate_parcel_id_buffers(1, .true.)
+
+            n_parcel_sends = 0
+
             do m = 1, n_local_small
                 rc = rclo(m)
                 if (comm%rank /= rc) then
                     n = get_neighbour_from_rank(rc)
+                    print *, comm%rank, "neighbour number", n
                     n_parcel_sends(n) = n_parcel_sends(n) + 1
                 endif
             enddo
+
+            print *, comm%rank, "n_parcel_sends", n_parcel_sends
 
             !------------------------------------------------------------------
             ! We must send all parcel attributes (n_par_attrib) plus
@@ -1653,6 +1660,7 @@ module parcel_nearest
                                 comm%err)
 
             n_parcel_recvs = 0
+            n_registered = 0
             iv = 1
             do m = 1, n_local_small
                 is = isma(m)
@@ -1665,20 +1673,24 @@ module parcel_nearest
 
                     n = get_neighbour_from_rank(rc)
 
+                    print *, comm%rank, "neighbour number again", n
+
 
                     call get_parcel_buffer_ptr(n, send_pid, send_buf)
 
                     print *, comm%rank, "neighbour", n, size(send_buf)
 
+                    n_registered(n) = n_registered(n) + 1
+
                     call parcel_serialize(is, buffer)
-                    j = n_entries * iv   ! 15, 30, 45, 60
-                    i = j - n_entries + 1 ! 1, 16, 31
-                    print *, comm%rank, "i, j", i, j, shape(buffer)
-                    send_buf(i:j-1) = buffer  ! 1:15
+                    j = n_entries * n_registered(n)   ! 15, 30, 45, 60
+                    i = j - n_entries + 1 ! 1, 16, 31, 46
+                    print *, comm%rank, "i, j", i, j
+                    send_buf(i:j-1) = buffer  ! 1:14
                     send_buf(j) = dble(ic)
 
-                    n = n_parcel_sends(n)
-                    send_pid(n) = is
+!                     n = n_parcel_sends(n)
+!                     send_pid(n) = is
                     invalid(iv) = is
                     iv = iv + 1
 
@@ -1688,6 +1700,13 @@ module parcel_nearest
                     rclo(m) = -1
                 endif
             enddo
+
+            ! We must now remove all invalid entries in isma and
+            ! iclo and also update the value of n_local_small:
+            n_local_small = count(isma(1:) /= -1)
+            isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
+            iclo(1:n_local_small) = pack(iclo, iclo /= -1)
+            rclo(1:n_local_small) = pack(rclo, rclo /= -1)
 
             call MPI_Win_lock_all(0, win_neighbour, comm%err)
 
@@ -1765,7 +1784,7 @@ module parcel_nearest
 
                 recv_count = recv_size / n_entries
 
-                print *, "gather: recv_count", recv_count
+                print *, comm%rank, "gather: recv_count", recv_count
 
                 ! Set the current value of the *m* index to
                 ! its current maximum value (excluding small
@@ -1783,9 +1802,8 @@ module parcel_nearest
 
                     ! Add the small parcel to isma and
                     ! its closest parcel to iclo
-                    ic = nint(recv_buf(j))
                     m = m + 1
-                    iclo(m) = ic
+                    iclo(m) = nint(recv_buf(j))
                     isma(m) = n_parcels
                 enddo
                 ! The last value of *m* is our new number of
@@ -1812,12 +1830,12 @@ module parcel_nearest
             call deallocate_parcel_id_buffers
             call deallocate_parcel_buffers
 
-            ! We must now remove all invalid entries in isma and
-            ! iclo and also update the value of n_local_small:
-            n_local_small = count(isma(1:) /= -1)
-            isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
-            iclo(1:n_local_small) = pack(iclo, iclo /= -1)
-            rclo(1:n_local_small) = pack(rclo, rclo /= -1)
+!             ! We must now remove all invalid entries in isma and
+!             ! iclo and also update the value of n_local_small:
+!             n_local_small = count(isma(1:) /= -1)
+!             isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
+!             iclo(1:n_local_small) = pack(iclo, iclo /= -1)
+!             rclo(1:n_local_small) = pack(rclo, rclo /= -1)
 
 #ifndef NDEBUG
             n = n_parcels
