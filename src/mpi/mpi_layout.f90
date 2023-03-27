@@ -11,7 +11,7 @@ module mpi_layout
         integer          :: halo_size(3)        ! number of grid points including halo
         double precision :: lower(3)            ! origin of *this* subdomain excluding halo
         double precision :: halo_lower(3)       ! origin of *this* subdomain including halo
-        double precision :: extent(3)           ! local domain extent excluding haloe
+        double precision :: extent(3)           ! local domain extent excluding halo
         integer          :: global_size(3)    ! global number of cell (excluding halo)
         integer          :: ncell               ! number of cells excluding halo
         integer          :: halo_ncell          ! number of cells including halo
@@ -202,6 +202,8 @@ module mpi_layout
             neighbours(MPI_NORTHEAST)%hi(2) = neighbours(MPI_NORTH)%hi(2)
 
         end subroutine mpi_layout_init
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         pure function is_neighbour(i, j, dir) result(l_inside)
             integer, intent(in) :: i, j, dir

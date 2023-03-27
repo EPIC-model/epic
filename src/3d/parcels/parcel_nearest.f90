@@ -107,10 +107,6 @@ module parcel_nearest
                 ! size of RMA window in bytes
                 win_size = disp_unit * max_num_parcels
 
-                print *, "Window size", win_size
-                print *, "Disp unit", disp_unit
-                print *, "Max size", max_num_parcels
-
                 !     MPI_Win_create(base, size, disp_unit, info, comm, win, ierror)
                 !     TYPE(*), DIMENSION(..), ASYNCHRONOUS :: base
                 !     INTEGER(KIND=MPI_ADDRESS_KIND), INTENT(IN) :: size
@@ -306,43 +302,18 @@ module parcel_nearest
             ! might merge.
             call send_small_parcel_bndry_info
 
-            ! We must also assign incoming small parcels to cells
-            ! Note: We must apply a shift for parcels communicated
-            !       across a periodic boundary.
-            do n = n_parcels + 1, n_parcels + n_remote_small
-                ! global cell index in x and y
-                ix = int(dxi(1) * (parcels%position(1, n) - lower(1)))
-                iy = int(dxi(2) * (parcels%position(2, n) - lower(2)))
-
-                ! Check if parcel is outside *this* subdomain (including halo region) and
-                ! shift if necessary. Across a periodic boundary we must shift a parcel
-                ! into the halo region of *this* subdomain.
-
-!                 print *, comm%rank, "position before", n, parcels%position(1:2, n)
-
-                ! If parcel position < lower + dx, then add global domain
-                ! extent to parcel position.
-                ! If parcel position > extent - dx, then subtract global domain
-                ! extent from parcel position.
-                do j = 1, 2
-                    if (parcels%position(j, n) < lower(j) + dx(j)) then
-                        parcels%position(j, n) = parcels%position(j, n) + extent(j)
-                    else if (parcels%position(j, n) > extent(j) - dx(j)) then
-                        parcels%position(j, n) = parcels%position(j, n) - extent(j)
-                    endif
-                enddo
-!                  print *, comm%rank, "position after", n, parcels%position(1:2, n)
-
-                ! Now we can safely assign the local cell index:
-                call parcel_to_local_cell_index(n, ix, iy)
-
-
-                print *, comm%rank, "remote parcel", n, ix, iy
-
-            enddo
-
             print *, comm%rank, "n_local_small", n_local_small, "n_remote_small", n_remote_small
 
+
+!             do j = 0, comm%size-1
+!                 if (j == comm%rank) then
+!                     do k= 1, n_parcels+n_remote_small
+!                         print *, parcels%position(1, k), parcels%position(2, k), k, comm%rank
+!                     enddo
+!                 endif
+!                 call MPI_Barrier(comm%world, comm%err)
+!             enddo
+!
 !             stop
 
             ! There are 4 cases:
@@ -402,10 +373,22 @@ module parcel_nearest
             ! Determine locally closest parcel:
             call find_closest_parcel_locally(n_local_small, isma, iclo, rclo, dclo)
 
-            print *, "closest parcel locally"
-            print *, comm%rank, "find locally, isma", isma(1:)
-            print *, comm%rank, "find locally, iclo", iclo
-            print *, comm%rank, "find locally, rclo", rclo
+!             print *, "closest parcel locally"
+!             do j = 0, comm%size - 1
+!                 if (j == comm%rank) then
+!                     do n = 1, size(iclo)
+!                         ix = isma(n)
+!                         iy = iclo(n)
+!                         print *, comm%rank, parcels%position(1, ix), parcels%position(2, ix), &
+!                                             parcels%position(1, iy), parcels%position(2, iy), &
+!                                             rclo(n)
+!                     enddo
+!                 endif
+!                 call MPI_Barrier(comm%world, comm%err)
+!             enddo
+!
+!             call MPI_Barrier(comm%world, comm%err)
+!             stop
 
             !---------------------------------------------------------------------
             ! Determine globally closest parcel:
@@ -413,12 +396,21 @@ module parcel_nearest
             call find_closest_parcel_globally(iclo, rclo, dclo)
 
             print *, "closest parcel globally"
-            print *, comm%rank, "find globally, isma", isma(1:)
-            print *, comm%rank, "find globally, iclo", iclo
-            print *, comm%rank, "find globally, rclo", rclo
+            do j = 0, comm%size - 1
+                if (j == comm%rank) then
+                    do n = 1, size(iclo)
+                        ix = isma(n)
+                        iy = iclo(n)
+                        print *, comm%rank, parcels%position(1, ix), parcels%position(2, ix), &
+                                            parcels%position(1, iy), parcels%position(2, iy), &
+                                            rclo(n)
+                    enddo
+                endif
+                call MPI_Barrier(comm%world, comm%err)
+            enddo
 
-!             call MPI_Barrier(comm%world, comm%err)
-!             stop
+            call MPI_Barrier(comm%world, comm%err)
+            stop
 
 #ifndef NDEBUG
             write(*,*) 'start merging, n_local_small='
@@ -467,6 +459,61 @@ module parcel_nearest
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        subroutine adjust_parcel_location(pos, dir)
+            double precision, intent(inout) :: pos(3)
+            integer,          intent(in)    :: dir
+            logical                         :: l_x_edge, l_y_edge
+            integer                         :: ix, iy
+
+            ix = nint(dxi(1) * (pos(1) - lower(1)))
+            iy = nint(dxi(2) * (pos(2) - lower(2)))
+
+            ! put <= and >= for safety reasons; it should actually always be ==
+            l_x_edge = (ix <= 0) .or. (ix >= nx)
+            l_y_edge = (iy <= 0) .or. (iy >= ny)
+
+            select case (dir)
+                case (MPI_NORTH)
+                    pos(2) = merge(pos(2) + extent(2), pos(2), l_y_edge)
+                case (MPI_SOUTH)
+                    pos(2) = merge(pos(2) - extent(2), pos(2), l_y_edge)
+                case (MPI_WEST)
+                    pos(1) = merge(pos(1) - extent(1), pos(1), l_x_edge)
+                case (MPI_EAST)
+                    pos(1) = merge(pos(1) + extent(1), pos(1), l_x_edge)
+                case (MPI_NORTHWEST)
+                    pos(1) = merge(pos(1) - extent(1), pos(1), l_x_edge)
+                    pos(2) = merge(pos(2) + extent(2), pos(2), l_y_edge)
+                case (MPI_NORTHEAST)
+                    pos(1) = merge(pos(1) + extent(1), pos(1), l_x_edge)
+                    pos(2) = merge(pos(2) + extent(2), pos(2), l_y_edge)
+                case (MPI_SOUTHWEST)
+                    pos(1) = merge(pos(1) - extent(1), pos(1), l_x_edge)
+                    pos(2) = merge(pos(2) - extent(2), pos(2), l_y_edge)
+                case (MPI_SOUTHEAST)
+                    pos(1) = merge(pos(1) + extent(1), pos(1), l_x_edge)
+                    pos(2) = merge(pos(2) - extent(2), pos(2), l_y_edge)
+                case default
+                    call mpi_exit_on_error(&
+                        "in parcel_nearest::adjust_parcel_location: No valid direction.")
+            end select
+        end subroutine adjust_parcel_location
+
+!         pure function is_inside_box(pos, d, nh) result(l_inside)
+!             double precision, intent(in) :: pos(3)
+!             integer,          intent(in) :: d, nh
+!             logical                      :: l_inside
+!             double precision             :: grow
+!
+!             grow = dble(nh) * dx(d)
+!
+!             l_inside = ((pos(d) >= box%lower(d) - grow) .and. &
+!                         (pos(d) <= box%lower(d) + box%extent(d) + grow))
+!
+!         end function is_inside_box
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         !!@pre Assumes a parcel is in the local domain including halo cells
         !      (in x and y).
         subroutine parcel_to_local_cell_index(n, ix, iy)
@@ -504,7 +551,7 @@ module parcel_nearest
             iy =     nint(dxi(2) * (parcels%position(2, n) - lower(2)))
 
 
-            print *, comm%rank, "nearest grid point", n, parcels%buoyancy(n), ix, iy
+!             print *, comm%rank, "nearest grid point", n, parcels%buoyancy(n), ix, iy
 !             iz = min(nint(dxi(3) * (parcels%position(3, n) - box%lower(3))), nz-1)
 
 !             ! Cell index of parcel:
@@ -546,7 +593,7 @@ module parcel_nearest
                 iy0 = nint(dxi(2) * (y_small - box%halo_lower(2))) ! ranges from 0 to box%halo_size(2)
                 iz0 = nint(dxi(3) * (z_small - box%lower(3)))      ! ranges from 0 to nz
 
-                print *, comm%rank, "m, ix0, iy0", m, ix0-1, ix0, iy0-1, iy0
+!                 print *, comm%rank, "is, m, ix0, iy0", is, m, ix0-1, ix0, iy0-1, iy0
 
                 ! Grid point (ix0, iy0, iz0) is closest to parcel "is"
 
@@ -584,7 +631,7 @@ module parcel_nearest
                     enddo
                 enddo
 
-                print *, "m, ic, is", m, ic, is
+!                 print *, "m, ic, is", m, ic, is
 
                 if (ic == 0) then
                     call mpi_exit_on_error('Merge error: no near neighbour found.')
@@ -747,7 +794,7 @@ module parcel_nearest
 
             call MPI_Win_get_attr(win_leaf, MPI_WIN_MODEL, icm, l_helper, comm%err)
 
-            print *, "win model", icm, MPI_WIN_UNIFIED, MPI_WIN_SEPARATE
+!             print *, "win model", icm, MPI_WIN_UNIFIED, MPI_WIN_SEPARATE
 
             call start_timer(merge_tree_resolve_timer)
 
@@ -1381,7 +1428,7 @@ module parcel_nearest
                     southwest_pid(2*k-1) = n
                     southwest_pid(2*k) = m
                     n_parcel_sends(MPI_SOUTHWEST) = k
-                    print *, comm%rank, "add parcel", n, "to south-west"
+!                     print *, comm%rank, "add parcel", n, "to south-west"
 
                 else if (iy == box%hi(2)+1) then
                     ! parcel in northwest corner with
@@ -1390,10 +1437,10 @@ module parcel_nearest
                     northwest_pid(2*k-1) = n
                     northwest_pid(2*k) = m
                     n_parcel_sends(MPI_NORTHWEST) = k
-                    print *, comm%rank, "add parcel", n, "to north-west"
+!                     print *, comm%rank, "add parcel", n, "to north-west"
                 endif
 
-                print *, comm%rank, "add parcel", n, "to west"
+!                 print *, comm%rank, "add parcel", n, "to west"
 
                 ! neighbour: west
                 k = n_parcel_sends(MPI_WEST) + 1
@@ -1412,7 +1459,7 @@ module parcel_nearest
                     southeast_pid(2*k-1) = n
                     southeast_pid(2*k) = m
                     n_parcel_sends(MPI_SOUTHEAST) = k
-                    print *, comm%rank, "add parcel", n, "to south-east"
+!                     print *, comm%rank, "add parcel", n, "to south-east"
 
                 else if (iy == box%hi(2)+1) then
                     ! parcel in northeast corner with
@@ -1421,7 +1468,7 @@ module parcel_nearest
                     northeast_pid(2*k-1) = n
                     northeast_pid(2*k) = m
                     n_parcel_sends(MPI_NORTHEAST) = k
-                    print *, comm%rank, "add parcel", n, "to north-east"
+!                     print *, comm%rank, "add parcel", n, "to north-east"
                 endif
 
                 ! neighbours: east
@@ -1430,7 +1477,7 @@ module parcel_nearest
                 east_pid(2*k) = m
                 n_parcel_sends(MPI_EAST) = k
 
-                print *, comm%rank, "add parcel", n, "to east"
+!                 print *, comm%rank, "add parcel", n, "to east"
             endif
 
             if (iy == box%lo(2)) then
@@ -1439,7 +1486,7 @@ module parcel_nearest
                 south_pid(2*k) = m
                 n_parcel_sends(MPI_SOUTH) = k
 
-                print *, comm%rank, "add parcel", n, "to south"
+!                 print *, comm%rank, "add parcel", n, "to south"
             endif
 
             if (iy == box%hi(2)+1) then
@@ -1448,7 +1495,7 @@ module parcel_nearest
                 north_pid(2*k) = m
                 n_parcel_sends(MPI_NORTH) = k
 
-                print *, comm%rank, "add parcel", n, "to north"
+!                 print *, comm%rank, "add parcel", n, "to north"
             endif
         end subroutine locate_parcel_in_boundary_cell
 
@@ -1463,7 +1510,7 @@ module parcel_nearest
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
             integer                                 :: recv_size, send_size
-            integer                                 :: tag, source, recv_count, n, i ,j, l, m, pid, k
+            integer                                 :: tag, source, recv_count, n, i ,j, l, m, pid, k, ix, iy
             integer, parameter                      :: n_entries = 5
             integer, allocatable                    :: rtmp(:), pidtmp(:), midtmp(:)
             ! rtmp: MPI rank remote small parcel belongs to
@@ -1489,7 +1536,7 @@ module parcel_nearest
                 send_size = n_parcel_sends(n) * n_entries
 
                 if (n_parcel_sends(n) > 0) then
-                    print *, comm%rank,"send",n_parcel_sends(n),"to neighbour",n,"with rank",neighbours(n)%rank
+!                     print *, comm%rank,"send",n_parcel_sends(n),"to neighbour",n,"with rank",neighbours(n)%rank
                     ! pack parcel position and parcel index to send buffer
                     do l = 1, n_parcel_sends(n)
                         i = 1 + (l-1) * n_entries
@@ -1540,7 +1587,7 @@ module parcel_nearest
 
                 recv_count = recv_size / n_entries
 
-                print *, comm%rank,"recv",recv_count,"from neighbour",tag,"with rank",neighbours(tag)%rank
+!                 print *, comm%rank,"recv",recv_count,"from neighbour",tag,"with rank",neighbours(tag)%rank
 
                 i = n_parcels+1
                 j = n_parcels+1+size(rsma) + recv_count
@@ -1568,8 +1615,34 @@ module parcel_nearest
                         pidtmp(k) = nint(recv_buf(i+3))
                         rtmp(k) = source
                         midtmp(k) = nint(recv_buf(i+4))
+
+                        !------------------------------------------------------
+                        ! We must also assign incoming small parcels to cells
+                        ! Note: We must apply a shift for parcels communicated
+                        !       across a periodic boundary.
+
+                        ! If parcel position < lower + dx, then add global domain
+                        ! extent to parcel position.
+                        ! If parcel position > extent - dx, then subtract global domain
+                        ! extent from parcel position.
+
+                        call adjust_parcel_location(parcels%position(:, k), tag)
+
+        !                 print *, comm%rank, "position after", n, parcels%position(1:2, n)
+
+                        ! Now we can safely assign the local cell index:
+                        call parcel_to_local_cell_index(k, ix, iy)
+
+
+!                         print *, comm%rank, "remote parcel", k, ix, iy
+
                     enddo
                     n_neighbour_small(n) = n_neighbour_small(n) + recv_count
+
+                    !----------------------------------------------------------
+
+
+
                 endif
 
                 small_recv_order(n) = tag
@@ -1633,12 +1706,12 @@ module parcel_nearest
                 rc = rclo(m)
                 if (comm%rank /= rc) then
                     n = get_neighbour_from_rank(rc)
-                    print *, comm%rank, "neighbour number", n
+!                     print *, comm%rank, "neighbour number", n
                     n_parcel_sends(n) = n_parcel_sends(n) + 1
                 endif
             enddo
 
-            print *, comm%rank, "n_parcel_sends", n_parcel_sends
+!             print *, comm%rank, "n_parcel_sends", n_parcel_sends
 
             !------------------------------------------------------------------
             ! We must send all parcel attributes (n_par_attrib) plus
@@ -1673,19 +1746,19 @@ module parcel_nearest
 
                     n = get_neighbour_from_rank(rc)
 
-                    print *, comm%rank, "neighbour number again", n
+!                     print *, comm%rank, "neighbour number again", n
 
 
                     call get_parcel_buffer_ptr(n, send_pid, send_buf)
 
-                    print *, comm%rank, "neighbour", n, size(send_buf)
+!                     print *, comm%rank, "neighbour", n, size(send_buf)
 
                     n_registered(n) = n_registered(n) + 1
 
                     call parcel_serialize(is, buffer)
                     j = n_entries * n_registered(n)   ! 15, 30, 45, 60
                     i = j - n_entries + 1 ! 1, 16, 31, 46
-                    print *, comm%rank, "i, j", i, j
+!                     print *, comm%rank, "i, j", i, j
                     send_buf(i:j-1) = buffer  ! 1:14
                     send_buf(j) = dble(ic)
 
@@ -1732,11 +1805,11 @@ module parcel_nearest
 
             call MPI_Win_free(win_neighbour, comm%err)
 
-            print *, comm%rank, "sends", n_parcel_sends
-            print *, comm%rank, "recvs", n_parcel_recvs
+!             print *, comm%rank, "sends", n_parcel_sends
+!             print *, comm%rank, "recvs", n_parcel_recvs
 
 
-            print *, comm%rank, "gather parcels"
+!             print *, comm%rank, "gather parcels"
 
             !------------------------------------------------------------------
             ! Communicate parcels:
@@ -1784,7 +1857,7 @@ module parcel_nearest
 
                 recv_count = recv_size / n_entries
 
-                print *, comm%rank, "gather: recv_count", recv_count
+!                 print *, comm%rank, "gather: recv_count", recv_count
 
                 ! Set the current value of the *m* index to
                 ! its current maximum value (excluding small
