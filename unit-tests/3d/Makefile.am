@@ -75,7 +75,8 @@ unittests_PROGRAMS = 				\
 	test_mpi_vtend				\
 	test_mpi_nearest_1			\
 	test_mpi_nearest_2			\
-	test_mpi_nearest_3
+	test_mpi_nearest_3			\
+	test_mpi_nearest_4
 # 	test_mpi_lapinv1
 
 dataroot_DATA =		\
@@ -230,6 +231,9 @@ test_mpi_nearest_2_LDADD = libcombi.la
 
 test_mpi_nearest_3_SOURCES = test_mpi_nearest_3.f90
 test_mpi_nearest_3_LDADD = libcombi.la
+
+test_mpi_nearest_4_SOURCES = test_mpi_nearest_4.f90
+test_mpi_nearest_4_LDADD = libcombi.la
 
 # test_mpi_lapinv1_SOURCES = test_mpi_lapinv1.f90
 # test_mpi_lapinv1_LDADD = libcombi.la
