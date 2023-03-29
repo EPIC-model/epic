@@ -11,7 +11,7 @@ module mpi_layout
         integer          :: halo_size(3)        ! number of grid points including halo
         double precision :: lower(3)            ! origin of *this* subdomain excluding halo
         double precision :: halo_lower(3)       ! origin of *this* subdomain including halo
-        double precision :: extent(3)           ! local domain extent excluding haloe
+        double precision :: extent(3)           ! local domain extent excluding halo
         integer          :: global_size(3)    ! global number of cell (excluding halo)
         integer          :: ncell               ! number of cells excluding halo
         integer          :: halo_ncell          ! number of cells including halo
@@ -203,6 +203,8 @@ module mpi_layout
 
         end subroutine mpi_layout_init
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         pure function is_neighbour(i, j, dir) result(l_inside)
             integer, intent(in) :: i, j, dir
             logical             :: l_inside
@@ -257,5 +259,22 @@ module mpi_layout
             last = first + nlocal - 1
 
         end subroutine get_local_bounds
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! As multiple neighbours can have the same rank number,
+        ! we cannot uniquely assign a neighbour. We just return
+        ! the first neighbour tag we find.
+        pure function get_neighbour_from_rank(r) result(nb)
+            integer, intent(in) :: r
+            integer             :: n, nb
+
+            do n = 1, 8
+                if (r == neighbours(n)%rank) then
+                    nb = n
+                    exit
+                endif
+            enddo
+        end function get_neighbour_from_rank
 
 end module mpi_layout
