@@ -1,7 +1,7 @@
 ! =============================================================================
 !                       Test nearest algorithm
 !
-!    This unit test checks dual links (a = b) across MPI boundaries.
+!   This unit test checks dual links (a = b) across diagonal MPI boundaries.
 ! =============================================================================
 program test_nearest_1
     use unit_test
@@ -77,7 +77,7 @@ program test_nearest_1
     if (comm%rank == comm%master) then
         passed = (passed .and. (check_array(1) == n_total_parcels) .and. (check_array(2) == 200))
 
-        call print_result_logical('Test MPI nearest algorithm: a = b', passed)
+        call print_result_logical('Test MPI nearest algorithm: (2) a = b', passed)
     endif
 
     call mpi_comm_finalise
@@ -109,16 +109,16 @@ program test_nearest_1
             l = l + 1
 
             do m = -1, 1, 2
-                parcels%position(1, l) = x + dble(m) * dx(1) * 0.45
-                parcels%position(2, l) = y
+                parcels%position(1, l) = x + dble(m) * dx(1) * 0.44
+                parcels%position(2, l) = y + dx(2) * 0.44
                 parcels%position(3, l) = z
                 parcels%buoyancy(l) = l + comm%rank * 100
                 l = l + 1
             enddo
 
             do m = -1, 1, 2
-                parcels%position(1, l) = x
-                parcels%position(2, l) = y + dble(m) * dx(2) * 0.45
+                parcels%position(1, l) = x + dble(m) * dx(1) * 0.44
+                parcels%position(2, l) = y - dx(2) * 0.44
                 parcels%position(3, l) = z
                 parcels%buoyancy(l) = l + comm%rank * 100
                 l = l + 1
