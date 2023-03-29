@@ -1,7 +1,7 @@
 ! =============================================================================
 !                       Test nearest algorithm
 !
-!   This unit test checks dual links (a = b) across diagonal MPI boundaries.
+!      This unit test checks dual links (a - B) across MPI boundaries.
 ! =============================================================================
 program test_nearest_1
     use unit_test
@@ -19,6 +19,7 @@ program test_nearest_1
     integer, allocatable, dimension(:) :: isma
     integer, allocatable, dimension(:) :: iclo
     integer                            :: n_merge, n, check_array(2)
+    integer :: is, ic, r
 
     call mpi_comm_initialise
 
@@ -62,6 +63,20 @@ program test_nearest_1
     check_array(1) = n_parcels
     check_array(2) = n_merge
 
+    do r = 0, comm%size-1
+        if (r == comm%rank) then
+            do n = 1, n_merge
+                is = isma(n)
+                ic = iclo(n)
+                print *, comm%rank, parcels%position(1, is), parcels%position(2, is), int(parcels%buoyancy(is)), &
+                                    parcels%position(1, ic), parcels%position(2, ic), int(parcels%buoyancy(ic))
+            enddo
+        endif
+        call MPI_Barrier(comm%world, comm%err)
+    enddo
+
+    stop
+
     if (comm%rank == comm%master) then
         call MPI_Reduce(MPI_IN_PLACE, check_array, 2, MPI_INTEGER, MPI_SUM, comm%master, comm%world, comm%err)
     else
@@ -77,7 +92,7 @@ program test_nearest_1
     if (comm%rank == comm%master) then
         passed = (passed .and. (check_array(1) == n_total_parcels) .and. (check_array(2) == 200))
 
-        call print_result_logical('Test MPI nearest algorithm: (2) a = b', passed)
+        call print_result_logical('Test MPI nearest algorithm: a = b', passed)
     endif
 
     call mpi_comm_finalise
@@ -88,7 +103,7 @@ program test_nearest_1
         subroutine cell_placement(l, i, j, k)
             integer, intent(inout) :: l
             integer, intent(in)    :: i, j, k
-            integer                :: ix, iy, iz, m
+            integer                :: ix, iy, iz
             double precision       :: x, y, z
 
             ix = i
@@ -99,32 +114,29 @@ program test_nearest_1
             y = lower(2) + (0.5d0 + dble(iy)) * dx(2)
             z = lower(3) + (0.5d0 + dble(iz)) * dx(3)
 
-            ! parcel in centre
-            parcels%position(1, l) = x
+            ! big parcel
+            parcels%position(1, l) = x + 0.1d0 * dx(1)
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
             parcels%buoyancy(l) = l + comm%rank * 100
-
             l = l + 1
 
-            do m = -1, 1, 2
-                parcels%position(1, l) = x + dble(m) * dx(1) * 0.44
-                parcels%position(2, l) = y + dx(2) * 0.44
-                parcels%position(3, l) = z
-                parcels%volume(l) = 0.9d0 * vmin
-                parcels%buoyancy(l) = l + comm%rank * 100
-                l = l + 1
-            enddo
+            ! small parcel
+            parcels%position(1, l) = x +  dx(1) * 0.35d0
+            parcels%position(2, l) = y
+            parcels%position(3, l) = z
+            parcels%volume(l) = 0.9d0 * vmin
+            parcels%buoyancy(l) = l + comm%rank * 100
+            l = l + 1
 
-            do m = -1, 1, 2
-                parcels%position(1, l) = x + dble(m) * dx(1) * 0.44
-                parcels%position(2, l) = y - dx(2) * 0.44
-                parcels%position(3, l) = z
-                parcels%volume(l) = 0.9d0 * vmin
-                parcels%buoyancy(l) = l + comm%rank * 100
-                l = l + 1
-            enddo
+            ! big parcel
+            parcels%position(1, l) = x - 0.42d0 * dx(1)
+            parcels%position(2, l) = y
+            parcels%position(3, l) = z
+            parcels%volume(l) = 1.1d0 * vmin
+            parcels%buoyancy(l) = l + comm%rank * 100
+            l = l + 1
 
         end subroutine cell_placement
 
@@ -139,6 +151,7 @@ program test_nearest_1
                     enddo
                 enddo
             enddo
+
         end subroutine parcel_setup
 
 end program test_nearest_1
