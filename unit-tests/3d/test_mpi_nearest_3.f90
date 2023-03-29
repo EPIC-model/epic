@@ -19,7 +19,6 @@ program test_nearest_1
     integer, allocatable, dimension(:) :: isma
     integer, allocatable, dimension(:) :: iclo
     integer                            :: n_merge, n, check_array(2)
-    integer :: is, ic, r
 
     call mpi_comm_initialise
 
@@ -63,20 +62,6 @@ program test_nearest_1
     check_array(1) = n_parcels
     check_array(2) = n_merge
 
-    do r = 0, comm%size-1
-        if (r == comm%rank) then
-            do n = 1, n_merge
-                is = isma(n)
-                ic = iclo(n)
-                print *, comm%rank, parcels%position(1, is), parcels%position(2, is), int(parcels%buoyancy(is)), &
-                                    parcels%position(1, ic), parcels%position(2, ic), int(parcels%buoyancy(ic))
-            enddo
-        endif
-        call MPI_Barrier(comm%world, comm%err)
-    enddo
-
-    stop
-
     if (comm%rank == comm%master) then
         call MPI_Reduce(MPI_IN_PLACE, check_array, 2, MPI_INTEGER, MPI_SUM, comm%master, comm%world, comm%err)
     else
@@ -90,9 +75,9 @@ program test_nearest_1
     endif
 
     if (comm%rank == comm%master) then
-        passed = (passed .and. (check_array(1) == n_total_parcels) .and. (check_array(2) == 200))
+        passed = (passed .and. (check_array(1) == n_total_parcels) .and. (check_array(2) == 100))
 
-        call print_result_logical('Test MPI nearest algorithm: a = b', passed)
+        call print_result_logical('Test MPI nearest algorithm: a - B', passed)
     endif
 
     call mpi_comm_finalise

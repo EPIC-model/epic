@@ -663,7 +663,7 @@ module parcel_nearest
                 enddo
 
                 if (ic == 0) then
-                    print *, comm%rank, m, x_small, y_small, ix0, iy0
+!                     print *, comm%rank, m, x_small, y_small, ix0, iy0
                     call mpi_exit_on_error('Merge error: no near neighbour found.')
                 endif
 
