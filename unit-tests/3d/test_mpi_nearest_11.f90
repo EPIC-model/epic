@@ -78,7 +78,7 @@ program test_nearest_1
     if (comm%rank == comm%master) then
         passed = (passed .and. (check_array(1) == n_total_parcels) .and. (check_array(2) == 200))
 
-        call print_result_logical('Test MPI nearest algorithm: (6) a = b - c', passed)
+        call print_result_logical('Test MPI nearest algorithm: (7) a = b - c', passed)
     endif
 
     call mpi_comm_finalise
@@ -101,7 +101,7 @@ program test_nearest_1
             z = lower(3) + (0.5d0 + dble(iz)) * dx(3)
 
             ! small parcel b
-            parcels%position(1, l) = x - dx(1) * 0.44d0
+            parcels%position(1, l) = x + dx(1) * 0.44d0
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
@@ -109,7 +109,7 @@ program test_nearest_1
             l = l + 1
 
             ! small parcel c
-            parcels%position(1, l) = x + dx(1) * 0.4d0
+            parcels%position(1, l) = x - dx(1) * 0.4d0
             parcels%position(2, l) = y - dx(2) * 0.4d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
@@ -117,7 +117,7 @@ program test_nearest_1
             l = l + 1
 
             ! small parcel a
-            parcels%position(1, l) = x - dx(1) * 0.35d0
+            parcels%position(1, l) = x + dx(1) * 0.35d0
             parcels%position(2, l) = y + dx(2) * 0.33d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
