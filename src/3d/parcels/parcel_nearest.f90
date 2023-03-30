@@ -382,7 +382,7 @@ module parcel_nearest
 !             enddo
 !
 !             call MPI_Barrier(comm%world, comm%err)
-! !             stop
+!             stop
 
             !---------------------------------------------------------------------
             ! Determine locally closest parcel:
@@ -395,10 +395,10 @@ module parcel_nearest
 !             do j = 0, comm%size - 1
 !                 if (j == comm%rank) then
 !                     do n = 1, size(iclo)
-!                         ix = isma(n)
-!                         iy = iclo(n)
-!                         print *, comm%rank, parcels%position(1, ix), parcels%position(2, ix), &
-!                                             parcels%position(1, iy), parcels%position(2, iy), &
+!                         k = isma(n)
+!                         ijk = iclo(n)
+!                         print *, comm%rank, parcels%position(1, k), parcels%position(2, k), &
+!                                             parcels%position(1, ijk), parcels%position(2, ijk), &
 !                                             rclo(n)
 !                     enddo
 !                 endif
@@ -413,17 +413,15 @@ module parcel_nearest
             ! After this operation isma, iclo and rclo are properly set.
             call find_closest_parcel_globally(n_local_small, iclo, rclo, dclo)
 
-!             print *, "closest parcel globally"
+! !             print *, "closest parcel globally"
 !             do j = 0, comm%size - 1
 !                 if (j == comm%rank) then
 !                     do n = 1, size(iclo)
-!                         ix = isma(n)
-!                         iy = iclo(n)
-!                         k  = rclo(n)
-!
-!                         if (k == comm%rank) then
-!                         print *, comm%rank, parcels%position(1, ix), parcels%position(2, ix), &
-!                                             parcels%position(1, iy), parcels%position(2, iy), &
+!                         k = isma(n)
+!                         ijk = iclo(n)
+!                         if (rclo(n) == comm%rank) then
+!                         print *, comm%rank, parcels%position(1, k), parcels%position(2, k), &
+!                                             parcels%position(1, ijk), parcels%position(2, ijk), &
 !                                             rclo(n)
 !                         endif
 !                     enddo
@@ -679,13 +677,21 @@ module parcel_nearest
             !---------------------------------------------------------------------
             ! Update isma, iclo and rclo with indices of remote parcels:
             do m = 1, n_local_small + n_remote_small
-
+                is = isma(m)
                 ic = iclo(m)
-                ! If the index *is* or *ic* are larger than the local number of parcels
-                ! we must update *isma(m)* or *iclo(m)* and *rclo(m)* with the index of the parcel stored
-                ! on the other MPI rank. Otherwise keep the current value.
 
-                if (ic > n_parcels) then
+                if ((is > n_parcels) .and. (ic > n_parcels)) then
+                    ! A remote parcel points to another remote parcel. The remotes do not necessarily
+                    ! need to be the same. Also, it can be a dual-link. As the same distance is evaluated on
+                    ! the other two MPI ranks, *this* MPI rank must set the distance between the parcels to the
+                    ! maximum value as otherwise the function "find_closest_parcel_globally" may think the
+                    ! parcels belong to *this* MPI rank due to round-offs in the distance calculation. The
+                    ! function "find_closest_parcel_globally" always sets "rclo" to the MPI source.
+                    dclo(m) = huge(0.0d0) ! huge(x) returns the maximum value of this type
+                else if (ic > n_parcels) then
+                    ! The index *ic* is larger than the local number of parcels
+                    ! we must update *iclo(m)* and *rclo(m)* with the index of the parcel stored
+                    ! on the other MPI rank.
                     iclo(m) = pidsma(ic)
                     rclo(m) = rsma(ic)
                 endif
