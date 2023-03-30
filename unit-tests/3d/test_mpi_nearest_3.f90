@@ -1,7 +1,7 @@
 ! =============================================================================
 !                       Test nearest algorithm
 !
-!      This unit test checks dual links (a - B) across MPI boundaries.
+!      This unit test checks a - B across x MPI boundaries.
 ! =============================================================================
 program test_nearest_1
     use unit_test
@@ -126,7 +126,7 @@ program test_nearest_1
         end subroutine cell_placement
 
         subroutine parcel_setup
-            integer             :: i, j, k
+            integer :: i, j, k
 
             n = 1
             do k = box%lo(3)+1, box%lo(3)+1

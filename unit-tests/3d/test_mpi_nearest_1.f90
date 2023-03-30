@@ -129,7 +129,7 @@ program test_nearest_1
         end subroutine cell_placement
 
         subroutine parcel_setup
-            integer             :: i, j, k
+            integer :: i, j, k
 
             n = 1
             do k = box%lo(3)+1, box%lo(3)+1
