@@ -681,7 +681,7 @@ module parcel_nearest
                 ic = iclo(m)
 
                 if ((is > n_parcels) .and. (ic > n_parcels)) then
-                    ! A remote parcel points to another remote parcel. The remotes do not necessarily
+                    ! A remote small parcel points to another remote small parcel. The remotes do not necessarily
                     ! need to be the same. Also, it can be a dual-link. As the same distance is evaluated on
                     ! the other two MPI ranks, *this* MPI rank must set the distance between the parcels to the
                     ! maximum value as otherwise the function "find_closest_parcel_globally" may think the
@@ -689,6 +689,7 @@ module parcel_nearest
                     ! function "find_closest_parcel_globally" always sets "rclo" to the MPI source.
                     dclo(m) = huge(0.0d0) ! huge(x) returns the maximum value of this type
                 else if (ic > n_parcels) then
+                    ! A local small parcel points to a remote small parcel.
                     ! The index *ic* is larger than the local number of parcels
                     ! we must update *iclo(m)* and *rclo(m)* with the index of the parcel stored
                     ! on the other MPI rank.
@@ -905,8 +906,11 @@ module parcel_nearest
                     endif
                 enddo
 
+                call MPI_Barrier(comm%world, comm%err)
+
                 ! synchronize the private and public window copies
                 call MPI_Win_sync(win_avail, comm%err)
+
 
 !                 print *, comm%rank, "determine leaf parcels."
 
@@ -941,11 +945,12 @@ module parcel_nearest
                     endif
                 enddo
 
+                call MPI_Barrier(comm%world, comm%err)
+
                 ! synchronize the private and public window copies
                 call MPI_Win_sync(win_leaf, comm%err)
 
 !                 print *, comm%rank, "determine leaf parcels. Done."
-                call MPI_Barrier(comm%world, comm%err)
 
 
 !                 print *, comm%rank, "filter out parcels that are 'unavailable' for merging."
@@ -985,10 +990,11 @@ module parcel_nearest
                     endif
                 enddo
 
+                call MPI_Barrier(comm%world, comm%err)
+
                 ! synchronize the private and public window copies
                 call MPI_Win_sync(win_avail, comm%err)
 
-                call MPI_Barrier(comm%world, comm%err)
 
 !                 print *, comm%rank, "filter out parcels that are 'unavailable' for merging. Done."
 
@@ -1071,6 +1077,8 @@ module parcel_nearest
                     "in MPI_Allreduce of parcel_nearest::resolve_tree.")
             enddo
 
+            call MPI_Barrier(comm%world, comm%err)
+
             ! synchronize the private and public window copies
             call MPI_Win_sync(win_merged, comm%err)
             call MPI_Win_sync(win_avail, comm%err)
@@ -1079,7 +1087,6 @@ module parcel_nearest
 
 !             print *, comm%rank, "Second stage, related to dual links"
 
-            call MPI_Barrier(comm%world, comm%err)
 
             ! Second stage, related to dual links
             do m = 1, n_local_small
@@ -1118,12 +1125,13 @@ module parcel_nearest
                 endif
             enddo
 
+            call MPI_Barrier(comm%world, comm%err)
+
             ! synchronize the private and public window copies
             call MPI_Win_sync(win_avail, comm%err)
 
 !             print *, comm%rank, "Second stage, related to dual links. Done."
 
-            call MPI_Barrier(comm%world, comm%err)
 
             ! Second stage
             do m = 1, n_local_small
@@ -1218,10 +1226,11 @@ module parcel_nearest
                 endif
             enddo
 
+            call MPI_Barrier(comm%world, comm%err)
+
             ! synchronize the private and public window copies
             call MPI_Win_sync(win_avail, comm%err)
 
-            call MPI_Barrier(comm%world, comm%err)
 
             !------------------------------------------------------
             do m = 1, n_local_small
@@ -1264,11 +1273,11 @@ module parcel_nearest
                 !------------------------------------------------------
             enddo
 
+            call MPI_Barrier(comm%world, comm%err)
+
             ! synchronize the private and public window copies
             call MPI_Win_sync(win_avail, comm%err)
 
-
-            call MPI_Barrier(comm%world, comm%err)
 
             j = 0
             do m = 1, n_local_small
