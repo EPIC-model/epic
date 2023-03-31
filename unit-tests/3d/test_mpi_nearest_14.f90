@@ -4,7 +4,7 @@
 !   This unit test checks a - B - c across MPI boundaries. The small
 !   parcels 'a' and 'c' should want to merge with the big parcel 'B'.
 ! =============================================================================
-program test_nearest_12
+program test_nearest_14
     use unit_test
     use constants, only : pi, zero, one, two, five, ten
     use parcel_container
@@ -505,4 +505,4 @@ program test_nearest_12
             endif
         end subroutine check_result
 
-end program test_nearest_12
+end program test_nearest_14
