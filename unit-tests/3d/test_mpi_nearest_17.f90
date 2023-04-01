@@ -276,7 +276,7 @@ program test_nearest_14
             y = lower(2) + (0.5d0 + dble(iy)) * dx(2)
             z = lower(3) + (0.5d0 + dble(iz)) * dx(3)
 
-!
+            !
             ! in x-direction
             !
 
