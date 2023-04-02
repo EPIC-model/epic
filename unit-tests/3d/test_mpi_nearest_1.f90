@@ -3,7 +3,7 @@
 !
 !    This unit test checks dual links (a = b) across MPI boundaries.
 ! =============================================================================
-program test_nearest_1
+program test_mpi_nearest_1
     use unit_test
     use constants, only : pi, zero, one, two, five, ten
     use parcel_container
@@ -141,4 +141,4 @@ program test_nearest_1
             enddo
         end subroutine parcel_setup
 
-end program test_nearest_1
+end program test_mpi_nearest_1

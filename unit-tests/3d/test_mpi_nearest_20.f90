@@ -50,7 +50,7 @@
 ! plt.savefig('final.png', dpi=500)
 ! plt.close()
 ! =============================================================================
-program test_nearest_14
+program test_mpi_nearest_20
     use unit_test
     use constants, only : pi, zero, one, two, five, ten
     use parcel_container
@@ -320,4 +320,4 @@ program test_nearest_14
             endif
         end subroutine check_result
 
-end program test_nearest_14
+end program test_mpi_nearest_20
