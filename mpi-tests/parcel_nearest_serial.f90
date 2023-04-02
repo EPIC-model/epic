@@ -6,11 +6,11 @@ module parcel_nearest_serial
     use parcel_container, only : parcels, n_parcels, get_delx, get_dely
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
-    use timer, only : start_timer, stop_timer
+!     use timer, only : start_timer, stop_timer
 
     implicit none
 
-    integer:: merge_nearest_timer, merge_tree_resolve_timer
+!     integer:: merge_nearest_timer, merge_tree_resolve_timer
 
     private
 
@@ -40,7 +40,7 @@ module parcel_nearest_serial
     integer :: ic, is, ijk, k, m, j, n
     integer :: ix, iy, iz, ix0, iy0, iz0
 
-    public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer
+    public :: find_nearest!, merge_nearest_timer, merge_tree_resolve_timer
 
     contains
 
@@ -57,7 +57,7 @@ module parcel_nearest_serial
             integer, allocatable, intent(out) :: iclo(:)
             integer, intent(out) :: nmerge
 
-            call start_timer(merge_nearest_timer)
+!             call start_timer(merge_nearest_timer)
 
             if (.not. allocated(nppc)) then
                 allocate(nppc(ncell))
@@ -103,7 +103,7 @@ module parcel_nearest_serial
             enddo
 
             if (nmerge == 0) then
-                call stop_timer(merge_nearest_timer)
+!                 call stop_timer(merge_nearest_timer)
                 return
             endif
 
@@ -206,8 +206,8 @@ module parcel_nearest_serial
             write(*,*) nmerge
 #endif
 
-            call stop_timer(merge_nearest_timer)
-            call start_timer(merge_tree_resolve_timer)
+!             call stop_timer(merge_nearest_timer)
+!             call start_timer(merge_tree_resolve_timer)
 
             ! First implementation of iterative algorithm
 
@@ -364,7 +364,7 @@ module parcel_nearest_serial
             enddo
 #endif
 
-            call stop_timer(merge_tree_resolve_timer)
+!             call stop_timer(merge_tree_resolve_timer)
 
         end subroutine find_nearest
 

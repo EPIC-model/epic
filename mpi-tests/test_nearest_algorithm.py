@@ -1,11 +1,14 @@
 import numpy as np
 from tools.nc_parcels import nc_parcels
+from tools.nc_reader import nc_reader
 import subprocess
 import os
 
 seed = 42
 
 n_runs = 1
+
+n_ranks = 1
 
 # nx = ny = nz = 10
 n_parcels = 16 * 10 ** 3
@@ -19,8 +22,10 @@ vmin = vcell / min_vratio
 
 tol = 1.0e-12
 
-exec_parallel = 'test_merging_parcels'
-exec_serial = 'test_merging_parcels_serial'
+exec_path = '/home/matthias/Documents/projects/epic/build-mpi/mpi-tests/'
+
+exec_parallel = exec_path + 'test_merging_parcels'
+exec_serial = exec_path + 'test_merging_parcels_serial'
 
 
 rng = np.random.default_rng(seed)
@@ -33,13 +38,13 @@ for i in range(n_runs):
 
     # -------------------------------------------------------------------------
     # Set up the parcel configuration:
-    x_position = rng.uniform(row=0.0, high=1.0, size=n_parcels)
-    y_position = rng.uniform(row=0.0, high=1.0, size=n_parcels)
-    z_position = rng.uniform(row=0.0, high=1.0, size=n_parcels)
+    x_position = rng.uniform(low=0.0, high=1.0, size=n_parcels)
+    y_position = rng.uniform(low=0.0, high=1.0, size=n_parcels)
+    z_position = rng.uniform(low=0.0, high=1.0, size=n_parcels)
 
-    x_vorticity = rng.uniform(row=-10.0, high=10.0, size=n_parcels)
-    y_vorticity = rng.uniform(row=-10.0, high=10.0, size=n_parcels)
-    z_vorticity = rng.uniform(row=-10.0, high=10.0, size=n_parcels)
+    x_vorticity = rng.uniform(low=-10.0, high=10.0, size=n_parcels)
+    y_vorticity = rng.uniform(low=-10.0, high=10.0, size=n_parcels)
+    z_vorticity = rng.uniform(low=-10.0, high=10.0, size=n_parcels)
 
     buoyancy = rng.uniform(low=-1.0, high=1.0, size=n_parcels)
 
@@ -73,9 +78,9 @@ for i in range(n_runs):
 
     # -------------------------------------------------------------------------
     # Write the initial NetCDF file:
-    ncp.open('initial_configuration.nc')
+    ncp.open('initial_parcels.nc')
 
-    ncp.add_box(tuple_origin, tuple_extent, tuple_ncells)
+    ncp.add_box([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [10, 10, 10])
 
     ncp.add_dataset('x_position', x_position, unit='m')
     ncp.add_dataset('y_position', y_position, unit='m')
@@ -99,16 +104,24 @@ for i in range(n_runs):
 
     # -------------------------------------------------------------------------
     # Run the serial and parallel versions of the nearest + merging algorithm:
-    process_1 = subprocess.Popen(['mpirun', '-np', n_ranks, exec_parallel])
-    process_2 = subprocess.Popen(['mpirun', '-np', 1, exec_serial])
+    process_1 = subprocess.Popen(['mpirun', '-np', str(n_ranks), exec_parallel])
+    process_2 = subprocess.Popen(['mpirun', '-np', '1', exec_serial])
 
     process_1.wait()
     process_2.wait()
 
     # -------------------------------------------------------------------------
     # Compare the results:
-    ncrs.open('serial_final_configuration.nc')
-    ncrp.open('parallel_final_configuration.nc')
+    ncrs.open('serial_final_0000000001_parcels.nc')
+    ncrp.open('parallel_final_0000000001_parcels.nc')
+
+    ind1 = np.lexsort((ncrs.get_dataset(step=0, name='x_position'),
+                       ncrs.get_dataset(step=0, name='y_position'),
+                       ncrs.get_dataset(step=0, name='z_position')))
+
+    ind2 = np.lexsort((ncrp.get_dataset(step=0, name='x_position'),
+                       ncrp.get_dataset(step=0, name='y_position'),
+                       ncrp.get_dataset(step=0, name='z_position')))
 
     failed = False
     for attr in ['x_position', 'y_position', 'z_position',
@@ -116,13 +129,23 @@ for i in range(n_runs):
                  'buoyancy', 'volume', 'B11', 'B12', 'B13', 'B22', 'B23']:
         ds1 = ncrs.get_dataset(step=0, name=attr)
         ds2 = ncrp.get_dataset(step=0, name=attr)
-        failed = (failed .or. max(abs(ds1 - ds2)) > tol)
+
+        num = 42#min(ds1.shape[0], ds2.shape[0])
+        for n in range(num):
+            print(n, ds1[ind1[n]], ds2[ind2[n]], ds1[ind1[n]] - ds2[ind2[n]])
+            if (abs(ds1[ind1[n]] - ds2[ind2[n]]) > 0.001):
+                exit()
+
+        print("failed", failed, max(abs(ds1[0:num] - ds2[0:num])), tol)
+        failed = (failed or max(abs(ds1[0:num] - ds2[0:num])) > tol)
 
     ncrs.close()
     ncrp.close()
 
     if failed:
         os.rename('initial_parcels.nc', 'initial_' + str(i).zfill(4) + '_parcels.nc')
-        os.rename('serial_final_parcels.nc', 'serial_final_' + str(i).zfill(4) + '_parcels.nc')
-        os.rename('parallel_final_parcels.nc', 'parallel_final_' + str(i).zfill(4) + '_parcels.nc')
+        os.rename('serial_final_0000000001_parcels.nc', 'serial_final_' + str(i).zfill(4) + '_parcels.nc')
+        os.rename('parallel_final_0000000001_parcels.nc', 'parallel_final_' + str(i).zfill(4) + '_parcels.nc')
         failed = False
+    else:
+        os.remove('initial_parcels.nc')

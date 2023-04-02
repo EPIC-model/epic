@@ -7,20 +7,18 @@ program test_merging_parcels
     use parcel_netcdf
     use mpi_communicator
     use mpi_layout
-    use mpi_timer
+    use test_utils
     implicit none
 
     call mpi_comm_initialise
+
+    call register_all_timers
 
     nx = 10
     ny = 10
     nz = 10
     lower  = (/zero, zero, zero/)
     extent = (/one, one, one/)
-
-    call register_timer('merge nearest', merge_nearest_timer)
-    call register_timer('merge tree resolve', merge_tree_resolve_timer)
-    call register_timer('parcel I/O', parcel_io_timer)
 
     parcel%lambda_max = 4.0d0
     parcel%min_vratio = 40.0d0
@@ -43,9 +41,16 @@ program test_merging_parcels
                        comm%world,      &
                        comm%err)
 
-
     call merge_parcels(parcels)
 
+    n_total_parcels = 0
+    call MPI_Allreduce(n_parcels,       &
+                       n_total_parcels, &
+                       1,               &
+                       MPI_INTEGER,     &
+                       MPI_SUM,         &
+                       comm%world,      &
+                       comm%err)
 
     call create_netcdf_parcel_file('parallel_final', .true., .false.)
     call write_netcdf_parcels(t = 0.0d0)
