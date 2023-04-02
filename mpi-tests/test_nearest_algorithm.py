@@ -7,14 +7,20 @@ seed = 42
 
 n_runs = 1
 
-n_parcels =
+# nx = ny = nz = 10
+n_parcels = 16 * 10 ** 3
 
-vmin = 1.0
+# domain [0, 1]^3
+
+#vmin = vcell / parcel%min_vratio
+vcell = 0.001
+min_vratio = 40.0
+vmin = vcell / min_vratio
 
 tol = 1.0e-12
 
-exec_parallel = ''
-exec_serial = ''
+exec_parallel = 'test_merging_parcels'
+exec_serial = 'test_merging_parcels_serial'
 
 
 rng = np.random.default_rng(seed)
@@ -116,7 +122,7 @@ for i in range(n_runs):
     ncrp.close()
 
     if failed:
-        os.rename('initial_configuration.nc', 'initial_configuration_' + str(i) + '.nc')
-        os.rename('serial_final_configuration.nc', 'serial_final_configuration_' + str(i) + '.nc')
-        os.rename('parallel_final_configuration.nc', 'parallel_final_configuration_' + str(i) + '.nc')
+        os.rename('initial_parcels.nc', 'initial_' + str(i).zfill(4) + '_parcels.nc')
+        os.rename('serial_final_parcels.nc', 'serial_final_' + str(i).zfill(4) + '_parcels.nc')
+        os.rename('parallel_final_parcels.nc', 'parallel_final_' + str(i).zfill(4) + '_parcels.nc')
         failed = False
