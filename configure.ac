@@ -33,6 +33,7 @@ AC_CONFIG_FILES([
     unit-tests/3d/Makefile
     unit-tests/mpi/Makefile
     unit-tests/netcdf/Makefile
+    mpi-tests/Makefile
     python-scripts/Makefile
     python-scripts/tools/Makefile
     python-scripts/tools/animate/Makefile
