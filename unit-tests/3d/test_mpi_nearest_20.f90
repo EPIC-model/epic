@@ -3,6 +3,52 @@
 !
 !               This unit test checks (a, b) - c - d = e and
 !               (a, b) - C - (d, e) across MPI boundaries.
+!
+! To plot the initial condition use:
+! import numpy as np
+! import matplotlib.pyplot as plt
+!
+! x, y, n, r = np.loadtxt('initial.dat', unpack=True)
+!
+! ng = 10
+!
+! h = 1.0 / ng
+!
+! for i in range(ng+1):
+!     plt.axhline(i*h, color='k', linestyle='dashed', linewidth=0.5)
+!     plt.axvline(i*h, color='k', linestyle='dashed', linewidth=0.5)
+!
+! colors = ['red', 'blue', 'orange', 'green', 'cyan']
+!
+! for i, txt in enumerate(n):
+!     plt.scatter(x[i], y[i], s=3, color=colors[int(r[i])])
+!
+! plt.savefig('initial.png', dpi=200)
+! plt.close()
+!
+!
+! To plot the final result use:
+! import numpy as np
+! import matplotlib.pyplot as plt
+!
+! rank, is_x, is_y, iss, ic_x, ic_y, icc = np.loadtxt('final.dat', unpack=True)
+!
+! ng = 10
+!
+! h = 1.0 / ng
+! colors = ['red', 'blue', 'orange', 'green', 'cyan', 'magenta']
+! marker = ['o', '+', '*', '.', '.', '.']
+!
+!
+! for i in range(ng+1):
+!     plt.axhline(i*h, color='k', linestyle='dashed', linewidth=0.5)
+!     plt.axvline(i*h, color='k', linestyle='dashed', linewidth=0.5)
+!
+! for i, r in enumerate(rank):
+!     plt.scatter(is_x[i], is_y[i], marker='o', color=colors[int(r)], s=15, alpha=0.25)
+!     plt.scatter(ic_x[i], ic_y[i], marker='x', color=colors[int(r)], s=15)
+! plt.savefig('final.png', dpi=500)
+! plt.close()
 ! =============================================================================
 program test_nearest_14
     use unit_test
