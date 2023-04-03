@@ -8,13 +8,15 @@ module parcel_merge
     use parcel_container, only : parcel_container_type  &
                                , n_parcels              &
                                , parcel_replace         &
-                               , get_delx               &
-                               , get_dely               &
+                               , get_delx_across_periodic               &
+                               , get_dely_across_periodic               &
                                , parcel_delete
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
     use parcel_bc
+    use merge_sort
     use mpi_timer, only : start_timer, stop_timer
+    use merge_sort, only : msort
 
     implicit none
 
@@ -36,9 +38,10 @@ module parcel_merge
             integer, allocatable, dimension(:)         :: isma
             integer, allocatable, dimension(:)         :: iclo
             integer                                    :: n_merge ! number of merges
+            integer                                    :: n_invalid
 
             ! find parcels to merge
-            call find_nearest(isma, iclo, n_merge)
+            call find_nearest(isma, iclo, n_merge, n_invalid)
 
             n_parcel_merges = n_parcel_merges + n_merge
 
@@ -56,8 +59,11 @@ module parcel_merge
                 ! merge small parcels into other parcels
                 call geometric_merge(parcels, isma, iclo, n_merge)
 
+                ! sort isma including invalid parcels
+                call msort(isma(1:n_merge+n_invalid))
+
                 ! overwrite invalid parcels
-                call parcel_delete(isma, n_merge)
+                call parcel_delete(isma, n_merge+n_invalid)
             endif
 
             if (allocated(isma)) then
@@ -100,6 +106,11 @@ module parcel_merge
             do m = 1, n_merge
                 ic = iclo(m) ! Index of closest other parcel
 
+                !-------------------------------------------------
+                is = isma(m)
+                call apply_periodic_bc(parcels%position(:, is))
+                !-------------------------------------------------
+
                 if (loca(ic) == 0) then
                     ! Start a new merged parcel, indexed l:
                     l = l + 1
@@ -140,8 +151,8 @@ module parcel_merge
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
 
                 ! works across periodic edge
-                delx = get_delx(parcels%position(1, is), x0(n))
-                dely = get_dely(parcels%position(2, is), y0(n))
+                delx = get_delx_across_periodic(parcels%position(1, is), x0(n))
+                dely = get_dely_across_periodic(parcels%position(2, is), y0(n))
 
                 ! Accumulate sum of v(is)*(x(is)-x(ic)) and v(is)*(y(is)-y(ic))
                 posm(1, n) = posm(1, n) + parcels%volume(is) * delx
@@ -170,8 +181,8 @@ module parcel_merge
 
                 call apply_periodic_bc(posm(:, m))
                 ! x and y centre of merged parcel, modulo periodicity
-                posm(1, m) = get_delx(x0(m), posm(1, m))
-                posm(2, m) = get_dely(y0(m), posm(2, m))
+                posm(1, m) = get_delx_across_periodic(x0(m), posm(1, m))
+                posm(2, m) = get_dely_across_periodic(y0(m), posm(2, m))
 
                 ! z centre of merged parcel
                 posm(3, m) = vmerge * posm(3, m)
@@ -201,8 +212,8 @@ module parcel_merge
 
                     B33 = get_B33(parcels%B(:, ic), parcels%volume(ic))
 
-                    delx = get_delx(parcels%position(1, ic), posm(1, l))
-                    dely = get_dely(parcels%position(2, ic), posm(2, l))
+                    delx = get_delx_across_periodic(parcels%position(1, ic), posm(1, l))
+                    dely = get_dely_across_periodic(parcels%position(2, ic), posm(2, l))
                     delz = parcels%position(3, ic) - posm(3, l)
 
                     mu = parcels%volume(ic) * vmerge
@@ -233,8 +244,8 @@ module parcel_merge
 
                 vmerge = one / vm(n)
 
-                delx = get_delx(parcels%position(1, is), posm(1, n))
-                dely = get_dely(parcels%position(2, is), posm(2, n))
+                delx = get_delx_across_periodic(parcels%position(1, is), posm(1, n))
+                dely = get_dely_across_periodic(parcels%position(2, is), posm(2, n))
                 delz = parcels%position(3, is) - posm(3, n)
 
                 B33 = get_B33(parcels%B(:, is), parcels%volume(is))

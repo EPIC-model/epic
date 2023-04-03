@@ -6,7 +6,7 @@ import os
 
 seed = 42
 
-n_runs = 1
+n_runs = 1000
 
 n_ranks = 1
 
@@ -34,6 +34,7 @@ ncp = nc_parcels()
 ncrs = nc_reader()
 ncrp = nc_reader()
 
+n_fails = 0
 for i in range(n_runs):
 
     # -------------------------------------------------------------------------
@@ -48,7 +49,7 @@ for i in range(n_runs):
 
     buoyancy = rng.uniform(low=-1.0, high=1.0, size=n_parcels)
 
-    volume = rng.uniform(low=0.5 * vmin, high=2.0 * vmin, size=n_parcels)
+    volume = rng.uniform(low=0.5 * vmin, high=2.0 * vmin, size=n_parcels) # change to 1.5 * vmin
 
     # lam = a / c
     lam = rng.uniform(low=1.0, high=4.0, size=n_parcels)
@@ -129,23 +130,22 @@ for i in range(n_runs):
                  'buoyancy', 'volume', 'B11', 'B12', 'B13', 'B22', 'B23']:
         ds1 = ncrs.get_dataset(step=0, name=attr)
         ds2 = ncrp.get_dataset(step=0, name=attr)
-
-        num = 42#min(ds1.shape[0], ds2.shape[0])
-        for n in range(num):
-            print(n, ds1[ind1[n]], ds2[ind2[n]], ds1[ind1[n]] - ds2[ind2[n]])
-            if (abs(ds1[ind1[n]] - ds2[ind2[n]]) > 0.001):
-                exit()
-
-        print("failed", failed, max(abs(ds1[0:num] - ds2[0:num])), tol)
-        failed = (failed or max(abs(ds1[0:num] - ds2[0:num])) > tol)
+        failed = (failed or max(abs(ds1[ind1] - ds2[ind2])) > tol)
 
     ncrs.close()
     ncrp.close()
 
     if failed:
-        os.rename('initial_parcels.nc', 'initial_' + str(i).zfill(4) + '_parcels.nc')
-        os.rename('serial_final_0000000001_parcels.nc', 'serial_final_' + str(i).zfill(4) + '_parcels.nc')
-        os.rename('parallel_final_0000000001_parcels.nc', 'parallel_final_' + str(i).zfill(4) + '_parcels.nc')
+        print("Run failed")
+        os.rename('initial_parcels.nc', 'initial_' + str(i).zfill(10) + '_parcels.nc')
+        os.rename('serial_final_0000000001_parcels.nc', 'serial_final_' + str(i).zfill(10) + '_parcels.nc')
+        os.rename('parallel_final_0000000001_parcels.nc', 'parallel_final_' + str(i).zfill(10) + '_parcels.nc')
         failed = False
+        n_fails = n_fails + 1
     else:
         os.remove('initial_parcels.nc')
+        os.remove('serial_final_0000000001_parcels.nc')
+        os.remove('parallel_final_0000000001_parcels.nc')
+
+print("------------------------------------------------------------------------")
+print("Preformed", n_runs, "runs where", n_fails, "failed.")

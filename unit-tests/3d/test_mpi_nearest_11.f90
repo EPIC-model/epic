@@ -19,7 +19,7 @@ program test_mpi_nearest_11
     logical                            :: passed = .true.
     integer, allocatable, dimension(:) :: isma
     integer, allocatable, dimension(:) :: iclo
-    integer                            :: n_merge, n, check_array(2)
+    integer                            :: n_merge, n, check_array(2), n_invalid
 
     call mpi_comm_initialise
 
@@ -58,9 +58,9 @@ program test_mpi_nearest_11
                        comm%err)
 
 
-    call find_nearest(isma, iclo, n_merge)
+    call find_nearest(isma, iclo, n_merge, n_invalid)
 
-    check_array(1) = n_parcels
+    check_array(1) = n_parcels - n_invalid
     check_array(2) = n_merge
 
     if (comm%rank == comm%master) then

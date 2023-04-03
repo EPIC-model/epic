@@ -227,10 +227,11 @@ module parcel_nearest
         !   - isma and iclo must be filled contiguously
         !   - parcel indices in isma cannot be in iclo, and vice-versa
         !   - the m-th entry in isma relates to the m-th entry in iclo
-        subroutine find_nearest(isma, iclo, n_local_small)
+        subroutine find_nearest(isma, iclo, n_local_small, n_invalid)
             integer, allocatable, intent(out) :: isma(:)
             integer, allocatable, intent(out) :: iclo(:)
             integer,              intent(out) :: n_local_small
+            integer,              intent(out) :: n_invalid
             integer                           :: n_global_small
             integer                           :: ijk, n, k, j
             integer, allocatable              :: rclo(:)    ! MPI rank of closest parcel
@@ -247,6 +248,7 @@ module parcel_nearest
 
             !---------------------------------------------------------------------
             ! Initialise search:
+            n_invalid = 0
             n_local_small = 0
             n_global_small = 0
             n_neighbour_small = 0
@@ -372,6 +374,8 @@ module parcel_nearest
 #endif
             enddo
 
+!             print *, comm%rank, "registered", j
+
 !             do j = 0, comm%size - 1
 !                 if (j == comm%rank) then
 !                     do n = 1, n_parcels + n_remote_small
@@ -467,12 +471,22 @@ module parcel_nearest
 
             call deallocate_parcel_id_buffers
 
+!             if (maxval(iclo(1:n_local_small)) > n_parcels) then
+!                 print *, "before", comm%rank, maxval(iclo(1:n_local_small)), n_parcels
+!                 stop
+!             endif
+
             !---------------------------------------------------------------------
             ! We perform the actual merging locally. We must therefore send all
             ! necessary remote parcels to *this* MPI rank.
             ! Note: It cannot happen that the closest parcel is a small parcel
             !       on another MPI rank that is sent elsewhere.
-            call gather_remote_parcels(n_local_small, rclo, iclo, isma)
+            call gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma)
+
+            if (maxval(iclo(1:n_local_small)) > n_parcels) then
+                print *, "after", comm%rank, maxval(iclo(1:n_local_small)), n_parcels
+                stop
+            endif
 
             call nearest_deallocate
 
@@ -613,6 +627,7 @@ module parcel_nearest
             ! Rather, stop if no nearest parcel found  in surrounding grid boxes
             do m = 1, n_local_small + n_remote_small
                 is = isma(m)
+
                 x_small = parcels%position(1, is)
                 y_small = parcels%position(2, is)
                 z_small = parcels%position(3, is)
@@ -1504,6 +1519,7 @@ module parcel_nearest
                         i = 1 + (l-1) * n_entries
                         k = sum(n_neighbour_small) + n_parcels + l
                         parcels%position(:, k) = recv_buf(i:i+2)
+                        parcels%volume(k) = zero    ! set to zero as each parcel is small
                         pidtmp(k) = nint(recv_buf(i+3))
                         rtmp(k) = source
                         midtmp(k) = nint(recv_buf(i+4))
@@ -1564,8 +1580,9 @@ module parcel_nearest
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine gather_remote_parcels(n_local_small, rclo, iclo, isma)
+        subroutine gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma)
             integer,                     intent(inout) :: n_local_small
+            integer,                     intent(inout) :: n_invalid
             integer,                     intent(inout) :: rclo(:)       ! MPI rank of closest parcel
             integer,                     intent(inout) :: iclo(:)
             integer,                     intent(inout) :: isma(0:)
@@ -1760,8 +1777,8 @@ module parcel_nearest
                     ! append it to the container with index
                     ! "n_parcels+1"
                     n_parcels = n_parcels + 1
-                    j = n_entries * k
-                    i = j - n_entries + 1
+                    j = n_entries * k ! 15, 30, 45, 60
+                    i = j - n_entries + 1 ! 1, 16, 31, 46
                     buffer = recv_buf(i:j-1)
                     call parcel_deserialize(n_parcels, buffer)
 
@@ -1788,9 +1805,16 @@ module parcel_nearest
             call mpi_check_for_error(&
                 "in MPI_Waitall of parcel_nearest::gather_remote_parcels.")
 
-            ! delete parcel that we sent
-            n = sum(n_parcel_sends)
-            call parcel_delete(invalid, n)
+            ! append invalid indices to isma (will be deleted afer merging)
+            n_invalid = sum(n_parcel_sends)
+            m = n_local_small + 1
+            do k = 1, n_invalid
+                isma(m) = invalid(k)
+                m = m + 1
+            enddo
+!             ! delete parcel that we sent
+!             n = sum(n_parcel_sends)
+!             call parcel_delete(invalid, n)
 
             call deallocate_parcel_id_buffers
             call deallocate_parcel_buffers
@@ -1803,7 +1827,7 @@ module parcel_nearest
 !             rclo(1:n_local_small) = pack(rclo, rclo /= -1)
 
 #ifndef NDEBUG
-            n = n_parcels
+            n = n_parcels - n_invalid
             call mpi_blocking_reduce(n, MPI_SUM)
             if ((comm%rank == comm%master) .and. (.not. n == n_total_parcels)) then
                 call mpi_exit_on_error(&
