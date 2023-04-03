@@ -3,7 +3,7 @@
 !==============================================================================
 module parcel_nearest_serial
     use constants, only : pi, f12
-    use parcel_container, only : parcels, n_parcels, get_delx, get_dely
+    use parcel_container, only : parcels, n_parcels, get_delx_across_periodic, get_dely_across_periodic
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
 !     use timer, only : start_timer, stop_timer
@@ -174,8 +174,8 @@ module parcel_nearest_serial
                                     delz = parcels%position(3, n) - z_small
                                     if (delz*delz < dsqmin) then
                                         ! works across periodic edge
-                                        delx = get_delx(parcels%position(1, n), x_small)
-                                        dely = get_dely(parcels%position(2, n), y_small)
+                                        delx = get_delx_across_periodic(parcels%position(1, n), x_small)
+                                        dely = get_dely_across_periodic(parcels%position(2, n), y_small)
                                         ! Minimise dsqmin
                                         dsq = delx ** 2 + dely ** 2 + delz ** 2
                                         if (dsq < dsqmin) then

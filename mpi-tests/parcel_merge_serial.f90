@@ -5,11 +5,11 @@
 module parcel_merge_serial
     use parcel_nearest_serial
     use constants, only : pi, zero, one, two, five, f13
-    use parcel_container, only : parcel_container_type  &
-                               , n_parcels              &
-                               , parcel_replace         &
-                               , get_delx               &
-                               , get_dely
+    use parcel_container, only : parcel_container_type      &
+                               , n_parcels                  &
+                               , parcel_replace             &
+                               , get_delx_across_periodic   &
+                               , get_dely_across_periodic
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
     use parcel_bc
@@ -140,8 +140,8 @@ module parcel_merge_serial
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
 
                 ! works across periodic edge
-                delx = get_delx(parcels%position(1, is), x0(n))
-                dely = get_dely(parcels%position(2, is), y0(n))
+                delx = get_delx_across_periodic(parcels%position(1, is), x0(n))
+                dely = get_dely_across_periodic(parcels%position(2, is), y0(n))
 
                 ! Accumulate sum of v(is)*(x(is)-x(ic)) and v(is)*(y(is)-y(ic))
                 posm(1, n) = posm(1, n) + parcels%volume(is) * delx
@@ -170,8 +170,8 @@ module parcel_merge_serial
 
                 call apply_periodic_bc(posm(:, m))
                 ! x and y centre of merged parcel, modulo periodicity
-                posm(1, m) = get_delx(x0(m), posm(1, m))
-                posm(2, m) = get_dely(y0(m), posm(2, m))
+                posm(1, m) = get_delx_across_periodic(x0(m), posm(1, m))
+                posm(2, m) = get_dely_across_periodic(y0(m), posm(2, m))
 
                 ! z centre of merged parcel
                 posm(3, m) = vmerge * posm(3, m)
@@ -201,8 +201,8 @@ module parcel_merge_serial
 
                     B33 = get_B33(parcels%B(:, ic), parcels%volume(ic))
 
-                    delx = get_delx(parcels%position(1, ic), posm(1, l))
-                    dely = get_dely(parcels%position(2, ic), posm(2, l))
+                    delx = get_delx_across_periodic(parcels%position(1, ic), posm(1, l))
+                    dely = get_dely_across_periodic(parcels%position(2, ic), posm(2, l))
                     delz = parcels%position(3, ic) - posm(3, l)
 
                     mu = parcels%volume(ic) * vmerge
@@ -233,8 +233,8 @@ module parcel_merge_serial
 
                 vmerge = one / vm(n)
 
-                delx = get_delx(parcels%position(1, is), posm(1, n))
-                dely = get_dely(parcels%position(2, is), posm(2, n))
+                delx = get_delx_across_periodic(parcels%position(1, is), posm(1, n))
+                dely = get_dely_across_periodic(parcels%position(2, is), posm(2, n))
                 delz = parcels%position(3, is) - posm(3, n)
 
                 B33 = get_B33(parcels%B(:, is), parcels%volume(is))
