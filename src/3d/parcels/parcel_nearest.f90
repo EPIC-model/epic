@@ -647,8 +647,8 @@ module parcel_nearest
 
                 ! Loop over 8 cells surrounding (ix0, iy0, iz0):
                 do iz = max(0, iz0-1), min(nz-1, iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
-                    do iy = min(1, iy0-1), min(box%size(2)+1, iy0)
-                        do ix = min(1, ix0-1), min(box%size(1)+1, ix0)
+                    do iy = max(0, iy0-1), min(box%size(2)+1, iy0)
+                        do ix = max(0, ix0-1), min(box%size(1)+1, ix0)
                             ! Cell index:
                             ijk = 1 + ix                                    &
                                 + box%halo_size(1) * iy                     &
@@ -668,6 +668,9 @@ module parcel_nearest
                                             dsqmin = dsq
                                             ic = n
                                         endif
+!                                         if (is == 2281) then
+!                                             print *, is, ic, delx, dely, delz, dsq, dsqmin
+!                                         endif
                                     endif
                                 endif
                             enddo
