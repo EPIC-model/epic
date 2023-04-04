@@ -105,10 +105,10 @@ for i in range(n_runs):
 
     # -------------------------------------------------------------------------
     # Run the serial and parallel versions of the nearest + merging algorithm:
-    process_1 = subprocess.Popen(args=['mpirun', '-np', str(n_ranks), exec_parallel])#,
+    process_1 = subprocess.Popen(args=['mpirun', '-np', str(n_ranks), exec_parallel],
                                  stdout=subprocess.DEVNULL,
                                  stderr=subprocess.STDOUT)
-    process_2 = subprocess.Popen(args=['mpirun', '-np', '1', exec_serial])#,
+    process_2 = subprocess.Popen(args=['mpirun', '-np', '1', exec_serial],
                                  stdout=subprocess.DEVNULL,
                                  stderr=subprocess.STDOUT)
 
