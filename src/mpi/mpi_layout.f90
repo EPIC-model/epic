@@ -2,6 +2,7 @@ module mpi_layout
     use mpi_f08
     use mpi_communicator, only : comm
     use mpi_tags
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     type box_type
@@ -35,6 +36,15 @@ module mpi_layout
     logical :: l_layout_initialised = .false.
 
     private :: l_layout_initialised
+
+    double precision, allocatable, dimension(:), target :: mpi_north_buf,       &
+                                                           mpi_south_buf,       &
+                                                           mpi_west_buf,        &
+                                                           mpi_east_buf,        &
+                                                           mpi_northwest_buf,   &
+                                                           mpi_northeast_buf,   &
+                                                           mpi_southwest_buf,   &
+                                                           mpi_southeast_buf
 
     contains
 
@@ -276,5 +286,86 @@ module mpi_layout
                 endif
             enddo
         end function get_neighbour_from_rank
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine get_mpi_buffer(dir, buf_ptr)
+            integer,                                 intent(in)    :: dir
+            double precision, dimension(:), pointer, intent(inout) :: buf_ptr
+
+            select case (dir)
+                case (MPI_NORTH)
+                    buf_ptr => mpi_north_buf
+                case (MPI_SOUTH)
+                    buf_ptr => mpi_south_buf
+                case (MPI_WEST)
+                    buf_ptr => mpi_west_buf
+                case (MPI_EAST)
+                    buf_ptr => mpi_east_buf
+                case (MPI_NORTHWEST)
+                    buf_ptr => mpi_northwest_buf
+                case (MPI_NORTHEAST)
+                    buf_ptr => mpi_northeast_buf
+                case (MPI_SOUTHWEST)
+                    buf_ptr => mpi_southwest_buf
+                case (MPI_SOUTHEAST)
+                    buf_ptr => mpi_southeast_buf
+                case default
+                    call mpi_exit_on_error(&
+                        "in mpi_layout::get_mpi_buffer: No valid direction.")
+            end select
+        end subroutine get_mpi_buffer
+
+        subroutine allocate_mpi_buffers(buf_sizes)
+            integer, intent(in)                     :: buf_sizes(8)
+            double precision, dimension(:), pointer :: buf_ptr
+            integer                                 :: n
+
+            do n = 1, 8
+                call get_mpi_buffer(n, buf_ptr)
+                allocate(buf_ptr(buf_sizes(n)))
+            enddo
+        end subroutine allocate_mpi_buffers
+
+        subroutine deallocate_mpi_buffers
+!             double precision, dimension(:), pointer :: buf_ptr
+!             integer                                 :: n
+
+            if (allocated(mpi_north_buf)) then
+                deallocate(mpi_north_buf)
+            endif
+
+            if (allocated(mpi_south_buf)) then
+                deallocate(mpi_south_buf)
+            endif
+
+            if (allocated(mpi_west_buf)) then
+                deallocate(mpi_west_buf)
+            endif
+
+            if (allocated(mpi_east_buf)) then
+                deallocate(mpi_east_buf)
+            endif
+
+            if (allocated(mpi_northwest_buf)) then
+                deallocate(mpi_northwest_buf)
+            endif
+
+            if (allocated(mpi_northeast_buf)) then
+                deallocate(mpi_northeast_buf)
+            endif
+
+            if (allocated(mpi_southwest_buf)) then
+                deallocate(mpi_southwest_buf)
+            endif
+
+            if (allocated(mpi_southeast_buf)) then
+                deallocate(mpi_southeast_buf)
+            endif
+!              do n = 1, 8
+!                 call get_mpi_buffer(n, buf_ptr)
+!                 deallocate(buf_ptr)
+!             enddo
+        end subroutine deallocate_mpi_buffers
 
 end module mpi_layout

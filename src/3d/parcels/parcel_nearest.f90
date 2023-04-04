@@ -392,6 +392,8 @@ module parcel_nearest
             ! Determine locally closest parcel:
             call find_closest_parcel_locally(n_local_small, isma, iclo, rclo, dclo)
 
+!             print *, comm%rank, "found closest locally"
+
 !             call MPI_Barrier(comm%world, comm%err)
 !             stop
 
@@ -412,10 +414,14 @@ module parcel_nearest
 !             call MPI_Barrier(comm%world, comm%err)
 !             stop
 
+!             print *, comm%rank, "try finding closest globally"
+
             !---------------------------------------------------------------------
             ! Determine globally closest parcel:
             ! After this operation isma, iclo and rclo are properly set.
             call find_closest_parcel_globally(n_local_small, iclo, rclo, dclo)
+
+!             print *, comm%rank, "found closest globally"
 
 ! !             print *, "closest parcel globally"
 !             do j = 0, comm%size - 1
@@ -445,6 +451,8 @@ module parcel_nearest
             !---------------------------------------------------------------------
             ! Figure out the mergers:
             call resolve_tree(isma, iclo, rclo, n_local_small)
+
+!             print *, comm%rank, "resolved tree"
 
 !             write(*,*) comm%rank, 'after tree resolve, n_local_small=', n_local_small
 
@@ -482,6 +490,8 @@ module parcel_nearest
             ! Note: It cannot happen that the closest parcel is a small parcel
             !       on another MPI rank that is sent elsewhere.
             call gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma)
+
+            print *, comm%rank, "gathered remote parcels"
 
             if (maxval(iclo(1:n_local_small)) > n_parcels) then
                 print *, "after", comm%rank, maxval(iclo(1:n_local_small)), n_parcels
@@ -742,11 +752,14 @@ module parcel_nearest
             double precision, intent(inout)         :: dclo(:)
             double precision, dimension(:), pointer :: send_buf
             double precision, allocatable           :: recv_buf(:)
-            type(MPI_Request)                       :: request
-            type(MPI_Status)                        :: recv_status, send_status
+            type(MPI_Request)                       :: requests(8)
+            type(MPI_Status)                        :: recv_status, send_statuses(8)
             integer                                 :: recv_size, send_size
             integer                                 :: tag, source, recv_count, n, l, i, m, k, j
             integer, parameter                      :: n_entries = 3
+
+
+!             call allocate_mpi_buffers(n_neighbour_small * n_entries)
 
             !------------------------------------------------------------------
             ! Communicate with neighbours:
@@ -756,6 +769,8 @@ module parcel_nearest
                 ! we send the distance, the remote parcel index and the
                 ! remote merge index *m* --> n_entries = 3.
                 send_size = n_neighbour_small(n) * n_entries
+
+                call get_mpi_buffer(n, send_buf)
 
                 allocate(send_buf(send_size))
 
@@ -767,7 +782,7 @@ module parcel_nearest
                     ! merge index on *this* rank
                     m = n_local_small + j + l
 
-                    send_buf(i)   = midsma(k)       ! merge index on remote rank
+                    send_buf(i)   = dble(midsma(k)) ! merge index on remote rank
                     send_buf(i+1) = dclo(m)         ! distance to closest parcel
                     send_buf(i+2) = dble(iclo(m))   ! parcel index of closest parcel
                 enddo
@@ -776,20 +791,29 @@ module parcel_nearest
 
                 tag = small_recv_order(n)
 
+!                 print *, comm%rank, "send to", neighbours(tag)%rank
+
                 call MPI_Isend(send_buf,                &
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(tag)%rank,    &
                                NEIGHBOUR_TAG(tag),      &
                                comm%cart,               &
-                               request,                 &
+                               requests(n),             &
                                comm%err)
 
                 call mpi_check_for_error(&
                     "in MPI_Isend of parcel_nearest::find_closest_parcel_globally.")
 
+!                 print *, comm%rank, "send. Done. Checking for incoming messages."
+
+            enddo
+
+            do n = 1, 8
                 ! check for incoming messages
                 call mpi_check_for_message(tag, recv_size, source)
+
+!                 print *, comm%rank, "check messages. Done. Receive message."
 
                 if (mod(recv_size, n_entries) /= 0) then
                     call mpi_exit_on_error(&
@@ -809,10 +833,13 @@ module parcel_nearest
                               recv_status,              &
                               comm%err)
 
+!                 print *, comm%rank, "received from", source
+
                 call mpi_check_for_error(&
                     "in MPI_Recv of parcel_nearest::find_closest_parcel_globally.")
 
-                call MPI_Wait(request, send_status, comm%err)
+!                 call MPI_Wait(request, send_status, comm%err)
+
 
                 do l = 1, recv_count
                     i = 1 + (l-1) * n_entries
@@ -827,12 +854,18 @@ module parcel_nearest
                     endif
                 enddo
 
-                deallocate(send_buf)
                 deallocate(recv_buf)
-
-                call mpi_check_for_error(&
-                    "in MPI_Wait of parcel_nearest::find_closest_parcel_globally.")
             enddo
+
+            call MPI_Waitall(8,                 &
+                            requests,           &
+                            send_statuses,      &
+                            comm%err)
+
+            call mpi_check_for_error(&
+                "in MPI_Waitall of parcel_nearest::find_closest_parcel_globally.")
+
+            call deallocate_mpi_buffers
 
         end subroutine find_closest_parcel_globally
 

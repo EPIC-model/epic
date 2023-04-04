@@ -8,7 +8,7 @@ seed = 42
 
 n_runs = 1000
 
-n_ranks = 1
+n_ranks = 6
 
 # nx = ny = nz = 10
 n_parcels = 16 * 10 ** 3
@@ -49,7 +49,7 @@ for i in range(n_runs):
 
     buoyancy = rng.uniform(low=-1.0, high=1.0, size=n_parcels)
 
-    volume = rng.uniform(low=0.5 * vmin, high=2.0 * vmin, size=n_parcels) # change to 1.5 * vmin
+    volume = rng.uniform(low=0.5 * vmin, high=1.5 * vmin, size=n_parcels)
 
     # lam = a / c
     lam = rng.uniform(low=1.0, high=4.0, size=n_parcels)
@@ -105,8 +105,12 @@ for i in range(n_runs):
 
     # -------------------------------------------------------------------------
     # Run the serial and parallel versions of the nearest + merging algorithm:
-    process_1 = subprocess.Popen(['mpirun', '-np', str(n_ranks), exec_parallel])
-    process_2 = subprocess.Popen(['mpirun', '-np', '1', exec_serial])
+    process_1 = subprocess.Popen(args=['mpirun', '-np', str(n_ranks), exec_parallel])#,
+                                 stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.STDOUT)
+    process_2 = subprocess.Popen(args=['mpirun', '-np', '1', exec_serial])#,
+                                 stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.STDOUT)
 
     process_1.wait()
     process_2.wait()
@@ -148,4 +152,4 @@ for i in range(n_runs):
         os.remove('parallel_final_0000000001_parcels.nc')
 
 print("------------------------------------------------------------------------")
-print("Preformed", n_runs, "runs where", n_fails, "failed.")
+print("Performed", n_runs, "runs where", n_fails, "failed.")
