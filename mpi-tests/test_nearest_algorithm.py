@@ -46,6 +46,18 @@ try:
         help="Print intermediate output."
     )
 
+    parser.add_argument(
+        "--exec_path",
+        type=str,
+        default='',
+        help="Path to executables")
+
+    parser.add_argument(
+        "--mpirun",
+        type=str,
+        default='',
+        help="which mpirun")
+
     args = parser.parse_args()
 
     # nx = ny = nz = 10
@@ -60,12 +72,8 @@ try:
 
     tol = 1.0e-14
 
-    mpirun = '/opt/modules/Compiler/openmpi/4.1.2/gcc/9.3.0/bin/mpirun'
-    exec_path = '/home/matthias/Documents/projects/epic/build-mpi/mpi-tests/'
-
-    exec_parallel = exec_path + 'test_merging_parcels'
-    exec_serial = exec_path + 'test_merging_parcels_serial'
-
+    exec_parallel = os.path.join)exec_path, 'test_merging_parcels')
+    exec_serial = os.path.join(exec_path, 'test_merging_parcels_serial')
 
 
     ncp = nc_parcels()
