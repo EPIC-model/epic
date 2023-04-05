@@ -64,7 +64,7 @@ program test_mpi_nearest_20
     implicit none
 
     logical                            :: passed = .true.
-    integer, allocatable, dimension(:) :: isma
+    integer, allocatable, dimension(:) :: isma, inva
     integer, allocatable, dimension(:) :: iclo
     integer                            :: n_merge, n, check_array(2), n_invalid
 
@@ -96,7 +96,7 @@ program test_mpi_nearest_20
     !
     call parcel_setup(1)
 
-    call find_nearest(isma, iclo, n_merge, n_invalid)
+    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
 
 !     To print out the result enable the following lines:
 !     do r = 0, comm%size-1
@@ -123,7 +123,7 @@ program test_mpi_nearest_20
     !
     call parcel_setup(2)
 
-    call find_nearest(isma, iclo, n_merge, n_invalid)
+    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
 
     call check_result(400)
 

@@ -16,7 +16,7 @@ program test_mpi_nearest_2
     implicit none
 
     logical                            :: passed = .true.
-    integer, allocatable, dimension(:) :: isma
+    integer, allocatable, dimension(:) :: isma, inva
     integer, allocatable, dimension(:) :: iclo
     integer                            :: n_merge, n, check_array(2), n_invalid
 
@@ -57,7 +57,7 @@ program test_mpi_nearest_2
                        comm%err)
 
 
-    call find_nearest(isma, iclo, n_merge, n_invalid)
+    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
 
     check_array(1) = n_parcels - n_invalid
     check_array(2) = n_merge

@@ -231,15 +231,19 @@ module parcel_nearest
 
         ! @param[out] isma indices of small parcels
         ! @param[out] iclo indices of close parcels
+        ! @param[out] inva indices of small + invalid (due to sending to other processes)
+        !             parcels
         ! @param[out] n_local_small the array size of isma and iclo
+        ! @param[out] n_invalid number of invalid parcels
         ! @post
-        !   - isma must be sorted in ascending order
-        !   - isma and iclo must be filled contiguously
+        !   - isma and inva must be sorted in ascending order
+        !   - isma, inva and iclo must be filled contiguously
         !   - parcel indices in isma cannot be in iclo, and vice-versa
         !   - the m-th entry in isma relates to the m-th entry in iclo
-        subroutine find_nearest(isma, iclo, n_local_small, n_invalid)
+        subroutine find_nearest(isma, iclo, inva, n_local_small, n_invalid)
             integer, allocatable, intent(out) :: isma(:)
             integer, allocatable, intent(out) :: iclo(:)
+            integer, allocatable, intent(out) :: inva(:)
             integer,              intent(out) :: n_local_small
             integer,              intent(out) :: n_invalid
             integer                           :: n_global_small
@@ -323,6 +327,7 @@ module parcel_nearest
 
             ! allocate arrays
             allocate(isma(0:n_local_small + n_remote_small))
+            allocate(inva(0:n_local_small + n_remote_small))
             allocate(iclo(n_local_small + n_remote_small))
             allocate(rclo(n_local_small + n_remote_small))
             allocate(dclo(n_local_small + n_remote_small))
@@ -395,7 +400,7 @@ module parcel_nearest
             ! necessary remote parcels to *this* MPI rank.
             ! Note: It cannot happen that the closest parcel is a small parcel
             !       on another MPI rank that is sent elsewhere.
-            call gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma)
+            call gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma, inva)
 
 #ifndef NDEBUG
             if (maxval(iclo(1:n_local_small)) > n_parcels) then
@@ -604,12 +609,13 @@ module parcel_nearest
             double precision, allocatable           :: recv_buf(:)
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
-            integer                                 :: recv_size, send_size
+            integer                                 :: recv_size, send_size, buf_sizes(8)
             integer                                 :: tag, source, recv_count, n, l, i, m, k, j
             integer, parameter                      :: n_entries = 3
 
 
-!             call allocate_mpi_buffers(n_neighbour_small * n_entries)
+            buf_sizes = n_neighbour_small * n_entries
+            call allocate_mpi_buffers(buf_sizes)
 
             !------------------------------------------------------------------
             ! Communicate with neighbours:
@@ -621,8 +627,6 @@ module parcel_nearest
                 send_size = n_neighbour_small(n) * n_entries
 
                 call get_mpi_buffer(n, send_buf)
-
-                allocate(send_buf(send_size))
 
                 do l = 1, n_neighbour_small(n)
                     i = 1 + (l-1) * n_entries
@@ -1374,13 +1378,13 @@ module parcel_nearest
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma)
+        subroutine gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma, inva)
             integer,                     intent(inout) :: n_local_small
             integer,                     intent(inout) :: n_invalid
             integer,                     intent(inout) :: rclo(:)       ! MPI rank of closest parcel
             integer,                     intent(inout) :: iclo(:)
             integer,                     intent(inout) :: isma(0:)
-            integer,          dimension(:), pointer    :: send_pid
+            integer,                     intent(inout) :: inva(0:)
             double precision, dimension(:), pointer    :: send_buf
             double precision, allocatable              :: recv_buf(:)
             type(MPI_Request)                          :: requests(8)
@@ -1388,7 +1392,7 @@ module parcel_nearest
             integer                                    :: tag, source, recv_count
             integer                                    :: recv_size, send_size
             double precision                           :: buffer(n_par_attrib)
-            integer                                    :: m, rc, ic, is, n, iv, i, j, k
+            integer                                    :: m, rc, ic, is, n, i, j, k
             integer, parameter                         :: n_entries = n_par_attrib + 1
             integer                                    :: n_bytes
             integer, asynchronous                      :: n_parcel_recvs(8)
@@ -1397,12 +1401,7 @@ module parcel_nearest
             integer                                    :: n_registered(8)
 
             !------------------------------------------------------------------
-            ! Figure out how many parcels we send to our neighbours:
-            ! We must store the parcel index of each small parcel.
-            ! We need to allocate the invalid buffer, therefore
-            ! the second argument is .true.
-            call allocate_parcel_id_buffers(1, .true.)
-
+            ! Figure out how many parcels we send:
             n_parcel_sends = 0
 
             do m = 1, n_local_small
@@ -1416,8 +1415,8 @@ module parcel_nearest
             !------------------------------------------------------------------
             ! We must send all parcel attributes (n_par_attrib) plus
             ! the index of the close parcel ic (1)
-            ! (this routine uses n_parcel_sends)
-            call allocate_parcel_buffers(n_entries)
+            n_registered = n_parcel_sends * n_entries
+            call allocate_mpi_buffers(n_registered)
 
             !------------------------------------------------------------------
             ! Figure out how many parcels we receive from our neighbours
@@ -1432,9 +1431,13 @@ module parcel_nearest
                                 win_neighbour,    &
                                 comm%err)
 
+
+            ! copy isma to inva for parcel deletion:
+            inva(1:n_local_small) = isma(1:n_local_small)
+            n_invalid = sum(n_parcel_sends)
+
             n_parcel_recvs = 0
             n_registered = 0
-            iv = 1
             do m = 1, n_local_small
                 is = isma(m)
                 ic = iclo(m)
@@ -1446,7 +1449,7 @@ module parcel_nearest
 
                     n = get_neighbour_from_rank(rc)
 
-                    call get_parcel_buffer_ptr(n, send_pid, send_buf)
+                    call get_mpi_buffer(n, send_buf)
 
                     n_registered(n) = n_registered(n) + 1
 
@@ -1455,9 +1458,6 @@ module parcel_nearest
                     i = j - n_entries + 1
                     send_buf(i:j-1) = buffer
                     send_buf(j) = dble(ic)
-
-                    invalid(iv) = is
-                    iv = iv + 1
 
                     ! Mark this as invalid
                     isma(m) = -1
@@ -1500,7 +1500,7 @@ module parcel_nearest
             !------------------------------------------------------------------
             ! Communicate parcels:
             do n = 1, 8
-                call get_parcel_buffer_ptr(n, send_pid, send_buf)
+                call get_mpi_buffer(n, send_buf)
 
                 send_size = n_parcel_sends(n) * n_entries
 
@@ -1579,16 +1579,7 @@ module parcel_nearest
             call mpi_check_for_error(&
                 "in MPI_Waitall of parcel_nearest::gather_remote_parcels.")
 
-            ! append invalid indices to isma (will be deleted afer merging)
-            n_invalid = sum(n_parcel_sends)
-            m = n_local_small + 1
-            do k = 1, n_invalid
-                isma(m) = invalid(k)
-                m = m + 1
-            enddo
-
-            call deallocate_parcel_id_buffers
-            call deallocate_parcel_buffers
+            call deallocate_mpi_buffers
 
 #ifndef NDEBUG
             n = n_parcels - n_invalid

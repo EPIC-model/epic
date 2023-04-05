@@ -14,10 +14,7 @@ module parcel_merge
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
     use parcel_bc
-    use merge_sort
     use mpi_timer, only : start_timer, stop_timer
-    use merge_sort, only : msort
-
     implicit none
 
     integer :: merge_timer
@@ -37,11 +34,12 @@ module parcel_merge
             type(parcel_container_type), intent(inout) :: parcels
             integer, allocatable, dimension(:)         :: isma
             integer, allocatable, dimension(:)         :: iclo
+            integer, allocatable, dimension(:)         :: inva
             integer                                    :: n_merge ! number of merges
             integer                                    :: n_invalid
 
             ! find parcels to merge
-            call find_nearest(isma, iclo, n_merge, n_invalid)
+            call find_nearest(isma, iclo, inva, n_merge, n_invalid)
 
             n_parcel_merges = n_parcel_merges + n_merge
 
@@ -58,12 +56,12 @@ module parcel_merge
             if (n_merge > 0) then
                 ! merge small parcels into other parcels
                 call geometric_merge(parcels, isma, iclo, n_merge)
+            endif
 
-                ! sort isma including invalid parcels
-                call msort(isma(1:n_merge+n_invalid))
-
-                ! overwrite invalid parcels
-                call parcel_delete(isma, n_merge+n_invalid)
+            if (n_merge + n_invalid > 0) then
+                ! overwrite all small and invalid parcels -- all small parcels are now invalid too
+                call parcel_delete(inva, n_merge + n_invalid)
+                deallocate(inva)
             endif
 
             if (allocated(isma)) then
