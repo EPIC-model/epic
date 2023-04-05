@@ -40,6 +40,12 @@ try:
         help="Number of parcels (on average) per grid cell.",
     )
 
+    parser.add_argument(
+        "--verbose",
+        action='store_true',
+        help="Print intermediate output."
+    )
+
     args = parser.parse_args()
 
     # nx = ny = nz = 10
@@ -54,6 +60,7 @@ try:
 
     tol = 1.0e-14
 
+    mpirun = '/opt/modules/Compiler/openmpi/4.1.2/gcc/9.3.0/bin/mpirun'
     exec_path = '/home/matthias/Documents/projects/epic/build-mpi/mpi-tests/'
 
     exec_parallel = exec_path + 'test_merging_parcels'
@@ -68,8 +75,8 @@ try:
     n_fails = 0
     n_merges = 0
 
-    for n_rank in args.n_ranks:
-        for seed in args.seeds:
+    for i, n_rank in enumerate(args.n_ranks):
+        for j, seed in enumerate(args.seeds):
             rng = np.random.default_rng(seed)
             for n in range(args.n_samples):
 
@@ -141,13 +148,13 @@ try:
 
                 # -------------------------------------------------------------
                 # Run the serial and parallel versions of the nearest + merging algorithm:
-                process_1 = subprocess.Popen(args=['mpirun', '-np', str(n_rank), exec_parallel],
-                                            stdout=subprocess.DEVNULL,
-                                            stderr=subprocess.STDOUT)
+                process_1 = subprocess.Popen(args=[mpirun, '-np', str(n_rank), exec_parallel],
+                                             stdout=subprocess.DEVNULL,
+                                             stderr=subprocess.STDOUT)
 
                 process_2 = subprocess.Popen(args=['mpirun', '-np', '1', exec_serial],
-                                            stdout=subprocess.DEVNULL,
-                                            stderr=subprocess.STDOUT)
+                                             stdout=subprocess.DEVNULL,
+                                             stderr=subprocess.STDOUT)
 
                 # We wait 2 minutes per process. If they exceed this time limit, we
                 # assume the nearest algorithm is in an endless loop, i.e. deadlocked.
@@ -214,8 +221,14 @@ try:
                     os.remove('serial_final_0000000001_parcels.nc')
                     os.remove('parallel_final_0000000001_parcels.nc')
 
+        if args.verbose and (len(args.seeds) > 1 or len(args.n_ranks) > 1):
+            print("Current number of samples: ", args.n_samples * (i+1) * (j+1))
+            print("Current number of fails:   ", n_fails)
+            print("Current number of merges:  ", n_merges)
+
     # -------------------------------------------------------------------------
     # Print summary:
+    print("--------------------------------------------------------------------")
     print("Total number of samples:      ", args.n_samples * len(args.seeds) * len(args.n_ranks))
     print("Seeds:                        ", args.seeds)
     print("MPI ranks:                    ", args.n_ranks)
