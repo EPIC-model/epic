@@ -1392,7 +1392,7 @@ module parcel_nearest
             integer                                    :: tag, source, recv_count
             integer                                    :: recv_size, send_size
             double precision                           :: buffer(n_par_attrib)
-            integer                                    :: m, rc, ic, is, n, i, j, k
+            integer                                    :: m, rc, ic, is, n, i, j, k, iv
             integer, parameter                         :: n_entries = n_par_attrib + 1
             integer                                    :: n_bytes
             integer, asynchronous                      :: n_parcel_recvs(8)
@@ -1432,7 +1432,7 @@ module parcel_nearest
                                 comm%err)
 
 
-            ! copy isma to inva for parcel deletion:
+            ! copy initial isma to inva for parcel deletion:
             inva(1:n_local_small) = isma(1:n_local_small)
             n_invalid = sum(n_parcel_sends)
 
@@ -1468,6 +1468,7 @@ module parcel_nearest
 
             ! We must now remove all invalid entries in isma and
             ! iclo and also update the value of n_local_small:
+            iv = n_local_small  ! we need to keep the original value for filling *inva*
             n_local_small = count(isma(1:) /= -1)
             isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
             iclo(1:n_local_small) = pack(iclo, iclo /= -1)
@@ -1556,11 +1557,13 @@ module parcel_nearest
                     buffer = recv_buf(i:j-1)
                     call parcel_deserialize(n_parcels, buffer)
 
-                    ! Add the small parcel to isma and
+                    ! Add the small parcel to isma and inva, and
                     ! its closest parcel to iclo
                     m = m + 1
+                    iv = iv + 1
                     iclo(m) = nint(recv_buf(j))
                     isma(m) = n_parcels
+                    inva(iv) = n_parcels
                 enddo
                 ! The last value of *m* is our new number of
                 ! small parcels. However, this still includes
