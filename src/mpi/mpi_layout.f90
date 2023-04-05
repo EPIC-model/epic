@@ -316,21 +316,24 @@ module mpi_layout
             end select
         end subroutine get_mpi_buffer
 
-        subroutine allocate_mpi_buffers(buf_sizes)
-            integer, intent(in)                     :: buf_sizes(8)
-            double precision, dimension(:), pointer :: buf_ptr
-            integer                                 :: n
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-            do n = 1, 8
-                call get_mpi_buffer(n, buf_ptr)
-                allocate(buf_ptr(buf_sizes(n)))
-            enddo
+        subroutine allocate_mpi_buffers(buf_sizes)
+            integer, intent(in) :: buf_sizes(8)
+
+            allocate(mpi_north_buf(buf_sizes(MPI_NORTH)))
+            allocate(mpi_south_buf(buf_sizes(MPI_SOUTH)))
+            allocate(mpi_west_buf(buf_sizes(MPI_WEST)))
+            allocate(mpi_east_buf(buf_sizes(MPI_EAST)))
+            allocate(mpi_northwest_buf(buf_sizes(MPI_NORTHWEST)))
+            allocate(mpi_northeast_buf(buf_sizes(MPI_NORTHEAST)))
+            allocate(mpi_southwest_buf(buf_sizes(MPI_SOUTHWEST)))
+            allocate(mpi_southeast_buf(buf_sizes(MPI_SOUTHEAST)))
         end subroutine allocate_mpi_buffers
 
-        subroutine deallocate_mpi_buffers
-!             double precision, dimension(:), pointer :: buf_ptr
-!             integer                                 :: n
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        subroutine deallocate_mpi_buffers
             if (allocated(mpi_north_buf)) then
                 deallocate(mpi_north_buf)
             endif
@@ -362,10 +365,6 @@ module mpi_layout
             if (allocated(mpi_southeast_buf)) then
                 deallocate(mpi_southeast_buf)
             endif
-!              do n = 1, 8
-!                 call get_mpi_buffer(n, buf_ptr)
-!                 deallocate(buf_ptr)
-!             enddo
         end subroutine deallocate_mpi_buffers
 
 end module mpi_layout
