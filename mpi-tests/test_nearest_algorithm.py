@@ -73,7 +73,7 @@ try:
             rng = np.random.default_rng(seed)
             for n in range(args.n_samples):
 
-                # -------------------------------------------------------------------------
+                # -------------------------------------------------------------
                 # Set up the parcel configuration:
                 x_position = rng.uniform(low=0.0, high=1.0, size=n_parcels)
                 y_position = rng.uniform(low=0.0, high=1.0, size=n_parcels)
@@ -113,7 +113,7 @@ try:
                 B22 = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
                 B23 = (a2 - c2) * st * sp * cp
 
-                # -------------------------------------------------------------------------
+                # -------------------------------------------------------------
                 # Write the initial NetCDF file:
                 ncp.open('initial_parcels.nc')
 
@@ -139,46 +139,64 @@ try:
 
                 ncp.close()
 
-                # -------------------------------------------------------------------------
+                # -------------------------------------------------------------
                 # Run the serial and parallel versions of the nearest + merging algorithm:
                 process_1 = subprocess.Popen(args=['mpirun', '-np', str(n_rank), exec_parallel],
                                             stdout=subprocess.DEVNULL,
                                             stderr=subprocess.STDOUT)
+
                 process_2 = subprocess.Popen(args=['mpirun', '-np', '1', exec_serial],
                                             stdout=subprocess.DEVNULL,
                                             stderr=subprocess.STDOUT)
 
-                process_1.wait()
-                process_2.wait()
+                # We wait 2 minutes per process. If they exceed this time limit, we
+                # assume the nearest algorithm is in an endless loop, i.e. deadlocked.
+                failed = False
+                try:
+                    process_1.wait(timeout=120)
+                except subprocess.TimeoutExpired:
+                    process_1.terminate()
+                    n_fails = n_fails + 1
+                    failed = True
 
-                # -------------------------------------------------------------------------
-                # Compare the results:
-                ncrs.open('serial_final_0000000001_parcels.nc')
-                ncrp.open('parallel_final_0000000001_parcels.nc')
-
-                ind1 = np.lexsort((ncrs.get_dataset(step=0, name='x_position'),
-                                ncrs.get_dataset(step=0, name='y_position'),
-                                ncrs.get_dataset(step=0, name='z_position')))
-
-                ind2 = np.lexsort((ncrp.get_dataset(step=0, name='x_position'),
-                                ncrp.get_dataset(step=0, name='y_position'),
-                                ncrp.get_dataset(step=0, name='z_position')))
-
-                n_merges = n_merges + n_parcels - ncrs.get_num_parcels(step=0)
-
-                failed = (not ncrs.get_num_parcels(step=0) == ncrp.get_num_parcels(step=0))
+                try:
+                    process_2.wait(timeout=120)
+                except subprocess.TimeoutExpired:
+                    process_2.terminate()
+                    n_fails = n_fails + 1
+                    failed = True
 
                 if not failed:
-                    for attr in ['x_position', 'y_position', 'z_position',
-                                'x_vorticity', 'y_vorticity', 'z_vorticity',
-                                'buoyancy', 'volume', 'B11', 'B12', 'B13', 'B22', 'B23']:
-                        ds1 = ncrs.get_dataset(step=0, name=attr)
-                        ds2 = ncrp.get_dataset(step=0, name=attr)
-                        failed = (failed or max(abs(ds1[ind1] - ds2[ind2])) > tol)
+                    # ---------------------------------------------------------
+                    # Compare the results:
+                    ncrs.open('serial_final_0000000001_parcels.nc')
+                    ncrp.open('parallel_final_0000000001_parcels.nc')
 
-                ncrs.close()
-                ncrp.close()
+                    ind1 = np.lexsort((ncrs.get_dataset(step=0, name='x_position'),
+                                    ncrs.get_dataset(step=0, name='y_position'),
+                                    ncrs.get_dataset(step=0, name='z_position')))
 
+                    ind2 = np.lexsort((ncrp.get_dataset(step=0, name='x_position'),
+                                    ncrp.get_dataset(step=0, name='y_position'),
+                                    ncrp.get_dataset(step=0, name='z_position')))
+
+                    n_merges = n_merges + n_parcels - ncrs.get_num_parcels(step=0)
+
+                    failed = (not ncrs.get_num_parcels(step=0) == ncrp.get_num_parcels(step=0))
+
+                    if not failed:
+                        for attr in ['x_position', 'y_position', 'z_position',
+                                    'x_vorticity', 'y_vorticity', 'z_vorticity',
+                                    'buoyancy', 'volume', 'B11', 'B12', 'B13', 'B22', 'B23']:
+                            ds1 = ncrs.get_dataset(step=0, name=attr)
+                            ds2 = ncrp.get_dataset(step=0, name=attr)
+                            failed = (failed or max(abs(ds1[ind1] - ds2[ind2])) > tol)
+
+                    ncrs.close()
+                    ncrp.close()
+
+                # -------------------------------------------------------------
+                # Do clean up:
                 if failed:
                     failed = False
                     n_fails = n_fails + 1
@@ -194,14 +212,15 @@ try:
                     os.remove('serial_final_0000000001_parcels.nc')
                     os.remove('parallel_final_0000000001_parcels.nc')
 
-    # -----------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Print summary:
-    print("Total number of samples:   ", args.n_samples * len(args.seeds) * len(args.n_ranks))
-    print("Seeds:                     ", args.seeds)
-    print("MPI ranks:                 ", args.n_ranks)
-    print("Number of parcels:         ", n_parcels)
-    print("Number of fails:           ", n_fails)
-    print("Number of merges:          ", n_merges)
+    print("Total number of samples:      ", args.n_samples * len(args.seeds) * len(args.n_ranks))
+    print("Seeds:                        ", args.seeds)
+    print("MPI ranks:                    ", args.n_ranks)
+    print("Number of parcels per sample: ", n_parcels)
+    print("Number of parcels per cell:   ", args.n_parcel_per_cell)
+    print("Number of fails:              ", n_fails)
+    print("Number of merges:             ", n_merges)
 
 except Exception as ex:
     print(ex)
