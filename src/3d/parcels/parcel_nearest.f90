@@ -1412,6 +1412,8 @@ module parcel_nearest
                 endif
             enddo
 
+            n_invalid = sum(n_parcel_sends)
+
             !------------------------------------------------------------------
             ! We must send all parcel attributes (n_par_attrib) plus
             ! the index of the close parcel ic (1)
@@ -1431,17 +1433,13 @@ module parcel_nearest
                                 win_neighbour,    &
                                 comm%err)
 
-
-            ! copy initial isma to inva for parcel deletion:
-            inva(1:n_local_small) = isma(1:n_local_small)
-            n_invalid = sum(n_parcel_sends)
-
             n_parcel_recvs = 0
             n_registered = 0
             do m = 1, n_local_small
                 is = isma(m)
                 ic = iclo(m)
                 rc = rclo(m)
+                inva(m) = is ! copy initial isma to inva for parcel deletion
                 if (comm%rank /= rc) then
                     ! The closest parcel to this small parcel *is*
                     ! is on another MPI rank. We must send this parcel
@@ -1560,9 +1558,9 @@ module parcel_nearest
                     ! Add the small parcel to isma and inva, and
                     ! its closest parcel to iclo
                     m = m + 1
-                    iv = iv + 1
                     iclo(m) = nint(recv_buf(j))
                     isma(m) = n_parcels
+                    iv = iv + 1
                     inva(iv) = n_parcels
                 enddo
                 ! The last value of *m* is our new number of

@@ -106,7 +106,7 @@ module parcel_netcdf
                                          dimsize=n_total_parcels,           &
                                          dimid=npar_dim_id)
 
-            call define_netcdf_dimension(ncid=ncid,                 &
+            call define_netcdf_dimension(ncid=ncid,                  &
                                          name='comm%size',           &
                                          dimsize=comm%size,          &
                                          dimid=mpi_dim_id)
