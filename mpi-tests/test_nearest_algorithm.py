@@ -203,10 +203,12 @@ try:
                     n_str = str(n_fails).zfill(10)
                     os.rename('initial_parcels.nc',
                             'initial_' + n_str + '_parcels.nc')
-                    os.rename('serial_final_0000000001_parcels.nc',
-                            'serial_fail_' + n_str + '_parcels.nc')
-                    os.rename('parallel_final_0000000001_parcels.nc',
-                            'parallel_fail_' + n_str + '_parcels.nc')
+                    if os.path.exists('serial_final_0000000001_parcels.nc'):
+                        os.rename('serial_final_0000000001_parcels.nc',
+                                  'serial_fail_' + n_str + '_parcels.nc')
+                    if os.path.exists('parallel_final_0000000001_parcels.nc'):
+                        os.rename('parallel_final_0000000001_parcels.nc',
+                                  'parallel_fail_' + n_str + '_parcels.nc')
                 else:
                     os.remove('initial_parcels.nc')
                     os.remove('serial_final_0000000001_parcels.nc')
