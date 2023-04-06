@@ -74,9 +74,6 @@ program test_mpi_parcel_diagnostics
     parcels%vorticity(:, 1:n_parcels) = f12
     velocity(:, 1:n_parcels)  = f12
 
-    ! calculates reference potential energy
-    call calculate_peref
-
     call calculate_parcel_diagnostics(velocity)
 
     if (comm%rank == comm%master) then

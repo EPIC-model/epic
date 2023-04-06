@@ -3,14 +3,13 @@
 ! =============================================================================
 module parcel_diagnostics
     use constants, only : zero, one, f12, thousand
-    use merge_sort
     use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
     use parcel_container, only : parcels, n_parcels, n_total_parcels
     use parcel_ellipsoid
     use parcel_split_mod, only : n_parcel_splits
     use parcel_merge, only : n_parcel_merges
     use omp_lib
-    use physics, only : peref, ape_calculation
+    use physics, only : ape_calculation
     use ape_density, only : ape_den
     use mpi_timer, only : start_timer, stop_timer
     use mpi_communicator
@@ -45,52 +44,11 @@ module parcel_diagnostics
 
     contains
 
-        ! Compute the reference potential energy
-        subroutine calculate_peref
-            integer          :: ii(n_parcels), n
-            double precision :: b(n_parcels)
-            double precision :: gam, zmean
-
-            if (.not. ape_calculation == "sorting") then
-                peref = zero
-                return
-            endif
-
-            call start_timer(parcel_stats_timer)
-
-            b = parcels%buoyancy(1:n_parcels)
-
-            ! sort buoyancy in ascending order
-            call msort(b, ii)
-
-            gam = f12 / (extent(1) * extent(2))
-
-            ! initially all parcels have the same volume,
-            ! hence, this is valid on each MPI rank
-            zmean = gam * parcels%volume(ii(1))
-
-            peref = - b(1) * parcels%volume(ii(1)) * zmean
-            do n = 2, n_parcels
-                zmean = zmean + gam * (parcels%volume(ii(n-1)) + parcels%volume(ii(n)))
-
-                peref = peref &
-                      - b(n) * parcels%volume(ii(n)) * zmean
-            enddo
-
-            call mpi_blocking_reduce(peref, MPI_SUM)
-
-            ! divide by domain volume to get domain-averaged peref
-            peref = peref * vdomaini
-
-            call stop_timer(parcel_stats_timer)
-        end subroutine calculate_peref
-
-
         ! Calculate all parcel related diagnostics
         subroutine calculate_parcel_diagnostics(velocity)
             double precision, intent(in) :: velocity(:, :)
             integer          :: n
-            double precision :: b, z, vel(3), vol, zmin, vor(3), pe
+            double precision :: b, z, vel(3), vol, vor(3)
             double precision :: ntoti, bmin, bmax
             double precision :: evals(3), lam
 
@@ -101,13 +59,11 @@ module parcel_diagnostics
             bmin = zero
             bmax = zero
 
-            zmin = lower(3)
-
             parcel_stats(IDX_NTOT_PAR) = dble(n_parcels)
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
-            !$omp& reduction(+: parcel_stats) reduction(-: pe) &
+            !$omp& reduction(+: parcel_stats) &
             !$omp& reduction(max: bmax) reduction(min: bmin)
             do n = 1, n_parcels
 
@@ -120,10 +76,7 @@ module parcel_diagnostics
                 ! kinetic energy
                 parcel_stats(IDX_KE) = parcel_stats(IDX_KE) + (vel(1) ** 2 + vel(2) ** 2 + vel(3) ** 2) * vol
 
-                if (ape_calculation == 'sorting') then
-                    ! potential energy using sorting approach
-                    pe = pe - b * (z - zmin) * vol
-                else if (ape_calculation == 'ape density') then
+                if (ape_calculation == 'ape density') then
                     parcel_stats(IDX_APE) = parcel_stats(IDX_APE) + ape_den(b, z) * vol
                 endif
 
@@ -183,9 +136,7 @@ module parcel_diagnostics
 
             ! divide by domain volume to get domain-averaged quantities
             parcel_stats(IDX_KE) = f12 * parcel_stats(IDX_KE) * vdomaini
-            if (ape_calculation == 'sorting') then
-                parcel_stats(IDX_APE) = pe * vdomaini - peref
-            else if (ape_calculation == 'ape density') then
+            if (ape_calculation == 'ape density') then
                 parcel_stats(IDX_APE) = parcel_stats(IDX_APE) * vdomaini
             endif
             parcel_stats(IDX_ENSTROPHY) = f12 * parcel_stats(IDX_ENSTROPHY)* vdomaini
