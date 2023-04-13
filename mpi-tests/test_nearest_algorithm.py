@@ -181,6 +181,10 @@ try:
                     n_fails = n_fails + 1
                     failed = True
 
+                if not os.path.exists('serial_final_0000000001_parcels.nc') and \
+                   not os.path.exists('parallel_final_0000000001_parcels.nc'):
+                    failed = True
+
                 if not failed:
                     # ---------------------------------------------------------
                     # Compare the results:
@@ -216,8 +220,9 @@ try:
                     failed = False
                     n_fails = n_fails + 1
                     n_str = str(n_fails).zfill(10)
-                    os.rename('initial_parcels.nc',
-                            'initial_' + n_str + '_parcels.nc')
+                    if os.path.exists('initial_parcels.nc'):
+                        os.rename('initial_parcels.nc',
+                                  'initial_' + n_str + '_parcels.nc')
                     if os.path.exists('serial_final_0000000001_parcels.nc'):
                         os.rename('serial_final_0000000001_parcels.nc',
                                   'serial_fail_' + n_str + '_parcels.nc')
