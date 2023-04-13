@@ -42,4 +42,6 @@ test_merging_parcels_serial_SOURCES = test_utils.f90			\
 				      test_merging_parcels_serial.f90
 test_merging_parcels_serial_LDADD = libcombi.la
 
+nobase_mpitests_DATA = test_nearest_algorithm.py
+
 endif
