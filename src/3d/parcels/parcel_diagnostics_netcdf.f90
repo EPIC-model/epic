@@ -86,7 +86,7 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
 
-            if (.not. ape_calculation == 'none') then
+            if (ape_calculation == 'ape density') then
                 call define_netcdf_dataset(                                 &
                     ncid=ncid,                                              &
                     name='ape',                                             &
@@ -281,7 +281,7 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 't', t_axis_id)
 
-            if (.not. ape_calculation == 'none') then
+            if (ape_calculation == 'ape density') then
                 call get_var_id(ncid, 'ape', ape_id)
             endif
 
@@ -349,7 +349,7 @@ module parcel_diagnostics_netcdf
             !
             ! write diagnostics
             !
-            if (.not. ape_calculation == 'none') then
+            if (ape_calculation == 'ape density') then
                 call write_netcdf_scalar(ncid, ape_id, parcel_stats(IDX_APE), n_writes)
             endif
             call write_netcdf_scalar(ncid, ke_id, parcel_stats(IDX_KE), n_writes)
