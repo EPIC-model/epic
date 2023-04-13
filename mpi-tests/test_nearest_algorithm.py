@@ -46,17 +46,15 @@ try:
         help="Print intermediate output."
     )
 
-    parser.add_argument(
-        "--exec_path",
-        type=str,
-        default='',
-        help="Path to executables")
+    mpirun = os.environ.get('MPIRUN')
+    exec_path = os.environ.get('EXEC_PATH')
 
-    parser.add_argument(
-        "--mpirun",
-        type=str,
-        default='',
-        help="which mpirun")
+    if mpirun is None:
+        raise KeyError('Missing environment variable $MPIRUN.')
+
+    if exec_path is None:
+        raise KeyError('Missing environment variable $EXEC_PATH.')
+
 
     args = parser.parse_args()
 
@@ -72,9 +70,8 @@ try:
 
     tol = 1.0e-14
 
-    exec_parallel = os.path.join)exec_path, 'test_merging_parcels')
+    exec_parallel = os.path.join(exec_path, 'test_merging_parcels')
     exec_serial = os.path.join(exec_path, 'test_merging_parcels_serial')
-
 
     ncp = nc_parcels()
     ncrs = nc_reader()
@@ -83,10 +80,16 @@ try:
     n_fails = 0
     n_merges = 0
 
-    for i, n_rank in enumerate(args.n_ranks):
-        for j, seed in enumerate(args.seeds):
+    # used when running with --verbose
+    total_samples = args.n_samples * len(args.n_ranks) * len(args.seeds)
+    modulo = max(1000, int(total_samples / 1000.0))
+
+    i = 0
+    for n_rank in args.n_ranks:
+        for seed in args.seeds:
             rng = np.random.default_rng(seed)
             for n in range(args.n_samples):
+                i = i + 1
 
                 # -------------------------------------------------------------
                 # Set up the parcel configuration:
@@ -156,28 +159,28 @@ try:
 
                 # -------------------------------------------------------------
                 # Run the serial and parallel versions of the nearest + merging algorithm:
-                process_1 = subprocess.Popen(args=[mpirun, '-np', str(n_rank), exec_parallel],
-                                             stdout=subprocess.DEVNULL,
-                                             stderr=subprocess.STDOUT)
-
-                process_2 = subprocess.Popen(args=['mpirun', '-np', '1', exec_serial],
-                                             stdout=subprocess.DEVNULL,
-                                             stderr=subprocess.STDOUT)
-
                 # We wait 2 minutes per process. If they exceed this time limit, we
                 # assume the nearest algorithm is in an endless loop, i.e. deadlocked.
                 failed = False
                 try:
-                    process_1.wait(timeout=120)
-                except subprocess.TimeoutExpired:
-                    process_1.terminate()
+                    subprocess.run(args=mpirun + ' -np ' + str(n_rank) + ' ' + exec_parallel,
+                                   shell=True,
+                                   check=True,
+                                   timeout=120,
+                                   stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.STDOUT)
+                except subprocess.CalledProcessError:
                     n_fails = n_fails + 1
                     failed = True
 
                 try:
-                    process_2.wait(timeout=120)
-                except subprocess.TimeoutExpired:
-                    process_2.terminate()
+                    subprocess.run(args=mpirun + ' -np 1 ' + exec_serial,
+                                   shell=True,
+                                   check=True,
+                                   timeout=120,
+                                   stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.STDOUT)
+                except subprocess.CalledProcessError:
                     n_fails = n_fails + 1
                     failed = True
 
@@ -234,10 +237,10 @@ try:
                     os.remove('serial_final_0000000001_parcels.nc')
                     os.remove('parallel_final_0000000001_parcels.nc')
 
-        if args.verbose and (len(args.seeds) > 1 or len(args.n_ranks) > 1):
-            print("Current number of samples: ", args.n_samples * (i+1) * (j+1))
-            print("Current number of fails:   ", n_fails)
-            print("Current number of merges:  ", n_merges)
+                # -------------------------------------------------------------
+                # Intermediate info:
+                if args.verbose and (i % modulo == 0):
+                    print("#samples, #fails, #merges: ", i, n_fails, n_merges)
 
     # -------------------------------------------------------------------------
     # Print summary:
