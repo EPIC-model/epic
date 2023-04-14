@@ -478,7 +478,7 @@ module parcel_interpl
         ! Bi-linear interpolation
         ! @param[in] pos position of the parcel
         ! @param[out] ii horizontal grid points for interoplation
-        ! @param[out] jj vertical grid points for interpolation
+        ! @param[out] jj meridional grid points for interpolation
         ! @param[out] ww interpolation weights
         subroutine bilinear(pos, ii, jj, ww)
             double precision, intent(in)  :: pos(2)

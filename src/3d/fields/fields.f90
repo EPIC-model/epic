@@ -123,7 +123,7 @@ module fields
         ! This subroutine does not take x periodicity into account.
         ! @param[in] pos position of the parcel
         ! @param[out] i lower, zonal cell index
-        ! @param[out] j lower, vertical cell index
+        ! @param[out] j lower, meridional cell index
         pure subroutine get_horizontal_index(pos, i, j)
             double precision, intent(in)  :: pos(2)
             integer,          intent(out) :: i, j
