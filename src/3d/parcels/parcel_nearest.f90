@@ -73,13 +73,6 @@ module parcel_nearest
     logical, allocatable, asynchronous :: l_available(:)
     logical, allocatable, asynchronous :: l_merged(:)    ! indicates parcels merged in first stage
 
-#ifndef NDEBUG
-    ! Logicals that are only needed for sanity checks
-    logical, allocatable, asynchronous :: l_is_merged(:) ! SANITY CHECK ONLY
-    logical, allocatable, asynchronous :: l_small(:)     ! SANITY CHECK ONLY
-    logical, allocatable, asynchronous :: l_close(:)     ! SANITY CHECK ONLY
-#endif
-
     integer              :: n_neighbour_small(8)  ! number of small parcels received
     integer              :: small_recv_order(8)   ! receive order of small parcels
     integer              :: n_remote_small        ! sum(n_neighbour_small)
@@ -88,10 +81,6 @@ module parcel_nearest
     integer, allocatable :: midsma(:)             ! *m* in *isma(m)*
 
     type(MPI_Win) :: win_merged, win_avail, win_leaf
-
-#ifndef NDEBUG
-    type(MPI_Win) :: win_is_merged, win_small, win_close
-#endif
 
     public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer
 
@@ -146,34 +135,6 @@ module parcel_nearest
                                     comm%world,     &
                                     win_merged,     &
                                     comm%err)
-
-#ifndef NDEBUG
-                allocate(l_is_merged(max_num_parcels))
-                allocate(l_small(max_num_parcels))
-                allocate(l_close(max_num_parcels))
-
-                call MPI_Win_create(l_is_merged,    &
-                                    win_size,       &
-                                    disp_unit,      &
-                                    MPI_INFO_NULL,  &
-                                    comm%world,     &
-                                    win_is_merged,  &
-                                    comm%err)
-                call MPI_Win_create(l_small,        &
-                                    win_size,       &
-                                    disp_unit,      &
-                                    MPI_INFO_NULL,  &
-                                    comm%world,     &
-                                    win_small,      &
-                                    comm%err)
-                call MPI_Win_create(l_close,        &
-                                    win_size,       &
-                                    disp_unit,      &
-                                    MPI_INFO_NULL,  &
-                                    comm%world,     &
-                                    win_close,      &
-                                    comm%err)
-#endif
             endif
         end subroutine nearest_allocate
 
@@ -201,23 +162,6 @@ module parcel_nearest
                 deallocate(l_leaf)
                 deallocate(l_available)
                 deallocate(l_merged)
-#ifndef NDEBUG
-                call MPI_Win_free(win_is_merged, comm%err)
-                call mpi_check_for_error(&
-                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
-                call MPI_Win_free(win_small, comm%err)
-                call mpi_check_for_error(&
-                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
-
-                call MPI_Win_free(win_close, comm%err)
-                call mpi_check_for_error(&
-                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
-
-                deallocate(l_is_merged)
-                deallocate(l_small)
-                deallocate(l_close)
-#endif
-
             endif
 
             if (allocated(rsma)) then
@@ -356,13 +300,6 @@ module parcel_nearest
                     j = j + 1
                     isma(j) = n
                 endif
-#ifndef NDEBUG
-                if (n <= n_parcels) then
-                    l_is_merged(n) = .false.! SANITY CHECK ONLY
-                    l_small(n) = .false. ! SANITY CHECK ONLY
-                    l_close(n) = .false. ! SANITY CHECK ONLY
-                endif
-#endif
             enddo
 
             !---------------------------------------------------------------------
@@ -402,13 +339,13 @@ module parcel_nearest
             !       on another MPI rank that is sent elsewhere.
             call gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma, inva)
 
-#ifndef NDEBUG
+            !------------------------------------------------------------------
+            ! Sanity check: Indices of close parcels must be smaller equal to the
+            ! number of local parcels:
             if (maxval(iclo(1:n_local_small)) > n_parcels) then
                 call mpi_exit_on_error(&
                     "in parcel_nearest::find_nearest: Close parcel index out of range.")
             endif
-#endif
-
             call nearest_deallocate
 
         end subroutine find_nearest
@@ -581,15 +518,15 @@ module parcel_nearest
                 endif
             enddo
 
-#ifndef NDEBUG
+            !------------------------------------------------------------------
+            ! Sanity check: Indices of small parcels must be smaller equal to the
+            ! number of local parcels:
             do m = 1, n_local_small
                 if (isma(m) > n_parcels) then
                     call mpi_exit_on_error(&
                         'in in parcel_nearest::find_closest_parcel_locally: Small parcel index out of range.')
                 endif
             enddo
-#endif
-
         end subroutine find_closest_parcel_locally
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -995,9 +932,10 @@ module parcel_nearest
                 if (l_merged(is) .and. l_leaf(is)) then
                     ! previously identified mergers: keep
                     l_do_merge(m) = .true.
-#ifndef NDEBUG
-                    ! sanity check on first stage mergers
-                    ! parcel cannot be both initiator and receiver in stage 1
+                    !----------------------------------------------------------
+                    ! begin of sanity check
+                    ! After first stage mergers parcel cannot be both initiator
+                    ! and receiver in stage 1
                     l_helper = .false.
                     if (rc == comm%rank) then
                         l_helper = l_leaf(ic)
@@ -1022,7 +960,9 @@ module parcel_nearest
                         call mpi_exit_on_error(&
                             'in parcel_nearest::resolve_tree: First stage error')
                     endif
-#endif
+                    ! end of sanity check
+                    !----------------------------------------------------------
+
                 elseif (.not. l_merged(is)) then
                     if (l_leaf(is)) then
                         ! links from leafs
