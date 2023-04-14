@@ -16,6 +16,8 @@ program test_field_interior_accumulate
     implicit none
 
     integer, parameter            :: nx = 10, ny = 10, nz = 0
+    double precision, parameter   :: lower(3) = (/zero, zero, zero/)
+    double precision, parameter   :: extent(3) = (/one, one, one/)
     double precision, allocatable :: values(:, :, :)
     logical                       :: passed = .true.
     double precision              :: diff
@@ -32,7 +34,7 @@ program test_field_interior_accumulate
 
     passed = (comm%err == 0)
 
-    call mpi_layout_init(nx, ny, nz)
+    call mpi_layout_init(lower, extent, nx, ny, nz)
 
     allocate(values(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 

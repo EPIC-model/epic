@@ -31,7 +31,7 @@ program test_mpi_diffx
 
     call update_parameters
 
-    call mpi_layout_init(nx, ny, nz)
+    call mpi_layout_init(lower, extent, nx, ny, nz)
 
     allocate(fp(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(fs(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))

@@ -26,10 +26,22 @@ libcombi_la_LIBADD = 					\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 mpitests_PROGRAMS =			\
-	test_moving_parcels
+	test_moving_parcels		\
+	test_merging_parcels		\
+	test_merging_parcels_serial
 
 test_moving_parcels_SOURCES = test_utils.f90 test_moving_parcels.f90
 test_moving_parcels_LDADD = libcombi.la
 
+test_merging_parcels_SOURCES = test_utils.f90 test_merging_parcels.f90
+test_merging_parcels_LDADD = libcombi.la
+
+test_merging_parcels_serial_SOURCES = test_utils.f90			\
+				      parcel_nearest_serial.f90		\
+				      parcel_merge_serial.f90		\
+				      test_merging_parcels_serial.f90
+test_merging_parcels_serial_LDADD = libcombi.la
+
+nobase_mpitests_DATA = test_nearest_algorithm.py
 
 endif

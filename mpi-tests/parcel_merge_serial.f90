@@ -2,19 +2,19 @@
 !                       Module to merge ellipsoids
 !           The module implements the geometric merge procedure.
 ! =============================================================================
-module parcel_merge
-    use parcel_nearest
+module parcel_merge_serial
+    use parcel_nearest_serial
     use constants, only : pi, zero, one, two, five, f13
-    use parcel_container, only : parcel_container_type  &
-                               , n_parcels              &
-                               , parcel_replace         &
-                               , get_delx_across_periodic               &
-                               , get_dely_across_periodic               &
-                               , parcel_delete
+    use parcel_container, only : parcel_container_type      &
+                               , n_parcels                  &
+                               , parcel_replace             &
+                               , get_delx_across_periodic   &
+                               , get_dely_across_periodic
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
     use parcel_bc
-    use mpi_timer, only : start_timer, stop_timer
+!     use timer, only : start_timer, stop_timer
+
     implicit none
 
     integer :: merge_timer
@@ -23,7 +23,8 @@ module parcel_merge
     integer :: n_parcel_merges = 0
 
     private :: geometric_merge, &
-               do_group_merge
+               do_group_merge,  &
+               pack_parcels
 
     contains
 
@@ -34,16 +35,14 @@ module parcel_merge
             type(parcel_container_type), intent(inout) :: parcels
             integer, allocatable, dimension(:)         :: isma
             integer, allocatable, dimension(:)         :: iclo
-            integer, allocatable, dimension(:)         :: inva
             integer                                    :: n_merge ! number of merges
-            integer                                    :: n_invalid
 
             ! find parcels to merge
-            call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+            call find_nearest(isma, iclo, n_merge)
 
             n_parcel_merges = n_parcel_merges + n_merge
 
-            call start_timer(merge_timer)
+!             call start_timer(merge_timer)
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
@@ -56,12 +55,9 @@ module parcel_merge
             if (n_merge > 0) then
                 ! merge small parcels into other parcels
                 call geometric_merge(parcels, isma, iclo, n_merge)
-            endif
 
-            if (n_merge + n_invalid > 0) then
-                ! overwrite all small and invalid parcels -- all small parcels are now invalid too
-                call parcel_delete(inva, n_merge + n_invalid)
-                deallocate(inva)
+                ! overwrite invalid parcels
+                call pack_parcels(isma, n_merge)
             endif
 
             if (allocated(isma)) then
@@ -69,7 +65,7 @@ module parcel_merge
                 deallocate(iclo)
             endif
 
-            call stop_timer(merge_timer)
+!             call stop_timer(merge_timer)
 
         end subroutine merge_parcels
 
@@ -103,11 +99,6 @@ module parcel_merge
             l = 0
             do m = 1, n_merge
                 ic = iclo(m) ! Index of closest other parcel
-
-                !-------------------------------------------------
-                is = isma(m)
-                call apply_periodic_bc(parcels%position(:, is))
-                !-------------------------------------------------
 
                 if (loca(ic) == 0) then
                     ! Start a new merged parcel, indexed l:
@@ -307,4 +298,61 @@ module parcel_merge
 
         end subroutine geometric_merge
 
-end module parcel_merge
+
+        ! This algorithm replaces invalid parcels with valid parcels
+        ! from the end of the container
+        ! @param[in] isma are the indices of the small parcels
+        ! @param[in] n_merge is the array size of isma and iclo
+        ! @pre
+        !   - isma must be sorted in ascending order
+        !   - isma must be contiguously filled
+        !   The above preconditions must be fulfilled so that the
+        !   parcel pack algorithm works correctly.
+        subroutine pack_parcels(isma, n_merge)
+            integer, intent(in) :: isma(0:)
+            integer, intent(in) :: n_merge
+            integer             :: k, l, m
+
+            ! l points always to the last valid parcel
+            l = n_parcels
+
+            ! k points always to last invalid parcel in isma
+            k = n_merge
+
+            ! find last parcel which is not invalid
+            do while ((k > 0) .and. (l == isma(k)))
+                l = l - 1
+                k = k - 1
+            enddo
+
+            if (l == 0) then
+                print *, "Error: All parcels are invalid."
+                stop
+            endif
+
+            ! replace invalid parcels with the last valid parcel
+            m = 1
+
+            do while (m <= k)
+                ! invalid parcel; overwrite *isma(m)* with last valid parcel *l*
+                call parcel_replace(isma(m), l)
+
+                l = l - 1
+
+                ! find next valid last parcel
+                do while ((k > 0) .and. (l == isma(k)))
+                    l = l - 1
+                    k = k - 1
+                enddo
+
+                ! next invalid
+                m = m + 1
+            enddo
+
+            ! update number of valid parcels
+            n_parcels = n_parcels - n_merge
+
+        end subroutine pack_parcels
+
+
+end module parcel_merge_serial

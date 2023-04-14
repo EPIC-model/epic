@@ -66,9 +66,9 @@ module parcel_container
         ! @returns delx = x1 - x2
         ! WARNING input needs to be between lower and upper (see debug statement)
 #ifndef NDEBUG
-        function get_delx(x1, x2) result (delx)
+        function get_delx_across_periodic(x1, x2) result (delx)
 #else
-        elemental function get_delx(x1, x2) result (delx)
+        elemental function get_delx_across_periodic(x1, x2) result (delx)
 #endif
             double precision, intent(in) :: x1, x2
             double precision             :: delx
@@ -84,6 +84,18 @@ module parcel_container
 #endif
             ! works across periodic edge
             delx = delx - extent(1) * dble(nint(delx * extenti(1)))
+        end function get_delx_across_periodic
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Obtain the difference between two zonal coordinates
+        ! @param[in] x1 first zonal position
+        ! @param[in] x2 second zonal position
+        ! @returns delx = x1 - x2
+        elemental function get_delx(x1, x2) result (delx)
+            double precision, intent(in) :: x1, x2
+            double precision             :: delx
+            delx = x1 - x2
         end function get_delx
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -95,9 +107,9 @@ module parcel_container
         ! @returns dely = y1 - y2
         ! WARNING input needs to be between lower and upper (see debug statement)
 #ifndef NDEBUG
-        function get_dely(y1, y2) result (dely)
+        function get_dely_across_periodic(y1, y2) result (dely)
 #else
-        elemental function get_dely(y1, y2) result (dely)
+        elemental function get_dely_across_periodic(y1, y2) result (dely)
 #endif
             double precision, intent(in) :: y1, y2
             double precision             :: dely
@@ -113,6 +125,18 @@ module parcel_container
 #endif
             ! works across periodic edge
             dely = dely - extent(2) * dble(nint(dely * extenti(2)))
+        end function get_dely_across_periodic
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Obtain the difference between two meridional coordinates
+        ! @param[in] y1 first meridional position
+        ! @param[in] y2 second meridional position
+        ! @returns dely = y1 - y2
+        elemental function get_dely(y1, y2) result (dely)
+            double precision, intent(in) :: y1, y2
+            double precision             :: dely
+            dely = y1 - y2
         end function get_dely
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
