@@ -473,4 +473,45 @@ module parcel_interpl
 
         end subroutine get_weights
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Bi-linear interpolation
+        ! @param[in] pos position of the parcel
+        ! @param[out] ii horizontal grid points for interoplation
+        ! @param[out] jj vertical grid points for interpolation
+        ! @param[out] ww interpolation weights
+        subroutine bilinear(pos, ii, jj, ww)
+            double precision, intent(in)  :: pos(2)
+            integer,          intent(out) :: ii(4), jj(4)
+            double precision, intent(out) :: ww(4)
+            double precision              :: xy(2)
+
+            ! (i, j)
+            call get_index(pos, ii(1), jj(1))
+            call get_position(ii(1), jj(1), xy)
+            ww(1) = product(one - abs(pos - xy) * dxi)
+
+            ! (i+1, j)
+            ii(2) = ii(1) + 1
+            jj(2) = jj(1)
+            call get_position(ii(2), jj(2), xy)
+            ww(2) = product(one - abs(pos - xy) * dxi)
+
+            ! (i, j+1)
+            ii(3) = ii(1)
+            jj(3) = jj(1) + 1
+            call get_position(ii(3), jj(3), xy)
+            ww(3) = product(one - abs(pos - xy) * dxi)
+
+            ! (i+1, j+1)
+            ii(4) = ii(2)
+            jj(4) = jj(3)
+            call get_position(ii(4), jj(4), xy)
+            ww(4) = product(one - abs(pos - xy) * dxi)
+
+            ! account for x periodicity
+            call periodic_index_shift(ii)
+
+        end subroutine bilinear
+
 end module parcel_interpl
