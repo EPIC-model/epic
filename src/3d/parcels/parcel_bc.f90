@@ -7,6 +7,7 @@ module parcel_bc
     use constants, only : zero, two
     use parameters, only : lower, upper, extent, hli, center
     use parcel_container, only : n_parcels
+    use parcel_mpi, only : parcel_halo_swap
     use omp_lib
     implicit none
 
@@ -57,6 +58,8 @@ module parcel_bc
             enddo
             !$omp end do
             !$omp end parallel
+
+            call parcel_halo_swap
         end subroutine apply_parcel_bc
 
 end module parcel_bc
