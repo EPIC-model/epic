@@ -81,8 +81,8 @@ module rk4_utils
             double precision, intent(in) :: t
             double precision             :: dt
             double precision             :: gmax, bmax, strain(n_dim, n_dim), D(n_dim)
-            double precision             :: gradb(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
-            double precision             :: db2(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision             :: gradb(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
+            double precision             :: db2(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             integer                      :: ix, iy, iz
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
@@ -150,21 +150,20 @@ module rk4_utils
             call field_halo_swap(tbuoyg)
 
             ! db/dx
-            gradb(:, :, box%lo(1):box%hi(1)) = &
-                f12 * dxi(I_X) * (tbuoyg(0:nz, :, box%lo(1)+1:box%hi(1)+1) &
-                                - tbuoyg(0:nz, :, box%lo(1)-1:box%hi(1)-1))
+            gradb = f12 * dxi(I_X) * (tbuoyg(0:nz, :, box%lo(1)+1:box%hi(1)+1) &
+                                    - tbuoyg(0:nz, :, box%lo(1)-1:box%hi(1)-1))
 
             db2 = gradb ** 2
 
             ! db/dy
-            gradb(:, box%lo(2):box%hi(2), :) = &
-                f12 * dxi(I_Y) * (tbuoyg(0:nz, box%lo(2)+1:box%hi(2)+1, :) &
-                                - tbuoyg(0:nz, box%lo(2)-1:box%hi(2)-1, :))
+            gradb = f12 * dxi(I_Y) * (tbuoyg(0:nz, box%lo(2)+1:box%hi(2)+1, :) &
+                                    - tbuoyg(0:nz, box%lo(2)-1:box%hi(2)-1, :))
 
             db2 = db2 + gradb ** 2
 
             ! db/dz
-            gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1, :, :) - tbuoyg(-1:nz-1, :, :))
+            gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
+                                    - tbuoyg(-1:nz-1, , box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
             bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)
