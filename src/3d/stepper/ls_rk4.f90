@@ -7,6 +7,7 @@ module ls_rk4
     use dimensions, only : I_Z
     use parcel_container
     use parcel_bc
+    use parcel_mpi, only : parcel_halo_swap
     use rk4_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
