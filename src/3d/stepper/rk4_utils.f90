@@ -80,7 +80,7 @@ module rk4_utils
             use options, only : time
             double precision, intent(in) :: t
             double precision             :: dt
-            double precision             :: gmax, bmax, strain(n_dim, n_dim), D(n_dim)
+            double precision             :: gmax, bmax, strain(n_dim, n_dim), D(n_dim), local_max(2)
             double precision             :: gradb(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision             :: db2(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             integer                      :: ix, iy, iz
@@ -139,9 +139,6 @@ module rk4_utils
                 enddo
             enddo
 
-            call MPI_Allreduce(MPI_IN_PLACE, gmax, 1, MPI_DOUBLE_PRECISION, &
-                               MPI_MAX, comm%world, comm%err)
-
             !
             ! buoyancy gradient (central difference)
             !
@@ -168,8 +165,14 @@ module rk4_utils
             bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
-            call MPI_Allreduce(MPI_IN_PLACE, bmax, 1, MPI_DOUBLE_PRECISION, &
+            local_max(1) = gmax
+            local_max(2) = bmax
+
+            call MPI_Allreduce(MPI_IN_PLACE, local_max, 2, MPI_DOUBLE_PRECISION, &
                                MPI_MAX, comm%world, comm%err)
+
+            gmax = local_max(1)
+            bmax = local_max(2)
 
             dt = min(time%alpha / gmax, time%alpha / bmax)
 #ifdef ENABLE_VERBOSE
