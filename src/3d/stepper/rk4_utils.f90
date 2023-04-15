@@ -163,7 +163,7 @@ module rk4_utils
 
             ! db/dz
             gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
-                                    - tbuoyg(-1:nz-1, , box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+                                    - tbuoyg(-1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
             bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)
