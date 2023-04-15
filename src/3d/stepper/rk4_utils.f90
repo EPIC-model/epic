@@ -150,14 +150,14 @@ module rk4_utils
             call field_halo_swap(tbuoyg)
 
             ! db/dx
-            gradb = f12 * dxi(I_X) * (tbuoyg(0:nz, :, box%lo(1)+1:box%hi(1)+1) &
-                                    - tbuoyg(0:nz, :, box%lo(1)-1:box%hi(1)-1))
+            gradb = f12 * dxi(I_X) * (tbuoyg(0:nz, box%lo(2):box%hi(2), box%lo(1)+1:box%hi(1)+1) &
+                                    - tbuoyg(0:nz, box%lo(2):box%hi(2), box%lo(1)-1:box%hi(1)-1))
 
             db2 = gradb ** 2
 
             ! db/dy
-            gradb = f12 * dxi(I_Y) * (tbuoyg(0:nz, box%lo(2)+1:box%hi(2)+1, :) &
-                                    - tbuoyg(0:nz, box%lo(2)-1:box%hi(2)-1, :))
+            gradb = f12 * dxi(I_Y) * (tbuoyg(0:nz, box%lo(2)+1:box%hi(2)+1, box%lo(1):box%hi(1)) &
+                                    - tbuoyg(0:nz, box%lo(2)-1:box%hi(2)-1, box%lo(1):box%hi(1)))
 
             db2 = db2 + gradb ** 2
 
