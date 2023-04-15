@@ -47,6 +47,8 @@ module parcel_bc
             double precision, intent(inout) :: position(:, :), B(:, :)
             integer                         :: n
 
+            call parcel_halo_swap
+
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
@@ -59,7 +61,6 @@ module parcel_bc
             !$omp end do
             !$omp end parallel
 
-            call parcel_halo_swap
         end subroutine apply_parcel_bc
 
 end module parcel_bc
