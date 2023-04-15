@@ -98,9 +98,11 @@ module ls_rk4
 
             do n = 1, 4
                 call ls_rk4_substep(dt, n)
+                call parcel_halo_swap
                 call par2grid
             enddo
             call ls_rk4_substep(dt, 5)
+            call parcel_halo_swap
 
             call start_timer(rk4_timer)
             call apply_parcel_bc(parcels%position, parcels%B)
