@@ -2,9 +2,12 @@ module rk4_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
+    use field_mpi, only : field_halo_swap
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
     use jacobi, only : jacobi_eigenvalues
+    use mpi_layout, only : box
+    use mpi_communicator
 #ifdef ENABLE_VERBOSE
     use options, only : output
 #endif
@@ -78,8 +81,8 @@ module rk4_utils
             double precision, intent(in) :: t
             double precision             :: dt
             double precision             :: gmax, bmax, strain(n_dim, n_dim), D(n_dim)
-            double precision             :: gradb(0:nz, 0:ny-1, 0:nx-1)
-            double precision             :: db2(0:nz, 0:ny-1, 0:nx-1)
+            double precision             :: gradb(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision             :: db2(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             integer                      :: ix, iy, iz
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
@@ -92,8 +95,8 @@ module rk4_utils
             ! find largest stretch -- this corresponds to largest
             ! eigenvalue over all local symmetrised strain matrices.
             gmax = epsilon(gmax)
-            do ix = 0, nx-1
-                do iy = 0, ny-1
+            do ix = box%lo(1), box%hi(1)
+                do iy = box%lo(2), box%hi(2)
                     do iz = 0, nz
                         ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
                         ! where
@@ -136,25 +139,27 @@ module rk4_utils
                 enddo
             enddo
 
+            call MPI_Allreduce(MPI_IN_PLACE, gmax, 1, MPI_DOUBLE_PRECISION, &
+                               MPI_MAX, comm%world, comm%err)
+
             !
             ! buoyancy gradient (central difference)
             !
 
-            ! db/dx inner part
-            gradb(:, :, 1:nx-2) = f12 * dxi(I_X) * (tbuoyg(0:nz, :, 2:nx-1) - tbuoyg(0:nz, :, 0:nx-3))
+            ! ensure that halo grid points are filled
+            call field_halo_swap(tbuoyg)
 
-            ! db/dx boundary grid points (make use of periodicity)
-            gradb(:, :, 0)    = f12 * dxi(I_X) * (tbuoyg(0:nz, :, 1) - tbuoyg(0:nz, :, nx-1))
-            gradb(:, :, nx-1) = f12 * dxi(I_X) * (tbuoyg(0:nz, :, 0) - tbuoyg(0:nz, :, nx-2))
+            ! db/dx
+            gradb(:, :, box%lo(1):box%hi(1)) = &
+                f12 * dxi(I_X) * (tbuoyg(0:nz, :, box%lo(1)+1:box%hi(1)+1) &
+                                - tbuoyg(0:nz, :, box%lo(1)-1:box%hi(1)-1))
 
             db2 = gradb ** 2
 
-            ! db/dy inner part
-            gradb(:, 1:ny-2, :) = f12 * dxi(I_Y) * (tbuoyg(0:nz, 2:ny-1, :) - tbuoyg(0:nz, 0:ny-3, :))
-
-            ! db/dy boundary grid points (make use of periodicity)
-            gradb(:, 0, :)    = f12 * dxi(I_Y) * (tbuoyg(0:nz, 1, :) - tbuoyg(0:nz, ny-1, :))
-            gradb(:, ny-1, :) = f12 * dxi(I_Y) * (tbuoyg(0:nz, 0, :) - tbuoyg(0:nz, ny-2, :))
+            ! db/dy
+            gradb(:, box%lo(2):box%hi(2), :) = &
+                f12 * dxi(I_Y) * (tbuoyg(0:nz, box%lo(2)+1:box%hi(2)+1, :) &
+                                - tbuoyg(0:nz, box%lo(2)-1:box%hi(2)-1, :))
 
             db2 = db2 + gradb ** 2
 
@@ -164,22 +169,27 @@ module rk4_utils
             bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
+            call MPI_Allreduce(MPI_IN_PLACE, bmax, 1, MPI_DOUBLE_PRECISION, &
+                               MPI_MAX, comm%world, comm%err)
+
             dt = min(time%alpha / gmax, time%alpha / bmax)
 #ifdef ENABLE_VERBOSE
-            fname = trim(output%basename) // '_alpha_time_step.asc'
-            inquire(file=fname, exist=exists)
-            ! 23 August
-            ! https://stackoverflow.com/questions/15526203/single-command-to-open-a-file-or-create-it-and-the-append-data
-            if ((t /= zero) .and. exists) then
-                open(unit=1235, file=fname, status='old', position='append')
-            else
-                open(unit=1235, file=fname, status='replace')
-                write(1235, *) '  # time (s)                \alpha_s/\gamma_{max}     \alpha_b/N_{max}'
+            if (comm%rank == comm%master) then
+                fname = trim(output%basename) // '_alpha_time_step.asc'
+                inquire(file=fname, exist=exists)
+                ! 23 August
+                ! https://stackoverflow.com/questions/15526203/single-command-to-open-a-file-or-create-it-and-the-append-data
+                if ((t /= zero) .and. exists) then
+                    open(unit=1235, file=fname, status='old', position='append')
+                else
+                    open(unit=1235, file=fname, status='replace')
+                    write(1235, *) '  # time (s)                \alpha_s/\gamma_{max}     \alpha_b/N_{max}'
+                endif
+
+                write(1235, *) t, time%alpha / gmax, time%alpha / bmax
+
+                close(1235)
             endif
-
-            write(1235, *) t, time%alpha / gmax, time%alpha / bmax
-
-            close(1235)
 #endif
             if (time%precise_stop .and. (t + dt > time%limit)) then
                 dt = time%limit - t
@@ -187,7 +197,7 @@ module rk4_utils
 
             if (dt <= zero) then
                 print "(a10, f0.2, a6)", "Time step ", dt, " <= 0!"
-                stop
+                call MPI_Abort(comm%world, -1, comm%err)
             endif
         end function get_time_step
 
