@@ -6,8 +6,10 @@ program test_moving_parcels
     use parcel_container
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_halo_swap
-    use fields, only : field_default
+    use fields, only : field_default, nparg
     use parcel_bc, only : apply_periodic_bc
+    use mpi_layout, only : box
+    use parcel_interpl, only : par2grid
     use test_utils
     implicit none
 
@@ -50,6 +52,13 @@ program test_moving_parcels
 
     call parcel_default
 
+    !--------------------------------------------------------------------------
+    ! Interpolate parcel data to grid:
+    call par2grid
+
+    !--------------------------------------------------------------------------
+    ! Check initial values:
+    call perform_checks
 
     !--------------------------------------------------------------------------
     ! Do time loop:
@@ -73,8 +82,11 @@ program test_moving_parcels
             call apply_periodic_bc(parcels%position(:, n))
         enddo
 
+        ! Interpolate parcel data to grid
+        call par2grid
+
         ! Test number of parcels: etc.
-        call check_total_number_of_parcels
+        call perform_checks
     enddo
 
     !--------------------------------------------------------------------------
@@ -91,26 +103,60 @@ program test_moving_parcels
 
     contains
 
+        subroutine perform_checks
+            call check_total_number_of_parcels
+
+            call check_number_of_parcels_per_cell
+
+        end subroutine perform_checks
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine check_total_number_of_parcels
             integer :: n_total
 
             n_total = n_parcels
 
-            if (comm%rank == comm%master) then
-                call MPI_Reduce(MPI_IN_PLACE, n_total, 1, MPI_INTEGER, MPI_SUM, &
-                                comm%master, comm%world, comm%err)
-            else
-                call MPI_Reduce(n_total, n_parcels, 1, MPI_INTEGER, MPI_SUM, &
-                                comm%master, comm%world, comm%err)
-            endif
+            call perform_integer_reduction(n_total)
 
             if (comm%rank == comm%master) then
                 if (n_total /= n_total_parcels) then
-                    print *, "Total number of parcels disagree!"
+                    print *, "check_total_number_of_parcels: Total number of parcels disagree!"
                     call MPI_Abort(comm%world, -1, comm%err)
                 endif
             endif
 
         end subroutine check_total_number_of_parcels
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine check_number_of_parcels_per_cell
+            integer :: n_total
+
+            n_total = sum(nparg(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+
+            call perform_integer_reduction(n_total)
+
+            if (comm%rank == comm%master) then
+                if (n_total /= n_total_parcels) then
+                    print *, "check_number_of_parcels_per_cell: Total number of parcel disagrees with grid!"
+                    call MPI_Abort(comm%world, -1, comm%err)
+                endif
+            endif
+
+        end subroutine check_number_of_parcels_per_cell
+
+        subroutine perform_integer_reduction(var)
+            integer, intent(inout) :: var
+
+            if (comm%rank == comm%master) then
+                call MPI_Reduce(MPI_IN_PLACE, var, 1, MPI_INTEGER, MPI_SUM, &
+                                comm%master, comm%world, comm%err)
+            else
+                call MPI_Reduce(var, var, 1, MPI_INTEGER, MPI_SUM, &
+                                comm%master, comm%world, comm%err)
+            endif
+
+        end subroutine perform_integer_reduction
 
 end program test_moving_parcels
