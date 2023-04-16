@@ -6,15 +6,16 @@ program test_moving_parcels
     use parcel_container
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_halo_swap
-    use fields, only : field_default, nparg
+    use fields, only : field_default, nparg, vortg
     use parcel_bc, only : apply_periodic_bc
     use mpi_layout, only : box
     use parcel_interpl, only : par2grid
     use test_utils
     implicit none
 
-    integer, parameter :: nt = 100
-    integer            :: i, n
+    integer, parameter          :: nt = 100
+    integer                     :: i, n
+    double precision, parameter :: VOR(3) = (/1.5d0, 2.0d0, 2.5d0/)
 
     !--------------------------------------------------------------------------
     ! Initialise MPI and setup all timers:
@@ -51,6 +52,10 @@ program test_moving_parcels
     ! Setup parcels:
 
     call parcel_default
+
+    do i = 1, 3
+        parcels%vorticity(i, 1:n_parcels) = VOR(i)
+    enddo
 
     !--------------------------------------------------------------------------
     ! Interpolate parcel data to grid:
@@ -108,6 +113,8 @@ program test_moving_parcels
 
             call check_number_of_parcels_per_cell
 
+            call check_gridded_vorticity
+
         end subroutine perform_checks
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -145,6 +152,27 @@ program test_moving_parcels
             endif
 
         end subroutine check_number_of_parcels_per_cell
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine check_gridded_vorticity
+            double precision :: vmin, vmax
+            integer          :: j
+            character(1)     :: dir(3) = (/'x', 'y', 'z'/)
+
+            do j = 1, 3
+                vmin = minval(vortg(0:nz, :, :, j))
+                vmax = maxval(vortg(0:nz, :, :, j))
+
+                if ((dabs(vmin - VOR(j)) > 100.0d0 * epsilon(vmin)) .or. &
+                    (dabs(vmax - VOR(j)) > 100.0d0 * epsilon(vmax))) then
+                    print *, "check_gridded_vorticity: Error in " // dir(j) // "-vorticity!"
+                    call MPI_Abort(comm%world, -1, comm%err)
+                endif
+            enddo
+        end subroutine check_gridded_vorticity
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine perform_integer_reduction(var)
             integer, intent(inout) :: var
