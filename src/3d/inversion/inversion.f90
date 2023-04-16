@@ -247,6 +247,10 @@ module inversion_mod
             velog(nz+1, :, :, I_Z) = -velog(nz-1, :, :, I_Z) ! w
             !$omp end parallel workshare
 
+            call field_halo_fill(velog(:, :, :, I_X))
+            call field_halo_fill(velog(:, :, :, I_Y))
+            call field_halo_fill(velog(:, :, :, I_Z))
+
             call stop_timer(vor2vel_timer)
 
         end subroutine
@@ -303,6 +307,12 @@ module inversion_mod
             velgradg(nz+1, :, :, I_DWDY) = -velgradg(nz-1, :, :, I_DWDY)
             !$omp end parallel workshare
 
+            call field_halo_fill(velgradg(:, :, :, I_DUDX))
+            call field_halo_fill(velgradg(:, :, :, I_DUDY))
+            call field_halo_fill(velgradg(:, :, :, I_DVDY))
+            call field_halo_fill(velgradg(:, :, :, I_DWDX))
+            call field_halo_fill(velgradg(:, :, :, I_DWDY))
+
         end subroutine vel2vgrad
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -347,7 +357,12 @@ module inversion_mod
             vtend(-1,   :, :, :) = two * vtend(0,  :, :, :) - vtend(1,    :, :, :)
             vtend(nz+1, :, :, :) = two * vtend(nz, :, :, :) - vtend(nz-1, :, :, :)
             !$omp end parallel workshare
-        end subroutine vorticity_tendency
+
+            call field_halo_fill(vtend(:, :, :, I_X))
+            call field_halo_fill(vtend(:, :, :, I_Y))
+            call field_halo_fill(vtend(:, :, :, I_Z))
+
+    end subroutine vorticity_tendency
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
