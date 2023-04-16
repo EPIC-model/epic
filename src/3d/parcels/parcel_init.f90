@@ -175,7 +175,9 @@ module parcel_init
             call field_halo_fill(vortg(:, :, :, I_Y))
             call field_halo_fill(vortg(:, :, :, I_Z))
             call field_halo_fill(tbuoyg)
+#ifndef ENABLE_DRY_MODE
             call field_halo_fill(humg)
+#endif
 
             !$omp parallel default(shared)
             !$omp do private(n, l, is, js, ks, weights)
