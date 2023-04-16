@@ -13,9 +13,9 @@ program test_moving_parcels
     use test_utils
     implicit none
 
-    integer, parameter          :: nt = 100
-    integer                     :: i, n
-    double precision, parameter :: VOR(3) = (/1.5d0, 2.0d0, 2.5d0/)
+    integer, parameter :: nt = 100
+    integer            :: i, n
+    double precision   :: VOR(3) = (/1.5d0, 2.0d0, 2.5d0/)
 
     !--------------------------------------------------------------------------
     ! Initialise MPI and setup all timers:
@@ -74,9 +74,12 @@ program test_moving_parcels
             print '(a15, i4)', "Performing step", i
         endif
 
+        VOR = 1.00d0 * VOR
+
         ! Move each parcel by dx and dy
         do n = 1, n_parcels
             parcels%position(1:2, n) = parcels%position(1:2, n) + dx(1:2)
+            parcels%vorticity(:, n) = VOR
         enddo
 
         ! Do halo swap
