@@ -7,6 +7,7 @@ program test_moving_parcels
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_halo_swap
     use fields, only : field_default
+    use parcel_bc, only : apply_periodic_bc
     use test_utils
     implicit none
 
@@ -66,6 +67,11 @@ program test_moving_parcels
 
         ! Do halo swap
         call parcel_halo_swap
+
+        ! Do periodic shift in x and y
+        do n = 1, n_parcels
+            call apply_periodic_bc(parcels%position(:, n))
+        enddo
 
         ! Test number of parcels: etc.
         ! TODO
