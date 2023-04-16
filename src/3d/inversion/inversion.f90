@@ -362,7 +362,7 @@ module inversion_mod
             call field_halo_fill(vtend(:, :, :, I_Y))
             call field_halo_fill(vtend(:, :, :, I_Z))
 
-    end subroutine vorticity_tendency
+        end subroutine vorticity_tendency
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -390,7 +390,7 @@ module inversion_mod
             ! div = df1/dx + df2/dy + df3/dz
             div = f(0:nz, :, :, I_X) + f(0:nz, :, :, I_Y) + div
 
-          end subroutine divergence
+        end subroutine divergence
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
