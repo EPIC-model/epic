@@ -74,7 +74,7 @@ program test_moving_parcels
         enddo
 
         ! Test number of parcels: etc.
-        ! TODO
+        call check_total_number_of_parcels
     enddo
 
     !--------------------------------------------------------------------------
@@ -87,5 +87,30 @@ program test_moving_parcels
     call print_timer
 
     call mpi_comm_finalise
+
+
+    contains
+
+        subroutine check_total_number_of_parcels
+            integer :: n_total
+
+            n_total = n_parcels
+
+            if (comm%rank == comm%master) then
+                call MPI_Reduce(MPI_IN_PLACE, n_total, 1, MPI_INTEGER, MPI_SUM, &
+                                comm%master, comm%world, comm%err)
+            else
+                call MPI_Reduce(n_total, n_parcels, 1, MPI_INTEGER, MPI_SUM, &
+                                comm%master, comm%world, comm%err)
+            endif
+
+            if (comm%rank == comm%master) then
+                if (n_total /= n_total_parcels) then
+                    print *, "Total number of parcels disagree!"
+                    call MPI_Abort(comm%world, -1, comm%err)
+                endif
+            endif
+
+        end subroutine check_total_number_of_parcels
 
 end program test_moving_parcels
