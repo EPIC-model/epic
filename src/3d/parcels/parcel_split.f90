@@ -6,13 +6,12 @@ module parcel_split_mod
     use constants, only : pi, three, five, f12, f34
     use parameters, only : vmax
     use parcel_container, only : parcel_container_type, n_parcels, n_total_parcels
-    use parcel_bc, only : apply_reflective_bc
+    use parcel_bc, only : apply_reflective_bc, apply_swap_periodicity
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
     use mpi_timer, only : start_timer, stop_timer
     use omp_lib
     use mpi_communicator, only : comm, MPI_SUM
     use mpi_collectives, only : mpi_blocking_reduce
-    use parcel_mpi, only : parcel_halo_swap
     implicit none
 
     double precision, parameter :: dh = f12 * dsqrt(three / five)
@@ -126,7 +125,9 @@ module parcel_split_mod
 
             ! send the invalid parcels to the proper MPI process;
             ! delete them on *this* MPI process
-            call parcel_halo_swap(invalid)
+            call apply_swap_periodicity(invalid)
+
+            ! apply perioddic boundary condition
 
 #ifdef ENABLE_VERBOSE
             if (verbose .and. (comm%rank == comm%master)) then

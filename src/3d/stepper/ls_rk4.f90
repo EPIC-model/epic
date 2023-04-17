@@ -7,7 +7,6 @@ module ls_rk4
     use dimensions, only : I_Z
     use parcel_container
     use parcel_bc
-    use parcel_mpi, only : parcel_halo_swap
     use rk4_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, grid2par_add
@@ -99,13 +98,12 @@ module ls_rk4
 
             do n = 1, 4
                 call ls_rk4_substep(dt, n)
-                call apply_parcel_periodic_bc(parcels%position)
                 call par2grid
             enddo
             call ls_rk4_substep(dt, 5)
 
             call start_timer(rk4_timer)
-            call apply_parcel_bc(parcels%position, parcels%B)
+            call apply_parcel_bc
             call stop_timer(rk4_timer)
 
             ! we need to subtract 14 calls since we start and stop
@@ -187,7 +185,7 @@ module ls_rk4
             enddo
             !$omp end parallel do
 
-            call parcel_halo_swap
+            call apply_swap_periodicity
 
             call stop_timer(rk4_timer)
 
