@@ -5,9 +5,10 @@
 module parcel_merge
     use parcel_nearest
     use constants, only : pi, zero, one, two, five, f13
-    use parcel_container, only : parcel_container_type  &
-                               , n_parcels              &
-                               , parcel_replace         &
+    use parcel_container, only : parcel_container_type                  &
+                               , n_parcels                              &
+                               , n_total_parcels                        &
+                               , parcel_replace                         &
                                , get_delx_across_periodic               &
                                , get_dely_across_periodic               &
                                , parcel_delete
@@ -15,6 +16,8 @@ module parcel_merge
     use options, only : parcel, verbose
     use parcel_bc
     use mpi_timer, only : start_timer, stop_timer
+    use mpi_communicator
+    use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
     integer :: merge_timer
@@ -68,6 +71,11 @@ module parcel_merge
                 deallocate(isma)
                 deallocate(iclo)
             endif
+
+            ! After this operation the root MPI process knows the new
+            ! number of parcels in the simulation
+            n_total_parcels = n_parcels
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
 
             call stop_timer(merge_timer)
 
