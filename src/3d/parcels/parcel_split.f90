@@ -124,10 +124,9 @@ module parcel_split_mod
             invalid = pack(pid(1:n_parcels), pid(1:n_parcels) /= 0)
 
             ! send the invalid parcels to the proper MPI process;
-            ! delete them on *this* MPI process
+            ! delete them on *this* MPI process and
+            ! apply periodic boundary condition
             call apply_swap_periodicity(invalid)
-
-            ! apply perioddic boundary condition
 
 #ifdef ENABLE_VERBOSE
             if (verbose .and. (comm%rank == comm%master)) then

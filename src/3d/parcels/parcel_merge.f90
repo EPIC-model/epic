@@ -82,6 +82,7 @@ module parcel_merge
                       "...", n_total_parcels
             endif
 #endif
+            call apply_swap_periodicity
 
             call stop_timer(merge_timer)
 
@@ -316,8 +317,6 @@ module parcel_merge
                     parcels%B(:, ic) = B(1:5, l) * factor
                 endif
             enddo
-
-            call apply_swap_periodicity
 
         end subroutine geometric_merge
 
