@@ -328,7 +328,7 @@ module parcel_diagnostics_netcdf
 
             call start_timer(parcel_stats_io_timer)
 
-            if (comm%rank > comm%master) then
+            if (comm%rank /= comm%master) then
                 return
             endif
 
@@ -344,31 +344,32 @@ module parcel_diagnostics_netcdf
             endif
 
             ! write time
-            call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
+            call write_netcdf_scalar(ncid, t_axis_id, t, n_writes, l_single=.true.)
 
             !
             ! write diagnostics
             !
             if (ape_calculation == 'ape density') then
-                call write_netcdf_scalar(ncid, ape_id, parcel_stats(IDX_APE), n_writes)
+                call write_netcdf_scalar(ncid, ape_id, parcel_stats(IDX_APE), n_writes, l_single=.true.)
             endif
-            call write_netcdf_scalar(ncid, ke_id, parcel_stats(IDX_KE), n_writes)
-            call write_netcdf_scalar(ncid, te_id, parcel_stats(IDX_KE) + parcel_stats(IDX_APE), n_writes)
-            call write_netcdf_scalar(ncid, npar_id, int(parcel_stats(IDX_NTOT_PAR)), n_writes)
-            call write_netcdf_scalar(ncid, nspar_id, int(parcel_stats(IDX_N_SMALL)), n_writes)
-            call write_netcdf_scalar(ncid, avg_lam_id, parcel_stats(IDX_AVG_LAM), n_writes)
-            call write_netcdf_scalar(ncid, std_lam_id, parcel_stats(IDX_STD_LAM), n_writes)
-            call write_netcdf_scalar(ncid, avg_vol_id, parcel_stats(IDX_AVG_VOL), n_writes)
-            call write_netcdf_scalar(ncid, std_vol_id, parcel_stats(IDX_STD_VOL), n_writes)
-            call write_netcdf_scalar(ncid, sum_vol_id, parcel_stats(IDX_SUM_VOL), n_writes)
-            call write_netcdf_scalar(ncid, rms_x_vor_id, parcel_stats(IDX_RMS_XI), n_writes)
-            call write_netcdf_scalar(ncid, rms_y_vor_id, parcel_stats(IDX_RMS_ETA), n_writes)
-            call write_netcdf_scalar(ncid, rms_z_vor_id, parcel_stats(IDX_RMS_ZETA), n_writes)
-            call write_netcdf_scalar(ncid, en_id, parcel_stats(IDX_ENSTROPHY), n_writes)
-            call write_netcdf_scalar(ncid, n_par_split_id, parcel_stats(IDX_NSPLITS), n_writes)
-            call write_netcdf_scalar(ncid, n_par_merge_id, parcel_stats(IDX_NMERGES), n_writes)
-            call write_netcdf_scalar(ncid, min_buo_id, parcel_stats(IDX_MIN_BUOY), n_writes)
-            call write_netcdf_scalar(ncid, max_buo_id, parcel_stats(IDX_MAX_BUOY), n_writes)
+            call write_netcdf_scalar(ncid, ke_id, parcel_stats(IDX_KE), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, te_id, parcel_stats(IDX_KE) + parcel_stats(IDX_APE), &
+                                     n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, npar_id, int(parcel_stats(IDX_NTOT_PAR)), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, nspar_id, int(parcel_stats(IDX_N_SMALL)), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, avg_lam_id, parcel_stats(IDX_AVG_LAM), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, std_lam_id, parcel_stats(IDX_STD_LAM), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, avg_vol_id, parcel_stats(IDX_AVG_VOL), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, std_vol_id, parcel_stats(IDX_STD_VOL), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, sum_vol_id, parcel_stats(IDX_SUM_VOL), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, rms_x_vor_id, parcel_stats(IDX_RMS_XI), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, rms_y_vor_id, parcel_stats(IDX_RMS_ETA), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, rms_z_vor_id, parcel_stats(IDX_RMS_ZETA), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, en_id, parcel_stats(IDX_ENSTROPHY), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, n_par_split_id, parcel_stats(IDX_NSPLITS), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, n_par_merge_id, parcel_stats(IDX_NMERGES), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, min_buo_id, parcel_stats(IDX_MIN_BUOY), n_writes, l_single=.true.)
+            call write_netcdf_scalar(ncid, max_buo_id, parcel_stats(IDX_MAX_BUOY), n_writes, l_single=.true.)
 
             ! increment counter
             n_writes = n_writes + 1

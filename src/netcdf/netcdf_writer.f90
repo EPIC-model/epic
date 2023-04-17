@@ -14,7 +14,8 @@ module netcdf_writer
                write_netcdf_attribute_integer,      &
                write_netcdf_attribute_double,       &
                write_netcdf_attribute_character,    &
-               write_netcdf_attribute_logical
+               write_netcdf_attribute_logical,      &
+               set_collective_write
 
     interface write_netcdf_scalar
         module procedure write_netcdf_scalar_integer
@@ -38,6 +39,27 @@ module netcdf_writer
     end interface write_netcdf_attribute
 
     contains
+
+        subroutine set_collective_write(ncid, varid, l_single)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            logical, optional, intent(in) :: l_single
+            logical                       :: l_parallel
+
+            l_parallel = (comm%size > 1)
+
+            if (present(l_single)) then
+                l_parallel = .not. l_single
+            endif
+
+            if (l_parallel) then
+                ! 18 April 2022
+                ! see also https://github.com/Unidata/netcdf-fortran/blob/main/examples/F90/simple_xy_par_wr2.f90
+                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
+                call check_netcdf_error("Failed to set collective.")
+            endif
+
+        end subroutine set_collective_write
 
         subroutine define_netcdf_dimension(ncid, name, dimsize, dimid)
             integer,      intent(in)  :: ncid
@@ -131,18 +153,14 @@ module netcdf_writer
 
         end subroutine write_netcdf_attribute_logical
 
-        subroutine write_netcdf_scalar_integer(ncid, varid, data, start)
-            integer, intent(in) :: ncid
-            integer, intent(in) :: varid
-            integer, intent(in) :: data
-            integer, intent(in) :: start
+        subroutine write_netcdf_scalar_integer(ncid, varid, data, start, l_single)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            integer,           intent(in) :: data
+            integer,           intent(in) :: start
+            logical, optional, intent(in) :: l_single
 
-            if (comm%size > 1) then
-                ! 18 April 2022
-                ! see also https://github.com/Unidata/netcdf-fortran/blob/main/examples/F90/simple_xy_par_wr2.f90
-                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
-                call check_netcdf_error("Failed to set collective.")
-            endif
+            call set_collective_write(ncid, varid, l_single)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, (/data/), &
@@ -152,18 +170,14 @@ module netcdf_writer
 
         end subroutine write_netcdf_scalar_integer
 
-        subroutine write_netcdf_scalar_double(ncid, varid, data, start)
+        subroutine write_netcdf_scalar_double(ncid, varid, data, start, l_single)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data
             integer,           intent(in) :: start
+            logical, optional, intent(in) :: l_single
 
-            if (comm%size > 1) then
-                ! 18 April 2022
-                ! see also https://github.com/Unidata/netcdf-fortran/blob/main/examples/F90/simple_xy_par_wr2.f90
-                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
-                call check_netcdf_error("Failed to set collective.")
-            endif
+            call set_collective_write(ncid, varid, l_single)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, (/data/), &
@@ -173,19 +187,15 @@ module netcdf_writer
 
         end subroutine write_netcdf_scalar_double
 
-        subroutine write_netcdf_dataset_1d_double(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_1d_double(ncid, varid, data, start, cnt, l_single)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data(:)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_single
 
-            if (comm%size > 1) then
-                ! 18 April 2022
-                ! see also https://github.com/Unidata/netcdf-fortran/blob/main/examples/F90/simple_xy_par_wr2.f90
-                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
-                call check_netcdf_error("Failed to set collective.")
-            endif
+            call set_collective_write(ncid, varid, l_single)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, data, &
@@ -195,20 +205,18 @@ module netcdf_writer
 
         end subroutine write_netcdf_dataset_1d_double
 
-        subroutine write_netcdf_dataset_2d_double(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_2d_double(ncid, varid, data, start, cnt, l_single)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data(:, :)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_single
+
+            call set_collective_write(ncid, varid, l_single)
 
             ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/))
             ! with map = shape(data)
-
-            if (comm%size > 1) then
-                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
-                call check_netcdf_error("Failed to set collective.")
-            endif
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, transpose(data),  &
@@ -218,20 +226,18 @@ module netcdf_writer
 
         end subroutine write_netcdf_dataset_2d_double
 
-        subroutine write_netcdf_dataset_3d_double(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_3d_double(ncid, varid, data, start, cnt, l_single)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data(:, :, :)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_single
             integer                       :: map(3)
 
-            if (comm%size > 1) then
-                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
-                call check_netcdf_error("Failed to set collective.")
-            endif
-
             map = shape(data)
+
+            call set_collective_write(ncid, varid, l_single)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid,                                    &
@@ -243,17 +249,15 @@ module netcdf_writer
 
         end subroutine write_netcdf_dataset_3d_double
 
-        subroutine write_netcdf_dataset_1d_integer(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_1d_integer(ncid, varid, data, start, cnt, l_single)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             integer,           intent(in) :: data(:)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_single
 
-            if (comm%size > 1) then
-                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
-                call check_netcdf_error("Failed to set collective.")
-            endif
+            call set_collective_write(ncid, varid, l_single)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, data, &
@@ -263,17 +267,15 @@ module netcdf_writer
 
         end subroutine write_netcdf_dataset_1d_integer
 
-        subroutine write_netcdf_dataset_2d_integer(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_2d_integer(ncid, varid, data, start, cnt, l_single)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             integer,           intent(in) :: data(:, :)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_single
 
-            if (comm%size > 1) then
-                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
-                call check_netcdf_error("Failed to set collective.")
-            endif
+            call set_collective_write(ncid, varid, l_single)
 
             ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/))
             ! with map = shape(data)
@@ -286,20 +288,18 @@ module netcdf_writer
 
         end subroutine write_netcdf_dataset_2d_integer
 
-        subroutine write_netcdf_dataset_3d_integer(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_3d_integer(ncid, varid, data, start, cnt, l_single)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             integer,           intent(in) :: data(:, :, :)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_single
             integer                       :: map(3)
 
             map = shape(data)
 
-            if (comm%size > 1) then
-                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
-                call check_netcdf_error("Failed to set collective.")
-            endif
+            call set_collective_write(ncid, varid, l_single)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid,                                    &

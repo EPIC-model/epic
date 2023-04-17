@@ -124,6 +124,7 @@ module utils
                 call write_netcdf_field_stats(t)
                 nsfw = nsfw + 1
             endif
+
         end subroutine write_step
 
         subroutine setup_restart(restart_file, t, file_type)
