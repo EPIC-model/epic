@@ -114,6 +114,11 @@ module parcel_split_mod
 
             n_parcel_splits = n_parcel_splits + n_parcels - last_index
 
+            ! after this operation the root MPI process knows the new
+            ! number of parcels in the simulation
+            n_total_parcels = n_parcels
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+
             ! all entries in "pid" that are non-zero are indices of
             ! child parcels; remove all zero entries such that
             ! we can do a halo swap
@@ -122,11 +127,6 @@ module parcel_split_mod
             ! send the invalid parcels to the proper MPI process;
             ! delete them on *this* MPI process
             call parcel_halo_swap(invalid)
-
-            ! after this operation the root MPI process knows the new
-            ! number of parcels in the simulation
-            n_total_parcels = n_parcels
-            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
 
 #ifdef ENABLE_VERBOSE
             if (verbose .and. (comm%rank == comm%master)) then
