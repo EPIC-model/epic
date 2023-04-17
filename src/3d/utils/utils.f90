@@ -107,7 +107,6 @@ module utils
                 nfw = nfw + 1
             endif
 
-
             if (output%write_parcels .and. &
                 (t + epsilon(zero) >= neg * dble(npw) * output%parcel_freq)) then
                 call write_netcdf_parcels(t)

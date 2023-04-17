@@ -40,6 +40,12 @@ module parcel_merge
             integer, allocatable, dimension(:)         :: inva
             integer                                    :: n_merge ! number of merges
             integer                                    :: n_invalid
+#ifdef ENABLE_VERBOSE
+            integer                                    :: orig_num
+
+            orig_num = n_total_parcels
+#endif
+
 
             ! find parcels to merge
             call find_nearest(isma, iclo, inva, n_merge, n_invalid)
@@ -47,14 +53,6 @@ module parcel_merge
             n_parcel_merges = n_parcel_merges + n_merge
 
             call start_timer(merge_timer)
-
-#ifdef ENABLE_VERBOSE
-            if (verbose) then
-                print "(a36, i0, a3, i0)",                               &
-                      "no. parcels before and after merge: ", n_parcels, &
-                      "...", n_parcels - n_merge
-            endif
-#endif
 
             if (n_merge > 0) then
                 ! merge small parcels into other parcels
@@ -76,6 +74,14 @@ module parcel_merge
             ! number of parcels in the simulation
             n_total_parcels = n_parcels
             call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+
+#ifdef ENABLE_VERBOSE
+            if (verbose .and. (comm%rank == comm%master)) then
+                print "(a36, i0, a3, i0)",                               &
+                      "no. parcels before and after merge: ", orig_num,  &
+                      "...", n_total_parcels
+            endif
+#endif
 
             call stop_timer(merge_timer)
 
