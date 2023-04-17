@@ -76,7 +76,7 @@ module ls_rk4
         subroutine ls_rk4_step(t)
             double precision, intent(inout) :: t
             double precision                :: dt
-            integer                         :: n, i
+            integer                         :: n
 
             call par2grid((t > time%initial))
 
@@ -99,14 +99,10 @@ module ls_rk4
 
             do n = 1, 4
                 call ls_rk4_substep(dt, n)
-                call parcel_halo_swap
-                do i = 1, n_parcels
-                   call apply_periodic_bc(parcels%position(:, i))
-                enddo
+                call apply_parcel_periodic_bc(parcels%position)
                 call par2grid
             enddo
             call ls_rk4_substep(dt, 5)
-            call parcel_halo_swap
 
             call start_timer(rk4_timer)
             call apply_parcel_bc(parcels%position, parcels%B)
@@ -190,6 +186,8 @@ module ls_rk4
                 delta_b(:, n) = ca * delta_b(:, n)
             enddo
             !$omp end parallel do
+
+            call parcel_halo_swap
 
             call stop_timer(rk4_timer)
 
