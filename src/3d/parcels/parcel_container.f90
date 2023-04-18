@@ -28,7 +28,7 @@ module parcel_container
                           IDX_VOL,          & ! volume
                           IDX_BUO,          & ! buoyancy
 #ifndef ENABLE_DRY_MODE
-    integer, protected :: IDX_HUM,          & ! humidity
+                          IDX_HUM,          & ! humidity
 #endif
                           IDX_RK4_X_DPOS,   & ! RK4 variable delta x-position
                           IDX_RK4_Y_DPOS,   & ! RK4 variable delta y-position
@@ -65,6 +65,15 @@ module parcel_container
             humidity,   &
 #endif
             buoyancy
+
+
+        ! LS-RK4 variables
+        double precision, allocatable, dimension(:, :) :: &
+            delta_pos,  &
+            delta_vor,  &
+            strain,     &
+            delta_b
+
     end type parcel_container_type
 
     type(parcel_container_type) parcels

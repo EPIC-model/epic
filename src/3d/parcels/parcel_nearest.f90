@@ -1333,7 +1333,7 @@ module parcel_nearest
             integer                                    :: recv_size, send_size
             double precision                           :: buffer(n_par_attrib)
             integer                                    :: m, rc, ic, is, n, i, j, k, iv
-            integer, parameter                         :: n_entries = n_par_attrib + 1
+            integer                                    :: n_entries = n_par_attrib + 1
             integer                                    :: n_bytes
             integer, asynchronous                      :: n_parcel_recvs(8)
             type(MPI_Win)                              :: win_neighbour
