@@ -20,7 +20,6 @@ program test_mpi_grid2par
     double precision              :: error
     integer                       :: ix, iy, iz, i, j, k, l, n_per_dim
     double precision              :: im, corner(3)
-    double precision, allocatable :: vel(:, :), vortend(:, :), vgrad(:, :)
     logical                       :: passed = .true.
 
     call mpi_comm_initialise
@@ -43,11 +42,6 @@ program test_mpi_grid2par
 
     n_parcels = n_per_dim ** 3 * nz * (box%hi(1) - box%lo(1) + 1) * (box%hi(2) - box%lo(2) + 1)
     call parcel_alloc(n_parcels)
-
-    allocate(vel(3, n_parcels))
-    allocate(vortend(3, n_parcels))
-    allocate(vgrad(5, n_parcels))
-
 
     im = one / dble(n_per_dim)
 
@@ -92,26 +86,22 @@ program test_mpi_grid2par
         velgradg(:, :, :, l) = dble(l)
     enddo
 
-    ! we cannot check vortend since parcels%vorticity is used in grid2par
-    call grid2par(vel, vortend, vgrad)
+    ! we cannot check parcels%delta_vor since parcels%vorticity is used in grid2par
+    call grid2par
 
     error = zero
 
     do l = 1, 3
-        error = max(error, maxval(dabs(vel(l, 1:n_parcels) - dble(l))))
+        error = max(error, maxval(dabs(parcels%delta_pos(l, 1:n_parcels) - dble(l))))
     enddo
 
     do l = 1, 5
-        error = max(error, maxval(dabs(vgrad(l, 1:n_parcels) - dble(l))))
+        error = max(error, maxval(dabs(parcels%strain(l, 1:n_parcels) - dble(l))))
     enddo
 
     call mpi_blocking_reduce(error, MPI_MAX)
 
     passed = (passed .and. (error < dble(1.0e-14)))
-
-    deallocate(vel)
-    deallocate(vortend)
-    deallocate(vgrad)
 
     call mpi_comm_finalise
 

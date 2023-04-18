@@ -31,7 +31,6 @@ program epic3d
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
-    use parameters, only : max_num_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
     use fft_pencil, only : initialise_pencil_fft, finalise_pencil_fft
     implicit none
