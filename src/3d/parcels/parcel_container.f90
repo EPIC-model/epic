@@ -226,16 +226,20 @@ module parcel_container
             endif
 #endif
 
-            parcels%position(:, n) = parcels%position(:, m)
-
+            parcels%position(:, n)  = parcels%position(:, m)
             parcels%vorticity(:, n) = parcels%vorticity(:, m)
-
-            parcels%volume(n)  = parcels%volume(m)
-            parcels%buoyancy(n) = parcels%buoyancy(m)
+            parcels%volume(n)       = parcels%volume(m)
+            parcels%buoyancy(n)     = parcels%buoyancy(m)
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(n) = parcels%humidity(m)
+            parcels%humidity(n)     = parcels%humidity(m)
 #endif
-            parcels%B(:, n) = parcels%B(:, m)
+            parcels%B(:, n)         = parcels%B(:, m)
+
+            ! LS-RK4 variables:
+            parcels%delta_pos(:, n) = parcels%delta_pos(:, m)
+            parcels%delta_vor(:, n) = parcels%delta_vor(:, m)
+            parcels%delta_b(:, n)   = parcels%delta_b(:, m)
+            parcels%strain(:, n)    = parcels%strain(:, m)
 
         end subroutine parcel_replace
 
