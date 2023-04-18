@@ -14,37 +14,37 @@ module parcel_container
     integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
 
     ! buffer indices to access individual parcel attributes
-    integer, protected :: IDX_X_POS         & ! x-position
-                          IDX_Y_POS         & ! y-position
-                          IDX_Z_POS         & ! z-position
-                          IDX_X_VOR         & ! x-vorticity
-                          IDX_Y_VOR         & ! y-vorticity
-                          IDX_Z_VOR         & ! z-vorticity
-                          IDX_B11           & ! B11 shape matrix element
-                          IDX_B12           & ! B12 shape matrix element
-                          IDX_B13           & ! B13 shape matrix element
-                          IDX_B22           & ! B22 shape matrix element
-                          IDX_B23           & ! B23 shape matrix element
-                          IDX_VOL           & ! volume
-                          IDX_BUO           & ! buoyancy
+    integer, protected :: IDX_X_POS,        & ! x-position
+                          IDX_Y_POS,        & ! y-position
+                          IDX_Z_POS,        & ! z-position
+                          IDX_X_VOR,        & ! x-vorticity
+                          IDX_Y_VOR,        & ! y-vorticity
+                          IDX_Z_VOR,        & ! z-vorticity
+                          IDX_B11,          & ! B11 shape matrix element
+                          IDX_B12,          & ! B12 shape matrix element
+                          IDX_B13,          & ! B13 shape matrix element
+                          IDX_B22,          & ! B22 shape matrix element
+                          IDX_B23,          & ! B23 shape matrix element
+                          IDX_VOL,          & ! volume
+                          IDX_BUO,          & ! buoyancy
 #ifndef ENABLE_DRY_MODE
-    integer, protected :: IDX_HUM           & ! humidity
+    integer, protected :: IDX_HUM,          & ! humidity
 #endif
-                          IDX_RK4_X_DPOS    & ! RK4 variable delta x-position
-                          IDX_RK4_Y_DPOS    & ! RK4 variable delta y-position
-                          IDX_RK4_Z_DPOX    & ! RK4 variable delta z-position
-                          IDX_RK4_X_DVOR    & ! RK4 variable delta x-vorticity
-                          IDX_RK4_Y_DVOR    & ! RK4 variable delta y-vorticity
-                          IDX_RK4_Z_DVOR    & ! RK4 variable delta z-vorticity
-                          IDX_RK4_DB11      & ! RK4 variable for B11
-                          IDX_RK4_DB12      & ! RK4 variable for B12
-                          IDX_RK4_DB13      & ! RK4 variable for B13
-                          IDX_RK4_DB22      & ! RK4 variable for B22
-                          IDX_RK4_DB23      & ! RK4 variable for B23
-                          IDX_RK4_DUDX      & ! RK4 variable du/dx
-                          IDX_RK4_DUDY      & ! RK4 variable du/dy
-                          IDX_RK4_DVDY      & ! RK4 variable dv/dy
-                          IDX_RK4_DWDX      & ! RK4 variable dw/dx
+                          IDX_RK4_X_DPOS,   & ! RK4 variable delta x-position
+                          IDX_RK4_Y_DPOS,   & ! RK4 variable delta y-position
+                          IDX_RK4_Z_DPOX,   & ! RK4 variable delta z-position
+                          IDX_RK4_X_DVOR,   & ! RK4 variable delta x-vorticity
+                          IDX_RK4_Y_DVOR,   & ! RK4 variable delta y-vorticity
+                          IDX_RK4_Z_DVOR,   & ! RK4 variable delta z-vorticity
+                          IDX_RK4_DB11,     & ! RK4 variable for B11
+                          IDX_RK4_DB12,     & ! RK4 variable for B12
+                          IDX_RK4_DB13,     & ! RK4 variable for B13
+                          IDX_RK4_DB22,     & ! RK4 variable for B22
+                          IDX_RK4_DB23,     & ! RK4 variable for B23
+                          IDX_RK4_DUDX,     & ! RK4 variable du/dx
+                          IDX_RK4_DUDY,     & ! RK4 variable du/dy
+                          IDX_RK4_DVDY,     & ! RK4 variable dv/dy
+                          IDX_RK4_DWDX,     & ! RK4 variable dw/dx
                           IDX_RK4_DWDY        ! RK4 variable dw/dy
 
     ! number of  parcel attributes
