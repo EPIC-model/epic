@@ -32,7 +32,7 @@ module parcel_container
 #endif
                           IDX_RK4_X_DPOS,   & ! RK4 variable delta x-position
                           IDX_RK4_Y_DPOS,   & ! RK4 variable delta y-position
-                          IDX_RK4_Z_DPOX,   & ! RK4 variable delta z-position
+                          IDX_RK4_Z_DPOS,   & ! RK4 variable delta z-position
                           IDX_RK4_X_DVOR,   & ! RK4 variable delta x-vorticity
                           IDX_RK4_Y_DVOR,   & ! RK4 variable delta y-vorticity
                           IDX_RK4_Z_DVOR,   & ! RK4 variable delta z-vorticity
@@ -110,7 +110,7 @@ module parcel_container
             ! LS-RK4 variables
             IDX_RK4_X_DPOS = i
             IDX_RK4_Y_DPOS = i + 1
-            IDX_RK4_Z_DPOX = i + 2
+            IDX_RK4_Z_DPOS = i + 2
             IDX_RK4_X_DVOR = i + 3
             IDX_RK4_Y_DVOR = i + 4
             IDX_RK4_Z_DVOR = i + 5
@@ -315,7 +315,7 @@ module parcel_container
             buffer(IDX_HUM)             = parcels%humidity(n)
 #endif
             ! LS-RK4 variables:
-            buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOX) = parcels%delta_pos(:, n)
+            buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS) = parcels%delta_pos(:, n)
             buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR) = parcels%delta_vor(:, n)
             buffer(IDX_RK4_DB11:IDX_RK4_DB23)     = parcels%delta_b(:, n)
             buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)     = parcels%strain(:, n)
@@ -337,7 +337,7 @@ module parcel_container
             parcels%humidity(n)     = buffer(IDX_HUM)
 #endif
             ! LS-RK4 variables:
-            parcels%delta_pos(:, n) = buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOX)
+            parcels%delta_pos(:, n) = buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS)
             parcels%delta_vor(:, n) = buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR)
             parcels%delta_b(:, n)   = buffer(IDX_RK4_DB11:IDX_RK4_DB23)
             parcels%strain(:, n)    = buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)
