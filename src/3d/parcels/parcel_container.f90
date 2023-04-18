@@ -314,6 +314,11 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             buffer(IDX_HUM)             = parcels%humidity(n)
 #endif
+            ! LS-RK4 variables:
+            buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOX) = parcels%delta_pos(:, n)
+            buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR) = parcels%delta_vor(:, n)
+            buffer(IDX_RK4_DB11:IDX_RK4_DB23)     = parcels%delta_b(:, n)
+            buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)     = parcels%strain(:, n)
         end subroutine parcel_serialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -331,6 +336,11 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n)     = buffer(IDX_HUM)
 #endif
+            ! LS-RK4 variables:
+            parcels%delta_pos(:, n) = buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOX)
+            parcels%delta_vor(:, n) = buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR)
+            parcels%delta_b(:, n)   = buffer(IDX_RK4_DB11:IDX_RK4_DB23)
+            parcels%strain(:, n)    = buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)
         end subroutine parcel_deserialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
