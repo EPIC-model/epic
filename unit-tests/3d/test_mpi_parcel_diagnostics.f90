@@ -17,7 +17,6 @@ program test_mpi_parcel_diagnostics
     integer, parameter            :: n_per_dim = 2
     integer                       :: ix, iy, iz, i, j, k, l, n_total
     double precision              :: im, corner(3), total_vol
-    double precision, allocatable :: velocity(:, :)
 
     call mpi_comm_initialise
 
@@ -42,8 +41,6 @@ program test_mpi_parcel_diagnostics
     n_parcels = n_per_dim ** 3 * nz * (box%hi(2)-box%lo(2)+1) * (box%hi(1)-box%lo(1)+1)
     n_total = n_per_dim ** 3 * nz * ny * nx
     call parcel_alloc(n_parcels)
-
-    allocate(velocity(3, n_parcels))
 
     im = one / dble(n_per_dim)
 
@@ -72,9 +69,9 @@ program test_mpi_parcel_diagnostics
     parcels%B(1, 1:n_parcels) = get_abc(parcels%volume(1:n_parcels)) ** f23
     parcels%B(4, 1:n_parcels) = parcels%B(1, 1:n_parcels)
     parcels%vorticity(:, 1:n_parcels) = f12
-    velocity(:, 1:n_parcels)  = f12
+    parcels%delta_pos(:, 1:n_parcels)  = f12
 
-    call calculate_parcel_diagnostics(velocity)
+    call calculate_parcel_diagnostics
 
     if (comm%rank == comm%master) then
         total_vol = dble(n_total) * parcels%volume(1)
@@ -89,8 +86,6 @@ program test_mpi_parcel_diagnostics
         passed = (passed .and. (dabs(parcel_stats(IDX_RMS_ETA) - f12) < 1.0e-15))
         passed = (passed .and. (dabs(parcel_stats(IDX_RMS_ZETA) - f12) < 1.0e-15))
     endif
-
-    deallocate(velocity)
 
     call mpi_comm_finalise
 

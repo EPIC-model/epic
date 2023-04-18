@@ -14,30 +14,42 @@ module parcel_container
     integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
 
     ! buffer indices to access individual parcel attributes
-    integer, parameter :: IDX_X_POS = 1,    & ! x-position
-                          IDX_Y_POS = 2,    & ! y-position
-                          IDX_Z_POS = 3,    & ! z-position
-                          IDX_X_VOR = 4,    & ! x-vorticity
-                          IDX_Y_VOR = 5,    & ! y-vorticity
-                          IDX_Z_VOR = 6,    & ! z-vorticity
-                          IDX_B11   = 7,    & ! B11 shape matrix element
-                          IDX_B12   = 8,    & ! B12 shape matrix element
-                          IDX_B13   = 9,    & ! B13 shape matrix element
-                          IDX_B22   = 10,   & ! B22 shape matrix element
-                          IDX_B23   = 11,   & ! B23 shape matrix element
-                          IDX_VOL   = 12,   & ! volume
-                          IDX_BUO   = 13      ! buoyancy
+    integer, protected :: IDX_X_POS,        & ! x-position
+                          IDX_Y_POS,        & ! y-position
+                          IDX_Z_POS,        & ! z-position
+                          IDX_X_VOR,        & ! x-vorticity
+                          IDX_Y_VOR,        & ! y-vorticity
+                          IDX_Z_VOR,        & ! z-vorticity
+                          IDX_B11,          & ! B11 shape matrix element
+                          IDX_B12,          & ! B12 shape matrix element
+                          IDX_B13,          & ! B13 shape matrix element
+                          IDX_B22,          & ! B22 shape matrix element
+                          IDX_B23,          & ! B23 shape matrix element
+                          IDX_VOL,          & ! volume
+                          IDX_BUO,          & ! buoyancy
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: IDX_HUM   = 14
+                          IDX_HUM,          & ! humidity
 #endif
+                          IDX_RK4_X_DPOS,   & ! RK4 variable delta x-position
+                          IDX_RK4_Y_DPOS,   & ! RK4 variable delta y-position
+                          IDX_RK4_Z_DPOS,   & ! RK4 variable delta z-position
+                          IDX_RK4_X_DVOR,   & ! RK4 variable delta x-vorticity
+                          IDX_RK4_Y_DVOR,   & ! RK4 variable delta y-vorticity
+                          IDX_RK4_Z_DVOR,   & ! RK4 variable delta z-vorticity
+                          IDX_RK4_DB11,     & ! RK4 variable for B11
+                          IDX_RK4_DB12,     & ! RK4 variable for B12
+                          IDX_RK4_DB13,     & ! RK4 variable for B13
+                          IDX_RK4_DB22,     & ! RK4 variable for B22
+                          IDX_RK4_DB23,     & ! RK4 variable for B23
+                          IDX_RK4_DUDX,     & ! RK4 variable du/dx
+                          IDX_RK4_DUDY,     & ! RK4 variable du/dy
+                          IDX_RK4_DVDY,     & ! RK4 variable dv/dy
+                          IDX_RK4_DWDX,     & ! RK4 variable dw/dx
+                          IDX_RK4_DWDY        ! RK4 variable dw/dy
 
-#ifndef ENABLE_DRY_MODE
-    integer, parameter :: n_par_attrib = IDX_HUM ! number of  parcel attributes
-                                                 ! (components are counted individually, e.g. position counts
-                                                 ! as 3 attributes)
-#else
-    integer, parameter :: n_par_attrib = IDX_BUO
-#endif
+    ! number of  parcel attributes
+    ! (components are counted individually, e.g. position counts as 3 attributes)
+    integer, protected :: n_par_attrib
 
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
@@ -53,11 +65,71 @@ module parcel_container
             humidity,   &
 #endif
             buoyancy
+
+
+        ! LS-RK4 variables
+        double precision, allocatable, dimension(:, :) :: &
+            delta_pos,  &
+            delta_vor,  &
+            strain,     &
+            delta_b
+
     end type parcel_container_type
 
     type(parcel_container_type) parcels
 
+    private :: set_buffer_indices
+
     contains
+
+        ! Sets the buffer indices for sending parcels around
+        ! (called in parcel_alloc)
+        subroutine set_buffer_indices
+            integer :: i
+
+            IDX_X_POS = 1   ! x-position
+            IDX_Y_POS = 2   ! y-position
+            IDX_Z_POS = 3   ! z-position
+            IDX_X_VOR = 4   ! x-vorticity
+            IDX_Y_VOR = 5   ! y-vorticity
+            IDX_Z_VOR = 6   ! z-vorticity
+            IDX_B11   = 7   ! B11 shape matrix element
+            IDX_B12   = 8   ! B12 shape matrix element
+            IDX_B13   = 9   ! B13 shape matrix element
+            IDX_B22   = 10  ! B22 shape matrix element
+            IDX_B23   = 11  ! B23 shape matrix element
+            IDX_VOL   = 12  ! volume
+            IDX_BUO   = 13  ! buoyancy
+
+            i = IDX_BUO + 1
+#ifndef ENABLE_DRY_MODE
+            IDX_HUM  = i
+            i = i + 1
+#endif
+
+            ! LS-RK4 variables
+            IDX_RK4_X_DPOS = i
+            IDX_RK4_Y_DPOS = i + 1
+            IDX_RK4_Z_DPOS = i + 2
+            IDX_RK4_X_DVOR = i + 3
+            IDX_RK4_Y_DVOR = i + 4
+            IDX_RK4_Z_DVOR = i + 5
+            IDX_RK4_DB11 = i + 6
+            IDX_RK4_DB12 = i + 7
+            IDX_RK4_DB13 = i + 8
+            IDX_RK4_DB22 = i + 9
+            IDX_RK4_DB23 = i + 10
+            IDX_RK4_DUDX = i + 11
+            IDX_RK4_DUDY = i + 12
+            IDX_RK4_DVDY = i + 13
+            IDX_RK4_DWDX = i + 14
+            IDX_RK4_DWDY = i + 15
+
+            n_par_attrib = IDX_RK4_DWDY
+
+        end subroutine set_buffer_indices
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the difference between two zonal coordinates
         ! across periodic edges
@@ -154,16 +226,20 @@ module parcel_container
             endif
 #endif
 
-            parcels%position(:, n) = parcels%position(:, m)
-
+            parcels%position(:, n)  = parcels%position(:, m)
             parcels%vorticity(:, n) = parcels%vorticity(:, m)
-
-            parcels%volume(n)  = parcels%volume(m)
-            parcels%buoyancy(n) = parcels%buoyancy(m)
+            parcels%volume(n)       = parcels%volume(m)
+            parcels%buoyancy(n)     = parcels%buoyancy(m)
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(n) = parcels%humidity(m)
+            parcels%humidity(n)     = parcels%humidity(m)
 #endif
-            parcels%B(:, n) = parcels%B(:, m)
+            parcels%B(:, n)         = parcels%B(:, m)
+
+            ! LS-RK4 variables:
+            parcels%delta_pos(:, n) = parcels%delta_pos(:, m)
+            parcels%delta_vor(:, n) = parcels%delta_vor(:, m)
+            parcels%delta_b(:, n)   = parcels%delta_b(:, m)
+            parcels%strain(:, n)    = parcels%strain(:, m)
 
         end subroutine parcel_replace
 
@@ -174,6 +250,8 @@ module parcel_container
         subroutine parcel_alloc(num)
             integer, intent(in) :: num
 
+            call set_buffer_indices
+
             allocate(parcels%position(3, num))
             allocate(parcels%vorticity(3, num))
             allocate(parcels%B(5, num))
@@ -183,6 +261,12 @@ module parcel_container
             allocate(parcels%humidity(num))
 #endif
             call parcel_ellipsoid_allocate(num)
+
+            ! LS-RK4 variables
+            allocate(parcels%delta_pos(3, num))
+            allocate(parcels%delta_vor(3, num))
+            allocate(parcels%strain(5, num))
+            allocate(parcels%delta_b(5, num))
         end subroutine parcel_alloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -210,6 +294,13 @@ module parcel_container
             deallocate(parcels%humidity)
 #endif
             call parcel_ellipsoid_deallocate
+
+            ! LS-RK4 variables
+            deallocate(parcels%delta_pos)
+            deallocate(parcels%delta_vor)
+            deallocate(parcels%strain)
+            deallocate(parcels%delta_b)
+
         end subroutine parcel_dealloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -227,6 +318,11 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             buffer(IDX_HUM)             = parcels%humidity(n)
 #endif
+            ! LS-RK4 variables:
+            buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS) = parcels%delta_pos(:, n)
+            buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR) = parcels%delta_vor(:, n)
+            buffer(IDX_RK4_DB11:IDX_RK4_DB23)     = parcels%delta_b(:, n)
+            buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)     = parcels%strain(:, n)
         end subroutine parcel_serialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -244,6 +340,11 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n)     = buffer(IDX_HUM)
 #endif
+            ! LS-RK4 variables:
+            parcels%delta_pos(:, n) = buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS)
+            parcels%delta_vor(:, n) = buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR)
+            parcels%delta_b(:, n)   = buffer(IDX_RK4_DB11:IDX_RK4_DB23)
+            parcels%strain(:, n)    = buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)
         end subroutine parcel_deserialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
