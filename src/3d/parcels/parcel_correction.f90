@@ -14,7 +14,6 @@ module parcel_correction
     use fields, only : volg
     use mpi_layout, only : box
     use mpi_communicator
-    use parcel_mpi, only : parcel_halo_swap
     use mpi_utils, only : mpi_check_for_error
     implicit none
 
@@ -166,13 +165,11 @@ module parcel_correction
                     parcels%position(3, n) = parcels%position(3, n)               &
                                            + weights(l) * wd(ks(l), js(l), is(l))
                 enddo
-
-                call apply_periodic_bc(parcels%position(:, n))
             enddo
             !$omp end do
             !$omp end parallel
 
-            call parcel_halo_swap
+            call apply_swap_periodicity
 
             call stop_timer(lapl_corr_timer)
 
