@@ -172,6 +172,7 @@ module ls_rk4
             call stop_timer(rk4_timer)
 
             if (step == 5) then
+                call apply_swap_periodicity
                return
             endif
 
