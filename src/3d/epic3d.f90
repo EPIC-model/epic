@@ -27,7 +27,7 @@ program epic3d
     use inversion_utils, only : init_inversion
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_timer
-    use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
+    use ls_rk4, only : ls_rk4_step, rk4_timer
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
@@ -90,8 +90,6 @@ program epic3d
 
             call setup_fields_and_parcels
 
-            call ls_rk4_alloc(max_num_parcels)
-
             call init_inversion
 
             call initialise_pencil_fft(nx, ny, nz)
@@ -146,7 +144,6 @@ program epic3d
         subroutine post_run
             use options, only : output
             call parcel_dealloc
-            call ls_rk4_dealloc
             call finalise_pencil_fft
             call stop_timer(epic_timer)
 

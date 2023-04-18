@@ -183,6 +183,12 @@ module parcel_container
             allocate(parcels%humidity(num))
 #endif
             call parcel_ellipsoid_allocate(num)
+
+            ! LS-RK4 variables
+            allocate(parcels%delta_pos(3, num))
+            allocate(parcels%delta_vor(3, num))
+            allocate(parcels%strain(5, num))
+            allocate(parcels%delta_b(5, num))
         end subroutine parcel_alloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -210,6 +216,13 @@ module parcel_container
             deallocate(parcels%humidity)
 #endif
             call parcel_ellipsoid_deallocate
+
+            ! LS-RK4 variables
+            deallocate(parcels%delta_pos)
+            deallocate(parcels%delta_vor)
+            deallocate(parcels%strain)
+            deallocate(parcels%delta_b)
+
         end subroutine parcel_dealloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

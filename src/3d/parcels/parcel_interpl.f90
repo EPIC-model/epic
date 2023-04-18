@@ -261,17 +261,13 @@ module parcel_interpl
 
 
         ! Interpolate the gridded quantities to the parcels
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vortend is the parcel vorticity tendency
-        ! @param[inout] vgrad is the parcel strain
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
-        ! @pre The parcel must assigned to the correct MPI process and the halo of fields must be
+        ! @pre The parcel must be assigned to the correct MPI process and the halo of fields must be
         !      filled correctly.
-        subroutine grid2par(vel, vortend, vgrad, add)
-            double precision,     intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
-            logical, optional, intent(in)       :: add
-            integer                             :: n, l
+        subroutine grid2par(add)
+            logical, optional, intent(in) :: add
+            integer                       :: n, l
 
             call start_timer(grid2par_timer)
 
@@ -281,8 +277,8 @@ module parcel_interpl
                     !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, n_parcels
-                        vel(:, n) = zero
-                        vortend(:, n) = zero
+                        parcels%delta_pos(:, n) = zero
+                        parcels%delta_vor(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -291,8 +287,8 @@ module parcel_interpl
                 !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_parcels
-                    vel(:, n) = zero
-                    vortend(:, n) = zero
+                    parcels%delta_pos(:, n) = zero
+                    parcels%delta_vor(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -302,18 +298,21 @@ module parcel_interpl
             !$omp do private(n, l, is, js, ks, weights)
             do n = 1, n_parcels
 
-                vgrad(:, n) = zero
+                parcels%strain(:, n) = zero
 
                 ! get interpolation weights and mesh indices
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
                 ! loop over grid points which are part of the interpolation
                 do l = 1, ngp
-                    vel(:, n) = vel(:, n) + weights(l) * velog(ks(l), js(l), is(l), :)
+                    parcels%delta_pos(:, n) = parcels%delta_pos(:, n) &
+                                            + weights(l) * velog(ks(l), js(l), is(l), :)
 
-                    vgrad(:, n) = vgrad(:, n) + weights(l) * velgradg(ks(l), js(l), is(l), :)
+                    parcels%strain(:, n) = parcels%strain(:, n) &
+                                         + weights(l) * velgradg(ks(l), js(l), is(l), :)
 
-                    vortend(:, n) = vortend(:, n) + weights(l) * vtend(ks(l), js(l), is(l), :)
+                    parcels%delta_vor(:, n) = parcels%delta_vor(:, n) &
+                                            + weights(l) * vtend(ks(l), js(l), is(l), :)
                 enddo
             enddo
             !$omp end do
@@ -322,20 +321,6 @@ module parcel_interpl
             call stop_timer(grid2par_timer)
 
         end subroutine grid2par
-
-
-        ! Interpolate the gridded quantities to the parcels without resetting
-        ! their values to zero before doing grid2par.
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vortend is the parcel vorticity tendency
-        ! @param[inout] vgrad is the parcel strain
-        subroutine grid2par_add(vel, vortend, vgrad)
-            double precision, intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
-
-            call grid2par(vel, vortend, vgrad, add=.true.)
-
-        end subroutine grid2par_add
-
 
         ! Tri-linear interpolation
         ! @param[in] pos position of the parcel
