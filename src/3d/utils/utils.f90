@@ -107,7 +107,6 @@ module utils
                 nfw = nfw + 1
             endif
 
-
             if (output%write_parcels .and. &
                 (t + epsilon(zero) >= neg * dble(npw) * output%parcel_freq)) then
                 call write_netcdf_parcels(t)
@@ -125,6 +124,7 @@ module utils
                 call write_netcdf_field_stats(t)
                 nsfw = nsfw + 1
             endif
+
         end subroutine write_step
 
         subroutine setup_restart(restart_file, t, file_type)

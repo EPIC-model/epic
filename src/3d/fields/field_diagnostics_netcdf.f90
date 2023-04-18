@@ -57,16 +57,16 @@ module field_diagnostics_netcdf
             call exist_netcdf_file(ncfname, l_exist)
 
             if (l_restart .and. l_exist) then
-                call open_netcdf_file(ncfname, NF90_NOWRITE, ncid, l_single=.true.)
+                call open_netcdf_file(ncfname, NF90_NOWRITE, ncid, l_serial=.true.)
                 call get_num_steps(ncid, n_writes)
                 call get_time(ncid, restart_time)
                 call read_netcdf_field_stats_content
-                call close_netcdf_file(ncid, l_single=.true.)
+                call close_netcdf_file(ncid, l_serial=.true.)
                 n_writes = n_writes + 1
                 return
             endif
 
-            call create_netcdf_file(ncfname, overwrite, ncid, l_single=.true.)
+            call create_netcdf_file(ncfname, overwrite, ncid, l_serial=.true.)
 
             call write_netcdf_info(ncid=ncid,                    &
                                    version_tag=package_version,  &
@@ -196,7 +196,7 @@ module field_diagnostics_netcdf
 
             call close_definition(ncid)
 
-            call close_netcdf_file(ncid, l_single=.true.)
+            call close_netcdf_file(ncid, l_serial=.true.)
 
         end subroutine create_netcdf_field_stats_file
 
@@ -241,7 +241,7 @@ module field_diagnostics_netcdf
 
             call start_timer(field_stats_io_timer)
 
-            if (comm%rank .ne. comm%master) then
+            if (comm%rank /= comm%master) then
                 return
             endif
 
@@ -250,36 +250,36 @@ module field_diagnostics_netcdf
                 return
             endif
 
-            call open_netcdf_file(ncfname, NF90_WRITE, ncid, l_single=.true.)
+            call open_netcdf_file(ncfname, NF90_WRITE, ncid, l_serial=.true.)
 
             if (n_writes == 1) then
                 call write_zeta_boundary_flag(ncid)
             endif
 
             ! write time
-            call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
+            call write_netcdf_scalar(ncid, t_axis_id, t, n_writes, l_serial=.true.)
 
             !
             ! write diagnostics
             !
-            call write_netcdf_scalar(ncid, rms_v_id, field_stats(IDX_RMS_V), n_writes)
-            call write_netcdf_scalar(ncid, abserr_v_id, field_stats(IDX_ABSERR_V), n_writes)
-            call write_netcdf_scalar(ncid, max_npar_id, field_stats(IDX_MAX_NPAR), n_writes)
-            call write_netcdf_scalar(ncid, min_npar_id, field_stats(IDX_MIN_NPAR), n_writes)
-            call write_netcdf_scalar(ncid, avg_npar_id, field_stats(IDX_AVG_NPAR), n_writes)
-            call write_netcdf_scalar(ncid, avg_nspar_id, field_stats(IDX_AVG_NSPAR), n_writes)
-            call write_netcdf_scalar(ncid, keg_id, field_stats(IDX_KEG), n_writes)
+            call write_netcdf_scalar(ncid, rms_v_id, field_stats(IDX_RMS_V), n_writes, l_serial=.true.)
+            call write_netcdf_scalar(ncid, abserr_v_id, field_stats(IDX_ABSERR_V), n_writes, l_serial=.true.)
+            call write_netcdf_scalar(ncid, max_npar_id, field_stats(IDX_MAX_NPAR), n_writes, l_serial=.true.)
+            call write_netcdf_scalar(ncid, min_npar_id, field_stats(IDX_MIN_NPAR), n_writes, l_serial=.true.)
+            call write_netcdf_scalar(ncid, avg_npar_id, field_stats(IDX_AVG_NPAR), n_writes, l_serial=.true.)
+            call write_netcdf_scalar(ncid, avg_nspar_id, field_stats(IDX_AVG_NSPAR), n_writes, l_serial=.true.)
+            call write_netcdf_scalar(ncid, keg_id, field_stats(IDX_KEG), n_writes, l_serial=.true.)
             if (ape_calculation == 'ape density') then
-                call write_netcdf_scalar(ncid, apeg_id, field_stats(IDX_APEG), n_writes)
+                call write_netcdf_scalar(ncid, apeg_id, field_stats(IDX_APEG), n_writes, l_serial=.true.)
             endif
-            call write_netcdf_scalar(ncid, eng_id, field_stats(IDX_ENG), n_writes)
-            call write_netcdf_scalar(ncid, min_buoy_id, field_stats(IDX_MIN_BUOY), n_writes)
-            call write_netcdf_scalar(ncid, max_buoy_id, field_stats(IDX_MAX_BUOY), n_writes)
+            call write_netcdf_scalar(ncid, eng_id, field_stats(IDX_ENG), n_writes, l_serial=.true.)
+            call write_netcdf_scalar(ncid, min_buoy_id, field_stats(IDX_MIN_BUOY), n_writes, l_serial=.true.)
+            call write_netcdf_scalar(ncid, max_buoy_id, field_stats(IDX_MAX_BUOY), n_writes, l_serial=.true.)
 
             ! increment counter
             n_writes = n_writes + 1
 
-            call close_netcdf_file(ncid, l_single=.true.)
+            call close_netcdf_file(ncid, l_serial=.true.)
 
             call stop_timer(field_stats_io_timer)
 

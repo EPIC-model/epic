@@ -116,7 +116,7 @@ program epic3d
             do while (t < time%limit)
 
 #ifdef ENABLE_VERBOSE
-                if (verbose) then
+                if (verbose .and. (comm%rank == comm%master)) then
                     print "(a15, f0.4)", "time:          ", t
                 endif
 #endif
@@ -214,7 +214,7 @@ program epic3d
 
 #ifdef ENABLE_VERBOSE
         ! This is the main application of EPIC
-        if (verbose) then
+        if (verbose .and. (comm%rank == comm%master)) then
             if (l_restart) then
                 print *, 'Restarting EPIC3D with "', trim(filename), '" and "', trim(restart_file), "'"
             else

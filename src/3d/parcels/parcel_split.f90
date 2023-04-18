@@ -6,13 +6,12 @@ module parcel_split_mod
     use constants, only : pi, three, five, f12, f34
     use parameters, only : vmax
     use parcel_container, only : parcel_container_type, n_parcels, n_total_parcels
-    use parcel_bc, only : apply_reflective_bc
+    use parcel_bc, only : apply_reflective_bc, apply_swap_periodicity
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
     use mpi_timer, only : start_timer, stop_timer
     use omp_lib
     use mpi_communicator, only : comm, MPI_SUM
     use mpi_collectives, only : mpi_blocking_reduce
-    use parcel_mpi, only : parcel_halo_swap
     implicit none
 
     double precision, parameter :: dh = f12 * dsqrt(three / five)
@@ -114,19 +113,20 @@ module parcel_split_mod
 
             n_parcel_splits = n_parcel_splits + n_parcels - last_index
 
+            ! after this operation the root MPI process knows the new
+            ! number of parcels in the simulation
+            n_total_parcels = n_parcels
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+
             ! all entries in "pid" that are non-zero are indices of
             ! child parcels; remove all zero entries such that
             ! we can do a halo swap
             invalid = pack(pid(1:n_parcels), pid(1:n_parcels) /= 0)
 
             ! send the invalid parcels to the proper MPI process;
-            ! delete them on *this* MPI process
-            call parcel_halo_swap(invalid)
-
-            ! after this operation the root MPI process knows the new
-            ! number of parcels in the simulation
-            n_total_parcels = n_parcels
-            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+            ! delete them on *this* MPI process and
+            ! apply periodic boundary condition
+            call apply_swap_periodicity(invalid)
 
 #ifdef ENABLE_VERBOSE
             if (verbose .and. (comm%rank == comm%master)) then

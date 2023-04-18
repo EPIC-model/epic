@@ -61,21 +61,21 @@ module netcdf_utils
 
         end subroutine set_netcdf_axes
 
-        ! If the logical argument 'l_single = .true.', the file
+        ! If the logical argument 'l_serial = .true.', the file
         ! is created by the root MPI rank with MPI size > 1. The argument
         ! is .false. by default.
-        subroutine create_netcdf_file(ncfname, overwrite, ncid, l_single)
+        subroutine create_netcdf_file(ncfname, overwrite, ncid, l_serial)
             character(*),      intent(in)  :: ncfname
             logical,           intent(in)  :: overwrite
             integer,           intent(out) :: ncid
             logical                        :: l_exist = .true.
-            logical, optional, intent(in)  :: l_single
+            logical, optional, intent(in)  :: l_serial
             logical                        :: l_parallel
 
             l_parallel = (comm%size > 1)
 
-            if (present(l_single)) then
-                l_parallel = .not. l_single
+            if (present(l_serial)) then
+                l_parallel = .not. l_serial
             endif
 
             ! check whether file exists
@@ -126,14 +126,14 @@ module netcdf_utils
         end subroutine delete_netcdf_file
 
 
-        ! If the logical argument 'l_single = .true.', the file
+        ! If the logical argument 'l_serial = .true.', the file
         ! is opened by the root MPI rank with MPI size > 1. The argument
         ! is .false. by default.
-        subroutine open_netcdf_file(ncfname, access_flag, ncid, l_single)
+        subroutine open_netcdf_file(ncfname, access_flag, ncid, l_serial)
             character(*),      intent(in)  :: ncfname
             integer,           intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
             integer,           intent(out) :: ncid
-            logical, optional, intent(in)  :: l_single
+            logical, optional, intent(in)  :: l_serial
             logical                        :: l_parallel
             logical                        :: l_exist
 
@@ -146,8 +146,8 @@ module netcdf_utils
                 stop
             endif
 
-            if (present(l_single)) then
-                l_parallel = .not. l_single
+            if (present(l_serial)) then
+                l_parallel = .not. l_serial
             endif
 
             if (l_parallel) then
@@ -169,17 +169,17 @@ module netcdf_utils
 
         end subroutine open_netcdf_file
 
-        ! Note: This subroutine should only be called with l_single = .true.
+        ! Note: This subroutine should only be called with l_serial = .true.
         ! if it was opened in single mode.
-        subroutine close_netcdf_file(ncid, l_single)
+        subroutine close_netcdf_file(ncid, l_serial)
             integer,           intent(in)  :: ncid
-            logical, optional, intent(in)  :: l_single
+            logical, optional, intent(in)  :: l_serial
             logical                        :: l_parallel
 
             l_parallel = (comm%size > 1)
 
-            if (present(l_single)) then
-                l_parallel = (.not. l_single)
+            if (present(l_serial)) then
+                l_parallel = (.not. l_serial)
             endif
 
             if (l_parallel) then

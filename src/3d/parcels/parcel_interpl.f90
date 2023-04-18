@@ -194,6 +194,7 @@ module parcel_interpl
 
 #ifndef ENABLE_DRY_MODE
             call field_halo_swap(dbuoyg)
+            call field_halo_swap(humg)
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
             dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
             dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)

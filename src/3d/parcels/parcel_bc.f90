@@ -6,7 +6,8 @@
 module parcel_bc
     use constants, only : zero, two
     use parameters, only : lower, upper, extent, hli, center
-    use parcel_container, only : n_parcels
+    use parcel_container, only : n_parcels, parcels
+    use parcel_mpi, only : parcel_halo_swap
     use omp_lib
     implicit none
 
@@ -39,24 +40,64 @@ module parcel_bc
             endif
         end subroutine apply_reflective_bc
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Apply all boundary conditions to all parcels
-        ! @param[inout] position vector of parcels
-        ! @param[inout] B matrix of parcels
-        subroutine apply_parcel_bc(position, B)
-            double precision, intent(inout) :: position(:, :), B(:, :)
-            integer                         :: n
+        subroutine apply_parcel_bc
+            integer :: n
 
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
                 ! zonal direction
-                call apply_periodic_bc(position(:, n))
+                call apply_periodic_bc(parcels%position(:, n))
 
                 ! vertical direction
-                call apply_reflective_bc(position(:, n), B(:, n))
+                call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
             enddo
             !$omp end do
             !$omp end parallel
+
         end subroutine apply_parcel_bc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Apply periodic boundary condition to all parcels
+        ! @param[inout] position vector of parcels
+        subroutine apply_parcel_periodic_bc
+            integer :: n
+
+            !$omp parallel default(shared)
+            !$omp do private(n)
+            do n = 1, n_parcels
+                ! zonal and meridional direction
+                call apply_periodic_bc(parcels%position(:, n))
+            enddo
+            !$omp end do
+            !$omp end parallel
+
+        end subroutine apply_parcel_periodic_bc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Performs a parcel halo swap and then applies the periodic boundary condition
+        ! to all parcels
+        ! @param[in] pindex are the parcel indices to check (optional)
+        subroutine apply_swap_periodicity(pindex)
+            integer, optional, intent(in) :: pindex(:)
+            integer                       :: n
+
+            call parcel_halo_swap(pindex)
+
+            !$omp parallel default(shared)
+            !$omp do private(n)
+            do n = 1, n_parcels
+                ! zonal and meridional direction
+                call apply_periodic_bc(parcels%position(:, n))
+            enddo
+            !$omp end do
+            !$omp end parallel
+
+        end subroutine apply_swap_periodicity
 
 end module parcel_bc

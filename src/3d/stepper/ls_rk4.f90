@@ -103,7 +103,7 @@ module ls_rk4
             call ls_rk4_substep(dt, 5)
 
             call start_timer(rk4_timer)
-            call apply_parcel_bc(parcels%position, parcels%B)
+            call apply_parcel_bc
             call stop_timer(rk4_timer)
 
             ! we need to subtract 14 calls since we start and stop
@@ -172,6 +172,7 @@ module ls_rk4
             call stop_timer(rk4_timer)
 
             if (step == 5) then
+                call apply_swap_periodicity
                return
             endif
 
@@ -184,6 +185,8 @@ module ls_rk4
                 delta_b(:, n) = ca * delta_b(:, n)
             enddo
             !$omp end parallel do
+
+            call apply_swap_periodicity
 
             call stop_timer(rk4_timer)
 

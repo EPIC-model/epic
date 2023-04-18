@@ -5,16 +5,19 @@
 module parcel_merge
     use parcel_nearest
     use constants, only : pi, zero, one, two, five, f13
-    use parcel_container, only : parcel_container_type  &
-                               , n_parcels              &
-                               , parcel_replace         &
+    use parcel_container, only : parcel_container_type                  &
+                               , n_parcels                              &
+                               , n_total_parcels                        &
+                               , parcel_replace                         &
                                , get_delx_across_periodic               &
                                , get_dely_across_periodic               &
                                , parcel_delete
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
-    use parcel_bc
+    use parcel_bc, only : apply_periodic_bc, apply_swap_periodicity
     use mpi_timer, only : start_timer, stop_timer
+    use mpi_communicator
+    use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
     integer :: merge_timer
@@ -37,6 +40,12 @@ module parcel_merge
             integer, allocatable, dimension(:)         :: inva
             integer                                    :: n_merge ! number of merges
             integer                                    :: n_invalid
+#ifdef ENABLE_VERBOSE
+            integer                                    :: orig_num
+
+            orig_num = n_total_parcels
+#endif
+
 
             ! find parcels to merge
             call find_nearest(isma, iclo, inva, n_merge, n_invalid)
@@ -44,14 +53,6 @@ module parcel_merge
             n_parcel_merges = n_parcel_merges + n_merge
 
             call start_timer(merge_timer)
-
-#ifdef ENABLE_VERBOSE
-            if (verbose) then
-                print "(a36, i0, a3, i0)",                               &
-                      "no. parcels before and after merge: ", n_parcels, &
-                      "...", n_parcels - n_merge
-            endif
-#endif
 
             if (n_merge > 0) then
                 ! merge small parcels into other parcels
@@ -68,6 +69,20 @@ module parcel_merge
                 deallocate(isma)
                 deallocate(iclo)
             endif
+
+            ! After this operation the root MPI process knows the new
+            ! number of parcels in the simulation
+            n_total_parcels = n_parcels
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+
+#ifdef ENABLE_VERBOSE
+            if (verbose .and. (comm%rank == comm%master)) then
+                print "(a36, i0, a3, i0)",                               &
+                      "no. parcels before and after merge: ", orig_num,  &
+                      "...", n_total_parcels
+            endif
+#endif
+            call apply_swap_periodicity
 
             call stop_timer(merge_timer)
 
@@ -104,10 +119,10 @@ module parcel_merge
             do m = 1, n_merge
                 ic = iclo(m) ! Index of closest other parcel
 
-                !-------------------------------------------------
+                ! This is different to the serial version: We must apply a periodic
+                ! shift as a small parcel might be across a periodic boundary.
                 is = isma(m)
                 call apply_periodic_bc(parcels%position(:, is))
-                !-------------------------------------------------
 
                 if (loca(ic) == 0) then
                     ! Start a new merged parcel, indexed l:
@@ -300,8 +315,6 @@ module parcel_merge
                     factor = (get_abc(V(l)) ** 2 / detB) ** f13
 
                     parcels%B(:, ic) = B(1:5, l) * factor
-
-                    call apply_periodic_bc(parcels%position(:, ic))
                 endif
             enddo
 
