@@ -56,7 +56,7 @@ module bndry_fluxes
             start = (/ 1,  1,  1 /)
 
             if (has_dataset(ncid, 'bflux')) then
-                allocate(bflux(ny, nx))
+                allocate(bflux(0:ny-1, 0:nx-1))
                 call read_netcdf_dataset(ncid, 'bflux', bflux, start, cnt)
             else
                 print *, "No buoyancy flux field 'bflux' found in file."
@@ -65,7 +65,7 @@ module bndry_fluxes
 
 #ifndef ENABLE_DRY_MODE
             if (has_dataset(ncid, 'hflux')) then
-                allocate(hflux(ny, nx))
+                allocate(hflux(0:ny-1, 0:nx-1))
                 call read_netcdf_dataset(ncid, 'hflux', hflux, start, cnt)
             else
                 print *, "No humidity flux field 'hflux' found in file."
@@ -94,21 +94,19 @@ module bndry_fluxes
         subroutine apply_bndry_fluxes(dt)
             double precision, intent(in)  :: dt
             double precision              :: xy(2), z, fac
-            integer                       :: n, i, j, l
+            integer                       :: n, l
 
             if (.not. l_enable_flux) then
                 return
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, i, j, l, is, js, weights, xy, z)
+            !$omp do private(n, l, is, js, weights, xy, z, fac)
             do n = 1, n_parcels
                 z = parcels%position(3, n)
                 if (z < zdepth) then
 
                     xy = parcels%position(1:2, n)
-
-                    call get_horizontal_index(xy, i, j)
 
                     call bilinear(xy, is, js, weights)
 
