@@ -35,12 +35,8 @@ module mpi_p2p
             integer,          intent(in)               :: dest
             integer,          intent(in)               :: tag
             type(MPI_Request)                          :: request
-            integer                                    :: lb, ub
 
-            lb = lbound(data)
-            ub = ubound(data)
-
-            call MPI_Isend(data(lb:ub),             &
+            call MPI_Isend(data(1:size(data)),      &
                            size(data),              &
                            MPI_DOUBLE_PRECISION,    &
                            dest,                    &
@@ -55,18 +51,14 @@ module mpi_p2p
             integer, intent(in)               :: dest
             integer, intent(in)               :: tag
             type(MPI_Request)                 :: request
-            integer                           :: lb, ub
 
-            lb = lbound(data)
-            ub = ubound(data)
-
-            call MPI_Isend(data(lb:ub), &
-                           size(data),  &
-                           MPI_INTEGER, &
-                           dest,        &
-                           tag,         &
-                           comm%world,  &
-                           request,     &
+            call MPI_Isend(data(1:size(data)),  &
+                           size(data),          &
+                           MPI_INTEGER,         &
+                           dest,                &
+                           tag,                 &
+                           comm%world,          &
+                           request,             &
                            comm%err)
         end subroutine mpi_integer_isend
 
@@ -76,12 +68,8 @@ module mpi_p2p
             integer,          intent(in)                :: source
             integer,          intent(in)                :: tag
             type(MPI_Request)                           :: request
-            integer                                    :: lb, ub
 
-            lb = lbound(data)
-            ub = ubound(data)
-
-            call MPI_Irecv(data(lb:ub),             &
+            call MPI_Irecv(data(1:size(data)),      &
                            size(data),              &
                            MPI_DOUBLE_PRECISION,    &
                            source,                  &
@@ -96,18 +84,14 @@ module mpi_p2p
             integer, intent(in)                :: source
             integer, intent(in)                :: tag
             type(MPI_Request)                  :: request
-            integer                           :: lb, ub
 
-            lb = lbound(data)
-            ub = ubound(data)
-
-            call MPI_Irecv(data(lb:ub), &
-                           size(data),  &
-                           MPI_INTEGER, &
-                           source,      &
-                           tag,         &
-                           comm%world,  &
-                           request,     &
+            call MPI_Irecv(data(1:size(data)),  &
+                           size(data),          &
+                           MPI_INTEGER,         &
+                           source,              &
+                           tag,                 &
+                           comm%world,          &
+                           request,             &
                            comm%err)
         end subroutine mpi_integer_irecv
 
@@ -119,12 +103,8 @@ module mpi_p2p
             double precision, intent(in) :: data(..)
             integer,          intent(in) :: dest
             integer,          intent(in) :: tag
-            integer                      :: lb, ub
 
-            lb = lbound(data)
-            ub = ubound(data)
-
-            call MPI_Send(data(lb:ub),          &
+            call MPI_Send(data(1:size(data)),   &
                           size(data),           &
                           MPI_DOUBLE_PRECISION, &
                           dest,                 &
@@ -137,17 +117,13 @@ module mpi_p2p
             integer, intent(in) :: data(..)
             integer, intent(in) :: dest
             integer, intent(in) :: tag
-            integer             :: lb, ub
 
-            lb = lbound(data)
-            ub = ubound(data)
-
-            call MPI_Send(data(lb:ub),  &
-                          size(data),   &
-                          MPI_INTEGER,  &
-                          dest,         &
-                          tag,          &
-                          comm%world,   &
+            call MPI_Send(data(1:size(data)),   &
+                          size(data),           &
+                          MPI_INTEGER,          &
+                          dest,                 &
+                          tag,                  &
+                          comm%world,           &
                           comm%err)
         end subroutine mpi_integer_send
 
@@ -157,12 +133,8 @@ module mpi_p2p
             integer,          intent(in)  :: source
             integer,          intent(in)  :: tag
             type(MPI_Status)              :: status
-            integer                       :: lb, ub
 
-            lb = lbound(data)
-            ub = ubound(data)
-
-            call MPI_Recv(data(lb:ub),          &
+            call MPI_Recv(data(1:size(data)),   &
                           size(data),           &
                           MPI_DOUBLE_PRECISION, &
                           source,               &
@@ -177,18 +149,14 @@ module mpi_p2p
             integer, intent(in)  :: source
             integer, intent(in)  :: tag
             type(MPI_Status)     :: status
-            integer              :: lb, ub
 
-            lb = lbound(data)
-            ub = ubound(data)
-
-            call MPI_Recv(data(lb:ub),  &
-                          size(data),   &
-                          MPI_INTEGER,  &
-                          source,       &
-                          tag,          &
-                          comm%world,   &
-                          status,       &
+            call MPI_Recv(data(1:size(data)),   &
+                          size(data),           &
+                          MPI_INTEGER,          &
+                          source,               &
+                          tag,                  &
+                          comm%world,           &
+                          status,               &
                           comm%err)
         end subroutine mpi_integer_recv
 
