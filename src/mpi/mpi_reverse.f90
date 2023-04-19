@@ -287,7 +287,7 @@ module mpi_reverse
             double precision, intent(out) :: gs(box%lo(3):box%hi(3),   & ! 0:nz
                                                 box%lo(2):box%hi(2),   &
                                                 box%hlo(1):box%hhi(1))
-            integer                       :: slb, sub, rlb, rub
+            integer                       :: send_size, recv_size
 
             if (.not. l_initialised_x) then
                 call initialise_reversing(x_reo, x_comm, 1)
@@ -298,16 +298,14 @@ module mpi_reverse
 
             call copy_to_buffer_in_x(gs)
 
-            slb = lbound(x_reo%send_buffer)
-            sub = ubound(x_reo%send_buffer)
-            rlb = lbound(x_reo%recv_buffer)
-            rub = ubound(x_reo%recv_buffer)
+            send_size = size(x_reo%send_buffer)
+            recv_size = size(x_reo%recv_buffer)
 
-            call MPI_Alltoallv(x_reo%send_buffer(slb:sub),              &
+            call MPI_Alltoallv(x_reo%send_buffer(1:send_size),          &
                                x_reo%send_recv_count(1:x_comm%size),    &
                                x_reo%send_offset(1:x_comm%size),        &
                                MPI_DOUBLE_PRECISION,                    &
-                               x_reo%recv_buffer(rlb:rub),              &
+                               x_reo%recv_buffer(1:recv_size),          &
                                x_reo%send_recv_count(1:x_comm%size),    &
                                x_reo%recv_offset(1:x_comm%size),        &
                                MPI_DOUBLE_PRECISION,                    &
@@ -329,7 +327,7 @@ module mpi_reverse
             double precision, intent(out) :: gs(box%lo(3):box%hi(3),   & ! 0:nz
                                                 box%hlo(2):box%hhi(2), &
                                                 box%lo(1):box%hi(1))
-            integer                       :: slb, sub, rlb, rub
+            integer                       :: send_size, recv_size
 
             if (.not. l_initialised_y) then
                 call initialise_reversing(y_reo, y_comm, 2)
@@ -340,16 +338,14 @@ module mpi_reverse
 
             call copy_to_buffer_in_y(gs)
 
-            slb = lbound(y_reo%send_buffer)
-            sub = ubound(y_reo%send_buffer)
-            rlb = lbound(y_reo%recv_buffer)
-            rub = ubound(y_reo%recv_buffer)
+            send_size = size(y_reo%send_buffer)
+            recv_size = size(y_reo%recv_buffer)
 
-            call MPI_Alltoallv(y_reo%send_buffer(slb:sub),              &
+            call MPI_Alltoallv(y_reo%send_buffer(1:send_size),          &
                                y_reo%send_recv_count(1:y_comm%size),    &
                                y_reo%send_offset(1:y_comm%size),        &
                                MPI_DOUBLE_PRECISION,                    &
-                               y_reo%recv_buffer(rlb:rub),              &
+                               y_reo%recv_buffer(1:recv_size),          &
                                y_reo%send_recv_count(1:y_comm%size),    &
                                y_reo%recv_offset(1:y_comm%size),        &
                                MPI_DOUBLE_PRECISION,                    &
@@ -439,32 +435,32 @@ module mpi_reverse
 
             call mpi_check_for_error("in MPI_Recv of mpi_reverse::communicate_halo.")
 
-            lb = lbound(reo%hi_buffer)
-            ub = ubound(reo%hi_buffer)
+            lb(1:2) = lbound(reo%hi_buffer)
+            ub(1:2) = ubound(reo%hi_buffer)
 
             ! send east buffer to west halo
-            call MPI_Isend(reo%hi_buffer(lb(1):ub(1), lb(2):ub(2), lb(3):ub(3)),    &
-                           size(reo%hi_buffer),                                     &
-                           MPI_DOUBLE_PRECISION,                                    &
-                           reo%hi_rank,                                             &
-                           REVERSE_HI_TAG,                                          &
-                           sub_comm%comm,                                           &
-                           request(2),                                              &
+            call MPI_Isend(reo%hi_buffer(lb(1):ub(1), lb(2):ub(2)), &
+                           size(reo%hi_buffer),                     &
+                           MPI_DOUBLE_PRECISION,                    &
+                           reo%hi_rank,                             &
+                           REVERSE_HI_TAG,                          &
+                           sub_comm%comm,                           &
+                           requests(2),                             &
                            sub_comm%err)
 
             call mpi_check_for_error("in MPI_Isend of mpi_reverse::communicate_halo.")
 
-            lb = lbound(reo%lo_halo_buffer)
-            ub = ubound(reo%lo_halo_buffer)
+            lb(1:2) = lbound(reo%lo_halo_buffer)
+            ub(1:2) = ubound(reo%lo_halo_buffer)
 
             ! receive east buffer into west halo (right to left)
-            call MPI_Recv(reo%lo_halo_buffer(lb(1):ub(1), lb(2):ub(2), lb(3):ub(3)),    &
-                          size(reo%lo_halo_buffer),                                     &
-                          MPI_DOUBLE_PRECISION,                                         &
-                          reo%lo_rank,                                                  &
-                          REVERSE_HI_TAG,                                               &
-                          sub_comm%comm,                                                &
-                          MPI_STATUS_IGNORE,                                            &
+            call MPI_Recv(reo%lo_halo_buffer(lb(1):ub(1), lb(2):ub(2)), &
+                          size(reo%lo_halo_buffer),                     &
+                          MPI_DOUBLE_PRECISION,                         &
+                          reo%lo_rank,                                  &
+                          REVERSE_HI_TAG,                               &
+                          sub_comm%comm,                                &
+                          MPI_STATUS_IGNORE,                            &
                           sub_comm%err)
 
             call mpi_check_for_error("in MPI_Recv of mpi_reverse::communicate_halo.")

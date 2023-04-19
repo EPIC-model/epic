@@ -284,15 +284,14 @@ contains
         double precision,           intent(out) :: target_data(:, :, :)
         double precision, allocatable, save     :: real_temp(:, :, :)
         double precision, allocatable, save     :: real_temp2(:)
-        integer                                 :: lb, ub
+        integer                                 :: buf_size
+
+        buf_size = product(transposition_description%pencil_size)
 
         !$OMP SINGLE
         allocate(real_temp(size(source_data, 3), size(source_data, 2), size(source_data, 1)))
-        allocate(real_temp2(product(transposition_description%pencil_size)))
+        allocate(real_temp2(buf_size))
         !$OMP END SINGLE
-
-        lb = lbound(real_temp2)
-        ub = ubound(real_temp2)
 
         ! --> realt_temp is x, y, z (c, b, a)
         call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
@@ -304,7 +303,7 @@ contains
                            transposition_description%send_sizes,    &
                            transposition_description%send_offsets,  &
                            MPI_DOUBLE_PRECISION,                    &
-                           real_temp2(lb:ub),                       &
+                           real_temp2(1:buf_size),                  &
                            transposition_description%recv_sizes,    &
                            transposition_description%recv_offsets,  &
                            MPI_DOUBLE_PRECISION,                    &
