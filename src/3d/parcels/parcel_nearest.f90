@@ -674,9 +674,9 @@ module parcel_nearest
                 ! reset relevant properties for candidate mergers
 
                 ! synchronize the private and public window copies
-                call MPI_Win_sync(win_merged, comm%err)
-                call MPI_Win_sync(win_avail, comm%err)
-                call MPI_Win_sync(win_leaf, comm%err)
+                !call MPI_Win_sync(win_merged, comm%err)
+                !call MPI_Win_sync(win_avail, comm%err)
+                !call MPI_Win_sync(win_leaf, comm%err)
 
                 do m = 1, n_local_small
                     is = isma(m)
@@ -721,7 +721,7 @@ module parcel_nearest
                 call MPI_Barrier(comm%world, comm%err)
 
                 ! synchronize the private and public window copies
-                call MPI_Win_sync(win_avail, comm%err)
+                !call MPI_Win_sync(win_avail, comm%err)
 
                 ! determine leaf parcels
                 do m = 1, n_local_small
@@ -756,7 +756,7 @@ module parcel_nearest
                 call MPI_Barrier(comm%world, comm%err)
 
                 ! synchronize the private and public window copies
-                call MPI_Win_sync(win_leaf, comm%err)
+                !call MPI_Win_sync(win_leaf, comm%err)
 
                 ! filter out parcels that are "unavailable" for merging
                 do m = 1, n_local_small
@@ -793,7 +793,7 @@ module parcel_nearest
                 call MPI_Barrier(comm%world, comm%err)
 
                 ! synchronize the private and public window copies
-                call MPI_Win_sync(win_avail, comm%err)
+                !call MPI_Win_sync(win_avail, comm%err)
 
                 ! identify mergers in this iteration
                 do m = 1, n_local_small
@@ -876,9 +876,9 @@ module parcel_nearest
             call MPI_Barrier(comm%world, comm%err)
 
             ! synchronize the private and public window copies
-            call MPI_Win_sync(win_merged, comm%err)
-            call MPI_Win_sync(win_avail, comm%err)
-            call MPI_Win_sync(win_leaf, comm%err)
+            !call MPI_Win_sync(win_merged, comm%err)
+            !call MPI_Win_sync(win_avail, comm%err)
+            !call MPI_Win_sync(win_leaf, comm%err)
 
 
             ! Second stage, related to dual links
@@ -918,7 +918,7 @@ module parcel_nearest
             call MPI_Barrier(comm%world, comm%err)
 
             ! synchronize the private and public window copies
-            call MPI_Win_sync(win_avail, comm%err)
+            !call MPI_Win_sync(win_avail, comm%err)
 
             ! Second stage
             do m = 1, n_local_small
@@ -1016,7 +1016,7 @@ module parcel_nearest
             call MPI_Barrier(comm%world, comm%err)
 
             ! synchronize the private and public window copies
-            call MPI_Win_sync(win_avail, comm%err)
+            !call MPI_Win_sync(win_avail, comm%err)
 
 
             !------------------------------------------------------
@@ -1062,7 +1062,7 @@ module parcel_nearest
             call MPI_Barrier(comm%world, comm%err)
 
             ! synchronize the private and public window copies
-            call MPI_Win_sync(win_avail, comm%err)
+            !call MPI_Win_sync(win_avail, comm%err)
 
             j = 0
             do m = 1, n_local_small
@@ -1432,7 +1432,7 @@ module parcel_nearest
 
             call MPI_Win_unlock_all(win_neighbour, comm%err)
 
-            call MPI_Win_sync(win_neighbour, comm%err)
+            !call MPI_Win_sync(win_neighbour, comm%err)
 
             call MPI_Win_free(win_neighbour, comm%err)
 
