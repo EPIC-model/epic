@@ -295,7 +295,7 @@ module parcel_netcdf
             sendbuf(comm%rank+1:comm%size) = n_parcels
             sendbuf(comm%rank+1) = 0
 
-            call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, comm%world, comm%err)
+            call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INTEGER, MPI_SUM, comm%world, comm%err)
 
             call mpi_check_for_error("in MPI_Reduce_scatter of parcel_netcdf::write_netcdf_parcels.")
 
@@ -432,7 +432,7 @@ module parcel_netcdf
 
             ! verify result
             n_total = n_parcels
-            call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INT, MPI_SUM, comm%world, comm%err)
+            call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INTEGER, MPI_SUM, comm%world, comm%err)
             call mpi_check_for_error("in MPI_Allreduce of parcel_netcdf::read_netcdf_parcels.")
             if (n_total_parcels .ne. n_total) then
                 call mpi_exit_on_error("Local number of parcels does not sum up to total number!")

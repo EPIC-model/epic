@@ -75,18 +75,22 @@ contains
             !   INTEGER, OPTIONAL, INTENT(OUT) :: ierror
             call mpi_cart_sub(comm%cart, (/.false., .true./), dim_y_comm, comm%err)
             call mpi_cart_sub(comm%cart, (/.true., .false./), dim_x_comm, comm%err)
-            call mpi_allgather(box%size(I_Y), 1, MPI_INT, y_distinct_sizes, 1, MPI_INT, dim_y_comm, comm%err)
-            call mpi_allgather(box%size(I_X), 1, MPI_INT, x_distinct_sizes, 1, MPI_INT, dim_x_comm, comm%err)
+            call mpi_allgather(box%size(I_Y), 1, MPI_INTEGER, y_distinct_sizes, 1, &
+                               MPI_INTEGER, dim_y_comm, comm%err)
+            call mpi_allgather(box%size(I_X), 1, MPI_INTEGER, x_distinct_sizes, 1, &
+                               MPI_INTEGER, dim_x_comm, comm%err)
         else if (layout%l_parallel(I_Y)) then
             dim_y_comm = comm%world
             dim_x_comm = MPI_COMM_SELF
-            call mpi_allgather(box%size(I_Y), 1, MPI_INT, y_distinct_sizes, 1, MPI_INT, dim_y_comm, comm%err)
+            call mpi_allgather(box%size(I_Y), 1, MPI_INTEGER, y_distinct_sizes, 1, &
+                               MPI_INTEGER, dim_y_comm, comm%err)
             x_distinct_sizes = box%size(I_X)
         else if (layout%l_parallel(I_X)) then
             dim_y_comm = MPI_COMM_SELF
             dim_x_comm = comm%world
             y_distinct_sizes = box%size(I_Y)
-            call mpi_allgather(box%size(I_X), 1, MPI_INT, x_distinct_sizes, 1, MPI_INT, dim_x_comm, comm%err)
+            call mpi_allgather(box%size(I_X), 1, MPI_INTEGER, x_distinct_sizes, 1, &
+                               MPI_INTEGER, dim_x_comm, comm%err)
         else
             dim_y_comm = MPI_COMM_SELF
             dim_x_comm = MPI_COMM_SELF
