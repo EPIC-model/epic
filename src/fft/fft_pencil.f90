@@ -73,24 +73,47 @@ contains
             !   LOGICAL, INTENT(IN) :: remain_dims(*)
             !   TYPE(MPI_Comm), INTENT(OUT) :: newcomm
             !   INTEGER, OPTIONAL, INTENT(OUT) :: ierror
-            call mpi_cart_sub(comm%cart, (/.false., .true./), dim_y_comm, comm%err)
-            call mpi_cart_sub(comm%cart, (/.true., .false./), dim_x_comm, comm%err)
-            call mpi_allgather(box%size(I_Y), 1, MPI_INTEGER, y_distinct_sizes, 1, &
-                               MPI_INTEGER, dim_y_comm, comm%err)
-            call mpi_allgather(box%size(I_X), 1, MPI_INTEGER, x_distinct_sizes, 1, &
-                               MPI_INTEGER, dim_x_comm, comm%err)
+            call MPI_Cart_sub(comm%cart, (/.false., .true./), dim_y_comm, comm%err)
+            call MPI_Cart_sub(comm%cart, (/.true., .false./), dim_x_comm, comm%err)
+            call MPI_Allgather(box%size(I_Y),       &
+                               1, MPI_INTEGER,      &
+                               y_distinct_sizes,    &
+                               1,                   &
+                               MPI_INTEGER,         &
+                               dim_y_comm,          &
+                               comm%err)
+            call MPI_Allgather(box%size(I_X),       &
+                               1,                   &
+                               MPI_INTEGER,         &
+                               x_distinct_sizes,    &
+                               1,                   &
+                               MPI_INTEGER,         &
+                               dim_x_comm,          &
+                               comm%err)
         else if (layout%l_parallel(I_Y)) then
             dim_y_comm = comm%world
             dim_x_comm = MPI_COMM_SELF
-            call mpi_allgather(box%size(I_Y), 1, MPI_INTEGER, y_distinct_sizes, 1, &
-                               MPI_INTEGER, dim_y_comm, comm%err)
+            call MPI_Allgather(box%size(I_Y),       &
+                               1,                   &
+                               MPI_INTEGER,         &
+                               y_distinct_sizes,    &
+                               1,                   &
+                               MPI_INTEGER,         &
+                               dim_y_comm,          &
+                               comm%err)
             x_distinct_sizes = box%size(I_X)
         else if (layout%l_parallel(I_X)) then
             dim_y_comm = MPI_COMM_SELF
             dim_x_comm = comm%world
             y_distinct_sizes = box%size(I_Y)
-            call mpi_allgather(box%size(I_X), 1, MPI_INTEGER, x_distinct_sizes, 1, &
-                               MPI_INTEGER, dim_x_comm, comm%err)
+            call MPI_Allgather(box%size(I_X),       &
+                               1,                   &
+                               MPI_INTEGER,         &
+                               x_distinct_sizes,    &
+                               1,                   &
+                               MPI_INTEGER,         &
+                               dim_x_comm,          &
+                               comm%err)
         else
             dim_y_comm = MPI_COMM_SELF
             dim_x_comm = MPI_COMM_SELF
@@ -259,23 +282,29 @@ contains
         type(MPI_Comm),             intent(in)  :: communicator
         double precision,           intent(in)  :: source_data(:, :, :)
         double precision,           intent(out) :: target_data(:, :, :)
-        double precision, allocatable, save :: real_temp(:, :, :)
-        double precision, allocatable, save :: real_temp2(:)
+        double precision, allocatable, save     :: real_temp(:, :, :)
+        double precision, allocatable, save     :: real_temp2(:)
+        integer                                 :: lb, ub
 
         !$OMP SINGLE
-        allocate(real_temp(size(source_data,3), size(source_data,2), size(source_data,1)))
+        allocate(real_temp(size(source_data, 3), size(source_data, 2), size(source_data, 1)))
         allocate(real_temp2(product(transposition_description%pencil_size)))
         !$OMP END SINGLE
+
+        lb = lbound(real_temp2)
+        ub = ubound(real_temp2)
 
         ! --> realt_temp is x, y, z (c, b, a)
         call rearrange_data_for_sending(real_source=source_data, real_target=real_temp)
 
         !$OMP SINGLE
-        call MPI_Alltoallv(real_temp,                               &
+        call MPI_Alltoallv(real_temp(1:size(source_data, 3),        &
+                                     1:size(source_data, 2),        &
+                                     1:size(source_data, 1)),       &
                            transposition_description%send_sizes,    &
                            transposition_description%send_offsets,  &
                            MPI_DOUBLE_PRECISION,                    &
-                           real_temp2,                              &
+                           real_temp2(lb:ub),                       &
                            transposition_description%recv_sizes,    &
                            transposition_description%recv_offsets,  &
                            MPI_DOUBLE_PRECISION,                    &

@@ -262,17 +262,33 @@ module mpi_timer
 
         function get_statistics(op) result(buffer)
             type(MPI_Op), intent(in) :: op
-            double precision :: buffer(size(timings))
+            double precision         :: buffer(size(timings))
+            integer                  :: lb, ub
 
             buffer = timings(:)%wall_time
 
+            lb = lbound(buffer)
+            ub = ubound(buffer)
+
             if (comm%rank == comm%master) then
-                call MPI_Reduce(MPI_IN_PLACE, buffer, size(timings), MPI_DOUBLE_PRECISION, &
-                                op, comm%master, comm%world, comm%err)
+                call MPI_Reduce(MPI_IN_PLACE,           &
+                                buffer(lb:ub),          &
+                                size(timings),          &
+                                MPI_DOUBLE_PRECISION,   &
+                                op,                     &
+                                comm%master,            &
+                                comm%world,             &
+                                comm%err)
 
             else
-                call MPI_Reduce(buffer, buffer, size(timings), MPI_DOUBLE_PRECISION, &
-                                op, comm%master, comm%world, comm%err)
+                call MPI_Reduce(buffer(lb:ub),          &
+                                buffer(lb:ub),          &
+                                size(timings),          &
+                                MPI_DOUBLE_PRECISION,   &
+                                op,                     &
+                                comm%master,            &
+                                comm%world,             &
+                                comm%err)
             endif
 
         end function get_statistics

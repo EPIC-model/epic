@@ -143,7 +143,7 @@ module parcel_mpi
                     call parcel_pack(pid, n_parcel_sends(n), send_buf)
                 endif
 
-                call MPI_Isend(send_buf,                &
+                call MPI_Isend(send_buf(1:send_size),   &
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
@@ -162,7 +162,7 @@ module parcel_mpi
 
                 allocate(recv_buf(recv_size))
 
-                call MPI_Recv(recv_buf,                 &
+                call MPI_Recv(recv_buf(1:recv_size),    &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               source,                   &

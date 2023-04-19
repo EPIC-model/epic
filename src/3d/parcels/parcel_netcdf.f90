@@ -295,7 +295,13 @@ module parcel_netcdf
             sendbuf(comm%rank+1:comm%size) = n_parcels
             sendbuf(comm%rank+1) = 0
 
-            call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INTEGER, MPI_SUM, comm%world, comm%err)
+            call MPI_Reduce_scatter(sendbuf(1:comm%size),   &
+                                    start_index,            &
+                                    recvcounts,             &
+                                    MPI_INTEGER,            &
+                                    MPI_SUM,                &
+                                    comm%world,             &
+                                    comm%err)
 
             call mpi_check_for_error("in MPI_Reduce_scatter of parcel_netcdf::write_netcdf_parcels.")
 

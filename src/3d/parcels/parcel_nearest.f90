@@ -114,26 +114,26 @@ module parcel_nearest
                 !     TYPE(MPI_Comm), INTENT(IN) :: comm
                 !     TYPE(MPI_Win), INTENT(OUT) :: win
                 !     INTEGER, OPTIONAL, INTENT(OUT) :: ierror
-                call MPI_Win_create(l_leaf,         &
-                                    win_size,       &
-                                    disp_unit,      &
-                                    MPI_INFO_NULL,  &
-                                    comm%world,     &
-                                    win_leaf,       &
+                call MPI_Win_create(l_leaf(1:max_num_parcels),  &
+                                    win_size,                   &
+                                    disp_unit,                  &
+                                    MPI_INFO_NULL,              &
+                                    comm%world,                 &
+                                    win_leaf,                   &
                                     comm%err)
-                call MPI_Win_create(l_available,    &
-                                    win_size,       &
-                                    disp_unit,      &
-                                    MPI_INFO_NULL,  &
-                                    comm%world,     &
-                                    win_avail,      &
+                call MPI_Win_create(l_available(1:max_num_parcels), &
+                                    win_size,                       &
+                                    disp_unit,                      &
+                                    MPI_INFO_NULL,                  &
+                                    comm%world,                     &
+                                    win_avail,                      &
                                     comm%err)
-                call MPI_Win_create(l_merged,       &
-                                    win_size,       &
-                                    disp_unit,      &
-                                    MPI_INFO_NULL,  &
-                                    comm%world,     &
-                                    win_merged,     &
+                call MPI_Win_create(l_merged(1:max_num_parcels),    &
+                                    win_size,                       &
+                                    disp_unit,                      &
+                                    MPI_INFO_NULL,                  &
+                                    comm%world,                     &
+                                    win_merged,                     &
                                     comm%err)
             endif
         end subroutine nearest_allocate
@@ -549,6 +549,7 @@ module parcel_nearest
             integer                                 :: recv_size, send_size, buf_sizes(8)
             integer                                 :: tag, source, recv_count, n, l, i, m, k, j
             integer, parameter                      :: n_entries = 3
+            integer                                 :: lb, ub
 
 
             buf_sizes = n_neighbour_small * n_entries
@@ -564,6 +565,9 @@ module parcel_nearest
                 send_size = n_neighbour_small(n) * n_entries
 
                 call get_mpi_buffer(n, send_buf)
+
+                lb = lbound(send_buf)
+                ub = ubound(send_buf)
 
                 do l = 1, n_neighbour_small(n)
                     i = 1 + (l-1) * n_entries
@@ -582,7 +586,7 @@ module parcel_nearest
 
                 tag = small_recv_order(n)
 
-                call MPI_Isend(send_buf,                &
+                call MPI_Isend(send_buf(lb:ub),         &
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(tag)%rank,    &
@@ -609,7 +613,7 @@ module parcel_nearest
 
                 allocate(recv_buf(recv_size))
 
-                call MPI_Recv(recv_buf,                 &
+                call MPI_Recv(recv_buf(1:recv_size),    &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               source,                   &
@@ -1178,6 +1182,7 @@ module parcel_nearest
             integer                                 :: tag, source, recv_count, n, i ,j, l, m, pid, k
             integer, parameter                      :: n_entries = 5
             integer, allocatable                    :: rtmp(:), pidtmp(:), midtmp(:)
+            integer                                 :: lb, ub
             ! rtmp: MPI rank remote small parcel belongs to
             ! pidtmp: parcel index of remote parcel (on the owning rank)
             ! midtmp: m index of remote parcel (on the owning rank)
@@ -1198,6 +1203,9 @@ module parcel_nearest
                 ! per small parcel: 1. local parcel index; 2. merge index *m*
                 call get_parcel_buffer_ptr(n, send_ptr, send_buf)
 
+                lb = lbound(send_buf)
+                ub = ubound(send_buf)
+
                 send_size = n_parcel_sends(n) * n_entries
 
                 if (n_parcel_sends(n) > 0) then
@@ -1212,7 +1220,7 @@ module parcel_nearest
                     enddo
                 endif
 
-                call MPI_Isend(send_buf,                &
+                call MPI_Isend(send_buf(lb:ub),         &
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
@@ -1232,7 +1240,7 @@ module parcel_nearest
 
                 allocate(recv_buf(recv_size))
 
-                call MPI_Recv(recv_buf,                 &
+                call MPI_Recv(recv_buf(1:recv_size),    &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               source,                   &
@@ -1338,7 +1346,7 @@ module parcel_nearest
             integer, asynchronous                      :: n_parcel_recvs(8)
             type(MPI_Win)                              :: win_neighbour
             integer(KIND=MPI_ADDRESS_KIND)             :: win_size, offset
-            integer                                    :: n_registered(8)
+            integer                                    :: n_registered(8), lb, ub
 
             !------------------------------------------------------------------
             ! Figure out how many parcels we send:
@@ -1442,9 +1450,12 @@ module parcel_nearest
             do n = 1, 8
                 call get_mpi_buffer(n, send_buf)
 
+                lb = lbound(send_buf)
+                ub = ubound(send_buf)
+
                 send_size = n_parcel_sends(n) * n_entries
 
-                call MPI_Isend(send_buf,                &
+                call MPI_Isend(send_buf(lb:ub),         &
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
@@ -1463,7 +1474,7 @@ module parcel_nearest
 
                 allocate(recv_buf(recv_size))
 
-                call MPI_Recv(recv_buf,                 &
+                call MPI_Recv(recv_buf(1:recv_size),    &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               source,                   &

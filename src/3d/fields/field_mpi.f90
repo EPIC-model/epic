@@ -102,7 +102,7 @@ module field_mpi
             double precision, dimension(:), pointer :: send_buf, recv_buf
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: statuses(8)
-            integer                                 :: tag, n
+            integer                                 :: tag, n, lb, ub
 
             do n = 1, 8
 
@@ -110,7 +110,10 @@ module field_mpi
 
                 call get_interior_buffer_ptr(tag, recv_buf)
 
-                call MPI_Irecv(recv_buf,                &
+                lb = lbound(recv_buf)
+                ub = ubound(recv_buf)
+
+                call MPI_Irecv(recv_buf(lb:ub),         &
                                size(recv_buf),          &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(tag)%rank,    &
@@ -126,7 +129,10 @@ module field_mpi
 
                 call get_halo_buffer_ptr(n, send_buf)
 
-                call MPI_Send(send_buf,                &
+                lb = lbound(send_buf)
+                ub = ubound(send_buf)
+
+                call MPI_Send(send_buf(lb:ub),         &
                               size(send_buf),          &
                               MPI_DOUBLE_PRECISION,    &
                               neighbours(n)%rank,      &
@@ -152,7 +158,7 @@ module field_mpi
             double precision, dimension(:), pointer :: send_buf, recv_buf
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: statuses(8)
-            integer                                 :: tag, n
+            integer                                 :: tag, n, lb, ub
 
             do n = 1, 8
 
@@ -160,7 +166,10 @@ module field_mpi
 
                 call get_halo_buffer_ptr(tag, recv_buf)
 
-                call MPI_Irecv(recv_buf,                &
+                lb = lbound(recv_buf)
+                ub = ubound(recv_buf)
+
+                call MPI_Irecv(recv_buf(lb:ub),         &
                                size(recv_buf),          &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(tag)%rank,    &
@@ -176,7 +185,10 @@ module field_mpi
             do n = 1, 8
                 call get_interior_buffer_ptr(n, send_buf)
 
-                call MPI_Send(send_buf,                &
+                lb = lbound(send_buf)
+                ub = ubound(send_buf)
+
+                call MPI_Send(send_buf(lb:ub),         &
                               size(send_buf),          &
                               MPI_DOUBLE_PRECISION,    &
                               neighbours(n)%rank,      &

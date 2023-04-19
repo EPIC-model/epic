@@ -60,8 +60,13 @@ module parcel_correction
 
             buf(1) = vsum
             buf(2:4) = vor_bar
-            call MPI_Allreduce(MPI_IN_PLACE, buf, 4, MPI_DOUBLE_PRECISION, &
-                               MPI_SUM, comm%world, comm%err)
+            call MPI_Allreduce(MPI_IN_PLACE,            &
+                               buf(1:4),                &
+                               4,                       &
+                               MPI_DOUBLE_PRECISION,    &
+                               MPI_SUM,                 &
+                               comm%world,              &
+                               comm%err)
 
             call mpi_check_for_error("in MPI_Allreduce of parcel_correction::init_parcel_correction.")
 
@@ -99,8 +104,13 @@ module parcel_correction
 
             buf(1) = vsum
             buf(2:4) = dvor
-            call MPI_Allreduce(MPI_IN_PLACE, buf, 4, MPI_DOUBLE_PRECISION, &
-                               MPI_SUM, comm%world, comm%err)
+            call MPI_Allreduce(MPI_IN_PLACE,            &
+                               buf(1:4),                &
+                               4,                       &
+                               MPI_DOUBLE_PRECISION,    &
+                               MPI_SUM,                 &
+                               comm%world,              &
+                               comm%err)
 
             call mpi_check_for_error("in MPI_Allreduce of parcel_correction::apply_vortcor.")
             vsum = buf(1)
