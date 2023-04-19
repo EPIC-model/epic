@@ -407,19 +407,19 @@ module mpi_reverse
             type(sub_communicator), intent(inout) :: sub_comm
             type(MPI_Request)                     :: requests(2)
             type(MPI_Status)                      :: send_statuses(2)
-            integer                               :: lb, ub
+            integer                               :: lb(3), ub(3)
 
             lb = lbound(reo%lo_buffer)
             ub = ubound(reo%lo_buffer)
 
             ! send west buffer to east halo
-            call MPI_Isend(reo%lo_buffer(lb:ub),    &
-                           size(reo%lo_buffer),     &
-                           MPI_DOUBLE_PRECISION,    &
-                           reo%lo_rank,             &
-                           REVERSE_LO_TAG,          &
-                           sub_comm%comm,           &
-                           requests(1),             &
+            call MPI_Isend(reo%lo_buffer(lb(1):ub(1), lb(2):ub(2), lb(3):ub(3)),    &
+                           size(reo%lo_buffer),                                     &
+                           MPI_DOUBLE_PRECISION,                                    &
+                           reo%lo_rank,                                             &
+                           REVERSE_LO_TAG,                                          &
+                           sub_comm%comm,                                           &
+                           requests(1),                                             &
                            sub_comm%err)
 
             call mpi_check_for_error("in MPI_Isend of mpi_reverse::communicate_halo.")
@@ -428,13 +428,13 @@ module mpi_reverse
             ub = ubound(reo%hi_halo_buffer)
 
             ! receive west buffer to east halo (left to right)
-            call MPI_Recv(reo%hi_halo_buffer(lb:ub),    &
-                          size(reo%hi_halo_buffer),     &
-                          MPI_DOUBLE_PRECISION,         &
-                          reo%hi_rank,                  &
-                          REVERSE_LO_TAG,               &
-                          sub_comm%comm,                &
-                          MPI_STATUS_IGNORE,            &
+            call MPI_Recv(reo%hi_halo_buffer(lb(1):ub(1), lb(2):ub(2), lb(3):ub(3)),    &
+                          size(reo%hi_halo_buffer),                                     &
+                          MPI_DOUBLE_PRECISION,                                         &
+                          reo%hi_rank,                                                  &
+                          REVERSE_LO_TAG,                                               &
+                          sub_comm%comm,                                                &
+                          MPI_STATUS_IGNORE,                                            &
                           sub_comm%err)
 
             call mpi_check_for_error("in MPI_Recv of mpi_reverse::communicate_halo.")
@@ -443,13 +443,13 @@ module mpi_reverse
             ub = ubound(reo%hi_buffer)
 
             ! send east buffer to west halo
-            call MPI_Isend(reo%hi_buffer(lb:ub),    &
-                           size(reo%hi_buffer),     &
-                           MPI_DOUBLE_PRECISION,    &
-                           reo%hi_rank,             &
-                           REVERSE_HI_TAG,          &
-                           sub_comm%comm,           &
-                           request(2),              &
+            call MPI_Isend(reo%hi_buffer(lb(1):ub(1), lb(2):ub(2), lb(3):ub(3)),    &
+                           size(reo%hi_buffer),                                     &
+                           MPI_DOUBLE_PRECISION,                                    &
+                           reo%hi_rank,                                             &
+                           REVERSE_HI_TAG,                                          &
+                           sub_comm%comm,                                           &
+                           request(2),                                              &
                            sub_comm%err)
 
             call mpi_check_for_error("in MPI_Isend of mpi_reverse::communicate_halo.")
@@ -458,13 +458,13 @@ module mpi_reverse
             ub = ubound(reo%lo_halo_buffer)
 
             ! receive east buffer into west halo (right to left)
-            call MPI_Recv(reo%lo_halo_buffer,       &
-                          size(reo%lo_halo_buffer), &
-                          MPI_DOUBLE_PRECISION,     &
-                          reo%lo_rank,              &
-                          REVERSE_HI_TAG,           &
-                          sub_comm%comm,            &
-                          MPI_STATUS_IGNORE,        &
+            call MPI_Recv(reo%lo_halo_buffer(lb(1):ub(1), lb(2):ub(2), lb(3):ub(3)),    &
+                          size(reo%lo_halo_buffer),                                     &
+                          MPI_DOUBLE_PRECISION,                                         &
+                          reo%lo_rank,                                                  &
+                          REVERSE_HI_TAG,                                               &
+                          sub_comm%comm,                                                &
+                          MPI_STATUS_IGNORE,                                            &
                           sub_comm%err)
 
             call mpi_check_for_error("in MPI_Recv of mpi_reverse::communicate_halo.")
