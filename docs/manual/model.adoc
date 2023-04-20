@@ -12,3 +12,5 @@
     & \frac{\mathrm{D} q}{\mathrm{D} t} = 0 \,,
 \end{align}
 ++++
+
+=== Vorticity inversion
