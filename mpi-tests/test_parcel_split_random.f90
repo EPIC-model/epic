@@ -2,7 +2,7 @@ program test_parcel_split_random
     use mpi_communicator
     use options, only : parcel
     use constants, only : zero, one, two
-    use parameters, only : update_parameters, nx, ny, nz, lower, extent, dx, vmax
+    use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmax
     use parcel_container
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_halo_swap
@@ -90,15 +90,7 @@ program test_parcel_split_random
                 parcels%volume(j) = 1.1d0 * vmax
                 parcels%buoyancy(j) = 1.0d0
             endif
-            parcels%position(1:2, n) = parcels%position(1:2, n) + rn(1:2) * dx(1:2)
-        enddo
 
-        ! Do halo swap
-        call parcel_halo_swap
-
-        ! Do periodic shift in x and y
-        do n = 1, n_parcels
-            call apply_periodic_bc(parcels%position(:, n))
         enddo
 
         n_orig = n_parcels
@@ -118,6 +110,17 @@ program test_parcel_split_random
             parcels%volume(n) = vol
             parcels%buoyancy(n) = 0.0d0
             parcels%B(:, n) = b
+
+            call random_number(rn)
+            parcels%position(:, n) = (/two, two, one/) * rn
+        enddo
+
+        ! Do halo swap
+        call parcel_halo_swap
+
+        ! Do periodic shift in x and y
+        do n = 1, n_parcels
+            call apply_periodic_bc(parcels%position(:, n))
         enddo
 
         call perform_integer_reduction(n_orig)
