@@ -112,7 +112,7 @@ program test_parcel_split_random
             parcels%B(:, n) = b
 
             call random_number(rn)
-            parcels%position(:, n) = (/two, two, one/) * rn
+            parcels%position(:, n) = lower + extent * rn
         enddo
 
         ! Do halo swap
