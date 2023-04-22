@@ -13,7 +13,7 @@ program test_moving_parcels
     use test_utils
     implicit none
 
-    integer, parameter :: nt = 100
+    integer, parameter :: nt = 1000
     integer            :: i, n
     double precision   :: VOR(3) = (/1.5d0, 2.0d0, 2.5d0/)
 
