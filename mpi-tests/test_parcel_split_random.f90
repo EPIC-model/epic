@@ -10,11 +10,12 @@ program test_parcel_split_random
     use parcel_bc, only : apply_periodic_bc
     use parcel_interpl, only : par2grid
     use parcel_split_mod, only : parcel_split
+    use mpi_layout, only : box
     use test_utils
     implicit none
 
     integer, parameter   :: nt = 100
-    integer              :: i, n, sk, j, n_orig
+    integer              :: i, n, sk, j, n_orig, n_splits
     integer, allocatable :: seed(:)
     double precision     :: rn(3)
     double precision     :: vol, b(5)
@@ -65,10 +66,6 @@ program test_parcel_split_random
     b = parcels%B(:, 1)
 
     !--------------------------------------------------------------------------
-    ! Interpolate parcel data to grid:
-    call par2grid
-
-    !--------------------------------------------------------------------------
     ! Check initial values:
     call perform_checks
 
@@ -93,6 +90,13 @@ program test_parcel_split_random
 
         enddo
 
+        n_splits = int(sum(parcels%buoyancy(1:n_parcels)))
+        call perform_integer_reduction(n_splits)
+
+        if (comm%rank == comm%master) then
+            print *, "Split", n_splits, "of", n_total_parcels, "parcels."
+        endif
+
         n_orig = n_parcels
 
         ! Split parcels
@@ -112,8 +116,11 @@ program test_parcel_split_random
             parcels%B(:, n) = b
 
             call random_number(rn)
-            parcels%position(:, n) = lower + extent * rn
+            parcels%position(:, n) = box%lower + box%extent * rn
         enddo
+
+        call perform_integer_reduction(n_orig)
+        n_total_parcels = n_orig
 
         ! Do halo swap
         call parcel_halo_swap
@@ -122,9 +129,6 @@ program test_parcel_split_random
         do n = 1, n_parcels
             call apply_periodic_bc(parcels%position(:, n))
         enddo
-
-        call perform_integer_reduction(n_orig)
-        n_total_parcels = n_orig
     enddo
 
     !--------------------------------------------------------------------------

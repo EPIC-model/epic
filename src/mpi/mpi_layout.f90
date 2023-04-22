@@ -121,7 +121,9 @@ module mpi_layout
             dx = extent / dble(box%global_size)
             box%lower = lower(3) + dx * dble(box%lo)
             box%halo_lower = box%lower - dx
-            box%extent = dx * box%size
+            box%extent(1) = dx(1) * box%size(1)
+            box%extent(2) = dx(2) * box%size(2)
+            box%extent(3) = dx(3) * (box%size(3) - 1)
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)
