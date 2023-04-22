@@ -347,7 +347,7 @@ module parcel_nearest
             !       on another MPI rank that is sent elsewhere.
             call gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma, inva)
 
-            call *, comm%rank, "after gathering"
+            print *, comm%rank, "after gathering"
 
             !------------------------------------------------------------------
             ! Sanity check: Indices of close parcels must be smaller equal to the
@@ -1504,33 +1504,35 @@ module parcel_nearest
 
                 recv_count = recv_size / n_entries
 
-                ! Set the current value of the *m* index to
-                ! its current maximum value (excluding small
-                ! parcel received earlier from other MPI ranks.
-                m = n_local_small
-                do k = 1, recv_count
-                    ! We receive a small parcel;
-                    ! append it to the container with index
-                    ! "n_parcels+1"
-                    n_parcels = n_parcels + 1
-                    j = n_entries * k
-                    i = j - n_entries + 1
-                    buffer = recv_buf(i:j-1)
-                    call parcel_deserialize(n_parcels, buffer)
+                if (recv_count > 0) then
+                    ! Set the current value of the *m* index to
+                    ! its current maximum value (excluding small
+                    ! parcel received earlier from other MPI ranks.
+                    m = n_local_small
+                    do k = 1, recv_count
+                        ! We receive a small parcel;
+                        ! append it to the container with index
+                        ! "n_parcels+1"
+                        n_parcels = n_parcels + 1
+                        j = n_entries * k
+                        i = j - n_entries + 1
+                        buffer = recv_buf(i:j-1)
+                        call parcel_deserialize(n_parcels, buffer)
 
-                    ! Add the small parcel to isma and inva, and
-                    ! its closest parcel to iclo
-                    m = m + 1
-                    iclo(m) = nint(recv_buf(j))
-                    isma(m) = n_parcels
-                    iv = iv + 1
-                    inva(iv) = n_parcels
-                enddo
-                ! The last value of *m* is our new number of
-                ! small parcels. However, this still includes
-                ! invalid entries in isma and iclo that we will
-                ! remove next.
-                n_local_small = m
+                        ! Add the small parcel to isma and inva, and
+                        ! its closest parcel to iclo
+                        m = m + 1
+                        iclo(m) = nint(recv_buf(j))
+                        isma(m) = n_parcels
+                        iv = iv + 1
+                        inva(iv) = n_parcels
+                    enddo
+                    ! The last value of *m* is our new number of
+                    ! small parcels. However, this still includes
+                    ! invalid entries in isma and iclo that we will
+                    ! remove next.
+                    n_local_small = m
+                endif
 
                 deallocate(recv_buf)
             enddo
