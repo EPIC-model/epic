@@ -117,6 +117,9 @@ program test_parcel_split_random
         n_parcels = n_orig
         parcels%volume(1:n_parcels) = vol
         parcels%buoyancy(1:n_parcels) = 0.0d0
+
+        call perform_integer_reduction(n_orig)
+        n_total_parcels = n_orig
     enddo
 
     !--------------------------------------------------------------------------
