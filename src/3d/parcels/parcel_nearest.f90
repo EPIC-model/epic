@@ -1425,6 +1425,7 @@ module parcel_nearest
                 endif
             enddo
 
+            iv = 0
             if (n_local_small > 0) then
                 ! We must now remove all invalid entries in isma and
                 ! iclo and also update the value of n_local_small:
@@ -1434,6 +1435,8 @@ module parcel_nearest
                 iclo(1:n_local_small) = pack(iclo, iclo /= -1)
                 rclo(1:n_local_small) = pack(rclo, rclo /= -1)
             endif
+
+            print *, comm%rank, iv, size(inva), n_local_small
 
             call MPI_Win_lock_all(0, win_neighbour, comm%err)
 
@@ -1525,6 +1528,7 @@ module parcel_nearest
                         iclo(m) = nint(recv_buf(j))
                         isma(m) = n_parcels
                         iv = iv + 1
+                        print *, comm%rank, iv, size(inva)
                         inva(iv) = n_parcels
                     enddo
                     ! The last value of *m* is our new number of
