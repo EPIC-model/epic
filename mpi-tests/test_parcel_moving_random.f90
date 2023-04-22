@@ -1,4 +1,4 @@
-program test_moving_parcels
+program test_parcel_moving_random
     use mpi_communicator
     use options, only : parcel
     use constants, only : zero, one, two
@@ -12,7 +12,7 @@ program test_moving_parcels
     use test_utils
     implicit none
 
-    integer, parameter   :: nt = 1000
+    integer, parameter   :: nt = 100
     integer              :: i, n, sk
     integer, allocatable :: seed(:)
     double precision     :: rn(2)
@@ -23,7 +23,7 @@ program test_moving_parcels
     call mpi_comm_initialise
 
     if (comm%rank == comm%master) then
-        print '(a35, i6, a11)', "Running test 'parcel moving random' with ", comm%size, " MPI ranks."
+        print '(a35, i6, a11)', "Running 'test_parcel_moving_random' with ", comm%size, " MPI ranks."
     endif
 
     call random_seed(size=sk)
@@ -81,8 +81,6 @@ program test_moving_parcels
             call random_number(rn)
             parcels%position(1:2, n) = parcels%position(1:2, n) + rn * dx(1:2)
         enddo
-
-        stop
 
         ! Do halo swap
         call parcel_halo_swap
@@ -151,4 +149,4 @@ program test_moving_parcels
 
         end subroutine perform_integer_reduction
 
-end program test_moving_parcels
+end program test_parcel_moving_random
