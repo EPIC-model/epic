@@ -317,6 +317,8 @@ module parcel_nearest
             ! Figure out the mergers:
             call resolve_tree(isma, iclo, rclo, n_local_small)
 
+            print *, comm%rank, "after tree resolve"
+
             if (.not. l_no_small) then
                 !---------------------------------------------------------------------
                 ! Mark all entries of isma, iclo and rclo above n_local_small
@@ -332,7 +334,11 @@ module parcel_nearest
                 rclo(1:n_local_small) = pack(rclo, rclo /= -1)
             endif
 
+            print *, comm%rank, "deallocate id buffers"
+
             call deallocate_parcel_id_buffers
+
+            print *, comm%rank, "before gathering"
 
             !---------------------------------------------------------------------
             ! We perform the actual merging locally. We must therefore send all
@@ -341,13 +347,26 @@ module parcel_nearest
             !       on another MPI rank that is sent elsewhere.
             call gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma, inva)
 
+            call *, comm%rank, "after gathering"
+
             !------------------------------------------------------------------
             ! Sanity check: Indices of close parcels must be smaller equal to the
             ! number of local parcels:
-            if (maxval(iclo(1:n_local_small)) > n_parcels) then
-                call mpi_exit_on_error(&
-                    "in parcel_nearest::find_nearest: Close parcel index out of range.")
+            if (.not. l_no_small) then
+                if (maxval(iclo(1:n_local_small)) > n_parcels) then
+                    call mpi_exit_on_error(&
+                        "in parcel_nearest::find_nearest: Close parcel index out of range.")
+                endif
             endif
+
+            if (allocated(rclo)) then
+                deallocate(rclo)
+            endif
+
+            if (allocated(dclo)) then
+                deallocate(dclo)
+            endif
+
             call nearest_deallocate
 
         end subroutine find_nearest
