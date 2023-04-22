@@ -79,6 +79,7 @@ module parcel_nearest
     integer, allocatable :: rsma(:)               ! rank of small parcel received (accessed with *n*)
     integer, allocatable :: pidsma(:)             ! index of remote small parcel (accessed with *n*)
     integer, allocatable :: midsma(:)             ! *m* in *isma(m)*
+    logical              :: l_no_small
 
     type(MPI_Win) :: win_merged, win_avail, win_leaf
 
@@ -260,51 +261,50 @@ module parcel_nearest
             !   - n_local_small > 0 and n_remote_small = 0 --> This rank has only local small parcels.
             !   - n_local_small = 0 and n_remote_small > 0 --> This rank has only remote small parcels.
             !   - n_local_small > 0 and n_remote_small > 0 --> This rank has local and remote small parcels.
-            if (n_local_small + n_remote_small == 0) then
-                ! Although *this* rank has no small parcels and is therefore not involved
-                ! in any merging, it must nonetheless call the tree resolving routine as
-                ! there is global synchronisation taking place.
-                call resolve_tree(isma, iclo, rclo, n_local_small)
 
-                return
+            ! Although *this* rank has no small parcels and is therefore not involved
+            ! in any merging, it must nonetheless call the tree resolving and parcel gathering
+            ! routine as there is global synchronisation taking place.
+            l_no_small = (n_local_small + n_remote_small == 0)
+
+            if (.not. l_no_small) then
+                ! allocate arrays
+                allocate(isma(0:n_local_small + n_remote_small))
+                allocate(inva(0:n_local_small + n_remote_small))
+                allocate(iclo(n_local_small + n_remote_small))
+                allocate(rclo(n_local_small + n_remote_small))
+                allocate(dclo(n_local_small + n_remote_small))
+
+                isma = -1
+                iclo = -1
+                rclo = -1
+                dclo = product(extent)
+
+                ! Find arrays kc1(ijk) & kc2(ijk) which indicate the parcels in grid cell ijk
+                ! through n = node(k), for k = kc1(ijk), kc2(ijk):
+                kc1(1) = 1
+                do ijk = 1, box%halo_ncell-1
+                    kc1(ijk+1) = kc1(ijk) + nppc(ijk)
+                enddo
+
+                kc2 = kc1 - 1
+                j = 0
+                do n = 1, n_parcels + n_remote_small
+                    ijk = loca(n)
+                    k = kc2(ijk) + 1
+                    node(k) = n
+                    kc2(ijk) = k
+
+                    if (parcels%volume(n) < vmin) then
+                        j = j + 1
+                        isma(j) = n
+                    endif
+                enddo
+
+                !---------------------------------------------------------------------
+                ! Determine locally closest parcel:
+                call find_closest_parcel_locally(n_local_small, isma, iclo, rclo, dclo)
             endif
-
-            ! allocate arrays
-            allocate(isma(0:n_local_small + n_remote_small))
-            allocate(inva(0:n_local_small + n_remote_small))
-            allocate(iclo(n_local_small + n_remote_small))
-            allocate(rclo(n_local_small + n_remote_small))
-            allocate(dclo(n_local_small + n_remote_small))
-
-            isma = -1
-            iclo = -1
-            rclo = -1
-            dclo = product(extent)
-
-            ! Find arrays kc1(ijk) & kc2(ijk) which indicate the parcels in grid cell ijk
-            ! through n = node(k), for k = kc1(ijk), kc2(ijk):
-            kc1(1) = 1
-            do ijk = 1, box%halo_ncell-1
-                kc1(ijk+1) = kc1(ijk) + nppc(ijk)
-            enddo
-
-            kc2 = kc1 - 1
-            j = 0
-            do n = 1, n_parcels + n_remote_small
-                ijk = loca(n)
-                k = kc2(ijk) + 1
-                node(k) = n
-                kc2(ijk) = k
-
-                if (parcels%volume(n) < vmin) then
-                    j = j + 1
-                    isma(j) = n
-                endif
-            enddo
-
-            !---------------------------------------------------------------------
-            ! Determine locally closest parcel:
-            call find_closest_parcel_locally(n_local_small, isma, iclo, rclo, dclo)
 
             !---------------------------------------------------------------------
             ! Determine globally closest parcel:
@@ -317,18 +317,20 @@ module parcel_nearest
             ! Figure out the mergers:
             call resolve_tree(isma, iclo, rclo, n_local_small)
 
-            !---------------------------------------------------------------------
-            ! Mark all entries of isma, iclo and rclo above n_local_small
-            ! as invalid.
-            do n = n_local_small+1, size(iclo)
-                isma(n) = -1
-                iclo(n) = -1
-                rclo(n) = -1
-            enddo
+            if (.not. l_no_small) then
+                !---------------------------------------------------------------------
+                ! Mark all entries of isma, iclo and rclo above n_local_small
+                ! as invalid.
+                do n = n_local_small+1, size(iclo)
+                    isma(n) = -1
+                    iclo(n) = -1
+                    rclo(n) = -1
+                enddo
 
-            isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
-            iclo(1:n_local_small) = pack(iclo, iclo /= -1)
-            rclo(1:n_local_small) = pack(rclo, rclo /= -1)
+                isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
+                iclo(1:n_local_small) = pack(iclo, iclo /= -1)
+                rclo(1:n_local_small) = pack(rclo, rclo /= -1)
+            endif
 
             call deallocate_parcel_id_buffers
 
@@ -1404,13 +1406,15 @@ module parcel_nearest
                 endif
             enddo
 
-            ! We must now remove all invalid entries in isma and
-            ! iclo and also update the value of n_local_small:
-            iv = n_local_small  ! we need to keep the original value for filling *inva*
-            n_local_small = count(isma(1:) /= -1)
-            isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
-            iclo(1:n_local_small) = pack(iclo, iclo /= -1)
-            rclo(1:n_local_small) = pack(rclo, rclo /= -1)
+            if (n_local_small > 0) then
+                ! We must now remove all invalid entries in isma and
+                ! iclo and also update the value of n_local_small:
+                iv = n_local_small  ! we need to keep the original value for filling *inva*
+                n_local_small = count(isma(1:) /= -1)
+                isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
+                iclo(1:n_local_small) = pack(iclo, iclo /= -1)
+                rclo(1:n_local_small) = pack(rclo, rclo /= -1)
+            endif
 
             call MPI_Win_lock_all(0, win_neighbour, comm%err)
 
