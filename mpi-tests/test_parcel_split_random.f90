@@ -17,7 +17,7 @@ program test_parcel_split_random
     integer              :: i, n, sk, j, n_orig
     integer, allocatable :: seed(:)
     double precision     :: rn(3)
-    double precision     :: vol
+    double precision     :: vol, b(5)
 
     !--------------------------------------------------------------------------
     ! Initialise MPI and setup all timers:
@@ -62,6 +62,7 @@ program test_parcel_split_random
     call parcel_default
 
     vol = parcels%volume(1)
+    b = parcels%B(:, 1)
 
     !--------------------------------------------------------------------------
     ! Interpolate parcel data to grid:
@@ -73,7 +74,6 @@ program test_parcel_split_random
 
     !--------------------------------------------------------------------------
     ! Do time loop:
-
     do i = 1, nt
 
         if (comm%rank == comm%master) then
@@ -84,14 +84,13 @@ program test_parcel_split_random
         do n = 1, n_parcels
             call random_number(rn)
 
-            j = ceiling(n_parcels * rn(3))
-
-            parcels%volume(j) = 1.1d0 * vmax
-
-            parcels%buoyancy(j) = 1.0d0
-
+            if (rn(3) > 0.5d0) then
+                call random_number(rn(3))
+                j = nint(n_parcels * rn(3)) + 1
+                parcels%volume(j) = 1.1d0 * vmax
+                parcels%buoyancy(j) = 1.0d0
+            endif
             parcels%position(1:2, n) = parcels%position(1:2, n) + rn(1:2) * dx(1:2)
-
         enddo
 
         ! Do halo swap
@@ -115,8 +114,11 @@ program test_parcel_split_random
 
         ! Reset:
         n_parcels = n_orig
-        parcels%volume(1:n_parcels) = vol
-        parcels%buoyancy(1:n_parcels) = 0.0d0
+        do n = 1, n_parcels
+            parcels%volume(n) = vol
+            parcels%buoyancy(n) = 0.0d0
+            parcels%B(:, n) = b
+        enddo
 
         call perform_integer_reduction(n_orig)
         n_total_parcels = n_orig
