@@ -10,6 +10,7 @@ program test_parcel_merge_random
     use parcel_bc, only : apply_periodic_bc
     use parcel_interpl, only : par2grid
     use parcel_merge, only : merge_parcels
+    use parcel_nearest
     use mpi_layout, only : box
     use test_utils
     implicit none
@@ -51,6 +52,8 @@ program test_parcel_merge_random
     call update_parameters
 
     parcel%n_per_cell = 8
+
+    call nearest_win_allocate
 
     !--------------------------------------------------------------------------
     ! Setup fields: All fields are zero
@@ -135,6 +138,8 @@ program test_parcel_merge_random
     ! Finish: Free memory and finalise MPI
 
     call parcel_dealloc
+
+    call nearest_win_deallocate
 
     call stop_timer(epic_timer)
 

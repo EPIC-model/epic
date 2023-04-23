@@ -83,21 +83,26 @@ module parcel_nearest
 
     type(MPI_Win) :: win_merged, win_avail, win_leaf
 
-    public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer
+    public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer, nearest_win_allocate, nearest_win_deallocate
 
     contains
 
         subroutine nearest_allocate
-            integer (KIND=MPI_ADDRESS_KIND) :: win_size
-            logical                         :: dummy
-            integer                         :: disp_unit = c_sizeof(dummy) ! size of logical in bytes
-
             if (.not. allocated(nppc)) then
                 allocate(nppc(box%halo_ncell))
                 allocate(kc1(box%halo_ncell))
                 allocate(kc2(box%halo_ncell))
                 allocate(loca(max_num_parcels))
                 allocate(node(max_num_parcels))
+            endif
+        end subroutine nearest_allocate
+          
+        subroutine nearest_win_allocate
+            integer (KIND=MPI_ADDRESS_KIND) :: win_size
+            logical                         :: dummy
+            integer                         :: disp_unit = c_sizeof(dummy) ! size of logical in bytes
+
+            print *, "allocate windows"
                 allocate(l_leaf(max_num_parcels))
                 allocate(l_available(max_num_parcels))
                 allocate(l_merged(max_num_parcels))
@@ -136,33 +141,63 @@ module parcel_nearest
                                     comm%world,                     &
                                     win_merged,                     &
                                     comm%err)
-            endif
-        end subroutine nearest_allocate
+        end subroutine nearest_win_allocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+!        subroutine nearest_allocate_index_arrays(num)
+!            integer, intent(in) :: num
+!            allocate(isma(0:num))                                         
+!            allocate(inva(0:num))
+!            allocate(iclo(num))
+!            allocate(rclo(num))
+!            allocate(dclo(num))
+!          end subroutine nearest_allocate_index_arrays
+
+        !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+!        subroutine nearest_deallocate_index_arrays
+!            if (allocated(isma)) then
+        !               deallocate(isma)
+        !deallocate(iclo)
+
+        !deallocate(rclo)
+
+        !deallocate(dclo)
+        !    endif
+!
+!            if (allocated(inva)) then
+!               deallocate(inva)
+!            endif
+!        end subroutine nearest_deallocate_index_arrays
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine nearest_win_deallocate
+            call MPI_Win_free(win_leaf, comm%err)
+            call mpi_check_for_error(&
+                 "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
+          
+            call MPI_Win_free(win_avail, comm%err)
+            call mpi_check_for_error(&
+                 "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
+          
+            call MPI_Win_free(win_merged, comm%err)
+            call mpi_check_for_error(&
+                 "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
+
+            deallocate(l_leaf)
+            deallocate(l_available)
+            deallocate(l_merged)
+        end subroutine nearest_win_deallocate
+        
         subroutine nearest_deallocate
             if (allocated(nppc)) then
-                call MPI_Win_free(win_leaf, comm%err)
-                call mpi_check_for_error(&
-                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
-
-                call MPI_Win_free(win_avail, comm%err)
-                call mpi_check_for_error(&
-                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
-
-                call MPI_Win_free(win_merged, comm%err)
-                call mpi_check_for_error(&
-                    "in MPI_Win_free of parcel_nearest::nearest_deallocate.")
-
                 deallocate(nppc)
                 deallocate(kc1)
                 deallocate(kc2)
                 deallocate(loca)
                 deallocate(node)
-                deallocate(l_leaf)
-                deallocate(l_available)
-                deallocate(l_merged)
             endif
 
             if (allocated(rsma)) then
@@ -212,6 +247,9 @@ module parcel_nearest
             n_global_small = 0
             n_neighbour_small = 0
             n_remote_small = 0
+            l_merged = .false.
+            l_leaf = .false.
+            l_available = .false.
             nppc = 0 !nppc(ijk) will contain the number of parcels in grid cell ijk
 
             ! Bin parcels in cells:
@@ -269,12 +307,12 @@ module parcel_nearest
 
             if (.not. l_no_small) then
                 ! allocate arrays
-                allocate(isma(0:n_local_small + n_remote_small))
-                allocate(inva(0:n_local_small + n_remote_small))
-                allocate(iclo(n_local_small + n_remote_small))
-                allocate(rclo(n_local_small + n_remote_small))
-                allocate(dclo(n_local_small + n_remote_small))
-
+                allocate(isma(0:n_local_small+n_remote_small))
+                allocate(inva(0:n_local_small+n_remote_small))
+                allocate(iclo(n_local_small+n_remote_small))
+                allocate(rclo(n_local_small+n_remote_small))
+                allocate(dclo(n_local_small+n_remote_small))
+                
                 isma = -1
                 iclo = -1
                 rclo = -1
@@ -317,7 +355,7 @@ module parcel_nearest
             ! Figure out the mergers:
             call resolve_tree(isma, iclo, rclo, n_local_small)
 
-            print *, comm%rank, "after tree resolve"
+            !print *, comm%rank, "after tree resolve"
 
             if (.not. l_no_small) then
                 !---------------------------------------------------------------------
@@ -334,11 +372,11 @@ module parcel_nearest
                 rclo(1:n_local_small) = pack(rclo, rclo /= -1)
             endif
 
-            print *, comm%rank, "deallocate id buffers"
+            !print *, comm%rank, "deallocate id buffers"
 
             call deallocate_parcel_id_buffers
 
-            print *, comm%rank, "before gathering"
+            !print *, comm%rank, "before gathering"
 
             !---------------------------------------------------------------------
             ! We perform the actual merging locally. We must therefore send all
@@ -347,7 +385,7 @@ module parcel_nearest
             !       on another MPI rank that is sent elsewhere.
             call gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma, inva)
 
-            print *, comm%rank, "after gathering"
+            !print *, comm%rank, "after gathering"
 
             !------------------------------------------------------------------
             ! Sanity check: Indices of close parcels must be smaller equal to the
@@ -1357,7 +1395,7 @@ module parcel_nearest
             integer                                    :: n_bytes
             integer, asynchronous                      :: n_parcel_recvs(8)
             type(MPI_Win)                              :: win_neighbour
-            integer(KIND=MPI_ADDRESS_KIND)             :: win_size, offset
+            integer(KIND=MPI_ADDRESS_KIND)             :: offset
             integer                                    :: n_registered(8)
 
             !------------------------------------------------------------------
@@ -1436,7 +1474,7 @@ module parcel_nearest
                 rclo(1:n_local_small) = pack(rclo, rclo /= -1)
             endif
 
-            print *, comm%rank, iv, size(inva), n_local_small
+            !print *, comm%rank, iv, size(inva), n_local_small
 
             call MPI_Win_lock_all(0, win_neighbour, comm%err)
 
@@ -1528,7 +1566,7 @@ module parcel_nearest
                         iclo(m) = nint(recv_buf(j))
                         isma(m) = n_parcels
                         iv = iv + 1
-                        print *, comm%rank, iv, size(inva)
+                        !print *, comm%rank, iv, size(inva)
                         inva(iv) = n_parcels
                     enddo
                     ! The last value of *m* is our new number of
