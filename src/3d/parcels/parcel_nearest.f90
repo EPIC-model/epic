@@ -1395,7 +1395,7 @@ module parcel_nearest
             integer                                    :: n_bytes
             integer, asynchronous                      :: n_parcel_recvs(8)
             type(MPI_Win)                              :: win_neighbour
-            integer(KIND=MPI_ADDRESS_KIND)             :: offset
+            integer(KIND=MPI_ADDRESS_KIND)             :: win_size, offset
             integer                                    :: n_registered(8)
 
             !------------------------------------------------------------------
