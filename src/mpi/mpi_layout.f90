@@ -253,7 +253,9 @@ module mpi_layout
             enddo
 
 #ifndef NDEBUG
-            call mpi_exit_on_error("mpi_layout::get_neighbour: No suitable neighbour found.")
+            if (.not. l_found) then
+                call mpi_exit_on_error("mpi_layout::get_neighbour: No suitable neighbour found.")
+            endif
 #endif
         end function get_neighbour
 
