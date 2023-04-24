@@ -8,7 +8,7 @@ program test_parcel_moving_equidistant
     use parcel_mpi, only : parcel_halo_swap
     use fields, only : field_default, nparg, vortg
     use parcel_bc, only : apply_periodic_bc
-    use mpi_layout, only : box
+    use mpi_layout, only : box, mpi_layout_init
     use parcel_interpl, only : par2grid
     use test_utils
     implicit none
@@ -38,6 +38,8 @@ program test_parcel_moving_equidistant
     nz = 64
     lower = (/zero, zero, zero/)
     extent = (/two, two, one/)
+
+    call mpi_layout_init(lower, extent, nx, ny, nz)
 
     call update_parameters
 

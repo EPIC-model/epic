@@ -12,6 +12,7 @@ program test_parcel_spli_merge
     use parcel_split_mod, only : parcel_split
     use parcel_merge, only : merge_parcels
     use parcel_nearest
+    use mpi_layout, only : mpi_layout_init
     use test_utils
     implicit none
 
@@ -47,6 +48,8 @@ program test_parcel_spli_merge
     nz = 64
     lower = (/zero, zero, zero/)
     extent = (/two, two, one/)
+
+    call mpi_layout_init(lower, extent, nx, ny, nz)
 
     call update_parameters
 
@@ -85,7 +88,7 @@ program test_parcel_spli_merge
         call parcel_halo_swap
 
         call apply_parcel_bc
-         
+
         n_merges = count(parcels%volume(1:n_parcels) < vmin)
         call perform_integer_reduction(n_merges)
 

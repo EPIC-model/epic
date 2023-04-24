@@ -9,6 +9,7 @@ program test_parcel_moving_random
     use fields, only : field_default
     use parcel_bc, only : apply_periodic_bc
     use parcel_interpl, only : par2grid
+    use mpi_layout, only : mpi_layout_init
     use test_utils
     implicit none
 
@@ -44,6 +45,8 @@ program test_parcel_moving_random
     nz = 64
     lower = (/zero, zero, zero/)
     extent = (/two, two, one/)
+
+    call mpi_layout_init(lower, extent, nx, ny, nz)
 
     call update_parameters
 

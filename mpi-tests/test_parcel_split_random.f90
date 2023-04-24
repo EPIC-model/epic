@@ -10,7 +10,7 @@ program test_parcel_split_random
     use parcel_bc, only : apply_periodic_bc
     use parcel_interpl, only : par2grid
     use parcel_split_mod, only : parcel_split
-    use mpi_layout, only : box
+    use mpi_layout, only : box, mpi_layout_init
     use test_utils
     implicit none
 
@@ -47,6 +47,8 @@ program test_parcel_split_random
     nz = 64
     lower = (/zero, zero, zero/)
     extent = (/two, two, one/)
+
+    call mpi_layout_init(lower, extent, nx, ny, nz)
 
     call update_parameters
 

@@ -11,7 +11,7 @@ program test_parcel_merge_random
     use parcel_interpl, only : par2grid
     use parcel_merge, only : merge_parcels
     use parcel_nearest
-    use mpi_layout, only : box
+    use mpi_layout, only : box, mpi_layout_init
     use test_utils
     implicit none
 
@@ -48,6 +48,8 @@ program test_parcel_merge_random
     nz = 64
     lower = (/zero, zero, zero/)
     extent = (/two, two, one/)
+
+    call mpi_layout_init(lower, extent, nx, ny, nz)
 
     call update_parameters
 
