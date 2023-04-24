@@ -9,7 +9,6 @@ module parameters
     use netcdf_utils
     use netcdf_writer
     use mpi_communicator
-    use mpi_utils, only : mpi_exit_on_error
     use mpi_layout, only : box, l_mpi_layout_initialised
     implicit none
 
@@ -93,7 +92,10 @@ module parameters
         double precision :: msr
 
         if (.not. l_mpi_layout_initialised) then
-            call mpi_exit_on_error("MPI layout is not initialsed!")
+            if (comm%rank == comm%master) then
+                print *, "MPI layout is not initialsed!"
+            endif
+            call MPI_Abort(comm%world, -1, comm%err)
         endif
 
         upper = lower + extent

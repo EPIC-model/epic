@@ -31,6 +31,8 @@ program test_mpi_parcel_halo_swap
     lower  = zero
     extent =  one
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
     ! calls mpi_layout_init internally
