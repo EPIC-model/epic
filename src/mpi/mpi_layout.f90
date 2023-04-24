@@ -33,9 +33,7 @@ module mpi_layout
     type(neighbour_type)  :: neighbours(8)
     type(parallel_layout) :: layout
 
-    logical :: l_layout_initialised = .false.
-
-    private :: l_layout_initialised
+    logical, protected :: l_mpi_layout_initialised = .false.
 
     double precision, allocatable, dimension(:), target :: mpi_north_buf,       &
                                                            mpi_south_buf,       &
@@ -60,10 +58,10 @@ module mpi_layout
             logical                      :: periods(2)
             double precision             :: dx(3)
 
-            if (l_layout_initialised) then
+            if (l_mpi_layout_initialised) then
                 return
             endif
-            l_layout_initialised = .true.
+            l_mpi_layout_initialised = .true.
 
             ! create slabs, z-direction keeps 1 processor
             dims = (/0, 0/)

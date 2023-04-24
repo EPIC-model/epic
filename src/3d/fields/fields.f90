@@ -6,7 +6,8 @@ module fields
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parameters, only : dx, dxi, extent, lower, nx, ny, nz
     use constants, only : zero
-    use mpi_layout
+    use mpi_communicator
+    use mpi_layout, only : box, l_mpi_layout_initialised
     implicit none
 
     ! x: zonal
@@ -60,11 +61,13 @@ module fields
         subroutine field_alloc
             integer :: hlo(3), hhi(3)
 
+            if (.not. l_mpi_layout_initialised) then
+                call MPI_Abort(comm%world, -1, comm%err)
+            endif
+
             if (allocated(velog)) then
                 return
             endif
-
-            call mpi_layout_init(lower, extent, nx, ny, nz)
 
             hlo = box%hlo
             hhi = box%hhi

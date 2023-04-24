@@ -54,6 +54,8 @@ program test_mpi_gradient_correction_3d
     lower  = (/zero, zero, zero/)
     extent = (/one, one, one/)
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
     call field_default

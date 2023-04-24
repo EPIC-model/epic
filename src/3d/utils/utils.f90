@@ -21,6 +21,7 @@ module utils
     use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
                          , set_zeta_boundary_flag
     use physics, only : read_physical_quantities, print_physical_quantities
+    use mpi_layout, only : mpi_layout_init
     implicit none
 
     integer :: nfw  = 0    ! number of field writes
@@ -169,6 +170,8 @@ module utils
             nx = ncells(1)
             ny = ncells(2)
             nz = ncells(3)
+
+            call mpi_layout_init(lower, extent, nx, ny, nz)
 
             ! update global parameters
             call update_parameters

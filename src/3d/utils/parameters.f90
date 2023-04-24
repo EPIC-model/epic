@@ -9,7 +9,8 @@ module parameters
     use netcdf_utils
     use netcdf_writer
     use mpi_communicator
-    use mpi_layout, only : box
+    use mpi_utils, only : mpi_exit_on_error
+    use mpi_layout, only : box, l_mpi_layout_initialised
     implicit none
 
     ! mesh spacing
@@ -90,6 +91,10 @@ module parameters
     ! user-defined global options.
     subroutine update_parameters
         double precision :: msr
+
+        if (.not. l_mpi_layout_initialised) then
+            call mpi_exit_on_error("MPI layout is not initialsed!")
+        endif
 
         upper = lower + extent
 
