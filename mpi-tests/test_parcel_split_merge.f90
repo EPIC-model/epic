@@ -2,7 +2,7 @@ program test_parcel_spli_merge
     use mpi_communicator
     use options, only : parcel
     use constants, only : zero, one, two
-    use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmin
+    use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmin, dx
     use parcel_container
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_halo_swap
@@ -12,7 +12,6 @@ program test_parcel_spli_merge
     use parcel_split_mod, only : parcel_split
     use parcel_merge, only : merge_parcels
     use parcel_nearest
-    use mpi_layout, only : box
     use test_utils
     implicit none
 
@@ -77,6 +76,12 @@ program test_parcel_spli_merge
             print '(a15, i4)', "Performing step", i
         endif
 
+        ! Move each parcel by random value in x and y
+        do n = 1, n_parcels
+            call random_number(rn)
+            parcels%position(1:2, n) = parcels%position(1:2, n) + rn(1:2) * dx(1:2)
+         enddo
+         
         n_merges = count(parcels%volume(1:n_parcels) < vmin)
         call perform_integer_reduction(n_merges)
 
@@ -105,12 +110,6 @@ program test_parcel_spli_merge
 
         ! Test number of parcels: etc.
         call perform_checks
-
-        ! Reset:
-        do n = 1, n_parcels
-            call random_number(rn)
-            parcels%position(:, n) = box%lower + box%extent * rn
-        enddo
 
         ! Do halo swap
         call parcel_halo_swap
