@@ -28,6 +28,7 @@ program test_merging_parcels
 
     parcel%lambda_max = 4.0d0
     parcel%min_vratio = 40.0d0
+    parcel%size_factor = 4
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
