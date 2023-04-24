@@ -227,10 +227,12 @@ module mpi_layout
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        pure function get_neighbour(i, j) result(nb)
+        function get_neighbour(i, j) result(nb)
             integer, intent(in) :: i, j
             integer             :: nb, n
-
+#ifndef NDEBUG
+            logical             :: l_found = .false.
+#endif
             nb = MPI_NONE
 
             if ((i >= box%lo(1)) .and. &
@@ -243,9 +245,16 @@ module mpi_layout
             do n = 1, 8
                 if (is_neighbour(i, j, n)) then
                     nb = n
+#ifndef NDEBUG
+                    l_found = .true.
+#endif
                     exit
                 endif
             enddo
+
+#ifndef NDEBUG
+            call mpi_exit_on_error("mpi_layout::get_neighbour: No suitable neighbour found.")
+#endif
         end function get_neighbour
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
