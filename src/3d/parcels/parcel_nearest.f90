@@ -72,6 +72,7 @@ module parcel_nearest
     logical, allocatable, asynchronous :: l_leaf(:)
     logical, allocatable, asynchronous :: l_available(:)
     logical, allocatable, asynchronous :: l_merged(:)    ! indicates parcels merged in first stage
+    integer,              asynchronous :: n_parcel_recvs(8)
 
     integer              :: n_neighbour_small(8)  ! number of small parcels received
     integer              :: small_recv_order(8)   ! receive order of small parcels
@@ -81,7 +82,7 @@ module parcel_nearest
     integer, allocatable :: midsma(:)             ! *m* in *isma(m)*
     logical              :: l_no_small
 
-    type(MPI_Win) :: win_merged, win_avail, win_leaf
+    type(MPI_Win) :: win_merged, win_avail, win_leaf, win_neighbour
 
     public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer, nearest_win_allocate, nearest_win_deallocate
 
@@ -96,18 +97,21 @@ module parcel_nearest
                 allocate(node(max_num_parcels))
             endif
         end subroutine nearest_allocate
-          
+
         subroutine nearest_win_allocate
             integer (KIND=MPI_ADDRESS_KIND) :: win_size
-            logical                         :: dummy
-            integer                         :: disp_unit = c_sizeof(dummy) ! size of logical in bytes
+            logical                         :: l_bytes
+            integer                         :: disp_unit
+            integer                         :: i_bytes
 
-            print *, "allocate windows"
                 allocate(l_leaf(max_num_parcels))
                 allocate(l_available(max_num_parcels))
                 allocate(l_merged(max_num_parcels))
 
-                call MPI_Sizeof(dummy, disp_unit, comm%err)
+                call MPI_Sizeof(l_bytes, disp_unit, comm%err)
+
+                call mpi_check_for_error(&
+                    "in MPI_Sizeof of parcel_nearest::nearest_win_allocate.")
 
                 ! size of RMA window in bytes
                 win_size = disp_unit * max_num_parcels
@@ -127,6 +131,10 @@ module parcel_nearest
                                     comm%world,                 &
                                     win_leaf,                   &
                                     comm%err)
+
+                call mpi_check_for_error(&
+                    "in MPI_Win_create of parcel_nearest::nearest_win_allocate.")
+
                 call MPI_Win_create(l_available(1:max_num_parcels), &
                                     win_size,                       &
                                     disp_unit,                      &
@@ -134,6 +142,10 @@ module parcel_nearest
                                     comm%world,                     &
                                     win_avail,                      &
                                     comm%err)
+
+                call mpi_check_for_error(&
+                    "in MPI_Win_create of parcel_nearest::nearest_win_allocate.")
+
                 call MPI_Win_create(l_merged(1:max_num_parcels),    &
                                     win_size,                       &
                                     disp_unit,                      &
@@ -141,13 +153,35 @@ module parcel_nearest
                                     comm%world,                     &
                                     win_merged,                     &
                                     comm%err)
+
+                call mpi_check_for_error(&
+                    "in MPI_Win_create of parcel_nearest::nearest_win_allocate.")
+
+
+                call MPI_Sizeof(i_bytes, disp_unit, comm%err)
+                win_size = 8 * disp_unit
+
+                call mpi_check_for_error(&
+                    "in MPI_Sizeof of parcel_nearest::nearest_win_allocate.")
+
+                call MPI_Win_create(n_parcel_recvs,   &
+                                    win_size,         &
+                                    disp_unit,        &
+                                    MPI_INFO_NULL,    &
+                                    comm%world,       &
+                                    win_neighbour,    &
+                                    comm%err)
+
+                call mpi_check_for_error(&
+                    "in MPI_Win_create of parcel_nearest::nearest_win_allocate.")
+
         end subroutine nearest_win_allocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 !        subroutine nearest_allocate_index_arrays(num)
 !            integer, intent(in) :: num
-!            allocate(isma(0:num))                                         
+!            allocate(isma(0:num))
 !            allocate(inva(0:num))
 !            allocate(iclo(num))
 !            allocate(rclo(num))
@@ -177,12 +211,16 @@ module parcel_nearest
             call MPI_Win_free(win_leaf, comm%err)
             call mpi_check_for_error(&
                  "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
-          
+
             call MPI_Win_free(win_avail, comm%err)
             call mpi_check_for_error(&
                  "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
-          
+
             call MPI_Win_free(win_merged, comm%err)
+            call mpi_check_for_error(&
+                 "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
+
+            call MPI_Win_free(win_neighbour, comm%err)
             call mpi_check_for_error(&
                  "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
 
@@ -190,7 +228,7 @@ module parcel_nearest
             deallocate(l_available)
             deallocate(l_merged)
         end subroutine nearest_win_deallocate
-        
+
         subroutine nearest_deallocate
             if (allocated(nppc)) then
                 deallocate(nppc)
@@ -312,7 +350,7 @@ module parcel_nearest
                 allocate(iclo(n_local_small+n_remote_small))
                 allocate(rclo(n_local_small+n_remote_small))
                 allocate(dclo(n_local_small+n_remote_small))
-                
+
                 isma = -1
                 iclo = -1
                 rclo = -1
@@ -1392,10 +1430,7 @@ module parcel_nearest
             double precision                           :: buffer(n_par_attrib)
             integer                                    :: m, rc, ic, is, n, i, j, k, iv
             integer                                    :: n_entries
-            integer                                    :: n_bytes
-            integer, asynchronous                      :: n_parcel_recvs(8)
-            type(MPI_Win)                              :: win_neighbour
-            integer(KIND=MPI_ADDRESS_KIND)             :: win_size, offset
+            integer(KIND=MPI_ADDRESS_KIND)             :: offset
             integer                                    :: n_registered(8)
 
             !------------------------------------------------------------------
@@ -1422,16 +1457,6 @@ module parcel_nearest
             !------------------------------------------------------------------
             ! Figure out how many parcels we receive from our neighbours
             ! and fill all buffers:
-            call MPI_Sizeof(m, n_bytes, comm%err)
-            win_size = 8 * n_bytes
-            call MPI_Win_create(n_parcel_recvs,   &
-                                win_size,         &
-                                n_bytes,          &
-                                MPI_INFO_NULL,    &
-                                comm%world,       &
-                                win_neighbour,    &
-                                comm%err)
-
             n_parcel_recvs = 0
             n_registered = 0
             do m = 1, n_local_small
@@ -1497,8 +1522,6 @@ module parcel_nearest
             call MPI_Win_unlock_all(win_neighbour, comm%err)
 
             !call MPI_Win_sync(win_neighbour, comm%err)
-
-            call MPI_Win_free(win_neighbour, comm%err)
 
             !------------------------------------------------------------------
             ! Communicate parcels:
