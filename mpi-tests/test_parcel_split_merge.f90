@@ -2,7 +2,7 @@ program test_parcel_spli_merge
     use mpi_communicator
     use options, only : parcel
     use constants, only : zero, one, two
-    use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmax, vmin
+    use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmin
     use parcel_container
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_halo_swap
@@ -17,10 +17,9 @@ program test_parcel_spli_merge
     implicit none
 
     integer, parameter   :: nt = 100
-    integer              :: i, n, sk, j, n_orig, n_splits, n_merges
+    integer              :: i, n, sk, n_orig, n_merges
     integer, allocatable :: seed(:)
     double precision     :: rn(3)
-    double precision     :: vol, b(5)
 
     !--------------------------------------------------------------------------
     ! Initialise MPI and setup all timers:
@@ -66,9 +65,6 @@ program test_parcel_spli_merge
 
     call parcel_default
 
-    vol = parcels%volume(1)
-    b = parcels%B(:, 1)
-
     !--------------------------------------------------------------------------
     ! Check initial values:
     call perform_checks
@@ -81,8 +77,6 @@ program test_parcel_spli_merge
             print '(a15, i4)', "Performing step", i
         endif
 
-
-
         n_merges = count(parcels%volume(1:n_parcels) < vmin)
         call perform_integer_reduction(n_merges)
 
@@ -92,25 +86,18 @@ program test_parcel_spli_merge
 
         call merge_parcels(parcels)
 
-
         do n = 1, n_parcels
             call random_number(rn)
-
-            if (rn(3) > 0.5d0) then
-                call random_number(rn(3))
-                j = nint(n_parcels * rn(3)) + 1
-                parcels%B(1, j) = 1.2d0 * parcels%B(1, j)
-                parcels%B(3, j) = 0.8d0 * parcels%B(3, j)
-            endif
-
+            parcels%B(1, n) = (1.0d0 + rn(1) * 0.3d0) * parcels%B(1, n)
+            parcels%B(3, n) = (1.0d0 - rn(2) * 0.3d0) * parcels%B(3, n)
         enddo
 
         ! Split parcels
-        n_splits = n_total_parcels
+        n_orig = n_total_parcels
         call parcel_split(parcels, 4.0d0)
 
         if (comm%rank == comm%master) then
-            print *, "Split", n_total_parcels - n_splits, "of", n_total_parcels, "parcels."
+            print *, "Split", n_total_parcels - n_orig, "of", n_total_parcels, "parcels."
         endif
 
         ! Interpolate parcel data to grid
