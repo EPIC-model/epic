@@ -3,11 +3,13 @@
 ! simulation.
 ! =============================================================================
 module parameters
-    use options, only : allow_larger_anisotropy, parcel, boundary, mpi_info
+    use options, only : allow_larger_anisotropy, parcel, boundary
     use constants
     use netcdf_reader
     use netcdf_utils
     use netcdf_writer
+    use mpi_communicator
+    use mpi_layout, only : box
     implicit none
 
     ! mesh spacing
@@ -101,14 +103,16 @@ module parameters
                        dxi(2) * dx(3), dxi(3) * dx(2)/))
 
         if (msr > two) then
-            print *, '**********************************************************************'
-            print *, '*                                                                    *'
-            print *, '*   Warning: A mesh spacing ratio of more than 2 is not advisable!   *'
-            print *, '*                                                                    *'
-            print *, '**********************************************************************'
+            if (comm%rank == comm%master) then
+                print *, '**********************************************************************'
+                print *, '*                                                                    *'
+                print *, '*   Warning: A mesh spacing ratio of more than 2 is not advisable!   *'
+                print *, '*                                                                    *'
+                print *, '**********************************************************************'
+            endif
 
             if (.not. allow_larger_anisotropy) then
-                stop
+                call MPI_Abort(comm%world, -1, comm%err)
             endif
         endif
 
@@ -136,7 +140,7 @@ module parameters
         vmin = vcell / parcel%min_vratio
         vmax = vcell / parcel%max_vratio
 
-        max_num_parcels = int(nx * ny * nz * parcel%min_vratio * parcel%size_factor)
+        max_num_parcels = int(box%ncell * parcel%min_vratio * parcel%size_factor)
 
     end subroutine update_parameters
 
@@ -147,9 +151,11 @@ module parameters
 
         if (boundary%l_ignore_bndry_zeta_flag) then
             l_bndry_zeta_zero(:) = .false.
-            print *, "WARNING: You allow the gridded vertical vorticity component"
-            print *, "         at the boundaries to develop non-zero values."
-            print *, "         Stop your simulation if this is not your intention."
+            if (comm%rank == comm%master) then
+                print *, "WARNING: You allow the gridded vertical vorticity component"
+                print *, "         at the boundaries to develop non-zero values."
+                print *, "         Stop your simulation if this is not your intention."
+            endif
         else
             rms_interior = dsqrt(sum(zeta(1:nz-1, :, :) ** 2) * nhcelli / (nz-1))
             rms_bndry(1) = dsqrt(sum(zeta(0,      :, :) ** 2) * nhcelli)
@@ -161,12 +167,12 @@ module parameters
         endif
 
 #if defined(ENABLE_VERBOSE) || !defined(NDEBUG)
-        if (.not. l_bndry_zeta_zero(1)) then
+        if ((.not. l_bndry_zeta_zero(1)) .and. (comm%rank == comm%master)) then
             print *, "WARNING: This simulation will not ensure that the gridded vertical"
             print *, "         vorticity component is zero at the lower boundary."
         endif
 
-        if (.not. l_bndry_zeta_zero(2)) then
+        if ((.not. l_bndry_zeta_zero(2)) .and. (comm%rank == comm%master)) then
             print *, "WARNING: This simulation will not ensure that the gridded vertical"
             print *, "         vorticity component is zero at the upper boundary."
         endif
@@ -181,9 +187,11 @@ module parameters
 
         if (boundary%l_ignore_bndry_zeta_flag) then
             l_bndry_zeta_zero(:) = .false.
-            print *, "WARNING: You allow the gridded vertical vorticity component"
-            print *, "         at the boundaries to develop non-zero values."
-            print *, "         Stop your simulation if this is not your intention."
+            if (comm%rank == comm%master) then
+                print *, "WARNING: You allow the gridded vertical vorticity component"
+                print *, "         at the boundaries to develop non-zero values."
+                print *, "         Stop your simulation if this is not your intention."
+            endif
             return
         endif
 
@@ -193,11 +201,13 @@ module parameters
             call read_netcdf_attribute(grp_ncid, 'l_lower_boundry_zeta_zero', l_bndry_zeta_zero(1))
             call read_netcdf_attribute(grp_ncid, 'l_upper_boundry_zeta_zero', l_bndry_zeta_zero(2))
         else
-            print *, "WARNING: Could not find a '" // name // "' group in the provided"
-            print *, "         NetCDF file."
-            print *, "         Note this will result in the boundary zeta flags being"
-            print *, "         set to false starting with parcels (which could well be"
-            print *, "         undesirable)."
+            if (comm%rank == comm%master) then
+                print *, "WARNING: Could not find a '" // name // "' group in the provided"
+                print *, "         NetCDF file."
+                print *, "         Note this will result in the boundary zeta flags being"
+                print *, "         set to false starting with parcels (which could well be"
+                print *, "         undesirable)."
+            endif
         endif
 
     end subroutine read_zeta_boundary_flag
