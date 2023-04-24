@@ -116,8 +116,6 @@ program test_parcel_spli_merge
         ! Split parcels
         call parcel_split(parcels, 4.0d0)
 
-
-
         ! Interpolate parcel data to grid
         call par2grid
 
