@@ -99,22 +99,19 @@ program test_parcel_spli_merge
             if (rn(3) > 0.5d0) then
                 call random_number(rn(3))
                 j = nint(n_parcels * rn(3)) + 1
-                parcels%volume(j) = 1.1d0 * vmax
+                parcels%B(1, j) = 1.2d0 * parcels%B(1, j)
+                parcels%B(3, j) = 0.8d0 * parcels%B(3, j)
             endif
 
         enddo
 
-        n_splits = count(parcels%volume(1:n_parcels) > vmax)
-        call perform_integer_reduction(n_splits)
+        ! Split parcels
+        n_splits = n_total_parcels
+        call parcel_split(parcels, 4.0d0)
 
         if (comm%rank == comm%master) then
-            print *, "Split", n_splits, "of", n_total_parcels, "parcels."
+            print *, "Split", n_total_parcels - n_splits, "of", n_total_parcels, "parcels."
         endif
-
-        n_orig = n_parcels
-
-        ! Split parcels
-        call parcel_split(parcels, 4.0d0)
 
         ! Interpolate parcel data to grid
         call par2grid
@@ -123,17 +120,10 @@ program test_parcel_spli_merge
         call perform_checks
 
         ! Reset:
-        n_parcels = n_orig
         do n = 1, n_parcels
-            parcels%volume(n) = vol
-            parcels%B(:, n) = b
-
             call random_number(rn)
             parcels%position(:, n) = box%lower + box%extent * rn
         enddo
-
-        call perform_integer_reduction(n_orig)
-        n_total_parcels = n_orig
 
         ! Do halo swap
         call parcel_halo_swap
