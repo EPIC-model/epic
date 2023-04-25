@@ -429,8 +429,6 @@ module parcel_netcdf
                     ! updates the variable n_parcels
                     call parcel_delete(invalid(0:m), n_del=m)
 
-                    print *, comm%rank, n_parcels
-
                     ! adjust the chunk size to fit the remaining memory
                     ! in the parcel container
                     avail_size = max(0, max_num_parcels - n_parcels)
@@ -449,9 +447,6 @@ module parcel_netcdf
                 enddo
 
                 deallocate(invalid)
-
-                print *, comm%rank, "final", n_parcels
-
             endif
 
             call close_netcdf_file(ncid)
