@@ -434,7 +434,7 @@ module parcel_netcdf
 
                     ! adjust the chunk size to fit the remaining memory
                     ! in the parcel container
-                    chunk_size = max_num_parcels - n_parcels
+                    chunk_size = min(0, max_num_parcels - n_parcels)
 
                     ! update start and end index for reading chunk
                     start_index = 1 + end_index
