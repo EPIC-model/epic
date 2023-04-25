@@ -350,7 +350,7 @@ module parcel_netcdf
             integer, allocatable         :: invalid(:)
             integer                      :: n, m, n_total, pfirst, plast
             integer                      :: start(2)
-            integer                      :: chunk_size, n_valid
+            integer                      :: chunk_size, n_remaining, n_read
 
             call start_timer(parcel_io_timer)
 
@@ -399,8 +399,7 @@ module parcel_netcdf
                 chunk_size = max_num_parcels
                 end_index = min(chunk_size, n_total_parcels)
                 pfirst = 1
-                plast = end_index
-                n_valid = 0
+                n_remaining = n_total_parcels
 
                 ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
                 ! not belonging to its domain
@@ -410,9 +409,12 @@ module parcel_netcdf
 
                     call read_chunk(start_index, end_index, pfirst)
 
+                    n_read = end_index - start_index + 1
+                    n_remaining = n_remaining - n_read
+                    n_parcels = pfirst + n_read - 1
+
                     m = 1
-                    n_parcels = plast
-                    do n = pfirst, plast
+                    do n = pfirst, n_parcels
                         if (is_contained(parcels%position(:, n))) then
                             cycle
                         endif
@@ -428,32 +430,28 @@ module parcel_netcdf
                     ! updates the variable n_parcels
                     call parcel_delete(invalid(0:m), n_del=m)
 
-                    ! actual valid parcels
-                    n_valid = n_valid + n_parcels - m
+                    print *, comm%rank, n_parcels
 
                     ! adjust the chunk size to fit the remaining memory
                     ! in the parcel container
-                    chunk_size = max(0, max_num_parcels - n_valid)
+                    chunk_size = max(0, max_num_parcels - n_parcels)
 
                     ! update start index to fill container
-                    pfirst = 1 + n_valid
+                    pfirst = 1 + n_parcels
                     plast = min(pfirst + chunk_size, n_total_parcels, max_num_parcels)
+
+                    ! we must make sure that we have enough data in the
+                    ! file as well as in the parcel container
+                    n_read = min(plast - pfirst + 1, n_remaining)
 
                     ! update start and end index for reading chunk
                     start_index = 1 + end_index
-                    end_index = min(end_index + pfirst - plast + 1, n_total_parcels)
-
-                    if ((pfirst > max_num_parcels) .or. (plast > max_num_parcels)) then
-                        print *, "Number of parcels exceeds limit of", max_num_parcels, &
-                                 ". You may increase parcel%size_factor. Exiting."
-                        call MPI_Abort(comm%world, -1, comm%err)
-                        call mpi_check_for_error("in MPI_Abort of parcel_netcdf::read_netcdf_parcels.")
-                    endif
+                    end_index = end_index + n_read
                 enddo
 
                 deallocate(invalid)
 
-                n_parcels = n_valid
+                print *, comm%rank, "final", n_parcels
 
             endif
 
@@ -481,6 +479,13 @@ module parcel_netcdf
 
             num = last - first + 1
             plast = pfirst + num - 1
+
+            if (plast > max_num_parcels) then
+                print *, "Number of parcels exceeds limit of", max_num_parcels, &
+                         ". You may increase parcel%size_factor. Exiting."
+                call MPI_Abort(comm%world, -1, comm%err)
+                call mpi_check_for_error("in MPI_Abort of parcel_netcdf::read_chunk.")
+            endif
 
             start = (/ first, 1 /)
             cnt   = (/ num,   1 /)
