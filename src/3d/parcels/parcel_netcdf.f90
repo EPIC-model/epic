@@ -381,8 +381,8 @@ module parcel_netcdf
                 n_parcels = end_index - start_index + 1
 
                 if (n_parcels > max_num_parcels) then
-                    print *, "Number of parcels exceeds limit of", &
-                            max_num_parcels, ". Exiting."
+                    print *, "Number of parcels exceeds limit of", max_num_parcels, &
+                             ". You may increase parcel%size_factor. Exiting."
                     call MPI_Abort(comm%world, -1, comm%err)
                     call mpi_check_for_error("in MPI_Abort of parcel_netcdf::read_netcdf_parcels.")
                 endif
@@ -442,6 +442,13 @@ module parcel_netcdf
 
                     ! update end index for looping container
                     n_parcels = n_parcels + end_index - start_index + 1
+
+                    if (n_parcels > max_num_parcels) then
+                        print *, "Number of parcels exceeds limit of", max_num_parcels, &
+                                 ". You may increase parcel%size_factor. Exiting."
+                        call MPI_Abort(comm%world, -1, comm%err)
+                        call mpi_check_for_error("in MPI_Abort of parcel_netcdf::read_netcdf_parcels.")
+                    endif
                 enddo
 
                 deallocate(invalid)
