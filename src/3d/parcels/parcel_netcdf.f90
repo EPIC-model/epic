@@ -348,7 +348,7 @@ module parcel_netcdf
             character(*),     intent(in) :: fname
             integer                      :: start_index, num_indices, end_index
             integer, allocatable         :: invalid(:)
-            integer                      :: n, m, n_total, pid
+            integer                      :: n, m, n_total, pfirst, plast
             integer                      :: start(2)
             integer                      :: chunk_size, n_valid
 
@@ -398,8 +398,9 @@ module parcel_netcdf
                 start_index = 1
                 chunk_size = max_num_parcels
                 end_index = min(chunk_size, n_total_parcels)
-                n_parcels = end_index
-                pid = 1
+                pfirst = 1
+                plast = end_index
+                n_valid = 0
 
                 ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
                 ! not belonging to its domain
@@ -407,10 +408,11 @@ module parcel_netcdf
 
                 do while (start_index <= end_index)
 
-                    call read_chunk(start_index, end_index, pid)
+                    call read_chunk(start_index, end_index, pfirst)
 
                     m = 1
-                    do n = pid, n_parcels
+                    n_parcels = plast
+                    do n = pfirst, plast
                         if (is_contained(parcels%position(:, n))) then
                             cycle
                         endif
@@ -427,24 +429,21 @@ module parcel_netcdf
                     call parcel_delete(invalid(0:m), n_del=m)
 
                     ! actual valid parcels
-                    n_parcels = max(0, n_parcels - m)
-                    n_valid = n_parcels
-
-                    ! update start index to fill container
-                    pid = n_parcels + 1
+                    n_valid = n_valid + n_parcels - m
 
                     ! adjust the chunk size to fit the remaining memory
                     ! in the parcel container
-                    chunk_size = max(0, max_num_parcels - n_parcels)
+                    chunk_size = max(0, max_num_parcels - n_valid)
+
+                    ! update start index to fill container
+                    pfirst = 1 + n_valid
+                    plast = min(pfirst + chunk_size, n_total_parcels)
 
                     ! update start and end index for reading chunk
                     start_index = 1 + end_index
                     end_index = min(end_index + chunk_size, n_total_parcels)
 
-                    ! update end index for looping container
-                    n_parcels = n_parcels + end_index - start_index + 1
-
-                    if ((pid > max_num_parcels) .or. (n_parcels > max_num_parcels)) then
+                    if ((pfirst > max_num_parcels) .or. (plast > max_num_parcels)) then
                         print *, "Number of parcels exceeds limit of", max_num_parcels, &
                                  ". You may increase parcel%size_factor. Exiting."
                         call MPI_Abort(comm%world, -1, comm%err)
