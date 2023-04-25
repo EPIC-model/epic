@@ -350,7 +350,7 @@ module parcel_netcdf
             integer, allocatable         :: invalid(:)
             integer                      :: n, m, n_total, pfirst, plast
             integer                      :: start(2)
-            integer                      :: chunk_size, n_remaining, n_read
+            integer                      :: avail_size, n_remaining, n_read
 
             call start_timer(parcel_io_timer)
 
@@ -396,8 +396,7 @@ module parcel_netcdf
                 !
                 call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
                 start_index = 1
-                chunk_size = max_num_parcels
-                end_index = min(chunk_size, n_total_parcels)
+                end_index = min(max_num_parcels, n_total_parcels)
                 pfirst = 1
                 n_remaining = n_total_parcels
 
@@ -434,15 +433,15 @@ module parcel_netcdf
 
                     ! adjust the chunk size to fit the remaining memory
                     ! in the parcel container
-                    chunk_size = max(0, max_num_parcels - n_parcels)
+                    avail_size = max(0, max_num_parcels - n_parcels)
 
                     ! update start index to fill container
                     pfirst = 1 + n_parcels
-                    plast = min(pfirst + chunk_size, n_total_parcels, max_num_parcels)
+                    plast = min(pfirst + avail_size, n_total_parcels, max_num_parcels)
 
                     ! we must make sure that we have enough data in the
                     ! file as well as in the parcel container
-                    n_read = min(plast - pfirst + 1, n_remaining)
+                    n_read = min(plast - pfirst, n_remaining)
 
                     ! update start and end index for reading chunk
                     start_index = 1 + end_index
