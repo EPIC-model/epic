@@ -350,7 +350,7 @@ module parcel_netcdf
             integer, allocatable         :: invalid(:)
             integer                      :: n, m, n_total, pid
             integer                      :: start(2)
-            integer                      :: chunk_size
+            integer                      :: chunk_size, n_valid
 
             call start_timer(parcel_io_timer)
 
@@ -427,7 +427,8 @@ module parcel_netcdf
                     call parcel_delete(invalid(0:m), n_del=m)
 
                     ! actual valid parcels
-                    n_parcels = n_parcels - m
+                    n_parcels = max(0, n_parcels - m)
+                    n_valid = n_parcels
 
                     ! update start index to fill container
                     pid = n_parcels + 1
@@ -452,6 +453,8 @@ module parcel_netcdf
                 enddo
 
                 deallocate(invalid)
+
+                n_parcels = n_valid
 
             endif
 
