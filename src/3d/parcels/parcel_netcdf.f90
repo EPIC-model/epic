@@ -350,7 +350,7 @@ module parcel_netcdf
             integer, allocatable         :: invalid(:)
             integer                      :: n, m, n_total, pid
             integer                      :: start(2)
-            integer, parameter           :: chunk_size = 4194304! 2048^2
+            integer                      :: chunk_size
 
             call start_timer(parcel_io_timer)
 
@@ -396,6 +396,7 @@ module parcel_netcdf
                 !
                 call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
                 start_index = 1
+                chunk_size = max_num_parcels
                 end_index = min(chunk_size, n_total_parcels)
                 n_parcels = end_index
                 pid = 1
@@ -425,9 +426,21 @@ module parcel_netcdf
                     ! updates the variable n_parcels
                     call parcel_delete(invalid(0:m), n_del=m)
 
+                    ! actual valid parcels
+                    n_parcels = n_parcels - m
+
+                    ! update start index to fill container
+                    pid = n_parcels + 1
+
+                    ! adjust the chunk size to fit the remaining memory
+                    ! in the parcel container
+                    chunk_size = max_num_parcels - n_parcels
+
+                    ! update start and end index for reading chunk
                     start_index = 1 + end_index
                     end_index = min(end_index + chunk_size, n_total_parcels)
-                    pid = n_parcels + 1
+
+                    ! update end index for looping container
                     n_parcels = n_parcels + end_index - start_index + 1
                 enddo
 
