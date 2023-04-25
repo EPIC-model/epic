@@ -487,68 +487,68 @@ module parcel_netcdf
             if (has_dataset(ncid, 'B11')) then
                 call read_netcdf_dataset(ncid, 'B11', parcels%B(1, pfirst:plast), start, cnt)
             else
-                print *, "The parcel shape component B11 must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel shape component B11 must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'B12')) then
                 call read_netcdf_dataset(ncid, 'B12', parcels%B(2, pfirst:plast), start, cnt)
             else
-                print *, "The parcel shape component B12 must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel shape component B12 must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'B13')) then
                 call read_netcdf_dataset(ncid, 'B13', parcels%B(3, pfirst:plast), start, cnt)
             else
-                print *, "The parcel shape component B13 must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel shape component B13 must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'B22')) then
                 call read_netcdf_dataset(ncid, 'B22', parcels%B(4, pfirst:plast), start, cnt)
             else
-                print *, "The parcel shape component B22 must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel shape component B22 must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'B23')) then
                 call read_netcdf_dataset(ncid, 'B23', parcels%B(5, pfirst:plast), start, cnt)
             else
-                print *, "The parcel shape component B23 must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel shape component B23 must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'x_position')) then
                 call read_netcdf_dataset(ncid, 'x_position', &
                                          parcels%position(1, pfirst:plast), start, cnt)
             else
-                print *, "The parcel x position must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel x position must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'y_position')) then
                 call read_netcdf_dataset(ncid, 'y_position', &
                                          parcels%position(2, pfirst:plast), start, cnt)
             else
-                print *, "The parcel y position must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel y position must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'z_position')) then
                 call read_netcdf_dataset(ncid, 'z_position', &
                                          parcels%position(3, pfirst:plast), start, cnt)
             else
-                print *, "The parcel z position must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel z position must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'volume')) then
                 call read_netcdf_dataset(ncid, 'volume', &
                                          parcels%volume(pfirst:plast), start, cnt)
             else
-                print *, "The parcel volume must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel volume must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'x_vorticity')) then
@@ -583,8 +583,8 @@ module parcel_netcdf
 #endif
 
             if (.not. l_valid) then
-                print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "Either the parcel buoyancy or vorticity must be present! Exiting.")
             endif
         end subroutine read_chunk
 
