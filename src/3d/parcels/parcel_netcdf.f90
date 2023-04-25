@@ -437,11 +437,11 @@ module parcel_netcdf
 
                     ! update start index to fill container
                     pfirst = 1 + n_valid
-                    plast = min(pfirst + chunk_size, n_total_parcels)
+                    plast = min(pfirst + chunk_size, n_total_parcels, max_num_parcels)
 
                     ! update start and end index for reading chunk
                     start_index = 1 + end_index
-                    end_index = min(end_index + chunk_size, n_total_parcels)
+                    end_index = min(end_index + pfirst - plast + 1, n_total_parcels)
 
                     if ((pfirst > max_num_parcels) .or. (plast > max_num_parcels)) then
                         print *, "Number of parcels exceeds limit of", max_num_parcels, &
