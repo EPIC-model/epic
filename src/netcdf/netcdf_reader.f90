@@ -95,9 +95,7 @@ module netcdf_reader
         subroutine get_time(ncid, t)
             integer,          intent(in)  :: ncid
             double precision, intent(out) :: t
-            integer                       :: n_steps
-            integer                       :: varid = -1
-            integer                       :: start(1), cnt(1)
+            integer                       :: n_steps, varid, start(1), cnt(1)
             double precision              :: values(1)
 
             call get_num_steps(ncid, n_steps)
@@ -146,7 +144,7 @@ module netcdf_reader
         function has_dataset(ncid, name) result(link_exists)
             integer,      intent(in) :: ncid
             character(*), intent(in) :: name
-            integer                  :: varid = -1
+            integer                  :: varid
             logical                  :: link_exists
 
             ncerr = nf90_inq_varid(ncid, name, varid)
@@ -165,7 +163,7 @@ module netcdf_reader
             integer,           intent(out) :: buffer(:)
             integer, optional, intent(in)  :: start(:)
             integer, optional, intent(in)  :: cnt(:)
-            integer                        :: varid = -1
+            integer                        :: varid
 
             ncerr = nf90_inq_varid(ncid, name, varid)
             call check_netcdf_error("Reading dataset id failed.")
@@ -180,7 +178,7 @@ module netcdf_reader
             double precision,  intent(out) :: buffer(:)
             integer, optional, intent(in)  :: start(:)
             integer, optional, intent(in)  :: cnt(:)
-            integer                        :: varid = -1
+            integer                        :: varid
 
             ncerr = nf90_inq_varid(ncid, name, varid)
             call check_netcdf_error("Reading dataset id failed.")
@@ -195,8 +193,7 @@ module netcdf_reader
             double precision,  intent(out) :: buffer(:, :)
             integer, optional, intent(in)  :: start(:)
             integer, optional, intent(in)  :: cnt(:)
-            integer                        :: varid = -1
-            integer                        :: map(2)
+            integer                        :: varid, map(2)
             double precision, allocatable  :: values(:, :)
 
             map = shape(buffer)
@@ -220,8 +217,7 @@ module netcdf_reader
             double precision,  intent(out) :: buffer(:, :, :)
             integer, optional, intent(in)  :: start(:)
             integer, optional, intent(in)  :: cnt(:)
-            integer                        :: varid = -1
-            integer                        :: map(3)
+            integer                        :: varid, map(3)
             double precision, allocatable  :: values(:, :, :)
 
             map = shape(buffer)
