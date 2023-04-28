@@ -338,14 +338,6 @@ module field_netcdf
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
-            if (n_writes == 1) then
-                call write_netcdf_axis_3d(ncid, dimids(1:3), box%lower, dx, box%size)
-                call write_zeta_boundary_flag(ncid)
-            endif
-
-            ! write time
-            call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
-
             lo = box%lo
             hi = box%hi
 
@@ -355,6 +347,14 @@ module field_netcdf
 
             cnt(1:3) = hi - lo + 1
             cnt(4)   = 1
+
+            if (n_writes == 1) then
+                call write_netcdf_axis_3d(ncid, dimids(1:3), box%lower, dx, box%size, start(1:3), cnt(1:3))
+                call write_zeta_boundary_flag(ncid)
+            endif
+
+            ! write time
+            call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
 
             !
             ! write fields (do not write halo cells)

@@ -366,10 +366,12 @@ module netcdf_writer
             call write_netcdf_dataset(ncid, dimids(2), z_axis)
         end subroutine write_netcdf_axis_2d
 
-        subroutine write_netcdf_axis_3d(ncid, dimids, origin, dx, ngps)
+        subroutine write_netcdf_axis_3d(ncid, dimids, origin, dx, ngps, start, cnt)
             integer,          intent(in) :: ncid
             double precision, intent(in) :: origin(3), dx(3)
             integer,          intent(in) :: dimids(3), ngps(3)
+            integer,          intent(in) :: start(3)
+            integer,          intent(in) :: cnt(3)
             integer                      :: i
             double precision             :: x_axis(0:ngps(1)-1)
             double precision             :: y_axis(0:ngps(2)-1)
@@ -388,9 +390,9 @@ module netcdf_writer
                 z_axis(i) = origin(3) + dble(i) * dx(3)
             enddo
 
-            call write_netcdf_dataset(ncid, dimids(1), x_axis)
-            call write_netcdf_dataset(ncid, dimids(2), y_axis)
-            call write_netcdf_dataset(ncid, dimids(3), z_axis)
+            call write_netcdf_dataset(ncid, dimids(1), x_axis, start, cnt)
+            call write_netcdf_dataset(ncid, dimids(2), y_axis, start, cnt)
+            call write_netcdf_dataset(ncid, dimids(3), z_axis, start, cnt)
         end subroutine write_netcdf_axis_3d
 
         subroutine write_netcdf_info(ncid, version_tag, file_type, cf_version)
