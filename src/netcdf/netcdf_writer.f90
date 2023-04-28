@@ -40,6 +40,27 @@ module netcdf_writer
 
     contains
 
+        subroutine set_independent_write(ncid, varid, l_serial)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            logical, optional, intent(in) :: l_serial
+            logical                       :: l_parallel
+
+            l_parallel = (comm%size > 1)
+
+            if (present(l_serial)) then
+                l_parallel = .not. l_serial
+            endif
+
+            if (l_parallel) then
+                ncerr = nf90_var_par_access(ncid, varid, NF90_INDEPENDENT)
+                call check_netcdf_error("Failed to set independent.")
+            endif
+
+        end subroutine set_independent_write
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine set_collective_write(ncid, varid, l_serial)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
@@ -367,16 +388,14 @@ module netcdf_writer
         end subroutine write_netcdf_axis_2d
 
         subroutine write_netcdf_axis_3d(ncid, dimids, origin, dx, ngps, start, cnt)
-            integer,          intent(in) :: ncid
-            double precision, intent(in) :: origin(3), dx(3)
-            integer,          intent(in) :: dimids(3), ngps(3)
-            integer,          intent(in) :: start(3)
-            integer,          intent(in) :: cnt(3)
-            integer                      :: i
-            double precision             :: x_axis(0:ngps(1)-1)
-            double precision             :: y_axis(0:ngps(2)-1)
-            double precision             :: z_axis(0:ngps(3)-1)
-
+            integer,           intent(in) :: ncid
+            double precision,  intent(in) :: origin(3), dx(3)
+            integer,           intent(in) :: dimids(3), ngps(3)
+            integer, optional, intent(in) :: start(3), cnt(3)
+            integer                       :: i
+            double precision              :: x_axis(0:ngps(1)-1)
+            double precision              :: y_axis(0:ngps(2)-1)
+            double precision              :: z_axis(0:ngps(3)-1)
 
             do i = 0, ngps(1)-1
                 x_axis(i) = origin(1) + dble(i) * dx(1)
@@ -390,9 +409,13 @@ module netcdf_writer
                 z_axis(i) = origin(3) + dble(i) * dx(3)
             enddo
 
-            call write_netcdf_dataset(ncid, dimids(1), x_axis, start, cnt)
-            call write_netcdf_dataset(ncid, dimids(2), y_axis, start, cnt)
-            call write_netcdf_dataset(ncid, dimids(3), z_axis, start, cnt)
+            print *, "HI"
+
+            call write_netcdf_dataset(ncid, dimids(1), x_axis, start=(/start(1)/), cnt=(/cnt(1)/))
+            call write_netcdf_dataset(ncid, dimids(2), y_axis, start=(/start(2)/), cnt=(/cnt(2)/))
+            call write_netcdf_dataset(ncid, dimids(3), z_axis, start=(/start(3)/), cnt=(/cnt(3)/))
+
+            print *, "done"
         end subroutine write_netcdf_axis_3d
 
         subroutine write_netcdf_info(ncid, version_tag, file_type, cf_version)
