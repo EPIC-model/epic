@@ -51,6 +51,10 @@ module parcel_diagnostics_netcdf
             logical                   :: l_exist
             integer                   :: start(1), cnt(1)
 
+            if (comm%rank /= comm%master) then
+                return
+            endif
+
             ncfname =  basename // '_parcel_stats.nc'
 
             restart_time = -one
@@ -61,13 +65,18 @@ module parcel_diagnostics_netcdf
             if (l_restart .and. l_exist) then
                 call open_netcdf_file(ncfname, NF90_NOWRITE, ncid, l_serial=.true.)
                 call get_num_steps(ncid, n_writes)
-                call get_time(ncid, restart_time)
-                call read_netcdf_parcel_stats_content
-                start = 1
-                cnt = 1
-                call close_netcdf_file(ncid, l_serial=.true.)
-                n_writes = n_writes + 1
-                return
+                if (n_writes > 0) then
+                    call get_time(ncid, restart_time)
+                    call read_netcdf_parcel_stats_content
+                    start = 1
+                    cnt = 1
+                    call close_netcdf_file(ncid, l_serial=.true.)
+                    n_writes = n_writes + 1
+                    return
+                else
+                    call close_netcdf_file(ncid, l_serial=.true.)
+                    call delete_netcdf_file(ncfname)
+                endif
             endif
 
             call create_netcdf_file(ncfname, overwrite, ncid, l_serial=.true.)
