@@ -175,7 +175,7 @@ module parameters
             val(3) = sum(zeta(nz,     box%lo(2):box%hi(2), box%lo(1):box%hi(1)) ** 2)
 
             call MPI_Allreduce(MPI_IN_PLACE,            &
-                               val(1:3),          &
+                               val(1:3),                &
                                3,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
