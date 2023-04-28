@@ -153,8 +153,11 @@ module parameters
 
 
     subroutine set_zeta_boundary_flag(zeta)
-        double precision, intent(in) :: zeta(-1:nz+1, 0:ny-1, 0:nx-1)
+        double precision, intent(in) :: zeta(-1:nz+1,                &
+                                             box%hlo(2):box%hhi(2),  &
+                                             box%hlo(1):box%hhi(1))
         double precision             :: rms_bndry(2), rms_interior, thres
+        double precision             :: val(3)
 
         if (boundary%l_ignore_bndry_zeta_flag) then
             l_bndry_zeta_zero(:) = .false.
@@ -164,9 +167,23 @@ module parameters
                 print *, "         Stop your simulation if this is not your intention."
             endif
         else
-            rms_interior = dsqrt(sum(zeta(1:nz-1, :, :) ** 2) * nhcelli / (nz-1))
-            rms_bndry(1) = dsqrt(sum(zeta(0,      :, :) ** 2) * nhcelli)
-            rms_bndry(2) = dsqrt(sum(zeta(nz,     :, :) ** 2) * nhcelli)
+            ! rms interior
+            val(1) = sum(zeta(1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) ** 2)
+
+            ! rms boundary
+            val(2) = sum(zeta(0,      box%lo(2):box%hi(2), box%lo(1):box%hi(1)) ** 2)
+            val(3) = sum(zeta(nz,     box%lo(2):box%hi(2), box%lo(1):box%hi(1)) ** 2)
+
+            call MPI_Allreduce(MPI_IN_PLACE,            &
+                               val(1:3),          &
+                               3,                       &
+                               MPI_DOUBLE_PRECISION,    &
+                               MPI_SUM,                 &
+                               comm%world,              &
+                               comm%err)
+
+            rms_interior = dsqrt(val(1) * nhcelli / (nz-1))
+            rms_bndry = dsqrt(val(2:3) * nhcelli)
 
             thres = boundary%zeta_tol * rms_interior + epsilon(rms_interior)
 
