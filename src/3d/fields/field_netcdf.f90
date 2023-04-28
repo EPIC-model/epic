@@ -443,7 +443,7 @@ module field_netcdf
                                          'x_vorticity',             &
                                          vortg(box%lo(3):box%hi(3), &
                                                box%lo(2):box%hi(2), &
-                                               box%lo(1):box%lo(1), &
+                                               box%lo(1):box%hi(1), &
                                                1),                  &
                                          start,                     &
                                          cnt)
@@ -454,7 +454,7 @@ module field_netcdf
                                          'y_vorticity',             &
                                          vortg(box%lo(3):box%hi(3), &
                                                box%lo(2):box%hi(2), &
-                                               box%lo(1):box%lo(1), &
+                                               box%lo(1):box%hi(1), &
                                                2),                  &
                                          start,                     &
                                          cnt)
@@ -465,7 +465,7 @@ module field_netcdf
                                          'z_vorticity',             &
                                          vortg(box%lo(3):box%hi(3), &
                                                box%lo(2):box%hi(2), &
-                                               box%lo(1):box%lo(1), &
+                                               box%lo(1):box%hi(1), &
                                                3),                  &
                                          start,                     &
                                          cnt)
@@ -476,7 +476,7 @@ module field_netcdf
                                          'buoyancy',                  &
                                          tbuoyg(box%lo(3):box%hi(3),  &
                                                 box%lo(2):box%hi(2),  &
-                                                box%lo(1):box%lo(1)), &
+                                                box%lo(1):box%hi(1)), &
                                          start,                       &
                                          cnt)
             endif
@@ -487,7 +487,7 @@ module field_netcdf
                                          'humidity',                &
                                          humg(box%lo(3):box%hi(3),  &
                                               box%lo(2):box%hi(2),  &
-                                              box%lo(1):box%lo(1)), &
+                                              box%lo(1):box%hi(1)), &
                                          start,                     &
                                          cnt)
             endif
