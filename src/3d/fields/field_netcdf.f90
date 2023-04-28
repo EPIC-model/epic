@@ -81,7 +81,9 @@ module field_netcdf
                     return
                 else
                     call close_netcdf_file(ncid)
-                    call delete_netcdf_file(ncfname)
+                    if (comm%rank == comm%master) then
+                        call delete_netcdf_file(ncfname)
+                    endif
                 endif
             endif
 
