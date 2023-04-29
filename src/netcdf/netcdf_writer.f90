@@ -409,9 +409,12 @@ module netcdf_writer
                 z_axis(i) = origin(3) + dble(i) * dx(3)
             enddo
 
-            call write_netcdf_dataset(ncid, dimids(1), x_axis, start=(/start(1)/), cnt=(/cnt(1)/))
-            call write_netcdf_dataset(ncid, dimids(2), y_axis, start=(/start(2)/), cnt=(/cnt(2)/))
-            call write_netcdf_dataset(ncid, dimids(3), z_axis, start=(/start(3)/), cnt=(/cnt(3)/))
+            call write_netcdf_dataset(ncid, dimids(1), x_axis, &
+                                      start=(/start(1)/), cnt=(/cnt(1)/))
+            call write_netcdf_dataset(ncid, dimids(2), y_axis, &
+                                      start=(/start(2)/), cnt=(/cnt(2)/))
+            call write_netcdf_dataset(ncid, dimids(3), z_axis, &
+                                      start=(/start(3)/), cnt=(/cnt(3)/))
 
         end subroutine write_netcdf_axis_3d
 
