@@ -80,7 +80,7 @@ module parcel_bc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Performs a parcel halo swap and then applies the periodic boundary condition
+        ! Performs a parcel swap and then applies the periodic boundary condition
         ! to all parcels
         ! @param[in] pindex are the parcel indices to check (optional)
         subroutine apply_swap_periodicity(pindex)
