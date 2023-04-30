@@ -32,7 +32,7 @@ module parcel_mpi
     ! we have 8 neighbours
     integer :: n_parcel_sends(8)
 
-    public :: parcel_halo_swap,             &
+    public :: parcel_communicate,             &
               n_parcel_sends,               &
               north_pid,                    &
               south_pid,                    &
@@ -102,7 +102,7 @@ module parcel_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine parcel_halo_swap(pindex)
+        subroutine parcel_communicate(pindex)
             integer, optional, intent(in)           :: pindex(:)
 
             ! We only must store the parcel indices (therefore 1) and
@@ -120,7 +120,7 @@ module parcel_mpi
 
             call deallocate_parcel_buffers
 
-        end subroutine parcel_halo_swap
+        end subroutine parcel_communicate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

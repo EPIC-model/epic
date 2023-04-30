@@ -102,7 +102,7 @@ program test_mpi_laplace_correction_3d
         call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
     enddo
 
-    call parcel_halo_swap
+    call parcel_communicate
 
     volg = zero
 

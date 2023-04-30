@@ -5,7 +5,7 @@ program test_parcel_moving_random
     use parameters, only : update_parameters, nx, ny, nz, lower, extent, dx
     use parcel_container
     use parcel_init, only : parcel_default
-    use parcel_mpi, only : parcel_halo_swap
+    use parcel_mpi, only : parcel_communicate
     use fields, only : field_default
     use parcel_bc, only : apply_periodic_bc
     use parcel_interpl, only : par2grid
@@ -86,7 +86,7 @@ program test_parcel_moving_random
         enddo
 
         ! Do halo swap
-        call parcel_halo_swap
+        call parcel_communicate
 
         ! Do periodic shift in x and y
         do n = 1, n_parcels

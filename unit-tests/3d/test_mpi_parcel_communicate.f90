@@ -4,7 +4,7 @@
 !   This unit test checks parcel halo swap. Each MPI rank sends comm%rank+1
 !   parcels to each of its neighbours.
 ! =============================================================================
-program test_mpi_parcel_halo_swap
+program test_mpi_parcel_communicate
     use constants, only : zero, one, f12
     use unit_test
     use mpi_communicator
@@ -98,7 +98,7 @@ program test_mpi_parcel_halo_swap
     parcels%vorticity(:, 1:n_parcels) = comm%rank + 1
     parcels%buoyancy(1:n_parcels) = comm%rank + 1
 
-    call parcel_halo_swap
+    call parcel_communicate
 
     n_total_verify = n_parcels
     call mpi_blocking_reduce(n_total_verify, MPI_SUM)
@@ -149,4 +149,4 @@ program test_mpi_parcel_halo_swap
 
     call mpi_comm_finalise
 
-end program test_mpi_parcel_halo_swap
+end program test_mpi_parcel_communicate

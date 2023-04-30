@@ -5,7 +5,7 @@ program test_parcel_spli_merge
     use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmin, dx
     use parcel_container
     use parcel_init, only : parcel_default
-    use parcel_mpi, only : parcel_halo_swap
+    use parcel_mpi, only : parcel_communicate
     use fields, only : field_default
     use parcel_bc, only : apply_periodic_bc, apply_parcel_bc
     use parcel_interpl, only : par2grid
@@ -85,7 +85,7 @@ program test_parcel_spli_merge
             parcels%position(1:2, n) = parcels%position(1:2, n) + rn(1:2) * dx(1:2)
         enddo
 
-        call parcel_halo_swap
+        call parcel_communicate
 
         call apply_parcel_bc
 

@@ -7,7 +7,7 @@ module parcel_bc
     use constants, only : zero, two
     use parameters, only : lower, upper, extent, hli, center
     use parcel_container, only : n_parcels, parcels
-    use parcel_mpi, only : parcel_halo_swap
+    use parcel_mpi, only : parcel_communicate
     use omp_lib
     implicit none
 
@@ -87,7 +87,7 @@ module parcel_bc
             integer, optional, intent(in) :: pindex(:)
             integer                       :: n
 
-            call parcel_halo_swap(pindex)
+            call parcel_communicate(pindex)
 
             !$omp parallel default(shared)
             !$omp do private(n)
