@@ -24,8 +24,8 @@ module mpi_utils
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine mpi_check_for_message(source, tag, recv_size)
-            integer, intent(in)  :: source
-            integer, intent(out) :: recv_size, tag
+            integer, intent(in)  :: source, tag
+            integer, intent(out) :: recv_size
             type(MPI_Status)     :: status
 
             status%MPI_SOURCE = -1
@@ -33,15 +33,13 @@ module mpi_utils
             status%MPI_ERROR = 0
 
             call MPI_probe(source,          &
-                           MPI_ANY_TAG,     &
+                           tag,             &
                            comm%cart,       &
                            status,          &
                            comm%err)
 
             call mpi_check_for_error(&
                 "in MPI_probe of mpi_utils::mpi_check_for_message.")
-
-            tag = status%MPI_TAG
 
             comm%err = status%MPI_ERROR
             call mpi_check_for_error(&
