@@ -1,6 +1,8 @@
 module parcel_mpi
     use mpi_layout
-    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_message, mpi_check_for_error
+    use mpi_utils, only : mpi_exit_on_error     &
+                        , mpi_check_for_message &
+                        , mpi_check_for_error
     use mpi_tags
 #ifndef NDEBUG
     use mpi_collectives, only : mpi_blocking_reduce
@@ -131,7 +133,7 @@ module parcel_mpi
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
             integer                                 :: n_total_sends, n
-            integer                                 :: tag, source, recv_count
+            integer                                 :: tag, recv_count
             integer                                 :: recv_size, send_size
 
             do n = 1, 8
@@ -158,14 +160,14 @@ module parcel_mpi
             do n = 1, 8
 
                 ! check for incoming messages
-                call mpi_check_for_message(tag, recv_size, source)
+                call mpi_check_for_message(neighbours(n)%rank, tag, recv_size)
 
                 allocate(recv_buf(recv_size))
 
                 call MPI_Recv(recv_buf(1:recv_size),    &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
-                              source,                   &
+                              neighbours(n)%rank,       &
                               tag,                      &
                               comm%cart,                &
                               recv_status,              &

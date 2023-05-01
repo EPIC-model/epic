@@ -631,7 +631,7 @@ module parcel_nearest
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
             integer                                 :: recv_size, send_size, buf_sizes(8)
-            integer                                 :: tag, source, recv_count, n, l, i, m, k, j
+            integer                                 :: tag, recv_count, n, l, i, m, k, j
             integer, parameter                      :: n_entries = 3
 
             buf_sizes = n_neighbour_small * n_entries
@@ -681,7 +681,7 @@ module parcel_nearest
 
             do n = 1, 8
                 ! check for incoming messages
-                call mpi_check_for_message(tag, recv_size, source)
+                call mpi_check_for_message(neighbours(n)%rank, tag, recv_size)
 
                 if (mod(recv_size, n_entries) /= 0) then
                     call mpi_exit_on_error(&
@@ -695,7 +695,7 @@ module parcel_nearest
                 call MPI_Recv(recv_buf(1:recv_size),    &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
-                              source,                   &
+                              neighbours(n)%rank,       &
                               tag,                      &
                               comm%cart,                &
                               recv_status,              &
@@ -713,7 +713,7 @@ module parcel_nearest
                         ! therefore update the rclo entry.
                         dclo(m) = recv_buf(i+1)
                         iclo(m) = nint(recv_buf(i+2))
-                        rclo(m) = source
+                        rclo(m) = neighbours(n)%rank
                     endif
                 enddo
 
@@ -1258,7 +1258,7 @@ module parcel_nearest
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
             integer                                 :: recv_size, send_size
-            integer                                 :: tag, source, recv_count, n, i ,j, l, m, pid, k
+            integer                                 :: tag, recv_count, n, i ,j, l, m, pid, k
             integer, parameter                      :: n_entries = 5
             integer, allocatable                    :: rtmp(:), pidtmp(:), midtmp(:)
             ! rtmp: MPI rank remote small parcel belongs to
@@ -1311,14 +1311,14 @@ module parcel_nearest
             do n = 1, 8
 
                 ! check for incoming messages
-                call mpi_check_for_message(tag, recv_size, source)
+                call mpi_check_for_message(neighbours(n)%rank, tag, recv_size)
 
                 allocate(recv_buf(recv_size))
 
                 call MPI_Recv(recv_buf(1:recv_size),    &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
-                              source,                   &
+                              neighbours(n)%rank,       &
                               tag,                      &
                               comm%cart,                &
                               recv_status,              &
@@ -1359,7 +1359,7 @@ module parcel_nearest
                         parcels%position(:, k) = recv_buf(i:i+2)
                         parcels%volume(k) = zero    ! set to zero as each parcel is small
                         pidtmp(k) = nint(recv_buf(i+3))
-                        rtmp(k) = source
+                        rtmp(k) = neighbours(n)%rank
                         midtmp(k) = nint(recv_buf(i+4))
 
                         !------------------------------------------------------
@@ -1412,7 +1412,7 @@ module parcel_nearest
             double precision, allocatable              :: recv_buf(:)
             type(MPI_Request)                          :: requests(8)
             type(MPI_Status)                           :: recv_status, send_statuses(8)
-            integer                                    :: tag, source, recv_count
+            integer                                    :: tag, recv_count
             integer                                    :: recv_size, send_size
             double precision                           :: buffer(n_par_attrib)
             integer                                    :: m, rc, ic, is, n, i, j, k, iv
@@ -1504,14 +1504,14 @@ module parcel_nearest
 
             do n = 1, 8
                 ! check for incoming messages
-                call mpi_check_for_message(tag, recv_size, source)
+                call mpi_check_for_message(neighbours(n)%rank, tag, recv_size)
 
                 allocate(recv_buf(recv_size))
 
                 call MPI_Recv(recv_buf(1:recv_size),    &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
-                              source,                   &
+                              neighbours(n)%rank,       &
                               tag,                      &
                               comm%cart,                &
                               recv_status,              &

@@ -23,34 +23,39 @@ module mpi_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine mpi_check_for_message(tag, recv_size, source)
-            integer, intent(out) :: recv_size, tag, source
+        subroutine mpi_check_for_message(source, tag, recv_size)
+            integer, intent(in)  :: source
+            integer, intent(out) :: recv_size, tag
             type(MPI_Status)     :: status
 
             status%MPI_SOURCE = -1
             status%MPI_TAG = -1
             status%MPI_ERROR = 0
 
-            call MPI_probe(MPI_ANY_SOURCE,  &
+            call MPI_probe(source,          &
                            MPI_ANY_TAG,     &
                            comm%cart,       &
                            status,          &
                            comm%err)
 
-            call mpi_check_for_error("in MPI_probe of mpi_utils::mpi_check_for_message.")
+            call mpi_check_for_error(&
+                "in MPI_probe of mpi_utils::mpi_check_for_message.")
 
-            source = status%MPI_SOURCE
             tag = status%MPI_TAG
 
             comm%err = status%MPI_ERROR
-            call mpi_check_for_error("in MPI_Status of mpi_utils::mpi_check_for_message.")
+            call mpi_check_for_error(&
+                "in MPI_Status of mpi_utils::mpi_check_for_message.")
 
             recv_size = 0
             call MPI_get_count(status, MPI_DOUBLE_PRECISION, recv_size, comm%err)
 
-            call mpi_check_for_error("in MPI_get_count of mpi_utils::mpi_check_for_message.")
+            call mpi_check_for_error(&
+                "in MPI_get_count of mpi_utils::mpi_check_for_message.")
 
         end subroutine mpi_check_for_message
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine mpi_check_for_error(msg)
             character(*), intent(in) :: msg
