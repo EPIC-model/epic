@@ -74,7 +74,6 @@ module parcel_nearest
     logical, allocatable, asynchronous :: l_merged(:)    ! indicates parcels merged in first stage
 
     integer              :: n_neighbour_small(8)  ! number of small parcels received
-    integer              :: small_recv_order(8)   ! receive order of small parcels
     integer              :: n_remote_small        ! sum(n_neighbour_small)
     integer, allocatable :: rsma(:)               ! rank of small parcel received (accessed with *n*)
     integer, allocatable :: pidsma(:)             ! index of remote small parcel (accessed with *n*)
@@ -663,13 +662,14 @@ module parcel_nearest
 
                 j = j + n_neighbour_small(n)
 
-                tag = small_recv_order(n)
+                ! receive order of small parcels
+                tag = RECV_NEIGHBOUR_TAG(n)
 
                 call MPI_Isend(send_buf(1:send_size),   &
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(tag)%rank,    &
-                               NEIGHBOUR_TAG(tag),      &
+                               SEND_NEIGHBOUR_TAG(tag), &
                                comm%cart,               &
                                requests(n),             &
                                comm%err)
@@ -681,7 +681,9 @@ module parcel_nearest
 
             do n = 1, 8
                 ! check for incoming messages
-                call mpi_check_for_message(neighbours(n)%rank, tag, recv_size)
+                call mpi_check_for_message(neighbours(n)%rank,      &
+                                           RECV_NEIGHBOUR_TAG(n),   &
+                                           recv_size)
 
                 if (mod(recv_size, n_entries) /= 0) then
                     call mpi_exit_on_error(&
@@ -696,7 +698,7 @@ module parcel_nearest
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               neighbours(n)%rank,       &
-                              tag,                      &
+                              RECV_NEIGHBOUR_TAG(n),    &
                               comm%cart,                &
                               recv_status,              &
                               comm%err)
@@ -1258,7 +1260,7 @@ module parcel_nearest
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
             integer                                 :: recv_size, send_size
-            integer                                 :: tag, recv_count, n, i ,j, l, m, pid, k
+            integer                                 :: recv_count, n, i ,j, l, m, pid, k
             integer, parameter                      :: n_entries = 5
             integer, allocatable                    :: rtmp(:), pidtmp(:), midtmp(:)
             ! rtmp: MPI rank remote small parcel belongs to
@@ -1299,7 +1301,7 @@ module parcel_nearest
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
-                               NEIGHBOUR_TAG(n),        &
+                               SEND_NEIGHBOUR_TAG(n),   &
                                comm%cart,               &
                                requests(n),             &
                                comm%err)
@@ -1311,7 +1313,9 @@ module parcel_nearest
             do n = 1, 8
 
                 ! check for incoming messages
-                call mpi_check_for_message(neighbours(n)%rank, tag, recv_size)
+                call mpi_check_for_message(neighbours(n)%rank,      &
+                                           RECV_NEIGHBOUR_TAG(n),   &
+                                           recv_size)
 
                 allocate(recv_buf(recv_size))
 
@@ -1319,7 +1323,7 @@ module parcel_nearest
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               neighbours(n)%rank,       &
-                              tag,                      &
+                              RECV_NEIGHBOUR_TAG(n),    &
                               comm%cart,                &
                               recv_status,              &
                               comm%err)
@@ -1366,15 +1370,14 @@ module parcel_nearest
                         ! We must also assign incoming small parcels to cells
                         ! Note: We must apply a shift for parcels communicated
                         !       across a periodic boundary.
-                        call apply_periodic_shift(parcels%position(:, k), tag)
+                        call apply_periodic_shift(parcels%position(:, k), &
+                                                  RECV_NEIGHBOUR_TAG(n))
 
                         ! Now we can safely assign the local cell index:
                         call parcel_to_local_cell_index(k)
                     enddo
                     n_neighbour_small(n) = n_neighbour_small(n) + recv_count
                 endif
-
-                small_recv_order(n) = tag
 
                 ! *move_alloc* deallocates pidtmp, rtmp and midtmp
                 call move_alloc(pidtmp, pidsma)
@@ -1412,7 +1415,7 @@ module parcel_nearest
             double precision, allocatable              :: recv_buf(:)
             type(MPI_Request)                          :: requests(8)
             type(MPI_Status)                           :: recv_status, send_statuses(8)
-            integer                                    :: tag, recv_count
+            integer                                    :: recv_count
             integer                                    :: recv_size, send_size
             double precision                           :: buffer(n_par_attrib)
             integer                                    :: m, rc, ic, is, n, i, j, k, iv
@@ -1493,7 +1496,7 @@ module parcel_nearest
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
-                               NEIGHBOUR_TAG(n),        &
+                               SEND_NEIGHBOUR_TAG(n),   &
                                comm%cart,               &
                                requests(n),             &
                                comm%err)
@@ -1504,7 +1507,9 @@ module parcel_nearest
 
             do n = 1, 8
                 ! check for incoming messages
-                call mpi_check_for_message(neighbours(n)%rank, tag, recv_size)
+                call mpi_check_for_message(neighbours(n)%rank,      &
+                                           RECV_NEIGHBOUR_TAG(n),   &
+                                           recv_size)
 
                 allocate(recv_buf(recv_size))
 
@@ -1512,7 +1517,7 @@ module parcel_nearest
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               neighbours(n)%rank,       &
-                              tag,                      &
+                              RECV_NEIGHBOUR_TAG(n),    &
                               comm%cart,                &
                               recv_status,              &
                               comm%err)

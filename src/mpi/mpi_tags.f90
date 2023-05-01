@@ -11,15 +11,6 @@ module mpi_tags
                            MPI_SOUTHWEST = 7, &
                            MPI_SOUTHEAST = 8
 
-    integer, parameter :: NEIGHBOUR_TAG(8) = (/MPI_SOUTH,       &   ! north maps to south
-                                               MPI_NORTH,       &   ! south maps to north
-                                               MPI_EAST,        &   ! west maps to east
-                                               MPI_WEST,        &   ! east maps to west
-                                               MPI_SOUTHEAST,   &   ! northwest maps to southeast
-                                               MPI_SOUTHWEST,   &   ! northeast maps to southwest
-                                               MPI_NORTHEAST,   &   ! southwest maps to northeast
-                                               MPI_NORTHWEST/)      ! southeast maps to northwest
-
     integer, parameter :: SEND_NEIGHBOUR_TAG(8) = (/MPI_SOUTH,      &   ! north maps to south
                                                     MPI_NORTH,      &   ! south maps to north
                                                     MPI_EAST,       &   ! west maps to east
