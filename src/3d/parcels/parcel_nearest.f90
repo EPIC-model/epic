@@ -25,7 +25,7 @@ module parcel_nearest
     use parameters, only : dx, dxi, vcell, hli, lower, extent       &
                          , ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use mpi_communicator
     use mpi_layout
     use mpi_collectives, only : mpi_blocking_reduce
