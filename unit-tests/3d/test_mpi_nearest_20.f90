@@ -85,9 +85,9 @@ program test_mpi_nearest_20
     ! vmin = vcell / parcel%min_vratio
     parcel%min_vratio = 8.0d0
 
-    call update_parameters
-
     call mpi_layout_init(lower, extent, nx, ny, nz)
+
+    call update_parameters
 
     call parcel_alloc(max_num_parcels)
 

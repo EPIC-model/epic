@@ -11,7 +11,6 @@ program test_mpi_parcel_split
     use unit_test
     use mpi_communicator
     use mpi_layout
-    use fields, only : field_alloc
     use parcel_container
     use parcel_mpi
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, vcell, set_vmax
@@ -39,12 +38,11 @@ program test_mpi_parcel_split
     lower  = zero
     extent = four
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
     call set_vmax(f14 * vcell)
-
-    ! calls mpi_layout_init internally
-    call field_alloc
 
     n_parcels = 2 * (box%hi(2) - box%lo(2) + 1) + 2 * (box%hi(1) - box%lo(1) + 1)
     n_total = 2 * n_parcels

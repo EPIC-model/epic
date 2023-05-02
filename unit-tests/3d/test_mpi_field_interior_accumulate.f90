@@ -15,7 +15,7 @@ program test_field_interior_accumulate
     use field_mpi
     implicit none
 
-    integer, parameter            :: nx = 10, ny = 10, nz = 0
+    integer, parameter            :: nx = 10, ny = 10, nz = 1
     double precision, parameter   :: lower(3) = (/zero, zero, zero/)
     double precision, parameter   :: extent(3) = (/one, one, one/)
     double precision, allocatable :: values(:, :, :)

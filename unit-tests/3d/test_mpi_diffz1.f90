@@ -37,9 +37,10 @@ program test_mpi_diffz1
     lower  = (/zero, zero, zero/)
     extent =  (/pi, pi, pi/)
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
-    call mpi_layout_init(lower, extent, nx, ny, nz)
 
     allocate(fp(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(dp(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))

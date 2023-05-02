@@ -34,6 +34,8 @@ program test_mpi_trilinear
 
     call register_timer('par2grid', par2grid_timer)
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
     call field_alloc

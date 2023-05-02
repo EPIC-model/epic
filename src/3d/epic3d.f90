@@ -8,7 +8,8 @@ program epic3d
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
     use parcel_merge, only : merge_parcels, merge_timer
-    use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
+    use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer, &
+    nearest_win_allocate, nearest_win_deallocate
     use parcel_correction, only : apply_laplace,          &
                                   apply_gradient,         &
                                   apply_vortcor,          &
@@ -97,6 +98,8 @@ program epic3d
 
             call setup_output_files
 
+            call nearest_win_allocate
+
         end subroutine
 
 
@@ -143,6 +146,7 @@ program epic3d
         subroutine post_run
             use options, only : output
             call parcel_dealloc
+            call nearest_win_deallocate
             call finalise_pencil_fft
             call stop_timer(epic_timer)
 

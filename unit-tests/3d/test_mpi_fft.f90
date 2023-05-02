@@ -30,9 +30,9 @@ program test_mpi_fft_3d
     lower = (/-pi, f12 * pi, zero/)
     extent = (/twopi, two * twopi, four * twopi/)
 
-    call update_parameters
-
     call mpi_layout_init(lower, extent, nx, ny, nz)
+
+    call update_parameters
 
     allocate(fp1(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(fp2(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))

@@ -50,6 +50,13 @@ program test_ellipse_multi_merge_4
 
         subroutine parcel_setup
             n_parcels = 3
+
+            parcels%vorticity = zero
+            parcels%buoyancy = zero
+#ifndef ENABLE_DRY_MODE
+            parcels%humidity = zero
+#endif
+
             parcels%position(1, 1) = -0.5d0
             parcels%position(2, 1) = zero
             parcels%volume(1) = 0.25d0 * pi
