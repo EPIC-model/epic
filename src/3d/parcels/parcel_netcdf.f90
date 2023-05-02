@@ -295,7 +295,13 @@ module parcel_netcdf
             sendbuf(comm%rank+1:comm%size) = n_parcels
             sendbuf(comm%rank+1) = 0
 
-            call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, comm%world, comm%err)
+            call MPI_Reduce_scatter(sendbuf(1:comm%size),   &
+                                    start_index,            &
+                                    recvcounts,             &
+                                    MPI_INTEGER,            &
+                                    MPI_SUM,                &
+                                    comm%world,             &
+                                    comm%err)
 
             call mpi_check_for_error("in MPI_Reduce_scatter of parcel_netcdf::write_netcdf_parcels.")
 
@@ -342,8 +348,9 @@ module parcel_netcdf
             character(*),     intent(in) :: fname
             integer                      :: start_index, num_indices, end_index
             integer, allocatable         :: invalid(:)
-            integer                      :: n, m, n_total, pid
+            integer                      :: n, m, n_total, pfirst, plast
             integer                      :: start(2)
+            integer                      :: avail_size, n_remaining, n_read
 
             call start_timer(parcel_io_timer)
 
@@ -374,8 +381,8 @@ module parcel_netcdf
                 n_parcels = end_index - start_index + 1
 
                 if (n_parcels > max_num_parcels) then
-                    print *, "Number of parcels exceeds limit of", &
-                            max_num_parcels, ". Exiting."
+                    print *, "Number of parcels exceeds limit of", max_num_parcels, &
+                             ". You may increase parcel%size_factor. Exiting."
                     call MPI_Abort(comm%world, -1, comm%err)
                     call mpi_check_for_error("in MPI_Abort of parcel_netcdf::read_netcdf_parcels.")
                 endif
@@ -390,8 +397,8 @@ module parcel_netcdf
                 call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
                 start_index = 1
                 end_index = min(max_num_parcels, n_total_parcels)
-                n_parcels = end_index
-                pid = 1
+                pfirst = 1
+                n_remaining = n_total_parcels
 
                 ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
                 ! not belonging to its domain
@@ -399,10 +406,14 @@ module parcel_netcdf
 
                 do while (start_index <= end_index)
 
-                    call read_chunk(start_index, end_index, pid)
+                    call read_chunk(start_index, end_index, pfirst)
+
+                    n_read = end_index - start_index + 1
+                    n_remaining = n_remaining - n_read
+                    n_parcels = pfirst + n_read - 1
 
                     m = 1
-                    do n = pid, n_parcels
+                    do n = pfirst, n_parcels
                         if (is_contained(parcels%position(:, n))) then
                             cycle
                         endif
@@ -418,21 +429,31 @@ module parcel_netcdf
                     ! updates the variable n_parcels
                     call parcel_delete(invalid(0:m), n_del=m)
 
+                    ! adjust the chunk size to fit the remaining memory
+                    ! in the parcel container
+                    avail_size = max(0, max_num_parcels - n_parcels)
+
+                    ! update start index to fill container
+                    pfirst = 1 + n_parcels
+                    plast = min(pfirst + avail_size, n_total_parcels, max_num_parcels)
+
+                    ! we must make sure that we have enough data in the
+                    ! file as well as in the parcel container
+                    n_read = min(plast - pfirst, n_remaining)
+
+                    ! update start and end index for reading chunk
                     start_index = 1 + end_index
-                    end_index = min(end_index + max_num_parcels, n_total_parcels)
-                    pid = n_parcels + 1
-                    n_parcels = n_parcels + end_index - start_index + 1
+                    end_index = end_index + n_read
                 enddo
 
                 deallocate(invalid)
-
             endif
 
             call close_netcdf_file(ncid)
 
             ! verify result
             n_total = n_parcels
-            call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INT, MPI_SUM, comm%world, comm%err)
+            call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INTEGER, MPI_SUM, comm%world, comm%err)
             call mpi_check_for_error("in MPI_Allreduce of parcel_netcdf::read_netcdf_parcels.")
             if (n_total_parcels .ne. n_total) then
                 call mpi_exit_on_error("Local number of parcels does not sum up to total number!")
@@ -453,74 +474,81 @@ module parcel_netcdf
             num = last - first + 1
             plast = pfirst + num - 1
 
+            if (plast > max_num_parcels) then
+                print *, "Number of parcels exceeds limit of", max_num_parcels, &
+                         ". You may increase parcel%size_factor. Exiting."
+                call MPI_Abort(comm%world, -1, comm%err)
+                call mpi_check_for_error("in MPI_Abort of parcel_netcdf::read_chunk.")
+            endif
+
             start = (/ first, 1 /)
             cnt   = (/ num,   1 /)
 
             if (has_dataset(ncid, 'B11')) then
                 call read_netcdf_dataset(ncid, 'B11', parcels%B(1, pfirst:plast), start, cnt)
             else
-                print *, "The parcel shape component B11 must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel shape component B11 must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'B12')) then
                 call read_netcdf_dataset(ncid, 'B12', parcels%B(2, pfirst:plast), start, cnt)
             else
-                print *, "The parcel shape component B12 must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel shape component B12 must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'B13')) then
                 call read_netcdf_dataset(ncid, 'B13', parcels%B(3, pfirst:plast), start, cnt)
             else
-                print *, "The parcel shape component B13 must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel shape component B13 must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'B22')) then
                 call read_netcdf_dataset(ncid, 'B22', parcels%B(4, pfirst:plast), start, cnt)
             else
-                print *, "The parcel shape component B22 must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel shape component B22 must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'B23')) then
                 call read_netcdf_dataset(ncid, 'B23', parcels%B(5, pfirst:plast), start, cnt)
             else
-                print *, "The parcel shape component B23 must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel shape component B23 must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'x_position')) then
                 call read_netcdf_dataset(ncid, 'x_position', &
                                          parcels%position(1, pfirst:plast), start, cnt)
             else
-                print *, "The parcel x position must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel x position must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'y_position')) then
                 call read_netcdf_dataset(ncid, 'y_position', &
                                          parcels%position(2, pfirst:plast), start, cnt)
             else
-                print *, "The parcel y position must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel y position must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'z_position')) then
                 call read_netcdf_dataset(ncid, 'z_position', &
                                          parcels%position(3, pfirst:plast), start, cnt)
             else
-                print *, "The parcel z position must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel z position must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'volume')) then
                 call read_netcdf_dataset(ncid, 'volume', &
                                          parcels%volume(pfirst:plast), start, cnt)
             else
-                print *, "The parcel volume must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "The parcel volume must be present! Exiting.")
             endif
 
             if (has_dataset(ncid, 'x_vorticity')) then
@@ -555,8 +583,8 @@ module parcel_netcdf
 #endif
 
             if (.not. l_valid) then
-                print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
-                stop
+                call mpi_exit_on_error(&
+                    "Either the parcel buoyancy or vorticity must be present! Exiting.")
             endif
         end subroutine read_chunk
 

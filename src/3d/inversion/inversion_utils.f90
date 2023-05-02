@@ -218,8 +218,13 @@ module inversion_utils
             !---------------------------------------------------------------------
             !Define gamtop as the integral of phip(iz, 0, 0) with zero average:
 
-            call MPI_Allreduce(MPI_IN_PLACE, phip00, nz+1, MPI_DOUBLE_PRECISION, &
-                               MPI_SUM, comm%world, comm%err)
+            call MPI_Allreduce(MPI_IN_PLACE,            &
+                               phip00(0:nz),            &
+                               nz+1,                    &
+                               MPI_DOUBLE_PRECISION,    &
+                               MPI_SUM,                 &
+                               comm%world,              &
+                               comm%err)
 
             !$omp parallel workshare
             gamtop = f12 * extent(3) * (phip00 ** 2 - f13)

@@ -55,6 +55,12 @@ program test_ellipse_multi_merge_3
 
             d = (dsqrt(a1b1) + dsqrt(a2b2)) * f12 * dsqrt(two)
 
+            parcels%vorticity = zero
+            parcels%buoyancy = zero
+#ifndef ENABLE_DRY_MODE
+            parcels%humidity = zero
+#endif
+
             n_parcels = 3
             parcels%position(1, 1) = 1.5d0
             parcels%position(2, 1) = 0.2d0

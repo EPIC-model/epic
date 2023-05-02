@@ -34,6 +34,8 @@ program test_mpi_grid2par
 
     call register_timer('grid2par', grid2par_timer)
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
     call field_alloc

@@ -102,18 +102,20 @@ module field_mpi
             double precision, dimension(:), pointer :: send_buf, recv_buf
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: statuses(8)
-            integer                                 :: tag, n
+            integer                                 :: tag, n, recv_size, send_size
 
             do n = 1, 8
 
-                tag = NEIGHBOUR_TAG(n)
+                tag = RECV_NEIGHBOUR_TAG(n)
 
                 call get_interior_buffer_ptr(tag, recv_buf)
 
-                call MPI_Irecv(recv_buf,                &
-                               size(recv_buf),          &
+                recv_size = size(recv_buf)
+
+                call MPI_Irecv(recv_buf(1:recv_size),   &
+                               recv_size,               &
                                MPI_DOUBLE_PRECISION,    &
-                               neighbours(tag)%rank,    &
+                               neighbours(n)%rank,      &
                                tag,                     &
                                comm%cart,               &
                                requests(n),             &
@@ -126,12 +128,14 @@ module field_mpi
 
                 call get_halo_buffer_ptr(n, send_buf)
 
-                call MPI_Send(send_buf,                &
-                              size(send_buf),          &
-                              MPI_DOUBLE_PRECISION,    &
-                              neighbours(n)%rank,      &
-                              NEIGHBOUR_TAG(n),        &
-                              comm%cart,               &
+                send_size = size(send_buf)
+
+                call MPI_Send(send_buf(1:send_size),    &
+                              send_size,                &
+                              MPI_DOUBLE_PRECISION,     &
+                              neighbours(n)%rank,       &
+                              SEND_NEIGHBOUR_TAG(n),    &
+                              comm%cart,                &
                               comm%err)
 
                 call mpi_check_for_error("in MPI_Send of field_mpi::halo_to_interior_communication.")
@@ -152,18 +156,20 @@ module field_mpi
             double precision, dimension(:), pointer :: send_buf, recv_buf
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: statuses(8)
-            integer                                 :: tag, n
+            integer                                 :: tag, n, recv_size, send_size
 
             do n = 1, 8
 
-                tag = NEIGHBOUR_TAG(n)
+                tag = RECV_NEIGHBOUR_TAG(n)
 
                 call get_halo_buffer_ptr(tag, recv_buf)
 
-                call MPI_Irecv(recv_buf,                &
-                               size(recv_buf),          &
+                recv_size = size(recv_buf)
+
+                call MPI_Irecv(recv_buf(1:recv_size),   &
+                               recv_size,               &
                                MPI_DOUBLE_PRECISION,    &
-                               neighbours(tag)%rank,    &
+                               neighbours(n)%rank,      &
                                tag,                     &
                                comm%cart,               &
                                requests(n),             &
@@ -176,12 +182,14 @@ module field_mpi
             do n = 1, 8
                 call get_interior_buffer_ptr(n, send_buf)
 
-                call MPI_Send(send_buf,                &
-                              size(send_buf),          &
-                              MPI_DOUBLE_PRECISION,    &
-                              neighbours(n)%rank,      &
-                              NEIGHBOUR_TAG(n),        &
-                              comm%cart,               &
+                send_size = size(send_buf)
+
+                call MPI_Send(send_buf(1:send_size),    &
+                              send_size,                &
+                              MPI_DOUBLE_PRECISION,     &
+                              neighbours(n)%rank,       &
+                              SEND_NEIGHBOUR_TAG(n),    &
+                              comm%cart,                &
                               comm%err)
 
                 call mpi_check_for_error("in MPI_Send of field_mpi::interior_to_halo_communication.")

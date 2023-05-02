@@ -168,8 +168,13 @@ module rk4_utils
             local_max(1) = gmax
             local_max(2) = bmax
 
-            call MPI_Allreduce(MPI_IN_PLACE, local_max, 2, MPI_DOUBLE_PRECISION, &
-                               MPI_MAX, comm%world, comm%err)
+            call MPI_Allreduce(MPI_IN_PLACE,            &
+                               local_max(1:2),          &
+                               2,                       &
+                               MPI_DOUBLE_PRECISION,    &
+                               MPI_MAX,                 &
+                               comm%world,              &
+                               comm%err)
 
             gmax = local_max(1)
             bmax = local_max(2)

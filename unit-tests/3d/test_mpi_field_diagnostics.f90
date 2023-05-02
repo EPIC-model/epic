@@ -8,7 +8,7 @@ program test_mpi_field_diagnostics
     use mpi_layout
     use fields
     use field_diagnostics
-    use parameters, only : lower, update_parameters, extent, nx, ny, nz, vcell, vcelli, ngrid
+    use parameters, only : lower, update_parameters, extent, nx, ny, nz, vcell, vcelli, ncell
     use mpi_timer
     implicit none
 
@@ -26,9 +26,10 @@ program test_mpi_field_diagnostics
     lower  = zero
     extent =  one
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
-    ! calls mpi_layout_init internally
     call field_alloc
 
     volg = vcell + one
@@ -45,7 +46,7 @@ program test_mpi_field_diagnostics
         passed = (passed .and. (field_stats(IDX_MIN_NPAR) == one))
         passed = (passed .and. (field_stats(IDX_AVG_NPAR) == one))
         passed = (passed .and. (field_stats(IDX_AVG_NSPAR) == one))
-        passed = (passed .and. (field_stats(IDX_KEG) == 0.375d0 * dble(ngrid) * (vcell + one)))
+        passed = (passed .and. dabs(field_stats(IDX_KEG) - 0.375d0 * dble(ncell) * (vcell + one)) < 1.0e-14)
     endif
 
     call mpi_comm_finalise

@@ -6,7 +6,6 @@ program test_mpi_parcel_diagnostics
     use unit_test
     use mpi_communicator
     use mpi_layout
-    use fields, only : field_alloc
     use parcel_container
     use parcel_diagnostics
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, vcell, dx, set_vmin
@@ -30,13 +29,12 @@ program test_mpi_parcel_diagnostics
     lower  = zero
     extent =  one
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
     ! set to make all parcels smaller than vmin
     call set_vmin(vcell)
-
-    ! calls mpi_layout_init internally
-    call field_alloc
 
     n_parcels = n_per_dim ** 3 * nz * (box%hi(2)-box%lo(2)+1) * (box%hi(1)-box%lo(1)+1)
     n_total = n_per_dim ** 3 * nz * ny * nx

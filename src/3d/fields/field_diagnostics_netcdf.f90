@@ -59,11 +59,16 @@ module field_diagnostics_netcdf
             if (l_restart .and. l_exist) then
                 call open_netcdf_file(ncfname, NF90_NOWRITE, ncid, l_serial=.true.)
                 call get_num_steps(ncid, n_writes)
-                call get_time(ncid, restart_time)
-                call read_netcdf_field_stats_content
-                call close_netcdf_file(ncid, l_serial=.true.)
-                n_writes = n_writes + 1
-                return
+                if (n_writes > 0) then
+                    call get_time(ncid, restart_time)
+                    call read_netcdf_field_stats_content
+                    call close_netcdf_file(ncid, l_serial=.true.)
+                    n_writes = n_writes + 1
+                    return
+                else
+                    call close_netcdf_file(ncid, l_serial=.true.)
+                    call delete_netcdf_file(ncfname)
+                endif
             endif
 
             call create_netcdf_file(ncfname, overwrite, ncid, l_serial=.true.)

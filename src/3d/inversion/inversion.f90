@@ -362,6 +362,8 @@ module inversion_mod
             call field_halo_fill(vtend(:, :, :, I_Y))
             call field_halo_fill(vtend(:, :, :, I_Z))
 
+            call stop_timer(vtend_timer)
+
         end subroutine vorticity_tendency
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

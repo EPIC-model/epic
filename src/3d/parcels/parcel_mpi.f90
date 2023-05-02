@@ -1,6 +1,8 @@
 module parcel_mpi
     use mpi_layout
-    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_message, mpi_check_for_error
+    use mpi_utils, only : mpi_exit_on_error     &
+                        , mpi_check_for_message &
+                        , mpi_check_for_error
     use mpi_tags
 #ifndef NDEBUG
     use mpi_collectives, only : mpi_blocking_reduce
@@ -32,7 +34,7 @@ module parcel_mpi
     ! we have 8 neighbours
     integer :: n_parcel_sends(8)
 
-    public :: parcel_halo_swap,             &
+    public :: parcel_communicate,             &
               n_parcel_sends,               &
               north_pid,                    &
               south_pid,                    &
@@ -102,7 +104,7 @@ module parcel_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine parcel_halo_swap(pindex)
+        subroutine parcel_communicate(pindex)
             integer, optional, intent(in)           :: pindex(:)
 
             ! We only must store the parcel indices (therefore 1) and
@@ -120,7 +122,7 @@ module parcel_mpi
 
             call deallocate_parcel_buffers
 
-        end subroutine parcel_halo_swap
+        end subroutine parcel_communicate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -131,7 +133,7 @@ module parcel_mpi
             type(MPI_Request)                       :: requests(8)
             type(MPI_Status)                        :: recv_status, send_statuses(8)
             integer                                 :: n_total_sends, n
-            integer                                 :: tag, source, recv_count
+            integer                                 :: recv_count
             integer                                 :: recv_size, send_size
 
             do n = 1, 8
@@ -143,11 +145,11 @@ module parcel_mpi
                     call parcel_pack(pid, n_parcel_sends(n), send_buf)
                 endif
 
-                call MPI_Isend(send_buf,                &
+                call MPI_Isend(send_buf(1:send_size),   &
                                send_size,               &
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
-                               NEIGHBOUR_TAG(n),        &
+                               SEND_NEIGHBOUR_TAG(n),   &
                                comm%cart,               &
                                requests(n),             &
                                comm%err)
@@ -158,15 +160,17 @@ module parcel_mpi
             do n = 1, 8
 
                 ! check for incoming messages
-                call mpi_check_for_message(tag, recv_size, source)
+                call mpi_check_for_message(neighbours(n)%rank,      &
+                                           RECV_NEIGHBOUR_TAG(n),   &
+                                           recv_size)
 
                 allocate(recv_buf(recv_size))
 
-                call MPI_Recv(recv_buf,                 &
+                call MPI_Recv(recv_buf(1:recv_size),    &
                               recv_size,                &
                               MPI_DOUBLE_PRECISION,     &
-                              source,                   &
-                              tag,                      &
+                              neighbours(n)%rank,       &
+                              RECV_NEIGHBOUR_TAG(n),    &
                               comm%cart,                &
                               recv_status,              &
                               comm%err)
