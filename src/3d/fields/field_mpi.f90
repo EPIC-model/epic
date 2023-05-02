@@ -106,7 +106,7 @@ module field_mpi
 
             do n = 1, 8
 
-                tag = NEIGHBOUR_TAG(n)
+                tag = RECV_NEIGHBOUR_TAG(n)
 
                 call get_interior_buffer_ptr(tag, recv_buf)
 
@@ -115,7 +115,7 @@ module field_mpi
                 call MPI_Irecv(recv_buf(1:recv_size),   &
                                recv_size,               &
                                MPI_DOUBLE_PRECISION,    &
-                               neighbours(tag)%rank,    &
+                               neighbours(n)%rank,      &
                                tag,                     &
                                comm%cart,               &
                                requests(n),             &
@@ -134,7 +134,7 @@ module field_mpi
                               send_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               neighbours(n)%rank,       &
-                              NEIGHBOUR_TAG(n),         &
+                              SEND_NEIGHBOUR_TAG(n),    &
                               comm%cart,                &
                               comm%err)
 
@@ -160,7 +160,7 @@ module field_mpi
 
             do n = 1, 8
 
-                tag = NEIGHBOUR_TAG(n)
+                tag = RECV_NEIGHBOUR_TAG(n)
 
                 call get_halo_buffer_ptr(tag, recv_buf)
 
@@ -169,7 +169,7 @@ module field_mpi
                 call MPI_Irecv(recv_buf(1:recv_size),   &
                                recv_size,               &
                                MPI_DOUBLE_PRECISION,    &
-                               neighbours(tag)%rank,    &
+                               neighbours(n)%rank,      &
                                tag,                     &
                                comm%cart,               &
                                requests(n),             &
@@ -188,7 +188,7 @@ module field_mpi
                               send_size,                &
                               MPI_DOUBLE_PRECISION,     &
                               neighbours(n)%rank,       &
-                              NEIGHBOUR_TAG(n),         &
+                              SEND_NEIGHBOUR_TAG(n),    &
                               comm%cart,                &
                               comm%err)
 

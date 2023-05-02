@@ -47,6 +47,8 @@ program test_mpi_vtend
     lower  = -f12 * pi * (/one, one, one/)
     extent =  pi * (/one, one, one/)
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
     call field_default

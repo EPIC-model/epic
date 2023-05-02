@@ -21,6 +21,8 @@ module utils
     use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
                          , set_zeta_boundary_flag
     use physics, only : read_physical_quantities, print_physical_quantities
+    use mpi_layout, only : mpi_layout_init
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     integer :: nfw  = 0    ! number of field writes
@@ -170,6 +172,8 @@ module utils
             ny = ncells(2)
             nz = ncells(3)
 
+            call mpi_layout_init(lower, extent, nx, ny, nz)
+
             ! update global parameters
             call update_parameters
 
@@ -193,11 +197,11 @@ module utils
 
                 if (file_type == 'fields') then
                     call read_netcdf_fields(trim(restart_file), -1)
+                    call init_parcels_from_grids
                 else if (file_type == 'parcels') then
                     call read_netcdf_parcels(restart_file)
                 else
-                    print *, 'Restart file must be of type "fields" or "parcels".'
-                    stop
+                    call mpi_exit_on_error('Restart file must be of type "fields" or "parcels".')
                 endif
             else
                 time%initial = zero ! make sure user cannot start at arbirtrary time

@@ -14,18 +14,19 @@ program test_merging_parcels
 
     call register_all_timers
 
-    nx = 10
-    ny = 10
-    nz = 10
+    nx = 32
+    ny = 32
+    nz = 32
     lower  = (/zero, zero, zero/)
     extent = (/one, one, one/)
 
     parcel%lambda_max = 4.0d0
     parcel%min_vratio = 40.0d0
-
-    call update_parameters
+    parcel%size_factor = 4
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
+
+    call update_parameters
 
     call parcel_alloc(max_num_parcels)
 
