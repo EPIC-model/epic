@@ -407,8 +407,8 @@ module parcel_container
                 k = k - 1
             enddo
 
-            if (l == 0) then
-                print *, "Error: All parcels are invalid."
+            if (l == -1) then
+                print *, "Error: more than all parcels are invalid."
                 stop
             endif
 

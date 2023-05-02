@@ -1,3 +1,4 @@
+
 ! =============================================================================
 !                       Test subroutine diffz
 !
@@ -36,9 +37,9 @@ program test_mpi_diffz0
     lower  = (/zero, zero, zero/)
     extent =  (/pi, twopi, two * twopi/)
 
-    call update_parameters
-
     call mpi_layout_init(lower, extent, nx, ny, nz)
+
+    call update_parameters
 
     allocate(fp(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
     allocate(dp(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))

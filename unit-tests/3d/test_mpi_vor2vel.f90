@@ -49,6 +49,8 @@ program test_mpi_vor2vel
     b = one
     c = one
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
     call field_default

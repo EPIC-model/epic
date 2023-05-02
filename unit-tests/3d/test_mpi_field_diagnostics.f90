@@ -26,9 +26,10 @@ program test_mpi_field_diagnostics
     lower  = zero
     extent =  one
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
-    ! calls mpi_layout_init internally
     call field_alloc
 
     volg = vcell + one

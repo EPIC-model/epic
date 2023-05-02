@@ -13,7 +13,6 @@ program test_mpi_parcel_read_rejection
     use parcel_netcdf
     use mpi_communicator
     use mpi_layout
-    use fields, only : field_alloc
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, max_num_parcels
     use mpi_timer
     implicit none
@@ -54,10 +53,9 @@ program test_mpi_parcel_read_rejection
     parcel%min_vratio = 40.d0
     parcel%size_factor = 1
 
-    call update_parameters
+    call mpi_layout_init(lower, extent, nx, ny, nz)
 
-    ! calls mpi_layout_init internally
-    call field_alloc
+    call update_parameters
 
     call register_timer('parcel I/O', parcel_io_timer)
 

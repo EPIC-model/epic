@@ -55,6 +55,8 @@ program test_mpi_laplace_correction_3d
     lower  = (/zero, zero, zero/)
     extent = (/one, one, one/)
 
+    call mpi_layout_init(lower, extent, nx, ny, nz)
+
     call update_parameters
 
     call field_default
@@ -100,7 +102,7 @@ program test_mpi_laplace_correction_3d
         call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
     enddo
 
-    call parcel_halo_swap
+    call parcel_communicate
 
     volg = zero
 

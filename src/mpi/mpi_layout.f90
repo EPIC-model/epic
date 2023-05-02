@@ -33,9 +33,7 @@ module mpi_layout
     type(neighbour_type)  :: neighbours(8)
     type(parallel_layout) :: layout
 
-    logical :: l_layout_initialised = .false.
-
-    private :: l_layout_initialised
+    logical, protected :: l_mpi_layout_initialised = .false.
 
     double precision, allocatable, dimension(:), target :: mpi_north_buf,       &
                                                            mpi_south_buf,       &
@@ -60,10 +58,10 @@ module mpi_layout
             logical                      :: periods(2)
             double precision             :: dx(3)
 
-            if (l_layout_initialised) then
+            if (l_mpi_layout_initialised) then
                 return
             endif
-            l_layout_initialised = .true.
+            l_mpi_layout_initialised = .true.
 
             ! create slabs, z-direction keeps 1 processor
             dims = (/0, 0/)
@@ -121,7 +119,9 @@ module mpi_layout
             dx = extent / dble(box%global_size)
             box%lower = lower(3) + dx * dble(box%lo)
             box%halo_lower = box%lower - dx
-            box%extent = dx * box%size
+            box%extent(1) = dx(1) * box%size(1)
+            box%extent(2) = dx(2) * box%size(2)
+            box%extent(3) = dx(3) * (box%size(3) - 1)
 
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_shift(comm, direction, disp, rank_source, rank_dest)
@@ -227,10 +227,12 @@ module mpi_layout
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        pure function get_neighbour(i, j) result(nb)
+        function get_neighbour(i, j) result(nb)
             integer, intent(in) :: i, j
             integer             :: nb, n
-
+#ifndef NDEBUG
+            logical             :: l_found = .false.
+#endif
             nb = MPI_NONE
 
             if ((i >= box%lo(1)) .and. &
@@ -243,9 +245,18 @@ module mpi_layout
             do n = 1, 8
                 if (is_neighbour(i, j, n)) then
                     nb = n
+#ifndef NDEBUG
+                    l_found = .true.
+#endif
                     exit
                 endif
             enddo
+
+#ifndef NDEBUG
+            if (.not. l_found) then
+                call mpi_exit_on_error("mpi_layout::get_neighbour: No suitable neighbour found.")
+            endif
+#endif
         end function get_neighbour
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
