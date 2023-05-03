@@ -14,7 +14,6 @@ if ENABLE_3D
 libepic_mpi_fft_la_SOURCES = 		\
 	../utils/constants.f90		\
 	../3d/utils/dimensions.f90	\
-	../utils/datatypes.f90		\
 	stafft.f90			\
 	sta2dfft.f90			\
 	fft_pencil.f90			\
