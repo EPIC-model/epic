@@ -148,7 +148,7 @@ program epic3d
             call parcel_dealloc
             call field_dealloc
             call nearest_win_deallocate
-            call finalise_pencil_fft
+            call finalise_inversion
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)

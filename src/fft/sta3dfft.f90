@@ -1,6 +1,9 @@
 module sta3dfft
     use mpi_layout
-    use mpi_reverse, only : reverse_x, reverse_y
+    use mpi_reverse, only : reverse_x               &
+                          , reverse_y               &
+                          , intialise_mpi_reverse   &
+                          , finalise_mpi_reverse
     use stafft, only : dct, dst
     use constants, only : zero, one
     use stafft
@@ -63,6 +66,8 @@ module sta3dfft
 
             call initialise_pencil_fft(nx, ny, nz)
 
+            call intialise_mpi_reverse
+
             nwx = nx / 2
             nwy = ny / 2
 
@@ -118,6 +123,8 @@ module sta3dfft
             endif
 
             call finalise_pencil_fft
+
+            call finalise_mpi_reverse
         end subroutine finalise_fft
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
