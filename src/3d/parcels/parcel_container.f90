@@ -279,11 +279,7 @@ module parcel_container
             endif
 
             n_parcels = 0
-
             n_total_parcels = 0
-            if (comm%size > 1) then
-                call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
-            endif
 
             deallocate(parcels%position)
             deallocate(parcels%vorticity)
