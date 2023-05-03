@@ -384,7 +384,6 @@ module inversion_utils
                 enddo
             enddo
             !$omp end parallel do
-!             call fftsine(sfc)
 
             !$omp parallel workshare
             sfc(nz, :, :) = sfctop
@@ -433,7 +432,6 @@ module inversion_utils
                 enddo
             enddo
             !$omp end parallel do
-!             call fftsine(sf)
 
             !$omp parallel workshare
             sf(nz, :, :) = sftop
