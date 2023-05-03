@@ -33,7 +33,7 @@ program epic3d
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
-    use mpi_utils, only : mpi_exit_on_error, mpi_print
+    use mpi_utils, only : mpi_print
     implicit none
 
     integer          :: epic_timer
@@ -195,21 +195,27 @@ program epic3d
         end do
 
         if (filename == '') then
-            call mpi_exit_on_error(&
+            call mpi_print(&
                 'No configuration file provided. Run code with "./epic3d --config [config file]"')
+            call mpi_comm_finalise
+            stop
         endif
 
         if (l_restart .and. (restart_file == '')) then
-            call mpi_exit_on_error(&
+            call mpi_print(&
                 'No restart file provided. Run code with "./epic3d --config [config file]' // &
                      ' --restart [restart file]"')
+            call mpi_comm_finalise
+            stop
         endif
 
         inquire(file=filename, exist=l_exist)
 
         if (.not. l_exist) then
-            call mpi_exit_on_error(&
+            call mpi_print(&
                 "Configuration file " // trim(filename) // " does not exist.")
+            call mpi_comm_finalise
+            stop
         endif
 
 #ifdef ENABLE_VERBOSE

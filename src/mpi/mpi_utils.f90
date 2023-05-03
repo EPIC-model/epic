@@ -5,7 +5,7 @@ module mpi_utils
     contains
         subroutine mpi_print(msg)
             character(*), intent(in) :: msg
-            if (comm%rank == 0) then
+            if (comm%rank == comm%master) then
                 print *, msg
             endif
         end subroutine mpi_print
