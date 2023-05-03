@@ -119,6 +119,10 @@ module fields
 #endif
             nparg    = zero
             nsparg   = zero
+
+#ifndef NDEBUG
+            sym_volg = zero
+#endif
         end subroutine field_default
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -138,6 +142,10 @@ module fields
 #endif
                 deallocate(nparg)
                 deallocate(nsparg)
+
+#ifndef NDEBUG
+                deallocate(sym_volg)
+#endif
             endif
 
             call field_mpi_dealloc
