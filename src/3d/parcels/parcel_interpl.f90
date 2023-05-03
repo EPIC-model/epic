@@ -70,6 +70,7 @@ module parcel_interpl
             call field_halo_swap(volg)
 
             ! apply free slip boundary condition
+            !$omp parallel workshare
             volg(0,  :, :) = two * volg(0,  :, :)
             volg(nz, :, :) = two * volg(nz, :, :)
 
@@ -77,6 +78,7 @@ module parcel_interpl
             ! axis at the physical domain
             volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
             volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
+            !$omp end parallel workshare
 
         end subroutine vol2grid
 
@@ -178,6 +180,7 @@ module parcel_interpl
             call field_halo_swap(vortg(:, :, :, I_Z))
             call field_halo_swap(tbuoyg)
 
+            !$omp parallel workshare
             ! apply free slip boundary condition
             volg(0,  :, :) = two * volg(0,  :, :)
             volg(nz, :, :) = two * volg(nz, :, :)
@@ -192,9 +195,16 @@ module parcel_interpl
             vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
 
+            tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
+            tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
+            tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
+            tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
+            !$omp end parallel workshare
+
 #ifndef ENABLE_DRY_MODE
             call field_halo_swap(dbuoyg)
             call field_halo_swap(humg)
+            !$omp parallel workshare
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
             dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
             dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)
@@ -203,11 +213,8 @@ module parcel_interpl
             humg(nz, :, :) = two * humg(nz, :, :)
             humg(1,    :, :) = humg(1,    :, :) + humg(-1,   :, :)
             humg(nz-1, :, :) = humg(nz-1, :, :) + humg(nz+1, :, :)
+            !$omp end parallel workshare
 #endif
-            tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
-            tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
-            tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
-            tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
 
             ! exclude halo cells to avoid division by zero
             do p = 1, 3
