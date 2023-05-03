@@ -23,6 +23,13 @@ module mpi_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        subroutine mpi_stop
+            call mpi_comm_finalise
+            stop
+        end subroutine mpi_stop
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine mpi_check_for_message(source, tag, recv_size)
             integer, intent(in)  :: source, tag
             integer, intent(out) :: recv_size
