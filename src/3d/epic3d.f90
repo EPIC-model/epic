@@ -146,6 +146,7 @@ program epic3d
         subroutine post_run
             use options, only : output
             call parcel_dealloc
+            call field_dealloc
             call nearest_win_deallocate
             call finalise_pencil_fft
             call stop_timer(epic_timer)

@@ -115,7 +115,27 @@ module fields
 #endif
             nparg    = zero
             nsparg   = zero
-        end subroutine
+        end subroutine field_default
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Deallocate fields
+        subroutine field_dealloc
+            if (allocated(velog)) then
+                deallocate(velog)
+                deallocate(velgradg)
+                deallocate(volg)
+                deallocate(vortg)
+                deallocate(vtend)
+                deallocate(tbuoyg)
+#ifndef ENABLE_DRY_MODE
+                deallocate(dbuoyg)
+                deallocate(humg )
+#endif
+                deallocate(nparg)
+                deallocate(nsparg)
+            endif
+        end subroutine field_dealloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
