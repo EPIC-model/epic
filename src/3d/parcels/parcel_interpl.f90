@@ -274,7 +274,8 @@ module parcel_interpl
         !      filled correctly.
         subroutine grid2par(add)
             logical, optional, intent(in) :: add
-            integer                       :: n, l
+            double precision              :: points(3, 4), weight
+            integer                       :: n, l, p
 
             call start_timer(grid2par_timer)
 
@@ -302,24 +303,31 @@ module parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, ks, weights)
+            !$omp do private(n, l, p, points, is, js, ks, weights, weight)
             do n = 1, n_parcels
 
                 parcels%strain(:, n) = zero
 
-                ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(:, n), is, js, ks, weights)
+                points = get_ellipsoid_points(parcels%position(:, n), &
+                                              parcels%volume(n), parcels%B(:, n), n)
 
-                ! loop over grid points which are part of the interpolation
-                do l = 1, ngp
-                    parcels%delta_pos(:, n) = parcels%delta_pos(:, n) &
-                                            + weights(l) * velog(ks(l), js(l), is(l), :)
+                do p = 1, 4
+                    ! get interpolation weights and mesh indices
+                    call trilinear(points(:, p), is, js, ks, weights)
 
-                    parcels%strain(:, n) = parcels%strain(:, n) &
-                                         + weights(l) * velgradg(ks(l), js(l), is(l), :)
+                    ! loop over grid points which are part of the interpolation
+                    do l = 1, ngp
+                        weight = f14 * weights(l)
 
-                    parcels%delta_vor(:, n) = parcels%delta_vor(:, n) &
-                                            + weights(l) * vtend(ks(l), js(l), is(l), :)
+                        parcels%delta_pos(:, n) = parcels%delta_pos(:, n) &
+                                                + weight * velog(ks(l), js(l), is(l), :)
+
+                        parcels%strain(:, n) = parcels%strain(:, n) &
+                                             + weight * velgradg(ks(l), js(l), is(l), :)
+
+                        parcels%delta_vor(:, n) = parcels%delta_vor(:, n) &
+                                                + weight * vtend(ks(l), js(l), is(l), :)
+                    enddo
                 enddo
             enddo
             !$omp end do
