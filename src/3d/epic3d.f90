@@ -33,6 +33,7 @@ program epic3d
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
+    use mpi_utils, only : mpi_exit_on_error, mpi_print
     implicit none
 
     integer          :: epic_timer
@@ -177,7 +178,8 @@ program epic3d
                 call get_command_argument(i, arg)
                 filename = trim(arg)
             else if (arg == '--help') then
-                print *, 'Run code with "./epic3d --config [config file]"'
+                call mpi_print('Run code with "./epic3d --config [config file]"')
+                call mpi_comm_finalise
                 stop
             else if (arg == '--restart') then
                 l_restart = .true.
@@ -193,21 +195,21 @@ program epic3d
         end do
 
         if (filename == '') then
-            print *, 'No configuration file provided. Run code with "./epic3d --config [config file]"'
-            stop
+            call mpi_exit_on_error(&
+                'No configuration file provided. Run code with "./epic3d --config [config file]"')
         endif
 
         if (l_restart .and. (restart_file == '')) then
-            print *, 'No restart file provided. Run code with "./epic3d --config [config file]' // &
-                     ' --restart [restart file]"'
-            stop
+            call mpi_exit_on_error(&
+                'No restart file provided. Run code with "./epic3d --config [config file]' // &
+                     ' --restart [restart file]"')
         endif
 
         inquire(file=filename, exist=l_exist)
 
         if (.not. l_exist) then
-            print *, "Configuration file " // trim(filename) // " does not exist."
-            stop
+            call mpi_exit_on_error(&
+                "Configuration file " // trim(filename) // " does not exist.")
         endif
 
 #ifdef ENABLE_VERBOSE

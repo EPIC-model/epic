@@ -16,7 +16,7 @@ module parcel_init
     use omp_lib
     use mpi_communicator
     use mpi_layout, only : box
-    use mpi_utils, only : mpi_print
+    use mpi_utils, only : mpi_print, mpi_exit_on_error
     use mpi_collectives, only : mpi_blocking_reduce
     use fields
     implicit none
@@ -51,7 +51,7 @@ module parcel_init
             if (n_parcels > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", &
                           max_num_parcels, ". Exiting."
-                stop
+                call MPI_Abort(comm%world, -1, comm%err)
             endif
 
             n_total_parcels = n_parcels
@@ -119,9 +119,11 @@ module parcel_init
             ! number of parcels per dimension
             n_per_dim = int(dble(parcel%n_per_cell) ** f13)
             if (n_per_dim ** 3 .ne. parcel%n_per_cell) then
-                print *, "Number of parcels per cell (", &
-                         parcel%n_per_cell, ") not a cubic."
-                stop
+                if (comm%rank == comm%master) then
+                    print *, "Number of parcels per cell (", &
+                             parcel%n_per_cell, ") not a cubic."
+                endif
+                call MPI_Abort(comm%world, -1, comm%err)
             endif
 
             im = one / dble(n_per_dim)
@@ -146,8 +148,7 @@ module parcel_init
             enddo
 
             if (.not. n_parcels == l - 1) then
-                print *, "Number of parcels disagree!"
-                stop
+                call mpi_exit_on_error("Number of parcels disagree!")
             endif
         end subroutine init_regular_positions
 

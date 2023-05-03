@@ -14,6 +14,7 @@ module parcel_interpl
     use field_mpi, only : field_halo_swap
     use physics, only : glat, lambda_c, q_0
     use omp_lib
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     ! number of indices and weights
@@ -251,8 +252,7 @@ module parcel_interpl
 
             ! sanity check
             if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then
-                print *, "par2grid: Wrong total number of parcels!"
-                stop
+                call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
             endif
 
             call stop_timer(par2grid_timer)

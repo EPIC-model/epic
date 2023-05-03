@@ -14,6 +14,7 @@ module parcel_diagnostics
     use mpi_timer, only : start_timer, stop_timer
     use mpi_communicator
     use mpi_collectives, only : mpi_blocking_reduce
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     integer :: parcel_stats_timer
@@ -107,8 +108,7 @@ module parcel_diagnostics
 #ifndef NDEBUG
                 !$omp critical
                 if (abs(get_determinant(parcels%B(:, n), vol) / get_abc(vol) ** 2 - one) > thres) then
-                    print *, "Parcel determinant not preserved!"
-                    stop
+                    call mpi_exit_on_error("Parcel determinant not preserved!")
                 endif
                 !$omp end critical
 #endif
