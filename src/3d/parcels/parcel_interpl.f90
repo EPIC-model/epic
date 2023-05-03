@@ -432,14 +432,14 @@ module parcel_interpl
             w01 = py * pxc
             w11 = py * px
 
-            ww(1) = ww(1) + pzc * w00
-            ww(2) = ww(2) + pzc * w10
-            ww(3) = ww(3) + pzc * w01
-            ww(4) = ww(4) + pzc * w11
-            ww(5) = ww(5) + pz * w00
-            ww(6) = ww(6) + pz * w10
-            ww(7) = ww(7) + pz * w01
-            ww(8) = ww(8) + pz * w11
+            ww(1) = ww(1) + pzc * w00  !w000
+            ww(2) = ww(2) + pzc * w10  !w100
+            ww(3) = ww(3) + pzc * w01  !w010
+            ww(4) = ww(4) + pzc * w11  !w110
+            ww(5) = ww(5) + pz  * w00  !w001
+            ww(6) = ww(6) + pz  * w10  !w101
+            ww(7) = ww(7) + pz  * w01  !w011
+            ww(8) = ww(8) + pz  * w11  !w111
 
         end subroutine get_weights
 
