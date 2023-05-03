@@ -25,7 +25,7 @@ program epic3d
     use field_diagnostics, only : field_stats_timer
     use field_diagnostics_netcdf, only : field_stats_io_timer
     use inversion_mod, only : vor2vel_timer, vtend_timer
-    use inversion_utils, only : init_inversion
+    use inversion_utils, only : init_inversion, finalise_inversion
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_timer
     use ls_rk4, only : ls_rk4_step, rk4_timer
@@ -33,7 +33,6 @@ program epic3d
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
-    use fft_pencil, only : initialise_pencil_fft, finalise_pencil_fft
     implicit none
 
     integer          :: epic_timer
@@ -91,8 +90,6 @@ program epic3d
             call setup_fields_and_parcels
 
             call init_inversion
-
-            call initialise_pencil_fft(nx, ny, nz)
 
             call init_parcel_correction
 
