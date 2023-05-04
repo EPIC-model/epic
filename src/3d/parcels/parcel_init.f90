@@ -51,7 +51,7 @@ module parcel_init
             if (n_parcels > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", &
                           max_num_parcels, ". Exiting."
-                call MPI_Abort(comm%world, -1, comm%err)
+                call mpi_exit_on_error
             endif
 
             n_total_parcels = n_parcels
@@ -123,7 +123,7 @@ module parcel_init
                     print *, "Number of parcels per cell (", &
                              parcel%n_per_cell, ") not a cubic."
                 endif
-                call MPI_Abort(comm%world, -1, comm%err)
+                call mpi_exit_on_error
             endif
 
             im = one / dble(n_per_dim)

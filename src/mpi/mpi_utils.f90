@@ -13,9 +13,11 @@ module mpi_utils
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine mpi_exit_on_error(msg)
-            character(*), intent(in) :: msg
-            print *, "Error on rank ", comm%rank
-            print *, "    ", msg
+            character(*), optional, intent(in) :: msg
+
+            if (present(msg)) then
+                print *, "Error on rank ", comm%rank, msg
+            endif
             call MPI_Abort(comm%world, -1, comm%err)
 
             call mpi_check_for_error("in MPI_Abort of mpi_utils::mpi_exit_on_error.")
@@ -23,7 +25,11 @@ module mpi_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine mpi_stop
+        subroutine mpi_stop(msg)
+            character(*), optional, intent(in) :: msg
+            if (present(msg)) then
+                call mpi_print(msg)
+            endif
             call mpi_comm_finalise
             stop
         end subroutine mpi_stop

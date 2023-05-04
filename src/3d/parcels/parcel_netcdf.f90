@@ -383,8 +383,7 @@ module parcel_netcdf
                 if (n_parcels > max_num_parcels) then
                     print *, "Number of parcels exceeds limit of", max_num_parcels, &
                              ". You may increase parcel%size_factor. Exiting."
-                    call MPI_Abort(comm%world, -1, comm%err)
-                    call mpi_check_for_error("in MPI_Abort of parcel_netcdf::read_netcdf_parcels.")
+                    call mpi_exit_on_error
                 endif
 
                 call read_chunk(start_index, end_index, 1)
@@ -477,8 +476,7 @@ module parcel_netcdf
             if (plast > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", max_num_parcels, &
                          ". You may increase parcel%size_factor. Exiting."
-                call MPI_Abort(comm%world, -1, comm%err)
-                call mpi_check_for_error("in MPI_Abort of parcel_netcdf::read_chunk.")
+                call mpi_exit_on_error
             endif
 
             start = (/ first, 1 /)

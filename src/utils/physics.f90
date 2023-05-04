@@ -199,7 +199,8 @@ module physics
                             call read_netcdf_attribute(grp_ncid, 'reference_potential_energy', peref)
                         else
                             call mpi_print(&
-                                "No float attribute 'reference_potential_energy'. It will be computed.")
+                                "No float attribute 'reference_potential_energy'. " // &
+                                "Please specify this if you would like to compute the APE density.")
                         endif
                     case ('ape density')
                         if (.not. l_ape_density) then

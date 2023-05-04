@@ -4,7 +4,7 @@
 module options
     use constants, only : zero, one, two, pi, four, twopi
     use netcdf_writer
-    use mpi_utils, only : mpi_print
+    use mpi_utils, only : mpi_stop
     implicit none
     !
     ! global options
@@ -112,9 +112,8 @@ module options
             inquire(file=filename, exist=exists)
 
             if (exists .eqv. .false.) then
-                call mpi_print(&
+                call mpi_stop(&
                     'Error: input file "' // trim(filename) // '" does not exist.')
-                call MPI_Abort(comm%world, -1, comm%err)
             endif
 
             ! open and read Namelist file.
@@ -123,8 +122,7 @@ module options
             read(nml=EPIC, iostat=ios, unit=fn)
 
             if (ios /= 0) then
-                call mpi_print('Error: invalid Namelist format.')
-                call MPI_Abort(comm%world, -1, comm%err)
+                call mpi_stop('Error: invalid Namelist format.')
             end if
 
             close(fn)
@@ -133,9 +131,8 @@ module options
             inquire(file=output%basename, exist=exists)
 
             if (exists) then
-                call mpi_print(&
+                call mpi_stop(&
                     'Error: output file "' // trim(output%basename) // '" already exists.')
-                call MPI_Abort(comm%world, -1, comm%err)
             endif
 
         end subroutine read_config_file
