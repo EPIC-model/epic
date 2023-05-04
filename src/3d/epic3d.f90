@@ -178,8 +178,7 @@ program epic3d
                 call get_command_argument(i, arg)
                 filename = trim(arg)
             else if (arg == '--help') then
-                call mpi_print('Run code with "./epic3d --config [config file]"')
-                call mpi_stop
+                call mpi_stop('Run code with "./epic3d --config [config file]"')
             else if (arg == '--restart') then
                 l_restart = .true.
                 i = i + 1
@@ -194,24 +193,21 @@ program epic3d
         end do
 
         if (filename == '') then
-            call mpi_print(&
+            call mpi_stop(&
                 'No configuration file provided. Run code with "./epic3d --config [config file]"')
-            call mpi_stop
         endif
 
         if (l_restart .and. (restart_file == '')) then
-            call mpi_print(&
+            call mpi_stop(&
                 'No restart file provided. Run code with "./epic3d --config [config file]' // &
                      ' --restart [restart file]"')
-            call mpi_stop
         endif
 
         inquire(file=filename, exist=l_exist)
 
         if (.not. l_exist) then
-            call mpi_print(&
+            call mpi_stop(&
                 "Configuration file " // trim(filename) // " does not exist.")
-            call mpi_stop
         endif
 
 #ifdef ENABLE_VERBOSE
