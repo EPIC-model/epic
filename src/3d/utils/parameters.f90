@@ -10,6 +10,7 @@ module parameters
     use netcdf_writer
     use mpi_communicator
     use mpi_layout, only : box, l_mpi_layout_initialised
+    use mpi_utils, only : mpi_print, mpi_stop
     implicit none
 
     ! mesh spacing
@@ -92,10 +93,8 @@ module parameters
         double precision :: msr
 
         if (.not. l_mpi_layout_initialised) then
-            if (comm%rank == comm%master) then
-                print *, "MPI layout is not initialsed!"
-            endif
-            call MPI_Abort(comm%world, -1, comm%err)
+            call mpi_print("MPI layout is not initialsed!")
+            call mpi_stop
         endif
 
         upper = lower + extent
@@ -119,7 +118,7 @@ module parameters
             endif
 
             if (.not. allow_larger_anisotropy) then
-                call MPI_Abort(comm%world, -1, comm%err)
+                call mpi_stop
             endif
         endif
 

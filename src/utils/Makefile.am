@@ -1,5 +1,6 @@
 # this line is needed such that config.h is found
 AM_FCFLAGS = -I $(top_builddir)/src/		\
+	     -I $(top_builddir)/src/mpi		\
 	     -I $(top_builddir)/src/netcdf
 
 lib_LTLIBRARIES = libepic_utils.la
