@@ -106,10 +106,10 @@ module field_mpi
         ! @pre Assumes buffers are allocated.
         ! @post Buffers need to be deallocated manually.
         subroutine field_interior_accumulate(data)
-            double precision, optional, intent(inout) :: data(box%hlo(3):box%hhi(3), &
-                                                              box%hlo(2):box%hhi(2), &
-                                                              box%hlo(1):box%hhi(1))
-            integer                                   :: nc
+            double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                                    box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1))
+            integer                         :: nc
 
             if (present(data)) then
                 call field_halo_to_buffer(data, 1)
@@ -129,9 +129,9 @@ module field_mpi
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine field_halo_swap(data)
-            double precision, optional, intent(inout) :: data(box%hlo(3):box%hhi(3), &
-                                                              box%hlo(2):box%hhi(2), &
-                                                              box%hlo(1):box%hhi(1))
+            double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                                    box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1))
             ! we must first fill the interior grid points
             ! correctly, and then the halo; otherwise
             ! halo grid points do not have correct values at
