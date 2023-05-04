@@ -216,11 +216,12 @@ program epic3d
 
 #ifdef ENABLE_VERBOSE
         ! This is the main application of EPIC
-        if (verbose .and. (comm%rank == comm%master)) then
+        if (verbose) then
             if (l_restart) then
-                print *, 'Restarting EPIC3D with "', trim(filename), '" and "', trim(restart_file), "'"
+                call mpi_print(&
+                    'Restarting EPIC3D with "' // trim(filename) // '" and "' // trim(restart_file) // "'")
             else
-                print *, 'Running EPIC3D with "', trim(filename), '"'
+                call mpi_print('Running EPIC3D with "' // trim(filename) // '"')
             endif
         endif
 #endif
