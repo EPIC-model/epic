@@ -8,6 +8,7 @@ module fields
     use constants, only : zero
     use mpi_communicator
     use mpi_layout, only : box, l_mpi_layout_initialised
+    use mpi_utils, only : mpi_exit_on_error
     use field_mpi, only : field_mpi_alloc   &
                         , field_mpi_dealloc
     implicit none
@@ -64,7 +65,7 @@ module fields
             integer :: hlo(3), hhi(3)
 
             if (.not. l_mpi_layout_initialised) then
-                call MPI_Abort(comm%world, -1, comm%err)
+                call mpi_exit_on_error
             endif
 
             if (allocated(velog)) then

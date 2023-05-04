@@ -8,6 +8,7 @@ module rk4_utils
     use jacobi, only : jacobi_eigenvalues
     use mpi_layout, only : box
     use mpi_communicator
+    use mpi_utils, only : mpi_exit_on_error
 #ifdef ENABLE_VERBOSE
     use options, only : output
 #endif
@@ -204,7 +205,7 @@ module rk4_utils
 
             if (dt <= zero) then
                 print "(a10, f0.2, a6)", "Time step ", dt, " <= 0!"
-                call MPI_Abort(comm%world, -1, comm%err)
+                call mpi_exit_on_error
             endif
         end function get_time_step
 
