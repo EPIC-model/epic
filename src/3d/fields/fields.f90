@@ -8,6 +8,8 @@ module fields
     use constants, only : zero
     use mpi_communicator
     use mpi_layout, only : box, l_mpi_layout_initialised
+    use field_mpi, only : field_mpi_alloc   &
+                        , field_mpi_dealloc
     implicit none
 
     ! x: zonal
@@ -95,6 +97,8 @@ module fields
             allocate(nparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(nsparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
+            call field_mpi_alloc
+
         end subroutine field_alloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -115,7 +119,37 @@ module fields
 #endif
             nparg    = zero
             nsparg   = zero
-        end subroutine
+
+#ifndef NDEBUG
+            sym_volg = zero
+#endif
+        end subroutine field_default
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Deallocate fields
+        subroutine field_dealloc
+            if (allocated(velog)) then
+                deallocate(velog)
+                deallocate(velgradg)
+                deallocate(volg)
+                deallocate(vortg)
+                deallocate(vtend)
+                deallocate(tbuoyg)
+#ifndef ENABLE_DRY_MODE
+                deallocate(dbuoyg)
+                deallocate(humg )
+#endif
+                deallocate(nparg)
+                deallocate(nsparg)
+
+#ifndef NDEBUG
+                deallocate(sym_volg)
+#endif
+            endif
+
+            call field_mpi_dealloc
+        end subroutine field_dealloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

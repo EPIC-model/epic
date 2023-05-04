@@ -27,10 +27,12 @@ module field_mpi
 
         logical :: l_allocated = .false.
 
-        public :: field_halo_reset,          &
-                  field_halo_fill,           &
-                  field_interior_accumulate, &
-                  field_halo_swap
+        public :: field_halo_reset          &
+                , field_halo_fill           &
+                , field_interior_accumulate &
+                , field_halo_swap           &
+                , field_mpi_alloc           &
+                , field_mpi_dealloc
 
     contains
 
@@ -206,8 +208,14 @@ module field_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine allocate_buffers
+        ! This routine is called inside fields::field_alloc
+        subroutine field_mpi_alloc
             integer :: zlen, ylen, xlen
+
+            if (l_allocated) then
+                return
+            endif
+            l_allocated = .true.
 
             xlen = box%hi(1)-box%lo(1)+1
             ylen = box%hi(2)-box%lo(2)+1
@@ -237,7 +245,43 @@ module field_mpi
             allocate(northwest_buf(zlen, 2))
             allocate(southeast_halo_buf(zlen, 2))
 
-        end subroutine allocate_buffers
+        end subroutine field_mpi_alloc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! This routine is called inside fields::field_dealloc
+        subroutine field_mpi_dealloc
+
+            if (.not. l_allocated) then
+                return
+            endif
+            l_allocated = .false.
+
+            deallocate(west_buf)
+            deallocate(east_halo_buf)
+
+            deallocate(east_buf)
+            deallocate(west_halo_buf)
+
+            deallocate(south_buf)
+            deallocate(north_halo_buf)
+
+            deallocate(north_buf)
+            deallocate(south_halo_buf)
+
+            deallocate(northeast_buf)
+            deallocate(southwest_halo_buf)
+
+            deallocate(southeast_buf)
+            deallocate(northwest_halo_buf)
+
+            deallocate(southwest_buf)
+            deallocate(northeast_halo_buf)
+
+            deallocate(northwest_buf)
+            deallocate(southeast_halo_buf)
+
+        end subroutine field_mpi_dealloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -245,11 +289,6 @@ module field_mpi
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
                                                  box%hlo(1):box%hhi(1))
-
-            if (.not. l_allocated) then
-                l_allocated = .true.
-                call allocate_buffers
-            endif
 
             west_buf  = data(:, box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1)
             east_buf  = data(:, box%lo(2):box%hi(2),   box%hi(1))
@@ -269,11 +308,6 @@ module field_mpi
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
                                                  box%hlo(1):box%hhi(1))
-
-            if (.not. l_allocated) then
-                l_allocated = .true.
-                call allocate_buffers
-            endif
 
             east_halo_buf = data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1))
             west_halo_buf = data(:, box%lo(2):box%hi(2), box%hlo(1))
@@ -340,28 +374,8 @@ module field_mpi
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
             logical,          intent(in)    :: l_add
-!             integer :: ylen, zlen, i, j, k
 
             if (l_add) then
-
-!                     ylen = box%hi(2)-box%lo(2)+1
-!                     zlen = box%hhi(3)-box%hlo(3)+1
-
-!                     do i = 1, 2
-!                         do j = 1, ylen
-!                             do k = 1, zlen
-!                                 print *, comm%rank, i, j, k, west_buf(k, j, i)
-!                             enddo
-!                         enddo
-!                     enddo
-
-!                     do i = box%lo(1), box%lo(1)+1
-!                         do j = box%lo(2), box%hi(2)
-!                             do k = box%hlo(3), box%hhi(3)
-!                                 print *, comm%rank, i, j, k, data(k, j, i)
-!                             enddo
-! !                         enddo
-!                     enddo
 
                 data(:, box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) &
                     = data(:, box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) + west_buf

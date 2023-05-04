@@ -22,8 +22,7 @@ module mpi_reverse
 
     end type reorder_type
 
-    logical :: l_initialised_x = .false.
-    logical :: l_initialised_y = .false.
+    logical :: l_initialised = .false.
 
     type(sub_communicator) :: x_comm
     type(sub_communicator) :: y_comm
@@ -31,12 +30,64 @@ module mpi_reverse
     type(reorder_type) :: x_reo
     type(reorder_type) :: y_reo
 
-    public :: reverse_x &
-            , reverse_y
+    public :: reverse_x             &
+            , reverse_y             &
+            , intialise_mpi_reverse &
+            , finalise_mpi_reverse
 
     contains
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine intialise_mpi_reverse
+            if (l_initialised) then
+                return
+            endif
+            l_initialised = .true.
+
+            call initialise_reversing(x_reo, x_comm, 1)
+
+            call initialise_reversing(y_reo, y_comm, 2)
+
+        end subroutine intialise_mpi_reverse
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine finalise_mpi_reverse
+            if (.not. l_initialised) then
+                return
+            endif
+
+            call finalise_reversing(x_reo)
+
+            call finalise_reversing(y_reo)
+
+        end subroutine finalise_mpi_reverse
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine finalise_reversing(reo)
+            type(reorder_type), intent(inout) :: reo
+
+            deallocate(reo%send_recv_count)
+            deallocate(reo%send_offset)
+            deallocate(reo%recv_count)
+            deallocate(reo%recv_offset)
+
+            deallocate(reo%dest)
+
+            deallocate(reo%send_buffer)
+            deallocate(reo%recv_buffer)
+
+
+            deallocate(reo%lo_buffer)
+            deallocate(reo%hi_buffer)
+            deallocate(reo%hi_halo_buffer)
+            deallocate(reo%lo_halo_buffer)
+
+        end subroutine finalise_reversing
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine initialise_reversing(reo, sub_comm, dir)
             type(reorder_type),     intent(inout) :: reo
@@ -144,7 +195,7 @@ module mpi_reverse
 
         end subroutine initialise_reversing
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine copy_to_buffer_in_x(fs)
             double precision, intent(in) :: fs(box%lo(3):box%hi(3),   &
@@ -167,7 +218,7 @@ module mpi_reverse
 
         end subroutine copy_to_buffer_in_x
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine copy_from_buffer_in_x(fs)
             double precision, intent(out) :: fs(box%lo(3):box%hi(3),   &
@@ -210,9 +261,7 @@ module mpi_reverse
 
         end subroutine copy_from_buffer_in_x
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine copy_to_buffer_in_y(fs)
             double precision, intent(in) :: fs(box%lo(3):box%hi(3),   &
@@ -235,7 +284,7 @@ module mpi_reverse
 
         end subroutine copy_to_buffer_in_y
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine copy_from_buffer_in_y(fs)
             double precision, intent(out) :: fs(box%lo(3):box%hi(3),   &
@@ -278,7 +327,7 @@ module mpi_reverse
 
         end subroutine copy_from_buffer_in_y
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine reverse_x(fs, gs)
             double precision, intent(in)  :: fs(box%lo(3):box%hi(3), & ! 0:nz
@@ -288,11 +337,6 @@ module mpi_reverse
                                                 box%lo(2):box%hi(2),   &
                                                 box%hlo(1):box%hhi(1))
             integer                       :: send_size, recv_size
-
-            if (.not. l_initialised_x) then
-                call initialise_reversing(x_reo, x_comm, 1)
-                l_initialised_x = .true.
-            endif
 
             gs(:, :, box%lo(1):box%hi(1)) = fs
 
@@ -318,7 +362,7 @@ module mpi_reverse
 
         end subroutine reverse_x
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine reverse_y(fs, gs)
             double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & ! 0:nz
@@ -328,11 +372,6 @@ module mpi_reverse
                                                 box%hlo(2):box%hhi(2), &
                                                 box%lo(1):box%hi(1))
             integer                       :: send_size, recv_size
-
-            if (.not. l_initialised_y) then
-                call initialise_reversing(y_reo, y_comm, 2)
-                l_initialised_y = .true.
-            endif
 
             gs(:, box%lo(2):box%hi(2), :) = fs
 
@@ -358,7 +397,7 @@ module mpi_reverse
 
         end subroutine reverse_y
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine halo_x_fill(gs)
             double precision, intent(inout) :: gs(box%lo(3):box%hi(3),   & ! 0:nz
@@ -377,7 +416,7 @@ module mpi_reverse
 
         end subroutine halo_x_fill
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine halo_y_fill(gs)
             double precision, intent(inout) :: gs(box%lo(3):box%hi(3),   & ! 0:nz
@@ -396,7 +435,7 @@ module mpi_reverse
 
         end subroutine halo_y_fill
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine communicate_halo(reo, sub_comm)
             type(reorder_type),     intent(inout) :: reo
