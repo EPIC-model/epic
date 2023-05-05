@@ -324,7 +324,7 @@ module parcel_interpl
             call field_buffer_to_interior(tbuoyg,              IDX_TBUOY_SWAP, .true.)
 #ifndef ENABLE_DRY_MODE
             call field_buffer_to_interior(dbuoyg,              IDX_DBUOY_SWAP, .true.)
-            call field_buffer_to_interior(volg,                IDX_HUM_SWAP, .true.)
+            call field_buffer_to_interior(humg,                IDX_HUM_SWAP, .true.)
 #endif
 
             !------------------------------------------------------------------
@@ -349,7 +349,7 @@ module parcel_interpl
             call field_buffer_to_halo(tbuoyg,              IDX_TBUOY_SWAP, .false.)
 #ifndef ENABLE_DRY_MODE
             call field_buffer_to_halo(dbuoyg,              IDX_DBUOY_SWAP, .false.)
-            call field_buffer_to_halo(volg,                IDX_HUM_SWAP, .false.)
+            call field_buffer_to_halo(humg,                IDX_HUM_SWAP, .false.)
 #endif
 
             call field_mpi_dealloc
