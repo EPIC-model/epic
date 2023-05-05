@@ -5,6 +5,8 @@ module field_mpi
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error
     implicit none
 
+        private
+
         double precision, contiguous, dimension(:, :, :, :), pointer :: west_buf,           &
                                                                         south_buf,          &
                                                                         southwest_buf,      &
@@ -57,9 +59,12 @@ module field_mpi
                 , field_halo_swap                   &
                 , field_mpi_alloc                   &
                 , field_mpi_dealloc                 &
-                , field_interior_to_buffer          &
+                , field_halo_to_buffer              &
                 , field_buffer_to_halo              &
-                , interior_to_halo_communication
+                , field_interior_to_buffer          &
+                , field_buffer_to_interior          &
+                , interior_to_halo_communication    &
+                , halo_to_interior_communication
 
     contains
 
