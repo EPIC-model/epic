@@ -44,11 +44,10 @@ program test_field_halo_fill_vector
         !
         ! check results
         !
-
-        ! check west halo
         do nc = 1, ncomp
             factor = dble(10 ** (nc-1))
 
+            ! check west halo
             ref = factor * dble(neighbours(MPI_WEST)%rank + 1)
             diff = diff + sum(abs(ref - values(box%lo(3):box%hi(3), &
                                                box%lo(2):box%hi(2), &
