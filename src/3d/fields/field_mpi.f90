@@ -188,18 +188,20 @@ module field_mpi
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine field_interior_accumulate_vector(data, l_alloc)
-            double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
-                                                    box%hlo(2):box%hhi(2), &
-                                                    box%hlo(1):box%hhi(1), &
-                                                    3)
+            double precision, intent(inout) :: data(box%hlo(3):, &
+                                                    box%hlo(2):, &
+                                                    box%hlo(1):, &
+                                                    :)
             logical,          intent(in)    :: l_alloc
-            integer                         :: nc
+            integer                         :: nc, ncomp
+
+            ncomp = size(data, 4)
 
             if (l_alloc) then
-                call field_mpi_alloc(3)
+                call field_mpi_alloc(ncomp)
             endif
 
-            do nc = 1, 3
+            do nc = 1, ncomp
                 call field_halo_to_buffer(data, nc)
             enddo
 
@@ -208,7 +210,7 @@ module field_mpi
 
             ! accumulate interior; after this operation
             ! all interior grid points have the correct value
-            do nc = 1, 3
+            do nc = 1, ncomp
                 call field_buffer_to_interior(data, nc, .true.)
             enddo
 
@@ -242,16 +244,20 @@ module field_mpi
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine field_halo_swap_vector(data)
-            double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
-                                                    box%hlo(2):box%hhi(2), &
-                                                    box%hlo(1):box%hhi(1), &
-                                                    3)
+            double precision, intent(inout) :: data(box%hlo(3):, &
+                                                    box%hlo(2):, &
+                                                    box%hlo(1):, &
+                                                    :)
+            integer                         :: ncomp
             ! we must first fill the interior grid points
             ! correctly, and then the halo; otherwise
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_mpi_alloc(3)
+
+            ncomp = size(data, 4)
+
+            call field_mpi_alloc(ncomp)
 
             call field_interior_accumulate_vector(data, .false.)
 
