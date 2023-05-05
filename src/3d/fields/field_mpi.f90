@@ -119,7 +119,7 @@ module field_mpi
             endif
 
             do nc = 1, ncomp
-                call field_interior_to_buffer(data, nc)
+                call field_interior_to_buffer(data(:, :, :, nc), nc)
             enddo
 
             call interior_to_halo_communication
@@ -217,7 +217,7 @@ module field_mpi
             endif
 
             do nc = 1, ncomp
-                call field_halo_to_buffer(data, nc)
+                call field_halo_to_buffer(data(:, :, :, nc), nc)
             enddo
 
             ! send halo data to valid regions of other processes
@@ -226,7 +226,7 @@ module field_mpi
             ! accumulate interior; after this operation
             ! all interior grid points have the correct value
             do nc = 1, ncomp
-                call field_buffer_to_interior(data, nc, .true.)
+                call field_buffer_to_interior(data(:, :, :, nc), nc, .true.)
             enddo
 
             if (l_buf) then

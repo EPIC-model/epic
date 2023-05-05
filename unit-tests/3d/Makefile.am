@@ -42,6 +42,7 @@ unittests_PROGRAMS = 				\
 	test_mpi_parcel_correction_3d		\
 	test_mpi_grid2par			\
 	test_mpi_field_halo_fill		\
+	test_mpi_field_halo_fill_vector		\
 	test_mpi_field_interior_accumulate	\
 	test_mpi_field_diagnostics		\
 	test_mpi_parcel_diagnostics		\
@@ -142,6 +143,9 @@ test_mpi_grid2par_LDADD = libcombi.la
 
 test_mpi_field_halo_fill_SOURCES = test_mpi_field_halo_fill.f90
 test_mpi_field_halo_fill_LDADD = libcombi.la
+
+test_mpi_field_halo_fill_vector_SOURCES = test_mpi_field_halo_fill_vector.f90
+test_mpi_field_halo_fill_vector_LDADD = libcombi.la
 
 test_mpi_field_interior_accumulate_SOURCES = test_mpi_field_interior_accumulate.f90
 test_mpi_field_interior_accumulate_LDADD = libcombi.la
