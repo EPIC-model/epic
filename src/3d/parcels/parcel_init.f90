@@ -198,7 +198,6 @@ module parcel_init
                 parcels%humidity(n) = parcels%humidity(n) &
                                     + sum(weights(:,:,:) * humg(ks:ks+1, js:js+1, is:is+1))
 #endif
-                enddo
             enddo
             !$omp end do
             !$omp end parallel

@@ -4,7 +4,7 @@
 module parcel_correction
     use inversion_utils, only : init_inversion
     use inversion_mod, only : diverge
-    use parcel_interpl, only : trilinear, ngp, vol2grid
+    use parcel_interpl, only : trilinear, vol2grid
     use parcel_bc
     use omp_lib
     use constants

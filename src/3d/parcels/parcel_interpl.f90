@@ -319,7 +319,7 @@ module parcel_interpl
                     enddo
                     do l = 1,3
                         parcels%delta_vor(l, n) = parcels%delta_vor(l, n) &
-                                                + f14 * sum(weights(:,:,:) * delta_vor(ks:ks+1, js:js+1, is:is+1, l))
+                                                + f14 * sum(weights(:,:,:) * vtend(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                 enddo
             enddo
