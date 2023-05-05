@@ -29,23 +29,109 @@ module field_mpi
 
         integer :: n_comp = 0
 
+        ! Convenient routines to fill halo cells for a single field:
         interface field_halo_fill
-            module procedure :: field_halo_fill_scalar_one
-            module procedure :: field_halo_fill_vector_one
+            module procedure :: field_halo_fill_scalar
+            module procedure :: field_halo_fill_vector
         end interface field_halo_fill
 
-        public :: field_halo_reset          &
-                , field_halo_fill           &
-                , field_interior_accumulate &
-                , field_halo_swap           &
-                , field_mpi_alloc           &
-                , field_mpi_dealloc
+        ! Convenient routines to accumulate interior and halo cells for a single field:
+        interface field_halo_swap
+            module procedure :: field_halo_swap_scalar
+            module procedure :: field_halo_swap_vector
+        end interface field_halo_swap
+
+        interface field_halo_reset
+            module procedure :: field_halo_reset_scalar
+            module procedure :: field_halo_reset_vector
+        end interface field_halo_reset
+
+        interface field_interior_accumulate
+            module procedure :: field_interior_accumulate_scalar
+            module procedure :: field_interior_accumulate_vector
+        end interface field_interior_accumulate
+
+        public :: field_halo_reset                  &
+                , field_halo_fill                   &
+                , field_interior_accumulate         &
+                , field_halo_swap                   &
+                , field_mpi_alloc                   &
+                , field_mpi_dealloc                 &
+                , field_interior_to_buffer          &
+                , field_buffer_to_halo              &
+                , interior_to_halo_communication
 
     contains
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_halo_reset(data)
+        subroutine field_halo_fill_scalar(data, l_alloc)
+            double precision,  intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                                     box%hlo(2):box%hhi(2), &
+                                                     box%hlo(1):box%hhi(1))
+            logical, optional, intent(in)    :: l_alloc
+            logical                          :: l_buf = .false.
+
+            if (present(l_alloc)) then
+                l_buf = l_alloc
+            endif
+
+            if (l_buf) then
+                call field_mpi_alloc(1)
+            endif
+
+            call field_interior_to_buffer(data, 1)
+
+            call interior_to_halo_communication
+
+            call field_buffer_to_halo(data, 1, .false.)
+
+            if (l_buf) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_halo_fill_scalar
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_fill_vector(data, l_alloc)
+            double precision,  intent(inout) :: data(box%hlo(3):, &
+                                                     box%hlo(2):, &
+                                                     box%hlo(1):, &
+                                                     :)
+            logical, optional, intent(in)    :: l_alloc
+            integer                          :: nc, ncomp
+            logical                          :: l_buf = .false.
+
+            ncomp = size(data, 4)
+
+            if (present(l_alloc)) then
+                l_buf = l_alloc
+            endif
+
+            if (l_buf) then
+                call field_mpi_alloc(ncomp)
+            endif
+
+            do nc = 1, ncomp
+                call field_interior_to_buffer(data, nc)
+            enddo
+
+            call interior_to_halo_communication
+
+            do nc = 1, ncomp
+                call field_buffer_to_halo(data(:, :, :, nc), nc, .false.)
+            enddo
+
+            if (l_buf) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_halo_fill_vector
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_reset_scalar(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
@@ -55,80 +141,86 @@ module field_mpi
             data(:, box%hlo(2),              box%lo(1):box%hi(1))     = zero  ! south halo
             data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))     = zero  ! north halo
 
-        end subroutine field_halo_reset
+        end subroutine field_halo_reset_scalar
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_halo_fill_scalar_one
-            double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
-                                                    box%hlo(2):box%hhi(2), &
-                                                    box%hlo(1):box%hhi(1))
-
-            call field_mpi_alloc(1)
-
-            call field_interior_to_buffer(data, 1)
-
-            call interior_to_halo_communication
-
-            call field_buffer_to_halo(data, 1, .false.)
-
-            call field_mpi_dealloc
-
-        end subroutine field_halo_fill_scalar_one
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine field_halo_fill_vector_one
+        subroutine field_halo_reset_vector(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1), &
                                                     3)
-            integer                         :: nc
 
-            call field_mpi_alloc(3)
+            data(:, box%hlo(2):box%hhi(2),   box%hlo(1), :)              = zero  ! west halo
+            data(:, box%hlo(2):box%hhi(2),   box%hhi(1)-1:box%hhi(1), :) = zero  ! east halo
+            data(:, box%hlo(2),              box%lo(1):box%hi(1), :)     = zero  ! south halo
+            data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1), :)     = zero  ! north halo
 
-            do nc = 1, 3
-                call field_interior_to_buffer(data, nc)
-            enddo
-
-            call interior_to_halo_communication
-
-            do nc = 1, 3
-                call field_buffer_to_halo(data(:, :, :, nc), nc, .false.)
-            enddo
-
-            call field_mpi_dealloc
-
-        end subroutine field_halo_fill_vector_one
+        end subroutine field_halo_reset_vector
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! @pre Assumes buffers are allocated.
-        ! @post Buffers need to be deallocated manually.
-        subroutine field_interior_accumulate(data)
+        subroutine field_interior_accumulate_scalar(data, l_alloc)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
-            integer                         :: nc
+            logical,          intent(in)    :: l_alloc
 
-            if (present(data)) then
-                call field_halo_to_buffer(data, 1)
-
-                ! send halo data to valid regions of other processes
-                call halo_to_interior_communication
-
-                ! accumulate interior; after this operation
-                ! all interior grid points have the correct value
-                call field_buffer_to_interior(data, 1, .true.)
-            else
-                call halo_to_interior_communication
+            if (l_alloc) then
+                call field_mpi_alloc(1)
             endif
 
-        end subroutine field_interior_accumulate
+            call field_halo_to_buffer(data, 1)
+
+            ! send halo data to valid regions of other processes
+            call halo_to_interior_communication
+
+            ! accumulate interior; after this operation
+            ! all interior grid points have the correct value
+            call field_buffer_to_interior(data, 1, .true.)
+
+            if (l_alloc) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_interior_accumulate_scalar
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_halo_swap(data)
+        subroutine field_interior_accumulate_vector(data, l_alloc)
+            double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                                    box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1), &
+                                                    3)
+            logical,          intent(in)    :: l_alloc
+            integer                         :: nc
+
+            if (l_alloc) then
+                call field_mpi_alloc(3)
+            endif
+
+            do nc = 1, 3
+                call field_halo_to_buffer(data, nc)
+            enddo
+
+            ! send halo data to valid regions of other processes
+            call halo_to_interior_communication
+
+            ! accumulate interior; after this operation
+            ! all interior grid points have the correct value
+            do nc = 1, 3
+                call field_buffer_to_interior(data, nc, .true.)
+            enddo
+
+            if (l_alloc) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_interior_accumulate_vector
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_swap_scalar(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
@@ -137,11 +229,37 @@ module field_mpi
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_interior_accumulate(data)
+            call field_mpi_alloc(1)
 
-            call field_halo_fill(data)
+            call field_interior_accumulate_scalar(data, .false.)
 
-        end subroutine field_halo_swap
+            call field_halo_fill_scalar(data, .false.)
+
+            call field_mpi_dealloc
+
+        end subroutine field_halo_swap_scalar
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_swap_vector(data)
+            double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                                    box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1), &
+                                                    3)
+            ! we must first fill the interior grid points
+            ! correctly, and then the halo; otherwise
+            ! halo grid points do not have correct values at
+            ! corners where multiple processes share grid points.
+
+            call field_mpi_alloc(3)
+
+            call field_interior_accumulate_vector(data, .false.)
+
+            call field_halo_fill_vector(data, .false.)
+
+            call field_mpi_dealloc
+
+        end subroutine field_halo_swap_vector
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
