@@ -7,7 +7,7 @@ module parcel_init
     use parcel_container, only : parcels, n_parcels, n_total_parcels, parcel_alloc
     use parcel_ellipsoid, only : get_abc, get_eigenvalues
     use parcel_split_mod, only : parcel_split
-    use parcel_interpl, only : trilinear, ngp
+    use parcel_interpl, only : trilinear
     use parameters, only : dx, vcell, ncell,            &
                            extent, lower, nx, ny, nz,   &
                            max_num_parcels
@@ -23,10 +23,10 @@ module parcel_init
 
     integer :: init_timer
 
-    integer :: is(ngp), js(ngp), ks(ngp)
+    integer :: is, js, ks
 
     ! interpolation weights
-    double precision :: weights(ngp)
+    double precision :: weights(0:1,0:1,0:1)
 
     private :: weights, is, js, ks
 
@@ -188,14 +188,15 @@ module parcel_init
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
                 ! loop over grid points which are part of the interpolation
-                do l = 1, ngp
-                    parcels%vorticity(:, n) = parcels%vorticity(:, n) &
-                                            + weights(l) * vortg(ks(l), js(l), is(l), :)
-                    parcels%buoyancy(n) = parcels%buoyancy(n) &
-                                        + weights(l) * tbuoyg(ks(l), js(l), is(l))
+                do l = 1, 3
+                    parcels%vorticity(l, n) = parcels%vorticity(l, n) &
+                                            + sum(weights(:,:,:) * vortg(ks:ks+1, js:js+1, is:is+1, l))
+                enddo
+                parcels%buoyancy(n) = parcels%buoyancy(n) &
+                                    + sum(weights(:,:,:) * tbuoyg(ks:ks+1, js:js+1, is:is+1))
 #ifndef ENABLE_DRY_MODE
-                    parcels%humidity(n) = parcels%humidity(n) &
-                                        + weights(l) * humg(ks(l), js(l), is(l))
+                parcels%humidity(n) = parcels%humidity(n) &
+                                    + sum(weights(:,:,:) * humg(ks:ks+1, js:js+1, is:is+1))
 #endif
                 enddo
             enddo
