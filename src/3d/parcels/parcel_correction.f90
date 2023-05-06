@@ -166,7 +166,7 @@ module parcel_correction
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
                 parcels%position(1, n) = parcels%position(1, n)               &
-                                       + weights(1) * ud(ks, js, is)
+                                       + weights(1) * ud(ks, js, is) &
                                        + weights(2) * ud(ks  , js   , is+1) &
                                        + weights(3) * ud(ks  , js+1 , is) &
                                        + weights(4) * ud(ks  , js+1 , is+1) &
@@ -176,7 +176,7 @@ module parcel_correction
                                        + weights(8) * ud(ks+1, js+1 , is+1)
 
                 parcels%position(2, n) = parcels%position(2, n)               &
-                                       + weights(1) * vd(ks, js, is)
+                                       + weights(1) * vd(ks, js, is) &
                                        + weights(2) * vd(ks  , js   , is+1) &
                                        + weights(3) * vd(ks  , js+1 , is) &
                                        + weights(4) * vd(ks  , js+1 , is+1) &
@@ -186,7 +186,7 @@ module parcel_correction
                                        + weights(8) * vd(ks+1, js+1 , is+1)
 
                 parcels%position(3, n) = parcels%position(3, n)               &
-                                       + weights(1) * wd(ks, js, is)
+                                       + weights(1) * wd(ks, js, is) &
                                        + weights(2) * wd(ks  , js   , is+1) &
                                        + weights(3) * wd(ks  , js+1 , is) &
                                        + weights(4) * wd(ks  , js+1 , is+1) &

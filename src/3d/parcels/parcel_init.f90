@@ -23,7 +23,7 @@ module parcel_init
 
     integer :: init_timer
 
-    integer :: is(ngp), js(ngp), ks(ngp)
+    integer :: is, js, ks
 
     ! interpolation weights
     double precision :: weights(ngp)
@@ -188,37 +188,35 @@ module parcel_init
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
                 ! loop over grid points which are part of the interpolation
-                do l = 1, ngp
-                    parcels%vorticity(:, n) = parcels%vorticity(:, n) &
-                                       + weights(1) * vortg(ks, js, is)
-                                       + weights(2) * vortg(ks  , js   , is+1) &
-                                       + weights(3) * vortg(ks  , js+1 , is) &
-                                       + weights(4) * vortg(ks  , js+1 , is+1) &
-                                       + weights(5) * vortg(ks+1, js   , is) &
-                                       + weights(6) * vortg(ks+1, js   , is) &
-                                       + weights(7) * vortg(ks+1, js+1 , is) &
-                                       + weights(8) * vortg(ks+1, js+1 , is+1)
-                    parcels%buoyancy(n) = parcels%buoyancy(n) &
-                                       + weights(1) * tbuoyg(ks, js, is)
-                                       + weights(2) * tbuoyg(ks  , js   , is+1) &
-                                       + weights(3) * tbuoyg(ks  , js+1 , is) &
-                                       + weights(4) * tbuoyg(ks  , js+1 , is+1) &
-                                       + weights(5) * tbuoyg(ks+1, js   , is) &
-                                       + weights(6) * tbuoyg(ks+1, js   , is) &
-                                       + weights(7) * tbuoyg(ks+1, js+1 , is) &
-                                       + weights(8) * tbuoyg(ks+1, js+1 , is+1)
+                parcels%vorticity(:, n) = parcels%vorticity(:, n) &
+                                   + weights(1) * vortg(ks, js, is, :) &
+                                   + weights(2) * vortg(ks  , js   , is+1, :) &
+                                   + weights(3) * vortg(ks  , js+1 , is, :) &
+                                   + weights(4) * vortg(ks  , js+1 , is+1, :) &
+                                   + weights(5) * vortg(ks+1, js   , is, :) &
+                                   + weights(6) * vortg(ks+1, js   , is, :) &
+                                   + weights(7) * vortg(ks+1, js+1 , is, :) &
+                                   + weights(8) * vortg(ks+1, js+1 , is+1, :)
+                parcels%buoyancy(n) = parcels%buoyancy(n) &
+                                   + weights(1) * tbuoyg(ks, js, is) &
+                                   + weights(2) * tbuoyg(ks  , js   , is+1) &
+                                   + weights(3) * tbuoyg(ks  , js+1 , is) &
+                                   + weights(4) * tbuoyg(ks  , js+1 , is+1) &
+                                   + weights(5) * tbuoyg(ks+1, js   , is) &
+                                   + weights(6) * tbuoyg(ks+1, js   , is) &
+                                   + weights(7) * tbuoyg(ks+1, js+1 , is) &
+                                   + weights(8) * tbuoyg(ks+1, js+1 , is+1)
 #ifndef ENABLE_DRY_MODE
-                    parcels%humidity(n) = parcels%humidity(n) &
-                                       + weights(1) * humg(ks, js, is)
-                                       + weights(2) * humg(ks  , js   , is+1) &
-                                       + weights(3) * humg(ks  , js+1 , is) &
-                                       + weights(4) * humg(ks  , js+1 , is+1) &
-                                       + weights(5) * humg(ks+1, js   , is) &
-                                       + weights(6) * humg(ks+1, js   , is) &
-                                       + weights(7) * humg(ks+1, js+1 , is) &
-                                       + weights(8) * humg(ks+1, js+1 , is+1)
+                parcels%humidity(n) = parcels%humidity(n) &
+                                   + weights(1) * humg(ks, js, is) &
+                                   + weights(2) * humg(ks  , js   , is+1) &
+                                   + weights(3) * humg(ks  , js+1 , is) &
+                                   + weights(4) * humg(ks  , js+1 , is+1) &
+                                   + weights(5) * humg(ks+1, js   , is) &
+                                   + weights(6) * humg(ks+1, js   , is) &
+                                   + weights(7) * humg(ks+1, js+1 , is) &
+                                   + weights(8) * humg(ks+1, js+1 , is+1)
 #endif
-                enddo
             enddo
             !$omp end do
             !$omp end parallel

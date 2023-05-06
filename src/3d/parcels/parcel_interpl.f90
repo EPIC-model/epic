@@ -252,7 +252,6 @@ module parcel_interpl
                                                   + f14pvol * weights(7)
                     volg(ks+1, js+1, is+1) = volg(ks+1, js+1, is+1) &
                                                   + f14pvol * weights(8)
-                    enddo
                 enddo
             enddo
             !$omp end do
@@ -410,7 +409,7 @@ module parcel_interpl
                                                 + weights(8) * velog(ks+1, js+1 , is+1, :) )
 
                     parcels%strain(:, n) = parcels%strain(:, n) &
-                                             + f14 * (weights(1) * velgradg(ks, js, is, :)
+                                             + f14 * (weights(1) * velgradg(ks, js, is, :) &
                                                 + weights(2) * velgradg(ks  , js   , is+1, :) &
                                                 + weights(3) * velgradg(ks  , js+1 , is,   :) &
                                                 + weights(4) * velgradg(ks  , js+1 , is+1, :) &
@@ -454,11 +453,11 @@ module parcel_interpl
 
             ! (i, j, k)
             xyz = (pos - lower) * dxi
-            ii(1) = floor(xyz(1))
-            jj(1) = floor(xyz(2))
-            kk(1) = floor(xyz(3))
+            ii = floor(xyz(1))
+            jj = floor(xyz(2))
+            kk = floor(xyz(3))
 
-            call get_weights(xyz, ii(1), jj(1), kk(1), ww)
+            call get_weights(xyz, ii, jj, kk, ww)
 
         end subroutine trilinear
 
