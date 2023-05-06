@@ -75,8 +75,9 @@ module field_mpi
                                                      box%hlo(2):box%hhi(2), &
                                                      box%hlo(1):box%hhi(1))
             logical, optional, intent(in)    :: l_alloc
-            logical                          :: l_buf = .true.
+            logical                          :: l_buf
 
+            l_buf = .true.
             if (present(l_alloc)) then
                 l_buf = l_alloc
             endif
@@ -106,10 +107,11 @@ module field_mpi
                                                      :)
             logical, optional, intent(in)    :: l_alloc
             integer                          :: nc, ncomp
-            logical                          :: l_buf = .true.
+            logical                          :: l_buf
 
             ncomp = size(data, 4)
 
+            l_buf = .true.
             if (present(l_alloc)) then
                 l_buf = l_alloc
             endif
@@ -170,8 +172,9 @@ module field_mpi
                                                      box%hlo(2):box%hhi(2), &
                                                      box%hlo(1):box%hhi(1))
             logical, optional, intent(in)    :: l_alloc
-            logical                          :: l_buf = .true.
+            logical                          :: l_buf
 
+            l_buf = .true.
             if (present(l_alloc)) then
                 l_buf = l_alloc
             endif
@@ -203,11 +206,12 @@ module field_mpi
                                                      box%hlo(1):, &
                                                      :)
             logical, optional, intent(in)    :: l_alloc
-            logical                          :: l_buf = .true.
+            logical                          :: l_buf
             integer                          :: nc, ncomp
 
             ncomp = size(data, 4)
 
+            l_buf = .true.
             if (present(l_alloc)) then
                 l_buf = l_alloc
             endif
