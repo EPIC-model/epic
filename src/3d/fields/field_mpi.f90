@@ -5,38 +5,140 @@ module field_mpi
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error
     implicit none
 
-        double precision, contiguous, dimension(:, :, :), pointer :: west_buf,           &
-                                                                     south_buf,          &
-                                                                     southwest_buf,      &
-                                                                     east_halo_buf,      &
-                                                                     north_halo_buf,     &
-                                                                     northeast_halo_buf
+        private
+
+        double precision, contiguous, dimension(:, :, :, :), pointer :: west_buf,           &
+                                                                        south_buf,          &
+                                                                        southwest_buf,      &
+                                                                        east_halo_buf,      &
+                                                                        north_halo_buf,     &
+                                                                        northeast_halo_buf
 
 
-        double precision, contiguous, dimension(:, :), pointer :: east_buf,             &
-                                                                  north_buf,            &
-                                                                  southeast_buf,        &
-                                                                  northwest_buf,        &
-                                                                  west_halo_buf,        &
-                                                                  south_halo_buf,       &
-                                                                  northwest_halo_buf,   &
-                                                                  southeast_halo_buf
+        double precision, contiguous, dimension(:, :, :), pointer :: east_buf,              &
+                                                                     north_buf,             &
+                                                                     southeast_buf,         &
+                                                                     northwest_buf,         &
+                                                                     west_halo_buf,         &
+                                                                     south_halo_buf,        &
+                                                                     northwest_halo_buf,    &
+                                                                     southeast_halo_buf
 
-        double precision, contiguous, dimension(:), pointer :: northeast_buf,       &
-                                                               southwest_halo_buf
+        double precision, contiguous, dimension(:, :), pointer :: northeast_buf,        &
+                                                                  southwest_halo_buf
 
         logical :: l_allocated = .false.
 
-        public :: field_halo_reset          &
-                , field_halo_fill           &
-                , field_interior_accumulate &
-                , field_halo_swap           &
-                , field_mpi_alloc           &
-                , field_mpi_dealloc
+        integer :: n_comp = 0
+
+        ! Convenient routines to fill halo cells for a single field:
+        interface field_halo_fill
+            module procedure :: field_halo_fill_scalar
+            module procedure :: field_halo_fill_vector
+        end interface field_halo_fill
+
+        ! Convenient routines to accumulate interior and halo cells for a single field:
+        interface field_halo_swap
+            module procedure :: field_halo_swap_scalar
+            module procedure :: field_halo_swap_vector
+        end interface field_halo_swap
+
+        interface field_halo_reset
+            module procedure :: field_halo_reset_scalar
+            module procedure :: field_halo_reset_vector
+        end interface field_halo_reset
+
+        interface field_interior_accumulate
+            module procedure :: field_interior_accumulate_scalar
+            module procedure :: field_interior_accumulate_vector
+        end interface field_interior_accumulate
+
+        public :: field_halo_reset                  &
+                , field_halo_fill                   &
+                , field_interior_accumulate         &
+                , field_halo_swap                   &
+                , field_mpi_alloc                   &
+                , field_mpi_dealloc                 &
+                , field_halo_to_buffer              &
+                , field_buffer_to_halo              &
+                , field_interior_to_buffer          &
+                , field_buffer_to_interior          &
+                , interior_to_halo_communication    &
+                , halo_to_interior_communication
 
     contains
 
-        subroutine field_halo_reset(data)
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_fill_scalar(data, l_alloc)
+            double precision,  intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                                     box%hlo(2):box%hhi(2), &
+                                                     box%hlo(1):box%hhi(1))
+            logical, optional, intent(in)    :: l_alloc
+            logical                          :: l_buf
+
+            l_buf = .true.
+            if (present(l_alloc)) then
+                l_buf = l_alloc
+            endif
+
+            if (l_buf) then
+                call field_mpi_alloc(1)
+            endif
+
+            call field_interior_to_buffer(data, 1)
+
+            call interior_to_halo_communication
+
+            call field_buffer_to_halo(data, 1, .false.)
+
+            if (l_buf) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_halo_fill_scalar
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_fill_vector(data, l_alloc)
+            double precision,  intent(inout) :: data(box%hlo(3):, &
+                                                     box%hlo(2):, &
+                                                     box%hlo(1):, &
+                                                     :)
+            logical, optional, intent(in)    :: l_alloc
+            integer                          :: nc, ncomp
+            logical                          :: l_buf
+
+            ncomp = size(data, 4)
+
+            l_buf = .true.
+            if (present(l_alloc)) then
+                l_buf = l_alloc
+            endif
+
+            if (l_buf) then
+                call field_mpi_alloc(ncomp)
+            endif
+
+            do nc = 1, ncomp
+                call field_interior_to_buffer(data(:, :, :, nc), nc)
+            enddo
+
+            call interior_to_halo_communication
+
+            do nc = 1, ncomp
+                call field_buffer_to_halo(data(:, :, :, nc), nc, .false.)
+            enddo
+
+            if (l_buf) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_halo_fill_vector
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_reset_scalar(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
@@ -46,44 +148,100 @@ module field_mpi
             data(:, box%hlo(2),              box%lo(1):box%hi(1))     = zero  ! south halo
             data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))     = zero  ! north halo
 
-        end subroutine field_halo_reset
+        end subroutine field_halo_reset_scalar
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_halo_fill(data)
+        subroutine field_halo_reset_vector(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
-                                                    box%hlo(1):box%hhi(1))
+                                                    box%hlo(1):box%hhi(1), &
+                                                    3)
 
-            call copy_from_interior_to_buffers(data)
+            data(:, box%hlo(2):box%hhi(2),   box%hlo(1), :)              = zero  ! west halo
+            data(:, box%hlo(2):box%hhi(2),   box%hhi(1)-1:box%hhi(1), :) = zero  ! east halo
+            data(:, box%hlo(2),              box%lo(1):box%hi(1), :)     = zero  ! south halo
+            data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1), :)     = zero  ! north halo
 
-            call interior_to_halo_communication
-
-            call copy_from_buffers_to_halo(data, .false.)
-
-        end subroutine field_halo_fill
+        end subroutine field_halo_reset_vector
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_interior_accumulate(data)
-            double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
-                                                    box%hlo(2):box%hhi(2), &
-                                                    box%hlo(1):box%hhi(1))
+        subroutine field_interior_accumulate_scalar(data, l_alloc)
+            double precision,  intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                                     box%hlo(2):box%hhi(2), &
+                                                     box%hlo(1):box%hhi(1))
+            logical, optional, intent(in)    :: l_alloc
+            logical                          :: l_buf
 
-            call copy_from_halo_to_buffers(data)
+            l_buf = .true.
+            if (present(l_alloc)) then
+                l_buf = l_alloc
+            endif
+
+            if (l_buf) then
+                call field_mpi_alloc(1)
+            endif
+
+            call field_halo_to_buffer(data, 1)
 
             ! send halo data to valid regions of other processes
             call halo_to_interior_communication
 
             ! accumulate interior; after this operation
             ! all interior grid points have the correct value
-            call copy_from_buffers_to_interior(data, .true.)
+            call field_buffer_to_interior(data, 1, .true.)
 
-        end subroutine field_interior_accumulate
+            if (l_buf) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_interior_accumulate_scalar
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_halo_swap(data)
+        subroutine field_interior_accumulate_vector(data, l_alloc)
+            double precision,  intent(inout) :: data(box%hlo(3):, &
+                                                     box%hlo(2):, &
+                                                     box%hlo(1):, &
+                                                     :)
+            logical, optional, intent(in)    :: l_alloc
+            logical                          :: l_buf
+            integer                          :: nc, ncomp
+
+            ncomp = size(data, 4)
+
+            l_buf = .true.
+            if (present(l_alloc)) then
+                l_buf = l_alloc
+            endif
+
+            if (l_buf) then
+                call field_mpi_alloc(ncomp)
+            endif
+
+            do nc = 1, ncomp
+                call field_halo_to_buffer(data(:, :, :, nc), nc)
+            enddo
+
+            ! send halo data to valid regions of other processes
+            call halo_to_interior_communication
+
+            ! accumulate interior; after this operation
+            ! all interior grid points have the correct value
+            do nc = 1, ncomp
+                call field_buffer_to_interior(data(:, :, :, nc), nc, .true.)
+            enddo
+
+            if (l_buf) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_interior_accumulate_vector
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_swap_scalar(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
@@ -92,11 +250,41 @@ module field_mpi
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_interior_accumulate(data)
+            call field_mpi_alloc(1)
 
-            call field_halo_fill(data)
+            call field_interior_accumulate_scalar(data, .false.)
 
-        end subroutine field_halo_swap
+            call field_halo_fill_scalar(data, .false.)
+
+            call field_mpi_dealloc
+
+        end subroutine field_halo_swap_scalar
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_swap_vector(data)
+            double precision, intent(inout) :: data(box%hlo(3):, &
+                                                    box%hlo(2):, &
+                                                    box%hlo(1):, &
+                                                    :)
+            integer                         :: ncomp
+            ! we must first fill the interior grid points
+            ! correctly, and then the halo; otherwise
+            ! halo grid points do not have correct values at
+            ! corners where multiple processes share grid points.
+
+
+            ncomp = size(data, 4)
+
+            call field_mpi_alloc(ncomp)
+
+            call field_interior_accumulate_vector(data, .false.)
+
+            call field_halo_fill_vector(data, .false.)
+
+            call field_mpi_dealloc
+
+        end subroutine field_halo_swap_vector
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -209,41 +397,45 @@ module field_mpi
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! This routine is called inside fields::field_alloc
-        subroutine field_mpi_alloc
-            integer :: zlen, ylen, xlen
+        ! @param[in] ncomp is the number of components (or number of scalar fields)
+        subroutine field_mpi_alloc(ncomp)
+            integer, intent(in) :: ncomp
+            integer             :: zlen, ylen, xlen
 
             if (l_allocated) then
                 return
             endif
             l_allocated = .true.
 
+            n_comp = ncomp
+
             xlen = box%hi(1)-box%lo(1)+1
             ylen = box%hi(2)-box%lo(2)+1
             zlen = box%hhi(3)-box%hlo(3)+1
 
-            allocate(west_buf(zlen, ylen, 2))
-            allocate(east_halo_buf(zlen, ylen, 2))
+            allocate(west_buf(zlen, ylen, 2, n_comp))
+            allocate(east_halo_buf(zlen, ylen, 2, n_comp))
 
-            allocate(east_buf(zlen, ylen))
-            allocate(west_halo_buf(zlen, ylen))
+            allocate(east_buf(zlen, ylen, n_comp))
+            allocate(west_halo_buf(zlen, ylen, n_comp))
 
-            allocate(south_buf(zlen, 2, xlen))
-            allocate(north_halo_buf(zlen, 2, xlen))
+            allocate(south_buf(zlen, 2, xlen, n_comp))
+            allocate(north_halo_buf(zlen, 2, xlen, n_comp))
 
-            allocate(north_buf(zlen, xlen))
-            allocate(south_halo_buf(zlen, xlen))
+            allocate(north_buf(zlen, xlen, n_comp))
+            allocate(south_halo_buf(zlen, xlen, n_comp))
 
-            allocate(northeast_buf(zlen))
-            allocate(southwest_halo_buf(zlen))
+            allocate(northeast_buf(zlen, n_comp))
+            allocate(southwest_halo_buf(zlen, n_comp))
 
-            allocate(southeast_buf(zlen, 2))
-            allocate(northwest_halo_buf(zlen, 2))
+            allocate(southeast_buf(zlen, 2, n_comp))
+            allocate(northwest_halo_buf(zlen, 2, n_comp))
 
-            allocate(southwest_buf(zlen, 2, 2))
-            allocate(northeast_halo_buf(zlen, 2, 2))
+            allocate(southwest_buf(zlen, 2, 2, n_comp))
+            allocate(northeast_halo_buf(zlen, 2, 2, n_comp))
 
-            allocate(northwest_buf(zlen, 2))
-            allocate(southeast_halo_buf(zlen, 2))
+            allocate(northwest_buf(zlen, 2, n_comp))
+            allocate(southeast_halo_buf(zlen, 2, n_comp))
 
         end subroutine field_mpi_alloc
 
@@ -256,6 +448,7 @@ module field_mpi
                 return
             endif
             l_allocated = .false.
+            n_comp = 0
 
             deallocate(west_buf)
             deallocate(east_halo_buf)
@@ -285,135 +478,159 @@ module field_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine copy_from_interior_to_buffers(data)
+        subroutine field_interior_to_buffer(data, nc)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
                                                  box%hlo(1):box%hhi(1))
+            integer,          intent(in) :: nc
 
-            west_buf  = data(:, box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1)
-            east_buf  = data(:, box%lo(2):box%hi(2),   box%hi(1))
-            south_buf = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))
-            north_buf = data(:, box%hi(2),             box%lo(1):box%hi(1))
+            if ((nc < 1) .or. (nc > n_comp)) then
+                call mpi_exit_on_error(&
+                    "field_mpi::field_interior_to_buffer: Component number outside bounds.")
+            endif
 
-            northeast_buf = data(:, box%hi(2),             box%hi(1))
-            southeast_buf = data(:, box%lo(2):box%lo(2)+1, box%hi(1))
-            southwest_buf = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1)
-            northwest_buf = data(:, box%hi(2),             box%lo(1):box%lo(1)+1)
+            west_buf(:, :, :, nc)  = data(:, box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1)
+            east_buf(:, :, nc)     = data(:, box%lo(2):box%hi(2),   box%hi(1))
+            south_buf(:, :, :, nc) = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))
+            north_buf(:, :, nc)    = data(:, box%hi(2),             box%lo(1):box%hi(1))
 
-        end subroutine copy_from_interior_to_buffers
+            northeast_buf(:, nc)       = data(:, box%hi(2),             box%hi(1))
+            southeast_buf(:, :, nc)    = data(:, box%lo(2):box%lo(2)+1, box%hi(1))
+            southwest_buf(:, :, :, nc) = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1)
+            northwest_buf(:, :, nc)    = data(:, box%hi(2),             box%lo(1):box%lo(1)+1)
+
+        end subroutine field_interior_to_buffer
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine copy_from_halo_to_buffers(data)
+        subroutine field_halo_to_buffer(data, nc)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
                                                  box%hlo(1):box%hhi(1))
+            integer,          intent(in) :: nc
 
-            east_halo_buf = data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1))
-            west_halo_buf = data(:, box%lo(2):box%hi(2), box%hlo(1))
-            north_halo_buf = data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))
-            south_halo_buf = data(:, box%hlo(2), box%lo(1):box%hi(1))
-            southwest_halo_buf = data(:, box%hlo(2), box%hlo(1))
-            northwest_halo_buf = data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1))
-            northeast_halo_buf = data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1))
-            southeast_halo_buf = data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1))
+            if ((nc < 1) .or. (nc > n_comp)) then
+                call mpi_exit_on_error(&
+                    "field_mpi::field_halo_to_buffer: Component number outside bounds.")
+            endif
 
-        end subroutine copy_from_halo_to_buffers
+            east_halo_buf(:, :, :, nc)      = data(:, box%lo(2):box%hi(2),     box%hhi(1)-1:box%hhi(1))
+            west_halo_buf(:, :, nc)         = data(:, box%lo(2):box%hi(2),     box%hlo(1))
+            north_halo_buf(:, :, :, nc)     = data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))
+            south_halo_buf(:, :, nc)        = data(:, box%hlo(2),              box%lo(1):box%hi(1))
+            southwest_halo_buf(:, nc)       = data(:, box%hlo(2),              box%hlo(1))
+            northwest_halo_buf(:, :, nc)    = data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1))
+            northeast_halo_buf(:, :, :, nc) = data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1))
+            southeast_halo_buf(:, :, nc)    = data(:, box%hlo(2),              box%hhi(1)-1:box%hhi(1))
+
+        end subroutine field_halo_to_buffer
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine copy_from_buffers_to_halo(data, l_add)
+        subroutine field_buffer_to_halo(data, nc, l_add)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
+            integer,          intent(in)    :: nc
             logical,          intent(in)    :: l_add
+
+            if ((nc < 1) .or. (nc > n_comp)) then
+                call mpi_exit_on_error(&
+                    "field_mpi::field_buffer_to_halo: Component number outside bounds.")
+            endif
 
             if (l_add) then
 
                 data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) &
-                    = data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) + east_halo_buf
+                    = data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) + east_halo_buf(:, :, :, nc)
 
                 data(:, box%lo(2):box%hi(2), box%hlo(1)) &
-                    = data(:, box%lo(2):box%hi(2), box%hlo(1)) + west_halo_buf
+                    = data(:, box%lo(2):box%hi(2), box%hlo(1)) + west_halo_buf(:, :, nc)
 
                 data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) &
-                    = data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) + north_halo_buf
+                    = data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) + north_halo_buf(:, :, :, nc)
 
                 data(:, box%hlo(2), box%lo(1):box%hi(1)) &
-                    = data(:, box%hlo(2), box%lo(1):box%hi(1)) + south_halo_buf
+                    = data(:, box%hlo(2), box%lo(1):box%hi(1)) + south_halo_buf(:, :, nc)
 
                 data(:, box%hlo(2), box%hlo(1)) &
-                    = data(:, box%hlo(2), box%hlo(1)) + southwest_halo_buf
+                    = data(:, box%hlo(2), box%hlo(1)) + southwest_halo_buf(:, nc)
 
                 data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1)) &
-                    = data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1)) + northwest_halo_buf
+                    = data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1)) + northwest_halo_buf(:, :, nc)
 
                 data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) &
                     = data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) &
-                    + northeast_halo_buf
+                    + northeast_halo_buf(:, :, :, nc)
 
                 data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1)) &
-                    = data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1)) + southeast_halo_buf
+                    = data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1)) + southeast_halo_buf(:, :, nc)
             else
-                data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) = east_halo_buf
-                data(:, box%lo(2):box%hi(2), box%hlo(1)) = west_halo_buf
-                data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) = north_halo_buf
-                data(:, box%hlo(2), box%lo(1):box%hi(1)) = south_halo_buf
-                data(:, box%hlo(2), box%hlo(1)) = southwest_halo_buf
-                data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1)) = northwest_halo_buf
-                data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) = northeast_halo_buf
-                data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1)) = southeast_halo_buf
+                data(:, box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) = east_halo_buf(:, :, :, nc)
+                data(:, box%lo(2):box%hi(2), box%hlo(1)) = west_halo_buf(:, :, nc)
+                data(:, box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) = north_halo_buf(:, :, :, nc)
+                data(:, box%hlo(2), box%lo(1):box%hi(1)) = south_halo_buf(:, :, nc)
+                data(:, box%hlo(2), box%hlo(1)) = southwest_halo_buf(:, nc)
+                data(:, box%hhi(2)-1:box%hhi(2), box%hlo(1)) = northwest_halo_buf(:, :, nc)
+                data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) = northeast_halo_buf(:, :, :, nc)
+                data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1)) = southeast_halo_buf(:, :, nc)
             endif
 
-        end subroutine copy_from_buffers_to_halo
+        end subroutine field_buffer_to_halo
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine copy_from_buffers_to_interior(data, l_add)
+        subroutine field_buffer_to_interior(data, nc, l_add)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
+            integer,          intent(in)    :: nc
             logical,          intent(in)    :: l_add
+
+            if ((nc < 1) .or. (nc > n_comp)) then
+                call mpi_exit_on_error(&
+                    "field_mpi::field_buffer_to_interior: Component number outside bounds.")
+            endif
 
             if (l_add) then
 
                 data(:, box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) &
-                    = data(:, box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) + west_buf
+                    = data(:, box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) + west_buf(:, :, :, nc)
 
                 data(:, box%lo(2):box%hi(2), box%hi(1)) &
-                    = data(:, box%lo(2):box%hi(2), box%hi(1)) + east_buf
+                    = data(:, box%lo(2):box%hi(2), box%hi(1)) + east_buf(:, :, nc)
 
                 data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1)) &
-                    = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1)) + south_buf
+                    = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1)) + south_buf(:, :, :, nc)
 
                 data(:, box%hi(2), box%lo(1):box%hi(1)) &
-                    = data(:, box%hi(2), box%lo(1):box%hi(1)) + north_buf
+                    = data(:, box%hi(2), box%lo(1):box%hi(1)) + north_buf(:, :, nc)
 
                 data(:, box%hi(2), box%hi(1)) &
-                    = data(:, box%hi(2), box%hi(1)) + northeast_buf
+                    = data(:, box%hi(2), box%hi(1)) + northeast_buf(:, nc)
 
                 data(:, box%lo(2):box%lo(2)+1, box%hi(1)) &
-                    = data(:, box%lo(2):box%lo(2)+1, box%hi(1)) + southeast_buf
+                    = data(:, box%lo(2):box%lo(2)+1, box%hi(1)) + southeast_buf(:, :, nc)
 
                 data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) &
-                    = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) + southwest_buf
+                    = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) + southwest_buf(:, :, :, nc)
 
                 data(:, box%hi(2), box%lo(1):box%lo(1)+1) &
-                    = data(:, box%hi(2), box%lo(1):box%lo(1)+1) + northwest_buf
+                    = data(:, box%hi(2), box%lo(1):box%lo(1)+1) + northwest_buf(:, :, nc)
 
             else
-                data(:, box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1) = west_buf
-                data(:, box%lo(2):box%hi(2),   box%hi(1))             = east_buf
-                data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))   = south_buf
-                data(:, box%hi(2),             box%lo(1):box%hi(1))   = north_buf
+                data(:, box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1) = west_buf(:, :, :, nc)
+                data(:, box%lo(2):box%hi(2),   box%hi(1))             = east_buf(:, :, nc)
+                data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))   = south_buf(:, :, :, nc)
+                data(:, box%hi(2),             box%lo(1):box%hi(1))   = north_buf(:, :, nc)
 
-                data(:, box%hi(2),             box%hi(1))             = northeast_buf
-                data(:, box%lo(2):box%lo(2)+1, box%hi(1))             = southeast_buf
-                data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) = southwest_buf
-                data(:, box%hi(2),             box%lo(1):box%lo(1)+1) = northwest_buf
+                data(:, box%hi(2),             box%hi(1))             = northeast_buf(:, nc)
+                data(:, box%lo(2):box%lo(2)+1, box%hi(1))             = southeast_buf(:, :, nc)
+                data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) = southwest_buf(:, :, :, nc)
+                data(:, box%hi(2),             box%lo(1):box%lo(1)+1) = northwest_buf(:, :, nc)
             endif
 
-        end subroutine copy_from_buffers_to_interior
+        end subroutine field_buffer_to_interior
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

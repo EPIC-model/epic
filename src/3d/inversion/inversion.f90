@@ -247,9 +247,7 @@ module inversion_mod
             velog(nz+1, :, :, I_Z) = -velog(nz-1, :, :, I_Z) ! w
             !$omp end parallel workshare
 
-            call field_halo_fill(velog(:, :, :, I_X))
-            call field_halo_fill(velog(:, :, :, I_Y))
-            call field_halo_fill(velog(:, :, :, I_Z))
+            call field_halo_fill(velog)
 
             call stop_timer(vor2vel_timer)
 
@@ -307,11 +305,7 @@ module inversion_mod
             velgradg(nz+1, :, :, I_DWDY) = -velgradg(nz-1, :, :, I_DWDY)
             !$omp end parallel workshare
 
-            call field_halo_fill(velgradg(:, :, :, I_DUDX))
-            call field_halo_fill(velgradg(:, :, :, I_DUDY))
-            call field_halo_fill(velgradg(:, :, :, I_DVDY))
-            call field_halo_fill(velgradg(:, :, :, I_DWDX))
-            call field_halo_fill(velgradg(:, :, :, I_DWDY))
+            call field_halo_fill(velgradg)
 
         end subroutine vel2vgrad
 
@@ -358,9 +352,7 @@ module inversion_mod
             vtend(nz+1, :, :, :) = two * vtend(nz, :, :, :) - vtend(nz-1, :, :, :)
             !$omp end parallel workshare
 
-            call field_halo_fill(vtend(:, :, :, I_X))
-            call field_halo_fill(vtend(:, :, :, I_Y))
-            call field_halo_fill(vtend(:, :, :, I_Z))
+            call field_halo_fill(vtend)
 
             call stop_timer(vtend_timer)
 
@@ -397,12 +389,10 @@ module inversion_mod
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Computes a divergent flow field (ud, vd, wd) = grad(phi) where
-        ! Lap(phi) = div (given).
-        subroutine diverge(div,  ud, vd, wd)
+        ! Lap(phi) = div (given) and grad = (ud, vd, wd).
+        subroutine diverge(div, grad)
             double precision, intent(inout)  :: div(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
-            double precision, intent(out)    :: ud(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                                vd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                                wd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out)    :: grad(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), 3)
             double precision                 :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision                 :: us(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
                                                 vs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)), &
@@ -424,19 +414,13 @@ module inversion_mod
             call diffx(ds, us)
 
             ! Reverse FFT to define x velocity component ud:
-            call fftxys2p(us, ud)
-
-            ! Fill halo grid points
-            call field_halo_fill(ud)
+            call fftxys2p(us, grad(:, :, :, I_X))
 
             ! Compute y derivative spectrally:
             call diffy(ds, vs)
 
             ! Reverse FFT to define y velocity component vd:
-            call fftxys2p(vs, vd)
-
-            ! Fill halo grid points
-            call field_halo_fill(vd)
+            call fftxys2p(vs, grad(:, :, :, I_Y))
 
             ! Compute z derivative by central differences:
             call central_diffz(ds, ws)
@@ -446,10 +430,10 @@ module inversion_mod
             ws(nz, :, :) = zero
 
             ! Reverse FFT to define z velocity component wd:
-            call fftxys2p(ws, wd)
+            call fftxys2p(ws, grad(:, :, :, I_Z))
 
-            ! Fill halo grid points
-            call field_halo_fill(wd)
+            ! Fill halo grid points:
+            call field_halo_fill(grad)
 
         end subroutine diverge
 

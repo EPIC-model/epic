@@ -133,12 +133,10 @@ module parcel_correction
 
         subroutine apply_laplace(l_reuse)
             logical, optional, intent(in) :: l_reuse
-            double precision              :: phi(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                              ud(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                              vd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
-                                              wd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision              :: phi(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision              :: grad(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), 3)
             double precision              :: weights(0:1,0:1,0:1)
-            integer                       :: n, is, js, ks
+            integer                       :: n, l, is, js, ks
 
             call start_timer(lapl_corr_timer)
 
@@ -147,32 +145,23 @@ module parcel_correction
             ! form divergence field
             phi = volg * vcelli - one
 
-            call diverge(phi, ud, vd, wd)
+            call diverge(phi, grad)
 
             ! use extrapolation to fill z grid lines outside domain:
-            ! (anti-symmetry in w is equal to extrapolation)
-            ud(-1, :, :)   =  two * ud(0, :, :) - ud(1, :, :)
-            vd(-1, :, :)   =  two * vd(0, :, :) - vd(1, :, :)
-            wd(-1, :, :)   = -wd(1, :, :)
-            ud(nz+1, :, :) =  two * ud(nz, :, :) - ud(nz-1, :, :)
-            vd(nz+1, :, :) =  two * vd(nz, :, :) - vd(nz-1, :, :)
-            wd(nz+1, :, :) = -wd(nz-1, :, :)
+            grad(-1,   :, :, :) =  two * grad(0,  :, :, :) - grad(1,    :, :, :)
+            grad(nz+1, :, :, :) =  two * grad(nz, :, :, :) - grad(nz-1, :, :, :)
 
             !------------------------------------------------------------------
             ! Increment parcel positions usind (ud, vd, wd) field:
             !$omp parallel default(shared)
-            !$omp do private(n, is, js, ks, weights)
+            !$omp do private(n, l, is, js, ks, weights)
             do n = 1, n_parcels
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
-                parcels%position(1, n) = parcels%position(1, n)               &
-                                           + sum(weights(:,:,:) * ud(ks:ks+1, js:js+1, is:is+1))
-
-                parcels%position(2, n) = parcels%position(2, n)               &
-                                           + sum(weights(:,:,:) * vd(ks:ks+1, js:js+1, is:is+1))
-
-                parcels%position(3, n) = parcels%position(3, n)               &
-                                           + sum(weights(:,:,:) * wd(ks:ks+1, js:js+1, is:is+1))
+                do l = 1, 3
+                    parcels%position(l, n) = parcels%position(l, n)                     &
+                                           + sum(weights(:,:,:) * grad(ks:ks+1, js:js+1, is:is+1, l))
+                enddo
             enddo
             !$omp end do
             !$omp end parallel
