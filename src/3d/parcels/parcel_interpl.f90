@@ -379,13 +379,13 @@ module parcel_interpl
 
             ! Note order of indices is k,j,i
             ww(0,0,0) = ww(0,0,0) + pzc * w00
-            ww(0,0,1) = ww(0,0,1) + pzc * w00
-            ww(0,1,0) = ww(0,1,0) + pzc * w00
-            ww(0,1,1) = ww(0,1,1) + pzc * w00
+            ww(0,0,1) = ww(0,0,1) + pzc * w10
+            ww(0,1,0) = ww(0,1,0) + pzc * w01
+            ww(0,1,1) = ww(0,1,1) + pzc * w11
             ww(1,0,0) = ww(1,0,0) + pz * w00
-            ww(1,0,1) = ww(1,0,1) + pz * w00
-            ww(1,1,0) = ww(1,1,0) + pz * w00
-            ww(1,1,1) = ww(1,1,1) + pz * w00
+            ww(1,0,1) = ww(1,0,1) + pz * w10
+            ww(1,1,0) = ww(1,1,0) + pz * w01
+            ww(1,1,1) = ww(1,1,1) + pz * w11
 
         end subroutine get_weights
 
