@@ -22,7 +22,7 @@ module parcel_interpl
 
     ! interpolation indices
     ! (first dimension x, y, z; second dimension l-th index)
-    integer :: is(ngp), js(ngp), ks(ngp)
+    integer :: is, js, ks
 
     ! interpolation weights
     double precision :: weights(ngp)
@@ -39,13 +39,13 @@ module parcel_interpl
         subroutine vol2grid(l_reuse)
             logical, optional, intent(in) :: l_reuse
             double precision              :: points(3, 4)
-            integer                       :: n, p, l
-            double precision              :: pvol
+            integer                       :: n, p
+            double precision              :: pvol, f14pvol
 
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pvol, is, js, ks, weights) &
+            !$omp do private(n, p, points, pvol, is, js, ks, weights, f14pvol) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -59,10 +59,22 @@ module parcel_interpl
 
                     call trilinear(points(:, p), is, js, ks, weights)
 
-                    do l = 1, ngp
-                        volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                                  + f14 * weights(l) * pvol
-                    enddo
+                    volg(ks, js, is) = volg(ks, js, is) &
+                                                  + f14pvol * weights(1)
+                    volg(ks, js, is+1) = volg(ks, js, is+1) &
+                                                  + f14pvol * weights(2)
+                    volg(ks, js+1, is) = volg(ks, js+1, is) &
+                                                  + f14pvol * weights(3)
+                    volg(ks, js+1, is+1) = volg(ks, js+1, is+1) &
+                                                  + f14pvol * weights(4)
+                    volg(ks+1, js, is) = volg(ks+1, js, is) &
+                                                  + f14pvol * weights(5)
+                    volg(ks+1, js, is+1) = volg(ks+1, js, is+1) &
+                                                  + f14pvol * weights(6)
+                    volg(ks+1, js+1, is) = volg(ks+1, js+1, is) &
+                                                  + f14pvol * weights(7)
+                    volg(ks+1, js+1, is+1) = volg(ks+1, js+1, is+1) &
+                                                  + f14pvol * weights(8)
                 enddo
             enddo
             !$omp end do
@@ -95,8 +107,8 @@ module parcel_interpl
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
             double precision  :: points(3, 4)
-            integer           :: n, p, l, i, j, k
-            double precision  :: pvol, weight, btot
+            integer           :: n, p, i, j, k
+            double precision  :: pvol, btot, f14pvol
 #ifndef ENABLE_DRY_MODE
             double precision  :: q_c
 #endif
@@ -114,11 +126,11 @@ module parcel_interpl
             tbuoyg = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, i, j, k, points, pvol, btot, q_c) &
+            !$omp do private(n, p, i, j, k, points, pvol, btot, q_c, f14pvol) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, humg, tbuoyg, volg)
 #else
-            !$omp do private(n, p, i, j, k, points, pvol, btot) &
+            !$omp do private(n, p, i, j, k, points, pvol, btot, f14pvol) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
@@ -153,52 +165,93 @@ module parcel_interpl
                     ! loop over grid points which are part of the interpolation
                     ! the weight is a quarter due to 4 points per ellipsoid
 
-                        f14pvol = f14 * pvol
+                    f14pvol = f14 * pvol
 
-                        vortg(ks, js, is, :) = vortg(ks, js, is, :) &
-                                                      + f14pvol * weights(1) * parcels%vorticity(:, n)
-                        vortg(ks, js, is+1, :) = vortg(ks, js, is+1, :) &
-                                                      + f14pvol * weights(2) * parcels%vorticity(:, n)
-                        vortg(ks, js+1, is, :) = vortg(ks, js+1, is, :) &
-                                                      + f14pvol * weights(3) * parcels%vorticity(:, n)
-                        vortg(ks, js+1, is+1, :) = vortg(ks, js+1, is+1, :) &
-                                                      + f14pvol * weights(4) * parcels%vorticity(:, n)
-                        vortg(ks+1, js, is, :) = vortg(ks+1, js, is, :) &
-                                                      + f14pvol * weights(5) * parcels%vorticity(:, n)
-                        vortg(ks+1, js, is+1, :) = vortg(ks+1, js, is+1, :) &
-                                                      + f14pvol * weights(6) * parcels%vorticity(:, n)
-                        vortg(ks+1, js+1, is, :) = vortg(ks+1, js+1, is, :) &
-                                                      + f14pvol * weights(7) * parcels%vorticity(:, n)
-                        vortg(ks+1, js+1, is+1, :) = vortg(ks+1, js+1, is+1, :) &
-                                                      + f14pvol * weights(8) * parcels%vorticity(:, n)
+                    vortg(ks, js, is, :) = vortg(ks, js, is, :) &
+                                                  + f14pvol * weights(1) * parcels%vorticity(:, n)
+                    vortg(ks, js, is+1, :) = vortg(ks, js, is+1, :) &
+                                                  + f14pvol * weights(2) * parcels%vorticity(:, n)
+                    vortg(ks, js+1, is, :) = vortg(ks, js+1, is, :) &
+                                                  + f14pvol * weights(3) * parcels%vorticity(:, n)
+                    vortg(ks, js+1, is+1, :) = vortg(ks, js+1, is+1, :) &
+                                                  + f14pvol * weights(4) * parcels%vorticity(:, n)
+                    vortg(ks+1, js, is, :) = vortg(ks+1, js, is, :) &
+                                                  + f14pvol * weights(5) * parcels%vorticity(:, n)
+                    vortg(ks+1, js, is+1, :) = vortg(ks+1, js, is+1, :) &
+                                                  + f14pvol * weights(6) * parcels%vorticity(:, n)
+                    vortg(ks+1, js+1, is, :) = vortg(ks+1, js+1, is, :) &
+                                                  + f14pvol * weights(7) * parcels%vorticity(:, n)
+                    vortg(ks+1, js+1, is+1, :) = vortg(ks+1, js+1, is+1, :) &
+                                                  + f14pvol * weights(8) * parcels%vorticity(:, n)
 
 #ifndef ENABLE_DRY_MODE
-                        vortg(ks, js, is, :) = vortg(ks, js, is, :) &
-                                                      + f14pvol * weights(1) * parcels%vorticity(:, n)
-                        vortg(ks, js, is+1, :) = vortg(ks, js, is+1, :) &
-                                                      + f14pvol * weights(2) * parcels%vorticity(:, n)
-                        vortg(ks, js+1, is, :) = vortg(ks, js+1, is, :) &
-                                                      + f14pvol * weights(3) * parcels%vorticity(:, n)
-                        vortg(ks, js+1, is+1, :) = vortg(ks, js+1, is+1, :) &
-                                                      + f14pvol * weights(4) * parcels%vorticity(:, n)
-                        vortg(ks+1, js, is, :) = vortg(ks+1, js, is, :) &
-                                                      + f14pvol * weights(5) * parcels%vorticity(:, n)
-                        vortg(ks+1, js, is+1, :) = vortg(ks+1, js, is+1, :) &
-                                                      + f14pvol * weights(6) * parcels%vorticity(:, n)
-                        vortg(ks+1, js+1, is, :) = vortg(ks+1, js+1, is, :) &
-                                                      + f14pvol * weights(7) * parcels%vorticity(:, n)
-                        vortg(ks+1, js+1, is+1, :) = vortg(ks+1, js+1, is+1, :) &
-                                                      + f14pvol * weights(8) * parcels%vorticity(:, n)
+                    dbuoyg(ks, js, is) = dbuoyg(ks, js, is) &
+                                                  + f14pvol * weights(1) * parcels%buoyancy(n)
+                    dbuoyg(ks, js, is+1) = dbuoyg(ks, js, is+1) &
+                                                  + f14pvol * weights(2) * parcels%buoyancy(n)
+                    dbuoyg(ks, js+1, is) = dbuoyg(ks, js+1, is) &
+                                                  + f14pvol * weights(3) * parcels%buoyancy(n)
+                    dbuoyg(ks, js+1, is+1) = dbuoyg(ks, js+1, is+1) &
+                                                  + f14pvol * weights(4) * parcels%buoyancy(n)
+                    dbuoyg(ks+1, js, is) = dbuoyg(ks+1, js, is) &
+                                                  + f14pvol * weights(5) * parcels%buoyancy(n)
+                    dbuoyg(ks+1, js, is+1) = dbuoyg(ks+1, js, is+1) &
+                                                  + f14pvol * weights(6) * parcels%buoyancy(n)
+                    dbuoyg(ks+1, js+1, is) = dbuoyg(ks+1, js+1, is) &
+                                                  + f14pvol * weights(7) * parcels%buoyancy(n)
+                    dbuoyg(ks+1, js+1, is+1) = dbuoyg(ks+1, js+1, is+1) &
+                                                  + f14pvol * weights(8) * parcels%buoyancy(n)
 
-                        dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
-                                                    + weight * parcels%buoyancy(n)
-                        humg(ks(l), js(l), is(l)) = humg(ks(l), js(l), is(l)) &
-                                                  + weight * parcels%humidity(n)
+                    humg(ks, js, is) = humg(ks, js, is) &
+                                                  + f14pvol * weights(1) * parcels%humidity(n)
+                    humg(ks, js, is+1) = humg(ks, js, is+1) &
+                                                  + f14pvol * weights(2) * parcels%humidity(n)
+                    humg(ks, js+1, is) = humg(ks, js+1, is) &
+                                                  + f14pvol * weights(3) * parcels%humidity(n)
+                    humg(ks, js+1, is+1) = humg(ks, js+1, is+1) &
+                                                  + f14pvol * weights(4) * parcels%humidity(n)
+                    humg(ks+1, js, is) = humg(ks+1, js, is) &
+                                                  + f14pvol * weights(5) * parcels%humidity(n)
+                    humg(ks+1, js, is+1) = humg(ks+1, js, is+1) &
+                                                  + f14pvol * weights(6) * parcels%humidity(n)
+                    humg(ks+1, js+1, is) = humg(ks+1, js+1, is) &
+                                                  + f14pvol * weights(7) * parcels%humidity(n)
+                    humg(ks+1, js+1, is+1) = humg(ks+1, js+1, is+1) &
+                                                  + f14pvol * weights(8) * parcels%humidity(n)
 #endif
-                        tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
-                                                    + weight * btot
-                        volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                                  + weight
+                    tbuoyg(ks, js, is) = tbuoyg(ks, js, is) &
+                                                  + f14pvol * weights(1) * btot
+                    tbuoyg(ks, js, is+1) = tbuoyg(ks, js, is+1) &
+                                                  + f14pvol * weights(2) * btot
+                    tbuoyg(ks, js+1, is) = tbuoyg(ks, js+1, is) &
+                                                  + f14pvol * weights(3) * btot
+                    tbuoyg(ks, js+1, is+1) = tbuoyg(ks, js+1, is+1) &
+                                                  + f14pvol * weights(4) * btot
+                    tbuoyg(ks+1, js, is) = tbuoyg(ks+1, js, is) &
+                                                  + f14pvol * weights(5) * btot
+                    tbuoyg(ks+1, js, is+1) = tbuoyg(ks+1, js, is+1) &
+                                                  + f14pvol * weights(6) * btot
+                    tbuoyg(ks+1, js+1, is) = tbuoyg(ks+1, js+1, is) &
+                                                  + f14pvol * weights(7) * btot
+                    tbuoyg(ks+1, js+1, is+1) = tbuoyg(ks+1, js+1, is+1) &
+                                                  + f14pvol * weights(8) * btot
+
+                    volg(ks, js, is) = volg(ks, js, is) &
+                                                  + f14pvol * weights(1)
+                    volg(ks, js, is+1) = volg(ks, js, is+1) &
+                                                  + f14pvol * weights(2)
+                    volg(ks, js+1, is) = volg(ks, js+1, is) &
+                                                  + f14pvol * weights(3)
+                    volg(ks, js+1, is+1) = volg(ks, js+1, is+1) &
+                                                  + f14pvol * weights(4)
+                    volg(ks+1, js, is) = volg(ks+1, js, is) &
+                                                  + f14pvol * weights(5)
+                    volg(ks+1, js, is+1) = volg(ks+1, js, is+1) &
+                                                  + f14pvol * weights(6)
+                    volg(ks+1, js+1, is) = volg(ks+1, js+1, is) &
+                                                  + f14pvol * weights(7)
+                    volg(ks+1, js+1, is+1) = volg(ks+1, js+1, is+1) &
+                                                  + f14pvol * weights(8)
                     enddo
                 enddo
             enddo
@@ -355,7 +408,7 @@ module parcel_interpl
                                                 + weights(6) * velog(ks+1, js   , is,   :) &
                                                 + weights(7) * velog(ks+1, js+1 , is,   :) &
                                                 + weights(8) * velog(ks+1, js+1 , is+1, :) )
-                                              
+
                     parcels%strain(:, n) = parcels%strain(:, n) &
                                              + f14 * (weights(1) * velgradg(ks, js, is, :)
                                                 + weights(2) * velgradg(ks  , js   , is+1, :) &
@@ -365,7 +418,7 @@ module parcel_interpl
                                                 + weights(6) * velgradg(ks+1, js   , is,   :) &
                                                 + weights(7) * velgradg(ks+1, js+1 , is,   :) &
                                                 + weights(8) * velgradg(ks+1, js+1 , is+1, :) )
- 
+
                     parcels%delta_vor(:, n) = parcels%delta_vor(:, n) &
                                                 + f14 * (weights(1) * vtend(ks, js, is, :) &
                                                 + weights(2) * vtend(ks  , js   , is+1, :) &

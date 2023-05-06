@@ -138,7 +138,7 @@ module parcel_correction
                                               vd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)), &
                                               wd(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision              :: weights(ngp)
-            integer                       :: n, l, is(ngp), js(ngp), ks(ngp)
+            integer                       :: n, l, is, js, ks
 
             call start_timer(lapl_corr_timer)
 
@@ -165,16 +165,35 @@ module parcel_correction
             do n = 1, n_parcels
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
-                do l = 1, ngp
-                    parcels%position(1, n) = parcels%position(1, n)               &
-                                           + weights(l) * ud(ks(l), js(l), is(l))
+                parcels%position(1, n) = parcels%position(1, n)               &
+                                       + weights(1) * ud(ks, js, is)
+                                       + weights(2) * ud(ks  , js   , is+1) &
+                                       + weights(3) * ud(ks  , js+1 , is) &
+                                       + weights(4) * ud(ks  , js+1 , is+1) &
+                                       + weights(5) * ud(ks+1, js   , is) &
+                                       + weights(6) * ud(ks+1, js   , is) &
+                                       + weights(7) * ud(ks+1, js+1 , is) &
+                                       + weights(8) * ud(ks+1, js+1 , is+1)
 
-                    parcels%position(2, n) = parcels%position(2, n)               &
-                                           + weights(l) * vd(ks(l), js(l), is(l))
+                parcels%position(2, n) = parcels%position(2, n)               &
+                                       + weights(1) * vd(ks, js, is)
+                                       + weights(2) * vd(ks  , js   , is+1) &
+                                       + weights(3) * vd(ks  , js+1 , is) &
+                                       + weights(4) * vd(ks  , js+1 , is+1) &
+                                       + weights(5) * vd(ks+1, js   , is) &
+                                       + weights(6) * vd(ks+1, js   , is) &
+                                       + weights(7) * vd(ks+1, js+1 , is) &
+                                       + weights(8) * vd(ks+1, js+1 , is+1)
 
-                    parcels%position(3, n) = parcels%position(3, n)               &
-                                           + weights(l) * wd(ks(l), js(l), is(l))
-                enddo
+                parcels%position(3, n) = parcels%position(3, n)               &
+                                       + weights(1) * wd(ks, js, is)
+                                       + weights(2) * wd(ks  , js   , is+1) &
+                                       + weights(3) * wd(ks  , js+1 , is) &
+                                       + weights(4) * wd(ks  , js+1 , is+1) &
+                                       + weights(5) * wd(ks+1, js   , is) &
+                                       + weights(6) * wd(ks+1, js   , is) &
+                                       + weights(7) * wd(ks+1, js+1 , is) &
+                                       + weights(8) * wd(ks+1, js+1 , is+1)
             enddo
             !$omp end do
             !$omp end parallel
@@ -191,8 +210,8 @@ module parcel_correction
             logical, optional, intent(in) :: l_reuse
             double precision              :: phi(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision              :: weights(ngp)
-            double precision              :: xs, ys, zs, xf, yf, zf, lim_x, lim_y, lim_z
-            integer                       :: n, is(ngp), js(ngp), ks(ngp)
+            double precision              :: xs, ys, zs, xf, yf, zf, xfc, yfc, zfc, lim_x, lim_y, lim_z
+            integer                       :: n, is, js, ks
 
             call start_timer(grad_corr_timer)
 
@@ -210,6 +229,9 @@ module parcel_correction
                 xf = weights(2) + weights(4) + weights(6) + weights(8) ! fractional position along x
                 yf = weights(3) + weights(4) + weights(7) + weights(8) ! fractional position along y
                 zf = weights(5) + weights(6) + weights(7) + weights(8) ! fractional position along z
+                xfc=one-xf
+                yfc=one-yf
+                zfc=one-zf
 
                 ! l   ks(l) js(l) is(l)
                 ! 1   k     j     i
@@ -220,38 +242,38 @@ module parcel_correction
                 ! 6   k+1   j     i+1
                 ! 7   k+1   j+1   i
                 ! 8   k+1   j+1   i+1
-                lim_x = dx(1) * xf * (one - xf)
+                lim_x = dx(1) * xf * xfc
                 xs = - prefactor * lim_x * (&
-                            (one - zf) * (&
-                                    (one - yf) * (phi(ks(2), js(2), is(2)) - phi(ks(1), js(1), is(1)))  &
-                                  +       (yf) * (phi(ks(4), js(4), is(4)) - phi(ks(3), js(3), is(3)))) &
-                          +      (zf) * (&
-                                    (one - yf) * (phi(ks(6), js(6), is(6)) - phi(ks(5), js(5), is(5)))  &
-                                  +       (yf) * (phi(ks(8), js(8), is(8)) - phi(ks(7), js(7), is(7)))))
+                            zfc * (&
+                                    yfc * (phi(ks, js,   is+1) - phi(ks, js,   is))  &
+                                  +       yf * (phi(ks, js+1, is+1) - phi(ks, js+1, is))) &
+                          +      zf * (&
+                                    yfc * (phi(ks+1, js,   is+1) - phi(ks+1, js,   is))  &
+                                  +       yf * (phi(ks+1, js+1, is+1) - phi(ks+1, js+1, is))))
 
                 lim_x = lim_x * max_compression
                 xs = max(-lim_x, min(xs, lim_x))
 
-                lim_y = dx(2) * yf * (one - yf)
+                lim_y = dx(2) * yf * yfc
                 ys = - prefactor * lim_y * (&
-                            (one - zf) * (&
-                                    (one - xf) * (phi(ks(3), js(3), is(3)) - phi(ks(1), js(1), is(1)))  &
-                                  +       (xf) * (phi(ks(4), js(4), is(4)) - phi(ks(2), js(2), is(2)))) &
-                          +      (zf) * (&
-                                    (one - xf) * (phi(ks(7), js(7), is(7)) - phi(ks(5), js(5), is(5)))  &
-                                  +       (xf) * (phi(ks(8), js(8), is(8)) - phi(ks(6), js(6), is(6)))))
+                            zfc * (&
+                                    xfc * (phi(ks, js+1, is  ) - phi(ks, js, is))  &
+                                  +       xf * (phi(ks, js+1, is+1) - phi(ks, js, is+1))) &
+                          +      zf * (&
+                                    xfc * (phi(ks+1, js+1, is) -   phi(ks+1, js, is))  &
+                                  +       xf * (phi(ks+1, js+1, is+1) - phi(ks+1, js, is+1))))
 
                 lim_y = lim_y * max_compression
                 ys = max(-lim_y, min(ys, lim_y))
 
-                lim_z = dx(3) * zf * (one - zf)
+                lim_z = dx(3) * zf * zfc
                 zs = - prefactor * lim_z * (&
-                            (one - xf) * (&
-                                    (one - yf) * (phi(ks(5), js(5), is(5)) - phi(ks(1), js(1), is(1)))  &
-                                  +       (yf) * (phi(ks(7), js(7), is(7)) - phi(ks(3), js(3), is(3)))) &
-                          +      (xf) * (&
-                                    (one - yf) * (phi(ks(6), js(6), is(6)) - phi(ks(2), js(2), is(2)))  &
-                                  +       (yf) * (phi(ks(8), js(8), is(8)) - phi(ks(4), js(4), is(4)))))
+                            xfc * (&
+                                    yfc * (phi(ks+1, js, is) - phi(ks, js, is))  &
+                                  +       yf * (phi(ks+1, js+1, is)) - phi(ks, js+1, is)) &
+                          +      xf * (&
+                                    yfc * (phi(ks+1, js, is+1) - phi(ks, js, is+1))  &
+                                  +       yf * (phi(ks+1, js+1, is+1) - phi(ks, js+1, is+1))))
 
                 lim_z = lim_z * max_compression
                 zs = max(-lim_z, min(zs, lim_z))
