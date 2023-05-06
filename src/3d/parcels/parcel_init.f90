@@ -194,7 +194,7 @@ module parcel_init
                                    + weights(3) * vortg(ks  , js+1 , is, :) &
                                    + weights(4) * vortg(ks  , js+1 , is+1, :) &
                                    + weights(5) * vortg(ks+1, js   , is, :) &
-                                   + weights(6) * vortg(ks+1, js   , is, :) &
+                                   + weights(6) * vortg(ks+1, js   , is+1, :) &
                                    + weights(7) * vortg(ks+1, js+1 , is, :) &
                                    + weights(8) * vortg(ks+1, js+1 , is+1, :)
                 parcels%buoyancy(n) = parcels%buoyancy(n) &
@@ -203,7 +203,7 @@ module parcel_init
                                    + weights(3) * tbuoyg(ks  , js+1 , is) &
                                    + weights(4) * tbuoyg(ks  , js+1 , is+1) &
                                    + weights(5) * tbuoyg(ks+1, js   , is) &
-                                   + weights(6) * tbuoyg(ks+1, js   , is) &
+                                   + weights(6) * tbuoyg(ks+1, js   , is+1) &
                                    + weights(7) * tbuoyg(ks+1, js+1 , is) &
                                    + weights(8) * tbuoyg(ks+1, js+1 , is+1)
 #ifndef ENABLE_DRY_MODE
@@ -213,7 +213,7 @@ module parcel_init
                                    + weights(3) * humg(ks  , js+1 , is) &
                                    + weights(4) * humg(ks  , js+1 , is+1) &
                                    + weights(5) * humg(ks+1, js   , is) &
-                                   + weights(6) * humg(ks+1, js   , is) &
+                                   + weights(6) * humg(ks+1, js   , is+1) &
                                    + weights(7) * humg(ks+1, js+1 , is) &
                                    + weights(8) * humg(ks+1, js+1 , is+1)
 #endif

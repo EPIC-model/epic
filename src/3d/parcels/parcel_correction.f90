@@ -161,7 +161,7 @@ module parcel_correction
             !------------------------------------------------------------------
             ! Increment parcel positions usind (ud, vd, wd) field:
             !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, ks, weights)
+            !$omp do private(n, is, js, ks, weights)
             do n = 1, n_parcels
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
 
@@ -171,7 +171,7 @@ module parcel_correction
                                        + weights(3) * ud(ks  , js+1 , is) &
                                        + weights(4) * ud(ks  , js+1 , is+1) &
                                        + weights(5) * ud(ks+1, js   , is) &
-                                       + weights(6) * ud(ks+1, js   , is) &
+                                       + weights(6) * ud(ks+1, js   , is+1) &
                                        + weights(7) * ud(ks+1, js+1 , is) &
                                        + weights(8) * ud(ks+1, js+1 , is+1)
 
@@ -181,7 +181,7 @@ module parcel_correction
                                        + weights(3) * vd(ks  , js+1 , is) &
                                        + weights(4) * vd(ks  , js+1 , is+1) &
                                        + weights(5) * vd(ks+1, js   , is) &
-                                       + weights(6) * vd(ks+1, js   , is) &
+                                       + weights(6) * vd(ks+1, js   , is+1) &
                                        + weights(7) * vd(ks+1, js+1 , is) &
                                        + weights(8) * vd(ks+1, js+1 , is+1)
 
@@ -191,7 +191,7 @@ module parcel_correction
                                        + weights(3) * wd(ks  , js+1 , is) &
                                        + weights(4) * wd(ks  , js+1 , is+1) &
                                        + weights(5) * wd(ks+1, js   , is) &
-                                       + weights(6) * wd(ks+1, js   , is) &
+                                       + weights(6) * wd(ks+1, js   , is+1) &
                                        + weights(7) * wd(ks+1, js+1 , is) &
                                        + weights(8) * wd(ks+1, js+1 , is+1)
             enddo

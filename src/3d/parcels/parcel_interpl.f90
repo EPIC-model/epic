@@ -58,6 +58,8 @@ module parcel_interpl
                 do p = 1, 4
 
                     call trilinear(points(:, p), is, js, ks, weights)
+                    
+                    f14pvol = f14 * pvol
 
                     volg(ks, js, is) = volg(ks, js, is) &
                                                   + f14pvol * weights(1)
