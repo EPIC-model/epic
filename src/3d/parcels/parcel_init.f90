@@ -207,10 +207,10 @@ module parcel_init
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine init_fill_halo
-            integer :: n_fields = 4
-
 #ifndef ENABLE_DRY_MODE
-            n_fields = 5
+            integer, parameter :: n_fields = 5
+#else
+            integer, parameter :: n_fields = 4
 #endif
             call field_mpi_alloc(n_fields)
 
