@@ -16,6 +16,7 @@ program test_mpi_parcel_init_3d
     use fields, only : tbuoyg, field_default
     use field_ops, only : get_rms, get_abs_max
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, vcell
+    use mpi_layout, only : box, mpi_layout_init
     use mpi_timer
     implicit none
 

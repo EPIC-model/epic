@@ -11,11 +11,21 @@ module parcel_interpl
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use fields
-    use field_mpi, only : field_halo_swap
+    use field_mpi, only : field_mpi_alloc                   &
+                        , field_mpi_dealloc                 &
+                        , field_buffer_to_halo              &
+                        , field_halo_to_buffer              &
+                        , field_buffer_to_interior          &
+                        , field_interior_to_buffer          &
+                        , interior_to_halo_communication    &
+                        , halo_to_interior_communication    &
+                        , field_halo_swap
     use physics, only : glat, lambda_c, q_0
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
     implicit none
+
+    private
 
     ! number of indices and weights
     integer, parameter :: ngp = 8
@@ -30,7 +40,27 @@ module parcel_interpl
     integer :: par2grid_timer, &
                grid2par_timer
 
-    private :: is, js, ks, weights
+    integer, parameter :: IDX_VOL_SWAP   = 1    &
+                        , IDX_VOR_X_SWAP = 2    &
+                        , IDX_VOR_Y_SWAP = 3    &
+                        , IDX_VOR_Z_SWAP = 4    &
+                        , IDX_TBUOY_SWAP = 5
+#ifndef ENABLE_DRY_MODE
+    integer, parameter :: IDX_DBUOY_SWAP = 6    &
+                        , IDX_HUM_SWAP   = 7
+
+    integer, parameter :: n_field_swap = 7
+#else
+    integer, parameter :: n_field_swap = 5
+#endif
+
+    public :: par2grid          &
+            , vol2grid          &
+            , grid2par          &
+            , par2grid_timer    &
+            , grid2par_timer    &
+            , trilinear         &
+            , ngp
 
     contains
 
@@ -175,11 +205,7 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
-            call field_halo_swap(volg)
-            call field_halo_swap(vortg(:, :, :, I_X))
-            call field_halo_swap(vortg(:, :, :, I_Y))
-            call field_halo_swap(vortg(:, :, :, I_Z))
-            call field_halo_swap(tbuoyg)
+            call par2grid_halo_swap
 
             !$omp parallel workshare
             ! apply free slip boundary condition
@@ -203,8 +229,6 @@ module parcel_interpl
             !$omp end parallel workshare
 
 #ifndef ENABLE_DRY_MODE
-            call field_halo_swap(dbuoyg)
-            call field_halo_swap(humg)
             !$omp parallel workshare
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
             dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
@@ -265,6 +289,72 @@ module parcel_interpl
             call stop_timer(par2grid_timer)
 
         end subroutine par2grid
+
+
+        subroutine par2grid_halo_swap
+            ! we must first fill the interior grid points
+            ! correctly, and then the halo; otherwise
+            ! halo grid points do not have correct values at
+            ! corners where multiple processes share grid points.
+
+            call field_mpi_alloc(n_field_swap)
+
+            !------------------------------------------------------------------
+            ! Accumulate interior:
+
+            call field_halo_to_buffer(volg,                IDX_VOL_SWAP)
+            call field_halo_to_buffer(vortg(:, :, :, I_X), IDX_VOR_X_SWAP)
+            call field_halo_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
+            call field_halo_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
+            call field_halo_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
+#ifndef ENABLE_DRY_MODE
+            call field_halo_to_buffer(dbuoyg,              IDX_DBUOY_SWAP)
+            call field_halo_to_buffer(humg,                IDX_HUM_SWAP)
+#endif
+
+            ! send halo data to valid regions of other processes
+            call halo_to_interior_communication
+
+            ! accumulate interior; after this operation
+            ! all interior grid points have the correct value
+            call field_buffer_to_interior(volg,                IDX_VOL_SWAP, .true.)
+            call field_buffer_to_interior(vortg(:, :, :, I_X), IDX_VOR_X_SWAP, .true.)
+            call field_buffer_to_interior(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .true.)
+            call field_buffer_to_interior(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .true.)
+            call field_buffer_to_interior(tbuoyg,              IDX_TBUOY_SWAP, .true.)
+#ifndef ENABLE_DRY_MODE
+            call field_buffer_to_interior(dbuoyg,              IDX_DBUOY_SWAP, .true.)
+            call field_buffer_to_interior(humg,                IDX_HUM_SWAP, .true.)
+#endif
+
+            !------------------------------------------------------------------
+            ! Fill halo:
+
+            call field_interior_to_buffer(volg,                IDX_VOL_SWAP)
+            call field_interior_to_buffer(vortg(:, :, :, I_X), IDX_VOR_X_SWAP)
+            call field_interior_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
+            call field_interior_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
+            call field_interior_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
+#ifndef ENABLE_DRY_MODE
+            call field_interior_to_buffer(dbuoyg,              IDX_DBUOY_SWAP)
+            call field_interior_to_buffer(humg,                IDX_HUM_SWAP)
+#endif
+
+            call interior_to_halo_communication
+
+            call field_buffer_to_halo(volg,                IDX_VOL_SWAP, .false.)
+            call field_buffer_to_halo(vortg(:, :, :, I_X), IDX_VOR_X_SWAP, .false.)
+            call field_buffer_to_halo(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .false.)
+            call field_buffer_to_halo(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .false.)
+            call field_buffer_to_halo(tbuoyg,              IDX_TBUOY_SWAP, .false.)
+#ifndef ENABLE_DRY_MODE
+            call field_buffer_to_halo(dbuoyg,              IDX_DBUOY_SWAP, .false.)
+            call field_buffer_to_halo(humg,                IDX_HUM_SWAP, .false.)
+#endif
+
+            call field_mpi_dealloc
+
+        end subroutine par2grid_halo_swap
 
 
         ! Interpolate the gridded quantities to the parcels
@@ -398,17 +488,6 @@ module parcel_interpl
             kk(8) = kk(5)
 
         end subroutine trilinear
-
-        pure subroutine trilinear_weights_add(pos, i, j, k, ww)
-            double precision, intent(in)    :: pos(3)
-            double precision, intent(inout) :: ww(ngp)
-            integer,          intent(in)    :: i, j, k
-            double precision                :: xyz(3)
-            xyz = (pos - lower) * dxi
-            call get_weights(xyz, i, j, k, ww)
-
-        end subroutine trilinear_weights_add
-
 
         pure subroutine get_weights(xyz, i, j, k, ww)
             double precision, intent(in)    :: xyz(3)

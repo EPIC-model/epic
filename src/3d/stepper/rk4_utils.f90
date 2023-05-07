@@ -145,7 +145,7 @@ module rk4_utils
             !
 
             ! ensure that halo grid points are filled
-            call field_halo_fill(tbuoyg)
+            call field_halo_fill(tbuoyg, l_alloc=.true.)
 
             ! db/dx
             gradb = f12 * dxi(I_X) * (tbuoyg(0:nz, box%lo(2):box%hi(2), box%lo(1)+1:box%hi(1)+1) &
