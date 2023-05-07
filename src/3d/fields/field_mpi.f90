@@ -71,18 +71,12 @@ module field_mpi
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine field_halo_fill_scalar(data, l_alloc)
-            double precision,  intent(inout) :: data(box%hlo(3):box%hhi(3), &
-                                                     box%hlo(2):box%hhi(2), &
-                                                     box%hlo(1):box%hhi(1))
-            logical, optional, intent(in)    :: l_alloc
-            logical                          :: l_buf
+            double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                                    box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1))
+            logical,          intent(in)    :: l_alloc
 
-            l_buf = .true.
-            if (present(l_alloc)) then
-                l_buf = l_alloc
-            endif
-
-            if (l_buf) then
+            if (l_alloc) then
                 call field_mpi_alloc(1)
             endif
 
@@ -92,7 +86,7 @@ module field_mpi
 
             call field_buffer_to_halo(data, 1, .false.)
 
-            if (l_buf) then
+            if (l_alloc) then
                 call field_mpi_dealloc
             endif
 
@@ -101,22 +95,16 @@ module field_mpi
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine field_halo_fill_vector(data, l_alloc)
-            double precision,  intent(inout) :: data(box%hlo(3):, &
-                                                     box%hlo(2):, &
-                                                     box%hlo(1):, &
+            double precision, intent(inout) :: data(box%hlo(3):, &
+                                                    box%hlo(2):, &
+                                                    box%hlo(1):, &
                                                      :)
-            logical, optional, intent(in)    :: l_alloc
-            integer                          :: nc, ncomp
-            logical                          :: l_buf
+            logical,          intent(in)    :: l_alloc
+            integer                         :: nc, ncomp
 
             ncomp = size(data, 4)
 
-            l_buf = .true.
-            if (present(l_alloc)) then
-                l_buf = l_alloc
-            endif
-
-            if (l_buf) then
+            if (l_alloc) then
                 call field_mpi_alloc(ncomp)
             endif
 
@@ -130,7 +118,7 @@ module field_mpi
                 call field_buffer_to_halo(data(:, :, :, nc), nc, .false.)
             enddo
 
-            if (l_buf) then
+            if (l_alloc) then
                 call field_mpi_dealloc
             endif
 
@@ -168,18 +156,12 @@ module field_mpi
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine field_interior_accumulate_scalar(data, l_alloc)
-            double precision,  intent(inout) :: data(box%hlo(3):box%hhi(3), &
-                                                     box%hlo(2):box%hhi(2), &
-                                                     box%hlo(1):box%hhi(1))
-            logical, optional, intent(in)    :: l_alloc
-            logical                          :: l_buf
+            double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                                    box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1))
+            logical,          intent(in)    :: l_alloc
 
-            l_buf = .true.
-            if (present(l_alloc)) then
-                l_buf = l_alloc
-            endif
-
-            if (l_buf) then
+            if (l_alloc) then
                 call field_mpi_alloc(1)
             endif
 
@@ -192,7 +174,7 @@ module field_mpi
             ! all interior grid points have the correct value
             call field_buffer_to_interior(data, 1, .true.)
 
-            if (l_buf) then
+            if (l_alloc) then
                 call field_mpi_dealloc
             endif
 
@@ -201,22 +183,16 @@ module field_mpi
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine field_interior_accumulate_vector(data, l_alloc)
-            double precision,  intent(inout) :: data(box%hlo(3):, &
-                                                     box%hlo(2):, &
-                                                     box%hlo(1):, &
+            double precision, intent(inout) :: data(box%hlo(3):, &
+                                                    box%hlo(2):, &
+                                                    box%hlo(1):, &
                                                      :)
-            logical, optional, intent(in)    :: l_alloc
-            logical                          :: l_buf
-            integer                          :: nc, ncomp
+            logical,          intent(in)    :: l_alloc
+            integer                         :: nc, ncomp
 
             ncomp = size(data, 4)
 
-            l_buf = .true.
-            if (present(l_alloc)) then
-                l_buf = l_alloc
-            endif
-
-            if (l_buf) then
+            if (l_alloc) then
                 call field_mpi_alloc(ncomp)
             endif
 
@@ -233,7 +209,7 @@ module field_mpi
                 call field_buffer_to_interior(data(:, :, :, nc), nc, .true.)
             enddo
 
-            if (l_buf) then
+            if (l_alloc) then
                 call field_mpi_dealloc
             endif
 

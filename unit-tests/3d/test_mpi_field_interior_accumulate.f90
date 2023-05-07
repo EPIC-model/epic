@@ -40,7 +40,7 @@ program test_field_interior_accumulate
 
     values(:, :, :) = one
 
-    call field_interior_accumulate(values)
+    call field_interior_accumulate(values, l_alloc=.true.)
 
     !
     ! check results
