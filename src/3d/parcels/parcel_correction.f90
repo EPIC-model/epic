@@ -160,7 +160,7 @@ module parcel_correction
 
                 do l = 1, 3
                     parcels%position(l, n) = parcels%position(l, n)                     &
-                                           + sum(weights(:,:,:) * grad(ks:ks+1, js:js+1, is:is+1, l))
+                                           + sum(weights * grad(ks:ks+1, js:js+1, is:is+1, l))
                 enddo
             enddo
             !$omp end do

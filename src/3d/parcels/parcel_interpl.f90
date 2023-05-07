@@ -35,7 +35,8 @@ module parcel_interpl
     double precision :: weights(0:1,0:1,0:1)
 
     integer :: par2grid_timer, &
-               grid2par_timer
+               grid2par_timer, &
+               halo_swap_timer
 
     integer, parameter :: IDX_VOL_SWAP   = 1    &
                         , IDX_VOR_X_SWAP = 2    &
@@ -56,6 +57,7 @@ module parcel_interpl
             , grid2par          &
             , par2grid_timer    &
             , grid2par_timer    &
+            , halo_swap_timer    &
             , trilinear         
 
     contains
@@ -65,13 +67,13 @@ module parcel_interpl
         subroutine vol2grid(l_reuse)
             logical, optional, intent(in) :: l_reuse
             double precision              :: points(3, 4)
-            integer                       :: n, p, l
+            integer                       :: n, p
             double precision              :: pvol
 
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pvol, is, js, ks, weights) &
+            !$omp do private(n, p, points, pvol, is, js, ks, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -86,13 +88,15 @@ module parcel_interpl
                     call trilinear(points(:, p), is, js, ks, weights)
 
                     volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
-                                              + f14 * weights(:,:,:) * pvol
+                                              + f14 * weights * pvol
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
-
+            
+            call start_timer(halo_swap_timer)
             call field_halo_swap(volg)
+            call stop_timer(halo_swap_timer)
 
             ! apply free slip boundary condition
             !$omp parallel workshare
@@ -180,24 +184,26 @@ module parcel_interpl
 
                     do l = 1, 3
                         vortg(ks:ks+1, js:js+1, is:is+1, l) = vortg(ks:ks+1, js:js+1, is:is+1, l) &
-                                                            + weight(:,:,:) * parcels%vorticity(l, n)
+                                                            + weight * parcels%vorticity(l, n)
                     enddo
 #ifndef ENABLE_DRY_MODE
                     dbuoyg(ks:ks+1, js:js+1, is:is+1) = dbuoyg(ks:ks+1, js:js+1, is:is+1) &
-                                                      + weight(:,:,:) * parcels%buoyancy(n)
+                                                      + weight * parcels%buoyancy(n)
                     humg(ks:ks+1, js:js+1, is:is+1) = humg(ks:ks+1, js:js+1, is:is+1) &
-                                              + weight(:,:,:) * parcels%humidity(n)
+                                              + weight * parcels%humidity(n)
 #endif
                     tbuoyg(ks:ks+1, js:js+1, is:is+1) = tbuoyg(ks:ks+1, js:js+1, is:is+1) &
-                                                + weight(:,:,:) * btot
+                                                + weight * btot
                     volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
-                                              + weight(:,:,:)
+                                              + weight
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
 
+            call start_timer(halo_swap_timer)
             call par2grid_halo_swap
+            call stop_timer(halo_swap_timer)
 
             !$omp parallel workshare
             ! apply free slip boundary condition
@@ -400,15 +406,15 @@ module parcel_interpl
                     ! loop over grid points which are part of the interpolation
                     do l = 1,3
                         parcels%delta_pos(l, n) = parcels%delta_pos(l, n) &
-                                                + f14 * sum(weights(:,:,:) * velog(ks:ks+1, js:js+1, is:is+1, l))
+                                                + f14 * sum(weights * velog(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                     do l = 1,5
                         parcels%strain(l, n) = parcels%strain(l, n) &
-                                             + f14 * sum(weights(:,:,:) * velgradg(ks:ks+1, js:js+1, is:is+1, l))
+                                             + f14 * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                     do l = 1,3
                         parcels%delta_vor(l, n) = parcels%delta_vor(l, n) &
-                                                + f14 * sum(weights(:,:,:) * vtend(ks:ks+1, js:js+1, is:is+1, l))
+                                                + f14 * sum(weights * vtend(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                 enddo
             enddo

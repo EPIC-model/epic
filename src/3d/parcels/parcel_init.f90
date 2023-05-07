@@ -188,13 +188,13 @@ module parcel_init
                 ! loop over grid points which are part of the interpolation
                 do l = 1, 3
                     parcels%vorticity(l, n) = parcels%vorticity(l, n) &
-                                            + sum(weights(:,:,:) * vortg(ks:ks+1, js:js+1, is:is+1, l))
+                                            + sum(weights * vortg(ks:ks+1, js:js+1, is:is+1, l))
                 enddo
                 parcels%buoyancy(n) = parcels%buoyancy(n) &
-                                    + sum(weights(:,:,:) * tbuoyg(ks:ks+1, js:js+1, is:is+1))
+                                    + sum(weights * tbuoyg(ks:ks+1, js:js+1, is:is+1))
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n) = parcels%humidity(n) &
-                                    + sum(weights(:,:,:) * humg(ks:ks+1, js:js+1, is:is+1))
+                                    + sum(weights * humg(ks:ks+1, js:js+1, is:is+1))
 #endif
             enddo
             !$omp end do
