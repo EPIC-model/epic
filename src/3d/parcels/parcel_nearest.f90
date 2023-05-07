@@ -773,7 +773,7 @@ module parcel_nearest
                 enddo
 
                 call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, comm%err)
-!                 call MPI_Barrier(comm%world, comm%err)
+                call MPI_Barrier(comm%world, comm%err)
 
                 ! determine leaf parcels
                 do m = 1, n_local_small
@@ -807,7 +807,7 @@ module parcel_nearest
                 enddo
 
                 call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, comm%err)
-!                 call MPI_Barrier(comm%world, comm%err)
+                call MPI_Barrier(comm%world, comm%err)
 
                 ! filter out parcels that are "unavailable" for merging
                 do m = 1, n_local_small
@@ -843,7 +843,7 @@ module parcel_nearest
                 enddo
 
                 call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, comm%err)
-!                 call MPI_Barrier(comm%world, comm%err)
+                call MPI_Barrier(comm%world, comm%err)
 
                 ! identify mergers in this iteration
                 do m = 1, n_local_small
@@ -968,7 +968,7 @@ module parcel_nearest
             enddo
 
             call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, comm%err)
-!             call MPI_Barrier(comm%world, comm%err)
+            call MPI_Barrier(comm%world, comm%err)
 
             ! Second stage
             do m = 1, n_local_small
@@ -1106,15 +1106,15 @@ module parcel_nearest
                     if (l_helper) then
                         ! merge this parcel into ic along with the leaf parcels
                         l_do_merge(m) = .true.
-!                     else
-!                       ! Dual link is resolved on other rank
+                    !else
+                    !   ! Dual link is resolved on other rank
                     endif
                 endif
                 !------------------------------------------------------
             enddo
 
             call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, comm%err)
-!             call MPI_Barrier(comm%world, comm%err)
+            call MPI_Barrier(comm%world, comm%err)
 
             j = 0
             do m = 1, n_local_small
