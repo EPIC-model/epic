@@ -82,6 +82,14 @@ module parcel_nearest
     type(MPI_Win) :: win_merged, win_avail, win_leaf
     logical       :: l_nearest_win_allocated
 
+#ifndef NDEBUG
+    ! Small remote parcels must be sent back to the original
+    ! MPI ranks in the same order as they were received. These
+    ! two arrays verify the correctness.
+    integer :: small_recv_order(8)
+    integer :: small_recv_count(8)
+#endif
+
     public :: find_nearest              &
             , merge_nearest_timer       &
             , merge_tree_resolve_timer  &
@@ -633,6 +641,18 @@ module parcel_nearest
 
                 ! receive order of small parcels
                 tag = RECV_NEIGHBOUR_TAG(n)
+
+#ifndef NDEBUG
+                if (small_recv_order(n) /= tag) then
+                    call mpi_exit_on_error(&
+                        "parcel_nearest::find_closest_parcel_globally: Wrong messge order.")
+                endif
+
+                if (small_recv_count(n) /= n_neighbour_small(n)) then
+                    call mpi_exit_on_error(&
+                        "parcel_nearest::find_closest_parcel_globally: Wrong number of parcels.")
+                endif
+#endif
 
                 call MPI_Isend(send_buf(1:send_size),   &
                                send_size,               &
@@ -1303,6 +1323,11 @@ module parcel_nearest
                 endif
 
                 recv_count = recv_size / n_entries
+
+#ifndef NDEBUG
+                small_recv_order(n) = RECV_NEIGHBOUR_TAG(n)
+                small_recv_count(n) = recv_count
+#endif
 
                 i = n_parcels+1
                 j = n_parcels+1+size(rsma) + recv_count

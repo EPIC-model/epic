@@ -7,6 +7,7 @@ module netcdf_utils
     use netcdf
     use mpi_communicator
     use config, only : package
+    use mpi_utils, only : mpi_stop, mpi_exit_on_error
     implicit none
 
     ! netCDF error if non-zero
@@ -26,8 +27,7 @@ module netcdf_utils
             character(1), intent(in) :: dim_names(:)
 
             if ((size(dim_names) < 3) .or. (size(dim_names) > 4)) then
-                print *, "Invalid number of dimensions. Exiting."
-                stop
+                call mpi_stop("Invalid number of dimensions. Exiting.")
             endif
 
             netcdf_dims(1:2) = dim_names(1:2)
@@ -47,8 +47,7 @@ module netcdf_utils
             character(1), intent(in) :: axis_names(:)
 
             if ((size(axis_names) < 3) .or. (size(axis_names) > 4)) then
-                print *, "Invalid number of axes. Exiting."
-                stop
+                call mpi_stop("Invalid number of axes. Exiting.")
             endif
 
             netcdf_axes(1:2) = axis_names(1:2)
@@ -84,8 +83,7 @@ module netcdf_utils
             if (l_exist .and. overwrite) then
                 call delete_netcdf_file(ncfname)
             else if (l_exist) then
-                print *, "File '" // trim(ncfname) // "' already exists. Exiting."
-                stop
+                call mpi_stop("File '" // trim(ncfname) // "' already exists. Exiting.")
             endif
 
             if (l_parallel) then
@@ -142,8 +140,7 @@ module netcdf_utils
             call exist_netcdf_file(ncfname, l_exist)
 
             if (.not. l_exist) then
-                print *, "Error: NetCDF file " // ncfname // " does not exist."
-                stop
+                call mpi_stop("Error: NetCDF file " // ncfname // " does not exist.")
             endif
 
             if (present(l_serial)) then
@@ -204,10 +201,8 @@ module netcdf_utils
         subroutine check_netcdf_error(msg)
             character(*), intent(in) :: msg
 #ifndef NDEBUG
-            if (ncerr /= nf90_noerr .and. comm%rank == comm%master) then
-                print *, msg
-                print *, trim(nf90_strerror(ncerr))
-                stop
+            if (ncerr /= nf90_noerr) then
+                call mpi_exit_on_error(msg // " " // trim(nf90_strerror(ncerr)))
             endif
 #endif
         end subroutine check_netcdf_error

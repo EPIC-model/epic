@@ -25,7 +25,7 @@ program epic3d
     use field_diagnostics, only : field_stats_timer
     use field_diagnostics_netcdf, only : field_stats_io_timer
     use inversion_mod, only : vor2vel_timer, vtend_timer
-    use inversion_utils, only : init_inversion
+    use inversion_utils, only : init_inversion, finalise_inversion
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_timer
     use ls_rk4, only : ls_rk4_step, rk4_timer
@@ -33,10 +33,10 @@ program epic3d
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
-    use fft_pencil, only : initialise_pencil_fft, finalise_pencil_fft
+    use mpi_utils, only : mpi_print, mpi_stop
     implicit none
 
-    integer          :: epic_timer
+    integer :: epic_timer
 
     call mpi_comm_initialise
 
@@ -92,8 +92,6 @@ program epic3d
 
             call init_inversion
 
-            call initialise_pencil_fft(nx, ny, nz)
-
             call init_parcel_correction
 
             call setup_output_files
@@ -146,8 +144,9 @@ program epic3d
         subroutine post_run
             use options, only : output
             call parcel_dealloc
+            call field_dealloc
             call nearest_win_deallocate
-            call finalise_pencil_fft
+            call finalise_inversion
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)
@@ -179,8 +178,7 @@ program epic3d
                 call get_command_argument(i, arg)
                 filename = trim(arg)
             else if (arg == '--help') then
-                print *, 'Run code with "./epic3d --config [config file]"'
-                stop
+                call mpi_stop('Run code with "./epic3d --config [config file]"')
             else if (arg == '--restart') then
                 l_restart = .true.
                 i = i + 1
@@ -195,30 +193,31 @@ program epic3d
         end do
 
         if (filename == '') then
-            print *, 'No configuration file provided. Run code with "./epic3d --config [config file]"'
-            stop
+            call mpi_stop(&
+                'No configuration file provided. Run code with "./epic3d --config [config file]"')
         endif
 
         if (l_restart .and. (restart_file == '')) then
-            print *, 'No restart file provided. Run code with "./epic3d --config [config file]' // &
-                     ' --restart [restart file]"'
-            stop
+            call mpi_stop(&
+                'No restart file provided. Run code with "./epic3d --config [config file]' // &
+                     ' --restart [restart file]"')
         endif
 
         inquire(file=filename, exist=l_exist)
 
         if (.not. l_exist) then
-            print *, "Configuration file " // trim(filename) // " does not exist."
-            stop
+            call mpi_stop(&
+                "Configuration file " // trim(filename) // " does not exist.")
         endif
 
 #ifdef ENABLE_VERBOSE
         ! This is the main application of EPIC
-        if (verbose .and. (comm%rank == comm%master)) then
+        if (verbose) then
             if (l_restart) then
-                print *, 'Restarting EPIC3D with "', trim(filename), '" and "', trim(restart_file), "'"
+                call mpi_print(&
+                    'Restarting EPIC3D with "' // trim(filename) // '" and "' // trim(restart_file) // "'")
             else
-                print *, 'Running EPIC3D with "', trim(filename), '"'
+                call mpi_print('Running EPIC3D with "' // trim(filename) // '"')
             endif
         endif
 #endif

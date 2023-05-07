@@ -8,6 +8,7 @@ module parcel_container
     use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
     use mpi_communicator
     use mpi_collectives, only : mpi_blocking_reduce
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     integer :: n_parcels        ! local number of parcels
@@ -279,11 +280,7 @@ module parcel_container
             endif
 
             n_parcels = 0
-
             n_total_parcels = 0
-            if (comm%size > 1) then
-                call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
-            endif
 
             deallocate(parcels%position)
             deallocate(parcels%vorticity)
@@ -408,8 +405,8 @@ module parcel_container
             enddo
 
             if (l == -1) then
-                print *, "Error: more than all parcels are invalid."
-                stop
+                call mpi_exit_on_error(&
+                    "in parcel_container::parcel_delete: more than all parcels are invalid.")
             endif
 
             ! replace invalid parcels with the last valid parcel

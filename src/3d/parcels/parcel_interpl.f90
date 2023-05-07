@@ -14,6 +14,7 @@ module parcel_interpl
     use field_mpi, only : field_halo_swap
     use physics, only : glat, lambda_c, q_0
     use omp_lib
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     ! number of indices and weights
@@ -70,6 +71,7 @@ module parcel_interpl
             call field_halo_swap(volg)
 
             ! apply free slip boundary condition
+            !$omp parallel workshare
             volg(0,  :, :) = two * volg(0,  :, :)
             volg(nz, :, :) = two * volg(nz, :, :)
 
@@ -77,6 +79,7 @@ module parcel_interpl
             ! axis at the physical domain
             volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
             volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
+            !$omp end parallel workshare
 
         end subroutine vol2grid
 
@@ -178,6 +181,7 @@ module parcel_interpl
             call field_halo_swap(vortg(:, :, :, I_Z))
             call field_halo_swap(tbuoyg)
 
+            !$omp parallel workshare
             ! apply free slip boundary condition
             volg(0,  :, :) = two * volg(0,  :, :)
             volg(nz, :, :) = two * volg(nz, :, :)
@@ -192,9 +196,16 @@ module parcel_interpl
             vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
 
+            tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
+            tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
+            tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
+            tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
+            !$omp end parallel workshare
+
 #ifndef ENABLE_DRY_MODE
             call field_halo_swap(dbuoyg)
             call field_halo_swap(humg)
+            !$omp parallel workshare
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
             dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
             dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)
@@ -203,11 +214,8 @@ module parcel_interpl
             humg(nz, :, :) = two * humg(nz, :, :)
             humg(1,    :, :) = humg(1,    :, :) + humg(-1,   :, :)
             humg(nz-1, :, :) = humg(nz-1, :, :) + humg(nz+1, :, :)
+            !$omp end parallel workshare
 #endif
-            tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
-            tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
-            tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
-            tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
 
             ! exclude halo cells to avoid division by zero
             do p = 1, 3
@@ -251,8 +259,7 @@ module parcel_interpl
 
             ! sanity check
             if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then
-                print *, "par2grid: Wrong total number of parcels!"
-                stop
+                call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
             endif
 
             call stop_timer(par2grid_timer)
@@ -267,7 +274,8 @@ module parcel_interpl
         !      filled correctly.
         subroutine grid2par(add)
             logical, optional, intent(in) :: add
-            integer                       :: n, l
+            double precision              :: points(3, 4), weight
+            integer                       :: n, l, p
 
             call start_timer(grid2par_timer)
 
@@ -295,24 +303,31 @@ module parcel_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, ks, weights)
+            !$omp do private(n, l, p, points, is, js, ks, weights, weight)
             do n = 1, n_parcels
 
                 parcels%strain(:, n) = zero
 
-                ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(:, n), is, js, ks, weights)
+                points = get_ellipsoid_points(parcels%position(:, n), &
+                                              parcels%volume(n), parcels%B(:, n), n)
 
-                ! loop over grid points which are part of the interpolation
-                do l = 1, ngp
-                    parcels%delta_pos(:, n) = parcels%delta_pos(:, n) &
-                                            + weights(l) * velog(ks(l), js(l), is(l), :)
+                do p = 1, 4
+                    ! get interpolation weights and mesh indices
+                    call trilinear(points(:, p), is, js, ks, weights)
 
-                    parcels%strain(:, n) = parcels%strain(:, n) &
-                                         + weights(l) * velgradg(ks(l), js(l), is(l), :)
+                    ! loop over grid points which are part of the interpolation
+                    do l = 1, ngp
+                        weight = f14 * weights(l)
 
-                    parcels%delta_vor(:, n) = parcels%delta_vor(:, n) &
-                                            + weights(l) * vtend(ks(l), js(l), is(l), :)
+                        parcels%delta_pos(:, n) = parcels%delta_pos(:, n) &
+                                                + weight * velog(ks(l), js(l), is(l), :)
+
+                        parcels%strain(:, n) = parcels%strain(:, n) &
+                                             + weight * velgradg(ks(l), js(l), is(l), :)
+
+                        parcels%delta_vor(:, n) = parcels%delta_vor(:, n) &
+                                                + weight * vtend(ks(l), js(l), is(l), :)
+                    enddo
                 enddo
             enddo
             !$omp end do
@@ -417,14 +432,14 @@ module parcel_interpl
             w01 = py * pxc
             w11 = py * px
 
-            ww(1) = ww(1) + pzc * w00
-            ww(2) = ww(2) + pzc * w10
-            ww(3) = ww(3) + pzc * w01
-            ww(4) = ww(4) + pzc * w11
-            ww(5) = ww(5) + pz * w00
-            ww(6) = ww(6) + pz * w10
-            ww(7) = ww(7) + pz * w01
-            ww(8) = ww(8) + pz * w11
+            ww(1) = ww(1) + pzc * w00  !w000
+            ww(2) = ww(2) + pzc * w10  !w100
+            ww(3) = ww(3) + pzc * w01  !w010
+            ww(4) = ww(4) + pzc * w11  !w110
+            ww(5) = ww(5) + pz  * w00  !w001
+            ww(6) = ww(6) + pz  * w10  !w101
+            ww(7) = ww(7) + pz  * w01  !w011
+            ww(8) = ww(8) + pz  * w11  !w111
 
         end subroutine get_weights
 

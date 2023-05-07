@@ -10,6 +10,7 @@ module field_netcdf
     use physics, only : write_physical_quantities, glati
     use mpi_layout, only : box
     use parameters, only : write_zeta_boundary_flag
+    use mpi_utils, only : mpi_stop
     implicit none
 
     integer :: field_io_timer
@@ -430,8 +431,7 @@ module field_netcdf
             if (st == -1) then
                 st = n_steps
             else if ((st == 0) .or. (st > n_steps)) then
-                print *, "Step number out of bounds."
-                error stop
+                call mpi_stop("Step number in NetCDF field file is out of bounds.")
             endif
 
             start(1:3) = box%lo + 1      ! need to add 1 since start must begin with index 1
