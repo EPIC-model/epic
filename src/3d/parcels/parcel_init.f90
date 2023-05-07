@@ -19,6 +19,7 @@ module parcel_init
     use mpi_utils, only : mpi_print, mpi_exit_on_error
     use mpi_collectives, only : mpi_blocking_reduce
     use fields
+    use field_mpi
     implicit none
 
     integer :: init_timer
@@ -30,7 +31,7 @@ module parcel_init
 
     private :: weights, is, js, ks
 
-    private :: init_refine
+    private :: init_refine, init_fill_halo
 
     contains
 
@@ -110,6 +111,7 @@ module parcel_init
 
         end subroutine parcel_default
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Position parcels regularly in the domain.
         subroutine init_regular_positions
@@ -152,6 +154,7 @@ module parcel_init
             endif
         end subroutine init_regular_positions
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine init_refine(lam)
             double precision, intent(inout) :: lam
@@ -165,20 +168,15 @@ module parcel_init
             end do
         end subroutine init_refine
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine init_parcels_from_grids
             integer:: n, l
 
             call start_timer(init_timer)
 
-            ! make usre halo grid points are filled
-            call field_halo_fill(vortg(:, :, :, I_X))
-            call field_halo_fill(vortg(:, :, :, I_Y))
-            call field_halo_fill(vortg(:, :, :, I_Z))
-            call field_halo_fill(tbuoyg)
-#ifndef ENABLE_DRY_MODE
-            call field_halo_fill(humg)
-#endif
+            ! make sure halo grid points are filled
+            call init_fill_halo
 
             !$omp parallel default(shared)
             !$omp do private(n, l, is, js, ks, weights)
@@ -205,5 +203,36 @@ module parcel_init
             call stop_timer(init_timer)
 
         end subroutine init_parcels_from_grids
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine init_fill_halo
+#ifndef ENABLE_DRY_MODE
+            integer, parameter :: n_fields = 5
+#else
+            integer, parameter :: n_fields = 4
+#endif
+            call field_mpi_alloc(n_fields)
+
+            call field_interior_to_buffer(vortg(:, :, :, I_X), 1)
+            call field_interior_to_buffer(vortg(:, :, :, I_Y), 2)
+            call field_interior_to_buffer(vortg(:, :, :, I_Z), 3)
+            call field_interior_to_buffer(tbuoyg, 4)
+#ifndef ENABLE_DRY_MODE
+            call field_interior_to_buffer(humg, 5)
+#endif
+
+            call interior_to_halo_communication
+
+            call field_buffer_to_halo(vortg(:, :, :, I_X), 1, .false.)
+            call field_buffer_to_halo(vortg(:, :, :, I_Y), 2, .false.)
+            call field_buffer_to_halo(vortg(:, :, :, I_Z), 3, .false.)
+            call field_buffer_to_halo(tbuoyg, 4, .false.)
+#ifndef ENABLE_DRY_MODE
+            call field_buffer_to_halo(humg, 5, .false.)
+#endif
+            call field_mpi_dealloc
+
+        end subroutine init_fill_halo
 
 end module parcel_init
