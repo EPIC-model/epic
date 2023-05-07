@@ -427,9 +427,9 @@ module parcel_interpl
 
         ! Tri-linear interpolation
         ! @param[in] pos position of the parcel
-        ! @param[out] ii zonal grid points for interoplation
-        ! @param[out] jj meridional grid points for interpolation
-        ! @param[out] kk vertical grid points for interpolation
+        ! @param[out] ii zonal lower grid point for interoplation
+        ! @param[out] jj meridional lower grid point for interpolation
+        ! @param[out] kk vertical lower grid point for interpolation
         ! @param[out] ww interpolation weights
         pure subroutine trilinear(pos, ii, jj, kk, ww)
             double precision, intent(in)  :: pos(3)

@@ -201,15 +201,6 @@ module parcel_correction
                 yfc=one-yf
                 zfc=one-zf
 
-                ! l   ks(l) js(l) is(l)
-                ! 1   k     j     i
-                ! 2   k     j     i+1
-                ! 3   k     j+1   i
-                ! 4   k     j+1   i+1
-                ! 5   k+1   j     i
-                ! 6   k+1   j     i+1
-                ! 7   k+1   j+1   i
-                ! 8   k+1   j+1   i+1
                 lim_x = dx(1) * xf * xfc
                 xs = - prefactor * lim_x * (&
                             zfc * (&
