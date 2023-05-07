@@ -247,7 +247,7 @@ module inversion_mod
             velog(nz+1, :, :, I_Z) = -velog(nz-1, :, :, I_Z) ! w
             !$omp end parallel workshare
 
-            call field_halo_fill(velog)
+            call field_halo_fill(velog, l_alloc=.true.)
 
             call stop_timer(vor2vel_timer)
 
@@ -305,7 +305,7 @@ module inversion_mod
             velgradg(nz+1, :, :, I_DWDY) = -velgradg(nz-1, :, :, I_DWDY)
             !$omp end parallel workshare
 
-            call field_halo_fill(velgradg)
+            call field_halo_fill(velgradg, l_alloc=.true.)
 
         end subroutine vel2vgrad
 
@@ -352,7 +352,7 @@ module inversion_mod
             vtend(nz+1, :, :, :) = two * vtend(nz, :, :, :) - vtend(nz-1, :, :, :)
             !$omp end parallel workshare
 
-            call field_halo_fill(vtend)
+            call field_halo_fill(vtend, l_alloc=.true.)
 
             call stop_timer(vtend_timer)
 
@@ -433,7 +433,7 @@ module inversion_mod
             call fftxys2p(ws, grad(:, :, :, I_Z))
 
             ! Fill halo grid points:
-            call field_halo_fill(grad)
+            call field_halo_fill(grad, l_alloc=.true.)
 
         end subroutine diverge
 

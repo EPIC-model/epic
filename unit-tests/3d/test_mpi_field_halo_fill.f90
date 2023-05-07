@@ -32,7 +32,7 @@ program test_field_halo_fill
 
     values(:, :, :) = dble(comm%rank + 1)
 
-    call field_halo_fill(values)
+    call field_halo_fill(values, l_alloc=.true.)
 
 
     !
