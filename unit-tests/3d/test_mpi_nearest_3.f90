@@ -100,7 +100,9 @@ program test_mpi_nearest_3
             iz = k
 
             x = lower(1) + (0.5d0 + dble(ix)) * dx(1)
-            y = lower(2) + (0.5d0 + dble(iy)) * dx(2)
+            ! misalign with centre to avoid round-off errors in
+            ! grid point assignment
+            y = lower(2) + (0.500001d0 + dble(iy)) * dx(2)
             z = lower(3) + (0.5d0 + dble(iz)) * dx(3)
 
             ! big parcel
