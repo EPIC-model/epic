@@ -28,6 +28,8 @@ program test_merging_parcels
 
     call update_parameters
 
+    call nearest_win_allocate
+
     call parcel_alloc(max_num_parcels)
 
     call read_netcdf_parcels('initial_parcels.nc')
@@ -55,6 +57,8 @@ program test_merging_parcels
 
     call create_netcdf_parcel_file('parallel_final', .true., .false.)
     call write_netcdf_parcels(t = 0.0d0)
+
+    call nearest_win_deallocate
 
     call mpi_comm_finalise
 
