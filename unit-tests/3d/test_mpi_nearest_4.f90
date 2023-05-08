@@ -99,7 +99,7 @@ program test_mpi_nearest_4
             iy = j
             iz = k
 
-            ! mis-align with centre to avoid round-off errors in
+            ! misalign with centre to avoid round-off errors in
             ! grid point assignment
             x = lower(1) + (0.500001d0 + dble(ix)) * dx(1)
             y = lower(2) + (0.5d0 + dble(iy)) * dx(2)
