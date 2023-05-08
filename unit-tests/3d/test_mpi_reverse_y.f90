@@ -11,7 +11,9 @@ program test_mpi_reverse_y
     use stafft
     use mpi_communicator
     use mpi_layout
-    use mpi_reverse, only : reverse_y
+    use mpi_reverse, only : reverse_y               &
+                          , intialise_mpi_reverse   &
+                          , finalise_mpi_reverse
     implicit none
 
     double precision, allocatable :: fp(:, :, :), &
@@ -34,6 +36,8 @@ program test_mpi_reverse_y
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
     call update_parameters
+
+    call intialise_mpi_reverse
 
     allocate(fp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
     allocate(gp(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%hlo(1):box%hhi(1)))
@@ -73,6 +77,8 @@ program test_mpi_reverse_y
     else
         call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
     endif
+
+    call finalise_mpi_reverse
 
     call mpi_comm_finalise
 

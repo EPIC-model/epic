@@ -43,6 +43,8 @@ program test_mpi_nearest_12
 
     call update_parameters
 
+    call nearest_win_allocate
+
     call parcel_alloc(max_num_parcels)
 
     !
@@ -122,6 +124,8 @@ program test_mpi_nearest_12
     if (comm%rank == comm%master) then
         call print_result_logical('Test MPI nearest algorithm: (6) a - b - C', passed)
     endif
+
+    call nearest_win_deallocate
 
     call mpi_comm_finalise
 

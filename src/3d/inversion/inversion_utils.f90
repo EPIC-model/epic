@@ -315,6 +315,11 @@ module inversion_utils
             kl = dsqrt(k2l2(ky, kx))
             fac = kl * extent(3)
             ef = dexp(- fac)
+#ifndef NDEBUG
+            ! To avoid "Floating-point exception - erroneous arithmetic operation"
+            ! when ef is really small.
+            ef = max(ef, dsqrt(tiny(ef)))
+#endif
             div = one / (one - ef**2)
             k2ifac = f12 * k2l2i(ky, kx)
 
@@ -323,6 +328,13 @@ module inversion_utils
 
             ep = dexp(- Lp)
             em = dexp(- Lm)
+
+#ifndef NDEBUG
+            ! To avoid "Floating-point exception - erroneous arithmetic operation"
+            ! when ep and em are really small.
+            ep = max(ep, dsqrt(tiny(ep)))
+            em = max(em, dsqrt(tiny(em)))
+#endif
 
             phim(:, ky, kx) = div * (ep - ef * em)
             phip(:, ky, kx) = div * (em - ef * ep)

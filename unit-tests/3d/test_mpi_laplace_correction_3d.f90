@@ -67,7 +67,7 @@ program test_mpi_laplace_correction_3d
     n_parcels = 8*box%ncell
     call parcel_alloc(n_parcels + 1000)
 
-     n_total_parcels = n_parcels
+    n_total_parcels = n_parcels
     call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
 
     parcel%n_per_cell = 8
