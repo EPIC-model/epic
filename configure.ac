@@ -423,8 +423,8 @@ AM_CONDITIONAL([ENABLE_DEBUG], [test "$ENABLE_DEBUG" = "yes"])
 AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
-    FCFLAGS="$FCFLAGS -Wall -Wno-maybe-uninitialized -Werror -g -O0"
-    FCFLAGS="$FCFLAGS -fcheck=all -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow,underflow"
+    FCFLAGS="$FCFLAGS -Wall -Wuninitialized -Wmaybe-uninitialized -Werror -g -O0"
+    FCFLAGS="$FCFLAGS -fcheck=all -fbounds-check -fbacktrace -ffpe-trap=denormal,invalid,zero,overflow,underflow"
 else
     AC_MSG_RESULT([no])
     FCFLAGS="$FCFLAGS -O3 -funroll-all-loops -flto -DNDEBUG"

@@ -176,9 +176,9 @@ module utils
         end subroutine setup_restart
 
         subroutine setup_domain_and_parameters
-            character(:), allocatable :: fname
-            integer                   :: ncid
-            integer                   :: ncells(2)
+            character(512) :: fname = ''
+            integer        :: ncid
+            integer        :: ncells(2)
 
             ! set axis and dimension names for the NetCDF output
             call set_netcdf_dimensions((/'x', 'z', 't'/))
