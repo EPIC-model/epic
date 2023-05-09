@@ -88,7 +88,7 @@ try:
 
     # used when running with --verbose
     total_samples = args.n_samples * len(args.n_ranks) * len(args.seeds)
-    modulo = max(1, int(total_samples / 1000.0))
+    modulo = max(100, min(100, int(total_samples / 1000.0)))
 
     i = 0
     for n_rank in args.n_ranks:
