@@ -61,7 +61,7 @@ try:
 
     args = parser.parse_args()
 
-    if not args.cmd == 'mpirun' or not args.cmd == 'srun':
+    if not args.cmd == 'mpirun' and not args.cmd == 'srun':
         raise IOError("Use either 'mpirun' or 'srun'.")
 
     # nx = ny = nz = 32
