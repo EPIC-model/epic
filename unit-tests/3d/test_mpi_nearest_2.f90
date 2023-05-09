@@ -41,6 +41,8 @@ program test_mpi_nearest_2
 
     call update_parameters
 
+    call nearest_win_allocate
+
     call parcel_alloc(max_num_parcels)
 
     call parcel_setup
@@ -79,6 +81,8 @@ program test_mpi_nearest_2
 
         call print_result_logical('Test MPI nearest algorithm: (2) a = b', passed)
     endif
+
+    call nearest_win_deallocate
 
     call mpi_comm_finalise
 

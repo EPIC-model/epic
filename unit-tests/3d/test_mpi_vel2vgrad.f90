@@ -33,9 +33,9 @@ program test_mpi_vel2vgrad
     use constants, only : zero, one, two, four, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use fields, only : vortg, velog, velgradg, field_default
-    use inversion_utils, only : init_inversion
+    use inversion_utils, only : init_inversion, finalise_inversion
     use inversion_mod, only : vel2vgrad
-    use sta3dfft, only : fftxyp2s, finalise_fft
+    use sta3dfft, only : fftxyp2s
     use mpi_timer
     use mpi_communicator
     use mpi_layout
@@ -108,7 +108,7 @@ program test_mpi_vel2vgrad
 
     call vel2vgrad(svelog)
 
-    call finalise_fft
+    call finalise_inversion
 
     error = maxval(dabs(velgradg(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :)   &
                         - strain(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :)))

@@ -41,6 +41,8 @@ program test_mpi_nearest_4
 
     call update_parameters
 
+    call nearest_win_allocate
+
     call parcel_alloc(max_num_parcels)
 
     call parcel_setup
@@ -80,6 +82,8 @@ program test_mpi_nearest_4
         call print_result_logical('Test MPI nearest algorithm: (2) a - B', passed)
     endif
 
+    call nearest_win_deallocate
+
     call mpi_comm_finalise
 
 
@@ -95,7 +99,9 @@ program test_mpi_nearest_4
             iy = j
             iz = k
 
-            x = lower(1) + (0.5d0 + dble(ix)) * dx(1)
+            ! misalign with centre to avoid round-off errors in
+            ! grid point assignment
+            x = lower(1) + (0.500001d0 + dble(ix)) * dx(1)
             y = lower(2) + (0.5d0 + dble(iy)) * dx(2)
             z = lower(3) + (0.5d0 + dble(iz)) * dx(3)
 
