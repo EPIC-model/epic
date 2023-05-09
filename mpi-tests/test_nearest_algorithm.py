@@ -46,11 +46,14 @@ try:
         help="Print intermediate output."
     )
 
-    mpirun = os.environ.get('MPIRUN')
-    exec_path = os.environ.get('EXEC_PATH')
+    parser.add_argument(
+        "--cmd",
+        type=str,
+        default="mpirun",
+        help="Run jobs with 'mpirun' or 'srun'."
+    )
 
-    if mpirun is None:
-        raise KeyError('Missing environment variable $MPIRUN.')
+    exec_path = os.environ.get('EXEC_PATH')
 
     if exec_path is None:
         raise KeyError('Missing environment variable $EXEC_PATH.')
@@ -58,13 +61,16 @@ try:
 
     args = parser.parse_args()
 
-    # nx = ny = nz = 10
-    n_parcels = args.n_parcel_per_cell * 10 ** 3
+    if not args.cmd == 'mpirun' and not args.cmd == 'srun':
+        raise IOError("Use either 'mpirun' or 'srun'.")
+
+    # nx = ny = nz = 32
+    n_parcels = args.n_parcel_per_cell * 32 ** 3
 
     # domain [0, 1]^3
 
     #vmin = vcell / parcel%min_vratio
-    vcell = 0.001
+    vcell = 1.0 / (32 * 32 * 32)
     min_vratio = 40.0
     vmin = vcell / min_vratio
 
@@ -82,7 +88,7 @@ try:
 
     # used when running with --verbose
     total_samples = args.n_samples * len(args.n_ranks) * len(args.seeds)
-    modulo = max(1000, int(total_samples / 1000.0))
+    modulo = max(100, min(100, int(total_samples / 1000.0)))
 
     i = 0
     for n_rank in args.n_ranks:
@@ -163,25 +169,31 @@ try:
                 # assume the nearest algorithm is in an endless loop, i.e. deadlocked.
                 failed = False
                 try:
-                    subprocess.run(args=mpirun + ' -np ' + str(n_rank) + ' ' + exec_parallel,
+                    cmd = 'mpirun -np ' + str(n_rank) + ' '
+                    if args.cmd == 'srun':
+                        cmd = 'srun --nodes=1 --ntasks-per-node=' + str(n_rank) + ' --cpus-per-task=1 '
+                    subprocess.run(args=cmd + exec_parallel,
                                    shell=True,
                                    check=True,
                                    timeout=120,
                                    stdout=subprocess.DEVNULL,
                                    stderr=subprocess.STDOUT)
                 except subprocess.CalledProcessError:
-                    n_fails = n_fails + 1
+                    print('Error in running the parallel version.')
                     failed = True
 
                 try:
-                    subprocess.run(args=mpirun + ' -np 1 ' + exec_serial,
+                    cmd = 'mpirun -np 1 '
+                    if args.cmd == 'srun':
+                        cmd = ''
+                    subprocess.run(args=cmd + exec_serial,
                                    shell=True,
                                    check=True,
                                    timeout=120,
                                    stdout=subprocess.DEVNULL,
                                    stderr=subprocess.STDOUT)
                 except subprocess.CalledProcessError:
-                    n_fails = n_fails + 1
+                    print('Error in running the serial version.')
                     failed = True
 
                 if not os.path.exists('serial_final_0000000001_parcels.nc') and \
