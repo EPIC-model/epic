@@ -521,9 +521,6 @@ module parcel_interpl
             call get_horizontal_position(ii(4), jj(4), xy)
             ww(4) = product(one - abs(pos - xy) * dxi(1:2))
 
-            ! account for x periodicity
-            call periodic_index_shift(ii, jj)
-
         end subroutine bilinear
 
 end module parcel_interpl
