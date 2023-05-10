@@ -57,8 +57,9 @@ module parcel_interpl
             , grid2par          &
             , par2grid_timer    &
             , grid2par_timer    &
-            , halo_swap_timer    &
-            , trilinear
+            , halo_swap_timer   &
+            , trilinear         &
+            , bilinear
 
     contains
 
