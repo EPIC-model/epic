@@ -11,6 +11,7 @@ AM_FCFLAGS =				\
 
 AM_LDFLAGS =						\
 	$(top_builddir)/src/3d/parcels/*.o 		\
+	$(top_builddir)/src/3d/boundary_layer/*.o	\
 	$(top_builddir)/src/3d/utils/*.o		\
 	$(top_builddir)/src/3d/fields/*.o		\
 	$(top_builddir)/src/3d/inversion/*.o		\

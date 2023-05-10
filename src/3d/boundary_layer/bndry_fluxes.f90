@@ -10,6 +10,7 @@ module bndry_fluxes
     use parcel_container, only : n_parcels, parcels
     use netcdf_reader
     use omp_lib
+    use mpi_utils, only : mpi_stop
     implicit none
 
     logical, protected :: l_enable_flux
@@ -59,8 +60,7 @@ module bndry_fluxes
                 allocate(bflux(0:ny-1, 0:nx-1))
                 call read_netcdf_dataset(ncid, 'bflux', bflux, start, cnt)
             else
-                print *, "No buoyancy flux field 'bflux' found in file."
-                stop
+                call mpi_stop("No buoyancy flux field 'bflux' found in file.")
             endif
 
 #ifndef ENABLE_DRY_MODE
@@ -68,8 +68,7 @@ module bndry_fluxes
                 allocate(hflux(0:ny-1, 0:nx-1))
                 call read_netcdf_dataset(ncid, 'hflux', hflux, start, cnt)
             else
-                print *, "No humidity flux field 'hflux' found in file."
-                stop
+                call mpi_stop("No humidity flux field 'hflux' found in file.")
             endif
 #endif
 
