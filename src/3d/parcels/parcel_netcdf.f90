@@ -25,7 +25,7 @@ module parcel_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: npar_dim_id, vol_id, buo_id,      &
+    integer            :: npar_dim_id, vol_id, theta_id,    &
                           x_pos_id, y_pos_id, z_pos_id,     &
                           x_vor_id, y_vor_id, z_vor_id,     &
                           b11_id, b12_id, b13_id,           &
@@ -34,19 +34,19 @@ module parcel_netcdf
     double precision   :: restart_time
 
 #ifndef ENABLE_DRY_MODE
-    integer :: hum_id
+    integer :: qv_id, ql_id
 #endif
 
     private :: ncid, ncfname, n_writes, npar_dim_id,    &
                x_pos_id, y_pos_id, z_pos_id, start_id,  &
                x_vor_id, y_vor_id, z_vor_id,            &
                b11_id, b12_id, b13_id, b22_id, b23_id,  &
-               vol_id, buo_id, t_dim_id, t_axis_id,     &
+               vol_id, theta_id, t_dim_id, t_axis_id,   &
                restart_time, mpi_dim_id,                &
                read_chunk
 
 #ifndef ENABLE_DRY_MODE
-    private :: hum_id
+    private :: qv_id, ql_id
 #endif
 
     private :: ncbasename
@@ -238,23 +238,32 @@ module parcel_netcdf
                                        varid=z_vor_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='buoyancy',                         &
-                                       long_name='parcel buoyancy',             &
+                                       name='theta',                            &
+                                       long_name='parcel potential temperature',&
                                        std_name='',                             &
-                                       unit='m/s^2',                            &
+                                       unit='K',                                &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
-                                       varid=buo_id)
+                                       varid=theta_id)
 
 #ifndef ENABLE_DRY_MODE
             call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='humidity',                         &
-                                       long_name='parcel humidity',             &
+                                       name='qv',                               &
+                                       long_name='water vapour spec. hum.',     &
                                        std_name='',                             &
-                                       unit='1',                                &
+                                       unit='kg/kg',                            &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
-                                       varid=hum_id)
+                                       varid=qv_id)
+
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='ql',                               &
+                                       long_name='liquid water spec. hum.',     &
+                                       std_name='',                             &
+                                       unit='kg/kg',                            &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=ql_id)
 #endif
 
             call close_definition(ncid)
@@ -330,10 +339,11 @@ module parcel_netcdf
             call write_netcdf_dataset(ncid, y_vor_id, parcels%vorticity(2, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, z_vor_id, parcels%vorticity(3, 1:n_parcels), start, cnt)
 
-            call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, theta_id, parcels%theta(1:n_parcels), start, cnt)
 
 #ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, qv_id, parcels%qv(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, ql_id, parcels%ql(1:n_parcels), start, cnt)
 #endif
             ! increment counter
             n_writes = n_writes + 1
@@ -566,17 +576,22 @@ module parcel_netcdf
                                          parcels%vorticity(3, pfirst:plast), start, cnt)
             endif
 
-            if (has_dataset(ncid, 'buoyancy')) then
+            if (has_dataset(ncid, 'theta')) then
                 l_valid = .true.
-                call read_netcdf_dataset(ncid, 'buoyancy', &
-                                         parcels%buoyancy(pfirst:plast), start, cnt)
+                call read_netcdf_dataset(ncid, 'theta', &
+                                         parcels%theta(pfirst:plast), start, cnt)
             endif
 
 #ifndef ENABLE_DRY_MODE
-            if (has_dataset(ncid, 'humidity')) then
+            if (has_dataset(ncid, 'qv')) then
                 l_valid = .true.
-                call read_netcdf_dataset(ncid, 'humidity', &
-                                         parcels%humidity(pfirst:plast), start, cnt)
+                call read_netcdf_dataset(ncid, 'qv', &
+                                         parcels%qv(pfirst:plast), start, cnt)
+            endif
+            if (has_dataset(ncid, 'ql')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'ql', &
+                                         parcels%ql(pfirst:plast), start, cnt)
             endif
 #endif
 
