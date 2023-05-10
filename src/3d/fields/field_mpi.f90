@@ -119,7 +119,7 @@ module field_mpi
             logical,          intent(in)    :: l_alloc
 
             if (l_alloc) then
-                call field_mpi_alloc(1)
+                call field_mpi_alloc(1, ndim=3)
             endif
 
             call field_interior_to_buffer_3d(data, 1)
@@ -142,7 +142,7 @@ module field_mpi
             logical,          intent(in)    :: l_alloc
 
             if (l_alloc) then
-                call field_mpi_alloc(1, zsize=1)
+                call field_mpi_alloc(1, ndim=2)
             endif
 
             call field_interior_to_buffer_2d(data, 1)
@@ -170,7 +170,7 @@ module field_mpi
             ncomp = size(data, 4)
 
             if (l_alloc) then
-                call field_mpi_alloc(ncomp)
+                call field_mpi_alloc(ncomp, ndim=3)
             endif
 
             do nc = 1, ncomp
@@ -201,7 +201,7 @@ module field_mpi
             ncomp = size(data, 3)
 
             if (l_alloc) then
-                call field_mpi_alloc(ncomp, zsize=1)
+                call field_mpi_alloc(ncomp, ndim=2)
             endif
 
             do nc = 1, ncomp
@@ -258,7 +258,7 @@ module field_mpi
             logical,          intent(in)    :: l_alloc
 
             if (l_alloc) then
-                call field_mpi_alloc(1)
+                call field_mpi_alloc(1, ndim=3)
             endif
 
             call field_halo_to_buffer_3d(data, 1)
@@ -284,7 +284,7 @@ module field_mpi
             logical,          intent(in)    :: l_alloc
 
             if (l_alloc) then
-                call field_mpi_alloc(1, zsize=1)
+                call field_mpi_alloc(1, ndim=2)
             endif
 
             call field_halo_to_buffer_2d(data, 1)
@@ -315,7 +315,7 @@ module field_mpi
             ncomp = size(data, 4)
 
             if (l_alloc) then
-                call field_mpi_alloc(ncomp)
+                call field_mpi_alloc(ncomp, ndim=3)
             endif
 
             do nc = 1, ncomp
@@ -349,7 +349,7 @@ module field_mpi
             ncomp = size(data, 3)
 
             if (l_alloc) then
-                call field_mpi_alloc(ncomp, zsize=1)
+                call field_mpi_alloc(ncomp, ndim=2)
             endif
 
             do nc = 1, ncomp
@@ -382,7 +382,7 @@ module field_mpi
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_mpi_alloc(1)
+            call field_mpi_alloc(1, ndim=3)
 
             call field_interior_accumulate_scalar_3d(data, .false.)
 
@@ -402,7 +402,7 @@ module field_mpi
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_mpi_alloc(1, zsize=1)
+            call field_mpi_alloc(1, ndim=2)
 
             call field_interior_accumulate_scalar_2d(data, .false.)
 
@@ -428,7 +428,7 @@ module field_mpi
 
             ncomp = size(data, 4)
 
-            call field_mpi_alloc(ncomp)
+            call field_mpi_alloc(ncomp, ndim=3)
 
             call field_interior_accumulate_vector_3d(data, .false.)
 
@@ -453,7 +453,7 @@ module field_mpi
 
             ncomp = size(data, 3)
 
-            call field_mpi_alloc(ncomp, zsize=1)
+            call field_mpi_alloc(ncomp, ndim=2)
 
             call field_interior_accumulate_vector_2d(data, .false.)
 
@@ -575,12 +575,11 @@ module field_mpi
 
         ! This routine is called inside fields::field_alloc
         ! @param[in] ncomp is the number of components (or number of scalar fields)
-        ! @param[in] zsize is the number of grid points. This input is optional, if not
-        !            provided, it takes the whole vertical range including halo grid points.
-        subroutine field_mpi_alloc(ncomp, zsize)
-            integer,           intent(in) :: ncomp
-            integer, optional, intent(in) :: zsize
-            integer                       :: zlen, ylen, xlen
+        ! @param[in] ndim is the number of dimensions. It can take either 2 or 3.
+        subroutine field_mpi_alloc(ncomp, ndim)
+            integer, intent(in) :: ncomp
+            integer, intent(in) :: ndim
+            integer             :: zlen, ylen, xlen
 
             if (l_allocated) then
                 return
@@ -589,12 +588,18 @@ module field_mpi
 
             n_comp = ncomp
 
+#infdef NDEBUG
+            if ((ndim /= 2) .and. (ndim /= 3)) then
+                call mpi_stop("field_mpi::field_mpi_alloc can only allocate 2D or 3D buffers.")
+            endif
+#endif
+
             xlen = box%hi(1)-box%lo(1)+1
             ylen = box%hi(2)-box%lo(2)+1
-            zlen = box%hhi(3)-box%hlo(3)+1
 
-            if (present(zsize)) then
-                zlen = zsize
+            zlen = box%hhi(3)-box%hlo(3)+1
+            if (ndim == 2) then
+                zlen = 1
             endif
 
             allocate(west_buf(zlen, ylen, 2, n_comp))

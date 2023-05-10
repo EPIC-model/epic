@@ -11,7 +11,7 @@ module bndry_fluxes
     use netcdf_reader
     use omp_lib
     use mpi_utils, only : mpi_stop
-    use field_mpi, only : field_mpi_alloc                   &
+    use field_mpi, only : field_mpi_alloc_2d                &
                         , field_mpi_dealloc                 &
                         , field_buffer_to_halo              &
                         , field_interior_to_buffer          &
@@ -137,11 +137,11 @@ module bndry_fluxes
 
         subroutine bndry_fluxes_fill_halo
 #ifndef ENABLE_DRY_MODE
-            integer, parameter :: n_fields = 2
+            integer, parameter :: nfluxes = 2
 #else
-            integer, parameter :: n_fields = 1
+            integer, parameter :: nfluxes = 1
 #endif
-            call field_mpi_alloc(n_fields, zsize=1)
+            call field_mpi_alloc(nfluxes, ndim=2)
 
             call field_interior_to_buffer(bflux, 1)
 #ifndef ENABLE_DRY_MODE

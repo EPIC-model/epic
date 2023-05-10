@@ -211,7 +211,7 @@ module parcel_init
 #else
             integer, parameter :: n_fields = 4
 #endif
-            call field_mpi_alloc(n_fields)
+            call field_mpi_alloc(n_fields, ndim=3)
 
             call field_interior_to_buffer(vortg(:, :, :, I_X), 1)
             call field_interior_to_buffer(vortg(:, :, :, I_Y), 2)

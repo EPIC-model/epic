@@ -296,7 +296,7 @@ module parcel_interpl
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_mpi_alloc(n_field_swap)
+            call field_mpi_alloc(n_field_swap, ndim=3)
 
             !------------------------------------------------------------------
             ! Accumulate interior:
