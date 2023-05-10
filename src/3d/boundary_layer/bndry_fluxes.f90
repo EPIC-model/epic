@@ -20,6 +20,7 @@ module bndry_fluxes
     implicit none
 
     logical, protected :: l_enable_flux
+    logical            :: l_bndry_flux_allocated = .false.
 
     private
 
@@ -43,9 +44,55 @@ module bndry_fluxes
     ! bilinear interpolation weights
     double precision :: weights(ngp)
 
-    public :: l_enable_flux, apply_bndry_fluxes, read_bndry_fluxes
+    public :: l_enable_flux             &
+            , apply_bndry_fluxes        &
+            , read_bndry_fluxes         &
+            , bndry_fluxes_allocate     &
+            , bndry_fluxes_deallocate
 
     contains
+
+        subroutine bndry_fluxes_allocate
+            if (l_bndry_flux_allocated) then
+                return
+            endif
+
+            l_bndry_flux_allocated = .true.
+
+            allocate(bflux(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+#ifndef ENABLE_DRY_MODE
+            allocate(hflux(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+#endif
+        end subroutine bndry_fluxes_allocate
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine bndry_fluxes_deallocate
+            if (.not. l_bndry_flux_allocated) then
+                return
+            endif
+
+            l_bndry_flux_allocated = .false.
+
+            deallocate(bflux)
+#ifndef ENABLE_DRY_MODE
+            deallocate(hflux)
+#endif
+        end subroutine bndry_fluxes_deallocate
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine bndry_fluxes_default
+
+            call bndry_fluxes_allocate
+
+            bflux = zero
+#ifndef ENABLE_DRY_MODE
+            hflux = zero
+#endif
+        end subroutine bndry_fluxes_default
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine read_bndry_fluxes(fname)
             character(*), intent(in) :: fname
@@ -69,8 +116,9 @@ module bndry_fluxes
             cnt(1:2) = hi(1:2) - lo(1:2) + 1
             cnt(3) = 1
 
+            call bndry_fluxes_default
+
             if (has_dataset(ncid, 'bflux')) then
-                allocate(bflux(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
                 call read_netcdf_dataset(ncid,                  &
                                          'bflux',               &
                                          bflux(lo(2):hi(2),     &
@@ -83,7 +131,6 @@ module bndry_fluxes
 
 #ifndef ENABLE_DRY_MODE
             if (has_dataset(ncid, 'hflux')) then
-                allocate(hflux(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
                 call read_netcdf_dataset(ncid,                  &
                                          'hflux',               &
                                          hflux(lo(2):hi(2),     &
@@ -113,6 +160,8 @@ module bndry_fluxes
             zdepth = lower(3) + dx(3)
 
         end subroutine read_bndry_fluxes
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Add fluxes of buoyancy and humidity to parcels in lowest grid layer:
         subroutine apply_bndry_fluxes(dt)
