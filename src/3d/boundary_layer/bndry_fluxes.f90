@@ -11,6 +11,11 @@ module bndry_fluxes
     use netcdf_reader
     use omp_lib
     use mpi_utils, only : mpi_stop
+    use field_mpi, only : field_mpi_alloc                   &
+                        , field_mpi_dealloc                 &
+                        , field_buffer_to_halo              &
+                        , field_interior_to_buffer          &
+                        , interior_to_halo_communication
     implicit none
 
     logical, protected :: l_enable_flux
@@ -87,6 +92,8 @@ module bndry_fluxes
 
             zdepth = lower(3) + dx(3)
 
+            call bndry_fluxes_fill_halo
+
         end subroutine read_bndry_fluxes
 
         ! Add fluxes of buoyancy and humidity to parcels in lowest grid layer:
@@ -125,5 +132,30 @@ module bndry_fluxes
             !$omp end parallel
 
         end subroutine apply_bndry_fluxes
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine bndry_fluxes_fill_halo
+#ifndef ENABLE_DRY_MODE
+            integer, parameter :: n_fields = 2
+#else
+            integer, parameter :: n_fields = 1
+#endif
+            call field_mpi_alloc(n_fields, zsize=1)
+
+            call field_interior_to_buffer(bflux, 1)
+#ifndef ENABLE_DRY_MODE
+            call field_interior_to_buffer(hflux, 2)
+#endif
+
+            call interior_to_halo_communication
+
+            call field_buffer_to_halo(bflux, 1, .false.)
+#ifndef ENABLE_DRY_MODE
+            call field_buffer_to_halo(hflux, 2, .false.)
+#endif
+            call field_mpi_dealloc
+
+        end subroutine bndry_fluxes_fill_halo
 
 end module bndry_fluxes
