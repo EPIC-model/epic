@@ -39,7 +39,7 @@ program test_field_halo_fill_vector
             values(:, :, :, nc) = dble(10 ** (nc-1)) * dble(comm%rank + 1)
         enddo
 
-        call field_halo_fill(values, l_alloc=.true.)
+        call field_halo_fill_vector(values, l_alloc=.true.)
 
         !
         ! check results

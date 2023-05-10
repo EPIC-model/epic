@@ -19,7 +19,7 @@ module parcel_interpl
                         , field_interior_to_buffer          &
                         , interior_to_halo_communication    &
                         , halo_to_interior_communication    &
-                        , field_halo_swap
+                        , field_halo_swap_scalar
     use physics, only : glat, lambda_c, q_0
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
@@ -96,7 +96,7 @@ module parcel_interpl
             !$omp end parallel
 
             call start_timer(halo_swap_timer)
-            call field_halo_swap(volg)
+            call field_halo_swap_scalar(volg)
             call stop_timer(halo_swap_timer)
 
             ! apply free slip boundary condition

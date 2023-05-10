@@ -12,7 +12,6 @@ module parcel_init
                            extent, lower, nx, ny, nz,   &
                            max_num_parcels
     use mpi_timer, only : start_timer, stop_timer
-    use field_mpi, only : field_halo_fill
     use omp_lib
     use mpi_communicator
     use mpi_layout, only : box

@@ -78,7 +78,7 @@ program test_mpi_parcel_init_3d
         enddo
     enddo
 
-    call field_halo_swap(tbuoyg)
+    call field_halo_swap_scalar(tbuoyg)
 
     !---------------------------
     ! Generate parcel attribute:
