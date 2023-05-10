@@ -2,7 +2,7 @@ module field_mpi
     use constants, only : zero
     use mpi_layout
     use mpi_communicator
-    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error
+    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error, mpi_stop
     implicit none
 
         private

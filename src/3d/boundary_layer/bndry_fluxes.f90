@@ -11,7 +11,7 @@ module bndry_fluxes
     use netcdf_reader
     use omp_lib
     use mpi_utils, only : mpi_stop
-    use field_mpi, only : field_mpi_alloc_2d                &
+    use field_mpi, only : field_mpi_alloc                   &
                         , field_mpi_dealloc                 &
                         , field_buffer_to_halo              &
                         , field_interior_to_buffer          &
