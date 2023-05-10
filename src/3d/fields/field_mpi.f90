@@ -588,7 +588,7 @@ module field_mpi
 
             n_comp = ncomp
 
-#infdef NDEBUG
+#ifndef NDEBUG
             if ((ndim /= 2) .and. (ndim /= 3)) then
                 call mpi_stop("field_mpi::field_mpi_alloc can only allocate 2D or 3D buffers.")
             endif
