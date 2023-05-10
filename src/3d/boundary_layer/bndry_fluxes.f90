@@ -16,6 +16,7 @@ module bndry_fluxes
                         , field_buffer_to_halo              &
                         , field_interior_to_buffer          &
                         , interior_to_halo_communication
+    use mpi_layout, only : box
     implicit none
 
     logical, protected :: l_enable_flux
@@ -49,6 +50,7 @@ module bndry_fluxes
         subroutine read_bndry_fluxes(fname)
             character(*), intent(in) :: fname
             integer                  :: ncid, start(3), cnt(3)
+            integer                  :: lo(3), hi(3)
 
             l_enable_flux = (fname /= '')
 
@@ -58,20 +60,36 @@ module bndry_fluxes
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
-            cnt  =  (/ nx, ny, 1 /)
-            start = (/ 1,  1,  1 /)
+            lo = box%lo
+            hi = box%hi
+
+            ! need to add 1 since start must begin with index 1
+            start(1:2) = lo(1:2) + 1
+            start(3) = 1
+            cnt(1:2) = hi(1:2) - lo(1:2) + 1
+            cnt(3) = 1
 
             if (has_dataset(ncid, 'bflux')) then
-                allocate(bflux(0:ny-1, 0:nx-1))
-                call read_netcdf_dataset(ncid, 'bflux', bflux, start, cnt)
+                allocate(bflux(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+                call read_netcdf_dataset(ncid,                  &
+                                         'bflux',               &
+                                         bflux(lo(2):hi(2),     &
+                                               lo(1):hi(1)),    &
+                                         start,                 &
+                                         cnt)
             else
                 call mpi_stop("No buoyancy flux field 'bflux' found in file.")
             endif
 
 #ifndef ENABLE_DRY_MODE
             if (has_dataset(ncid, 'hflux')) then
-                allocate(hflux(0:ny-1, 0:nx-1))
-                call read_netcdf_dataset(ncid, 'hflux', hflux, start, cnt)
+                allocate(hflux(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+                call read_netcdf_dataset(ncid,                  &
+                                         'hflux',               &
+                                         hflux(lo(2):hi(2),     &
+                                               lo(1):hi(1)),    &
+                                         start,                 &
+                                         cnt)
             else
                 call mpi_stop("No humidity flux field 'hflux' found in file.")
             endif
@@ -80,6 +98,8 @@ module bndry_fluxes
             call close_netcdf_file(ncid)
 
             fluxfac = two * dxi(3) ** 2
+
+            call bndry_fluxes_fill_halo
 
             !$omp parallel
             !$omp workshare
@@ -91,8 +111,6 @@ module bndry_fluxes
             !$omp end parallel
 
             zdepth = lower(3) + dx(3)
-
-            call bndry_fluxes_fill_halo
 
         end subroutine read_bndry_fluxes
 
