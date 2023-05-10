@@ -7,7 +7,6 @@
 ! =============================================================================
 program test_ellipsoid_reflection
     use unit_test
-    use options, only : verbose
     use constants, only : pi, zero, one, two, three, six, f12, f13, f14, f18, f23, twopi
     use parcel_container, only : parcel_alloc   &
                                , parcel_dealloc &

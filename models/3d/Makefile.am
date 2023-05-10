@@ -1,6 +1,7 @@
 AM_FCFLAGS = 				\
 	-I $(top_builddir)/src/3d/	\
 	-I $(top_builddir)/src/utils	\
+	-I $(top_builddir)/src/mpi	\
 	-I $(top_builddir)/src/netcdf
 
 AM_LDFLAGS = 						\
@@ -20,6 +21,7 @@ epic3d_models_SOURCES =		\
 
 epic3d_models_LDADD = 					\
 	$(top_builddir)/src/utils/libepic_utils.la	\
+	$(top_builddir)/src/mpi/libepic_mpi.la		\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 clean-local:

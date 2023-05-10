@@ -7,12 +7,14 @@
 module netcdf_reader
     use netcdf_utils
     use config
+    use mpi_utils, only : mpi_stop, mpi_print
     implicit none
 
     interface read_netcdf_dataset
         module procedure :: read_netcdf_dataset_1d
         module procedure :: read_netcdf_dataset_2d
         module procedure :: read_netcdf_dataset_3d
+        module procedure :: read_netcdf_dataset_1d_integer
     end interface read_netcdf_dataset
 
     interface read_netcdf_attribute
@@ -61,15 +63,23 @@ module netcdf_reader
             call check_netcdf_error("Reading the ID of '" // name // "' failed.")
         end subroutine get_dim_id
 
+        subroutine get_dimension_size(ncid, name, num)
+            integer,      intent(in) :: ncid
+            character(*), intent(in) :: name
+            integer, intent(out)     :: num
+            integer                  :: dimid
+
+            ncerr = nf90_inq_dimid(ncid, name, dimid)
+            call check_netcdf_error("Reading " // name // " dimension id failed.")
+            ncerr = nf90_inquire_dimension(ncid, dimid, len=num)
+            call check_netcdf_error("Reading " // name // " failed.")
+        end subroutine get_dimension_size
+
         subroutine get_num_parcels(ncid, n_parcels)
             integer, intent(in)  :: ncid
             integer, intent(out) :: n_parcels
-            integer              :: dimid
 
-            ncerr = nf90_inq_dimid(ncid, 'n_parcels', dimid)
-            call check_netcdf_error("Reading n_parcel dimension id failed.")
-            ncerr = nf90_inquire_dimension(ncid, dimid, len=n_parcels)
-            call check_netcdf_error("Reading n_parcels failed.")
+            call get_dimension_size(ncid, 'n_parcels', n_parcels)
         end subroutine get_num_parcels
 
         subroutine get_num_steps(ncid, n_steps)
@@ -101,8 +111,7 @@ module netcdf_reader
                 call check_netcdf_error("Reading time failed.")
                 return
             else
-                print *, "Error: No time dataset found."
-                stop
+                call mpi_stop("Error: No time dataset found.")
             endif
         end subroutine get_time
 
@@ -111,8 +120,7 @@ module netcdf_reader
             character(*), intent(out) :: file_type
 
             if (.not. has_attribute(ncid, 'file_type')) then
-                print *, 'Not a proper '//package//' NetCDF file.'
-                stop
+                call mpi_stop('Not a proper '//package//' NetCDF file.')
             endif
 
             ncerr = nf90_get_att(ncid=ncid, varid=NF90_GLOBAL, &
@@ -147,6 +155,21 @@ module netcdf_reader
             link_exists = (link_exists .and. (ncerr == nf90_noerr))
             ncerr = 0
         end function has_dataset
+
+        subroutine read_netcdf_dataset_1d_integer(ncid, name, buffer, start, cnt)
+            integer,           intent(in)  :: ncid
+            character(*),      intent(in)  :: name
+            integer,           intent(out) :: buffer(:)
+            integer, optional, intent(in)  :: start(:)
+            integer, optional, intent(in)  :: cnt(:)
+            integer                        :: varid
+
+            ncerr = nf90_inq_varid(ncid, name, varid)
+            call check_netcdf_error("Reading dataset id failed.")
+
+            ncerr = nf90_get_var(ncid=ncid, varid=varid, values=buffer, &
+                                 start=start, count=cnt)
+        end subroutine read_netcdf_dataset_1d_integer
 
         subroutine read_netcdf_dataset_1d(ncid, name, buffer, start, cnt)
             integer,           intent(in)  :: ncid
@@ -269,8 +292,7 @@ module netcdf_reader
             integer,          intent(out)    :: ncells(:)
 
             if ((size(ncells) > 3) .or. (size(extent) > 3) .or. (size(extent) > 3)) then
-                print *, "Cannot read more than 3 dimensions!"
-                stop
+                call mpi_stop("Cannot read more than 3 dimensions!")
             endif
 
             ncerr = nf90_get_att(ncid, NF90_GLOBAL, "ncells", ncells)
@@ -292,9 +314,9 @@ module netcdf_reader
             if (has_attribute(ncid, name)) then
                 call read_netcdf_attrib_double(ncid, name, val)
 #ifdef ENABLE_VERBOSE
-                print *, "Found float attribute '" // name // "'."
+                call mpi_print("Found float attribute '" // name // "'.")
             else
-                print *, "WARNING: Using default value of '" // name // "'."
+                call mpi_print("WARNING: Using default value of '" // name // "'.")
 #endif
             endif
 
@@ -308,9 +330,9 @@ module netcdf_reader
             if (has_attribute(ncid, name)) then
                 call read_netcdf_attrib_integer(ncid, name, val)
 #ifdef ENABLE_VERBOSE
-                print *, "Found integer attribute '" // name // "'."
+                call mpi_print("Found integer attribute '" // name // "'.")
             else
-                print *, "WARNING: Using default value of '" // name // "'."
+                call mpi_print("WARNING: Using default value of '" // name // "'.")
 #endif
             endif
 
@@ -325,9 +347,9 @@ module netcdf_reader
             if (has_attribute(ncid, name)) then
                 call read_netcdf_attrib_logical(ncid, name, val)
 #ifdef ENABLE_VERBOSE
-                print *, "Found boolean attribute '" // name // "'."
+                call mpi_print("Found boolean attribute '" // name // "'.")
             else
-                print *, "WARNING: Using default value of '" // name // "'."
+                call mpi_print("WARNING: Using default value of '" // name // "'.")
 #endif
             endif
 
@@ -342,9 +364,9 @@ module netcdf_reader
             if (has_attribute(ncid, name)) then
                 call read_netcdf_attrib_character(ncid, name, val)
 #ifdef ENABLE_VERBOSE
-                print *, "Found character attribute '" // name // "'."
+                call mpi_print("Found character attribute '" // name // "'.")
             else
-                print *, "WARNING: Using default value of '" // name // "'."
+                call mpi_print("WARNING: Using default value of '" // name // "'.")
 #endif
             endif
 

@@ -32,6 +32,7 @@ program test_netcdf_time_series_2
 
     call close_definition(ncid)
 
+    call close_netcdf_file(ncid)
 
     do t = 1, nt
 

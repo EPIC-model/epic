@@ -1,3 +1,4 @@
+! Note: In parallel we need to set NF90_COLLECTIVE for variables if one dimension is NF90_UNLIMITED
 module netcdf_writer
     use netcdf_utils
     implicit none
@@ -13,7 +14,8 @@ module netcdf_writer
                write_netcdf_attribute_integer,      &
                write_netcdf_attribute_double,       &
                write_netcdf_attribute_character,    &
-               write_netcdf_attribute_logical
+               write_netcdf_attribute_logical,      &
+               set_collective_write
 
     interface write_netcdf_scalar
         module procedure write_netcdf_scalar_integer
@@ -37,6 +39,48 @@ module netcdf_writer
     end interface write_netcdf_attribute
 
     contains
+
+        subroutine set_independent_write(ncid, varid, l_serial)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            logical, optional, intent(in) :: l_serial
+            logical                       :: l_parallel
+
+            l_parallel = (comm%size > 1)
+
+            if (present(l_serial)) then
+                l_parallel = .not. l_serial
+            endif
+
+            if (l_parallel) then
+                ncerr = nf90_var_par_access(ncid, varid, NF90_INDEPENDENT)
+                call check_netcdf_error("Failed to set independent.")
+            endif
+
+        end subroutine set_independent_write
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine set_collective_write(ncid, varid, l_serial)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            logical, optional, intent(in) :: l_serial
+            logical                       :: l_parallel
+
+            l_parallel = (comm%size > 1)
+
+            if (present(l_serial)) then
+                l_parallel = .not. l_serial
+            endif
+
+            if (l_parallel) then
+                ! 18 April 2022
+                ! see also https://github.com/Unidata/netcdf-fortran/blob/main/examples/F90/simple_xy_par_wr2.f90
+                ncerr = nf90_var_par_access(ncid, varid, NF90_COLLECTIVE)
+                call check_netcdf_error("Failed to set collective.")
+            endif
+
+        end subroutine set_collective_write
 
         subroutine define_netcdf_dimension(ncid, name, dimsize, dimid)
             integer,      intent(in)  :: ncid
@@ -130,11 +174,14 @@ module netcdf_writer
 
         end subroutine write_netcdf_attribute_logical
 
-        subroutine write_netcdf_scalar_integer(ncid, varid, data, start)
-            integer, intent(in) :: ncid
-            integer, intent(in) :: varid
-            integer, intent(in) :: data
-            integer, intent(in) :: start
+        subroutine write_netcdf_scalar_integer(ncid, varid, data, start, l_serial)
+            integer,           intent(in) :: ncid
+            integer,           intent(in) :: varid
+            integer,           intent(in) :: data
+            integer,           intent(in) :: start
+            logical, optional, intent(in) :: l_serial
+
+            call set_collective_write(ncid, varid, l_serial)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, (/data/), &
@@ -144,11 +191,14 @@ module netcdf_writer
 
         end subroutine write_netcdf_scalar_integer
 
-        subroutine write_netcdf_scalar_double(ncid, varid, data, start)
+        subroutine write_netcdf_scalar_double(ncid, varid, data, start, l_serial)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data
             integer,           intent(in) :: start
+            logical, optional, intent(in) :: l_serial
+
+            call set_collective_write(ncid, varid, l_serial)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, (/data/), &
@@ -158,12 +208,15 @@ module netcdf_writer
 
         end subroutine write_netcdf_scalar_double
 
-        subroutine write_netcdf_dataset_1d_double(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_1d_double(ncid, varid, data, start, cnt, l_serial)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data(:)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_serial
+
+            call set_collective_write(ncid, varid, l_serial)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, data, &
@@ -173,14 +226,17 @@ module netcdf_writer
 
         end subroutine write_netcdf_dataset_1d_double
 
-        subroutine write_netcdf_dataset_2d_double(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_2d_double(ncid, varid, data, start, cnt, l_serial)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data(:, :)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_serial
 
-            ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/)
+            call set_collective_write(ncid, varid, l_serial)
+
+            ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/))
             ! with map = shape(data)
 
             ! write data
@@ -191,15 +247,18 @@ module netcdf_writer
 
         end subroutine write_netcdf_dataset_2d_double
 
-        subroutine write_netcdf_dataset_3d_double(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_3d_double(ncid, varid, data, start, cnt, l_serial)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             double precision,  intent(in) :: data(:, :, :)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_serial
             integer                       :: map(3)
 
             map = shape(data)
+
+            call set_collective_write(ncid, varid, l_serial)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid,                                    &
@@ -211,12 +270,15 @@ module netcdf_writer
 
         end subroutine write_netcdf_dataset_3d_double
 
-        subroutine write_netcdf_dataset_1d_integer(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_1d_integer(ncid, varid, data, start, cnt, l_serial)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             integer,           intent(in) :: data(:)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_serial
+
+            call set_collective_write(ncid, varid, l_serial)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid, data, &
@@ -226,14 +288,17 @@ module netcdf_writer
 
         end subroutine write_netcdf_dataset_1d_integer
 
-        subroutine write_netcdf_dataset_2d_integer(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_2d_integer(ncid, varid, data, start, cnt, l_serial)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             integer,           intent(in) :: data(:, :)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_serial
 
-            ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/)
+            call set_collective_write(ncid, varid, l_serial)
+
+            ! transpose(data) == reshape(data, shape=(/map(2), map(1)/), order=(/2, 1/))
             ! with map = shape(data)
 
             ! write data
@@ -244,15 +309,18 @@ module netcdf_writer
 
         end subroutine write_netcdf_dataset_2d_integer
 
-        subroutine write_netcdf_dataset_3d_integer(ncid, varid, data, start, cnt)
+        subroutine write_netcdf_dataset_3d_integer(ncid, varid, data, start, cnt, l_serial)
             integer,           intent(in) :: ncid
             integer,           intent(in) :: varid
             integer,           intent(in) :: data(:, :, :)
             integer, optional, intent(in) :: start(:)
             integer, optional, intent(in) :: cnt(:)
+            logical, optional, intent(in) :: l_serial
             integer                       :: map(3)
 
             map = shape(data)
+
+            call set_collective_write(ncid, varid, l_serial)
 
             ! write data
             ncerr = nf90_put_var(ncid, varid,                                    &
@@ -319,15 +387,15 @@ module netcdf_writer
             call write_netcdf_dataset(ncid, dimids(2), z_axis)
         end subroutine write_netcdf_axis_2d
 
-        subroutine write_netcdf_axis_3d(ncid, dimids, origin, dx, ngps)
-            integer,          intent(in) :: ncid
-            double precision, intent(in) :: origin(3), dx(3)
-            integer,          intent(in) :: dimids(3), ngps(3)
-            integer                      :: i
-            double precision             :: x_axis(0:ngps(1)-1)
-            double precision             :: y_axis(0:ngps(2)-1)
-            double precision             :: z_axis(0:ngps(3)-1)
-
+        subroutine write_netcdf_axis_3d(ncid, dimids, origin, dx, ngps, start, cnt)
+            integer,           intent(in) :: ncid
+            double precision,  intent(in) :: origin(3), dx(3)
+            integer,           intent(in) :: dimids(3), ngps(3)
+            integer, optional, intent(in) :: start(3), cnt(3)
+            integer                       :: i
+            double precision              :: x_axis(0:ngps(1)-1)
+            double precision              :: y_axis(0:ngps(2)-1)
+            double precision              :: z_axis(0:ngps(3)-1)
 
             do i = 0, ngps(1)-1
                 x_axis(i) = origin(1) + dble(i) * dx(1)
@@ -341,9 +409,26 @@ module netcdf_writer
                 z_axis(i) = origin(3) + dble(i) * dx(3)
             enddo
 
-            call write_netcdf_dataset(ncid, dimids(1), x_axis)
-            call write_netcdf_dataset(ncid, dimids(2), y_axis)
-            call write_netcdf_dataset(ncid, dimids(3), z_axis)
+            if (present(start) .and. present(cnt)) then
+                call write_netcdf_dataset(ncid, dimids(1), x_axis, &
+                                          start=(/start(1)/), cnt=(/cnt(1)/))
+                call write_netcdf_dataset(ncid, dimids(2), y_axis, &
+                                          start=(/start(2)/), cnt=(/cnt(2)/))
+                call write_netcdf_dataset(ncid, dimids(3), z_axis, &
+                                          start=(/start(3)/), cnt=(/cnt(3)/))
+            else if (present(start)) then
+                call write_netcdf_dataset(ncid, dimids(1), x_axis, &
+                                          start=(/start(1)/))
+                call write_netcdf_dataset(ncid, dimids(2), y_axis, &
+                                          start=(/start(2)/))
+                call write_netcdf_dataset(ncid, dimids(3), z_axis, &
+                                          start=(/start(3)/))
+            else
+                call write_netcdf_dataset(ncid, dimids(1), x_axis)
+                call write_netcdf_dataset(ncid, dimids(2), y_axis)
+                call write_netcdf_dataset(ncid, dimids(3), z_axis)
+            endif
+
         end subroutine write_netcdf_axis_3d
 
         subroutine write_netcdf_info(ncid, version_tag, file_type, cf_version)

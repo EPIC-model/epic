@@ -3,6 +3,7 @@ module unit_test
 
     ! abolute tolerance
     double precision, parameter :: atol_m = dble(1.0e-15)
+    logical                     :: verbose = .false.
 
     logical :: l_verbose = .false.
 

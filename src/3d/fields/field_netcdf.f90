@@ -5,10 +5,12 @@ module field_netcdf
     use netcdf_reader
     use fields
     use config, only : package_version, cf_version
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities, glati
+    use mpi_layout, only : box
     use parameters, only : write_zeta_boundary_flag
+    use mpi_utils, only : mpi_stop
     implicit none
 
     integer :: field_io_timer
@@ -72,11 +74,18 @@ module field_netcdf
             if (l_restart .and. l_exist) then
                 call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
                 call get_num_steps(ncid, n_writes)
-                call get_time(ncid, restart_time)
-                call read_netcdf_field_content
-                call close_netcdf_file(ncid)
-                n_writes = n_writes + 1
-                return
+                if (n_writes > 0) then
+                    call get_time(ncid, restart_time)
+                    call read_netcdf_field_content
+                    call close_netcdf_file(ncid)
+                    n_writes = n_writes + 1
+                    return
+                else
+                    call close_netcdf_file(ncid)
+                    if (comm%rank == comm%master) then
+                        call delete_netcdf_file(ncfname)
+                    endif
+                endif
             endif
 
             call create_netcdf_file(ncfname, overwrite, ncid)
@@ -253,6 +262,8 @@ module field_netcdf
 
             call close_definition(ncid)
 
+            call close_netcdf_file(ncid)
+
         end subroutine create_netcdf_field_file
 
         ! Pre-condition: Assumes an open file
@@ -317,6 +328,7 @@ module field_netcdf
         subroutine write_netcdf_fields(t)
             double precision, intent(in) :: t
             integer                      :: cnt(4), start(4)
+            integer                      :: lo(3), hi(3)
 
             call start_timer(field_io_timer)
 
@@ -327,64 +339,72 @@ module field_netcdf
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
+            lo = box%lo
+            hi = box%hi
+
+            ! need to add 1 since start must begin with index 1
+            start(1:3) = lo + 1
+            start(4) = n_writes
+
+            cnt(1:3) = hi - lo + 1
+            cnt(4)   = 1
+
             if (n_writes == 1) then
-                call write_netcdf_axis_3d(ncid, dimids(1:3), lower, dx, (/nx, ny, nz+1/))
+                call write_netcdf_axis_3d(ncid, dimids(1:3), box%lower, dx, &
+                                          box%size, start(1:3), cnt(1:3))
                 call write_zeta_boundary_flag(ncid)
             endif
 
             ! write time
             call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
 
-            ! time step to write [step(4) is the time]
-            cnt   = (/ nx, ny, nz+1, 1        /)
-            start = (/ 1,  1,  1,    n_writes /)
-
             !
             ! write fields (do not write halo cells)
             !
-
-            call write_netcdf_dataset(ncid, x_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 1), &
+            call write_netcdf_dataset(ncid, x_vel_id, velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1), &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, y_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 2), &
+            call write_netcdf_dataset(ncid, y_vel_id, velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2), &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, z_vel_id, velog(0:nz, 0:ny-1, 0:nx-1, 3), &
+            call write_netcdf_dataset(ncid, z_vel_id, velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3), &
                                       start, cnt)
 
 #ifdef ENABLE_DIAGNOSE
-            call write_netcdf_dataset(ncid, x_vtend_id, vtend(0:nz, 0:ny-1, 0:nx-1, 1), &
+            call write_netcdf_dataset(ncid, x_vtend_id, vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1), &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, y_vtend_id, vtend(0:nz, 0:ny-1, 0:nx-1, 2), &
+            call write_netcdf_dataset(ncid, y_vtend_id, vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2), &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, z_vtend_id, vtend(0:nz, 0:ny-1, 0:nx-1, 3), &
+            call write_netcdf_dataset(ncid, z_vtend_id, vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3), &
                                       start, cnt)
 
-            call write_netcdf_dataset(ncid, nparg_id, nparg(0:nz, 0:ny-1, 0:nx-1), &
+            call write_netcdf_dataset(ncid, nparg_id, nparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, nsparg_id, nparg(0:nz, 0:ny-1, 0:nx-1), &
+            call write_netcdf_dataset(ncid, nsparg_id, nparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                       start, cnt)
 #endif
 
-            call write_netcdf_dataset(ncid, x_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 1), &
+            call write_netcdf_dataset(ncid, x_vor_id, vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1), &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, y_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 2), &
+            call write_netcdf_dataset(ncid, y_vor_id, vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2), &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, z_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 3), &
+            call write_netcdf_dataset(ncid, z_vor_id, vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3), &
                                       start, cnt)
 
-            call write_netcdf_dataset(ncid, tbuoy_id, tbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
+            call write_netcdf_dataset(ncid, tbuoy_id, tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
 
 #ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, dbuoy_id, dbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
+            call write_netcdf_dataset(ncid, dbuoy_id, dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, hum_id, humg(0:nz, 0:ny-1, 0:nx-1),   &
+
+            call write_netcdf_dataset(ncid, lbuoy_id, glati * (tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))    &
+                                                             - dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))),  &
                                       start, cnt)
-            call write_netcdf_dataset(ncid, lbuoy_id, glati * (tbuoyg(0:nz, 0:ny-1, 0:nx-1)     &
-                                                             - dbuoyg(0:nz, 0:ny-1, 0:nx-1)),   &
+
+            call write_netcdf_dataset(ncid, hum_id, humg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
 #endif
 
-            call write_netcdf_dataset(ncid, vol_id, volg(0:nz, 0:ny-1, 0:nx-1), &
+            call write_netcdf_dataset(ncid, vol_id, volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)), &
                                       start, cnt)
 
             ! increment counter
@@ -411,32 +431,66 @@ module field_netcdf
             if (st == -1) then
                 st = n_steps
             else if ((st == 0) .or. (st > n_steps)) then
-                print *, "Step number out of bounds."
-                error stop
+                call mpi_stop("Step number in NetCDF field file is out of bounds.")
             endif
 
-            cnt  =  (/ nx, ny, nz+1, 1  /)
-            start = (/ 1,  1,  1,    st /)
+            start(1:3) = box%lo + 1      ! need to add 1 since start must begin with index 1
+            cnt(1:3) = box%size
+            cnt(4) = 1
+            start(4) = st
 
             if (has_dataset(lid, 'x_vorticity')) then
-                call read_netcdf_dataset(lid, 'x_vorticity', vortg(0:nz, :, :, 1), start, cnt)
+                call read_netcdf_dataset(lid,                       &
+                                         'x_vorticity',             &
+                                         vortg(box%lo(3):box%hi(3), &
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%hi(1), &
+                                               1),                  &
+                                         start,                     &
+                                         cnt)
             endif
 
             if (has_dataset(lid, 'y_vorticity')) then
-                call read_netcdf_dataset(lid, 'y_vorticity', vortg(0:nz, :, :, 2), start, cnt)
+                call read_netcdf_dataset(lid,                       &
+                                         'y_vorticity',             &
+                                         vortg(box%lo(3):box%hi(3), &
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%hi(1), &
+                                               2),                  &
+                                         start,                     &
+                                         cnt)
             endif
 
             if (has_dataset(lid, 'z_vorticity')) then
-                call read_netcdf_dataset(lid, 'z_vorticity', vortg(0:nz, :, :, 3), start, cnt)
+                call read_netcdf_dataset(lid,                       &
+                                         'z_vorticity',             &
+                                         vortg(box%lo(3):box%hi(3), &
+                                               box%lo(2):box%hi(2), &
+                                               box%lo(1):box%hi(1), &
+                                               3),                  &
+                                         start,                     &
+                                         cnt)
             endif
 
             if (has_dataset(lid, 'buoyancy')) then
-                call read_netcdf_dataset(lid, 'buoyancy', tbuoyg(0:nz, :, :), start, cnt)
+                call read_netcdf_dataset(lid,                         &
+                                         'buoyancy',                  &
+                                         tbuoyg(box%lo(3):box%hi(3),  &
+                                                box%lo(2):box%hi(2),  &
+                                                box%lo(1):box%hi(1)), &
+                                         start,                       &
+                                         cnt)
             endif
 
 #ifndef ENABLE_DRY_MODE
             if (has_dataset(lid, 'humidity')) then
-                call read_netcdf_dataset(lid, 'humidity', humg(0:nz, :, :), start, cnt)
+                call read_netcdf_dataset(lid,                       &
+                                         'humidity',                &
+                                         humg(box%lo(3):box%hi(3),  &
+                                              box%lo(2):box%hi(2),  &
+                                              box%lo(1):box%hi(1)), &
+                                         start,                     &
+                                         cnt)
             endif
 #endif
             call close_netcdf_file(lid)

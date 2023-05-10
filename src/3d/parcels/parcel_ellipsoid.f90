@@ -16,8 +16,8 @@ module parcel_ellipsoid
                         , three &
                         , five  &
                         , seven
-    use parameters, only : max_num_parcels
     use jacobi
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     double precision, parameter :: rho = dsqrt(two / five)
@@ -39,12 +39,19 @@ module parcel_ellipsoid
 
     contains
 
-        subroutine parcel_ellipsoid_allocate
-            allocate(Vetas(n_dim, max_num_parcels))
-            allocate(Vtaus(n_dim, max_num_parcels))
+        subroutine parcel_ellipsoid_allocate(num)
+            integer, intent(in) :: num
+
+            allocate(Vetas(3, num))
+            allocate(Vtaus(3, num))
         end subroutine parcel_ellipsoid_allocate
 
         subroutine parcel_ellipsoid_deallocate
+
+            if (.not. allocated(Vetas)) then
+                return
+            endif
+
             deallocate(Vetas)
             deallocate(Vtaus)
         end subroutine parcel_ellipsoid_deallocate
@@ -83,8 +90,8 @@ module parcel_ellipsoid
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
             if (minval(D) <= zero) then
-                print *, "Invalid parcel shape."
-                stop
+                call mpi_exit_on_error(&
+                    "in parcel_ellipsoid::get_eigenvalues: Invalid parcel shape.")
             endif
 #endif
         end function get_eigenvalues
@@ -119,8 +126,8 @@ module parcel_ellipsoid
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
             if (minval(D) <= zero) then
-                print *, "Invalid parcel shape."
-                stop
+                call mpi_exit_on_error(&
+                    "in parcel_ellipsoid::get_eigenvectors: Invalid parcel shape.")
             endif
 #endif
         end function get_eigenvectors
@@ -147,8 +154,8 @@ module parcel_ellipsoid
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
             if (minval(D) <= zero) then
-                print *, "Invalid parcel shape."
-                stop
+                call mpi_exit_on_error(&
+                    "in parcel_ellipsoid::diagonalise: Invalid parcel shape.")
             endif
 #endif
         end subroutine diagonalise
@@ -166,8 +173,8 @@ module parcel_ellipsoid
             abc = get_abc(volume)
 
             if (dabs(B(I_B11) * B(I_B22) - B(I_B12) ** 2) <= epsilon(abc)) then
-                print *, "Error in get_B33: Division by small number!"
-                stop
+                call mpi_exit_on_error(&
+                    "in parcel_ellipsoid::get_B33: Division by small number!")
             endif
 
             B33 = (abc ** 2 - B(I_B13) * (B(I_B12) * B(I_B23) - B(I_B13) * B(I_B22)) &

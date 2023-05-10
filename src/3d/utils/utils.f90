@@ -21,8 +21,10 @@ module utils
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
                          , set_zeta_boundary_flag
-    use physics, only : read_physical_quantities, print_physical_quantities, l_peref
     use bndry_fluxes, only : read_bndry_fluxes
+    use physics, only : read_physical_quantities, print_physical_quantities
+    use mpi_layout, only : mpi_layout_init
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     integer :: nfw  = 0    ! number of field writes
@@ -36,10 +38,6 @@ module utils
 
         ! Create NetCDF files and set the step number
         subroutine setup_output_files
-
-            if (.not. l_peref) then
-                call calculate_peref
-            endif
 
             if (output%write_parcel_stats) then
                 call create_netcdf_parcel_stats_file(trim(output%basename), &
@@ -72,9 +70,6 @@ module utils
         ! @param[in] t is the time
         subroutine write_last_step(t)
             double precision,  intent(in) :: t
-            double precision              :: velocity(3, n_parcels)
-            double precision              :: strain(5, n_parcels)
-            double precision              :: vorticity(3, n_parcels)
 
             call par2grid
 
@@ -84,9 +79,9 @@ module utils
 
             call vorticity_tendency
 
-            call grid2par(velocity, vorticity, strain)
+            call grid2par
 
-            call calculate_parcel_diagnostics(velocity)
+            call calculate_parcel_diagnostics
             call calculate_field_diagnostics
 
             call write_step(t, .true.)
@@ -113,7 +108,6 @@ module utils
                 nfw = nfw + 1
             endif
 
-
             if (output%write_parcels .and. &
                 (t + epsilon(zero) >= neg * dble(npw) * output%parcel_freq)) then
                 call write_netcdf_parcels(t)
@@ -131,6 +125,7 @@ module utils
                 call write_netcdf_field_stats(t)
                 nsfw = nsfw + 1
             endif
+
         end subroutine write_step
 
         subroutine setup_restart(restart_file, t, file_type)
@@ -144,8 +139,8 @@ module utils
             call get_time(ncid, t)
             call close_netcdf_file(ncid)
 
-            ! set counters (we nee to increment by 1 since
-            ! we want to write the next time
+            ! set counters (we need to increment by 1 since
+            ! we want to write the next time)
             nfw = int(t / output%field_freq) + 1
             npw = int(t / output%parcel_freq) + 1
             nspw = int(t / output%parcel_stats_freq) + 1
@@ -179,6 +174,8 @@ module utils
             ny = ncells(2)
             nz = ncells(3)
 
+            call mpi_layout_init(lower, extent, nx, ny, nz)
+
             ! update global parameters
             call update_parameters
 
@@ -202,11 +199,11 @@ module utils
 
                 if (file_type == 'fields') then
                     call read_netcdf_fields(trim(restart_file), -1)
+                    call init_parcels_from_grids
                 else if (file_type == 'parcels') then
                     call read_netcdf_parcels(restart_file)
                 else
-                    print *, 'Restart file must be of type "fields" or "parcels".'
-                    stop
+                    call mpi_exit_on_error('Restart file must be of type "fields" or "parcels".')
                 endif
             else
                 time%initial = zero ! make sure user cannot start at arbirtrary time

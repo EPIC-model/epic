@@ -3,91 +3,100 @@
 ! interpolation.
 ! =============================================================================
 module parcel_interpl
-    use constants, only : zero, one, two, f14, pi
-    use timer, only : start_timer, stop_timer
+    use constants, only : zero, one, two, f14
+    use mpi_timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use fields
+    use field_mpi, only : field_mpi_alloc                   &
+                        , field_mpi_dealloc                 &
+                        , field_buffer_to_halo              &
+                        , field_halo_to_buffer              &
+                        , field_buffer_to_interior          &
+                        , field_interior_to_buffer          &
+                        , interior_to_halo_communication    &
+                        , halo_to_interior_communication    &
+                        , field_halo_swap
     use physics, only : glat, lambda_c, q_0
     use omp_lib
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
-    ! number of indices and weights
-    integer, parameter :: ngp = 8
+    private
 
     ! interpolation indices
     ! (first dimension x, y, z; second dimension l-th index)
-    integer :: is(ngp), js(ngp), ks(ngp)
+    integer :: is, js, ks
 
     ! interpolation weights
-    double precision :: weights(ngp)
+    double precision :: weights(0:1,0:1,0:1)
 
     integer :: par2grid_timer, &
-               grid2par_timer
+               grid2par_timer, &
+               halo_swap_timer
 
-    private :: is, js, ks, weights
+    integer, parameter :: IDX_VOL_SWAP   = 1    &
+                        , IDX_VOR_X_SWAP = 2    &
+                        , IDX_VOR_Y_SWAP = 3    &
+                        , IDX_VOR_Z_SWAP = 4    &
+                        , IDX_TBUOY_SWAP = 5
+#ifndef ENABLE_DRY_MODE
+    integer, parameter :: IDX_DBUOY_SWAP = 6    &
+                        , IDX_HUM_SWAP   = 7
+
+    integer, parameter :: n_field_swap = 7
+#else
+    integer, parameter :: n_field_swap = 5
+#endif
+
+    public :: par2grid          &
+            , vol2grid          &
+            , grid2par          &
+            , par2grid_timer    &
+            , grid2par_timer    &
+            , halo_swap_timer    &
+            , trilinear
 
     contains
 
         ! Interpolate the parcel volume to the grid
+        ! @pre The parcel must be assigned to the correct MPI process.
         subroutine vol2grid(l_reuse)
             logical, optional, intent(in) :: l_reuse
             double precision              :: points(3, 4)
-            integer                       :: n, p, l
+            integer                       :: n, p
             double precision              :: pvol
-            integer :: i, j, k, i_stored, j_stored, k_stored
 
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pvol, is, js, ks, i, j, k, i_stored, j_stored, k_stored, weights) &
+            !$omp do private(n, p, points, pvol, is, js, ks, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
-               pvol = parcels%volume(n)
+                pvol = parcels%volume(n)
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               pvol, parcels%B(:, n),  &
                                               n, l_reuse)
 
-
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
 
-                    ! ensure point is within the domain
-                    call apply_periodic_bc(points(:, p))
-                    call get_index(points(:, p), i, j, k)
+                    call trilinear(points(:, p), is, js, ks, weights)
 
-                    if (p == 1) then
-                      call trilinear(points(:, p), is, js, ks, weights)
-                    elseif ((i == i_stored) .and. (j == j_stored) .and. (k == k_stored)) then
-                      ! if point is in same grid cell, just add to weights
-                      call trilinear_weights_add(points(:, p), i, j, k, weights)
-                    else
-                      ! if point is in different grid cell, save previously stored
-                      ! weights first
-                      ! loop over grid points which are part of the interpolation
-                      ! the weight is a quarter due to 4 points per ellipsoid
-                      do l = 1, ngp
-                          volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                                    + f14 * weights(l) * pvol
-                      enddo
-                      call trilinear(points(:, p), is, js, ks, weights)
-                    endif
-                    i_stored = i
-                    j_stored = j
-                    k_stored = k
-                enddo
-                ! save contibutions at end of points loop
-                do l = 1, ngp
-                    volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                              + f14 * weights(l) * pvol
+                    volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
+                                              + f14 * weights * pvol
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
+
+            call start_timer(halo_swap_timer)
+            call field_halo_swap(volg)
+            call stop_timer(halo_swap_timer)
 
             ! apply free slip boundary condition
             !$omp parallel workshare
@@ -99,6 +108,7 @@ module parcel_interpl
             volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
             volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
             !$omp end parallel workshare
+
         end subroutine vol2grid
 
 
@@ -109,11 +119,12 @@ module parcel_interpl
         ! It also updates the scalar fields:
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
+        ! @pre The parcel must be assigned to the correct MPI process.
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
             double precision  :: points(3, 4)
             integer           :: n, p, l, i, j, k
-            double precision  :: pvol, weight, btot
+            double precision  :: pvol, weight(0:1,0:1,0:1), btot
 #ifndef ENABLE_DRY_MODE
             double precision  :: q_c
 #endif
@@ -157,8 +168,6 @@ module parcel_interpl
                                               pvol, parcels%B(:, n), n, l_reuse)
 
                 call get_index(parcels%position(:, n), i, j, k)
-                i = mod(i + nx, nx)
-                j = mod(j + ny, ny)
                 nparg(k, j, i) = nparg(k, j, i) + 1
                 if (parcels%volume(n) <= vmin) then
                     nsparg(k, j, i) = nsparg(k, j, i) + 1
@@ -166,36 +175,35 @@ module parcel_interpl
 
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
-                    ! ensure point is within the domain
-                    call apply_periodic_bc(points(:, p))
-                    call get_index(points(:, p), i, j, k)
 
                     call trilinear(points(:, p), is, js, ks, weights)
 
                     ! loop over grid points which are part of the interpolation
                     ! the weight is a quarter due to 4 points per ellipsoid
-                    do l = 1, ngp
+                    weight = f14 * pvol* weights
 
-                        weight = f14 * weights(l) * pvol
-
-                        vortg(ks(l), js(l), is(l), :) = vortg(ks(l), js(l), is(l), :) &
-                                                      + weight * parcels%vorticity(:, n)
-
-#ifndef ENABLE_DRY_MODE
-                        dbuoyg(ks(l), js(l), is(l)) = dbuoyg(ks(l), js(l), is(l)) &
-                                                    + weight * parcels%buoyancy(n)
-                        humg(ks(l), js(l), is(l)) = humg(ks(l), js(l), is(l)) &
-                                                    + weight * parcels%humidity(n)
-#endif
-                        tbuoyg(ks(l), js(l), is(l)) = tbuoyg(ks(l), js(l), is(l)) &
-                                                    + weight * btot
-                        volg(ks(l), js(l), is(l)) = volg(ks(l), js(l), is(l)) &
-                                                  + weight
+                    do l = 1, 3
+                        vortg(ks:ks+1, js:js+1, is:is+1, l) = vortg(ks:ks+1, js:js+1, is:is+1, l) &
+                                                            + weight * parcels%vorticity(l, n)
                     enddo
+#ifndef ENABLE_DRY_MODE
+                    dbuoyg(ks:ks+1, js:js+1, is:is+1) = dbuoyg(ks:ks+1, js:js+1, is:is+1) &
+                                                      + weight * parcels%buoyancy(n)
+                    humg(ks:ks+1, js:js+1, is:is+1) = humg(ks:ks+1, js:js+1, is:is+1) &
+                                              + weight * parcels%humidity(n)
+#endif
+                    tbuoyg(ks:ks+1, js:js+1, is:is+1) = tbuoyg(ks:ks+1, js:js+1, is:is+1) &
+                                                + weight * btot
+                    volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
+                                              + weight
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
+
+            call start_timer(halo_swap_timer)
+            call par2grid_halo_swap
+            call stop_timer(halo_swap_timer)
 
             !$omp parallel workshare
             ! apply free slip boundary condition
@@ -209,13 +217,17 @@ module parcel_interpl
 
             vortg(0,  :, :, :) = two * vortg(0,  :, :, :)
             vortg(nz, :, :, :) = two * vortg(nz, :, :, :)
-            !$omp end parallel workshare
-
-            !$omp parallel workshare
             vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
 
+            tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
+            tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
+            tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
+            tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
+            !$omp end parallel workshare
+
 #ifndef ENABLE_DRY_MODE
+            !$omp parallel workshare
             dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
             dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
             dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)
@@ -224,12 +236,8 @@ module parcel_interpl
             humg(nz, :, :) = two * humg(nz, :, :)
             humg(1,    :, :) = humg(1,    :, :) + humg(-1,   :, :)
             humg(nz-1, :, :) = humg(nz-1, :, :) + humg(nz+1, :, :)
-#endif
-            tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
-            tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
-            tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
-            tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
             !$omp end parallel workshare
+#endif
 
             ! exclude halo cells to avoid division by zero
             do p = 1, 3
@@ -273,8 +281,7 @@ module parcel_interpl
 
             ! sanity check
             if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then
-                print *, "par2grid: Wrong total number of parcels!"
-                stop
+                call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
             endif
 
             call stop_timer(par2grid_timer)
@@ -282,20 +289,81 @@ module parcel_interpl
         end subroutine par2grid
 
 
+        subroutine par2grid_halo_swap
+            ! we must first fill the interior grid points
+            ! correctly, and then the halo; otherwise
+            ! halo grid points do not have correct values at
+            ! corners where multiple processes share grid points.
+
+            call field_mpi_alloc(n_field_swap)
+
+            !------------------------------------------------------------------
+            ! Accumulate interior:
+
+            call field_halo_to_buffer(volg,                IDX_VOL_SWAP)
+            call field_halo_to_buffer(vortg(:, :, :, I_X), IDX_VOR_X_SWAP)
+            call field_halo_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
+            call field_halo_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
+            call field_halo_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
+#ifndef ENABLE_DRY_MODE
+            call field_halo_to_buffer(dbuoyg,              IDX_DBUOY_SWAP)
+            call field_halo_to_buffer(humg,                IDX_HUM_SWAP)
+#endif
+
+            ! send halo data to valid regions of other processes
+            call halo_to_interior_communication
+
+            ! accumulate interior; after this operation
+            ! all interior grid points have the correct value
+            call field_buffer_to_interior(volg,                IDX_VOL_SWAP, .true.)
+            call field_buffer_to_interior(vortg(:, :, :, I_X), IDX_VOR_X_SWAP, .true.)
+            call field_buffer_to_interior(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .true.)
+            call field_buffer_to_interior(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .true.)
+            call field_buffer_to_interior(tbuoyg,              IDX_TBUOY_SWAP, .true.)
+#ifndef ENABLE_DRY_MODE
+            call field_buffer_to_interior(dbuoyg,              IDX_DBUOY_SWAP, .true.)
+            call field_buffer_to_interior(humg,                IDX_HUM_SWAP, .true.)
+#endif
+
+            !------------------------------------------------------------------
+            ! Fill halo:
+
+            call field_interior_to_buffer(volg,                IDX_VOL_SWAP)
+            call field_interior_to_buffer(vortg(:, :, :, I_X), IDX_VOR_X_SWAP)
+            call field_interior_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
+            call field_interior_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
+            call field_interior_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
+#ifndef ENABLE_DRY_MODE
+            call field_interior_to_buffer(dbuoyg,              IDX_DBUOY_SWAP)
+            call field_interior_to_buffer(humg,                IDX_HUM_SWAP)
+#endif
+
+            call interior_to_halo_communication
+
+            call field_buffer_to_halo(volg,                IDX_VOL_SWAP, .false.)
+            call field_buffer_to_halo(vortg(:, :, :, I_X), IDX_VOR_X_SWAP, .false.)
+            call field_buffer_to_halo(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .false.)
+            call field_buffer_to_halo(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .false.)
+            call field_buffer_to_halo(tbuoyg,              IDX_TBUOY_SWAP, .false.)
+#ifndef ENABLE_DRY_MODE
+            call field_buffer_to_halo(dbuoyg,              IDX_DBUOY_SWAP, .false.)
+            call field_buffer_to_halo(humg,                IDX_HUM_SWAP, .false.)
+#endif
+
+            call field_mpi_dealloc
+
+        end subroutine par2grid_halo_swap
+
+
         ! Interpolate the gridded quantities to the parcels
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vortend is the parcel vorticity tendency
-        ! @param[inout] vgrad is the parcel strain
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
-        subroutine grid2par(vel, vortend, vgrad, add)
-          double precision,     intent(inout) :: vel(3, n_parcels), &
-                                                 vortend(3, n_parcels), &
-                                                 vgrad(5, n_parcels)
-          logical, optional, intent(in)       :: add
-          double precision :: points(3, 4)
-            integer                             :: n, l, p
-            !           double precision :: vsum
+        ! @pre The parcel must be assigned to the correct MPI process and the halo of fields must be
+        !      filled correctly.
+        subroutine grid2par(add)
+            logical, optional, intent(in) :: add
+            double precision              :: points(3, 4)
+            integer                       :: n, l, p
 
             call start_timer(grid2par_timer)
 
@@ -305,8 +373,8 @@ module parcel_interpl
                     !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, n_parcels
-                        vel(:, n) = zero
-                        vortend(:, n) = zero
+                        parcels%delta_pos(:, n) = zero
+                        parcels%delta_vor(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -315,8 +383,8 @@ module parcel_interpl
                 !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_parcels
-                    vel(:, n) = zero
-                    vortend(:, n) = zero
+                    parcels%delta_pos(:, n) = zero
+                    parcels%delta_vor(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -326,25 +394,29 @@ module parcel_interpl
             !$omp do private(n, l, p, points, is, js, ks, weights)
             do n = 1, n_parcels
 
-               vgrad(:, n) = zero
+                parcels%strain(:, n) = zero
 
-               points = get_ellipsoid_points(parcels%position(:, n), &
-                                             parcels%volume(n), parcels%B(:, n), n)
+                points = get_ellipsoid_points(parcels%position(:, n), &
+                                              parcels%volume(n), parcels%B(:, n), n)
 
-               do p = 1, 4
-                  ! ensure point is within the domain
-                  call apply_periodic_bc(points(:, p))
+                do p = 1, 4
+                    ! get interpolation weights and mesh indices
+                    call trilinear(points(:, p), is, js, ks, weights)
 
-                  ! get interpolation weights and mesh indices
-                  call trilinear(points(:, p), is, js, ks, weights)
-
-                  ! loop over grid points which are part of the interpolation
-                  do l = 1, ngp
-                     vel(:, n) = vel(:, n) + f14 * weights(l) * velog(ks(l), js(l), is(l), :)
-                     vgrad(:, n) = vgrad(:, n) + f14 * weights(l) * velgradg(ks(l), js(l), is(l), :)
-                     vortend(:, n) = vortend(:, n) + f14 * weights(l) * vtend(ks(l), js(l), is(l), :)
-                  enddo
-               enddo
+                    ! loop over grid points which are part of the interpolation
+                    do l = 1,3
+                        parcels%delta_pos(l, n) = parcels%delta_pos(l, n) &
+                                                + f14 * sum(weights * velog(ks:ks+1, js:js+1, is:is+1, l))
+                    enddo
+                    do l = 1,5
+                        parcels%strain(l, n) = parcels%strain(l, n) &
+                                             + f14 * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
+                    enddo
+                    do l = 1,3
+                        parcels%delta_vor(l, n) = parcels%delta_vor(l, n) &
+                                                + f14 * sum(weights * vtend(ks:ks+1, js:js+1, is:is+1, l))
+                    enddo
+                enddo
             enddo
             !$omp end do
             !$omp end parallel
@@ -353,96 +425,34 @@ module parcel_interpl
 
         end subroutine grid2par
 
-
-        ! Interpolate the gridded quantities to the parcels without resetting
-        ! their values to zero before doing grid2par.
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vortend is the parcel vorticity tendency
-        ! @param[inout] vgrad is the parcel strain
-        subroutine grid2par_add(vel, vortend, vgrad)
-            double precision, intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
-
-            call grid2par(vel, vortend, vgrad, add=.true.)
-
-        end subroutine grid2par_add
-
-
         ! Tri-linear interpolation
         ! @param[in] pos position of the parcel
-        ! @param[out] ii zonal grid points for interoplation
-        ! @param[out] jj meridional grid points for interpolation
-        ! @param[out] kk vertical grid points for interpolation
+        ! @param[out] ii zonal lower grid point for interoplation
+        ! @param[out] jj meridional lower grid point for interpolation
+        ! @param[out] kk vertical lower grid point for interpolation
         ! @param[out] ww interpolation weights
         pure subroutine trilinear(pos, ii, jj, kk, ww)
             double precision, intent(in)  :: pos(3)
-            integer,          intent(out) :: ii(ngp), jj(ngp), kk(ngp)
-            double precision, intent(out) :: ww(ngp)
+            integer,          intent(out) :: ii, jj, kk
+            double precision, intent(out) :: ww(0:1,0:1,0:1)
             double precision              :: xyz(3)
 
             ww = zero
 
             ! (i, j, k)
             xyz = (pos - lower) * dxi
-            ii(1) = floor(xyz(1))
-            jj(1) = floor(xyz(2))
-            kk(1) = floor(xyz(3))
+            ii = floor(xyz(1))
+            jj = floor(xyz(2))
+            kk = floor(xyz(3))
 
-            call get_weights(xyz, ii(1), jj(1), kk(1), ww)
-
-            ii(1) = mod(ii(1) + nx, nx)
-            jj(1) = mod(jj(1) + ny, ny)
-
-            ! (i+1, j, k)
-            ii(2) = mod(ii(1) + 1 + nx, nx)
-            jj(2) = jj(1)
-            kk(2) = kk(1)
-
-            ! (i, j+1, k)
-            ii(3) = ii(1)
-            jj(3) = mod(jj(1) + 1 + ny, ny)
-            kk(3) = kk(1)
-
-            ! (i+1, j+1, k)
-            ii(4) = ii(2)
-            jj(4) = jj(3)
-            kk(4) = kk(1)
-
-            ! (i, j, k+1)
-            ii(5) = ii(1)
-            jj(5) = jj(1)
-            kk(5) = kk(1) + 1
-
-            ! (i+1, j, k+1)
-            ii(6) = ii(2)
-            jj(6) = jj(1)
-            kk(6) = kk(5)
-
-            ! (i, j+1, k+1)
-            ii(7) = ii(1)
-            jj(7) = jj(3)
-            kk(7) = kk(5)
-
-            ! (i+1, j+1, k+1)
-            ii(8) = ii(2)
-            jj(8) = jj(3)
-            kk(8) = kk(5)
+            call get_weights(xyz, ii, jj, kk, ww)
 
         end subroutine trilinear
-
-        pure subroutine trilinear_weights_add(pos, i, j, k, ww)
-            double precision, intent(in)    :: pos(3)
-            double precision, intent(inout) :: ww(ngp)
-            integer,          intent(in)    :: i, j, k
-            double precision                :: xyz(3)
-            xyz = (pos - lower) * dxi
-            call get_weights(xyz, i, j, k, ww)
-
-        end subroutine trilinear_weights_add
 
 
         pure subroutine get_weights(xyz, i, j, k, ww)
             double precision, intent(in)    :: xyz(3)
-            double precision, intent(inout) :: ww(ngp)
+            double precision, intent(inout) :: ww(0:1,0:1,0:1)
             integer,          intent(in)    :: i, j, k
             double precision                :: px, py, pz, pxc, pyc, pzc
             double precision                :: w00, w10, w01, w11
@@ -462,14 +472,15 @@ module parcel_interpl
             w01 = py * pxc
             w11 = py * px
 
-            ww(1) = ww(1) + pzc * w00  !w000
-            ww(2) = ww(2) + pzc * w10  !w100
-            ww(3) = ww(3) + pzc * w01  !w010
-            ww(4) = ww(4) + pzc * w11  !w110
-            ww(5) = ww(5) + pz  * w00  !w001
-            ww(6) = ww(6) + pz  * w10  !w101
-            ww(7) = ww(7) + pz  * w01  !w011
-            ww(8) = ww(8) + pz  * w11  !w111
+            ! Note order of indices is k,j,i
+            ww(0,0,0) = ww(0,0,0) + pzc * w00
+            ww(0,0,1) = ww(0,0,1) + pzc * w10
+            ww(0,1,0) = ww(0,1,0) + pzc * w01
+            ww(0,1,1) = ww(0,1,1) + pzc * w11
+            ww(1,0,0) = ww(1,0,0) + pz * w00
+            ww(1,0,1) = ww(1,0,1) + pz * w10
+            ww(1,1,0) = ww(1,1,0) + pz * w01
+            ww(1,1,1) = ww(1,1,1) + pz * w11
 
         end subroutine get_weights
 
