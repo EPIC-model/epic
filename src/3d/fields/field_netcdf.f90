@@ -397,7 +397,7 @@ module field_netcdf
             call write_netcdf_dataset(ncid, tbuoy_id, tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
 
-            call write_netcdf_dataset(ncid, theta_id, theta(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
+            call write_netcdf_dataset(ncid, theta_id, thetag(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
 
 #ifndef ENABLE_DRY_MODE

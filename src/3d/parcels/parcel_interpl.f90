@@ -151,7 +151,7 @@ module parcel_interpl
 
 #ifndef ENABLE_DRY_MODE
                 ! total buoyancy (including effects of latent heating)
-                btot = gravity*(parcels%theta(n)*(1.0+qv_theta_coefficient*parcels%qv(n)-parcels%ql(n))/theta_0-1.0)
+                btot = gravity*(parcels%theta(n)*(1.0+qv_dens_coeff*parcels%qv(n)-parcels%ql(n))/theta_0-1.0)
 #else
                 btot = gravity*(parcels%theta(n)/theta_0-1.0)
 #endif
@@ -264,23 +264,24 @@ module parcel_interpl
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
         ! @pre The parcel must be assigned to the correct MPI process.
-        subroutine par2grid_diag
+        subroutine par2grid_diag(l_reuse)
+            logical, optional :: l_reuse
             double precision  :: points(3, 4)
-            integer           :: n, p, l, i, j, k
+            integer           :: n, p, i, j, k
             double precision  :: pvol, weight(0:1,0:1,0:1)
 
             thetag = zero
 #ifndef ENABLE_DRY_MODE
-            qcg = zero
             qvg = zero
+            qlg = zero
 #endif
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, j, k, points, pvol, weight) &
+            !$omp do private(n, p, i, j, k, points, pvol, weight) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, thetag, qvg, qlg)
 #else
-            !$omp do private(n, p, l, i, j, k, points, pvol, weight) &
+            !$omp do private(n, p, i, j, k, points, pvol, weight) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, thetag)
 #endif
@@ -421,6 +422,7 @@ module parcel_interpl
             ! accumulate interior; after this operation
             ! all interior grid points have the correct value
             call field_buffer_to_interior(thetag,              IDX_THETA_SWAP, .true.)
+#ifndef ENABLE_DRY_MODE
             call field_buffer_to_interior(qvg,              IDX_QV_SWAP, .true.)
             call field_buffer_to_interior(qlg,              IDX_QL_SWAP, .true.)
 #endif
@@ -575,11 +577,11 @@ module parcel_interpl
         end subroutine get_weights
 
         subroutine saturation_adjustment
-            double precision, parameter :: tk0c = 273.15       &! Temperature of freezing in Kelvin
-            double precision, parameter :: qsa1 = 3.8,         &! Top in equation to calculate qsat
-            double precision, parameter :: qsa2 = -17.2693882, &! Constant in qsat equation
-            double precision, parameter :: qsa3 = 35.86,       &! Constant in qsat equation
-            double precision, parameter :: qsa4 = 6.109,       &! Constant in qsat equation
+            double precision, parameter :: tk0c = 273.15       ! Temperature of freezing in Kelvin
+            double precision, parameter :: qsa1 = 3.8          ! Top in equation to calculate qsat
+            double precision, parameter :: qsa2 = -17.2693882  ! Constant in qsat equation
+            double precision, parameter :: qsa3 = 35.86        ! Constant in qsat equation
+            double precision, parameter :: qsa4 = 6.109        ! Constant in qsat equation
             double precision, parameter :: pressure_scale_height = 8000.       ! Constant in qsat equation
             double precision, parameter :: ref_press = 100000
             double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat

@@ -50,7 +50,8 @@ program test_mpi_parcel_pack
         parcels%volume(n) = 12.0d0 + a
         parcels%theta(n) = 13.0d0 + a
 #ifndef ENABLE_DRY_MODE
-        parcels%humidity(n) = 14.0d0 + a
+        parcels%qv(n) = 14.0d0 + a
+        parcels%ql(n) = 15.0d0 + a
 #endif
     enddo
 
