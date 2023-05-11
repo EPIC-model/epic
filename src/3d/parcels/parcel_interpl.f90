@@ -20,7 +20,7 @@ module parcel_interpl
                         , interior_to_halo_communication    &
                         , halo_to_interior_communication    &
                         , field_halo_swap_scalar
-                        , 
+                         
     use physics, only : gravity, theta_0, qv_dens_coeff, r_d, c_p, L_v
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
@@ -409,7 +409,7 @@ module parcel_interpl
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_mpi_alloc(n_field_swap_diag)
+            call field_mpi_alloc(n_field_swap_diag, ndim=3)
 
             !------------------------------------------------------------------
             ! Accumulate interior:

@@ -25,9 +25,9 @@ module bndry_fluxes
     private
 
     ! Spatial form of the buoyancy and humidity fluxes through lower surface:
-    double precision, dimension(:, :), allocatable :: bflux
+    double precision, dimension(:, :), allocatable :: thetaflux
 #ifndef ENABLE_DRY_MODE
-    double precision, dimension(:, :), allocatable :: hflux
+    double precision, dimension(:, :), allocatable :: qvflux
 #endif
 
     double precision :: fluxfac
@@ -86,9 +86,9 @@ module bndry_fluxes
 
             call bndry_fluxes_allocate
 
-            bflux = zero
+            thetaflux = zero
 #ifndef ENABLE_DRY_MODE
-            hflux = zero
+            qvflux = zero
 #endif
         end subroutine bndry_fluxes_default
 
@@ -183,7 +183,7 @@ module bndry_fluxes
 
                     call bilinear(xy, is, js, weights)
 
-                    fac = 2.0*(zdepth - z)/(dx(3)*dx(3)) * dt
+                    fac = (zdepth - z) * dt
 
                     do l = 1, ngp
                         ! The multiplication by dt is necessary to provide the amount of b or h
