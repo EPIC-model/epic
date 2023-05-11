@@ -40,9 +40,10 @@ program test_mpi_parcel_unpack
         parcels%B(4, n) = 10.0d0 + a
         parcels%B(5, n) = 11.0d0 + a
         parcels%volume(n) = 12.0d0 + a
-        parcels%buoyancy(n) = 13.0d0 + a
+        parcels%theta(n) = 13.0d0 + a
 #ifndef ENABLE_DRY_MODE
-        parcels%humidity(n) = 14.0d0 + a
+        parcels%qv(n) = 14.0d0 + a
+        parcels%ql(n) = 15.0d0 + a
 #endif
     enddo
 
@@ -65,9 +66,10 @@ program test_mpi_parcel_unpack
         buffer(i + IDX_B22) = 10.0d0 + a
         buffer(i + IDX_B23) = 11.0d0 + a
         buffer(i + IDX_VOL) = 12.0d0 + a
-        buffer(i + IDX_BUO) = 13.0d0 + a
+        buffer(i + IDX_THETA) = 13.0d0 + a
 #ifndef ENABLE_DRY_MODE
-        buffer(i + IDX_HUM) = 14.0d0 + a
+        buffer(i + IDX_QV) = 14.0d0 + a
+        buffer(i + IDX_QL) = 15.0d0 + a
 #endif
     enddo
 
@@ -92,9 +94,10 @@ program test_mpi_parcel_unpack
         passed = (passed .and. (parcels%B(4, n) == 10.0d0 + a))
         passed = (passed .and. (parcels%B(5, n) == 11.0d0 + a))
         passed = (passed .and. (parcels%volume(n) == 12.0d0 + a))
-        passed = (passed .and. (parcels%buoyancy(n) == 13.0d0 + a))
+        passed = (passed .and. (parcels%theta(n) == 13.0d0 + a))
 #ifndef ENABLE_DRY_MODE
-        passed = (passed .and. (parcels%humidity(n) == 14.0d0 + a))
+        passed = (passed .and. (parcels%qv(n) == 14.0d0 + a))
+        passed = (passed .and. (parcels%ql(n) == 15.0d0 + a))
 #endif
     enddo
 

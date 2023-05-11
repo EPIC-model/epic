@@ -249,7 +249,7 @@ module parcel_netcdf
 #ifndef ENABLE_DRY_MODE
             call define_netcdf_dataset(ncid=ncid,                               &
                                        name='qv',                               &
-                                       long_name='water vapour spec. hum.',     &
+                                       long_name='parcel water vapour spec. hum.',&
                                        std_name='',                             &
                                        unit='kg/kg',                            &
                                        dtype=NF90_DOUBLE,                       &
@@ -258,7 +258,7 @@ module parcel_netcdf
 
             call define_netcdf_dataset(ncid=ncid,                               &
                                        name='ql',                               &
-                                       long_name='liquid water spec. hum.',     &
+                                       long_name='parcel liquid water spec. hum.',&
                                        std_name='',                             &
                                        unit='kg/kg',                            &
                                        dtype=NF90_DOUBLE,                       &

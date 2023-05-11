@@ -96,7 +96,7 @@ program test_mpi_parcel_communicate
     parcels%volume(1:n_parcels) = comm%rank + 1
     parcels%B(:, 1:n_parcels) = comm%rank + 1
     parcels%vorticity(:, 1:n_parcels) = comm%rank + 1
-    parcels%buoyancy(1:n_parcels) = comm%rank + 1
+    parcels%theta(1:n_parcels) = comm%rank + 1
 
     call parcel_communicate
 

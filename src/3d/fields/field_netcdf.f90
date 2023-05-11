@@ -11,6 +11,8 @@ module field_netcdf
     use mpi_layout, only : box
     use parameters, only : write_zeta_boundary_flag
     use mpi_utils, only : mpi_stop
+    use parcel_interpl, only: par2grid_diag
+
     implicit none
 
     integer :: field_io_timer
@@ -337,6 +339,8 @@ module field_netcdf
                 call stop_timer(field_io_timer)
                 return
             endif
+
+            call par2grid_diag
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 

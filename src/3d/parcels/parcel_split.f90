@@ -88,9 +88,10 @@ module parcel_split_mod
 
                 parcels%vorticity(:, n_thread_loc) = parcels%vorticity(:, n)
                 parcels%volume(n_thread_loc) = parcels%volume(n)
-                parcels%buoyancy(n_thread_loc) = parcels%buoyancy(n)
+                parcels%theta(n_thread_loc) = parcels%theta(n)
 #ifndef ENABLE_DRY_MODE
-                parcels%humidity(n_thread_loc) = parcels%humidity(n)
+                parcels%qv(n_thread_loc) = parcels%qv(n)
+                parcels%ql(n_thread_loc) = parcels%ql(n)
 #endif
                 V(:, 1) = V(:, 1) * dh * dsqrt(D(1))
                 parcels%position(:, n_thread_loc) = parcels%position(:, n) - V(:, 1)
@@ -104,11 +105,11 @@ module parcel_split_mod
                 call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
 
                 ! save parcel indices of child parcels for the
-                ! halo swap routine
+!~                 ! halo swap routine
                 pid(n) = n
                 pid(n_thread_loc) = n_thread_loc
             enddo
-            !$omp end do
+            !$omp end dosrc/2d/parcels/parcel_diagnostics.f90:
             !$omp end parallel
 
             n_parcel_splits = n_parcel_splits + n_parcels - last_index

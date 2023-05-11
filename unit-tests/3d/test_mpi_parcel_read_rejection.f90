@@ -25,14 +25,14 @@ program test_mpi_parcel_read_rejection
     double precision   :: x_sum, y_sum, z_sum
 
     integer            :: ncid
-    integer            :: npar_dim_id, vol_id, buo_id,      &
+    integer            :: npar_dim_id, vol_id, theta_id,      &
                           x_pos_id, y_pos_id, z_pos_id,     &
                           x_vor_id, y_vor_id, z_vor_id,     &
                           b11_id, b12_id, b13_id,           &
                           b22_id, b23_id,                   &
                           t_axis_id, t_dim_id, mpi_dim_id
 #ifndef ENABLE_DRY_MODE
-    integer :: hum_id
+    integer :: qv_id, ql_id
 #endif
 
     character(len=512) :: ncbasename
@@ -97,10 +97,11 @@ program test_mpi_parcel_read_rejection
     parcels%B(:, 1:n_parcels) = comm%rank + 1
     parcels%volume(1:n_parcels) = comm%rank + 1
     parcels%vorticity(:, 1:n_parcels) = comm%rank + 1
-    parcels%buoyancy(1:n_parcels) = comm%rank + 1
+    parcels%theta(1:n_parcels) = comm%rank + 1
 
 #ifndef ENABLE_DRY_MODE
-    parcels%humidity(1:n_parcels) = comm%rank + 1
+    parcels%qv(1:n_parcels) = comm%rank + 1
+    parcels%ql(1:n_parcels) = comm%rank + 1
 #endif
 
     call create_file('nctest')
@@ -119,9 +120,10 @@ program test_mpi_parcel_read_rejection
     parcels%B = 0
     parcels%volume = 0
     parcels%vorticity = 0
-    parcels%buoyancy = 0
+    parcels%theta = 0
 #ifndef ENABLE_DRY_MODE
-    parcels%humidity = 0
+    parcels%qv = 0
+    parcels%ql = 0
 #endif
 
     call read_netcdf_parcels('nctest_0000000001_parcels.nc')
@@ -143,9 +145,10 @@ program test_mpi_parcel_read_rejection
         passed = (passed .and. (maxval(abs(parcels%vorticity(1, 1:n_parcels) - res)) == zero))
         passed = (passed .and. (maxval(abs(parcels%vorticity(2, 1:n_parcels) - res)) == zero))
         passed = (passed .and. (maxval(abs(parcels%vorticity(3, 1:n_parcels) - res)) == zero))
-        passed = (passed .and. (maxval(abs(parcels%buoyancy(1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%theta(1:n_parcels) - res)) == zero))
 #ifndef ENABLE_DRY_MODE
-        passed = (passed .and. (maxval(abs(parcels%humidity(1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%qv(1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%ql(1:n_parcels) - res)) == zero))
 #endif
     endif
 
@@ -315,23 +318,32 @@ program test_mpi_parcel_read_rejection
                                        varid=z_vor_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='buoyancy',                         &
-                                       long_name='parcel buoyancy',             &
+                                       name='theta',                            &
+                                       long_name='parcel potential temperature',&
                                        std_name='',                             &
-                                       unit='m/s^2',                            &
+                                       unit='K',                                &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
-                                       varid=buo_id)
+                                       varid=theta_id)
 
 #ifndef ENABLE_DRY_MODE
             call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='humidity',                         &
-                                       long_name='parcel humidity',             &
+                                       name='qv',                               &
+                                       long_name='parcel water vapour spec. hum.',&
                                        std_name='',                             &
-                                       unit='1',                                &
+                                       unit='kg/kg',                            &
                                        dtype=NF90_DOUBLE,                       &
                                        dimids=dimids,                           &
-                                       varid=hum_id)
+                                       varid=qv_id)
+
+            call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='ql',                               &
+                                       long_name='parcel liquid water spec. hum.',&
+                                       std_name='',                             &
+                                       unit='kg/kg',                            &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=ql_id)
 #endif
 
             call close_definition(ncid)
@@ -384,10 +396,11 @@ program test_mpi_parcel_read_rejection
             call write_netcdf_dataset(ncid, y_vor_id, parcels%vorticity(2, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, z_vor_id, parcels%vorticity(3, 1:n_parcels), start, cnt)
 
-            call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, theta_id, parcels%theta(1:n_parcels), start, cnt)
 
 #ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, qv_id, parcels%qv(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, ql_id, parcels%ql(1:n_parcels), start, cnt)
 #endif
             call close_netcdf_file(ncid)
 

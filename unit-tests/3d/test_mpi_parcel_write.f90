@@ -29,10 +29,11 @@ program test_mpi_parcel_write
     parcels%B(:, 1:n_parcels) = comm%rank
     parcels%volume(1:n_parcels) = comm%rank
     parcels%vorticity(:, 1:n_parcels) = comm%rank
-    parcels%buoyancy(1:n_parcels) = comm%rank
+    parcels%theta(1:n_parcels) = comm%rank
 
 #ifndef ENABLE_DRY_MODE
-    parcels%humidity(1:n_parcels) = comm%rank
+    parcels%qv(1:n_parcels) = comm%rank
+    parcels%ql(1:n_parcels) = comm%rank
 #endif
 
     call create_netcdf_parcel_file('nctest', .true., .false.)

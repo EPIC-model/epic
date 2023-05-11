@@ -50,9 +50,10 @@ program test_mpi_parcel_delete
             parcels%B(4, n) = 10.0d0 + a
             parcels%B(5, n) = 11.0d0 + a
             parcels%volume(n) = 12.0d0 + a
-            parcels%buoyancy(n) = 13.0d0 + a
+            parcels%theta(n) = 13.0d0 + a
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(n) = 14.0d0 + a
+            parcels%qv(n) = 14.0d0 + a
+            parcels%ql(n) = 15.0d0 + a
 #endif
         enddo
 
@@ -107,9 +108,10 @@ program test_mpi_parcel_delete
                 passed = (passed .and. (parcels%B(4, ii(n)) - (10.0d0 + a) == zero))
                 passed = (passed .and. (parcels%B(5, ii(n)) - (11.0d0 + a) == zero))
                 passed = (passed .and. (parcels%volume(ii(n)) - (12.0d0 + a) == zero))
-                passed = (passed .and. (parcels%buoyancy(ii(n)) - (13.0d0 + a) == zero))
+                passed = (passed .and. (parcels%theta(ii(n)) - (13.0d0 + a) == zero))
 #ifndef ENABLE_DRY_MODE
-                passed = (passed .and. (parcels%humidity(ii(n)) - (14.0d0 + a) == zero))
+                passed = (passed .and. (parcels%qv(ii(n)) - (14.0d0 + a) == zero))
+                passed = (passed .and. (parcels%ql(ii(n)) - (15.0d0 + a) == zero))
 #endif
                 i = i + 1
             endif

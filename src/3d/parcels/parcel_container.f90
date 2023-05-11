@@ -317,7 +317,7 @@ module parcel_container
             buffer(IDX_X_VOR:IDX_Z_VOR) = parcels%vorticity(:, n)
             buffer(IDX_B11:IDX_B23)     = parcels%B(:, n)
             buffer(IDX_VOL)             = parcels%volume(n)
-            buffer(IDX_THETA)            = parcels%theta(n)
+            buffer(IDX_THETA)           = parcels%theta(n)
 #ifndef ENABLE_DRY_MODE
             buffer(IDX_QV)              = parcels%qv(n)
             buffer(IDX_QL)              = parcels%ql(n)

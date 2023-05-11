@@ -106,7 +106,7 @@ program test_mpi_parcel_split
 
     parcels%volume(1:n_parcels) = f12 * vcell
     parcels%vorticity(:, 1:n_parcels) = comm%rank + 1
-    parcels%buoyancy(1:n_parcels) = comm%rank + 1
+    parcels%theta(1:n_parcels) = comm%rank + 1
 
     call parcel_split(parcels, threshold=four)
 

@@ -108,7 +108,7 @@ program test_mpi_nearest_1
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%theta(l) = l + comm%rank * 100
 
             l = l + 1
 
@@ -117,7 +117,7 @@ program test_mpi_nearest_1
                 parcels%position(2, l) = y
                 parcels%position(3, l) = z
                 parcels%volume(l) = 0.9d0 * vmin
-                parcels%buoyancy(l) = l + comm%rank * 100
+                parcels%theta(l) = l + comm%rank * 100
                 l = l + 1
             enddo
 
@@ -126,7 +126,7 @@ program test_mpi_nearest_1
                 parcels%position(2, l) = y + dble(m) * dx(2) * 0.45
                 parcels%position(3, l) = z
                 parcels%volume(l) = 0.9d0 * vmin
-                parcels%buoyancy(l) = l + comm%rank * 100
+                parcels%theta(l) = l + comm%rank * 100
                 l = l + 1
             enddo
 
