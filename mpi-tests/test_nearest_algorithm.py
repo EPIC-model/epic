@@ -171,7 +171,9 @@ try:
                 try:
                     cmd = 'mpirun -np ' + str(n_rank) + ' '
                     if args.cmd == 'srun':
-                        cmd = 'srun --nodes=1 --ntasks-per-node=' + str(n_rank) + ' --cpus-per-task=1 '
+                        cmd = 'srun --nodes=1 --ntasks=' + str(n_rank)
+                        cmd = cmd + ' --ntasks-per-node=' + str(n_rank)
+                        cmd = cmd + ' --cpus-per-task=1 --exact '
                     subprocess.run(args=cmd + exec_parallel,
                                    shell=True,
                                    check=True,
@@ -185,7 +187,7 @@ try:
                 try:
                     cmd = 'mpirun -np 1 '
                     if args.cmd == 'srun':
-                        cmd = ''
+                        cmd = 'srun --nodes=1 --ntasks=1 --ntasks-per-node=1 --exact '
                     subprocess.run(args=cmd + exec_serial,
                                    shell=True,
                                    check=True,
