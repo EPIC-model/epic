@@ -117,7 +117,7 @@ module mpi_layout
 
             box%global_size = (/nx, ny, nz/)
             dx = extent / dble(box%global_size)
-            box%lower = lower(3) + dx * dble(box%lo)
+            box%lower = lower + dx * dble(box%lo)
             box%halo_lower = box%lower - dx
             box%extent(1) = dx(1) * box%size(1)
             box%extent(2) = dx(2) * box%size(2)
