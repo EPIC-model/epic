@@ -105,11 +105,11 @@ module parcel_split_mod
                 call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
 
                 ! save parcel indices of child parcels for the
-!~                 ! halo swap routine
+                ! halo swap routine
                 pid(n) = n
                 pid(n_thread_loc) = n_thread_loc
             enddo
-            !$omp end dosrc/2d/parcels/parcel_diagnostics.f90:
+            !$omp end do
             !$omp end parallel
 
             n_parcel_splits = n_parcel_splits + n_parcels - last_index

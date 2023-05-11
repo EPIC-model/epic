@@ -279,11 +279,11 @@ module parcel_interpl
 #ifndef ENABLE_DRY_MODE
             !$omp do private(n, p, i, j, k, points, pvol, weight) &
             !$omp& private( is, js, ks, weights) &
-            !$omp& reduction(+:nparg, nsparg, vortg, thetag, qvg, qlg)
+            !$omp& reduction(+:nparg, nsparg, thetag, qvg, qlg)
 #else
             !$omp do private(n, p, i, j, k, points, pvol, weight) &
             !$omp& private( is, js, ks, weights) &
-            !$omp& reduction(+:nparg, nsparg, vortg, thetag)
+            !$omp& reduction(+:nparg, nsparg, thetag)
 #endif
 
             do n = 1, n_parcels
@@ -582,8 +582,8 @@ module parcel_interpl
             double precision, parameter :: qsa2 = -17.2693882  ! Constant in qsat equation
             double precision, parameter :: qsa3 = 35.86        ! Constant in qsat equation
             double precision, parameter :: qsa4 = 6.109        ! Constant in qsat equation
-            double precision, parameter :: pressure_scale_height = 8000.       ! Constant in qsat equation
-            double precision, parameter :: ref_press = 100000
+            double precision, parameter :: pressure_scale_height = 8000.0       ! Constant in qsat equation
+            double precision, parameter :: ref_press = 100000.0
             double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat
             integer :: n, iter
 
