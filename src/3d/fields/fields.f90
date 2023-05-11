@@ -167,6 +167,19 @@ module fields
             k = floor((pos(I_Z) - lower(I_Z)) * dxi(I_Z))
         end subroutine get_index
 
+        ! Get the lower horizontal (x, y) index of the cell the parcel is in.
+        ! This subroutine does not take x periodicity into account.
+        ! @param[in] pos position of the parcel
+        ! @param[out] i lower, zonal cell index
+        ! @param[out] j lower, meridional cell index
+        pure subroutine get_horizontal_index(pos, i, j)
+            double precision, intent(in)  :: pos(2)
+            integer,          intent(out) :: i, j
+
+            i = floor((pos(I_X) - lower(I_X)) * dxi(I_X))
+            j = floor((pos(I_Y) - lower(I_Y)) * dxi(I_Y))
+        end subroutine get_horizontal_index
+
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Get the lower index of the cell the parcel is in including
@@ -222,5 +235,18 @@ module fields
             pos(I_Z) = lower(I_Z) + k * dx(I_Z)
 
         end subroutine get_position
+
+        ! Get the coordinate of a grid point (i, j).
+        ! @param[in] i zonal cell index
+        ! @param[in] j meridional cell index
+        ! @param[out] pos position of (i, j) in the domain
+        pure subroutine get_horizontal_position(i, j, pos)
+            integer,          intent(in)  :: i, j
+            double precision, intent(out) :: pos(2)
+
+            pos(I_X) = lower(I_X) + i * dx(I_X)
+            pos(I_Y) = lower(I_Y) + j * dx(I_Y)
+
+        end subroutine get_horizontal_position
 
 end module fields

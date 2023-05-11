@@ -2,7 +2,7 @@ module field_mpi
     use constants, only : zero
     use mpi_layout
     use mpi_communicator
-    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error
+    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error, mpi_stop
     implicit none
 
         private
@@ -31,32 +31,74 @@ module field_mpi
 
         integer :: n_comp = 0
 
-        ! Convenient routines to fill halo cells for a single field:
-        interface field_halo_fill
-            module procedure :: field_halo_fill_scalar
-            module procedure :: field_halo_fill_vector
-        end interface field_halo_fill
+        ! Convenient routines to fill halo cells for a single scalar field:
+        interface field_halo_fill_scalar
+            module procedure :: field_halo_fill_scalar_2d
+            module procedure :: field_halo_fill_scalar_3d
+        end interface field_halo_fill_scalar
 
-        ! Convenient routines to accumulate interior and halo cells for a single field:
-        interface field_halo_swap
-            module procedure :: field_halo_swap_scalar
-            module procedure :: field_halo_swap_vector
-        end interface field_halo_swap
+        ! Convenient routines to fill halo cells for a single vector field:
+        interface field_halo_fill_vector
+            module procedure :: field_halo_fill_vector_2d
+            module procedure :: field_halo_fill_vector_3d
+        end interface field_halo_fill_vector
+
+        ! Convenient routines to accumulate interior and halo cells
+        ! for a single scalar field:
+        interface field_halo_swap_scalar
+            module procedure :: field_halo_swap_scalar_2d
+            module procedure :: field_halo_swap_scalar_3d
+        end interface field_halo_swap_scalar
+
+        ! Convenient routines to accumulate interior and halo cells
+        ! for a single vector field:
+        interface field_halo_swap_vector
+            module procedure :: field_halo_swap_vector_2d
+            module procedure :: field_halo_swap_vector_3d
+        end interface field_halo_swap_vector
 
         interface field_halo_reset
             module procedure :: field_halo_reset_scalar
             module procedure :: field_halo_reset_vector
         end interface field_halo_reset
 
-        interface field_interior_accumulate
-            module procedure :: field_interior_accumulate_scalar
-            module procedure :: field_interior_accumulate_vector
-        end interface field_interior_accumulate
+        interface field_interior_accumulate_scalar
+            module procedure :: field_interior_accumulate_scalar_2d
+            module procedure :: field_interior_accumulate_scalar_3d
+        end interface field_interior_accumulate_scalar
+
+         interface field_interior_accumulate_vector
+            module procedure :: field_interior_accumulate_vector_2d
+            module procedure :: field_interior_accumulate_vector_3d
+        end interface field_interior_accumulate_vector
+
+        interface field_interior_to_buffer
+            module procedure :: field_interior_to_buffer_2d
+            module procedure :: field_interior_to_buffer_3d
+        end interface field_interior_to_buffer
+
+        interface field_buffer_to_halo
+            module procedure :: field_buffer_to_halo_2d
+            module procedure :: field_buffer_to_halo_3d
+        end interface field_buffer_to_halo
+
+        interface field_halo_to_buffer
+            module procedure :: field_halo_to_buffer_2d
+            module procedure :: field_halo_to_buffer_3d
+        end interface field_halo_to_buffer
+
+        interface field_buffer_to_interior
+            module procedure :: field_buffer_to_interior_2d
+            module procedure :: field_buffer_to_interior_3d
+        end interface field_buffer_to_interior
 
         public :: field_halo_reset                  &
-                , field_halo_fill                   &
-                , field_interior_accumulate         &
-                , field_halo_swap                   &
+                , field_halo_fill_scalar            &
+                , field_halo_fill_vector            &
+                , field_interior_accumulate_scalar  &
+                , field_interior_accumulate_vector  &
+                , field_halo_swap_scalar            &
+                , field_halo_swap_vector            &
                 , field_mpi_alloc                   &
                 , field_mpi_dealloc                 &
                 , field_halo_to_buffer              &
@@ -70,59 +112,113 @@ module field_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_halo_fill_scalar(data, l_alloc)
+        subroutine field_halo_fill_scalar_3d(data, l_alloc)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
             logical,          intent(in)    :: l_alloc
 
             if (l_alloc) then
-                call field_mpi_alloc(1)
+                call field_mpi_alloc(1, ndim=3)
             endif
 
-            call field_interior_to_buffer(data, 1)
+            call field_interior_to_buffer_3d(data, 1)
 
             call interior_to_halo_communication
 
-            call field_buffer_to_halo(data, 1, .false.)
+            call field_buffer_to_halo_3d(data, 1, .false.)
 
             if (l_alloc) then
                 call field_mpi_dealloc
             endif
 
-        end subroutine field_halo_fill_scalar
+        end subroutine field_halo_fill_scalar_3d
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_halo_fill_vector(data, l_alloc)
+        subroutine field_halo_fill_scalar_2d(data, l_alloc)
+            double precision, intent(inout) :: data(box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1))
+            logical,          intent(in)    :: l_alloc
+
+            if (l_alloc) then
+                call field_mpi_alloc(1, ndim=2)
+            endif
+
+            call field_interior_to_buffer_2d(data, 1)
+
+            call interior_to_halo_communication
+
+            call field_buffer_to_halo_2d(data, 1, .false.)
+
+            if (l_alloc) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_halo_fill_scalar_2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_fill_vector_3d(data, l_alloc)
             double precision, intent(inout) :: data(box%hlo(3):, &
                                                     box%hlo(2):, &
                                                     box%hlo(1):, &
-                                                     :)
+                                                    :)
             logical,          intent(in)    :: l_alloc
             integer                         :: nc, ncomp
 
             ncomp = size(data, 4)
 
             if (l_alloc) then
-                call field_mpi_alloc(ncomp)
+                call field_mpi_alloc(ncomp, ndim=3)
             endif
 
             do nc = 1, ncomp
-                call field_interior_to_buffer(data(:, :, :, nc), nc)
+                call field_interior_to_buffer_3d(data(:, :, :, nc), nc)
             enddo
 
             call interior_to_halo_communication
 
             do nc = 1, ncomp
-                call field_buffer_to_halo(data(:, :, :, nc), nc, .false.)
+                call field_buffer_to_halo_3d(data(:, :, :, nc), nc, .false.)
             enddo
 
             if (l_alloc) then
                 call field_mpi_dealloc
             endif
 
-        end subroutine field_halo_fill_vector
+        end subroutine field_halo_fill_vector_3d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_fill_vector_2d(data, l_alloc)
+            double precision, intent(inout) :: data(box%hlo(2):, &
+                                                    box%hlo(1):, &
+                                                    :)
+            logical,          intent(in)    :: l_alloc
+            integer                         :: nc, ncomp
+
+            ncomp = size(data, 3)
+
+            if (l_alloc) then
+                call field_mpi_alloc(ncomp, ndim=2)
+            endif
+
+            do nc = 1, ncomp
+                call field_interior_to_buffer_2d(data(:, :, nc), nc)
+            enddo
+
+            call interior_to_halo_communication
+
+            do nc = 1, ncomp
+                call field_buffer_to_halo_2d(data(:, :, nc), nc, .false.)
+            enddo
+
+            if (l_alloc) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_halo_fill_vector_2d
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -155,34 +251,60 @@ module field_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_interior_accumulate_scalar(data, l_alloc)
+        subroutine field_interior_accumulate_scalar_3d(data, l_alloc)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
             logical,          intent(in)    :: l_alloc
 
             if (l_alloc) then
-                call field_mpi_alloc(1)
+                call field_mpi_alloc(1, ndim=3)
             endif
 
-            call field_halo_to_buffer(data, 1)
+            call field_halo_to_buffer_3d(data, 1)
 
             ! send halo data to valid regions of other processes
             call halo_to_interior_communication
 
             ! accumulate interior; after this operation
             ! all interior grid points have the correct value
-            call field_buffer_to_interior(data, 1, .true.)
+            call field_buffer_to_interior_3d(data, 1, .true.)
 
             if (l_alloc) then
                 call field_mpi_dealloc
             endif
 
-        end subroutine field_interior_accumulate_scalar
+        end subroutine field_interior_accumulate_scalar_3d
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_interior_accumulate_vector(data, l_alloc)
+        subroutine field_interior_accumulate_scalar_2d(data, l_alloc)
+            double precision, intent(inout) :: data(box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1))
+            logical,          intent(in)    :: l_alloc
+
+            if (l_alloc) then
+                call field_mpi_alloc(1, ndim=2)
+            endif
+
+            call field_halo_to_buffer_2d(data, 1)
+
+            ! send halo data to valid regions of other processes
+            call halo_to_interior_communication
+
+            ! accumulate interior; after this operation
+            ! all interior grid points have the correct value
+            call field_buffer_to_interior_2d(data, 1, .true.)
+
+            if (l_alloc) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_interior_accumulate_scalar_2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_interior_accumulate_vector_3d(data, l_alloc)
             double precision, intent(inout) :: data(box%hlo(3):, &
                                                     box%hlo(2):, &
                                                     box%hlo(1):, &
@@ -193,11 +315,11 @@ module field_mpi
             ncomp = size(data, 4)
 
             if (l_alloc) then
-                call field_mpi_alloc(ncomp)
+                call field_mpi_alloc(ncomp, ndim=3)
             endif
 
             do nc = 1, ncomp
-                call field_halo_to_buffer(data(:, :, :, nc), nc)
+                call field_halo_to_buffer_3d(data(:, :, :, nc), nc)
             enddo
 
             ! send halo data to valid regions of other processes
@@ -206,18 +328,52 @@ module field_mpi
             ! accumulate interior; after this operation
             ! all interior grid points have the correct value
             do nc = 1, ncomp
-                call field_buffer_to_interior(data(:, :, :, nc), nc, .true.)
+                call field_buffer_to_interior_3d(data(:, :, :, nc), nc, .true.)
             enddo
 
             if (l_alloc) then
                 call field_mpi_dealloc
             endif
 
-        end subroutine field_interior_accumulate_vector
+        end subroutine field_interior_accumulate_vector_3d
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_halo_swap_scalar(data)
+        subroutine field_interior_accumulate_vector_2d(data, l_alloc)
+            double precision, intent(inout) :: data(box%hlo(2):, &
+                                                    box%hlo(1):, &
+                                                     :)
+            logical,          intent(in)    :: l_alloc
+            integer                         :: nc, ncomp
+
+            ncomp = size(data, 3)
+
+            if (l_alloc) then
+                call field_mpi_alloc(ncomp, ndim=2)
+            endif
+
+            do nc = 1, ncomp
+                call field_halo_to_buffer_2d(data(:, :, nc), nc)
+            enddo
+
+            ! send halo data to valid regions of other processes
+            call halo_to_interior_communication
+
+            ! accumulate interior; after this operation
+            ! all interior grid points have the correct value
+            do nc = 1, ncomp
+                call field_buffer_to_interior_2d(data(:, :, nc), nc, .true.)
+            enddo
+
+            if (l_alloc) then
+                call field_mpi_dealloc
+            endif
+
+        end subroutine field_interior_accumulate_vector_2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_swap_scalar_3d(data)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
@@ -226,19 +382,39 @@ module field_mpi
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_mpi_alloc(1)
+            call field_mpi_alloc(1, ndim=3)
 
-            call field_interior_accumulate_scalar(data, .false.)
+            call field_interior_accumulate_scalar_3d(data, .false.)
 
-            call field_halo_fill_scalar(data, .false.)
+            call field_halo_fill_scalar_3d(data, .false.)
 
             call field_mpi_dealloc
 
-        end subroutine field_halo_swap_scalar
+        end subroutine field_halo_swap_scalar_3d
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_halo_swap_vector(data)
+        subroutine field_halo_swap_scalar_2d(data)
+            double precision, intent(inout) :: data(box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1))
+            ! we must first fill the interior grid points
+            ! correctly, and then the halo; otherwise
+            ! halo grid points do not have correct values at
+            ! corners where multiple processes share grid points.
+
+            call field_mpi_alloc(1, ndim=2)
+
+            call field_interior_accumulate_scalar_2d(data, .false.)
+
+            call field_halo_fill_scalar_2d(data, .false.)
+
+            call field_mpi_dealloc
+
+        end subroutine field_halo_swap_scalar_2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_swap_vector_3d(data)
             double precision, intent(inout) :: data(box%hlo(3):, &
                                                     box%hlo(2):, &
                                                     box%hlo(1):, &
@@ -252,15 +428,40 @@ module field_mpi
 
             ncomp = size(data, 4)
 
-            call field_mpi_alloc(ncomp)
+            call field_mpi_alloc(ncomp, ndim=3)
 
-            call field_interior_accumulate_vector(data, .false.)
+            call field_interior_accumulate_vector_3d(data, .false.)
 
-            call field_halo_fill_vector(data, .false.)
+            call field_halo_fill_vector_3d(data, .false.)
 
             call field_mpi_dealloc
 
-        end subroutine field_halo_swap_vector
+        end subroutine field_halo_swap_vector_3d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_swap_vector_2d(data)
+            double precision, intent(inout) :: data(box%hlo(2):, &
+                                                    box%hlo(1):, &
+                                                    :)
+            integer                         :: ncomp
+            ! we must first fill the interior grid points
+            ! correctly, and then the halo; otherwise
+            ! halo grid points do not have correct values at
+            ! corners where multiple processes share grid points.
+
+
+            ncomp = size(data, 3)
+
+            call field_mpi_alloc(ncomp, ndim=2)
+
+            call field_interior_accumulate_vector_2d(data, .false.)
+
+            call field_halo_fill_vector_2d(data, .false.)
+
+            call field_mpi_dealloc
+
+        end subroutine field_halo_swap_vector_2d
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -374,8 +575,10 @@ module field_mpi
 
         ! This routine is called inside fields::field_alloc
         ! @param[in] ncomp is the number of components (or number of scalar fields)
-        subroutine field_mpi_alloc(ncomp)
+        ! @param[in] ndim is the number of dimensions. It can take either 2 or 3.
+        subroutine field_mpi_alloc(ncomp, ndim)
             integer, intent(in) :: ncomp
+            integer, intent(in) :: ndim
             integer             :: zlen, ylen, xlen
 
             if (l_allocated) then
@@ -385,9 +588,19 @@ module field_mpi
 
             n_comp = ncomp
 
+#ifndef NDEBUG
+            if ((ndim /= 2) .and. (ndim /= 3)) then
+                call mpi_stop("field_mpi::field_mpi_alloc can only allocate 2D or 3D buffers.")
+            endif
+#endif
+
             xlen = box%hi(1)-box%lo(1)+1
             ylen = box%hi(2)-box%lo(2)+1
+
             zlen = box%hhi(3)-box%hlo(3)+1
+            if (ndim == 2) then
+                zlen = 1
+            endif
 
             allocate(west_buf(zlen, ylen, 2, n_comp))
             allocate(east_halo_buf(zlen, ylen, 2, n_comp))
@@ -454,7 +667,7 @@ module field_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_interior_to_buffer(data, nc)
+        subroutine field_interior_to_buffer_3d(data, nc)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
                                                  box%hlo(1):box%hhi(1))
@@ -462,7 +675,7 @@ module field_mpi
 
             if ((nc < 1) .or. (nc > n_comp)) then
                 call mpi_exit_on_error(&
-                    "field_mpi::field_interior_to_buffer: Component number outside bounds.")
+                    "field_mpi::field_interior_to_buffer_3d: Component number outside bounds.")
             endif
 
             west_buf(:, :, :, nc)  = data(:, box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1)
@@ -475,11 +688,35 @@ module field_mpi
             southwest_buf(:, :, :, nc) = data(:, box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1)
             northwest_buf(:, :, nc)    = data(:, box%hi(2),             box%lo(1):box%lo(1)+1)
 
-        end subroutine field_interior_to_buffer
+        end subroutine field_interior_to_buffer_3d
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_halo_to_buffer(data, nc)
+        subroutine field_interior_to_buffer_2d(data, nc)
+            double precision, intent(in) :: data(box%hlo(2):box%hhi(2), &
+                                                 box%hlo(1):box%hhi(1))
+            integer,          intent(in) :: nc
+
+            if ((nc < 1) .or. (nc > n_comp)) then
+                call mpi_exit_on_error(&
+                    "field_mpi::field_interior_to_buffer_2d: Component number outside bounds.")
+            endif
+
+            west_buf(1, :, :, nc)  = data(box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1)
+            east_buf(1, :, nc)     = data(box%lo(2):box%hi(2),   box%hi(1))
+            south_buf(1, :, :, nc) = data(box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))
+            north_buf(1, :, nc)    = data(box%hi(2),             box%lo(1):box%hi(1))
+
+            northeast_buf(1, nc)       = data(box%hi(2),             box%hi(1))
+            southeast_buf(1, :, nc)    = data(box%lo(2):box%lo(2)+1, box%hi(1))
+            southwest_buf(1, :, :, nc) = data(box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1)
+            northwest_buf(1, :, nc)    = data(box%hi(2),             box%lo(1):box%lo(1)+1)
+
+        end subroutine field_interior_to_buffer_2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_halo_to_buffer_3d(data, nc)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
                                                  box%hlo(1):box%hhi(1))
@@ -487,7 +724,7 @@ module field_mpi
 
             if ((nc < 1) .or. (nc > n_comp)) then
                 call mpi_exit_on_error(&
-                    "field_mpi::field_halo_to_buffer: Component number outside bounds.")
+                    "field_mpi::field_halo_to_buffer_3d: Component number outside bounds.")
             endif
 
             east_halo_buf(:, :, :, nc)      = data(:, box%lo(2):box%hi(2),     box%hhi(1)-1:box%hhi(1))
@@ -499,11 +736,34 @@ module field_mpi
             northeast_halo_buf(:, :, :, nc) = data(:, box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1))
             southeast_halo_buf(:, :, nc)    = data(:, box%hlo(2),              box%hhi(1)-1:box%hhi(1))
 
-        end subroutine field_halo_to_buffer
+        end subroutine field_halo_to_buffer_3d
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_buffer_to_halo(data, nc, l_add)
+        subroutine field_halo_to_buffer_2d(data, nc)
+            double precision, intent(in) :: data(box%hlo(2):box%hhi(2), &
+                                                 box%hlo(1):box%hhi(1))
+            integer,          intent(in) :: nc
+
+            if ((nc < 1) .or. (nc > n_comp)) then
+                call mpi_exit_on_error(&
+                    "field_mpi::field_halo_to_buffer_2d: Component number outside bounds.")
+            endif
+
+            east_halo_buf(1, :, :, nc)      = data(box%lo(2):box%hi(2),     box%hhi(1)-1:box%hhi(1))
+            west_halo_buf(1, :, nc)         = data(box%lo(2):box%hi(2),     box%hlo(1))
+            north_halo_buf(1, :, :, nc)     = data(box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1))
+            south_halo_buf(1, :, nc)        = data(box%hlo(2),              box%lo(1):box%hi(1))
+            southwest_halo_buf(1, nc)       = data(box%hlo(2),              box%hlo(1))
+            northwest_halo_buf(1, :, nc)    = data(box%hhi(2)-1:box%hhi(2), box%hlo(1))
+            northeast_halo_buf(1, :, :, nc) = data(box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1))
+            southeast_halo_buf(1, :, nc)    = data(box%hlo(2),              box%hhi(1)-1:box%hhi(1))
+
+        end subroutine field_halo_to_buffer_2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_buffer_to_halo_3d(data, nc, l_add)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
@@ -512,7 +772,7 @@ module field_mpi
 
             if ((nc < 1) .or. (nc > n_comp)) then
                 call mpi_exit_on_error(&
-                    "field_mpi::field_buffer_to_halo: Component number outside bounds.")
+                    "field_mpi::field_buffer_to_halo_3d: Component number outside bounds.")
             endif
 
             if (l_add) then
@@ -552,11 +812,63 @@ module field_mpi
                 data(:, box%hlo(2), box%hhi(1)-1:box%hhi(1)) = southeast_halo_buf(:, :, nc)
             endif
 
-        end subroutine field_buffer_to_halo
+        end subroutine field_buffer_to_halo_3d
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine field_buffer_to_interior(data, nc, l_add)
+        subroutine field_buffer_to_halo_2d(data, nc, l_add)
+            double precision, intent(inout) :: data(box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1))
+            integer,          intent(in)    :: nc
+            logical,          intent(in)    :: l_add
+
+            if ((nc < 1) .or. (nc > n_comp)) then
+                call mpi_exit_on_error(&
+                    "field_mpi::field_buffer_to_halo_2d: Component number outside bounds.")
+            endif
+
+            if (l_add) then
+
+                data(box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) &
+                    = data(box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) + east_halo_buf(1, :, :, nc)
+
+                data(box%lo(2):box%hi(2), box%hlo(1)) &
+                    = data(box%lo(2):box%hi(2), box%hlo(1)) + west_halo_buf(1, :, nc)
+
+                data(box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) &
+                    = data(box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) + north_halo_buf(1, :, :, nc)
+
+                data(box%hlo(2), box%lo(1):box%hi(1)) &
+                    = data(box%hlo(2), box%lo(1):box%hi(1)) + south_halo_buf(1, :, nc)
+
+                data(box%hlo(2), box%hlo(1)) &
+                    = data(box%hlo(2), box%hlo(1)) + southwest_halo_buf(1, nc)
+
+                data(box%hhi(2)-1:box%hhi(2), box%hlo(1)) &
+                    = data(box%hhi(2)-1:box%hhi(2), box%hlo(1)) + northwest_halo_buf(1, :, nc)
+
+                data(box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) &
+                    = data(box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) &
+                    + northeast_halo_buf(1, :, :, nc)
+
+                data(box%hlo(2), box%hhi(1)-1:box%hhi(1)) &
+                    = data(box%hlo(2), box%hhi(1)-1:box%hhi(1)) + southeast_halo_buf(1, :, nc)
+            else
+                data(box%lo(2):box%hi(2), box%hhi(1)-1:box%hhi(1)) = east_halo_buf(1, :, :, nc)
+                data(box%lo(2):box%hi(2), box%hlo(1)) = west_halo_buf(1, :, nc)
+                data(box%hhi(2)-1:box%hhi(2), box%lo(1):box%hi(1)) = north_halo_buf(1, :, :, nc)
+                data(box%hlo(2), box%lo(1):box%hi(1)) = south_halo_buf(1, :, nc)
+                data(box%hlo(2), box%hlo(1)) = southwest_halo_buf(1, nc)
+                data(box%hhi(2)-1:box%hhi(2), box%hlo(1)) = northwest_halo_buf(1, :, nc)
+                data(box%hhi(2)-1:box%hhi(2), box%hhi(1)-1:box%hhi(1)) = northeast_halo_buf(1, :, :, nc)
+                data(box%hlo(2), box%hhi(1)-1:box%hhi(1)) = southeast_halo_buf(1, :, nc)
+            endif
+
+        end subroutine field_buffer_to_halo_2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_buffer_to_interior_3d(data, nc, l_add)
             double precision, intent(inout) :: data(box%hlo(3):box%hhi(3), &
                                                     box%hlo(2):box%hhi(2), &
                                                     box%hlo(1):box%hhi(1))
@@ -565,7 +877,7 @@ module field_mpi
 
             if ((nc < 1) .or. (nc > n_comp)) then
                 call mpi_exit_on_error(&
-                    "field_mpi::field_buffer_to_interior: Component number outside bounds.")
+                    "field_mpi::field_buffer_to_interior_3d: Component number outside bounds.")
             endif
 
             if (l_add) then
@@ -606,7 +918,60 @@ module field_mpi
                 data(:, box%hi(2),             box%lo(1):box%lo(1)+1) = northwest_buf(:, :, nc)
             endif
 
-        end subroutine field_buffer_to_interior
+        end subroutine field_buffer_to_interior_3d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_buffer_to_interior_2d(data, nc, l_add)
+            double precision, intent(inout) :: data(box%hlo(2):box%hhi(2), &
+                                                    box%hlo(1):box%hhi(1))
+            integer,          intent(in)    :: nc
+            logical,          intent(in)    :: l_add
+
+            if ((nc < 1) .or. (nc > n_comp)) then
+                call mpi_exit_on_error(&
+                    "field_mpi::field_buffer_to_interior_2d: Component number outside bounds.")
+            endif
+
+            if (l_add) then
+
+                data(box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) &
+                    = data(box%lo(2):box%hi(2), box%lo(1):box%lo(1)+1) + west_buf(1, :, :, nc)
+
+                data(box%lo(2):box%hi(2), box%hi(1)) &
+                    = data(box%lo(2):box%hi(2), box%hi(1)) + east_buf(1, :, nc)
+
+                data(box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1)) &
+                    = data(box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1)) + south_buf(1, :, :, nc)
+
+                data(box%hi(2), box%lo(1):box%hi(1)) &
+                    = data(box%hi(2), box%lo(1):box%hi(1)) + north_buf(1, :, nc)
+
+                data(box%hi(2), box%hi(1)) &
+                    = data(box%hi(2), box%hi(1)) + northeast_buf(1, nc)
+
+                data(box%lo(2):box%lo(2)+1, box%hi(1)) &
+                    = data(box%lo(2):box%lo(2)+1, box%hi(1)) + southeast_buf(1, :, nc)
+
+                data(box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) &
+                    = data(box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) + southwest_buf(1, :, :, nc)
+
+                data(box%hi(2), box%lo(1):box%lo(1)+1) &
+                    = data(box%hi(2), box%lo(1):box%lo(1)+1) + northwest_buf(1, :, nc)
+
+            else
+                data(box%lo(2):box%hi(2),   box%lo(1):box%lo(1)+1) = west_buf(1, :, :, nc)
+                data(box%lo(2):box%hi(2),   box%hi(1))             = east_buf(1, :, nc)
+                data(box%lo(2):box%lo(2)+1, box%lo(1):box%hi(1))   = south_buf(1, :, :, nc)
+                data(box%hi(2),             box%lo(1):box%hi(1))   = north_buf(1, :, nc)
+
+                data(box%hi(2),             box%hi(1))             = northeast_buf(1, nc)
+                data(box%lo(2):box%lo(2)+1, box%hi(1))             = southeast_buf(1, :, nc)
+                data(box%lo(2):box%lo(2)+1, box%lo(1):box%lo(1)+1) = southwest_buf(1, :, :, nc)
+                data(box%hi(2),             box%lo(1):box%lo(1)+1) = northwest_buf(1, :, nc)
+            endif
+
+        end subroutine field_buffer_to_interior_2d
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

@@ -23,7 +23,10 @@ module options
     character(len=512) :: restart_file = ''
 
     ! field input file
-    character(len=512)  :: field_file = ''
+    character(len=512) :: field_file = ''
+
+    ! boundary surface flux input file
+    character(len=512) :: flux_file = ''
 
 
     type bndry_info
@@ -106,7 +109,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, boundary, output, parcel, time
+            namelist /EPIC/ field_file, flux_file, boundary, output, parcel, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -144,6 +147,8 @@ module options
             call write_netcdf_attribute(ncid, "verbose", verbose)
 #endif
             call write_netcdf_attribute(ncid, "field_file", field_file)
+
+            call write_netcdf_attribute(ncid, "flux_file", flux_file)
 
             call write_netcdf_attribute(ncid, "zeta_tol", boundary%zeta_tol)
             call write_netcdf_attribute(ncid, "l_ignore_bndry_zeta_flag", &

@@ -14,6 +14,7 @@ module ls_rk4
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
     use field_diagnostics, only : calculate_field_diagnostics
+    use bndry_fluxes, only : apply_bndry_fluxes
     use mpi_timer, only : start_timer, stop_timer, timings
     implicit none
 
@@ -72,6 +73,8 @@ module ls_rk4
             call calculate_field_diagnostics
 
             call write_step(t)
+
+            call apply_bndry_fluxes(dt)
 
             do n = 1, 4
                 call ls_rk4_substep(dt, n)

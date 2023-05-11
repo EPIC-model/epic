@@ -19,7 +19,8 @@ module parcel_interpl
                         , field_interior_to_buffer          &
                         , interior_to_halo_communication    &
                         , halo_to_interior_communication    &
-                        , field_halo_swap
+                        , field_halo_swap_scalar
+                        , 
     use physics, only : gravity, theta_0, qv_dens_coeff, r_d, c_p, L_v
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
@@ -62,8 +63,9 @@ module parcel_interpl
             , grid2par          &
             , par2grid_timer    &
             , grid2par_timer    &
-            , halo_swap_timer    &
-            , trilinear
+            , halo_swap_timer   &
+            , trilinear         &
+            , bilinear
 
     contains
 
@@ -100,7 +102,7 @@ module parcel_interpl
             !$omp end parallel
 
             call start_timer(halo_swap_timer)
-            call field_halo_swap(volg)
+            call field_halo_swap_scalar(volg)
             call stop_timer(halo_swap_timer)
 
             ! apply free slip boundary condition
@@ -357,7 +359,7 @@ module parcel_interpl
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_mpi_alloc(n_field_swap)
+            call field_mpi_alloc(n_field_swap, ndim=3)
 
             !------------------------------------------------------------------
             ! Accumulate interior:
@@ -623,5 +625,43 @@ module parcel_interpl
             !$omp end parallel
 
        end subroutine saturation_adjustment
+
+       !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Bi-linear interpolation
+        ! @param[in] pos position of the parcel
+        ! @param[out] ii horizontal grid points for interoplation
+        ! @param[out] jj meridional grid points for interpolation
+        ! @param[out] ww interpolation weights
+        subroutine bilinear(pos, ii, jj, ww)
+            double precision, intent(in)  :: pos(2)
+            integer,          intent(out) :: ii(4), jj(4)
+            double precision, intent(out) :: ww(4)
+            double precision              :: xy(2)
+
+            ! (i, j)
+            call get_horizontal_index(pos, ii(1), jj(1))
+            call get_horizontal_position(ii(1), jj(1), xy)
+            ww(1) = product(one - abs(pos - xy) * dxi(1:2))
+
+            ! (i+1, j)
+            ii(2) = ii(1) + 1
+            jj(2) = jj(1)
+            call get_horizontal_position(ii(2), jj(2), xy)
+            ww(2) = product(one - abs(pos - xy) * dxi(1:2))
+
+            ! (i, j+1)
+            ii(3) = ii(1)
+            jj(3) = jj(1) + 1
+            call get_horizontal_position(ii(3), jj(3), xy)
+            ww(3) = product(one - abs(pos - xy) * dxi(1:2))
+
+            ! (i+1, j+1)
+            ii(4) = ii(2)
+            jj(4) = jj(3)
+            call get_horizontal_position(ii(4), jj(4), xy)
+            ww(4) = product(one - abs(pos - xy) * dxi(1:2))
+
+        end subroutine bilinear
 
 end module parcel_interpl

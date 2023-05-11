@@ -1,6 +1,7 @@
 module utils
     use constants, only : one
     use options, only : field_file          &
+                      , flux_file           &
                       , output              &
                       , l_restart           &
                       , restart_file        &
@@ -20,6 +21,7 @@ module utils
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
                          , set_zeta_boundary_flag
+    use bndry_fluxes, only : read_bndry_fluxes
     use physics, only : read_physical_quantities, print_physical_quantities
     use mpi_layout, only : mpi_layout_init
     use mpi_utils, only : mpi_exit_on_error
@@ -212,6 +214,8 @@ module utils
                 ! on a vertical boundary
                 call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
             endif
+
+            call read_bndry_fluxes(trim(flux_file))
 
         end subroutine setup_fields_and_parcels
 

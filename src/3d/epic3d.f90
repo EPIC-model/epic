@@ -35,6 +35,7 @@ program epic3d
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
+    use bndry_fluxes, only : bndry_fluxes_deallocate
     use mpi_utils, only : mpi_print, mpi_stop
     implicit none
 
@@ -149,6 +150,7 @@ program epic3d
             call parcel_dealloc
             call field_dealloc
             call nearest_win_deallocate
+            call bndry_fluxes_deallocate
             call finalise_inversion
             call stop_timer(epic_timer)
 
