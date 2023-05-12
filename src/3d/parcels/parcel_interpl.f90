@@ -322,6 +322,25 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
+            !$omp parallel workshare
+            ! apply free slip boundary condition
+            thetag(0,  :, :) = two * thetag(0,  :, :)
+            thetag(nz, :, :) = two * thetag(nz, :, :)
+            thetag(1,    :, :) = thetag(1,    :, :) + thetag(-1,   :, :)
+            thetag(nz-1, :, :) = thetag(nz-1, :, :) + thetag(nz+1, :, :)
+
+            qvg(0,  :, :) = two * qvg(0,  :, :)
+            qvg(nz, :, :) = two * qvg(nz, :, :)
+            qvg(1,    :, :) = qvg(1,    :, :) + qvg(-1,   :, :)
+            qvg(nz-1, :, :) = qvg(nz-1, :, :) + qvg(nz+1, :, :)
+
+            qlg(0,  :, :) = two * qlg(0,  :, :)
+            qlg(nz, :, :) = two * qlg(nz, :, :)
+            qlg(1,    :, :) = qlg(1,    :, :) + qlg(-1,   :, :)
+            qlg(nz-1, :, :) = qlg(nz-1, :, :) + qlg(nz+1, :, :)
+            !$omp end parallel workshare
+
+
             call start_timer(halo_swap_timer)
             call par2grid_halo_swap_diag
             call stop_timer(halo_swap_timer)
