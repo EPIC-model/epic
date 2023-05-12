@@ -48,13 +48,13 @@ module parcel_interpl
     integer, parameter :: n_field_swap = 5
 
     ! restart indices for par2grid_diag
-    integer, parameter :: IDX_THETA_SWAP = 1
+    integer, parameter :: IDX_THETA_SWAP = 2
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: IDX_QV_SWAP   = 2     &
-                        , IDX_QL_SWAP   = 3
-    integer, parameter :: n_field_swap_diag = 3
+    integer, parameter :: IDX_QV_SWAP   = 3     &
+                        , IDX_QL_SWAP   = 4
+    integer, parameter :: n_field_swap_diag = 4
 #else
-    integer, parameter :: n_field_swap_diag = 1
+    integer, parameter :: n_field_swap_diag = 2
 #endif
 
     public :: par2grid          &
@@ -273,6 +273,7 @@ module parcel_interpl
             double precision  :: pvol, weight(0:1,0:1,0:1)
 
             thetag = zero
+            volg = zero
 #ifndef ENABLE_DRY_MODE
             qvg = zero
             qlg = zero
@@ -281,11 +282,11 @@ module parcel_interpl
 #ifndef ENABLE_DRY_MODE
             !$omp do private(n, p, i, j, k, points, pvol, weight) &
             !$omp& private( is, js, ks, weights) &
-            !$omp& reduction(+:nparg, nsparg, thetag, qvg, qlg)
+            !$omp& reduction(+:nparg, nsparg, thetag, volg, qvg, qlg)
 #else
             !$omp do private(n, p, i, j, k, points, pvol, weight) &
             !$omp& private( is, js, ks, weights) &
-            !$omp& reduction(+:nparg, nsparg, thetag)
+            !$omp& reduction(+:nparg, nsparg, thetag, volg)
 #endif
 
             do n = 1, n_parcels
@@ -311,6 +312,8 @@ module parcel_interpl
 
                     thetag(ks:ks+1, js:js+1, is:is+1) = thetag(ks:ks+1, js:js+1, is:is+1) &
                                                       + weight * parcels%theta(n)
+                    volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
+                                                      + weight
 #ifndef ENABLE_DRY_MODE
                     qvg(ks:ks+1, js:js+1, is:is+1) = qvg(ks:ks+1, js:js+1, is:is+1) &
                                                       + weight * parcels%qv(n)
@@ -324,6 +327,11 @@ module parcel_interpl
 
             !$omp parallel workshare
             ! apply free slip boundary condition
+            volg(0,  :, :) = two * volg(0,  :, :)
+            volg(nz, :, :) = two * volg(nz, :, :)
+            volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
+            volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
+
             thetag(0,  :, :) = two * thetag(0,  :, :)
             thetag(nz, :, :) = two * thetag(nz, :, :)
             thetag(1,    :, :) = thetag(1,    :, :) + thetag(-1,   :, :)
@@ -434,6 +442,7 @@ module parcel_interpl
 
             !------------------------------------------------------------------
             ! Accumulate interior:
+            call field_halo_to_buffer(volg,                    IDX_VOL_SWAP)
             call field_halo_to_buffer(thetag,                  IDX_THETA_SWAP)
 #ifndef ENABLE_DRY_MODE
             call field_halo_to_buffer(qvg,                     IDX_QV_SWAP)
@@ -444,6 +453,7 @@ module parcel_interpl
 
             ! accumulate interior; after this operation
             ! all interior grid points have the correct value
+            call field_buffer_to_interior(volg,                IDX_VOL_SWAP, .true.)
             call field_buffer_to_interior(thetag,              IDX_THETA_SWAP, .true.)
 #ifndef ENABLE_DRY_MODE
             call field_buffer_to_interior(qvg,              IDX_QV_SWAP, .true.)
@@ -453,6 +463,7 @@ module parcel_interpl
             !------------------------------------------------------------------
             ! Fill halo:
 
+            call field_interior_to_buffer(volg,                IDX_VOL_SWAP)
             call field_interior_to_buffer(thetag,              IDX_THETA_SWAP)
 #ifndef ENABLE_DRY_MODE
             call field_interior_to_buffer(qvg,                 IDX_QV_SWAP)
@@ -461,6 +472,7 @@ module parcel_interpl
 
             call interior_to_halo_communication
 
+            call field_buffer_to_halo(volg,                IDX_VOL_SWAP, .false.)
             call field_buffer_to_halo(thetag,              IDX_THETA_SWAP, .false.)
 #ifndef ENABLE_DRY_MODE
             call field_buffer_to_halo(qvg,                 IDX_QV_SWAP, .false.)
@@ -610,6 +622,7 @@ module parcel_interpl
             double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat
             integer :: n, iter
 
+#ifndef ENABLE_DRY_MODE
             !$omp parallel default(shared)
             !$omp do private(n, iter, press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat)
             do n = 1, n_parcels
@@ -644,6 +657,7 @@ module parcel_interpl
             end do
             !$omp end do
             !$omp end parallel
+#endif
 
        end subroutine saturation_adjustment
 
