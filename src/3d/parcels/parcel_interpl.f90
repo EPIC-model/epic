@@ -329,6 +329,7 @@ module parcel_interpl
             thetag(1,    :, :) = thetag(1,    :, :) + thetag(-1,   :, :)
             thetag(nz-1, :, :) = thetag(nz-1, :, :) + thetag(nz+1, :, :)
 
+#ifndef ENABLE_DRY_MODE
             qvg(0,  :, :) = two * qvg(0,  :, :)
             qvg(nz, :, :) = two * qvg(nz, :, :)
             qvg(1,    :, :) = qvg(1,    :, :) + qvg(-1,   :, :)
@@ -338,6 +339,7 @@ module parcel_interpl
             qlg(nz, :, :) = two * qlg(nz, :, :)
             qlg(1,    :, :) = qlg(1,    :, :) + qlg(-1,   :, :)
             qlg(nz-1, :, :) = qlg(nz-1, :, :) + qlg(nz+1, :, :)
+#endif
             !$omp end parallel workshare
 
 
