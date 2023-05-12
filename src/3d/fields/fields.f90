@@ -36,10 +36,10 @@ module fields
 
     double precision, allocatable, dimension(:, :, :) :: &
 #ifndef ENABLE_DRY_MODE
-        thetag,     &   ! dry buoyancy (or liquid-water buoyancy)
         qvg,        &   ! humidity
         qlg,        &   ! liquid water
 #endif
+        thetag,     &   ! dry buoyancy (or liquid-water buoyancy)
         tbuoyg,    &   ! buoyancy
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
