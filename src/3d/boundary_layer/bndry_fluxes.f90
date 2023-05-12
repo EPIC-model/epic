@@ -25,12 +25,10 @@ module bndry_fluxes
     private
 
     ! Spatial form of the buoyancy and humidity fluxes through lower surface:
-    double precision, dimension(:, :), allocatable :: bflux
+    double precision, dimension(:, :), allocatable :: binc
 #ifndef ENABLE_DRY_MODE
-    double precision, dimension(:, :), allocatable :: hflux
+    double precision, dimension(:, :), allocatable :: hinc
 #endif
-
-    double precision :: fluxfac
 
     ! Denotes height below which surface fluxes are applied:
     double precision :: zdepth
@@ -59,9 +57,9 @@ module bndry_fluxes
 
             l_bndry_flux_allocated = .true.
 
-            allocate(bflux(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(binc(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 #ifndef ENABLE_DRY_MODE
-            allocate(hflux(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
+            allocate(hinc(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 #endif
         end subroutine bndry_fluxes_allocate
 
@@ -74,9 +72,9 @@ module bndry_fluxes
 
             l_bndry_flux_allocated = .false.
 
-            deallocate(bflux)
+            deallocate(binc)
 #ifndef ENABLE_DRY_MODE
-            deallocate(hflux)
+            deallocate(hinc)
 #endif
         end subroutine bndry_fluxes_deallocate
 
@@ -86,18 +84,20 @@ module bndry_fluxes
 
             call bndry_fluxes_allocate
 
-            bflux = zero
+            binc = zero
 #ifndef ENABLE_DRY_MODE
-            hflux = zero
+            hinc = zero
 #endif
         end subroutine bndry_fluxes_default
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! Read in buoyancy and humidity fluxes.
         subroutine read_bndry_fluxes(fname)
             character(*), intent(in) :: fname
             integer                  :: ncid, start(3), cnt(3)
             integer                  :: lo(3), hi(3)
+            double precision         :: flux2inc
 
             l_enable_flux = (fname /= '')
 
@@ -121,8 +121,8 @@ module bndry_fluxes
             if (has_dataset(ncid, 'bflux')) then
                 call read_netcdf_dataset(ncid,                  &
                                          'bflux',               &
-                                         bflux(lo(2):hi(2),     &
-                                               lo(1):hi(1)),    &
+                                         binc(lo(2):hi(2),      &
+                                              lo(1):hi(1)),     &
                                          start,                 &
                                          cnt)
             else
@@ -130,10 +130,10 @@ module bndry_fluxes
             endif
 
 #ifndef ENABLE_DRY_MODE
-            if (has_dataset(ncid, 'hflux')) then
+            if (has_dataset(ncid, 's')) then
                 call read_netcdf_dataset(ncid,                  &
                                          'hflux',               &
-                                         hflux(lo(2):hi(2),     &
+                                         hinc(lo(2):hi(2),      &
                                                lo(1):hi(1)),    &
                                          start,                 &
                                          cnt)
@@ -144,15 +144,17 @@ module bndry_fluxes
 
             call close_netcdf_file(ncid)
 
-            fluxfac = two * dxi(3) ** 2
+            ! change the unit from "per unit area per unit time" to "per unit time"
+            ! the "per unit time" will be fixed when applying the flux
+            flux2inc = dx(1) * dx(2)
 
             call bndry_fluxes_fill_halo
 
             !$omp parallel
             !$omp workshare
-            bflux = fluxfac * bflux
+            binc = flux2inc * binc
 #ifndef ENABLE_DRY_MODE
-            hflux = fluxfac * hflux
+            hinc = flux2inc * hinc
 #endif
             !$omp end workshare
             !$omp end parallel
@@ -183,14 +185,15 @@ module bndry_fluxes
 
                     call bilinear(xy, is, js, weights)
 
-                    fac = (zdepth - z) * dt
+                    ! "fac" has unit of time
+                    fac = (zdepth - z) * dxi(3) * dt
 
                     do l = 1, ngp
                         ! The multiplication by dt is necessary to provide the amount of b or h
                         ! entering through the bottom surface over a time interval of dt.
-                        parcels%buoyancy(n) = parcels%buoyancy(n) + fac * weights(l) * bflux(js(l), is(l))
+                        parcels%buoyancy(n) = parcels%buoyancy(n) + fac * weights(l) * binc(js(l), is(l))
 #ifndef ENABLE_DRY_MODE
-                        parcels%humidity(n) = parcels%humidity(n) + fac * weights(l) * hflux(js(l), is(l))
+                        parcels%humidity(n) = parcels%humidity(n) + fac * weights(l) * hinc(js(l), is(l))
 #endif
                     enddo
                 endif
@@ -210,16 +213,16 @@ module bndry_fluxes
 #endif
             call field_mpi_alloc(nfluxes, ndim=2)
 
-            call field_interior_to_buffer(bflux, 1)
+            call field_interior_to_buffer(binc, 1)
 #ifndef ENABLE_DRY_MODE
-            call field_interior_to_buffer(hflux, 2)
+            call field_interior_to_buffer(hinc, 2)
 #endif
 
             call interior_to_halo_communication
 
-            call field_buffer_to_halo(bflux, 1, .false.)
+            call field_buffer_to_halo(binc, 1, .false.)
 #ifndef ENABLE_DRY_MODE
-            call field_buffer_to_halo(hflux, 2, .false.)
+            call field_buffer_to_halo(hinc, 2, .false.)
 #endif
             call field_mpi_dealloc
 
