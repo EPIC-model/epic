@@ -130,11 +130,11 @@ module bndry_fluxes
             endif
 
 #ifndef ENABLE_DRY_MODE
-            if (has_dataset(ncid, 's')) then
+            if (has_dataset(ncid, 'hflux')) then
                 call read_netcdf_dataset(ncid,                  &
                                          'hflux',               &
                                          hinc(lo(2):hi(2),      &
-                                               lo(1):hi(1)),    &
+                                              lo(1):hi(1)),     &
                                          start,                 &
                                          cnt)
             else
