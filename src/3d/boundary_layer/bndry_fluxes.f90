@@ -17,12 +17,14 @@ module bndry_fluxes
                         , field_interior_to_buffer          &
                         , interior_to_halo_communication
     use mpi_layout, only : box
+    use mpi_timer, only : start_timer, stop_timer
     implicit none
+
+    private
 
     logical, protected :: l_enable_flux
     logical            :: l_bndry_flux_allocated = .false.
-
-    private
+    integer            :: bndry_flux_timer
 
     ! Spatial form of the buoyancy and humidity fluxes through lower surface:
     double precision, dimension(:, :), allocatable :: binc
@@ -46,7 +48,8 @@ module bndry_fluxes
             , apply_bndry_fluxes        &
             , read_bndry_fluxes         &
             , bndry_fluxes_allocate     &
-            , bndry_fluxes_deallocate
+            , bndry_fluxes_deallocate   &
+            , bndry_flux_timer
 
     contains
 
@@ -70,17 +73,23 @@ module bndry_fluxes
                 return
             endif
 
+            call start_timer(bndry_flux_timer)
+
             l_bndry_flux_allocated = .false.
 
             deallocate(binc)
 #ifndef ENABLE_DRY_MODE
             deallocate(hinc)
 #endif
+            call stop_timer(bndry_flux_timer)
+
         end subroutine bndry_fluxes_deallocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine bndry_fluxes_default
+
+            call start_timer(bndry_flux_timer)
 
             call bndry_fluxes_allocate
 
@@ -88,6 +97,8 @@ module bndry_fluxes
 #ifndef ENABLE_DRY_MODE
             hinc = zero
 #endif
+            call stop_timer(bndry_flux_timer)
+
         end subroutine bndry_fluxes_default
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -98,6 +109,8 @@ module bndry_fluxes
             integer                  :: ncid, start(3), cnt(3)
             integer                  :: lo(3), hi(3)
             double precision         :: flux2inc
+
+            call start_timer(bndry_flux_timer)
 
             l_enable_flux = (fname /= '')
 
@@ -161,6 +174,8 @@ module bndry_fluxes
 
             zdepth = lower(3) + dx(3)
 
+            call stop_timer(bndry_flux_timer)
+
         end subroutine read_bndry_fluxes
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -174,6 +189,8 @@ module bndry_fluxes
             if (.not. l_enable_flux) then
                 return
             endif
+
+            call start_timer(bndry_flux_timer)
 
             !$omp parallel default(shared)
             !$omp do private(n, l, is, js, weights, xy, z, fac)
@@ -200,6 +217,8 @@ module bndry_fluxes
             enddo
             !$omp end do
             !$omp end parallel
+
+            call stop_timer(bndry_flux_timer)
 
         end subroutine apply_bndry_fluxes
 

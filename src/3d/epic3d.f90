@@ -35,7 +35,8 @@ program epic3d
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
-    use bndry_fluxes, only : bndry_fluxes_deallocate
+    use bndry_fluxes, only : bndry_fluxes_deallocate    &
+                           , bndry_flux_timer
     use mpi_utils, only : mpi_print, mpi_stop
     implicit none
 
@@ -83,6 +84,7 @@ program epic3d
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
+            call register_timer('boundary fluxes', bndry_flux_timer)
 
             call start_timer(epic_timer)
 
