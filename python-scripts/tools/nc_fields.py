@@ -7,6 +7,8 @@ from tools.nc_utils import write_nc_info, write_nc_parameters
 class nc_fields:
     def __init__(self):
         self._ncfile = None
+        self._dim_names_in_3d = ['x', 'y', 'z']
+        self._dim_names_in_2d = ['x', 'z']
 
     def open(self, fname):
         """
@@ -29,6 +31,13 @@ class nc_fields:
 
         self._time = 0.0
 
+    def set_dim_names(self, names):
+        names = list(names)
+        if len(names) == 2:
+            self._dim_names_in_2d = names
+        elif len(names) == 3:
+            self._dim_names_in_3d = names
+
     def set_time(self, time):
         self._time = time
 
@@ -39,9 +48,11 @@ class nc_fields:
         self._parameters[key] = value
 
     def add_axis(self, axis, values):
-        if axis == 'x' or axis == 'y' or axis == 'z':
+        if axis == self._dim_names_in_3d[0] or \
+            axis == self._dim_names_in_3d[1] or \
+                axis == self._dim_names_in_3d[2]:
             var = self._ncfile.createVariable(varname=axis,
-                                              datatype='f8',                                            
+                                              datatype='f8',
                                               dimensions=(axis))
             var[:] = values[:]
 
@@ -65,13 +76,13 @@ class nc_fields:
             # add dimensions
             self._ncfile.createDimension(dimname="t", size=None)
             if len(shape) == 2:
-                self._ncfile.createDimension(dimname="z", size=shape[0])
-                self._ncfile.createDimension(dimname="x", size=shape[1])
+                self._ncfile.createDimension(dimname=self._dim_names_in_2d[1], size=shape[0])
+                self._ncfile.createDimension(dimname=self._dim_names_in_2d[0], size=shape[1])
                 self._ndims = 2
             elif len(shape) == 3:
-                self._ncfile.createDimension(dimname="z", size=shape[0])
-                self._ncfile.createDimension(dimname="y", size=shape[1])
-                self._ncfile.createDimension(dimname="x", size=shape[2])
+                self._ncfile.createDimension(dimname=self._dim_names_in_3d[2], size=shape[0])
+                self._ncfile.createDimension(dimname=self._dim_names_in_3d[1], size=shape[1])
+                self._ncfile.createDimension(dimname=self._dim_names_in_3d[0], size=shape[2])
                 self._ndims = 3
             else:
                 RuntimeError("Shape must be of 2 or 3 dimensions")
@@ -85,12 +96,17 @@ class nc_fields:
         if self._ndims == 2:
             var = self._ncfile.createVariable(varname=name,
                                               datatype=dtype,
-                                              dimensions=('t', 'z', 'x'))
+                                              dimensions=('t',
+                                                          self._dim_names_in_2d[1],
+                                                          self._dim_names_in_2d[0]))
             var[0, :, :] = values[:, :]
         else:
             var = self._ncfile.createVariable(varname=name,
                                               datatype=dtype,
-                                              dimensions=('t', 'z', 'y', 'x'))
+                                              dimensions=('t',
+                                                          self._dim_names_in_3d[2],
+                                                          self._dim_names_in_3d[1],
+                                                          self._dim_names_in_3d[0]))
             var[0, :, :, :] = values[:, :, :]
 
         unit = kwargs.pop('unit', '')
