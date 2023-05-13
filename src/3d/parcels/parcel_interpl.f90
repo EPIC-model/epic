@@ -617,8 +617,9 @@ module parcel_interpl
             double precision, parameter :: qsa2 = -17.2693882  ! Constant in qsat equation
             double precision, parameter :: qsa3 = 35.86        ! Constant in qsat equation
             double precision, parameter :: qsa4 = 6.109        ! Constant in qsat equation
-            double precision, parameter :: pressure_scale_height = 8000.0       ! Constant in qsat equation
-            double precision, parameter :: ref_press = 100000.0
+            double precision, parameter :: pressure_scale_height = 8500.0    
+            double precision, parameter :: surf_press = 101500.0
+            double precision, parameter :: ref_press =  100000.0
             double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat
             integer :: n, iter
 
@@ -626,7 +627,7 @@ module parcel_interpl
             !$omp parallel default(shared)
             !$omp do private(n, iter, press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat)
             do n = 1, n_parcels
-                press=ref_press*exp(-parcels%position(3, n)/pressure_scale_height)
+                press=surf_press*exp(-parcels%position(3, n)/pressure_scale_height)
                 exn=(press/ref_press)**(r_d/c_p)
                 temp=parcels%theta(n)*exn
                 temp_start=temp
@@ -634,7 +635,7 @@ module parcel_interpl
                 qt_start=ql_start+parcels%qv(n)
                 ! Test unsaturated case first
                 temp_low=temp-(L_v/c_p)*ql_start
-                qsat_low = qsa1/(press*exp(qsa2*(temp_low - tk0c)/(temp_low - qsa3)) - qsa4)
+                qsat_low = qsa1/(0.01*press*exp(qsa2*(temp_low - tk0c)/(temp_low - qsa3)) - qsa4)
                 if(qt_start < qsat_low) then ! Evaporate everything, if needed at all
                    if(ql_start>0.) then
                       parcels%theta(n)=parcels%theta(n)-(L_v/(c_p*exn))*ql_start
@@ -644,11 +645,11 @@ module parcel_interpl
                 ! Moist case: iterate a few times, start from temp instead of temp_low
                 else
                    do iter=1,4
-                      qsat=qsa1/(press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
+                      qsat=qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
                       ql_iter=max(qt_start-qsat,0.0)
                       temp=temp_start-(L_v/c_p)*(ql_start-ql_iter)
                    enddo
-                   qsat=qsa1/(press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
+                   qsat=qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
                    ql_iter=max(qt_start-qsat,0.0)
                    parcels%theta(n)=parcels%theta(n)-(L_v/(c_p*exn))*(ql_start-ql_iter)
                    parcels%qv(n)=qt_start-ql_iter

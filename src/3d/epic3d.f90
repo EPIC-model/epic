@@ -122,7 +122,7 @@ program epic3d
                     print "(a15, f0.4)", "time:          ", t
                 endif
 #endif
-                call apply_vortcor
+                !call apply_vortcor
 
                 call ls_rk4_step(t)
 
