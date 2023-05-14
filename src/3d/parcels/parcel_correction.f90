@@ -71,7 +71,7 @@ module parcel_correction
             call start_timer(vort_corr_timer)
 
             vsum = zero
-            dvor = - vor_bar
+            dvor = zero
 
             !$omp parallel default(shared)
             !$omp do private(n) reduction(+: dvor, vsum)
@@ -82,7 +82,11 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
-            dvor = dvor / vsum
+            ! vorticity correction:
+            ! vor_mean = dvor / vsum
+            ! if vor_mean < vor_bar --> correction < 0 --> we must add to parcel vorticity
+            ! if vor_mean > vor_bar --> correction > 0 --> we must subtract from parcel vorticity
+            dvor = dvor / vsum - vor_bar
 
             !$omp parallel default(shared)
             !$omp do private(n)
