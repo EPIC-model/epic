@@ -1,3 +1,7 @@
+## EPIC version 0.12.5
+* [Update requirements.txt](https://github.com/EPIC-model/epic/pull/450)
+* [Fix the calculation of the vorticity correction](https://github.com/EPIC-model/epic/pull/484)
+
 ## EPIC version 0.12.4
 * [Fix field reading in 2D genspec and add 3D genspec](https://github.com/matt-frey/epic/pull/346)
 * [Divergence form and nearest parcel fix](https://github.com/matt-frey/epic/pull/399)
