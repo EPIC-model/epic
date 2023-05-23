@@ -1,4 +1,4 @@
-module rk4_utils
+module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
@@ -191,4 +191,4 @@ module rk4_utils
             endif
         end function get_time_step
 
-end module rk4_utils
+end module rk_utils

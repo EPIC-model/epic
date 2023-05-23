@@ -77,7 +77,7 @@ module utils
             call par2grid
 
             ! need to be called in order to set initial time step;
-            ! this is also needed for the first ls-rk4 substep
+            ! this is also needed for the first ls-rk substep
             call vor2vel
 
             call vorticity_tendency
