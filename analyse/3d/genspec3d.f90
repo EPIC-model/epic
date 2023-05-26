@@ -229,9 +229,9 @@ program genspec
         end subroutine read_data
 
         subroutine write_spectrum
-            logical                   :: exists = .false.
-            character(:), allocatable :: fname
-            integer                   :: pos
+            logical        :: exists = .false.
+            character(512) :: fname
+            integer        :: pos
 
             ! 1 October 2021
             ! https://stackoverflow.com/questions/36731707/fortran-how-to-remove-file-extension-from-character
