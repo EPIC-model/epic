@@ -52,4 +52,22 @@ module linalg
 
     end function determinant
 
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    ! Calculates C = A * B where A and B are symmetric matrices
+    pure function dsymm(A, B) result(C)
+        double precision, intent(in) :: A(3, 3), B(3, 3)
+        double precision             :: C(3, 3)
+
+        C(1, 1) = A(1, 1) * B(1, 1) + A(1, 2) * B(1, 2) + A(1, 3) * B(1, 3)
+        C(1, 2) = A(1, 1) * B(1, 2) + A(1, 2) * B(2, 2) + A(1, 3) * B(2, 3)
+        C(1, 3) = A(1, 1) * B(1, 3) + A(1, 2) * B(2, 3) + A(1, 3) * B(3, 3)
+        C(2, 1) = A(1, 2) * B(1, 1) + A(2, 2) * B(1, 2) + A(2, 3) * B(1, 3)
+        C(2, 2) = A(1, 2) * B(1, 2) + A(2, 2) * B(2, 2) + A(2, 3) * B(2, 3)
+        C(2, 3) = A(1, 2) * B(1, 3) + A(2, 2) * B(2, 3) + A(2, 3) * B(3, 3)
+        C(3, 1) = A(1, 3) * B(1, 1) + A(2, 3) * B(1, 2) + A(3, 3) * B(1, 3)
+        C(3, 2) = A(1, 3) * B(1, 2) + A(2, 3) * B(2, 2) + A(3, 3) * B(2, 3)
+        C(3, 3) = A(1, 3) * B(1, 3) + A(2, 3) * B(2, 3) + A(3, 3) * B(3, 3)
+    end function dsymm
+
 end module linalg
