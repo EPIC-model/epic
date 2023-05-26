@@ -14,8 +14,6 @@ module scherzinger
 
     private
         double precision, parameter :: atol = 1.0e-12
-        double precision            :: r(3, 3)
-        double precision            :: eta(3)
 
     public :: scherzinger_diagonalise, scherzinger_eigenvalues
 
@@ -30,12 +28,13 @@ module scherzinger
         ! @param[inout] A real symmetric 3x3 matrix
         ! @param[out] D eigenvalues in descending order
         ! @param[out] V eigenvector matrix
-        subroutine scherzinger_diagonalise(A, D, V)
+        pure subroutine scherzinger_diagonalise(A, D, V)
             double precision, intent(inout) :: A(3, 3)
             double precision, intent(out)   :: D(3)
             double precision, intent(out)   :: V(3, 3)
             double precision                :: tmp
-            double precision                :: rlen(3)
+            double precision                :: rlen(3), r(3, 3)
+            double precision                :: eta(3)
             integer                         :: i
 
             ! sum of off-diagonal entries
@@ -56,7 +55,7 @@ module scherzinger
                 return
             endif
 
-            call scherzinger_eigenvalues(A, D, .false.)
+            call evaluate_eigenvalues(A, r, eta, D)
 
             A(1, 1) = A(1, 1) - eta(2)
             A(2, 2) = A(2, 2) - eta(2)
@@ -79,46 +78,34 @@ module scherzinger
             V(:, 2) = cross(V(:, 3), V(:, 1))
             V(:, 3) = cross(V(:, 1), V(:, 2))
 
-            call sort_descending(D, V)
-
-        end subroutine scherzinger_diagonalise
-
-        ! Sort the eigenvalues in descending order.
-        ! It sorts the eigenvector matrix accordingly.
-        ! @param[inout] D eigenvalues
-        ! @param[inout] V eigenvector matrix
-        pure subroutine sort_descending(D, V)
-            double precision, intent(inout) :: D(3)
-            double precision, intent(inout) :: V(3, 3)
-            double precision                :: teval, tevec(3)
-
             if (D(2) > D(1)) then
-                teval = D(1)
+                tmp = D(1)
                 D(1) = D(2)
-                D(2) = teval
-                tevec = V(:, 1)
+                D(2) = tmp
+                rlen = V(:, 1)
                 V(:, 1) = V(:, 2)
-                V(:, 2) = tevec
+                V(:, 2) = rlen
             endif
 
             if (D(3) > D(2)) then
-                teval = D(2)
+                tmp = D(2)
                 D(2) = D(3)
-                D(3) = teval
-                tevec = V(:, 2)
+                D(3) = tmp
+                rlen = V(:, 2)
                 V(:, 2) = V(:, 3)
-                V(:, 3) = tevec
+                V(:, 3) = rlen
             endif
 
             if (D(2) > D(1)) then
-                teval = D(1)
+                tmp = D(1)
                 D(1) = D(2)
-                D(2) = teval
-                tevec = V(:, 1)
+                D(2) = tmp
+                rlen = V(:, 1)
                 V(:, 1) = V(:, 2)
-                V(:, 2) = tevec
+                V(:, 2) = rlen
             endif
-        end subroutine sort_descending
+
+        end subroutine scherzinger_diagonalise
 
         ! Diagonalise a real symmetric 3x3 matrix A = V^T * D * V
         ! where D is a diagonal matrix with the eigenvalues and
@@ -127,10 +114,22 @@ module scherzinger
         ! The input matrix is overwritten.
         ! @param[inout] A real symmetric 3x3 matrix
         ! @param[out] D eigenvalues in descending order
-        subroutine scherzinger_eigenvalues(A, D, l_sort)
+
+        pure subroutine scherzinger_eigenvalues(A, D)
             double precision, intent(inout) :: A(3, 3)
             double precision, intent(out)   :: D(3)
-            logical,          intent(in)    :: l_sort
+            double precision                :: eta(3), r(3, 3)
+
+            call evaluate_eigenvalues(A, r, eta, D)
+
+            call sort_eigenvalues(D)
+
+        end subroutine scherzinger_eigenvalues
+
+        pure subroutine evaluate_eigenvalues(A, r, eta, D)
+            double precision, intent(inout) :: A(3, 3)
+            double precision, intent(out)   :: eta(3), r(3, 3)
+            double precision, intent(out)   :: D(3)
             double precision                :: AA(3, 3)
             double precision                :: tr, j2, j3, alpha
             double precision                :: tmp, smp
@@ -219,11 +218,7 @@ module scherzinger
             ! final eigenvalues:
             D = eta + f13 * tr
 
-            if (l_sort) then
-                call sort_eigenvalues(D)
-            endif
-
-        end subroutine scherzinger_eigenvalues
+        end subroutine evaluate_eigenvalues
 
         ! Sort the eigenvalues in descending order.
         ! @param[inout] D eigenvalues
