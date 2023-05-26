@@ -4,7 +4,7 @@
 module parcel_split_mod
     use options, only : verbose
     use constants, only : pi, three, five, f12, f34
-    use parameters, only : vmax
+    use parameters, only : amax
     use parcel_container, only : parcel_container_type, n_parcels, n_total_parcels
     use parcel_bc, only : apply_reflective_bc, apply_swap_periodicity
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
@@ -25,7 +25,7 @@ module parcel_split_mod
 
     contains
 
-        ! Split large parcels (volumes larger than vmax) or
+        ! Split elongated parcels (semi-major axis larger than amax) or
         ! parcels with aspect ratios larger than the threshold.
         ! @param[inout] parcels
         ! @param[in] threshold is the largest allowed aspect ratio
@@ -62,7 +62,7 @@ module parcel_split_mod
 
                 pid(n) = 0
 
-                if (lam <= threshold .and. vol <= vmax) then
+                if (lam <= threshold .and. D(1) <= amax ** 2) then
                     cycle
                 endif
 

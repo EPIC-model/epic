@@ -83,7 +83,6 @@ module options
         integer          :: correction_iters = 2        ! parcel correction iterations
         double precision :: gradient_pref    = 1.8d0    ! prefactor for gradient descent
         double precision :: max_compression  = 0.5d0    ! parameter for gradient descent (limits the shift in parcel position)
-        double precision :: max_vratio       = 4.913d0  ! maximum ratio of grid cell volume / parcel volume (1.7^3)
 
     end type parcel_type
 
@@ -164,7 +163,6 @@ module options
             call write_netcdf_attribute(ncid, "correction_iters", parcel%correction_iters)
             call write_netcdf_attribute(ncid, "gradient_pref", parcel%gradient_pref)
             call write_netcdf_attribute(ncid, "max_compression", parcel%max_compression)
-            call write_netcdf_attribute(ncid, "max_vratio", parcel%max_vratio)
 
             call write_netcdf_attribute(ncid, "parcel_freq", output%parcel_freq)
             call write_netcdf_attribute(ncid, "field_freq", output%field_freq)

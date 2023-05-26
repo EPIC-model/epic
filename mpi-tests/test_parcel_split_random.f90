@@ -2,7 +2,7 @@ program test_parcel_split_random
     use mpi_communicator
     use options, only : parcel
     use constants, only : zero, one, two
-    use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmax
+    use parameters, only : update_parameters, nx, ny, nz, lower, extent, amax
     use parcel_container
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_communicate
@@ -86,7 +86,7 @@ program test_parcel_split_random
             if (rn(3) > 0.5d0) then
                 call random_number(rn(3))
                 j = nint(n_parcels * rn(3)) + 1
-                parcels%volume(j) = 1.1d0 * vmax
+                parcels%B(1, j) = 5.0d0 * parcels%B(1, j)
                 parcels%buoyancy(j) = 1.0d0
             endif
 
