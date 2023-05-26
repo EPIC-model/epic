@@ -62,7 +62,7 @@ module parcel_split_mod
 
                 pid(n) = 0
 
-                if (lam <= threshold .and. D(1) < amax ** 2) then
+                if (lam < threshold .and. D(1) < amax ** 2) then
                     cycle
                 endif
 
