@@ -8,8 +8,10 @@ program epic3d
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
     use parcel_merge, only : merge_parcels, merge_timer
-    use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer, &
-    nearest_win_allocate, nearest_win_deallocate
+    use parcel_nearest, only : merge_nearest_timer      &
+                             , merge_tree_resolve_timer &
+                             , nearest_win_allocate     &
+                             , nearest_win_deallocate
     use parcel_correction, only : apply_laplace,          &
                                   apply_gradient,         &
                                   apply_vortcor,          &
@@ -30,12 +32,13 @@ program epic3d
                                par2grid_timer, &
                                halo_swap_timer
     use parcel_init, only : init_timer
-    use ls_rk4, only : ls_rk4_step, rk4_timer
+    use ls_rk, only : ls_rk_step, rk_timer, ls_rk_setup
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
     use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
     use mpi_utils, only : mpi_print, mpi_stop
+    use options, only : rk_order
     implicit none
 
     integer :: epic_timer
@@ -78,7 +81,7 @@ program epic3d
             call register_timer('field diagnostics I/O', field_stats_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
-            call register_timer('parcel push', rk4_timer)
+            call register_timer('parcel push', rk_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
@@ -92,6 +95,8 @@ program epic3d
             call setup_domain_and_parameters
 
             call setup_fields_and_parcels
+
+            call ls_rk_setup(rk_order)
 
             call init_inversion
 
@@ -123,7 +128,7 @@ program epic3d
 #endif
                 call apply_vortcor
 
-                call ls_rk4_step(t)
+                call ls_rk_step(t)
 
                 call merge_parcels(parcels)
 
