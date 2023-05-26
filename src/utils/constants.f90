@@ -25,6 +25,7 @@ module constants
     double precision, parameter :: fpi    = one / pi
     double precision, parameter :: fpi2   = pi / two
     double precision, parameter :: fpi4   = pi / four
+    double precision, parameter :: fpi6   = pi / six
 
     double precision, parameter :: f32   = three / two
     double precision, parameter :: f34   = three / four

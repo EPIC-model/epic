@@ -9,7 +9,9 @@ libepic_utils_la_SOURCES = 	\
 	merge_sort.f90		\
 	constants.f90		\
 	timer.f90		\
+	linalg.f90		\
 	jacobi.f90		\
+	scherzinger.f90		\
 	ape_density.f90		\
 	physics.f90
 
