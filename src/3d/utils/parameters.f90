@@ -135,7 +135,7 @@ module parameters
 
         vmin = vcell / parcel%min_vratio
 
-        amax = maxval(dx)
+        amax = minval(dx)
 
         max_num_parcels = int(nx * ny * nz * parcel%min_vratio * parcel%size_factor)
 
