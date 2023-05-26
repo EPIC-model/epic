@@ -9,7 +9,7 @@
 ! =============================================================================
 module scherzinger
     use constants, only : one, zero, f12, f13, f32, fpi6, three, pi, two, four, f23
-    use linalg, only : cross, determinant, trace, signum
+    use linalg, only : cross, determinant, trace, signum, dsymm
     implicit none
 
     private
@@ -65,10 +65,7 @@ module scherzinger
             V(:, 1) = cross(r(:, 1), r(:, 2))
 
             ! u1 and u2, eq 30:
-            rlen = matmul(A, r(:, 1))
-            r(:, 1) = rlen
-            rlen = matmul(A, r(:, 2))
-            r(:, 2) = rlen
+            r(:, 1:2) = matmul(A, r(:, 1:2))
 
             rlen = norm2(r, dim=1)
             i = maxloc(rlen(1:2), dim=1)
@@ -156,7 +153,7 @@ module scherzinger
             A(3, 3) = A(3, 3) - tmp
 
             ! invariants j2 and j3 (eq 5):
-            AA = matmul(A, A)
+            AA = dsymm(A, A)
             j2 = f12 * trace(AA)
             j3 = determinant(A)
 
@@ -209,13 +206,12 @@ module scherzinger
 !             V(:, 1) = cross(r(:, 1), r(:, 2))
 
             ! eq 22:
-            rlen = matmul(A, r(:, 1))
-            s1As1 = dot_product(r(:, 1), rlen)
-            s2As1 = dot_product(r(:, 2), rlen)
-
-            rlen = matmul(A, r(:, 2))
+            AA(:, 1:2) = matmul(A, r(:, 1:2))
+            s1As1 = dot_product(r(:, 1), AA(:, 1))
+            s2As1 = dot_product(r(:, 2), AA(:, 1))
             s1As2 = s2As1 !dot_product(r(:, 1), rlen)
-            s2As2 = dot_product(r(:, 2), rlen)
+            s2As2 = dot_product(r(:, 2), AA(:, 2))
+
 
             tmp = s1As1 - s2As2
             smp = s1As1 + s2As2
