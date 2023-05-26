@@ -51,7 +51,7 @@ module parcel_split_mod
                 ! evaluate maximum aspect ratio (a2 >= b2 >= c2)
                 lam = get_aspect_ratio(D)
 
-                if (lam <= threshold .and. D(1) < amax ** 2) then
+                if (lam < threshold .and. D(1) < amax ** 2) then
                     cycle
                 endif
 
