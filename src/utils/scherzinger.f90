@@ -28,7 +28,7 @@ module scherzinger
         ! @param[inout] A real symmetric 3x3 matrix
         ! @param[out] D eigenvalues in descending order
         ! @param[out] V eigenvector matrix
-        pure subroutine scherzinger_diagonalise(A, D, V)
+        subroutine scherzinger_diagonalise(A, D, V)
             double precision, intent(inout) :: A(3, 3)
             double precision, intent(out)   :: D(3)
             double precision, intent(out)   :: V(3, 3)
@@ -115,18 +115,29 @@ module scherzinger
         ! @param[inout] A real symmetric 3x3 matrix
         ! @param[out] D eigenvalues in descending order
 
-        pure subroutine scherzinger_eigenvalues(A, D)
+        subroutine scherzinger_eigenvalues(A, D)
             double precision, intent(inout) :: A(3, 3)
             double precision, intent(out)   :: D(3)
             double precision                :: eta(3), r(3, 3)
+            double precision                :: tmp
 
-            call evaluate_eigenvalues(A, r, eta, D)
+            ! sum of off-diagonal entries
+            tmp = dabs(A(1, 2)) + dabs(A(1, 3)) + dabs(A(2, 3))
+
+            ! check if a diagonal matrix
+            if (tmp < atol) then
+                D(1) = A(1, 1)
+                D(2) = A(2, 2)
+                D(3) = A(3, 3)
+            else
+                call evaluate_eigenvalues(A, r, eta, D)
+            endif
 
             call sort_eigenvalues(D)
 
         end subroutine scherzinger_eigenvalues
 
-        pure subroutine evaluate_eigenvalues(A, r, eta, D)
+        subroutine evaluate_eigenvalues(A, r, eta, D)
             double precision, intent(inout) :: A(3, 3)
             double precision, intent(out)   :: eta(3), r(3, 3)
             double precision, intent(out)   :: D(3)
@@ -138,6 +149,7 @@ module scherzinger
 
             ! deviatoric matrix (eq 2):
             tr = trace(A)
+
             tmp = f13 * tr
             A(1, 1) = A(1, 1) - tmp
             A(2, 2) = A(2, 2) - tmp

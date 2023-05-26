@@ -126,8 +126,11 @@ module rk4_utils
                         strain(1, 1) = velgradg(iz, iy, ix, I_DUDX)                                   ! S11
                         strain(1, 2) = velgradg(iz, iy, ix, I_DUDY) + f12 * vortg(iz, iy, ix, I_Z)    ! S12
                         strain(1, 3) = velgradg(iz, iy, ix, I_DWDX) + f12 * vortg(iz, iy, ix, I_Y)    ! S13
+                        strain(2, 1) = strain(1, 2)
                         strain(2, 2) = velgradg(iz, iy, ix, I_DVDY)                                   ! S22
                         strain(2, 3) = velgradg(iz, iy, ix, I_DWDY) - f12 * vortg(iz, iy, ix, I_X)    ! S23
+                        strain(3, 1) = strain(1, 3)
+                        strain(3, 2) = strain(2, 3)
                         strain(3, 3) = -(velgradg(iz, iy, ix, I_DUDX) + velgradg(iz, iy, ix, I_DVDY)) ! S33
 
                         ! calculate its eigenvalues. The Jacobi solver
