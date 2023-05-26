@@ -16,7 +16,8 @@ module parcel_ellipsoid
                         , three &
                         , five  &
                         , seven
-    use jacobi
+    use scherzinger, only : scherzinger_diagonalise &
+                          , scherzinger_eigenvalues
     use mpi_utils, only : mpi_exit_on_error
     implicit none
 
@@ -85,7 +86,7 @@ module parcel_ellipsoid
 
             U = get_upper_triangular(B, volume)
 
-            call jacobi_eigenvalues(U, D)
+            call scherzinger_eigenvalues(U, D)
 
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
@@ -121,7 +122,7 @@ module parcel_ellipsoid
 
             U = get_upper_triangular(B, volume)
 
-            call jacobi_diagonalise(U, D, V)
+            call scherzinger_diagonalise(U, D, V)
 
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
@@ -149,7 +150,7 @@ module parcel_ellipsoid
 
             U = get_upper_triangular(B, volume)
 
-            call jacobi_diagonalise(U, D, V)
+            call scherzinger_diagonalise(U, D, V)
 
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero

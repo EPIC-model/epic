@@ -5,7 +5,7 @@ module rk4_utils
     use field_mpi, only : field_halo_fill
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
-    use jacobi, only : jacobi_eigenvalues
+    use scherzinger, only : scherzinger_eigenvalues
     use mpi_layout, only : box
     use mpi_communicator
     use mpi_utils, only : mpi_exit_on_error
@@ -132,7 +132,7 @@ module rk4_utils
 
                         ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
-                        call jacobi_eigenvalues(strain, D)
+                        call scherzinger_eigenvalues(strain, D)
 
                         ! we must take the largest eigenvalue in magnitude (absolute value)
                         gmax = max(gmax, maxval(abs(D)))
