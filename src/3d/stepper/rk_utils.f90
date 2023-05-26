@@ -4,7 +4,7 @@ module rk_utils
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
-    use jacobi, only : jacobi_eigenvalues
+    use scherzinger, only : scherzinger_eigenvalues
 #ifdef ENABLE_VERBOSE
     use options, only : output
 #endif
@@ -128,7 +128,7 @@ module rk_utils
 
                         ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
-                        call jacobi_eigenvalues(strain, D)
+                        call scherzinger_eigenvalues(strain, D)
 
                         ! we must take the largest eigenvalue in magnitude (absolute value)
                         gmax = max(gmax, maxval(abs(D)))
