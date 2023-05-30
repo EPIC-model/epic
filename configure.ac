@@ -8,18 +8,7 @@ LT_INIT
 # change file extension from *.f to *.f90
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
-
-# 30 May 2023
-# https://stackoverflow.com/a/47159411
-COMPILER_VERSION=`"$FC" --version 2>/dev/null`
-IS_GFORTRAN=`echo $COMPILER_VERSION | $EGREP -i -c -E 'GNU Fortran'`
-IS_IFORT=`echo $COMPILER_VERSION | $EGREP -i -c -E 'ifort'`
-
-if test "$IS_GFORTRAN" -ne "0"; then
-    FCFLAGS="-std=f2018 -fdefault-real-8 -fdefault-double-8 -cpp -fPIC -mcmodel=large -fall-intrinsics"
-elif test "$IS_IFORT" -ne "0"; then
-    FCFLAGS="-std18 -real-size 8 -double-size 64 -fPIC -mcmodel=large"
-fi
+AC_FC_PP_SRCEXT(f90)
 
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_HEADERS([src/config.h])
@@ -50,6 +39,30 @@ AC_CONFIG_FILES([
     python-scripts/tools/epic_config.py
     run-script/Makefile
 ])
+
+# 30 May 2023
+# https://www.gnu.org/software/autoconf-archive/ax_compiler_vendor.html
+# https://www.gnu.org/software/autoconf-archive/ax_check_compile_flag.html
+AX_COMPILER_VENDOR
+
+
+AX_CHECK_COMPILE_FLAG([-cpp], [FCFLAGS="$FCFLAGS -cpp"])
+AX_CHECK_COMPILE_FLAG([-fPIC], [FCFLAGS="$FCFLAGS -fPIC"])
+AX_CHECK_COMPILE_FLAG([-mcmodel=large], [FCFLAGS="$FCFLAGS -mcmodel=large"])
+AX_CHECK_COMPILE_FLAG([-fall-intrinsics], [FCFLAGS="$FCFLAGS -fall-intrinsics"])
+
+if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
+    AX_CHECK_COMPILE_FLAG([-std=f2018], [FCFLAGS="$FCFLAGS -std=f2018"])
+    AX_CHECK_COMPILE_FLAG([-fdefault-real-8], [FCFLAGS="$FCFLAGS -fdefault-real-8"])
+    AX_CHECK_COMPILE_FLAG([-fdefault-double-8], [FCFLAGS="$FCFLAGS -fdefault-double-8"])
+elif test "$ax_cv_fc_compiler_vendor" = "intel"; then
+    AX_CHECK_COMPILE_FLAG([-std18], [FCFLAGS="$FCFLAGS -std18"])
+    AX_CHECK_COMPILE_FLAG([-real-size 8], [FCFLAGS="$FCFLAGS -real-size 8"])
+    AX_CHECK_COMPILE_FLAG([-double-size 64], [FCFLAGS="$FCFLAGS -double-size 64"])
+elif test "$ax_cv_fc_compiler_vendor" = "unknown"; then
+    AC_MSG_ERROR([Could not deduce compiler vendor.])
+fi
+
 
 #######################################################################################
 ##
@@ -433,19 +446,32 @@ AM_CONDITIONAL([ENABLE_DEBUG], [test "$ENABLE_DEBUG" = "yes"])
 AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
-    if test "$IS_GFORTRAN" -ne "0"; then
-        FCFLAGS="$FCFLAGS -Wall -Wuninitialized -Wmaybe-uninitialized -Werror -g -O0"
-        FCFLAGS="$FCFLAGS -fcheck=all -fbounds-check -fbacktrace"
-        FCFLAGS="$FCFLAGS -ffpe-trap=denormal,invalid,zero,overflow,underflow"
-    elif test "$IS_IFORT" -ne "0"; then
-        FCFLAGS="$FCFLAGS -debug full -g -O0"
+    AX_CHECK_COMPILE_FLAG([-Wall], [FCFLAGS="$FCFLAGS -Wall"])
+    AX_CHECK_COMPILE_FLAG([-Wuninitialized], [FCFLAGS="$FCFLAGS -Wuninitialized"])
+    AX_CHECK_COMPILE_FLAG([-Wmaybe-uninitialized], [FCFLAGS="$FCFLAGS -Wmaybe-uninitialized"])
+    AX_CHECK_COMPILE_FLAG([-Werror], [FCFLAGS="$FCFLAGS -Werror"])
+    AX_CHECK_COMPILE_FLAG([-g], [FCFLAGS="$FCFLAGS -g"])
+    AX_CHECK_COMPILE_FLAG([-O0], [FCFLAGS="$FCFLAGS -O0"])
+    if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
+        AX_CHECK_COMPILE_FLAG([-fcheck=all], [FCFLAGS="$FCFLAGS -fcheck=all"])
+        AX_CHECK_COMPILE_FLAG([-fbounds-check], [FCFLAGS="$FCFLAGS -fbounds-check"])
+        AX_CHECK_COMPILE_FLAG([-fbacktrace], [FCFLAGS="$FCFLAGS -fbacktrace"])
+        AX_CHECK_COMPILE_FLAG([-ffpe-trap=denormal,invalid,zero,overflow,underflow],
+                              [FCFLAGS="$FCFLAGS -ffpe-trap=denormal,invalid,zero,overflow,underflow"])
+    elif test "$ax_cv_fc_compiler_vendor" = "intel"; then
+        AX_CHECK_COMPILE_FLAG([-debug full], [FCFLAGS="$FCFLAGS -debug full"])
     fi
 else
     AC_MSG_RESULT([no])
-    if test "$IS_GFORTRAN" -ne "0"; then
-        FCFLAGS="$FCFLAGS -O3 -funroll-all-loops -flto -DNDEBUG"
-    elif test "$IS_IFORT" -ne "0"; then
-        FCFLAGS="$FCFLAGS -O3 -funroll-loops -ffat-lto-objects -DNDEBUG"
+    AX_CHECK_COMPILE_FLAG([-O3], [FCFLAGS="$FCFLAGS -O3"])
+    AX_CHECK_COMPILE_FLAG([-DNDEBUG], [FCFLAGS="$FCFLAGS -DNDEBUG"])
+
+    if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
+        AX_CHECK_COMPILE_FLAG([-funroll-all-loops], [FCFLAGS="$FCFLAGS -funroll-all-loops"])
+        AX_CHECK_COMPILE_FLAG([-flto], [FCFLAGS="$FCFLAGS -flto"])
+    elif test "$ax_cv_fc_compiler_vendor" = "intel"; then
+        AX_CHECK_COMPILE_FLAG([-funroll-loops], [FCFLAGS="$FCFLAGS -funroll-loops"])
+        AX_CHECK_COMPILE_FLAG([-ffat-lto-objects], [FCFLAGS="$FCFLAGS -ffat-lto-objects"])
     fi
 fi
 
@@ -479,9 +505,9 @@ AM_CONDITIONAL([ENABLE_OPENMP], [test "$ENABLE_OPENMP" = "yes"])
 AC_MSG_CHECKING([whether we are enabling OpenMP])
 if test "x$ENABLE_OPENMP" = "xyes"; then
     AC_MSG_RESULT([yes])
-    if test "$IS_GFORTRAN" -ne "0"; then
+    if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
         FCFLAGS="$FCFLAGS -fopenmp -DENABLE_OPENMP"
-    elif test "$IS_IFORT" -ne "0"; then
+    elif test "$ax_cv_fc_compiler_vendor" = "intel"; then
         FCFLAGS="$FCFLAGS -openmp -DENABLE_OPENMP"
     fi
 
