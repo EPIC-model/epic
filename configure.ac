@@ -9,7 +9,17 @@ LT_INIT
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
 
-FCFLAGS="-std=f2018 -fdefault-real-8 -fdefault-double-8 -cpp -fPIC -mcmodel=large -fall-intrinsics"
+# 30 May 2023
+# https://stackoverflow.com/a/47159411
+COMPILER_VERSION=`"$FC" --version 2>/dev/null`
+IS_GFORTRAN=`echo $COMPILER_VERSION | $EGREP -i -c -E 'GNU Fortran'`
+IS_IFORT=`echo $COMPILER_VERSION | $EGREP -i -c -E 'ifort'`
+
+if test "$IS_GFORTRAN" -ne "0"; then
+    FCFLAGS="-std=f2018 -fdefault-real-8 -fdefault-double-8 -cpp -fPIC -mcmodel=large -fall-intrinsics"
+elif test "$IS_IFORT" -ne "0"; then
+    FCFLAGS="-std18 -real-size 8 -double-size 64 -fPIC -mcmodel=large"
+fi
 
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_HEADERS([src/config.h])
@@ -423,11 +433,20 @@ AM_CONDITIONAL([ENABLE_DEBUG], [test "$ENABLE_DEBUG" = "yes"])
 AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
-    FCFLAGS="$FCFLAGS -Wall -Wuninitialized -Wmaybe-uninitialized -Werror -g -O0"
-    FCFLAGS="$FCFLAGS -fcheck=all -fbounds-check -fbacktrace -ffpe-trap=denormal,invalid,zero,overflow,underflow"
+    if test "$IS_GFORTRAN" -ne "0"; then
+        FCFLAGS="$FCFLAGS -Wall -Wuninitialized -Wmaybe-uninitialized -Werror -g -O0"
+        FCFLAGS="$FCFLAGS -fcheck=all -fbounds-check -fbacktrace"
+        FCFLAGS="$FCFLAGS -ffpe-trap=denormal,invalid,zero,overflow,underflow"
+    elif test "$IS_IFORT" -ne "0"; then
+        FCFLAGS="$FCFLAGS -debug full -g -O0"
+    fi
 else
     AC_MSG_RESULT([no])
-    FCFLAGS="$FCFLAGS -O3 -funroll-all-loops -flto -DNDEBUG"
+    if test "$IS_GFORTRAN" -ne "0"; then
+        FCFLAGS="$FCFLAGS -O3 -funroll-all-loops -flto -DNDEBUG"
+    elif test "$IS_IFORT" -ne "0"; then
+        FCFLAGS="$FCFLAGS -O3 -funroll-loops -ffat-lto-objects -DNDEBUG"
+    fi
 fi
 
 
@@ -460,7 +479,12 @@ AM_CONDITIONAL([ENABLE_OPENMP], [test "$ENABLE_OPENMP" = "yes"])
 AC_MSG_CHECKING([whether we are enabling OpenMP])
 if test "x$ENABLE_OPENMP" = "xyes"; then
     AC_MSG_RESULT([yes])
-    FCFLAGS="$FCFLAGS -fopenmp -DENABLE_OPENMP"
+    if test "$IS_GFORTRAN" -ne "0"; then
+        FCFLAGS="$FCFLAGS -fopenmp -DENABLE_OPENMP"
+    elif test "$IS_IFORT" -ne "0"; then
+        FCFLAGS="$FCFLAGS -openmp -DENABLE_OPENMP"
+    fi
+
 else
     AC_MSG_RESULT([no])
 fi
