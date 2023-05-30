@@ -117,6 +117,11 @@ module parcel_container
         subroutine parcel_resize(new_size)
             integer, intent(in) :: new_size
 
+            if (new_size < n_parcels) then
+                call mpi_exit_on_error(&
+                    "in parcel_container::parcel_resize: losing parcels when resizing.")
+            endif
+
             call set_max_num_parcels(new_size)
 
             call resize_array(parcels%position, new_size)
