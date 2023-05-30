@@ -226,6 +226,11 @@ module parameters
     end subroutine set_mesh_spacing
 
 
+    subroutine set_max_num_parcels(num)
+        integer, intent(in) :: num
+        max_num_parcels = num
+    end subroutine set_max_num_parcels
+
 #ifdef ENABLE_UNIT_TESTS
     subroutine set_vmin(val)
         double precision, intent(in) :: val

@@ -4,7 +4,7 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use parameters, only : extent, extenti, center, lower, upper
+    use parameters, only : extent, extenti, center, lower, upper, set_max_num_parcels
     use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
     use armanip, only : resize_array
     implicit none
@@ -116,6 +116,8 @@ module parcel_container
         ! @param[in] new_size is the new size of each attribute
         subroutine parcel_resize(new_size)
             integer, intent(in) :: new_size
+
+            call set_max_num_parcels(new_size)
 
             call resize_array(parcels%position, new_size)
 
