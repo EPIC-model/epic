@@ -19,6 +19,7 @@ module parcel_ellipsoid
     use parameters, only : max_num_parcels
     use scherzinger, only : scherzinger_diagonalise &
                           , scherzinger_eigenvalues
+    use armanip, only : resize_array
     implicit none
 
     double precision, parameter :: rho = dsqrt(two / five)
@@ -40,15 +41,31 @@ module parcel_ellipsoid
 
     contains
 
-        subroutine parcel_ellipsoid_allocate
-            allocate(Vetas(n_dim, max_num_parcels))
-            allocate(Vtaus(n_dim, max_num_parcels))
+        subroutine parcel_ellipsoid_resize(new_size)
+            integer, intent(in) :: new_size
+
+            call resize_array(Vetas, new_size)
+            call resize_array(Vtaus, new_size)
+
+        end subroutine parcel_ellipsoid_resize
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_ellipsoid_allocate(num)
+            integer, intent(in) :: num
+
+            allocate(Vetas(3, num))
+            allocate(Vtaus(3, num))
         end subroutine parcel_ellipsoid_allocate
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_ellipsoid_deallocate
             deallocate(Vetas)
             deallocate(Vtaus)
         end subroutine parcel_ellipsoid_deallocate
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the parcel shape matrix.
         ! @param[in] B = (B11, B12, B13, B22, B23)
@@ -69,6 +86,8 @@ module parcel_ellipsoid
             U(3, 2) = U(2, 3)
             U(3, 3) = get_B33(B, volume)
         end function get_full_matrix
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain all eigenvalues sorted in descending order
         ! @param[in] B = (B11, B12, B13, B22, B23)
@@ -93,6 +112,8 @@ module parcel_ellipsoid
 #endif
         end function get_eigenvalues
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         function get_determinant(B, volume) result(detB)
             double precision, intent(in) :: B(5)
             double precision, intent(in) :: volume
@@ -104,6 +125,8 @@ module parcel_ellipsoid
                  - B(I_B12) * (B(I_B12) * B33 - B(I_B13) * B(I_B23))      &
                  + B(I_B13) * (B(I_B12) * B(I_B23) - B(I_B13) * B(I_B22))
         end function get_determinant
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the normalized eigenvectors.
         ! The eigenvector V(:, j) belongs to the j-th
@@ -128,6 +151,8 @@ module parcel_ellipsoid
             endif
 #endif
         end function get_eigenvectors
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Compute the eigenvalue decomposition B = V^T * D * V
         ! where D has the eigenvalues on its diagonal
@@ -157,6 +182,8 @@ module parcel_ellipsoid
 #endif
         end subroutine diagonalise
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Obtain the B33 matrix element
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
@@ -181,6 +208,8 @@ module parcel_ellipsoid
 
         end function get_B33
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Obtain the product of the semi-minor and semi-major axis.
         ! @param[in] volume of the parcel
         ! @returns abc = 3 * volume / (4 * pi)
@@ -190,6 +219,8 @@ module parcel_ellipsoid
 
             abc = f34 * volume * fpi
         end function get_abc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the aspect ratio a/c of the parcel(s).
         ! @param[in] D eigenvalues sorted in descending order
@@ -201,6 +232,8 @@ module parcel_ellipsoid
 
             lam = dsqrt(D(I_X) / D(I_Z))
         end function get_aspect_ratio
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the ellipse support points for par2grid and grid2par
         ! @param[in] position vector of the parcel
@@ -254,6 +287,8 @@ module parcel_ellipsoid
                              + Vtau * sintheta(j)
             enddo
         end function get_ellipsoid_points
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         function get_angles(B, volume) result(angles)
             double precision, intent(in) :: B(5)
