@@ -9,6 +9,7 @@ module parcel_container
     use mpi_communicator
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error
+    use armanip, only : resize_array
     implicit none
 
     integer :: n_parcels        ! local number of parcels
@@ -243,6 +244,32 @@ module parcel_container
             parcels%strain(:, n)    = parcels%strain(:, m)
 
         end subroutine parcel_replace
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Resize the parcel container
+        ! @param[in] new_size is the new size of each attribute
+        subroutine parcel_resize(new_size)
+            integer, intent(in) :: new_size
+
+            call resize_array(parcels%position, new_size)
+
+            call resize_array(parcels%vorticity, new_size)
+            call resize_array(parcels%B, new_size)
+            call resize_array(parcels%volume, new_size)
+            call resize_array(parcels%buoyancy, new_size)
+#ifndef ENABLE_DRY_MODE
+            call resize_array(parcels%humidity, new_size)
+#endif
+            call parcel_ellipsoid_resize(new_size)
+
+            ! LS-RK4 variables
+            call resize_array(parcels%delta_pos, new_size)
+            call resize_array(parcels%delta_vor, new_size)
+            call resize_array(parcels%strain, new_size)
+            call resize_array(parcels%delta_b, new_size)
+
+        end subroutine parcel_resize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
