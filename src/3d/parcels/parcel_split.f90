@@ -27,7 +27,7 @@ module parcel_split_mod
     ! current index for "running average"
     integer, protected :: ri = 0
 
-    private :: dh, n_previous_splits, ri
+    private :: dh, n_previous_splits, ri, adapt_container_size
 
     integer :: split_timer
 
@@ -37,24 +37,13 @@ module parcel_split_mod
 
     contains
 
-        ! Split large parcels (volumes larger than vmax) or
-        ! parcels with aspect ratios larger than parcel%lambda_max.
-        subroutine parcel_split
-            double precision     :: B(5)
-            double precision     :: vol, lam
-            double precision     :: D(3), V(3, 3)
-            integer              :: last_index
-            integer              :: n, n_thread_loc
-            integer              :: pid(2 * n_parcels)
-            integer, allocatable :: invalid(:)
+        ! Adapt the container size. This routine is invoked before
+        ! the actual splitting. It estimstes the final number of parcels
+        ! according to previous split calls. If the estimated number exceeds
+        ! the container size, a container resize operation is invoked. If the
+        ! estimated number is below a threshold, the container size is reduced.
+        subroutine adapt_container_size
             integer              :: n_estimate, shrunk_size, grown_size
-#ifdef ENABLE_VERBOSE
-            integer              :: orig_num
-
-            orig_num = n_total_parcels
-#endif
-
-            call start_timer(split_timer)
 
             ! Estimate final number of parcels based on previous number of splits:
             n_estimate = nint(dble(sum(n_previous_splits)) / dble(size(n_previous_splits))) &
@@ -68,6 +57,29 @@ module parcel_split_mod
             else if (n_estimate < shrunk_size) then
                 call parcel_resize(shrunk_size)
             endif
+
+        end subroutine adapt_container_size
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Split large parcels (volumes larger than vmax) or
+        ! parcels with aspect ratios larger than parcel%lambda_max.
+        subroutine parcel_split
+            double precision     :: B(5)
+            double precision     :: vol, lam
+            double precision     :: D(3), V(3, 3)
+            integer              :: last_index
+            integer              :: n, n_thread_loc
+            integer              :: pid(2 * n_parcels)
+            integer, allocatable :: invalid(:)
+#ifdef ENABLE_VERBOSE
+            integer              :: orig_num
+
+            orig_num = n_total_parcels
+#endif
+            call adapt_container_size
+
+            call start_timer(split_timer)
 
             last_index = n_parcels
 

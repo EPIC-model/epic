@@ -65,6 +65,7 @@ program epic3d
             use options, only : read_config_file
 
             call register_timer('epic', epic_timer)
+            call register_timer('parcel container resize', resize_timer)
             call register_timer('par2grid', par2grid_timer)
             call register_timer('grid2par', grid2par_timer)
             call register_timer('parcel split', split_timer)

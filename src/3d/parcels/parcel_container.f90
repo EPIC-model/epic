@@ -12,10 +12,13 @@ module parcel_container
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error
     use armanip, only : resize_array
+    use mpi_timer, only : start_timer, stop_timer
     implicit none
 
     integer :: n_parcels        ! local number of parcels
     integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
+
+    integer :: resize_timer
 
     ! buffer indices to access individual parcel attributes
     integer, protected :: IDX_X_POS,        & ! x-position
@@ -254,6 +257,8 @@ module parcel_container
         subroutine parcel_resize(new_size)
             integer, intent(in) :: new_size
 
+            call start_timer(resize_timer)
+
             if (new_size < n_parcels) then
                 call mpi_exit_on_error(&
                     "in parcel_container::parcel_resize: losing parcels when resizing.")
@@ -277,6 +282,8 @@ module parcel_container
             call resize_array(parcels%delta_vor, new_size)
             call resize_array(parcels%strain, new_size)
             call resize_array(parcels%delta_b, new_size)
+
+            call stop_timer(resize_timer)
 
         end subroutine parcel_resize
 
