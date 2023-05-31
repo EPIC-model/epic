@@ -9,9 +9,12 @@ module parcel_container
                                , parcel_ellipsoid_deallocate    &
                                , parcel_ellipsoid_resize
     use armanip, only : resize_array
+    use mpi_timer, only : start_timer, stop_timer
     implicit none
 
     integer :: n_parcels
+
+    integer :: resize_timer
 
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
@@ -119,6 +122,8 @@ module parcel_container
         subroutine parcel_resize(new_size)
             integer, intent(in) :: new_size
 
+            call start_timer(resize_timer)
+
             if (new_size < n_parcels) then
                 print *, "Losing parcels when resizing."
                 stop
@@ -142,6 +147,8 @@ module parcel_container
             call resize_array(parcels%delta_vor, new_size)
             call resize_array(parcels%strain, new_size)
             call resize_array(parcels%delta_b, new_size)
+
+            call stop_timer(resize_timer)
 
         end subroutine parcel_resize
 
