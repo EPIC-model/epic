@@ -47,7 +47,6 @@ module parcel_split_mod
             call start_timer(split_timer)
 
             ! Estimate final number of parcels based on previous number of splits:
-            ! If the est
             n_estimate = nint(dble(sum(n_previous_splits)) / dble(size(n_previous_splits))) &
                        + n_parcels
 
