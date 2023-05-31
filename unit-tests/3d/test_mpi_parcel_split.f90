@@ -16,6 +16,7 @@ program test_mpi_parcel_split
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, vcell, set_vmax
     use mpi_collectives
     use parcel_split_mod, only : parcel_split, split_timer
+    use options, only : parcel
     use mpi_timer
     implicit none
 
@@ -48,6 +49,8 @@ program test_mpi_parcel_split
     n_total = 2 * n_parcels
 
     call parcel_alloc(n_total)
+
+    parcel%lambda_max = four
 
     n = 1
 
@@ -108,7 +111,7 @@ program test_mpi_parcel_split
     parcels%vorticity(:, 1:n_parcels) = comm%rank + 1
     parcels%buoyancy(1:n_parcels) = comm%rank + 1
 
-    call parcel_split(parcels, threshold=four)
+    call parcel_split
 
     passed = (passed .and. (2 * n_orig_local == n_parcels))
 

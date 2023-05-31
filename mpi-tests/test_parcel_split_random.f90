@@ -53,6 +53,7 @@ program test_parcel_split_random
     call update_parameters
 
     parcel%n_per_cell = 8
+    parcel%lambda_max = 4.0d0
 
     !--------------------------------------------------------------------------
     ! Setup fields: All fields are zero
@@ -102,7 +103,7 @@ program test_parcel_split_random
         n_orig = n_parcels
 
         ! Split parcels
-        call parcel_split(parcels, 4.0d0)
+        call parcel_split
 
         ! Interpolate parcel data to grid
         call par2grid

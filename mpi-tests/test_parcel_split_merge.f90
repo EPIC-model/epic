@@ -54,6 +54,7 @@ program test_parcel_spli_merge
     call update_parameters
 
     parcel%n_per_cell = 8
+    parcel%lambda_max = 4.0d0
 
     call nearest_win_allocate
 
@@ -106,7 +107,7 @@ program test_parcel_spli_merge
 
         ! Split parcels
         n_orig = n_total_parcels
-        call parcel_split(parcels, 4.0d0)
+        call parcel_split
 
         if (comm%rank == comm%master) then
             print *, "Split", n_total_parcels - n_orig, "of", n_total_parcels, "parcels."
