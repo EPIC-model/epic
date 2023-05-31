@@ -42,7 +42,7 @@ module parcel_split_mod
             double precision     :: D(3), V(3, 3)
             integer              :: last_index
             integer              :: n, n_thread_loc
-            integer              :: n_estimate
+            integer              :: n_estimate, shrunk_size, grown_size
 
             call start_timer(split_timer)
 
@@ -50,9 +50,14 @@ module parcel_split_mod
             ! If the est
             n_estimate = nint(dble(sum(n_previous_splits)) / dble(size(n_previous_splits))) &
                        + n_parcels
+
+            shrunk_size = nint(parcel%shrink_factor * max_num_parcels)
+
             if (n_estimate > max_num_parcels) then
-                n_estimate = nint(parcel%grow_factor * max_num_parcels)
-                call parcel_resize(n_estimate)
+                grown_size = nint(parcel%grow_factor * max_num_parcels)
+                call parcel_resize(grown_size)
+            else if (n_estimate < shrunk_size) then
+                call parcel_resize(shrunk_size)
             endif
 
             last_index = n_parcels
