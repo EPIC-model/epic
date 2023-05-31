@@ -30,6 +30,7 @@ program test_mpi_parcel_split
     call mpi_comm_initialise
 
     call register_timer('parcel split', split_timer)
+    call register_timer('parcel container resize', resize_timer)
 
     passed = (comm%err == 0)
 
