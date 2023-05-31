@@ -49,14 +49,15 @@ AX_COMPILER_VENDOR
 AX_CHECK_COMPILE_FLAG([-cpp], [FCFLAGS="$FCFLAGS -cpp"])
 AX_CHECK_COMPILE_FLAG([-fPIC], [FCFLAGS="$FCFLAGS -fPIC"])
 AX_CHECK_COMPILE_FLAG([-mcmodel=large], [FCFLAGS="$FCFLAGS -mcmodel=large"])
-AX_CHECK_COMPILE_FLAG([-fall-intrinsics], [FCFLAGS="$FCFLAGS -fall-intrinsics"])
 
 if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
     AX_CHECK_COMPILE_FLAG([-std=f2018], [FCFLAGS="$FCFLAGS -std=f2018"])
+    AX_CHECK_COMPILE_FLAG([-fall-intrinsics], [FCFLAGS="$FCFLAGS -fall-intrinsics"])
     AX_CHECK_COMPILE_FLAG([-fdefault-real-8], [FCFLAGS="$FCFLAGS -fdefault-real-8"])
     AX_CHECK_COMPILE_FLAG([-fdefault-double-8], [FCFLAGS="$FCFLAGS -fdefault-double-8"])
 elif test "$ax_cv_fc_compiler_vendor" = "intel"; then
     AX_CHECK_COMPILE_FLAG([-std18], [FCFLAGS="$FCFLAGS -std18"])
+    AX_CHECK_COMPILE_FLAG([-fp-model=source], [FCFLAGS="$FCFLAGS -fp-model=source"])
     AX_CHECK_COMPILE_FLAG([-real-size 8], [FCFLAGS="$FCFLAGS -real-size 8"])
     AX_CHECK_COMPILE_FLAG([-double-size 64], [FCFLAGS="$FCFLAGS -double-size 64"])
 elif test "$ax_cv_fc_compiler_vendor" = "unknown"; then
@@ -446,19 +447,21 @@ AM_CONDITIONAL([ENABLE_DEBUG], [test "$ENABLE_DEBUG" = "yes"])
 AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
-    AX_CHECK_COMPILE_FLAG([-Wall], [FCFLAGS="$FCFLAGS -Wall"])
-    AX_CHECK_COMPILE_FLAG([-Wuninitialized], [FCFLAGS="$FCFLAGS -Wuninitialized"])
-    AX_CHECK_COMPILE_FLAG([-Wmaybe-uninitialized], [FCFLAGS="$FCFLAGS -Wmaybe-uninitialized"])
-    AX_CHECK_COMPILE_FLAG([-Werror], [FCFLAGS="$FCFLAGS -Werror"])
     AX_CHECK_COMPILE_FLAG([-g], [FCFLAGS="$FCFLAGS -g"])
     AX_CHECK_COMPILE_FLAG([-O0], [FCFLAGS="$FCFLAGS -O0"])
     if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
+        AX_CHECK_COMPILE_FLAG([-Wall], [FCFLAGS="$FCFLAGS -Wall"])
+        AX_CHECK_COMPILE_FLAG([-Wuninitialized], [FCFLAGS="$FCFLAGS -Wuninitialized"])
+        AX_CHECK_COMPILE_FLAG([-Wmaybe-uninitialized], [FCFLAGS="$FCFLAGS -Wmaybe-uninitialized"])
+        AX_CHECK_COMPILE_FLAG([-Werror], [FCFLAGS="$FCFLAGS -Werror"])
         AX_CHECK_COMPILE_FLAG([-fcheck=all], [FCFLAGS="$FCFLAGS -fcheck=all"])
         AX_CHECK_COMPILE_FLAG([-fbounds-check], [FCFLAGS="$FCFLAGS -fbounds-check"])
         AX_CHECK_COMPILE_FLAG([-fbacktrace], [FCFLAGS="$FCFLAGS -fbacktrace"])
         AX_CHECK_COMPILE_FLAG([-ffpe-trap=denormal,invalid,zero,overflow,underflow],
                               [FCFLAGS="$FCFLAGS -ffpe-trap=denormal,invalid,zero,overflow,underflow"])
     elif test "$ax_cv_fc_compiler_vendor" = "intel"; then
+        AX_CHECK_COMPILE_FLAG([-warn all], [FCFLAGS="$FCFLAGS -Wall"])
+        AX_CHECK_COMPILE_FLAG([-warn error], [FCFLAGS="$FCFLAGS -warn error"])
         AX_CHECK_COMPILE_FLAG([-debug full], [FCFLAGS="$FCFLAGS -debug full"])
     fi
 else
@@ -508,7 +511,7 @@ if test "x$ENABLE_OPENMP" = "xyes"; then
     if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
         FCFLAGS="$FCFLAGS -fopenmp -DENABLE_OPENMP"
     elif test "$ax_cv_fc_compiler_vendor" = "intel"; then
-        FCFLAGS="$FCFLAGS -openmp -DENABLE_OPENMP"
+        FCFLAGS="$FCFLAGS -qopenmp -DENABLE_OPENMP"
     fi
 
 else
