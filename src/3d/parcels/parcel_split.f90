@@ -2,10 +2,12 @@
 !                           Module to split ellipsoids
 ! =============================================================================
 module parcel_split_mod
-    use options, only : verbose
+    use options, only : verbose, parcel
     use constants, only : pi, three, five, f12, f34
     use parameters, only : amax
-    use parcel_container, only : parcel_container_type, n_parcels
+    use parcel_container, only : parcels                &
+                               , n_parcels              &
+                               , parcel_resize
     use parcel_bc, only : apply_reflective_bc
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
     use timer, only : start_timer, stop_timer
@@ -14,29 +16,44 @@ module parcel_split_mod
 
     double precision, parameter :: dh = f12 * dsqrt(three / five)
 
-    private :: dh
+    ! saves the last previous number of splits
+    ! to calculate the "running average"
+    ! (see https://en.wikipedia.org/wiki/Moving_average)
+    integer, protected :: n_previous_splits(10) = 0
+
+    ! current index for "running average"
+    integer, protected :: ri = 0
+
+    private :: dh, n_previous_splits, ri
 
     integer :: split_timer
 
     ! number of parcel splits (is reset in every write step)
     integer :: n_parcel_splits = 0
 
+
     contains
 
         ! Split elongated parcels (semi-major axis larger than amax) or
-        ! parcels with aspect ratios larger than the threshold.
-        ! @param[inout] parcels
-        ! @param[in] threshold is the largest allowed aspect ratio
-        subroutine parcel_split(parcels, threshold)
-            type(parcel_container_type), intent(inout) :: parcels
-            double precision,            intent(in)    :: threshold
-            double precision                           :: B(5)
-            double precision                           :: vol, lam
-            double precision                           :: D(3), V(3, 3)
-            integer                                    :: last_index
-            integer                                    :: n, n_thread_loc
+        ! parcels with aspect ratios larger than parcel%lambda_max.
+        subroutine parcel_split
+            double precision     :: B(5)
+            double precision     :: vol, lam
+            double precision     :: D(3), V(3, 3)
+            integer              :: last_index
+            integer              :: n, n_thread_loc
+            integer              :: n_estimate
 
             call start_timer(split_timer)
+
+            ! Estimate final number of parcels based on previous number of splits:
+            ! If the est
+            n_estimate = nint(dble(sum(n_previous_splits)) / dble(size(n_previous_splits))) &
+                       + n_parcels
+            if (n_estimate > max_num_parcels) then
+                n_estimate = nint(parcel%grow_factor * max_num_parcels)
+                call parcel_resize(n_estimate)
+            endif
 
             last_index = n_parcels
 
@@ -97,6 +114,11 @@ module parcel_split_mod
             enddo
             !$omp end do
             !$omp end parallel
+
+            ! number of previous splits; used for calculating
+            ! the running average for parcel container size adaption
+            n_previous_splits(ri+1) = n_parcels - last_index
+            ri = mod(ri + 1, 10)
 
             n_parcel_splits = n_parcel_splits + n_parcels - last_index
 

@@ -5,7 +5,9 @@
 module parcel_container
     use options, only : verbose
     use parameters, only : extent, extenti, center, lower, upper, set_max_num_parcels
-    use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
+    use parcel_ellipsoid, only : parcel_ellipsoid_allocate      &
+                               , parcel_ellipsoid_deallocate    &
+                               , parcel_ellipsoid_resize
     use armanip, only : resize_array
     implicit none
 

@@ -121,7 +121,7 @@ program epic3d
 
                 call merge_parcels(parcels)
 
-                call parcel_split(parcels, parcel%lambda_max)
+                call parcel_split
 
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace((cor_iter > 1))
