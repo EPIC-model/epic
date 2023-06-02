@@ -28,6 +28,9 @@ module options
     ! boundary surface flux input file
     character(len=512) :: flux_file = ''
 
+    ! ls rk order
+    integer :: rk_order = 4
+
 
     type bndry_info
         ! the rms of the boundary zeta must be smaller than
@@ -109,7 +112,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, flux_file, boundary, output, parcel, time
+            namelist /EPIC/ field_file, flux_file, rk_order, boundary, output, parcel, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -149,6 +152,8 @@ module options
             call write_netcdf_attribute(ncid, "field_file", field_file)
 
             call write_netcdf_attribute(ncid, "flux_file", flux_file)
+
+            call write_netcdf_attribute(ncid, "rk_order", rk_order)
 
             call write_netcdf_attribute(ncid, "zeta_tol", boundary%zeta_tol)
             call write_netcdf_attribute(ncid, "l_ignore_bndry_zeta_flag", &

@@ -33,8 +33,8 @@ epic3d_SOURCES = 				\
 	parcels/parcel_diagnostics_netcdf.f90	\
 	boundary_layer/bndry_fluxes.f90		\
 	utils/utils.f90				\
-	stepper/rk4_utils.f90			\
-	stepper/ls_rk4.f90			\
+	stepper/rk_utils.f90			\
+	stepper/ls_rk.f90			\
 	epic3d.f90
 
 epic3d_LDADD = 						\
