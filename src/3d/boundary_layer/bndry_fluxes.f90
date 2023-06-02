@@ -52,7 +52,7 @@ module bndry_fluxes
             , bndry_fluxes_allocate     &
             , bndry_fluxes_deallocate   &
             , bndry_flux_timer          &
-            , bndry_flux_time_step
+            , bndry_fluxes_time_step
 
     contains
 
