@@ -104,11 +104,11 @@ module bndry_fluxes
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Read in buoyancy and humidity fluxes.
+        ! @pre The buoyancy boundary fluxes are assumed in units of m**2/s**3.
         subroutine read_bndry_fluxes(fname)
             character(*), intent(in) :: fname
             integer                  :: ncid, start(3), cnt(3)
             integer                  :: lo(3), hi(3)
-            double precision         :: flux2inc
 
             call start_timer(bndry_flux_timer)
 
@@ -157,22 +157,25 @@ module bndry_fluxes
 
             call close_netcdf_file(ncid)
 
-            ! change the unit from "per unit area per unit time" to "per unit time"
-            ! the "per unit time" will be fixed when applying the flux
-            flux2inc = dx(1) * dx(2)
 
             call bndry_fluxes_fill_halo
 
+            ! There is linear decrease of the buoyancy flux "force", where
+            ! for z >= zdepth, the bouyancy fluy is zero.
+            zdepth = lower(3) + dx(3)
+
+            !------------------------------------------------------------------
+            ! change the buoyancy flux units from m**2/s**3 to m/s**3;
+            ! the time will be fixed when applying the flux
+
             !$omp parallel
             !$omp workshare
-            binc = flux2inc * binc
+            binc = dxi(3) * binc
 #ifndef ENABLE_DRY_MODE
-            hinc = flux2inc * hinc
+            hinc = dxi(3) * hinc
 #endif
             !$omp end workshare
             !$omp end parallel
-
-            zdepth = lower(3) + dx(3)
 
             call stop_timer(bndry_flux_timer)
 
@@ -203,6 +206,8 @@ module bndry_fluxes
                     call bilinear(xy, is, js, weights)
 
                     ! "fac" has unit of time
+                    ! Note: fac = 0 if z = zdepth
+                    !       fac = dt if z = lower(3)
                     fac = (zdepth - z) * dxi(3) * dt
 
                     do l = 1, ngp
