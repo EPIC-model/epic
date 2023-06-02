@@ -7,10 +7,10 @@ module bndry_fluxes
     use parameters, only : dx, lower, dxi, nx, ny
     use parcel_interpl, only : bilinear
     use fields, only : get_horizontal_index
-    use field_ops, only : get_abs_max
     use parcel_container, only : n_parcels, parcels
     use netcdf_reader
     use omp_lib
+    use options, only : time
     use mpi_utils, only : mpi_stop
     use field_mpi, only : field_mpi_alloc                   &
                         , field_mpi_dealloc                 &
@@ -19,7 +19,6 @@ module bndry_fluxes
                         , interior_to_halo_communication
     use mpi_layout, only : box
     use mpi_timer, only : start_timer, stop_timer
-    use physics, only : gravity
     implicit none
 
     private
@@ -210,7 +209,9 @@ module bndry_fluxes
                                comm%world,              &
                                comm%err)
 
-            dt = min(dt, gravity / abs_max)
+            abs_max = (dx(3) / abs_max) ** (1.0d0/3.0d0)
+
+            dt = min(dt, time%alpha * abs_max)
 
         end subroutine bndry_fluxes_time_step
 
