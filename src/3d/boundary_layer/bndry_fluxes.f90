@@ -170,12 +170,14 @@ module bndry_fluxes
             !------------------------------------------------------------------
             ! change the buoyancy flux units from m**2/s**3 to m/s**3;
             ! the time will be fixed when applying the flux
+            ! Multiply with 2 to ensure that the flux given to the parcels
+            ! entering the lowest grid layer matches the expected integrated flux:
 
             !$omp parallel
             !$omp workshare
-            binc = dxi(3) * binc
+            binc = two * dxi(3) * binc
 #ifndef ENABLE_DRY_MODE
-            hinc = dxi(3) * hinc
+            hinc = two * dxi(3) * hinc
 #endif
             !$omp end workshare
             !$omp end parallel
