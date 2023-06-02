@@ -192,6 +192,10 @@ module bndry_fluxes
             double precision, intent(inout) :: dt
             double precision                :: abs_max
 
+            if (.not. l_enable_flux) then
+                return
+            endif
+
             ! local maximum of absolute value (units: m/s**3)
             abs_max = maxval(dabs(binc(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
