@@ -3,7 +3,7 @@
 ! humidity to each parcel in the lowest grid cell.
 !==============================================================================
 module bndry_fluxes
-    use constants, only : zero, two
+    use constants, only : zero, two, f13
     use parameters, only : dx, lower, dxi, nx, ny
     use parcel_interpl, only : bilinear
     use fields, only : get_horizontal_index
@@ -209,7 +209,7 @@ module bndry_fluxes
                                comm%world,              &
                                comm%err)
 
-            abs_max = (dx(3) / abs_max) ** (1.0d0/3.0d0)
+            abs_max = (dx(3) / abs_max) ** f13
 
             dt = min(dt, time%alpha * abs_max)
 
