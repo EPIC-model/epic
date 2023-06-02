@@ -7,6 +7,7 @@ module bndry_fluxes
     use parameters, only : dx, lower, dxi, nx, ny
     use parcel_interpl, only : bilinear
     use fields, only : get_horizontal_index
+    use field_ops, only : get_abs_max
     use parcel_container, only : n_parcels, parcels
     use netcdf_reader
     use omp_lib
@@ -18,6 +19,7 @@ module bndry_fluxes
                         , interior_to_halo_communication
     use mpi_layout, only : box
     use mpi_timer, only : start_timer, stop_timer
+    use physics, only : gravity
     implicit none
 
     private
@@ -49,7 +51,8 @@ module bndry_fluxes
             , read_bndry_fluxes         &
             , bndry_fluxes_allocate     &
             , bndry_fluxes_deallocate   &
-            , bndry_flux_timer
+            , bndry_flux_timer          &
+            , bndry_flux_time_step
 
     contains
 
@@ -180,6 +183,30 @@ module bndry_fluxes
             call stop_timer(bndry_flux_timer)
 
         end subroutine read_bndry_fluxes
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Correct the time step estimate including the buoyancy flux.
+        ! Uses g*dz/bf (where [bf] = m**2/s**3) to get a time measure.
+        subroutine bndry_fluxes_time_step(dt)
+            double precision, intent(inout) :: dt
+            double precision                :: abs_max
+
+            ! local maximum of absolute value (units: m/s**3)
+            abs_max = maxval(dabs(binc(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
+
+            ! get gloval abs_max
+            call MPI_Allreduce(MPI_IN_PLACE,            &
+                               abs_max,                 &
+                               1,                       &
+                               MPI_DOUBLE_PRECISION,    &
+                               MPI_MAX,                 &
+                               comm%world,              &
+                               comm%err)
+
+            dt = min(dt, gravity / abs_max)
+
+        end subroutine bndry_fluxes_time_step
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
