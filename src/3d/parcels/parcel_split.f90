@@ -48,10 +48,10 @@ module parcel_split_mod
 
             shrunk_size = nint(parcel%shrink_factor * max_num_parcels)
 
-            if (n_estimate > max_num_parcels) then
+            if (n_estimate > int(f34 * max_num_parcels)) then
                 grown_size = nint(parcel%grow_factor * max_num_parcels)
                 call parcel_resize(grown_size)
-            else if (n_estimate < shrunk_size) then
+            else if (n_estimate < int(f34 * shrunk_size)) then
                 call parcel_resize(shrunk_size)
             endif
 
@@ -136,7 +136,7 @@ module parcel_split_mod
             ! number of previous splits; used for calculating
             ! the running average for parcel container size adaption
             n_previous_splits(ri+1) = n_parcels - last_index
-            ri = mod(ri + 1, 10)
+            ri = mod(ri + 1, size(n_previous_splits))
 
             n_parcel_splits = n_parcel_splits + n_parcels - last_index
 
