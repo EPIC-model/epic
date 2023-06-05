@@ -9,22 +9,14 @@ module parcel_split_mod
                                , n_parcels              &
                                , parcel_resize
     use parcel_bc, only : apply_reflective_bc
-    use parcel_ellipsoid, only : diagonalise, get_aspect_ratio
+    use parcel_ellipsoid, only : diagonalise, get_aspect_ratio, get_eigenvalues
     use timer, only : start_timer, stop_timer
     use omp_lib
     implicit none
 
     double precision, parameter :: dh = f12 * dsqrt(three / five)
 
-    ! saves the last previous number of splits
-    ! to calculate the "running average"
-    ! (see https://en.wikipedia.org/wiki/Moving_average)
-    integer, protected :: n_previous_splits(10) = 0
-
-    ! current index for "running average"
-    integer, protected :: ri = 0
-
-    private :: dh, n_previous_splits, ri, adapt_container_size
+    private :: dh
 
     integer :: split_timer
 
@@ -34,29 +26,6 @@ module parcel_split_mod
 
     contains
 
-        ! Adapt the container size. This routine is invoked before
-        ! the actual splitting. It estimstes the final number of parcels
-        ! according to previous split calls. If the estimated number exceeds
-        ! the container size, a container resize operation is invoked. If the
-        ! estimated number is below a threshold, the container size is reduced.
-        subroutine adapt_container_size
-            integer              :: n_estimate, shrunk_size, grown_size
-
-            ! Estimate final number of parcels based on previous number of splits:
-            n_estimate = nint(dble(sum(n_previous_splits)) / dble(size(n_previous_splits))) &
-                       + n_parcels
-
-            shrunk_size = nint(parcel%shrink_factor * max_num_parcels)
-
-            if (n_estimate > int(f34 * max_num_parcels)) then
-                grown_size = nint(parcel%grow_factor * max_num_parcels)
-                call parcel_resize(grown_size)
-            else if (n_estimate < int(f34 * shrunk_size)) then
-                call parcel_resize(shrunk_size)
-            endif
-
-        end subroutine adapt_container_size
-
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Split elongated parcels (semi-major axis larger than amax) or
@@ -65,23 +34,22 @@ module parcel_split_mod
             double precision     :: B(5)
             double precision     :: vol, lam
             double precision     :: D(3), V(3, 3)
-            integer              :: last_index
-            integer              :: n, n_thread_loc
-            integer              :: n_estimate, shrunk_size, grown_size
-
-            call adapt_container_size
+            integer              :: last_index, n_indices
+            integer              :: grown_size, shrunk_size, n_required
+            integer              :: i, n, n_thread_loc
+            integer, allocatable :: indices(:)
 
             call start_timer(split_timer)
 
-            last_index = n_parcels
-
+            !------------------------------------------------------------------
+            ! Check which parcels split and store the indices in *pid*:
             !$omp parallel default(shared)
-            !$omp do private(n, B, vol, lam, D, V, n_thread_loc)
-            do n = 1, last_index
+            !$omp do private(n, B, vol, lam, D)
+            do n = 1, n_parcels
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
 
-                call diagonalise(B, vol, D, V)
+                D = get_eigenvalues(B, vol)
 
                 ! evaluate maximum aspect ratio (a2 >= b2 >= c2)
                 lam = get_aspect_ratio(D)
@@ -89,6 +57,56 @@ module parcel_split_mod
                 if (lam < threshold .and. D(1) < amax ** 2) then
                     cycle
                 endif
+
+                pid(n) = n
+
+            enddo
+            !$omp end do
+            !$omp end parallel
+
+            ! contains all indices of parcels that split
+            indices = pack(pid(1:n_parcels), pid(1:n_parcels) /= 0)
+
+            n_indices = size(indices)
+
+            !------------------------------------------------------------------
+            ! Adapt container size if needed:
+
+            ! we get additional "n_indices" parcels
+            n_required = n_parcels + n_indices
+
+            shrunk_size = max(n_required, max_num_parcels)
+            shrunk_size = nint(parcel%shrink_factor * shrunk_size)
+
+            call stop_timer(split_timer)
+
+            if (n_required > max_num_parcels) then
+                grown_size = nint(parcel%grow_factor * n_required)
+                call parcel_resize(grown_size)
+            else if (n_required < int(f34 * shrunk_size)) then
+                call parcel_resize(shrunk_size)
+            endif
+
+            call start_timer(split_timer)
+
+            !------------------------------------------------------------------
+            ! Loop over all parcels that really split:
+
+            last_index = n_parcels
+
+            !$omp parallel default(shared)
+            !$omp do private(i, n, B, vol, lam, D, V, n_thread_loc)
+            do i = 1, n_indices
+
+                ! get parcel index
+                n = indices(i)
+
+                B = parcels%B(:, n)
+                vol = parcels%volume(n)
+
+                call diagonalise(B, vol, D, V)
+
+                pid(n) = 0
 
                 !
                 ! this ellipsoid is split, i.e., add a new parcel
@@ -133,11 +151,6 @@ module parcel_split_mod
             !$omp end do
             !$omp end parallel
 
-            ! number of previous splits; used for calculating
-            ! the running average for parcel container size adaption
-            n_previous_splits(ri+1) = n_parcels - last_index
-            ri = mod(ri + 1, size(n_previous_splits))
-
             n_parcel_splits = n_parcel_splits + n_parcels - last_index
 
 #ifdef ENABLE_VERBOSE
@@ -148,6 +161,9 @@ module parcel_split_mod
 #endif
 
             call stop_timer(split_timer)
+
+            ! subtract one call as we start and stop the timer twice here:
+            timings(split_timer)%n_calls = timings(split_timer)%n_calls - 1
 
         end subroutine parcel_split
 
