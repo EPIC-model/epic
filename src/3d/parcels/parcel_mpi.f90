@@ -34,7 +34,7 @@ module parcel_mpi
     ! we have 8 neighbours
     integer :: n_parcel_sends(8)
 
-    public :: parcel_communicate,             &
+    public :: parcel_communicate,           &
               n_parcel_sends,               &
               north_pid,                    &
               south_pid,                    &
