@@ -4,17 +4,19 @@ module parcel_mpi
                         , mpi_check_for_message &
                         , mpi_check_for_error
     use mpi_tags
+    use options, only : parcel
 #ifndef NDEBUG
     use mpi_collectives, only : mpi_blocking_reduce
 #endif
     use fields, only : get_index_periodic
     use merge_sort, only : msort
-    use parameters, only : vmin, vcell, nz
+    use parameters, only : vmin, vcell, nz, max_num_parcels
     use parcel_container, only : n_par_attrib       &
                                , parcel_pack        &
                                , parcel_unpack      &
                                , parcel_delete      &
                                , n_parcels          &
+                               , parcel_resize      &
 #ifndef NDEBUG
                                , n_total_parcels    &
 #endif
@@ -116,6 +118,8 @@ module parcel_mpi
 
             call allocate_parcel_buffers(n_par_attrib)
 
+            call communicate_sizes_and_resize
+
             call communicate_parcels
 
             call deallocate_parcel_id_buffers
@@ -123,6 +127,60 @@ module parcel_mpi
             call deallocate_parcel_buffers
 
         end subroutine parcel_communicate
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Check how many parcels we receive. Adapt the parcel parcel container
+        ! if needed.
+        subroutine communicate_sizes_and_resize
+            integer           :: n
+            type(MPI_Request) :: requests(8)
+            type(MPI_Status)  :: recv_status, send_statuses(8)
+            integer           :: n_parcel_recvs(8), total_size
+
+            do n = 1, 8
+                call MPI_Isend(n_parcel_sends(n),       &
+                               1,                       &
+                               MPI_INTEGER,             &
+                               neighbours(n)%rank,      &
+                               SEND_NEIGHBOUR_TAG(n),   &
+                               comm%cart,               &
+                               requests(n),             &
+                               comm%err)
+
+                call mpi_check_for_error("in MPI_Isend of parcel_mpi::communicate_sizes_and_resize.")
+            enddo
+
+            do n = 1, 8
+
+                call MPI_Recv(n_parcel_recvs(n),        &
+                              1,                        &
+                              MPI_INTEGER,              &
+                              neighbours(n)%rank,       &
+                              RECV_NEIGHBOUR_TAG(n),    &
+                              comm%cart,                &
+                              recv_status,              &
+                              comm%err)
+
+                call mpi_check_for_error("in MPI_Recv of parcel_mpi::communicate_sizes_and_resize.")
+
+            enddo
+
+            call MPI_Waitall(8,                 &
+                             requests,          &
+                             send_statuses,     &
+                             comm%err)
+
+            call mpi_check_for_error("in MPI_Waitall of parcel_mpi::communicate_sizes_and_resize.")
+
+            total_size = sum(n_parcel_recvs) + n_parcels
+
+            if (total_size >= max_num_parcels) then
+                total_size = nint(parcel%grow_factor * total_size)
+                call parcel_resize(total_size)
+            endif
+
+        end subroutine communicate_sizes_and_resize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
