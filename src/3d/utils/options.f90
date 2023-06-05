@@ -76,9 +76,9 @@ module options
     !
     type parcel_type
         double precision :: size_factor      = 1.0d0    ! factor to increase max. number of parcels
-        double precision :: grow_factor      = 0.5d0    ! factor to increase the parcel container size
+        double precision :: grow_factor      = 1.2d0    ! factor to increase the parcel container size
                                                         ! in the parcel splitting routine
-        double precision :: shrink_factor    = 0.5d0    ! factor to reduce the parcel container size
+        double precision :: shrink_factor    = 0.8d0    ! factor to reduce the parcel container size
         integer          :: n_per_cell       = 8        ! number of parcels per cell (need to be a cube)
         double precision :: lambda_max       = four     ! max. ellipse aspect ratio a/b
         double precision :: min_vratio       = 40.0d0   ! minimum ratio of grid cell volume / parcel volume
