@@ -266,22 +266,22 @@ module parcel_container
 
             call set_max_num_parcels(new_size)
 
-            call resize_array(parcels%position, new_size)
+            call resize_array(parcels%position, new_size, n_parcels)
 
-            call resize_array(parcels%vorticity, new_size)
-            call resize_array(parcels%B, new_size)
-            call resize_array(parcels%volume, new_size)
-            call resize_array(parcels%buoyancy, new_size)
+            call resize_array(parcels%vorticity, new_size, n_parcels)
+            call resize_array(parcels%B, new_size, n_parcels)
+            call resize_array(parcels%volume, new_size, n_parcels)
+            call resize_array(parcels%buoyancy, new_size, n_parcels)
 #ifndef ENABLE_DRY_MODE
-            call resize_array(parcels%humidity, new_size)
+            call resize_array(parcels%humidity, new_size, n_parcels)
 #endif
-            call parcel_ellipsoid_resize(new_size)
+            call parcel_ellipsoid_resize(new_size, n_parcels)
 
             ! LS-RK4 variables
-            call resize_array(parcels%delta_pos, new_size)
-            call resize_array(parcels%delta_vor, new_size)
-            call resize_array(parcels%strain, new_size)
-            call resize_array(parcels%delta_b, new_size)
+            call resize_array(parcels%delta_pos, new_size, n_parcels)
+            call resize_array(parcels%delta_vor, new_size, n_parcels)
+            call resize_array(parcels%strain, new_size, n_parcels)
+            call resize_array(parcels%delta_b, new_size, n_parcels)
 
             call stop_timer(resize_timer)
 
