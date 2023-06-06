@@ -158,7 +158,14 @@ module scherzinger
             j3 = determinant(A)
 
             ! angle (solve eq 7 for alpha):
-            alpha = f13 * dacos(f12 * j3 * (three / j2) ** f32)
+            smp = f12 * j3 * (three / j2) ** f32
+            
+            ! make sure abs(smp) <= 1; round-off errors could cause
+            ! smp to be slightly larger/smaller
+            ! (e.g. cases like -1.0000000000000004 occurred)
+            smp = min(max(-one, smp), one)
+
+            alpha = f13 * dacos(smp)
 
             if (alpha > fpi6) then
                 alpha = alpha + f23 * pi
