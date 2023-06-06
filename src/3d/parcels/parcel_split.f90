@@ -85,15 +85,14 @@ module parcel_split_mod
             ! we get additional "n_indices" parcels
             n_required = n_parcels + n_indices
 
-            shrunk_size = max(n_required, max_num_parcels)
-            shrunk_size = nint(parcel%shrink_factor * shrunk_size)
+            shrunk_size = nint(parcel%shrink_factor * n_required)
 
             call stop_timer(split_timer)
 
             if (n_required > max_num_parcels) then
                 grown_size = nint(parcel%grow_factor * n_required)
                 call parcel_resize(grown_size)
-            else if (n_required < int(f34 * shrunk_size)) then
+            else if (n_required < nint(f34 * shrunk_size)) then
                 call parcel_resize(shrunk_size)
             endif
 
