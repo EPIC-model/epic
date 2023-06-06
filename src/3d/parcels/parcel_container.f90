@@ -126,7 +126,7 @@ module parcel_container
             IDX_RK4_DWDX = i + 14
             IDX_RK4_DWDY = i + 15
 
-            n_par_attrib = IDX_RK4_DWDY
+            n_par_attrib = set_ellipsoid_buffer_indices(i, 16)
 
         end subroutine set_buffer_indices
 
@@ -320,6 +320,8 @@ module parcel_container
             buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR) = parcels%delta_vor(:, n)
             buffer(IDX_RK4_DB11:IDX_RK4_DB23)     = parcels%delta_b(:, n)
             buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)     = parcels%strain(:, n)
+
+            call parcel_ellipsoid_serialize(n, buffer)
         end subroutine parcel_serialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -342,6 +344,8 @@ module parcel_container
             parcels%delta_vor(:, n) = buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR)
             parcels%delta_b(:, n)   = buffer(IDX_RK4_DB11:IDX_RK4_DB23)
             parcels%strain(:, n)    = buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)
+
+            call parcel_ellipsoid_deserialize(n, buffer)
         end subroutine parcel_deserialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

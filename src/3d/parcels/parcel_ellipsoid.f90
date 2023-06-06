@@ -35,9 +35,38 @@ module parcel_ellipsoid
                         , I_B22 = 4 & ! index for B22 matrix component
                         , I_B23 = 5   ! index for B23 matrix component
 
+    integer :: IDX_ELL_VETA, IDX_ELL_VTAU
+
     private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_upper_triangular, Vetas, Vtaus
 
     contains
+
+        pure function set_ellipsoid_buffer_indices(i, j) restul(n_attr)
+            integer, intent(in) :: i, j
+
+            IDX_ELL_VETA = i + j
+            IDX_ELL_VTAU = i + j + 3
+
+            n_attr = IDX_ELL_VTAU + 2
+        end function set_ellispoid_buffer_indices
+
+        subroutine parcel_ellipsoid_serialize(n, buffer)
+            integer,          intent(in)    :: n
+            double precision, intent(inout) :: buffer(:)
+
+            buffer(IDX_ELL_VETA:IDX_ELL_VETA+2) = Vetas(:, n)
+            buffer(IDX_ELL_VTAU:IDX_ELL_VTAU+2) = Vtaus(:, n)
+
+        end subroutine parcel_ellipsoid_serialize
+
+        subroutine parcel_ellipsoid_deserialize(n, buffer)
+            integer,          intent(in) :: n
+            double precision, intent(in) :: buffer(:)
+
+            Vetas(:, n) = buffer(IDX_ELL_VETA:IDX_ELL_VETA+2)
+            Vtaus(:. n) = buffer(IDX_ELL_VTAU:IDX_ELL_VTAU+2)
+
+        end subroutine parcel_ellipsoid_deserialize
 
         subroutine parcel_ellipsoid_allocate(num)
             integer, intent(in) :: num
