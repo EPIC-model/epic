@@ -37,18 +37,32 @@ module parcel_ellipsoid
 
     integer :: IDX_ELL_VETA, IDX_ELL_VTAU
 
-    private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_upper_triangular, Vetas, Vtaus
+    private :: rho                  &
+             , f3pi4                &
+             , f5pi4                &
+             , f7pi4                &
+             , costheta             &
+             , sintheta             &
+             , get_upper_triangular &
+             , Vetas                &
+             , Vtaus                &
+             , IDX_ELL_VETA         &
+             , IDX_ELL_VTAU
 
     contains
 
-        pure function set_ellipsoid_buffer_indices(i, j) restul(n_attr)
-            integer, intent(in) :: i, j
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-            IDX_ELL_VETA = i + j
-            IDX_ELL_VTAU = i + j + 3
+        pure function set_ellipsoid_buffer_indices(i) restul(n_attr)
+            integer, intent(in) :: i
+
+            IDX_ELL_VETA = i
+            IDX_ELL_VTAU = i + 3
 
             n_attr = IDX_ELL_VTAU + 2
-        end function set_ellispoid_buffer_indices
+        end function set_ellipsoid_buffer_indices
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_ellipsoid_serialize(n, buffer)
             integer,          intent(in)    :: n
@@ -59,6 +73,8 @@ module parcel_ellipsoid
 
         end subroutine parcel_ellipsoid_serialize
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine parcel_ellipsoid_deserialize(n, buffer)
             integer,          intent(in) :: n
             double precision, intent(in) :: buffer(:)
@@ -68,12 +84,16 @@ module parcel_ellipsoid
 
         end subroutine parcel_ellipsoid_deserialize
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine parcel_ellipsoid_allocate(num)
             integer, intent(in) :: num
 
             allocate(Vetas(3, num))
             allocate(Vtaus(3, num))
         end subroutine parcel_ellipsoid_allocate
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_ellipsoid_deallocate
 
@@ -84,6 +104,8 @@ module parcel_ellipsoid
             deallocate(Vetas)
             deallocate(Vtaus)
         end subroutine parcel_ellipsoid_deallocate
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the parcel shape matrix.
         ! @param[in] B = (B11, B12, B13, B22, B23)

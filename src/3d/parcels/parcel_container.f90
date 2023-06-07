@@ -126,7 +126,9 @@ module parcel_container
             IDX_RK4_DWDX = i + 14
             IDX_RK4_DWDY = i + 15
 
-            n_par_attrib = set_ellipsoid_buffer_indices(i, 16)
+            i = i + 16
+
+            n_par_attrib = set_ellipsoid_buffer_indices(i)
 
         end subroutine set_buffer_indices
 
