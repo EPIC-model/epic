@@ -5,7 +5,11 @@
 module parcel_container
     use options, only : verbose
     use parameters, only : extent, extenti, center, lower, upper
-    use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
+    use parcel_ellipsoid, only : parcel_ellipsoid_allocate    &
+                               , parcel_ellipsoid_deallocate  &
+                               , set_ellipsoid_buffer_indices &
+                               , parcel_ellipsoid_serialize   &
+                               , parcel_ellipsoid_deserialize
     use mpi_communicator
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error

@@ -53,8 +53,9 @@ module parcel_ellipsoid
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        pure function set_ellipsoid_buffer_indices(i) restul(n_attr)
+        function set_ellipsoid_buffer_indices(i) result(n_attr)
             integer, intent(in) :: i
+            integer             :: n_attr
 
             IDX_ELL_VETA = i
             IDX_ELL_VTAU = i + 3
@@ -80,7 +81,7 @@ module parcel_ellipsoid
             double precision, intent(in) :: buffer(:)
 
             Vetas(:, n) = buffer(IDX_ELL_VETA:IDX_ELL_VETA+2)
-            Vtaus(:. n) = buffer(IDX_ELL_VTAU:IDX_ELL_VTAU+2)
+            Vtaus(:, n) = buffer(IDX_ELL_VTAU:IDX_ELL_VTAU+2)
 
         end subroutine parcel_ellipsoid_deserialize
 
