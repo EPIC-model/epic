@@ -13,7 +13,7 @@ program test_mpi_parcel_split
     use mpi_layout
     use parcel_container
     use parcel_mpi
-    use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, vcell, set_vmax
+    use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, vcell, set_amax
     use mpi_collectives
     use parcel_split_mod, only : parcel_split, split_timer
     use options, only : parcel
@@ -44,7 +44,6 @@ program test_mpi_parcel_split
 
     call update_parameters
 
-    call set_vmax(f14 * vcell)
 
     n_parcels = 2 * (box%hi(2) - box%lo(2) + 1) + 2 * (box%hi(1) - box%lo(1) + 1)
     n_total = 2 * n_parcels
@@ -61,6 +60,9 @@ program test_mpi_parcel_split
     a2 = f34 * abc
     b2 = f18 * abc
     c2 = b2
+
+    abc = dsqrt(a2)
+    call set_amax(abc)
 
     ! place parcels in the last interior cells in the west
     i = box%lo(1)

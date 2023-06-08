@@ -87,11 +87,11 @@ try:
     n_merges = 0
 
     # used when running with --verbose
-    total_samples = args.n_samples * len(args.n_ranks) * len(args.seeds)
-    modulo = max(100, min(100, int(total_samples / 1000.0)))
+    modulo = 100
 
     i = 0
     for n_rank in args.n_ranks:
+        print("Running now jobs with", n_rank, " MPI ranks.", flush=True)
         for seed in args.seeds:
             rng = np.random.default_rng(seed)
             for n in range(args.n_samples):
@@ -171,7 +171,9 @@ try:
                 try:
                     cmd = 'mpirun -np ' + str(n_rank) + ' '
                     if args.cmd == 'srun':
-                        cmd = 'srun --nodes=1 --ntasks-per-node=' + str(n_rank) + ' --cpus-per-task=1 '
+                        cmd = 'srun --nodes=1 --ntasks=' + str(n_rank)
+                        cmd = cmd + ' --ntasks-per-node=' + str(n_rank)
+                        cmd = cmd + ' --cpus-per-task=1 --exact '
                     subprocess.run(args=cmd + exec_parallel,
                                    shell=True,
                                    check=True,
@@ -179,13 +181,13 @@ try:
                                    stdout=subprocess.DEVNULL,
                                    stderr=subprocess.STDOUT)
                 except subprocess.CalledProcessError:
-                    print('Error in running the parallel version.')
+                    print('Error in running the parallel version.', flush=True)
                     failed = True
 
                 try:
                     cmd = 'mpirun -np 1 '
                     if args.cmd == 'srun':
-                        cmd = ''
+                        cmd = 'srun --nodes=1 --ntasks=1 --ntasks-per-node=1 --exact '
                     subprocess.run(args=cmd + exec_serial,
                                    shell=True,
                                    check=True,
@@ -193,7 +195,7 @@ try:
                                    stdout=subprocess.DEVNULL,
                                    stderr=subprocess.STDOUT)
                 except subprocess.CalledProcessError:
-                    print('Error in running the serial version.')
+                    print('Error in running the serial version.', flush=True)
                     failed = True
 
                 if not os.path.exists('serial_final_0000000001_parcels.nc') and \
@@ -252,18 +254,18 @@ try:
                 # -------------------------------------------------------------
                 # Intermediate info:
                 if args.verbose and (i % modulo == 0):
-                    print("#samples, #fails, #merges: ", i, n_fails, n_merges)
+                    print("#samples, #fails, #merges: ", i, n_fails, n_merges, flush=True)
 
     # -------------------------------------------------------------------------
     # Print summary:
-    print("--------------------------------------------------------------------")
-    print("Total number of samples:      ", args.n_samples * len(args.seeds) * len(args.n_ranks))
-    print("Seeds:                        ", args.seeds)
-    print("MPI ranks:                    ", args.n_ranks)
-    print("Number of parcels per sample: ", n_parcels)
-    print("Number of parcels per cell:   ", args.n_parcel_per_cell)
-    print("Number of fails:              ", n_fails)
-    print("Number of merges:             ", n_merges)
+    print("--------------------------------------------------------------------", flush=True)
+    print("Total number of samples:      ", args.n_samples * len(args.seeds) * len(args.n_ranks), flush=True)
+    print("Seeds:                        ", args.seeds, flush=True)
+    print("MPI ranks:                    ", args.n_ranks, flush=True)
+    print("Number of parcels per sample: ", n_parcels, flush=True)
+    print("Number of parcels per cell:   ", args.n_parcel_per_cell, flush=True)
+    print("Number of fails:              ", n_fails, flush=True)
+    print("Number of merges:             ", n_merges, flush=True)
 
 except Exception as ex:
-    print(ex)
+    print(ex, flush=True)

@@ -4,7 +4,7 @@
 module parcel_split_mod
     use options, only : verbose, parcel
     use constants, only : pi, three, five, f12, f34
-    use parameters, only : vmax, max_num_parcels
+    use parameters, only : amax, max_num_parcels
     use parcel_container, only : parcels                &
                                , n_parcels              &
                                , n_total_parcels        &
@@ -31,7 +31,7 @@ module parcel_split_mod
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Split large parcels (volumes larger than vmax) or
+        ! Split elongated parcels (semi-major axis larger than amax) or
         ! parcels with aspect ratios larger than parcel%lambda_max.
         subroutine parcel_split
             double precision     :: B(5)
@@ -64,7 +64,7 @@ module parcel_split_mod
 
                 pid(n) = 0
 
-                if (lam <= parcel%lambda_max .and. vol <= vmax) then
+                if (lam < parcel%lambda_max .and. D(1) < amax ** 2) then
                     cycle
                 endif
 

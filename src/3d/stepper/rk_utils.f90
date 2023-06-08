@@ -87,7 +87,7 @@ module rk_utils
             integer                      :: ix, iy, iz
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
-            character(:), allocatable    :: fname
+            character(512)               :: fname
 #endif
 
             !
@@ -187,13 +187,13 @@ module rk_utils
 #ifdef ENABLE_VERBOSE
             if (comm%rank == comm%master) then
                 fname = trim(output%basename) // '_alpha_time_step.asc'
-                inquire(file=fname, exist=exists)
+                inquire(file=trim(fname), exist=exists)
                 ! 23 August
                 ! https://stackoverflow.com/questions/15526203/single-command-to-open-a-file-or-create-it-and-the-append-data
                 if ((t /= zero) .and. exists) then
-                    open(unit=1235, file=fname, status='old', position='append')
+                    open(unit=1235, file=trim(fname), status='old', position='append')
                 else
-                    open(unit=1235, file=fname, status='replace')
+                    open(unit=1235, file=trim(fname), status='replace')
                     write(1235, *) '  # time (s)                \alpha_s/\gamma_{max}     \alpha_b/N_{max}'
                 endif
 

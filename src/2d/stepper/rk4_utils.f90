@@ -42,7 +42,7 @@ module rk4_utils
             double precision             :: dbdz(0:nz, 0:nx-1)
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
-            character(:), allocatable    :: fname
+            character(512)               :: fname
 #endif
 
             ! velocity strain
