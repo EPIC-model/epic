@@ -31,7 +31,7 @@ module armanip
             endif
 
             if (new_size < copy_size) then
-                call mpi_exit_on_error("armanip::resize_array_1d: new_size < old_size")
+                call mpi_exit_on_error("armanip::resize_array_1d: new_size < copy_size")
             endif
 
             allocate(buffer(new_size))
@@ -59,7 +59,7 @@ module armanip
             endif
 
             if (new_size < copy_size) then
-                call mpi_exit_on_error("armanip::resize_array_2d: new_size < old_size")
+                call mpi_exit_on_error("armanip::resize_array_2d: new_size < copy_size")
             endif
 
             allocate(buffer(ncomp, new_size))
