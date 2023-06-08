@@ -4,15 +4,21 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use parameters, only : extent, extenti, center, lower, upper
-    use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
+    use parameters, only : extent, extenti, center, lower, upper, set_max_num_parcels
+    use parcel_ellipsoid, only : parcel_ellipsoid_allocate      &
+                               , parcel_ellipsoid_deallocate    &
+                               , parcel_ellipsoid_resize
     use mpi_communicator
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error
+    use armanip, only : resize_array
+    use mpi_timer, only : start_timer, stop_timer
     implicit none
 
     integer :: n_parcels        ! local number of parcels
     integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
+
+    integer :: resize_timer
 
     ! buffer indices to access individual parcel attributes
     integer, protected :: IDX_X_POS,        & ! x-position
@@ -243,6 +249,43 @@ module parcel_container
             parcels%strain(:, n)    = parcels%strain(:, m)
 
         end subroutine parcel_replace
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Resize the parcel container
+        ! @param[in] new_size is the new size of each attribute
+        subroutine parcel_resize(new_size)
+            integer, intent(in) :: new_size
+
+            call start_timer(resize_timer)
+
+            if (new_size < n_parcels) then
+                call mpi_exit_on_error(&
+                    "in parcel_container::parcel_resize: losing parcels when resizing.")
+            endif
+
+            call set_max_num_parcels(new_size)
+
+            call resize_array(parcels%position, new_size, n_parcels)
+
+            call resize_array(parcels%vorticity, new_size, n_parcels)
+            call resize_array(parcels%B, new_size, n_parcels)
+            call resize_array(parcels%volume, new_size, n_parcels)
+            call resize_array(parcels%buoyancy, new_size, n_parcels)
+#ifndef ENABLE_DRY_MODE
+            call resize_array(parcels%humidity, new_size, n_parcels)
+#endif
+            call parcel_ellipsoid_resize(new_size, n_parcels)
+
+            ! LS-RK4 variables
+            call resize_array(parcels%delta_pos, new_size, n_parcels)
+            call resize_array(parcels%delta_vor, new_size, n_parcels)
+            call resize_array(parcels%strain, new_size, n_parcels)
+            call resize_array(parcels%delta_b, new_size, n_parcels)
+
+            call stop_timer(resize_timer)
+
+        end subroutine parcel_resize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

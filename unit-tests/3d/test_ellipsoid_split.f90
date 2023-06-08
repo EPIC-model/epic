@@ -30,6 +30,7 @@ program test_ellipsoid_split
     call set_vmax(one)
 
     call register_timer('parcel split', split_timer)
+    call register_timer('parcel container resize', resize_timer)
 
     call parcel_alloc(2)
 
