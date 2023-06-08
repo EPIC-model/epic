@@ -18,25 +18,25 @@ module armanip
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine resize_array_1d(attr, new_size, old_size)
+        subroutine resize_array_1d(attr, new_size, copy_size)
             double precision, allocatable, intent(inout) :: attr(:)
             integer,                       intent(in)    :: new_size
-            integer, optional,             intent(in)    :: old_size
+            integer, optional,             intent(in)    :: copy_size
             double precision, allocatable                :: buffer(:)
-            integer                                      :: copy_size
+            integer                                      :: old_size
 
-            copy_size = size(attr)
-            if (present(old_size)) then
-                copy_size = old_size
+            old_size = size(attr)
+            if (present(copy_size)) then
+                old_size = copy_size
             endif
 
-            if (new_size < copy_size) then
-                call mpi_exit_on_error("armanip::resize_array_1d: new_size < copy_size")
+            if (new_size < old_size) then
+                call mpi_exit_on_error("armanip::resize_array_1d: new_size < old_size")
             endif
 
             allocate(buffer(new_size))
 
-            buffer(1:copy_size) = attr(1:copy_size)
+            buffer(1:old_size) = attr(1:old_size)
 
             call move_alloc(buffer, attr)
 
@@ -44,27 +44,27 @@ module armanip
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine resize_array_2d(attr, new_size, old_size)
+        subroutine resize_array_2d(attr, new_size, copy_size)
             double precision, allocatable, intent(inout) :: attr(:, :)
             integer,                       intent(in)    :: new_size
-            integer, optional,             intent(in)    :: old_size
+            integer, optional,             intent(in)    :: copy_size
             double precision, allocatable                :: buffer(:, :)
-            integer                                      :: ncomp, copy_size
+            integer                                      :: ncomp, old_size
 
             ncomp = size(attr, dim=1)
-            copy_size = size(attr, dim=2)
+            old_size = size(attr, dim=2)
 
-            if (present(old_size)) then
-                copy_size = old_size
+            if (present(copy_size)) then
+                old_size = copy_size
             endif
 
-            if (new_size < copy_size) then
-                call mpi_exit_on_error("armanip::resize_array_2d: new_size < copy_size")
+            if (new_size < old_size) then
+                call mpi_exit_on_error("armanip::resize_array_2d: new_size < old_size")
             endif
 
             allocate(buffer(ncomp, new_size))
 
-            buffer(:, 1:copy_size) = attr(:, 1:copy_size)
+            buffer(:, 1:old_size) = attr(:, 1:old_size)
 
             call move_alloc(buffer, attr)
 
