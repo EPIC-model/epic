@@ -41,11 +41,11 @@ module parcel_ellipsoid
 
     contains
 
-        subroutine parcel_ellipsoid_resize(new_size, copy_size)
-            integer, intent(in) :: new_size, copy_size
+        subroutine parcel_ellipsoid_resize(new_size, old_size)
+            integer, intent(in) :: new_size, old_size
 
-            call resize_array(Vetas, new_size, copy_size)
-            call resize_array(Vtaus, new_size, copy_size)
+            call resize_array(Vetas, new_size, old_size)
+            call resize_array(Vtaus, new_size, old_size)
 
         end subroutine parcel_ellipsoid_resize
 
