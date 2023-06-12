@@ -30,7 +30,7 @@ module parcel_nearest
     use mpi_layout
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error, mpi_check_for_message
-    use iso_c_binding, only : c_sizeof
+    use iso_c_binding, only : c_ptr
     use fields, only : get_index_periodic
     use parcel_mpi, only : n_parcel_sends               &
                          , north_pid                    &
@@ -69,9 +69,9 @@ module parcel_nearest
     ! Logicals used to determine which mergers are executed
     ! Integers above could be reused for this, but this would
     ! make the algorithm less readable
-    logical, allocatable, asynchronous :: l_leaf(:)
-    logical, allocatable, asynchronous :: l_available(:)
-    logical, allocatable, asynchronous :: l_merged(:)    ! indicates parcels merged in first stage
+    logical, pointer, asynchronous :: l_leaf(:)
+    logical, pointer, asynchronous :: l_available(:)
+    logical, pointer, asynchronous :: l_merged(:)    ! indicates parcels merged in first stage
 
     integer              :: n_neighbour_small(8)  ! number of small parcels received
     integer              :: n_remote_small        ! sum(n_neighbour_small)
@@ -112,6 +112,7 @@ module parcel_nearest
             integer (KIND=MPI_ADDRESS_KIND) :: win_size
             logical                         :: l_bytes
             integer                         :: disp_unit
+            type(c_ptr)                     :: buf_ptr
 
             if (l_nearest_win_allocated) then
                 return
@@ -119,7 +120,6 @@ module parcel_nearest
 
             l_nearest_win_allocated = .true.
 
-            allocate(l_leaf(max_num_parcels))
             allocate(l_available(max_num_parcels))
             allocate(l_merged(max_num_parcels))
 
@@ -131,46 +131,48 @@ module parcel_nearest
             ! size of RMA window in bytes
             win_size = disp_unit * max_num_parcels
 
-            !     MPI_Win_create(base, size, disp_unit, info, comm, win, ierror)
-            !     TYPE(*), DIMENSION(..), ASYNCHRONOUS :: base
-            !     INTEGER(KIND=MPI_ADDRESS_KIND), INTENT(IN) :: size
-            !     INTEGER, INTENT(IN) :: disp_unit
-            !     TYPE(MPI_Info), INTENT(IN) :: info
-            !     TYPE(MPI_Comm), INTENT(IN) :: comm
-            !     TYPE(MPI_Win), INTENT(OUT) :: win
-            !     INTEGER, OPTIONAL, INTENT(OUT) :: ierror
-            call MPI_Win_create(l_leaf(1:max_num_parcels),  &
-                                win_size,                   &
-                                disp_unit,                  &
-                                MPI_INFO_NULL,              &
-                                comm%world,                 &
-                                win_leaf,                   &
-                                comm%err)
+            ! allocate window win_leaf and memory for l_leaf
+            call MPI_Win_allocate(win_size,         &
+                                  disp_unit,        &
+                                  MPI_INFO_NULL,    &
+                                  comm%world,       &
+                                  buf_ptr,          &
+                                  win_leaf,         &
+                                  comm%err)
 
             call mpi_check_for_error(&
-                "in MPI_Win_create of parcel_nearest::nearest_win_allocate.")
+                "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
 
-            call MPI_Win_create(l_available(1:max_num_parcels), &
-                                win_size,                       &
-                                disp_unit,                      &
-                                MPI_INFO_NULL,                  &
-                                comm%world,                     &
-                                win_avail,                      &
-                                comm%err)
+            call c_f_pointer(buf_ptr, l_leaf, [max_num_parcels])
 
-            call mpi_check_for_error(&
-                "in MPI_Win_create of parcel_nearest::nearest_win_allocate.")
 
-            call MPI_Win_create(l_merged(1:max_num_parcels),    &
-                                win_size,                       &
-                                disp_unit,                      &
-                                MPI_INFO_NULL,                  &
-                                comm%world,                     &
-                                win_merged,                     &
-                                comm%err)
+            ! allocate window win_avail and memory for l_available
+            call MPI_Win_allocate(win_size,         &
+                                  disp_unit,        &
+                                  MPI_INFO_NULL,    &
+                                  comm%world,       &
+                                  buf_ptr,          &
+                                  win_avail,         &
+                                  comm%err)
 
             call mpi_check_for_error(&
-                "in MPI_Win_create of parcel_nearest::nearest_win_allocate.")
+                "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
+
+            call c_f_pointer(buf_ptr, l_available, [max_num_parcels])
+
+            ! allocate window win_merged and memory for l_merged
+            call MPI_Win_allocate(win_size,         &
+                                  disp_unit,        &
+                                  MPI_INFO_NULL,    &
+                                  comm%world,       &
+                                  buf_ptr,          &
+                                  win_merged,         &
+                                  comm%err)
+
+            call mpi_check_for_error(&
+                "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
+
+            call c_f_pointer(buf_ptr, l_merged, [max_num_parcels])
 
         end subroutine nearest_win_allocate
 
@@ -193,9 +195,6 @@ module parcel_nearest
             call mpi_check_for_error(&
                  "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
 
-            deallocate(l_leaf)
-            deallocate(l_available)
-            deallocate(l_merged)
         end subroutine nearest_win_deallocate
 
         subroutine nearest_deallocate
