@@ -2,7 +2,6 @@
 ! Module for common array manipulations.
 ! =============================================================================
 module armanip
-    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     private
@@ -35,7 +34,8 @@ module armanip
             endif
 
             if (new_size < copy_size) then
-                call mpi_exit_on_error("armanip::resize_array_1d: new_size < copy_size")
+                print *, "armanip::resize_array_1d: new_size < copy_size"
+                stop
             endif
 
             allocate(buffer(new_size))
@@ -67,7 +67,8 @@ module armanip
             endif
 
             if (new_size < copy_size) then
-                call mpi_exit_on_error("armanip::resize_array_2d: new_size < copy_size")
+                print *, "armanip::resize_array_2d: new_size < copy_size"
+                stop
             endif
 
             allocate(buffer(ncomp, new_size))

@@ -9,7 +9,7 @@ module parcel_container
                                , parcel_ellipsoid_deallocate    &
                                , parcel_ellipsoid_resize
     use armanip, only : resize_array
-    use mpi_timer, only : start_timer, stop_timer
+    use timer, only : start_timer, stop_timer
     implicit none
 
     integer :: n_parcels
@@ -30,9 +30,18 @@ module parcel_container
             humidity,   &
 #endif
             buoyancy
+
+        ! low-storage RK arrays:
+        double precision, allocatable, dimension(:, :) :: &
+            delta_pos,  &       ! velocity
+            delta_vor,  &       ! vorticity tendency
+            strain,     &
+            delta_b             ! B-matrix tendency
     end type parcel_container_type
 
     type(parcel_container_type) parcels
+
+
 
     contains
 
@@ -93,6 +102,7 @@ module parcel_container
         ! @param[in] n index of parcel to be replaced
         ! @param[in] m index of parcel used to replace parcel at index n
         ! @pre n and m must be valid parcel indices
+        ! Note: We do not need to overwrite the RK variables.
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
 
@@ -167,7 +177,14 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             allocate(parcels%humidity(num))
 #endif
-            call parcel_ellipsoid_allocate
+            call parcel_ellipsoid_allocate(num)
+
+            ! low-storage RK arrays:
+            allocate(parcels%delta_pos(3, num))
+            allocate(parcels%delta_vor(3, num))
+            allocate(parcels%strain(5, num))
+            allocate(parcels%delta_b(5, num))
+
         end subroutine parcel_alloc
 
         ! Deallocate parcel memory
@@ -181,6 +198,13 @@ module parcel_container
             deallocate(parcels%humidity)
 #endif
             call parcel_ellipsoid_deallocate
+
+            ! low-storage RK arrays:
+            deallocate(parcels%delta_pos)
+            deallocate(parcels%delta_vor)
+            deallocate(parcels%strain)
+            deallocate(parcels%delta_b)
+
         end subroutine parcel_dealloc
 
 end module parcel_container

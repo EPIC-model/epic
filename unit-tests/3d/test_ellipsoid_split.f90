@@ -10,7 +10,8 @@ program test_ellipsoid_split
     use parcel_container
     use parcel_ellipsoid, only : get_B33
     use parcel_split_mod, only : parcel_split, split_timer
-    use parameters, only : update_parameters, nx, ny, nz, extent, lower, set_vmax
+    use parameters, only : update_parameters, nx, ny, nz, extent, lower, set_amax
+    use options, only : parcel
     use timer
     implicit none
 
@@ -27,7 +28,7 @@ program test_ellipsoid_split
     lower = (/-five, -five, -five/)
     call update_parameters
 
-    call set_vmax(one)
+    parcel%lambda_max = four
 
     call register_timer('parcel split', split_timer)
     call register_timer('parcel container resize', resize_timer)
@@ -40,6 +41,8 @@ program test_ellipsoid_split
     a2 = ab * lam
     b2 = ab / lam
     c2 = (abc / ab) ** 2
+
+    call set_amax(f12 * a2)
 
     error = zero
 
@@ -55,7 +58,7 @@ program test_ellipsoid_split
             call setup_parcels
 
             ! numerical split
-            call parcel_split(parcels, threshold=four)
+            call parcel_split
 
             call check_result
         enddo

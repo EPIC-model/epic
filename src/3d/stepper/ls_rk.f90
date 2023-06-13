@@ -9,7 +9,7 @@ module ls_rk
     use parcel_bc
     use rk_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
-    use parcel_interpl, only : par2grid, grid2par, grid2par_add
+    use parcel_interpl, only : par2grid, grid2par
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
@@ -57,29 +57,6 @@ module ls_rk
 
     contains
 
-        ! Allocate memory of low-storage RK-4 temporaries.
-        ! This memory is deallocated at the end of the simulation.
-        ! @param[in] num is the size to allocate
-        subroutine ls_rk4_alloc(num)
-            integer, intent(in) :: num
-
-            allocate(delta_pos(3, num))
-            allocate(delta_vor(3, num))
-            allocate(strain(5, num))
-            allocate(delta_b(5, num))
-
-        end subroutine ls_rk4_alloc
-
-        ! Deallocate memory of temporaries
-        subroutine ls_rk4_dealloc
-
-            deallocate(delta_pos)
-            deallocate(delta_vor)
-            deallocate(strain)
-            deallocate(delta_b)
-
-        end subroutine ls_rk4_dealloc
-
         subroutine ls_rk_setup(order)
             integer, intent(in) :: order
 
@@ -121,9 +98,9 @@ module ls_rk
             ! update the time step
             dt = get_time_step(t)
 
-            call grid2par(delta_pos, delta_vor, strain)
+            call grid2par
 
-            call calculate_parcel_diagnostics(delta_pos)
+            call calculate_parcel_diagnostics
 
             call calculate_field_diagnostics
 
@@ -164,8 +141,8 @@ module ls_rk
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
-                    delta_b(:, n) = get_dBdt(parcels%B(:, n), strain(:, n), &
-                                             parcels%vorticity(:, n), parcels%volume(n))
+                    parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n), parcels%strain(:, n),     &
+                                                     parcels%vorticity(:, n), parcels%volume(n))
                 enddo
                 !$omp end parallel do
 
@@ -175,15 +152,15 @@ module ls_rk
 
                 call vorticity_tendency
 
-                call grid2par_add(delta_pos, delta_vor, strain)
+                call grid2par(add=.true.)
 
                 call start_timer(rk_timer)
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
-                    delta_b(:, n) = delta_b(:, n) &
-                                  + get_dBdt(parcels%B(:, n), strain(:, n), &
-                                             parcels%vorticity(:, n), parcels%volume(n))
+                    parcels%delta_b(:, n) = parcels%delta_b(:, n)                               &
+                                          + get_dBdt(parcels%B(:, n), parcels%strain(:, n),     &
+                                                     parcels%vorticity(:, n), parcels%volume(n))
                 enddo
                 !$omp end parallel do
 
@@ -195,10 +172,13 @@ module ls_rk
             !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
                 parcels%position(:, n) = parcels%position(:, n) &
-                                       + cb * dt * delta_pos(:, n)
+                                       + cb * dt * parcels%delta_pos(:, n)
 
-                parcels%vorticity(:, n) = parcels%vorticity(:, n) + cb * dt * delta_vor(:, n)
-                parcels%B(:, n) = parcels%B(:, n) + cb * dt * delta_b(:, n)
+                parcels%vorticity(:, n) = parcels%vorticity(:, n) &
+                                        + cb * dt * parcels%delta_vor(:, n)
+
+                parcels%B(:, n) = parcels%B(:, n)                   &
+                                + cb * dt * parcels%delta_b(:, n)
             enddo
             !$omp end parallel do
 
@@ -212,9 +192,9 @@ module ls_rk
 
             !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
-                delta_pos(:, n) = ca * delta_pos(:, n)
-                delta_vor(:, n) = ca * delta_vor(:, n)
-                delta_b(:, n) = ca * delta_b(:, n)
+                parcels%delta_pos(:, n) = ca * parcels%delta_pos(:, n)
+                parcels%delta_vor(:, n) = ca * parcels%delta_vor(:, n)
+                parcels%delta_b(:, n) = ca * parcels%delta_b(:, n)
             enddo
             !$omp end parallel do
 

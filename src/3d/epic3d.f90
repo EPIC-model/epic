@@ -27,7 +27,7 @@ program epic3d
     use inversion_utils, only : init_inversion
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_timer
-    use ls_rk, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk_step, rk_timer, ls_rk_setu
+    use ls_rk, only : ls_rk_step, rk_timer, ls_rk_setup
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
@@ -86,8 +86,6 @@ program epic3d
 
             call setup_fields_and_parcels
 
-            call ls_rk4_alloc(max_num_parcels)
-
             call ls_rk_setup(rk_order)
 
             call init_inversion
@@ -142,7 +140,6 @@ program epic3d
         subroutine post_run
             use options, only : output
             call parcel_dealloc
-            call ls_rk4_dealloc
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)

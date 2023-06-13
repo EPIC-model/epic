@@ -70,9 +70,6 @@ module utils
         ! @param[in] t is the time
         subroutine write_last_step(t)
             double precision,  intent(in) :: t
-            double precision              :: velocity(3, n_parcels)
-            double precision              :: strain(5, n_parcels)
-            double precision              :: vorticity(3, n_parcels)
 
             call par2grid
 
@@ -82,9 +79,9 @@ module utils
 
             call vorticity_tendency
 
-            call grid2par(velocity, vorticity, strain)
+            call grid2par
 
-            call calculate_parcel_diagnostics(velocity)
+            call calculate_parcel_diagnostics
             call calculate_field_diagnostics
 
             call write_step(t, .true.)

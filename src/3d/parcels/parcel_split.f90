@@ -4,13 +4,13 @@
 module parcel_split_mod
     use options, only : verbose, parcel
     use constants, only : pi, three, five, f12, f34
-    use parameters, only : amax
+    use parameters, only : amax, max_num_parcels
     use parcel_container, only : parcels                &
                                , n_parcels              &
                                , parcel_resize
     use parcel_bc, only : apply_reflective_bc
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio, get_eigenvalues
-    use timer, only : start_timer, stop_timer
+    use timer, only : start_timer, stop_timer, timings
     use omp_lib
     implicit none
 
@@ -38,6 +38,7 @@ module parcel_split_mod
             integer              :: grown_size, shrunk_size, n_required
             integer              :: i, n, n_thread_loc
             integer, allocatable :: indices(:)
+            integer              :: pid(n_parcels)
 
             call start_timer(split_timer)
 
@@ -51,10 +52,12 @@ module parcel_split_mod
 
                 D = get_eigenvalues(B, vol)
 
+                pid(n) = 0;
+
                 ! evaluate maximum aspect ratio (a2 >= b2 >= c2)
                 lam = get_aspect_ratio(D)
 
-                if (lam < threshold .and. D(1) < amax ** 2) then
+                if (lam < parcel%lambda_max .and. D(1) < amax ** 2) then
                     cycle
                 endif
 
@@ -104,8 +107,6 @@ module parcel_split_mod
                 vol = parcels%volume(n)
 
                 call diagonalise(B, vol, D, V)
-
-                pid(n) = 0
 
                 !
                 ! this ellipsoid is split, i.e., add a new parcel

@@ -82,8 +82,7 @@ module parcel_diagnostics
 
 
         ! Calculate all parcel related diagnostics
-        subroutine calculate_parcel_diagnostics(velocity)
-            double precision, intent(in) :: velocity(:, :)
+        subroutine calculate_parcel_diagnostics
             integer          :: n
             double precision :: b, z, vel(3), vol, zmin, vor(3), pe
             double precision :: evals(3), lam, lsum, l2sum, v2sum
@@ -120,7 +119,7 @@ module parcel_diagnostics
             !$omp& reduction(-: pe) reduction(max: bmax) reduction(min: bmin)
             do n = 1, n_parcels
 
-                vel = velocity(:, n)
+                vel = parcels%delta_pos(:, n)
                 vor = parcels%vorticity(:, n)
                 vol = parcels%volume(n)
                 b   = parcels%buoyancy(n)
