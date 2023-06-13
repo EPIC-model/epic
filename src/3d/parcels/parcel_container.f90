@@ -118,8 +118,8 @@ module parcel_container
             integer, intent(in) :: new_size
 
             if (new_size < n_parcels) then
-                call mpi_exit_on_error(&
-                    "in parcel_container::parcel_resize: losing parcels when resizing.")
+                print *, "Losing parcels when resizing."
+                stop
             endif
 
             call set_max_num_parcels(new_size)
