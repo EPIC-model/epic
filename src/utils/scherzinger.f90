@@ -50,7 +50,7 @@ module scherzinger
                 D(2) = A(2, 2)
                 D(3) = A(3, 3)
 
-                call sort_eigenvalues(D)
+                call sort_descending(D, V)
 
                 return
             endif
@@ -159,7 +159,7 @@ module scherzinger
 
             ! angle (solve eq 7 for alpha):
             smp = f12 * j3 * (three / j2) ** f32
-            
+
             ! make sure abs(smp) <= 1; round-off errors could cause
             ! smp to be slightly larger/smaller
             ! (e.g. cases like -1.0000000000000004 occurred)
@@ -259,5 +259,37 @@ module scherzinger
                 D(2) = teval
             endif
         end subroutine sort_eigenvalues
+
+        pure subroutine sort_descending(D, V)
+            double precision, intent(inout) :: D(3), V(3, 3)
+            double precision                :: teval, tevec(3)
+
+            if (D(2) > D(1)) then
+                teval = D(1)
+                D(1) = D(2)
+                D(2) = teval
+                tevec = V(:, 1)
+                V(:, 1) = V(:, 2)
+                V(:, 2) = tevec
+            endif
+
+            if (D(3) > D(2)) then
+                teval = D(2)
+                D(2) = D(3)
+                D(3) = teval
+                tevec = V(:, 2)
+                V(:, 2) = V(:, 3)
+                V(:, 3) = tevec
+            endif
+
+            if (D(2) > D(1)) then
+                teval = D(1)
+                D(1) = D(2)
+                D(2) = teval
+                tevec = V(:, 1)
+                V(:, 1) = V(:, 2)
+                V(:, 2) = tevec
+            endif
+        end subroutine sort_descending
 
 end module scherzinger
