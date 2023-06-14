@@ -30,7 +30,7 @@ module parcel_nearest
     use mpi_layout
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error, mpi_check_for_message
-    use iso_c_binding, only : c_ptr
+    use iso_c_binding, only : c_ptr, c_f_pointer
     use fields, only : get_index_periodic
     use parcel_mpi, only : n_parcel_sends               &
                          , north_pid                    &
