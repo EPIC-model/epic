@@ -75,6 +75,13 @@ module scherzinger
             V(:, 2) = cross(V(:, 3), V(:, 1))
             V(:, 3) = cross(V(:, 1), V(:, 2))
 
+            ! normalise vectors
+            rlen = norm2(V, dim=1)
+            V(:, 1) = V(:, 1) / rlen(1)
+            V(:, 2) = V(:, 2) / rlen(2)
+            V(:, 3) = V(:, 3) / rlen(3)
+
+
             if (D(2) > D(1)) then
                 tmp = D(1)
                 D(1) = D(2)
