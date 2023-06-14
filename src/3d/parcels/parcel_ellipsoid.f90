@@ -12,7 +12,6 @@ module parcel_ellipsoid
                         , fpi4  &
                         , f34   &
                         , zero  &
-                        , one   &
                         , two   &
                         , three &
                         , five  &
@@ -301,9 +300,6 @@ module parcel_ellipsoid
 
             ! azimuthal angle
             angles(I_X) = datan2(evec(I_Y, I_X), evec(I_X, I_X))
-
-            ! restrict to -1, 1
-            evec(I_Z, I_Z) = max(-one, min(one, evec(I_Z, I_Z)))
 
             ! polar angle
             angles(I_Y) = dasin(evec(I_Z, I_Z))
