@@ -13,7 +13,7 @@ program test_ellipsoid_split_merge
     use parcel_merge, only : merge_parcels, merge_timer
     use parcel_nearest
     use parcel_split_mod, only : parcel_split, split_timer
-    use parameters, only : update_parameters, nx, ny, nz, extent, lower, set_amax, set_vmin, vmin
+    use parameters, only : update_parameters, nx, ny, nz, extent, lower, set_amax, set_vmin
     use options, only : parcel
     use timer
     implicit none
