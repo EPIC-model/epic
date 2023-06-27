@@ -402,9 +402,9 @@ module inversion_mod
             ! Convert phi to spectral space (in x & y) as ds:
             call fftxyp2s(div, ds)
 
-            if ((1 >= box%lo(1)) .and. (1 <= box%hi(1)) .and. &
-                (1 >= box%lo(2)) .and. (1 <= box%hi(2))) then
-                ds(:, 1, 1) = zero
+            ! Note: ds horizontal indices start at zero in parallel version
+            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+                ds(:, 0, 0) = zero
             endif
 
             ! Invert Laplace's operator semi-spectrally:
