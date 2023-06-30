@@ -490,8 +490,8 @@ module inversion_utils
         !Calculates df/dz for a field f using 2nd-order differencing.
         !Here df = df/dz. In physical space.
         subroutine central_diffz(f, df)
-            double precision, intent(in)  :: f(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
-            double precision, intent(out) :: df(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(in)  :: f(-1:nz+1,  box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: df(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             integer                       :: iz
 
             ! Linear extrapolation at the boundaries:

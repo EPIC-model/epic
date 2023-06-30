@@ -321,19 +321,19 @@ module inversion_mod
             f(:, : , :, I_Y) = (vortg(:, :, :, I_Y) + f_cor(I_Y)) * velog(:, :, :, I_X) + tbuoyg
             f(:, : , :, I_Z) = (vortg(:, :, :, I_Z) + f_cor(I_Z)) * velog(:, :, :, I_X)
 
-            call divergence(f, vtend(0:nz, :, :, I_X))
+            call divergence(f, vtend(:, :, :, I_X))
 
             f(:, : , :, I_X) = (vortg(:, :, :, I_X) + f_cor(I_X)) * velog(:, :, :, I_Y) - tbuoyg
             f(:, : , :, I_Y) = (vortg(:, :, :, I_Y) + f_cor(I_Y)) * velog(:, :, :, I_Y)
             f(:, : , :, I_Z) = (vortg(:, :, :, I_Z) + f_cor(I_Z)) * velog(:, :, :, I_Y)
 
-           call divergence(f, vtend(0:nz, :, :, I_Y))
+           call divergence(f, vtend(:, :, :, I_Y))
 
             f(:, : , :, I_X) = (vortg(:, :, :, I_X) + f_cor(I_X)) * velog(:, :, :, I_Z)
             f(:, : , :, I_Y) = (vortg(:, :, :, I_Y) + f_cor(I_Y)) * velog(:, :, :, I_Z)
             f(:, : , :, I_Z) = (vortg(:, :, :, I_Z) + f_cor(I_Z)) * velog(:, :, :, I_Z)
 
-            call divergence(f, vtend(0:nz, :, :, I_Z))
+            call divergence(f, vtend(:, :, :, I_Z))
 
             !-------------------------------------------------------
             ! Set dzeta/dt = 0 on the boundary if required:
@@ -360,10 +360,11 @@ module inversion_mod
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Note: f is overwritten
+        ! Note: f is overwritten; only the range div(0:nz, :, :) contains
+        ! valid data
         subroutine divergence(f, div)
             double precision, intent(inout) :: f(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim)
-            double precision, intent(out)   :: div(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out)   :: div(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision                :: fs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision                :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
 
@@ -381,7 +382,7 @@ module inversion_mod
             call central_diffz(f(:, :, :, I_Z), div)
 
             ! div = df1/dx + df2/dy + df3/dz
-            div = f(0:nz, :, :, I_X) + f(0:nz, :, :, I_Y) + div
+            div(0:nz, :, :) = f(0:nz, :, :, I_X) + f(0:nz, :, :, I_Y) + div(0:nz, :, :)
 
         end subroutine divergence
 
