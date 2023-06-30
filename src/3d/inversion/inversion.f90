@@ -54,7 +54,7 @@ module inversion_mod
             cs = svor(:, :, :, I_Z)
             !$omp end parallel workshare
             call field_combine_semi_spectral(cs)
-            call central_diffz(cs, es)                     ! es = E
+            call central_diffz_semi_spectral(cs, es)                ! es = E
             call field_decompose_semi_spectral(es)
 
             ! ubar and vbar are used here to store the mean x and y components of the vorticity
@@ -378,8 +378,7 @@ module inversion_mod
             call fftxys2p(ds, f(:, :, :, I_Y))
 
             ! calculate df3/dz
-            call central_diffz(f(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), I_Z), &
-                             div(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+            call central_diffz(f(:, :, :, I_Z), div)
 
             ! div = df1/dx + df2/dy + df3/dz
             div = f(0:nz, :, :, I_X) + f(0:nz, :, :, I_Y) + div
@@ -423,7 +422,7 @@ module inversion_mod
             call fftxys2p(vs, grad(:, :, :, I_Y))
 
             ! Compute z derivative by central differences:
-            call central_diffz(ds, ws)
+            call central_diffz_semi_spectral(ds, ws)
 
             ! Set vertical boundary values to zero
             ws(0,  :, :) = zero
