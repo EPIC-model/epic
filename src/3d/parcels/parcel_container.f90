@@ -9,6 +9,7 @@ module parcel_container
                                , parcel_ellipsoid_deallocate  &
                                , parcel_ellipsoid_resize      &
                                , set_ellipsoid_buffer_indices &
+                               , parcel_ellipsoid_replace     &
                                , parcel_ellipsoid_serialize   &
                                , parcel_ellipsoid_deserialize
     use mpi_communicator
@@ -246,6 +247,8 @@ module parcel_container
             parcels%humidity(n)     = parcels%humidity(m)
 #endif
             parcels%B(:, n)         = parcels%B(:, m)
+
+            call parcel_ellipsoid_replace(n, m)
 
             ! LS-RK4 variables:
             parcels%delta_pos(:, n) = parcels%delta_pos(:, m)

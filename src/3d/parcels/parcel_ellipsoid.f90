@@ -97,6 +97,16 @@ module parcel_ellipsoid
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        subroutine parcel_ellipsoid_replace(n, m)
+            integer,          intent(in) :: n, m
+
+            Vetas(:, n) = Vetas(:, m)
+            Vtaus(:, n) = Vtaus(:, m)
+
+        end subroutine parcel_ellipsoid_replace
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine parcel_ellipsoid_allocate(num)
             integer, intent(in) :: num
 
