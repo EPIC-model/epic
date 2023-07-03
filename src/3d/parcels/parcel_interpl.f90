@@ -437,8 +437,6 @@ module parcel_interpl
             double precision, intent(out) :: ww(0:1,0:1,0:1)
             double precision              :: xyz(3)
 
-            ww = zero
-
             ! (i, j, k)
             xyz = (pos - lower) * dxi
             ii = floor(xyz(1))
@@ -452,7 +450,7 @@ module parcel_interpl
 
         pure subroutine get_weights(xyz, i, j, k, ww)
             double precision, intent(in)    :: xyz(3)
-            double precision, intent(inout) :: ww(0:1,0:1,0:1)
+            double precision, intent(out) :: ww(0:1,0:1,0:1)
             integer,          intent(in)    :: i, j, k
             double precision                :: px, py, pz, pxc, pyc, pzc
             double precision                :: w00, w10, w01, w11
@@ -473,14 +471,14 @@ module parcel_interpl
             w11 = py * px
 
             ! Note order of indices is k,j,i
-            ww(0,0,0) = ww(0,0,0) + pzc * w00
-            ww(0,0,1) = ww(0,0,1) + pzc * w10
-            ww(0,1,0) = ww(0,1,0) + pzc * w01
-            ww(0,1,1) = ww(0,1,1) + pzc * w11
-            ww(1,0,0) = ww(1,0,0) + pz * w00
-            ww(1,0,1) = ww(1,0,1) + pz * w10
-            ww(1,1,0) = ww(1,1,0) + pz * w01
-            ww(1,1,1) = ww(1,1,1) + pz * w11
+            ww(0,0,0) = pzc * w00
+            ww(0,0,1) = pzc * w10
+            ww(0,1,0) = pzc * w01
+            ww(0,1,1) = pzc * w11
+            ww(1,0,0) = pz * w00
+            ww(1,0,1) = pz * w10
+            ww(1,1,0) = pz * w01
+            ww(1,1,1) = pz * w11
 
         end subroutine get_weights
 
