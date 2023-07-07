@@ -466,6 +466,38 @@ else
 fi
 
 #
+# Arm forge
+#
+
+ENABLE_ARMFORGE='no'
+
+AC_ARG_ENABLE([armforge],
+              [AS_HELP_STRING([--enable-armforge], [compile with armforge enabled (default=no)])],
+              [ENABLE_ARMFORGE=$enableval])
+
+AM_CONDITIONAL([ENABLE_ARMFORGE], [test "ENABLE_ARMFORGE" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling with armforge])
+if test "x$ENABLE_ARMFORGE" = "xyes"; then
+    AC_MSG_RESULT([yes])
+
+    # check if armforge executable is part of $PATH
+    AC_CHECK_PROG([armforge_found],
+                   [map],
+                   [yes],
+                   [no],
+                   [$PATH])
+
+    if test "x$armforge_found" = "xno"; then
+        AC_MSG_ERROR([armforge not part of PATH environment variable!])
+    fi
+
+    FCFLAGS="$FCFLAGS -L${FORGE_DIR}/map/libs/default/gnu/ofi -lmap-sampler-pmpi -lmap-sampler -Wl,--eh-frame-hdr -Wl,-rpath=${FORGE_DIR}/map/libs/default/gnu/ofi"
+else
+    AC_MSG_RESULT([no])
+fi
+
+#
 # Scalasca and Score-P
 #
 ENABLE_SCALASCA='no'
