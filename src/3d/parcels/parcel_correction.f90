@@ -248,6 +248,8 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
+            call apply_swap_periodicity
+
             call stop_timer(grad_corr_timer)
 
         end subroutine apply_gradient

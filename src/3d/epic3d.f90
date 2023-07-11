@@ -135,6 +135,8 @@ program epic3d
 
                 call parcel_split
 
+                call apply_swap_periodicity
+
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace((cor_iter > 1))
                     call apply_gradient(parcel%gradient_pref, parcel%max_compression, .true.)
