@@ -43,8 +43,11 @@ module parcel_bc
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Apply all boundary conditions to all parcels
-        subroutine apply_parcel_bc
-            integer :: n
+        subroutine apply_parcel_bc(pindex)
+            integer, optional, intent(in) :: pindex(:)
+            integer                       :: n
+
+            call parcel_communicate(pindex)
 
             !$omp parallel default(shared)
             !$omp do private(n)
@@ -64,8 +67,11 @@ module parcel_bc
 
         ! Apply periodic boundary condition to all parcels
         ! @param[inout] position vector of parcels
-        subroutine apply_parcel_periodic_bc
-            integer :: n
+        subroutine apply_parcel_periodic_bc(pindex)
+            integer, optional, intent(in) :: pindex(:)
+            integer                       :: n
+
+            call parcel_communicate(pindex)
 
             !$omp parallel default(shared)
             !$omp do private(n)

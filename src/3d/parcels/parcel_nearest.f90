@@ -357,12 +357,21 @@ module parcel_nearest
             ! After this operation isma, iclo and rclo are properly set.
             call find_closest_parcel_globally(n_local_small, iclo, rclo, dclo)
 
+            if (.not. l_no_small) then
+                do n=1,n_local_small+n_remote_small
+                    if(iclo(n)==0) then
+                        write(*,*) iclo(n),dclo(n)
+                        call mpi_exit_on_error('Merge error: no near enough neighbour found.') 
+                    endif
+                end do
+            end if
+
             call stop_timer(merge_nearest_timer)
 
             !---------------------------------------------------------------------
             ! Figure out the mergers:
             call resolve_tree(isma, iclo, rclo, n_local_small)
-
+            
             if (.not. l_no_small) then
                 !---------------------------------------------------------------------
                 ! Mark all entries of isma, iclo and rclo above n_local_small
@@ -540,17 +549,15 @@ module parcel_nearest
                     enddo
                 enddo
 
-                if (ic == 0) then
-                    call mpi_exit_on_error('Merge error: no near neighbour found.')
-                endif
-
                 ! Store the MPI rank and the index of the parcel to be potentially merged with:
                 isma(m) = is
                 iclo(m) = ic
                 rclo(m) = comm%rank
                 dclo(m) = dsqmin
                 l_merged(is) = .false.
-                l_merged(ic) = .false.
+                if(ic>0) then
+                    l_merged(ic) = .false.
+                end if
             enddo
 
             !---------------------------------------------------------------------
@@ -644,7 +651,7 @@ module parcel_nearest
 #ifndef NDEBUG
                 if (small_recv_order(n) /= tag) then
                     call mpi_exit_on_error(&
-                        "parcel_nearest::find_closest_parcel_globally: Wrong messge order.")
+                        "parcel_nearest::find_closest_parcel_globally: Wrong message order.")
                 endif
 
                 if (small_recv_count(n) /= n_neighbour_small(n)) then

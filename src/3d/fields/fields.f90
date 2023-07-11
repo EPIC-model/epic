@@ -4,7 +4,7 @@
 ! =============================================================================
 module fields
     use dimensions, only : n_dim, I_X, I_Y, I_Z
-    use parameters, only : dx, dxi, extent, lower, nx, ny, nz
+    use parameters, only : dx, dxi, extent, center, hli, lower, nx, ny, nz
     use constants, only : zero
     use mpi_communicator
     use mpi_layout, only : box, l_mpi_layout_initialised
@@ -174,18 +174,26 @@ module fields
         ! @param[out] k lower, vertical cell index
         pure subroutine get_index_periodic(pos, i, j, k)
             double precision, intent(in)  :: pos(n_dim)
+            double precision   :: pos_corr(n_dim)
             integer,          intent(out) :: i, j, k
+            
+            pos_corr(I_X) = pos(I_X) - extent(I_X) * dble(int((pos(I_X) - center(I_X)) * hli(I_X)))
+            pos_corr(I_Y) = pos(I_Y) - extent(I_Y) * dble(int((pos(I_Y) - center(I_Y)) * hli(I_Y)))
+            pos_corr(I_Z) = pos(I_Z)
 
-            call get_index(pos, i, j, k)
+            call get_index(pos_corr, i, j, k)
 
-            ! account for x / y periodicity:
-            ! -1          --> nx-1 / ny-1
-            !  0          --> 0
-            ! nx+1 / ny+1 --> 1
-            ! nx / ny     --> 0
-            ! nx-1 / ny-1 --> nx-1 / ny-1
-            i = mod(i + nx, nx)
-            j = mod(j + ny, ny)
+            if(i<0) then
+              i=0
+            elseif(i>nx-1) then
+              i=nx-1
+            endif
+            if(j<0) then
+              j=0
+            elseif(j>ny-1) then
+              j=ny-1
+            endif
+
         end subroutine get_index_periodic
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
