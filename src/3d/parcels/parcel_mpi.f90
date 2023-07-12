@@ -8,9 +8,9 @@ module parcel_mpi
 #ifndef NDEBUG
     use mpi_collectives, only : mpi_blocking_reduce
 #endif
-    use fields, only : get_index_periodic
-    use merge_sort, only : msort
-    use parameters, only : vmin, vcell, nz, max_num_parcels
+    use fields, only : get_index, get_nearest_index
+    use parcel_bc, only : apply_periodic_bc
+    use parameters, only : vmin, vcell, nx, ny, nz, max_num_parcels
     use parcel_container, only : n_par_attrib       &
                                , parcel_pack        &
                                , parcel_unpack      &
@@ -292,7 +292,9 @@ module parcel_mpi
                     l = pindex(n)
                 endif
 
-                call get_index_periodic(parcels%position(:, l), i, j, k)
+                call apply_periodic_bc(parcels%position(:, l))
+
+                call get_nearest_index(parcels%position(:, l), i, j, k)
 
                 nb = get_neighbour(i, j)
 

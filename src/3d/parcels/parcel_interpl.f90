@@ -167,7 +167,7 @@ module parcel_interpl
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               pvol, parcels%B(:, n), n, l_reuse)
 
-                call get_index(parcels%position(:, n), i, j, k)
+                call get_nearest_index(parcels%position(:, n), i, j, k)
                 nparg(k, j, i) = nparg(k, j, i) + 1
                 if (parcels%volume(n) <= vmin) then
                     nsparg(k, j, i) = nsparg(k, j, i) + 1

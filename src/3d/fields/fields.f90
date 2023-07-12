@@ -166,27 +166,14 @@ module fields
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Get the lower index of the cell the parcel is in including
-        ! a periodic shift in x and y.
-        ! @param[in] pos position of the parcel
-        ! @param[out] i lower, zonal cell index
-        ! @param[out] j lower, meridional cell index
-        ! @param[out] k lower, vertical cell index
-        pure subroutine get_index_periodic(pos, i, j, k)
+        pure subroutine get_nearest_index(pos, i, j, k)
             double precision, intent(in)  :: pos(n_dim)
             integer,          intent(out) :: i, j, k
-
-            call get_index(pos, i, j, k)
-
-            ! account for x / y periodicity:
-            ! -1          --> nx-1 / ny-1
-            !  0          --> 0
-            ! nx+1 / ny+1 --> 1
-            ! nx / ny     --> 0
-            ! nx-1 / ny-1 --> nx-1 / ny-1
-            i = mod(i + nx, nx)
-            j = mod(j + ny, ny)
-        end subroutine get_index_periodic
+            
+            i = nint((pos(I_X) - lower(I_X)) * dxi(I_X))
+            j = nint((pos(I_Y) - lower(I_Y)) * dxi(I_Y))
+            k = nint((pos(I_Z) - lower(I_Z)) * dxi(I_Z))
+        end subroutine get_nearest_index
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

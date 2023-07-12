@@ -14,7 +14,8 @@ module parcel_merge
                                , parcel_delete
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
-    use parcel_bc, only : apply_periodic_bc, apply_swap_periodicity
+    use parcel_bc, only : apply_periodic_bc
+    use parcel_mpi, only : parcel_communicate
     use mpi_timer, only : start_timer, stop_timer
     use mpi_communicator
     use mpi_collectives, only : mpi_blocking_reduce
@@ -82,7 +83,7 @@ module parcel_merge
                       "...", n_total_parcels
             endif
 #endif
-            call apply_swap_periodicity
+            call parcel_communicate
 
             call stop_timer(merge_timer)
 

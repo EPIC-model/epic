@@ -7,6 +7,7 @@ module ls_rk
     use dimensions, only : I_Z
     use parcel_container
     use parcel_bc
+    use parcel_mpi, only : parcel_communicate
     use rk_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par
@@ -108,7 +109,6 @@ module ls_rk
 
             do n = 1, n_stages-1
                 call ls_rk_substep(dt, n)
-                call par2grid
             enddo
             call ls_rk_substep(dt, n_stages)
 
@@ -188,7 +188,7 @@ module ls_rk
             call stop_timer(rk_timer)
 
             if (step == n_stages) then
-                call apply_swap_periodicity
+                call parcel_communicate
                return
             endif
 
@@ -202,7 +202,9 @@ module ls_rk
             enddo
             !$omp end parallel do
 
-            call apply_swap_periodicity
+            call parcel_communicate
+
+            call par2grid
 
             call stop_timer(rk_timer)
 

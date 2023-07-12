@@ -15,6 +15,7 @@ module parcel_correction
     use mpi_layout, only : box
     use mpi_communicator
     use mpi_utils, only : mpi_check_for_error
+    use parcel_mpi, only : parcel_communicate
     implicit none
 
     private
@@ -170,7 +171,7 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
-            call apply_swap_periodicity
+            call parcel_communicate
 
             call stop_timer(lapl_corr_timer)
 
@@ -233,7 +234,7 @@ module parcel_correction
                 zs = - prefactor * lim_z * (&
                             xfc * (&
                                     yfc * (phi(ks+1, js, is) - phi(ks, js, is))  &
-                                  +       yf * (phi(ks+1, js+1, is)) - phi(ks, js+1, is)) &
+                                  +       yf * (phi(ks+1, js+1, is) - phi(ks, js+1, is))) &
                           +      xf * (&
                                     yfc * (phi(ks+1, js, is+1) - phi(ks, js, is+1))  &
                                   +       yf * (phi(ks+1, js+1, is+1) - phi(ks, js+1, is+1))))

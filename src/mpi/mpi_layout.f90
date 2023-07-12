@@ -219,10 +219,10 @@ module mpi_layout
             integer, intent(in) :: i, j, dir
             logical             :: l_inside
 
-            l_inside = ((i >= neighbours(dir)%lo(1)) .and. &
-                        (i <= neighbours(dir)%hi(1)) .and. &
-                        (j >= neighbours(dir)%lo(2)) .and. &
-                        (j <= neighbours(dir)%hi(2)))
+            l_inside = ((i >= neighbours(dir)%lo(1))   .and. &
+                        (i <= neighbours(dir)%hi(1)+1) .and. &
+                        (j >= neighbours(dir)%lo(2))   .and. &
+                        (j <= neighbours(dir)%hi(2)+1))
         end function is_neighbour
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -235,10 +235,10 @@ module mpi_layout
 #endif
             nb = MPI_NONE
 
-            if ((i >= box%lo(1)) .and. &
-                (i <= box%hi(1)) .and. &
-                (j >= box%lo(2)) .and. &
-                (j <= box%hi(2))) then
+            if ((i >= box%lo(1))   .and. &
+                (i <= box%hi(1)+1) .and. &
+                (j >= box%lo(2))   .and. &
+                (j <= box%hi(2)+1)) then
                 return
             endif
 
