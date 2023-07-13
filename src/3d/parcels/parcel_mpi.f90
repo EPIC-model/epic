@@ -294,7 +294,10 @@ module parcel_mpi
 
                 call apply_periodic_bc(parcels%position(:, l))
 
-                call get_nearest_index(parcels%position(:, l), i, j, k)
+                call get_index(parcels%position(:, l), i, j, k)
+
+                i = min(max(0, i), nx-1)
+                j = min(max(0, j), ny-1)
 
                 nb = get_neighbour(i, j)
 

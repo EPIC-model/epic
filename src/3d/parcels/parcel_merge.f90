@@ -120,10 +120,10 @@ module parcel_merge
             do m = 1, n_merge
                 ic = iclo(m) ! Index of closest other parcel
 
-                ! This is different to the serial version: We must apply a periodic
-                ! shift as a small parcel might be across a periodic boundary.
-                is = isma(m)
-                call apply_periodic_bc(parcels%position(:, is))
+                !! This is different to the serial version: We must apply a periodic
+                !! shift as a small parcel might be across a periodic boundary.
+                !is = isma(m)
+                !call apply_periodic_bc(parcels%position(:, is))
 
                 if (loca(ic) == 0) then
                     ! Start a new merged parcel, indexed l:
