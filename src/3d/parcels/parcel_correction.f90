@@ -209,10 +209,10 @@ module parcel_correction
                 xs = - prefactor * lim_x * (&
                             zfc * (&
                                     yfc * (phi(ks, js,   is+1) - phi(ks, js,   is))  &
-                                  +       yf * (phi(ks, js+1, is+1) - phi(ks, js+1, is))) &
-                          +      zf * (&
+                             +      yf *  (phi(ks, js+1, is+1) - phi(ks, js+1, is))) &
+                     +      zf *  (&
                                     yfc * (phi(ks+1, js,   is+1) - phi(ks+1, js,   is))  &
-                                  +       yf * (phi(ks+1, js+1, is+1) - phi(ks+1, js+1, is))))
+                             +      yf *  (phi(ks+1, js+1, is+1) - phi(ks+1, js+1, is))))
 
                 lim_x = lim_x * max_compression
                 xs = max(-lim_x, min(xs, lim_x))
@@ -220,11 +220,11 @@ module parcel_correction
                 lim_y = dx(2) * yf * yfc
                 ys = - prefactor * lim_y * (&
                             zfc * (&
-                                    xfc * (phi(ks, js+1, is  ) - phi(ks, js, is))  &
-                                  +       xf * (phi(ks, js+1, is+1) - phi(ks, js, is+1))) &
-                          +      zf * (&
+                                    xfc * (phi(ks, js+1, is  ) - phi(ks, js, is))    &
+                             +      xf  * (phi(ks, js+1, is+1) - phi(ks, js, is+1))) &
+                     +      zf *  (&
                                     xfc * (phi(ks+1, js+1, is) -   phi(ks+1, js, is))  &
-                                  +       xf * (phi(ks+1, js+1, is+1) - phi(ks+1, js, is+1))))
+                             +      xf  * (phi(ks+1, js+1, is+1) - phi(ks+1, js, is+1))))
 
                 lim_y = lim_y * max_compression
                 ys = max(-lim_y, min(ys, lim_y))
@@ -232,11 +232,11 @@ module parcel_correction
                 lim_z = dx(3) * zf * zfc
                 zs = - prefactor * lim_z * (&
                             xfc * (&
-                                    yfc * (phi(ks+1, js, is) - phi(ks, js, is))  &
-                                  +       yf * (phi(ks+1, js+1, is)) - phi(ks, js+1, is)) &
-                          +      xf * (&
-                                    yfc * (phi(ks+1, js, is+1) - phi(ks, js, is+1))  &
-                                  +       yf * (phi(ks+1, js+1, is+1) - phi(ks, js+1, is+1))))
+                                    yfc * (phi(ks+1, js, is  ) - phi(ks, js,   is))  &
+                             +      yf  * (phi(ks+1, js+1, is) - phi(ks, js+1, is))) &
+                     +      xf *  (&
+                                    yfc * (phi(ks+1, js,   is+1) - phi(ks, js,   is+1))  &
+                             +      yf  * (phi(ks+1, js+1, is+1) - phi(ks, js+1, is+1))))
 
                 lim_z = lim_z * max_compression
                 zs = max(-lim_z, min(zs, lim_z))
