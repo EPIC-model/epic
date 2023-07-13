@@ -166,17 +166,6 @@ module fields
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        pure subroutine get_nearest_index(pos, i, j, k)
-            double precision, intent(in)  :: pos(n_dim)
-            integer,          intent(out) :: i, j, k
-            
-            i = nint((pos(I_X) - lower(I_X)) * dxi(I_X))
-            j = nint((pos(I_Y) - lower(I_Y)) * dxi(I_Y))
-            k = nint((pos(I_Z) - lower(I_Z)) * dxi(I_Z))
-        end subroutine get_nearest_index
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
         pure function is_contained(pos) result(l_contained)
             double precision, intent(in) :: pos(3)
             integer                      :: i, j, k

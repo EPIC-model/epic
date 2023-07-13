@@ -8,7 +8,7 @@ module parcel_mpi
 #ifndef NDEBUG
     use mpi_collectives, only : mpi_blocking_reduce
 #endif
-    use fields, only : get_index, get_nearest_index
+    use fields, only : get_index
     use parcel_bc, only : apply_periodic_bc
     use parameters, only : vmin, vcell, nx, ny, nz, max_num_parcels
     use parcel_container, only : n_par_attrib       &
