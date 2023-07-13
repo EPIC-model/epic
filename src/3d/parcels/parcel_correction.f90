@@ -249,6 +249,8 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
+            call parcel_communicate
+
             call stop_timer(grad_corr_timer)
 
         end subroutine apply_gradient

@@ -41,40 +41,19 @@ module parcel_bc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Apply all boundary conditions to all parcels
-        subroutine apply_parcel_bc
+        ! Apply reflective boundary conditions to all parcels
+        subroutine apply_parcel_reflective_bc
             integer :: n
 
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
-                ! zonal direction
-                call apply_periodic_bc(parcels%position(:, n))
-
                 ! vertical direction
                 call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
             enddo
             !$omp end do
             !$omp end parallel
 
-        end subroutine apply_parcel_bc
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Apply periodic boundary condition to all parcels
-        ! @param[inout] position vector of parcels
-        subroutine apply_parcel_periodic_bc
-            integer :: n
-
-            !$omp parallel default(shared)
-            !$omp do private(n)
-            do n = 1, n_parcels
-                ! zonal and meridional direction
-                call apply_periodic_bc(parcels%position(:, n))
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-        end subroutine apply_parcel_periodic_bc
+        end subroutine apply_parcel_reflective_bc
 
 end module parcel_bc

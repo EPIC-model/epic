@@ -113,7 +113,7 @@ module ls_rk
             call ls_rk_substep(dt, n_stages)
 
             call start_timer(rk_timer)
-            call apply_parcel_bc
+            call apply_parcel_reflective_bc
             call stop_timer(rk_timer)
 
             ! we need to subtract 14 calls since we start and stop
