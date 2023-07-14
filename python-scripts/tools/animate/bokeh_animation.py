@@ -48,12 +48,6 @@ class BokehAnimation:
             if coloring == "aspect-ratio":
                 vmin = 1.0
                 vmax = self.ncreader.get_global_attribute("lambda_max")
-            elif coloring == "vol-distr":
-                extent = self.ncreader.get_box_extent()
-                ncells = self.ncreader.get_box_ncells()
-                vcell = np.prod(extent / ncells)
-                vmin = vcell / self.ncreader.get_global_attribute("min_vratio")
-                vmax = vcell / self.ncreader.get_global_attribute("max_vratio")
             else:
                 vmin, vmax = self.ncreader.get_dataset_min_max(coloring)
 
