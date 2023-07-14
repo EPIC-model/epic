@@ -62,8 +62,6 @@ module parcel_container
     ! (components are counted individually, e.g. position counts as 3 attributes)
     integer, protected :: n_par_attrib
 
-    integer :: resize_timer
-
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
             position,   &
