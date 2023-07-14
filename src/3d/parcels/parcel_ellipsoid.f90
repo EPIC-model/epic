@@ -16,8 +16,10 @@ module parcel_ellipsoid
                         , three &
                         , five  &
                         , seven
-    use jacobi
+    use scherzinger, only : scherzinger_diagonalise &
+                          , scherzinger_eigenvalues
     use mpi_utils, only : mpi_exit_on_error
+    use armanip, only : resize_array
     implicit none
 
     double precision, parameter :: rho = dsqrt(two / five)
@@ -43,13 +45,21 @@ module parcel_ellipsoid
              , f7pi4                &
              , costheta             &
              , sintheta             &
-             , get_upper_triangular &
+             , get_full_matrix      &
              , Vetas                &
              , Vtaus                &
              , IDX_ELL_VETA         &
              , IDX_ELL_VTAU
 
     contains
+
+        subroutine parcel_ellipsoid_resize(new_size, n_copy)
+            integer, intent(in) :: new_size, n_copy
+
+            call resize_array(Vetas, new_size, n_copy)
+            call resize_array(Vtaus, new_size, n_copy)
+
+        end subroutine parcel_ellipsoid_resize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -122,7 +132,7 @@ module parcel_ellipsoid
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
         ! @returns the upper trinagular matrix
-        function get_upper_triangular(B, volume) result(U)
+        function get_full_matrix(B, volume) result(U)
             double precision, intent(in) :: B(5)
             double precision, intent(in) :: volume
             double precision             :: U(n_dim, n_dim)
@@ -130,10 +140,15 @@ module parcel_ellipsoid
             U(1, 1) = B(I_B11)
             U(1, 2) = B(I_B12)
             U(1, 3) = B(I_B13)
+            U(2, 1) = U(1, 2)
             U(2, 2) = B(I_B22)
             U(2, 3) = B(I_B23)
+            U(3, 1) = U(1, 3)
+            U(3, 2) = U(2, 3)
             U(3, 3) = get_B33(B, volume)
-        end function get_upper_triangular
+        end function get_full_matrix
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain all eigenvalues sorted in descending order
         ! @param[in] B = (B11, B12, B13, B22, B23)
@@ -145,9 +160,9 @@ module parcel_ellipsoid
             double precision             :: U(n_dim, n_dim)
             double precision             :: D(n_dim)
 
-            U = get_upper_triangular(B, volume)
+            U = get_full_matrix(B, volume)
 
-            call jacobi_eigenvalues(U, D)
+            call scherzinger_eigenvalues(U, D)
 
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
@@ -157,6 +172,8 @@ module parcel_ellipsoid
             endif
 #endif
         end function get_eigenvalues
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         function get_determinant(B, volume) result(detB)
             double precision, intent(in) :: B(5)
@@ -170,6 +187,8 @@ module parcel_ellipsoid
                  + B(I_B13) * (B(I_B12) * B(I_B23) - B(I_B13) * B(I_B22))
         end function get_determinant
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Obtain the normalized eigenvectors.
         ! The eigenvector V(:, j) belongs to the j-th
         ! eigenvalue.
@@ -181,9 +200,9 @@ module parcel_ellipsoid
             double precision, intent(in) :: volume
             double precision             :: U(n_dim, n_dim), D(n_dim), V(n_dim, n_dim)
 
-            U = get_upper_triangular(B, volume)
+            U = get_full_matrix(B, volume)
 
-            call jacobi_diagonalise(U, D, V)
+            call scherzinger_diagonalise(U, D, V)
 
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
@@ -193,6 +212,8 @@ module parcel_ellipsoid
             endif
 #endif
         end function get_eigenvectors
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Compute the eigenvalue decomposition B = V^T * D * V
         ! where D has the eigenvalues on its diagonal
@@ -209,9 +230,9 @@ module parcel_ellipsoid
             double precision, intent(out) :: D(n_dim), V(n_dim, n_dim)
             double precision              :: U(n_dim, n_dim)
 
-            U = get_upper_triangular(B, volume)
+            U = get_full_matrix(B, volume)
 
-            call jacobi_diagonalise(U, D, V)
+            call scherzinger_diagonalise(U, D, V)
 
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
@@ -221,6 +242,8 @@ module parcel_ellipsoid
             endif
 #endif
         end subroutine diagonalise
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the B33 matrix element
         ! @param[in] B = (B11, B12, B13, B22, B23)
@@ -246,6 +269,8 @@ module parcel_ellipsoid
 
         end function get_B33
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Obtain the product of the semi-minor and semi-major axis.
         ! @param[in] volume of the parcel
         ! @returns abc = 3 * volume / (4 * pi)
@@ -255,6 +280,8 @@ module parcel_ellipsoid
 
             abc = f34 * volume * fpi
         end function get_abc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the aspect ratio a/c of the parcel(s).
         ! @param[in] D eigenvalues sorted in descending order
@@ -266,6 +293,8 @@ module parcel_ellipsoid
 
             lam = dsqrt(D(I_X) / D(I_Z))
         end function get_aspect_ratio
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the ellipse support points for par2grid and grid2par
         ! @param[in] position vector of the parcel
@@ -319,6 +348,8 @@ module parcel_ellipsoid
                              + Vtau * sintheta(j)
             enddo
         end function get_ellipsoid_points
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         function get_angles(B, volume) result(angles)
             double precision, intent(in) :: B(5)

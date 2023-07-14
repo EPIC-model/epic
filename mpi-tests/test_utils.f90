@@ -1,5 +1,6 @@
 module test_utils
     use mpi_timer
+    use parcel_container, only : resize_timer
     use parcel_split_mod, only : split_timer
     use parcel_merge, only : merge_timer
     use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
@@ -15,7 +16,7 @@ module test_utils
     use inversion_mod, only : vor2vel_timer, vtend_timer
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_timer
-    use ls_rk4, only : rk4_timer
+    use ls_rk, only : rk_timer
     implicit none
 
     integer :: epic_timer
@@ -24,6 +25,7 @@ module test_utils
 
         subroutine register_all_timers
             call register_timer('epic', epic_timer)
+            call register_timer('parcel container resize', resize_timer)
             call register_timer('par2grid', par2grid_timer)
             call register_timer('grid2par', grid2par_timer)
             call register_timer('parcel split', split_timer)
@@ -40,7 +42,7 @@ module test_utils
             call register_timer('field diagnostics I/O', field_stats_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
-            call register_timer('parcel push', rk4_timer)
+            call register_timer('parcel push', rk_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
         end subroutine register_all_timers

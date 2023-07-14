@@ -22,6 +22,7 @@ module parcel_nearest
                                , parcel_serialize   &
                                , parcel_deserialize &
                                , parcel_delete
+    use fields, only : get_index
     use parameters, only : dx, dxi, vcell, hli, lower, extent       &
                          , ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
@@ -31,7 +32,6 @@ module parcel_nearest
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error, mpi_check_for_message
     use iso_c_binding, only : c_ptr, c_f_pointer
-    use fields, only : get_index_periodic
     use parcel_mpi, only : n_parcel_sends               &
                          , north_pid                    &
                          , south_pid                    &
@@ -357,6 +357,15 @@ module parcel_nearest
             ! After this operation isma, iclo and rclo are properly set.
             call find_closest_parcel_globally(n_local_small, iclo, rclo, dclo)
 
+            if (.not. l_no_small) then
+                do n = 1, n_local_small + n_remote_small
+                    if (iclo(n) == 0) then
+                        write(*,*) iclo(n), dclo(n)
+                        call mpi_exit_on_error('Merge error: no near enough neighbour found.') 
+                    endif
+                enddo
+            endif
+
             call stop_timer(merge_nearest_timer)
 
             !---------------------------------------------------------------------
@@ -455,11 +464,36 @@ module parcel_nearest
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! If parcels are on the periodic edge, they might end up on the wrong side.
+        ! We must correct this by shifting the parcel position such that it ends
+        ! up in the sub-domain.
+        subroutine handle_periodic_edge_parcels(pos)
+            double precision, intent(inout) :: pos(3)
+            integer                         :: ix, iy, iz
+
+            ! global grid index in x and y
+            call get_index(pos, ix, iy, iz)
+
+            ! apply a periodic shift if not inside sub-domain
+            ! note: we subtract 1 from box%hhi(1:2) as we have 2 halo grid points
+            ! on the upper side
+            pos(1) = merge(pos(1) + extent(1), pos(1), ix < box%hlo(1)) 
+            pos(1) = merge(pos(1) - extent(1), pos(1), ix > box%hhi(1) - 1)
+
+            pos(2) = merge(pos(2) + extent(2), pos(2), iy < box%hlo(2))
+            pos(2) = merge(pos(2) - extent(2), pos(2), iy > box%hhi(2) - 1)
+
+        end subroutine handle_periodic_edge_parcels
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         !!@pre Assumes a parcel is in the local domain including halo cells
         !      (in x and y).
         subroutine parcel_to_local_cell_index(n)
             integer, intent(in)  :: n
             integer              :: ix, iy, iz, ijk
+
+            call handle_periodic_edge_parcels(parcels%position(:, n))
 
             ix =     int(dxi(1) * (parcels%position(1, n) - box%halo_lower(1)))
             iy =     int(dxi(2) * (parcels%position(2, n) - box%halo_lower(2)))
@@ -469,6 +503,13 @@ module parcel_nearest
             !   This runs from 1 to halo_ncell where
             !   halo_ncell includes halo cells
             ijk = 1 + ix + box%halo_size(1) * iy + box%halo_size(1) * box%halo_size(2) * iz
+
+#ifndef NEDBUG
+            if (ijk < 1) then
+               call mpi_exit_on_error(&                                                             
+                        'in in parcel_to_local_cell_index: Parcel not in local domain.')
+            endif
+#endif
 
             ! Accumulate number of parcels in this grid cell:
             nppc(ijk) = nppc(ijk) + 1
@@ -540,17 +581,15 @@ module parcel_nearest
                     enddo
                 enddo
 
-                if (ic == 0) then
-                    call mpi_exit_on_error('Merge error: no near neighbour found.')
-                endif
-
                 ! Store the MPI rank and the index of the parcel to be potentially merged with:
                 isma(m) = is
                 iclo(m) = ic
                 rclo(m) = comm%rank
                 dclo(m) = dsqmin
                 l_merged(is) = .false.
-                l_merged(ic) = .false.
+                if (ic > 0) then
+                    l_merged(ic) = .false.
+                endif
             enddo
 
             !---------------------------------------------------------------------
