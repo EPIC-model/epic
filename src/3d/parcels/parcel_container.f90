@@ -230,7 +230,6 @@ module parcel_container
         ! @param[in] n index of parcel to be replaced
         ! @param[in] m index of parcel used to replace parcel at index n
         ! @pre n and m must be valid parcel indices
-        ! Note: We do not need to overwrite the RK variables.
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
 
