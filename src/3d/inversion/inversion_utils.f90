@@ -509,6 +509,12 @@ module inversion_utils
             enddo
             !$omp end parallel do
 
+            ! Linear extrapolate for halo grid points:
+            !$omp parallel workshare
+            df(  -1, :, :) = two * df( 0, :, :) - df(   1, :, :)
+            df(nz+1, :, :) = two * df(nz, :, :) - df(nz-1, :, :)
+            !$omp end parallel workshare
+
         end subroutine central_diffz
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

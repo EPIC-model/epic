@@ -373,16 +373,26 @@ module inversion_mod
             call diffx(fs, ds)
             call fftxys2p(ds, f(:, :, :, I_X))
 
+            !$omp parallel workshare
+            f(  -1, :, :, I_X) = two * f( 0, :, :, I_X) - f(   1, :, :, I_X)
+            f(nz+1, :, :, I_X) = two * f(nz, :, :, I_X) - f(nz-1, :, :, I_X)
+            !$omp end parallel workshare
+
             ! calculate df2/dy
             call fftxyp2s(f(:, :, :, I_Y), fs)
             call diffy(fs, ds)
             call fftxys2p(ds, f(:, :, :, I_Y))
 
+            !$omp parallel workshare
+            f(  -1, :, :, I_Y) = two * f( 0, :, :, I_Y) - f(   1, :, :, I_Y)
+            f(nz+1, :, :, I_Y) = two * f(nz, :, :, I_Y) - f(nz-1, :, :, I_Y)
+            !$omp end parallel workshare
+
             ! calculate df3/dz
             call central_diffz(f(:, :, :, I_Z), div)
 
             ! div = df1/dx + df2/dy + df3/dz
-            div(0:nz, :, :) = f(0:nz, :, :, I_X) + f(0:nz, :, :, I_Y) + div(0:nz, :, :)
+            div = f(:, :, :, I_X) + f(:, :, :, I_Y) + div
 
         end subroutine divergence
 
