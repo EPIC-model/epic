@@ -61,7 +61,6 @@
 * [Fix parcels on periodic edge](https://github.com/EPIC-model/epic/pull/509)
 * [Avoid array temporaries](https://github.com/EPIC-model/epic/pull/504)
 * [Remove max_vratio from configuration files](https://github.com/EPIC-model/epic/pull/510)
-* [Pull optimizations to serial version](https://github.com/EPIC-model/epic/pull/500)
 
 ## EPIC version 0.12.6
 * [Pull optimizations to serial version](https://github.com/EPIC-model/epic/pull/500)
