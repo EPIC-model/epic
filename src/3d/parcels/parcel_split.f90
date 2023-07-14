@@ -9,7 +9,8 @@ module parcel_split_mod
                                , n_parcels              &
                                , n_total_parcels        &
                                , parcel_resize
-    use parcel_bc, only : apply_reflective_bc, apply_swap_periodicity
+    use parcel_bc, only : apply_reflective_bc
+    use parcel_mpi, only : parcel_communicate
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio, get_eigenvalues
     use mpi_timer, only : start_timer, stop_timer, timings
     use omp_lib
@@ -177,7 +178,7 @@ module parcel_split_mod
             ! send the invalid parcels to the proper MPI process;
             ! delete them on *this* MPI process and
             ! apply periodic boundary condition
-            call apply_swap_periodicity(invalid)
+            call parcel_communicate(invalid)
 
 #ifdef ENABLE_VERBOSE
             if (verbose .and. (comm%rank == comm%master)) then

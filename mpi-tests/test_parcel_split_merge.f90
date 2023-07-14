@@ -7,7 +7,7 @@ program test_parcel_spli_merge
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_communicate
     use fields, only : field_default
-    use parcel_bc, only : apply_periodic_bc, apply_parcel_bc
+    use parcel_bc, only : apply_periodic_bc, apply_reflective_bc
     use parcel_interpl, only : par2grid
     use parcel_split_mod, only : parcel_split
     use parcel_merge, only : merge_parcels
@@ -88,7 +88,10 @@ program test_parcel_spli_merge
 
         call parcel_communicate
 
-        call apply_parcel_bc
+        do n = 1, n_parcels
+            call apply_periodic_bc(parcels%position(:, n))
+            call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
+        enddo
 
         n_merges = count(parcels%volume(1:n_parcels) < vmin)
         call perform_integer_reduction(n_merges)

@@ -130,8 +130,8 @@ module parcel_diagnostics
             call mpi_blocking_reduce(parcel_stats(IDX_MIN_BUOY), MPI_MIN)
             call mpi_blocking_reduce(parcel_stats(IDX_MAX_BUOY), MPI_MAX)
 
-            n_total_parcels = int(parcel_stats(IDX_NTOT_PAR))
-            ntoti = one / parcel_stats(IDX_NTOT_PAR)
+            n_total_parcels = nint(parcel_stats(IDX_NTOT_PAR))
+            ntoti = one / dble(n_total_parcels)
 
             ! divide by domain volume to get domain-averaged quantities
             parcel_stats(IDX_KE) = f12 * parcel_stats(IDX_KE) * vdomaini

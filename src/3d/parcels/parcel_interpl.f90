@@ -436,8 +436,9 @@ module parcel_interpl
             integer,          intent(out) :: ii, jj, kk
             double precision, intent(out) :: ww(0:1,0:1,0:1)
             double precision              :: xyz(3)
+            double precision              :: w00, w10, w01, w11
+            double precision              :: px, py, pz, pxc, pyc, pzc
 
-            ww = zero
 
             ! (i, j, k)
             xyz = (pos - lower) * dxi
@@ -445,26 +446,13 @@ module parcel_interpl
             jj = floor(xyz(2))
             kk = floor(xyz(3))
 
-            call get_weights(xyz, ii, jj, kk, ww)
-
-        end subroutine trilinear
-
-
-        pure subroutine get_weights(xyz, i, j, k, ww)
-            double precision, intent(in)    :: xyz(3)
-            double precision, intent(inout) :: ww(0:1,0:1,0:1)
-            integer,          intent(in)    :: i, j, k
-            double precision                :: px, py, pz, pxc, pyc, pzc
-            double precision                :: w00, w10, w01, w11
-
-            ! (i, j, k)
-            px = xyz(1) - dble(i)
+            px = xyz(1) - dble(ii)
             pxc = one - px
 
-            py = xyz(2) - dble(j)
+            py = xyz(2) - dble(jj)
             pyc = one - py
 
-            pz = xyz(3) - dble(k)
+            pz = xyz(3) - dble(kk)
             pzc = one - pz
 
             w00 = pyc * pxc
@@ -473,16 +461,16 @@ module parcel_interpl
             w11 = py * px
 
             ! Note order of indices is k,j,i
-            ww(0,0,0) = ww(0,0,0) + pzc * w00
-            ww(0,0,1) = ww(0,0,1) + pzc * w10
-            ww(0,1,0) = ww(0,1,0) + pzc * w01
-            ww(0,1,1) = ww(0,1,1) + pzc * w11
-            ww(1,0,0) = ww(1,0,0) + pz * w00
-            ww(1,0,1) = ww(1,0,1) + pz * w10
-            ww(1,1,0) = ww(1,1,0) + pz * w01
-            ww(1,1,1) = ww(1,1,1) + pz * w11
+            ww(0,0,0) = pzc * w00
+            ww(0,0,1) = pzc * w10
+            ww(0,1,0) = pzc * w01
+            ww(0,1,1) = pzc * w11
+            ww(1,0,0) = pz * w00
+            ww(1,0,1) = pz * w10
+            ww(1,1,0) = pz * w01
+            ww(1,1,1) = pz * w11
 
-        end subroutine get_weights
+        end subroutine trilinear
 
 
 end module parcel_interpl
