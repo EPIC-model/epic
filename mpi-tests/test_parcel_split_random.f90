@@ -2,7 +2,7 @@ program test_parcel_split_random
     use mpi_communicator
     use options, only : parcel
     use constants, only : zero, one, two
-    use parameters, only : update_parameters, nx, ny, nz, lower, extent, amax
+    use parameters, only : update_parameters, nx, ny, nz, lower, extent
     use parcel_container
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_communicate

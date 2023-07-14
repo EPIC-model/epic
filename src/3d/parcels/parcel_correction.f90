@@ -15,6 +15,7 @@ module parcel_correction
     use mpi_layout, only : box
     use mpi_communicator
     use mpi_utils, only : mpi_check_for_error
+    use parcel_mpi, only : parcel_communicate
     implicit none
 
     private
@@ -170,7 +171,7 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
-            call apply_swap_periodicity
+            call parcel_communicate
 
             call stop_timer(lapl_corr_timer)
 
@@ -247,6 +248,8 @@ module parcel_correction
             enddo
             !$omp end do
             !$omp end parallel
+
+            call parcel_communicate
 
             call stop_timer(grad_corr_timer)
 
