@@ -292,7 +292,7 @@ module parcel_mpi
                     l = pindex(n)
                 endif
 
-                call apply_periodic_bc(parcels%position(:, l))
+!                 call apply_periodic_bc(parcels%position(:, l))
 
                 call get_index(parcels%position(:, l), i, j, k)
 
