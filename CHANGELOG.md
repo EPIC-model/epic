@@ -1,3 +1,6 @@
+## EPIC version 0.12.6
+* [Pull optimizations to serial version](https://github.com/EPIC-model/epic/pull/500)
+
 ## EPIC version 0.12.5
 * [Update requirements.txt](https://github.com/EPIC-model/epic/pull/450)
 * [Fix the calculation of the vorticity correction](https://github.com/EPIC-model/epic/pull/484)

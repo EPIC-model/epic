@@ -4,11 +4,17 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use parameters, only : extent, extenti, center, lower, upper
-    use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
+    use parameters, only : extent, extenti, center, lower, upper, set_max_num_parcels
+    use parcel_ellipsoid, only : parcel_ellipsoid_allocate      &
+                               , parcel_ellipsoid_deallocate    &
+                               , parcel_ellipsoid_resize
+    use armanip, only : resize_array
+    use timer, only : start_timer, stop_timer
     implicit none
 
     integer :: n_parcels
+
+    integer :: resize_timer
 
     type parcel_container_type
         double precision, allocatable, dimension(:, :) :: &
@@ -24,9 +30,18 @@ module parcel_container
             humidity,   &
 #endif
             buoyancy
+
+        ! low-storage RK arrays:
+        double precision, allocatable, dimension(:, :) :: &
+            delta_pos,  &       ! velocity
+            delta_vor,  &       ! vorticity tendency
+            strain,     &
+            delta_b             ! B-matrix tendency
     end type parcel_container_type
 
     type(parcel_container_type) parcels
+
+
 
     contains
 
@@ -87,6 +102,7 @@ module parcel_container
         ! @param[in] n index of parcel to be replaced
         ! @param[in] m index of parcel used to replace parcel at index n
         ! @pre n and m must be valid parcel indices
+        ! Note: We do not need to overwrite the RK variables.
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
 
@@ -109,6 +125,45 @@ module parcel_container
 
         end subroutine parcel_replace
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Resize the parcel container
+        ! @param[in] new_size is the new size of each attribute
+        subroutine parcel_resize(new_size)
+            integer, intent(in) :: new_size
+
+            call start_timer(resize_timer)
+
+            if (new_size < n_parcels) then
+                print *, "Losing parcels when resizing."
+                stop
+            endif
+
+            call set_max_num_parcels(new_size)
+
+            call resize_array(parcels%position, new_size, n_parcels)
+
+            call resize_array(parcels%vorticity, new_size, n_parcels)
+            call resize_array(parcels%B, new_size, n_parcels)
+            call resize_array(parcels%volume, new_size, n_parcels)
+            call resize_array(parcels%buoyancy, new_size, n_parcels)
+#ifndef ENABLE_DRY_MODE
+            call resize_array(parcels%humidity, new_size, n_parcels)
+#endif
+            call parcel_ellipsoid_resize(new_size, n_parcels)
+
+            ! LS-RK4 variables
+            call resize_array(parcels%delta_pos, new_size, n_parcels)
+            call resize_array(parcels%delta_vor, new_size, n_parcels)
+            call resize_array(parcels%strain, new_size, n_parcels)
+            call resize_array(parcels%delta_b, new_size, n_parcels)
+
+            call stop_timer(resize_timer)
+
+        end subroutine parcel_resize
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Allocate parcel memory
         ! @param[in] num number of parcels
         subroutine parcel_alloc(num)
@@ -122,7 +177,14 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             allocate(parcels%humidity(num))
 #endif
-            call parcel_ellipsoid_allocate
+            call parcel_ellipsoid_allocate(num)
+
+            ! low-storage RK arrays:
+            allocate(parcels%delta_pos(3, num))
+            allocate(parcels%delta_vor(3, num))
+            allocate(parcels%strain(5, num))
+            allocate(parcels%delta_b(5, num))
+
         end subroutine parcel_alloc
 
         ! Deallocate parcel memory
@@ -136,6 +198,13 @@ module parcel_container
             deallocate(parcels%humidity)
 #endif
             call parcel_ellipsoid_deallocate
+
+            ! low-storage RK arrays:
+            deallocate(parcels%delta_pos)
+            deallocate(parcels%delta_vor)
+            deallocate(parcels%strain)
+            deallocate(parcels%delta_b)
+
         end subroutine parcel_dealloc
 
 end module parcel_container

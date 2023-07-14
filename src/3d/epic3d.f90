@@ -27,11 +27,11 @@ program epic3d
     use inversion_utils, only : init_inversion
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_timer
-    use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
+    use ls_rk, only : ls_rk_step, rk_timer, ls_rk_setup
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
-    use parameters, only : max_num_parcels
+    use options, only : rk_order
     implicit none
 
     integer          :: epic_timer
@@ -54,6 +54,7 @@ program epic3d
             use options, only : read_config_file
 
             call register_timer('epic', epic_timer)
+            call register_timer('parcel container resize', resize_timer)
             call register_timer('par2grid', par2grid_timer)
             call register_timer('grid2par', grid2par_timer)
             call register_timer('parcel split', split_timer)
@@ -70,7 +71,7 @@ program epic3d
             call register_timer('field diagnostics I/O', field_stats_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
-            call register_timer('parcel push', rk4_timer)
+            call register_timer('parcel push', rk_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
 
@@ -84,7 +85,7 @@ program epic3d
 
             call setup_fields_and_parcels
 
-            call ls_rk4_alloc(max_num_parcels)
+            call ls_rk_setup(rk_order)
 
             call init_inversion
 
@@ -114,11 +115,11 @@ program epic3d
 #endif
                 call apply_vortcor
 
-                call ls_rk4_step(t)
+                call ls_rk_step(t)
 
                 call merge_parcels(parcels)
 
-                call parcel_split(parcels, parcel%lambda_max)
+                call parcel_split
 
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace((cor_iter > 1))
@@ -138,7 +139,6 @@ program epic3d
         subroutine post_run
             use options, only : output
             call parcel_dealloc
-            call ls_rk4_dealloc
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)

@@ -1,10 +1,10 @@
-module rk4_utils
+module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
-    use jacobi, only : jacobi_eigenvalues
+    use scherzinger, only : scherzinger_eigenvalues
 #ifdef ENABLE_VERBOSE
     use options, only : output
 #endif
@@ -122,13 +122,16 @@ module rk4_utils
                         strain(1, 1) = velgradg(iz, iy, ix, I_DUDX)                                   ! S11
                         strain(1, 2) = velgradg(iz, iy, ix, I_DUDY) + f12 * vortg(iz, iy, ix, I_Z)    ! S12
                         strain(1, 3) = velgradg(iz, iy, ix, I_DWDX) + f12 * vortg(iz, iy, ix, I_Y)    ! S13
+                        strain(2, 1) = strain(1, 2)
                         strain(2, 2) = velgradg(iz, iy, ix, I_DVDY)                                   ! S22
                         strain(2, 3) = velgradg(iz, iy, ix, I_DWDY) - f12 * vortg(iz, iy, ix, I_X)    ! S23
+                        strain(3, 1) = strain(1, 3)
+                        strain(3, 2) = strain(2, 3)
                         strain(3, 3) = -(velgradg(iz, iy, ix, I_DUDX) + velgradg(iz, iy, ix, I_DVDY)) ! S33
 
                         ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
-                        call jacobi_eigenvalues(strain, D)
+                        call scherzinger_eigenvalues(strain, D)
 
                         ! we must take the largest eigenvalue in magnitude (absolute value)
                         gmax = max(gmax, maxval(abs(D)))
@@ -191,4 +194,4 @@ module rk4_utils
             endif
         end function get_time_step
 
-end module rk4_utils
+end module rk_utils

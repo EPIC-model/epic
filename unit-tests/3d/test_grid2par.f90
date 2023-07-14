@@ -17,7 +17,6 @@ program test_trilinear
     double precision              :: error
     integer                       :: ix, iy, iz, i, j, k, l, n_per_dim
     double precision              :: im, corner(3)
-    double precision, allocatable :: vel(:, :), vortend(:, :), vgrad(:, :)
 
     nx = 32
     ny = 32
@@ -35,11 +34,6 @@ program test_trilinear
 
     n_parcels = n_per_dim ** 3 * nx *ny *nz
     call parcel_alloc(n_parcels)
-
-    allocate(vel(3, n_parcels))
-    allocate(vortend(3, n_parcels))
-    allocate(vgrad(5, n_parcels))
-
 
     im = one / dble(n_per_dim)
 
@@ -84,22 +78,17 @@ program test_trilinear
         velgradg(:, :, :, l) = dble(l)
     enddo
 
-    ! we cannot check vortend since parcels%vorticity is used in grid2par
-    call grid2par(vel, vortend, vgrad)
+    call grid2par
 
     error = zero
 
     do l = 1, 3
-        error = max(error, maxval(dabs(vel(l, 1:n_parcels) - dble(l))))
+        error = max(error, maxval(dabs(parcels%delta_pos(l, 1:n_parcels) - dble(l))))
     enddo
 
     do l = 1, 5
-        error = max(error, maxval(dabs(vgrad(l, 1:n_parcels) - dble(l))))
+        error = max(error, maxval(dabs(parcels%strain(l, 1:n_parcels) - dble(l))))
     enddo
     call print_result_dp('Test grid2par', error, atol=dble(1.0e-14))
-
-    deallocate(vel)
-    deallocate(vortend)
-    deallocate(vgrad)
 
 end program test_trilinear

@@ -72,8 +72,8 @@ module parameters
     ! minimum volume
     double precision, protected :: vmin
 
-    ! maximum volume
-    double precision, protected :: vmax
+    ! upper bound for major semi-axis (used for splitting)
+    double precision, protected :: amax
 
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
@@ -134,7 +134,8 @@ module parameters
         hli = one / hl
 
         vmin = vcell / parcel%min_vratio
-        vmax = vcell / parcel%max_vratio
+
+        amax = minval(dx)
 
         max_num_parcels = int(nx * ny * nz * parcel%min_vratio * parcel%size_factor)
 
@@ -225,17 +226,21 @@ module parameters
     end subroutine set_mesh_spacing
 
 
+    subroutine set_max_num_parcels(num)
+        integer, intent(in) :: num
+        max_num_parcels = num
+    end subroutine set_max_num_parcels
+
 #ifdef ENABLE_UNIT_TESTS
     subroutine set_vmin(val)
         double precision, intent(in) :: val
         vmin = val
     end subroutine set_vmin
 
-
-    subroutine set_vmax(val)
+    subroutine set_amax(val)
         double precision, intent(in) :: val
-        vmax = val
-    end subroutine set_vmax
+        amax = val
+    end subroutine set_amax
 #endif
 
 end module parameters

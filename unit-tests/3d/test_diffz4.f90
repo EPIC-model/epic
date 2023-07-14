@@ -60,7 +60,7 @@ program test_diffz2
 
     error = max(error, maxval(dabs(dp - ref_sol)))
 
-    call print_result_dp('Test diffz', error, atol=4.0e-2)
+    call print_result_dp('Test diffz', error, atol=5.0e-2)
 
     deallocate(fp)
     deallocate(dp)

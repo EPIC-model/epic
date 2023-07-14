@@ -115,7 +115,7 @@ program test_ellipsoid_reflection
         close(81)
     endif
 
-    call print_result_dp('Test ellipsoid reflection', error, atol=3.0e-13)
+    call print_result_dp('Test ellipsoid reflection', error, atol=1.0e-14)
 
     call parcel_dealloc
 
