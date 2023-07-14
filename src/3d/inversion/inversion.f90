@@ -54,7 +54,7 @@ module inversion_mod
             cs = svor(:, :, :, I_Z)
             !$omp end parallel workshare
             call field_combine_semi_spectral(cs)
-            call central_diffz(cs, es)                     ! es = E
+            call central_diffz_semi_spectral(cs, es)                ! es = E
             call field_decompose_semi_spectral(es)
 
             ! ubar and vbar are used here to store the mean x and y components of the vorticity
@@ -321,19 +321,19 @@ module inversion_mod
             f(:, : , :, I_Y) = (vortg(:, :, :, I_Y) + f_cor(I_Y)) * velog(:, :, :, I_X) + tbuoyg
             f(:, : , :, I_Z) = (vortg(:, :, :, I_Z) + f_cor(I_Z)) * velog(:, :, :, I_X)
 
-            call divergence(f, vtend(0:nz, :, :, I_X))
+            call divergence(f, vtend(:, :, :, I_X))
 
             f(:, : , :, I_X) = (vortg(:, :, :, I_X) + f_cor(I_X)) * velog(:, :, :, I_Y) - tbuoyg
             f(:, : , :, I_Y) = (vortg(:, :, :, I_Y) + f_cor(I_Y)) * velog(:, :, :, I_Y)
             f(:, : , :, I_Z) = (vortg(:, :, :, I_Z) + f_cor(I_Z)) * velog(:, :, :, I_Y)
 
-           call divergence(f, vtend(0:nz, :, :, I_Y))
+           call divergence(f, vtend(:, :, :, I_Y))
 
             f(:, : , :, I_X) = (vortg(:, :, :, I_X) + f_cor(I_X)) * velog(:, :, :, I_Z)
             f(:, : , :, I_Y) = (vortg(:, :, :, I_Y) + f_cor(I_Y)) * velog(:, :, :, I_Z)
             f(:, : , :, I_Z) = (vortg(:, :, :, I_Z) + f_cor(I_Z)) * velog(:, :, :, I_Z)
 
-            call divergence(f, vtend(0:nz, :, :, I_Z))
+            call divergence(f, vtend(:, :, :, I_Z))
 
             !-------------------------------------------------------
             ! Set dzeta/dt = 0 on the boundary if required:
@@ -360,10 +360,11 @@ module inversion_mod
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Note: f is overwritten
+        ! Note: f is overwritten; only the range div(0:nz, :, :) contains
+        ! valid data
         subroutine divergence(f, div)
             double precision, intent(inout) :: f(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), n_dim)
-            double precision, intent(out)   :: div(0:nz, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out)   :: div(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
             double precision                :: fs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision                :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
 
@@ -372,17 +373,26 @@ module inversion_mod
             call diffx(fs, ds)
             call fftxys2p(ds, f(:, :, :, I_X))
 
+            !$omp parallel workshare
+            f(  -1, :, :, I_X) = two * f( 0, :, :, I_X) - f(   1, :, :, I_X)
+            f(nz+1, :, :, I_X) = two * f(nz, :, :, I_X) - f(nz-1, :, :, I_X)
+            !$omp end parallel workshare
+
             ! calculate df2/dy
             call fftxyp2s(f(:, :, :, I_Y), fs)
             call diffy(fs, ds)
             call fftxys2p(ds, f(:, :, :, I_Y))
 
+            !$omp parallel workshare
+            f(  -1, :, :, I_Y) = two * f( 0, :, :, I_Y) - f(   1, :, :, I_Y)
+            f(nz+1, :, :, I_Y) = two * f(nz, :, :, I_Y) - f(nz-1, :, :, I_Y)
+            !$omp end parallel workshare
+
             ! calculate df3/dz
-            call central_diffz(f(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), I_Z), &
-                             div(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+            call central_diffz(f(:, :, :, I_Z), div)
 
             ! div = df1/dx + df2/dy + df3/dz
-            div = f(0:nz, :, :, I_X) + f(0:nz, :, :, I_Y) + div
+            div = f(:, :, :, I_X) + f(:, :, :, I_Y) + div
 
         end subroutine divergence
 
@@ -423,7 +433,7 @@ module inversion_mod
             call fftxys2p(vs, grad(:, :, :, I_Y))
 
             ! Compute z derivative by central differences:
-            call central_diffz(ds, ws)
+            call central_diffz_semi_spectral(ds, ws)
 
             ! Set vertical boundary values to zero
             ws(0,  :, :) = zero
