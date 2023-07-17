@@ -15,6 +15,8 @@ module parcel_nearest
     use constants, only : zero
     use parcel_container, only : parcels            &
                                , n_parcels          &
+                               , get_delx_across_periodic &
+                               , get_dely_across_periodic &
                                , get_delx           &
                                , get_dely           &
                                , n_par_attrib       &
@@ -233,9 +235,10 @@ module parcel_nearest
             integer,              intent(out) :: n_local_small
             integer,              intent(out) :: n_invalid
             integer                           :: n_global_small
-            integer                           :: ijk, n, k, j
+            integer                           :: ijk, n, k, j, is, ic
             integer, allocatable              :: rclo(:)    ! MPI rank of closest parcel
             double precision, allocatable     :: dclo(:)    ! distance to closest parcel
+            double precision                  :: delx, dely, delx_a_p, dely_a_p
             logical                           :: l_no_small ! if *this* rank has no local and no remote small
                                                             ! parcels
 
@@ -351,6 +354,25 @@ module parcel_nearest
                 ! Determine locally closest parcel:
                 call find_closest_parcel_locally(n_local_small, isma, iclo, rclo, dclo)
             endif
+
+            do n=1,n_local_small
+               if(rclo(n)==comm%rank) then
+                   is=isma(n)
+                   ic=iclo(n)
+                   delx_a_p=get_delx_across_periodic(parcels%position(1,is),parcels%position(1,ic))
+                   dely_a_p=get_dely_across_periodic(parcels%position(2,is),parcels%position(2,ic))
+                   delx=get_delx(parcels%position(1,is),parcels%position(1,ic))
+                   dely=get_dely(parcels%position(2,is),parcels%position(2,ic))
+                   if(abs(delx_a_p)>1.5*dx(1)) then
+                     write(*,*) 'delx_a_p,delx,is,ic,parcels%position(1,is),parcels%position(1,ic),sqrt(dclo(n)),1.5*dx(1)'
+                     write(*,*) delx_a_p,delx,is,ic,parcels%position(1,is),parcels%position(1,ic),sqrt(dclo(n)),1.5*dx(1)
+                   end if
+                   if(abs(dely_a_p)>1.5*dx(2)) then
+                     write(*,*) 'dely_a_p,dely,is,ic,parcels%position(2,is),parcels%position(2,ic),sqrt(dclo(n)),1.5*dx(2)'
+                     write(*,*) dely_a_p,dely,is,ic,parcels%position(2,is),parcels%position(2,ic),sqrt(dclo(n)),1.5*dx(2)
+                   end if
+                endif
+            end do
 
             !---------------------------------------------------------------------
             ! Determine globally closest parcel:
