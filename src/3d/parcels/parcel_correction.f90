@@ -66,8 +66,8 @@ module parcel_correction
                                4,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             call mpi_check_for_error("in MPI_Allreduce of parcel_correction::init_parcel_correction.")
 
@@ -110,8 +110,8 @@ module parcel_correction
                                4,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             call mpi_check_for_error("in MPI_Allreduce of parcel_correction::apply_vortcor.")
             vsum = buf(1)

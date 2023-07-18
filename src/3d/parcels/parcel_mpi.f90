@@ -144,9 +144,9 @@ module parcel_mpi
                                MPI_INTEGER,             &
                                neighbours(n)%rank,      &
                                SEND_NEIGHBOUR_TAG(n),   &
-                               comm%cart,               &
+                               cart%comm,               &
                                requests(n),             &
-                               comm%err)
+                               cart%err)
 
                 call mpi_check_for_error("in MPI_Isend of parcel_mpi::communicate_sizes_and_resize.")
             enddo
@@ -158,9 +158,9 @@ module parcel_mpi
                               MPI_INTEGER,              &
                               neighbours(n)%rank,       &
                               RECV_NEIGHBOUR_TAG(n),    &
-                              comm%cart,                &
+                              cart%comm,                &
                               recv_status,              &
-                              comm%err)
+                              cart%err)
 
                 call mpi_check_for_error("in MPI_Recv of parcel_mpi::communicate_sizes_and_resize.")
 
@@ -169,7 +169,7 @@ module parcel_mpi
             call MPI_Waitall(8,                 &
                              requests,          &
                              send_statuses,     &
-                             comm%err)
+                             cart%err)
 
             call mpi_check_for_error("in MPI_Waitall of parcel_mpi::communicate_sizes_and_resize.")
 
@@ -208,9 +208,9 @@ module parcel_mpi
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
                                SEND_NEIGHBOUR_TAG(n),   &
-                               comm%cart,               &
+                               cart%comm,               &
                                requests(n),             &
-                               comm%err)
+                               cart%err)
 
                 call mpi_check_for_error("in MPI_Isend of parcel_mpi::communicate_parcels.")
             enddo
@@ -229,9 +229,9 @@ module parcel_mpi
                               MPI_DOUBLE_PRECISION,     &
                               neighbours(n)%rank,       &
                               RECV_NEIGHBOUR_TAG(n),    &
-                              comm%cart,                &
+                              cart%comm,                &
                               recv_status,              &
-                              comm%err)
+                              cart%err)
 
                 call mpi_check_for_error("in MPI_Recv of parcel_mpi::communicate_parcels.")
 
@@ -251,7 +251,7 @@ module parcel_mpi
             call MPI_Waitall(8,                 &
                             requests,           &
                             send_statuses,      &
-                            comm%err)
+                            cart%err)
 
             call mpi_check_for_error("in MPI_Waitall of parcel_mpi::communicate_parcels.")
 
@@ -262,7 +262,7 @@ module parcel_mpi
 #ifndef NDEBUG
             n = n_parcels
             call mpi_blocking_reduce(n, MPI_SUM)
-            if ((comm%rank == comm%master) .and. (.not. n == n_total_parcels)) then
+            if ((cart%rank == cart%master) .and. (.not. n == n_total_parcels)) then
                 call mpi_exit_on_error(&
                     "in parcel_mpi::communicate_parcels: We lost parcels.")
             endif

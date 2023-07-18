@@ -181,7 +181,7 @@ module parcel_split_mod
             call parcel_communicate(invalid)
 
 #ifdef ENABLE_VERBOSE
-            if (verbose .and. (comm%rank == comm%master)) then
+            if (verbose .and. (world%rank == world%master)) then
                 print "(a36, i0, a3, i0)", &
                       "no. parcels before and after split: ", orig_num, "...", n_total_parcels
             endif

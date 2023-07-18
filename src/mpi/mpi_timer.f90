@@ -105,7 +105,7 @@ module mpi_timer
 
             call collect_statistics
 
-            if (.not. comm%rank == comm%master) then
+            if (.not. world%rank == world%root) then
                 return
             endif
 
@@ -170,7 +170,7 @@ module mpi_timer
 
             call collect_statistics
 
-            if (.not. comm%rank == comm%master) then
+            if (.not. world%rank == world%root) then
                 return
             endif
 
@@ -262,15 +262,15 @@ module mpi_timer
 
             buffer = timings(1:n_timers)%wall_time
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 call MPI_Reduce(MPI_IN_PLACE,           &
                                 buffer(1:n_timers),     &
                                 n_timers,               &
                                 MPI_DOUBLE_PRECISION,   &
                                 op,                     &
-                                comm%master,            &
-                                comm%world,             &
-                                comm%err)
+                                world%root,             &
+                                world%comm,             &
+                                world%err)
 
             else
                 call MPI_Reduce(buffer(1:n_timers),     &
@@ -278,9 +278,9 @@ module mpi_timer
                                 n_timers,               &
                                 MPI_DOUBLE_PRECISION,   &
                                 op,                     &
-                                comm%master,            &
-                                comm%world,             &
-                                comm%err)
+                                world%root,             &
+                                world%comm,             &
+                                world%err)
             endif
 
         end function get_statistics
@@ -299,7 +299,7 @@ module mpi_timer
             timings(1:n_timers)%min_time = get_statistics(MPI_MIN)
             timings(1:n_timers)%mean_time = get_statistics(MPI_SUM)
 
-            timings(1:n_timers)%mean_time = timings(1:n_timers)%mean_time / dble(comm%size)
+            timings(1:n_timers)%mean_time = timings(1:n_timers)%mean_time / dble(world%size)
 
         end subroutine collect_statistics
 

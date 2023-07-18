@@ -109,7 +109,7 @@ module parameters
                        dxi(2) * dx(3), dxi(3) * dx(2)/))
 
         if (msr > two) then
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 print *, '**********************************************************************'
                 print *, '*                                                                    *'
                 print *, '*   Warning: A mesh spacing ratio of more than 2 is not advisable!   *'
@@ -161,7 +161,7 @@ module parameters
 
         if (boundary%l_ignore_bndry_zeta_flag) then
             l_bndry_zeta_zero(:) = .false.
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 print *, "WARNING: You allow the gridded vertical vorticity component"
                 print *, "         at the boundaries to develop non-zero values."
                 print *, "         Stop your simulation if this is not your intention."
@@ -179,8 +179,8 @@ module parameters
                                3,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             rms_interior = dsqrt(val(1) * nhcelli / (nz-1))
             rms_bndry = dsqrt(val(2:3) * nhcelli)
@@ -191,12 +191,12 @@ module parameters
         endif
 
 #if defined(ENABLE_VERBOSE) || !defined(NDEBUG)
-        if ((.not. l_bndry_zeta_zero(1)) .and. (comm%rank == comm%master)) then
+        if ((.not. l_bndry_zeta_zero(1)) .and. (world%rank == world%root)) then
             print *, "WARNING: This simulation will not ensure that the gridded vertical"
             print *, "         vorticity component is zero at the lower boundary."
         endif
 
-        if ((.not. l_bndry_zeta_zero(2)) .and. (comm%rank == comm%master)) then
+        if ((.not. l_bndry_zeta_zero(2)) .and. (world%rank == world%root)) then
             print *, "WARNING: This simulation will not ensure that the gridded vertical"
             print *, "         vorticity component is zero at the upper boundary."
         endif
@@ -211,7 +211,7 @@ module parameters
 
         if (boundary%l_ignore_bndry_zeta_flag) then
             l_bndry_zeta_zero(:) = .false.
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 print *, "WARNING: You allow the gridded vertical vorticity component"
                 print *, "         at the boundaries to develop non-zero values."
                 print *, "         Stop your simulation if this is not your intention."
@@ -225,7 +225,7 @@ module parameters
             call read_netcdf_attribute(grp_ncid, 'l_lower_boundry_zeta_zero', l_bndry_zeta_zero(1))
             call read_netcdf_attribute(grp_ncid, 'l_upper_boundry_zeta_zero', l_bndry_zeta_zero(2))
         else
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 print *, "WARNING: Could not find a '" // name // "' group in the provided"
                 print *, "         NetCDF file."
                 print *, "         Note this will result in the boundary zeta flags being"

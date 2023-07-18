@@ -224,8 +224,8 @@ module inversion_utils
                                nz+1,                    &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             !$omp parallel workshare
             gamtop = f12 * extent(3) * (phip00 ** 2 - f13)

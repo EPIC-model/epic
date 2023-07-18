@@ -46,7 +46,7 @@ module netcdf_writer
             logical, optional, intent(in) :: l_serial
             logical                       :: l_parallel
 
-            l_parallel = (comm%size > 1)
+            l_parallel = (world%size > 1)
 
             if (present(l_serial)) then
                 l_parallel = .not. l_serial
@@ -67,7 +67,7 @@ module netcdf_writer
             logical, optional, intent(in) :: l_serial
             logical                       :: l_parallel
 
-            l_parallel = (comm%size > 1)
+            l_parallel = (world%size > 1)
 
             if (present(l_serial)) then
                 l_parallel = .not. l_serial
