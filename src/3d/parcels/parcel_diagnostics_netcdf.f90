@@ -51,7 +51,7 @@ module parcel_diagnostics_netcdf
             logical                   :: l_exist
             integer                   :: start(1), cnt(1)
 
-            if (world%rank /= world%master) then
+            if (world%rank /= world%root) then
                 return
             endif
 
@@ -337,7 +337,7 @@ module parcel_diagnostics_netcdf
 
             call start_timer(parcel_stats_io_timer)
 
-            if (world%rank /= world%master) then
+            if (world%rank /= world%root) then
                 return
             endif
 

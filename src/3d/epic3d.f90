@@ -123,7 +123,7 @@ program epic3d
             do while (t < time%limit)
 
 #ifdef ENABLE_VERBOSE
-                if (verbose .and. (world%rank == world%master)) then
+                if (verbose .and. (world%rank == world%root)) then
                     print "(a15, f0.4)", "time:          ", t
                 endif
 #endif

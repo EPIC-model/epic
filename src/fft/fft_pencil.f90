@@ -31,7 +31,7 @@ module fft_pencil
     integer, parameter :: FORWARD=1, BACKWARD=2   !< Transposition directions
 
 
-    type(communicator) :: dim_y, dim_x !< Communicators for each dimension
+    type(communicator) :: fft_y_comm, fft_x_comm !< Communicators for each dimension
 
     ! Transpositions from one pencil to another
     type(pencil_layout) :: y_from_z_transposition   &
@@ -74,38 +74,38 @@ contains
             !   LOGICAL, INTENT(IN) :: remain_dims(*)
             !   TYPE(MPI_Comm), INTENT(OUT) :: newcomm
             !   INTEGER, OPTIONAL, INTENT(OUT) :: ierror
-            call MPI_Cart_sub(cart%comm, (/.false., .true./), dim_y_comm%comm, cart%err)
-            call MPI_Cart_sub(cart%comm, (/.true., .false./), dim_x_comm%comm, cart%err)
+            call MPI_Cart_sub(cart%comm, (/.false., .true./), fft_y_comm%comm, cart%err)
+            call MPI_Cart_sub(cart%comm, (/.true., .false./), fft_x_comm%comm, cart%err)
             call MPI_Allgather(box%size(I_Y),       &
                                1, MPI_INTEGER,      &
                                y_distinct_sizes,    &
                                1,                   &
                                MPI_INTEGER,         &
-                               dim_y_comm%comm,     &
-                               dim_y_comm%err)
+                               fft_y_comm%comm,     &
+                               fft_y_comm%err)
             call MPI_Allgather(box%size(I_X),       &
                                1,                   &
                                MPI_INTEGER,         &
                                x_distinct_sizes,    &
                                1,                   &
                                MPI_INTEGER,         &
-                               dim_x_comm%comm,     &
-                               dim_x_comm%err)
+                               fft_x_comm%comm,     &
+                               fft_x_comm%err)
         else if (layout%l_parallel(I_Y)) then
-            dim_y_comm%comm = cart%comm
-            dim_x_comm%comm = MPI_COMM_SELF
+            fft_y_comm%comm = cart%comm
+            fft_x_comm%comm = MPI_COMM_SELF
             call MPI_Allgather(box%size(I_Y),       &
                                1,                   &
                                MPI_INTEGER,         &
                                y_distinct_sizes,    &
                                1,                   &
                                MPI_INTEGER,         &
-                               dim_y_comm%comm,     &
-                               dim_y_comm%err)
+                               fft_y_comm%comm,     &
+                               fft_y_comm%err)
             x_distinct_sizes = box%size(I_X)
         else if (layout%l_parallel(I_X)) then
-            dim_y_comm%comm = MPI_COMM_SELF
-            dim_x_comm%comm = cart%comm
+            fft_y_comm%comm = MPI_COMM_SELF
+            fft_x_comm%comm = cart%comm
             y_distinct_sizes = box%size(I_Y)
             call MPI_Allgather(box%size(I_X),       &
                                1,                   &
@@ -113,11 +113,11 @@ contains
                                x_distinct_sizes,    &
                                1,                   &
                                MPI_INTEGER,         &
-                               dim_x_comm%comm,     &
-                               dim_x_comm%err)
+                               fft_x_comm%comm,     &
+                               fft_x_comm%err)
         else
-            dim_y_comm%comm = MPI_COMM_SELF
-            dim_x_comm%comm = MPI_COMM_SELF
+            fft_y_comm%comm = MPI_COMM_SELF
+            fft_x_comm%comm = MPI_COMM_SELF
             y_distinct_sizes = box%size(I_Y)
             x_distinct_sizes = box%size(I_X)
         endif
@@ -132,12 +132,12 @@ contains
 
     !> Cleans up allocated buffer memory
     subroutine finalise_pencil_fft
-        if ((dim_y_comm%comm .ne. MPI_COMM_SELF) .and. (dim_y_comm%comm .ne. cart%comm)) then
-            call MPI_Comm_free(dim_y_comm%comm, cart%err)
+        if ((fft_y_comm%comm .ne. MPI_COMM_SELF) .and. (fft_y_comm%comm .ne. cart%comm)) then
+            call MPI_Comm_free(fft_y_comm%comm, cart%err)
         endif
 
-        if ((dim_x_comm%comm .ne. MPI_COMM_SELF) .and. (dim_x_comm%comm .ne. cart%comm)) then
-            call MPI_Comm_free(dim_x_comm%comm, cart%err)
+        if ((fft_x_comm%comm .ne. MPI_COMM_SELF) .and. (fft_x_comm%comm .ne. cart%comm)) then
+            call MPI_Comm_free(fft_x_comm%comm, cart%err)
         endif
 
         deallocate(fft_in_y_buffer , fft_in_x_buffer, diff_x_buffer)
@@ -278,14 +278,14 @@ contains
     !! @param target_data Target data (bca)
     subroutine transpose_to_pencil(transposition_description, source_dims, comm, &
                                    direction, source_data, target_data)
-        type(pencil_layout),         intent(in)  :: transposition_description
-        integer,                     intent(in)  :: source_dims(3), direction
-        type(communicator),          intent(in)  :: comm
-        double precision,            intent(in)  :: source_data(:, :, :)
-        double precision,            intent(out) :: target_data(:, :, :)
-        double precision, allocatable, save      :: real_temp(:, :, :)
-        double precision, allocatable, save      :: real_temp2(:)
-        integer                                  :: buf_size
+        type(pencil_layout),         intent(in)    :: transposition_description
+        integer,                     intent(in)    :: source_dims(3), direction
+        type(communicator),          intent(inout) :: comm
+        double precision,            intent(in)    :: source_data(:, :, :)
+        double precision,            intent(out)   :: target_data(:, :, :)
+        double precision, allocatable, save        :: real_temp(:, :, :)
+        double precision, allocatable, save        :: real_temp2(:)
+        integer                                    :: buf_size
 
         buf_size = product(transposition_description%pencil_size)
 

@@ -1,6 +1,6 @@
 module mpi_layout
     use mpi_f08
-    use mpi_communicator, only : comm
+    use mpi_communicator, only : communicator, world
     use mpi_tags
     use mpi_utils, only : mpi_exit_on_error
     implicit none
@@ -17,6 +17,8 @@ module mpi_layout
         integer          :: ncell               ! number of cells excluding halo
         integer          :: halo_ncell          ! number of cells including halo
     end type box_type
+
+    type(communicator) :: cart
 
     type parallel_layout
         logical :: l_parallel(3)
@@ -255,7 +257,8 @@ module mpi_layout
 
 #ifndef NDEBUG
             if (.not. l_found) then
-                call mpi_exit_on_error("mpi_layout::get_neighbour: No suitable neighbour found.")
+                call mpi_exit_on_error(&
+                    "mpi_layout::get_neighbour: No suitable neighbour found.")
             endif
 #endif
         end function get_neighbour

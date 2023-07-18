@@ -19,7 +19,7 @@ program test_mpi_parcel_diagnostics
 
     call mpi_comm_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     call register_timer('parcel stats', parcel_stats_timer)
 
@@ -71,7 +71,7 @@ program test_mpi_parcel_diagnostics
 
     call calculate_parcel_diagnostics
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         total_vol = dble(n_total) * parcels%volume(1)
         passed = (passed .and. (dabs(parcel_stats(IDX_KE) - 0.375d0 * total_vol) == zero))
         passed = (passed .and. (dabs(parcel_stats(IDX_N_SMALL) - n_total) == zero))
@@ -87,9 +87,9 @@ program test_mpi_parcel_diagnostics
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI parcel diagnostics', passed)
     endif
 

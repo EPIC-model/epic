@@ -22,7 +22,7 @@ program test_mpi_fft_3d
 
     call mpi_comm_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     nx = 32
     ny = 64
@@ -71,9 +71,9 @@ program test_mpi_fft_3d
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         if (.not. passed) then
             call print_result_logical('Test FFT 2D transform', passed)
         else

@@ -39,7 +39,7 @@ program test_mpi_parcel_init_3d
 
     call parse_command_line
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     nx = 128
     ny = 128
@@ -154,9 +154,9 @@ program test_mpi_parcel_init_3d
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test parcel initialisation 3D', passed)
     endif
 

@@ -69,7 +69,8 @@ module parcel_correction
                                world%comm,              &
                                world%err)
 
-            call mpi_check_for_error("in MPI_Allreduce of parcel_correction::init_parcel_correction.")
+            call mpi_check_for_error(world, &
+                "in MPI_Allreduce of parcel_correction::init_parcel_correction.")
 
             vsum = buf(1)
             vor_bar = buf(2:4)
@@ -113,7 +114,8 @@ module parcel_correction
                                world%comm,              &
                                world%err)
 
-            call mpi_check_for_error("in MPI_Allreduce of parcel_correction::apply_vortcor.")
+            call mpi_check_for_error(world, &
+                "in MPI_Allreduce of parcel_correction::apply_vortcor.")
             vsum = buf(1)
             dvor = buf(2:4)
 

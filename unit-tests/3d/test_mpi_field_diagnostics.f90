@@ -16,7 +16,7 @@ program test_mpi_field_diagnostics
 
     call mpi_comm_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     call register_timer('field stats', field_stats_timer)
 
@@ -39,7 +39,7 @@ program test_mpi_field_diagnostics
 
     call calculate_field_diagnostics
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         passed = (passed .and. (dabs(field_stats(IDX_RMS_V) - vcelli) == zero))
         passed = (passed .and. (dabs(field_stats(IDX_ABSERR_V) - vcelli) == zero))
         passed = (passed .and. (field_stats(IDX_MAX_NPAR) == one))
@@ -51,9 +51,9 @@ program test_mpi_field_diagnostics
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI field diagnostics', passed)
     endif
 

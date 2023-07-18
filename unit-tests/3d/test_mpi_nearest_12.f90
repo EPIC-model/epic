@@ -24,7 +24,7 @@ program test_mpi_nearest_12
 
     call mpi_comm_initialise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
     nx = 10
     ny = 10
@@ -56,7 +56,7 @@ program test_mpi_nearest_12
 
     call check_result(100)
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI nearest algorithm: (1) a - b - C', passed)
     endif
 
@@ -69,7 +69,7 @@ program test_mpi_nearest_12
 
     call check_result(100)
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI nearest algorithm: (2) a - b - C', passed)
     endif
 
@@ -82,7 +82,7 @@ program test_mpi_nearest_12
 
     call check_result(100)
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI nearest algorithm: (3) a - b - C', passed)
     endif
 
@@ -95,7 +95,7 @@ program test_mpi_nearest_12
 
     call check_result(100)
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI nearest algorithm: (4) a - b - C', passed)
     endif
 
@@ -108,7 +108,7 @@ program test_mpi_nearest_12
 
     call check_result(200)
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI nearest algorithm: (5) a - b - C', passed)
     endif
 
@@ -121,7 +121,7 @@ program test_mpi_nearest_12
 
     call check_result(200)
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI nearest algorithm: (6) a - b - C', passed)
     endif
 
@@ -152,7 +152,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! big parcel C
@@ -160,7 +160,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y - dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel a
@@ -168,7 +168,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y + dx(2) * 0.28d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
         end subroutine cell_placement_1
@@ -193,7 +193,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel a
@@ -201,7 +201,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y - dx(2) * 0.4d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! big parcel C
@@ -209,7 +209,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y + dx(2) * 0.34d0
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
         end subroutine cell_placement_2
@@ -234,7 +234,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! big parcel C
@@ -242,7 +242,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y - dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel a
@@ -250,7 +250,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y + dx(2) * 0.28d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
         end subroutine cell_placement_3
@@ -275,7 +275,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel a
@@ -283,7 +283,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y - dx(2) * 0.4d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! big parcel C
@@ -291,7 +291,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y + dx(2) * 0.34d0
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
         end subroutine cell_placement_4
@@ -320,7 +320,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! big parcel C
@@ -328,7 +328,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel a
@@ -336,7 +336,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             !
@@ -348,7 +348,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y - dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! big parcel C
@@ -356,7 +356,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y + dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel a
@@ -364,7 +364,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y - dx(2) * 0.30d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
         end subroutine cell_placement_5
@@ -393,7 +393,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! big parcel C
@@ -401,7 +401,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel a
@@ -409,7 +409,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             !
@@ -421,7 +421,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y - dx(2) * 0.44d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! big parcel C
@@ -429,7 +429,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y - dx(2) * 0.32d0
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
             ! small parcel a
@@ -437,7 +437,7 @@ program test_mpi_nearest_12
             parcels%position(2, l) = y + dx(2) * 0.33d0
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%buoyancy(l) = l + comm%rank * 100
+            parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
         end subroutine cell_placement_6
@@ -479,8 +479,8 @@ program test_mpi_nearest_12
                                1,               &
                                MPI_INTEGER,     &
                                MPI_SUM,         &
-                               comm%world,      &
-                               comm%err)
+                               world%comm,      &
+                               world%err)
         end subroutine parcel_setup
 
         subroutine check_result(n_true_merges)
@@ -488,23 +488,23 @@ program test_mpi_nearest_12
             check_array(1) = n_parcels - n_invalid
             check_array(2) = n_merge
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 call MPI_Reduce(MPI_IN_PLACE, check_array, 2, MPI_INTEGER, MPI_SUM, &
-                                comm%master, comm%world, comm%err)
+                                world%root, world%comm, world%err)
             else
                 call MPI_Reduce(check_array, check_array, 2, MPI_INTEGER, MPI_SUM, &
-                                comm%master, comm%world, comm%err)
+                                world%root, world%comm, world%err)
             endif
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, &
-                                comm%master, comm%world, comm%err)
+                                world%root, world%comm, world%err)
             else
                 call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, &
-                                comm%master, comm%world, comm%err)
+                                world%root, world%comm, world%err)
             endif
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 passed = (passed .and. (check_array(1) == n_total_parcels) .and. (check_array(2) == n_true_merges))
             endif
         end subroutine check_result

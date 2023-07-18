@@ -24,13 +24,13 @@ program test_field_halo_fill
 
     call mpi_comm_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
     allocate(values(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1)))
 
-    values(:, :, :) = dble(comm%rank + 1)
+    values(:, :, :) = dble(world%rank + 1)
 
     call field_halo_fill(values, l_alloc=.true.)
 
@@ -81,17 +81,17 @@ program test_field_halo_fill
 
     passed = (passed .and. (diff == zero))
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI field halo fill', passed)
     endif
 

@@ -13,12 +13,12 @@ module mpi_collectives
             double precision, intent(inout) :: sendbuf(..)
             type(MPI_Op),     intent(in)    :: op
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_DOUBLE_PRECISION, &
-                                op, comm%master, comm%world, comm%err)
+                                op, world%root, world%comm, world%err)
             else
                 call MPI_Reduce(sendbuf, sendbuf, size(sendbuf), MPI_DOUBLE_PRECISION, &
-                                op, comm%master, comm%world, comm%err)
+                                op, world%root, world%comm, world%err)
             endif
         end subroutine mpi_double_reduce
 
@@ -26,12 +26,12 @@ module mpi_collectives
             integer,      intent(inout) :: sendbuf(..)
             type(MPI_Op), intent(in)    :: op
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_INTEGER, &
-                                op, comm%master, comm%world, comm%err)
+                                op, world%root, world%comm, world%err)
             else
                 call MPI_Reduce(sendbuf, sendbuf, size(sendbuf), MPI_INTEGER, &
-                                op, comm%master, comm%world, comm%err)
+                                op, world%root, world%comm, world%err)
             endif
         end subroutine mpi_integer_reduce
 

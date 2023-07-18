@@ -20,10 +20,10 @@ program test_mpi_netcdf_dataset_2d
     call mpi_comm_initialise
 
     do n = 1, n_local_parcels
-        dset(n) = n + n_local_parcels * comm%rank
+        dset(n) = n + n_local_parcels * world%rank
     enddo
 
-    n_total_parcels = comm%size * n_local_parcels
+    n_total_parcels = world%size * n_local_parcels
 
     call create_netcdf_file(ncfname='nctest.nc',                    &
                             overwrite=.true.,                       &
@@ -53,7 +53,7 @@ program test_mpi_netcdf_dataset_2d
 
     passed = (passed .and. (ncerr == 0))
 
-    start(1) = comm%rank * n_local_parcels + 1
+    start(1) = world%rank * n_local_parcels + 1
     cnt(1) = n_local_parcels
 
     call write_netcdf_dataset(ncid, var_id, dset, start, cnt)
@@ -68,13 +68,13 @@ program test_mpi_netcdf_dataset_2d
 
     passed = (passed .and. (ncerr == 0))
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI netCDF write 1D dataset', passed)
     endif
 

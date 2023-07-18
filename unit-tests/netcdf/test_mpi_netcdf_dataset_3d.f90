@@ -6,7 +6,8 @@
 program test_mpi_netcdf_dataset_3d
     use unit_test
     use netcdf_writer
-    use mpi_communicator, only : comm, mpi_comm_initialise, mpi_comm_finalise
+    use mpi_communicator, only : world, mpi_comm_initialise, mpi_comm_finalise
+    use mpi_layout, only : cart
     implicit none
 
     integer, parameter   :: nx = 10, ny = 8, nz = 5
@@ -17,22 +18,21 @@ program test_mpi_netcdf_dataset_3d
     integer              :: start(3), cnt(3)
     integer              :: dims(2), coords(2)
     logical              :: periods(2)
-    integer              :: rank ! we do not reorder the rank numbers, so this is unused!
     integer              :: lo(3), hi(3)
 
     call mpi_comm_initialise
 
     ! create slabs, z-direction keeps 1 processor
     dims = (/0, 0/)
-    call MPI_Dims_create(comm%size, 2, dims, comm%err)
+    call MPI_Dims_create(world%size, 2, dims, world%err)
 
     periods = (/.true., .true./)
 
-    call MPI_Cart_create(comm%world, 2, dims, periods, .false., comm%cart, comm%err)
+    call MPI_Cart_create(world%comm, 2, dims, periods, .false., cart%comm, world%err)
 
-    call MPI_Comm_rank(comm%cart, rank, comm%err)
+    call MPI_Comm_rank(cart%comm, cart%rank, world%err)
 
-    call MPI_Cart_coords(comm%cart, rank, 2, coords)
+    call MPI_Cart_coords(cart%comm, cart%rank, 2, coords)
 
     call set_local_bounds(nx, coords(1), dims(1), lo(1), hi(1))
     call set_local_bounds(ny, coords(2), dims(2), lo(2), hi(2))
@@ -44,7 +44,7 @@ program test_mpi_netcdf_dataset_3d
     do ix = lo(1), hi(1)
         do iy = lo(2), hi(2)
             do iz = lo(3), hi(3)
-                dset(iz, iy, ix) = comm%rank
+                dset(iz, iy, ix) = world%rank
             enddo
         enddo
     enddo
@@ -118,13 +118,13 @@ program test_mpi_netcdf_dataset_3d
 
     passed = (passed .and. (ncerr == 0))
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI netCDF write 3D datasets', passed)
     endif
 

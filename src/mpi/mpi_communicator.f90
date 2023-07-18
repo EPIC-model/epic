@@ -8,17 +8,10 @@ module mpi_communicator
         integer        :: err = 0
         integer        :: rank = -1
         integer        :: size = 1
-        integer        :: master = 0
+        integer        :: root = 0
     end type communicator
 
     type(communicator) :: world
-
-    type :: sub_communicator
-        type(MPI_Comm) :: comm = MPI_COMM_WORLD
-        integer        :: err = 0
-        integer        :: rank = 0
-        integer        :: size = 1
-    end type sub_communicator
 
     contains
 

@@ -148,7 +148,8 @@ module parcel_mpi
                                requests(n),             &
                                cart%err)
 
-                call mpi_check_for_error("in MPI_Isend of parcel_mpi::communicate_sizes_and_resize.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Isend of parcel_mpi::communicate_sizes_and_resize.")
             enddo
 
             do n = 1, 8
@@ -162,7 +163,8 @@ module parcel_mpi
                               recv_status,              &
                               cart%err)
 
-                call mpi_check_for_error("in MPI_Recv of parcel_mpi::communicate_sizes_and_resize.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Recv of parcel_mpi::communicate_sizes_and_resize.")
 
             enddo
 
@@ -171,7 +173,8 @@ module parcel_mpi
                              send_statuses,     &
                              cart%err)
 
-            call mpi_check_for_error("in MPI_Waitall of parcel_mpi::communicate_sizes_and_resize.")
+            call mpi_check_for_error(cart, &
+                "in MPI_Waitall of parcel_mpi::communicate_sizes_and_resize.")
 
             total_size = sum(n_parcel_recvs) + n_parcels
 
@@ -212,7 +215,8 @@ module parcel_mpi
                                requests(n),             &
                                cart%err)
 
-                call mpi_check_for_error("in MPI_Isend of parcel_mpi::communicate_parcels.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Isend of parcel_mpi::communicate_parcels.")
             enddo
 
             do n = 1, 8
@@ -220,7 +224,8 @@ module parcel_mpi
                 ! check for incoming messages
                 call mpi_check_for_message(neighbours(n)%rank,      &
                                            RECV_NEIGHBOUR_TAG(n),   &
-                                           recv_size)
+                                           recv_size,               &
+                                           cart)
 
                 allocate(recv_buf(recv_size))
 
@@ -233,7 +238,8 @@ module parcel_mpi
                               recv_status,              &
                               cart%err)
 
-                call mpi_check_for_error("in MPI_Recv of parcel_mpi::communicate_parcels.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Recv of parcel_mpi::communicate_parcels.")
 
                 if (mod(recv_size, n_par_attrib) /= 0) then
                     call mpi_exit_on_error("parcel_mpi::communicate_parcels: Receiving wrong count.")
@@ -253,7 +259,8 @@ module parcel_mpi
                             send_statuses,      &
                             cart%err)
 
-            call mpi_check_for_error("in MPI_Waitall of parcel_mpi::communicate_parcels.")
+            call mpi_check_for_error(cart, &
+                "in MPI_Waitall of parcel_mpi::communicate_parcels.")
 
             ! delete parcel that we sent
             n_total_sends = sum(n_parcel_sends)
@@ -262,7 +269,7 @@ module parcel_mpi
 #ifndef NDEBUG
             n = n_parcels
             call mpi_blocking_reduce(n, MPI_SUM)
-            if ((cart%rank == cart%master) .and. (.not. n == n_total_parcels)) then
+            if ((world%rank == world%root) .and. (.not. n == n_total_parcels)) then
                 call mpi_exit_on_error(&
                     "in parcel_mpi::communicate_parcels: We lost parcels.")
             endif

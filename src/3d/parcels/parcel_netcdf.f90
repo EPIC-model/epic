@@ -303,7 +303,8 @@ module parcel_netcdf
                                     world%comm,             &
                                     world%err)
 
-            call mpi_check_for_error("in MPI_Reduce_scatter of parcel_netcdf::write_netcdf_parcels.")
+            call mpi_check_for_error(world, &
+                "in MPI_Reduce_scatter of parcel_netcdf::write_netcdf_parcels.")
 
             ! we need to increase the start_index by 1
             ! since the starting index in Fortran is 1 and not 0.
@@ -452,10 +453,20 @@ module parcel_netcdf
 
             ! verify result
             n_total = n_parcels
-            call MPI_Allreduce(MPI_IN_PLACE, n_total, 1, MPI_INTEGER, MPI_SUM, world%comm, world%err)
-            call mpi_check_for_error("in MPI_Allreduce of parcel_netcdf::read_netcdf_parcels.")
+            call MPI_Allreduce(MPI_IN_PLACE,    &
+                               n_total,         &
+                               1,               &
+                               MPI_INTEGER,     &
+                               MPI_SUM,         &
+                               world%comm,      &
+                               world%err)
+
+            call mpi_check_for_error(world, &
+                "in MPI_Allreduce of parcel_netcdf::read_netcdf_parcels.")
+
             if (n_total_parcels .ne. n_total) then
-                call mpi_exit_on_error("Local number of parcels does not sum up to total number!")
+                call mpi_exit_on_error(&
+                    "Local number of parcels does not sum up to total number!")
             endif
 
             call stop_timer(parcel_io_timer)

@@ -123,9 +123,9 @@ module parcel_nearest
             allocate(l_available(max_num_parcels))
             allocate(l_merged(max_num_parcels))
 
-            call MPI_Sizeof(l_bytes, disp_unit, cart%err)
+            call MPI_Sizeof(l_bytes, disp_unit, world%err)
 
-            call mpi_check_for_error(&
+            call mpi_check_for_error(world, &
                 "in MPI_Sizeof of parcel_nearest::nearest_win_allocate.")
 
             ! size of RMA window in bytes
@@ -135,12 +135,12 @@ module parcel_nearest
             call MPI_Win_allocate(win_size,         &
                                   disp_unit,        &
                                   MPI_INFO_NULL,    &
-                                  cart%comm,        &
+                                  world%comm,       &
                                   buf_ptr,          &
                                   win_leaf,         &
-                                  cart%err)
+                                  world%err)
 
-            call mpi_check_for_error(&
+            call mpi_check_for_error(world, &
                 "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
 
             call c_f_pointer(buf_ptr, l_leaf, [max_num_parcels])
@@ -150,12 +150,12 @@ module parcel_nearest
             call MPI_Win_allocate(win_size,         &
                                   disp_unit,        &
                                   MPI_INFO_NULL,    &
-                                  cart%comm,        &
+                                  world%comm,       &
                                   buf_ptr,          &
                                   win_avail,        &
-                                  cart%err)
+                                  world%err)
 
-            call mpi_check_for_error(&
+            call mpi_check_for_error(world, &
                 "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
 
             call c_f_pointer(buf_ptr, l_available, [max_num_parcels])
@@ -164,12 +164,12 @@ module parcel_nearest
             call MPI_Win_allocate(win_size,         &
                                   disp_unit,        &
                                   MPI_INFO_NULL,    &
-                                  cart%comm,        &
+                                  world%comm,       &
                                   buf_ptr,          &
                                   win_merged,       &
-                                  cart%err)
+                                  world%err)
 
-            call mpi_check_for_error(&
+            call mpi_check_for_error(world, &
                 "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
 
             call c_f_pointer(buf_ptr, l_merged, [max_num_parcels])
@@ -183,16 +183,16 @@ module parcel_nearest
                 return
             endif
 
-            call MPI_Win_free(win_leaf, cart%err)
-            call mpi_check_for_error(&
+            call MPI_Win_free(win_leaf, world%err)
+            call mpi_check_for_error(world, &
                  "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
 
-            call MPI_Win_free(win_avail, cart%err)
-            call mpi_check_for_error(&
+            call MPI_Win_free(win_avail, world%err)
+            call mpi_check_for_error(world, &
                  "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
 
-            call MPI_Win_free(win_merged, cart%err)
-            call mpi_check_for_error(&
+            call MPI_Win_free(win_merged, world%err)
+            call mpi_check_for_error(world, &
                  "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
 
         end subroutine nearest_win_deallocate
@@ -281,10 +281,10 @@ module parcel_nearest
                                1,               &
                                MPI_INTEGER,     &
                                MPI_SUM,         &
-                               cart%comm,       &
-                               cart%err)
+                               world%comm,      &
+                               world%err)
 
-            call mpi_check_for_error(&
+            call mpi_check_for_error(world, &
                     "in MPI_Allreduce of parcel_nearest::find_nearest.")
 
             if (n_global_small == 0) then
@@ -701,7 +701,7 @@ module parcel_nearest
                                requests(n),             &
                                cart%err)
 
-                call mpi_check_for_error(&
+                call mpi_check_for_error(cart, &
                     "in MPI_Isend of parcel_nearest::find_closest_parcel_globally.")
 
             enddo
@@ -710,7 +710,8 @@ module parcel_nearest
                 ! check for incoming messages
                 call mpi_check_for_message(neighbours(n)%rank,      &
                                            RECV_NEIGHBOUR_TAG(n),   &
-                                           recv_size)
+                                           recv_size,               &
+                                           cart)
 
                 if (mod(recv_size, n_entries) /= 0) then
                     call mpi_exit_on_error(&
@@ -730,7 +731,7 @@ module parcel_nearest
                               recv_status,              &
                               cart%err)
 
-                call mpi_check_for_error(&
+                call mpi_check_for_error(cart, &
                     "in MPI_Recv of parcel_nearest::find_closest_parcel_globally.")
 
                 do l = 1, recv_count
@@ -754,7 +755,7 @@ module parcel_nearest
                             send_statuses,      &
                             cart%err)
 
-            call mpi_check_for_error(&
+            call mpi_check_for_error(cart, &
                 "in MPI_Waitall of parcel_nearest::find_closest_parcel_globally.")
 
             call deallocate_mpi_buffers
@@ -822,7 +823,7 @@ module parcel_nearest
                                           win_avail,        &
                                           requests(m),      &
                                           cart%err)
-                            call mpi_check_for_error(&
+                            call mpi_check_for_error(cart, &
                                 "in MPI_Put of parcel_nearest::resolve_tree.")
 
                             call MPI_Win_unlock(rc, win_avail, cart%err)
@@ -857,7 +858,7 @@ module parcel_nearest
                                           win_leaf,         &
                                           requests(m),      &
                                           cart%err)
-                            call mpi_check_for_error(&
+                            call mpi_check_for_error(cart, &
                                 "in MPI_Put of parcel_nearest::resolve_tree.")
                             call MPI_Win_unlock(rc, win_leaf, cart%err)
                         endif
@@ -892,7 +893,7 @@ module parcel_nearest
                                               win_avail,        &
                                               requests(m),      &
                                               cart%err)
-                                call mpi_check_for_error(&
+                                call mpi_check_for_error(cart, &
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
                                 call MPI_Win_unlock(rc, win_avail, cart%err)
                             endif
@@ -935,7 +936,7 @@ module parcel_nearest
                                           win_avail,        &
                                           requests(m),      &
                                           cart%err)
-                            call mpi_check_for_error(&
+                            call mpi_check_for_error(cart, &
                                     "in MPI_Get of parcel_nearest::resolve_tree.")
 
                             call MPI_Win_unlock(rc, win_avail, cart%err)
@@ -964,7 +965,7 @@ module parcel_nearest
                                               win_merged,       &
                                               requests(m),      &
                                               cart%err)
-                                call mpi_check_for_error(&
+                                call mpi_check_for_error(cart, &
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
                                 call MPI_Win_unlock(rc, win_merged, cart%err)
                             endif
@@ -984,7 +985,7 @@ module parcel_nearest
                                    cart%comm,               &
                                    cart%err)
 
-                call mpi_check_for_error(&
+                call mpi_check_for_error(cart, &
                     "in MPI_Allreduce of parcel_nearest::resolve_tree.")
             enddo
 
@@ -1016,7 +1017,7 @@ module parcel_nearest
                                           requests(m),      &
                                           cart%err)
 
-                            call mpi_check_for_error(&
+                            call mpi_check_for_error(cart, &
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
 
                             call MPI_Win_unlock(rc, win_avail, cart%err)
@@ -1059,7 +1060,7 @@ module parcel_nearest
                                       win_leaf,         &
                                       requests(m),      &
                                       cart%err)
-                        call mpi_check_for_error(&
+                        call mpi_check_for_error(cart, &
                             "in MPI_Get of parcel_nearest::resolve_tree.")
 
                         call MPI_Win_unlock(rc, win_leaf, cart%err)
@@ -1098,7 +1099,7 @@ module parcel_nearest
                                           requests(m),      &
                                           cart%err)
 
-                            call mpi_check_for_error(&
+                            call mpi_check_for_error(cart, &
                                 "in MPI_Get of parcel_nearest::resolve_tree.")
 
                             call MPI_Win_unlock(rc, win_avail, cart%err)
@@ -1155,7 +1156,7 @@ module parcel_nearest
                                       requests(m),      &
                                       cart%err)
 
-                        call mpi_check_for_error(&
+                        call mpi_check_for_error(cart, &
                             "in MPI_Get of parcel_nearest::resolve_tree.")
 
                         call MPI_Win_unlock(rc, win_avail, cart%err)
@@ -1330,7 +1331,7 @@ module parcel_nearest
                                requests(n),             &
                                cart%err)
 
-                call mpi_check_for_error(&
+                call mpi_check_for_error(cart, &
                     "in MPI_Isend of parcel_nearest::send_small_parcel_bndry_info.")
             enddo
 
@@ -1339,7 +1340,8 @@ module parcel_nearest
                 ! check for incoming messages
                 call mpi_check_for_message(neighbours(n)%rank,      &
                                            RECV_NEIGHBOUR_TAG(n),   &
-                                           recv_size)
+                                           recv_size,               &
+                                           cart)
 
                 allocate(recv_buf(recv_size))
 
@@ -1352,7 +1354,7 @@ module parcel_nearest
                               recv_status,              &
                               cart%err)
 
-                call mpi_check_for_error(&
+                call mpi_check_for_error(cart, &
                     "in MPI_Recv of parcel_nearest::send_small_parcel_bndry_info.")
 
                 if (mod(recv_size, n_entries) /= 0) then
@@ -1423,7 +1425,7 @@ module parcel_nearest
                             send_statuses,      &
                             cart%err)
 
-            call mpi_check_for_error(&
+            call mpi_check_for_error(cart, &
                 "in MPI_Waitall of parcel_nearest::send_small_parcel_bndry_info.")
 
 
@@ -1530,7 +1532,7 @@ module parcel_nearest
                                requests(n),             &
                                cart%err)
 
-                call mpi_check_for_error(&
+                call mpi_check_for_error(cart, &
                     "in MPI_Isend of parcel_nearest::gather_remote_parcels.")
             enddo
 
@@ -1538,7 +1540,8 @@ module parcel_nearest
                 ! check for incoming messages
                 call mpi_check_for_message(neighbours(n)%rank,      &
                                            RECV_NEIGHBOUR_TAG(n),   &
-                                           recv_size)
+                                           recv_size,               &
+                                           cart)
 
                 allocate(recv_buf(recv_size))
 
@@ -1551,7 +1554,7 @@ module parcel_nearest
                               recv_status,              &
                               cart%err)
 
-                call mpi_check_for_error(&
+                call mpi_check_for_error(cart, &
                     "in MPI_Recv of parcel_nearest::gather_remote_parcels.")
 
                 if (mod(recv_size, n_entries) /= 0) then
@@ -1599,7 +1602,7 @@ module parcel_nearest
                             send_statuses,      &
                             cart%err)
 
-            call mpi_check_for_error(&
+            call mpi_check_for_error(cart, &
                 "in MPI_Waitall of parcel_nearest::gather_remote_parcels.")
 
             call deallocate_mpi_buffers
@@ -1607,7 +1610,7 @@ module parcel_nearest
 #ifndef NDEBUG
             n = n_parcels - n_invalid
             call mpi_blocking_reduce(n, MPI_SUM)
-            if ((cart%rank == cart%master) .and. (.not. n == n_total_parcels)) then
+            if ((world%rank == world%root) .and. (.not. n == n_total_parcels)) then
                 call mpi_exit_on_error(&
                     "in parcel_nearest::gather_remote_parcels: We lost parcels.")
             endif

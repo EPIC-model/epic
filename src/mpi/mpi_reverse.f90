@@ -24,8 +24,8 @@ module mpi_reverse
 
     logical :: l_initialised = .false.
 
-    type(sub_communicator) :: x_comm
-    type(sub_communicator) :: y_comm
+    type(communicator) :: x_comm
+    type(communicator) :: y_comm
 
     type(reorder_type) :: x_reo
     type(reorder_type) :: y_reo
@@ -90,12 +90,12 @@ module mpi_reverse
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine initialise_reversing(reo, sub_comm, dir)
-            type(reorder_type),     intent(inout) :: reo
-            type(sub_communicator), intent(inout) :: sub_comm
-            integer,                intent(in)    :: dir
-            integer, allocatable                  :: rlos(:), rhis(:)
-            integer                               :: i, j, lo, hi, rank, d
-            logical                               :: remain_dims(2)
+            type(reorder_type), intent(inout) :: reo
+            type(communicator), intent(inout) :: sub_comm
+            integer,            intent(in)    :: dir
+            integer, allocatable              :: rlos(:), rhis(:)
+            integer                           :: i, j, lo, hi, rank, d
+            logical                           :: remain_dims(2)
 
             reo%dir = dir
 
@@ -106,7 +106,7 @@ module mpi_reverse
             remain_dims(dir) = .true.
             remain_dims(d) = .false.
 
-            call MPI_Cart_sub(comm%cart, remain_dims, sub_comm%comm, comm%err)
+            call MPI_Cart_sub(cart%comm, remain_dims, sub_comm%comm, cart%err)
 
             call MPI_Comm_rank(sub_comm%comm, sub_comm%rank, sub_comm%err)
 
@@ -139,7 +139,7 @@ module mpi_reverse
                 reo%dest(i) = sub_comm%rank
                 do j = 0, layout%size(dir)-1
                     if (i >= rlos(j) .and. i <= rhis(j)) then
-                        call MPI_Cart_rank(sub_comm%comm, (/j/), rank, comm%err)
+                        call MPI_Cart_rank(sub_comm%comm, (/j/), rank, sub_comm%err)
                         reo%dest(i) = rank
                     endif
                 enddo
@@ -438,11 +438,11 @@ module mpi_reverse
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine communicate_halo(reo, sub_comm)
-            type(reorder_type),     intent(inout) :: reo
-            type(sub_communicator), intent(inout) :: sub_comm
-            type(MPI_Request)                     :: requests(2)
-            type(MPI_Status)                      :: send_statuses(2)
-            integer                               :: lb(3), ub(3)
+            type(reorder_type), intent(inout) :: reo
+            type(communicator), intent(inout) :: sub_comm
+            type(MPI_Request)                 :: requests(2)
+            type(MPI_Status)                  :: send_statuses(2)
+            integer                           :: lb(3), ub(3)
 
             lb = lbound(reo%lo_buffer)
             ub = ubound(reo%lo_buffer)
@@ -457,7 +457,8 @@ module mpi_reverse
                            requests(1),                                             &
                            sub_comm%err)
 
-            call mpi_check_for_error("in MPI_Isend of mpi_reverse::communicate_halo.")
+            call mpi_check_for_error(sub_comm, &
+                "in MPI_Isend of mpi_reverse::communicate_halo.")
 
             lb = lbound(reo%hi_halo_buffer)
             ub = ubound(reo%hi_halo_buffer)
@@ -472,7 +473,8 @@ module mpi_reverse
                           MPI_STATUS_IGNORE,                                            &
                           sub_comm%err)
 
-            call mpi_check_for_error("in MPI_Recv of mpi_reverse::communicate_halo.")
+            call mpi_check_for_error(sub_comm, &
+                "in MPI_Recv of mpi_reverse::communicate_halo.")
 
             lb(1:2) = lbound(reo%hi_buffer)
             ub(1:2) = ubound(reo%hi_buffer)
@@ -487,7 +489,8 @@ module mpi_reverse
                            requests(2),                             &
                            sub_comm%err)
 
-            call mpi_check_for_error("in MPI_Isend of mpi_reverse::communicate_halo.")
+            call mpi_check_for_error(sub_comm, &
+                "in MPI_Isend of mpi_reverse::communicate_halo.")
 
             lb(1:2) = lbound(reo%lo_halo_buffer)
             ub(1:2) = ubound(reo%lo_halo_buffer)
@@ -502,14 +505,16 @@ module mpi_reverse
                           MPI_STATUS_IGNORE,                            &
                           sub_comm%err)
 
-            call mpi_check_for_error("in MPI_Recv of mpi_reverse::communicate_halo.")
+            call mpi_check_for_error(sub_comm, &
+                "in MPI_Recv of mpi_reverse::communicate_halo.")
 
             call MPI_Waitall(2,                 &
                             requests,           &
                             send_statuses,      &
-                            comm%err)
+                            sub_comm%err)
 
-            call mpi_check_for_error("in MPI_Waitall of mpi_reverse::communicate_halo.")
+            call mpi_check_for_error(sub_comm, &
+                "in MPI_Waitall of mpi_reverse::communicate_halo.")
 
         end subroutine communicate_halo
 

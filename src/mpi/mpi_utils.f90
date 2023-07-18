@@ -14,9 +14,15 @@ module mpi_utils
 
         subroutine mpi_exit_on_error(msg, rank)
             character(*), optional, intent(in) :: msg
+            integer,      optional, intent(in) :: rank
+            integer                            :: r
 
             if (present(msg)) then
-                print *, "Error on rank ", rank, msg
+                r = world%rank
+                if (present(rank)) then
+                    r = rank
+                endif
+                print *, "Error on rank ", r, msg
             endif
             call MPI_Abort(world%comm, -1, world%err)
 

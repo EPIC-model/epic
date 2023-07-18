@@ -1,7 +1,7 @@
 ! =============================================================================
 !                         Test MPI parcel halo swap
 !
-!   This unit test checks parcel halo swap. Each MPI rank sends comm%rank+1
+!   This unit test checks parcel halo swap. Each MPI rank sends world%rank+1
 !   parcels to each of its neighbours.
 ! =============================================================================
 program test_mpi_parcel_communicate
@@ -23,7 +23,7 @@ program test_mpi_parcel_communicate
 
     call mpi_comm_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     nx = 32
     ny = 32
@@ -38,65 +38,65 @@ program test_mpi_parcel_communicate
     ! calls mpi_layout_init internally
     call field_alloc
 
-    n_parcels = 8 * (comm%rank + 1)
-    n_total = 4 * comm%size * (comm%size + 1)
+    n_parcels = 8 * (world%rank + 1)
+    n_total = 4 * world%size * (world%size + 1)
     call parcel_alloc(2 * n_total)
 
     n_total_parcels = n_total
 
-    do n = 1, comm%rank + 1
+    do n = 1, world%rank + 1
         ! place parcels in southwest halo
         parcels%position(1, n) = (box%hlo(1) + f12) * dx(1)
         parcels%position(2, n) = (box%hlo(2) + f12) * dx(2)
         parcels%position(3, n) = f12
 
         ! place parcels in west halo
-        j = comm%rank + 1
+        j = world%rank + 1
         parcels%position(1, n + j) = (box%hlo(1) + f12) * dx(1)
         parcels%position(2, n + j) = (box%lo(2) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in northwest halo
-        j = 2 * (comm%rank + 1)
+        j = 2 * (world%rank + 1)
         parcels%position(1, n + j) = (box%hlo(1) + f12) * dx(1)
         parcels%position(2, n + j) = ((box%hhi(2) - 1) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in north halo
-        j = 3 * (comm%rank + 1)
+        j = 3 * (world%rank + 1)
         parcels%position(1, n + j) = (box%lo(1) + f12) * dx(1)
         parcels%position(2, n + j) = ((box%hhi(2) - 1) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in northeast halo
-        j = 4 * (comm%rank + 1)
+        j = 4 * (world%rank + 1)
         parcels%position(1, n + j) = ((box%hhi(1) - 1) + f12) * dx(1)
         parcels%position(2, n + j) = ((box%hhi(2) - 1) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in east halo
-        j = 5 * (comm%rank + 1)
+        j = 5 * (world%rank + 1)
         parcels%position(1, n + j) = ((box%hhi(1) - 1) + f12) * dx(1)
         parcels%position(2, n + j) = (box%lo(2) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in southeast halo
-        j = 6 * (comm%rank + 1)
+        j = 6 * (world%rank + 1)
         parcels%position(1, n + j) = ((box%hhi(1) - 1) + f12) * dx(1)
         parcels%position(2, n + j) = (box%hlo(2) + f12) * dx(2)
         parcels%position(3, n + j) = f12
 
         ! place parcels in south halo
-        j = 7 * (comm%rank + 1)
+        j = 7 * (world%rank + 1)
         parcels%position(1, n + j) = (box%lo(1) + f12) * dx(1)
         parcels%position(2, n + j) = (box%hlo(2) + f12) * dx(2)
         parcels%position(3, n + j) = f12
     enddo
 
-    parcels%volume(1:n_parcels) = comm%rank + 1
-    parcels%B(:, 1:n_parcels) = comm%rank + 1
-    parcels%vorticity(:, 1:n_parcels) = comm%rank + 1
-    parcels%buoyancy(1:n_parcels) = comm%rank + 1
+    parcels%volume(1:n_parcels) = world%rank + 1
+    parcels%B(:, 1:n_parcels) = world%rank + 1
+    parcels%vorticity(:, 1:n_parcels) = world%rank + 1
+    parcels%buoyancy(1:n_parcels) = world%rank + 1
 
     call parcel_communicate
 
@@ -104,7 +104,7 @@ program test_mpi_parcel_communicate
     call mpi_blocking_reduce(n_total_verify, MPI_SUM)
 
     ! this needs to be checked by the MPI root only!
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         passed = (passed .and. (n_total_verify == n_total))
     endif
 
@@ -135,15 +135,15 @@ program test_mpi_parcel_communicate
         passed = (passed .and. (n_expected == n_total))
     endif
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI parcel halo swap', passed)
     endif
 

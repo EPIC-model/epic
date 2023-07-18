@@ -41,8 +41,8 @@ program test_merging_parcels
                        1,               &
                        MPI_INTEGER,     &
                        MPI_SUM,         &
-                       comm%world,      &
-                       comm%err)
+                       world%comm,      &
+                       world%err)
 
     call merge_parcels(parcels)
 
@@ -52,8 +52,8 @@ program test_merging_parcels
                        1,               &
                        MPI_INTEGER,     &
                        MPI_SUM,         &
-                       comm%world,      &
-                       comm%err)
+                       world%comm,      &
+                       world%err)
 
     call create_netcdf_parcel_file('parallel_final', .true., .false.)
     call write_netcdf_parcels(t = 0.0d0)

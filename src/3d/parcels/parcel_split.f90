@@ -14,7 +14,7 @@ module parcel_split_mod
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio, get_eigenvalues
     use mpi_timer, only : start_timer, stop_timer, timings
     use omp_lib
-    use mpi_communicator, only : comm, MPI_SUM
+    use mpi_communicator, only : world, MPI_SUM
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
@@ -181,7 +181,7 @@ module parcel_split_mod
             call parcel_communicate(invalid)
 
 #ifdef ENABLE_VERBOSE
-            if (verbose .and. (world%rank == world%master)) then
+            if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)", &
                       "no. parcels before and after split: ", orig_num, "...", n_total_parcels
             endif

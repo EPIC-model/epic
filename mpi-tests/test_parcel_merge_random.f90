@@ -26,13 +26,13 @@ program test_parcel_merge_random
 
     call mpi_comm_initialise
 
-    if (comm%rank == comm%master) then
-        print '(a35, i6, a11)', "Running 'test_parcel_merge_random' with ", comm%size, " MPI ranks."
+    if (world%rank == world%root) then
+        print '(a35, i6, a11)', "Running 'test_parcel_merge_random' with ", world%size, " MPI ranks."
     endif
 
     call random_seed(size=sk)
     allocate(seed(1:sk))
-    seed(:) = comm%rank
+    seed(:) = world%rank
     call random_seed(put=seed)
 
 
@@ -78,7 +78,7 @@ program test_parcel_merge_random
     ! Do time loop:
     do i = 1, nt
 
-        if (comm%rank == comm%master) then
+        if (world%rank == world%root) then
             print '(a15, i4)', "Performing step", i
         endif
 
@@ -98,7 +98,7 @@ program test_parcel_merge_random
         n_merges = int(sum(parcels%buoyancy(1:n_parcels)))
         call perform_integer_reduction(n_merges)
 
-        if (comm%rank == comm%master) then
+        if (world%rank == world%root) then
             print *, "Merge", n_merges, "of", n_total_parcels, "parcels."
         endif
 
@@ -166,10 +166,10 @@ program test_parcel_merge_random
 
             call perform_integer_reduction(n_total)
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 if (n_total /= n_total_parcels) then
                     print *, "check_total_number_of_parcels: Total number of parcels disagree!"
-                    call MPI_Abort(comm%world, -1, comm%err)
+                    call MPI_Abort(world%comm, -1, world%err)
                 endif
             endif
 
@@ -180,12 +180,12 @@ program test_parcel_merge_random
         subroutine perform_integer_reduction(var)
             integer, intent(inout) :: var
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 call MPI_Reduce(MPI_IN_PLACE, var, 1, MPI_INTEGER, MPI_SUM, &
-                                comm%master, comm%world, comm%err)
+                                world%root, world%comm, world%err)
             else
                 call MPI_Reduce(var, var, 1, MPI_INTEGER, MPI_SUM, &
-                                comm%master, comm%world, comm%err)
+                                world%root, world%comm, world%err)
             endif
 
         end subroutine perform_integer_reduction

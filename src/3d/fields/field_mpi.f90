@@ -287,7 +287,8 @@ module field_mpi
                                requests(n),             &
                                cart%err)
 
-                call mpi_check_for_error("in MPI_Irecv of field_mpi::halo_to_interior_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Irecv of field_mpi::halo_to_interior_communication.")
             enddo
 
             do n = 1, 8
@@ -304,7 +305,8 @@ module field_mpi
                               cart%comm,                &
                               cart%err)
 
-                call mpi_check_for_error("in MPI_Send of field_mpi::halo_to_interior_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Send of field_mpi::halo_to_interior_communication.")
             enddo
 
             call MPI_Waitall(8,         &
@@ -312,7 +314,8 @@ module field_mpi
                              statuses,  &
                              cart%err)
 
-            call mpi_check_for_error("in MPI_Waitall of field_mpi::halo_to_interior_communication.")
+            call mpi_check_for_error(cart, &
+                "in MPI_Waitall of field_mpi::halo_to_interior_communication.")
 
         end subroutine halo_to_interior_communication
 
@@ -341,7 +344,8 @@ module field_mpi
                                requests(n),             &
                                cart%err)
 
-                call mpi_check_for_error("in MPI_Irecv of field_mpi::interior_to_halo_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Irecv of field_mpi::interior_to_halo_communication.")
             enddo
 
 
@@ -358,7 +362,8 @@ module field_mpi
                               cart%comm,                &
                               cart%err)
 
-                call mpi_check_for_error("in MPI_Send of field_mpi::interior_to_halo_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Send of field_mpi::interior_to_halo_communication.")
             enddo
 
             call MPI_Waitall(8,         &
@@ -366,7 +371,8 @@ module field_mpi
                              statuses,  &
                              cart%err)
 
-            call mpi_check_for_error("in MPI_Waitall of field_mpi::interior_to_halo_communication.")
+            call mpi_check_for_error(cart, &
+                "in MPI_Waitall of field_mpi::interior_to_halo_communication.")
 
         end subroutine interior_to_halo_communication
 

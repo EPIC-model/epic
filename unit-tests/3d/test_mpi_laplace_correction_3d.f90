@@ -36,11 +36,11 @@ program test_mpi_laplace_correction_3d
 
     call mpi_comm_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     call random_seed(size=sk)
     allocate(seed(1:sk))
-    seed(:) = comm%rank
+    seed(:) = world%rank
     call random_seed(put=seed)
 
     call parse_command_line
@@ -124,7 +124,7 @@ program test_mpi_laplace_correction_3d
 
     max_err = get_abs_max(volg)
 
-    if (l_verbose .and. (comm%rank == comm%master)) then
+    if (l_verbose .and. (world%rank == world%root)) then
         write(*,*) 'test laplace correction'
         write(*,*) 'iteration, average error, max absolute error'
         write(*,*) 0, init_error, max_err
@@ -139,7 +139,7 @@ program test_mpi_laplace_correction_3d
             volg(0:nz, lo(2):hi(2), lo(1):hi(1)) = abs(volg(0:nz, lo(2):hi(2), lo(1):hi(1)) / vcell - one)
             final_error = get_sum(volg) / (nx * ny * (nz+1))
             max_err = get_abs_max(volg)
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 write(*,*) i, final_error, max_err
             endif
         endif
@@ -155,9 +155,9 @@ program test_mpi_laplace_correction_3d
 
     call mpi_comm_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI laplace correction 3D', passed)
     endif
 

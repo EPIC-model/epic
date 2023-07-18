@@ -121,7 +121,7 @@ module parcel_init
             ! number of parcels per dimension
             n_per_dim = int(dble(parcel%n_per_cell) ** f13)
             if (n_per_dim ** 3 .ne. parcel%n_per_cell) then
-                if (world%rank == world%master) then
+                if (world%rank == world%root) then
                     print *, "Number of parcels per cell (", &
                              parcel%n_per_cell, ") not a cubic."
                 endif

@@ -21,7 +21,7 @@ program test_mpi_parcel_read
 
     call mpi_comm_initialise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
     call register_timer('parcel I/O', parcel_io_timer)
 
@@ -29,15 +29,15 @@ program test_mpi_parcel_read
     ! write parcels first
     !
 
-    n_parcels = 10 + (comm%rank + 1)
+    n_parcels = 10 + (world%rank + 1)
     n_parcels_before = n_parcels
-    n_total_parcels = 11 * comm%size + (comm%size * (comm%size - 1)) / 2
+    n_total_parcels = 11 * world%size + (world%size * (world%size - 1)) / 2
 
     call parcel_alloc(n_total_parcels)
 
     ! fill with 1 to n_total_parcels
     start_index = 0
-    do n = 0, comm%rank-1
+    do n = 0, world%rank-1
         start_index = start_index + 10 + (n + 1)
     enddo
 
@@ -106,13 +106,13 @@ program test_mpi_parcel_read
 
     passed = (passed .and. (ncerr == 0))
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI parcel read', passed)
     endif
 
