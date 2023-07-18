@@ -123,9 +123,9 @@ module parcel_nearest
             allocate(l_available(max_num_parcels))
             allocate(l_merged(max_num_parcels))
 
-            call MPI_Sizeof(l_bytes, disp_unit, world%err)
+            call MPI_Sizeof(l_bytes, disp_unit, cart%err)
 
-            call mpi_check_for_error(world, &
+            call mpi_check_for_error(cart, &
                 "in MPI_Sizeof of parcel_nearest::nearest_win_allocate.")
 
             ! size of RMA window in bytes
@@ -135,12 +135,12 @@ module parcel_nearest
             call MPI_Win_allocate(win_size,         &
                                   disp_unit,        &
                                   MPI_INFO_NULL,    &
-                                  world%comm,       &
+                                  cart%comm,        &
                                   buf_ptr,          &
                                   win_leaf,         &
-                                  world%err)
+                                  cart%err)
 
-            call mpi_check_for_error(world, &
+            call mpi_check_for_error(cart, &
                 "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
 
             call c_f_pointer(buf_ptr, l_leaf, [max_num_parcels])
@@ -150,12 +150,12 @@ module parcel_nearest
             call MPI_Win_allocate(win_size,         &
                                   disp_unit,        &
                                   MPI_INFO_NULL,    &
-                                  world%comm,       &
+                                  cart%comm,        &
                                   buf_ptr,          &
                                   win_avail,        &
-                                  world%err)
+                                  cart%err)
 
-            call mpi_check_for_error(world, &
+            call mpi_check_for_error(cart, &
                 "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
 
             call c_f_pointer(buf_ptr, l_available, [max_num_parcels])
@@ -164,12 +164,12 @@ module parcel_nearest
             call MPI_Win_allocate(win_size,         &
                                   disp_unit,        &
                                   MPI_INFO_NULL,    &
-                                  world%comm,       &
+                                  cart%comm,        &
                                   buf_ptr,          &
                                   win_merged,       &
-                                  world%err)
+                                  cart%err)
 
-            call mpi_check_for_error(world, &
+            call mpi_check_for_error(cart, &
                 "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
 
             call c_f_pointer(buf_ptr, l_merged, [max_num_parcels])
@@ -183,16 +183,16 @@ module parcel_nearest
                 return
             endif
 
-            call MPI_Win_free(win_leaf, world%err)
-            call mpi_check_for_error(world, &
+            call MPI_Win_free(win_leaf, cart%err)
+            call mpi_check_for_error(cart, &
                  "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
 
-            call MPI_Win_free(win_avail, world%err)
-            call mpi_check_for_error(world, &
+            call MPI_Win_free(win_avail, cart%err)
+            call mpi_check_for_error(cart, &
                  "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
 
-            call MPI_Win_free(win_merged, world%err)
-            call mpi_check_for_error(world, &
+            call MPI_Win_free(win_merged, cart%err)
+            call mpi_check_for_error(cart, &
                  "in MPI_Win_free of parcel_nearest::nearest_win_deallocate.")
 
         end subroutine nearest_win_deallocate
