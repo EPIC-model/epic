@@ -7,7 +7,7 @@ module parcel_diagnostics
     use parcel_container, only : parcels, n_parcels, n_total_parcels
     use parcel_ellipsoid
     use parcel_split_mod, only : n_parcel_splits
-    use parcel_merge, only : n_parcel_merges
+    use parcel_merging, only : n_parcel_merges
     use omp_lib
     use physics, only : ape_calculation
     use ape_density, only : ape_den
