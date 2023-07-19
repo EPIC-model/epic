@@ -3,7 +3,7 @@ program test_merging_parcels
     use parcel_container
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels
-    use parcel_merge
+    use parcel_merging
     use parcel_netcdf
     use mpi_environment
     use mpi_layout
@@ -44,7 +44,7 @@ program test_merging_parcels
                        world%comm,      &
                        world%err)
 
-    call merge_parcels(parcels)
+    call parcel_merge
 
     n_total_parcels = 0
     call MPI_Allreduce(n_parcels,       &

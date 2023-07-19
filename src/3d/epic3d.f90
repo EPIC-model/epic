@@ -7,7 +7,7 @@ program epic3d
     use parcel_container
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
-    use parcel_merge, only : merge_parcels, merge_timer
+    use parcel_merging, only : parcel_merge, merge_timer
     use parcel_nearest, only : merge_nearest_timer      &
                              , merge_tree_resolve_timer &
                              , nearest_win_allocate     &
@@ -131,7 +131,7 @@ program epic3d
 
                 call ls_rk_step(t)
 
-                call merge_parcels(parcels)
+                call parcel_merge
 
                 call parcel_split
 
