@@ -89,7 +89,7 @@ module netcdf_writer
             integer,      intent(out) :: dimid
 
             ncerr = nf90_def_dim(ncid, name, dimsize, dimid)
-            call check_netcdf_error("Failed to define" // name // "dimension.")
+            call check_netcdf_error("Failed to define " // name // " dimension.")
         end subroutine define_netcdf_dimension
 
         subroutine define_netcdf_dataset(ncid, name, long_name, std_name, unit, dtype, dimids, varid)
