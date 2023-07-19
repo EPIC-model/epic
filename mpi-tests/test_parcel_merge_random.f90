@@ -9,7 +9,7 @@ program test_parcel_merge_random
     use fields, only : field_default
     use parcel_bc, only : apply_periodic_bc
     use parcel_interpl, only : par2grid
-    use parcel_merge, only : merge_parcels
+    use parcel_merging, only : parcel_merge
     use parcel_nearest
     use mpi_layout, only : box, mpi_layout_init
     use test_utils
@@ -105,7 +105,7 @@ program test_parcel_merge_random
         n_orig = n_parcels
 
         ! Merge parcels
-        call merge_parcels(parcels)
+        call parcel_merge(parcels)
 
         ! Interpolate parcel data to grid
         call par2grid
