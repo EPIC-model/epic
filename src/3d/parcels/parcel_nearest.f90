@@ -30,7 +30,10 @@ module parcel_nearest
     use mpi_communicator
     use mpi_layout
     use mpi_collectives, only : mpi_blocking_reduce
-    use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error, mpi_check_for_message
+    use mpi_utils, only : mpi_exit_on_error         &
+                        , mpi_check_for_error       &
+                        , mpi_check_for_message     &
+                        , mpi_stop
     use iso_c_binding, only : c_ptr, c_f_pointer
     use parcel_mpi, only : n_parcel_sends               &
                          , north_pid                    &
@@ -116,6 +119,10 @@ module parcel_nearest
 
             if (l_nearest_win_allocated) then
                 return
+            endif
+
+            if (.not. l_mpi_layout_initialised) then
+                call mpi_stop("Error: The Cartesian communicator not yet initialised.")
             endif
 
             l_nearest_win_allocated = .true.
