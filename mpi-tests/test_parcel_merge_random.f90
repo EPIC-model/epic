@@ -105,7 +105,7 @@ program test_parcel_merge_random
         n_orig = n_parcels
 
         ! Merge parcels
-        call parcel_merge(parcels)
+        call parcel_merge
 
         ! Interpolate parcel data to grid
         call par2grid

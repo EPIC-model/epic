@@ -10,7 +10,7 @@ program test_parcel_spli_merge
     use parcel_bc, only : apply_periodic_bc, apply_reflective_bc
     use parcel_interpl, only : par2grid
     use parcel_split_mod, only : parcel_split
-    use parcel_merging, only : merge_parcels
+    use parcel_merging, only : parcel_merge
     use parcel_nearest
     use mpi_layout, only : mpi_layout_init
     use test_utils
@@ -100,7 +100,7 @@ program test_parcel_spli_merge
             print *, "Merge", n_merges, "of", n_total_parcels, "parcels."
         endif
 
-        call merge_parcels(parcels)
+        call parcel_merge
 
         do n = 1, n_parcels
             call random_number(rn)
