@@ -58,7 +58,7 @@ module parcel_interpl
             , par2grid_timer    &
             , grid2par_timer    &
             , halo_swap_timer    &
-            , trilinear         
+            , trilinear
 
     contains
 
@@ -93,7 +93,7 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
-            
+
             call start_timer(halo_swap_timer)
             call field_halo_swap(volg)
             call stop_timer(halo_swap_timer)
@@ -424,6 +424,7 @@ module parcel_interpl
             call stop_timer(grid2par_timer)
 
         end subroutine grid2par
+
 
         ! Tri-linear interpolation
         ! @param[in] pos position of the parcel

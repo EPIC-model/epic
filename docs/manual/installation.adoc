@@ -6,18 +6,19 @@ Users can obtain the source code by
 
 [source, bash]
 ----
-git clone https://github.com/matt-frey/epic.git
+git clone https://github.com/EPIC-model/epic.git
 ----
 
 It is however recommended to use the latest link:https://github.com/matt-frey/epic/releases[release] for production runs. EPIC contributors can also clone the repository using the SSH version
 [source, bash]
 ----
-git clone git@github.com:matt-frey/epic.git
+git clone git@github.com:EPIC-model/epic.git
 ----
 
 
 === Prerequisites
-EPIC is implemented in Fortran; hence, a Fortran compiler is required. We recommend to use link:https://gcc.gnu.org/wiki/GFortran[GNU Fortran compiler]. It further depends on link:https://www.hdfgroup.org/solutions/hdf5/[HDF5] and
+EPIC is implemented in Fortran; hence, a Fortran compiler is required. We recommend to use link:https://gcc.gnu.org/wiki/GFortran[GNU Fortran compiler].
+Also, the 3D model uses MPI to run on distributed memory architectures. It further depends on link:https://www.hdfgroup.org/solutions/hdf5/[HDF5] and
 link:https://www.unidata.ucar.edu/software/netcdf/[NetCDF]. Scripts to install HDF5 and NetCDF are found in the
 source code subdirectory `dependencies`. No guarantee can be given for a successful installation with these scripts.
 Optionally, users can install Python in order to use the provided pre- and post-processing scripts. It is generally
@@ -47,6 +48,7 @@ $ mkdir build
 $ cd build
 $ ../configure
 ----
+Note that the environment variables `$MPI_DIR`, `$NETCDF_C_DIR` and `$NETCDF_FORTRAN_DIR` must be set to the proper installation root directories.
 The most important configure options are given in <<tab_configure_options>>. You can also append the flag `--help`
 to see all available options.
 

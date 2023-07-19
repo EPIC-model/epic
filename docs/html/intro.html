@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.17">
-<meta name="author" content="Matthias Frey (Univ. of St Andrews), David G. Dritschel (Univ. of St Andrews), Steven J. Böing (Univ. of Leeds), Evgenij Belikov (Univ. of Edinburgh)">
+<meta name="author" content="Matthias Frey (Univ. of St Andrews), David G. Dritschel (Univ. of St Andrews), Steven J. Böing (Univ. of Leeds)">
 <title>EPIC - Elliptical Parcel-In-Cell</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -444,7 +444,6 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <span id="author" class="author">Matthias Frey (Univ. of St Andrews)</span><br>
 <span id="author2" class="author">David G. Dritschel (Univ. of St Andrews)</span><br>
 <span id="author3" class="author">Steven J. Böing (Univ. of Leeds)</span><br>
-<span id="author4" class="author">Evgenij Belikov (Univ. of Edinburgh)</span><br>
 <span id="revnumber">version 0.12.3</span>
 </div>
 <div id="toc" class="toc2">
@@ -501,7 +500,7 @@ system.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">git clone https://github.com/matt-frey/epic.git</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">git clone https://github.com/EPIC-model/epic.git</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -509,14 +508,15 @@ system.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">git clone git@github.com:matt-frey/epic.git</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">git clone git@github.com:EPIC-model/epic.git</code></pre>
 </div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_prerequisites">1.2. Prerequisites</h3>
 <div class="paragraph">
-<p>EPIC is implemented in Fortran; hence, a Fortran compiler is required. We recommend to use <a href="https://gcc.gnu.org/wiki/GFortran">GNU Fortran compiler</a>. It further depends on <a href="https://www.hdfgroup.org/solutions/hdf5/">HDF5</a> and
+<p>EPIC is implemented in Fortran; hence, a Fortran compiler is required. We recommend to use <a href="https://gcc.gnu.org/wiki/GFortran">GNU Fortran compiler</a>.
+Also, the 3D model uses MPI to run on distributed memory architectures. It further depends on <a href="https://www.hdfgroup.org/solutions/hdf5/">HDF5</a> and
 <a href="https://www.unidata.ucar.edu/software/netcdf/">NetCDF</a>. Scripts to install HDF5 and NetCDF are found in the
 source code subdirectory <code>dependencies</code>. No guarantee can be given for a successful installation with these scripts.
 Optionally, users can install Python in order to use the provided pre- and post-processing scripts. It is generally
@@ -558,7 +558,8 @@ $ ../configure</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The most important configure options are given in <a href="#tab_configure_options">Table 1</a>. You can also append the flag <code>--help</code>
+<p>Note that the environment variables <code>$MPI_DIR</code>, <code>$NETCDF_C_DIR</code> and <code>$NETCDF_FORTRAN_DIR</code> must be set to the proper installation root directories.
+The most important configure options are given in <a href="#tab_configure_options">Table 1</a>. You can also append the flag <code>--help</code>
 to see all available options.</p>
 </div>
 <table id="tab_configure_options" class="tableblock frame-all grid-all stretch">
@@ -1050,7 +1051,7 @@ step is taken.</p>
 <div id="footer">
 <div id="footer-text">
 Version 0.12.3<br>
-Last updated 2022-11-14 13:46:50 UTC
+Last updated 2023-05-11 15:59:17 +0200
 </div>
 </div>
 <script type="text/x-mathjax-config">
