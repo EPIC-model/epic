@@ -9,7 +9,7 @@ program test_mpi_trilinear
     use constants, only : pi, zero, one, f12, f23, f32
     use parcel_container
     use mpi_layout
-    use parcel_interpl, only : par2grid, par2grid_timer
+    use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
     use parcel_ellipsoid, only : get_abc
     use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz, ngrid
     use fields, only : volg, field_alloc
@@ -33,6 +33,7 @@ program test_mpi_trilinear
     extent =  (/0.4d0, 0.4d0, 0.4d0/)
 
     call register_timer('par2grid', par2grid_timer)
+    call register_timer('halo swap', halo_swap_timer)
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 

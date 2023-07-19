@@ -1,18 +1,18 @@
 ! =============================================================================
 !                       Test subroutine diffz
 !
-!  This unit test checks the subroutine diffz and central_diffz using the
-!  function:
+!  This unit test checks the subroutine diffz and central_diffz_semi_spectral
+!  using the function:
 !               z^3
 !  in a domain of width 2 * pi in x and y, and of height pi (-pi/2 < z < pi/2)
-!  The subroutine diffz and central_diffz should return
+!  The subroutine diffz and central_diffz_semi_spectral should return
 !               3z^2
 ! =============================================================================
 program test_mpi_diffz5
     use unit_test
     use constants, only : zero, three, pi, twopi, f12
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use inversion_mod, only : init_inversion, central_diffz, diffz &
+    use inversion_mod, only : init_inversion, central_diffz_semi_spectral, diffz &
                             , field_combine_physical, field_decompose_physical, fftxyp2s, fftxys2p
     use mpi_environment
     use mpi_layout
@@ -59,7 +59,7 @@ program test_mpi_diffz5
 
     dp = fp
     call fftxyp2s(dp, fs)
-    call central_diffz(fs, ds)
+    call central_diffz_semi_spectral(fs, ds)
     call fftxys2p(ds, dp)
 
     error = maxval(dabs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &

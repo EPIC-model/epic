@@ -15,7 +15,7 @@ program test_mpi_gradient_correction_3d
                                 , grad_corr_timer           &
                                 , vort_corr_timer           &
                                 , init_parcel_correction
-    use parcel_interpl, only : vol2grid
+    use parcel_interpl, only : vol2grid, halo_swap_timer
     use parcel_ellipsoid, only : get_abc
     use parcel_init, only : init_regular_positions
     use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz, dx
@@ -47,6 +47,7 @@ program test_mpi_gradient_correction_3d
 
     call register_timer('gradient correction', grad_corr_timer)
     call register_timer('vorticity correction', vort_corr_timer)
+    call register_timer('halo swap', halo_swap_timer)
 
     nx = 32
     ny = 32

@@ -11,7 +11,7 @@ program test_mpi_parcel_init_3d
     use constants, only : pi, zero, one, two, four, five, f12, f13, f23, f32
     use parcel_container
     use parcel_init, only : init_timer, parcel_default, init_parcels_from_grids
-    use parcel_interpl, only : par2grid, par2grid_timer
+    use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
     use parcel_ellipsoid, only : get_abc
     use fields, only : tbuoyg, field_default
     use field_ops, only : get_rms, get_abs_max
@@ -49,6 +49,7 @@ program test_mpi_parcel_init_3d
 
     call register_timer('parcel init', init_timer)
     call register_timer('par2grid', par2grid_timer)
+    call register_timer('halo swap', halo_swap_timer)
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
