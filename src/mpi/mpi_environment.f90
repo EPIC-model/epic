@@ -6,7 +6,7 @@ module mpi_environment
     type :: communicator
         type(MPI_Comm) :: comm = MPI_COMM_WORLD
         integer        :: err = 0
-        integer        :: rank = -1
+        integer        :: rank = 0
         integer        :: size = 1
         integer        :: root = 0
     end type communicator
