@@ -14,7 +14,7 @@ program test_mpi_diffz1
     use constants, only : zero, one, two, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use inversion_mod, only : diffz, init_inversion, field_decompose_physical, field_combine_physical
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -26,7 +26,7 @@ program test_mpi_diffz1
     double precision              :: x, y, z, k, l, m, prefactor
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (world%err == 0)
 
@@ -90,7 +90,7 @@ program test_mpi_diffz1
         call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0) .and. (error < 0.2d0))
 

@@ -7,7 +7,7 @@ module rk_utils
     use parameters, only : nx, ny, nz, dxi, vcell
     use scherzinger, only : scherzinger_eigenvalues
     use mpi_layout, only : box
-    use mpi_communicator
+    use mpi_environment
     use mpi_utils, only : mpi_exit_on_error
 #ifdef ENABLE_VERBOSE
     use options, only : output

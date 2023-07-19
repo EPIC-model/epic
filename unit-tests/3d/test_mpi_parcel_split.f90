@@ -9,7 +9,7 @@
 program test_mpi_parcel_split
     use constants, only : zero, one, f18, f14, f12, f34, fpi, pi, four
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use parcel_container
     use parcel_mpi
@@ -27,7 +27,7 @@ program test_mpi_parcel_split
     integer          :: n_orig_total
     integer          :: n_orig_local
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     call register_timer('parcel split', split_timer)
     call register_timer('parcel container resize', resize_timer)
@@ -134,7 +134,7 @@ program test_mpi_parcel_split
         call print_result_logical('Test MPI parcel split', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     contains
 

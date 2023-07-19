@@ -5,22 +5,22 @@
 ! =============================================================================
 program test_mpi_init
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     implicit none
 
     logical :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     if (world%size == 1) then
         print *, "MPI tests must be run with more than one process."
-        call mpi_comm_finalise
+        call mpi_env_finalise
         stop
     endif
 
     passed = (world%err == 0)
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0))
 

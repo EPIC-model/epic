@@ -10,7 +10,7 @@
 program test_field_interior_accumulate
     use constants, only : zero, one, two, four
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use field_mpi
     implicit none
@@ -22,13 +22,13 @@ program test_field_interior_accumulate
     logical                       :: passed = .true.
     double precision              :: diff
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     if (world%size > 4) then
         if (world%rank == world%root) then
             print *, "This unit test does not work with more than 4 MPI ranks."
         endif
-        call mpi_comm_finalise
+        call mpi_env_finalise
         stop
     endif
 
@@ -81,7 +81,7 @@ program test_field_interior_accumulate
         call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0))
 

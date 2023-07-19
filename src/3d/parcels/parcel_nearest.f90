@@ -27,7 +27,7 @@ module parcel_nearest
                          , ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
     use mpi_timer, only : start_timer, stop_timer
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error         &

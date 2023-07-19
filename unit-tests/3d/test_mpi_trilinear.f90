@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_mpi_trilinear
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use constants, only : pi, zero, one, f12, f23, f32
     use parcel_container
     use mpi_layout
@@ -22,7 +22,7 @@ program test_mpi_trilinear
     double precision :: im, corner(3)
     logical          :: passed = .true.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (passed .and. (world%err == 0))
 
@@ -83,7 +83,7 @@ program test_mpi_trilinear
 
     passed = (passed .and. (error < dble(3.0e-14)))
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0))
 

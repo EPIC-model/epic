@@ -37,7 +37,7 @@ program test_mpi_vel2vgrad
     use inversion_mod, only : vel2vgrad
     use sta3dfft, only : fftxyp2s
     use mpi_timer
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -47,7 +47,7 @@ program test_mpi_vel2vgrad
     double precision              :: x, y, z, AA, BB, CC, a, b, c
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (world%err == 0)
 
@@ -125,7 +125,7 @@ program test_mpi_vel2vgrad
         call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0) .and. (error < dble(2.0e-14)))
 

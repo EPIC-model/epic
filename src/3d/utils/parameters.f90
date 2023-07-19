@@ -8,7 +8,7 @@ module parameters
     use netcdf_reader
     use netcdf_utils
     use netcdf_writer
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout, only : box, l_mpi_layout_initialised
     use mpi_utils, only : mpi_print, mpi_stop
     implicit none

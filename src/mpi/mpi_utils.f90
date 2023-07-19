@@ -1,5 +1,5 @@
 module mpi_utils
-    use mpi_communicator
+    use mpi_environment
     implicit none
 
     contains
@@ -37,7 +37,7 @@ module mpi_utils
             if (present(msg)) then
                 call mpi_print(msg)
             endif
-            call mpi_comm_finalise
+            call mpi_env_finalise
             stop
         end subroutine mpi_stop
 

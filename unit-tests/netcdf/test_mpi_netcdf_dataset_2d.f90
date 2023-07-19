@@ -6,7 +6,7 @@
 program test_mpi_netcdf_dataset_2d
     use unit_test
     use netcdf_writer
-    use mpi_communicator
+    use mpi_environment
     implicit none
 
     integer, parameter :: nx = 2, ny = 5
@@ -16,7 +16,7 @@ program test_mpi_netcdf_dataset_2d
     logical            :: passed = .true.
     integer            :: xstart, xend, ystart, yend, xlen, ylen
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     xstart = world%rank * nx + 1
     xend   = (world%rank + 1) * nx
@@ -108,6 +108,6 @@ program test_mpi_netcdf_dataset_2d
 
     deallocate(dset)
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_netcdf_dataset_2d

@@ -2,7 +2,7 @@ module inversion_utils
     use constants
     use parameters, only : nx, ny, nz, dx, dxi, extent, upper, lower
     use mpi_layout
-    use mpi_communicator
+    use mpi_environment
     use sta3dfft, only : initialise_fft &
                        , finalise_fft   &
                        , rkx            &

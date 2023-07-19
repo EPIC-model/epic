@@ -1,5 +1,5 @@
 module field_ops
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use constants, only : f12
     use parameters, only : nz, ncell

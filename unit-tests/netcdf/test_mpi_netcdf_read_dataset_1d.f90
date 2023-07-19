@@ -7,7 +7,7 @@ program test_mpi_netcdf_read_dataset_1d
     use unit_test
     use netcdf_writer
     use netcdf_reader
-    use mpi_communicator
+    use mpi_environment
     implicit none
 
     integer, parameter            :: n_local_parcels = 10
@@ -19,7 +19,7 @@ program test_mpi_netcdf_read_dataset_1d
     integer, allocatable          :: recvcounts(:), n_size(:)
     integer                       :: recvbuf
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     n_parcels = n_local_parcels * world%size
 
@@ -120,6 +120,6 @@ program test_mpi_netcdf_read_dataset_1d
     deallocate(recvcounts)
     deallocate(n_size)
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_netcdf_read_dataset_1d

@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_mpi_grid2par
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_collectives
     use mpi_layout
     use constants, only : pi, zero, one, two, three, four, five, f12, f23
@@ -22,7 +22,7 @@ program test_mpi_grid2par
     double precision              :: im, corner(3)
     logical                       :: passed = .true.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (passed .and. (world%err == 0))
 
@@ -105,7 +105,7 @@ program test_mpi_grid2par
 
     passed = (passed .and. (error < dble(1.0e-14)))
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0))
 

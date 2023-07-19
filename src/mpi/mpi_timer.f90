@@ -3,7 +3,7 @@
 !                     https://github.com/EPCCed/pmpic
 ! =============================================================================
 module mpi_timer
-    use mpi_communicator
+    use mpi_environment
     implicit none
 
     type timer_type

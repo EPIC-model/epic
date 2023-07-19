@@ -1,4 +1,4 @@
-module mpi_communicator
+module mpi_environment
     use mpi_f08
     use mpi_tags
     implicit none
@@ -15,7 +15,7 @@ module mpi_communicator
 
     contains
 
-        subroutine mpi_comm_initialise
+        subroutine mpi_env_initialise
 #ifdef ENABLE_OPENMP
             integer :: provided
             call MPI_Init_thread(MPI_THREAD_SERIALIZED, provided, world%err)
@@ -29,9 +29,9 @@ module mpi_communicator
             call MPI_Comm_size(world%comm, world%size, world%err)
             call MPI_Comm_rank(world%comm, world%rank, world%err)
             call MPI_Comm_size(world%comm, world%size, world%err)
-        end subroutine mpi_comm_initialise
+        end subroutine mpi_env_initialise
 
-        subroutine mpi_comm_finalise
+        subroutine mpi_env_finalise
             logical :: flag
             call MPI_Initialized(flag, world%err)
 
@@ -44,5 +44,5 @@ module mpi_communicator
             if (.not. flag) then
                 call MPI_Abort(world%comm, -1, world%err)
             endif
-        end subroutine mpi_comm_finalise
-end module mpi_communicator
+        end subroutine mpi_env_finalise
+end module mpi_environment

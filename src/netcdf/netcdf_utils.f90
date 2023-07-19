@@ -5,7 +5,7 @@
 ! =============================================================================
 module netcdf_utils
     use netcdf
-    use mpi_communicator
+    use mpi_environment
     use config, only : package
     use mpi_utils, only : mpi_stop, mpi_exit_on_error
     implicit none

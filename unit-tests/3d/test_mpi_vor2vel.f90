@@ -19,7 +19,7 @@ program test_mpi_vor2vel
     use inversion_utils, only : init_inversion
     use inversion_mod, only : vor2vel, vor2vel_timer
     use mpi_timer
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -29,7 +29,7 @@ program test_mpi_vor2vel
     double precision              :: x, y, z, AA, BB, CC, a, b, c
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (world%err == 0)
 
@@ -97,7 +97,7 @@ program test_mpi_vor2vel
         call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0) .and. (error < dble(1.0e-14)))
 

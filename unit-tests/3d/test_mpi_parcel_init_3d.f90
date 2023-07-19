@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_mpi_parcel_init_3d
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use options, only : parcel
     use field_mpi
     use constants, only : pi, zero, one, two, four, five, f12, f13, f23, f32
@@ -35,7 +35,7 @@ program test_mpi_parcel_init_3d
                                    dyf = one / dble(nbgy), &
                                    dzf = one / dble(nbgz)
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     call parse_command_line
 
@@ -152,7 +152,7 @@ program test_mpi_parcel_init_3d
 
     deallocate(workg)
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0))
 

@@ -7,7 +7,7 @@ program test_mpi_parcel_delete
     use unit_test
     use constants
     use parcel_container
-    use mpi_communicator
+    use mpi_environment
     use mpi_timer
     use merge_sort
     implicit none
@@ -22,7 +22,7 @@ program test_mpi_parcel_delete
     integer :: ii(1000 - n_del)
 
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (passed .and. (world%err == 0))
 
@@ -128,6 +128,6 @@ program test_mpi_parcel_delete
         call print_result_logical('Test MPI parcel delete', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_parcel_delete

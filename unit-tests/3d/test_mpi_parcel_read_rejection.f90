@@ -11,7 +11,7 @@ program test_mpi_parcel_read_rejection
     use constants, only : zero, f12
     use parcel_container
     use parcel_netcdf
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, max_num_parcels
     use mpi_timer
@@ -39,7 +39,7 @@ program test_mpi_parcel_read_rejection
 
     character(len=512) :: ncfname
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (passed .and. (world%err == 0))
 
@@ -165,7 +165,7 @@ program test_mpi_parcel_read_rejection
         call print_result_logical('Test MPI parcel read', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 
     contains

@@ -9,7 +9,7 @@ program test_mpi_reverse_y
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent, upper
     use deriv1d
     use stafft
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use mpi_reverse, only : reverse_y               &
                           , intialise_mpi_reverse   &
@@ -23,7 +23,7 @@ program test_mpi_reverse_y
     double precision              :: x, y, z, xr
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (world%err == 0)
 
@@ -80,7 +80,7 @@ program test_mpi_reverse_y
 
     call finalise_mpi_reverse
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0))
 

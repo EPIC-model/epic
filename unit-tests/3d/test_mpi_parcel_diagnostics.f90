@@ -4,7 +4,7 @@
 program test_mpi_parcel_diagnostics
     use constants, only : zero, one, f12, f23
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use parcel_container
     use parcel_diagnostics
@@ -17,7 +17,7 @@ program test_mpi_parcel_diagnostics
     integer                       :: ix, iy, iz, i, j, k, l, n_total
     double precision              :: im, corner(3), total_vol
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (world%err == 0)
 
@@ -85,7 +85,7 @@ program test_mpi_parcel_diagnostics
         passed = (passed .and. (dabs(parcel_stats(IDX_RMS_ZETA) - f12) < 1.0e-15))
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0))
 

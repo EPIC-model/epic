@@ -1,5 +1,5 @@
 program test_parcel_split_random
-    use mpi_communicator
+    use mpi_environment
     use options, only : parcel
     use constants, only : zero, one, two
     use parameters, only : update_parameters, nx, ny, nz, lower, extent
@@ -23,7 +23,7 @@ program test_parcel_split_random
     !--------------------------------------------------------------------------
     ! Initialise MPI and setup all timers:
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     if (world%rank == world%root) then
         print '(a35, i6, a11)', "Running 'test_parcel_split_random' with ", world%size, " MPI ranks."
@@ -143,7 +143,7 @@ program test_parcel_split_random
 
     call print_timer
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 
     contains

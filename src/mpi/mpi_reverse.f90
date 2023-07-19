@@ -1,5 +1,5 @@
 module mpi_reverse
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error
     implicit none

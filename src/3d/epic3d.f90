@@ -36,14 +36,14 @@ program epic3d
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
-    use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
+    use mpi_environment, only : mpi_env_initialise, mpi_env_finalise
     use mpi_utils, only : mpi_print, mpi_stop
     use options, only : rk_order
     implicit none
 
     integer :: epic_timer
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -57,7 +57,7 @@ program epic3d
     ! Deallocate memory
     call post_run
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     contains
 

@@ -7,7 +7,7 @@ program test_mpi_netcdf_read_dataset_3d
     use unit_test
     use netcdf_writer
     use netcdf_reader
-    use mpi_communicator, only : world, mpi_comm_initialise, mpi_comm_finalise
+    use mpi_environment, only : world, mpi_env_initialise, mpi_env_finalise
     use mpi_layout, only : cart
     implicit none
 
@@ -21,7 +21,7 @@ program test_mpi_netcdf_read_dataset_3d
     logical                       :: periods(2)
     integer                       :: lo(3), hi(3)
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     ! create slabs, z-direction keeps 1 processor
     dims = (/0, 0/)
@@ -157,7 +157,7 @@ program test_mpi_netcdf_read_dataset_3d
     deallocate(wdset)
     deallocate(rdset)
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     contains
 

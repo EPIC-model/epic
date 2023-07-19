@@ -1,5 +1,5 @@
 program test_parcel_spli_merge
-    use mpi_communicator
+    use mpi_environment
     use options, only : parcel
     use constants, only : zero, one, two
     use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmin, dx
@@ -24,7 +24,7 @@ program test_parcel_spli_merge
     !--------------------------------------------------------------------------
     ! Initialise MPI and setup all timers:
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     if (world%rank == world%root) then
         print '(a35, i6, a11)', "Running 'test_parcel_spli_merge' with ", world%size, " MPI ranks."
@@ -134,7 +134,7 @@ program test_parcel_spli_merge
 
     call print_timer
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 
     contains

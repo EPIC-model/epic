@@ -13,7 +13,7 @@ module parcel_correction
     use mpi_timer, only : start_timer, stop_timer
     use fields, only : volg
     use mpi_layout, only : box
-    use mpi_communicator
+    use mpi_environment
     use mpi_utils, only : mpi_check_for_error
     use parcel_mpi, only : parcel_communicate
     implicit none

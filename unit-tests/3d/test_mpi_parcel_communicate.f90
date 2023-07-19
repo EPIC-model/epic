@@ -7,7 +7,7 @@
 program test_mpi_parcel_communicate
     use constants, only : zero, one, f12
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use fields, only : field_alloc
     use parcel_container
@@ -21,7 +21,7 @@ program test_mpi_parcel_communicate
     integer :: n_total, n, j, n_total_verify
     integer :: n_local_verify, n_expected
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (world%err == 0)
 
@@ -147,6 +147,6 @@ program test_mpi_parcel_communicate
         call print_result_logical('Test MPI parcel halo swap', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_parcel_communicate

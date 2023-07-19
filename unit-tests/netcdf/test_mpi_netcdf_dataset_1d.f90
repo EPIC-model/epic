@@ -6,7 +6,7 @@
 program test_mpi_netcdf_dataset_2d
     use unit_test
     use netcdf_writer
-    use mpi_communicator
+    use mpi_environment
     implicit none
 
     integer, parameter :: n_local_parcels = 5
@@ -17,7 +17,7 @@ program test_mpi_netcdf_dataset_2d
     logical            :: passed = .true.
     integer            :: start(1), cnt(1)
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     do n = 1, n_local_parcels
         dset(n) = n + n_local_parcels * world%rank
@@ -78,6 +78,6 @@ program test_mpi_netcdf_dataset_2d
         call print_result_logical('Test MPI netCDF write 1D dataset', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_netcdf_dataset_2d

@@ -23,7 +23,7 @@ program test_mpi_vtend
     use sta3dfft, only : finalise_fft, fftxyp2s
     use inversion_mod, only : init_inversion, vorticity_tendency, vtend_timer
     use mpi_timer
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -34,7 +34,7 @@ program test_mpi_vtend
     double precision              :: cosmz, sinmz, sinkxly, coskxly
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (world%err == 0)
 
@@ -119,7 +119,7 @@ program test_mpi_vtend
         call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0) .and. (error < 1.2d0))
 

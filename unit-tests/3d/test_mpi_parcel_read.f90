@@ -9,7 +9,7 @@ program test_mpi_parcel_read
     use parcel_container
     use parameters, only : set_max_num_parcels
     use parcel_netcdf
-    use mpi_communicator
+    use mpi_environment
     use mpi_timer
     implicit none
 
@@ -19,7 +19,7 @@ program test_mpi_parcel_read
 
     call set_max_num_parcels(100000000)
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (passed .and. (world%err == 0))
 
@@ -116,6 +116,6 @@ program test_mpi_parcel_read
         call print_result_logical('Test MPI parcel read', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_parcel_read

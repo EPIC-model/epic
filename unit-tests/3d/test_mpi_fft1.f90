@@ -8,7 +8,7 @@ program test_mpi_fft1
     use constants, only : pi, twopi, f12, zero, five, four, three, two, one
     use sta3dfft, only : initialise_fft, finalise_fft, fftxyp2s, fftxys2p
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -20,7 +20,7 @@ program test_mpi_fft1
     double precision              :: x, y, z, rad
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (world%err == 0)
 
@@ -85,7 +85,7 @@ program test_mpi_fft1
         call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0) .and. (error < dble(1.0e-14)))
 

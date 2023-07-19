@@ -13,7 +13,7 @@ module parcel_netcdf
     use iomanip, only : zfill
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
-    use mpi_communicator
+    use mpi_environment
     use mpi_utils, only : mpi_exit_on_error, mpi_print, mpi_check_for_error
     use fields, only : is_contained
     implicit none

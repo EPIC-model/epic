@@ -8,7 +8,7 @@ program test_mpi_parcel_unpack
     use unit_test
     use constants
     use parcel_container
-    use mpi_communicator
+    use mpi_environment
     use mpi_timer
     implicit none
 
@@ -18,7 +18,7 @@ program test_mpi_parcel_unpack
     integer, parameter :: n_unpack = 222
     double precision, allocatable:: buffer(:)
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (passed .and. (world%err == 0))
 
@@ -110,6 +110,6 @@ program test_mpi_parcel_unpack
         call print_result_logical('Test MPI parcel unpack', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_parcel_unpack

@@ -12,7 +12,7 @@ module parcel_container
                                , parcel_ellipsoid_replace     &
                                , parcel_ellipsoid_serialize   &
                                , parcel_ellipsoid_deserialize
-    use mpi_communicator
+    use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error
     use armanip, only : resize_array

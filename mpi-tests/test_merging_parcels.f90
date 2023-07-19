@@ -5,12 +5,12 @@ program test_merging_parcels
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels
     use parcel_merge
     use parcel_netcdf
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use test_utils
     implicit none
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     call register_all_timers
 
@@ -60,6 +60,6 @@ program test_merging_parcels
 
     call nearest_win_deallocate
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_merging_parcels

@@ -7,7 +7,7 @@
 ! =============================================================================
 program test_mpi_laplace_correction_3d
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use options, only : parcel
     use constants, only : pi, one, zero, f14, f23, f32, two, four, f12, f18
     use parcel_container, only : n_parcels, parcels, n_total_parcels, parcel_alloc
@@ -34,7 +34,7 @@ program test_mpi_laplace_correction_3d
     integer :: lo(3), hi(3)
     double precision :: q, m, delta
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (world%err == 0)
 
@@ -153,7 +153,7 @@ program test_mpi_laplace_correction_3d
 
     passed = (passed .and. (final_error < init_error))
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0))
 

@@ -14,7 +14,7 @@ module parcel_init
     use mpi_timer, only : start_timer, stop_timer
     use field_mpi, only : field_halo_fill
     use omp_lib
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout, only : box
     use mpi_utils, only : mpi_print, mpi_exit_on_error
     use mpi_collectives, only : mpi_blocking_reduce

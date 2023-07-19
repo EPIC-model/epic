@@ -8,13 +8,13 @@ program test_mpi_parcel_write
     use constants, only : zero
     use parcel_container
     use parcel_netcdf
-    use mpi_communicator
+    use mpi_environment
     use mpi_timer
     implicit none
 
     logical :: passed = .true.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (passed .and. (world%err == 0))
 
@@ -59,6 +59,6 @@ program test_mpi_parcel_write
         call print_result_logical('Test MPI parcel write', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_parcel_write

@@ -10,7 +10,7 @@ program test_mpi_nearest_4
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, dx, vmin, max_num_parcels
     use parcel_nearest
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use mpi_timer
     implicit none
@@ -20,7 +20,7 @@ program test_mpi_nearest_4
     integer, allocatable, dimension(:) :: iclo
     integer                            :: n_merge, n, check_array(2), n_invalid
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (passed .and. (world%err == 0))
 
@@ -84,7 +84,7 @@ program test_mpi_nearest_4
 
     call nearest_win_deallocate
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 
     contains

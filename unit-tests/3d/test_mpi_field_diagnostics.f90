@@ -4,7 +4,7 @@
 program test_mpi_field_diagnostics
     use constants, only : zero, one, f12
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use fields
     use field_diagnostics
@@ -14,7 +14,7 @@ program test_mpi_field_diagnostics
 
     logical :: passed = .true.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     passed = (world%err == 0)
 
@@ -49,7 +49,7 @@ program test_mpi_field_diagnostics
         passed = (passed .and. dabs(field_stats(IDX_KEG) - 0.375d0 * dble(ncell) * (vcell + one)) < 1.0e-14)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0))
 

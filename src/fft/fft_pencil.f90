@@ -8,7 +8,7 @@
 !! Note that we use quite a lot of buffer space here, this could be cut down if Y=X dimensions
 !! so some optimisation on memory could be done there in that case
 module fft_pencil
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use constants
     use dimensions

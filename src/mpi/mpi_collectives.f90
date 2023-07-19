@@ -1,5 +1,5 @@
 module mpi_collectives
-    use mpi_communicator
+    use mpi_environment
     implicit none
 
     interface mpi_blocking_reduce

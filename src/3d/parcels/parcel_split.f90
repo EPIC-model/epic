@@ -14,7 +14,7 @@ module parcel_split_mod
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio, get_eigenvalues
     use mpi_timer, only : start_timer, stop_timer, timings
     use omp_lib
-    use mpi_communicator, only : world, MPI_SUM
+    use mpi_environment, only : world, MPI_SUM
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 

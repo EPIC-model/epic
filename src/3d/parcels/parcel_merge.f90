@@ -17,7 +17,7 @@ module parcel_merge
     use parcel_bc, only : apply_periodic_bc
     use parcel_mpi, only : parcel_communicate
     use mpi_timer, only : start_timer, stop_timer
-    use mpi_communicator
+    use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 

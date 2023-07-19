@@ -1,6 +1,6 @@
 module mpi_layout
     use mpi_f08
-    use mpi_communicator, only : communicator, world
+    use mpi_environment, only : communicator, world
     use mpi_tags
     use mpi_utils, only : mpi_exit_on_error
     implicit none

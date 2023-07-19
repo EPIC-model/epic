@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_mpi_layout
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -16,11 +16,11 @@ program test_mpi_layout
     double precision              :: sendbuf, recvbuf
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
 !     if (world%size == 1) then
 !         print *, "MPI tests must be run with more than one process."
-!         call mpi_comm_finalise
+!         call mpi_env_finalise
 !         stop
 !     endif
 
@@ -39,7 +39,7 @@ program test_mpi_layout
 
     passed = (passed .and. (world%err == 0) .and. (dble((nz+1)*nx*ny) - recvbuf == 0.0d0))
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     passed = (passed .and. (world%err == 0))
 
