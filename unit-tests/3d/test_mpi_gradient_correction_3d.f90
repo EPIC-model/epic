@@ -69,7 +69,7 @@ program test_mpi_gradient_correction_3d
     call parcel_alloc(n_parcels)
 
     n_total_parcels = n_parcels
-    call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+    call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
 
     parcel%n_per_cell = 8
     call init_regular_positions

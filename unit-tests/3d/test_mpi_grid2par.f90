@@ -101,7 +101,7 @@ program test_mpi_grid2par
         error = max(error, maxval(dabs(parcels%strain(l, 1:n_parcels) - dble(l))))
     enddo
 
-    call mpi_blocking_reduce(error, MPI_MAX)
+    call mpi_blocking_reduce(error, MPI_MAX, world)
 
     passed = (passed .and. (error < dble(1.0e-14)))
 

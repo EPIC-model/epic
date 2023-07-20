@@ -101,7 +101,7 @@ program test_mpi_parcel_communicate
     call parcel_communicate
 
     n_total_verify = n_parcels
-    call mpi_blocking_reduce(n_total_verify, MPI_SUM)
+    call mpi_blocking_reduce(n_total_verify, MPI_SUM, world)
 
     ! this needs to be checked by the MPI root only!
     if (world%rank == world%root) then

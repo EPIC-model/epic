@@ -168,7 +168,7 @@ module parcel_split_mod
             ! after this operation the root MPI process knows the new
             ! number of parcels in the simulation
             n_total_parcels = n_parcels
-            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
 
             ! all entries in "pid" that are non-zero are indices of
             ! child parcels; remove all zero entries such that

@@ -71,7 +71,7 @@ module parcel_merging
             ! After this operation the root MPI process knows the new
             ! number of parcels in the simulation
             n_total_parcels = n_parcels
-            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
 
 #ifdef ENABLE_VERBOSE
             if (verbose .and. (world%rank == world%root)) then

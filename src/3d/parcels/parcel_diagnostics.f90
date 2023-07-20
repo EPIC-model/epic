@@ -126,9 +126,9 @@ module parcel_diagnostics
             parcel_stats(IDX_NSPLITS) = n_parcel_splits
             parcel_stats(IDX_NMERGES) = n_parcel_merges
 
-            call mpi_blocking_reduce(parcel_stats(IDX_APE:IDX_NMERGES), MPI_SUM)
-            call mpi_blocking_reduce(parcel_stats(IDX_MIN_BUOY), MPI_MIN)
-            call mpi_blocking_reduce(parcel_stats(IDX_MAX_BUOY), MPI_MAX)
+            call mpi_blocking_reduce(parcel_stats(IDX_APE:IDX_NMERGES), MPI_SUM, world)
+            call mpi_blocking_reduce(parcel_stats(IDX_MIN_BUOY), MPI_MIN, world)
+            call mpi_blocking_reduce(parcel_stats(IDX_MAX_BUOY), MPI_MAX, world)
 
             n_total_parcels = nint(parcel_stats(IDX_NTOT_PAR))
             ntoti = one / dble(n_total_parcels)
