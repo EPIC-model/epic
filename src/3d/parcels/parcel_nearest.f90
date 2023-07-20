@@ -1616,7 +1616,7 @@ module parcel_nearest
 
 #ifndef NDEBUG
             n = n_parcels - n_invalid
-            call mpi_blocking_reduce(n, MPI_SUM)
+            call mpi_blocking_reduce(n, MPI_SUM, world)
             if ((world%rank == world%root) .and. (.not. n == n_total_parcels)) then
                 call mpi_exit_on_error(&
                     "in parcel_nearest::gather_remote_parcels: We lost parcels.")

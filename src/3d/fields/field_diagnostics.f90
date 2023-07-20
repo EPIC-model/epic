@@ -118,11 +118,11 @@ module field_diagnostics
             !
             ! do communication
             !
-            call mpi_blocking_reduce(field_stats(IDX_RMS_V:IDX_ENG), MPI_SUM)
+            call mpi_blocking_reduce(field_stats(IDX_RMS_V:IDX_ENG), MPI_SUM, world)
 
-            call mpi_blocking_reduce(field_stats(IDX_ABSERR_V:IDX_MAX_BUOY), MPI_MAX)
+            call mpi_blocking_reduce(field_stats(IDX_ABSERR_V:IDX_MAX_BUOY), MPI_MAX, world)
 
-            call mpi_blocking_reduce(field_stats(IDX_MIN_NPAR:IDX_MIN_BUOY), MPI_MIN)
+            call mpi_blocking_reduce(field_stats(IDX_MIN_NPAR:IDX_MIN_BUOY), MPI_MIN, world)
 
             !
             ! final calculations

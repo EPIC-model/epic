@@ -108,7 +108,7 @@ program test_mpi_parcel_split
     n_orig_total = n_parcels
     n_orig_local = n_parcels
 
-    call mpi_blocking_reduce(n_orig_total, MPI_SUM)
+    call mpi_blocking_reduce(n_orig_total, MPI_SUM, world)
 
     parcels%volume(1:n_parcels) = f12 * vcell
     parcels%vorticity(:, 1:n_parcels) = world%rank + 1

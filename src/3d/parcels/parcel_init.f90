@@ -57,7 +57,7 @@ module parcel_init
 
             n_total_parcels = n_parcels
             if (world%size > 1) then
-                call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+                call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
             endif
 
             call init_regular_positions
