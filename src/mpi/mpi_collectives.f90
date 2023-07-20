@@ -24,8 +24,9 @@ module mpi_collectives
         end subroutine mpi_double_reduce
 
         subroutine mpi_integer_reduce(sendbuf, op, comm)
-            integer,      intent(inout) :: sendbuf(..)
-            type(MPI_Op), intent(in)    :: op
+            integer,            intent(inout) :: sendbuf(..)
+            type(MPI_Op),       intent(in)    :: op
+            type(communicator), intent(inout) :: comm
 
             if (comm%rank == comm%root) then
                 call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_INTEGER, &
