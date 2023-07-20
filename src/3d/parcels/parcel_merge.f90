@@ -17,7 +17,7 @@ module parcel_merging
     use parcel_bc, only : apply_periodic_bc
     use parcel_mpi, only : parcel_communicate
     use mpi_timer, only : start_timer, stop_timer
-    use mpi_communicator
+    use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
@@ -74,7 +74,7 @@ module parcel_merging
             call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
 
 #ifdef ENABLE_VERBOSE
-            if (verbose .and. (comm%rank == comm%master)) then
+            if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)",                               &
                       "no. parcels before and after merge: ", orig_num,  &
                       "...", n_total_parcels

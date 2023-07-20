@@ -4,7 +4,7 @@
 program test_mpi_field_diagnostics
     use constants, only : zero, one, f12
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use fields
     use field_diagnostics
@@ -14,9 +14,9 @@ program test_mpi_field_diagnostics
 
     logical :: passed = .true.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     call register_timer('field stats', field_stats_timer)
 
@@ -39,7 +39,7 @@ program test_mpi_field_diagnostics
 
     call calculate_field_diagnostics
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         passed = (passed .and. (dabs(field_stats(IDX_RMS_V) - vcelli) == zero))
         passed = (passed .and. (dabs(field_stats(IDX_ABSERR_V) - vcelli) == zero))
         passed = (passed .and. (field_stats(IDX_MAX_NPAR) == one))
@@ -49,11 +49,11 @@ program test_mpi_field_diagnostics
         passed = (passed .and. dabs(field_stats(IDX_KEG) - 0.375d0 * dble(ncell) * (vcell + one)) < 1.0e-14)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI field diagnostics', passed)
     endif
 

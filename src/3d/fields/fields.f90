@@ -6,7 +6,7 @@ module fields
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parameters, only : dx, dxi, extent, lower, nx, ny, nz
     use constants, only : zero
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout, only : box, l_mpi_layout_initialised
     use mpi_utils, only : mpi_exit_on_error
     implicit none

@@ -12,7 +12,7 @@ module parcel_diagnostics
     use physics, only : ape_calculation
     use ape_density, only : ape_den
     use mpi_timer, only : start_timer, stop_timer
-    use mpi_communicator
+    use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error
     implicit none

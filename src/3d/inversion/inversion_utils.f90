@@ -2,7 +2,7 @@ module inversion_utils
     use constants
     use parameters, only : nx, ny, nz, dx, dxi, extent, upper, lower
     use mpi_layout
-    use mpi_communicator
+    use mpi_environment
     use sta3dfft, only : initialise_fft &
                        , finalise_fft   &
                        , rkx            &
@@ -224,8 +224,8 @@ module inversion_utils
                                nz+1,                    &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             !$omp parallel workshare
             gamtop = f12 * extent(3) * (phip00 ** 2 - f13)

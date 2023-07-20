@@ -46,7 +46,7 @@ module netcdf_writer
             logical, optional, intent(in) :: l_serial
             logical                       :: l_parallel
 
-            l_parallel = (comm%size > 1)
+            l_parallel = (world%size > 1)
 
             if (present(l_serial)) then
                 l_parallel = .not. l_serial
@@ -67,7 +67,7 @@ module netcdf_writer
             logical, optional, intent(in) :: l_serial
             logical                       :: l_parallel
 
-            l_parallel = (comm%size > 1)
+            l_parallel = (world%size > 1)
 
             if (present(l_serial)) then
                 l_parallel = .not. l_serial
@@ -89,7 +89,7 @@ module netcdf_writer
             integer,      intent(out) :: dimid
 
             ncerr = nf90_def_dim(ncid, name, dimsize, dimid)
-            call check_netcdf_error("Failed to define" // name // "dimension.")
+            call check_netcdf_error("Failed to define " // name // " dimension.")
         end subroutine define_netcdf_dimension
 
         subroutine define_netcdf_dataset(ncid, name, long_name, std_name, unit, dtype, dimids, varid)

@@ -1,7 +1,7 @@
 module field_mpi
     use constants, only : zero
     use mpi_layout
-    use mpi_communicator
+    use mpi_environment
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error
     implicit none
 
@@ -283,11 +283,12 @@ module field_mpi
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
                                tag,                     &
-                               comm%cart,               &
+                               cart%comm,               &
                                requests(n),             &
-                               comm%err)
+                               cart%err)
 
-                call mpi_check_for_error("in MPI_Irecv of field_mpi::halo_to_interior_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Irecv of field_mpi::halo_to_interior_communication.")
             enddo
 
             do n = 1, 8
@@ -301,18 +302,20 @@ module field_mpi
                               MPI_DOUBLE_PRECISION,     &
                               neighbours(n)%rank,       &
                               SEND_NEIGHBOUR_TAG(n),    &
-                              comm%cart,                &
-                              comm%err)
+                              cart%comm,                &
+                              cart%err)
 
-                call mpi_check_for_error("in MPI_Send of field_mpi::halo_to_interior_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Send of field_mpi::halo_to_interior_communication.")
             enddo
 
             call MPI_Waitall(8,         &
                              requests,  &
                              statuses,  &
-                             comm%err)
+                             cart%err)
 
-            call mpi_check_for_error("in MPI_Waitall of field_mpi::halo_to_interior_communication.")
+            call mpi_check_for_error(cart, &
+                "in MPI_Waitall of field_mpi::halo_to_interior_communication.")
 
         end subroutine halo_to_interior_communication
 
@@ -337,11 +340,12 @@ module field_mpi
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
                                tag,                     &
-                               comm%cart,               &
+                               cart%comm,               &
                                requests(n),             &
-                               comm%err)
+                               cart%err)
 
-                call mpi_check_for_error("in MPI_Irecv of field_mpi::interior_to_halo_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Irecv of field_mpi::interior_to_halo_communication.")
             enddo
 
 
@@ -355,18 +359,20 @@ module field_mpi
                               MPI_DOUBLE_PRECISION,     &
                               neighbours(n)%rank,       &
                               SEND_NEIGHBOUR_TAG(n),    &
-                              comm%cart,                &
-                              comm%err)
+                              cart%comm,                &
+                              cart%err)
 
-                call mpi_check_for_error("in MPI_Send of field_mpi::interior_to_halo_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Send of field_mpi::interior_to_halo_communication.")
             enddo
 
             call MPI_Waitall(8,         &
                              requests,  &
                              statuses,  &
-                             comm%err)
+                             cart%err)
 
-            call mpi_check_for_error("in MPI_Waitall of field_mpi::interior_to_halo_communication.")
+            call mpi_check_for_error(cart, &
+                "in MPI_Waitall of field_mpi::interior_to_halo_communication.")
 
         end subroutine interior_to_halo_communication
 
