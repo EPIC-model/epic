@@ -36,7 +36,7 @@ program test_field_halo_fill_vector
         allocate(values(box%hlo(3):box%hhi(3), box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), ncomp))
 
         do nc = 1, ncomp
-            values(:, :, :, nc) = dble(10 ** (nc-1)) * dble(world%rank + 1)
+            values(:, :, :, nc) = dble(10 ** (nc-1)) * dble(cart%rank + 1)
         enddo
 
         call field_halo_fill(values, l_alloc=.true.)
