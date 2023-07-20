@@ -88,6 +88,14 @@ module mpi_layout
             ! Get new MPI rank number of *this* process
             call MPI_Comm_rank(cart%comm, cart%rank, cart%err)
 
+            ! Get the nmber of ranks of the communicator
+            call MPI_Comm_size(cart%comm, cart%size, cart%err)
+
+            if (cart%size /= world.size) then
+                call mpi_exit_on_error(&
+                    "mpi_layout::mpi_layout_init: Wrong communicator size.")
+            endif
+
             ! Info from https://www.open-mpi.org
             ! MPI_Cart_coords(comm, rank, maxdims, coords, ierror)
             !   comm    -- communicator with Cartesian structure

@@ -122,6 +122,10 @@ contains
             x_distinct_sizes = box%size(I_X)
         endif
 
+        ! Get communicator sizes:
+        call MPI_Comm_size(fft_y_comm%comm, fft_y_comm%size, fft_y_comm%err)
+        call MPI_Comm_size(fft_x_comm%comm, fft_x_comm%size, fft_x_comm%err)
+
         call initialise_transpositions(y_distinct_sizes, x_distinct_sizes)
 
         call initialise_buffers

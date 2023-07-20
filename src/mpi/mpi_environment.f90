@@ -28,7 +28,6 @@ module mpi_environment
 #endif
             call MPI_Comm_size(world%comm, world%size, world%err)
             call MPI_Comm_rank(world%comm, world%rank, world%err)
-            call MPI_Comm_size(world%comm, world%size, world%err)
         end subroutine mpi_env_initialise
 
         subroutine mpi_env_finalise
