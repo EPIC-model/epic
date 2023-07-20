@@ -13,7 +13,7 @@ module parcel_correction
     use mpi_timer, only : start_timer, stop_timer
     use fields, only : volg
     use mpi_layout, only : box
-    use mpi_communicator
+    use mpi_environment
     use mpi_utils, only : mpi_check_for_error
     use parcel_mpi, only : parcel_communicate
     implicit none
@@ -66,10 +66,11 @@ module parcel_correction
                                4,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
-            call mpi_check_for_error("in MPI_Allreduce of parcel_correction::init_parcel_correction.")
+            call mpi_check_for_error(world, &
+                "in MPI_Allreduce of parcel_correction::init_parcel_correction.")
 
             vsum = buf(1)
             vor_bar = buf(2:4)
@@ -110,10 +111,11 @@ module parcel_correction
                                4,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
-            call mpi_check_for_error("in MPI_Allreduce of parcel_correction::apply_vortcor.")
+            call mpi_check_for_error(world, &
+                "in MPI_Allreduce of parcel_correction::apply_vortcor.")
             vsum = buf(1)
             dvor = buf(2:4)
 

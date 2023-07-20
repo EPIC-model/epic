@@ -6,7 +6,7 @@
 program test_mpi_netcdf_dataset_2d
     use unit_test
     use netcdf_writer
-    use mpi_communicator
+    use mpi_environment
     implicit none
 
     integer, parameter :: nx = 2, ny = 5
@@ -16,10 +16,10 @@ program test_mpi_netcdf_dataset_2d
     logical            :: passed = .true.
     integer            :: xstart, xend, ystart, yend, xlen, ylen
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    xstart = comm%rank * nx + 1
-    xend   = (comm%rank + 1) * nx
+    xstart = world%rank * nx + 1
+    xend   = (world%rank + 1) * nx
     ystart = 1
     yend   = ny
 
@@ -30,7 +30,7 @@ program test_mpi_netcdf_dataset_2d
 
     do ix = xstart, xend
         do iy = ystart, yend
-            dset(iy, ix) = comm%rank
+            dset(iy, ix) = world%rank
         enddo
     enddo
 
@@ -40,7 +40,7 @@ program test_mpi_netcdf_dataset_2d
 
     passed = (passed .and. (ncerr == 0))
 
-    call define_netcdf_dimension(ncid, "x", comm%size * nx, dimids(1))
+    call define_netcdf_dimension(ncid, "x", world%size * nx, dimids(1))
 
     passed = (passed .and. (ncerr == 0))
 
@@ -96,18 +96,18 @@ program test_mpi_netcdf_dataset_2d
 
     passed = (passed .and. (ncerr == 0))
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI netCDF write 2D dataset', passed)
     endif
 
     deallocate(dset)
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_netcdf_dataset_2d

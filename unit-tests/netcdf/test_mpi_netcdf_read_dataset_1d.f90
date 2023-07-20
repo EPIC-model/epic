@@ -7,7 +7,7 @@ program test_mpi_netcdf_read_dataset_1d
     use unit_test
     use netcdf_writer
     use netcdf_reader
-    use mpi_communicator
+    use mpi_environment
     implicit none
 
     integer, parameter            :: n_local_parcels = 10
@@ -19,17 +19,17 @@ program test_mpi_netcdf_read_dataset_1d
     integer, allocatable          :: recvcounts(:), n_size(:)
     integer                       :: recvbuf
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    n_parcels = n_local_parcels * comm%size
+    n_parcels = n_local_parcels * world%size
 
     allocate(wdset(n_local_parcels))
     allocate(rdset(n_local_parcels))
-    allocate(recvcounts(comm%size))
-    allocate(n_size(comm%size))
+    allocate(recvcounts(world%size))
+    allocate(n_size(world%size))
 
     do n = 1, n_local_parcels
-        wdset(n) = dble(n_local_parcels * comm%rank + n)
+        wdset(n) = dble(n_local_parcels * world%rank + n)
     enddo
 
     call create_netcdf_file(ncfname='nctest.nc', &
@@ -59,10 +59,10 @@ program test_mpi_netcdf_read_dataset_1d
     recvcounts = 1
     recvbuf = 0
     n_size = 0
-    n_size(comm%rank+1:comm%size) = n_local_parcels
-    n_size(comm%rank+1) = 0
+    n_size(world%rank+1:world%size) = n_local_parcels
+    n_size(world%rank+1) = 0
 
-    call MPI_Reduce_scatter(n_size, recvbuf, recvcounts, MPI_INT, MPI_SUM, comm%world, comm%err)
+    call MPI_Reduce_scatter(n_size, recvbuf, recvcounts, MPI_INT, MPI_SUM, world%comm, world%err)
 
     ! time step to write [step(2) is the time]
     cnt   = (/ n_local_parcels /)
@@ -105,13 +105,13 @@ program test_mpi_netcdf_read_dataset_1d
 
     passed = (passed .and. (ncerr == 0))
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI netCDF read 1D dataset', passed)
     endif
 
@@ -120,6 +120,6 @@ program test_mpi_netcdf_read_dataset_1d
     deallocate(recvcounts)
     deallocate(n_size)
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_netcdf_read_dataset_1d

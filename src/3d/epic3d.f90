@@ -7,7 +7,7 @@ program epic3d
     use parcel_container
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
-    use parcel_merge, only : merge_parcels, merge_timer
+    use parcel_merging, only : parcel_merge, merge_timer
     use parcel_nearest, only : merge_nearest_timer      &
                              , merge_tree_resolve_timer &
                              , nearest_win_allocate     &
@@ -36,14 +36,14 @@ program epic3d
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
-    use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
+    use mpi_environment, only : mpi_env_initialise, mpi_env_finalise
     use mpi_utils, only : mpi_print, mpi_stop
     use options, only : rk_order
     implicit none
 
     integer :: epic_timer
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -57,7 +57,7 @@ program epic3d
     ! Deallocate memory
     call post_run
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     contains
 
@@ -123,7 +123,7 @@ program epic3d
             do while (t < time%limit)
 
 #ifdef ENABLE_VERBOSE
-                if (verbose .and. (comm%rank == comm%master)) then
+                if (verbose .and. (world%rank == world%root)) then
                     print "(a15, f0.4)", "time:          ", t
                 endif
 #endif
@@ -131,7 +131,7 @@ program epic3d
 
                 call ls_rk_step(t)
 
-                call merge_parcels(parcels)
+                call parcel_merge
 
                 call parcel_split
 

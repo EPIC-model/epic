@@ -2,7 +2,7 @@ module test_utils
     use mpi_timer
     use parcel_container, only : resize_timer
     use parcel_split_mod, only : split_timer
-    use parcel_merge, only : merge_timer
+    use parcel_merging, only : merge_timer
     use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
     use parcel_correction, only : lapl_corr_timer,        &
                                   grad_corr_timer,        &

@@ -3,14 +3,14 @@ program test_merging_parcels
     use parcel_container
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels
-    use parcel_merge
+    use parcel_merging
     use parcel_netcdf
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use test_utils
     implicit none
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     call register_all_timers
 
@@ -41,10 +41,10 @@ program test_merging_parcels
                        1,               &
                        MPI_INTEGER,     &
                        MPI_SUM,         &
-                       comm%world,      &
-                       comm%err)
+                       world%comm,      &
+                       world%err)
 
-    call merge_parcels(parcels)
+    call parcel_merge
 
     n_total_parcels = 0
     call MPI_Allreduce(n_parcels,       &
@@ -52,14 +52,14 @@ program test_merging_parcels
                        1,               &
                        MPI_INTEGER,     &
                        MPI_SUM,         &
-                       comm%world,      &
-                       comm%err)
+                       world%comm,      &
+                       world%err)
 
     call create_netcdf_parcel_file('parallel_final', .true., .false.)
     call write_netcdf_parcels(t = 0.0d0)
 
     call nearest_win_deallocate
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_merging_parcels

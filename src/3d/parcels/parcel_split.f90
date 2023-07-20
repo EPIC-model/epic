@@ -14,7 +14,7 @@ module parcel_split_mod
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio, get_eigenvalues
     use mpi_timer, only : start_timer, stop_timer, timings
     use omp_lib
-    use mpi_communicator, only : comm, MPI_SUM
+    use mpi_environment, only : world, MPI_SUM
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
@@ -168,7 +168,7 @@ module parcel_split_mod
             ! after this operation the root MPI process knows the new
             ! number of parcels in the simulation
             n_total_parcels = n_parcels
-            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
 
             ! all entries in "pid" that are non-zero are indices of
             ! child parcels; remove all zero entries such that
@@ -181,7 +181,7 @@ module parcel_split_mod
             call parcel_communicate(invalid)
 
 #ifdef ENABLE_VERBOSE
-            if (verbose .and. (comm%rank == comm%master)) then
+            if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)", &
                       "no. parcels before and after split: ", orig_num, "...", n_total_parcels
             endif

@@ -82,7 +82,7 @@ module field_netcdf
                     return
                 else
                     call close_netcdf_file(ncid)
-                    if (comm%rank == comm%master) then
+                    if (world%rank == world%root) then
                         call delete_netcdf_file(ncfname)
                     endif
                 endif
