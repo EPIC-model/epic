@@ -1,0 +1,5 @@
+[bibliography]
+= Bibliography
+[[[Dritschel2023]]] Dritschel, D., & Frey, M. (2023).
+The stability of inviscid Beltrami flow between parallel free-slip impermeable boundaries.
+Journal of Fluid Mechanics, 954, A31. doi:10.1017/jfm.2022.1007

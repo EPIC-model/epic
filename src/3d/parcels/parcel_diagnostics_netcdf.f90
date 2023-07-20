@@ -10,7 +10,7 @@ module parcel_diagnostics_netcdf
     use parcel_diagnostics
     use parameters, only : lower, extent, nx, ny, nz, write_zeta_boundary_flag
     use parcel_split_mod, only : n_parcel_splits
-    use parcel_merge, only : n_parcel_merges
+    use parcel_merging, only : n_parcel_merges
     use config, only : package_version, cf_version
     use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
@@ -51,7 +51,7 @@ module parcel_diagnostics_netcdf
             logical                   :: l_exist
             integer                   :: start(1), cnt(1)
 
-            if (comm%rank /= comm%master) then
+            if (world%rank /= world%root) then
                 return
             endif
 
@@ -337,7 +337,7 @@ module parcel_diagnostics_netcdf
 
             call start_timer(parcel_stats_io_timer)
 
-            if (comm%rank /= comm%master) then
+            if (world%rank /= world%root) then
                 return
             endif
 

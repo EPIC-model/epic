@@ -13,8 +13,9 @@ module parcel_correction
     use mpi_timer, only : start_timer, stop_timer
     use fields, only : volg
     use mpi_layout, only : box
-    use mpi_communicator
+    use mpi_environment
     use mpi_utils, only : mpi_check_for_error
+    use parcel_mpi, only : parcel_communicate
     implicit none
 
     private
@@ -65,10 +66,11 @@ module parcel_correction
                                4,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
-            call mpi_check_for_error("in MPI_Allreduce of parcel_correction::init_parcel_correction.")
+            call mpi_check_for_error(world, &
+                "in MPI_Allreduce of parcel_correction::init_parcel_correction.")
 
             vsum = buf(1)
             vor_bar = buf(2:4)
@@ -91,7 +93,7 @@ module parcel_correction
             call start_timer(vort_corr_timer)
 
             vsum = zero
-            dvor = - vor_bar
+            dvor = zero
 
             !$omp parallel default(shared)
             !$omp do private(n) reduction(+: dvor, vsum)
@@ -109,14 +111,19 @@ module parcel_correction
                                4,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
-            call mpi_check_for_error("in MPI_Allreduce of parcel_correction::apply_vortcor.")
+            call mpi_check_for_error(world, &
+                "in MPI_Allreduce of parcel_correction::apply_vortcor.")
             vsum = buf(1)
             dvor = buf(2:4)
 
-            dvor = dvor / vsum
+            ! vorticity correction:
+            ! vor_mean = dvor / vsum
+            ! if vor_mean < vor_bar --> correction < 0 --> we must add to parcel vorticity
+            ! if vor_mean > vor_bar --> correction > 0 --> we must subtract from parcel vorticity
+            dvor = dvor / vsum - vor_bar
 
             !$omp parallel default(shared)
             !$omp do private(n)
@@ -166,7 +173,7 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
-            call apply_swap_periodicity
+            call parcel_communicate
 
             call stop_timer(lapl_corr_timer)
 
@@ -205,10 +212,10 @@ module parcel_correction
                 xs = - prefactor * lim_x * (&
                             zfc * (&
                                     yfc * (phi(ks, js,   is+1) - phi(ks, js,   is))  &
-                                  +       yf * (phi(ks, js+1, is+1) - phi(ks, js+1, is))) &
-                          +      zf * (&
+                             +      yf *  (phi(ks, js+1, is+1) - phi(ks, js+1, is))) &
+                     +      zf *  (&
                                     yfc * (phi(ks+1, js,   is+1) - phi(ks+1, js,   is))  &
-                                  +       yf * (phi(ks+1, js+1, is+1) - phi(ks+1, js+1, is))))
+                             +      yf *  (phi(ks+1, js+1, is+1) - phi(ks+1, js+1, is))))
 
                 lim_x = lim_x * max_compression
                 xs = max(-lim_x, min(xs, lim_x))
@@ -216,11 +223,11 @@ module parcel_correction
                 lim_y = dx(2) * yf * yfc
                 ys = - prefactor * lim_y * (&
                             zfc * (&
-                                    xfc * (phi(ks, js+1, is  ) - phi(ks, js, is))  &
-                                  +       xf * (phi(ks, js+1, is+1) - phi(ks, js, is+1))) &
-                          +      zf * (&
+                                    xfc * (phi(ks, js+1, is  ) - phi(ks, js, is))    &
+                             +      xf  * (phi(ks, js+1, is+1) - phi(ks, js, is+1))) &
+                     +      zf *  (&
                                     xfc * (phi(ks+1, js+1, is) -   phi(ks+1, js, is))  &
-                                  +       xf * (phi(ks+1, js+1, is+1) - phi(ks+1, js, is+1))))
+                             +      xf  * (phi(ks+1, js+1, is+1) - phi(ks+1, js, is+1))))
 
                 lim_y = lim_y * max_compression
                 ys = max(-lim_y, min(ys, lim_y))
@@ -228,11 +235,11 @@ module parcel_correction
                 lim_z = dx(3) * zf * zfc
                 zs = - prefactor * lim_z * (&
                             xfc * (&
-                                    yfc * (phi(ks+1, js, is) - phi(ks, js, is))  &
-                                  +       yf * (phi(ks+1, js+1, is)) - phi(ks, js+1, is)) &
-                          +      xf * (&
-                                    yfc * (phi(ks+1, js, is+1) - phi(ks, js, is+1))  &
-                                  +       yf * (phi(ks+1, js+1, is+1) - phi(ks, js+1, is+1))))
+                                    yfc * (phi(ks+1, js, is  ) - phi(ks, js,   is))  &
+                             +      yf  * (phi(ks+1, js+1, is) - phi(ks, js+1, is))) &
+                     +      xf *  (&
+                                    yfc * (phi(ks+1, js,   is+1) - phi(ks, js,   is+1))  &
+                             +      yf  * (phi(ks+1, js+1, is+1) - phi(ks, js+1, is+1))))
 
                 lim_z = lim_z * max_compression
                 zs = max(-lim_z, min(zs, lim_z))
@@ -243,6 +250,8 @@ module parcel_correction
             enddo
             !$omp end do
             !$omp end parallel
+
+            call parcel_communicate
 
             call stop_timer(grad_corr_timer)
 

@@ -252,7 +252,7 @@ module physics
         end subroutine write_physical_quantities
 
         subroutine print_physical_quantities
-            if (comm%rank /= comm%master) then
+            if (world%rank /= world%root) then
                 return
             endif
             write(*, "(a)") 'List of physical quantities (in MKS units):'

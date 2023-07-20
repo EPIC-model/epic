@@ -2,21 +2,22 @@
 !                       Module to merge ellipsoids
 !           The module implements the geometric merge procedure.
 ! =============================================================================
-module parcel_merge
+module parcel_merging
     use parcel_nearest
     use constants, only : pi, zero, one, two, five, f13
-    use parcel_container, only : parcel_container_type                  &
-                               , n_parcels                              &
-                               , n_total_parcels                        &
-                               , parcel_replace                         &
-                               , get_delx_across_periodic               &
-                               , get_dely_across_periodic               &
+    use parcel_container, only : parcels                    &
+                               , n_parcels                  &
+                               , n_total_parcels            &
+                               , parcel_replace             &
+                               , get_delx_across_periodic   &
+                               , get_dely_across_periodic   &
                                , parcel_delete
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
-    use parcel_bc, only : apply_periodic_bc, apply_swap_periodicity
+    use parcel_bc, only : apply_periodic_bc
+    use parcel_mpi, only : parcel_communicate
     use mpi_timer, only : start_timer, stop_timer
-    use mpi_communicator
+    use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
@@ -32,20 +33,17 @@ module parcel_merge
 
         ! Merge small parcels into neighbouring equal-sized parcels or bigger
         ! parcels which are close by.
-        ! @param[inout] parcels is the parcel container
-        subroutine merge_parcels(parcels)
-            type(parcel_container_type), intent(inout) :: parcels
-            integer, allocatable, dimension(:)         :: isma
-            integer, allocatable, dimension(:)         :: iclo
-            integer, allocatable, dimension(:)         :: inva
-            integer                                    :: n_merge ! number of merges
-            integer                                    :: n_invalid
+        subroutine parcel_merge
+            integer, allocatable, dimension(:) :: isma
+            integer, allocatable, dimension(:) :: iclo
+            integer, allocatable, dimension(:) :: inva
+            integer                            :: n_merge ! number of merges
+            integer                            :: n_invalid
 #ifdef ENABLE_VERBOSE
-            integer                                    :: orig_num
+            integer                            :: orig_num
 
             orig_num = n_total_parcels
 #endif
-
 
             ! find parcels to merge
             call find_nearest(isma, iclo, inva, n_merge, n_invalid)
@@ -56,7 +54,7 @@ module parcel_merge
 
             if (n_merge > 0) then
                 ! merge small parcels into other parcels
-                call geometric_merge(parcels, isma, iclo, n_merge)
+                call geometric_merge(isma, iclo, n_merge)
             endif
 
             if (n_merge + n_invalid > 0) then
@@ -73,45 +71,43 @@ module parcel_merge
             ! After this operation the root MPI process knows the new
             ! number of parcels in the simulation
             n_total_parcels = n_parcels
-            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
 
 #ifdef ENABLE_VERBOSE
-            if (verbose .and. (comm%rank == comm%master)) then
+            if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)",                               &
                       "no. parcels before and after merge: ", orig_num,  &
                       "...", n_total_parcels
             endif
 #endif
-            call apply_swap_periodicity
+            call parcel_communicate
 
             call stop_timer(merge_timer)
 
-        end subroutine merge_parcels
+        end subroutine parcel_merge
 
 
         ! Actual merge.
-        ! @param[inout] parcels is the parcel container
         ! @param[in] isma are the indices of the small parcels
         ! @param[in] iclo are the indices of the close parcels
         ! @param[in] n_merge is the array size of isma and iclo
         ! @param[out] Bm are the B matrix entries of the mergers
         ! @param[out] vm are the volumes of the mergers
-        subroutine do_group_merge(parcels, isma, iclo, n_merge, Bm, vm)
-            type(parcel_container_type), intent(inout) :: parcels
-            integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: iclo(:)
-            integer,                     intent(in)    :: n_merge
-            integer                                    :: m, ic, is, l, n
-            integer                                    :: loca(n_parcels)
-            double precision                           :: x0(n_merge), y0(n_merge)
-            double precision                           :: posm(3, n_merge)
-            double precision                           :: delx, vmerge, dely, delz, B33, mu
-            double precision                           :: buoym(n_merge), vortm(3, n_merge)
+        subroutine do_group_merge(isma, iclo, n_merge, Bm, vm)
+            integer,          intent(in)    :: isma(0:)
+            integer,          intent(in)    :: iclo(:)
+            integer,          intent(in)    :: n_merge
+            integer                         :: m, ic, is, l, n
+            integer                         :: loca(n_parcels)
+            double precision                :: x0(n_merge), y0(n_merge)
+            double precision                :: posm(3, n_merge)
+            double precision                :: delx, vmerge, dely, delz, B33, mu
+            double precision                :: buoym(n_merge), vortm(3, n_merge)
 #ifndef ENABLE_DRY_MODE
-            double precision                           :: hum(n_merge)
+            double precision                :: hum(n_merge)
 #endif
-            double precision,            intent(out)   :: Bm(6, n_merge) ! B11, B12, B13, B22, B23, B33
-            double precision,            intent(out)   :: vm(n_merge)
+            double precision, intent(out)   :: Bm(6, n_merge) ! B11, B12, B13, B22, B23, B33
+            double precision, intent(out)   :: vm(n_merge)
 
             loca = zero
 
@@ -282,18 +278,17 @@ module parcel_merge
         ! @param[in] isma are the indices of the small parcels
         ! @param[in] iclo are the indices of the close parcels
         ! @param[in] n_merge is the array size of isma and iclo
-        subroutine geometric_merge(parcels, isma, iclo, n_merge)
-            type(parcel_container_type), intent(inout) :: parcels
-            integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: iclo(:)
-            integer,                     intent(in)    :: n_merge
-            integer                                    :: m, ic, l
-            integer                                    :: loca(n_parcels)
-            double precision                           :: factor, detB
-            double precision                           :: B(6, n_merge), &
-                                                          V(n_merge)
+        subroutine geometric_merge(isma, iclo, n_merge)
+            integer,         intent(in) :: isma(0:)
+            integer,         intent(in) :: iclo(:)
+            integer,         intent(in) :: n_merge
+            integer                     :: m, ic, l
+            integer                     :: loca(n_parcels)
+            double precision            :: factor, detB
+            double precision            :: B(6, n_merge), &
+                                        V(n_merge)
 
-            call do_group_merge(parcels, isma, iclo, n_merge, B, V)
+            call do_group_merge(isma, iclo, n_merge, B, V)
 
             loca = zero
 
@@ -320,4 +315,4 @@ module parcel_merge
 
         end subroutine geometric_merge
 
-end module parcel_merge
+end module parcel_merging

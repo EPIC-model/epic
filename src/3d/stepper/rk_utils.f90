@@ -7,7 +7,7 @@ module rk_utils
     use parameters, only : nx, ny, nz, dxi, vcell
     use scherzinger, only : scherzinger_eigenvalues
     use mpi_layout, only : box
-    use mpi_communicator
+    use mpi_environment
     use mpi_utils, only : mpi_exit_on_error
 #ifdef ENABLE_VERBOSE
     use options, only : output
@@ -87,7 +87,7 @@ module rk_utils
             integer                      :: ix, iy, iz
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
-            character(:), allocatable    :: fname
+            character(512)               :: fname
 #endif
 
             !
@@ -177,23 +177,23 @@ module rk_utils
                                2,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_MAX,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             gmax = local_max(1)
             bmax = local_max(2)
 
             dt = min(time%alpha / gmax, time%alpha / bmax)
 #ifdef ENABLE_VERBOSE
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 fname = trim(output%basename) // '_alpha_time_step.asc'
-                inquire(file=fname, exist=exists)
+                inquire(file=trim(fname), exist=exists)
                 ! 23 August
                 ! https://stackoverflow.com/questions/15526203/single-command-to-open-a-file-or-create-it-and-the-append-data
                 if ((t /= zero) .and. exists) then
-                    open(unit=1235, file=fname, status='old', position='append')
+                    open(unit=1235, file=trim(fname), status='old', position='append')
                 else
-                    open(unit=1235, file=fname, status='replace')
+                    open(unit=1235, file=trim(fname), status='replace')
                     write(1235, *) '  # time (s)                \alpha_s/\gamma_{max}     \alpha_b/N_{max}'
                 endif
 

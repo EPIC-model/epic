@@ -1,20 +1,20 @@
 ! =============================================================================
 !                       Test subroutine diffz
 !
-!  This unit test checks the subroutine diffz and central_diffz using the
-!  function:
+!  This unit test checks the subroutine diffz and central_diffz_semi_spectral
+!  using the function:
 !               z^2
 !  in a domain of width 2 * pi in x and y, and of height pi (-pi/2 < z < pi/2)
-!  The subroutine diffz and central_diffz should return
+!  The subroutine diffz and central_diffz_semi_spectral should return
 !               2z
 ! =============================================================================
 program test_mpi_diffz4
     use unit_test
     use constants, only : zero, one, two, pi, twopi, f12
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use inversion_mod, only : init_inversion, central_diffz, diffz &
+    use inversion_mod, only : init_inversion, central_diffz_semi_spectral, diffz &
                             , field_combine_physical, field_decompose_physical, fftxyp2s, fftxys2p
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -26,9 +26,9 @@ program test_mpi_diffz4
     double precision              :: z
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     nx = 128
     ny = 128
@@ -59,7 +59,7 @@ program test_mpi_diffz4
 
     dp = fp
     call fftxyp2s(dp, fs)
-    call central_diffz(fs, ds)
+    call central_diffz_semi_spectral(fs, ds)
     call fftxys2p(ds, dp)
 
     error = maxval(dabs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
@@ -72,23 +72,23 @@ program test_mpi_diffz4
     error = max(error, maxval(dabs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
                             - ref_sol(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))))
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0) .and. (error < 0.05d0))
+    passed = (passed .and. (world%err == 0) .and. (error < 0.05d0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI diffz4', passed)
     endif
 

@@ -6,7 +6,7 @@ module fields
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parameters, only : dx, dxi, extent, lower, nx, ny, nz
     use constants, only : zero
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout, only : box, l_mpi_layout_initialised
     use mpi_utils, only : mpi_exit_on_error
     implicit none
@@ -176,30 +176,6 @@ module fields
             i = floor((pos(I_X) - lower(I_X)) * dxi(I_X))
             j = floor((pos(I_Y) - lower(I_Y)) * dxi(I_Y))
         end subroutine get_horizontal_index
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Get the lower index of the cell the parcel is in including
-        ! a periodic shift in x and y.
-        ! @param[in] pos position of the parcel
-        ! @param[out] i lower, zonal cell index
-        ! @param[out] j lower, meridional cell index
-        ! @param[out] k lower, vertical cell index
-        pure subroutine get_index_periodic(pos, i, j, k)
-            double precision, intent(in)  :: pos(n_dim)
-            integer,          intent(out) :: i, j, k
-
-            call get_index(pos, i, j, k)
-
-            ! account for x / y periodicity:
-            ! -1          --> nx-1 / ny-1
-            !  0          --> 0
-            ! nx+1 / ny+1 --> 1
-            ! nx / ny     --> 0
-            ! nx-1 / ny-1 --> nx-1 / ny-1
-            i = mod(i + nx, nx)
-            j = mod(j + ny, ny)
-        end subroutine get_index_periodic
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

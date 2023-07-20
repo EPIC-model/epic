@@ -7,12 +7,12 @@ module parcel_diagnostics
     use parcel_container, only : parcels, n_parcels, n_total_parcels
     use parcel_ellipsoid
     use parcel_split_mod, only : n_parcel_splits
-    use parcel_merge, only : n_parcel_merges
+    use parcel_merging, only : n_parcel_merges
     use omp_lib
     use physics, only : ape_calculation
     use ape_density, only : ape_den
     use mpi_timer, only : start_timer, stop_timer
-    use mpi_communicator
+    use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error
     implicit none
@@ -126,12 +126,12 @@ module parcel_diagnostics
             parcel_stats(IDX_NSPLITS) = n_parcel_splits
             parcel_stats(IDX_NMERGES) = n_parcel_merges
 
-            call mpi_blocking_reduce(parcel_stats(IDX_APE:IDX_NMERGES), MPI_SUM)
-            call mpi_blocking_reduce(parcel_stats(IDX_MIN_BUOY), MPI_MIN)
-            call mpi_blocking_reduce(parcel_stats(IDX_MAX_BUOY), MPI_MAX)
+            call mpi_blocking_reduce(parcel_stats(IDX_APE:IDX_NMERGES), MPI_SUM, world)
+            call mpi_blocking_reduce(parcel_stats(IDX_MIN_BUOY), MPI_MIN, world)
+            call mpi_blocking_reduce(parcel_stats(IDX_MAX_BUOY), MPI_MAX, world)
 
-            n_total_parcels = int(parcel_stats(IDX_NTOT_PAR))
-            ntoti = one / parcel_stats(IDX_NTOT_PAR)
+            n_total_parcels = nint(parcel_stats(IDX_NTOT_PAR))
+            ntoti = one / dble(n_total_parcels)
 
             ! divide by domain volume to get domain-averaged quantities
             parcel_stats(IDX_KE) = f12 * parcel_stats(IDX_KE) * vdomaini

@@ -13,7 +13,7 @@ module parcel_init
                            max_num_parcels
     use mpi_timer, only : start_timer, stop_timer
     use omp_lib
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout, only : box
     use mpi_utils, only : mpi_print, mpi_exit_on_error
     use mpi_collectives, only : mpi_blocking_reduce
@@ -55,8 +55,8 @@ module parcel_init
             endif
 
             n_total_parcels = n_parcels
-            if (comm%size > 1) then
-                call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+            if (world%size > 1) then
+                call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
             endif
 
             call init_regular_positions
@@ -120,7 +120,7 @@ module parcel_init
             ! number of parcels per dimension
             n_per_dim = int(dble(parcel%n_per_cell) ** f13)
             if (n_per_dim ** 3 .ne. parcel%n_per_cell) then
-                if (comm%rank == comm%master) then
+                if (world%rank == world%root) then
                     print *, "Number of parcels per cell (", &
                              parcel%n_per_cell, ") not a cubic."
                 endif
@@ -161,7 +161,7 @@ module parcel_init
 
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
-                call parcel_split(parcels, parcel%lambda_max)
+                call parcel_split
                 evals = get_eigenvalues(parcels%B(1, :), parcels%volume(1))
                 lam = dsqrt(evals(1) / evals(3))
             end do

@@ -3,7 +3,7 @@
 !                     https://github.com/EPCCed/pmpic
 ! =============================================================================
 module mpi_timer
-    use mpi_communicator
+    use mpi_environment
     implicit none
 
     type timer_type
@@ -33,19 +33,18 @@ module mpi_timer
 
         subroutine resize_timer_by(add)
             integer, intent(in)           :: add
-            integer                       :: cur_size
             type(timer_type), allocatable :: tmp(:)
 
-            cur_size = size(timings)
+            allocate(tmp(n_timers + add))
 
-            allocate(tmp(cur_size + add))
-
-            tmp(1:cur_size) = timings
+            tmp(1:n_timers) = timings
 
             deallocate(timings)
 
             ! deallocates tmp
             call move_alloc(tmp, timings)
+
+            n_timers = n_timers + add
 
         end subroutine resize_timer_by
 
@@ -55,11 +54,8 @@ module mpi_timer
 
             if (.not. allocated(timings)) then
                 allocate(timings(1))
-            endif
-
-            n_timers = n_timers + 1
-
-            if (n_timers > size(timings)) then
+                n_timers = 1
+            else
                 call resize_timer_by(1)
             endif
 
@@ -109,7 +105,7 @@ module mpi_timer
 
             call collect_statistics
 
-            if (.not. comm%rank == comm%master) then
+            if (.not. world%rank == world%root) then
                 return
             endif
 
@@ -174,7 +170,7 @@ module mpi_timer
 
             call collect_statistics
 
-            if (.not. comm%rank == comm%master) then
+            if (.not. world%rank == world%root) then
                 return
             endif
 
@@ -239,14 +235,14 @@ module mpi_timer
             endif
 
             ! go from minutes to hours (7 days = 10080 minutes)
-            max_wall_time = maxval(timings(:)%wall_time)
+            max_wall_time = maxval(timings(1:n_timers)%wall_time)
             if ((max_wall_time > 10080.0d0) .and. (time_unit == 'minutes')) then
                 time_unit = 'hours'
                 timings(1:n_timers)%wall_time = timings(1:n_timers)%wall_time / 60.0d0
             endif
 
             ! go from hours to days (1 year = 8760 hours)
-            max_wall_time = maxval(timings(:)%wall_time)
+            max_wall_time = maxval(timings(1:n_timers)%wall_time)
             if ((max_wall_time > 8760.d0) .and. (time_unit == 'hours')) then
                 time_unit = 'days'
                 timings(1:n_timers)%wall_time = timings(1:n_timers)%wall_time / 24.0d0
@@ -262,32 +258,29 @@ module mpi_timer
 
         function get_statistics(op) result(buffer)
             type(MPI_Op), intent(in) :: op
-            double precision         :: buffer(size(timings))
-            integer                  :: buf_size
+            double precision         :: buffer(1:n_timers)
 
-            buffer = timings(:)%wall_time
+            buffer = timings(1:n_timers)%wall_time
 
-            buf_size = size(timings)
-
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 call MPI_Reduce(MPI_IN_PLACE,           &
-                                buffer(1:buf_size),     &
-                                buf_size,               &
+                                buffer(1:n_timers),     &
+                                n_timers,               &
                                 MPI_DOUBLE_PRECISION,   &
                                 op,                     &
-                                comm%master,            &
-                                comm%world,             &
-                                comm%err)
+                                world%root,             &
+                                world%comm,             &
+                                world%err)
 
             else
-                call MPI_Reduce(buffer(1:buf_size),     &
-                                buffer(1:buf_size),     &
-                                buf_size,               &
+                call MPI_Reduce(buffer(1:n_timers),     &
+                                buffer(1:n_timers),     &
+                                n_timers,               &
                                 MPI_DOUBLE_PRECISION,   &
                                 op,                     &
-                                comm%master,            &
-                                comm%world,             &
-                                comm%err)
+                                world%root,             &
+                                world%comm,             &
+                                world%err)
             endif
 
         end function get_statistics
@@ -302,11 +295,11 @@ module mpi_timer
 
             ! 3 reductions may be as fast as gather all the data to the root process and to the
             ! calculation there.
-            timings(:)%max_time = get_statistics(MPI_MAX)
-            timings(:)%min_time = get_statistics(MPI_MIN)
-            timings(:)%mean_time = get_statistics(MPI_SUM)
+            timings(1:n_timers)%max_time = get_statistics(MPI_MAX)
+            timings(1:n_timers)%min_time = get_statistics(MPI_MIN)
+            timings(1:n_timers)%mean_time = get_statistics(MPI_SUM)
 
-            timings(:)%mean_time = timings(:)%mean_time / dble(comm%size)
+            timings(1:n_timers)%mean_time = timings(1:n_timers)%mean_time / dble(world%size)
 
         end subroutine collect_statistics
 

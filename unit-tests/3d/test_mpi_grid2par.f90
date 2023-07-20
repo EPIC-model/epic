@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_mpi_grid2par
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_collectives
     use mpi_layout
     use constants, only : pi, zero, one, two, three, four, five, f12, f23
@@ -22,9 +22,9 @@ program test_mpi_grid2par
     double precision              :: im, corner(3)
     logical                       :: passed = .true.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
     nx = 32
     ny = 32
@@ -101,15 +101,15 @@ program test_mpi_grid2par
         error = max(error, maxval(dabs(parcels%strain(l, 1:n_parcels) - dble(l))))
     enddo
 
-    call mpi_blocking_reduce(error, MPI_MAX)
+    call mpi_blocking_reduce(error, MPI_MAX, world)
 
     passed = (passed .and. (error < dble(1.0e-14)))
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI grid2par', passed)
     endif
 
