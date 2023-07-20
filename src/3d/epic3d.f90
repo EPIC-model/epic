@@ -3,12 +3,15 @@
 ! =============================================================================
 program epic3d
     use constants, only : zero
-    use timer
+    use mpi_timer
     use parcel_container
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
-    use parcel_merge, only : merge_parcels, merge_timer
-    use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
+    use parcel_merging, only : parcel_merge, merge_timer
+    use parcel_nearest, only : merge_nearest_timer      &
+                             , merge_tree_resolve_timer &
+                             , nearest_win_allocate     &
+                             , nearest_win_deallocate
     use parcel_correction, only : apply_laplace,          &
                                   apply_gradient,         &
                                   apply_vortcor,          &
@@ -24,17 +27,23 @@ program epic3d
     use field_diagnostics, only : field_stats_timer
     use field_diagnostics_netcdf, only : field_stats_io_timer
     use inversion_mod, only : vor2vel_timer, vtend_timer
-    use inversion_utils, only : init_inversion
-    use parcel_interpl, only : grid2par_timer, par2grid_timer
+    use inversion_utils, only : init_inversion, finalise_inversion
+    use parcel_interpl, only : grid2par_timer, &
+                               par2grid_timer, &
+                               halo_swap_timer
     use parcel_init, only : init_timer
     use ls_rk, only : ls_rk_step, rk_timer, ls_rk_setup
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
+    use mpi_environment, only : mpi_env_initialise, mpi_env_finalise
+    use mpi_utils, only : mpi_print, mpi_stop
     use options, only : rk_order
     implicit none
 
-    integer          :: epic_timer
+    integer :: epic_timer
+
+    call mpi_env_initialise
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -47,6 +56,8 @@ program epic3d
 
     ! Deallocate memory
     call post_run
+
+    call mpi_env_finalise
 
     contains
 
@@ -74,6 +85,7 @@ program epic3d
             call register_timer('parcel push', rk_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
+            call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
 
             call start_timer(epic_timer)
 
@@ -93,6 +105,8 @@ program epic3d
 
             call setup_output_files
 
+            call nearest_win_allocate
+
         end subroutine
 
 
@@ -109,7 +123,7 @@ program epic3d
             do while (t < time%limit)
 
 #ifdef ENABLE_VERBOSE
-                if (verbose) then
+                if (verbose .and. (world%rank == world%root)) then
                     print "(a15, f0.4)", "time:          ", t
                 endif
 #endif
@@ -117,7 +131,7 @@ program epic3d
 
                 call ls_rk_step(t)
 
-                call merge_parcels(parcels)
+                call parcel_merge
 
                 call parcel_split
 
@@ -139,6 +153,9 @@ program epic3d
         subroutine post_run
             use options, only : output
             call parcel_dealloc
+            call field_dealloc
+            call nearest_win_deallocate
+            call finalise_inversion
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)
@@ -170,8 +187,7 @@ program epic3d
                 call get_command_argument(i, arg)
                 filename = trim(arg)
             else if (arg == '--help') then
-                print *, 'Run code with "./epic3d --config [config file]"'
-                stop
+                call mpi_stop('Run code with "./epic3d --config [config file]"')
             else if (arg == '--restart') then
                 l_restart = .true.
                 i = i + 1
@@ -186,30 +202,31 @@ program epic3d
         end do
 
         if (filename == '') then
-            print *, 'No configuration file provided. Run code with "./epic3d --config [config file]"'
-            stop
+            call mpi_stop(&
+                'No configuration file provided. Run code with "./epic3d --config [config file]"')
         endif
 
         if (l_restart .and. (restart_file == '')) then
-            print *, 'No restart file provided. Run code with "./epic3d --config [config file]' // &
-                     ' --restart [restart file]"'
-            stop
+            call mpi_stop(&
+                'No restart file provided. Run code with "./epic3d --config [config file]' // &
+                     ' --restart [restart file]"')
         endif
 
         inquire(file=filename, exist=l_exist)
 
         if (.not. l_exist) then
-            print *, "Configuration file " // trim(filename) // " does not exist."
-            stop
+            call mpi_stop(&
+                "Configuration file " // trim(filename) // " does not exist.")
         endif
 
 #ifdef ENABLE_VERBOSE
         ! This is the main application of EPIC
         if (verbose) then
             if (l_restart) then
-                print *, 'Restarting EPIC3D with "', trim(filename), '" and "', trim(restart_file), "'"
+                call mpi_print(&
+                    'Restarting EPIC3D with "' // trim(filename) // '" and "' // trim(restart_file) // "'")
             else
-                print *, 'Running EPIC3D with "', trim(filename), '"'
+                call mpi_print('Running EPIC3D with "' // trim(filename) // '"')
             endif
         endif
 #endif

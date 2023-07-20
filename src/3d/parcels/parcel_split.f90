@@ -7,11 +7,15 @@ module parcel_split_mod
     use parameters, only : amax, max_num_parcels
     use parcel_container, only : parcels                &
                                , n_parcels              &
+                               , n_total_parcels        &
                                , parcel_resize
     use parcel_bc, only : apply_reflective_bc
+    use parcel_mpi, only : parcel_communicate
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio, get_eigenvalues
-    use timer, only : start_timer, stop_timer, timings
+    use mpi_timer, only : start_timer, stop_timer, timings
     use omp_lib
+    use mpi_environment, only : world, MPI_SUM
+    use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
     double precision, parameter :: dh = f12 * dsqrt(three / five)
@@ -37,9 +41,13 @@ module parcel_split_mod
             integer              :: last_index, n_indices
             integer              :: grown_size, shrunk_size, n_required
             integer              :: i, n, n_thread_loc
-            integer, allocatable :: indices(:)
-            integer              :: pid(n_parcels)
+            integer              :: pid(2 * n_parcels)
+            integer, allocatable :: invalid(:), indices(:)
+#ifdef ENABLE_VERBOSE
+            integer              :: orig_num
 
+            orig_num = n_total_parcels
+#endif
             call start_timer(split_timer)
 
             !------------------------------------------------------------------
@@ -52,10 +60,10 @@ module parcel_split_mod
 
                 D = get_eigenvalues(B, vol)
 
-                pid(n) = 0;
-
                 ! evaluate maximum aspect ratio (a2 >= b2 >= c2)
                 lam = get_aspect_ratio(D)
+
+                pid(n) = 0
 
                 if (lam < parcel%lambda_max .and. D(1) < amax ** 2) then
                     cycle
@@ -108,6 +116,8 @@ module parcel_split_mod
 
                 call diagonalise(B, vol, D, V)
 
+                pid(n) = 0
+
                 !
                 ! this ellipsoid is split, i.e., add a new parcel
                 !
@@ -117,7 +127,6 @@ module parcel_split_mod
                 parcels%B(4, n) = B(4) - f34 * D(1) * V(2, 1) ** 2
                 parcels%B(5, n) = B(5) - f34 * D(1) * V(2, 1) * V(3, 1)
 
-
                 parcels%volume(n) = f12 * vol
 
                 !$omp critical
@@ -126,7 +135,6 @@ module parcel_split_mod
                 ! we only need to add one new parcel
                 n_parcels = n_parcels + 1
                 !$omp end critical
-
 
                 parcels%B(:, n_thread_loc) = parcels%B(:, n)
 
@@ -147,19 +155,37 @@ module parcel_split_mod
 
                 call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
 
+                ! save parcel indices of child parcels for the
+                ! halo swap routine
+                pid(n) = n
+                pid(n_thread_loc) = n_thread_loc
             enddo
             !$omp end do
             !$omp end parallel
 
             n_parcel_splits = n_parcel_splits + n_parcels - last_index
 
+            ! after this operation the root MPI process knows the new
+            ! number of parcels in the simulation
+            n_total_parcels = n_parcels
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
+
+            ! all entries in "pid" that are non-zero are indices of
+            ! child parcels; remove all zero entries such that
+            ! we can do a halo swap
+            invalid = pack(pid(1:n_parcels), pid(1:n_parcels) /= 0)
+
+            ! send the invalid parcels to the proper MPI process;
+            ! delete them on *this* MPI process and
+            ! apply periodic boundary condition
+            call parcel_communicate(invalid)
+
 #ifdef ENABLE_VERBOSE
-            if (verbose) then
+            if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)", &
-                      "no. parcels before and after split: ", last_index, "...", n_parcels
+                      "no. parcels before and after split: ", orig_num, "...", n_total_parcels
             endif
 #endif
-
             call stop_timer(split_timer)
 
             ! subtract one call as we start and stop the timer twice here:

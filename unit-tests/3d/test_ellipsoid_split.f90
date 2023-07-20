@@ -12,7 +12,7 @@ program test_ellipsoid_split
     use parcel_split_mod, only : parcel_split, split_timer
     use parameters, only : update_parameters, nx, ny, nz, extent, lower, set_amax
     use options, only : parcel
-    use timer
+    use mpi_timer
     implicit none
 
     double precision, parameter :: lam = five

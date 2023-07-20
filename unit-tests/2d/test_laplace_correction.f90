@@ -9,9 +9,11 @@ program test_laplace_correction
     use unit_test
     use options, only : parcel
     use constants, only : pi, one, zero, two, f14, f32
-    use parcel_container
+    use parcel_container, only : n_parcels, parcels, parcel_alloc
     use parcel_bc, only : apply_periodic_bc, apply_reflective_bc
-    use parcel_correction
+    use parcel_correction, only : apply_laplace             &
+                                , lapl_corr_timer           &
+                                , init_parcel_correction
     use parcel_interpl, only : vol2grid
     use parcel_ellipse, only : get_ab
     use parcel_init, only : init_regular_positions

@@ -6,7 +6,7 @@
 module parcel_bc
     use constants, only : zero, two
     use parameters, only : lower, upper, extent, hli, center
-    use parcel_container, only : n_parcels
+    use parcel_container, only : n_parcels, parcels
     use omp_lib
     implicit none
 
@@ -39,24 +39,21 @@ module parcel_bc
             endif
         end subroutine apply_reflective_bc
 
-        ! Apply all boundary conditions to all parcels
-        ! @param[inout] position vector of parcels
-        ! @param[inout] B matrix of parcels
-        subroutine apply_parcel_bc(position, B)
-            double precision, intent(inout) :: position(:, :), B(:, :)
-            integer                         :: n
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Apply reflective boundary conditions to all parcels
+        subroutine apply_parcel_reflective_bc
+            integer :: n
 
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
-                ! zonal direction
-                call apply_periodic_bc(position(:, n))
-
                 ! vertical direction
-                call apply_reflective_bc(position(:, n), B(:, n))
+                call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
             enddo
             !$omp end do
             !$omp end parallel
-        end subroutine apply_parcel_bc
+
+        end subroutine apply_parcel_reflective_bc
 
 end module parcel_bc

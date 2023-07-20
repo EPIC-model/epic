@@ -40,6 +40,7 @@ module physics
     use netcdf_writer
     use iso_fortran_env, only : IOSTAT_END
     use ape_density, only : l_ape_density
+    use mpi_utils, only : mpi_print, mpi_stop
     implicit none
 
     ![m/s**2] standard gravity (i.e. at 45° latitude and mean sea level):
@@ -132,8 +133,8 @@ module physics
             inquire(file=fname, exist=exists)
 
             if (exists .eqv. .false.) then
-                print *, 'Error: input file "' // fname // '" does not exist.'
-                stop
+                call mpi_print('Error: input file "' // fname // '" does not exist.')
+                call mpi_stop
             endif
 
             ! open and read Namelist file.
@@ -144,8 +145,8 @@ module physics
             if (ios == IOSTAT_END) then
                 ! physical constants/parameters not present
             else if (ios /= 0) then
-                print *, 'Error: invalid Namelist format.'
-                stop
+                call mpi_print('Error: invalid Namelist format.')
+                call mpi_stop
             endif
 
             close(fn)
@@ -194,27 +195,30 @@ module physics
                     case ('sorting')
                         l_peref = has_attribute(grp_ncid, 'reference_potential_energy')
                         if (l_peref) then
-                            print *, "Found float attribute 'reference_potential_energy'."
+                            call mpi_print("Found float attribute 'reference_potential_energy'.")
                             call read_netcdf_attribute(grp_ncid, 'reference_potential_energy', peref)
                         else
-                            print *, "No float attribute 'reference_potential_energy'. It will be computed."
+                            call mpi_print(&
+                                "No float attribute 'reference_potential_energy'. " // &
+                                "Please specify this if you would like to compute the APE density.")
                         endif
                     case ('ape density')
                         if (.not. l_ape_density) then
-                            print *, "In order to use the APE calculation, you must provide"
-                            print *, "the APE density function in utils/ape_density.f90"
-                            error stop
+                            call mpi_print("In order to use the APE calculation, you must provide")
+                            call mpi_print("the APE density function in utils/ape_density.f90")
+                            call mpi_stop
                         endif
-                            print *, "APE calculation using APE density function."
+                            call mpi_print("APE calculation using APE density function.")
                     case default
-                        print *, "WARNING: No APE calculated!"
+                        call mpi_print("WARNING: No APE calculated!")
                         ape_calculation = 'none'
                     end select
 
 
 #ifdef ENABLE_VERBOSE
             else
-                print *, "WARNING: No physical constants found! EPIC uses default values."
+                call mpi_print(&
+                    "WARNING: No physical constants found! EPIC uses default values.")
 #endif
             endif
 
@@ -248,6 +252,9 @@ module physics
         end subroutine write_physical_quantities
 
         subroutine print_physical_quantities
+            if (world%rank /= world%root) then
+                return
+            endif
             write(*, "(a)") 'List of physical quantities (in MKS units):'
             write(*, "(a)") repeat("-", 78)
             call print_physical_quantity('standard gravity', gravity, 'm/s^2')

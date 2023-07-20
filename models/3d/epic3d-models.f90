@@ -88,7 +88,7 @@ program epic3d_models
                     stop
             end select
 
-            call write_netcdf_axis_3d(ncid, dimids, lower, dx, box%ncells)
+            call write_netcdf_axis_3d(ncid, dimids, lower, dx, (/nx, ny, nz+1/))
 
             ! write time
             call write_netcdf_scalar(ncid, axids(4), zero, 1)

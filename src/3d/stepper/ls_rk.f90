@@ -7,6 +7,7 @@ module ls_rk
     use dimensions, only : I_Z
     use parcel_container
     use parcel_bc
+    use parcel_mpi, only : parcel_communicate
     use rk_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par
@@ -14,7 +15,8 @@ module ls_rk
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
     use field_diagnostics, only : calculate_field_diagnostics
-    use timer, only : start_timer, stop_timer, timings
+    use mpi_timer, only : start_timer, stop_timer, timings
+    use mpi_utils, only : mpi_stop
     implicit none
 
     private
@@ -70,8 +72,7 @@ module ls_rk
                     cbptr => cbs4
                     n_stages = 5
                 case default
-                    print *, 'Only third and fourth order RK supported.'
-                    stop
+                    call mpi_stop('Only third and fourth order RK supported.')
             end select
 
         end subroutine ls_rk_setup
@@ -108,12 +109,11 @@ module ls_rk
 
             do n = 1, n_stages-1
                 call ls_rk_substep(dt, n)
-                call par2grid
             enddo
             call ls_rk_substep(dt, n_stages)
 
             call start_timer(rk_timer)
-            call apply_parcel_bc(parcels%position, parcels%B)
+            call apply_parcel_reflective_bc
             call stop_timer(rk_timer)
 
             ! we need to subtract 14 calls since we start and stop
@@ -141,8 +141,10 @@ module ls_rk
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
-                    parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n), parcels%strain(:, n),     &
-                                                     parcels%vorticity(:, n), parcels%volume(n))
+                    parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n),           &
+                                                     parcels%strain(:, n),      &
+                                                     parcels%vorticity(:, n),   &
+                                                     parcels%volume(n))
                 enddo
                 !$omp end parallel do
 
@@ -158,9 +160,11 @@ module ls_rk
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
-                    parcels%delta_b(:, n) = parcels%delta_b(:, n)                               &
-                                          + get_dBdt(parcels%B(:, n), parcels%strain(:, n),     &
-                                                     parcels%vorticity(:, n), parcels%volume(n))
+                    parcels%delta_b(:, n) = parcels%delta_b(:, n)               &
+                                          + get_dBdt(parcels%B(:, n),           &
+                                                     parcels%strain(:, n),      &
+                                                     parcels%vorticity(:, n),   &
+                                                     parcels%volume(n))
                 enddo
                 !$omp end parallel do
 
@@ -176,8 +180,7 @@ module ls_rk
 
                 parcels%vorticity(:, n) = parcels%vorticity(:, n) &
                                         + cb * dt * parcels%delta_vor(:, n)
-
-                parcels%B(:, n) = parcels%B(:, n)                   &
+                parcels%B(:, n) = parcels%B(:, n) &
                                 + cb * dt * parcels%delta_b(:, n)
             enddo
             !$omp end parallel do
@@ -185,6 +188,7 @@ module ls_rk
             call stop_timer(rk_timer)
 
             if (step == n_stages) then
+                call parcel_communicate
                return
             endif
 
@@ -197,6 +201,10 @@ module ls_rk
                 parcels%delta_b(:, n) = ca * parcels%delta_b(:, n)
             enddo
             !$omp end parallel do
+
+            call parcel_communicate
+
+            call par2grid
 
             call stop_timer(rk_timer)
 

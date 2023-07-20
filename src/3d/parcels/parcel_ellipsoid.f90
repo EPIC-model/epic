@@ -16,9 +16,9 @@ module parcel_ellipsoid
                         , three &
                         , five  &
                         , seven
-    use parameters, only : max_num_parcels
     use scherzinger, only : scherzinger_diagonalise &
                           , scherzinger_eigenvalues
+    use mpi_utils, only : mpi_exit_on_error
     use armanip, only : resize_array
     implicit none
 
@@ -37,7 +37,19 @@ module parcel_ellipsoid
                         , I_B22 = 4 & ! index for B22 matrix component
                         , I_B23 = 5   ! index for B23 matrix component
 
-    private :: rho, f3pi4, f5pi4, f7pi4, costheta, sintheta, get_full_matrix, Vetas, Vtaus
+    integer :: IDX_ELL_VETA, IDX_ELL_VTAU
+
+    private :: rho                  &
+             , f3pi4                &
+             , f5pi4                &
+             , f7pi4                &
+             , costheta             &
+             , sintheta             &
+             , get_full_matrix      &
+             , Vetas                &
+             , Vtaus                &
+             , IDX_ELL_VETA         &
+             , IDX_ELL_VTAU
 
     contains
 
@@ -51,6 +63,50 @@ module parcel_ellipsoid
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        function set_ellipsoid_buffer_indices(i) result(n_attr)
+            integer, intent(in) :: i
+            integer             :: n_attr
+
+            IDX_ELL_VETA = i
+            IDX_ELL_VTAU = i + 3
+
+            n_attr = IDX_ELL_VTAU + 2
+        end function set_ellipsoid_buffer_indices
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_ellipsoid_serialize(n, buffer)
+            integer,          intent(in)    :: n
+            double precision, intent(inout) :: buffer(:)
+
+            buffer(IDX_ELL_VETA:IDX_ELL_VETA+2) = Vetas(:, n)
+            buffer(IDX_ELL_VTAU:IDX_ELL_VTAU+2) = Vtaus(:, n)
+
+        end subroutine parcel_ellipsoid_serialize
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_ellipsoid_deserialize(n, buffer)
+            integer,          intent(in) :: n
+            double precision, intent(in) :: buffer(:)
+
+            Vetas(:, n) = buffer(IDX_ELL_VETA:IDX_ELL_VETA+2)
+            Vtaus(:, n) = buffer(IDX_ELL_VTAU:IDX_ELL_VTAU+2)
+
+        end subroutine parcel_ellipsoid_deserialize
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_ellipsoid_replace(n, m)
+            integer,          intent(in) :: n, m
+
+            Vetas(:, n) = Vetas(:, m)
+            Vtaus(:, n) = Vtaus(:, m)
+
+        end subroutine parcel_ellipsoid_replace
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine parcel_ellipsoid_allocate(num)
             integer, intent(in) :: num
 
@@ -61,6 +117,11 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_ellipsoid_deallocate
+
+            if (.not. allocated(Vetas)) then
+                return
+            endif
+
             deallocate(Vetas)
             deallocate(Vtaus)
         end subroutine parcel_ellipsoid_deallocate
@@ -106,8 +167,8 @@ module parcel_ellipsoid
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
             if (minval(D) <= zero) then
-                print *, "Invalid parcel shape."
-                stop
+                call mpi_exit_on_error(&
+                    "in parcel_ellipsoid::get_eigenvalues: Invalid parcel shape.")
             endif
 #endif
         end function get_eigenvalues
@@ -146,8 +207,8 @@ module parcel_ellipsoid
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
             if (minval(D) <= zero) then
-                print *, "Invalid parcel shape."
-                stop
+                call mpi_exit_on_error(&
+                    "in parcel_ellipsoid::get_eigenvectors: Invalid parcel shape.")
             endif
 #endif
         end function get_eigenvectors
@@ -176,8 +237,8 @@ module parcel_ellipsoid
 #ifndef NDEBUG
             ! check if any eigenvalue is less or equal zero
             if (minval(D) <= zero) then
-                print *, "Invalid parcel shape."
-                stop
+                call mpi_exit_on_error(&
+                    "in parcel_ellipsoid::diagonalise: Invalid parcel shape.")
             endif
 #endif
         end subroutine diagonalise
@@ -197,8 +258,8 @@ module parcel_ellipsoid
             abc = get_abc(volume)
 
             if (dabs(B(I_B11) * B(I_B22) - B(I_B12) ** 2) <= epsilon(abc)) then
-                print *, "Error in get_B33: Division by small number!"
-                stop
+                call mpi_exit_on_error(&
+                    "in parcel_ellipsoid::get_B33: Division by small number!")
             endif
 
             B33 = (abc ** 2 - B(I_B13) * (B(I_B12) * B(I_B23) - B(I_B13) * B(I_B22)) &

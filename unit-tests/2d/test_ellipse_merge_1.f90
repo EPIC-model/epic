@@ -58,6 +58,7 @@ program test_ellipse_multi_merge_1
             parcels%volume(1) = a1b1 * pi
             parcels%B(1, 1) = a1b1
             parcels%B(2, 1) = zero
+            parcels%vorticity(1) = zero
             parcels%buoyancy(1) = 1.5d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(1) = 1.3d0
@@ -68,6 +69,7 @@ program test_ellipse_multi_merge_1
             parcels%volume(2) = a2b2 * pi
             parcels%B(1, 2) = a2b2
             parcels%B(2, 2) = zero
+            parcels%vorticity(2) = zero
             parcels%buoyancy(2) = 1.8d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(2) = 1.2d0
@@ -78,6 +80,7 @@ program test_ellipse_multi_merge_1
             parcels%volume(3) = a2b2 * pi
             parcels%B(1, 3) = a2b2
             parcels%B(2, 3) = zero
+            parcels%vorticity(3) = zero
             parcels%buoyancy(3) = 1.4d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(3) = 1.1d0
@@ -88,6 +91,7 @@ program test_ellipse_multi_merge_1
             parcels%volume(4) = a2b2 * pi
             parcels%B(1, 4) = a2b2
             parcels%B(2, 4) = zero
+            parcels%vorticity(4) = zero
             parcels%buoyancy(4) = 1.7d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(4) = 1.0d0
@@ -98,6 +102,7 @@ program test_ellipse_multi_merge_1
             parcels%volume(5) = a2b2 * pi
             parcels%B(1, 5) = a2b2
             parcels%B(2, 5) = zero
+            parcels%vorticity(5) = zero
             parcels%buoyancy(5) = 1.5d0
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(5) = 1.4d0

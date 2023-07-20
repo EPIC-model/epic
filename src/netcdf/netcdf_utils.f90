@@ -5,7 +5,9 @@
 ! =============================================================================
 module netcdf_utils
     use netcdf
+    use mpi_environment
     use config, only : package
+    use mpi_utils, only : mpi_stop, mpi_exit_on_error
     implicit none
 
     ! netCDF error if non-zero
@@ -25,8 +27,7 @@ module netcdf_utils
             character(1), intent(in) :: dim_names(:)
 
             if ((size(dim_names) < 3) .or. (size(dim_names) > 4)) then
-                print *, "Invalid number of dimensions. Exiting."
-                stop
+                call mpi_stop("Invalid number of dimensions. Exiting.")
             endif
 
             netcdf_dims(1:2) = dim_names(1:2)
@@ -46,8 +47,7 @@ module netcdf_utils
             character(1), intent(in) :: axis_names(:)
 
             if ((size(axis_names) < 3) .or. (size(axis_names) > 4)) then
-                print *, "Invalid number of axes. Exiting."
-                stop
+                call mpi_stop("Invalid number of axes. Exiting.")
             endif
 
             netcdf_axes(1:2) = axis_names(1:2)
@@ -60,11 +60,22 @@ module netcdf_utils
 
         end subroutine set_netcdf_axes
 
-        subroutine create_netcdf_file(ncfname, overwrite, ncid)
-            character(*), intent(in)  :: ncfname
-            logical,      intent(in)  :: overwrite
-            integer,      intent(out) :: ncid
-            logical                   :: l_exist = .true.
+        ! If the logical argument 'l_serial = .true.', the file
+        ! is created by the root MPI rank with MPI size > 1. The argument
+        ! is .false. by default.
+        subroutine create_netcdf_file(ncfname, overwrite, ncid, l_serial)
+            character(*),      intent(in)  :: ncfname
+            logical,           intent(in)  :: overwrite
+            integer,           intent(out) :: ncid
+            logical                        :: l_exist = .true.
+            logical, optional, intent(in)  :: l_serial
+            logical                        :: l_parallel
+
+            l_parallel = (world%size > 1)
+
+            if (present(l_serial)) then
+                l_parallel = .not. l_serial
+            endif
 
             ! check whether file exists
             call exist_netcdf_file(ncfname, l_exist)
@@ -72,13 +83,25 @@ module netcdf_utils
             if (l_exist .and. overwrite) then
                 call delete_netcdf_file(ncfname)
             else if (l_exist) then
-                print *, "File '" // trim(ncfname) // "' already exists. Exiting."
-                stop
+                call mpi_stop("File '" // trim(ncfname) // "' already exists. Exiting.")
             endif
 
-            ncerr = nf90_create(path = ncfname,        &
-                                cmode = NF90_NETCDF4,  &
-                                ncid = ncid)
+            if (l_parallel) then
+                ! 16 April
+                ! https://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node25.htm
+                ncerr = nf90_create(path = ncfname,                         &
+                                    cmode = ior(NF90_NETCDF4, NF90_MPIIO),  &
+                                    ncid = ncid,                            &
+                                    comm = world%comm%MPI_VAL,              &
+                                    info = MPI_INFO_NULL%MPI_VAL)
+            else
+                ! in single execution world%root = world%rank = 0
+                if (world%root == world%rank) then
+                    ncerr = nf90_create(path = ncfname,        &
+                                        cmode = NF90_NETCDF4,  &
+                                        ncid = ncid)
+                endif
+            endif
 
             call check_netcdf_error("Failed to create netcdf file'" // trim(ncfname) // "'.")
 
@@ -87,6 +110,10 @@ module netcdf_utils
         subroutine delete_netcdf_file(ncfname)
             character(*), intent(in) :: ncfname
             integer                  :: stat
+
+            if (world%rank .ne. world%root) then
+                return
+            endif
 
             ! 15 June 2021
             ! https://stackoverflow.com/questions/18668832/how-delete-file-from-fortran-code
@@ -97,32 +124,68 @@ module netcdf_utils
         end subroutine delete_netcdf_file
 
 
-        subroutine open_netcdf_file(ncfname, access_flag, ncid)
-            character(*), intent(in)  :: ncfname
-            integer,      intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
-            integer,      intent(out) :: ncid
-            logical                   :: l_exist
+        ! If the logical argument 'l_serial = .true.', the file
+        ! is opened by the root MPI rank with MPI size > 1. The argument
+        ! is .false. by default.
+        subroutine open_netcdf_file(ncfname, access_flag, ncid, l_serial)
+            character(*),      intent(in)  :: ncfname
+            integer,           intent(in)  :: access_flag ! NF90_WRITE or NF90_NOWRITE
+            integer,           intent(out) :: ncid
+            logical, optional, intent(in)  :: l_serial
+            logical                        :: l_parallel
+            logical                        :: l_exist
 
-            inquire(file=ncfname, exist=l_exist)
+            l_parallel = (world%size > 1)
+
+            call exist_netcdf_file(ncfname, l_exist)
 
             if (.not. l_exist) then
-                print *, "Error: NetCDF file " // ncfname // " does not exist."
-                stop
+                call mpi_stop("Error: NetCDF file " // ncfname // " does not exist.")
             endif
 
-            ncerr = nf90_open(path = ncfname,       &
-                              mode = access_flag,   &
-                              ncid = ncid)
+            if (present(l_serial)) then
+                l_parallel = .not. l_serial
+            endif
+
+            if (l_parallel) then
+                ncerr = nf90_open(path = ncfname,               &
+                                  mode = access_flag,           &
+                                  ncid = ncid,                  &
+                                  comm = world%comm%MPI_VAL,    &
+                                  info = MPI_INFO_NULL%MPI_VAL)
+            else
+                ! in single execution world%root = world%rank = 0
+                if (world%root == world%rank) then
+                    ncerr = nf90_open(path = ncfname,     &
+                                    mode = access_flag,   &
+                                    ncid = ncid)
+                endif
+            endif
 
             call check_netcdf_error("Opening the netcdf file failed.")
 
         end subroutine open_netcdf_file
 
+        ! Note: This subroutine should only be called with l_serial = .true.
+        ! if it was opened in single mode.
+        subroutine close_netcdf_file(ncid, l_serial)
+            integer,           intent(in)  :: ncid
+            logical, optional, intent(in)  :: l_serial
+            logical                        :: l_parallel
 
-        subroutine close_netcdf_file(ncid)
-            integer, intent(in) :: ncid
+            l_parallel = (world%size > 1)
 
-            ncerr = nf90_close(ncid)
+            if (present(l_serial)) then
+                l_parallel = (.not. l_serial)
+            endif
+
+            if (l_parallel) then
+                ncerr = nf90_close(ncid)
+            else
+                if (world%root == world%rank) then
+                    ncerr = nf90_close(ncid)
+                endif
+            endif
 
             call check_netcdf_error("Closing the netcdf file failed.")
         end subroutine close_netcdf_file
@@ -139,9 +202,7 @@ module netcdf_utils
             character(*), intent(in) :: msg
 #ifndef NDEBUG
             if (ncerr /= nf90_noerr) then
-                print *, msg
-                print *, trim(nf90_strerror(ncerr))
-                stop
+                call mpi_exit_on_error(msg // " " // trim(nf90_strerror(ncerr)))
             endif
 #endif
         end subroutine check_netcdf_error
