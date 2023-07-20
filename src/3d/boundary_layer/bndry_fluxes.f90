@@ -36,15 +36,6 @@ module bndry_fluxes
     ! Denotes height below which surface fluxes are applied:
     double precision :: zdepth
 
-    ! number of indices and weights
-    integer, parameter :: ngp = 4
-
-    ! bilinear interpolation indices
-    integer :: is(ngp), js(ngp)
-
-    ! bilinear interpolation weights
-    double precision :: weights(ngp)
-
     public :: l_enable_flux             &
             , apply_bndry_fluxes        &
             , read_bndry_fluxes         &
@@ -206,8 +197,8 @@ module bndry_fluxes
                                1,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_MAX,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             abs_max = (dx(3) / abs_max) ** f13
 
@@ -219,9 +210,9 @@ module bndry_fluxes
 
         ! Add fluxes of buoyancy and humidity to parcels in lowest grid layer:
         subroutine apply_bndry_fluxes(dt)
-            double precision, intent(in)  :: dt
-            double precision              :: xy(2), z, fac
-            integer                       :: n, l
+            double precision, intent(in) :: dt
+            double precision             :: xy(2), z, fac, weights(0:1, 0:1)
+            integer                      :: n, is, js
 
             if (.not. l_enable_flux) then
                 return
@@ -230,7 +221,7 @@ module bndry_fluxes
             call start_timer(bndry_flux_timer)
 
             !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, weights, xy, z, fac)
+            !$omp do private(n, is, js, weights, xy, z, fac)
             do n = 1, n_parcels
                 z = parcels%position(3, n)
                 if (z < zdepth) then
@@ -244,14 +235,14 @@ module bndry_fluxes
                     !       fac = dt if z = lower(3)
                     fac = (zdepth - z) * dxi(3) * dt
 
-                    do l = 1, ngp
-                        ! The multiplication by dt is necessary to provide the amount of b or h
-                        ! entering through the bottom surface over a time interval of dt.
-                        parcels%buoyancy(n) = parcels%buoyancy(n) + fac * weights(l) * binc(js(l), is(l))
+                    ! The multiplication by dt is necessary to provide the amount of b or h
+                    ! entering through the bottom surface over a time interval of dt.
+                    parcels%buoyancy(n) = parcels%buoyancy(n) &
+                                        + fac * sum(weights * binc(js:js+1, is:is+1))
 #ifndef ENABLE_DRY_MODE
-                        parcels%humidity(n) = parcels%humidity(n) + fac * weights(l) * hinc(js(l), is(l))
+                    parcels%humidity(n) = parcels%humidity(n) &
+                                        + fac * sum(weights * hinc(js:js+1, is:is+1))
 #endif
-                    enddo
                 endif
             enddo
             !$omp end do
