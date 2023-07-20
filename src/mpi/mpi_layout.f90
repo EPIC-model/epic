@@ -91,7 +91,7 @@ module mpi_layout
             ! Get the nmber of ranks of the communicator
             call MPI_Comm_size(cart%comm, cart%size, cart%err)
 
-            if (cart%size /= world.size) then
+            if (cart%size /= world%size) then
                 call mpi_exit_on_error(&
                     "mpi_layout::mpi_layout_init: Wrong communicator size.")
             endif
