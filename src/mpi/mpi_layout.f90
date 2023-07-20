@@ -88,7 +88,7 @@ module mpi_layout
             ! Get new MPI rank number of *this* process
             call MPI_Comm_rank(cart%comm, cart%rank, cart%err)
 
-            ! Get the nmber of ranks of the communicator
+            ! Get the number of ranks of the communicator
             call MPI_Comm_size(cart%comm, cart%size, cart%err)
 
             if (cart%size /= world%size) then
