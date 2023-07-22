@@ -61,6 +61,13 @@
 * [Fix parcels on periodic edge](https://github.com/EPIC-model/epic/pull/509)
 * [Avoid array temporaries](https://github.com/EPIC-model/epic/pull/504)
 * [Remove max_vratio from configuration files](https://github.com/EPIC-model/epic/pull/510)
+* [Simplify parcel merge routine call](https://github.com/EPIC-model/epic/pull/514)
+* [Fix unit-tests -- register missing timer and fix function call](https://github.com/EPIC-model/epic/pull/513)
+* [Fix communicator issue](https://github.com/EPIC-model/epic/pull/512)
+* [Do not use MPI_COMM_WORLD as default in collectives](https://github.com/EPIC-model/epic/pull/515)
+* [MPI version of 3D model](https://github.com/EPIC-model/epic/pull/511)
+* [Fix OpenMP race condition in inversion_utils.f90](https://github.com/EPIC-model/epic/pull/516)
+
 
 ## EPIC version 0.12.6
 * [Pull optimizations to serial version](https://github.com/EPIC-model/epic/pull/500)
