@@ -18,9 +18,9 @@ module mpi_environment
         subroutine mpi_env_initialise
 #ifdef ENABLE_OPENMP
             integer :: provided
-            call MPI_Init_thread(MPI_THREAD_SERIALIZED, provided, world%err)
+            call MPI_Init_thread(MPI_THREAD_FUNNELED, provided, world%err)
 
-            if (.not. provided == MPI_THREAD_SERIALIZED) then
+            if (.not. provided == MPI_THREAD_FUNNELED) then
                 stop
             endif
 #else
