@@ -479,7 +479,7 @@ module field_netcdf
             enddo
 
             if (count(nc_dset(:)%l_enabled) == 0) then
-                call mpi_print("WARNING: No fields are written.")
+                call mpi_stop("WARNING: No fields are written.")
             endif
 
         end subroutine set_netcdf_field_output
