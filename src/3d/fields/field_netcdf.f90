@@ -218,66 +218,104 @@ module field_netcdf
             !
             ! write fields (do not write halo cells)
             !
-            call write_netcdf_dataset(ncid, nc_dset(NC_X_VEL)%varid,                    &
-                                      velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1),  &
-                                      start, cnt)
+            if (nc_dset(NC_X_VEL)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_X_VEL)%varid,                    &
+                                          velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1),  &
+                                          start, cnt)
+            endif
 
-            call write_netcdf_dataset(ncid, nc_dset(NC_Y_VEL)%varid,                    &
-                                      velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2),  &
-                                      start, cnt)
-            call write_netcdf_dataset(ncid, nc_dset(NC_Z_VEL)%varid,                    &
-                                      velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3),  &
-                                      start, cnt)
+            if (nc_dset(NC_Y_VEL)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_Y_VEL)%varid,                    &
+                                          velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2),  &
+                                          start, cnt)
+            endif
 
-            call write_netcdf_dataset(ncid, nc_dset(NC_X_VTEND)%varid,                  &
-                                      vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1),  &
-                                      start, cnt)
-            call write_netcdf_dataset(ncid, nc_dset(NC_Y_VTEND)%varid,                  &
-                                      vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2),  &
-                                      start, cnt)
-            call write_netcdf_dataset(ncid, nc_dset(NC_Z_VTEND)%varid,                  &
-                                      vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3),  &
-                                      start, cnt)
+            if (nc_dset(NC_Z_VEL)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_Z_VEL)%varid,                    &
+                                          velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3),  &
+                                          start, cnt)
+            endif
 
-            call write_netcdf_dataset(ncid, nc_dset(NC_NPARG)%varid,                    &
-                                      nparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),     &
-                                      start, cnt)
-            call write_netcdf_dataset(ncid, nc_dset(NC_NSPARG)%varid,                   &
-                                      nsparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),    &
-                                      start, cnt)
+            if (nc_dset(NC_X_VTEND)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_X_VTEND)%varid,                  &
+                                          vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1),  &
+                                          start, cnt)
+            endif
 
-            call write_netcdf_dataset(ncid, nc_dset(NC_X_VOR)%varid,                    &
-                                      vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1),  &
-                                      start, cnt)
-            call write_netcdf_dataset(ncid, nc_dset(NC_Y_VOR)%varid,                    &
-                                      vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2),  &
-                                      start, cnt)
-            call write_netcdf_dataset(ncid, nc_dset(NC_Z_VOR)%varid,                    &
-                                      vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3),  &
-                                      start, cnt)
+            if (nc_dset(NC_Y_VTEND)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_Y_VTEND)%varid,                  &
+                                          vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2),  &
+                                          start, cnt)
+            endif
 
-            call write_netcdf_dataset(ncid, nc_dset(NC_TBUOY)%varid,                    &
-                                      tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),    &
-                                      start, cnt)
+            if (nc_dset(NC_Z_VTEND)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_Z_VTEND)%varid,                  &
+                                          vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3),  &
+                                          start, cnt)
+            endif
+
+            if (nc_dset(NC_NPARG)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_NPARG)%varid,                    &
+                                          nparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),     &
+                                          start, cnt)
+            endif
+
+            if (nc_dset(NC_NSPARG)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_NSPARG)%varid,                   &
+                                          nsparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),    &
+                                          start, cnt)
+            endif
+
+            if (nc_dset(NC_X_VOR)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_X_VOR)%varid,                    &
+                                          vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1),  &
+                                          start, cnt)
+            endif
+
+            if (nc_dset(NC_Y_VOR)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_Y_VOR)%varid,                    &
+                                          vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2),  &
+                                          start, cnt)
+            endif
+
+            if (nc_dset(NC_Z_VOR)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_Z_VOR)%varid,                    &
+                                          vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3),  &
+                                          start, cnt)
+            endif
+
+
+            if (nc_dset(NC_TBUOY)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_TBUOY)%varid,                    &
+                                          tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),    &
+                                          start, cnt)
+            endif
 
 #ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, nc_dset(NC_DBUOY)%varid,                    &
-                                      dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),    &
-                                      start, cnt)
+            if (nc_dset(NC_DBUOY)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_DBUOY)%varid,                    &
+                                          dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),    &
+                                         start, cnt)
+            endif
 
-            call write_netcdf_dataset(ncid, nc_dset(NC_LBUOY)%varid,                            &
-                                      glati * (tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))    &
-                                             - dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))),  &
-                                      start, cnt)
+            if (nc_dset(NC_LBUOY)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_LBUOY)%varid,                            &
+                                          glati * (tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))    &
+                                                 - dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))),  &
+                                          start, cnt)
+            endif
 
-            call write_netcdf_dataset(ncid, nc_dset(NC_HUM)%varid,                   &
-                                      humg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
-                                      start, cnt)
+            if (nc_dset(NC_HUM)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_HUM)%varid,                   &
+                                          humg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
+                                          start, cnt)
+            endif
 #endif
-
-            call write_netcdf_dataset(ncid, nc_dset(NC_VOL)%varid,                   &
-                                      volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
-                                      start, cnt)
+            if (nc_dset(NC_VOL)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_VOL)%varid,                   &
+                                          volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
+                                          start, cnt)
+            endif
 
             ! increment counter
             n_writes = n_writes + 1
