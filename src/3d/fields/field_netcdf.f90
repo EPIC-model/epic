@@ -333,6 +333,8 @@ module field_netcdf
             integer,      intent(in) :: step
             integer                  :: n_steps, lid, start(4), cnt(4), st
 
+            call set_netcdf_field_info
+
             call open_netcdf_file(fname, NF90_NOWRITE, lid)
 
             call get_num_steps(lid, n_steps)
