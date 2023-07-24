@@ -474,7 +474,7 @@ module field_netcdf
                     case ('')
                         ! do nothing
                     case default
-                        call mpi_stop("No field '" // output%field_list(n) // "' available.")
+                        call mpi_stop("No field '" // trim(output%field_list(n)) // "' available.")
                 end select
             enddo
 
