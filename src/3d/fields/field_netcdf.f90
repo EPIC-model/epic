@@ -407,17 +407,34 @@ module field_netcdf
                         nc_dset(NC_TBUOY)%l_enabled = .true.
 #ifndef ENABLE_DRY_MODE
                     case ('dry-buoyancy')
+                        nc_dset(NC_DBUOY)%l_enabled = .true.
+                    case ('humidity')
                         nc_dset(NC_HUM)%l_enabled = .true.
                     case ('liquid-water-content')
                         nc_dset(NC_LBUOY)%l_enabled = .true.
 #endif
                     case ('volume')
                         nc_dset(NC_VOL)%l_enabled = .true.
+                    case ('all')
+                        nc_dset(:)%l_enabled = .true.
+                    case ('default')
+                        nc_dset(NC_X_VOR)%l_enabled = .true.
+                        nc_dset(NC_Y_VOR)%l_enabled = .true.
+                        nc_dset(NC_Z_VOR)%l_enabled = .true.
+                        nc_dset(NC_X_VEL)%l_enabled = .true.
+                        nc_dset(NC_Y_VEL)%l_enabled = .true.
+                        nc_dset(NC_Z_VEL)%l_enabled = .true.
+                        nc_dset(NC_TBUOY)%l_enabled = .true.
+#ifndef ENABLE_DRY_MODE
+                        nc_dset(NC_DBUOY)%l_enabled = .true.
+                        nc_dset(NC_HUM)%l_enabled   = .true.
+                        nc_dset(NC_LBUOY)%l_enabled = .true.
+#endif
+                        nc_dset(NC_VOL)%l_enabled   = .true.
                     case ('')
                         ! do nothing
                     case default
-                        print *, "Writing this field not supported."
-                        stop
+                        call mpi_stop("No field '" // output%field_list(n) // "' available.")
                 end select
             enddo
 
