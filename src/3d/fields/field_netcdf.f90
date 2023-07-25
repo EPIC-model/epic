@@ -218,104 +218,31 @@ module field_netcdf
             !
             ! write fields (do not write halo cells)
             !
-            if (nc_dset(NC_X_VEL)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_X_VEL)%varid,                    &
-                                          velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1),  &
-                                          start, cnt)
-            endif
+            call write_field_double(NC_X_VEL, velog(:, :, :, 1), start, cnt)
+            call write_field_double(NC_Y_VEL, velog(:, :, :, 2), start, cnt)
+            call write_field_double(NC_Z_VEL, velog(:, :, :, 3), start, cnt)
 
-            if (nc_dset(NC_Y_VEL)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_Y_VEL)%varid,                    &
-                                          velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2),  &
-                                          start, cnt)
-            endif
+            call write_field_double(NC_X_VTEND, vtend(:, :, :, 1), start, cnt)
+            call write_field_double(NC_Y_VTEND, vtend(:, :, :, 2), start, cnt)
+            call write_field_double(NC_Z_VTEND, vtend(:, :, :, 3), start, cnt)
 
-            if (nc_dset(NC_Z_VEL)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_Z_VEL)%varid,                    &
-                                          velog(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3),  &
-                                          start, cnt)
-            endif
+            call write_field_integer(NC_NPARG, nparg, start, cnt)
+            call write_field_integer(NC_NSPARG, nsparg, start, cnt)
 
-            if (nc_dset(NC_X_VTEND)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_X_VTEND)%varid,                  &
-                                          vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1),  &
-                                          start, cnt)
-            endif
+            call write_field_double(NC_X_VOR, vortg(:, :, :, 1), start, cnt)
+            call write_field_double(NC_Y_VOR, vortg(:, :, :, 2), start, cnt)
+            call write_field_double(NC_Z_VOR, vortg(:, :, :, 3), start, cnt)
 
-            if (nc_dset(NC_Y_VTEND)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_Y_VTEND)%varid,                  &
-                                          vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2),  &
-                                          start, cnt)
-            endif
-
-            if (nc_dset(NC_Z_VTEND)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_Z_VTEND)%varid,                  &
-                                          vtend(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3),  &
-                                          start, cnt)
-            endif
-
-            if (nc_dset(NC_NPARG)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_NPARG)%varid,                    &
-                                          nparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),     &
-                                          start, cnt)
-            endif
-
-            if (nc_dset(NC_NSPARG)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_NSPARG)%varid,                   &
-                                          nsparg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),    &
-                                          start, cnt)
-            endif
-
-            if (nc_dset(NC_X_VOR)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_X_VOR)%varid,                    &
-                                          vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 1),  &
-                                          start, cnt)
-            endif
-
-            if (nc_dset(NC_Y_VOR)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_Y_VOR)%varid,                    &
-                                          vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 2),  &
-                                          start, cnt)
-            endif
-
-            if (nc_dset(NC_Z_VOR)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_Z_VOR)%varid,                    &
-                                          vortg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1), 3),  &
-                                          start, cnt)
-            endif
-
-
-            if (nc_dset(NC_TBUOY)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_TBUOY)%varid,                    &
-                                          tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),    &
-                                          start, cnt)
-            endif
+            call write_field_double(NC_TBUOY, tbuoyg, start, cnt)
 
 #ifndef ENABLE_DRY_MODE
-            if (nc_dset(NC_DBUOY)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_DBUOY)%varid,                    &
-                                          dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),    &
-                                         start, cnt)
-            endif
+            call write_field_double(NC_DBUOY, dbuoyg, start, cnt)
 
-            if (nc_dset(NC_LBUOY)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_LBUOY)%varid,                            &
-                                          glati * (tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))    &
-                                                 - dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))),  &
-                                          start, cnt)
-            endif
+            call write_field_double(NC_LBUOY, glati * (tbuoyg - dbuoyg), start, cnt)
 
-            if (nc_dset(NC_HUM)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_HUM)%varid,                   &
-                                          humg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
-                                          start, cnt)
-            endif
+            call write_field_double(NC_HUM, humg, start, cnt)
 #endif
-            if (nc_dset(NC_VOL)%l_enabled) then
-                call write_netcdf_dataset(ncid, nc_dset(NC_VOL)%varid,                   &
-                                          volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
-                                          start, cnt)
-            endif
+            call write_field_double(NC_VOL, volg, start, cnt)
 
             ! increment counter
             n_writes = n_writes + 1
@@ -325,6 +252,42 @@ module field_netcdf
             call stop_timer(field_io_timer)
 
         end subroutine write_netcdf_fields
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine write_field_double(id, fdata, start, cnt)
+            integer,          intent(in) :: id
+            double precision, intent(in) :: fdata(box%hlo(3):box%hhi(3), &
+                                                  box%hlo(2):box%hhi(2), &
+                                                  box%hlo(1):box%hhi(1))
+            integer,          intent(in) :: cnt(4), start(4)
+
+            if (nc_dset(id)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(id)%varid,      &
+                                          fdata(box%lo(3):box%hi(3),    &
+                                                box%lo(2):box%hi(2),    &
+                                                box%lo(1):box%hi(1)),   &
+                                          start, cnt)
+            endif
+        end subroutine write_field_double
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine write_field_integer(id, fdata, start, cnt)
+            integer, intent(in) :: id
+            integer, intent(in) :: fdata(box%hlo(3):box%hhi(3), &
+                                         box%hlo(2):box%hhi(2), &
+                                         box%hlo(1):box%hhi(1))
+            integer, intent(in) :: cnt(4), start(4)
+
+            if (nc_dset(id)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(id)%varid,      &
+                                          fdata(box%lo(3):box%hi(3),    &
+                                                box%lo(2):box%hi(2),    &
+                                                box%lo(1):box%hi(1)),   &
+                                          start, cnt)
+            endif
+        end subroutine write_field_integer
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -419,64 +382,29 @@ module field_netcdf
 
             nc_dset(:)%l_enabled = .false.
 
-            do n = 1, size(output%field_list)
-                select case (output%field_list(n))
-                    case ('x-vorticity')
-                        nc_dset(NC_X_VOR)%l_enabled = .true.
-                    case ('y-vorticity')
-                        nc_dset(NC_Y_VOR)%l_enabled = .true.
-                    case ('z-vorticity')
-                        nc_dset(NC_Z_VOR)%l_enabled = .true.
-                    case ('x-velocity')
-                        nc_dset(NC_X_VEL)%l_enabled = .true.
-                    case ('y-velocity')
-                        nc_dset(NC_Y_VEL)%l_enabled = .true.
-                    case ('z-velocity')
-                        nc_dset(NC_Z_VEL)%l_enabled = .true.
-                    case ('x-vorticity-tendency')
-                        nc_dset(NC_X_VTEND)%l_enabled = .true.
-                    case ('y-vorticity-tendency')
-                        nc_dset(NC_Y_VTEND)%l_enabled = .true.
-                    case ('z-vorticity-tendency')
-                        nc_dset(NC_Z_VTEND)%l_enabled = .true.
-                    case ('nparg')
-                        nc_dset(NC_NPARG)%l_enabled = .true.
-                    case ('nsparg')
-                        nc_dset(NC_NSPARG)%l_enabled = .true.
-                    case ('buoyancy')
-                        nc_dset(NC_TBUOY)%l_enabled = .true.
+            ! check custom tags
+            if (any('all' == output%field_list(:))) then
+                nc_dset(:)%l_enabled = .true.
+            else if (any('default' == output%field_list(:))) then
+                nc_dset(NC_X_VOR)%l_enabled = .true.
+                nc_dset(NC_Y_VOR)%l_enabled = .true.
+                nc_dset(NC_Z_VOR)%l_enabled = .true.
+                nc_dset(NC_X_VEL)%l_enabled = .true.
+                nc_dset(NC_Y_VEL)%l_enabled = .true.
+                nc_dset(NC_Z_VEL)%l_enabled = .true.
+                nc_dset(NC_TBUOY)%l_enabled = .true.
 #ifndef ENABLE_DRY_MODE
-                    case ('dry-buoyancy')
-                        nc_dset(NC_DBUOY)%l_enabled = .true.
-                    case ('humidity')
-                        nc_dset(NC_HUM)%l_enabled = .true.
-                    case ('liquid-water-content')
-                        nc_dset(NC_LBUOY)%l_enabled = .true.
+                nc_dset(NC_DBUOY)%l_enabled = .true.
+                nc_dset(NC_HUM)%l_enabled   = .true.
+                nc_dset(NC_LBUOY)%l_enabled = .true.
 #endif
-                    case ('volume')
-                        nc_dset(NC_VOL)%l_enabled = .true.
-                    case ('all')
-                        nc_dset(:)%l_enabled = .true.
-                    case ('default')
-                        nc_dset(NC_X_VOR)%l_enabled = .true.
-                        nc_dset(NC_Y_VOR)%l_enabled = .true.
-                        nc_dset(NC_Z_VOR)%l_enabled = .true.
-                        nc_dset(NC_X_VEL)%l_enabled = .true.
-                        nc_dset(NC_Y_VEL)%l_enabled = .true.
-                        nc_dset(NC_Z_VEL)%l_enabled = .true.
-                        nc_dset(NC_TBUOY)%l_enabled = .true.
-#ifndef ENABLE_DRY_MODE
-                        nc_dset(NC_DBUOY)%l_enabled = .true.
-                        nc_dset(NC_HUM)%l_enabled   = .true.
-                        nc_dset(NC_LBUOY)%l_enabled = .true.
-#endif
-                        nc_dset(NC_VOL)%l_enabled   = .true.
-                    case ('')
-                        ! do nothing
-                    case default
-                        call mpi_stop("No field '" // trim(output%field_list(n)) // "' available.")
-                end select
-            enddo
+                nc_dset(NC_VOL)%l_enabled   = .true.
+            else
+                ! check individual fields
+                do n = 1, size(nc_dset)
+                    nc_dset(n)%l_enabled = any(nc_dset(n)%name == output%field_list(:))
+                enddo
+            endif
 
             if (count(nc_dset(:)%l_enabled) == 0) then
                 call mpi_stop("WARNING: No fields are written.")
