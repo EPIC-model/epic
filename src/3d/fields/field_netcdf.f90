@@ -403,7 +403,14 @@ module field_netcdf
             endif
 
             if (count(nc_dset(:)%l_enabled) == 0) then
-                call mpi_stop("WARNING: No fields are written.")
+                if (world%rank == world%root) then
+                    print *, "WARNING: No fields are written. You must enable at least one field."
+                    print *, "         The following fields are available:"
+                    do n = 1, size(nc_dset)
+                        print *, "         '" // trim(nc_dset(n)%name) // "' : " // trim(nc_dset(n)%long_name)
+                    enddo
+                endif
+                call mpi_stop
             endif
 
         end subroutine set_netcdf_field_output
