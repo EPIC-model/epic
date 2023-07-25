@@ -6,11 +6,11 @@ module field_netcdf
     use fields
     use config, only : package_version, cf_version
     use mpi_timer, only : start_timer, stop_timer
-    use options, only : write_netcdf_options, output
+    use options, only : write_netcdf_options, output, verbose
     use physics, only : write_physical_quantities, glati
     use mpi_layout, only : box
     use parameters, only : write_zeta_boundary_flag
-    use mpi_utils, only : mpi_stop
+    use mpi_utils, only : mpi_stop, mpi_print
     implicit none
 
     private
@@ -381,6 +381,7 @@ module field_netcdf
             ! check custom tags
             if (any('all' == output%field_list(:))) then
                 nc_dset(:)%l_enabled = .true.
+                call mpi_print("Info: EPIC is going to write all fields.")
             else if (any('default' == output%field_list(:))) then
                 nc_dset(NC_X_VOR)%l_enabled = .true.
                 nc_dset(NC_Y_VOR)%l_enabled = .true.
@@ -429,6 +430,17 @@ module field_netcdf
 #endif
                 nc_dset(NC_VOL)%l_enabled   = .true.
             endif
+
+#ifdef ENABLE_VERBOSE
+            if (verbose .and. (world%rank == world%root)) then
+                print *, "EPIC is going to write the following fields:"
+                do n = 1, size(nc_dset)
+                    if (nc_dset(n)%l_enabled) then
+                        print *, repeat(" ", 4) // trim(nc_dset(n)%name)
+                    endif
+                enddo
+            endif
+#endif
 
         end subroutine set_netcdf_field_output
 
