@@ -55,7 +55,7 @@ module options
     type info
         double precision                  :: field_freq         = one
         logical                           :: write_fields       = .true.
-        character(len=64), dimension(128) :: field_list         = ''
+        character(len=32), dimension(128) :: field_list         = ''
         double precision                  :: parcel_freq        = one
         logical                           :: overwrite          = .false.
         logical                           :: write_parcels      = .true.

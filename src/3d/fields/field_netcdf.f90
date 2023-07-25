@@ -25,7 +25,7 @@ module field_netcdf
 
 
     type netcdf_field_info
-        character(64)  :: name      = ''
+        character(32)  :: name      = ''
         character(128) :: long_name = ''
         character(128) :: std_name  = ''
         character(16)  :: unit      = ''
@@ -412,8 +412,8 @@ module field_netcdf
                     do n = 1, size(nc_dset)
                         print *, "         " // nc_dset(n)%name // " : " // trim(nc_dset(n)%long_name)
                     enddo
-                    print *, "         " // "all"     // repeat(" ", 61) // " : write all fields"
-                    print *, "         " // "default" // repeat(" ", 57) // " : write default fields"
+                    print *, "         " // "all"     // repeat(" ", 29) // " : write all fields"
+                    print *, "         " // "default" // repeat(" ", 25) // " : write default fields"
                 endif
                 nc_dset(NC_X_VOR)%l_enabled = .true.
                 nc_dset(NC_Y_VOR)%l_enabled = .true.
