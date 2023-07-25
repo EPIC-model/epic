@@ -231,7 +231,7 @@ module parcel_container
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
 
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose) then
                 print '(a19, i0, a6, i0)', '    replace parcel ', n, ' with ', m
             endif
