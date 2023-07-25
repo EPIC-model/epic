@@ -10,7 +10,7 @@ module field_netcdf
     use physics, only : write_physical_quantities, glati
     use mpi_layout, only : box
     use parameters, only : write_zeta_boundary_flag
-    use mpi_utils, only : mpi_stop, mpi_print
+    use mpi_utils, only : mpi_stop
     implicit none
 
     private
@@ -381,7 +381,6 @@ module field_netcdf
             ! check custom tags
             if (any('all' == output%field_list(:))) then
                 nc_dset(:)%l_enabled = .true.
-                call mpi_print("Info: EPIC is going to write all fields.")
             else if (any('default' == output%field_list(:))) then
                 nc_dset(NC_X_VOR)%l_enabled = .true.
                 nc_dset(NC_Y_VOR)%l_enabled = .true.
@@ -415,6 +414,7 @@ module field_netcdf
                     enddo
                     print *, "         " // "all"     // repeat(" ", 29) // " : write all fields"
                     print *, "         " // "default" // repeat(" ", 25) // " : write default fields"
+                    print * ""
                 endif
                 nc_dset(NC_X_VOR)%l_enabled = .true.
                 nc_dset(NC_Y_VOR)%l_enabled = .true.
@@ -439,6 +439,7 @@ module field_netcdf
                         print *, repeat(" ", 4) // trim(nc_dset(n)%name)
                     endif
                 enddo
+                print * ""
             endif
 #endif
 
