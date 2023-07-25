@@ -405,8 +405,8 @@ module field_netcdf
             if (count(nc_dset(:)%l_enabled) == 0) then
                 if (world%rank == world%root) then
                     print *, "WARNING: No fields are actively selected. EPIC is going to write"
-                    print *, "         default fields. Stop the simulation now if this is not"
-                    print *, "         your intention. Fields can be provided to the list"
+                    print *, "         the default fields. Stop the simulation now if this is"
+                    print *, "         not your intention. Fields can be provided to the list"
                     print *, "         'output%field_list' in the configuration file."
                     print *, "         The following fields are available:"
                     do n = 1, size(nc_dset)
