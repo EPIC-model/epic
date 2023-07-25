@@ -185,7 +185,6 @@ module field_netcdf
         subroutine write_netcdf_fields(t)
             double precision, intent(in) :: t
             integer                      :: cnt(4), start(4)
-            integer                      :: lo(3), hi(3)
 
             call start_timer(field_io_timer)
 
@@ -196,14 +195,11 @@ module field_netcdf
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
-            lo = box%lo
-            hi = box%hi
-
             ! need to add 1 since start must begin with index 1
-            start(1:3) = lo + 1
+            start(1:3) = box%lo + 1
             start(4) = n_writes
 
-            cnt(1:3) = hi - lo + 1
+            cnt(1:3) = box%hi - box%lo + 1
             cnt(4)   = 1
 
             if (n_writes == 1) then
