@@ -414,7 +414,7 @@ module field_netcdf
                     enddo
                     print *, "         " // "all"     // repeat(" ", 29) // " : write all fields"
                     print *, "         " // "default" // repeat(" ", 25) // " : write default fields"
-                    print * ""
+                    print *, ""
                 endif
                 nc_dset(NC_X_VOR)%l_enabled = .true.
                 nc_dset(NC_Y_VOR)%l_enabled = .true.
@@ -439,7 +439,7 @@ module field_netcdf
                         print *, repeat(" ", 4) // trim(nc_dset(n)%name)
                     endif
                 enddo
-                print * ""
+                print *, ""
             endif
 #endif
 
