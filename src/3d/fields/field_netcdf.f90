@@ -404,13 +404,30 @@ module field_netcdf
 
             if (count(nc_dset(:)%l_enabled) == 0) then
                 if (world%rank == world%root) then
-                    print *, "Error: No fields are written. You must enable at least one field."
-                    print *, "       The following fields are available:"
+                    print *, "WARNING: No fields are actively selected. EPIC is going to write"
+                    print *, "         default fields. Stop the simulation now if this is not"
+                    print *, "         your intention. Fields can be provided to the list"
+                    print *, "         'output%field_list' in the configuration file."
+                    print *, "         The following fields are available:"
                     do n = 1, size(nc_dset)
-                        print *, "       '" // trim(nc_dset(n)%name) // "' : " // trim(nc_dset(n)%long_name)
+                        print *, "         " // nc_dset(n)%name // " : " // trim(nc_dset(n)%long_name)
                     enddo
+                    print *, "         " // "all"     // repeat(" ", 61) // " : write all fields"
+                    print *, "         " // "default" // repeat(" ", 57) // " : write default fields"
                 endif
-                call mpi_stop
+                nc_dset(NC_X_VOR)%l_enabled = .true.
+                nc_dset(NC_Y_VOR)%l_enabled = .true.
+                nc_dset(NC_Z_VOR)%l_enabled = .true.
+                nc_dset(NC_X_VEL)%l_enabled = .true.
+                nc_dset(NC_Y_VEL)%l_enabled = .true.
+                nc_dset(NC_Z_VEL)%l_enabled = .true.
+                nc_dset(NC_TBUOY)%l_enabled = .true.
+#ifndef ENABLE_DRY_MODE
+                nc_dset(NC_DBUOY)%l_enabled = .true.
+                nc_dset(NC_HUM)%l_enabled   = .true.
+                nc_dset(NC_LBUOY)%l_enabled = .true.
+#endif
+                nc_dset(NC_VOL)%l_enabled   = .true.
             endif
 
         end subroutine set_netcdf_field_output
