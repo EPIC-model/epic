@@ -52,11 +52,13 @@ module field_netcdf
     integer, parameter :: NC_DBUOY   = 14       &
                         , NC_HUM     = 15       &
                         , NC_LBUOY   = 16
+
+    type(netcdf_field_info) :: nc_dset(16)
+#else
+    type(netcdf_field_info) :: nc_dset(13)
 #endif
 
     integer :: n_writes
-
-    type(netcdf_field_info) :: nc_dset(16)
 
     double precision   :: restart_time
 
