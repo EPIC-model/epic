@@ -1,5 +1,5 @@
-program coarsen_prog
-    use constants, only : pi, twopi, f14, f12, zero, one, four
+program coarsening
+    use constants, only : f14, f18, f16, f112
     use netcdf_reader
     use netcdf_writer
     implicit none
@@ -67,8 +67,8 @@ program coarsen_prog
             integer                       :: v, dimids(4), varids(32)
             character(len=64)             :: name
             character(len=64)             :: fields(32)
-            double precision              :: fdata(fnz+1, fny, fnx)
-            double precision              :: cdata(cnz+1, cny, cnx)
+            double precision              :: fdata(0:fnz, 0:fny-1, 0:fnx-1)
+            double precision              :: cdata(0:cnz, 0:cny-1, 0:cnx-1)
             character(512)                :: fname
             integer                       :: coord_ids(3)  ! = (x, y, z)
             integer                       :: t_axis_id
@@ -144,7 +144,10 @@ program coarsen_prog
                                            varids(v))
             enddo
 
+
             call close_definition(mcid)
+
+            call close_netcdf_file(mcid, l_serial=.true.)
 
             call open_netcdf_file(trim(fname), NF90_WRITE, mcid, l_serial=.true.)
 
@@ -180,9 +183,8 @@ program coarsen_prog
                     call read_netcdf_dataset(ncid, trim(fields(v)), fdata, &
                                              start=start, cnt=cnt)
 
-                    print *, step, fields(v)
 
-                    call coarsen(fdata, cdata)
+                    call coarsen_two(fdata, cdata)
 
                     cnt = (/ cnx, cny, cnz+1, 1/)
 
@@ -198,29 +200,41 @@ program coarsen_prog
 
         end subroutine process_steps
 
-        subroutine coarsen(fdata, cdata)
-            double precision  :: fdata(fnz+1, fny, fnx)
-            double precision  :: cdata(cnz+1, cny, cnx)
-            integer           :: ix, iy, iz, jx, jy, jz
-            double precision  :: fac
+        subroutine coarsen_two(fdata, cdata)
+            double precision, intent(in)  :: fdata(0:fnz, 0:fny-1, 0:fnx-1)
+            double precision, intent(out) :: cdata(0:cnz, 0:cny-1, 0:cnx-1)
+            integer                       :: ix, jx, iy, iz, jy, jz, jxp1, jyp1, jxm1, jym1
 
-            fac = one / dble(shrink ** 3)
-
-            do ix = 1, cnx - 1
-                jx = shrink * (ix-1) + 1
-                do iy = 1, cny - 1
-                    jy = shrink * (iy - 1) + 1
-                    do iz = 2, cnz
-                        jz = shrink * (iz - 1) + 1
-                        cdata(iz, iy, ix) = sum(fdata(jz:jz+shrink, jy:jy+shrink, jx:jx+shrink)) * fac
+            do ix = 0, cnx-1
+                jx = 2 * ix
+                jxm1 = mod(jx - 1 + fnx, fnx)
+                jxp1 = mod(jx + 1, fnx)
+                do iy = 0, cny-1
+                    jy = 2 * iy
+                    jym1 = mod(jy - 1 + fny, fny)
+                    jyp1 = mod(jy + 1, fny)
+                    do iz = 1, cnz
+                        jz = 2 * iz - 1
+                        cdata(iz, iy, ix) = f112 * (fdata(jz, jy, jxm1) + fdata(jz, jy, jxp1)  &
+                                                  + fdata(jz, jym1, jx) + fdata(jz, jyp1, jx)  &
+                                                  + fdata(jz-1, jy, jx) + fdata(jz+1, jy, jx)) &
+                                          + f16 * fdata(jz, jy, jx)                           &
+                                          + f16 * fdata(jz, jy, jx)                           &
+                                          + f16 * fdata(jz, jy, jx)
                     enddo
+                    cdata(0, iy, ix) = f18 * (fdata(0, jy, jxm1) + fdata(0, jy, jxp1)  &
+                                            + fdata(0, jym1, jx) + fdata(0, jyp1, jx)) &
+                                     + f14 * fdata(0, jy, jx)                          &
+                                     + f14 * fdata(0, jy, jx)
+
+                    cdata(cnz, iy, ix) = f18 * (fdata(fnz, jy, jxm1) + fdata(fnz, jy, jxp1)  &
+                                              + fdata(fnz, jym1, jx) + fdata(fnz, jyp1, jx)) &
+                                         + f14 * fdata(fnz, jy, jx)                          &
+                                         + f14 * fdata(fnz, jy, jx)
                 enddo
             enddo
 
-!             cdata(1,     :, :) = fdata(1,     :, :)
-!             cdata(cnz+1, :, :) = fdata(fnz+1, :, :)
-
-        end subroutine coarsen
+        end subroutine coarsen_two
 
         ! Get the file name provided via the command line
         subroutine parse_command_line
@@ -281,4 +295,4 @@ program coarsen_prog
             endif
         end subroutine parse_command_line
 
-end program coarsen_prog
+end program coarsening
