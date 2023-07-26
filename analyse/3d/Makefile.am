@@ -6,7 +6,7 @@ AM_FCFLAGS = 				\
 
 analysedir = $(prefix)/bin
 
-analyse_PROGRAMS = genspec3d coarsening
+analyse_PROGRAMS = genspec3d coarsen
 
 genspec3d_SOURCES = genspec3d.f90
 
@@ -15,9 +15,9 @@ genspec3d_LDADD = 					\
 	$(top_builddir)/src/fft/libepic_fft.la		\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
-coarsening_SOURCES = coarsening.f90
+coarsen_SOURCES = coarsen.f90
 
-coarsening_LDADD =					\
+coarsen_LDADD =					\
 	$(top_builddir)/src/utils/libepic_utils.la	\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
