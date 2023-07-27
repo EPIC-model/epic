@@ -125,6 +125,9 @@ program coarsening
             call define_netcdf_temporal_dimension(mcid, dimids(4), t_axis_id)
 
 
+            !------------------------------------------------------------------
+            ! Register all variables: We ignore the spatial and temporal
+            ! dimensions.
             nc = 1
             do nv = 1, nVariables
                 ncerr = nf90_inquire_variable(ncid, nv, name)
@@ -159,7 +162,10 @@ program coarsening
             call open_netcdf_file(trim(cname), NF90_WRITE, mcid, l_serial=.true.)
 
             dx = extent / dble(ncells)
-            call write_netcdf_axis_3d(mcid, dimids(1:3), lower, dx, &
+            call write_netcdf_axis_3d(mcid,                 &
+                                      dimids(1:3),          &
+                                      lower,                &
+                                      dx,                   &
                                       (/cnx, cny, cnz+1/))
 
             call read_netcdf_dataset(ncid, 't', t, start=(/1/), cnt=(/n_steps/))
