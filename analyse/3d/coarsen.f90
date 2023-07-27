@@ -1,8 +1,11 @@
 program coarsening
-    use constants, only : f14, f18, f16, f112
+    use constants, only : f14, f12
     use netcdf_reader
     use netcdf_writer
     implicit none
+
+    double precision, parameter :: f116 = 1.0d0 / 16.0d0
+    double precision, parameter :: f38 = 3.0d0 / 8.0d0
 
     ! Grid dimensions:
     integer :: fnx, fny, fnz    ! fine grid
@@ -225,7 +228,8 @@ program coarsening
             double precision              :: xydata(0:fnz, 0:cny-1, 0:cnx-1, nc)
             integer                       :: ix, jx, iy, iz, jy, jz, jxp1, jyp1, jxm1, jym1
 
-
+            !------------------------------------------------------------------
+            ! Coarsen in x using 1-2-1 stencil:
             do ix = 0, cnx-1
                 jx = 2 * ix
                 jxm1 = mod(jx - 1 + fnx, fnx)
@@ -233,32 +237,40 @@ program coarsening
 
                 do iy = 0, fny-1
                     do iz = 0, fnz
-                        xdata(iz, iy, ix, :) = 1.0d0/4.0d0  * (fdata(iz, iy, jxm1, :) + fdata(iz, iy, jxp1, :)) &
-                                          + 2.0d0/4.0d0 *  fdata(iz, iy, jx, :)
+                        xdata(iz, iy, ix, :) = f14 * (fdata(iz, iy, jxm1, :) + &
+                                                      fdata(iz, iy, jxp1, :))  &
+                                             + f12 *  fdata(iz, iy, jx, :)
                     enddo
                 enddo
             enddo
 
+            !------------------------------------------------------------------
+            ! Coarsen in y using 1-2-1 stencil:
             do ix = 0, cnx-1
                 do iy = 0, cny-1
                     jy = 2 * iy
                     jym1 = mod(jy - 1 + fny, fny)
                     jyp1 = mod(jy + 1, fny)
                     do iz = 0, fnz
-                        xydata(iz, iy, ix, :) = 1.0d0/4.0d0  * (xdata(iz, jym1, ix, :) + xdata(iz, jyp1, ix, :)) &
-                                           + 2.0d0/4.0d0 *  xdata(iz, jy, ix, :)
+                        xydata(iz, iy, ix, :) = f14 * (xdata(iz, jym1, ix, :) + &
+                                                       xdata(iz, jyp1, ix, :))  &
+                                              + f12 *  xdata(iz, jy, ix, :)
                     enddo
                 enddo
             enddo
 
+            !------------------------------------------------------------------
+            ! Coarsen in z using 1-2-1 stencil:
+            ! Note: The boundaries are kept the same.
             do ix = 0, cnx-1
                 do iy = 0, cny-1
                     do iz = 1, cnz - 1
                         jz = 2 * iz
-                        cdata(iz, iy, ix, :) = 1.0d0/4.0d0  * (xydata(jz-1, iy, ix, :) + xydata(jz+1, iy, ix, :)) &
-                                          + 2.0d0/4.0d0 *  xydata(jz, iy, ix, :)
+                        cdata(iz, iy, ix, :) = f14 * (xydata(jz-1, iy, ix, :) + &
+                                                      xydata(jz+1, iy, ix, :))  &
+                                             + f12 *  xydata(jz, iy, ix, :)
                     enddo
-                    cdata(0, iy, ix, :) = xydata(0, iy, ix, :)
+                    cdata(0,   iy, ix, :) = xydata(0,   iy, ix, :)
                     cdata(cnz, iy, ix, :) = xydata(fnz, iy, ix, :)
                 enddo
             enddo
@@ -274,6 +286,8 @@ program coarsening
             integer :: jxm2, jxp2
             integer :: jym2, jyp2
 
+            !------------------------------------------------------------------
+            ! Coarsen in x using 1-4-6-4-1 stencil:
             do ix = 0, cnx-1
                 jx = 3 * ix
                 jxm2 = mod(jx - 2 + fnx, fnx)
@@ -283,13 +297,17 @@ program coarsening
 
                 do iy = 0, fny-1
                     do iz = 0, fnz
-                        xdata(iz, iy, ix, :) = 1.0d0/16.d0  * (fdata(iz, iy, jxm2, :) + fdata(iz, iy, jxp2, :)) &
-                                          + 4.0d0/16.d0  * (fdata(iz, iy, jxm1, :) + fdata(iz, iy, jxp1, :)) &
-                                          + 6.0d0/16.0d0 *  fdata(iz, iy, jx, :)
+                        xdata(iz, iy, ix, :) = f116 * (fdata(iz, iy, jxm2, :) + &
+                                                       fdata(iz, iy, jxp2, :))  &
+                                             + f14  * (fdata(iz, iy, jxm1, :) + &
+                                                       fdata(iz, iy, jxp1, :))  &
+                                             + f38  *  fdata(iz, iy, jx, :)
                     enddo
                 enddo
             enddo
 
+            !------------------------------------------------------------------
+            ! Coarsen in y using 1-4-6-4-1 stencil:
             do ix = 0, cnx-1
                 do iy = 0, cny-1
                     jy = 3 * iy
@@ -298,22 +316,29 @@ program coarsening
                     jyp1 = mod(jy + 1, fny)
                     jyp2 = mod(jy + 2, fny)
                     do iz = 0, fnz
-                        xydata(iz, iy, ix, :) = 1.0d0/16.d0  * (xdata(iz, jym2, ix, :) + xdata(iz, jyp2, ix, :)) &
-                                          + 4.0d0/16.d0  * (xdata(iz, jym1, ix, :) + xdata(iz, jyp1, ix, :)) &
-                                          + 6.0d0/16.0d0 *  xdata(iz, jy, ix, :)
+                        xydata(iz, iy, ix, :) = f116 * (xdata(iz, jym2, ix, :) + &
+                                                        xdata(iz, jyp2, ix, :))  &
+                                              + f14  * (xdata(iz, jym1, ix, :) + &
+                                                        xdata(iz, jyp1, ix, :))  &
+                                              + f38  *  xdata(iz, jy, ix, :)
                     enddo
                 enddo
             enddo
 
+            !------------------------------------------------------------------
+            ! Coarsen in z using 1-4-6-4-1 stencil:
+            ! Note: The boundaries are kept the same.
             do ix = 0, cnx-1
                 do iy = 0, cny-1
                     do iz = 1, cnz - 1
                         jz = 3 * iz
-                        cdata(iz, iy, ix, :) = 1.0d0/16.d0  * (xydata(jz-2, iy, ix, :) + xydata(jz+2, iy, ix, :)) &
-                                          + 4.0d0/16.d0  * (xydata(jz-1, iy, ix, :) + xydata(jz+1, iy, ix, :)) &
-                                          + 6.0d0/16.0d0 *  xydata(jz, iy, ix, :)
+                        cdata(iz, iy, ix, :) = f116 * (xydata(jz-2, iy, ix, :) + &
+                                                       xydata(jz+2, iy, ix, :))  &
+                                             + f14  * (xydata(jz-1, iy, ix, :) + &
+                                                       xydata(jz+1, iy, ix, :))  &
+                                             + f38  *  xydata(jz, iy, ix, :)
                     enddo
-                    cdata(0, iy, ix, :) = xydata(0, iy, ix, :)
+                    cdata(0,   iy, ix, :) = xydata(0,   iy, ix, :)
                     cdata(cnz, iy, ix, :) = xydata(fnz, iy, ix, :)
                 enddo
             enddo
