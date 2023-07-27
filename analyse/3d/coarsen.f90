@@ -4,20 +4,17 @@ program coarsening
     use netcdf_writer
     implicit none
 
-    ! Ordering in physical space: z, y, x
-
     ! Grid dimensions:
-    integer :: fnx, fny, fnz
-    integer :: cnx, cny, cnz
+    integer :: fnx, fny, fnz    ! fine grid
+    integer :: cnx, cny, cnz    ! coarse grid
 
     ! Width and height of the domain:
     double precision :: extent(3), lower(3)
     integer          :: ncells(3)
 
-    character(len=512) :: filename
+    character(len=512) :: cname     ! file name of coarse grid
+    character(len=512) :: fname     ! file name of fine grid
     integer            :: shrink
-
-!     call mpi_env_initialise
 
     call parse_command_line
 
@@ -42,6 +39,16 @@ program coarsening
     cny = fny / shrink
     cnz = fnz / shrink
 
+    select case(shrink)
+        case (2)
+            cname = 'crse_2_' // trim(fname)
+        case (3)
+            cname = 'crse_3_' // trim(fname)
+        case default
+            print *, "We can only coarse by a factor 2 or 3."
+            stop
+    end select
+
     print '(a23, i5, a6, i5, a6, i5)', 'Grid dimensions: nx = ', fnx, ' ny = ', fny, ' nz = ', fnz
 
     ! read data into array pp:
@@ -52,7 +59,7 @@ program coarsening
         subroutine get_domain
             integer          :: ncid
             ! read domain dimensions
-            call open_netcdf_file(trim(filename), NF90_NOWRITE, ncid)
+            call open_netcdf_file(trim(fname), NF90_NOWRITE, ncid)
             call get_netcdf_box(ncid, lower, extent, ncells)
             fnx = ncells(1)
             fny = ncells(2)
@@ -63,37 +70,38 @@ program coarsening
         subroutine process_steps
             integer                       :: ncid, cnt(4), start(4), n_steps, ncerr
             integer                       :: mcid
-            integer                       :: nDimensions, nVariables, step
-            integer                       :: v, dimids(4), varids(32), nc
+            integer                       :: nDimensions, nVariables, step, nComp
+            integer                       :: dimids(4), nc, nv
             character(len=64)             :: name
-            character(len=64)             :: fields(32)
+            integer, allocatable          :: varids(:)
+            character(len=64), allocatable:: fields(:)
             double precision, allocatable :: fdata(:, :, :, :)
             double precision, allocatable :: cdata(:, :, :, :)
-            character(512)                :: fname
             integer                       :: coord_ids(3)  ! = (x, y, z)
             integer                       :: t_axis_id
             double precision              :: dx(3)
             double precision, allocatable :: t(:)
 
-            call open_netcdf_file(trim(filename), NF90_NOWRITE, ncid, l_serial=.true.)
+            call open_netcdf_file(trim(fname), NF90_NOWRITE, ncid, l_serial=.true.)
 
             call get_num_steps(ncid, n_steps)
-
-            allocate(t(n_steps))
 
             ncerr = nf90_inquire(ncid, nDimensions, nVariables)
 
             ! allocate for all variables (excluding spatial and temporal variables)
-            allocate(fdata(0:fnz, 0:fny-1, 0:fnx-1, nVariables - 4))
-            allocate(cdata(0:cnz, 0:cny-1, 0:cnx-1, nVariables - 4))
+            nComp = nVariables - 4
 
-            fname = 'coarsened_' // trim(filename)
+            allocate(t(n_steps))
+            allocate(fdata(0:fnz, 0:fny-1, 0:fnx-1, nComp))
+            allocate(cdata(0:cnz, 0:cny-1, 0:cnx-1, nComp))
+            allocate(fields(nComp))
+            allocate(varids(nComp))
 
             ncells(1) = cnx
             ncells(2) = cny
             ncells(3) = cnz
 
-            call create_netcdf_file(ncfname=trim(fname),    &
+            call create_netcdf_file(ncfname=trim(cname),    &
                                     overwrite=.true.,       &
                                     ncid=mcid,              &
                                     l_serial=.true.)
@@ -114,33 +122,30 @@ program coarsening
             call define_netcdf_temporal_dimension(mcid, dimids(4), t_axis_id)
 
 
-            do v = 1, nVariables
-                ncerr = nf90_inquire_variable(ncid, v, name)
+            nc = 1
+            do nv = 1, nVariables
+                ncerr = nf90_inquire_variable(ncid, nv, name)
 
-                fields(v) = name
-                if (trim(fields(v)) == 'x') then
-                        cycle
-                    endif
-
-                    if (trim(fields(v)) == 'y') then
-                        cycle
-                    endif
-
-                    if (trim(fields(v)) == 'z') then
-                        cycle
-                    endif
-
-                    if (trim(fields(v)) == 't') then
-                        cycle
-                    endif
-
-                print *, "Found " // trim(name)
-                call define_netcdf_dataset(mcid,            &
-                                           trim(name),      &
-                                           '', '', '',      &
-                                           NF90_DOUBLE,     &
-                                           dimids,          &
-                                           varids(v))
+                select case(trim(name))
+                    case ('x')
+                        print *, "Skipping " // trim(name)
+                    case ('y')
+                        print *, "Skipping " // trim(name)
+                    case ('z')
+                        print *, "Skipping " // trim(name)
+                    case ('t')
+                        print *, "Skipping " // trim(name)
+                    case default
+                        print *, "Found " // trim(name)
+                        fields(nc) = name
+                        call define_netcdf_dataset(mcid,        &
+                                                   trim(name),  &
+                                                   '', '', '',  &
+                                                   NF90_DOUBLE, &
+                                                   dimids,      &
+                                                   varids(nc))
+                        nc = nc + 1
+                end select
             enddo
 
 
@@ -148,7 +153,7 @@ program coarsening
 
             call close_netcdf_file(mcid, l_serial=.true.)
 
-            call open_netcdf_file(trim(fname), NF90_WRITE, mcid, l_serial=.true.)
+            call open_netcdf_file(trim(cname), NF90_WRITE, mcid, l_serial=.true.)
 
             dx = extent / dble(ncells)
             call write_netcdf_axis_3d(mcid, dimids(1:3), lower, dx, &
@@ -157,73 +162,47 @@ program coarsening
             call read_netcdf_dataset(ncid, 't', t, start=(/1/), cnt=(/n_steps/))
 
             do step = 1, n_steps
-                start = (/ 1,  1,  1, step /)
+                start = (/1, 1, 1, step/)
 
-                nc = 1
+                !--------------------------------------------------------------
+                ! read all fields:
 
-                do v = 1, nVariables
-                    cnt = (/ fnx, fny, fnz+1, 1/)
+                call write_netcdf_scalar(mcid, t_axis_id, t(step), step)
 
-                    if (trim(fields(v)) == 'x') then
-                        cycle
-                    endif
+                cnt = (/fnx, fny, fnz+1, 1/)
 
-                    if (trim(fields(v)) == 'y') then
-                        cycle
-                    endif
-
-                    if (trim(fields(v)) == 'z') then
-                        cycle
-                    endif
-
-                    if (trim(fields(v)) == 't') then
-                        call write_netcdf_scalar(mcid, t_axis_id, t(step), step)
-                        cycle
-                    endif
-
-                    call read_netcdf_dataset(ncid, trim(fields(v)), fdata(:, :, :, nc), &
-                                             start=start, cnt=cnt)
-
-                    nc = nc + 1
+                do nc = 1, nComp
+                    call read_netcdf_dataset(ncid,                  &
+                                             trim(fields(nc)),      &
+                                             fdata(:, :, :, nc),    &
+                                             start=start,           &
+                                             cnt=cnt)
                 enddo
 
+                !--------------------------------------------------------------
+                ! coarsen all fields:
+                select case(shrink)
+                    case (2)
+                        call coarsen_two(fdata, cdata, nComp)
+                    case (3)
+                        call coarsen_three(fdata, cdata, nComp)
+                    case default
+                        print *, "We can only coarse by a factor 2 or 3."
+                        stop
+                end select
 
-                    if (shrink == 2) then
-                        call coarsen_two(fdata, cdata, nVariables-4)
-                    else if (shrink == 3) then
-!                         print *, "Shrink by factor 3"
-                        call coarsen_three(fdata, cdata, nVariables-4)
-                    endif
+                !--------------------------------------------------------------
+                ! write all coarsened fields:
 
+                cnt = (/cnx, cny, cnz+1, 1/)
 
-
-                nc = 1
-                do v = 1, nVariables
-
-
-                    cnt = (/ cnx, cny, cnz+1, 1/)
-
-                    if (trim(fields(v)) == 'x') then
-                        cycle
-                    endif
-
-                    if (trim(fields(v)) == 'y') then
-                        cycle
-                    endif
-
-                    if (trim(fields(v)) == 'z') then
-                        cycle
-                    endif
-
-                    if (trim(fields(v)) == 't') then
-                        call write_netcdf_scalar(mcid, t_axis_id, t(step), step)
-                        cycle
-                    endif
-
-                    call write_netcdf_dataset(mcid, v, cdata(:, :, :, nc), start=start, cnt=cnt, l_serial=.true.)
-
-                    nc = nc + 1
-
+                do nc = 1, nComp
+                    call write_netcdf_dataset(mcid,                 &
+                                              nc,                   &
+                                              cdata(:, :, :, nc),   &
+                                              start=start,          &
+                                              cnt=cnt,              &
+                                              l_serial=.true.)
                 enddo
             enddo
 
@@ -231,6 +210,10 @@ program coarsening
             call close_netcdf_file(ncid, l_serial=.true.)
 
             deallocate(t)
+            deallocate(fdata)
+            deallocate(cdata)
+            deallocate(fields)
+            deallocate(varids)
 
         end subroutine process_steps
 
@@ -279,36 +262,6 @@ program coarsening
                     cdata(cnz, iy, ix, :) = xydata(fnz, iy, ix, :)
                 enddo
             enddo
-
-!             do ix = 0, cnx-1
-!                 jx = 2 * ix
-!                 jxm1 = mod(jx - 1 + fnx, fnx)
-!                 jxp1 = mod(jx + 1, fnx)
-!                 do iy = 0, cny-1
-!                     jy = 2 * iy
-!                     jym1 = mod(jy - 1 + fny, fny)
-!                     jyp1 = mod(jy + 1, fny)
-!                     do iz = 1, cnz
-!                         jz = 2 * iz - 1
-!                         cdata(iz, iy, ix) = f112 * (fdata(jz, jy, jxm1) + fdata(jz, jy, jxp1)  &
-!                                                   + fdata(jz, jym1, jx) + fdata(jz, jyp1, jx)  &
-!                                                   + fdata(jz-1, jy, jx) + fdata(jz+1, jy, jx)) &
-!                                           + f16 * fdata(jz, jy, jx)                           &
-!                                           + f16 * fdata(jz, jy, jx)                           &
-!                                           + f16 * fdata(jz, jy, jx)
-!                     enddo
-!                     cdata(0, iy, ix) = f18 * (fdata(0, jy, jxm1) + fdata(0, jy, jxp1)  &
-!                                             + fdata(0, jym1, jx) + fdata(0, jyp1, jx)) &
-!                                      + f14 * fdata(0, jy, jx)                          &
-!                                      + f14 * fdata(0, jy, jx)
-!
-!                     cdata(cnz, iy, ix) = f18 * (fdata(fnz, jy, jxm1) + fdata(fnz, jy, jxp1)  &
-!                                               + fdata(fnz, jym1, jx) + fdata(fnz, jyp1, jx)) &
-!                                          + f14 * fdata(fnz, jy, jx)                          &
-!                                          + f14 * fdata(fnz, jy, jx)
-!                 enddo
-!             enddo
-
         end subroutine coarsen_two
 
         subroutine coarsen_three(fdata, cdata, nc)
@@ -364,50 +317,6 @@ program coarsening
                     cdata(cnz, iy, ix, :) = xydata(fnz, iy, ix, :)
                 enddo
             enddo
-
-!
-!
-!
-!
-! !                 print *, ix, jxm2, jxm1, jx, jxp1, jxp2
-!                 do iy = 0, cny-1
-!                     jy = 3 * iy
-!                     jym2 = mod(jy - 2 + fny, fny)
-!                     jym1 = mod(jy - 1 + fny, fny)
-!                     jyp1 = mod(jy + 1, fny)
-!                     jyp2 = mod(jy + 2, fny)
-!                     do iz = 1, cnz
-!                         jz = 3 * iz - 1
-! !                         cdata(iz, iy, ix) = 1.0d0 / 48.0d0 * (fdata(iz, jy, jxm2) + fdata(iz, jy, jxp2)   &
-! !                                             +    fdata(iz, jym2, jx) + fdata(iz, jyp2, jx)   &
-! !                                             +    fdata(iz-2, jy, jx) + fdata(iz+2, jy, jx))  &
-! !                                           + 4.0d0 / 48.0d0 * (fdata(iz, jy, jxm1) + fdata(iz, jy, jxp1)   &
-! !                                               +  fdata(iz, jym1, jx) + fdata(iz, jyp1, jx)   &
-! !                                               +  fdata(iz-1, jy, jx) + fdata(iz+1, jy, jx))  &
-! !                                           + 6.0d0 / 48.0d0 * fdata(iz, iy, jx)                            &
-! !                                           + 6.0d0 / 48.0d0 * fdata(iz, iy, jx)                            &
-! !                                           + 6.0d0 / 48.0d0 * fdata(iz, iy, jx)
-!                     enddo
-!                     cdata(0, iy, ix) = 1.0d0 / 32.0d0 * (fdata(0, jy, jxm2) + fdata(0, jy, jxp2)   &
-!                                                     +     fdata(0, jym2, jx) + fdata(0, jyp2, jx))  &
-!                                      + 4.0d0 / 32.0d0 * (fdata(0, jy, jxm1) + fdata(0, jy, jxp1)   &
-!                                                      +    fdata(0, jym1, jx) + fdata(0, jyp1, jx))  &
-!                                      + 6.0d0 / 32.0d0 * fdata(0, iy, jx)                           &
-!                                      + 6.0d0 / 32.0d0 * fdata(0, iy, jx)
-!
-!
-!
-!                     cdata(cnz, iy, ix) = 1.0d0 / 32.0d0 * (fdata(fnz, jy, jxm2) + fdata(fnz, jy, jxp2)   &
-!                                                      +    fdata(fnz, jym2, jx) + fdata(fnz, jyp2, jx))   &
-!                                        + 4.0d0 / 32.0d0 * (fdata(fnz, jy, jxm1) + fdata(fnz, jy, jxp1)   &
-!                                                      +    fdata(fnz, jym1, jx) + fdata(fnz, jyp1, jx))   &
-!                                        + 6.0d0 / 32.0d0 * fdata(fnz, iy, jx)                           &
-!                                        + 6.0d0 / 32.0d0 * fdata(fnz, iy, jx)
-!                 enddo
-!             enddo
-!             stop
-
-
         end subroutine coarsen_three
 
         ! Get the file name provided via the command line
@@ -417,7 +326,7 @@ program coarsening
             logical            :: exists
 
             shrink = -1
-            filename = ''
+            fname = ''
             i = 0
             do
                 call get_command_argument(i, arg)
@@ -428,7 +337,7 @@ program coarsening
                 if (arg == '--filename') then
                     i = i + 1
                     call get_command_argument(i, arg)
-                    filename = trim(arg)
+                    fname = trim(arg)
                 else if (arg == '--shrink') then
                     i = i + 1
                     call get_command_argument(i, arg)
@@ -441,7 +350,7 @@ program coarsening
                         stop
                     endif
                 else if (arg == '--help') then
-                    print *, 'This program computes the power spectrum and writes it to file.'
+                    print *, 'This program coarsens all fields by a factor 2 or 3.'
                     print *, 'An EPIC field output must be provided to analyse.'
                     print *, 'Run code with "coarsen --filename [field file]" --shrink [coarsen shrink]'
                     stop
@@ -449,22 +358,22 @@ program coarsening
                 i = i+1
             enddo
 
-            if ((filename == '') .or. (shrink == -1) ) then
+            if ((fname == '') .or. (shrink == -1) ) then
                 print *, 'No file or step provided. Run code with "coarsen --help"'
                 stop
             endif
 
             ! check if correct file is passed
-            stat = index(trim(filename), '_fields.nc', back=.true.)
+            stat = index(trim(fname), '_fields.nc', back=.true.)
             if (stat == 0) then
                 print *, "Error: No EPIC field output file provided."
                 stop
             endif
 
             ! check if file exsits
-            inquire(file=trim(filename), exist=exists)
+            inquire(file=trim(fname), exist=exists)
             if (.not. exists) then
-                print *, "Error: File '" // trim(filename) // "' does not exist."
+                print *, "Error: File '" // trim(fname) // "' does not exist."
                 stop
             endif
         end subroutine parse_command_line
