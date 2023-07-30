@@ -281,9 +281,10 @@ module parcel_container
             call resize_array(parcels%vorticity, new_size, n_parcels)
             call resize_array(parcels%B, new_size, n_parcels)
             call resize_array(parcels%volume, new_size, n_parcels)
-            call resize_array(parcels%buoyancy, new_size, n_parcels)
+            call resize_array(parcels%theta, new_size, n_parcels)
 #ifndef ENABLE_DRY_MODE
-            call resize_array(parcels%humidity, new_size, n_parcels)
+            call resize_array(parcels%qv, new_size, n_parcels)
+            call resize_array(parcels%ql, new_size, n_parcels)
 #endif
             call parcel_ellipsoid_resize(new_size, n_parcels)
 
