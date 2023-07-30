@@ -8,7 +8,7 @@ program test_mpi_parcel_unpack
     use unit_test
     use constants
     use parcel_container
-    use mpi_communicator
+    use mpi_environment
     use mpi_timer
     implicit none
 
@@ -18,9 +18,9 @@ program test_mpi_parcel_unpack
     integer, parameter :: n_unpack = 222
     double precision, allocatable:: buffer(:)
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
     n_parcels = 1000 - n_unpack
     call parcel_alloc(n_parcels + n_unpack)
@@ -103,16 +103,16 @@ program test_mpi_parcel_unpack
 
     deallocate(buffer)
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI parcel unpack', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_parcel_unpack

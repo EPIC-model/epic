@@ -9,13 +9,14 @@
 program test_mpi_parcel_split
     use constants, only : zero, one, f18, f14, f12, f34, fpi, pi, four
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use parcel_container
     use parcel_mpi
-    use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, vcell, set_vmax
+    use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, vcell, set_amax
     use mpi_collectives
     use parcel_split_mod, only : parcel_split, split_timer
+    use options, only : parcel
     use mpi_timer
     implicit none
 
@@ -26,11 +27,12 @@ program test_mpi_parcel_split
     integer          :: n_orig_total
     integer          :: n_orig_local
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     call register_timer('parcel split', split_timer)
+    call register_timer('parcel container resize', resize_timer)
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     nx = 32
     ny = 32
@@ -42,12 +44,13 @@ program test_mpi_parcel_split
 
     call update_parameters
 
-    call set_vmax(f14 * vcell)
 
     n_parcels = 2 * (box%hi(2) - box%lo(2) + 1) + 2 * (box%hi(1) - box%lo(1) + 1)
     n_total = 2 * n_parcels
 
     call parcel_alloc(n_total)
+
+    parcel%lambda_max = four
 
     n = 1
 
@@ -57,6 +60,9 @@ program test_mpi_parcel_split
     a2 = f34 * abc
     b2 = f18 * abc
     c2 = b2
+
+    abc = dsqrt(a2)
+    call set_amax(abc)
 
     ! place parcels in the last interior cells in the west
     i = box%lo(1)
@@ -102,33 +108,33 @@ program test_mpi_parcel_split
     n_orig_total = n_parcels
     n_orig_local = n_parcels
 
-    call mpi_blocking_reduce(n_orig_total, MPI_SUM)
+    call mpi_blocking_reduce(n_orig_total, MPI_SUM, world)
 
     parcels%volume(1:n_parcels) = f12 * vcell
-    parcels%vorticity(:, 1:n_parcels) = comm%rank + 1
-    parcels%theta(1:n_parcels) = comm%rank + 1
+    parcels%vorticity(:, 1:n_parcels) = world%rank + 1
+    parcels%theta(1:n_parcels) = world%rank + 1
 
-    call parcel_split(parcels, threshold=four)
+    call parcel_split
 
     passed = (passed .and. (2 * n_orig_local == n_parcels))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         passed = (passed .and. (2 * n_orig_total == n_total_parcels))
     endif
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI parcel split', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     contains
 

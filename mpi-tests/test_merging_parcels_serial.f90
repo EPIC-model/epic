@@ -5,16 +5,16 @@ program test_merging_parcels
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels
     use parcel_merge_serial
     use parcel_netcdf
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use mpi_utils, only : mpi_exit_on_error
     use mpi_layout, only : mpi_layout_init
     use test_utils
     implicit none
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    if (comm%size > 1) then
+    if (world%size > 1) then
         call mpi_exit_on_error("This program only runs in serial.")
     endif
 
@@ -45,8 +45,8 @@ program test_merging_parcels
                        1,               &
                        MPI_INTEGER,     &
                        MPI_SUM,         &
-                       comm%world,      &
-                       comm%err)
+                       world%comm,      &
+                       world%err)
 
 
     call merge_parcels(parcels)
@@ -57,12 +57,12 @@ program test_merging_parcels
                        1,               &
                        MPI_INTEGER,     &
                        MPI_SUM,         &
-                       comm%world,      &
-                       comm%err)
+                       world%comm,      &
+                       world%err)
 
     call create_netcdf_parcel_file('serial_final', .true., .false.)
     call write_netcdf_parcels(t = 0.0d0)
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_merging_parcels

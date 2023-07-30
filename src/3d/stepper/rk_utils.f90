@@ -1,13 +1,13 @@
-module rk4_utils
+module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
     use field_mpi, only : field_halo_fill_scalar
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
-    use jacobi, only : jacobi_eigenvalues
+    use scherzinger, only : scherzinger_eigenvalues
     use mpi_layout, only : box
-    use mpi_communicator
+    use mpi_environment
     use mpi_utils, only : mpi_exit_on_error
 #ifdef ENABLE_VERBOSE
     use options, only : output
@@ -87,7 +87,7 @@ module rk4_utils
             integer                      :: ix, iy, iz
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
-            character(:), allocatable    :: fname
+            character(512)               :: fname
 #endif
 
             !
@@ -126,13 +126,16 @@ module rk4_utils
                         strain(1, 1) = velgradg(iz, iy, ix, I_DUDX)                                   ! S11
                         strain(1, 2) = velgradg(iz, iy, ix, I_DUDY) + f12 * vortg(iz, iy, ix, I_Z)    ! S12
                         strain(1, 3) = velgradg(iz, iy, ix, I_DWDX) + f12 * vortg(iz, iy, ix, I_Y)    ! S13
+                        strain(2, 1) = strain(1, 2)
                         strain(2, 2) = velgradg(iz, iy, ix, I_DVDY)                                   ! S22
                         strain(2, 3) = velgradg(iz, iy, ix, I_DWDY) - f12 * vortg(iz, iy, ix, I_X)    ! S23
+                        strain(3, 1) = strain(1, 3)
+                        strain(3, 2) = strain(2, 3)
                         strain(3, 3) = -(velgradg(iz, iy, ix, I_DUDX) + velgradg(iz, iy, ix, I_DVDY)) ! S33
 
                         ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
-                        call jacobi_eigenvalues(strain, D)
+                        call scherzinger_eigenvalues(strain, D)
 
                         ! we must take the largest eigenvalue in magnitude (absolute value)
                         gmax = max(gmax, maxval(abs(D)))
@@ -174,23 +177,23 @@ module rk4_utils
                                2,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_MAX,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             gmax = local_max(1)
             bmax = local_max(2)
 
             dt = min(time%alpha / gmax, time%alpha / bmax)
 #ifdef ENABLE_VERBOSE
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 fname = trim(output%basename) // '_alpha_time_step.asc'
-                inquire(file=fname, exist=exists)
+                inquire(file=trim(fname), exist=exists)
                 ! 23 August
                 ! https://stackoverflow.com/questions/15526203/single-command-to-open-a-file-or-create-it-and-the-append-data
                 if ((t /= zero) .and. exists) then
-                    open(unit=1235, file=fname, status='old', position='append')
+                    open(unit=1235, file=trim(fname), status='old', position='append')
                 else
-                    open(unit=1235, file=fname, status='replace')
+                    open(unit=1235, file=trim(fname), status='replace')
                     write(1235, *) '  # time (s)                \alpha_s/\gamma_{max}     \alpha_b/N_{max}'
                 endif
 
@@ -209,4 +212,4 @@ module rk4_utils
             endif
         end function get_time_step
 
-end module rk4_utils
+end module rk_utils

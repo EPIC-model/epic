@@ -8,7 +8,7 @@ program test_mpi_fft_3d
     use constants, only : pi, twopi, f12, zero, four, two
     use sta3dfft, only : initialise_fft, finalise_fft, fftxyp2s, fftxys2p
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -20,9 +20,9 @@ program test_mpi_fft_3d
     double precision              :: x, y, z
     logical                       :: passed
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     nx = 32
     ny = 64
@@ -69,11 +69,11 @@ program test_mpi_fft_3d
     error = maxval(dabs(fp1(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)) - &
                         fp2(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         if (.not. passed) then
             call print_result_logical('Test FFT 2D transform', passed)
         else

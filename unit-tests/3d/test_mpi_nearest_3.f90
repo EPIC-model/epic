@@ -10,7 +10,7 @@ program test_mpi_nearest_3
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, dx, vmin, max_num_parcels
     use parcel_nearest
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use mpi_timer
     implicit none
@@ -20,9 +20,9 @@ program test_mpi_nearest_3
     integer, allocatable, dimension(:) :: iclo
     integer                            :: n_merge, n, check_array(2), n_invalid
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
     nx = 10
     ny = 10
@@ -55,8 +55,8 @@ program test_mpi_nearest_3
                        1,               &
                        MPI_INTEGER,     &
                        MPI_SUM,         &
-                       comm%world,      &
-                       comm%err)
+                       world%comm,      &
+                       world%err)
 
 
     call find_nearest(isma, iclo, inva, n_merge, n_invalid)
@@ -64,19 +64,19 @@ program test_mpi_nearest_3
     check_array(1) = n_parcels - n_invalid
     check_array(2) = n_merge
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, check_array, 2, MPI_INTEGER, MPI_SUM, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, check_array, 2, MPI_INTEGER, MPI_SUM, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(check_array, check_array, 2, MPI_INTEGER, MPI_SUM, comm%master, comm%world, comm%err)
+        call MPI_Reduce(check_array, check_array, 2, MPI_INTEGER, MPI_SUM, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         passed = (passed .and. (check_array(1) == n_total_parcels) .and. (check_array(2) == 100))
 
         call print_result_logical('Test MPI nearest algorithm: a - B', passed)
@@ -84,7 +84,7 @@ program test_mpi_nearest_3
 
     call nearest_win_deallocate
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 
     contains
@@ -110,7 +110,8 @@ program test_mpi_nearest_3
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%theta(l) = l + comm%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! small parcel
@@ -118,7 +119,8 @@ program test_mpi_nearest_3
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 0.9d0 * vmin
-            parcels%theta(l) = l + comm%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
             ! big parcel
@@ -126,7 +128,8 @@ program test_mpi_nearest_3
             parcels%position(2, l) = y
             parcels%position(3, l) = z
             parcels%volume(l) = 1.1d0 * vmin
-            parcels%theta(l) = l + comm%rank * 100
+            parcels%theta(l) = l + world%rank * 100
+
             l = l + 1
 
         end subroutine cell_placement

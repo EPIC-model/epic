@@ -46,7 +46,7 @@ module field_diagnostics_netcdf
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
 
-            if (comm%rank .ne. comm%master) then
+            if (world%rank .ne. world%root) then
                 return
             endif
 
@@ -247,7 +247,7 @@ module field_diagnostics_netcdf
 
             call start_timer(field_stats_io_timer)
 
-            if (comm%rank /= comm%master) then
+            if (world%rank /= world%root) then
                 return
             endif
 

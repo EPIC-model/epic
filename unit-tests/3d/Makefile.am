@@ -36,6 +36,10 @@ unittests_PROGRAMS = 					\
 	test_jacobi_2					\
 	test_jacobi_3					\
 	test_jacobi_4					\
+	test_scherzinger_1				\
+	test_scherzinger_2				\
+	test_scherzinger_3				\
+	test_scherzinger_4				\
 	test_mpi_parcel_init_3d				\
 	test_mpi_trilinear				\
 	test_mpi_laplace_correction_3d			\
@@ -112,6 +116,18 @@ test_jacobi_3_LDADD = libcombi.la
 
 test_jacobi_4_SOURCES = test_jacobi_4.f90
 test_jacobi_4_LDADD = libcombi.la
+
+test_scherzinger_1_SOURCES = test_scherzinger_1.f90
+test_scherzinger_1_LDADD = libcombi.la
+
+test_scherzinger_2_SOURCES = test_scherzinger_2.f90
+test_scherzinger_2_LDADD = libcombi.la
+
+test_scherzinger_3_SOURCES = test_scherzinger_3.f90
+test_scherzinger_3_LDADD = libcombi.la
+
+test_scherzinger_4_SOURCES = test_scherzinger_4.f90
+test_scherzinger_4_LDADD = libcombi.la
 
 # test_ellipsoid_split_SOURCES = test_ellipsoid_split.f90
 # test_ellipsoid_split_LDADD = libcombi.la

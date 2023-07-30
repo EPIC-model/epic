@@ -552,6 +552,7 @@ module parcel_interpl
 
         end subroutine grid2par
 
+
         ! Tri-linear interpolation
         ! @param[in] pos position of the parcel
         ! @param[out] ii zonal lower grid point for interoplation
@@ -563,8 +564,9 @@ module parcel_interpl
             integer,          intent(out) :: ii, jj, kk
             double precision, intent(out) :: ww(0:1,0:1,0:1)
             double precision              :: xyz(3)
+            double precision              :: w00, w10, w01, w11
+            double precision              :: px, py, pz, pxc, pyc, pzc
 
-            ww = zero
 
             ! (i, j, k)
             xyz = (pos - lower) * dxi
@@ -572,26 +574,13 @@ module parcel_interpl
             jj = floor(xyz(2))
             kk = floor(xyz(3))
 
-            call get_weights(xyz, ii, jj, kk, ww)
-
-        end subroutine trilinear
-
-
-        pure subroutine get_weights(xyz, i, j, k, ww)
-            double precision, intent(in)    :: xyz(3)
-            double precision, intent(inout) :: ww(0:1,0:1,0:1)
-            integer,          intent(in)    :: i, j, k
-            double precision                :: px, py, pz, pxc, pyc, pzc
-            double precision                :: w00, w10, w01, w11
-
-            ! (i, j, k)
-            px = xyz(1) - dble(i)
+            px = xyz(1) - dble(ii)
             pxc = one - px
 
-            py = xyz(2) - dble(j)
+            py = xyz(2) - dble(jj)
             pyc = one - py
 
-            pz = xyz(3) - dble(k)
+            pz = xyz(3) - dble(kk)
             pzc = one - pz
 
             w00 = pyc * pxc
@@ -600,16 +589,16 @@ module parcel_interpl
             w11 = py * px
 
             ! Note order of indices is k,j,i
-            ww(0,0,0) = ww(0,0,0) + pzc * w00
-            ww(0,0,1) = ww(0,0,1) + pzc * w10
-            ww(0,1,0) = ww(0,1,0) + pzc * w01
-            ww(0,1,1) = ww(0,1,1) + pzc * w11
-            ww(1,0,0) = ww(1,0,0) + pz * w00
-            ww(1,0,1) = ww(1,0,1) + pz * w10
-            ww(1,1,0) = ww(1,1,0) + pz * w01
-            ww(1,1,1) = ww(1,1,1) + pz * w11
+            ww(0,0,0) = pzc * w00
+            ww(0,0,1) = pzc * w10
+            ww(0,1,0) = pzc * w01
+            ww(0,1,1) = pzc * w11
+            ww(1,0,0) = pz * w00
+            ww(1,0,1) = pz * w10
+            ww(1,1,0) = pz * w01
+            ww(1,1,1) = pz * w11
 
-        end subroutine get_weights
+        end subroutine trilinear
 
         subroutine saturation_adjustment
             double precision, parameter :: tk0c = 273.15       ! Temperature of freezing in Kelvin
@@ -671,32 +660,28 @@ module parcel_interpl
         ! @param[out] ww interpolation weights
         subroutine bilinear(pos, ii, jj, ww)
             double precision, intent(in)  :: pos(2)
-            integer,          intent(out) :: ii(4), jj(4)
-            double precision, intent(out) :: ww(4)
+            integer,          intent(out) :: ii, jj
+            double precision, intent(out) :: ww(0:1, 0:1)
             double precision              :: xy(2)
+            double precision              :: px, py, pxc, pyc
+
 
             ! (i, j)
-            call get_horizontal_index(pos, ii(1), jj(1))
-            call get_horizontal_position(ii(1), jj(1), xy)
-            ww(1) = product(one - abs(pos - xy) * dxi(1:2))
+            xy = (pos - lower(1:2)) * dxi(1:2)
+            ii = floor(xy(1))
+            jj = floor(xy(2))
 
-            ! (i+1, j)
-            ii(2) = ii(1) + 1
-            jj(2) = jj(1)
-            call get_horizontal_position(ii(2), jj(2), xy)
-            ww(2) = product(one - abs(pos - xy) * dxi(1:2))
+            px = xy(1) - dble(ii)
+            pxc = one - px
 
-            ! (i, j+1)
-            ii(3) = ii(1)
-            jj(3) = jj(1) + 1
-            call get_horizontal_position(ii(3), jj(3), xy)
-            ww(3) = product(one - abs(pos - xy) * dxi(1:2))
+            py = xy(2) - dble(jj)
+            pyc = one - py
 
-            ! (i+1, j+1)
-            ii(4) = ii(2)
-            jj(4) = jj(3)
-            call get_horizontal_position(ii(4), jj(4), xy)
-            ww(4) = product(one - abs(pos - xy) * dxi(1:2))
+            ! Note order of indices is k,j,i
+            ww(0, 0) = pyc * pxc
+            ww(0, 1) = pyc * px
+            ww(1, 0) = py  * pxc
+            ww(1, 1) = py  * px
 
         end subroutine bilinear
 

@@ -3,13 +3,13 @@
 ! humidity to each parcel in the lowest grid cell.
 !==============================================================================
 module bndry_fluxes
-    use constants, only : zero, two
+    use constants, only : zero, two, f13
     use parameters, only : dx, lower, dxi, nx, ny
     use parcel_interpl, only : bilinear
-    use fields, only : get_horizontal_index
     use parcel_container, only : n_parcels, parcels
     use netcdf_reader
     use omp_lib
+    use options, only : time
     use mpi_utils, only : mpi_stop
     use field_mpi, only : field_mpi_alloc                   &
                         , field_mpi_dealloc                 &
@@ -17,12 +17,14 @@ module bndry_fluxes
                         , field_interior_to_buffer          &
                         , interior_to_halo_communication
     use mpi_layout, only : box
+    use mpi_timer, only : start_timer, stop_timer
     implicit none
+
+    private
 
     logical, protected :: l_enable_flux
     logical            :: l_bndry_flux_allocated = .false.
-
-    private
+    integer            :: bndry_flux_timer
 
     ! Spatial form of the buoyancy and humidity fluxes through lower surface:
     double precision, dimension(:, :), allocatable :: thetaflux
@@ -30,25 +32,16 @@ module bndry_fluxes
     double precision, dimension(:, :), allocatable :: qvflux
 #endif
 
-    double precision :: fluxfac
-
     ! Denotes height below which surface fluxes are applied:
     double precision :: zdepth
-
-    ! number of indices and weights
-    integer, parameter :: ngp = 4
-
-    ! bilinear interpolation indices
-    integer :: is(ngp), js(ngp)
-
-    ! bilinear interpolation weights
-    double precision :: weights(ngp)
 
     public :: l_enable_flux             &
             , apply_bndry_fluxes        &
             , read_bndry_fluxes         &
             , bndry_fluxes_allocate     &
-            , bndry_fluxes_deallocate
+            , bndry_fluxes_deallocate   &
+            , bndry_flux_timer          &
+            , bndry_fluxes_time_step
 
     contains
 
@@ -72,17 +65,23 @@ module bndry_fluxes
                 return
             endif
 
+            call start_timer(bndry_flux_timer)
+
             l_bndry_flux_allocated = .false.
 
             deallocate(thetaflux)
 #ifndef ENABLE_DRY_MODE
             deallocate(qvflux)
 #endif
+            call stop_timer(bndry_flux_timer)
+
         end subroutine bndry_fluxes_deallocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine bndry_fluxes_default
+
+            call start_timer(bndry_flux_timer)
 
             call bndry_fluxes_allocate
 
@@ -90,14 +89,20 @@ module bndry_fluxes
 #ifndef ENABLE_DRY_MODE
             qvflux = zero
 #endif
+            call stop_timer(bndry_flux_timer)
+
         end subroutine bndry_fluxes_default
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! Read in buoyancy and humidity fluxes.
+        ! @pre The buoyancy boundary fluxes are assumed in units of m**2/s**3.
         subroutine read_bndry_fluxes(fname)
             character(*), intent(in) :: fname
             integer                  :: ncid, start(3), cnt(3)
             integer                  :: lo(3), hi(3)
+
+            call start_timer(bndry_flux_timer)
 
             l_enable_flux = (fname /= '')
 
@@ -144,37 +149,78 @@ module bndry_fluxes
 
             call close_netcdf_file(ncid)
 
-            fluxfac = two * dxi(3) ** 2
 
             call bndry_fluxes_fill_halo
 
+            ! There is linear decrease of the buoyancy flux "force", where
+            ! for z >= zdepth, the bouyancy fluy is zero.
+            zdepth = lower(3) + dx(3)
+
+            !------------------------------------------------------------------
+            ! change the buoyancy flux units from m**2/s**3 to m/s**3;
+            ! the time will be fixed when applying the flux
+            ! Multiply with 2 to ensure that the flux given to the parcels
+            ! entering the lowest grid layer matches the expected integrated flux:
+
             !$omp parallel
             !$omp workshare
-            thetaflux = fluxfac * thetaflux
+            thetaflux = two * dxi(3) * thetaflux
 #ifndef ENABLE_DRY_MODE
-            qvflux = fluxfac * qvflux
+            qvflux = two * dxi(3) * qvflux
 #endif
             !$omp end workshare
             !$omp end parallel
 
-            zdepth = lower(3) + dx(3)
+            call stop_timer(bndry_flux_timer)
 
         end subroutine read_bndry_fluxes
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Add fluxes of buoyancy and humidity to parcels in lowest grid layer:
-        subroutine apply_bndry_fluxes(dt)
-            double precision, intent(in)  :: dt
-            double precision              :: xy(2), z, fac
-            integer                       :: n, l
+        ! Correct the time step estimate including the buoyancy flux.
+        ! Uses g*dz/bf (where [bf] = m**2/s**3) to get a time measure.
+        subroutine bndry_fluxes_time_step(dt)
+            double precision, intent(inout) :: dt
+            double precision                :: abs_max
 
             if (.not. l_enable_flux) then
                 return
             endif
 
+            ! local maximum of absolute value (units: m/s**3)
+            abs_max = maxval(dabs(binc(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
+
+            ! get global abs_max
+            call MPI_Allreduce(MPI_IN_PLACE,            &
+                               abs_max,                 &
+                               1,                       &
+                               MPI_DOUBLE_PRECISION,    &
+                               MPI_MAX,                 &
+                               world%comm,              &
+                               world%err)
+
+            abs_max = (dx(3) / abs_max) ** f13
+
+            dt = min(dt, time%alpha * abs_max)
+
+        end subroutine bndry_fluxes_time_step
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Add fluxes of buoyancy and humidity to parcels in lowest grid layer:
+        subroutine apply_bndry_fluxes(dt)
+            double precision, intent(in) :: dt
+            double precision             :: xy(2), z, fac, weights(0:1, 0:1)
+            integer                      :: n, is, js
+
+            if (.not. l_enable_flux) then
+                return
+            endif
+
+            call start_timer(bndry_flux_timer)
+
             !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, weights, xy, z, fac)
+            !$omp do private(n, is, js, weights, xy, z, fac)
             do n = 1, n_parcels
                 z = parcels%position(3, n)
                 if (z < zdepth) then
@@ -183,20 +229,25 @@ module bndry_fluxes
 
                     call bilinear(xy, is, js, weights)
 
-                    fac = (zdepth - z) * dt
+                    ! "fac" has unit of time
+                    ! Note: fac = 0 if z = zdepth
+                    !       fac = dt if z = lower(3)
+                    fac = (zdepth - z) * dxi(3) * dt
 
-                    do l = 1, ngp
-                        ! The multiplication by dt is necessary to provide the amount of b or h
-                        ! entering through the bottom surface over a time interval of dt.
-                        parcels%theta(n) = parcels%theta(n) + fac * weights(l) * thetaflux(js(l), is(l))
+                    ! The multiplication by dt is necessary to provide the amount of b or h
+                    ! entering through the bottom surface over a time interval of dt.
+                    parcels%theta(n) = parcels%theta(n) &
+                                        + fac * sum(weights * thetaflux(js:js+1, is:is+1))
 #ifndef ENABLE_DRY_MODE
-                        parcels%qv(n) = parcels%qv(n) + fac * weights(l) * qvflux(js(l), is(l))
+                    parcels%qv(n) = parcels%qv(n) &
+                                        + fac * sum(weights * qvflux(js:js+1, is:is+1))
 #endif
-                    enddo
                 endif
             enddo
             !$omp end do
             !$omp end parallel
+
+            call stop_timer(bndry_flux_timer)
 
         end subroutine apply_bndry_fluxes
 

@@ -15,7 +15,7 @@ program test_mpi_diffz0
     use constants, only : zero, one, two, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
     use inversion_mod, only : diffz, init_inversion, field_decompose_physical, field_combine_physical
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -27,9 +27,9 @@ program test_mpi_diffz0
     double precision              :: x, y, z, k, l, m, prefactor
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     nx = 32
     ny = 64
@@ -78,23 +78,23 @@ program test_mpi_diffz0
                  - ref_sol(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0) .and. (error < 1.7e-13))
+    passed = (passed .and. (world%err == 0) .and. (error < 1.7e-13))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI diffz0', passed)
     endif
 

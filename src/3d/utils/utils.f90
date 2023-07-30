@@ -74,7 +74,7 @@ module utils
             call par2grid
 
             ! need to be called in order to set initial time step;
-            ! this is also needed for the first ls-rk4 substep
+            ! this is also needed for the first ls-rk substep
             call vor2vel
 
             call vorticity_tendency
@@ -148,21 +148,21 @@ module utils
         end subroutine setup_restart
 
         subroutine setup_domain_and_parameters
-            character(:), allocatable :: fname
-            integer                   :: ncid
-            integer                   :: ncells(3)
+            character(512) :: fname
+            integer        :: ncid
+            integer        :: ncells(3)
 
             ! set axis and dimension names for the NetCDF output
             call set_netcdf_dimensions((/'x', 'y', 'z', 't'/))
             call set_netcdf_axes((/'X', 'Y', 'Z', 'T'/))
 
             if (l_restart) then
-                fname = trim(restart_file)
+                fname = restart_file
             else
-                fname = trim(field_file)
+                fname = field_file
             endif
 
-            call open_netcdf_file(fname, NF90_NOWRITE, ncid)
+            call open_netcdf_file(trim(fname), NF90_NOWRITE, ncid)
 
             call get_netcdf_box(ncid, lower, extent, ncells)
             call read_physical_quantities(ncid)

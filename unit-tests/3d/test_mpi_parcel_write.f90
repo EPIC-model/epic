@@ -8,32 +8,32 @@ program test_mpi_parcel_write
     use constants, only : zero
     use parcel_container
     use parcel_netcdf
-    use mpi_communicator
+    use mpi_environment
     use mpi_timer
     implicit none
 
     logical :: passed = .true.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
     call register_timer('parcel I/O', parcel_io_timer)
 
-    n_parcels = 10 + (comm%rank + 1)
-    n_total_parcels = 11 * comm%size + (comm%size * (comm%size - 1)) / 2
+    n_parcels = 10 + (world%rank + 1)
+    n_total_parcels = 11 * world%size + (world%size * (world%size - 1)) / 2
 
     call parcel_alloc(n_parcels)
 
-    parcels%position(:, 1:n_parcels) = comm%rank
-    parcels%B(:, 1:n_parcels) = comm%rank
-    parcels%volume(1:n_parcels) = comm%rank
-    parcels%vorticity(:, 1:n_parcels) = comm%rank
-    parcels%theta(1:n_parcels) = comm%rank
+    parcels%position(:, 1:n_parcels) = world%rank
+    parcels%B(:, 1:n_parcels) = world%rank
+    parcels%volume(1:n_parcels) = world%rank
+    parcels%vorticity(:, 1:n_parcels) = world%rank
+    parcels%theta(1:n_parcels) = world%rank
 
 #ifndef ENABLE_DRY_MODE
-    parcels%qv(1:n_parcels) = comm%rank
-    parcels%ql(1:n_parcels) = comm%rank
+    parcels%qv(1:n_parcels) = world%rank
+    parcels%ql(1:n_parcels) = world%rank
 #endif
 
     call create_netcdf_parcel_file('nctest', .true., .false.)
@@ -50,16 +50,16 @@ program test_mpi_parcel_write
 
     passed = (passed .and. (ncerr == 0))
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI parcel write', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_parcel_write

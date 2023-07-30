@@ -2,7 +2,7 @@ module inversion_utils
     use constants
     use parameters, only : nx, ny, nz, dx, dxi, extent, upper, lower
     use mpi_layout
-    use mpi_communicator
+    use mpi_environment
     use sta3dfft, only : initialise_fft &
                        , finalise_fft   &
                        , rkx            &
@@ -69,7 +69,8 @@ module inversion_utils
     public :: field_combine_semi_spectral   &
             , field_combine_physical        &
             , field_decompose_semi_spectral &
-            , field_decompose_physical
+            , field_decompose_physical      &
+            , central_diffz_semi_spectral
 
     contains
 
@@ -223,8 +224,8 @@ module inversion_utils
                                nz+1,                    &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             !$omp parallel workshare
             gamtop = f12 * extent(3) * (phip00 ** 2 - f13)
@@ -461,8 +462,8 @@ module inversion_utils
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         !Calculates df/dz for a field f using 2nd-order differencing.
-        !Here fs = f, ds = df/dz. In semi-spectral space or physical space.
-        subroutine central_diffz(fs, ds)
+        !Here fs = f, ds = df/dz. In semi-spectral space.
+        subroutine central_diffz_semi_spectral(fs, ds)
             double precision, intent(in)  :: fs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision, intent(out) :: ds(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             integer                       :: iz
@@ -481,6 +482,38 @@ module inversion_utils
                 ds(iz, :, :) = (fs(iz+1, :, :) - fs(iz-1, :, :)) * hdzi
             enddo
             !$omp end parallel do
+
+        end subroutine central_diffz_semi_spectral
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        !Calculates df/dz for a field f using 2nd-order differencing.
+        !Here df = df/dz. In physical space.
+        subroutine central_diffz(f, df)
+            double precision, intent(in)  :: f(-1:nz+1,  box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: df(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            integer                       :: iz
+
+            ! Linear extrapolation at the boundaries:
+            ! iz = 0:  (f(1) - f(0)) / dz
+            ! iz = nz: (f(nz) - f(nz-1)) / dz
+            !$omp parallel workshare
+            df(0,  :, :) = dzi * (f(1,    :, :) - f(0,    :, :))
+            df(nz, :, :) = dzi * (f(nz,   :, :) - f(nz-1, :, :))
+            !$omp end parallel workshare
+
+            ! central differencing for interior cells
+            !$omp parallel do private(iz) default(shared)
+            do iz = 1, nz-1
+                df(iz, :, :) = (f(iz+1, :, :) - f(iz-1, :, :)) * hdzi
+            enddo
+            !$omp end parallel do
+
+            ! Linear extrapolate for halo grid points:
+            !$omp parallel workshare
+            df(  -1, :, :) = two * df( 0, :, :) - df(   1, :, :)
+            df(nz+1, :, :) = two * df(nz, :, :) - df(nz-1, :, :)
+            !$omp end parallel workshare
 
         end subroutine central_diffz
 

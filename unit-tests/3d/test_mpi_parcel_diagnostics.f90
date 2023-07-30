@@ -4,7 +4,7 @@
 program test_mpi_parcel_diagnostics
     use constants, only : zero, one, f12, f23
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use parcel_container
     use parcel_diagnostics
@@ -17,9 +17,9 @@ program test_mpi_parcel_diagnostics
     integer                       :: ix, iy, iz, i, j, k, l, n_total
     double precision              :: im, corner(3), total_vol
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     call register_timer('parcel stats', parcel_stats_timer)
 
@@ -71,7 +71,7 @@ program test_mpi_parcel_diagnostics
 
     call calculate_parcel_diagnostics
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         total_vol = dble(n_total) * parcels%volume(1)
         passed = (passed .and. (dabs(parcel_stats(IDX_KE) - 0.375d0 * total_vol) == zero))
         passed = (passed .and. (dabs(parcel_stats(IDX_N_SMALL) - n_total) == zero))
@@ -85,11 +85,11 @@ program test_mpi_parcel_diagnostics
         passed = (passed .and. (dabs(parcel_stats(IDX_RMS_ZETA) - f12) < 1.0e-15))
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI parcel diagnostics', passed)
     endif
 

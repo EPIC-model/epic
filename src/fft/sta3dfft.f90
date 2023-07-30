@@ -151,7 +151,7 @@ module sta3dfft
 
             call transpose_to_pencil(y_from_z_transposition,  &
                                      (/1, 2, 3/),             &
-                                     dim_y_comm,              &
+                                     fft_y_comm,              &
                                      FORWARD,                 &
                                      fp(box%lo(3):box%hi(3),  &
                                         box%lo(2):box%hi(2),  &
@@ -166,7 +166,7 @@ module sta3dfft
 
             call transpose_to_pencil(x_from_y_transposition, &
                                      (/2, 3, 1/),            &
-                                     dim_x_comm,             &
+                                     fft_x_comm,             &
                                      FORWARD,                &
                                      fft_in_y_buffer,        &
                                      fft_in_x_buffer)
@@ -179,14 +179,14 @@ module sta3dfft
 
             call transpose_to_pencil(y_from_x_transposition,    &
                                      (/3, 1, 2/),               &
-                                     dim_x_comm,                &
+                                     fft_x_comm,                &
                                      BACKWARD,                  &
                                      fft_in_x_buffer,           &
                                      fft_in_y_buffer)
 
             call transpose_to_pencil(z_from_y_transposition,  &
                                      (/2, 3, 1/),             &
-                                     dim_y_comm,              &
+                                     fft_y_comm,              &
                                      BACKWARD,                &
                                      fft_in_y_buffer,         &
                                      fs)
@@ -217,14 +217,14 @@ module sta3dfft
 
             call transpose_to_pencil(y_from_z_transposition, &
                                      (/1, 2, 3/),            &
-                                     dim_y_comm,             &
+                                     fft_y_comm,             &
                                      FORWARD,                &
                                      fs,                     &
                                      fft_in_y_buffer)
 
             call transpose_to_pencil(x_from_y_transposition, &
                                      (/2, 3, 1/),            &
-                                     dim_x_comm,             &
+                                     fft_x_comm,             &
                                      FORWARD,                &
                                      fft_in_y_buffer,        &
                                      fft_in_x_buffer)
@@ -237,7 +237,7 @@ module sta3dfft
 
             call transpose_to_pencil(y_from_x_transposition, &
                                      (/3, 1, 2/),            &
-                                     dim_x_comm,             &
+                                     fft_x_comm,             &
                                      BACKWARD,               &
                                      fft_in_x_buffer,        &
                                      fft_in_y_buffer)
@@ -250,7 +250,7 @@ module sta3dfft
 
             call transpose_to_pencil(z_from_y_transposition,  &
                                      (/2, 3, 1/),             &
-                                     dim_y_comm,              &
+                                     fft_y_comm,              &
                                      BACKWARD,                &
                                      fft_in_y_buffer,         &
                                      fp(box%lo(3):box%hi(3),  &
