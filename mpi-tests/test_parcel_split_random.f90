@@ -87,7 +87,7 @@ program test_parcel_split_random
             if (rn(3) > 0.5d0) then
                 call random_number(rn(3))
                 j = nint(n_parcels * rn(3)) + 1
-                parcels%volume(j) = 1.1d0 * vmax
+                parcels%B(1, j) = 5.0d0 * parcels%B(1, j)
                 parcels%theta(j) = 1.0d0
             endif
 
