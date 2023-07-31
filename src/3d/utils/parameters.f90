@@ -145,7 +145,7 @@ module parameters
 
         vmin = vcell / parcel%min_vratio
 
-        amax = minval(dx)
+        amax = (f34 * fpi) ** f13 * minval(dx)
 
         max_num_parcels = int(box%halo_ncell * parcel%min_vratio * parcel%size_factor)
 
