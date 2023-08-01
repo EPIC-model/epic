@@ -46,10 +46,11 @@ program test_mpi_parcel_read
         parcels%B(:, n) = start_index + n
         parcels%volume(n) = start_index + n
         parcels%vorticity(:, n) = start_index + n
-        parcels%buoyancy(n) = start_index + n
+        parcels%theta(n) = start_index + n
 
 #ifndef ENABLE_DRY_MODE
-        parcels%humidity(n) = start_index + n
+        parcels%qv(n) = start_index + n
+        parcels%ql(n) = start_index + n
 #endif
     enddo
 
@@ -69,9 +70,10 @@ program test_mpi_parcel_read
     parcels%B = 0
     parcels%volume = 0
     parcels%vorticity = 0
-    parcels%buoyancy = 0
+    parcels%theta = 0
 #ifndef ENABLE_DRY_MODE
-    parcels%humidity = 0
+    parcels%qv = 0
+    parcels%ql = 0
 #endif
 
     call read_netcdf_parcels('nctest_0000000001_parcels.nc')
@@ -93,9 +95,10 @@ program test_mpi_parcel_read
             passed = (passed .and. (abs(parcels%vorticity(1, n) - res) == zero))
             passed = (passed .and. (abs(parcels%vorticity(2, n) - res) == zero))
             passed = (passed .and. (abs(parcels%vorticity(3, n) - res) == zero))
-            passed = (passed .and. (abs(parcels%buoyancy(n) - res) == zero))
+            passed = (passed .and. (abs(parcels%theta(n) - res) == zero))
 #ifndef ENABLE_DRY_MODE
-            passed = (passed .and. (abs(parcels%humidity(n) - res) == zero))
+            passed = (passed .and. (abs(parcels%qv(n) - res) == zero))
+            passed = (passed .and. (abs(parcels%ql(n) - res) == zero))
 #endif
         enddo
     endif

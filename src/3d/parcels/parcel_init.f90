@@ -98,9 +98,10 @@ module parcel_init
             !$omp do private(n)
             do n = 1, n_parcels
                 parcels%vorticity(:, n) = zero
-                parcels%buoyancy(n) = zero
+                parcels%theta(n) = zero
 #ifndef ENABLE_DRY_MODE
-                parcels%humidity(n) = zero
+                parcels%qv(n) = zero
+                parcels%ql(n) = zero
 #endif
             enddo
             !$omp end do
@@ -189,11 +190,13 @@ module parcel_init
                     parcels%vorticity(l, n) = parcels%vorticity(l, n) &
                                             + sum(weights * vortg(ks:ks+1, js:js+1, is:is+1, l))
                 enddo
-                parcels%buoyancy(n) = parcels%buoyancy(n) &
-                                    + sum(weights * tbuoyg(ks:ks+1, js:js+1, is:is+1))
+                parcels%theta(n) = parcels%theta(n) &
+                                    + sum(weights * thetag(ks:ks+1, js:js+1, is:is+1))
 #ifndef ENABLE_DRY_MODE
-                parcels%humidity(n) = parcels%humidity(n) &
-                                    + sum(weights * humg(ks:ks+1, js:js+1, is:is+1))
+                parcels%qv(n) = parcels%qv(n) &
+                                    + sum(weights * qvg(ks:ks+1, js:js+1, is:is+1))
+                parcels%ql(n) = parcels%ql(n) &
+                                    + sum(weights * qlg(ks:ks+1, js:js+1, is:is+1))
 #endif
             enddo
             !$omp end do
@@ -207,7 +210,7 @@ module parcel_init
 
         subroutine init_fill_halo
 #ifndef ENABLE_DRY_MODE
-            integer, parameter :: n_fields = 5
+            integer, parameter :: n_fields = 6
 #else
             integer, parameter :: n_fields = 4
 #endif
@@ -216,9 +219,10 @@ module parcel_init
             call field_interior_to_buffer(vortg(:, :, :, I_X), 1)
             call field_interior_to_buffer(vortg(:, :, :, I_Y), 2)
             call field_interior_to_buffer(vortg(:, :, :, I_Z), 3)
-            call field_interior_to_buffer(tbuoyg, 4)
+            call field_interior_to_buffer(thetag, 4)
 #ifndef ENABLE_DRY_MODE
-            call field_interior_to_buffer(humg, 5)
+            call field_interior_to_buffer(qvg, 5)
+            call field_interior_to_buffer(qlg, 6)
 #endif
 
             call interior_to_halo_communication
@@ -226,9 +230,10 @@ module parcel_init
             call field_buffer_to_halo(vortg(:, :, :, I_X), 1, .false.)
             call field_buffer_to_halo(vortg(:, :, :, I_Y), 2, .false.)
             call field_buffer_to_halo(vortg(:, :, :, I_Z), 3, .false.)
-            call field_buffer_to_halo(tbuoyg, 4, .false.)
+            call field_buffer_to_halo(thetag, 4, .false.)
 #ifndef ENABLE_DRY_MODE
-            call field_buffer_to_halo(humg, 5, .false.)
+            call field_buffer_to_halo(qvg, 5, .false.)
+            call field_buffer_to_halo(qlg, 6, .false.)
 #endif
             call field_mpi_dealloc
 

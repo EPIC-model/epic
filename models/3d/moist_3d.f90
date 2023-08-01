@@ -30,7 +30,7 @@ module moist_3d
         double precision :: e_values(3)         ! To create asymmetry, we vary the buoyancy in the plume
                                                 ! according to  b = b_pl*[1 + (e1*x*y+e2*x*z+e3*yz)/R^2].
         double precision :: r_smooth_frac       ! Fraction of radius where smooth transition starts
-                                              
+
     end type plume_type
 
     type(plume_type) :: moist

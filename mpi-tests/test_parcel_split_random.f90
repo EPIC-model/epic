@@ -88,12 +88,12 @@ program test_parcel_split_random
                 call random_number(rn(3))
                 j = nint(n_parcels * rn(3)) + 1
                 parcels%B(1, j) = 5.0d0 * parcels%B(1, j)
-                parcels%buoyancy(j) = 1.0d0
+                parcels%theta(j) = 1.0d0
             endif
 
         enddo
 
-        n_splits = int(sum(parcels%buoyancy(1:n_parcels)))
+        n_splits = int(sum(parcels%theta(1:n_parcels)))
         call perform_integer_reduction(n_splits)
 
         if (world%rank == world%root) then
@@ -115,7 +115,7 @@ program test_parcel_split_random
         n_parcels = n_orig
         do n = 1, n_parcels
             parcels%volume(n) = vol
-            parcels%buoyancy(n) = 0.0d0
+            parcels%theta(n) = 0.0d0
             parcels%B(:, n) = b
 
             call random_number(rn)

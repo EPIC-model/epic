@@ -20,7 +20,8 @@ module parcel_interpl
                         , interior_to_halo_communication    &
                         , halo_to_interior_communication    &
                         , field_halo_swap_scalar
-    use physics, only : glat, lambda_c, q_0
+                         
+    use physics, only : gravity, theta_0, qv_dens_coeff, r_d, c_p, L_v
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
     implicit none
@@ -43,16 +44,21 @@ module parcel_interpl
                         , IDX_VOR_Y_SWAP = 3    &
                         , IDX_VOR_Z_SWAP = 4    &
                         , IDX_TBUOY_SWAP = 5
-#ifndef ENABLE_DRY_MODE
-    integer, parameter :: IDX_DBUOY_SWAP = 6    &
-                        , IDX_HUM_SWAP   = 7
 
-    integer, parameter :: n_field_swap = 7
-#else
     integer, parameter :: n_field_swap = 5
+
+    ! restart indices for par2grid_diag
+    integer, parameter :: IDX_THETA_SWAP = 2
+#ifndef ENABLE_DRY_MODE
+    integer, parameter :: IDX_QV_SWAP   = 3     &
+                        , IDX_QL_SWAP   = 4
+    integer, parameter :: n_field_swap_diag = 4
+#else
+    integer, parameter :: n_field_swap_diag = 2
 #endif
 
     public :: par2grid          &
+            , par2grid_diag     &
             , vol2grid          &
             , grid2par          &
             , par2grid_timer    &
@@ -126,44 +132,30 @@ module parcel_interpl
             double precision  :: points(3, 4)
             integer           :: n, p, l, i, j, k
             double precision  :: pvol, weight(0:1,0:1,0:1), btot
-#ifndef ENABLE_DRY_MODE
-            double precision  :: q_c
-#endif
 
             call start_timer(par2grid_timer)
+
+#ifndef ENABLE_DRY_MODE
+            call saturation_adjustment
+#endif
 
             vortg = zero
             volg = zero
             nparg = zero
             nsparg = zero
-#ifndef ENABLE_DRY_MODE
-            dbuoyg = zero
-            humg = zero
-#endif
             tbuoyg = zero
             !$omp parallel default(shared)
-#ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot, q_c) &
-            !$omp& private( is, js, ks, weights) &
-            !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, humg, tbuoyg, volg)
-#else
             !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
-#endif
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 
 #ifndef ENABLE_DRY_MODE
-                ! liquid water content
-                q_c = parcels%humidity(n) &
-                    - q_0 * dexp(lambda_c * (lower(3) - parcels%position(3, n)))
-                q_c = max(zero, q_c)
-
                 ! total buoyancy (including effects of latent heating)
-                btot = parcels%buoyancy(n) + glat * q_c
+                btot = gravity*(parcels%theta(n)*(1.0+qv_dens_coeff*parcels%qv(n)-parcels%ql(n))/theta_0-1.0)
 #else
-                btot = parcels%buoyancy(n)
+                btot = gravity*(parcels%theta(n)/theta_0-1.0)
 #endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               pvol, parcels%B(:, n), n, l_reuse)
@@ -187,12 +179,6 @@ module parcel_interpl
                         vortg(ks:ks+1, js:js+1, is:is+1, l) = vortg(ks:ks+1, js:js+1, is:is+1, l) &
                                                             + weight * parcels%vorticity(l, n)
                     enddo
-#ifndef ENABLE_DRY_MODE
-                    dbuoyg(ks:ks+1, js:js+1, is:is+1) = dbuoyg(ks:ks+1, js:js+1, is:is+1) &
-                                                      + weight * parcels%buoyancy(n)
-                    humg(ks:ks+1, js:js+1, is:is+1) = humg(ks:ks+1, js:js+1, is:is+1) &
-                                              + weight * parcels%humidity(n)
-#endif
                     tbuoyg(ks:ks+1, js:js+1, is:is+1) = tbuoyg(ks:ks+1, js:js+1, is:is+1) &
                                                 + weight * btot
                     volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
@@ -227,19 +213,6 @@ module parcel_interpl
             tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
             !$omp end parallel workshare
 
-#ifndef ENABLE_DRY_MODE
-            !$omp parallel workshare
-            dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
-            dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
-            dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)
-            dbuoyg(nz-1, :, :) = dbuoyg(nz-1, :, :) + dbuoyg(nz+1, :, :)
-            humg(0,  :, :) = two * humg(0,  :, :)
-            humg(nz, :, :) = two * humg(nz, :, :)
-            humg(1,    :, :) = humg(1,    :, :) + humg(-1,   :, :)
-            humg(nz-1, :, :) = humg(nz-1, :, :) + humg(nz+1, :, :)
-            !$omp end parallel workshare
-#endif
-
             ! exclude halo cells to avoid division by zero
             do p = 1, 3
                 vortg(0:nz, :, :, p) = vortg(0:nz, :, :, p) / volg(0:nz, :, :)
@@ -259,10 +232,6 @@ module parcel_interpl
             vortg(-1,   :, :, :) = two * vortg(0,  :, :, :) - vortg(1, :, :, :)
             vortg(nz+1, :, :, :) = two * vortg(nz, :, :, :) - vortg(nz-1, :, :, :)
 
-#ifndef ENABLE_DRY_MODE
-            dbuoyg(0:nz, :, :) = dbuoyg(0:nz, :, :) / volg(0:nz, :, :)
-            humg(0:nz, :, :) = humg(0:nz, :, :) / volg(0:nz, :, :)
-#endif
             tbuoyg(0:nz, :, :) = tbuoyg(0:nz, :, :) / volg(0:nz, :, :)
 
             ! extrapolate to halo grid points (needed to compute
@@ -289,6 +258,129 @@ module parcel_interpl
 
         end subroutine par2grid
 
+        ! Interpolate parcel quantities to the grid, these consist of the parcel
+        !   - vorticity
+        !   - buoyancy
+        !   - volume
+        ! It also updates the scalar fields:
+        !   - nparg, that is the number of parcels per grid cell
+        !   - nsparg, that is the number of small parcels per grid cell
+        ! @pre The parcel must be assigned to the correct MPI process.
+        subroutine par2grid_diag(l_reuse)
+            logical, optional :: l_reuse
+            double precision  :: points(3, 4)
+            integer           :: n, p, i, j, k
+            double precision  :: pvol, weight(0:1,0:1,0:1)
+
+            thetag = zero
+            volg = zero
+#ifndef ENABLE_DRY_MODE
+            qvg = zero
+            qlg = zero
+#endif
+            !$omp parallel default(shared)
+#ifndef ENABLE_DRY_MODE
+            !$omp do private(n, p, i, j, k, points, pvol, weight) &
+            !$omp& private( is, js, ks, weights) &
+            !$omp& reduction(+:nparg, nsparg, thetag, volg, qvg, qlg)
+#else
+            !$omp do private(n, p, i, j, k, points, pvol, weight) &
+            !$omp& private( is, js, ks, weights) &
+            !$omp& reduction(+:nparg, nsparg, thetag, volg)
+#endif
+
+            do n = 1, n_parcels
+                pvol = parcels%volume(n)
+
+                points = get_ellipsoid_points(parcels%position(:, n), &
+                                              pvol, parcels%B(:, n), n, l_reuse)
+
+                call get_index(parcels%position(:, n), i, j, k)
+                nparg(k, j, i) = nparg(k, j, i) + 1
+                if (parcels%volume(n) <= vmin) then
+                    nsparg(k, j, i) = nsparg(k, j, i) + 1
+                endif
+
+                ! we have 4 points per ellipsoid
+                do p = 1, 4
+
+                    call trilinear(points(:, p), is, js, ks, weights)
+
+                    ! loop over grid points which are part of the interpolation
+                    ! the weight is a quarter due to 4 points per ellipsoid
+                    weight = f14 * pvol* weights
+
+                    thetag(ks:ks+1, js:js+1, is:is+1) = thetag(ks:ks+1, js:js+1, is:is+1) &
+                                                      + weight * parcels%theta(n)
+                    volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
+                                                      + weight
+#ifndef ENABLE_DRY_MODE
+                    qvg(ks:ks+1, js:js+1, is:is+1) = qvg(ks:ks+1, js:js+1, is:is+1) &
+                                                      + weight * parcels%qv(n)
+                    qlg(ks:ks+1, js:js+1, is:is+1) = qlg(ks:ks+1, js:js+1, is:is+1) &
+                                              + weight * parcels%ql(n)
+#endif
+                enddo
+            enddo
+            !$omp end do
+            !$omp end parallel
+
+            !$omp parallel workshare
+            ! apply free slip boundary condition
+            volg(0,  :, :) = two * volg(0,  :, :)
+            volg(nz, :, :) = two * volg(nz, :, :)
+            volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
+            volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
+
+            thetag(0,  :, :) = two * thetag(0,  :, :)
+            thetag(nz, :, :) = two * thetag(nz, :, :)
+            thetag(1,    :, :) = thetag(1,    :, :) + thetag(-1,   :, :)
+            thetag(nz-1, :, :) = thetag(nz-1, :, :) + thetag(nz+1, :, :)
+
+#ifndef ENABLE_DRY_MODE
+            qvg(0,  :, :) = two * qvg(0,  :, :)
+            qvg(nz, :, :) = two * qvg(nz, :, :)
+            qvg(1,    :, :) = qvg(1,    :, :) + qvg(-1,   :, :)
+            qvg(nz-1, :, :) = qvg(nz-1, :, :) + qvg(nz+1, :, :)
+
+            qlg(0,  :, :) = two * qlg(0,  :, :)
+            qlg(nz, :, :) = two * qlg(nz, :, :)
+            qlg(1,    :, :) = qlg(1,    :, :) + qlg(-1,   :, :)
+            qlg(nz-1, :, :) = qlg(nz-1, :, :) + qlg(nz+1, :, :)
+#endif
+            !$omp end parallel workshare
+
+
+            call start_timer(halo_swap_timer)
+            call par2grid_halo_swap_diag
+            call stop_timer(halo_swap_timer)
+
+            !$omp parallel workshare
+            thetag(0:nz, :, :) = thetag(0:nz, :, :) / volg(0:nz, :, :)
+
+            ! extrapolate to halo grid points (needed to compute
+            ! z derivative used for the time step)
+            thetag(-1,   :, :) = two * thetag(0,  :, :) - thetag(1, :, :)
+            thetag(nz+1, :, :) = two * thetag(nz, :, :) - thetag(nz-1, :, :)
+
+#ifndef ENABLE_DRY_MODE
+            qvg(0:nz, :, :) = qvg(0:nz, :, :) / volg(0:nz, :, :)
+
+            ! extrapolate to halo grid points (needed to compute
+            ! z derivative used for the time step)
+            qvg(-1,   :, :) = two * qvg(0,  :, :) - qvg(1, :, :)
+            qvg(nz+1, :, :) = two * qvg(nz, :, :) - qvg(nz-1, :, :)
+
+            qlg(0:nz, :, :) = qlg(0:nz, :, :) / volg(0:nz, :, :)
+
+            ! extrapolate to halo grid points (needed to compute
+            ! z derivative used for the time step)
+            qlg(-1,   :, :) = two * qlg(0,  :, :) - qlg(1, :, :)
+            qlg(nz+1, :, :) = two * qlg(nz, :, :) - qlg(nz-1, :, :)
+#endif
+            !$omp end parallel workshare
+
+        end subroutine par2grid_diag
 
         subroutine par2grid_halo_swap
             ! we must first fill the interior grid points
@@ -306,10 +398,6 @@ module parcel_interpl
             call field_halo_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
             call field_halo_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
             call field_halo_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
-#ifndef ENABLE_DRY_MODE
-            call field_halo_to_buffer(dbuoyg,              IDX_DBUOY_SWAP)
-            call field_halo_to_buffer(humg,                IDX_HUM_SWAP)
-#endif
 
             ! send halo data to valid regions of other processes
             call halo_to_interior_communication
@@ -321,10 +409,7 @@ module parcel_interpl
             call field_buffer_to_interior(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .true.)
             call field_buffer_to_interior(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .true.)
             call field_buffer_to_interior(tbuoyg,              IDX_TBUOY_SWAP, .true.)
-#ifndef ENABLE_DRY_MODE
-            call field_buffer_to_interior(dbuoyg,              IDX_DBUOY_SWAP, .true.)
-            call field_buffer_to_interior(humg,                IDX_HUM_SWAP, .true.)
-#endif
+
 
             !------------------------------------------------------------------
             ! Fill halo:
@@ -334,10 +419,6 @@ module parcel_interpl
             call field_interior_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
             call field_interior_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
             call field_interior_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
-#ifndef ENABLE_DRY_MODE
-            call field_interior_to_buffer(dbuoyg,              IDX_DBUOY_SWAP)
-            call field_interior_to_buffer(humg,                IDX_HUM_SWAP)
-#endif
 
             call interior_to_halo_communication
 
@@ -346,15 +427,60 @@ module parcel_interpl
             call field_buffer_to_halo(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .false.)
             call field_buffer_to_halo(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .false.)
             call field_buffer_to_halo(tbuoyg,              IDX_TBUOY_SWAP, .false.)
-#ifndef ENABLE_DRY_MODE
-            call field_buffer_to_halo(dbuoyg,              IDX_DBUOY_SWAP, .false.)
-            call field_buffer_to_halo(humg,                IDX_HUM_SWAP, .false.)
-#endif
 
             call field_mpi_dealloc
 
         end subroutine par2grid_halo_swap
 
+        subroutine par2grid_halo_swap_diag
+            ! we must first fill the interior grid points
+            ! correctly, and then the halo; otherwise
+            ! halo grid points do not have correct values at
+            ! corners where multiple processes share grid points.
+
+            call field_mpi_alloc(n_field_swap_diag, ndim=3)
+
+            !------------------------------------------------------------------
+            ! Accumulate interior:
+            call field_halo_to_buffer(volg,                    IDX_VOL_SWAP)
+            call field_halo_to_buffer(thetag,                  IDX_THETA_SWAP)
+#ifndef ENABLE_DRY_MODE
+            call field_halo_to_buffer(qvg,                     IDX_QV_SWAP)
+            call field_halo_to_buffer(qlg,                     IDX_QL_SWAP)
+#endif
+            ! send halo data to valid regions of other processes
+            call halo_to_interior_communication
+
+            ! accumulate interior; after this operation
+            ! all interior grid points have the correct value
+            call field_buffer_to_interior(volg,                IDX_VOL_SWAP, .true.)
+            call field_buffer_to_interior(thetag,              IDX_THETA_SWAP, .true.)
+#ifndef ENABLE_DRY_MODE
+            call field_buffer_to_interior(qvg,              IDX_QV_SWAP, .true.)
+            call field_buffer_to_interior(qlg,              IDX_QL_SWAP, .true.)
+#endif
+
+            !------------------------------------------------------------------
+            ! Fill halo:
+
+            call field_interior_to_buffer(volg,                IDX_VOL_SWAP)
+            call field_interior_to_buffer(thetag,              IDX_THETA_SWAP)
+#ifndef ENABLE_DRY_MODE
+            call field_interior_to_buffer(qvg,                 IDX_QV_SWAP)
+            call field_interior_to_buffer(qlg,                 IDX_QL_SWAP)
+#endif
+
+            call interior_to_halo_communication
+
+            call field_buffer_to_halo(volg,                IDX_VOL_SWAP, .false.)
+            call field_buffer_to_halo(thetag,              IDX_THETA_SWAP, .false.)
+#ifndef ENABLE_DRY_MODE
+            call field_buffer_to_halo(qvg,                 IDX_QV_SWAP, .false.)
+            call field_buffer_to_halo(qlg,                 IDX_QL_SWAP, .false.)
+#endif
+            call field_mpi_dealloc
+
+        end subroutine par2grid_halo_swap_diag
 
         ! Interpolate the gridded quantities to the parcels
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
@@ -474,7 +600,58 @@ module parcel_interpl
 
         end subroutine trilinear
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        subroutine saturation_adjustment
+            double precision, parameter :: tk0c = 273.15       ! Temperature of freezing in Kelvin
+            double precision, parameter :: qsa1 = 3.8          ! Top in equation to calculate qsat
+            double precision, parameter :: qsa2 = -17.2693882  ! Constant in qsat equation
+            double precision, parameter :: qsa3 = 35.86        ! Constant in qsat equation
+            double precision, parameter :: qsa4 = 6.109        ! Constant in qsat equation
+            double precision, parameter :: pressure_scale_height = 8500.0    
+            double precision, parameter :: surf_press = 101500.0
+            double precision, parameter :: ref_press =  100000.0
+            double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat
+            integer :: n, iter
+
+#ifndef ENABLE_DRY_MODE
+            !$omp parallel default(shared)
+            !$omp do private(n, iter, press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat)
+            do n = 1, n_parcels
+                press=surf_press*exp(-parcels%position(3, n)/pressure_scale_height)
+                exn=(press/ref_press)**(r_d/c_p)
+                temp=parcels%theta(n)*exn
+                temp_start=temp
+                ql_start=parcels%ql(n)
+                qt_start=ql_start+parcels%qv(n)
+                ! Test unsaturated case first
+                temp_low=temp-(L_v/c_p)*ql_start
+                qsat_low = qsa1/(0.01*press*exp(qsa2*(temp_low - tk0c)/(temp_low - qsa3)) - qsa4)
+                if(qt_start < qsat_low) then ! Evaporate everything, if needed at all
+                   if(ql_start>0.) then
+                      parcels%theta(n)=parcels%theta(n)-(L_v/(c_p*exn))*ql_start
+                      parcels%qv(n)=parcels%qv(n)+ql_start
+                      parcels%ql(n)=0.
+                   end if
+                ! Moist case: iterate a few times, start from temp instead of temp_low
+                else
+                   do iter=1,4
+                      qsat=qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
+                      ql_iter=max(qt_start-qsat,0.0)
+                      temp=temp_start-(L_v/c_p)*(ql_start-ql_iter)
+                   enddo
+                   qsat=qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
+                   ql_iter=max(qt_start-qsat,0.0)
+                   parcels%theta(n)=parcels%theta(n)-(L_v/(c_p*exn))*(ql_start-ql_iter)
+                   parcels%qv(n)=qt_start-ql_iter
+                   parcels%ql(n)=ql_iter
+                end if
+            end do
+            !$omp end do
+            !$omp end parallel
+#endif
+
+       end subroutine saturation_adjustment
+
+       !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Bi-linear interpolation
         ! @param[in] pos position of the parcel

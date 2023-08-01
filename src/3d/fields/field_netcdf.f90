@@ -11,6 +11,8 @@ module field_netcdf
     use mpi_layout, only : box
     use parameters, only : write_zeta_boundary_flag
     use mpi_utils, only : mpi_stop
+    use parcel_interpl, only: par2grid_diag
+
     implicit none
 
     integer :: field_io_timer
@@ -23,7 +25,7 @@ module field_netcdf
 
     integer            :: x_vel_id, y_vel_id, z_vel_id, &
                           x_vor_id, y_vor_id, z_vor_id, &
-                          tbuoy_id, vol_id, n_writes
+                          tbuoy_id, theta_id, vol_id, n_writes
 
 #ifdef ENABLE_DIAGNOSE
     integer            :: x_vtend_id, y_vtend_id, z_vtend_id, &
@@ -31,7 +33,7 @@ module field_netcdf
 #endif
 
 #ifndef ENABLE_DRY_MODE
-    integer            :: dbuoy_id, hum_id, lbuoy_id
+    integer            :: qv_id, ql_id
 #endif
 
     double precision   :: restart_time
@@ -41,7 +43,7 @@ module field_netcdf
                coord_ids, t_axis_id,            &
                x_vel_id, y_vel_id, z_vel_id,    &
                x_vor_id, y_vor_id, z_vor_id,    &
-               tbuoy_id, vol_id,                &
+               tbuoy_id, theta_id, vol_id,      &
                n_writes, restart_time
 
 #ifdef ENABLE_DIAGNOSE
@@ -50,7 +52,7 @@ module field_netcdf
 #endif
 
 #ifndef ENABLE_DRY_MODE
-    private :: dbuoy_id, hum_id, lbuoy_id
+    private :: qv_id, ql_id
 #endif
 
     contains
@@ -222,33 +224,33 @@ module field_netcdf
                                        dimids=dimids,                       &
                                        varid=tbuoy_id)
 
-#ifndef ENABLE_DRY_MODE
             call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='dry_buoyancy',                 &
-                                       long_name='dry buoyancy',            &
+                                       name='theta',                        &
+                                       long_name='potential temperature',   &
                                        std_name='',                         &
-                                       unit='m/s^2',                        &
+                                       unit='K',                            &
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
-                                       varid=dbuoy_id)
+                                       varid=theta_id)
+#ifndef ENABLE_DRY_MODE
 
             call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='humidity',                     &
-                                       long_name='specific humidity',       &
+                                       name='qv',                           &
+                                       long_name='water vapour spec. hum.', &
                                        std_name='',                         &
                                        unit='kg/kg',                        &
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
-                                       varid=hum_id)
+                                       varid=qv_id)
 
             call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='liquid_water_content',         &
-                                       long_name='liquid-water content',    &
+                                       name='ql',                           &
+                                       long_name='liquid water spec. hum.', &
                                        std_name='',                         &
-                                       unit='1',                            &
+                                       unit='kg/kg',                        &
                                        dtype=NF90_DOUBLE,                   &
                                        dimids=dimids,                       &
-                                       varid=lbuoy_id)
+                                       varid=ql_id)
 #endif
 
             call define_netcdf_dataset(ncid=ncid,                           &
@@ -312,13 +314,14 @@ module field_netcdf
 
             call get_var_id(ncid, 'buoyancy', tbuoy_id)
 
+            call get_var_id(ncid, 'theta', theta_id)
+
 #ifndef ENABLE_DRY_MODE
-            call get_var_id(ncid, 'dry_buoyancy', dbuoy_id)
+            call get_var_id(ncid, 'qv', qv_id)
 
-            call get_var_id(ncid, 'humidity', hum_id)
-
-            call get_var_id(ncid, 'liquid_water_content', lbuoy_id)
+            call get_var_id(ncid, 'ql', ql_id)
 #endif
+
             call get_var_id(ncid, 'volume', vol_id)
         end subroutine read_netcdf_field_content
 
@@ -336,6 +339,8 @@ module field_netcdf
                 call stop_timer(field_io_timer)
                 return
             endif
+
+            call par2grid_diag
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
@@ -392,15 +397,14 @@ module field_netcdf
             call write_netcdf_dataset(ncid, tbuoy_id, tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
 
+            call write_netcdf_dataset(ncid, theta_id, thetag(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
+                                      start, cnt)
+
 #ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, dbuoy_id, dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
+            call write_netcdf_dataset(ncid, qv_id, qvg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
 
-            call write_netcdf_dataset(ncid, lbuoy_id, glati * (tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))    &
-                                                             - dbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))),  &
-                                      start, cnt)
-
-            call write_netcdf_dataset(ncid, hum_id, humg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
+            call write_netcdf_dataset(ncid, ql_id, qlg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)),   &
                                       start, cnt)
 #endif
 
@@ -472,10 +476,10 @@ module field_netcdf
                                          cnt)
             endif
 
-            if (has_dataset(lid, 'buoyancy')) then
+            if (has_dataset(lid, 'theta')) then
                 call read_netcdf_dataset(lid,                         &
-                                         'buoyancy',                  &
-                                         tbuoyg(box%lo(3):box%hi(3),  &
+                                         'theta',                     &
+                                         thetag(box%lo(3):box%hi(3),  &
                                                 box%lo(2):box%hi(2),  &
                                                 box%lo(1):box%hi(1)), &
                                          start,                       &
@@ -483,12 +487,22 @@ module field_netcdf
             endif
 
 #ifndef ENABLE_DRY_MODE
-            if (has_dataset(lid, 'humidity')) then
+            if (has_dataset(lid, 'qv')) then
                 call read_netcdf_dataset(lid,                       &
-                                         'humidity',                &
-                                         humg(box%lo(3):box%hi(3),  &
-                                              box%lo(2):box%hi(2),  &
-                                              box%lo(1):box%hi(1)), &
+                                         'qv',                      &
+                                         qvg(box%lo(3):box%hi(3),   &
+                                             box%lo(2):box%hi(2),   &
+                                             box%lo(1):box%hi(1)),  &
+                                         start,                     &
+                                         cnt)
+            endif
+
+            if (has_dataset(lid, 'ql')) then
+                call read_netcdf_dataset(lid,                       &
+                                         'ql',                      &
+                                         qlg(box%lo(3):box%hi(3),   &
+                                             box%lo(2):box%hi(2),   &
+                                             box%lo(1):box%hi(1)),  &
                                          start,                     &
                                          cnt)
             endif

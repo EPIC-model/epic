@@ -4,8 +4,8 @@ volg     -- volume
 velog    -- velocity
 velgradg -- velocity gradient tensor
 vortg    -- vorticity
-tbuoyg   -- total buoyancy
-dbuoyg   -- dry buoyancy
-humg     -- specific humidity
-humlig   -- condensed humidity
+tbuoyg   -- total buoyancy (in m/s^2)
+thetag   -- potential temperature
+qvg      -- water vapour specific humidity
+qlg      -- liquid water specific humidity
 nparg    -- number of parcels per grid box
