@@ -1,5 +1,5 @@
 module utils
-    use constants, only : one
+    use constants, only : zero, one
     use options, only : field_file          &
                       , output              &
                       , l_restart           &
@@ -26,12 +26,12 @@ module utils
     use mpi_utils, only : mpi_exit_on_error
     implicit none
 
-    integer :: nfw  = 0    ! number of field writes
-    integer :: npw  = 0    ! number of parcel writes
-    integer :: nspw = 0    ! number of parcel diagnostics writes
-    integer :: nsfw = 0    ! number of field diagnostics writes
+    double precision :: t_fw  = zero    ! last time of field write
+    double precision :: t_pw  = zero    ! last time of parcel write
+    double precision :: t_pdw = zero    ! last time of parcel diagnostics write
+    double precision :: t_fdw = zero    ! last time of field diagnostics write
 
-    private :: nfw, npw, nspw, nsfw
+    private :: t_fw, t_pw, t_pdw, t_fdw
 
     contains
 
@@ -102,27 +102,27 @@ module utils
 
             ! make sure we always write initial setup
             if (output%write_fields .and. &
-                (t + epsilon(zero) >= neg * dble(nfw) * output%field_freq)) then
+                (t + epsilon(zero) >= neg * (t_fw + output%field_freq))) then
                 call write_netcdf_fields(t)
-                nfw = nfw + 1
+                t_fw = t
             endif
 
             if (output%write_parcels .and. &
-                (t + epsilon(zero) >= neg * dble(npw) * output%parcel_freq)) then
+                (t + epsilon(zero) >= neg * (t_pw * output%parcel_freq))) then
                 call write_netcdf_parcels(t)
-                npw = npw + 1
+                t_pw = t
             endif
 
             if (output%write_parcel_stats .and. &
-                (t + epsilon(zero) >= neg * dble(nspw) * output%parcel_stats_freq)) then
+                (t + epsilon(zero) >= neg * (t_pdw + output%parcel_stats_freq))) then
                 call write_netcdf_parcel_stats(t)
-                nspw = nspw + 1
+                t_pdw = t
             endif
 
             if (output%write_field_stats .and. &
-                (t + epsilon(zero) >= neg * dble(nsfw) * output%field_stats_freq)) then
+                (t + epsilon(zero) >= neg * (t_fdw + output%field_stats_freq))) then
                 call write_netcdf_field_stats(t)
-                nsfw = nsfw + 1
+                t_fdw = t
             endif
 
         end subroutine write_step
@@ -138,12 +138,11 @@ module utils
             call get_time(ncid, t)
             call close_netcdf_file(ncid)
 
-            ! set counters (we need to increment by 1 since
-            ! we want to write the next time)
-            nfw = int(t / output%field_freq) + 1
-            npw = int(t / output%parcel_freq) + 1
-            nspw = int(t / output%parcel_stats_freq) + 1
-            nsfw = int(t / output%field_stats_freq) + 1
+            ! set the last time we wrote to files:
+            t_fw = t
+            t_pw = t
+            t_pdw = t
+            t_fdw = t
         end subroutine setup_restart
 
         subroutine setup_domain_and_parameters
