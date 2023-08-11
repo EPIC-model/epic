@@ -26,14 +26,23 @@ module utils
     use mpi_utils, only : mpi_exit_on_error
     implicit none
 
-    double precision :: t_fw  = zero    ! last time of field write
-    double precision :: t_pw  = zero    ! last time of parcel write
-    double precision :: t_pdw = zero    ! last time of parcel diagnostics write
-    double precision :: t_fdw = zero    ! last time of field diagnostics write
+    double precision :: t_fw  = zero    ! next intended time of field write
+    double precision :: t_pw  = zero    ! next intended time of parcel write
+    double precision :: t_pdw = zero    ! next intended time of parcel diagnostics write
+    double precision :: t_fdw = zero    ! next intended time of field diagnostics write
 
-    private :: t_fw, t_pw, t_pdw, t_fdw
+    private :: t_fw, t_pw, t_pdw, t_fdw, get_next_write_time
 
     contains
+
+        ! Get the next intended time of write
+        function get_next_write_time(freq, t) result(tnext)
+            double precision, intent(in) :: freq, t
+            double precision             :: tnext
+
+            tnext = freq * dble(int(t / freq) + 1)
+
+        end function get_next_write_time
 
         ! Create NetCDF files and set the step number
         subroutine setup_output_files
@@ -101,28 +110,24 @@ module utils
             endif
 
             ! make sure we always write initial setup
-            if (output%write_fields .and. &
-                (t + epsilon(zero) >= neg * (t_fw + output%field_freq))) then
+            if (output%write_fields .and. (t + epsilon(zero) >= neg * t_fw)) then
                 call write_netcdf_fields(t)
-                t_fw = t
+                t_fw = get_next_write_time(output%field_freq, t)
             endif
 
-            if (output%write_parcels .and. &
-                (t + epsilon(zero) >= neg * (t_pw * output%parcel_freq))) then
+            if (output%write_parcels .and. (t + epsilon(zero) >= neg * t_pw)) then
                 call write_netcdf_parcels(t)
-                t_pw = t
+                t_pw = get_next_write_time(output%parcel_freq, t)
             endif
 
-            if (output%write_parcel_stats .and. &
-                (t + epsilon(zero) >= neg * (t_pdw + output%parcel_stats_freq))) then
+            if (output%write_parcel_stats .and. (t + epsilon(zero) >= neg * t_pdw)) then
                 call write_netcdf_parcel_stats(t)
-                t_pdw = t
+                t_pdw = get_next_write_time(output%parcel_stats_freq, t)
             endif
 
-            if (output%write_field_stats .and. &
-                (t + epsilon(zero) >= neg * (t_fdw + output%field_stats_freq))) then
+            if (output%write_field_stats .and. (t + epsilon(zero) >= neg * t_fdw)) then
                 call write_netcdf_field_stats(t)
-                t_fdw = t
+                t_fdw = get_next_write_time(output%field_stats_freq, t)
             endif
 
         end subroutine write_step
@@ -138,11 +143,11 @@ module utils
             call get_time(ncid, t)
             call close_netcdf_file(ncid)
 
-            ! set the last time we wrote to files:
-            t_fw = t
-            t_pw = t
-            t_pdw = t
-            t_fdw = t
+            ! set the next intended time to write to files:
+            t_fw = get_next_write_time(output%field_freq, t)
+            t_pw = get_next_write_time(output%parcel_freq, t)
+            t_pdw = get_next_write_time(output%parcel_stats_freq, t)
+            t_fdw = get_next_write_time(output%field_stats_freq, t)
         end subroutine setup_restart
 
         subroutine setup_domain_and_parameters
