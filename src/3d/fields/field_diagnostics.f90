@@ -53,6 +53,7 @@ module field_diagnostics
 
             field_stats(IDX_ABSERR_V) = maxval(abs(volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))  - vcell)) * vcelli
 
+            ! vertically only include 0 (= lo(3) to nz-1 (= hi(3) - 1)
             field_stats(IDX_MAX_NPAR) = maxval(nparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1)))
 
             field_stats(IDX_MIN_NPAR) = minval(nparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1)))
@@ -61,6 +62,7 @@ module field_diagnostics
 
             field_stats(IDX_AVG_NSPAR) = sum(nsparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1))) * ncelli
 
+            ! do not take halo cells into account
             field_stats(IDX_MIN_BUOY) = minval(tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
             field_stats(IDX_MAX_BUOY) = maxval(tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
 

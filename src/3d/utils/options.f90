@@ -53,16 +53,17 @@ module options
     ! output options
     !
     type info
-        double precision    :: field_freq         = one
-        logical             :: write_fields       = .true.
-        double precision    :: parcel_freq        = one
-        logical             :: overwrite          = .false.
-        logical             :: write_parcels      = .true.
-        double precision    :: parcel_stats_freq  = one
-        logical             :: write_parcel_stats = .true.
-        double precision    :: field_stats_freq   = one
-        logical             :: write_field_stats  = .true.
-        character(len=512)  :: basename           = ''
+        double precision                  :: field_freq         = one
+        logical                           :: write_fields       = .true.
+        character(len=32), dimension(128) :: field_list         = ''
+        double precision                  :: parcel_freq        = one
+        logical                           :: overwrite          = .false.
+        logical                           :: write_parcels      = .true.
+        double precision                  :: parcel_stats_freq  = one
+        logical                           :: write_parcel_stats = .true.
+        double precision                  :: field_stats_freq   = one
+        logical                           :: write_field_stats  = .true.
+        character(len=512)                :: basename           = ''
     end type info
 
     type(info) :: output
