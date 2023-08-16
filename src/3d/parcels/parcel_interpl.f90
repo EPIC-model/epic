@@ -65,6 +65,7 @@ module parcel_interpl
             , grid2par_timer    &
             , halo_swap_timer   &
             , trilinear         &
+            , saturation_adjustment &
             , bilinear
 
     contains

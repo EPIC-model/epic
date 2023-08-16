@@ -29,6 +29,7 @@ epic3d_SOURCES = 				\
 	inversion/inversion_utils.f90		\
 	inversion/inversion.f90			\
 	parcels/parcel_correction.f90		\
+	parcels/parcel_ls_forcings.f90		\
 	parcels/parcel_netcdf.f90		\
 	parcels/parcel_diagnostics_netcdf.f90	\
 	boundary_layer/bndry_fluxes.f90		\

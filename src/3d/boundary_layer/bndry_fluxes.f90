@@ -9,6 +9,7 @@ module bndry_fluxes
     use parcel_container, only : n_parcels, parcels
     use netcdf_reader
     use omp_lib
+    use physics, only : gravity, theta_0
     use options, only : time
     use mpi_utils, only : mpi_stop
     use field_mpi, only : field_mpi_alloc                   &
@@ -188,7 +189,7 @@ module bndry_fluxes
             endif
 
             ! local maximum of absolute value (units: m/s**3)
-            abs_max = maxval(dabs(binc(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
+            abs_max = (gravity/theta_0)*maxval(dabs(thetaflux(box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
             ! get global abs_max
             call MPI_Allreduce(MPI_IN_PLACE,            &
