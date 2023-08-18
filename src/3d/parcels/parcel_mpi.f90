@@ -360,21 +360,21 @@ module parcel_mpi
             ub = ceiling(vcell / vmin)
 
             ! number of cells sharing with north and south neighbour
-            nc = (box%hi(1) - box%lo(1) + 1) * nz
+            nc = (box%hi(1) - box%lo(1) + 1) * (nz + 2)
             n_max = 2 * nc
 
             allocate(north_pid(nc * ub * n_ids))
             allocate(south_pid(nc * ub * n_ids))
 
             ! number of cells sharing with west and east neighbour
-            nc = (box%hi(2) - box%lo(2) + 1) * nz
+            nc = (box%hi(2) - box%lo(2) + 1) * (nz + 2)
             n_max = n_max + 2 * nc
 
             allocate(west_pid(nc * ub * n_ids))
             allocate(east_pid(nc * ub * n_ids))
 
             ! number of cells sharing with corner neighbours
-            nc = nz
+            nc = nz + 2
             n_max = n_max + 4 * nc
 
             allocate(northwest_pid(nc * ub * n_ids))
