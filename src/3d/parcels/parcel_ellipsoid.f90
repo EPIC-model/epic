@@ -301,9 +301,10 @@ module parcel_ellipsoid
         ! @param[in] volume of the parcel
         ! @param[in] B matrix elements of the parcel
         ! @returns the parcel support points
-        function get_ellipsoid_points(position, volume, B, n, l_reuse) result(points)
+        function get_ellipsoid_points(position, volume, truevolume, B, n, l_reuse) result(points)
             double precision,  intent(in) :: position(n_dim)
             double precision,  intent(in) :: volume
+            double precision,  intent(in) :: truevolume
             double precision,  intent(in) :: B(5)        ! B11, B12, B13, B22, B23
             integer, optional, intent(in) :: n
             logical, optional, intent(in) :: l_reuse
@@ -344,8 +345,8 @@ module parcel_ellipsoid
 
                 ! suppport point in the global reference frame
                 points(:, j) = position           &
-                             + Veta * costheta(j) &
-                             + Vtau * sintheta(j)
+                             + Veta * costheta(j) * (truevolume/volume)**(1./3.) &
+                             + Vtau * sintheta(j) * (truevolume/volume)**(1./3.)
             enddo
         end function get_ellipsoid_points
 

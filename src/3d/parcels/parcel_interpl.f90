@@ -5,7 +5,7 @@
 module parcel_interpl
     use constants, only : zero, one, two, f14
     use mpi_timer, only : start_timer, stop_timer
-    use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
+    use parameters, only : nx, nz, vmin, l_bndry_zeta_zero, dx
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
@@ -19,8 +19,11 @@ module parcel_interpl
                         , field_interior_to_buffer          &
                         , interior_to_halo_communication    &
                         , halo_to_interior_communication    &
-                        , field_halo_swap_scalar
-                         
+                        , field_halo_swap_scalar            &
+                        , field_halo_to_buffer_integer      &
+                        , field_buffer_to_interior_integer  &
+                        , field_interior_to_buffer_integer  &
+                        , field_buffer_to_halo_integer
     use physics, only : gravity, theta_0, qv_dens_coeff, r_d, c_p, L_v
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
@@ -43,9 +46,11 @@ module parcel_interpl
                         , IDX_VOR_X_SWAP = 2    &
                         , IDX_VOR_Y_SWAP = 3    &
                         , IDX_VOR_Z_SWAP = 4    &
-                        , IDX_TBUOY_SWAP = 5
+                        , IDX_TBUOY_SWAP = 5    &
+                        , IDX_NPARG_SWAP  = 6   &
+                        , IDX_NSPARG_SWAP = 7
 
-    integer, parameter :: n_field_swap = 5
+    integer, parameter :: n_field_swap = 7
 
     ! restart indices for par2grid_diag
     integer, parameter :: IDX_THETA_SWAP = 2
@@ -76,18 +81,19 @@ module parcel_interpl
             logical, optional, intent(in) :: l_reuse
             double precision              :: points(3, 4)
             integer                       :: n, p
-            double precision              :: pvol
+            double precision              :: pvol, ptruevol
 
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, points, pvol, is, js, ks, weights) &
+            !$omp do private(n, p, points, pvol, ptruevol, is, js, ks, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
+                ptruevol = parcels%truevolume(n)
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n),  &
+                                              pvol, ptruevol, parcels%B(:, n),  &
                                               n, l_reuse)
 
                 ! we have 4 points per ellipsoid
@@ -132,7 +138,10 @@ module parcel_interpl
             logical, optional :: l_reuse
             double precision  :: points(3, 4)
             integer           :: n, p, l, i, j, k
-            double precision  :: pvol, weight(0:1,0:1,0:1), btot
+            double precision  :: pvol, ptruevol, weight(0:1,0:1,0:1), btot
+#ifndef ENABLE_DRY_MODE
+            double precision  :: q_c
+#endif
 
             call start_timer(par2grid_timer)
 
@@ -146,11 +155,12 @@ module parcel_interpl
             nsparg = zero
             tbuoyg = zero
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot) &
+            !$omp do private(n, p, l, i, j, k, points, pvol, ptruevol, weight, btot) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
+                ptruevol = parcels%truevolume(n)
 
 #ifndef ENABLE_DRY_MODE
                 ! total buoyancy (including effects of latent heating)
@@ -159,7 +169,7 @@ module parcel_interpl
                 btot = gravity*(parcels%theta(n)/theta_0-1.0)
 #endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, l_reuse)
+                                              pvol, ptruevol, parcels%B(:, n), n, l_reuse)
 
                 call get_index(parcels%position(:, n), i, j, k)
                 nparg(k, j, i) = nparg(k, j, i) + 1
@@ -188,6 +198,22 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
+
+            ! sum halo contribution into internal cells
+            ! (be aware that halo cell contribution at upper boundary
+            ! are added to cell nz)
+            nparg(0,    :, :) = nparg(0,    :, :) + nparg(-1, :, :)
+            nparg(nz-1, :, :) = nparg(nz-1, :, :) + nparg(nz, :, :)
+
+            nsparg(0,    :, :) = nsparg(0,    :, :) + nsparg(-1, :, :)
+            nsparg(nz-1, :, :) = nsparg(nz-1, :, :) + nsparg(nz, :, :)
+            !$omp end parallel workshare
+
+            ! sanity check -- note: this must be checked for calling the halo swap routine
+            ! as otherwise we count parcels in the halo region twice.
+            if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then
+                call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
+            endif
 
             call start_timer(halo_swap_timer)
             call par2grid_halo_swap
@@ -240,21 +266,6 @@ module parcel_interpl
             tbuoyg(-1,   :, :) = two * tbuoyg(0,  :, :) - tbuoyg(1, :, :)
             tbuoyg(nz+1, :, :) = two * tbuoyg(nz, :, :) - tbuoyg(nz-1, :, :)
 
-            ! sum halo contribution into internal cells
-            ! (be aware that halo cell contribution at upper boundary
-            ! are added to cell nz)
-            nparg(0,    :, :) = nparg(0,    :, :) + nparg(-1, :, :)
-            nparg(nz-1, :, :) = nparg(nz-1, :, :) + nparg(nz, :, :)
-
-            nsparg(0,    :, :) = nsparg(0,    :, :) + nsparg(-1, :, :)
-            nsparg(nz-1, :, :) = nsparg(nz-1, :, :) + nsparg(nz, :, :)
-            !$omp end parallel workshare
-
-            ! sanity check
-            if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then
-                call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
-            endif
-
             call stop_timer(par2grid_timer)
 
         end subroutine par2grid
@@ -271,7 +282,7 @@ module parcel_interpl
             logical, optional :: l_reuse
             double precision  :: points(3, 4)
             integer           :: n, p, i, j, k
-            double precision  :: pvol, weight(0:1,0:1,0:1)
+            double precision  :: pvol, ptruevol, weight(0:1,0:1,0:1)
 
             thetag = zero
             volg = zero
@@ -281,20 +292,21 @@ module parcel_interpl
 #endif
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, i, j, k, points, pvol, weight) &
+            !$omp do private(n, p, i, j, k, points, pvol, ptruevol, weight) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, thetag, volg, qvg, qlg)
 #else
-            !$omp do private(n, p, i, j, k, points, pvol, weight) &
+            !$omp do private(n, p, i, j, k, points, pvol, ptruevol, weight) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, thetag, volg)
 #endif
 
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
+                ptruevol = parcels%truevolume(n)
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, l_reuse)
+                                              pvol, ptruevol, parcels%B(:, n), n, l_reuse)
 
                 call get_index(parcels%position(:, n), i, j, k)
                 nparg(k, j, i) = nparg(k, j, i) + 1
@@ -399,6 +411,8 @@ module parcel_interpl
             call field_halo_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
             call field_halo_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
             call field_halo_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
+            call field_halo_to_buffer_integer(nparg,       IDX_NPARG_SWAP)
+            call field_halo_to_buffer_integer(nsparg,      IDX_NSPARG_SWAP)
 
             ! send halo data to valid regions of other processes
             call halo_to_interior_communication
@@ -410,7 +424,8 @@ module parcel_interpl
             call field_buffer_to_interior(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .true.)
             call field_buffer_to_interior(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .true.)
             call field_buffer_to_interior(tbuoyg,              IDX_TBUOY_SWAP, .true.)
-
+            call field_buffer_to_interior_integer(nparg,       IDX_NPARG_SWAP, .true.)
+            call field_buffer_to_interior_integer(nsparg,      IDX_NSPARG_SWAP, .true.)
 
             !------------------------------------------------------------------
             ! Fill halo:
@@ -420,6 +435,8 @@ module parcel_interpl
             call field_interior_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
             call field_interior_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
             call field_interior_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
+            call field_interior_to_buffer_integer(nparg,       IDX_NPARG_SWAP)
+            call field_interior_to_buffer_integer(nsparg,      IDX_NSPARG_SWAP)
 
             call interior_to_halo_communication
 
@@ -428,6 +445,8 @@ module parcel_interpl
             call field_buffer_to_halo(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .false.)
             call field_buffer_to_halo(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .false.)
             call field_buffer_to_halo(tbuoyg,              IDX_TBUOY_SWAP, .false.)
+            call field_buffer_to_halo_integer(nparg,       IDX_NPARG_SWAP, .false.)
+            call field_buffer_to_halo_integer(nsparg,      IDX_NSPARG_SWAP, .false.)
 
             call field_mpi_dealloc
 
@@ -492,6 +511,7 @@ module parcel_interpl
             logical, optional, intent(in) :: add
             double precision              :: points(3, 4)
             integer                       :: n, l, p
+            double precision, parameter   :: parcel_growth_fac=2.0
 
             call start_timer(grid2par_timer)
 
@@ -503,6 +523,7 @@ module parcel_interpl
                     do n = 1, n_parcels
                         parcels%delta_pos(:, n) = zero
                         parcels%delta_vor(:, n) = zero
+                        parcels%delta_truevolume(n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -513,6 +534,7 @@ module parcel_interpl
                 do n = 1, n_parcels
                     parcels%delta_pos(:, n) = zero
                     parcels%delta_vor(:, n) = zero
+                    parcels%delta_truevolume(n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -525,7 +547,7 @@ module parcel_interpl
                 parcels%strain(:, n) = zero
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              parcels%volume(n), parcels%B(:, n), n)
+                                              parcels%volume(n), parcels%truevolume(n), parcels%B(:, n), n)
 
                 do p = 1, 4
                     ! get interpolation weights and mesh indices
@@ -545,6 +567,12 @@ module parcel_interpl
                                                 + f14 * sum(weights * vtend(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                 enddo
+
+                ! single point representation for safety
+                call trilinear(parcels%position(:, n), is, js, ks, weights)
+                parcels%delta_truevolume(n) = parcels%delta_truevolume(n) &
+                                                + parcel_growth_fac*sum(weights * strain_mag(ks:ks+1, js:js+1, is:is+1))*&
+                                                (dx(1)*dx(2)*dx(3))**(2./9.)*parcels%truevolume(n)**(7./9.)
             enddo
             !$omp end do
             !$omp end parallel

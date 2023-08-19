@@ -13,7 +13,10 @@ module parcel_merging
                                , get_dely_across_periodic   &
                                , parcel_delete
     use parcel_ellipsoid, only : get_B33, get_abc
-    use options, only : parcel, verbose
+    use options, only : parcel
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
+    use options, only : verbose
+#endif
     use parcel_bc, only : apply_periodic_bc
     use parcel_mpi, only : parcel_communicate
     use mpi_timer, only : start_timer, stop_timer
@@ -39,7 +42,7 @@ module parcel_merging
             integer, allocatable, dimension(:) :: inva
             integer                            :: n_merge ! number of merges
             integer                            :: n_invalid
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             integer                            :: orig_num
 
             orig_num = n_total_parcels
@@ -73,7 +76,7 @@ module parcel_merging
             n_total_parcels = n_parcels
             call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
 
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)",                               &
                       "no. parcels before and after merge: ", orig_num,  &
@@ -109,6 +112,7 @@ module parcel_merging
 #endif
             double precision, intent(out)   :: Bm(6, n_merge) ! B11, B12, B13, B22, B23, B33
             double precision, intent(out)   :: vm(n_merge)
+            double precision                :: tvm(n_merge)
 
             loca = zero
 
@@ -128,6 +132,12 @@ module parcel_merging
 
                     ! vm will contain the total volume of the merged parcel
                     vm(l) = parcels%volume(ic)
+
+                    if(parcels%volume(ic)<0.25*parcels%truevolume(ic)) then ! merge because of dilution
+                      tvm(l) = 0.5*parcels%truevolume(ic) !Accumulate volume of merged parcel
+                    else
+                      tvm(l) = parcels%truevolume(ic) !Accumulate volume of merged parcel
+                    endif
 
                     !x0 stores the x centre of the other parcel
                     x0(l) = parcels%position(1, ic)
@@ -160,6 +170,12 @@ module parcel_merging
                 is = isma(m) !Small parcel
                 n = loca(ic)  !Index of merged parcel
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
+
+                if(parcels%volume(is)<0.25*parcels%truevolume(is)) then ! merge because of dilution
+                  tvm(n) = tvm(n) + 0.5*parcels%truevolume(is) !Accumulate volume of merged parcel
+                else
+                  tvm(n) = tvm(n) + parcels%truevolume(is) !Accumulate volume of merged parcel
+                endif
 
                 ! works across periodic edge
                 delx = get_delx_across_periodic(parcels%position(1, is), x0(n))
@@ -240,6 +256,7 @@ module parcel_merging
                     Bm(6, l) = mu * (five * delz ** 2   + B33)
 
                     parcels%volume(ic)  = vm(l)
+                    parcels%truevolume(ic)  = tvm(l)
                     parcels%position(1, ic) = posm(1, l)
                     parcels%position(2, ic) = posm(2, l)
                     parcels%position(3, ic) = posm(3, l)

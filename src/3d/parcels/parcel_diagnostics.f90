@@ -102,13 +102,9 @@ module parcel_diagnostics
                     parcel_stats(IDX_N_SMALL) = parcel_stats(IDX_N_SMALL) + one
                 endif
 
-                if (bmax < b) then
-                    bmax = b
-                endif
+                bmax = max(bmax, b)
 
-                if (bmin > b) then
-                    bmin = b
-                endif
+                bmin = min(bmin, b)
 
 #ifndef NDEBUG
                 !$omp critical

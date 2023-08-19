@@ -9,6 +9,7 @@ module utils
                       , verbose
     use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     use field_netcdf
+    use fields, only : vortg, field_default
     use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
     use parcel_init, only : parcel_default, init_parcels_from_grids

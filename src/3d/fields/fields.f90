@@ -44,7 +44,8 @@ module fields
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
-        volg           ! volume scalar field
+        volg, &        ! volume scalar field
+        strain_mag     ! strain_magnitude field
 
     integer, allocatable, dimension(:, :, :) :: &
         nparg,     &   ! number of parcels per grid box
@@ -96,6 +97,7 @@ module fields
 
             allocate(nparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(nsparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
         end subroutine field_alloc
 
@@ -118,7 +120,7 @@ module fields
 #endif
             nparg    = zero
             nsparg   = zero
-
+            strain_mag = zero
 #ifndef NDEBUG
             sym_volg = zero
 #endif
@@ -142,7 +144,7 @@ module fields
 #endif
                 deallocate(nparg)
                 deallocate(nsparg)
-
+                deallocate(strain_mag)
 #ifndef NDEBUG
                 deallocate(sym_volg)
 #endif

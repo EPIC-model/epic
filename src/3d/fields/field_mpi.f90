@@ -106,7 +106,11 @@ module field_mpi
                 , field_interior_to_buffer          &
                 , field_buffer_to_interior          &
                 , interior_to_halo_communication    &
-                , halo_to_interior_communication
+                , halo_to_interior_communication    &
+                , field_halo_to_buffer_integer      &
+                , field_buffer_to_interior_integer  &
+                , field_interior_to_buffer_integer  &
+                , field_buffer_to_halo_integer
 
     contains
 
@@ -673,6 +677,23 @@ module field_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        subroutine field_interior_to_buffer_integer(data, nc)
+            integer, intent(in) :: data(box%hlo(3):box%hhi(3), &
+                                        box%hlo(2):box%hhi(2), &
+                                        box%hlo(1):box%hhi(1))
+            integer, intent(in) :: nc
+            double precision    :: tmp(box%hlo(3):box%hhi(3), &
+                                       box%hlo(2):box%hhi(2), &
+                                       box%hlo(1):box%hhi(1))
+
+            tmp = data
+
+            call field_interior_to_buffer(tmp, nc)
+
+        end subroutine field_interior_to_buffer_integer
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine field_interior_to_buffer_3d(data, nc)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
@@ -722,6 +743,24 @@ module field_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        subroutine field_halo_to_buffer_integer(data, nc)
+            integer, intent(in) :: data(box%hlo(3):box%hhi(3), &
+                                        box%hlo(2):box%hhi(2), &
+                                        box%hlo(1):box%hhi(1))
+            integer, intent(in) :: nc
+            double precision    :: tmp(box%hlo(3):box%hhi(3), &
+                                       box%hlo(2):box%hhi(2), &
+                                       box%hlo(1):box%hhi(1))
+
+            !$omp parallel workshare
+            tmp = data
+            !$omp end parallel workshare
+
+            call field_halo_to_buffer(tmp, nc)
+
+        end subroutine field_halo_to_buffer_integer
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         subroutine field_halo_to_buffer_3d(data, nc)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
@@ -766,6 +805,30 @@ module field_mpi
             southeast_halo_buf(1, :, nc)    = data(box%hlo(2),              box%hhi(1)-1:box%hhi(1))
 
         end subroutine field_halo_to_buffer_2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_buffer_to_halo_integer(data, nc, l_add)
+            integer, intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                           box%hlo(2):box%hhi(2), &
+                                           box%hlo(1):box%hhi(1))
+            integer, intent(in)    :: nc
+            logical, intent(in)    :: l_add
+            double precision       :: tmp(box%hlo(3):box%hhi(3), &
+                                          box%hlo(2):box%hhi(2), &
+                                          box%hlo(1):box%hhi(1))
+
+            !$omp parallel workshare
+            tmp = data
+            !$omp end parallel workshare
+
+            call field_buffer_to_halo(tmp, nc, l_add)
+
+            !$omp parallel workshare
+            data = int(tmp)
+            !$omp end parallel workshare
+
+        end subroutine field_buffer_to_halo_integer
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -871,6 +934,30 @@ module field_mpi
             endif
 
         end subroutine field_buffer_to_halo_2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_buffer_to_interior_integer(data, nc, l_add)
+            integer, intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                           box%hlo(2):box%hhi(2), &
+                                           box%hlo(1):box%hhi(1))
+            integer, intent(in)    :: nc
+            logical, intent(in)    :: l_add
+            double precision       :: tmp(box%hlo(3):box%hhi(3), &
+                                          box%hlo(2):box%hhi(2), &
+                                          box%hlo(1):box%hhi(1))
+
+            !$omp parallel workshare
+            tmp = data
+            !$omp end parallel workshare
+
+            call field_buffer_to_interior(tmp, nc, l_add)
+
+            !$omp parallel workshare
+            data = int(tmp)
+            !$omp end parallel workshare
+
+        end subroutine field_buffer_to_interior_integer
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

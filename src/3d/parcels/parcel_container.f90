@@ -57,7 +57,10 @@ module parcel_container
                           IDX_RK4_DUDY,     & ! RK4 variable du/dy
                           IDX_RK4_DVDY,     & ! RK4 variable dv/dy
                           IDX_RK4_DWDX,     & ! RK4 variable dw/dx
-                          IDX_RK4_DWDY        ! RK4 variable dw/dy
+                          IDX_RK4_DWDY,     & ! RK4 variable dw/dy
+                          IDX_TRUEVOL,      &
+                          IDX_RK4_TRUEVOL     ! RK4 variable truevol
+
 
     ! number of  parcel attributes
     ! (components are counted individually, e.g. position counts as 3 attributes)
@@ -73,6 +76,8 @@ module parcel_container
 
         double precision, allocatable, dimension(:) :: &
             volume,     &
+            truevolume,     &
+            delta_truevolume,     &
 #ifndef ENABLE_DRY_MODE
             qv,   &
             ql,   &
@@ -136,8 +141,10 @@ module parcel_container
             IDX_RK4_DVDY = i + 13
             IDX_RK4_DWDX = i + 14
             IDX_RK4_DWDY = i + 15
+            IDX_TRUEVOL = i + 16
+            IDX_RK4_TRUEVOL = i + 17
 
-            i = i + 16
+            i = i + 18
 
             n_par_attrib = set_ellipsoid_buffer_indices(i)
 
@@ -234,7 +241,7 @@ module parcel_container
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
 
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose) then
                 print '(a19, i0, a6, i0)', '    replace parcel ', n, ' with ', m
             endif
@@ -244,6 +251,8 @@ module parcel_container
             parcels%vorticity(:, n) = parcels%vorticity(:, m)
             parcels%volume(n)       = parcels%volume(m)
             parcels%theta(n)        = parcels%theta(m)
+            parcels%truevolume(n)   = parcels%truevolume(m)
+            parcels%delta_truevolume(n) = parcels%delta_truevolume(m)
 #ifndef ENABLE_DRY_MODE
             parcels%qv(n)           = parcels%qv(m)
             parcels%ql(n)           = parcels%ql(m)
@@ -282,6 +291,8 @@ module parcel_container
             call resize_array(parcels%B, new_size, n_parcels)
             call resize_array(parcels%volume, new_size, n_parcels)
             call resize_array(parcels%theta, new_size, n_parcels)
+            call resize_array(parcels%truevolume, new_size, n_parcels)
+            call resize_array(parcels%delta_truevolume, new_size, n_parcels)
 #ifndef ENABLE_DRY_MODE
             call resize_array(parcels%qv, new_size, n_parcels)
             call resize_array(parcels%ql, new_size, n_parcels)
@@ -312,6 +323,8 @@ module parcel_container
             allocate(parcels%B(5, num))
             allocate(parcels%volume(num))
             allocate(parcels%theta(num))
+            allocate(parcels%truevolume(num))
+            allocate(parcels%delta_truevolume(num))
 #ifndef ENABLE_DRY_MODE
             allocate(parcels%qv(num))
             allocate(parcels%ql(num))
@@ -343,6 +356,8 @@ module parcel_container
             deallocate(parcels%B)
             deallocate(parcels%volume)
             deallocate(parcels%theta)
+            deallocate(parcels%truevolume)
+            deallocate(parcels%delta_truevolume)
 #ifndef ENABLE_DRY_MODE
             deallocate(parcels%qv)
             deallocate(parcels%ql)
@@ -369,6 +384,8 @@ module parcel_container
             buffer(IDX_B11:IDX_B23)     = parcels%B(:, n)
             buffer(IDX_VOL)             = parcels%volume(n)
             buffer(IDX_THETA)           = parcels%theta(n)
+            buffer(IDX_TRUEVOL)         = parcels%truevolume(n)
+            buffer(IDX_RK4_TRUEVOL)     = parcels%delta_truevolume(n)
 #ifndef ENABLE_DRY_MODE
             buffer(IDX_QV)              = parcels%qv(n)
             buffer(IDX_QL)              = parcels%ql(n)
@@ -394,6 +411,8 @@ module parcel_container
             parcels%B(:, n)         = buffer(IDX_B11:IDX_B23)
             parcels%volume(n)       = buffer(IDX_VOL)
             parcels%theta(n)        = buffer(IDX_THETA)
+            parcels%truevolume(n)   = buffer(IDX_TRUEVOL)
+            parcels%delta_truevolume(n)  = buffer(IDX_RK4_TRUEVOL)
 #ifndef ENABLE_DRY_MODE
             parcels%qv(n)           = buffer(IDX_QV)
             parcels%ql(n)           = buffer(IDX_QL)

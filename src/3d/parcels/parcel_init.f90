@@ -66,6 +66,7 @@ module parcel_init
             !$omp do private(n)
             do n = 1, n_parcels
                 parcels%volume(n) = vcell / dble(parcel%n_per_cell)
+                parcels%truevolume(n) = parcels%volume(n)
             enddo
             !$omp end do
             !$omp end parallel

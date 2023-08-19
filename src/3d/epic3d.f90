@@ -115,9 +115,6 @@ program epic3d
 
         subroutine run
             use options, only : time, parcel
-#ifdef ENABLE_VERBOSE
-            use options, only : verbose
-#endif
             double precision :: t = zero    ! current time
             integer          :: cor_iter    ! iterator for parcel correction
 
@@ -125,11 +122,6 @@ program epic3d
 
             do while (t < time%limit)
 
-#ifdef ENABLE_VERBOSE
-                if (verbose .and. (world%rank == world%root)) then
-                    print "(a15, f0.4)", "time:          ", t
-                endif
-#endif
                 call apply_vortcor
 
                 call ls_rk_step(t)
