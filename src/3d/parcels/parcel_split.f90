@@ -39,7 +39,7 @@ module parcel_split_mod
         ! parcels with aspect ratios larger than parcel%lambda_max.
         subroutine parcel_split
             double precision     :: B(5)
-            double precision     :: vol, lam
+            double precision     :: vol, truevol, lam
             double precision     :: D(3), V(3, 3)
             integer              :: last_index, n_indices
             integer              :: grown_size, shrunk_size, n_required
@@ -56,10 +56,11 @@ module parcel_split_mod
             !------------------------------------------------------------------
             ! Check which parcels split and store the indices in *pid*:
             !$omp parallel default(shared)
-            !$omp do private(n, B, vol, lam, D)
+            !$omp do private(n, B, vol, truevol, lam, D)
             do n = 1, n_parcels
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
+                truevol = parcels%truevolume(n)
 
                 D = get_eigenvalues(B, vol)
 
@@ -68,7 +69,7 @@ module parcel_split_mod
 
                 pid(n) = 0
 
-                if (lam < parcel%lambda_max .and. D(1) < amax ** 2) then
+                if (lam < parcel%lambda_max .and. D(1)*(truevol/vol)**(2./3.) < amax ** 2) then
                     cycle
                 endif
 
@@ -108,7 +109,7 @@ module parcel_split_mod
             last_index = n_parcels
 
             !$omp parallel default(shared)
-            !$omp do private(i, n, B, vol, lam, D, V, n_thread_loc)
+            !$omp do private(i, n, B, vol, truevol, lam, D, V, n_thread_loc)
             do i = 1, n_indices
 
                 ! get parcel index
@@ -116,6 +117,7 @@ module parcel_split_mod
 
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
+                truevol = parcels%truevolume(n)
 
                 call diagonalise(B, vol, D, V)
 
@@ -131,6 +133,7 @@ module parcel_split_mod
                 parcels%B(5, n) = B(5) - f34 * D(1) * V(2, 1) * V(3, 1)
 
                 parcels%volume(n) = f12 * vol
+                parcels%truevolume(n) = f12 * truevol
 
                 !$omp critical
                 n_thread_loc = n_parcels + 1
@@ -143,11 +146,12 @@ module parcel_split_mod
 
                 parcels%vorticity(:, n_thread_loc) = parcels%vorticity(:, n)
                 parcels%volume(n_thread_loc) = parcels%volume(n)
+                parcels%truevolume(n_thread_loc) = parcels%truevolume(n)
                 parcels%buoyancy(n_thread_loc) = parcels%buoyancy(n)
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n_thread_loc) = parcels%humidity(n)
 #endif
-                V(:, 1) = V(:, 1) * dh * dsqrt(D(1))
+                V(:, 1) = V(:, 1) * dh * dsqrt(D(1)) * (parcels%truevolume(n)/parcels%volume(n))**(1./3.)
                 parcels%position(:, n_thread_loc) = parcels%position(:, n) - V(:, 1)
                 parcels%position(:, n) = parcels%position(:, n) + V(:, 1)
 

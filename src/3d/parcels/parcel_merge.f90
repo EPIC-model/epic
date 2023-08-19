@@ -96,7 +96,7 @@ module parcel_merging
         ! @param[in] n_merge is the array size of isma and iclo
         ! @param[out] Bm are the B matrix entries of the mergers
         ! @param[out] vm are the volumes of the mergers
-        subroutine do_group_merge(isma, iclo, n_merge, Bm, vm)
+        subroutine do_group_merge(isma, iclo, n_merge, Bm, vm, tvm)
             integer,          intent(in)    :: isma(0:)
             integer,          intent(in)    :: iclo(:)
             integer,          intent(in)    :: n_merge
@@ -111,6 +111,7 @@ module parcel_merging
 #endif
             double precision, intent(out)   :: Bm(6, n_merge) ! B11, B12, B13, B22, B23, B33
             double precision, intent(out)   :: vm(n_merge)
+            double precision, intent(out)   :: tvm(n_merge)
 
             loca = zero
 
@@ -130,6 +131,7 @@ module parcel_merging
 
                     ! vm will contain the total volume of the merged parcel
                     vm(l) = parcels%volume(ic)
+                    tvm(l) = parcels%truevolume(ic)
 
                     !x0 stores the x centre of the other parcel
                     x0(l) = parcels%position(1, ic)
@@ -161,6 +163,7 @@ module parcel_merging
                 is = isma(m) !Small parcel
                 n = loca(ic)  !Index of merged parcel
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
+                tvm(n) = tvm(n) + 0.5*parcels%truevolume(is) !Accumulate volume of merged parcel
 
                 ! works across periodic edge
                 delx = get_delx_across_periodic(parcels%position(1, is), x0(n))
@@ -239,6 +242,7 @@ module parcel_merging
                     Bm(6, l) = mu * (five * delz ** 2   + B33)
 
                     parcels%volume(ic)  = vm(l)
+                    parcels%truevolume(ic)  = tvm(l)
                     parcels%position(1, ic) = posm(1, l)
                     parcels%position(2, ic) = posm(2, l)
                     parcels%position(3, ic) = posm(3, l)

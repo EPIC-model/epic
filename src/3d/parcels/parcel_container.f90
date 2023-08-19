@@ -56,7 +56,10 @@ module parcel_container
                           IDX_RK4_DUDY,     & ! RK4 variable du/dy
                           IDX_RK4_DVDY,     & ! RK4 variable dv/dy
                           IDX_RK4_DWDX,     & ! RK4 variable dw/dx
-                          IDX_RK4_DWDY        ! RK4 variable dw/dy
+                          IDX_RK4_DWDY,     & ! RK4 variable dw/dy
+                          IDX_TRUEVOL,      &
+                          IDX_RK4_TRUEVOL     ! RK4 variable truevol
+
 
     ! number of  parcel attributes
     ! (components are counted individually, e.g. position counts as 3 attributes)
@@ -72,6 +75,8 @@ module parcel_container
 
         double precision, allocatable, dimension(:) :: &
             volume,     &
+            truevolume,     &
+            delta_truevolume,     &
 #ifndef ENABLE_DRY_MODE
             humidity,   &
 #endif
@@ -133,8 +138,10 @@ module parcel_container
             IDX_RK4_DVDY = i + 13
             IDX_RK4_DWDX = i + 14
             IDX_RK4_DWDY = i + 15
+            IDX_TRUEVOL = i + 16
+            IDX_DELTA_TRUEVOL = i + 17
 
-            i = i + 16
+            i = i + 18
 
             n_par_attrib = set_ellipsoid_buffer_indices(i)
 
@@ -240,6 +247,8 @@ module parcel_container
             parcels%position(:, n)  = parcels%position(:, m)
             parcels%vorticity(:, n) = parcels%vorticity(:, m)
             parcels%volume(n)       = parcels%volume(m)
+            parcels%truevolume(n)   = parcels%truevolume(m)
+            parcels%delta_truevolume(n) = parcels%delta_truevolume(m)
             parcels%buoyancy(n)     = parcels%buoyancy(m)
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n)     = parcels%humidity(m)
@@ -277,6 +286,8 @@ module parcel_container
             call resize_array(parcels%vorticity, new_size, n_parcels)
             call resize_array(parcels%B, new_size, n_parcels)
             call resize_array(parcels%volume, new_size, n_parcels)
+            call resize_array(parcels%truevolume, new_size, n_parcels)
+            call resize_array(parcels%delta_truevolume, new_size, n_parcels)
             call resize_array(parcels%buoyancy, new_size, n_parcels)
 #ifndef ENABLE_DRY_MODE
             call resize_array(parcels%humidity, new_size, n_parcels)
@@ -306,6 +317,8 @@ module parcel_container
             allocate(parcels%vorticity(3, num))
             allocate(parcels%B(5, num))
             allocate(parcels%volume(num))
+            allocate(parcels%truevolume(num))
+            allocate(parcels%delta_truevolume(num))
             allocate(parcels%buoyancy(num))
 #ifndef ENABLE_DRY_MODE
             allocate(parcels%humidity(num))
@@ -336,6 +349,8 @@ module parcel_container
             deallocate(parcels%vorticity)
             deallocate(parcels%B)
             deallocate(parcels%volume)
+            deallocate(parcels%truevolume)
+            deallocate(parcels%delta_truevolume)
             deallocate(parcels%buoyancy)
 #ifndef ENABLE_DRY_MODE
             deallocate(parcels%humidity)
@@ -361,6 +376,8 @@ module parcel_container
             buffer(IDX_X_VOR:IDX_Z_VOR) = parcels%vorticity(:, n)
             buffer(IDX_B11:IDX_B23)     = parcels%B(:, n)
             buffer(IDX_VOL)             = parcels%volume(n)
+            buffer(IDX_TRUEVOL)         = parcels%truevolume(n)
+            buffer(IDX_RK4_TRUEVOL)     = parcels%delta_truevolume(n)
             buffer(IDX_BUO)             = parcels%buoyancy(n)
 #ifndef ENABLE_DRY_MODE
             buffer(IDX_HUM)             = parcels%humidity(n)
@@ -385,6 +402,8 @@ module parcel_container
             parcels%vorticity(:, n) = buffer(IDX_X_VOR:IDX_Z_VOR)
             parcels%B(:, n)         = buffer(IDX_B11:IDX_B23)
             parcels%volume(n)       = buffer(IDX_VOL)
+            parcels%truevolume(n)   = buffer(IDX_TRUEVOL)
+            parcels%delta_truevolume(n)  = buffer(IDX_DELTA_TRUEVOL)
             parcels%buoyancy(n)     = buffer(IDX_BUO)
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n)     = buffer(IDX_HUM)

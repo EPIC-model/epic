@@ -5,7 +5,7 @@
 module parcel_interpl
     use constants, only : zero, one, two, f14
     use mpi_timer, only : start_timer, stop_timer
-    use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
+    use parameters, only : nx, nz, vmin, l_bndry_zeta_zero, dx
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
@@ -74,18 +74,19 @@ module parcel_interpl
             logical, optional, intent(in) :: l_reuse
             double precision              :: points(3, 4)
             integer                       :: n, p
-            double precision              :: pvol
+            double precision              :: pvol, ptruevol
 
             volg = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, points, pvol, is, js, ks, weights) &
+            !$omp do private(n, p, points, pvol, ptruevol, is, js, ks, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
+                ptruevol = parcels%truevolume(n)
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n),  &
+                                              pvol, ptruevol, parcels%B(:, n),  &
                                               n, l_reuse)
 
                 ! we have 4 points per ellipsoid
@@ -130,7 +131,7 @@ module parcel_interpl
             logical, optional :: l_reuse
             double precision  :: points(3, 4)
             integer           :: n, p, l, i, j, k
-            double precision  :: pvol, weight(0:1,0:1,0:1), btot
+            double precision  :: pvol, ptruevol, weight(0:1,0:1,0:1), btot
 #ifndef ENABLE_DRY_MODE
             double precision  :: q_c
 #endif
@@ -148,16 +149,17 @@ module parcel_interpl
             tbuoyg = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot, q_c) &
+            !$omp do private(n, p, l, i, j, k, points, pvol, ptruevol, weight, btot, q_c) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, humg, tbuoyg, volg)
 #else
-            !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot) &
+            !$omp do private(n, p, l, i, j, k, points, pvol, ptruevol, weight, btot) &
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
+                ptruevol = parcels%truevolume(n)
 
 #ifndef ENABLE_DRY_MODE
                 ! liquid water content
@@ -171,7 +173,7 @@ module parcel_interpl
                 btot = parcels%buoyancy(n)
 #endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, l_reuse)
+                                              pvol, ptruevol, parcels%B(:, n), n, l_reuse)
 
                 call get_index(parcels%position(:, n), i, j, k)
                 nparg(k, j, i) = nparg(k, j, i) + 1
@@ -379,6 +381,7 @@ module parcel_interpl
             logical, optional, intent(in) :: add
             double precision              :: points(3, 4)
             integer                       :: n, l, p
+            double precision, parameter   :: parcel_growth_fac=2.0
 
             call start_timer(grid2par_timer)
 
@@ -390,6 +393,7 @@ module parcel_interpl
                     do n = 1, n_parcels
                         parcels%delta_pos(:, n) = zero
                         parcels%delta_vor(:, n) = zero
+                        parcels%delta_truevolume(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -400,6 +404,7 @@ module parcel_interpl
                 do n = 1, n_parcels
                     parcels%delta_pos(:, n) = zero
                     parcels%delta_vor(:, n) = zero
+                    parcels%delta_truevolume(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -412,7 +417,7 @@ module parcel_interpl
                 parcels%strain(:, n) = zero
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              parcels%volume(n), parcels%B(:, n), n)
+                                              parcels%volume(n), parcels%truevolume(n), parcels%B(:, n), n)
 
                 do p = 1, 4
                     ! get interpolation weights and mesh indices
@@ -432,6 +437,11 @@ module parcel_interpl
                                                 + f14 * sum(weights * vtend(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                 enddo
+
+                ! single point representation for safety
+                call trilinear(parcels%position(:, n), is, js, ks, weights)
+                parcels%delta_truevolume(n) = parcels%delta_truevolume(n) &
+                                                + parcel_growth_fac*sum(weights * strain_mag(ks:ks+1, js:js+1, is:is+1, l))*sqrt(dx(1)*dx(2)*dx(3))*parcels%truevolume(n)**(7./9.)
             enddo
             !$omp end do
             !$omp end parallel

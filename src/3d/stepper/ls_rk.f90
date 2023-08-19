@@ -8,7 +8,7 @@ module ls_rk
     use parcel_container
     use parcel_bc
     use parcel_mpi, only : parcel_communicate
-    use rk_utils, only: get_dBdt, get_time_step
+    use rk_utils, only: get_dBdt, get_time_step, get_strain_magnitude_field
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
@@ -99,6 +99,7 @@ module ls_rk
             ! update the time step
             dt = get_time_step(t)
 
+            call get_strain_magnitude_field
             call grid2par
 
             call calculate_parcel_diagnostics
@@ -138,7 +139,6 @@ module ls_rk
 
             if (step == 1) then
                 call start_timer(rk_timer)
-
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
                     parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n),           &
@@ -153,11 +153,10 @@ module ls_rk
                 call vor2vel
 
                 call vorticity_tendency
-
+                call get_strain_magnitude_field
                 call grid2par(add=.true.)
 
                 call start_timer(rk_timer)
-
                 !$omp parallel do default(shared) private(n)
                 do n = 1, n_parcels
                     parcels%delta_b(:, n) = parcels%delta_b(:, n)               &
@@ -175,6 +174,8 @@ module ls_rk
 
             !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
+                parcels%truevolume(n) = parcels%truevolume(n) &
+                                       + cb * dt * parcels%delta_truevolume(n)
                 parcels%position(:, n) = parcels%position(:, n) &
                                        + cb * dt * parcels%delta_pos(:, n)
 
@@ -196,6 +197,7 @@ module ls_rk
 
             !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
+                parcels%delta_truevolume(:, n) = ca * parcels%delta_truevolume(n)
                 parcels%delta_pos(:, n) = ca * parcels%delta_pos(:, n)
                 parcels%delta_vor(:, n) = ca * parcels%delta_vor(:, n)
                 parcels%delta_b(:, n) = ca * parcels%delta_b(:, n)
