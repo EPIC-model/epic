@@ -96,7 +96,7 @@ module parcel_merging
         ! @param[in] n_merge is the array size of isma and iclo
         ! @param[out] Bm are the B matrix entries of the mergers
         ! @param[out] vm are the volumes of the mergers
-        subroutine do_group_merge(isma, iclo, n_merge, Bm, vm, tvm)
+        subroutine do_group_merge(isma, iclo, n_merge, Bm, vm)
             integer,          intent(in)    :: isma(0:)
             integer,          intent(in)    :: iclo(:)
             integer,          intent(in)    :: n_merge
@@ -111,7 +111,7 @@ module parcel_merging
 #endif
             double precision, intent(out)   :: Bm(6, n_merge) ! B11, B12, B13, B22, B23, B33
             double precision, intent(out)   :: vm(n_merge)
-            double precision, intent(out)   :: tvm(n_merge)
+            double precision                :: tvm(n_merge)
 
             loca = zero
 
@@ -131,7 +131,12 @@ module parcel_merging
 
                     ! vm will contain the total volume of the merged parcel
                     vm(l) = parcels%volume(ic)
-                    tvm(l) = parcels%truevolume(ic)
+
+                    if(parcels%volume(ic)<0.25*parcels%truevolume(ic)) then ! merge because of dilution
+                      tvm(l) = 0.5*parcels%truevolume(ic) !Accumulate volume of merged parcel
+                    else
+                      tvm(l) = parcels%truevolume(ic) !Accumulate volume of merged parcel
+                    endif
 
                     !x0 stores the x centre of the other parcel
                     x0(l) = parcels%position(1, ic)
@@ -163,7 +168,12 @@ module parcel_merging
                 is = isma(m) !Small parcel
                 n = loca(ic)  !Index of merged parcel
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
-                tvm(n) = tvm(n) + 0.5*parcels%truevolume(is) !Accumulate volume of merged parcel
+
+                if(parcels%volume(is)<0.25*parcels%truevolume(is)) then ! merge because of dilution
+                  tvm(n) = tvm(n) + 0.5*parcels%truevolume(is) !Accumulate volume of merged parcel
+                else
+                  tvm(n) = tvm(n) + parcels%truevolume(is) !Accumulate volume of merged parcel
+                endif
 
                 ! works across periodic edge
                 delx = get_delx_across_periodic(parcels%position(1, is), x0(n))

@@ -100,8 +100,3 @@ test_tri_inversion_LDADD = libcombi.la
 test_parcel_init_SOURCES = test_parcel_init.f90
 test_parcel_init_LDADD = libcombi.la
 
-if ENABLE_DEBUG
-unittests_PROGRAMS += test_ellipse_merge_symmetry
-test_ellipse_merge_symmetry_SOURCES = test_ellipse_merge_symmetry.f90
-test_ellipse_merge_symmetry_LDADD = libcombi.la
-endif

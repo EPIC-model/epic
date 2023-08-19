@@ -197,7 +197,7 @@ module ls_rk
 
             !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
-                parcels%delta_truevolume(:, n) = ca * parcels%delta_truevolume(n)
+                parcels%delta_truevolume(n) = ca * parcels%delta_truevolume(n)
                 parcels%delta_pos(:, n) = ca * parcels%delta_pos(:, n)
                 parcels%delta_vor(:, n) = ca * parcels%delta_vor(:, n)
                 parcels%delta_b(:, n) = ca * parcels%delta_b(:, n)

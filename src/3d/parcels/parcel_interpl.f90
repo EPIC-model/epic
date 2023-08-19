@@ -393,7 +393,7 @@ module parcel_interpl
                     do n = 1, n_parcels
                         parcels%delta_pos(:, n) = zero
                         parcels%delta_vor(:, n) = zero
-                        parcels%delta_truevolume(:, n) = zero
+                        parcels%delta_truevolume(n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -404,7 +404,7 @@ module parcel_interpl
                 do n = 1, n_parcels
                     parcels%delta_pos(:, n) = zero
                     parcels%delta_vor(:, n) = zero
-                    parcels%delta_truevolume(:, n) = zero
+                    parcels%delta_truevolume(n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -441,7 +441,8 @@ module parcel_interpl
                 ! single point representation for safety
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
                 parcels%delta_truevolume(n) = parcels%delta_truevolume(n) &
-                                                + parcel_growth_fac*sum(weights * strain_mag(ks:ks+1, js:js+1, is:is+1, l))*sqrt(dx(1)*dx(2)*dx(3))*parcels%truevolume(n)**(7./9.)
+                                                + parcel_growth_fac*sum(weights * strain_mag(ks:ks+1, js:js+1, is:is+1))*&
+                                                (dx(1)*dx(2)*dx(3))**(2./9.)*parcels%truevolume(n)**(7./9.)
             enddo
             !$omp end do
             !$omp end parallel

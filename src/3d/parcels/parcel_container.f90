@@ -139,7 +139,7 @@ module parcel_container
             IDX_RK4_DWDX = i + 14
             IDX_RK4_DWDY = i + 15
             IDX_TRUEVOL = i + 16
-            IDX_DELTA_TRUEVOL = i + 17
+            IDX_RK4_TRUEVOL = i + 17
 
             i = i + 18
 
@@ -403,7 +403,7 @@ module parcel_container
             parcels%B(:, n)         = buffer(IDX_B11:IDX_B23)
             parcels%volume(n)       = buffer(IDX_VOL)
             parcels%truevolume(n)   = buffer(IDX_TRUEVOL)
-            parcels%delta_truevolume(n)  = buffer(IDX_DELTA_TRUEVOL)
+            parcels%delta_truevolume(n)  = buffer(IDX_RK4_TRUEVOL)
             parcels%buoyancy(n)     = buffer(IDX_BUO)
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n)     = buffer(IDX_HUM)

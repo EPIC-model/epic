@@ -273,7 +273,7 @@ module parcel_nearest
 
                 call parcel_to_local_cell_index(n)
 
-                if (parcels%volume(n) < vmin .or. parcels%volume(n)<(1./4.)*parcels%truevolume(n)) then
+                if (parcels%volume(n) < vmin .or. parcels%volume(n)<0.25*parcels%truevolume(n)) then
                     n_local_small = n_local_small + 1
 
                     ! If a small parcel is in a boundary cell, a duplicate must
@@ -348,7 +348,7 @@ module parcel_nearest
                     node(k) = n
                     kc2(ijk) = k
 
-                    if (parcels%volume(n) < vmin .or. parcels%volume(n)<(1./4.)*parcels%truevolume(n)) then
+                    if (parcels%volume(n) < vmin .or. parcels%volume(n)<0.25*parcels%truevolume(n)) then
                         j = j + 1
                         isma(j) = n
                     endif

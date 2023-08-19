@@ -25,7 +25,8 @@ module parcel_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: npar_dim_id, vol_id, buo_id,      &
+    integer            :: npar_dim_id, vol_id, truevol_id,  &
+                          buo_id,      &
                           x_pos_id, y_pos_id, z_pos_id,     &
                           x_vor_id, y_vor_id, z_vor_id,     &
                           b11_id, b12_id, b13_id,           &
@@ -41,7 +42,8 @@ module parcel_netcdf
                x_pos_id, y_pos_id, z_pos_id, start_id,  &
                x_vor_id, y_vor_id, z_vor_id,            &
                b11_id, b12_id, b13_id, b22_id, b23_id,  &
-               vol_id, buo_id, t_dim_id, t_axis_id,     &
+               vol_id, truevol_id,                      &
+               buo_id, t_dim_id, t_axis_id,             &
                restart_time, mpi_dim_id,                &
                read_chunk
 
@@ -211,6 +213,16 @@ module parcel_netcdf
                                        varid=vol_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='truevolume',                       &
+                                       long_name='parcel true volume',          &
+                                       std_name='',                             &
+                                       unit='m^3',                              &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=truevol_id)
+
+
+            call define_netcdf_dataset(ncid=ncid,                               &
                                        name='x_vorticity',                      &
                                        long_name='x vorticity component',       &
                                        std_name='',                             &
@@ -326,6 +338,7 @@ module parcel_netcdf
             call write_netcdf_dataset(ncid, b23_id, parcels%B(5, 1:n_parcels), start, cnt)
 
             call write_netcdf_dataset(ncid, vol_id, parcels%volume(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, truevol_id, parcels%truevolume(1:n_parcels), start, cnt)
 
             call write_netcdf_dataset(ncid, x_vor_id, parcels%vorticity(1, 1:n_parcels), start, cnt)
             call write_netcdf_dataset(ncid, y_vor_id, parcels%vorticity(2, 1:n_parcels), start, cnt)
@@ -559,6 +572,15 @@ module parcel_netcdf
                 call mpi_exit_on_error(&
                     "The parcel volume must be present! Exiting.")
             endif
+
+            if (has_dataset(ncid, 'truevolume')) then
+                call read_netcdf_dataset(ncid, 'truevolume', &
+                                         parcels%truevolume(pfirst:plast), start, cnt)
+            else
+                call mpi_exit_on_error(&
+                    "The parcel true volume must be present! Exiting.")
+            endif
+
 
             if (has_dataset(ncid, 'x_vorticity')) then
                 l_valid = .true.

@@ -304,6 +304,7 @@ module parcel_ellipsoid
         function get_ellipsoid_points(position, volume, truevolume, B, n, l_reuse) result(points)
             double precision,  intent(in) :: position(n_dim)
             double precision,  intent(in) :: volume
+            double precision,  intent(in) :: truevolume
             double precision,  intent(in) :: B(5)        ! B11, B12, B13, B22, B23
             integer, optional, intent(in) :: n
             logical, optional, intent(in) :: l_reuse
