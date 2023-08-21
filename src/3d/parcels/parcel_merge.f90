@@ -112,7 +112,7 @@ module parcel_merging
 #endif
             double precision, intent(out)   :: Bm(6, n_merge) ! B11, B12, B13, B22, B23, B33
             double precision, intent(out)   :: vm(n_merge)
-            double precision                :: tvm(n_merge)
+            double precision                :: dil_fac
 
             loca = zero
 
@@ -132,12 +132,6 @@ module parcel_merging
 
                     ! vm will contain the total volume of the merged parcel
                     vm(l) = parcels%volume(ic)
-
-                    if(parcels%volume(ic)<0.25*parcels%truevolume(ic)) then ! merge because of dilution
-                      tvm(l) = 0.5*parcels%truevolume(ic) !Accumulate volume of merged parcel
-                    else
-                      tvm(l) = parcels%truevolume(ic) !Accumulate volume of merged parcel
-                    endif
 
                     !x0 stores the x centre of the other parcel
                     x0(l) = parcels%position(1, ic)
@@ -170,12 +164,6 @@ module parcel_merging
                 is = isma(m) !Small parcel
                 n = loca(ic)  !Index of merged parcel
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
-
-                if(parcels%volume(is)<0.25*parcels%truevolume(is)) then ! merge because of dilution
-                  tvm(n) = tvm(n) + 0.5*parcels%truevolume(is) !Accumulate volume of merged parcel
-                else
-                  tvm(n) = tvm(n) + parcels%truevolume(is) !Accumulate volume of merged parcel
-                endif
 
                 ! works across periodic edge
                 delx = get_delx_across_periodic(parcels%position(1, is), x0(n))
@@ -247,16 +235,15 @@ module parcel_merging
 
                     mu = parcels%volume(ic) * vmerge
 
-
-                    Bm(1, l) = mu * (five * delx ** 2   + parcels%B(1, ic))
-                    Bm(2, l) = mu * (five * delx * dely + parcels%B(2, ic))
-                    Bm(3, l) = mu * (five * delx * delz + parcels%B(3, ic))
-                    Bm(4, l) = mu * (five * dely ** 2   + parcels%B(4, ic))
-                    Bm(5, l) = mu * (five * dely * delz + parcels%B(5, ic))
-                    Bm(6, l) = mu * (five * delz ** 2   + B33)
+                    dil_fac=(parcels%truevolume(ic)/parcels%volume(ic))**(2./3.)
+                    Bm(1, l) = mu * (five * delx ** 2   + parcels%B(1, ic)*dil_fac)
+                    Bm(2, l) = mu * (five * delx * dely + parcels%B(2, ic)*dil_fac)
+                    Bm(3, l) = mu * (five * delx * delz + parcels%B(3, ic)*dil_fac)
+                    Bm(4, l) = mu * (five * dely ** 2   + parcels%B(4, ic)*dil_fac)
+                    Bm(5, l) = mu * (five * dely * delz + parcels%B(5, ic)*dil_fac)
+                    Bm(6, l) = mu * (five * delz ** 2   + B33*dil_fac)
 
                     parcels%volume(ic)  = vm(l)
-                    parcels%truevolume(ic)  = tvm(l)
                     parcels%position(1, ic) = posm(1, l)
                     parcels%position(2, ic) = posm(2, l)
                     parcels%position(3, ic) = posm(3, l)
@@ -284,12 +271,13 @@ module parcel_merging
                 ! volume fraction V_{is} / V
                 mu = vmerge * parcels%volume(is)
 
-                Bm(1, n) = Bm(1, n) + mu * (five * delx ** 2   + parcels%B(1, is))
-                Bm(2, n) = Bm(2, n) + mu * (five * delx * dely + parcels%B(2, is))
-                Bm(3, n) = Bm(3, n) + mu * (five * delx * delz + parcels%B(3, is))
-                Bm(4, n) = Bm(4, n) + mu * (five * dely ** 2   + parcels%B(4, is))
-                Bm(5, n) = Bm(5, n) + mu * (five * dely * delz + parcels%B(5, is))
-                Bm(6, n) = Bm(6, n) + mu * (five * delz ** 2   + B33)
+                dil_fac=(parcels%truevolume(is)/parcels%volume(is))**(2./3.)
+                Bm(1, n) = Bm(1, n) + mu * (five * delx ** 2   + parcels%B(1, is)*dil_fac)
+                Bm(2, n) = Bm(2, n) + mu * (five * delx * dely + parcels%B(2, is)*dil_fac)
+                Bm(3, n) = Bm(3, n) + mu * (five * delx * delz + parcels%B(3, is)*dil_fac)
+                Bm(4, n) = Bm(4, n) + mu * (five * dely ** 2   + parcels%B(4, is)*dil_fac)
+                Bm(5, n) = Bm(5, n) + mu * (five * dely * delz + parcels%B(5, is)*dil_fac)
+                Bm(6, n) = Bm(6, n) + mu * (five * delz ** 2   + B33*dil_fac)
             enddo
 
         end subroutine do_group_merge
@@ -308,8 +296,8 @@ module parcel_merging
             integer                     :: loca(n_parcels)
             double precision            :: factor, detB
             double precision            :: B(6, n_merge), &
-                                        V(n_merge)
-
+                                           V(n_merge)
+ 
             call do_group_merge(isma, iclo, n_merge, B, V)
 
             loca = zero
@@ -330,8 +318,12 @@ module parcel_merging
                          + B(3, l) * (B(2, l) * B(5, l) - B(3, l) * B(4, l))
 
                     factor = (get_abc(V(l)) ** 2 / detB) ** f13
-
                     parcels%B(:, ic) = B(1:5, l) * factor
+                    if(factor>1.0) then
+                        parcels%truevolume(ic)=parcels%volume(ic)
+                    else
+                        parcels%truevolume(ic)=parcels%volume(ic)/(factor**(3./2.))
+                    endif
                 endif
             enddo
 
