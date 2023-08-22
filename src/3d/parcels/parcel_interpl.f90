@@ -636,7 +636,7 @@ module parcel_interpl
             double precision, parameter :: qsa3 = 35.86        ! Constant in qsat equation
             double precision, parameter :: qsa4 = 6.109        ! Constant in qsat equation
             double precision, parameter :: pressure_scale_height = 8619.0 ! Scale height for bomex    
-            double precision, parameter :: surf_press = 101500.0
+            double precision, parameter :: surf_press = 100000.0
             double precision, parameter :: ref_press =  100000.0
             double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat
             integer :: n, iter
