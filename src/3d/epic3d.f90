@@ -122,7 +122,7 @@ program epic3d
 
             do while (t < time%limit)
 
-                call apply_vortcor
+                !call apply_vortcor
 
                 call ls_rk_step(t)
 
@@ -139,7 +139,7 @@ program epic3d
 
             ! write final step (we only write if we really advanced in time)
              if (t > time%initial) then
-                call apply_vortcor
+                !call apply_vortcor
                 call write_last_step(t)
             endif
 
