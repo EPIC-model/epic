@@ -199,6 +199,7 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
+            !$omp parallel workshare
             ! sum halo contribution into internal cells
             ! (be aware that halo cell contribution at upper boundary
             ! are added to cell nz)
@@ -265,6 +266,7 @@ module parcel_interpl
             ! z derivative used for the time step)
             tbuoyg(-1,   :, :) = two * tbuoyg(0,  :, :) - tbuoyg(1, :, :)
             tbuoyg(nz+1, :, :) = two * tbuoyg(nz, :, :) - tbuoyg(nz-1, :, :)
+            !$omp end parallel workshare
 
             call stop_timer(par2grid_timer)
 

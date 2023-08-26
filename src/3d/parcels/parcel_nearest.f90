@@ -84,7 +84,6 @@ module parcel_nearest
 
     type(MPI_Win) :: win_merged, win_avail, win_leaf
     logical       :: l_nearest_win_allocated
-    double precision, parameter :: crit_dil=0.36787944117144233
 #ifndef NDEBUG
     ! Small remote parcels must be sent back to the original
     ! MPI ranks in the same order as they were received. These
@@ -97,8 +96,7 @@ module parcel_nearest
             , merge_nearest_timer       &
             , merge_tree_resolve_timer  &
             , nearest_win_allocate      &
-            , nearest_win_deallocate    &
-            , crit_dil
+            , nearest_win_deallocate    
 
     contains
 
@@ -274,7 +272,7 @@ module parcel_nearest
 
                 call parcel_to_local_cell_index(n)
 
-                if (parcels%volume(n) < vmin .or. parcels%volume(n)<crit_dil*parcels%truevolume(n)) then
+                if (parcels%volume(n) < vmin) then
                     n_local_small = n_local_small + 1
 
                     ! If a small parcel is in a boundary cell, a duplicate must
@@ -349,7 +347,7 @@ module parcel_nearest
                     node(k) = n
                     kc2(ijk) = k
 
-                    if (parcels%volume(n) < vmin .or. parcels%volume(n)<crit_dil*parcels%truevolume(n)) then
+                    if (parcels%volume(n) < vmin) then
                         j = j + 1
                         isma(j) = n
                     endif
