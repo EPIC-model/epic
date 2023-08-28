@@ -7,7 +7,7 @@ program test_mpi_parcel_delete
     use unit_test
     use constants
     use parcel_container
-    use mpi_communicator
+    use mpi_environment
     use mpi_timer
     use merge_sort
     implicit none
@@ -22,13 +22,13 @@ program test_mpi_parcel_delete
     integer :: ii(1000 - n_del)
 
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
     call random_seed(size=sk)
     allocate(seed(1:sk))
-    seed(:) = comm%rank
+    seed(:) = world%rank
     call random_seed(put=seed)
 
     do m = 1, 100
@@ -118,16 +118,16 @@ program test_mpi_parcel_delete
         call parcel_dealloc
     enddo
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI parcel delete', passed)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 end program test_mpi_parcel_delete

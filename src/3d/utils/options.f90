@@ -53,16 +53,17 @@ module options
     ! output options
     !
     type info
-        double precision    :: field_freq         = one
-        logical             :: write_fields       = .true.
-        double precision    :: parcel_freq        = one
-        logical             :: overwrite          = .false.
-        logical             :: write_parcels      = .true.
-        double precision    :: parcel_stats_freq  = one
-        logical             :: write_parcel_stats = .true.
-        double precision    :: field_stats_freq   = one
-        logical             :: write_field_stats  = .true.
-        character(len=512)  :: basename           = ''
+        double precision                  :: field_freq         = one
+        logical                           :: write_fields       = .true.
+        character(len=32), dimension(128) :: field_list         = ''
+        double precision                  :: parcel_freq        = one
+        logical                           :: overwrite          = .false.
+        logical                           :: write_parcels      = .true.
+        double precision                  :: parcel_stats_freq  = one
+        logical                           :: write_parcel_stats = .true.
+        double precision                  :: field_stats_freq   = one
+        logical                           :: write_field_stats  = .true.
+        character(len=512)                :: basename           = ''
     end type info
 
     type(info) :: output
@@ -82,12 +83,11 @@ module options
         double precision :: shrink_factor    = 0.8d0    ! factor to reduce the parcel container size
         integer          :: n_per_cell       = 8        ! number of parcels per cell (need to be a cube)
         double precision :: lambda_max       = four     ! max. ellipse aspect ratio a/b
-        double precision :: min_vratio       = 40.0d0   ! minimum ratio of grid cell volume / parcel volume
+        double precision :: min_vratio       = 20.0d0   ! minimum ratio of grid cell volume / parcel volume
         integer          :: correction_iters = 2        ! parcel correction iterations
         double precision :: gradient_pref    = 1.8d0    ! prefactor for gradient descent
         double precision :: max_compression  = 0.5d0    ! parameter for gradient descent
                                                         ! (limits the shift in parcel position)
-        double precision :: max_vratio       = 4.913d0  ! maximum ratio of grid cell volume / parcel volume (1.7^3)
     end type parcel_type
 
     type(parcel_type) :: parcel

@@ -23,7 +23,7 @@ program test_mpi_vtend
     use sta3dfft, only : finalise_fft, fftxyp2s
     use inversion_mod, only : init_inversion, vorticity_tendency, vtend_timer
     use mpi_timer
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -34,9 +34,9 @@ program test_mpi_vtend
     double precision              :: cosmz, sinmz, sinkxly, coskxly
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     call register_timer('vtend', vtend_timer)
 
@@ -107,23 +107,23 @@ program test_mpi_vtend
 
     call finalise_fft
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, comm%master, comm%world, comm%err)
+        call MPI_Reduce(error, error, 1, MPI_DOUBLE_PRECISION, MPI_MAX, world%root, world%comm, world%err)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0) .and. (error < 1.2d0))
+    passed = (passed .and. (world%err == 0) .and. (error < 1.2d0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI vorticity tendency', passed)
     endif
 

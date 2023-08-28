@@ -12,7 +12,7 @@ module parcel_container
                                , parcel_ellipsoid_replace     &
                                , parcel_ellipsoid_serialize   &
                                , parcel_ellipsoid_deserialize
-    use mpi_communicator
+    use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error
     use armanip, only : resize_array
@@ -77,14 +77,12 @@ module parcel_container
 #endif
             buoyancy
 
-
         ! LS-RK4 variables
         double precision, allocatable, dimension(:, :) :: &
-            delta_pos,  &
-            delta_vor,  &
+            delta_pos,  &   ! velocity
+            delta_vor,  &   ! vorticity tendency
             strain,     &
-            delta_b
-
+            delta_b         ! B-matrix tendency
     end type parcel_container_type
 
     type(parcel_container_type) parcels
@@ -233,7 +231,7 @@ module parcel_container
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
 
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose) then
                 print '(a19, i0, a6, i0)', '    replace parcel ', n, ' with ', m
             endif
@@ -319,6 +317,7 @@ module parcel_container
             allocate(parcels%delta_vor(3, num))
             allocate(parcels%strain(5, num))
             allocate(parcels%delta_b(5, num))
+
         end subroutine parcel_alloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

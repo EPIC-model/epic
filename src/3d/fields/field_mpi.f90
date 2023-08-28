@@ -1,7 +1,7 @@
 module field_mpi
     use constants, only : zero
     use mpi_layout
-    use mpi_communicator
+    use mpi_environment
     use mpi_utils, only : mpi_exit_on_error, mpi_check_for_error
     implicit none
 
@@ -64,7 +64,11 @@ module field_mpi
                 , field_interior_to_buffer          &
                 , field_buffer_to_interior          &
                 , interior_to_halo_communication    &
-                , halo_to_interior_communication
+                , halo_to_interior_communication    &
+                , field_halo_to_buffer_integer      &
+                , field_buffer_to_interior_integer  &
+                , field_interior_to_buffer_integer  &
+                , field_buffer_to_halo_integer
 
     contains
 
@@ -283,11 +287,12 @@ module field_mpi
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
                                tag,                     &
-                               comm%cart,               &
+                               cart%comm,               &
                                requests(n),             &
-                               comm%err)
+                               cart%err)
 
-                call mpi_check_for_error("in MPI_Irecv of field_mpi::halo_to_interior_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Irecv of field_mpi::halo_to_interior_communication.")
             enddo
 
             do n = 1, 8
@@ -301,18 +306,20 @@ module field_mpi
                               MPI_DOUBLE_PRECISION,     &
                               neighbours(n)%rank,       &
                               SEND_NEIGHBOUR_TAG(n),    &
-                              comm%cart,                &
-                              comm%err)
+                              cart%comm,                &
+                              cart%err)
 
-                call mpi_check_for_error("in MPI_Send of field_mpi::halo_to_interior_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Send of field_mpi::halo_to_interior_communication.")
             enddo
 
             call MPI_Waitall(8,         &
                              requests,  &
                              statuses,  &
-                             comm%err)
+                             cart%err)
 
-            call mpi_check_for_error("in MPI_Waitall of field_mpi::halo_to_interior_communication.")
+            call mpi_check_for_error(cart, &
+                "in MPI_Waitall of field_mpi::halo_to_interior_communication.")
 
         end subroutine halo_to_interior_communication
 
@@ -337,11 +344,12 @@ module field_mpi
                                MPI_DOUBLE_PRECISION,    &
                                neighbours(n)%rank,      &
                                tag,                     &
-                               comm%cart,               &
+                               cart%comm,               &
                                requests(n),             &
-                               comm%err)
+                               cart%err)
 
-                call mpi_check_for_error("in MPI_Irecv of field_mpi::interior_to_halo_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Irecv of field_mpi::interior_to_halo_communication.")
             enddo
 
 
@@ -355,18 +363,20 @@ module field_mpi
                               MPI_DOUBLE_PRECISION,     &
                               neighbours(n)%rank,       &
                               SEND_NEIGHBOUR_TAG(n),    &
-                              comm%cart,                &
-                              comm%err)
+                              cart%comm,                &
+                              cart%err)
 
-                call mpi_check_for_error("in MPI_Send of field_mpi::interior_to_halo_communication.")
+                call mpi_check_for_error(cart, &
+                    "in MPI_Send of field_mpi::interior_to_halo_communication.")
             enddo
 
             call MPI_Waitall(8,         &
                              requests,  &
                              statuses,  &
-                             comm%err)
+                             cart%err)
 
-            call mpi_check_for_error("in MPI_Waitall of field_mpi::interior_to_halo_communication.")
+            call mpi_check_for_error(cart, &
+                "in MPI_Waitall of field_mpi::interior_to_halo_communication.")
 
         end subroutine interior_to_halo_communication
 
@@ -454,6 +464,23 @@ module field_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        subroutine field_interior_to_buffer_integer(data, nc)
+            integer, intent(in) :: data(box%hlo(3):box%hhi(3), &
+                                        box%hlo(2):box%hhi(2), &
+                                        box%hlo(1):box%hhi(1))
+            integer, intent(in) :: nc
+            double precision    :: tmp(box%hlo(3):box%hhi(3), &
+                                       box%hlo(2):box%hhi(2), &
+                                       box%hlo(1):box%hhi(1))
+
+            tmp = data
+
+            call field_interior_to_buffer(tmp, nc)
+
+        end subroutine field_interior_to_buffer_integer
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine field_interior_to_buffer(data, nc)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
@@ -479,6 +506,25 @@ module field_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        subroutine field_halo_to_buffer_integer(data, nc)
+            integer, intent(in) :: data(box%hlo(3):box%hhi(3), &
+                                        box%hlo(2):box%hhi(2), &
+                                        box%hlo(1):box%hhi(1))
+            integer, intent(in) :: nc
+            double precision    :: tmp(box%hlo(3):box%hhi(3), &
+                                       box%hlo(2):box%hhi(2), &
+                                       box%hlo(1):box%hhi(1))
+
+            !$omp parallel workshare
+            tmp = data
+            !$omp end parallel workshare
+
+            call field_halo_to_buffer(tmp, nc)
+
+        end subroutine field_halo_to_buffer_integer
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine field_halo_to_buffer(data, nc)
             double precision, intent(in) :: data(box%hlo(3):box%hhi(3), &
                                                  box%hlo(2):box%hhi(2), &
@@ -500,6 +546,30 @@ module field_mpi
             southeast_halo_buf(:, :, nc)    = data(:, box%hlo(2),              box%hhi(1)-1:box%hhi(1))
 
         end subroutine field_halo_to_buffer
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_buffer_to_halo_integer(data, nc, l_add)
+            integer, intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                           box%hlo(2):box%hhi(2), &
+                                           box%hlo(1):box%hhi(1))
+            integer, intent(in)    :: nc
+            logical, intent(in)    :: l_add
+            double precision       :: tmp(box%hlo(3):box%hhi(3), &
+                                          box%hlo(2):box%hhi(2), &
+                                          box%hlo(1):box%hhi(1))
+
+            !$omp parallel workshare
+            tmp = data
+            !$omp end parallel workshare
+
+            call field_buffer_to_halo(tmp, nc, l_add)
+
+            !$omp parallel workshare
+            data = int(tmp)
+            !$omp end parallel workshare
+
+        end subroutine field_buffer_to_halo_integer
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -553,6 +623,30 @@ module field_mpi
             endif
 
         end subroutine field_buffer_to_halo
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine field_buffer_to_interior_integer(data, nc, l_add)
+            integer, intent(inout) :: data(box%hlo(3):box%hhi(3), &
+                                           box%hlo(2):box%hhi(2), &
+                                           box%hlo(1):box%hhi(1))
+            integer, intent(in)    :: nc
+            logical, intent(in)    :: l_add
+            double precision       :: tmp(box%hlo(3):box%hhi(3), &
+                                          box%hlo(2):box%hhi(2), &
+                                          box%hlo(1):box%hhi(1))
+
+            !$omp parallel workshare
+            tmp = data
+            !$omp end parallel workshare
+
+            call field_buffer_to_interior(tmp, nc, l_add)
+
+            !$omp parallel workshare
+            data = int(tmp)
+            !$omp end parallel workshare
+
+        end subroutine field_buffer_to_interior_integer
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

@@ -1,5 +1,5 @@
 program test_parcel_spli_merge
-    use mpi_communicator
+    use mpi_environment
     use options, only : parcel
     use constants, only : zero, one, two
     use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmin, dx
@@ -7,10 +7,10 @@ program test_parcel_spli_merge
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_communicate
     use fields, only : field_default
-    use parcel_bc, only : apply_periodic_bc, apply_parcel_bc
+    use parcel_bc, only : apply_periodic_bc, apply_reflective_bc
     use parcel_interpl, only : par2grid
     use parcel_split_mod, only : parcel_split
-    use parcel_merge, only : merge_parcels
+    use parcel_merging, only : parcel_merge
     use parcel_nearest
     use mpi_layout, only : mpi_layout_init
     use test_utils
@@ -24,15 +24,15 @@ program test_parcel_spli_merge
     !--------------------------------------------------------------------------
     ! Initialise MPI and setup all timers:
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    if (comm%rank == comm%master) then
-        print '(a35, i6, a11)', "Running 'test_parcel_spli_merge' with ", comm%size, " MPI ranks."
+    if (world%rank == world%root) then
+        print '(a35, i6, a11)', "Running 'test_parcel_spli_merge' with ", world%size, " MPI ranks."
     endif
 
     call random_seed(size=sk)
     allocate(seed(1:sk))
-    seed(:) = comm%rank
+    seed(:) = world%rank
     call random_seed(put=seed)
 
 
@@ -76,7 +76,7 @@ program test_parcel_spli_merge
     ! Do time loop:
     do i = 1, nt
 
-        if (comm%rank == comm%master) then
+        if (world%rank == world%root) then
             print '(a15, i4)', "Performing step", i
         endif
 
@@ -88,16 +88,19 @@ program test_parcel_spli_merge
 
         call parcel_communicate
 
-        call apply_parcel_bc
+        do n = 1, n_parcels
+            call apply_periodic_bc(parcels%position(:, n))
+            call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
+        enddo
 
         n_merges = count(parcels%volume(1:n_parcels) < vmin)
         call perform_integer_reduction(n_merges)
 
-        if (comm%rank == comm%master) then
+        if (world%rank == world%root) then
             print *, "Merge", n_merges, "of", n_total_parcels, "parcels."
         endif
 
-        call merge_parcels(parcels)
+        call parcel_merge
 
         do n = 1, n_parcels
             call random_number(rn)
@@ -109,7 +112,7 @@ program test_parcel_spli_merge
         n_orig = n_total_parcels
         call parcel_split
 
-        if (comm%rank == comm%master) then
+        if (world%rank == world%root) then
             print *, "Split", n_total_parcels - n_orig, "of", n_total_parcels, "parcels."
         endif
 
@@ -131,7 +134,7 @@ program test_parcel_spli_merge
 
     call print_timer
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 
     contains
@@ -150,10 +153,10 @@ program test_parcel_spli_merge
 
             call perform_integer_reduction(n_total)
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 if (n_total /= n_total_parcels) then
                     print *, "check_total_number_of_parcels: Total number of parcels disagree!"
-                    call MPI_Abort(comm%world, -1, comm%err)
+                    call MPI_Abort(world%comm, -1, world%err)
                 endif
             endif
 
@@ -164,12 +167,12 @@ program test_parcel_spli_merge
         subroutine perform_integer_reduction(var)
             integer, intent(inout) :: var
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 call MPI_Reduce(MPI_IN_PLACE, var, 1, MPI_INTEGER, MPI_SUM, &
-                                comm%master, comm%world, comm%err)
+                                world%root, world%comm, world%err)
             else
                 call MPI_Reduce(var, var, 1, MPI_INTEGER, MPI_SUM, &
-                                comm%master, comm%world, comm%err)
+                                world%root, world%comm, world%err)
             endif
 
         end subroutine perform_integer_reduction

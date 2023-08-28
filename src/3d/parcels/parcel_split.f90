@@ -2,18 +2,22 @@
 !                           Module to split ellipsoids
 ! =============================================================================
 module parcel_split_mod
-    use options, only : verbose, parcel
+    use options, only : parcel
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
+    use options, only : verbose
+#endif
     use constants, only : pi, three, five, f12, f34
     use parameters, only : amax, max_num_parcels
     use parcel_container, only : parcels                &
                                , n_parcels              &
                                , n_total_parcels        &
                                , parcel_resize
-    use parcel_bc, only : apply_reflective_bc, apply_swap_periodicity
+    use parcel_bc, only : apply_reflective_bc
+    use parcel_mpi, only : parcel_communicate
     use parcel_ellipsoid, only : diagonalise, get_aspect_ratio, get_eigenvalues
     use mpi_timer, only : start_timer, stop_timer, timings
     use omp_lib
-    use mpi_communicator, only : comm, MPI_SUM
+    use mpi_environment, only : world, MPI_SUM
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
@@ -42,7 +46,7 @@ module parcel_split_mod
             integer              :: i, n, n_thread_loc
             integer              :: pid(2 * n_parcels)
             integer, allocatable :: invalid(:), indices(:)
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             integer              :: orig_num
 
             orig_num = n_total_parcels
@@ -167,7 +171,7 @@ module parcel_split_mod
             ! after this operation the root MPI process knows the new
             ! number of parcels in the simulation
             n_total_parcels = n_parcels
-            call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+            call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
 
             ! all entries in "pid" that are non-zero are indices of
             ! child parcels; remove all zero entries such that
@@ -177,10 +181,10 @@ module parcel_split_mod
             ! send the invalid parcels to the proper MPI process;
             ! delete them on *this* MPI process and
             ! apply periodic boundary condition
-            call apply_swap_periodicity(invalid)
+            call parcel_communicate(invalid)
 
-#ifdef ENABLE_VERBOSE
-            if (verbose .and. (comm%rank == comm%master)) then
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
+            if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)", &
                       "no. parcels before and after split: ", orig_num, "...", n_total_parcels
             endif

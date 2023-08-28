@@ -5,11 +5,11 @@
 ! =============================================================================
 program test_mpi_trilinear
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use constants, only : pi, zero, one, f12, f23, f32
     use parcel_container
     use mpi_layout
-    use parcel_interpl, only : par2grid, par2grid_timer
+    use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
     use parcel_ellipsoid, only : get_abc
     use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz, ngrid
     use fields, only : volg, field_alloc
@@ -22,9 +22,9 @@ program test_mpi_trilinear
     double precision :: im, corner(3)
     logical          :: passed = .true.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
     nx = 32
     ny = 32
@@ -33,6 +33,7 @@ program test_mpi_trilinear
     extent =  (/0.4d0, 0.4d0, 0.4d0/)
 
     call register_timer('par2grid', par2grid_timer)
+    call register_timer('halo swap', halo_swap_timer)
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
@@ -83,11 +84,11 @@ program test_mpi_trilinear
 
     passed = (passed .and. (error < dble(3.0e-14)))
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI trilinear (par2grid)', passed)
     endif
 
