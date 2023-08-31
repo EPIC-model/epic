@@ -30,6 +30,8 @@ module inversion_mod
             double precision :: cs(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))          ! semi-spectral
             double precision :: svel(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), n_dim) ! semi-spectral
             double precision :: svor(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), n_dim) ! mixed spectral
+            double precision :: div(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
+            double precision :: grad(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), 3)
             double precision :: ubar(0:nz), vbar(0:nz)
             integer          :: iz, nc, kx, ky, kz
 
@@ -40,56 +42,29 @@ module inversion_mod
             do nc = 1, n_dim
                 call field_decompose_physical(vortg(:, :, :, nc), svor(:, :, :, nc))
                 svor(:, :, :, nc) = filt * svor(:, :, :, nc)
-            enddo
-
-            !----------------------------------------------------------
-            ! Enforce solenoidality
-            ! A, B, C are vorticities
-            ! D = B_x - A_y; E = C_z
-            ! A = k2l2i * (E_x + D_y) and B = k2l2i * (E_y - D_x) --> A_x + B_y + C_z = zero
-            call diffx(svor(:, :, :, I_Y), as) ! as = B_x
-            call diffy(svor(:, :, :, I_X), bs) ! bs = A_y
-            !$omp parallel workshare
-            ds = as - bs                     ! ds = D
-            cs = svor(:, :, :, I_Z)
-            !$omp end parallel workshare
-            call field_combine_semi_spectral(cs)
-            call central_diffz_semi_spectral(cs, es)                ! es = E
-            call field_decompose_semi_spectral(es)
-
-            ! ubar and vbar are used here to store the mean x and y components of the vorticity
-            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
-                ubar = svor(:, 0, 0, I_X)
-                vbar = svor(:, 0, 0, I_Y)
-            endif
-
-            call diffx(es, svor(:, :, :, I_X)) ! E_x
-            call diffy(ds, cs)               ! cs = D_y
-            !$omp parallel do private(iz)  default(shared)
-            do iz = 0, nz
-               svor(iz, :, :, I_X) = k2l2i * (svor(iz, :, :, I_X) + cs(iz, :, :))
-            enddo
-            !$omp end parallel do
-
-            call diffy(es, svor(:, :, :, I_Y)) ! E_y
-            call diffx(ds, cs)                 ! D_x
-
-            !$omp parallel do private(iz)  default(shared)
-            do iz = 0, nz
-               svor(iz, :, :, I_Y) = k2l2i * (svor(iz, :, :, I_Y) - cs(iz, :, :))
-            enddo
-            !$omp end parallel do
-
-            ! bring back the mean x and y components of the vorticity
-            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
-                svor(:, 0, 0, I_X) = ubar
-                svor(:, 0, 0, I_Y) = vbar
-            endif
-
-            !----------------------------------------------------------
-            ! Combine vorticity in physical space:
-            do nc = 1, n_dim
                 call field_combine_physical(svor(:, :, :, nc), vortg(:, :, :, nc))
+            enddo
+
+            !----------------------------------------------------------
+            ! Enforce solenoidality:
+            ! we do not need to fill the internal halo grid points as
+            ! diverge calculates the x and y derivatives in spectral space where
+            ! no halo grid points are needed
+
+            ! Get source div(vortg) for solenoidal correction:
+            call divergence(vortg, div)
+
+            ! Compute vorticity correction grad(phi) where
+            ! Lap(phi) = div (given):
+            call diverge(div, grad)
+
+            ! Apply solenoidal correction:
+            vortg = vortg - grad
+
+            !----------------------------------------------------------
+            ! Decompose vorticity:
+            do nc = 1, n_dim
+                call field_decompose_physical(vortg(:, :, :, nc), svor(:, :, :, nc))
             enddo
 
             !----------------------------------------------------------
