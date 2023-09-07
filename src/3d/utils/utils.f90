@@ -23,7 +23,7 @@ module utils
                          , set_zeta_boundary_flag
     use physics, only : read_physical_quantities        &
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
-                      , calculate_basic_reference_state &
+                    , calculate_basic_reference_state &
 #endif
                       , print_physical_quantities
     use mpi_layout, only : mpi_layout_init
@@ -192,7 +192,7 @@ module utils
         ! Reads always the last time step of a field file.
         subroutine setup_fields_and_parcels
             character(len=16) :: file_type
-            integer :: ncid
+            integer           :: ncid
 
             call field_default
 
