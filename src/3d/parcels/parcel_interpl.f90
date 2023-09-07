@@ -24,7 +24,10 @@ module parcel_interpl
                         , field_buffer_to_interior_integer  &
                         , field_interior_to_buffer_integer  &
                         , field_buffer_to_halo_integer
-    use physics, only : glat, lambda_c, q_0, bfsq
+    use physics, only : glat, lambda_c, q_0
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+    use physics, only : bfsq
+#endif
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
     implicit none
