@@ -230,7 +230,7 @@ module utils
                else if (file_type == 'parcels') then
                    call read_netcdf_parcels(field_file)
                else
-                   call mpi_exit_on_error('Restart file must be of type "fields" or "parcels".')
+                   call mpi_exit_on_error('Input file must be of type "fields" or "parcels".')
                endif
             endif
 
