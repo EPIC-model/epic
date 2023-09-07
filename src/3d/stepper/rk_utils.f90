@@ -170,7 +170,7 @@ module rk_utils
                                     - tbuoyg(-1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
-            gradb = bradb + bfsq
+            gradb = gradb + bfsq
 #endif
 
             bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
