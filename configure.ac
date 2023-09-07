@@ -366,9 +366,25 @@ else
     AC_MSG_RESULT([no])
 fi
 
+ENABLE_BUOYANCY_PERTURBATION_MODE='no'
+AC_ARG_ENABLE([buoyancy-perturbation-mode],
+              [AS_HELP_STRING([--enable-buoyancy-perturbation-mode],
+              [enable buoyancy perturbation mode (default=no)])],
+              [ENABLE_BUOYANCY_PERTURBATION_MODE=$enableval])
+
+AM_CONDITIONAL([ENABLE_BUOYANCY_PERTURBATION_MODE], [test "$ENABLE_BUOYANCY_PERTURBATION_MODE" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling in buoyancy perturbation mode])
+if test "x$ENABLE_BUOYANCY_PERTURBATION_MODE" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_BUOYANCY_PERTURBATION_MODE"
+else
+    AC_MSG_RESULT([no])
+fi
+
 ENABLE_DRY_MODE='no'
 AC_ARG_ENABLE([dry-mode],
-              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=yes)])],
+              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=no)])],
               [ENABLE_DRY_MODE=$enableval])
 
 AM_CONDITIONAL([ENABLE_DRY_MODE], [test "$ENABLE_DRY_MODE" = "yes"])

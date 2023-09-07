@@ -8,7 +8,7 @@ module utils
                       , verbose
     use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     use field_netcdf
-    use fields, only : vortg, field_default
+    use fields, only : vortg, field_default, tbuoyg
     use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
     use parcel_init, only : parcel_default, init_parcels_from_grids
@@ -21,7 +21,9 @@ module utils
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
                          , set_zeta_boundary_flag
-    use physics, only : read_physical_quantities, print_physical_quantities
+    use physics, only : read_physical_quantities        &
+                      , print_physical_quantities       &
+                      , calculate_basic_reference_state
     use mpi_layout, only : mpi_layout_init
     use mpi_utils, only : mpi_exit_on_error
     implicit none
@@ -208,6 +210,12 @@ module utils
                 time%initial = zero ! make sure user cannot start at arbirtrary time
                 call read_netcdf_fields(field_file, -1)
                 call init_parcels_from_grids
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+                ! If not in restart mode, we could not read in the squared buoyancy frequency.
+                ! We must calculate it.
+                call calculate_basic_reference_state(nx, ny, nz, extent(3), tbuoyg)
+#endif
 
                 ! we must check if zeta must be kept zero
                 ! on a vertical boundary

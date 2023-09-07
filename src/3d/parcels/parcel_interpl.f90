@@ -24,7 +24,7 @@ module parcel_interpl
                         , field_buffer_to_interior_integer  &
                         , field_interior_to_buffer_integer  &
                         , field_buffer_to_halo_integer
-    use physics, only : glat, lambda_c, q_0
+    use physics, only : glat, lambda_c, q_0, bfsq
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
     implicit none
@@ -169,6 +169,11 @@ module parcel_interpl
                 btot = parcels%buoyancy(n) + glat * q_c
 #else
                 btot = parcels%buoyancy(n)
+#endif
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+                ! remove basic state N^2 * z
+                btot = btot - bfsq * parcels%position(3, n)
 #endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               pvol, parcels%B(:, n), n, l_reuse)
