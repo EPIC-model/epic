@@ -1,3 +1,8 @@
+! =============================================================================
+! Program to coarsen 3D gridded data by a factor 2 or 3. Note that the
+! boundaries are kept the same. The gridded data can be successively coarsened
+! by running the program several times.
+! =============================================================================
 program coarsening
     use constants, only : f14, f12
     use netcdf_reader
