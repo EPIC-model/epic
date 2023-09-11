@@ -89,6 +89,8 @@ program coarsening
 
             call get_num_steps(ncid, n_steps)
 
+            print *, "Number of steps:", n_steps
+
             ncerr = nf90_inquire(ncid, nDimensions, nVariables)
 
             ! allocate for all variables (excluding spatial and temporal variables)
@@ -173,6 +175,8 @@ program coarsening
             do step = 1, n_steps
                 start = (/1, 1, 1, step/)
 
+                print *, "Process step", step
+
                 !--------------------------------------------------------------
                 ! read all fields:
 
@@ -207,7 +211,7 @@ program coarsening
 
                 do nc = 1, nComp
                     call write_netcdf_dataset(mcid,                 &
-                                              nc,                   &
+                                              varids(nc),           &
                                               cdata(:, :, :, nc),   &
                                               start=start,          &
                                               cnt=cnt,              &
