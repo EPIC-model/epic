@@ -8,9 +8,13 @@ module field_netcdf
     use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options, output, verbose
     use physics, only : write_physical_quantities, glati
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+    use physics, only : bfsq
+#endif
     use mpi_layout, only : box
     use parameters, only : write_zeta_boundary_flag
     use mpi_utils, only : mpi_stop
+
     implicit none
 
     private
@@ -187,6 +191,10 @@ module field_netcdf
         subroutine write_netcdf_fields(t)
             double precision, intent(in) :: t
             integer                      :: cnt(4), start(4)
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            integer          :: iz
+            double precision :: z
+#endif
 
             call start_timer(field_io_timer)
 
@@ -231,6 +239,14 @@ module field_netcdf
             call write_field_double(NC_Y_VOR, vortg(:, :, :, 2), start, cnt)
             call write_field_double(NC_Z_VOR, vortg(:, :, :, 3), start, cnt)
 
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            ! add basic state
+            do iz = 0, nz
+                z = lower(3) + dble(iz) * dx(3)
+                tbuoyg(iz, :, :) = tbuoyg(iz, :, :) + bfsq * z
+            enddo
+#endif
+
             call write_field_double(NC_TBUOY, tbuoyg, start, cnt)
 
 #ifndef ENABLE_DRY_MODE
@@ -241,6 +257,15 @@ module field_netcdf
             call write_field_double(NC_HUM, humg, start, cnt)
 #endif
             call write_field_double(NC_VOL, volg, start, cnt)
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            ! remove basic state
+            do iz = 0, nz
+                z = lower(3) + dble(iz) * dx(3)
+                tbuoyg(iz, :, :) = tbuoyg(iz, :, :) - bfsq * z
+            enddo
+#endif
+
 
             ! increment counter
             n_writes = n_writes + 1
