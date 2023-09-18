@@ -525,7 +525,7 @@ module parcel_interpl
             py = xy(2) - dble(jj)
             pyc = one - py
 
-            ! Note order of indices is k,j,i
+            ! Note order of indices is j,i
             ww(0, 0) = pyc * pxc
             ww(0, 1) = pyc * px
             ww(1, 0) = py  * pxc
