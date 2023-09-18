@@ -4,7 +4,7 @@
 module parcel_init
     use options, only : parcel, output, verbose
     use constants, only : zero, two, one, f12, f13, f23
-    use parcel_container, only : parcels, n_parcels
+    use parcel_container, only : parcels, n_parcels, n_total_parcels, parcel_alloc
     use parcel_ellipsoid, only : get_abc, get_eigenvalues
     use parcel_split_mod, only : parcel_split
     use parcel_interpl, only : trilinear
@@ -28,7 +28,8 @@ module parcel_init
     use omp_lib
     use mpi_environment
     use mpi_layout, only : box
-    use mpi_utils, only : mpi_print
+    use mpi_utils, only : mpi_print, mpi_exit_on_error
+    use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
     integer :: init_timer
@@ -53,23 +54,29 @@ module parcel_init
         end subroutine unit_test_parcel_init_alloc
 
 
-        ! Set default values for parcel attributes
-        ! Attention: This subroutine assumes that the parcel
-        !            container is already allocated!
+        ! Allocate parcel container and sets values for parcel attributes
+        ! to their default values.
         subroutine parcel_default
             double precision :: lam, l23
             integer          :: n
 
             call start_timer(init_timer)
 
+            call parcel_alloc(max_num_parcels)
+
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
-            n_parcels = parcel%n_per_cell * ncell
+            n_parcels = parcel%n_per_cell * box%ncell
 
             if (n_parcels > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", &
                           max_num_parcels, ". Exiting."
-                stop
+                call mpi_exit_on_error
+            endif
+
+            n_total_parcels = n_parcels
+            if (world%size > 1) then
+                call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
             endif
 
             call init_regular_positions
