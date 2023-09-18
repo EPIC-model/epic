@@ -8,7 +8,7 @@ module utils
                       , verbose
     use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     use field_netcdf
-    use fields, only : vortg, field_default
+    use fields, only : vortg, field_default, tbuoyg
     use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
     use parcel_init, only : parcel_default, init_parcels_from_grids
@@ -21,7 +21,11 @@ module utils
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
                          , set_zeta_boundary_flag
-    use physics, only : read_physical_quantities, print_physical_quantities
+    use physics, only : read_physical_quantities        &
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+                    , calculate_basic_reference_state &
+#endif
+                      , print_physical_quantities
     use mpi_layout, only : mpi_layout_init
     use mpi_utils, only : mpi_exit_on_error
     implicit none
@@ -192,6 +196,7 @@ module utils
         ! Reads always the last time step of a field file.
         subroutine setup_fields_and_parcels
             character(len=16) :: file_type
+            integer           :: ncid
 
             call field_default
 
@@ -210,12 +215,27 @@ module utils
                 endif
             else
                 time%initial = zero ! make sure user cannot start at arbirtrary time
-                call read_netcdf_fields(field_file, -1)
-                call init_parcels_from_grids
 
-                ! we must check if zeta must be kept zero
-                ! on a vertical boundary
-                call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
+                call open_netcdf_file(field_file, NF90_NOWRITE, ncid)
+                call get_file_type(ncid, file_type)
+                call close_netcdf_file(ncid)
+
+                if (file_type == 'fields') then
+                    call read_netcdf_fields(field_file, -1)
+                    call init_parcels_from_grids
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+                   ! If not in restart mode, we could not read in the squared buoyancy frequency.
+                   ! We must calculate it.
+                   call calculate_basic_reference_state(nx, ny, nz, extent(3), tbuoyg)
+#endif
+                   ! we must check if zeta must be kept zero
+                   ! on a vertical boundary
+                   call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
+               else if (file_type == 'parcels') then
+                   call read_netcdf_parcels(field_file)
+               else
+                   call mpi_exit_on_error('Input file must be of type "fields" or "parcels".')
+               endif
             endif
 
         end subroutine setup_fields_and_parcels

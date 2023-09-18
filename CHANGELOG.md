@@ -1,3 +1,16 @@
+## EPIC version 0.13.1
+* [Write specific fields only](https://github.com/EPIC-model/epic/pull/520)
+* [Remove -fPIC flag](https://github.com/EPIC-model/epic/pull/519)
+* [Do halo swap for nparg and nsparg](https://github.com/EPIC-model/epic/pull/523)
+* [Fix OpenMP pragmas](https://github.com/EPIC-model/epic/pull/528)
+* [Change default value from 1/40 to 1/20](https://github.com/EPIC-model/epic/pull/526)
+* [Initialise buoyancy, vorticity and humidity](https://github.com/EPIC-model/epic/pull/534)
+* [Buoyancy perturbation mode](https://github.com/EPIC-model/epic/pull/532)
+* [Update Python packages](https://github.com/EPIC-model/epic/pull/522)
+* [Update Python tools](https://github.com/EPIC-model/epic/pull/529)
+* [Increase buffer in parcel communication](https://github.com/EPIC-model/epic/pull/530)
+* [Add data coarsening post-processing tool](https://github.com/EPIC-model/epic/pull/521)
+
 ## EPIC version 0.13.0
 * [Rename comm to comm_world](https://github.com/EPIC-model/epic/pull/364)
 * [Extend NetCDF interface to MPI](https://github.com/EPIC-model/epic/pull/363)
