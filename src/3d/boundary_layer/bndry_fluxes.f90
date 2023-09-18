@@ -178,7 +178,7 @@ module bndry_fluxes
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Correct the time step estimate including the buoyancy flux.
-        ! Uses g*dz/bf (where [bf] = m**2/s**3) to get a time measure.
+        ! Uses (dz/bf)**(1/3) (where [bf] = m/s**3) to get a time measure.
         subroutine bndry_fluxes_time_step(dt)
             double precision, intent(inout) :: dt
             double precision                :: abs_max
