@@ -19,8 +19,15 @@ module parcel_interpl
                         , field_interior_to_buffer          &
                         , interior_to_halo_communication    &
                         , halo_to_interior_communication    &
-                        , field_halo_swap_scalar
+                        , field_halo_swap_scalar            &
+                        , field_halo_to_buffer_integer      &
+                        , field_buffer_to_interior_integer  &
+                        , field_interior_to_buffer_integer  &
+                        , field_buffer_to_halo_integer
     use physics, only : glat, lambda_c, q_0
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+    use physics, only : bfsq
+#endif
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
     implicit none
@@ -38,18 +45,20 @@ module parcel_interpl
                grid2par_timer, &
                halo_swap_timer
 
-    integer, parameter :: IDX_VOL_SWAP   = 1    &
-                        , IDX_VOR_X_SWAP = 2    &
-                        , IDX_VOR_Y_SWAP = 3    &
-                        , IDX_VOR_Z_SWAP = 4    &
-                        , IDX_TBUOY_SWAP = 5
+    integer, parameter :: IDX_VOL_SWAP    = 1   &
+                        , IDX_VOR_X_SWAP  = 2   &
+                        , IDX_VOR_Y_SWAP  = 3   &
+                        , IDX_VOR_Z_SWAP  = 4   &
+                        , IDX_TBUOY_SWAP  = 5   &
+                        , IDX_NPARG_SWAP  = 6   &
+                        , IDX_NSPARG_SWAP = 7
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: IDX_DBUOY_SWAP = 6    &
-                        , IDX_HUM_SWAP   = 7
+    integer, parameter :: IDX_DBUOY_SWAP = 8    &
+                        , IDX_HUM_SWAP   = 9
 
-    integer, parameter :: n_field_swap = 7
+    integer, parameter :: n_field_swap = 9
 #else
-    integer, parameter :: n_field_swap = 5
+    integer, parameter :: n_field_swap = 7
 #endif
 
     public :: par2grid          &
@@ -165,6 +174,11 @@ module parcel_interpl
 #else
                 btot = parcels%buoyancy(n)
 #endif
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+                ! remove basic state N^2 * z
+                btot = btot - bfsq * parcels%position(3, n)
+#endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               pvol, parcels%B(:, n), n, l_reuse)
 
@@ -201,6 +215,23 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
+
+            ! sum halo contribution into internal cells
+            ! (be aware that halo cell contribution at upper boundary
+            ! are added to cell nz)
+            !$omp parallel workshare
+            nparg(0,    :, :) = nparg(0,    :, :) + nparg(-1, :, :)
+            nparg(nz-1, :, :) = nparg(nz-1, :, :) + nparg(nz, :, :)
+
+            nsparg(0,    :, :) = nsparg(0,    :, :) + nsparg(-1, :, :)
+            nsparg(nz-1, :, :) = nsparg(nz-1, :, :) + nsparg(nz, :, :)
+            !$omp end parallel workshare
+
+            ! sanity check -- note: this must be checked for calling the halo swap routine
+            ! as otherwise we count parcels in the halo region twice.
+            if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then
+                call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
+            endif
 
             call start_timer(halo_swap_timer)
             call par2grid_halo_swap
@@ -269,21 +300,7 @@ module parcel_interpl
             ! z derivative used for the time step)
             tbuoyg(-1,   :, :) = two * tbuoyg(0,  :, :) - tbuoyg(1, :, :)
             tbuoyg(nz+1, :, :) = two * tbuoyg(nz, :, :) - tbuoyg(nz-1, :, :)
-
-            ! sum halo contribution into internal cells
-            ! (be aware that halo cell contribution at upper boundary
-            ! are added to cell nz)
-            nparg(0,    :, :) = nparg(0,    :, :) + nparg(-1, :, :)
-            nparg(nz-1, :, :) = nparg(nz-1, :, :) + nparg(nz, :, :)
-
-            nsparg(0,    :, :) = nsparg(0,    :, :) + nsparg(-1, :, :)
-            nsparg(nz-1, :, :) = nsparg(nz-1, :, :) + nsparg(nz, :, :)
             !$omp end parallel workshare
-
-            ! sanity check
-            if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then
-                call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
-            endif
 
             call stop_timer(par2grid_timer)
 
@@ -306,6 +323,8 @@ module parcel_interpl
             call field_halo_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
             call field_halo_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
             call field_halo_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
+            call field_halo_to_buffer_integer(nparg,       IDX_NPARG_SWAP)
+            call field_halo_to_buffer_integer(nsparg,      IDX_NSPARG_SWAP)
 #ifndef ENABLE_DRY_MODE
             call field_halo_to_buffer(dbuoyg,              IDX_DBUOY_SWAP)
             call field_halo_to_buffer(humg,                IDX_HUM_SWAP)
@@ -321,6 +340,8 @@ module parcel_interpl
             call field_buffer_to_interior(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .true.)
             call field_buffer_to_interior(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .true.)
             call field_buffer_to_interior(tbuoyg,              IDX_TBUOY_SWAP, .true.)
+            call field_buffer_to_interior_integer(nparg,       IDX_NPARG_SWAP, .true.)
+            call field_buffer_to_interior_integer(nsparg,      IDX_NSPARG_SWAP, .true.)
 #ifndef ENABLE_DRY_MODE
             call field_buffer_to_interior(dbuoyg,              IDX_DBUOY_SWAP, .true.)
             call field_buffer_to_interior(humg,                IDX_HUM_SWAP, .true.)
@@ -334,6 +355,8 @@ module parcel_interpl
             call field_interior_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
             call field_interior_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
             call field_interior_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
+            call field_interior_to_buffer_integer(nparg,       IDX_NPARG_SWAP)
+            call field_interior_to_buffer_integer(nsparg,      IDX_NSPARG_SWAP)
 #ifndef ENABLE_DRY_MODE
             call field_interior_to_buffer(dbuoyg,              IDX_DBUOY_SWAP)
             call field_interior_to_buffer(humg,                IDX_HUM_SWAP)
@@ -346,6 +369,8 @@ module parcel_interpl
             call field_buffer_to_halo(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .false.)
             call field_buffer_to_halo(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .false.)
             call field_buffer_to_halo(tbuoyg,              IDX_TBUOY_SWAP, .false.)
+            call field_buffer_to_halo_integer(nparg,       IDX_NPARG_SWAP, .false.)
+            call field_buffer_to_halo_integer(nsparg,      IDX_NSPARG_SWAP, .false.)
 #ifndef ENABLE_DRY_MODE
             call field_buffer_to_halo(dbuoyg,              IDX_DBUOY_SWAP, .false.)
             call field_buffer_to_halo(humg,                IDX_HUM_SWAP, .false.)

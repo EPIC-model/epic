@@ -1,4 +1,4 @@
-AC_INIT([epic], [0.13.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
+AC_INIT([epic], [0.13.1], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
@@ -9,7 +9,7 @@ LT_INIT
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
 
-FCFLAGS="-std=f2018 -fdefault-real-8 -fdefault-double-8 -cpp -fPIC -mcmodel=large -fall-intrinsics"
+FCFLAGS="-std=f2018 -fdefault-real-8 -fdefault-double-8 -cpp -mcmodel=large -fall-intrinsics"
 
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_HEADERS([src/config.h])
@@ -366,9 +366,25 @@ else
     AC_MSG_RESULT([no])
 fi
 
+ENABLE_BUOYANCY_PERTURBATION_MODE='no'
+AC_ARG_ENABLE([buoyancy-perturbation-mode],
+              [AS_HELP_STRING([--enable-buoyancy-perturbation-mode],
+              [enable buoyancy perturbation mode (default=no)])],
+              [ENABLE_BUOYANCY_PERTURBATION_MODE=$enableval])
+
+AM_CONDITIONAL([ENABLE_BUOYANCY_PERTURBATION_MODE], [test "$ENABLE_BUOYANCY_PERTURBATION_MODE" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling in buoyancy perturbation mode])
+if test "x$ENABLE_BUOYANCY_PERTURBATION_MODE" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_BUOYANCY_PERTURBATION_MODE"
+else
+    AC_MSG_RESULT([no])
+fi
+
 ENABLE_DRY_MODE='no'
 AC_ARG_ENABLE([dry-mode],
-              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=yes)])],
+              [AS_HELP_STRING([--enable-dry-mode], [enable dry mode (default=no)])],
               [ENABLE_DRY_MODE=$enableval])
 
 AM_CONDITIONAL([ENABLE_DRY_MODE], [test "$ENABLE_DRY_MODE" = "yes"])

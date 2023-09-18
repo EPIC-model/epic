@@ -12,6 +12,9 @@ module rk_utils
 #ifdef ENABLE_VERBOSE
     use options, only : output
 #endif
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+    use physics, only : bfsq
+#endif
 
     implicit none
 
@@ -165,6 +168,10 @@ module rk_utils
             ! db/dz
             gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
                                     - tbuoyg(-1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            gradb = gradb + bfsq
+#endif
 
             bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)

@@ -1,3 +1,16 @@
+## EPIC version 0.13.1
+* [Write specific fields only](https://github.com/EPIC-model/epic/pull/520)
+* [Remove -fPIC flag](https://github.com/EPIC-model/epic/pull/519)
+* [Do halo swap for nparg and nsparg](https://github.com/EPIC-model/epic/pull/523)
+* [Fix OpenMP pragmas](https://github.com/EPIC-model/epic/pull/528)
+* [Change default value from 1/40 to 1/20](https://github.com/EPIC-model/epic/pull/526)
+* [Initialise buoyancy, vorticity and humidity](https://github.com/EPIC-model/epic/pull/534)
+* [Buoyancy perturbation mode](https://github.com/EPIC-model/epic/pull/532)
+* [Update Python packages](https://github.com/EPIC-model/epic/pull/522)
+* [Update Python tools](https://github.com/EPIC-model/epic/pull/529)
+* [Increase buffer in parcel communication](https://github.com/EPIC-model/epic/pull/530)
+* [Add data coarsening post-processing tool](https://github.com/EPIC-model/epic/pull/521)
+
 ## EPIC version 0.13.0
 * [Rename comm to comm_world](https://github.com/EPIC-model/epic/pull/364)
 * [Extend NetCDF interface to MPI](https://github.com/EPIC-model/epic/pull/363)
@@ -61,6 +74,13 @@
 * [Fix parcels on periodic edge](https://github.com/EPIC-model/epic/pull/509)
 * [Avoid array temporaries](https://github.com/EPIC-model/epic/pull/504)
 * [Remove max_vratio from configuration files](https://github.com/EPIC-model/epic/pull/510)
+* [Simplify parcel merge routine call](https://github.com/EPIC-model/epic/pull/514)
+* [Fix unit-tests -- register missing timer and fix function call](https://github.com/EPIC-model/epic/pull/513)
+* [Fix communicator issue](https://github.com/EPIC-model/epic/pull/512)
+* [Do not use MPI_COMM_WORLD as default in collectives](https://github.com/EPIC-model/epic/pull/515)
+* [MPI version of 3D model](https://github.com/EPIC-model/epic/pull/511)
+* [Fix OpenMP race condition in inversion_utils.f90](https://github.com/EPIC-model/epic/pull/516)
+
 
 ## EPIC version 0.12.6
 * [Pull optimizations to serial version](https://github.com/EPIC-model/epic/pull/500)

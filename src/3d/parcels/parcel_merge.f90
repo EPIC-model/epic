@@ -13,7 +13,10 @@ module parcel_merging
                                , get_dely_across_periodic   &
                                , parcel_delete
     use parcel_ellipsoid, only : get_B33, get_abc
-    use options, only : parcel, verbose
+    use options, only : parcel
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
+    use options, only : verbose
+#endif
     use parcel_bc, only : apply_periodic_bc
     use parcel_mpi, only : parcel_communicate
     use mpi_timer, only : start_timer, stop_timer
@@ -39,7 +42,7 @@ module parcel_merging
             integer, allocatable, dimension(:) :: inva
             integer                            :: n_merge ! number of merges
             integer                            :: n_invalid
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             integer                            :: orig_num
 
             orig_num = n_total_parcels
@@ -73,7 +76,7 @@ module parcel_merging
             n_total_parcels = n_parcels
             call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
 
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)",                               &
                       "no. parcels before and after merge: ", orig_num,  &
