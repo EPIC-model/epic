@@ -19,7 +19,7 @@ module parcel_interpl
                         , field_interior_to_buffer          &
                         , interior_to_halo_communication    &
                         , halo_to_interior_communication    &
-                        , field_halo_swap                   &
+                        , field_halo_swap_scalar            &
                         , field_halo_to_buffer_integer      &
                         , field_buffer_to_interior_integer  &
                         , field_interior_to_buffer_integer  &
@@ -66,8 +66,9 @@ module parcel_interpl
             , grid2par          &
             , par2grid_timer    &
             , grid2par_timer    &
-            , halo_swap_timer    &
-            , trilinear
+            , halo_swap_timer   &
+            , trilinear         &
+            , bilinear
 
     contains
 
@@ -104,7 +105,7 @@ module parcel_interpl
             !$omp end parallel
 
             call start_timer(halo_swap_timer)
-            call field_halo_swap(volg)
+            call field_halo_swap_scalar(volg)
             call stop_timer(halo_swap_timer)
 
             ! apply free slip boundary condition
@@ -312,7 +313,7 @@ module parcel_interpl
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_mpi_alloc(n_field_swap)
+            call field_mpi_alloc(n_field_swap, ndim=3)
 
             !------------------------------------------------------------------
             ! Accumulate interior:
@@ -498,5 +499,38 @@ module parcel_interpl
 
         end subroutine trilinear
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Bi-linear interpolation
+        ! @param[in] pos position of the parcel
+        ! @param[out] ii horizontal grid points for interoplation
+        ! @param[out] jj meridional grid points for interpolation
+        ! @param[out] ww interpolation weights
+        subroutine bilinear(pos, ii, jj, ww)
+            double precision, intent(in)  :: pos(2)
+            integer,          intent(out) :: ii, jj
+            double precision, intent(out) :: ww(0:1, 0:1)
+            double precision              :: xy(2)
+            double precision              :: px, py, pxc, pyc
+
+
+            ! (i, j)
+            xy = (pos - lower(1:2)) * dxi(1:2)
+            ii = floor(xy(1))
+            jj = floor(xy(2))
+
+            px = xy(1) - dble(ii)
+            pxc = one - px
+
+            py = xy(2) - dble(jj)
+            pyc = one - py
+
+            ! Note order of indices is j,i
+            ww(0, 0) = pyc * pxc
+            ww(0, 1) = pyc * px
+            ww(1, 0) = py  * pxc
+            ww(1, 1) = py  * px
+
+        end subroutine bilinear
 
 end module parcel_interpl

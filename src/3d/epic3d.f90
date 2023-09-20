@@ -37,6 +37,8 @@ program epic3d
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
     use mpi_environment, only : mpi_env_initialise, mpi_env_finalise
+    use bndry_fluxes, only : bndry_fluxes_deallocate    &
+                           , bndry_flux_timer
     use mpi_utils, only : mpi_print, mpi_stop
     use options, only : rk_order
     implicit none
@@ -86,6 +88,7 @@ program epic3d
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
+            call register_timer('boundary fluxes', bndry_flux_timer)
 
             call start_timer(epic_timer)
 
@@ -147,6 +150,7 @@ program epic3d
             call parcel_dealloc
             call field_dealloc
             call nearest_win_deallocate
+            call bndry_fluxes_deallocate
             call finalise_inversion
             call stop_timer(epic_timer)
 
