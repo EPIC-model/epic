@@ -3,9 +3,9 @@
 ! interpolation.
 ! =============================================================================
 module parcel_interpl
-    use constants, only : zero, one, two, f14
+    use constants, only : zero, one, two, f14, f13, f43, f12
     use mpi_timer, only : start_timer, stop_timer
-    use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
+    use parameters, only : nx, nz, vmin, l_bndry_zeta_zero, dx
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
@@ -25,6 +25,7 @@ module parcel_interpl
                         , field_interior_to_buffer_integer  &
                         , field_buffer_to_halo_integer
     use physics, only : glat, lambda_c, q_0
+    use dimensions, only : I_Z
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
     use physics, only : bfsq
 #endif
@@ -50,15 +51,16 @@ module parcel_interpl
                         , IDX_VOR_Y_SWAP  = 3   &
                         , IDX_VOR_Z_SWAP  = 4   &
                         , IDX_TBUOY_SWAP  = 5   &
-                        , IDX_NPARG_SWAP  = 6   &
-                        , IDX_NSPARG_SWAP = 7
+                        , IDX_ZG_SWAP     = 6   &
+                        , IDX_NPARG_SWAP  = 7   &
+                        , IDX_NSPARG_SWAP = 8
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: IDX_DBUOY_SWAP = 8    &
-                        , IDX_HUM_SWAP   = 9
+    integer, parameter :: IDX_DBUOY_SWAP = 9    &
+                        , IDX_HUM_SWAP   = 10
 
-    integer, parameter :: n_field_swap = 9
+    integer, parameter :: n_field_swap = 10
 #else
-    integer, parameter :: n_field_swap = 7
+    integer, parameter :: n_field_swap = 8
 #endif
 
     public :: par2grid          &
@@ -132,8 +134,8 @@ module parcel_interpl
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
             double precision  :: points(3, 4)
-            integer           :: n, p, l, i, j, k
-            double precision  :: pvol, weight(0:1,0:1,0:1), btot
+            integer           :: n, p, l, i, j, k, ix, iy
+            double precision  :: pvol, weight(0:1,0:1,0:1), btot, dz_corr
 #ifndef ENABLE_DRY_MODE
             double precision  :: q_c
 #endif
@@ -149,15 +151,16 @@ module parcel_interpl
             humg = zero
 #endif
             tbuoyg = zero
+            zg = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
             !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot, q_c) &
             !$omp& private( is, js, ks, weights) &
-            !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, humg, tbuoyg, volg)
+            !$omp& reduction(+:nparg, nsparg, vortg, dbuoyg, humg, tbuoyg, zg, volg)
 #else
             !$omp do private(n, p, l, i, j, k, points, pvol, weight, btot) &
             !$omp& private( is, js, ks, weights) &
-            !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
+            !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, zg, volg)
 #endif
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
@@ -208,6 +211,8 @@ module parcel_interpl
 #endif
                     tbuoyg(ks:ks+1, js:js+1, is:is+1) = tbuoyg(ks:ks+1, js:js+1, is:is+1) &
                                                 + weight * btot
+                    zg(ks:ks+1, js:js+1, is:is+1) = zg(ks:ks+1, js:js+1, is:is+1) &
+                                                + weight * parcels%position(I_Z, n)
                     volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
                                               + weight
                 enddo
@@ -255,6 +260,11 @@ module parcel_interpl
             tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
             tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
             tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
+
+            zg(0,  :, :) = two * zg(0,  :, :)
+            zg(nz, :, :) = two * zg(nz, :, :)
+            zg(1,    :, :) = zg(1,    :, :) + zg(-1,   :, :)
+            zg(nz-1, :, :) = zg(nz-1, :, :) + zg(nz+1, :, :)
             !$omp end parallel workshare
 
 #ifndef ENABLE_DRY_MODE
@@ -285,23 +295,89 @@ module parcel_interpl
                 vortg(nz, :, :, I_Z) = zero
             endif
 
-            !$omp parallel workshare
-            vortg(-1,   :, :, :) = two * vortg(0,  :, :, :) - vortg(1, :, :, :)
-            vortg(nz+1, :, :, :) = two * vortg(nz, :, :, :) - vortg(nz-1, :, :, :)
-
 #ifndef ENABLE_DRY_MODE
             dbuoyg(0:nz, :, :) = dbuoyg(0:nz, :, :) / volg(0:nz, :, :)
             humg(0:nz, :, :) = humg(0:nz, :, :) / volg(0:nz, :, :)
 #endif
             tbuoyg(0:nz, :, :) = tbuoyg(0:nz, :, :) / volg(0:nz, :, :)
 
-            ! extrapolate to halo grid points (needed to compute
-            ! z derivative used for the time step)
-            tbuoyg(-1,   :, :) = two * tbuoyg(0,  :, :) - tbuoyg(1, :, :)
-            tbuoyg(nz+1, :, :) = two * tbuoyg(nz, :, :) - tbuoyg(nz-1, :, :)
-            !$omp end parallel workshare
+            !!!REVISED EXTRAPOLATION GOES HERE
+            do ix = box%hlo(1), box%hhi(1)
+              do iy = box%hlo(2), box%hhi(2)
+
+                !! LOWER BOUNDARIES VIA GRADIENT ESTIMATE
+                dz_corr=correct_dz(zg(1,   iy, ix)-zg(0,   iy, ix),dx(3))
+                vortg(-1,   iy, ix, :) = vortg(1,   iy, ix, :) &
+                                         -2.0*dx(3)*(vortg(1,   iy, ix, :)-vortg(0,   iy, ix, :))/dz_corr
+                tbuoyg(-1,   iy, ix)   = tbuoyg(1,   iy, ix) &
+                                         -2.0*dx(3)*(tbuoyg(1,   iy, ix)-tbuoyg(0,   iy, ix))/dz_corr
+#ifndef ENABLE_DRY_MODE
+                humg(-1,   iy, ix)     = humg(1,   iy, ix) &
+                                         -2.0*dx(3)*(humg(1,   iy, ix)-humg(0,   iy, ix))/dz_corr
+                dbuoyg(-1,   iy, ix)   = dbuoyg(1,   iy, ix) &
+                                         -2.0*dx(3)*(dbuoyg(1,   iy, ix)-dbuoyg(0,   iy, ix))/dz_corr
+#endif
+
+                vortg(0,   iy, ix, :) = vortg(1,   iy, ix, :) &
+                                        - dx(3)*(vortg(1,   iy, ix, :)-vortg(0,   iy, ix, :))/dz_corr
+                tbuoyg(0,   iy, ix)   = tbuoyg(1,   iy, ix) &
+                                        - dx(3)*(tbuoyg(1,   iy, ix)-tbuoyg(0,   iy, ix))/dz_corr
+#ifndef ENABLE_DRY_MODE
+                humg(0,   iy, ix)     = humg(1,   iy, ix) &
+                                        - dx(3)*(humg(1,   iy, ix)-humg(0,   iy, ix))/dz_corr
+                dbuoyg(0,   iy, ix)   = dbuoyg(1,   iy, ix) &
+                                        - dx(3)*(dbuoyg(1,   iy, ix)-dbuoyg(0,   iy, ix))/dz_corr
+#endif
+
+                !! UPPER BOUNDARIES VIA GRADIENT ESTIMATE
+                dz_corr=correct_dz(zg(nz,   iy, ix)-zg(nz-1,   iy, ix),dx(3))
+
+                vortg(nz+1,   iy, ix, :) = vortg(nz-1,   iy, ix, :) &
+                                           + 2.0*dx(3)*(vortg(nz,   iy, ix, :)-vortg(nz-1,   iy, ix, :))/dz_corr
+                tbuoyg(nz+1,   iy, ix)   = tbuoyg(nz-1,   iy, ix) &
+                                           + 2.0*dx(3)*(tbuoyg(nz,   iy, ix)-tbuoyg(nz-1,   iy, ix))/dz_corr
+#ifndef ENABLE_DRY_MODE
+                humg(nz+1,   iy, ix)     = humg(nz-1,   iy, ix) &
+                                           + 2.0*dx(3)*(humg(nz,   iy, ix)-humg(nz-1,   iy, ix))/dz_corr
+                dbuoyg(nz+1,   iy, ix)   = dbuoyg(nz-1,   iy, ix) &
+                                           + 2.0*dx(3)*(dbuoyg(nz,   iy, ix)-dbuoyg(nz-1,   iy, ix))/dz_corr
+#endif
+
+                vortg(nz  ,   iy, ix, :) = vortg(nz-1,   iy, ix, :) &
+                                           + dx(3)*(vortg(nz,   iy, ix, :)-vortg(nz-1,   iy, ix, :))/dz_corr
+                tbuoyg(nz  ,   iy, ix)   = tbuoyg(nz-1,   iy, ix) &
+                                           + dx(3)*(tbuoyg(nz,   iy, ix)-tbuoyg(nz-1,   iy, ix))/dz_corr
+#ifndef ENABLE_DRY_MODE
+                humg(nz  ,   iy, ix)     = humg(nz-1,   iy, ix) &
+                                           + dx(3)*(humg(nz,   iy, ix)-humg(nz-1,   iy, ix))/dz_corr
+                dbuoyg(nz  ,   iy, ix)   = dbuoyg(nz-1,   iy, ix) &
+                                           + dx(3)*(dbuoyg(nz,   iy, ix)-dbuoyg(nz-1,   iy, ix))/dz_corr
+#endif
+
+              end do
+            end do
 
             call stop_timer(par2grid_timer)
+            !!!
+
+
+!~             !$omp parallel workshare
+!~             vortg(-1,   :, :, :) = two * vortg(0,  :, :, :) - vortg(1, :, :, :)
+!~             vortg(nz+1, :, :, :) = two * vortg(nz, :, :, :) - vortg(nz-1, :, :, :)
+
+!~ #ifndef ENABLE_DRY_MODE
+!~             dbuoyg(0:nz, :, :) = dbuoyg(0:nz, :, :) / volg(0:nz, :, :)
+!~             humg(0:nz, :, :) = humg(0:nz, :, :) / volg(0:nz, :, :)
+!~ #endif
+!~             tbuoyg(0:nz, :, :) = tbuoyg(0:nz, :, :) / volg(0:nz, :, :)
+
+!~             ! extrapolate to halo grid points (needed to compute
+!~             ! z derivative used for the time step)
+!~             tbuoyg(-1,   :, :) = two * tbuoyg(0,  :, :) - tbuoyg(1, :, :)
+!~             tbuoyg(nz+1, :, :) = two * tbuoyg(nz, :, :) - tbuoyg(nz-1, :, :)
+!~             !$omp end parallel workshare
+
+!~             call stop_timer(par2grid_timer)
 
         end subroutine par2grid
 
@@ -322,6 +398,7 @@ module parcel_interpl
             call field_halo_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
             call field_halo_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
             call field_halo_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
+            call field_halo_to_buffer(zg,                  IDX_ZG_SWAP)
             call field_halo_to_buffer_integer(nparg,       IDX_NPARG_SWAP)
             call field_halo_to_buffer_integer(nsparg,      IDX_NSPARG_SWAP)
 #ifndef ENABLE_DRY_MODE
@@ -339,6 +416,7 @@ module parcel_interpl
             call field_buffer_to_interior(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .true.)
             call field_buffer_to_interior(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .true.)
             call field_buffer_to_interior(tbuoyg,              IDX_TBUOY_SWAP, .true.)
+            call field_buffer_to_interior(zg,                  IDX_ZG_SWAP, .true.)
             call field_buffer_to_interior_integer(nparg,       IDX_NPARG_SWAP, .true.)
             call field_buffer_to_interior_integer(nsparg,      IDX_NSPARG_SWAP, .true.)
 #ifndef ENABLE_DRY_MODE
@@ -354,6 +432,7 @@ module parcel_interpl
             call field_interior_to_buffer(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP)
             call field_interior_to_buffer(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP)
             call field_interior_to_buffer(tbuoyg,              IDX_TBUOY_SWAP)
+            call field_interior_to_buffer(zg,                  IDX_ZG_SWAP)
             call field_interior_to_buffer_integer(nparg,       IDX_NPARG_SWAP)
             call field_interior_to_buffer_integer(nsparg,      IDX_NSPARG_SWAP)
 #ifndef ENABLE_DRY_MODE
@@ -368,6 +447,7 @@ module parcel_interpl
             call field_buffer_to_halo(vortg(:, :, :, I_Y), IDX_VOR_Y_SWAP, .false.)
             call field_buffer_to_halo(vortg(:, :, :, I_Z), IDX_VOR_Z_SWAP, .false.)
             call field_buffer_to_halo(tbuoyg,              IDX_TBUOY_SWAP, .false.)
+            call field_buffer_to_halo(zg,                  IDX_ZG_SWAP, .false.)
             call field_buffer_to_halo_integer(nparg,       IDX_NPARG_SWAP, .false.)
             call field_buffer_to_halo_integer(nsparg,      IDX_NSPARG_SWAP, .false.)
 #ifndef ENABLE_DRY_MODE
@@ -498,5 +578,23 @@ module parcel_interpl
 
         end subroutine trilinear
 
+        ! This function limits dz to a sensible value in order to prevent gradients from blowing up
+        ! Should be rarely used as dz_in should be about 2/3 or at least 1/2 dz_grid normally, but serves as a limiter
+        function correct_dz(dz_in,dz_grid) result(dz_out)
+            double precision, intent(in) :: dz_in
+            double precision, intent(in) :: dz_grid
+            double precision             :: dz_nd
+            double precision             :: dz_out
+
+            if(dz_in>f12*dz_grid) then
+              dz_out=dz_in
+            else if(dz_in>f13*dz_grid) then
+              dz_nd=dz_in/dz_grid
+              dz_out=dz_grid*(f43*dz_nd*dz_nd*dz_nd+f13)
+            else
+              dz_out=f13*dz_grid
+            endif
+
+        end function correct_dz
 
 end module parcel_interpl

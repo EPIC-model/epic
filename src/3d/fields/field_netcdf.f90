@@ -50,16 +50,17 @@ module field_netcdf
                         , NC_NPARG   = 10       &
                         , NC_NSPARG  = 11       &
                         , NC_TBUOY   = 12       &
-                        , NC_VOL     = 13
+                        , NC_ZG      = 13       &
+                        , NC_VOL     = 14
 
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: NC_DBUOY   = 14       &
-                        , NC_HUM     = 15       &
-                        , NC_LBUOY   = 16
+    integer, parameter :: NC_DBUOY   = 15       &
+                        , NC_HUM     = 16       &
+                        , NC_LBUOY   = 17
 
-    type(netcdf_field_info) :: nc_dset(16)
+    type(netcdf_field_info) :: nc_dset(17)
 #else
-    type(netcdf_field_info) :: nc_dset(13)
+    type(netcdf_field_info) :: nc_dset(14)
 #endif
 
     integer :: n_writes
@@ -249,6 +250,8 @@ module field_netcdf
 
             call write_field_double(NC_TBUOY, tbuoyg, start, cnt)
 
+            call write_field_double(NC_ZG, zg, start, cnt)
+
 #ifndef ENABLE_DRY_MODE
             call write_field_double(NC_DBUOY, dbuoyg, start, cnt)
 
@@ -414,6 +417,7 @@ module field_netcdf
                 nc_dset(NC_Y_VEL)%l_enabled = .true.
                 nc_dset(NC_Z_VEL)%l_enabled = .true.
                 nc_dset(NC_TBUOY)%l_enabled = .true.
+                nc_dset(NC_ZG)%l_enabled = .true.
 #ifndef ENABLE_DRY_MODE
                 nc_dset(NC_DBUOY)%l_enabled = .true.
                 nc_dset(NC_HUM)%l_enabled   = .true.
@@ -448,6 +452,7 @@ module field_netcdf
                 nc_dset(NC_Y_VEL)%l_enabled = .true.
                 nc_dset(NC_Z_VEL)%l_enabled = .true.
                 nc_dset(NC_TBUOY)%l_enabled = .true.
+                nc_dset(NC_ZG)%l_enabled    = .true.
 #ifndef ENABLE_DRY_MODE
                 nc_dset(NC_DBUOY)%l_enabled = .true.
                 nc_dset(NC_HUM)%l_enabled   = .true.
@@ -543,6 +548,12 @@ module field_netcdf
                                                   long_name='total buoyancy',           &
                                                   std_name='',                          &
                                                   unit='m/s^2',                         &
+                                                  dtype=NF90_DOUBLE)
+
+            nc_dset(NC_ZG) = netcdf_field_info(name='parcel_height',                      &
+                                                  long_name='parcel height',           &
+                                                  std_name='',                          &
+                                                  unit='m',                         &
                                                   dtype=NF90_DOUBLE)
 
 #ifndef ENABLE_DRY_MODE

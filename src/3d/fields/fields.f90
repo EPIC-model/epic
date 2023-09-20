@@ -40,6 +40,7 @@ module fields
         humg,      &   ! humidity
 #endif
         tbuoyg,    &   ! buoyancy
+        zg,        &   ! gridded height
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
@@ -88,6 +89,8 @@ module fields
 
             allocate(tbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
+            allocate(zg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+
 #ifndef ENABLE_DRY_MODE
             allocate(dbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(humg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
@@ -110,6 +113,8 @@ module fields
             vortg    = zero
             vtend    = zero
             tbuoyg   = zero
+            zg       = zero
+
 #ifndef ENABLE_DRY_MODE
             dbuoyg   = zero
             humg     = zero
@@ -133,6 +138,7 @@ module fields
                 deallocate(vortg)
                 deallocate(vtend)
                 deallocate(tbuoyg)
+                deallocate(zg)
 #ifndef ENABLE_DRY_MODE
                 deallocate(dbuoyg)
                 deallocate(humg )
