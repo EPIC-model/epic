@@ -300,6 +300,7 @@ module parcel_interpl
             humg(0:nz, :, :) = humg(0:nz, :, :) / volg(0:nz, :, :)
 #endif
             tbuoyg(0:nz, :, :) = tbuoyg(0:nz, :, :) / volg(0:nz, :, :)
+            zg(0:nz, :, :) = zg(0:nz, :, :) / volg(0:nz, :, :)
 
             !!!REVISED EXTRAPOLATION GOES HERE
             do ix = box%hlo(1), box%hhi(1)
