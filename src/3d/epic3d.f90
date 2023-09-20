@@ -22,6 +22,15 @@ program epic3d
     use parcel_diagnostics, only : parcel_stats_timer
     use parcel_netcdf, only : parcel_io_timer
     use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
+    use surface_parcel_merge, only : surf_merge_timer
+    use surface_parcel_netcdf, only : surf_parcel_io_timer
+    use surface_parcel_split, only :surf_split_timer
+    use surface_parcel_init, only : surf_init_timer
+    use surface_parcel_interpl, only : surf_par2grid_timer  &
+                                     , surf_grid2par_timer
+    use surface_parcel_correction, only : surf_lapl_corr_timer &
+                                        , surf_grad_corr_timer
+    use surface_parcel_diagnostics, only : surf_parcel_stats_timer
     use fields
     use field_netcdf, only : field_io_timer
     use field_diagnostics, only : field_stats_timer
@@ -89,6 +98,15 @@ program epic3d
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
             call register_timer('boundary fluxes', bndry_flux_timer)
+            call register_timer('surface parcel merge', surf_merge_timer)
+            call register_timer('surface parcel I/O', surf_parcel_io_timer)
+            call register_timer('surface parcel split', surf_split_timer)
+            call register_timer('surface parcel init', surf_init_timer)
+            call register_timer('surface par2grid', surf_par2grid_timer)
+            call register_timer('surface grid2par', surf_grid2par_timer)
+            call register_timer('surface laplace correction', surf_lapl_corr_timer)
+            call register_timer('surface gradient correction', surf_grad_corr_timer)
+            call register_timer('surface parcel diagnostics', surf_parcel_stats_timer)
 
             call start_timer(epic_timer)
 

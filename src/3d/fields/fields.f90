@@ -166,6 +166,21 @@ module fields
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! Get the lower index of the cell the surface parcel is in.
+        ! This subroutine does not take x or y periodicity into account.
+        ! @param[in] pos position of the parcel
+        ! @param[out] i lower, zonal cell index
+        ! @param[out] j lower, vertical cell index
+        pure subroutine get_surf_index(pos, i, j)
+            double precision, intent(in)  :: pos(2)
+            integer,          intent(out) :: i, j
+
+            i = floor((pos(I_X) - lower(I_X)) * dxi(I_X))
+            j = floor((pos(I_Y) - lower(I_Y)) * dxi(I_Y))
+        end subroutine get_surf_index
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         pure function is_contained(pos) result(l_contained)
             double precision, intent(in) :: pos(3)
             integer                      :: i, j, k
@@ -195,5 +210,20 @@ module fields
             pos(I_Z) = lower(I_Z) + k * dx(I_Z)
 
         end subroutine get_position
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Get the coordinate of a surface grid point (i, j).
+        ! @param[in] i zonal cell index
+        ! @param[in] j meridional cell index
+        ! @param[out] pos position of (i, j) in the domain
+        pure subroutine get_surf_position(i, j, pos)
+            integer,          intent(in)  :: i, j
+            double precision, intent(out) :: pos(2)
+
+            pos(I_X) = lower(I_X) + i * dx(I_X)
+            pos(I_Y) = lower(I_Y) + j * dx(I_Y)
+
+        end subroutine get_surf_position
 
 end module fields

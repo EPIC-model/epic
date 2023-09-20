@@ -30,6 +30,9 @@ module utils
                       , print_physical_quantities
     use mpi_layout, only : mpi_layout_init
     use mpi_utils, only : mpi_exit_on_error
+    use surface_parcel_netcdf
+    use surface_parcel_init, only : init_surface_parcels
+    use surface_parcel_diagnostics_netcdf, only : create_netcdf_surface_parcel_stats_files
     implicit none
 
     double precision :: t_fw  = zero    ! next intended time of field write
@@ -57,6 +60,10 @@ module utils
                 call create_netcdf_parcel_stats_file(trim(output%basename), &
                                                      output%overwrite,      &
                                                      l_restart)
+
+                call create_netcdf_surface_parcel_stats_files(trim(output%basename),    &
+                                                              output%overwrite,         &
+                                                              l_restart)
             endif
 
             if (output%write_fields) then
@@ -75,6 +82,10 @@ module utils
                 call create_netcdf_parcel_file(trim(output%basename),    &
                                                output%overwrite,         &
                                                l_restart)
+
+                call create_netcdf_surface_parcel_files(trim(output%basename),    &
+                                                        output%overwrite,         &
+                                                        l_restart)
             endif
 
         end subroutine setup_output_files
@@ -95,7 +106,15 @@ module utils
 
             call grid2par
 
+            call lower_surface_grid2par
+            call upper_surface_grid2par
+
             call calculate_parcel_diagnostics
+
+            call calculate_surface_parcel_diagnostics('low')
+
+            call calculate_surface_parcel_diagnostics('high')
+
             call calculate_field_diagnostics
 
             call write_step(t, .true.)
@@ -212,6 +231,7 @@ module utils
                     call init_parcels_from_grids
                 else if (file_type == 'parcels') then
                     call read_netcdf_parcels(restart_file)
+                    call mpi_exit_on_error("We must read surface parcels as well!")
                 else
                     call mpi_exit_on_error('Restart file must be of type "fields" or "parcels".')
                 endif

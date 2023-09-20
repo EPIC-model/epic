@@ -2,7 +2,10 @@
 !                             Field diagnostics
 ! =============================================================================
 module field_diagnostics
-    use parameters, only : vcell, vcelli, nx, nz, ngridi, ncelli, vdomaini
+    use parameters, only : vcell, vcelli, vdomaini  &
+                         , nx, nz                   &
+                         , ngridi, ncelli           &
+                         , acell, acelli, nhgridi
     use constants, only : f12, f14
     use fields
     use mpi_timer, only : start_timer, stop_timer
@@ -17,18 +20,20 @@ module field_diagnostics
 
     ! Array indices of field stats array
     integer, parameter :: IDX_RMS_V         = 1,  & ! rms volume error
-                          IDX_AVG_NPAR      = 2,  & ! average num parcels per cell
-                          IDX_AVG_NSPAR     = 3,  & ! average num small parcels per cell
-                          IDX_KEG           = 4,  & ! domain-averaged kinetic energy calculated on the grid
-                          IDX_APEG          = 5,  & ! domain-averaged available potential energy on the grid
-                          IDX_ENG           = 6,  & ! domain-averaged enstrophy calculated on the grid
-                          IDX_ABSERR_V      = 7,  & ! max absolute normalised volume error
-                          IDX_MAX_NPAR      = 8,  & ! max num parcels per cell
-                          IDX_MAX_BUOY      = 9,  & ! max gridded buoyancy
-                          IDX_MIN_NPAR      = 10, & ! min num parcels per cell
-                          IDX_MIN_BUOY      = 11    ! min gridded buoyancy
+                          IDX_RMS_A_LOW     = 2,  & ! rms area error of lower surface (iz = 0)
+                          IDX_RMS_A_HIGH    = 3,  & ! rms area error of upper surface (iz = nz)
+                          IDX_AVG_NPAR      = 4,  & ! average num parcels per cell
+                          IDX_AVG_NSPAR     = 5,  & ! average num small parcels per cell
+                          IDX_KEG           = 6,  & ! domain-averaged kinetic energy calculated on the grid
+                          IDX_APEG          = 7,  & ! domain-averaged available potential energy on the grid
+                          IDX_ENG           = 8,  & ! domain-averaged enstrophy calculated on the grid
+                          IDX_ABSERR_V      = 9,  & ! max absolute normalised volume error
+                          IDX_MAX_NPAR      = 10, & ! max num parcels per cell
+                          IDX_MAX_BUOY      = 11, & ! max gridded buoyancy
+                          IDX_MIN_NPAR      = 12, & ! min num parcels per cell
+                          IDX_MIN_BUOY      = 13    ! min gridded buoyancy
 
-    double precision :: field_stats(IDX_MIN_BUOY)
+    double precision :: field_stats(IDX_RMS_A_HIGH)
 
     contains
 
@@ -50,6 +55,9 @@ module field_diagnostics
 
             ! do not take halo cells into account
             field_stats(IDX_RMS_V) = sum((volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)) - vcell) ** 2)
+
+            field_stats(IDX_RMS_A_LOW)  = sum((volg(0,  lo(2):hi(2), lo(1):hi(1)) - acell) ** 2)
+            field_stats(IDX_RMS_A_HIGH) = sum((volg(nz, lo(2):hi(2), lo(1):hi(1)) - acell) ** 2)
 
             field_stats(IDX_ABSERR_V) = maxval(abs(volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))  - vcell)) * vcelli
 
@@ -129,7 +137,9 @@ module field_diagnostics
             !
             ! final calculations
             !
-            field_stats(IDX_RMS_V) = dsqrt(field_stats(IDX_RMS_V) * ngridi) * vcelli
+            field_stats(IDX_RMS_V)      = dsqrt(field_stats(IDX_RMS_V) * ngridi) * vcelli
+            field_stats(IDX_RMS_A_LOW)  = dsqrt(field_stats(IDX_RMS_A_LOW) * nhgridi) * acelli
+            field_stats(IDX_RMS_A_HIGH) = dsqrt(field_stats(IDX_RMS_A_LOW) * nhgridi) * acelli
 
             call stop_timer(field_stats_timer)
 

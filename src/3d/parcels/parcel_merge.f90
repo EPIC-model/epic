@@ -19,6 +19,7 @@ module parcel_merging
 #endif
     use parcel_bc, only : apply_periodic_bc
     use parcel_mpi, only : parcel_communicate
+    use surface_parcel_merging only : surface_parcel_merge
     use mpi_timer, only : start_timer, stop_timer
     use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
@@ -47,6 +48,8 @@ module parcel_merging
 
             orig_num = n_total_parcels
 #endif
+
+            call surface_parcel_merge
 
             ! find parcels to merge
             call find_nearest(isma, iclo, inva, n_merge, n_invalid)

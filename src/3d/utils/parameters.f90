@@ -25,6 +25,12 @@ module parameters
     ! inverse grid cell volume
     double precision, protected :: vcelli
 
+    ! grid cell area:
+    double precision, protected :: acell
+
+    ! inverse grid cell area
+    double precision, protected :: acelli
+
     ! number of grid cells in each dimension
     integer :: nx, ny, nz
 
@@ -46,6 +52,12 @@ module parameters
     ! inverse of total number of grid points
     double precision, protected :: ngridi
 
+    ! total number of grid points on a surface
+    integer, protected :: nhgrid
+
+    ! inverse of total number of grid points on a surface
+    double precision, protected :: nhgridi
+
     ! domain size
     double precision :: extent(3)
 
@@ -57,6 +69,12 @@ module parameters
 
     ! inverse domain volume
     double precision, protected :: vdomaini
+
+    ! surface area
+    double precision, protected :: asurf
+
+    ! inverse surface area
+    double precision, protected :: asurfi
 
     ! domain centre
     double precision, protected :: center(3)
@@ -75,11 +93,18 @@ module parameters
     ! minimum volume
     double precision, protected :: vmin
 
+    ! minimum area
+    double precision, protected :: amin
+
     ! upper bound for major semi-axis (used for splitting)
     double precision, protected :: amax
 
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
+
+    ! maximum number of allowed surface parcels
+    integer, protected :: max_num_surf_parcels
+
 
     ! specifies if zeta is kept zero on a boundary;
     ! this also makes sure that dzeta/dt = 0 on a boundary
@@ -125,8 +150,14 @@ module parameters
         vdomain = product(extent)
         vdomaini = one / vdomain
 
+        asurf = extent(1) * extent(2)
+        asurfi = one / asurf
+
         vcell = product(dx)
         vcelli = one / vcell
+
+        acell = dx(1) * dx(2)
+        acelli = one / acell
 
         nhcell = nx * ny
         nhcelli = one / dble(nhcell)
@@ -134,9 +165,13 @@ module parameters
         ncell = nhcell * nz
         ncelli = one / dble(ncell)
 
+        nhgrid = nx * ny
+        nhgridi = one / dble(nhgridi)
+
         ! due to x periodicity it is only nx
-        ngrid = nx * ny * (nz + 1)
+        ngrid = nhgrid * (nz + 1)
         ngridi = one / dble(ngrid)
+
 
         ! domain
         center = f12 * (lower + upper)
@@ -145,9 +180,13 @@ module parameters
 
         vmin = vcell / parcel%min_vratio
 
+        amin = acell / parcel%min_aratio
+
         amax = (f34 * fpi) ** f13 * minval(dx)
 
         max_num_parcels = int(box%halo_ncell * parcel%min_vratio * parcel%size_factor)
+
+        max_num_surf_parcels = int(box%halo_nhcell * parcel%min_aratio * parcel%size_factor)
 
     end subroutine update_parameters
 

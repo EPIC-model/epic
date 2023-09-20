@@ -16,6 +16,8 @@ module parcel_correction
     use mpi_environment
     use mpi_utils, only : mpi_check_for_error
     use parcel_mpi, only : parcel_communicate
+    use surface_parcel_correction, only : apply_surface_laplace &
+                                        , apply_surface_gradient
     implicit none
 
     private
@@ -145,6 +147,8 @@ module parcel_correction
             double precision              :: weights(0:1,0:1,0:1)
             integer                       :: n, l, is, js, ks
 
+            call apply_surface_laplace
+
             call start_timer(lapl_corr_timer)
 
             call vol2grid(l_reuse)
@@ -187,6 +191,8 @@ module parcel_correction
             double precision              :: weights(0:1,0:1,0:1)
             double precision              :: xs, ys, zs, xf, yf, zf, xfc, yfc, zfc, lim_x, lim_y, lim_z
             integer                       :: n, is, js, ks
+
+            call apply_surface_gradient(prefactor, max_compression)
 
             call start_timer(grad_corr_timer)
 

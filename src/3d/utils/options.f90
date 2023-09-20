@@ -85,8 +85,10 @@ module options
                                                         ! in the parcel splitting routine
         double precision :: shrink_factor    = 0.8d0    ! factor to reduce the parcel container size
         integer          :: n_per_cell       = 8        ! number of parcels per cell (need to be a cube)
+        integer          :: n_surf_per_cell  = 9
         double precision :: lambda_max       = four     ! max. ellipse aspect ratio a/b
         double precision :: min_vratio       = 20.0d0   ! minimum ratio of grid cell volume / parcel volume
+        double precision :: min_aratio       = 40.0d0   ! minimum ratio of grid cell area / parcel
         integer          :: correction_iters = 2        ! parcel correction iterations
         double precision :: gradient_pref    = 1.8d0    ! prefactor for gradient descent
         double precision :: max_compression  = 0.5d0    ! parameter for gradient descent
@@ -167,8 +169,10 @@ module options
 
             call write_netcdf_attribute(ncid, "size_factor", parcel%size_factor)
             call write_netcdf_attribute(ncid, "n_per_cell", parcel%n_per_cell)
+            call write_netcdf_attribute(ncid, "n_surf_per_cell", parcel%n_surf_per_cell)
             call write_netcdf_attribute(ncid, "lambda_max", parcel%lambda_max)
             call write_netcdf_attribute(ncid, "min_vratio", parcel%min_vratio)
+            call write_netcdf_attribute(ncid, "min_aratio", parcel%min_aratio)
             call write_netcdf_attribute(ncid, "correction_iters", parcel%correction_iters)
             call write_netcdf_attribute(ncid, "gradient_pref", parcel%gradient_pref)
             call write_netcdf_attribute(ncid, "max_compression", parcel%max_compression)

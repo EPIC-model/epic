@@ -13,6 +13,7 @@ module parcel_netcdf
     use iomanip, only : zfill
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
+    use surface_parcel_netcdf, only : write_netcdf_surface_parcels
     use mpi_environment
     use mpi_utils, only : mpi_exit_on_error, mpi_print, mpi_check_for_error
     use fields, only : is_contained
@@ -270,6 +271,8 @@ module parcel_netcdf
             integer                      :: cnt(2), start(2)
             integer                      :: recvcounts(world%size)
             integer                      :: sendbuf(world%size), start_index
+
+            call write_netcdf_surface_parcels(t)
 
             call start_timer(parcel_io_timer)
 

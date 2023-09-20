@@ -19,6 +19,7 @@ module parcel_split_mod
     use omp_lib
     use mpi_environment, only : world, MPI_SUM
     use mpi_collectives, only : mpi_blocking_reduce
+    use surface_parcel_split_mod, only : surface_parcel_split
     implicit none
 
     double precision, parameter :: dh = f12 * dsqrt(three / five)
@@ -51,6 +52,9 @@ module parcel_split_mod
 
             orig_num = n_total_parcels
 #endif
+
+            call surface_parcel_split
+
             call start_timer(split_timer)
 
             !------------------------------------------------------------------
