@@ -27,7 +27,7 @@ program epic3d
     use inversion_utils, only : init_inversion
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_timer
-    use ls_rk, only : ls_rk_step, rk_timer
+    use ls_rk, only : ls_rk_step, ls_rk_setup, rk_timer
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
@@ -103,6 +103,8 @@ program epic3d
             call setup_domain_and_parameters
 
             call setup_fields_and_parcels
+            
+            call ls_rk_setup(4)
 
             call init_inversion
 

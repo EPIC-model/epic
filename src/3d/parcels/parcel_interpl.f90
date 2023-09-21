@@ -150,7 +150,7 @@ module parcel_interpl
                 ! total buoyancy (including effects of latent heating)
                 btot = parcels%buoyancy(n) + glat * q_c
 #else
-                btot = parcels%buoyancy(n)
+                btot = parcels%buoyancy(n) - 4.0d0 * parcels%position(3, n)
 #endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               pvol, parcels%B(:, n), n, l_reuse)

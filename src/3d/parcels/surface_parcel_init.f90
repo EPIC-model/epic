@@ -6,7 +6,8 @@ module surface_parcel_init
     use constants, only : zero, one, f12
     use surface_parcel_container, only : surface_parcel_container_type      &
                                        , lo_surf_parcels, n_lo_surf_parcels &
-                                       , up_surf_parcels, n_up_surf_parcels
+                                       , up_surf_parcels, n_up_surf_parcels &
+                                       , surface_parcel_alloc
     use parcel_ellipse, only : get_ab, get_eigenvalue
     use surface_parcel_split_mod, only : do_ellipse_split
     use surface_parcel_interpl, only : bilinear, ngp
@@ -61,6 +62,8 @@ module surface_parcel_init
                           max_num_surf_parcels, ". Exiting."
                 stop
             endif
+
+            call surface_parcel_alloc(s_parcels, max_num_surf_parcels)
 
 
             call init_regular_positions(s_parcels, n_par)

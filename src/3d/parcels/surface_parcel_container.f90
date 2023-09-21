@@ -32,7 +32,7 @@ module surface_parcel_container
 
     type(surface_parcel_container_type) up_surf_parcels, lo_surf_parcels
 
-    private :: alloc, dealloc
+    private :: dealloc
 
     contains
 
@@ -105,14 +105,6 @@ module surface_parcel_container
 
         end subroutine surface_parcel_replace
 
-        ! Allocate parcel memory
-        ! @param[in] num number of parcels
-        subroutine surface_parcel_alloc(num)
-            integer, intent(in) :: num
-            call alloc(up_surf_parcels, num)
-            call alloc(lo_surf_parcels, num)
-        end subroutine surface_parcel_alloc
-
         ! Deallocate parcel memory
         subroutine surface_parcel_dealloc
             call dealloc(up_surf_parcels)
@@ -120,7 +112,7 @@ module surface_parcel_container
         end subroutine surface_parcel_dealloc
 
 
-        subroutine alloc(s_parcels, num)
+        subroutine surface_parcel_alloc(s_parcels, num)
             type(surface_parcel_container_type), intent(inout) :: s_parcels
             integer,                             intent(in)    :: num
             allocate(s_parcels%position(2, num))
@@ -136,7 +128,7 @@ module surface_parcel_container
             allocate(s_parcels%delta_vor(3, num))
             allocate(s_parcels%strain(4, num))
             allocate(s_parcels%delta_b(3, num))
-        end subroutine alloc
+        end subroutine surface_parcel_alloc
 
         subroutine dealloc(s_parcels)
             type(surface_parcel_container_type), intent(inout) :: s_parcels
