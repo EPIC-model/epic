@@ -330,6 +330,8 @@ module field_netcdf
         subroutine write_netcdf_fields(t)
             double precision, intent(in) :: t
             integer                      :: cnt(4), start(4)
+            integer :: iz
+            double precision :: z
 
             call start_timer(field_io_timer)
 
@@ -384,8 +386,18 @@ module field_netcdf
             call write_netcdf_dataset(ncid, z_vor_id, vortg(0:nz, 0:ny-1, 0:nx-1, 3), &
                                       start, cnt)
 
+            do iz = 0, nz
+                z = lower(3) + dble(iz) * dx(3)
+                tbuoyg(iz, :, :) = tbuoyg(iz, :, :) + 4.0d0 * z
+            enddo
+
             call write_netcdf_dataset(ncid, tbuoy_id, tbuoyg(0:nz, 0:ny-1, 0:nx-1),   &
                                       start, cnt)
+
+            do iz = 0, nz
+                z = lower(3) + dble(iz) * dx(3)
+                tbuoyg(iz, :, :) = tbuoyg(iz, :, :) - 4.0d0 * z
+            enddo
 
 #ifndef ENABLE_DRY_MODE
             call write_netcdf_dataset(ncid, dbuoy_id, dbuoyg(0:nz, 0:ny-1, 0:nx-1),   &

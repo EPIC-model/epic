@@ -160,7 +160,7 @@ module parameters
 
 
         nhgrid = nx * ny
-        nhgridi = one / dble(nhgridi)
+        nhgridi = one / dble(nhgrid)
 
         ! due to x periodicity it is only nx
         ngrid = nhgrid * (nz + 1)

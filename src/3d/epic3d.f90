@@ -40,6 +40,7 @@ program epic3d
     use surface_parcel_correction, only : surf_lapl_corr_timer &
                                         , surf_grad_corr_timer
     use surface_parcel_diagnostics, only : surf_parcel_stats_timer
+    use surface_parcel_diagnostics_netcdf, only : surf_parcel_stats_io_timer
     use parameters, only : max_num_parcels, max_num_surf_parcels
     implicit none
 
@@ -91,6 +92,7 @@ program epic3d
             call register_timer('surface laplace correction', surf_lapl_corr_timer)
             call register_timer('surface gradient correction', surf_grad_corr_timer)
             call register_timer('surface parcel diagnostics', surf_parcel_stats_timer)
+            call register_timer('surface parcel I/O diagnostics', surf_parcel_stats_io_timer)
 
 
             call start_timer(epic_timer)
@@ -101,11 +103,19 @@ program epic3d
             ! read domain dimensions
             call setup_domain_and_parameters
 
+            print *, "setup parcels"
+
             call setup_parcels
+
+            print *, "ls alloc"
 
             call ls_rk4_alloc(max_num_parcels, max_num_surf_parcels)
 
+            print *, "init inversion"
+
             call init_inversion
+
+            print *, "init parcel correction"
 
             call init_parcel_correction
 

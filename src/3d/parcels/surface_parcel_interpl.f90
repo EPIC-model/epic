@@ -100,12 +100,15 @@ module surface_parcel_interpl
             double precision                                :: points(2, 2)
             integer                                         :: n, p, l, k
             double precision                                :: weight, btot
+            double precision :: zz
 
             call start_timer(surf_par2grid_timer)
 
             k = nz
+            zz = lower(3) + dble(k) * dx(3)
             if (which == 'lo') then
                 k = 0
+                zz = lower(3)
             endif
 
             volg(k, :, :) = zero
@@ -130,7 +133,7 @@ module surface_parcel_interpl
 !                     nsparg(j, i) = nsparg(j, i) + 1
 !                 endif
 
-                btot = s_parcels%buoyancy(n)
+                btot = s_parcels%buoyancy(n) - 4.0d0 * zz
 
                 ! we have 2 points per ellipse
                 do p = 1, 2

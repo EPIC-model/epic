@@ -226,6 +226,8 @@ module utils
             call parcel_alloc(max_num_parcels)
             call surface_parcel_alloc(max_num_surf_parcels)
 
+            print *, "allocated parcel memory"
+
             if (l_restart) then
                 call setup_restart(trim(restart_file), time%initial, file_type)
 
@@ -242,8 +244,9 @@ module utils
                 endif
             else
                 time%initial = zero ! make sure user cannot start at arbirtrary time
-
+                print *, "init interior parcels"
                 call init_parcels(field_file, field_tol)
+                print *, "init surface parcels"
                 call init_surface_parcels(field_file, field_tol)
             endif
         end subroutine setup_parcels

@@ -254,31 +254,41 @@ module surface_parcel_init
                 k = 0
             endif
 
+            print *, "init from grids"
+
 
             if (has_dataset(ncid, 'x_vorticity')) then
                 buffer = zero
+                print *, "xi"
                 call read_netcdf_dataset(ncid, 'x_vorticity', buffer, start=start, cnt=cnt)
+                print *, "generate"
                 call gen_parcel_scalar_attr(s_parcels, n_par, &
                                             buffer(k, :, :), tol, s_parcels%vorticity(1, :))
             endif
 
             if (has_dataset(ncid, 'y_vorticity')) then
                 buffer = zero
+                print *, "eta"
                 call read_netcdf_dataset(ncid, 'y_vorticity', buffer, start=start, cnt=cnt)
+                print *, "generate"
                 call gen_parcel_scalar_attr(s_parcels, n_par, &
                                             buffer(k, :, :), tol, s_parcels%vorticity(2, :))
             endif
 
             if (has_dataset(ncid, 'z_vorticity')) then
                 buffer = zero
+                print *, "zeta"
                 call read_netcdf_dataset(ncid, 'z_vorticity', buffer, start=start, cnt=cnt)
+                print *, "generate"
                 call gen_parcel_scalar_attr(s_parcels, n_par, &
                                             buffer(k, :, :), tol, s_parcels%vorticity(3, :))
             endif
 
             if (has_dataset(ncid, 'buoyancy')) then
                 buffer = zero
+                print *, "buoyancy"
                 call read_netcdf_dataset(ncid, 'buoyancy', buffer, start=start, cnt=cnt)
+                print *, "generate"
                 call gen_parcel_scalar_attr(s_parcels, n_par, &
                                             buffer(k, :, :), tol, s_parcels%buoyancy)
             endif
@@ -354,7 +364,7 @@ module surface_parcel_init
             ! Iteratively compute a residual and update (area-weighted) attribute:
             rerr = one
 
-            do while (rerr .gt. rtol)
+            do while (rerr .gt. max(rtol, 1.0e-14))
                 !Compute residual:
                 resi = zero
                 do n = 1, n_par

@@ -181,7 +181,7 @@ module rk4_utils
             ! db/dz
             gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1, :, :) - tbuoyg(-1:nz-1, :, :))
 
-            bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
+            bmax = dsqrt(dsqrt(maxval(db2 + (gradb + 4.0d0) ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
             dt = get_surf_time_step()
