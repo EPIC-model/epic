@@ -54,7 +54,7 @@ program test_ellipsoid_split
             call setup_parcels
 
             ! numerical split
-            call parcel_split(parcels, threshold=four)
+            call parcel_split
 
             call check_result
         enddo

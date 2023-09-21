@@ -85,7 +85,7 @@ program test_trilinear
     enddo
 
     ! we cannot check vortend since parcels%vorticity is used in grid2par
-    call grid2par(vel, vortend, vgrad)
+    call grid2par
 
     error = zero
 

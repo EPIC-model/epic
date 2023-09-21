@@ -1,7 +1,6 @@
 module utils
     use constants, only : one
     use options, only : field_file          &
-                      , field_tol           &
                       , output              &
                       , l_restart           &
                       , restart_file        &
@@ -11,25 +10,16 @@ module utils
     use field_netcdf
     use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
-    use parcel_init, only : init_parcels
+    use parcel_init, only : parcel_default, init_parcels_from_grids
     use parcel_netcdf
-    use surface_parcel_netcdf
-    use surface_parcel_init, only : init_surface_parcels
     use parcel_diagnostics_netcdf
+    use parcel_diagnostics
     use surface_parcel_diagnostics_netcdf, only : create_netcdf_surface_parcel_stats_files
-    use parcel_diagnostics, only : calculate_parcel_diagnostics, calculate_peref
-    use surface_parcel_diagnostics, only : calculate_surface_parcel_diagnostics
-    use parcel_container, only : n_parcels, parcel_alloc
-    use surface_parcel_container, only : n_lo_surf_parcels  &
-                                       , n_up_surf_parcels  &
-                                       , surface_parcel_alloc
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
-    use surface_parcel_interpl, only : lo_surf_grid2par, up_surf_grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
-    use parameters, only : lower, extent, update_parameters         &
-                         , read_zeta_boundary_flag, max_num_parcels &
-                         , max_num_surf_parcels
+    use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
+                         , set_zeta_boundary_flag
     use physics, only : read_physical_quantities, print_physical_quantities, l_peref
     implicit none
 
@@ -53,9 +43,10 @@ module utils
                 call create_netcdf_parcel_stats_file(trim(output%basename), &
                                                      output%overwrite,      &
                                                      l_restart)
-                call create_netcdf_surface_parcel_stats_files(trim(output%basename),    &
-                                                              output%overwrite,         &
-                                                              l_restart)
+!                 call create_netcdf_surface_parcel_stats_files(trim(output%basename),    &
+!                                                               output%overwrite,         &
+!                                                               l_restart)
+
             endif
 
             if (output%write_fields) then
@@ -74,9 +65,9 @@ module utils
                 call create_netcdf_parcel_file(trim(output%basename),    &
                                                output%overwrite,         &
                                                l_restart)
-                call create_netcdf_surface_parcel_files(trim(output%basename),    &
-                                                        output%overwrite,         &
-                                                        l_restart)
+!                 call create_netcdf_surface_parcel_files(trim(output%basename),    &
+!                                                         output%overwrite,         &
+!                                                         l_restart)
             endif
 
         end subroutine setup_output_files
@@ -86,38 +77,18 @@ module utils
         ! @param[in] t is the time
         subroutine write_last_step(t)
             double precision,  intent(in) :: t
-            double precision              :: velocity(3, n_parcels)
-            double precision              :: strain(5, n_parcels)
-            double precision              :: vorticity(3, n_parcels)
-            double precision              :: lo_surf_delta_vor(3, n_lo_surf_parcels)
-            double precision              :: lo_vel(2, n_lo_surf_parcels)
-            double precision              :: lo_surf_strain(4, n_lo_surf_parcels)
-            double precision              :: up_surf_delta_vor(3, n_up_surf_parcels)
-            double precision              :: up_vel(2, n_up_surf_parcels)
-            double precision              :: up_surf_strain(4, n_up_surf_parcels)
 
             call par2grid
 
             ! need to be called in order to set initial time step;
-            ! this is also needed for the first ls-rk4 substep
+            ! this is also needed for the first ls-rk substep
             call vor2vel
 
             call vorticity_tendency
 
-            call grid2par(velocity, vorticity, strain)
+            call grid2par
 
-            call lo_surf_grid2par(lo_vel, lo_surf_delta_vor, lo_surf_strain)
-            call up_surf_grid2par(up_vel, up_surf_delta_vor, up_surf_strain)
-
-
-            call calculate_parcel_diagnostics(velocity)
-
-            call calculate_surface_parcel_diagnostics(lo_surf_parcels, n_lo_surf_parcels, &
-                                                      'lo', lo_vel)
-
-            call calculate_surface_parcel_diagnostics(up_surf_parcels, n_up_surf_parcels, &
-                                                      'up', up_vel)
-
+            call calculate_parcel_diagnostics
             call calculate_field_diagnostics
 
             call write_step(t, .true.)
@@ -220,35 +191,35 @@ module utils
 #endif
         end subroutine setup_domain_and_parameters
 
-        subroutine setup_parcels
+        ! Reads always the last time step of a field file.
+        subroutine setup_fields_and_parcels
             character(len=16) :: file_type
 
-            call parcel_alloc(max_num_parcels)
-            call surface_parcel_alloc(max_num_surf_parcels)
+            call field_default
 
-            print *, "allocated parcel memory"
+            call parcel_default
 
             if (l_restart) then
                 call setup_restart(trim(restart_file), time%initial, file_type)
 
                 if (file_type == 'fields') then
-                    call init_parcels(restart_file, field_tol)
-                    call init_surface_parcels(restart_file, field_tol)
+                    call read_netcdf_fields(trim(restart_file), -1)
                 else if (file_type == 'parcels') then
                     call read_netcdf_parcels(restart_file)
-                    print *, "ERROR: We must read surfac parcels as well!"
-                    stop
                 else
                     print *, 'Restart file must be of type "fields" or "parcels".'
                     stop
                 endif
             else
                 time%initial = zero ! make sure user cannot start at arbirtrary time
-                print *, "init interior parcels"
-                call init_parcels(field_file, field_tol)
-                print *, "init surface parcels"
-                call init_surface_parcels(field_file, field_tol)
+                call read_netcdf_fields(field_file, -1)
+                call init_parcels_from_grids
+
+                ! we must check if zeta must be kept zero
+                ! on a vertical boundary
+                call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
             endif
-        end subroutine setup_parcels
+
+        end subroutine setup_fields_and_parcels
 
 end module utils

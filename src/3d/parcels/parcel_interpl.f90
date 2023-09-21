@@ -10,7 +10,7 @@ module parcel_interpl
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
-    use surface_parcel_interpl, only : surface_par2grid, area2grid
+    use surface_parcel_interpl, only : surface_par2grid, area2grid, surface_grid2par
     use fields
     use physics, only : glat, lambda_c, q_0
     use omp_lib
@@ -92,11 +92,7 @@ module parcel_interpl
 
             call area2grid
 
-            ! apply free slip boundary condition
             !$omp parallel workshare
-!             volg(0,  :, :) = two * volg(0,  :, :)
-!             volg(nz, :, :) = two * volg(nz, :, :)
-
             ! free slip boundary condition is reflective with mirror
             ! axis at the physical domain
             volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
@@ -154,7 +150,7 @@ module parcel_interpl
                 ! total buoyancy (including effects of latent heating)
                 btot = parcels%buoyancy(n) + glat * q_c
 #else
-                btot = parcels%buoyancy(n) - 4.0 * parcels%position(3, n)
+                btot = parcels%buoyancy(n)
 #endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               pvol, parcels%B(:, n), n, l_reuse)
@@ -203,17 +199,11 @@ module parcel_interpl
             call surface_par2grid
 
             !$omp parallel workshare
-            ! apply free slip boundary condition
-            !volg(0,  :, :) = two * volg(0,  :, :)
-            !volg(nz, :, :) = two * volg(nz, :, :)
-
             ! free slip boundary condition is reflective with mirror
             ! axis at the physical domain
             volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
             volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
 
-            !vortg(0,  :, :, :) = two * vortg(0,  :, :, :)
-            !vortg(nz, :, :, :) = two * vortg(nz, :, :, :)
             !$omp end parallel workshare
 
             !$omp parallel workshare
@@ -221,17 +211,11 @@ module parcel_interpl
             vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
 
 #ifndef ENABLE_DRY_MODE
-            dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
-            dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
             dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)
             dbuoyg(nz-1, :, :) = dbuoyg(nz-1, :, :) + dbuoyg(nz+1, :, :)
-            humg(0,  :, :) = two * humg(0,  :, :)
-            humg(nz, :, :) = two * humg(nz, :, :)
             humg(1,    :, :) = humg(1,    :, :) + humg(-1,   :, :)
             humg(nz-1, :, :) = humg(nz-1, :, :) + humg(nz+1, :, :)
 #endif
-            !tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
-            !tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
             tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
             tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
             !$omp end parallel workshare
@@ -288,19 +272,15 @@ module parcel_interpl
 
 
         ! Interpolate the gridded quantities to the parcels
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vortend is the parcel vorticity tendency
-        ! @param[inout] vgrad is the parcel strain
-        ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
-        !            (optional)
-        subroutine grid2par(vel, vortend, vgrad, add)
-          double precision,     intent(inout) :: vel(3, n_parcels), &
-                                                 vortend(3, n_parcels), &
-                                                 vgrad(5, n_parcels)
-          logical, optional, intent(in)       :: add
+        ! @param[in] add contributions, i.e. do not reset parcel quantities
+        !            to zero before doing grid2par (optional).
+        subroutine grid2par(add)
+          logical, optional, intent(in) :: add
           double precision :: points(3, 4)
             integer                             :: n, l, p
             !           double precision :: vsum
+
+            call surface_grid2par(add)
 
             call start_timer(grid2par_timer)
 
@@ -310,8 +290,8 @@ module parcel_interpl
                     !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, n_parcels
-                        vel(:, n) = zero
-                        vortend(:, n) = zero
+                        parcels%delta_pos(:, n) = zero
+                        parcels%delta_vor(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -320,8 +300,8 @@ module parcel_interpl
                 !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_parcels
-                    vel(:, n) = zero
-                    vortend(:, n) = zero
+                    parcels%delta_pos(:, n) = zero
+                    parcels%delta_vor(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -331,7 +311,7 @@ module parcel_interpl
             !$omp do private(n, l, p, points, is, js, ks, weights)
             do n = 1, n_parcels
 
-               vgrad(:, n) = zero
+               parcels%strain(:, n) = zero
 
                points = get_ellipsoid_points(parcels%position(:, n), &
                                              parcels%volume(n), parcels%B(:, n), n)
@@ -345,9 +325,12 @@ module parcel_interpl
 
                   ! loop over grid points which are part of the interpolation
                   do l = 1, ngp
-                     vel(:, n) = vel(:, n) + f14 * weights(l) * velog(ks(l), js(l), is(l), :)
-                     vgrad(:, n) = vgrad(:, n) + f14 * weights(l) * velgradg(ks(l), js(l), is(l), :)
-                     vortend(:, n) = vortend(:, n) + f14 * weights(l) * vtend(ks(l), js(l), is(l), :)
+                     parcels%delta_pos(:, n) = parcels%delta_pos(:, n)                          &
+                                             + f14 * weights(l) * velog(ks(l), js(l), is(l), :)
+                     parcels%strain(:, n) = parcels%strain(:, n)                                &
+                                          + f14 * weights(l) * velgradg(ks(l), js(l), is(l), :)
+                     parcels%delta_vor(:, n) = parcels%delta_vor(:, n)                          &
+                                             + f14 * weights(l) * vtend(ks(l), js(l), is(l), :)
                   enddo
                enddo
             enddo
@@ -357,19 +340,6 @@ module parcel_interpl
             call stop_timer(grid2par_timer)
 
         end subroutine grid2par
-
-
-        ! Interpolate the gridded quantities to the parcels without resetting
-        ! their values to zero before doing grid2par.
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vortend is the parcel vorticity tendency
-        ! @param[inout] vgrad is the parcel strain
-        subroutine grid2par_add(vel, vortend, vgrad)
-            double precision, intent(inout) :: vel(:, :), vortend(:, :), vgrad(:, :)
-
-            call grid2par(vel, vortend, vgrad, add=.true.)
-
-        end subroutine grid2par_add
 
 
         ! Tri-linear interpolation

@@ -66,7 +66,7 @@ program test_ellipsoid_split_merge
             call setup_parcels
 
             ! numerical split
-            call parcel_split(parcels, threshold=four)
+            call parcel_split
 
             ! make sure we split
             error = max(error, abs(dble(2 - n_parcels)))

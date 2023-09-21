@@ -2,7 +2,7 @@
 !                       Module to merge ellipses
 !           The module implements the geometric merge procedure.
 ! =============================================================================
-module surface_parcel_merge
+module surface_parcel_merging
     use surface_parcel_nearest
     use constants, only : pi, zero, one, two, four
     use surface_parcel_container, only : surface_parcel_container_type  &
@@ -28,10 +28,10 @@ module surface_parcel_merge
 
     contains
 
-        subroutine merge_ellipses
+        subroutine surface_parcel_merge
             call do_merge_ellipses(lo_surf_parcels, n_lo_surf_parcels)
             call do_merge_ellipses(up_surf_parcels, n_up_surf_parcels)
-        end subroutine merge_ellipses
+        end subroutine surface_parcel_merge
 
         ! Merge small parcels into neighbouring equal-sized parcels or bigger
         ! parcels which are close by.
@@ -300,4 +300,4 @@ module surface_parcel_merge
         end subroutine pack_parcels
 
 
-end module surface_parcel_merge
+end module surface_parcel_merging

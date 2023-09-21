@@ -1,8 +1,8 @@
 ! =============================================================================
 !                           Module to split ellipses
 ! =============================================================================
-module surface_parcel_split
-    use options, only : verbose
+module surface_parcel_split_mod
+    use options, only : verbose, parcel
     use constants, only : pi, three, f12, f14, f34
     use parameters, only : amax
     use surface_parcel_container, only : surface_parcel_container_type  &
@@ -21,20 +21,17 @@ module surface_parcel_split
 
     contains
 
-        subroutine split_ellipses(threshold)
-            double precision, intent(in) :: threshold
-            call do_ellipse_split(lo_surf_parcels, n_lo_surf_parcels, threshold)
-            call do_ellipse_split(up_surf_parcels, n_up_surf_parcels, threshold)
-        end subroutine split_ellipses
+        subroutine surface_parcel_split
+            call do_ellipse_split(lo_surf_parcels, n_lo_surf_parcels)
+            call do_ellipse_split(up_surf_parcels, n_up_surf_parcels)
+        end subroutine surface_parcel_split
 
         ! Split large parcels (areas larger than amax) or
-        ! parcels with aspect ratios larger than the threshold.
+        ! parcels with aspect ratios larger than parcel%lambda_max.
         ! @param[inout] parcels
-        ! @param[in] threshold is the largest allowed aspect ratio
-        subroutine do_ellipse_split(s_parcels, n_par, threshold)
+        subroutine do_ellipse_split(s_parcels, n_par)
             type(surface_parcel_container_type), intent(inout) :: s_parcels
             integer,                             intent(inout) :: n_par
-            double precision,                    intent(in)    :: threshold
             double precision                                   :: B(3)
             double precision                                   :: a2, lam, V
             double precision                                   :: evec(2)
@@ -57,7 +54,7 @@ module surface_parcel_split
                 ! a/b
                 lam = get_aspect_ratio(a2, V)
 
-                if (lam <= threshold .and. V <= amax) then
+                if (lam <= parcel%lambda_max .and. V <= amax) then
                     cycle
                 endif
 
@@ -95,4 +92,4 @@ module surface_parcel_split
 
         end subroutine do_ellipse_split
 
-end module surface_parcel_split
+end module surface_parcel_split_mod

@@ -14,8 +14,7 @@ module parcel_diagnostics_netcdf
     use config, only : package_version, cf_version
     use timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
-    use physics, only : write_physical_quantities
-    use surface_parcel_diagnostics_netcdf, only : write_netcdf_surface_parcel_stats
+    use physics, only : write_physical_quantities, ape_calculation
     implicit none
 
 
@@ -24,7 +23,7 @@ module parcel_diagnostics_netcdf
     character(len=512) :: ncfname
     integer            :: ncid
     integer            :: t_axis_id, t_dim_id, n_writes,            &
-                          pe_id, ke_id, te_id, npar_id, nspar_id,   &
+                          ape_id, ke_id, te_id, npar_id, nspar_id,  &
                           rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
                           avg_lam_id, std_lam_id,                   &
                           avg_vol_id, std_vol_id, sum_vol_id,       &
@@ -84,15 +83,17 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
 
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='pe',                                                  &
-                long_name='domain-averaged potential energy',               &
-                std_name='',                                                &
-                unit='m^2/s^2',                                             &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=pe_id)
+            if (.not. ape_calculation == 'none') then
+                call define_netcdf_dataset(                                 &
+                    ncid=ncid,                                              &
+                    name='ape',                                             &
+                    long_name='domain-averaged available potential energy', &
+                    std_name='',                                            &
+                    unit='m^2/s^2',                                         &
+                    dtype=NF90_DOUBLE,                                      &
+                    dimids=(/t_dim_id/),                                    &
+                    varid=ape_id)
+            endif
 
             call define_netcdf_dataset(                                     &
                 ncid=ncid,                                                  &
@@ -275,7 +276,9 @@ module parcel_diagnostics_netcdf
 
             call get_var_id(ncid, 't', t_axis_id)
 
-            call get_var_id(ncid, 'pe', pe_id)
+            if (.not. ape_calculation == 'none') then
+                call get_var_id(ncid, 'ape', ape_id)
+            endif
 
             call get_var_id(ncid, 'ke', ke_id)
 
@@ -318,8 +321,6 @@ module parcel_diagnostics_netcdf
         subroutine write_netcdf_parcel_stats(t)
             double precision, intent(in)    :: t
 
-            call write_netcdf_surface_parcel_stats(t)
-
             call start_timer(parcel_stats_io_timer)
 
             if (t <= restart_time) then
@@ -339,9 +340,11 @@ module parcel_diagnostics_netcdf
             !
             ! write diagnostics
             !
-            call write_netcdf_scalar(ncid, pe_id, pe, n_writes)
+            if (.not. ape_calculation == 'none') then
+                call write_netcdf_scalar(ncid, ape_id, ape, n_writes)
+            endif
             call write_netcdf_scalar(ncid, ke_id, ke, n_writes)
-            call write_netcdf_scalar(ncid, te_id, ke + pe, n_writes)
+            call write_netcdf_scalar(ncid, te_id, ke + ape, n_writes)
             call write_netcdf_scalar(ncid, en_id, en, n_writes)
             call write_netcdf_scalar(ncid, npar_id, n_parcels, n_writes)
             call write_netcdf_scalar(ncid, nspar_id, n_small, n_writes)

@@ -8,7 +8,7 @@ module surface_parcel_init
                                        , lo_surf_parcels, n_lo_surf_parcels &
                                        , up_surf_parcels, n_up_surf_parcels
     use parcel_ellipse, only : get_ab, get_eigenvalue
-    use surface_parcel_split, only : do_ellipse_split
+    use surface_parcel_split_mod, only : do_ellipse_split
     use surface_parcel_interpl, only : bilinear, ngp
     use parameters, only : dx, acell,                   &
                            extent, lower, nx, ny, nz,   &
@@ -16,47 +16,37 @@ module surface_parcel_init
     use netcdf_reader
     use timer, only : start_timer, stop_timer
     use omp_lib
+    use fields, only : vortg, tbuoyg
+#ifndef ENABLE_DRY_MODE
+    use fields, only : humg
+#endif
     implicit none
 
     integer :: surf_init_timer
 
-    double precision, allocatable :: weights(:, :), apar(:)
-    integer, allocatable :: is(:, :), js(:, :)
+    double precision :: weights(ngp)
+    integer :: is(ngp), js(ngp)
 
-    private :: weights, apar, is, js
+    private :: weights, is, js
 
 
     private :: init_refine,                 &
-               init_parcels,                &
-               init_from_grids,             &
-               alloc_and_precompute,        &
-               gen_parcel_scalar_attr,      &
-               dealloc
+               parcel_default,              &
+               init_from_grids
 
     contains
 
-!         ! This subroutine is only used in the unit test
-!         ! "test_parcel_init"
-!         subroutine unit_test_parcel_init_alloc
-!             call alloc_and_precompute
-!         end subroutine unit_test_parcel_init_alloc
-
-        subroutine init_surface_parcels(fname, tol)
-            character(*),     intent(in) :: fname
-            double precision, intent(in) :: tol
-            call init_parcels(lo_surf_parcels, n_lo_surf_parcels, 'lo', fname, tol)
-            call init_parcels(up_surf_parcels, n_up_surf_parcels, 'up', fname, tol)
-        end subroutine init_surface_parcels
+        subroutine surface_parcel_default
+            call parcel_default(lo_surf_parcels, n_lo_surf_parcels)
+            call parcel_default(up_surf_parcels, n_up_surf_parcels)
+        end subroutine surface_parcel_default
 
         ! Set default values for parcel attributes
         ! Attention: This subroutine assumes that the parcel
         !            container is already allocated!
-        subroutine init_parcels(s_parcels, n_par, which, fname, tol)
+        subroutine parcel_default(s_parcels, n_par)
             type(surface_parcel_container_type), intent(inout) :: s_parcels
             integer,                             intent(inout) :: n_par
-            character(2),                        intent(in)    :: which
-            character(*),     intent(in)                       :: fname
-            double precision, intent(in)                       :: tol
             double precision                                   :: lam, ratio
             integer                                            :: n
 
@@ -118,11 +108,9 @@ module surface_parcel_init
             !$omp end do
             !$omp end parallel
 
-            call init_from_grids(s_parcels, n_par, which, fname, tol)
-
             call stop_timer(surf_init_timer)
 
-        end subroutine init_parcels
+        end subroutine parcel_default
 
 
         ! Position parcels regularly in the domain.
@@ -170,243 +158,52 @@ module surface_parcel_init
 
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
-                call do_ellipse_split(s_parcels, n_par, parcel%lambda_max)
+                call do_ellipse_split(s_parcels, n_par)
                 a2 = get_eigenvalue(s_parcels%B(:, 1))
                 lam = a2 / get_ab(s_parcels%area(1))
             end do
         end subroutine init_refine
 
 
-        ! Precompute weights, indices of bilinear
-        ! interpolation and "apar"
-        subroutine alloc_and_precompute(s_parcels, n_par)
-            type(surface_parcel_container_type), intent(in) :: s_parcels
-            integer,                             intent(in) :: n_par
-            double precision, allocatable                   :: resi(:, :)
-            double precision                                :: rsum
-            integer                                         :: n, l
-
-            allocate(apar(n_par))
-            allocate(weights(ngp, n_par))
-            allocate(is(ngp, n_par))
-            allocate(js(ngp, n_par))
-            allocate(resi(0:ny-1, 0:nx-1))
-
-            ! Compute mean parcel density:
-            resi = zero
-
-            !$omp parallel do default(shared) private(n, l) reduction(+:resi)
-            do n = 1, n_par
-                ! get interpolation weights and mesh indices
-                call bilinear(s_parcels%position(:, n), is(:, n), js(:, n), weights(:, n))
-
-                do l = 1, ngp
-                    resi(js(l, n), is(l, n)) = resi(js(l, n), is(l, n)) + weights(l, n)
-                enddo
-            enddo
-            !$omp end parallel do
-
-            ! Determine local inverse density of parcels (apar)
-            !$omp parallel do default(shared) private(n, l, rsum)
-            do n = 1, n_par
-                rsum = zero
-                do l = 1, ngp
-                    rsum = rsum + resi(js(l, n), is(l, n)) * weights(l, n)
-                enddo
-                apar(n) = one / rsum
-            enddo
-            !$omp end parallel do
-
-            deallocate(resi)
-
-        end subroutine alloc_and_precompute
-
-        subroutine dealloc
-            deallocate(apar)
-            deallocate(weights)
-            deallocate(is)
-            deallocate(js)
-        end subroutine dealloc
-
+        subroutine init_surface_from_grids
+            call init_from_grids(lo_surf_parcels, n_lo_surf_parcels, 'lo')
+            call init_from_grids(up_surf_parcels, n_up_surf_parcels, 'up')
+        end subroutine init_surface_from_grids
 
         ! Initialise parcel attributes from gridded quantities.
-        subroutine init_from_grids(s_parcels, n_par, which, ncfname, tol)
+        subroutine init_from_grids(s_parcels, n_par, which)
             type(surface_parcel_container_type), intent(inout) :: s_parcels
             integer,                             intent(inout) :: n_par
             character(2),                        intent(in)    :: which
-            character(*),                        intent(in)    :: ncfname
-            double precision,                    intent(in)    :: tol
-            double precision                                   :: buffer(0:nz, 0:ny-1, 0:nx-1)
-            integer                                            :: ncid, k
-            integer                                            :: n_steps, start(4), cnt(4)
-
-            call alloc_and_precompute(s_parcels, n_par)
-
-            call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
-
-            call get_num_steps(ncid, n_steps)
-
-            cnt  =  (/ nx, ny, nz+1, 1       /)
-            start = (/ 1,  1,  1,    n_steps /)
+            integer                                            :: n, k, l
 
             k = nz
             if (which == 'lo') then
                 k = 0
             endif
 
-            print *, "init from grids"
-
-
-            if (has_dataset(ncid, 'x_vorticity')) then
-                buffer = zero
-                print *, "xi"
-                call read_netcdf_dataset(ncid, 'x_vorticity', buffer, start=start, cnt=cnt)
-                print *, "generate"
-                call gen_parcel_scalar_attr(s_parcels, n_par, &
-                                            buffer(k, :, :), tol, s_parcels%vorticity(1, :))
-            endif
-
-            if (has_dataset(ncid, 'y_vorticity')) then
-                buffer = zero
-                print *, "eta"
-                call read_netcdf_dataset(ncid, 'y_vorticity', buffer, start=start, cnt=cnt)
-                print *, "generate"
-                call gen_parcel_scalar_attr(s_parcels, n_par, &
-                                            buffer(k, :, :), tol, s_parcels%vorticity(2, :))
-            endif
-
-            if (has_dataset(ncid, 'z_vorticity')) then
-                buffer = zero
-                print *, "zeta"
-                call read_netcdf_dataset(ncid, 'z_vorticity', buffer, start=start, cnt=cnt)
-                print *, "generate"
-                call gen_parcel_scalar_attr(s_parcels, n_par, &
-                                            buffer(k, :, :), tol, s_parcels%vorticity(3, :))
-            endif
-
-            if (has_dataset(ncid, 'buoyancy')) then
-                buffer = zero
-                print *, "buoyancy"
-                call read_netcdf_dataset(ncid, 'buoyancy', buffer, start=start, cnt=cnt)
-                print *, "generate"
-                call gen_parcel_scalar_attr(s_parcels, n_par, &
-                                            buffer(k, :, :), tol, s_parcels%buoyancy)
-            endif
-
-#ifndef ENABLE_DRY_MODE
-            if (has_dataset(ncid, 'humidity')) then
-                buffer = zero
-                call read_netcdf_dataset(ncid, 'humidity', buffer, start=start, cnt=cnt)
-                call gen_parcel_scalar_attr(s_parcels, n_par, &
-                                            buffer(k, :, :), tol, s_parcels%humidity)
-            endif
-#endif
-            call close_netcdf_file(ncid)
-
-            call dealloc
-
-        end subroutine init_from_grids
-
-        ! Generates the parcel attribute "par" from the field values provided
-        ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)
-        subroutine gen_parcel_scalar_attr(s_parcels, n_par, field, tol, par)
-            type(surface_parcel_container_type), intent(inout) :: s_parcels
-            integer,                             intent(inout) :: n_par
-            double precision,                    intent(in)  :: field(0:ny-1, 0:nx-1)
-            double precision,                    intent(in)  :: tol
-            double precision,                    intent(out) :: par(:)
-            double precision                                 :: resi(0:ny-1, 0:nx-1)
-            double precision                                 :: rms, rtol, rerr
-            double precision                                 :: rsum, fsum, avg_field
-            integer                                          :: n, l
-
-#ifdef ENABLE_VERBOSE
-                if (verbose) then
-                    print *, 'Generate parcel attribute'
-                endif
-#endif
-
-            ! Compute mean field value:
-            ! (divide by nx * ny since lower and upper edge weights are halved)
-            avg_field = sum(field) / dble(nx * ny)
-
-            resi = (field - avg_field) ** 2
-
-            rms = dsqrt(sum(resi) / dble(nx * ny))
-
-
-            if (rms == zero) then
-                !$omp parallel default(shared)
-                !$omp do private(n)
-                do n = 1, n_par
-                    ! assign mean value
-                    par(n) = avg_field
-                enddo
-                !$omp end do
-                !$omp end parallel
-                return
-            endif
-
-            ! Maximum error permitted below in gridded residue:
-            rtol = rms * tol
-
-            ! Initialise (area-weighted) parcel attribute with a guess
-            !$omp parallel do default(shared) private(n, l, fsum)
-            do n = 1, n_par
-                fsum = zero
-                do l = 1, ngp
-                    fsum = fsum + field(js(l, n), is(l, n)) * weights(l, n)
-                enddo
-                par(n) = apar(n) * fsum
-            enddo
-            !$omp end parallel do
-
-            ! Iteratively compute a residual and update (area-weighted) attribute:
-            rerr = one
-
-            do while (rerr .gt. max(rtol, 1.0e-14))
-                !Compute residual:
-                resi = zero
-                do n = 1, n_par
-                    do l = 1, ngp
-                        resi(js(l, n), is(l, n)) = resi(js(l, n), is(l, n)) &
-                                                 + weights(l, n) * par(n)
-                    enddo
-                enddo
-
-                resi = field - resi
-
-                !Update (area-weighted) attribute:
-                !$omp parallel do default(shared) private(n, rsum, l)
-                do n = 1, n_par
-                    rsum = zero
-                    do l = 1, ngp
-                        rsum = rsum + resi(js(l, n), is(l, n)) * weights(l, n)
-                    enddo
-                    par(n) = par(n) + apar(n) * rsum
-                enddo
-                !$omp end parallel do
-
-                !Compute maximum error:
-                rerr = maxval(dabs(resi))
-
-#ifdef ENABLE_VERBOSE
-                if (verbose) then
-                    print *, ' Max abs error = ', rerr
-                endif
-#endif
-            enddo
-
-            !Finally divide by parcel area to define attribute:
-            ! (multiply with acell since algorithm is designed for area fractions)
             !$omp parallel default(shared)
-            !$omp do private(n)
+            !$omp do private(n, l, is, js, weights)
             do n = 1, n_par
-                par(n) = acell * par(n) / s_parcels%area(n)
+
+                ! get interpolation weights and mesh indices
+                call bilinear(s_parcels%position(:, n), is, js, weights)
+
+                ! loop over grid points which are part of the interpolation
+                do l = 1, ngp
+                    s_parcels%vorticity(:, n) = s_parcels%vorticity(:, n) &
+                                              + weights(l) * vortg(k, js(l), is(l), :)
+                    s_parcels%buoyancy(n) = s_parcels%buoyancy(n) &
+                                          + weights(l) * tbuoyg(k, js(l), is(l))
+#ifndef ENABLE_DRY_MODE
+                    s_parcels%humidity(n) = s_parcels%humidity(n) &
+                                          + weights(l) * humg(k, js(l), is(l))
+#endif
+
+                enddo
             enddo
             !$omp end do
             !$omp end parallel
-
-        end subroutine gen_parcel_scalar_attr
+        end subroutine init_from_grids
 
 end module surface_parcel_init

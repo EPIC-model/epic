@@ -27,13 +27,13 @@ program epic3d
     use inversion_utils, only : init_inversion
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_timer
-    use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
+    use ls_rk, only : ls_rk_step, rk_timer
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
-                    , setup_parcels
-    use surface_parcel_merge, only : surf_merge_timer
+                    , setup_fields_and_parcels
+    use surface_parcel_merging, only : surf_merge_timer
     use surface_parcel_netcdf, only : surf_parcel_io_timer
-    use surface_parcel_split, only :surf_split_timer
+    use surface_parcel_split_mod, only : surf_split_timer
     use surface_parcel_init, only : surf_init_timer
     use surface_parcel_interpl, only : surf_par2grid_timer  &
                                      , surf_grid2par_timer
@@ -41,7 +41,6 @@ program epic3d
                                         , surf_grad_corr_timer
     use surface_parcel_diagnostics, only : surf_parcel_stats_timer
     use surface_parcel_diagnostics_netcdf, only : surf_parcel_stats_io_timer
-    use parameters, only : max_num_parcels, max_num_surf_parcels
     implicit none
 
     integer          :: epic_timer
@@ -80,7 +79,7 @@ program epic3d
             call register_timer('field diagnostics I/O', field_stats_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
-            call register_timer('parcel push', rk4_timer)
+            call register_timer('parcel push', rk_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('surface parcel merge', surf_merge_timer)
@@ -103,19 +102,9 @@ program epic3d
             ! read domain dimensions
             call setup_domain_and_parameters
 
-            print *, "setup parcels"
-
-            call setup_parcels
-
-            print *, "ls alloc"
-
-            call ls_rk4_alloc(max_num_parcels, max_num_surf_parcels)
-
-            print *, "init inversion"
+            call setup_fields_and_parcels
 
             call init_inversion
-
-            print *, "init parcel correction"
 
             call init_parcel_correction
 
@@ -145,11 +134,11 @@ program epic3d
 #endif
                 call apply_vortcor
 
-                call ls_rk4_step(t)
+                call ls_rk_step(t)
 
                 call merge_parcels(parcels)
 
-                call parcel_split(parcels, parcel%lambda_max)
+                call parcel_split
 
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace((cor_iter > 1))
@@ -169,7 +158,6 @@ program epic3d
         subroutine post_run
             use options, only : output
             call parcel_dealloc
-            call ls_rk4_dealloc
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)

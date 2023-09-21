@@ -21,6 +21,13 @@ module surface_parcel_container
             humidity,   &
 #endif
             buoyancy
+
+            ! low-storage RK arrays:
+        double precision, allocatable, dimension(:, :) :: &
+            delta_pos,  &       ! velocity
+            delta_vor,  &       ! vorticity tendency
+            strain,     &
+            delta_b             ! B-matrix tendency
     end type surface_parcel_container_type
 
     type(surface_parcel_container_type) up_surf_parcels, lo_surf_parcels
@@ -124,6 +131,11 @@ module surface_parcel_container
 #ifndef ENABLE_DRY_MODE
             allocate(s_parcels%humidity(num))
 #endif
+            ! low-storage RK arrays:
+            allocate(s_parcels%delta_pos(2, num))
+            allocate(s_parcels%delta_vor(3, num))
+            allocate(s_parcels%strain(4, num))
+            allocate(s_parcels%delta_b(3, num))
         end subroutine alloc
 
         subroutine dealloc(s_parcels)
@@ -137,6 +149,11 @@ module surface_parcel_container
 #ifndef ENABLE_DRY_MODE
             deallocate(s_parcels%humidity)
 #endif
+            ! low-storage RK arrays:
+            deallocate(s_parcels%delta_pos)
+            deallocate(s_parcels%delta_vor)
+            deallocate(s_parcels%strain)
+            deallocate(s_parcels%delta_b)
         end subroutine dealloc
 
 end module surface_parcel_container

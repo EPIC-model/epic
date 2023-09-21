@@ -176,15 +176,12 @@ module surface_parcel_interpl
 
 
         ! Interpolate the gridded quantities to the parcels
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vgrad is the parcel strain
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
-        subroutine do_grid2par(s_parcels, n_par, which, vel, vor, vgrad, add)
+        subroutine do_grid2par(s_parcels, n_par, which, add)
             type(surface_parcel_container_type), intent(inout) :: s_parcels
             integer,                             intent(in)    :: n_par
             character(2),                        intent(in)    :: which
-            double precision,     intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
             logical, optional, intent(in)       :: add
             double precision                    :: points(2, 2), weight, dvdx
             integer                             :: n, p, l, k
@@ -202,8 +199,8 @@ module surface_parcel_interpl
                     !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, n_par
-                        vel(:, n) = zero
-                        vor(:, n) = zero
+                        s_parcels%delta_pos(:, n) = zero
+                        s_parcels%delta_vor(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -212,8 +209,8 @@ module surface_parcel_interpl
                 !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_par
-                    vel(:, n) = zero
-                    vor(:, n) = zero
+                    s_parcels%delta_pos(:, n) = zero
+                    s_parcels%delta_vor(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -223,7 +220,7 @@ module surface_parcel_interpl
             !$omp do private(n, p, l, points, weight, is, js, weights, dvdx)
             do n = 1, n_par
 
-                vgrad(:, n) = zero
+                s_parcels%strain(:, n) = zero
 
                 points = get_ellipse_points(s_parcels%position(:, n), &
                                             s_parcels%B(:, n))
@@ -242,22 +239,27 @@ module surface_parcel_interpl
                         ! the weight is halved due to 2 points per ellipse
                         weight = f12 * weights(l)
 
-                        vel(:, n) = vel(:, n) + weight * velog(k, js(l), is(l), 1:2)
+                        s_parcels%delta_pos(:, n) = s_parcels%delta_pos(:, n)               &
+                                                  + weight * velog(k, js(l), is(l), 1:2)
 
                         ! du/dx
-                        vgrad(1, n) = vgrad(1, n) + weight * velgradg(k, js(l), is(l), 1)
+                        s_parcels%strain(1, n) = s_parcels%strain(1, n)                 &
+                                               + weight * velgradg(k, js(l), is(l), 1)
 
                         ! du/dy
-                        vgrad(2, n) = vgrad(2, n) + weight * velgradg(k, js(l), is(l), 2)
+                        s_parcels%strain(2, n) = s_parcels%strain(2, n)                 &
+                                               + weight * velgradg(k, js(l), is(l), 2)
 
                         ! dv/dx = \zeta + du/dy
                         dvdx = vortg(k, js(l), is(l), 3) + velgradg(k, js(l), is(l), 2)
-                        vgrad(3, n) = vgrad(3, n) + weight * dvdx
+                        s_parcels%strain(3, n) = s_parcels%strain(3, n) + weight * dvdx
 
                         ! dv/dy
-                        vgrad(4, n) = vgrad(4, n) + weight * velgradg(k, js(l), is(l), 3)
+                        s_parcels%strain(4, n) = s_parcels%strain(4, n)                 &
+                                               + weight * velgradg(k, js(l), is(l), 3)
 
-                        vor(:, n) = vor(:, n) + weight * vtend(k, js(l), is(l), :)
+                        s_parcels%delta_vor(:, n) = s_parcels%delta_vor(:, n)           &
+                                                  + weight * vtend(k, js(l), is(l), :)
 
                     enddo
                 enddo
@@ -269,39 +271,12 @@ module surface_parcel_interpl
 
         end subroutine do_grid2par
 
-        subroutine lo_surf_grid2par(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
 
-            call do_grid2par(lo_surf_parcels, n_lo_surf_parcels, 'lo', vel, vor, vgrad)
-
-        end subroutine lo_surf_grid2par
-
-        subroutine up_surf_grid2par(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
-
-            call do_grid2par(up_surf_parcels, n_up_surf_parcels, 'up', vel, vor, vgrad)
-
-        end subroutine up_surf_grid2par
-
-
-        ! Interpolate the gridded quantities to the parcels without resetting
-        ! their values to zero before doing grid2par.
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vgrad is the parcel strain
-        subroutine lo_surf_grid2par_add(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
-
-            call do_grid2par(lo_surf_parcels, n_lo_surf_parcels, 'lo', vel, vor, vgrad, add=.true.)
-
-        end subroutine lo_surf_grid2par_add
-
-        subroutine up_surf_grid2par_add(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:, :), vgrad(:, :)
-
-            call do_grid2par(up_surf_parcels, n_up_surf_parcels, 'up', vel, vor, vgrad, add=.true.)
-
-        end subroutine up_surf_grid2par_add
-
+        subroutine surface_grid2par(add)
+            logical, optional, intent(in) :: add
+            call do_grid2par(lo_surf_parcels, n_lo_surf_parcels, 'lo', add)
+            call do_grid2par(up_surf_parcels, n_up_surf_parcels, 'up', add)
+        end subroutine surface_grid2par
 
         ! Bi-linear interpolation
         ! @param[in] pos position of the parcel

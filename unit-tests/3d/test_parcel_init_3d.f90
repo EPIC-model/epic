@@ -7,7 +7,7 @@ program test_parcel_init_3d
     use unit_test
     use constants, only : pi, zero, one, two, four, f12, f13, f23, f32
     use parcel_container
-    use parcel_init, only : gen_parcel_scalar_attr, unit_test_parcel_init_alloc, init_timer
+    use parcel_init, only : init_timer
     use parcel_interpl, only : par2grid, par2grid_timer
     use parcel_ellipsoid, only : get_abc
     use fields, only : tbuoyg, field_default
@@ -94,13 +94,6 @@ program test_parcel_init_3d
         enddo
     enddo
 
-
-    ! Prepare for "gen_parcel_scalar_attr"
-    call unit_test_parcel_init_alloc
-
-    !---------------------------
-    ! Generate parcel attribute:
-    call gen_parcel_scalar_attr(tbuoyg, tol, parcels%buoyancy)
 
     !
     ! check result
