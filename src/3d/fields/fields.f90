@@ -21,6 +21,7 @@ module fields
     double precision, allocatable, dimension(:, :, :, :) :: &
         velog,     &   ! velocity vector field (u, v, w)
         vortg,     &   ! vorticity vector field (\xi, \eta, \zeta)
+        vortg_pre,     &   ! vorticity vector field (\xi, \eta, \zeta)
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
                        ! ordering: du/dx, du/dy,
@@ -85,6 +86,8 @@ module fields
 
             allocate(vortg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
+            allocate(vortg_pre(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
+
             allocate(vtend(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
             allocate(tbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
@@ -111,6 +114,7 @@ module fields
             velgradg = zero
             volg     = zero
             vortg    = zero
+            vortg_pre = zero
             vtend    = zero
             tbuoyg   = zero
             zg       = zero
@@ -136,6 +140,7 @@ module fields
                 deallocate(velgradg)
                 deallocate(volg)
                 deallocate(vortg)
+                deallocate(vortg_pre)
                 deallocate(vtend)
                 deallocate(tbuoyg)
                 deallocate(zg)

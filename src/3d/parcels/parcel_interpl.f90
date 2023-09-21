@@ -372,8 +372,6 @@ module parcel_interpl
               end do
             end do
 
-            vortg_pre=vortg
-
             call stop_timer(par2grid_timer)
 
             !!!

@@ -35,6 +35,8 @@ module inversion_mod
 
             call start_timer(vor2vel_timer)
 
+            vortg_pre=vortg
+
             !----------------------------------------------------------
             ! Decompose initial vorticity and filter spectrally:
             do nc = 1, n_dim
@@ -47,50 +49,50 @@ module inversion_mod
             ! A, B, C are vorticities
             ! D = B_x - A_y; E = C_z
             ! A = k2l2i * (E_x + D_y) and B = k2l2i * (E_y - D_x) --> A_x + B_y + C_z = zero
-            call diffx(svor(:, :, :, I_Y), as) ! as = B_x
-            call diffy(svor(:, :, :, I_X), bs) ! bs = A_y
-            !$omp parallel workshare
-            ds = as - bs                     ! ds = D
-            cs = svor(:, :, :, I_Z)
-            !$omp end parallel workshare
-            call field_combine_semi_spectral(cs)
-            call central_diffz_semi_spectral(cs, es)                ! es = E
-            call field_decompose_semi_spectral(es)
+!~             call diffx(svor(:, :, :, I_Y), as) ! as = B_x
+!~             call diffy(svor(:, :, :, I_X), bs) ! bs = A_y
+!~             !$omp parallel workshare
+!~             ds = as - bs                     ! ds = D
+!~             cs = svor(:, :, :, I_Z)
+!~             !$omp end parallel workshare
+!~             call field_combine_semi_spectral(cs)
+!~             call central_diffz_semi_spectral(cs, es)                ! es = E
+!~             call field_decompose_semi_spectral(es)
 
-            ! ubar and vbar are used here to store the mean x and y components of the vorticity
-            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
-                ubar = svor(:, 0, 0, I_X)
-                vbar = svor(:, 0, 0, I_Y)
-            endif
+!~             ! ubar and vbar are used here to store the mean x and y components of the vorticity
+!~             if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+!~                 ubar = svor(:, 0, 0, I_X)
+!~                 vbar = svor(:, 0, 0, I_Y)
+!~             endif
 
-            call diffx(es, svor(:, :, :, I_X)) ! E_x
-            call diffy(ds, cs)               ! cs = D_y
-            !$omp parallel do private(iz)  default(shared)
-            do iz = 0, nz
-               svor(iz, :, :, I_X) = k2l2i * (svor(iz, :, :, I_X) + cs(iz, :, :))
-            enddo
-            !$omp end parallel do
+!~             call diffx(es, svor(:, :, :, I_X)) ! E_x
+!~             call diffy(ds, cs)               ! cs = D_y
+!~             !$omp parallel do private(iz)  default(shared)
+!~             do iz = 0, nz
+!~                svor(iz, :, :, I_X) = k2l2i * (svor(iz, :, :, I_X) + cs(iz, :, :))
+!~             enddo
+!~             !$omp end parallel do
 
-            call diffy(es, svor(:, :, :, I_Y)) ! E_y
-            call diffx(ds, cs)                 ! D_x
+!~             call diffy(es, svor(:, :, :, I_Y)) ! E_y
+!~             call diffx(ds, cs)                 ! D_x
 
-            !$omp parallel do private(iz)  default(shared)
-            do iz = 0, nz
-               svor(iz, :, :, I_Y) = k2l2i * (svor(iz, :, :, I_Y) - cs(iz, :, :))
-            enddo
-            !$omp end parallel do
+!~             !$omp parallel do private(iz)  default(shared)
+!~             do iz = 0, nz
+!~                svor(iz, :, :, I_Y) = k2l2i * (svor(iz, :, :, I_Y) - cs(iz, :, :))
+!~             enddo
+!~             !$omp end parallel do
 
-            ! bring back the mean x and y components of the vorticity
-            if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
-                svor(:, 0, 0, I_X) = ubar
-                svor(:, 0, 0, I_Y) = vbar
-            endif
+!~             ! bring back the mean x and y components of the vorticity
+!~             if ((box%lo(1) == 0) .and. (box%lo(2) == 0)) then
+!~                 svor(:, 0, 0, I_X) = ubar
+!~                 svor(:, 0, 0, I_Y) = vbar
+!~             endif
 
-            !----------------------------------------------------------
-            ! Combine vorticity in physical space:
-            do nc = 1, n_dim
-                call field_combine_physical(svor(:, :, :, nc), vortg(:, :, :, nc))
-            enddo
+             !----------------------------------------------------------
+             ! Combine vorticity in physical space:
+             do nc = 1, n_dim
+                 call field_combine_physical(svor(:, :, :, nc), vortg(:, :, :, nc))
+             enddo
 
             !----------------------------------------------------------
             !Form source term for inversion of vertical velocity -> ds:
