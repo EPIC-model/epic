@@ -51,16 +51,19 @@ module field_netcdf
                         , NC_NSPARG  = 11       &
                         , NC_TBUOY   = 12       &
                         , NC_ZG      = 13       &
-                        , NC_VOL     = 14
+                        , NC_VOL     = 14       &
+                        , NC_X_PREVOR   = 15        &
+                        , NC_Y_PREVOR   = 16        &
+                        , NC_Z_PREVOR   = 17
 
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: NC_DBUOY   = 15       &
-                        , NC_HUM     = 16       &
-                        , NC_LBUOY   = 17
+    integer, parameter :: NC_DBUOY   = 18       &
+                        , NC_HUM     = 19       &
+                        , NC_LBUOY   = 20
 
-    type(netcdf_field_info) :: nc_dset(17)
+    type(netcdf_field_info) :: nc_dset(20)
 #else
-    type(netcdf_field_info) :: nc_dset(14)
+    type(netcdf_field_info) :: nc_dset(17)
 #endif
 
     integer :: n_writes
@@ -252,6 +255,10 @@ module field_netcdf
 
             call write_field_double(NC_ZG, zg, start, cnt)
 
+            call write_field_double(NC_X_PREVOR, vortg_pre(:, :, :, 1), start, cnt)
+            call write_field_double(NC_Y_PREVOR, vortg_pre(:, :, :, 2), start, cnt)
+            call write_field_double(NC_Z_PREVOR, vortg_pre(:, :, :, 3), start, cnt)
+
 #ifndef ENABLE_DRY_MODE
             call write_field_double(NC_DBUOY, dbuoyg, start, cnt)
 
@@ -418,6 +425,9 @@ module field_netcdf
                 nc_dset(NC_Z_VEL)%l_enabled = .true.
                 nc_dset(NC_TBUOY)%l_enabled = .true.
                 nc_dset(NC_ZG)%l_enabled = .true.
+                nc_dset(NC_X_PREVOR)%l_enabled = .true.
+                nc_dset(NC_Y_PREVOR)%l_enabled = .true.
+                nc_dset(NC_Z_PREVOR)%l_enabled = .true.
 #ifndef ENABLE_DRY_MODE
                 nc_dset(NC_DBUOY)%l_enabled = .true.
                 nc_dset(NC_HUM)%l_enabled   = .true.
@@ -453,6 +463,9 @@ module field_netcdf
                 nc_dset(NC_Z_VEL)%l_enabled = .true.
                 nc_dset(NC_TBUOY)%l_enabled = .true.
                 nc_dset(NC_ZG)%l_enabled    = .true.
+                nc_dset(NC_X_PREVOR)%l_enabled = .true.
+                nc_dset(NC_Y_PREVOR)%l_enabled = .true.
+                nc_dset(NC_Z_PREVOR)%l_enabled = .true.
 #ifndef ENABLE_DRY_MODE
                 nc_dset(NC_DBUOY)%l_enabled = .true.
                 nc_dset(NC_HUM)%l_enabled   = .true.
@@ -554,6 +567,24 @@ module field_netcdf
                                                   long_name='parcel height',           &
                                                   std_name='',                          &
                                                   unit='m',                         &
+                                                  dtype=NF90_DOUBLE)
+
+            nc_dset(NC_X_PREVOR) = netcdf_field_info(name='x_prevorticity',                   &
+                                                  long_name='check on x vorticity component',    &
+                                                  std_name='',                          &
+                                                  unit='1/s',                           &
+                                                  dtype=NF90_DOUBLE)
+
+            nc_dset(NC_Y_PREVOR) = netcdf_field_info(name='y_prevorticity',                   &
+                                                  long_name='check on y vorticity component',    &
+                                                  std_name='',                          &
+                                                  unit='1/s',                           &
+                                                  dtype=NF90_DOUBLE)
+
+            nc_dset(NC_Z_PREVOR) = netcdf_field_info(name='z_prevorticity',                   &
+                                                  long_name='check on z vorticity component',    &
+                                                  std_name='',                          &
+                                                  unit='1/s',                           &
                                                   dtype=NF90_DOUBLE)
 
 #ifndef ENABLE_DRY_MODE

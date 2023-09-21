@@ -212,7 +212,7 @@ module parcel_interpl
                     tbuoyg(ks:ks+1, js:js+1, is:is+1) = tbuoyg(ks:ks+1, js:js+1, is:is+1) &
                                                 + weight * btot
                     zg(ks:ks+1, js:js+1, is:is+1) = zg(ks:ks+1, js:js+1, is:is+1) &
-                                                + weight * parcels%position(I_Z, n)
+                                                + weight * parcels%position(3, n)
                     volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
                                               + weight
                 enddo
@@ -308,8 +308,11 @@ module parcel_interpl
 
                 !! LOWER BOUNDARIES VIA GRADIENT ESTIMATE
                 dz_corr=correct_dz(zg(1,   iy, ix)-zg(0,   iy, ix),dx(3))
-                vortg(-1,   iy, ix, :) = vortg(1,   iy, ix, :) &
-                                         -2.0*dx(3)*(vortg(1,   iy, ix, :)-vortg(0,   iy, ix, :))/dz_corr
+
+                do p = 1, 3
+                  vortg(-1,   iy, ix, p) = vortg(1,   iy, ix, p) &
+                                         -2.0*dx(3)*(vortg(1,   iy, ix, p)-vortg(0,   iy, ix, p))/dz_corr
+                end do
                 tbuoyg(-1,   iy, ix)   = tbuoyg(1,   iy, ix) &
                                          -2.0*dx(3)*(tbuoyg(1,   iy, ix)-tbuoyg(0,   iy, ix))/dz_corr
 #ifndef ENABLE_DRY_MODE
@@ -319,8 +322,11 @@ module parcel_interpl
                                          -2.0*dx(3)*(dbuoyg(1,   iy, ix)-dbuoyg(0,   iy, ix))/dz_corr
 #endif
 
-                vortg(0,   iy, ix, :) = vortg(1,   iy, ix, :) &
-                                        - dx(3)*(vortg(1,   iy, ix, :)-vortg(0,   iy, ix, :))/dz_corr
+                do p = 1, 3
+                  vortg(0,   iy, ix, p) = vortg(1,   iy, ix, p) &
+                                        - dx(3)*(vortg(1,   iy, ix, p)-vortg(0,   iy, ix, p))/dz_corr
+                end do
+
                 tbuoyg(0,   iy, ix)   = tbuoyg(1,   iy, ix) &
                                         - dx(3)*(tbuoyg(1,   iy, ix)-tbuoyg(0,   iy, ix))/dz_corr
 #ifndef ENABLE_DRY_MODE
@@ -329,12 +335,19 @@ module parcel_interpl
                 dbuoyg(0,   iy, ix)   = dbuoyg(1,   iy, ix) &
                                         - dx(3)*(dbuoyg(1,   iy, ix)-dbuoyg(0,   iy, ix))/dz_corr
 #endif
+              end do
+            end do
 
+            do ix = box%hlo(1), box%hhi(1)
+              do iy = box%hlo(2), box%hhi(2)
                 !! UPPER BOUNDARIES VIA GRADIENT ESTIMATE
                 dz_corr=correct_dz(zg(nz,   iy, ix)-zg(nz-1,   iy, ix),dx(3))
 
-                vortg(nz+1,   iy, ix, :) = vortg(nz-1,   iy, ix, :) &
-                                           + 2.0*dx(3)*(vortg(nz,   iy, ix, :)-vortg(nz-1,   iy, ix, :))/dz_corr
+                do p = 1, 3
+                  vortg(nz+1,   iy, ix, p) = vortg(nz-1,   iy, ix, p) &
+                                           + 2.0*dx(3)*(vortg(nz,   iy, ix, p)-vortg(nz-1,   iy, ix, p))/dz_corr
+                end do
+
                 tbuoyg(nz+1,   iy, ix)   = tbuoyg(nz-1,   iy, ix) &
                                            + 2.0*dx(3)*(tbuoyg(nz,   iy, ix)-tbuoyg(nz-1,   iy, ix))/dz_corr
 #ifndef ENABLE_DRY_MODE
@@ -343,9 +356,10 @@ module parcel_interpl
                 dbuoyg(nz+1,   iy, ix)   = dbuoyg(nz-1,   iy, ix) &
                                            + 2.0*dx(3)*(dbuoyg(nz,   iy, ix)-dbuoyg(nz-1,   iy, ix))/dz_corr
 #endif
-
-                vortg(nz  ,   iy, ix, :) = vortg(nz-1,   iy, ix, :) &
-                                           + dx(3)*(vortg(nz,   iy, ix, :)-vortg(nz-1,   iy, ix, :))/dz_corr
+                do p = 1, 3
+                  vortg(nz  ,   iy, ix, p) = vortg(nz-1,   iy, ix, p) &
+                                           + dx(3)*(vortg(nz,   iy, ix, p)-vortg(nz-1,   iy, ix, p))/dz_corr
+                end do
                 tbuoyg(nz  ,   iy, ix)   = tbuoyg(nz-1,   iy, ix) &
                                            + dx(3)*(tbuoyg(nz,   iy, ix)-tbuoyg(nz-1,   iy, ix))/dz_corr
 #ifndef ENABLE_DRY_MODE
@@ -358,7 +372,10 @@ module parcel_interpl
               end do
             end do
 
+            vortg_pre=vortg
+
             call stop_timer(par2grid_timer)
+
             !!!
 
 

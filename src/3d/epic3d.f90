@@ -92,10 +92,16 @@ program epic3d
             ! parse the config file
             call read_config_file
 
+            write(*,*) '101'
+
             ! read domain dimensions
             call setup_domain_and_parameters
 
+            write(*,*) '102'
+
             call setup_fields_and_parcels
+
+            write(*,*) '103'
 
             call ls_rk_setup(rk_order)
 
@@ -103,7 +109,11 @@ program epic3d
 
             call init_parcel_correction
 
+            write(*,*) '104'
+
             call setup_output_files
+
+            write(*,*) '105'
 
             call nearest_win_allocate
 
