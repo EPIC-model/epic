@@ -36,7 +36,7 @@ module parcel_split_mod
             double precision     :: vol, lam
             double precision     :: D(3), V(3, 3)
             integer              :: last_index, n_indices
-            integer              :: grown_size, shrunk_size, n_required
+            !integer              :: grown_size, shrunk_size, n_required
             integer              :: i, n, n_thread_loc
             integer, allocatable :: indices(:)
             integer              :: pid(n_parcels)
@@ -79,18 +79,18 @@ module parcel_split_mod
             ! Adapt container size if needed:
 
             ! we get additional "n_indices" parcels
-            n_required = n_parcels + n_indices
+            !n_required = n_parcels + n_indices
 
-            shrunk_size = nint(parcel%shrink_factor * n_required)
+            !shrunk_size = nint(parcel%shrink_factor * n_required)
 
             call stop_timer(split_timer)
 
-            if (n_required > max_num_parcels) then
-                grown_size = nint(parcel%grow_factor * n_required)
-                call parcel_resize(grown_size)
-            else if (n_required < nint(f34 * shrunk_size)) then
-                call parcel_resize(shrunk_size)
-            endif
+            !if (n_required > max_num_parcels) then
+            !    grown_size = nint(parcel%grow_factor * n_required)
+            !    call parcel_resize(grown_size)
+            !else if (n_required < nint(f34 * shrunk_size)) then
+            !    call parcel_resize(shrunk_size)
+            !endif
 
             call start_timer(split_timer)
 

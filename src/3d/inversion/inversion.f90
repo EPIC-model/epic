@@ -40,45 +40,45 @@ module inversion_mod
                 svor(:, :, :, nc) = filt * svor(:, :, :, nc)
             enddo
 
-            !----------------------------------------------------------
-            ! Enforce solenoidality
-            ! A, B, C are vorticities
-            ! D = B_x - A_y; E = C_z
-            ! A = k2l2i * (E_x + D_y) and B = k2l2i * (E_y - D_x) --> A_x + B_y + C_z = zero
-            call diffx(svor(:, :, :, I_Y), as) ! as = B_x
-            call diffy(svor(:, :, :, I_X), bs) ! bs = A_y
-            !$omp parallel workshare
-            ds = as - bs                     ! ds = D
-            cs = svor(:, :, :, I_Z)
-            !$omp end parallel workshare
-            call field_combine_semi_spectral(cs)
-            call central_diffz(cs, es)                     ! es = E
-            call field_decompose_semi_spectral(es)
-
-            ! ubar and vbar are used here to store the mean x and y components of the vorticity
-            ubar = svor(:, 0, 0, I_X)
-            vbar = svor(:, 0, 0, I_Y)
-
-            call diffx(es, svor(:, :, :, I_X)) ! E_x
-            call diffy(ds, cs)               ! cs = D_y
-            !$omp parallel do private(iz)  default(shared)
-            do iz = 0, nz
-               svor(iz, :, :, I_X) = k2l2i * (svor(iz, :, :, I_X) + cs(iz, :, :))
-            enddo
-            !$omp end parallel do
-
-            call diffy(es, svor(:, :, :, I_Y)) ! E_y
-            call diffx(ds, cs)                 ! D_x
-
-            !$omp parallel do private(iz)  default(shared)
-            do iz = 0, nz
-               svor(iz, :, :, I_Y) = k2l2i * (svor(iz, :, :, I_Y) - cs(iz, :, :))
-            enddo
-            !$omp end parallel do
-
-            ! bring back the mean x and y components of the vorticity
-            svor(:, 0, 0, I_X) = ubar
-            svor(:, 0, 0, I_Y) = vbar
+!            !----------------------------------------------------------
+!            ! Enforce solenoidality
+!            ! A, B, C are vorticities
+!            ! D = B_x - A_y; E = C_z
+!            ! A = k2l2i * (E_x + D_y) and B = k2l2i * (E_y - D_x) --> A_x + B_y + C_z = zero
+!            call diffx(svor(:, :, :, I_Y), as) ! as = B_x
+!            call diffy(svor(:, :, :, I_X), bs) ! bs = A_y
+!            !$omp parallel workshare
+!            ds = as - bs                     ! ds = D
+!            cs = svor(:, :, :, I_Z)
+!            !$omp end parallel workshare
+!            !call field_combine_semi_spectral(cs)
+!            call central_diffz(cs, es)                     ! es = E
+!            !call field_decompose_semi_spectral(es)
+!
+!            ! ubar and vbar are used here to store the mean x and y components of the vorticity
+!            ubar = svor(:, 0, 0, I_X)
+!            vbar = svor(:, 0, 0, I_Y)
+!
+!            call diffx(es, svor(:, :, :, I_X)) ! E_x
+!            call diffy(ds, cs)               ! cs = D_y
+!            !$omp parallel do private(iz)  default(shared)
+!            do iz = 0, nz
+!               svor(iz, :, :, I_X) = k2l2i * (svor(iz, :, :, I_X) + cs(iz, :, :))
+!            enddo
+!            !$omp end parallel do
+!
+!            call diffy(es, svor(:, :, :, I_Y)) ! E_y
+!            call diffx(ds, cs)                 ! D_x
+!
+!            !$omp parallel do private(iz)  default(shared)
+!            do iz = 0, nz
+!               svor(iz, :, :, I_Y) = k2l2i * (svor(iz, :, :, I_Y) - cs(iz, :, :))
+!            enddo
+!            !$omp end parallel do
+!
+!            ! bring back the mean x and y components of the vorticity
+!            svor(:, 0, 0, I_X) = ubar
+!            svor(:, 0, 0, I_Y) = vbar
 
             !----------------------------------------------------------
             ! Combine vorticity in physical space:
@@ -352,7 +352,10 @@ module inversion_mod
             call fftxys2p(ds, f(0:nz, :, :, I_Y))
 
             ! calculate df3/dz
-            call central_diffz(f(0:nz, :, :, I_Z), div)
+            call field_decompose_physical(f(0:nz, :, :, I_Z), fs) 
+            call diffz(fs, ds)
+            call field_combine_physical(ds, div) 
+            !call central_diffz(f(0:nz, :, :, I_Z), div)
 
             ! div = df1/dx + df2/dy + df3/dz
             div = f(0:nz, :, :, I_X) + f(0:nz, :, :, I_Y) + div

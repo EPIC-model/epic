@@ -92,6 +92,7 @@ program epic3d
             call register_timer('surface gradient correction', surf_grad_corr_timer)
             call register_timer('surface parcel diagnostics', surf_parcel_stats_timer)
             call register_timer('surface parcel I/O diagnostics', surf_parcel_stats_io_timer)
+            call register_timer('resize timer', resize_timer)
 
 
             call start_timer(epic_timer)
