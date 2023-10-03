@@ -1,5 +1,10 @@
 #!/bin/bash
 
+export DOWNLOADS_DIR=/home/stevenboeing/epic_downloads
+export SRC_DIR=/home/stevenboeing/epic_src
+export NJOBS=1
+export PREFIX=/home/stevenboeing/epic_install
+
 # recipe for:
 NETCDF_C=netcdf-c
 NETCDF_C_VERSION=4.8.1
@@ -45,7 +50,7 @@ export CPPFLAGS="$CPPFLAGS -I${PREFIX}/include"
 mkdir -p "${SRC_DIR}/$NETCDF_F/build" && cd "$_"
 ${SRC_DIR}/$NETCDF_F/$NETCDF_F-$NETCDF_F_VERSION/configure      \
     --with-pic                                                  \
-    --prefix=${PREFIX}
+    --prefix=${PREFIX} FC=gfortran
 
 # compile & install
 make -j ${NJOBS}
