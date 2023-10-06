@@ -71,7 +71,7 @@ module parcel_damping
             double precision              :: parcel_qlp
             double precision              :: parcel_thetap
             double precision              :: reduce_fact
-            double precision, parameter   :: pre_fact=1.85
+            double precision, parameter   :: pre_fact=1.0
 
             !call start_timer(grid2par_timer)
 
@@ -102,27 +102,13 @@ module parcel_damping
                 parcel_strain_mag=sum(weights * strain_mag(ks:ks+1, js:js+1, is:is+1))
                 reduce_fact=(1.0-exp(-pre_fact*parcel_strain_mag*dt))
                 do l=1,3
-                    parcel_vortp(l)=reduce_fact*(parcels%vorticity(l, n)-&
-                                    sum(weights * vortg(ks:ks+1, js:js+1, is:is+1, l)))
+                    parcel_vortp(l)=reduce_fact*parcels%vorticity(l, n)
                 enddo
 #ifndef ENABLE_DRY_MODE
-                parcel_qvp=reduce_fact*(parcels%qv(n)-&
-                             sum(weights * qvg(ks:ks+1, js:js+1, is:is+1)))
-                parcel_qlp=reduce_fact*(parcels%ql(n)-&
-                             sum(weights * qlg(ks:ks+1, js:js+1, is:is+1)))
+                parcel_qvp=reduce_fact*parcels%qv(n)
+                parcel_qlp=reduce_fact*parcels%ql(n)
 #endif
-                parcel_thetap=reduce_fact*(parcels%theta(n)-&
-                             sum(weights * thetag(ks:ks+1, js:js+1, is:is+1)))
-                ! reduce parcel perturbations
-                do l=1,3
-                    parcels%vorticity(l,n)=parcels%vorticity(l,n)-parcel_vortp(l)
-                enddo
-#ifndef ENABLE_DRY_MODE
-                parcels%qv(n)=parcels%qv(n)-parcel_qvp
-                parcels%ql(n)=parcels%ql(n)-parcel_qlp
-#endif
-                parcels%theta(n)=parcels%theta(n)-parcel_thetap
-                ! and put perturbations on grid using pointwise par2grid
+                parcel_thetap=reduce_fact*parcels%theta(n)
 
                 weight = parcels%volume(n) * weights
 
@@ -138,8 +124,9 @@ module parcel_damping
                 qlpg(ks:ks+1, js:js+1, is:is+1) = qlpg(ks:ks+1, js:js+1, is:is+1) &
                                               + weight * parcel_qlp
 #endif
+                ! use volg to store contributed volume here
                 volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
-                                              + weight
+                                              + weight * reduce_fact
                  
             enddo
             !$omp end do
@@ -164,20 +151,22 @@ module parcel_damping
             !$omp end parallel workshare
 
             !$omp parallel default(shared)
-            !$omp do private(n, l, is, js, ks, weights) &
+            !$omp do private(n, l, is, js, ks, weights, parcel_strain_mag, reduce_fact) 
             do n = 1, n_parcels
                 call trilinear(parcels%position(:, n), is, js, ks, weights)
+                parcel_strain_mag=sum(weights * strain_mag(ks:ks+1, js:js+1, is:is+1))
+                reduce_fact=(1.0-exp(-pre_fact*parcel_strain_mag*dt))
                 do l=1,3
-                    parcels%vorticity(l,n)=parcels%vorticity(l,n)+&
+                    parcels%vorticity(l,n)=parcels%vorticity(l,n)*(1-reduce_fact)+reduce_fact*&
                                            sum(weights * vortpg(ks:ks+1, js:js+1, is:is+1, l))
                 enddo
 #ifndef ENABLE_DRY_MODE
-                parcels%qv(n)=parcels%qv(n)+&
+                parcels%qv(n)=parcels%qv(n)*(1-reduce_fact)+reduce_fact*&
                                     sum(weights * qvpg(ks:ks+1, js:js+1, is:is+1))
-                parcels%ql(n)=parcels%ql(n)+&
+                parcels%ql(n)=parcels%ql(n)*(1-reduce_fact)+reduce_fact*&
                                     sum(weights * qlpg(ks:ks+1, js:js+1, is:is+1))
 #endif
-                parcels%theta(n)=parcels%theta(n)+&
+                parcels%theta(n)=parcels%theta(n)*(1-reduce_fact)+reduce_fact*&
                                     sum(weights * thetapg(ks:ks+1, js:js+1, is:is+1))
             enddo
             !$omp end do
