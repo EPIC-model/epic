@@ -56,7 +56,6 @@ module parcel_damping
 
         subroutine parcel_damp(dt)
             double precision, intent(in)  :: dt
-            call par2grid(.false.)
             call perturbation_damping(dt)
         end subroutine parcel_damp
 
@@ -110,7 +109,7 @@ module parcel_damping
 #endif
                 parcel_thetap=reduce_fact*parcels%theta(n)
 
-                weight = parcels%volume(n) * weights
+                weight = parcels%volume(n) * weights 
 
                 do l = 1, 3
                     vortpg(ks:ks+1, js:js+1, is:is+1, l) = vortpg(ks:ks+1, js:js+1, is:is+1, l) &
@@ -157,16 +156,16 @@ module parcel_damping
                 parcel_strain_mag=sum(weights * strain_mag(ks:ks+1, js:js+1, is:is+1))
                 reduce_fact=(1.0-exp(-pre_fact*parcel_strain_mag*dt))
                 do l=1,3
-                    parcels%vorticity(l,n)=parcels%vorticity(l,n)*(1-reduce_fact)+reduce_fact*&
+                    parcels%vorticity(l,n)=parcels%vorticity(l,n)*(1.0-reduce_fact)+reduce_fact*&
                                            sum(weights * vortpg(ks:ks+1, js:js+1, is:is+1, l))
                 enddo
 #ifndef ENABLE_DRY_MODE
-                parcels%qv(n)=parcels%qv(n)*(1-reduce_fact)+reduce_fact*&
+                parcels%qv(n)=parcels%qv(n)*(1.0-reduce_fact)+reduce_fact*&
                                     sum(weights * qvpg(ks:ks+1, js:js+1, is:is+1))
-                parcels%ql(n)=parcels%ql(n)*(1-reduce_fact)+reduce_fact*&
+                parcels%ql(n)=parcels%ql(n)*(1.0-reduce_fact)+reduce_fact*&
                                     sum(weights * qlpg(ks:ks+1, js:js+1, is:is+1))
 #endif
-                parcels%theta(n)=parcels%theta(n)*(1-reduce_fact)+reduce_fact*&
+                parcels%theta(n)=parcels%theta(n)*(1.0-reduce_fact)+reduce_fact*&
                                     sum(weights * thetapg(ks:ks+1, js:js+1, is:is+1))
             enddo
             !$omp end do
