@@ -26,6 +26,7 @@ epic3d_SOURCES = 				\
 	parcels/parcel_diagnostics.f90		\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_init.f90			\
+	parcels/parcel_damping.f90	        \
 	inversion/inversion_utils.f90		\
 	inversion/inversion.f90			\
 	parcels/parcel_correction.f90		\

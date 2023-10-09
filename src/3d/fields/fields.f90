@@ -21,6 +21,7 @@ module fields
     double precision, allocatable, dimension(:, :, :, :) :: &
         velog,     &   ! velocity vector field (u, v, w)
         vortg,     &   ! vorticity vector field (\xi, \eta, \zeta)
+        vortpg,    &   ! vorticity perturbation vector field (\xi, \eta, \zeta)
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
                        ! ordering: du/dx, du/dy,
@@ -38,12 +39,15 @@ module fields
 #ifndef ENABLE_DRY_MODE
         dbuoyg,    &   ! dry buoyancy (or liquid-water buoyancy)
         humg,      &   ! humidity
+        humpg,     &   ! humidity perturbation
 #endif
         tbuoyg,    &   ! buoyancy
+        buoypg,    &   ! buoyancy perturbation
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
-        volg           ! volume scalar field
+        volg, &        ! volume scalar field
+        strain_mag     ! strain magnitude
 
     integer, allocatable, dimension(:, :, :) :: &
         nparg,     &   ! number of parcels per grid box
@@ -77,20 +81,24 @@ module fields
             allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 5))
 
             allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef NDEBUG
             allocate(sym_volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
             allocate(vortg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
+            allocate(vortpg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
             allocate(vtend(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
             allocate(tbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(buoypg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef ENABLE_DRY_MODE
             allocate(dbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(humg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(humpg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
             allocate(nparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
@@ -107,12 +115,16 @@ module fields
             velog    = zero
             velgradg = zero
             volg     = zero
+            strain_mag = zero
             vortg    = zero
+            vortpg   = zero
             vtend    = zero
             tbuoyg   = zero
+            buoypg   = zero
 #ifndef ENABLE_DRY_MODE
             dbuoyg   = zero
             humg     = zero
+            humpg    = zero
 #endif
             nparg    = zero
             nsparg   = zero
@@ -130,12 +142,16 @@ module fields
                 deallocate(velog)
                 deallocate(velgradg)
                 deallocate(volg)
+                deallocate(strain_mag)
                 deallocate(vortg)
+                deallocate(vortpg)
                 deallocate(vtend)
                 deallocate(tbuoyg)
+                deallocate(buoypg)
 #ifndef ENABLE_DRY_MODE
                 deallocate(dbuoyg)
-                deallocate(humg )
+                deallocate(humg)
+                deallocate(humpg)
 #endif
                 deallocate(nparg)
                 deallocate(nsparg)
