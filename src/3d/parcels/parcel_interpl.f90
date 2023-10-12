@@ -601,6 +601,7 @@ module parcel_interpl
 
         end subroutine trilinear
 
+
         subroutine saturation_adjustment
             double precision, parameter :: tk0c = 273.15       ! Temperature of freezing in Kelvin
             double precision, parameter :: qsa1 = 3.8          ! Top in equation to calculate qsat
@@ -611,11 +612,12 @@ module parcel_interpl
             double precision, parameter :: surf_press = 100000.0
             double precision, parameter :: ref_press =  100000.0
             double precision :: press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat
+            double precision :: err_at_temp, err_at_temp_inv_deriv,efact,divfact
             integer :: n, iter
-
-#ifndef ENABLE_DRY_MODE
-            !$omp parallel default(shared)
-            !$omp do private(n, iter, press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat)
+            
+!!! #ifndef ENABLE_DRY_MODE
+!!!            !$omp parallel default(shared)
+!!!            !$omp do private(n, iter, press, exn, temp, temp_low, qsat_low, qt_start, ql_start, ql_iter, temp_start, qsat)
             do n = 1, n_parcels
                 press=surf_press*exp(-parcels%position(3, n)/pressure_scale_height)
                 exn=(press/ref_press)**(r_d/c_p)
@@ -633,11 +635,21 @@ module parcel_interpl
                       parcels%ql(n)=0.
                    end if
                 ! Moist case: iterate a few times, start from temp instead of temp_low
+                ! Use Newton-Raphson to converge
                 else
-                   do iter=1,4
-                      qsat=qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
+                   do iter=1,3
+                      efact=0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3))
+                      qsat=qsa1/(efact - qsa4)
                       ql_iter=max(qt_start-qsat,0.0)
-                      temp=temp_start-(L_v/c_p)*(ql_start-ql_iter)
+                      err_at_temp=temp-(temp_start-(L_v/c_p)*(ql_start-ql_iter))
+                      if(ql_iter>0.0) then
+                         !calculate 1/(d err/ dt) to save a division latet on
+                         divfact=((efact - qsa4)*(efact - qsa4)*(temp - qsa3)*(temp - qsa3))
+                         err_at_temp_inv_deriv=divfact/(divfact+(L_v/c_p)*(qsa1*qsa2*efact*(qsa3-tk0c)))
+                      else 
+                         err_at_temp_inv_deriv=1.0
+                      endif
+                      temp=temp-err_at_temp*err_at_temp_inv_deriv
                    enddo
                    qsat=qsa1/(0.01*press*exp(qsa2*(temp - tk0c)/(temp - qsa3)) - qsa4)
                    ql_iter=max(qt_start-qsat,0.0)
@@ -646,9 +658,9 @@ module parcel_interpl
                    parcels%ql(n)=ql_iter
                 end if
             end do
-            !$omp end do
-            !$omp end parallel
-#endif
+!!!            !$omp end do
+!!!            !$omp end parallel
+!!!#endif
 
        end subroutine saturation_adjustment
 
