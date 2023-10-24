@@ -1,6 +1,6 @@
 module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
-    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
+    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23, I_B33
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
     use field_mpi, only : field_halo_fill
     use constants, only : zero, one, two, f12
@@ -27,11 +27,11 @@ module rk_utils
         ! @param[in] volume is the parcel volume
         ! @returns dB/dt in Bout
         function get_dBdt(Bin, S, vorticity, volume) result(Bout)
-            double precision, intent(in) :: Bin(I_B23)
+            double precision, intent(in) :: Bin(I_B33)
             double precision, intent(in) :: S(5)
             double precision, intent(in) :: vorticity(n_dim)
             double precision, intent(in) :: volume
-            double precision             :: Bout(5), B33
+            double precision             :: Bout(I_B33)
             double precision             :: dudz, dvdx, dvdz, dwdz
 
             ! du/dz = \eta + dw/dx
@@ -46,7 +46,7 @@ module rk_utils
             ! dw/dz = - (du/dx + dv/dy)
             dwdz = - (S(I_DUDX) + S(I_DVDY))
 
-            B33 = get_B33(Bin, volume)
+            ! B33 = get_B33(Bin, volume)
 
             ! dB11/dt = 2 * (du/dx * B11 + du/dy * B12 + du/dz * B13)
             Bout(I_B11) = two * (S(I_DUDX) * Bin(I_B11) + S(I_DUDY) * Bin(I_B12) + dudz * Bin(I_B13))
@@ -63,7 +63,7 @@ module rk_utils
                         + S(I_DWDY) * Bin(I_B12) & ! + dw/dy * B12
                         - S(I_DVDY) * Bin(I_B13) & ! - dv/dy * B13
                         + S(I_DUDY) * Bin(I_B23) & ! + du/dy * B23
-                        + dudz      * B33         ! + du/dz * B33
+                        + dudz      * Bin(I_B33)   ! + du/dz * B33
 
             ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
             Bout(I_B22) = two * (dvdx * Bin(I_B12) + S(I_DVDY) * Bin(I_B22) + dvdz * Bin(I_B23))
@@ -73,7 +73,9 @@ module rk_utils
                         + dvdx      * Bin(I_B13) & ! + dv/dx * B13
                         + S(I_DWDY) * Bin(I_B22) & ! + dw/dy * B22
                         - S(I_DUDX) * Bin(I_B23) & ! - du/dx * B23
-                        + dvdz      * B33          ! + dv/dz * B33
+                        + dvdz      * Bin(I_B33)   ! + dv/dz * B33
+
+            Bout(I_B33) = get_B33(Bout(I_B11:I_B23), volume)
         end function get_dBdt
 
         ! Estimate a suitable time step based on the velocity strain

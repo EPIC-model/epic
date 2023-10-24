@@ -35,7 +35,8 @@ module parcel_ellipsoid
                         , I_B12 = 2 & ! index for B12 matrix component
                         , I_B13 = 3 & ! index for B13 matrix component
                         , I_B22 = 4 & ! index for B22 matrix component
-                        , I_B23 = 5   ! index for B23 matrix component
+                        , I_B23 = 5 & ! index for B23 matrix component
+                        , I_B33 = 6   ! index for B33 matrix component
 
     integer :: IDX_ELL_VETA, IDX_ELL_VTAU
 
@@ -132,9 +133,10 @@ module parcel_ellipsoid
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
         ! @returns the upper trinagular matrix
-        function get_full_matrix(B, volume) result(U)
-            double precision, intent(in) :: B(5)
-            double precision, intent(in) :: volume
+        function get_full_matrix(B) result(U)
+        ! function get_full_matrix(B, volume) result(U)
+            double precision, intent(in) :: B(6)
+            ! double precision, intent(in) :: volume
             double precision             :: U(n_dim, n_dim)
 
             U(1, 1) = B(I_B11)
@@ -145,7 +147,7 @@ module parcel_ellipsoid
             U(2, 3) = B(I_B23)
             U(3, 1) = U(1, 3)
             U(3, 2) = U(2, 3)
-            U(3, 3) = get_B33(B, volume)
+            U(3, 3) = B(I_B33)
         end function get_full_matrix
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -154,13 +156,13 @@ module parcel_ellipsoid
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
         ! @returns all eigenvalues (sorted in descending order)
-        function get_eigenvalues(B, volume) result(D)
+        function get_eigenvalues(B) result(D)
             double precision, intent(in) :: B(5)
-            double precision, intent(in) :: volume
+            ! double precision, intent(in) :: volume
             double precision             :: U(n_dim, n_dim)
             double precision             :: D(n_dim)
 
-            U = get_full_matrix(B, volume)
+            U = get_full_matrix(B)
 
             call scherzinger_eigenvalues(U, D)
 
@@ -178,12 +180,12 @@ module parcel_ellipsoid
         function get_determinant(B, volume) result(detB)
             double precision, intent(in) :: B(5)
             double precision, intent(in) :: volume
-            double precision             :: detB, B33
+            double precision             :: detB
 
-            B33 = get_B33(B, volume)
+            ! B33 = get_B33(B, volume)
 
-            detB = B(I_B11) * (B(I_B22) * B33 - B(I_B23) ** 2)            &
-                 - B(I_B12) * (B(I_B12) * B33 - B(I_B13) * B(I_B23))      &
+            detB = B(I_B11) * (B(I_B22) * B(I_B33) - B(I_B23) ** 2)            &
+                 - B(I_B12) * (B(I_B12) * B(I_B33) - B(I_B13) * B(I_B23))      &
                  + B(I_B13) * (B(I_B12) * B(I_B23) - B(I_B13) * B(I_B22))
         end function get_determinant
 
@@ -195,12 +197,12 @@ module parcel_ellipsoid
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
         ! @returns the eigenvectors
-        function get_eigenvectors(B, volume) result(V)
-            double precision, intent(in) :: B(5)
-            double precision, intent(in) :: volume
+        function get_eigenvectors(B) result(V)
+            double precision, intent(in) :: B(6)
+            ! double precision, intent(in) :: volume
             double precision             :: U(n_dim, n_dim), D(n_dim), V(n_dim, n_dim)
 
-            U = get_full_matrix(B, volume)
+            U = get_full_matrix(B)
 
             call scherzinger_diagonalise(U, D, V)
 
@@ -224,13 +226,13 @@ module parcel_ellipsoid
         ! @param[in] volume of the parcel
         ! @param[out] D eigenvalues (sorted in descending order)
         ! @param[out] V eigenvectors
-        subroutine diagonalise(B, volume, D, V)
-            double precision, intent(in)  :: B(5)
+        subroutine diagonalise(B, D, V)
+            double precision, intent(in)  :: B(6)
             double precision, intent(in)  :: volume
             double precision, intent(out) :: D(n_dim), V(n_dim, n_dim)
             double precision              :: U(n_dim, n_dim)
 
-            U = get_full_matrix(B, volume)
+            U = get_full_matrix(B)
 
             call scherzinger_diagonalise(U, D, V)
 
