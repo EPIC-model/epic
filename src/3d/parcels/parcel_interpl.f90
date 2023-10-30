@@ -88,7 +88,7 @@ module parcel_interpl
                 pvol = parcels%volume(n)
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n),  &
+                                              parcels%B(:, n),  &
                                               n, l_reuse)
 
                 ! we have 4 points per ellipsoid
@@ -179,7 +179,7 @@ module parcel_interpl
                 btot = btot - bfsq * parcels%position(3, n)
 #endif
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, l_reuse)
+                                              parcels%B(:, n), n, l_reuse)
 
                 call get_index(parcels%position(:, n), i, j, k)
                 nparg(k, j, i) = nparg(k, j, i) + 1
@@ -422,7 +422,7 @@ module parcel_interpl
                 parcels%strain(:, n) = zero
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              parcels%volume(n), parcels%B(:, n), n)
+                                              parcels%B(:, n), n)
 
                 do p = 1, 4
                     ! get interpolation weights and mesh indices

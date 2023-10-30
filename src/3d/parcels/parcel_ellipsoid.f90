@@ -177,9 +177,9 @@ module parcel_ellipsoid
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        function get_determinant(B, volume) result(detB)
+        function get_determinant(B) result(detB)
             double precision, intent(in) :: B(6)
-            double precision, intent(in) :: volume
+            ! double precision, intent(in) :: volume
             double precision             :: detB
 
             ! B33 = get_B33(B, volume)
@@ -228,7 +228,7 @@ module parcel_ellipsoid
         ! @param[out] V eigenvectors
         subroutine diagonalise(B, D, V)
             double precision, intent(in)  :: B(6)
-            double precision, intent(in)  :: volume
+            ! double precision, intent(in)  :: volume
             double precision, intent(out) :: D(n_dim), V(n_dim, n_dim)
             double precision              :: U(n_dim, n_dim)
 
@@ -303,9 +303,9 @@ module parcel_ellipsoid
         ! @param[in] volume of the parcel
         ! @param[in] B matrix elements of the parcel
         ! @returns the parcel support points
-        function get_ellipsoid_points(position, volume, B, n, l_reuse) result(points)
+        function get_ellipsoid_points(position, B, n, l_reuse) result(points)
             double precision,  intent(in) :: position(n_dim)
-            double precision,  intent(in) :: volume
+            ! double precision,  intent(in) :: volume
             double precision,  intent(in) :: B(6)        ! B11, B12, B13, B22, B23
             integer, optional, intent(in) :: n
             logical, optional, intent(in) :: l_reuse
@@ -319,7 +319,7 @@ module parcel_ellipsoid
                     Veta = Vetas(:, n)
                     Vtau = Vtaus(:, n)
                 else
-                    call diagonalise(B, volume, D, V)
+                    call diagonalise(B, D, V)
                     Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
                     Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
 
@@ -329,7 +329,7 @@ module parcel_ellipsoid
             else
                 ! (/a2, b2, c2/) with a >= b >= c
                 ! D = (/a2, b2, c2/)
-                call diagonalise(B, volume, D, V)
+                call diagonalise(B, D, V)
 
                 Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
                 Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
@@ -353,13 +353,13 @@ module parcel_ellipsoid
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        function get_angles(B, volume) result(angles)
+        function get_angles(B) result(angles)
             double precision, intent(in) :: B(6)
-            double precision, intent(in) :: volume
+            ! double precision, intent(in) :: volume
             double precision             :: evec(n_dim, n_dim)
             double precision             :: angles(2) ! (/azimuth, polar/)
 
-            evec = get_eigenvectors(B, volume)
+            evec = get_eigenvectors(B)
 
             ! azimuthal angle
             angles(I_X) = datan2(evec(I_Y, I_X), evec(I_X, I_X))
