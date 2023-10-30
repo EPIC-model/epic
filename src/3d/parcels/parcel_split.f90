@@ -39,7 +39,7 @@ module parcel_split_mod
         ! parcels with aspect ratios larger than parcel%lambda_max.
         subroutine parcel_split
             double precision     :: B(6)
-            double precision     :: lam
+            double precision     :: vol, lam
             double precision     :: D(3), V(3, 3)
             integer              :: last_index, n_indices
             integer              :: grown_size, shrunk_size, n_required
