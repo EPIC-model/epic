@@ -38,7 +38,7 @@ module parcel_split_mod
         ! Split elongated parcels (semi-major axis larger than amax) or
         ! parcels with aspect ratios larger than parcel%lambda_max.
         subroutine parcel_split
-            double precision     :: B(5)
+            double precision     :: B(6)
             double precision     :: vol, lam
             double precision     :: D(3), V(3, 3)
             integer              :: last_index, n_indices
@@ -117,7 +117,7 @@ module parcel_split_mod
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
 
-                call diagonalise(B, vol, D, V)
+                call diagonalise(B, D, V)
 
                 pid(n) = 0
 
