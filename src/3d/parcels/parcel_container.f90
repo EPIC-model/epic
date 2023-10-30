@@ -304,7 +304,7 @@ module parcel_container
 
             allocate(parcels%position(3, num))
             allocate(parcels%vorticity(3, num))
-            allocate(parcels%B(5, num))
+            allocate(parcels%B(6, num))
             allocate(parcels%volume(num))
             allocate(parcels%buoyancy(num))
 #ifndef ENABLE_DRY_MODE
