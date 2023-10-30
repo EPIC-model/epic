@@ -153,11 +153,11 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain all eigenvalues sorted in descending order
-        ! @param[in] B = (B11, B12, B13, B22, B23)
+        ! @param[in] B = (B11, B12, B13, B22, B23, B33)
         ! @param[in] volume of the parcel
         ! @returns all eigenvalues (sorted in descending order)
         function get_eigenvalues(B) result(D)
-            double precision, intent(in) :: B(5)
+            double precision, intent(in) :: B(6)
             ! double precision, intent(in) :: volume
             double precision             :: U(n_dim, n_dim)
             double precision             :: D(n_dim)
@@ -178,7 +178,7 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         function get_determinant(B, volume) result(detB)
-            double precision, intent(in) :: B(5)
+            double precision, intent(in) :: B(6)
             double precision, intent(in) :: volume
             double precision             :: detB
 
@@ -306,7 +306,7 @@ module parcel_ellipsoid
         function get_ellipsoid_points(position, volume, B, n, l_reuse) result(points)
             double precision,  intent(in) :: position(n_dim)
             double precision,  intent(in) :: volume
-            double precision,  intent(in) :: B(5)        ! B11, B12, B13, B22, B23
+            double precision,  intent(in) :: B(6)        ! B11, B12, B13, B22, B23
             integer, optional, intent(in) :: n
             logical, optional, intent(in) :: l_reuse
             double precision              :: Veta(n_dim), Vtau(n_dim), D(n_dim), V(n_dim, n_dim)
@@ -354,7 +354,7 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         function get_angles(B, volume) result(angles)
-            double precision, intent(in) :: B(5)
+            double precision, intent(in) :: B(6)
             double precision, intent(in) :: volume
             double precision             :: evec(n_dim, n_dim)
             double precision             :: angles(2) ! (/azimuth, polar/)
