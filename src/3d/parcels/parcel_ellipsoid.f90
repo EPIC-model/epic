@@ -130,7 +130,7 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the parcel shape matrix.
-        ! @param[in] B = (B11, B12, B13, B22, B23)
+        ! @param[in] B = (B11, B12, B13, B22, B23, B33)
         ! @param[in] volume of the parcel
         ! @returns the upper trinagular matrix
         function get_full_matrix(B) result(U)
@@ -306,7 +306,7 @@ module parcel_ellipsoid
         function get_ellipsoid_points(position, B, n, l_reuse) result(points)
             double precision,  intent(in) :: position(n_dim)
             ! double precision,  intent(in) :: volume
-            double precision,  intent(in) :: B(6)        ! B11, B12, B13, B22, B23
+            double precision,  intent(in) :: B(6)        ! B11, B12, B13, B22, B23, B33
             integer, optional, intent(in) :: n
             logical, optional, intent(in) :: l_reuse
             double precision              :: Veta(n_dim), Vtau(n_dim), D(n_dim), V(n_dim, n_dim)
