@@ -36,6 +36,7 @@ module parcel_container
                           IDX_B13,          & ! B13 shape matrix element
                           IDX_B22,          & ! B22 shape matrix element
                           IDX_B23,          & ! B23 shape matrix element
+                          IDX_B33,          & ! B33 shape matrix element
                           IDX_VOL,          & ! volume
                           IDX_BUO,          & ! buoyancy
 #ifndef ENABLE_DRY_MODE
@@ -52,6 +53,7 @@ module parcel_container
                           IDX_RK4_DB13,     & ! RK4 variable for B13
                           IDX_RK4_DB22,     & ! RK4 variable for B22
                           IDX_RK4_DB23,     & ! RK4 variable for B23
+                          IDX_RK4_DB33,     & ! RK4 variable for B33
                           IDX_RK4_DUDX,     & ! RK4 variable du/dx
                           IDX_RK4_DUDY,     & ! RK4 variable du/dy
                           IDX_RK4_DVDY,     & ! RK4 variable dv/dy
@@ -107,8 +109,9 @@ module parcel_container
             IDX_B13   = 9   ! B13 shape matrix element
             IDX_B22   = 10  ! B22 shape matrix element
             IDX_B23   = 11  ! B23 shape matrix element
-            IDX_VOL   = 12  ! volume
-            IDX_BUO   = 13  ! buoyancy
+            IDX_B33   = 12  ! B33 shape matrix element
+            IDX_VOL   = 13  ! volume
+            IDX_BUO   = 14  ! buoyancy
 
             i = IDX_BUO + 1
 #ifndef ENABLE_DRY_MODE
@@ -128,13 +131,14 @@ module parcel_container
             IDX_RK4_DB13 = i + 8
             IDX_RK4_DB22 = i + 9
             IDX_RK4_DB23 = i + 10
-            IDX_RK4_DUDX = i + 11
-            IDX_RK4_DUDY = i + 12
-            IDX_RK4_DVDY = i + 13
-            IDX_RK4_DWDX = i + 14
-            IDX_RK4_DWDY = i + 15
+            IDX_RK4_DB33 = i + 11
+            IDX_RK4_DUDX = i + 12
+            IDX_RK4_DUDY = i + 13
+            IDX_RK4_DVDY = i + 14
+            IDX_RK4_DWDX = i + 15
+            IDX_RK4_DWDY = i + 16
 
-            i = i + 16
+            i = i + 17
 
             n_par_attrib = set_ellipsoid_buffer_indices(i)
 
@@ -359,7 +363,7 @@ module parcel_container
 
             buffer(IDX_X_POS:IDX_Z_POS) = parcels%position(:, n)
             buffer(IDX_X_VOR:IDX_Z_VOR) = parcels%vorticity(:, n)
-            buffer(IDX_B11:IDX_B23)     = parcels%B(:, n)
+            buffer(IDX_B11:IDX_B33)     = parcels%B(:, n)
             buffer(IDX_VOL)             = parcels%volume(n)
             buffer(IDX_BUO)             = parcels%buoyancy(n)
 #ifndef ENABLE_DRY_MODE
@@ -368,7 +372,7 @@ module parcel_container
             ! LS-RK4 variables:
             buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS) = parcels%delta_pos(:, n)
             buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR) = parcels%delta_vor(:, n)
-            buffer(IDX_RK4_DB11:IDX_RK4_DB23)     = parcels%delta_b(:, n)
+            buffer(IDX_RK4_DB11:IDX_RK4_DB33)     = parcels%delta_b(:, n)
             buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)     = parcels%strain(:, n)
 
             call parcel_ellipsoid_serialize(n, buffer)
@@ -383,7 +387,7 @@ module parcel_container
 
             parcels%position(:, n)  = buffer(IDX_X_POS:IDX_Z_POS)
             parcels%vorticity(:, n) = buffer(IDX_X_VOR:IDX_Z_VOR)
-            parcels%B(:, n)         = buffer(IDX_B11:IDX_B23)
+            parcels%B(:, n)         = buffer(IDX_B11:IDX_B33)
             parcels%volume(n)       = buffer(IDX_VOL)
             parcels%buoyancy(n)     = buffer(IDX_BUO)
 #ifndef ENABLE_DRY_MODE
@@ -392,7 +396,7 @@ module parcel_container
             ! LS-RK4 variables:
             parcels%delta_pos(:, n) = buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS)
             parcels%delta_vor(:, n) = buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR)
-            parcels%delta_b(:, n)   = buffer(IDX_RK4_DB11:IDX_RK4_DB23)
+            parcels%delta_b(:, n)   = buffer(IDX_RK4_DB11:IDX_RK4_DB33)
             parcels%strain(:, n)    = buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)
 
             call parcel_ellipsoid_deserialize(n, buffer)
