@@ -70,7 +70,7 @@ module parcel_container
             vorticity,  &
             B               ! B matrix entries; ordering:
                             ! B(:, 1) = B11, B(:, 2) = B12, B(:, 3) = B13
-                            ! B(:, 4) = B22, B(:, 5) = B23
+                            ! B(:, 4) = B22, B(:, 5) = B23, B(:, 6) = B33
 
         double precision, allocatable, dimension(:) :: &
             volume,     &
@@ -320,7 +320,7 @@ module parcel_container
             allocate(parcels%delta_pos(3, num))
             allocate(parcels%delta_vor(3, num))
             allocate(parcels%strain(5, num))
-            allocate(parcels%delta_b(5, num))
+            allocate(parcels%delta_b(6, num))
 
         end subroutine parcel_alloc
 
