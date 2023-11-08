@@ -16,7 +16,7 @@ program test_mpi_gradient_correction_3d
                                 , vort_corr_timer           &
                                 , init_parcel_correction
     use parcel_interpl, only : vol2grid, halo_swap_timer
-    use parcel_ellipsoid, only : get_abc
+    use parcel_ellipsoid, only : get_abc, get_b33
     use parcel_init, only : init_regular_positions
     use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz, dx
     use fields, only : volg, field_default
@@ -116,6 +116,9 @@ program test_mpi_gradient_correction_3d
 
     ! b22
     parcels%B(4, :) = parcels%B(1, :)
+
+    ! b33 needs to be calculated here
+    parcels%B(6, :) = get_b33(parcels%B(0:5, :), parcels%volume)
 
     call vol2grid
 
