@@ -251,7 +251,7 @@ module parcel_ellipsoid
         ! @param[in] B = (B11, B12, B13, B22, B23)
         ! @param[in] volume of the parcel
         ! @returns B33
-        function get_B33(B, volume) result(B33)
+        pure elemental function get_B33(B, volume) result(B33)
             double precision, intent(in) :: B(5)
             double precision, intent(in) :: volume
             double precision             :: abc
