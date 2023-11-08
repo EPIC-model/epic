@@ -118,8 +118,8 @@ program test_mpi_gradient_correction_3d
     parcels%B(4, :) = parcels%B(1, :)
 
     ! b33 needs to be calculated here
-    do i =0, n_parcels
-      parcels%B(6, i) = get_b33(parcels%B(0:5, i), parcels%volume(i))
+    do n = 1, n_parcels
+      parcels%B(6, n) = get_b33(parcels%B(0:5, n), parcels%volume(n))
     enddo
 
     call vol2grid
