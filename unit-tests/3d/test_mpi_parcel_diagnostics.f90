@@ -66,6 +66,10 @@ program test_mpi_parcel_diagnostics
     parcels%B(:, 1:n_parcels) = zero
     parcels%B(1, 1:n_parcels) = get_abc(parcels%volume(1:n_parcels)) ** f23
     parcels%B(4, 1:n_parcels) = parcels%B(1, 1:n_parcels)
+    ! b33
+    do n = 1, n_parcels
+      parcels%B(6, n) = get_b33(parcels%B(1:5, n), parcels%volume(n))
+    enddo
     parcels%vorticity(:, 1:n_parcels) = f12
     parcels%delta_pos(:, 1:n_parcels)  = f12
 

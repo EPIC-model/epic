@@ -76,6 +76,11 @@ program test_mpi_grid2par
     ! b22
     parcels%B(4, 1:n_parcels) = parcels%B(1, 1:n_parcels)
 
+    ! b33
+    do n = 1, n_parcels
+      parcels%B(6, n) = get_b33(parcels%B(1:5, n), parcels%volume(n))
+    enddo
+
     velog(:, :, :, 1) = one
     velog(:, :, :, 2) = two
     velog(:, :, :, 3) = three
