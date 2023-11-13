@@ -75,7 +75,10 @@ module rk_utils
                         - S(I_DUDX) * Bin(I_B23) & ! - du/dx * B23
                         + dvdz      * Bin(I_B33)   ! + dv/dz * B33
 
-            Bout(I_B33) = 
+
+            ! dB33/dt
+            Bout(I_B33) = two * (S(I_DWDX) * Bin(I_B13) + S(I_DWDY) * Bin(I_B23) + dwdz * Bin(I_B33))
+
         end function get_dBdt
 
         ! Estimate a suitable time step based on the velocity strain
