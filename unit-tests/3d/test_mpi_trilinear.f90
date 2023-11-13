@@ -18,7 +18,7 @@ program test_mpi_trilinear
     implicit none
 
     double precision :: error
-    integer          :: ix, iy, iz, i, j, k, l, n_per_dim
+    integer          :: ix, iy, iz, i, j, k, l, n_per_dim, n
     double precision :: im, corner(3)
     logical          :: passed = .true.
 
