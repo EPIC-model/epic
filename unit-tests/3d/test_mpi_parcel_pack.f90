@@ -34,6 +34,7 @@ program test_mpi_parcel_pack
     call parcel_alloc(n_parcels)
 
     ! initialise parcels
+    write (*, *) "initialise parcels"
     do n = 1, n_parcels
         a = dble(n-1) * 100.0d0
         parcels%position(1, n) = 1.0d0 + a
@@ -55,6 +56,8 @@ program test_mpi_parcel_pack
 #endif
     enddo
 
+    write (*, *) "init done"
+
     do m = 1, 100
         ! randomly select parcels to pack
         pid = -1
@@ -70,12 +73,15 @@ program test_mpi_parcel_pack
             pid(k) = l
         enddo
 
+        write (*, *) "allocate(buffer(n_par_attrib * n_pack))"
         allocate(buffer(n_par_attrib * n_pack))
 
         ! pack the parcels
+        write (*, *) "call parcel_pack(pid, n_pack, buffer)"
         call parcel_pack(pid, n_pack, buffer)
 
         ! check the buffer of packed parcels
+        write (*, *) "check the buffer of packed parcels"
         do n = 1, n_pack
 
             l = pid(n)
@@ -104,6 +110,7 @@ program test_mpi_parcel_pack
         deallocate(buffer)
     enddo
 
+    write (*, *) " mpi checks"
     if (world%rank == world%root) then
         call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
