@@ -11,14 +11,14 @@ program test_mpi_grid2par
     use constants, only : pi, zero, one, two, three, four, five, f12, f23
     use parcel_container
     use parcel_interpl, only : grid2par, grid2par_timer
-    use parcel_ellipsoid, only : get_abc
+    use parcel_ellipsoid, only : get_abc, get_b33
     use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz
     use fields, only : velog, vortg, velgradg, field_alloc
     use mpi_timer
     implicit none
 
     double precision              :: error
-    integer                       :: ix, iy, iz, i, j, k, l, n_per_dim
+    integer                       :: ix, iy, iz, i, j, k, l, n_per_dim, n
     double precision              :: im, corner(3)
     logical                       :: passed = .true.
 
