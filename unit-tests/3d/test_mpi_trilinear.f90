@@ -10,7 +10,7 @@ program test_mpi_trilinear
     use parcel_container
     use mpi_layout
     use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
-    use parcel_ellipsoid, only : get_abc
+    use parcel_ellipsoid, only : get_abc, get_b33
     use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz, ngrid
     use fields, only : volg, field_alloc
     use field_ops, only : get_sum
