@@ -47,7 +47,7 @@ program test_mpi_parcel_pack
         parcels%B(3, n) = 9.0d0 + a
         parcels%B(4, n) = 10.0d0 + a
         parcels%B(5, n) = 11.0d0 + a
-        parcels%B(5, n) = 12.0d0 + a
+        parcels%B(6, n) = 12.0d0 + a
         parcels%volume(n) = 13.0d0 + a
         parcels%buoyancy(n) = 14.0d0 + a
 #ifndef ENABLE_DRY_MODE
