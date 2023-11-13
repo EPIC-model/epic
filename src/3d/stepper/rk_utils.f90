@@ -26,11 +26,10 @@ module rk_utils
         ! @param[in] vorticity of parcel
         ! @param[in] volume is the parcel volume
         ! @returns dB/dt in Bout
-        function get_dBdt(Bin, S, vorticity, volume) result(Bout)
+        function get_dBdt(Bin, S, vorticity) result(Bout)
             double precision, intent(in) :: Bin(I_B33)
             double precision, intent(in) :: S(5)
             double precision, intent(in) :: vorticity(n_dim)
-            double precision, intent(in) :: volume
             double precision             :: Bout(I_B33)
             double precision             :: dudz, dvdx, dvdz, dwdz
 
