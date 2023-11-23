@@ -247,6 +247,7 @@ module field_diagnostics_netcdf
             call start_timer(field_stats_io_timer)
 
             if (world%rank /= world%root) then
+                call stop_timer(field_stats_io_timer)
                 return
             endif
 
