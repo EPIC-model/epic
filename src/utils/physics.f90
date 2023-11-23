@@ -387,6 +387,7 @@ module physics
                                world%err)
 
             bfsq = bfsq / (dble(nx * ny) * zext)
+            bf = dsqrt(bfsq)
 
             if (world%rank == world%root) then
                 print *, "Calculated squared buoyancy frequency:", bfsq
