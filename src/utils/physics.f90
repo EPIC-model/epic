@@ -270,7 +270,7 @@ module physics
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
             if (l_bfsq) then
-                call write_netcdf_attribute(grp_ncid, 'squared_buoyancy_frequency', bf)
+                call write_netcdf_attribute(grp_ncid, 'squared_buoyancy_frequency', bfsq)
             endif
 #endif
 
@@ -301,7 +301,7 @@ module physics
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
             if (l_bfsq) then
-                call print_physical_quantity('squared_buoyancy_frequency', bf, '1/s^2')
+                call print_physical_quantity('squared_buoyancy_frequency', bfsq, '1/s^2')
             endif
 #endif
             write(*, *) ''
@@ -366,6 +366,7 @@ module physics
                                                  box%hlo(2):box%hhi(2),  &
                                                  box%hlo(1):box%hhi(1))
 
+            ! We only calculate N^2 if it did not get provided as an input.
             if (l_bfsq) then
                 if (world%rank == world%root) then
                     print *, "Provided squared buoyancy frequency:", bfsq
