@@ -219,11 +219,7 @@ module utils
                 if (file_type == 'fields') then
                     call read_netcdf_fields(field_file, -1)
                     call init_parcels_from_grids
-#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
-                   ! If not in restart mode, we could not read in the squared buoyancy frequency.
-                   ! We must calculate it.
-                   call calculate_basic_reference_state(nx, ny, nz, extent(3), tbuoyg)
-#endif
+
                    ! we must check if zeta must be kept zero
                    ! on a vertical boundary
                    call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
@@ -233,6 +229,11 @@ module utils
                    call mpi_exit_on_error('Input file must be of type "fields" or "parcels".')
                endif
             endif
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            ! Calculate the squared buoyancy frequency if not provided.
+            call calculate_basic_reference_state(nx, ny, nz, extent(3), tbuoyg)
+#endif
 
         end subroutine setup_fields_and_parcels
 
