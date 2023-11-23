@@ -117,7 +117,7 @@ module physics
                print_physical_quantity_integer,     &
                print_physical_quantity_logical,     &
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
-               l_bfsq,                             &
+               l_bfsq,                              &
 #endif
                print_physical_quantity_character
 
