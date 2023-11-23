@@ -101,9 +101,8 @@ module physics
     ! squared buoyancy frequency, N^2
     double precision, protected :: bfsq = zero
 
-    ! buoyancy frequency, N
-    double precision, protected :: bf   = zero
-    logical                     :: l_bfreq = .false.
+    ! Was N^2 provided?
+    logical                     :: l_bfsq = .false.
 #endif
 
     interface print_physical_quantity
@@ -118,7 +117,7 @@ module physics
                print_physical_quantity_integer,     &
                print_physical_quantity_logical,     &
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
-               l_bfreq,                             &
+               l_bfsq,                             &
 #endif
                print_physical_quantity_character
 
@@ -204,10 +203,9 @@ module physics
                 call read_netcdf_attribute_default(grp_ncid, 'ape_calculation', ape_calculation)
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
-                l_bfreq = has_attribute(grp_ncid, 'buoyancy_frequency')
-                if (l_bfreq) then
-                    call read_netcdf_attribute_default(grp_ncid, 'buoyancy_frequency', bf)
-                    bfsq = bf ** 2
+                l_bfsq = has_attribute(grp_ncid, 'squared_buoyancy_frequency')
+                if (l_bfsq) then
+                    call read_netcdf_attribute_default(grp_ncid, 'squared_buoyancy_frequency', bfsq)
                 endif
 #endif
 
@@ -271,8 +269,8 @@ module physics
             call write_netcdf_attribute(grp_ncid, 'ape_calculation', ape_calculation)
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
-            if (l_bfreq) then
-                call write_netcdf_attribute(grp_ncid, 'buoyancy_frequency', bf)
+            if (l_bfsq) then
+                call write_netcdf_attribute(grp_ncid, 'squared_buoyancy_frequency', bf)
             endif
 #endif
 
@@ -302,8 +300,8 @@ module physics
             call print_physical_quantity('APE calculation', ape_calculation)
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
-            if (l_bfreq) then
-                call print_physical_quantity('buoyancy_frequency', bf, '1/s')
+            if (l_bfsq) then
+                call print_physical_quantity('squared_buoyancy_frequency', bf, '1/s^2')
             endif
 #endif
             write(*, *) ''
@@ -368,7 +366,7 @@ module physics
                                                  box%hlo(2):box%hhi(2),  &
                                                  box%hlo(1):box%hhi(1))
 
-            if (l_bfreq) then
+            if (l_bfsq) then
                 if (world%rank == world%root) then
                     print *, "Provided squared buoyancy frequency:", bfsq
                 endif
@@ -387,7 +385,6 @@ module physics
                                world%err)
 
             bfsq = bfsq / (dble(nx * ny) * zext)
-            bf = dsqrt(bfsq)
 
             if (world%rank == world%root) then
                 print *, "Calculated squared buoyancy frequency:", bfsq
