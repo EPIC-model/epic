@@ -18,7 +18,7 @@ module inversion_utils
     private
 
     ! Ordering in physical space: z, y, x
-    ! Ordering in spectral space: z, x, y
+    ! Ordering in spectral space: z, y, x
 
     ! Tridiagonal arrays for the vertical vorticity component:
     double precision, allocatable :: etdv(:, :, :), htdv(:, :, :)
