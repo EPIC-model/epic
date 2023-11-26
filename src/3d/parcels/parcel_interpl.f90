@@ -147,11 +147,7 @@ module parcel_interpl
         ! @pre The parcel must be assigned to the correct MPI process.
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
-#ifndef ENABLE_P2G_1POINT
-            double precision  :: points(3, 4)
-#else
-            double precision  :: points(3, 1)
-#endif
+            double precision  :: points(3, n_points_p2g)
             integer           :: n, p, l, i, j, k
             double precision  :: pvol, weight(0:1,0:1,0:1), btot
 #ifndef ENABLE_DRY_MODE
@@ -411,11 +407,7 @@ module parcel_interpl
         !      filled correctly.
         subroutine grid2par(add)
             logical, optional, intent(in) :: add
-#ifndef ENABLE_G2P_1POINT
-            double precision              :: points(3, 4)
-#else
-            double precision              :: points(3, 1)
-#endif
+            double precision              :: points(3, n_points_g2p)
             integer                       :: n, l, p
 
             call start_timer(grid2par_timer)
