@@ -75,7 +75,7 @@ module rk_utils
                         + dvdz      * Bin(I_B33)   ! + dv/dz * B33
 
 
-            ! dB33/dt
+            ! dB33/dt = 2 * (dw/dx * B13 + dw/dy * B23 + dw/dz * B33)
             Bout(I_B33) = two * (S(I_DWDX) * Bin(I_B13) + S(I_DWDY) * Bin(I_B23) + dwdz * Bin(I_B33))
 
         end function get_dBdt
