@@ -397,6 +397,35 @@ else
     AC_MSG_RESULT([no])
 fi
 
+ENABLE_P2G_1POINT='no'
+AC_ARG_ENABLE([p2g-1point],
+              [AS_HELP_STRING([--enable-p2g-1point], [enable one-point par2grid (default=no)])],
+              [ENABLE_P2G_1POINT=$enableval])
+
+AM_CONDITIONAL([ENABLE_P2G_1POINT], [test "$ENABLE_P2G_1POINT" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling with 1 point in par2grid])
+if test "x$ENABLE_P2G_1POINT" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_P2G_1POINT"
+else
+    AC_MSG_RESULT([no])
+fi
+
+ENABLE_G2P_1POINT='no'
+AC_ARG_ENABLE([g2p-1point],
+              [AS_HELP_STRING([--enable-g2p-1point], [enable one-point grid2par (default=no)])],
+              [ENABLE_G2P_1POINT=$enableval])
+
+AM_CONDITIONAL([ENABLE_G2P_1POINT], [test "$ENABLE_G2P_1POINT" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling with 1 point in grid2par])
+if test "x$ENABLE_G2P_1POINT" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_G2P_1POINT"
+else
+    AC_MSG_RESULT([no])
+fi
 
 ENABLE_DIAGNOSE='no'
 AC_ARG_ENABLE([diagnose],
