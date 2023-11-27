@@ -23,7 +23,10 @@ module options
     character(len=512) :: restart_file = ''
 
     ! field input file
-    character(len=512)  :: field_file = ''
+    character(len=512) :: field_file = ''
+
+    ! boundary surface flux input file
+    character(len=512) :: flux_file = ''
 
     ! ls rk order
     integer :: rk_order = 4
@@ -112,7 +115,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, rk_order, boundary, output, parcel, time
+            namelist /EPIC/ field_file, flux_file, rk_order, boundary, output, parcel, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -150,6 +153,8 @@ module options
             call write_netcdf_attribute(ncid, "verbose", verbose)
 #endif
             call write_netcdf_attribute(ncid, "field_file", field_file)
+
+            call write_netcdf_attribute(ncid, "flux_file", flux_file)
 
             call write_netcdf_attribute(ncid, "rk_order", rk_order)
 

@@ -19,7 +19,7 @@ module parcel_interpl
                         , field_interior_to_buffer          &
                         , interior_to_halo_communication    &
                         , halo_to_interior_communication    &
-                        , field_halo_swap                   &
+                        , field_halo_swap_scalar            &
                         , field_halo_to_buffer_integer      &
                         , field_buffer_to_interior_integer  &
                         , field_interior_to_buffer_integer  &
@@ -61,13 +61,30 @@ module parcel_interpl
     integer, parameter :: n_field_swap = 7
 #endif
 
+#ifndef ENABLE_G2P_1POINT
+    integer, parameter :: n_points_g2p = 4
+    double precision, parameter :: point_weight_g2p = f14
+#else
+    integer, parameter :: n_points_g2p = 1
+    double precision, parameter :: point_weight_g2p = one
+#endif
+
+#ifndef ENABLE_P2G_1POINT
+    integer, parameter :: n_points_p2g = 4
+    double precision, parameter :: point_weight_p2g = f14
+#else
+    integer, parameter :: n_points_p2g = 1
+    double precision, parameter :: point_weight_p2g = one
+#endif
+
     public :: par2grid          &
             , vol2grid          &
             , grid2par          &
             , par2grid_timer    &
             , grid2par_timer    &
-            , halo_swap_timer    &
-            , trilinear
+            , halo_swap_timer   &
+            , trilinear         &
+            , bilinear
 
     contains
 
@@ -104,7 +121,7 @@ module parcel_interpl
             !$omp end parallel
 
             call start_timer(halo_swap_timer)
-            call field_halo_swap(volg)
+            call field_halo_swap_scalar(volg)
             call stop_timer(halo_swap_timer)
 
             ! apply free slip boundary condition
@@ -131,7 +148,7 @@ module parcel_interpl
         ! @pre The parcel must be assigned to the correct MPI process.
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
-            double precision  :: points(3, 4)
+            double precision  :: points(3, n_points_p2g)
             integer           :: n, p, l, i, j, k
             double precision  :: pvol, weight(0:1,0:1,0:1), btot
 #ifndef ENABLE_DRY_MODE
@@ -178,9 +195,13 @@ module parcel_interpl
                 ! remove basic state N^2 * z
                 btot = btot - bfsq * parcels%position(3, n)
 #endif
+
+#ifndef ENABLE_P2G_1POINT
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               pvol, parcels%B(:, n), n, l_reuse)
-
+#else
+                points(:, 1) = parcels%position(:, n)
+#endif
                 call get_index(parcels%position(:, n), i, j, k)
                 nparg(k, j, i) = nparg(k, j, i) + 1
                 if (parcels%volume(n) <= vmin) then
@@ -188,13 +209,13 @@ module parcel_interpl
                 endif
 
                 ! we have 4 points per ellipsoid
-                do p = 1, 4
+                do p = 1, n_points_p2g
 
                     call trilinear(points(:, p), is, js, ks, weights)
 
                     ! loop over grid points which are part of the interpolation
                     ! the weight is a quarter due to 4 points per ellipsoid
-                    weight = f14 * pvol* weights
+                    weight = point_weight_p2g * pvol* weights
 
                     do l = 1, 3
                         vortg(ks:ks+1, js:js+1, is:is+1, l) = vortg(ks:ks+1, js:js+1, is:is+1, l) &
@@ -312,7 +333,7 @@ module parcel_interpl
             ! halo grid points do not have correct values at
             ! corners where multiple processes share grid points.
 
-            call field_mpi_alloc(n_field_swap)
+            call field_mpi_alloc(n_field_swap, ndim=3)
 
             !------------------------------------------------------------------
             ! Accumulate interior:
@@ -387,7 +408,7 @@ module parcel_interpl
         !      filled correctly.
         subroutine grid2par(add)
             logical, optional, intent(in) :: add
-            double precision              :: points(3, 4)
+            double precision              :: points(3, n_points_g2p)
             integer                       :: n, l, p
 
             call start_timer(grid2par_timer)
@@ -421,25 +442,28 @@ module parcel_interpl
 
                 parcels%strain(:, n) = zero
 
+#ifndef ENABLE_G2P_1POINT
                 points = get_ellipsoid_points(parcels%position(:, n), &
                                               parcels%volume(n), parcels%B(:, n), n)
-
-                do p = 1, 4
+#else
+                points(:, 1) = parcels%position(:, n)
+#endif
+                do p = 1, n_points_g2p
                     ! get interpolation weights and mesh indices
                     call trilinear(points(:, p), is, js, ks, weights)
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1,3
                         parcels%delta_pos(l, n) = parcels%delta_pos(l, n) &
-                                                + f14 * sum(weights * velog(ks:ks+1, js:js+1, is:is+1, l))
+                                                + point_weight_g2p * sum(weights * velog(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                     do l = 1,5
                         parcels%strain(l, n) = parcels%strain(l, n) &
-                                             + f14 * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
+                                             + point_weight_g2p * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                     do l = 1,3
                         parcels%delta_vor(l, n) = parcels%delta_vor(l, n) &
-                                                + f14 * sum(weights * vtend(ks:ks+1, js:js+1, is:is+1, l))
+                                                + point_weight_g2p * sum(weights * vtend(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                 enddo
             enddo
@@ -498,5 +522,38 @@ module parcel_interpl
 
         end subroutine trilinear
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Bi-linear interpolation
+        ! @param[in] pos position of the parcel
+        ! @param[out] ii horizontal grid points for interoplation
+        ! @param[out] jj meridional grid points for interpolation
+        ! @param[out] ww interpolation weights
+        subroutine bilinear(pos, ii, jj, ww)
+            double precision, intent(in)  :: pos(2)
+            integer,          intent(out) :: ii, jj
+            double precision, intent(out) :: ww(0:1, 0:1)
+            double precision              :: xy(2)
+            double precision              :: px, py, pxc, pyc
+
+
+            ! (i, j)
+            xy = (pos - lower(1:2)) * dxi(1:2)
+            ii = floor(xy(1))
+            jj = floor(xy(2))
+
+            px = xy(1) - dble(ii)
+            pxc = one - px
+
+            py = xy(2) - dble(jj)
+            pyc = one - py
+
+            ! Note order of indices is j,i
+            ww(0, 0) = pyc * pxc
+            ww(0, 1) = pyc * px
+            ww(1, 0) = py  * pxc
+            ww(1, 1) = py  * px
+
+        end subroutine bilinear
 
 end module parcel_interpl

@@ -50,7 +50,7 @@ program test_field_interior_accumulate_vector
             values(:, :, :, nc) = one
         enddo
 
-        call field_interior_accumulate(values, l_alloc=.true.)
+        call field_interior_accumulate_vector(values, l_alloc=.true.)
 
         !
         ! check results

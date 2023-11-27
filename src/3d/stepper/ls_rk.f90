@@ -15,6 +15,7 @@ module ls_rk
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
     use field_diagnostics, only : calculate_field_diagnostics
+    use bndry_fluxes, only : apply_bndry_fluxes, bndry_fluxes_time_step
     use mpi_timer, only : start_timer, stop_timer, timings
     use mpi_utils, only : mpi_stop
     implicit none
@@ -99,6 +100,10 @@ module ls_rk
             ! update the time step
             dt = get_time_step(t)
 
+!            if (dabs(t - time%initial) < 1.0e-13) then
+                call bndry_fluxes_time_step(dt)
+!            endif
+
             call grid2par
 
             call calculate_parcel_diagnostics
@@ -106,6 +111,8 @@ module ls_rk
             call calculate_field_diagnostics
 
             call write_step(t)
+
+            call apply_bndry_fluxes(dt)
 
             do n = 1, n_stages-1
                 call ls_rk_substep(dt, n)

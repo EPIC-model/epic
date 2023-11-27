@@ -11,7 +11,8 @@ AM_LDFLAGS =						\
 	$(top_builddir)/src/3d/parcels/*.o 		\
 	$(top_builddir)/src/3d/utils/*.o		\
 	$(top_builddir)/src/3d/fields/*.o		\
-	$(top_builddir)/src/3d/inversion/*.o
+	$(top_builddir)/src/3d/inversion/*.o		\
+	$(top_builddir)/src/3d/boundary_layer/*.o
 
 # 21 November 2021
 # gnu.org/software/automake/manual/html_node/Libtool-Convenience-Libraries.html
