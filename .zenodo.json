@@ -1,5 +1,6 @@
 {
   "metadata": {
+    "description": "Elliptical Parcel-in-Cell model for fluid dynamics",
     "access_right": "open",
     "upload_type": "software",
     "keywords": ["particle-in-cell",
