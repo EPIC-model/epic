@@ -1,5 +1,4 @@
 {
-  "metadata": {
     "description": "Elliptical Parcel-in-Cell model for fluid dynamics",
     "access_right": "open",
     "upload_type": "software",
@@ -34,5 +33,4 @@
             "id": "10.13039/100014013::EP/T025409/1"
         }
     ]
-  }
 }
