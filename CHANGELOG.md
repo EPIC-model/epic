@@ -4,6 +4,7 @@
 * [Add missing field statistics timer stop](https://github.com/EPIC-model/epic/pull/537)
 * [Calculate squared buoyancy frequency only if not provided](https://github.com/EPIC-model/epic/pull/538)
 * [Compilation flag based 1-point par2grid and grid2par](https://github.com/EPIC-model/epic/pull/539)
+* [Overwrite default Zenodo metadata](https://github.com/EPIC-model/epic/pull/536)
 
 ## EPIC version 0.13.1
 * [Write specific fields only](https://github.com/EPIC-model/epic/pull/520)
