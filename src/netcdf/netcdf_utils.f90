@@ -18,6 +18,17 @@ module netcdf_utils
 
     character(*), parameter :: version_name = package // '_version'
 
+    type netcdf_info
+        character(32)        :: name      = ''
+        character(128)       :: long_name = ''
+        character(128)       :: std_name  = ''
+        character(16)        :: unit      = ''
+        integer              :: dtype     = -1
+        integer              :: varid     = -1
+        integer, allocatable :: dimids(:)
+        logical              :: l_enabled = .false.
+    end type netcdf_info
+
     contains
 
         ! This subroutine takes an array of length 3 or 4

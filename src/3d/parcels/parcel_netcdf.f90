@@ -18,6 +18,8 @@ module parcel_netcdf
     use fields, only : is_contained
     implicit none
 
+    private
+
     integer :: parcel_io_timer
 
     integer :: n_writes = 1
@@ -25,32 +27,39 @@ module parcel_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: npar_dim_id, vol_id, buo_id,      &
-                          x_pos_id, y_pos_id, z_pos_id,     &
-                          x_vor_id, y_vor_id, z_vor_id,     &
-                          b11_id, b12_id, b13_id,           &
-                          b22_id, b23_id, start_id,         &
-                          t_axis_id, t_dim_id, mpi_dim_id
+    integer            :: npar_dim_id   &
+                        , t_axis_id     &
+                        , t_dim_id      &
+                        , mpi_dim_id
     double precision   :: restart_time
 
+    integer, parameter :: NC_START = 1  &
+                        , NC_VOL   = 2  &
+                        , NC_X_POS = 3  &
+                        , NC_Y_POS = 4  &
+                        , NC_Z_POS = 5  &
+                        , NC_BUOY  = 6  &
+                        , NC_X_VOR = 7  &
+                        , NC_Y_VOR = 8  &
+                        , NC_Z_VOR = 9  &
+                        , NC_B11   = 10 &
+                        , NC_B12   = 11 &
+                        , NC_B13   = 12 &
+                        , NC_B22   = 13 &
+                        , NC_B23   = 14
+
 #ifndef ENABLE_DRY_MODE
-    integer :: hum_id
+    integer, parameter :: NC_HUM   = 15
+
+    type(netcdf_info) :: nc_dset(NC_HUM)
+#else
+    type(netcdf_info) :: nc_dset(NC_B23)
 #endif
 
-    private :: ncid, ncfname, n_writes, npar_dim_id,    &
-               x_pos_id, y_pos_id, z_pos_id, start_id,  &
-               x_vor_id, y_vor_id, z_vor_id,            &
-               b11_id, b12_id, b13_id, b22_id, b23_id,  &
-               vol_id, buo_id, t_dim_id, t_axis_id,     &
-               restart_time, mpi_dim_id,                &
-               read_chunk
-
-#ifndef ENABLE_DRY_MODE
-    private :: hum_id
-#endif
-
-    private :: ncbasename
-
+    public :: create_netcdf_parcel_file &
+            , write_netcdf_parcels      &
+            , read_netcdf_parcels       &
+            , parcel_io_timer
 
     contains
 
@@ -63,6 +72,8 @@ module parcel_netcdf
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
             integer                   :: dimids(2)
+
+            call set_netcdf_parcel_output
 
             ncfname =  basename // '_' // zfill(n_writes) // '_parcels.nc'
 
@@ -120,142 +131,22 @@ module parcel_netcdf
 
             dimids = (/npar_dim_id, t_dim_id/)
 
-            call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='x_position',                   &
-                                       long_name='x position component',    &
-                                       std_name='',                         &
-                                       unit='m',                            &
-                                       dtype=NF90_DOUBLE,                   &
-                                       dimids=dimids,                       &
-                                       varid=x_pos_id)
+            call set_netcdf_parcel_output
 
-            call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='y_position',                   &
-                                       long_name='y position component',    &
-                                       std_name='',                         &
-                                       unit='m',                            &
-                                       dtype=NF90_DOUBLE,                   &
-                                       dimids=dimids,                       &
-                                       varid=y_pos_id)
+            ! define parcel attributes
+            do n = 1, size(nc_dset)
+                if (nc_dset(n)%l_enabled) then
+                    call define_netcdf_dataset(ncid=ncid,                       &
+                                               name=nc_dset(n)%name,            &
+                                               long_name=nc_dset(n)%long_name,  &
+                                               std_name=nc_dset(n)%std_name,    &
+                                               unit=nc_dset(n)%unit,            &
+                                               dtype=nc_dset(n)%dtype,          &
+                                               dimids=nc_dset(n)%dimids,        &
+                                               varid=nc_dset(n)%varid)
 
-            call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='z_position',                   &
-                                       long_name='z position component',    &
-                                       std_name='',                         &
-                                       unit='m',                            &
-                                       dtype=NF90_DOUBLE,                   &
-                                       dimids=dimids,                       &
-                                       varid=z_pos_id)
-
-            call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='start_index',                  &
-                                       long_name='MPI rank start index',    &
-                                       std_name='',                         &
-                                       unit='1',                            &
-                                       dtype=NF90_INT,                      &
-                                       dimids=(/mpi_dim_id/),               &
-                                       varid=start_id)
-
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='B11',                              &
-                                       long_name='B11 element of shape matrix', &
-                                       std_name='',                             &
-                                       unit='m^2',                              &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=b11_id)
-
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='B12',                              &
-                                       long_name='B12 element of shape matrix', &
-                                       std_name='',                             &
-                                       unit='m^2',                              &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=b12_id)
-
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='B13',                              &
-                                       long_name='B13 element of shape matrix', &
-                                       std_name='',                             &
-                                       unit='m^2',                              &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=b13_id)
-
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='B22',                              &
-                                       long_name='B22 element of shape matrix', &
-                                       std_name='',                             &
-                                       unit='m^2',                              &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=b22_id)
-
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='B23',                              &
-                                       long_name='B23 element of shape matrix', &
-                                       std_name='',                             &
-                                       unit='m^2',                              &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=b23_id)
-
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='volume',                           &
-                                       long_name='parcel volume',               &
-                                       std_name='',                             &
-                                       unit='m^3',                              &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=vol_id)
-
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='x_vorticity',                      &
-                                       long_name='x vorticity component',       &
-                                       std_name='',                             &
-                                       unit='1/s',                              &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=x_vor_id)
-
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='y_vorticity',                      &
-                                       long_name='y vorticity component',       &
-                                       std_name='',                             &
-                                       unit='1/s',                              &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=y_vor_id)
-
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='z_vorticity',                      &
-                                       long_name='z vorticity component',       &
-                                       std_name='',                             &
-                                       unit='1/s',                              &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=z_vor_id)
-
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='buoyancy',                         &
-                                       long_name='parcel buoyancy',             &
-                                       std_name='',                             &
-                                       unit='m/s^2',                            &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=buo_id)
-
-#ifndef ENABLE_DRY_MODE
-            call define_netcdf_dataset(ncid=ncid,                               &
-                                       name='humidity',                         &
-                                       long_name='parcel humidity',             &
-                                       std_name='',                             &
-                                       unit='1',                                &
-                                       dtype=NF90_DOUBLE,                       &
-                                       dimids=dimids,                           &
-                                       varid=hum_id)
-#endif
+                endif
+            enddo
 
             call close_definition(ncid)
 
@@ -354,6 +245,8 @@ module parcel_netcdf
             integer                      :: avail_size, n_remaining, n_read
 
             call start_timer(parcel_io_timer)
+
+            call set_netcdf_parcel_info
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
@@ -596,5 +489,223 @@ module parcel_netcdf
                     "Either the parcel buoyancy or vorticity must be present! Exiting.")
             endif
         end subroutine read_chunk
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine set_netcdf_parcel_output
+            integer :: n
+            logical :: l_enabled_restart = .true.
+
+            call set_netcdf_field_info
+
+            ! check custom tags
+            if (any('all' == output%field_list(:))) then
+                nc_dset(:)%l_enabled = .true.
+            else if (any('default' == output%field_list(:))) then
+                nc_dset(NC_X_POS)%l_enabled = .true.
+                nc_dset(NC_Y_POS)%l_enabled = .true.
+                nc_dset(NC_Z_POS)%l_enabled = .true.
+                nc_dset(NC_X_VOR)%l_enabled = .true.
+                nc_dset(NC_Y_VOR)%l_enabled = .true.
+                nc_dset(NC_Z_VOR)%l_enabled = .true.
+                nc_dset(NC_BUOY)%l_enabled  = .true.
+#ifndef ENABLE_DRY_MODE
+                nc_dset(NC_HUM)%l_enabled   = .true.
+#endif
+                nc_dset(NC_VOL)%l_enabled   = .true.
+                nc_dset(NC_START)%l_enabled = .true.
+                nc_dset(NC_B11)%l_enabled   = .true.
+                nc_dset(NC_B12)%l_enabled   = .true.
+                nc_dset(NC_B13)%l_enabled   = .true.
+                nc_dset(NC_B22)%l_enabled   = .true.
+                nc_dset(NC_B23)%l_enabled   = .true.
+            else
+                ! check individual fields
+                do n = 1, size(nc_dset)
+                    nc_dset(n)%l_enabled = any(nc_dset(n)%name == output%field_list(:))
+                enddo
+            endif
+
+            if (count(nc_dset(:)%l_enabled) == 0) then
+                if (world%rank == world%root) then
+                    print *, "WARNING: No parcel attributes are actively selected. EPIC is going to write"
+                    print *, "         the default parcel attributes. Stop the simulation now if this is"
+                    print *, "         not your intention. Parcel attributes can be provided to the list"
+                    print *, "         'output%parcel_list' in the configuration file."
+                    print *, "         The following parcel attributes are available:"
+                    do n = 1, size(nc_dset)
+                        print *, "         " // nc_dset(n)%name // " : " // trim(nc_dset(n)%long_name)
+                    enddo
+                    print *, "         " // "all"     // repeat(" ", 29) // " : write all parcel attributes"
+                    print *, "         " // "default" // repeat(" ", 25) // " : write default parcel attributes"
+                    print *, ""
+                endif
+                nc_dset(NC_X_POS)%l_enabled = .true.
+                nc_dset(NC_Y_POS)%l_enabled = .true.
+                nc_dset(NC_Z_POS)%l_enabled = .true.
+                nc_dset(NC_X_VOR)%l_enabled = .true.
+                nc_dset(NC_Y_VOR)%l_enabled = .true.
+                nc_dset(NC_Z_VOR)%l_enabled = .true.
+                nc_dset(NC_BUOY)%l_enabled  = .true.
+#ifndef ENABLE_DRY_MODE
+                nc_dset(NC_HUM)%l_enabled   = .true.
+#endif
+                nc_dset(NC_VOL)%l_enabled   = .true.
+                nc_dset(NC_START)%l_enabled = .true.
+                nc_dset(NC_B11)%l_enabled   = .true.
+                nc_dset(NC_B12)%l_enabled   = .true.
+                nc_dset(NC_B13)%l_enabled   = .true.
+                nc_dset(NC_B22)%l_enabled   = .true.
+                nc_dset(NC_B23)%l_enabled   = .true.
+            endif
+
+
+            do n = NC_X_POS, NC_Y_POS
+                l_enabled_restart = (l_enabled_restart .and. nc_dset(n)%l_enabled)
+            endif
+
+            do n = NC_B11, NC_B23
+                l_enabled_restart = (l_enabled_restart .and. nc_dset(n)%l_enabled)
+            endif
+            l_enabled_restart = (l_enabled_restart .and. nc_dset(NC_VOL)%l_enabled)
+
+            l_enabled_restart = (l_enabled_restart .and.              &
+                                 ((nc_dset(NC_X_VOR%l_enabled) .and.  &
+                                   nc_dset(NC_Y_VOR%l_enabled) .and.  &
+                                   nc_dset(NC_Z_VOR%l_enabled)) .or.  &
+                                   nc_dset(NC_BUOY)%l_enabled))
+
+
+            if ((.not. l_enabled_restart) .and. (world%rank == world%root) then
+                print *, "WARNING: EPIC will not be able to restart from a parcel file."
+                print *, "         You must at least write the B-shape matrix, parcel position"
+                print *, "         parcel volume and parcel vorticity or buoyancy to enable a"
+                print *, "         restart. If you intend to restart from a parcel file later,"
+                print *, "         you must stop the simulation immediately."
+            endif
+
+#ifdef ENABLE_VERBOSE
+            if (verbose .and. (world%rank == world%root)) then
+                print *, "EPIC is going to write the following parcel attributes:"
+                do n = 1, size(nc_dset)
+                    if (nc_dset(n)%l_enabled) then
+                        print *, repeat(" ", 4) // trim(nc_dset(n)%name)
+                    endif
+                enddo
+                print *, ""
+            endif
+#endif
+        end set_netcdf_parcel_output
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine set_netcdf_parcel_info
+            nc_dset(NC_X_POS) = netcdf_info(name='x_position',                   &
+                                            long_name='x position component',    &
+                                            std_name='',                         &
+                                            unit='m',                            &
+                                            dtype=NF90_DOUBLE,                   &
+                                            dimids=dimids)
+
+            nc_dset(NC_Y_POS) = netcdf_info(name='y_position',                   &
+                                            long_name='y position component',    &
+                                            std_name='',                         &
+                                            unit='m',                            &
+                                            dtype=NF90_DOUBLE,                   &
+                                            dimids=dimids)
+
+            nc_dset(NC_Z_POS) = netcdf_info(name='z_position',                   &
+                                            long_name='z position component',    &
+                                            std_name='',                         &
+                                            unit='m',                            &
+                                            dtype=NF90_DOUBLE,                   &
+                                            dimids=dimids)
+
+            nc_dset(NC_START) = netcdf_info(name='start_index',                  &
+                                            long_name='MPI rank start index',    &
+                                            std_name='',                         &
+                                            unit='1',                            &
+                                            dtype=NF90_INT,                      &
+                                            dimids=(/mpi_dim_id/))
+
+            nc_dset(NC_B11) = netcdf_info(name='B11',                              &
+                                          long_name='B11 element of shape matrix', &
+                                          std_name='',                             &
+                                          unit='m^2',                              &
+                                          dtype=NF90_DOUBLE,                       &
+                                          dimids=dimids)
+
+            nc_dset(NC_B12) = netcdf_info(name='B12',                              &
+                                          long_name='B12 element of shape matrix', &
+                                          std_name='',                             &
+                                          unit='m^2',                              &
+                                          dtype=NF90_DOUBLE,                       &
+                                          dimids=dimids)
+
+            nc_dset(NC_B13) = netcdf_info(name='B13',                              &
+                                          long_name='B13 element of shape matrix', &
+                                          std_name='',                             &
+                                          unit='m^2',                              &
+                                          dtype=NF90_DOUBLE,                       &
+                                          dimids=dimids)
+
+            nc_dset(NC_B22) = netcdf_info(name='B22',                              &
+                                          long_name='B22 element of shape matrix', &
+                                          std_name='',                             &
+                                          unit='m^2',                              &
+                                          dtype=NF90_DOUBLE,                       &
+                                          dimids=dimids)
+
+            nc_dset(NC_B23) = netcdf_info(name='B23',                              &
+                                          long_name='B23 element of shape matrix', &
+                                          std_name='',                             &
+                                          unit='m^2',                              &
+                                          dtype=NF90_DOUBLE,                       &
+                                          dimids=dimids)
+
+            nc_dset(NC_VOL) = netcdf_info(name='volume',                           &
+                                          long_name='parcel volume',               &
+                                          std_name='',                             &
+                                          unit='m^3',                              &
+                                          dtype=NF90_DOUBLE,                       &
+                                          dimids=dimids)
+
+            nc_dset(NC_X_VOR) = netcdf_info(name='x_vorticity',                      &
+                                            long_name='x vorticity component',       &
+                                            std_name='',                             &
+                                            unit='1/s',                              &
+                                            dtype=NF90_DOUBLE,                       &
+                                            dimids=dimids)
+
+            nc_dset(NC_Y_VOR) = netcdf_info(name='y_vorticity',                      &
+                                            long_name='y vorticity component',       &
+                                            std_name='',                             &
+                                            unit='1/s',                              &
+                                            dtype=NF90_DOUBLE,                       &
+                                            dimids=dimids)
+
+            nc_dset(NC_Z_VOR) = netcdf_info(name='z_vorticity',                      &
+                                            long_name='z vorticity component',       &
+                                            std_name='',                             &
+                                            unit='1/s',                              &
+                                            dtype=NF90_DOUBLE,                       &
+                                            dimids=dimids)
+
+            nc_dset(NC_BUOY) = netcdf_info(name='buoyancy',                         &
+                                           long_name='parcel buoyancy',             &
+                                           std_name='',                             &
+                                           unit='m/s^2',                            &
+                                           dtype=NF90_DOUBLE,                       &
+                                           dimids=dimids)
+
+#ifndef ENABLE_DRY_MODE
+            nc_dset(NC_HUM) = netcdf_info(name='humidity',                         &
+                                          long_name='parcel humidity',             &
+                                          std_name='',                             &
+                                          unit='1',                                &
+                                          dtype=NF90_DOUBLE,                       &
+                                          dimids=dimids)
+#endif
+        end subroutine set_netcdf_parcel_info
 
 end module parcel_netcdf
