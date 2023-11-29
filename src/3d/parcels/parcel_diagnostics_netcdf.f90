@@ -386,6 +386,7 @@ module parcel_diagnostics_netcdf
             ! reset counters for parcel operations
             n_parcel_splits = 0
             n_parcel_merges = 0
+            n_way_parcel_mergers = 0
 
             call close_netcdf_file(ncid, l_serial=.true.)
 

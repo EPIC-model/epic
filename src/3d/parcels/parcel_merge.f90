@@ -29,8 +29,13 @@ module parcel_merging
     ! number of parcel merges (is reset in every write step)
     integer :: n_parcel_merges = 0
 
-    private :: geometric_merge, &
-               do_group_merge
+    ! number of merging parcels (up to 10 supported, all others are put into index 10)
+    ! note that array index 1 corresponds to 2-way merging
+    integer :: n_way_parcel_mergers(10) = 0
+
+    private :: geometric_merge,     &
+               do_group_merge,      &
+               collect_merge_stats
 
     contains
 
@@ -51,9 +56,12 @@ module parcel_merging
             ! find parcels to merge
             call find_nearest(isma, iclo, inva, n_merge, n_invalid)
 
+            call start_timer(merge_timer)
+
             n_parcel_merges = n_parcel_merges + n_merge
 
-            call start_timer(merge_timer)
+            call collect_merge_stats(iclo, n_merge)
+
 
             if (n_merge > 0) then
                 ! merge small parcels into other parcels
@@ -89,6 +97,7 @@ module parcel_merging
 
         end subroutine parcel_merge
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Actual merge.
         ! @param[in] isma are the indices of the small parcels
@@ -275,6 +284,7 @@ module parcel_merging
 
         end subroutine do_group_merge
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Geometric merging -- called by subroutine merge_parcels.
         ! @param[inout] parcels is the parcel container
@@ -317,5 +327,42 @@ module parcel_merging
             enddo
 
         end subroutine geometric_merge
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine collect_merge_stats(iclo, n_merge)
+            integer, allocatable, dimension(:) :: iclo
+            integer                            :: n_merge
+            integer                            :: unique(n_merge) ! unique 'iclo' indices
+            integer                            :: number(n_merge) ! number of merging parcels
+            integer                            :: ic, m, j, last
+
+            unique = 0
+            number = 0 ! note that "number" does not include the 'iclo' parcel in the count
+
+            !------------------------------------------------------------------
+            ! Find unique 'iclo' indices and the total number of parcels
+            ! merging with them:
+            last = 0
+            do m = 1, n
+                ic = iclo(m)
+                j = findloc(unique(1:last), value = ic, dim=1)
+                if (j == 0) then
+                    last = last + 1
+                    j = last
+                endif
+                unique(j) = ic
+                number(j) = number(j) + 1
+            enddo
+
+            !------------------------------------------------------------------
+            ! Count the number of 2-, 3-, 4- etc way merging:
+            do m = 1, last
+                ! all mergers involving more than size(n_way_parcel_mergers) parcels are added together
+                j = min(size(n_way_parcel_mergers), number(m))
+                n_way_parcel_mergers(j) = n_way_parcel_mergers(j) + 1
+            enddo
+
+        end subroutine collect_merge_stats
 
 end module parcel_merging
