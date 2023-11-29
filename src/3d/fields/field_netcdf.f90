@@ -130,7 +130,7 @@ module field_netcdf
                                                std_name=nc_dset(n)%std_name,    &
                                                unit=nc_dset(n)%unit,            &
                                                dtype=nc_dset(n)%dtype,          &
-                                               dimids=nc_dset(n)%dimids,        &
+                                               dimids=dimids,                   &
                                                varid=nc_dset(n)%varid)
 
                 endif

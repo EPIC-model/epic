@@ -25,7 +25,6 @@ module netcdf_utils
         character(16)        :: unit      = ''
         integer              :: dtype     = -1
         integer              :: varid     = -1
-        integer, allocatable :: dimids(:)
         logical              :: l_enabled = .false.
     end type netcdf_info
 
