@@ -1,5 +1,5 @@
 module parcel_netcdf
-    use options, only : output
+    use options, only : output, verbose
     use constants, only : one
     use netcdf_utils
     use netcdf_writer
@@ -48,6 +48,8 @@ module parcel_netcdf
                         , NC_B13   = 12 &
                         , NC_B22   = 13 &
                         , NC_B23   = 14
+
+    logical :: l_first_write = .true.
 
 #ifndef ENABLE_DRY_MODE
     integer, parameter :: NC_HUM   = 15
@@ -548,11 +550,10 @@ module parcel_netcdf
                 do n = 1, size(nc_dset)
                     nc_dset(n)%l_enabled = any(nc_dset(n)%name == output%parcel_list(:))
                 enddo
-                nc_dset(NC_START)%l_enabled = .true.
             endif
 
             if (count(nc_dset(:)%l_enabled) == 0) then
-                if (world%rank == world%root) then
+                if ((world%rank == world%root) .and. l_first_write) then
                     print *, "WARNING: No parcel attributes are actively selected. EPIC is going to write"
                     print *, "         the default parcel attributes. Stop the simulation now if this is"
                     print *, "         not your intention. Parcel attributes can be provided to the list"
@@ -565,6 +566,7 @@ module parcel_netcdf
                     print *, "         " // "default" // repeat(" ", 25) // " : write default parcel attributes"
                     print *, ""
                 endif
+                nc_dset(NC_START)%l_enabled = .true.
                 nc_dset(NC_X_POS)%l_enabled = .true.
                 nc_dset(NC_Y_POS)%l_enabled = .true.
                 nc_dset(NC_Z_POS)%l_enabled = .true.
@@ -583,33 +585,8 @@ module parcel_netcdf
                 nc_dset(NC_B23)%l_enabled   = .true.
             endif
 
-
-            do n = NC_X_POS, NC_Y_POS
-                l_enabled_restart = (l_enabled_restart .and. nc_dset(n)%l_enabled)
-            enddo
-
-            do n = NC_B11, NC_B23
-                l_enabled_restart = (l_enabled_restart .and. nc_dset(n)%l_enabled)
-            enddo
-            l_enabled_restart = (l_enabled_restart .and. nc_dset(NC_VOL)%l_enabled)
-
-            l_enabled_restart = (l_enabled_restart .and.                &
-                                 ((nc_dset(NC_X_VOR)%l_enabled .and.    &
-                                   nc_dset(NC_Y_VOR)%l_enabled .and.    &
-                                   nc_dset(NC_Z_VOR)%l_enabled) .or.    &
-                                   nc_dset(NC_BUOY)%l_enabled))
-
-
-            if ((.not. l_enabled_restart) .and. (world%rank == world%root)) then
-                print *, "WARNING: EPIC will not be able to restart from a parcel file."
-                print *, "         You must at least write the B-shape matrix, parcel position"
-                print *, "         parcel volume and parcel vorticity or buoyancy to enable a"
-                print *, "         restart. If you intend to restart from a parcel file later,"
-                print *, "         you must stop the simulation immediately."
-            endif
-
 #ifdef ENABLE_VERBOSE
-            if (verbose .and. (world%rank == world%root)) then
+            if (verbose .and. (world%rank == world%root) .and. l_first_write) then
                 print *, "EPIC is going to write the following parcel attributes:"
                 do n = 1, size(nc_dset)
                     if (nc_dset(n)%l_enabled) then
@@ -619,6 +596,37 @@ module parcel_netcdf
                 print *, ""
             endif
 #endif
+
+
+            if (l_first_write) then
+                l_first_write = .false.
+
+                do n = NC_X_POS, NC_Y_POS
+                    l_enabled_restart = (l_enabled_restart .and. nc_dset(n)%l_enabled)
+                enddo
+
+                do n = NC_B11, NC_B23
+                    l_enabled_restart = (l_enabled_restart .and. nc_dset(n)%l_enabled)
+                enddo
+                l_enabled_restart = (l_enabled_restart .and. nc_dset(NC_VOL)%l_enabled)
+
+                l_enabled_restart = (l_enabled_restart .and.                &
+                                      ((nc_dset(NC_X_VOR)%l_enabled .and.   &
+                                        nc_dset(NC_Y_VOR)%l_enabled .and.   &
+                                        nc_dset(NC_Z_VOR)%l_enabled) .or.   &
+                                        nc_dset(NC_BUOY)%l_enabled))
+
+
+                if ((.not. l_enabled_restart) .and. (world%rank == world%root)) then
+                    print *, "WARNING: EPIC will not be able to restart from a parcel file."
+                    print *, "         You must at least write the B-shape matrix, parcel position"
+                    print *, "         parcel volume and parcel vorticity or buoyancy to enable a"
+                    print *, "         restart. If you intend to restart from a parcel file later,"
+                    print *, "         you must stop the simulation immediately. Furthermore, you can"
+                    print *, "         write the MPI 'start_index' to speed up the restart."
+                endif
+            endif
+
         end subroutine set_netcdf_parcel_output
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
