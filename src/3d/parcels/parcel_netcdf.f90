@@ -137,14 +137,16 @@ module parcel_netcdf
 
             ! define parcel attributes
             n = NC_START
-            call define_netcdf_dataset(ncid=ncid,                       &
-                                       name=nc_dset(n)%name,            &
-                                       long_name=nc_dset(n)%long_name,  &
-                                       std_name=nc_dset(n)%std_name,    &
-                                       unit=nc_dset(n)%unit,            &
-                                       dtype=nc_dset(n)%dtype,          &
-                                       dimids=(/mpi_dim_id/),           &
-                                       varid=nc_dset(n)%varid)
+            if (nc_dset(n)%l_enabled) then
+                call define_netcdf_dataset(ncid=ncid,                       &
+                                           name=nc_dset(n)%name,            &
+                                           long_name=nc_dset(n)%long_name,  &
+                                           std_name=nc_dset(n)%std_name,    &
+                                           unit=nc_dset(n)%unit,            &
+                                           dtype=nc_dset(n)%dtype,          &
+                                           dimids=(/mpi_dim_id/),           &
+                                           varid=nc_dset(n)%varid)
+            endif
 
             do n = 2, size(nc_dset)
                 if (nc_dset(n)%l_enabled) then
@@ -215,8 +217,10 @@ module parcel_netcdf
             start = (/ start_index, 1 /)
             cnt   = (/ n_parcels,   1 /)
 
-            call write_netcdf_dataset(ncid, nc_dset(NC_START)%varid, &
-                                      (/start_index/), start=(/1+world%rank, 1/), cnt=(/1, 1/))
+            if (nc_dset(NC_START)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(NC_START)%varid, (/start_index/), &
+                                          start=(/1+world%rank, 1/), cnt=(/1, 1/))
+            endif
 
             call write_parcel_attribute(NC_X_POS, parcels%position(1, :), start, cnt)
             call write_parcel_attribute(NC_Y_POS, parcels%position(2, :), start, cnt)
@@ -261,6 +265,8 @@ module parcel_netcdf
                                           start, cnt)
             endif
         end subroutine write_parcel_attribute
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine read_netcdf_parcels(fname)
             character(*),     intent(in) :: fname
