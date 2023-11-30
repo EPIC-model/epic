@@ -123,7 +123,7 @@ module parcel_diagnostics_netcdf
             do n = 1, size(nc_dset)
                 if (nc_dset(n)%l_enabled) then
                     if (n == NC_NWAY_MERGE) then
-                        continue
+                        cycle
                     endif
                     call define_netcdf_dataset(ncid=ncid,                       &
                                                name=nc_dset(n)%name,            &
@@ -176,6 +176,11 @@ module parcel_diagnostics_netcdf
 
             call start_timer(parcel_stats_io_timer)
 
+            ! reset counters for parcel operations
+            n_parcel_splits = 0
+            n_parcel_merges = 0
+            n_way_parcel_mergers = 0
+
             if (world%rank /= world%root) then
                 return
             endif
@@ -217,16 +222,12 @@ module parcel_diagnostics_netcdf
             call write_diagnostic(NC_MIN_BUOY, parcel_stats(IDX_MIN_BUOY))
             call write_diagnostic(NC_MAX_BUOY, parcel_stats(IDX_MAX_BUOY))
 
-            call write_netcdf_dataset(ncid, nc_dset(NC_NWAY_MERGE)%varid, parcel_merge_stats, &
-                                      start=(/1, n_writes/), cnt=(/size(parcel_merge_stats), 1/))
+            call write_netcdf_dataset(ncid, nc_dset(NC_NWAY_MERGE)%varid, parcel_merge_stats,     &
+                                      start=(/1, n_writes/), cnt=(/size(parcel_merge_stats), 1/), &
+                                      l_serial=.true.)
 
             ! increment counter
             n_writes = n_writes + 1
-
-            ! reset counters for parcel operations
-            n_parcel_splits = 0
-            n_parcel_merges = 0
-            n_way_parcel_mergers = 0
 
             call close_netcdf_file(ncid, l_serial=.true.)
 
@@ -380,6 +381,13 @@ module parcel_diagnostics_netcdf
                 std_name='',                                                &
                 unit='m/s^2',                                               &
                 dtype=NF90_DOUBLE)
+
+            nc_dset(NC_NWAY_MERGE) = netcdf_info(                           &
+                name='n_way_merging',                                       &
+                long_name='n-way merging',                                  &
+                std_name='',                                                &
+                unit='1',                                                   &
+                dtype=NF90_INT)
 
         end subroutine set_netcdf_parcel_diagnostics_info
 
