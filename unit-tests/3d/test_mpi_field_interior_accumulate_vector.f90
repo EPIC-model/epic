@@ -10,7 +10,7 @@
 program test_field_interior_accumulate_vector
     use constants, only : zero, one, two, four
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use field_mpi
     implicit none
@@ -23,17 +23,17 @@ program test_field_interior_accumulate_vector
     double precision              :: diff
     integer                       :: nc, ncomp
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    if (comm%size > 4) then
-        if (comm%rank == comm%master) then
+    if (world%size > 4) then
+        if (world%rank == world%root) then
             print *, "This unit test does not work with more than 4 MPI ranks."
         endif
-        call mpi_comm_finalise
+        call mpi_env_finalise
         stop
     endif
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
@@ -50,7 +50,7 @@ program test_field_interior_accumulate_vector
             values(:, :, :, nc) = one
         enddo
 
-        call field_interior_accumulate(values, l_alloc=.true.)
+        call field_interior_accumulate_vector(values, l_alloc=.true.)
 
         !
         ! check results
@@ -116,17 +116,17 @@ program test_field_interior_accumulate_vector
 
     passed = (passed .and. (diff == zero))
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI vector field interior accumulate', passed)
     endif
 

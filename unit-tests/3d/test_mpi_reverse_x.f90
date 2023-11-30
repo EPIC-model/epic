@@ -9,7 +9,7 @@ program test_mpi_reverse_x
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, extent, upper
     use deriv1d
     use stafft
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     use mpi_reverse, only : reverse_x               &
                           , intialise_mpi_reverse   &
@@ -23,9 +23,9 @@ program test_mpi_reverse_x
     double precision              :: x, y, z, xr
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     nx = 8
     ny = 8
@@ -72,19 +72,19 @@ program test_mpi_reverse_x
         enddo
     enddo
 
-    if (comm%rank == comm%master) then
-        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+    if (world%rank == world%root) then
+        call MPI_Reduce(MPI_IN_PLACE, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     else
-        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, comm%master, comm%world, comm%err)
+        call MPI_Reduce(passed, passed, 1, MPI_LOGICAL, MPI_LAND, world%root, world%comm, world%err)
     endif
 
     call finalise_mpi_reverse
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
             call print_result_logical('Test MPI reverse_x', passed)
     endif
 

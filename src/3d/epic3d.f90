@@ -7,7 +7,7 @@ program epic3d
     use parcel_container
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
-    use parcel_merge, only : merge_parcels, merge_timer
+    use parcel_merging, only : parcel_merge, merge_timer
     use parcel_nearest, only : merge_nearest_timer      &
                              , merge_tree_resolve_timer &
                              , nearest_win_allocate     &
@@ -36,14 +36,16 @@ program epic3d
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_fields_and_parcels
-    use mpi_communicator, only : mpi_comm_initialise, mpi_comm_finalise
+    use mpi_environment, only : mpi_env_initialise, mpi_env_finalise
+    use bndry_fluxes, only : bndry_fluxes_deallocate    &
+                           , bndry_flux_timer
     use mpi_utils, only : mpi_print, mpi_stop
     use options, only : rk_order
     implicit none
 
     integer :: epic_timer
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -57,7 +59,7 @@ program epic3d
     ! Deallocate memory
     call post_run
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
     contains
 
@@ -65,6 +67,7 @@ program epic3d
             use options, only : read_config_file
 
             call register_timer('epic', epic_timer)
+            call register_timer('parcel container resize', resize_timer)
             call register_timer('par2grid', par2grid_timer)
             call register_timer('grid2par', grid2par_timer)
             call register_timer('parcel split', split_timer)
@@ -85,6 +88,7 @@ program epic3d
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
+            call register_timer('boundary fluxes', bndry_flux_timer)
 
             call start_timer(epic_timer)
 
@@ -111,9 +115,6 @@ program epic3d
 
         subroutine run
             use options, only : time, parcel
-#ifdef ENABLE_VERBOSE
-            use options, only : verbose
-#endif
             double precision :: t = zero    ! current time
             integer          :: cor_iter    ! iterator for parcel correction
 
@@ -121,18 +122,13 @@ program epic3d
 
             do while (t < time%limit)
 
-#ifdef ENABLE_VERBOSE
-                if (verbose .and. (comm%rank == comm%master)) then
-                    print "(a15, f0.4)", "time:          ", t
-                endif
-#endif
                 call apply_vortcor
 
                 call ls_rk_step(t)
 
-                call merge_parcels(parcels)
+                call parcel_merge
 
-                call parcel_split(parcels, parcel%lambda_max)
+                call parcel_split
 
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace((cor_iter > 1))
@@ -154,6 +150,7 @@ program epic3d
             call parcel_dealloc
             call field_dealloc
             call nearest_win_deallocate
+            call bndry_fluxes_deallocate
             call finalise_inversion
             call stop_timer(epic_timer)
 

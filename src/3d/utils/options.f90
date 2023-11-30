@@ -23,7 +23,10 @@ module options
     character(len=512) :: restart_file = ''
 
     ! field input file
-    character(len=512)  :: field_file = ''
+    character(len=512) :: field_file = ''
+
+    ! boundary surface flux input file
+    character(len=512) :: flux_file = ''
 
     ! ls rk order
     integer :: rk_order = 4
@@ -53,16 +56,17 @@ module options
     ! output options
     !
     type info
-        double precision    :: field_freq         = one
-        logical             :: write_fields       = .true.
-        double precision    :: parcel_freq        = one
-        logical             :: overwrite          = .false.
-        logical             :: write_parcels      = .true.
-        double precision    :: parcel_stats_freq  = one
-        logical             :: write_parcel_stats = .true.
-        double precision    :: field_stats_freq   = one
-        logical             :: write_field_stats  = .true.
-        character(len=512)  :: basename           = ''
+        double precision                  :: field_freq         = one
+        logical                           :: write_fields       = .true.
+        character(len=32), dimension(128) :: field_list         = ''
+        double precision                  :: parcel_freq        = one
+        logical                           :: overwrite          = .false.
+        logical                           :: write_parcels      = .true.
+        double precision                  :: parcel_stats_freq  = one
+        logical                           :: write_parcel_stats = .true.
+        double precision                  :: field_stats_freq   = one
+        logical                           :: write_field_stats  = .true.
+        character(len=512)                :: basename           = ''
     end type info
 
     type(info) :: output
@@ -77,14 +81,16 @@ module options
     !
     type parcel_type
         double precision :: size_factor      = 1.0d0    ! factor to increase max. number of parcels
+        double precision :: grow_factor      = 1.2d0    ! factor to increase the parcel container size
+                                                        ! in the parcel splitting routine
+        double precision :: shrink_factor    = 0.8d0    ! factor to reduce the parcel container size
         integer          :: n_per_cell       = 8        ! number of parcels per cell (need to be a cube)
         double precision :: lambda_max       = four     ! max. ellipse aspect ratio a/b
-        double precision :: min_vratio       = 40.0d0   ! minimum ratio of grid cell volume / parcel volume
+        double precision :: min_vratio       = 20.0d0   ! minimum ratio of grid cell volume / parcel volume
         integer          :: correction_iters = 2        ! parcel correction iterations
         double precision :: gradient_pref    = 1.8d0    ! prefactor for gradient descent
-        double precision :: max_compression  = 0.5d0    ! parameter for gradient descent (limits the shift in parcel position)
-        double precision :: max_vratio       = 4.913d0  ! maximum ratio of grid cell volume / parcel volume (1.7^3)
-
+        double precision :: max_compression  = 0.5d0    ! parameter for gradient descent
+                                                        ! (limits the shift in parcel position)
     end type parcel_type
 
     type(parcel_type) :: parcel
@@ -109,7 +115,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, rk_order, boundary, output, parcel, time
+            namelist /EPIC/ field_file, flux_file, rk_order, boundary, output, parcel, time
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -148,6 +154,8 @@ module options
 #endif
             call write_netcdf_attribute(ncid, "field_file", field_file)
 
+            call write_netcdf_attribute(ncid, "flux_file", flux_file)
+
             call write_netcdf_attribute(ncid, "rk_order", rk_order)
 
             call write_netcdf_attribute(ncid, "zeta_tol", boundary%zeta_tol)
@@ -164,7 +172,6 @@ module options
             call write_netcdf_attribute(ncid, "correction_iters", parcel%correction_iters)
             call write_netcdf_attribute(ncid, "gradient_pref", parcel%gradient_pref)
             call write_netcdf_attribute(ncid, "max_compression", parcel%max_compression)
-            call write_netcdf_attribute(ncid, "max_vratio", parcel%max_vratio)
 
             call write_netcdf_attribute(ncid, "parcel_freq", output%parcel_freq)
             call write_netcdf_attribute(ncid, "field_freq", output%field_freq)

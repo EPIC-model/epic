@@ -4,15 +4,25 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use parameters, only : extent, extenti, center, lower, upper
-    use parcel_ellipsoid, only : parcel_ellipsoid_allocate, parcel_ellipsoid_deallocate
-    use mpi_communicator
+    use parameters, only : extent, extenti, center, lower, upper, set_max_num_parcels
+    use parcel_ellipsoid, only : parcel_ellipsoid_allocate    &
+                               , parcel_ellipsoid_deallocate  &
+                               , parcel_ellipsoid_resize      &
+                               , set_ellipsoid_buffer_indices &
+                               , parcel_ellipsoid_replace     &
+                               , parcel_ellipsoid_serialize   &
+                               , parcel_ellipsoid_deserialize
+    use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error
+    use armanip, only : resize_array
+    use mpi_timer, only : start_timer, stop_timer
     implicit none
 
     integer :: n_parcels        ! local number of parcels
     integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
+
+    integer :: resize_timer
 
     ! buffer indices to access individual parcel attributes
     integer, protected :: IDX_X_POS,        & ! x-position
@@ -67,14 +77,12 @@ module parcel_container
 #endif
             buoyancy
 
-
         ! LS-RK4 variables
         double precision, allocatable, dimension(:, :) :: &
-            delta_pos,  &
-            delta_vor,  &
+            delta_pos,  &   ! velocity
+            delta_vor,  &   ! vorticity tendency
             strain,     &
-            delta_b
-
+            delta_b         ! B-matrix tendency
     end type parcel_container_type
 
     type(parcel_container_type) parcels
@@ -126,7 +134,9 @@ module parcel_container
             IDX_RK4_DWDX = i + 14
             IDX_RK4_DWDY = i + 15
 
-            n_par_attrib = IDX_RK4_DWDY
+            i = i + 16
+
+            n_par_attrib = set_ellipsoid_buffer_indices(i)
 
         end subroutine set_buffer_indices
 
@@ -221,7 +231,7 @@ module parcel_container
         subroutine parcel_replace(n, m)
             integer, intent(in) :: n, m
 
-#ifdef ENABLE_VERBOSE
+#if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose) then
                 print '(a19, i0, a6, i0)', '    replace parcel ', n, ' with ', m
             endif
@@ -236,6 +246,8 @@ module parcel_container
 #endif
             parcels%B(:, n)         = parcels%B(:, m)
 
+            call parcel_ellipsoid_replace(n, m)
+
             ! LS-RK4 variables:
             parcels%delta_pos(:, n) = parcels%delta_pos(:, m)
             parcels%delta_vor(:, n) = parcels%delta_vor(:, m)
@@ -243,6 +255,43 @@ module parcel_container
             parcels%strain(:, n)    = parcels%strain(:, m)
 
         end subroutine parcel_replace
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Resize the parcel container
+        ! @param[in] new_size is the new size of each attribute
+        subroutine parcel_resize(new_size)
+            integer, intent(in) :: new_size
+
+            call start_timer(resize_timer)
+
+            if (new_size < n_parcels) then
+                call mpi_exit_on_error(&
+                    "in parcel_container::parcel_resize: losing parcels when resizing.")
+            endif
+
+            call set_max_num_parcels(new_size)
+
+            call resize_array(parcels%position, new_size, n_parcels)
+
+            call resize_array(parcels%vorticity, new_size, n_parcels)
+            call resize_array(parcels%B, new_size, n_parcels)
+            call resize_array(parcels%volume, new_size, n_parcels)
+            call resize_array(parcels%buoyancy, new_size, n_parcels)
+#ifndef ENABLE_DRY_MODE
+            call resize_array(parcels%humidity, new_size, n_parcels)
+#endif
+            call parcel_ellipsoid_resize(new_size, n_parcels)
+
+            ! LS-RK4 variables
+            call resize_array(parcels%delta_pos, new_size, n_parcels)
+            call resize_array(parcels%delta_vor, new_size, n_parcels)
+            call resize_array(parcels%strain, new_size, n_parcels)
+            call resize_array(parcels%delta_b, new_size, n_parcels)
+
+            call stop_timer(resize_timer)
+
+        end subroutine parcel_resize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -268,6 +317,7 @@ module parcel_container
             allocate(parcels%delta_vor(3, num))
             allocate(parcels%strain(5, num))
             allocate(parcels%delta_b(5, num))
+
         end subroutine parcel_alloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -320,6 +370,8 @@ module parcel_container
             buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR) = parcels%delta_vor(:, n)
             buffer(IDX_RK4_DB11:IDX_RK4_DB23)     = parcels%delta_b(:, n)
             buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)     = parcels%strain(:, n)
+
+            call parcel_ellipsoid_serialize(n, buffer)
         end subroutine parcel_serialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -342,6 +394,8 @@ module parcel_container
             parcels%delta_vor(:, n) = buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR)
             parcels%delta_b(:, n)   = buffer(IDX_RK4_DB11:IDX_RK4_DB23)
             parcels%strain(:, n)    = buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)
+
+            call parcel_ellipsoid_deserialize(n, buffer)
         end subroutine parcel_deserialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

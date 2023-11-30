@@ -7,7 +7,7 @@ module field_diagnostics
     use fields
     use mpi_timer, only : start_timer, stop_timer
     use mpi_layout, only : box
-    use mpi_communicator
+    use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
     use physics, only : ape_calculation
     use ape_density, only : ape_den
@@ -53,6 +53,7 @@ module field_diagnostics
 
             field_stats(IDX_ABSERR_V) = maxval(abs(volg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1))  - vcell)) * vcelli
 
+            ! vertically only include 0 (= lo(3) to nz-1 (= hi(3) - 1)
             field_stats(IDX_MAX_NPAR) = maxval(nparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1)))
 
             field_stats(IDX_MIN_NPAR) = minval(nparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1)))
@@ -61,6 +62,7 @@ module field_diagnostics
 
             field_stats(IDX_AVG_NSPAR) = sum(nsparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1))) * ncelli
 
+            ! do not take halo cells into account
             field_stats(IDX_MIN_BUOY) = minval(tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
             field_stats(IDX_MAX_BUOY) = maxval(tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
 
@@ -118,11 +120,11 @@ module field_diagnostics
             !
             ! do communication
             !
-            call mpi_blocking_reduce(field_stats(IDX_RMS_V:IDX_ENG), MPI_SUM)
+            call mpi_blocking_reduce(field_stats(IDX_RMS_V:IDX_ENG), MPI_SUM, world)
 
-            call mpi_blocking_reduce(field_stats(IDX_ABSERR_V:IDX_MAX_BUOY), MPI_MAX)
+            call mpi_blocking_reduce(field_stats(IDX_ABSERR_V:IDX_MAX_BUOY), MPI_MAX, world)
 
-            call mpi_blocking_reduce(field_stats(IDX_MIN_NPAR:IDX_MIN_BUOY), MPI_MIN)
+            call mpi_blocking_reduce(field_stats(IDX_MIN_NPAR:IDX_MIN_BUOY), MPI_MIN, world)
 
             !
             ! final calculations

@@ -7,6 +7,7 @@ module ls_rk
     use dimensions, only : I_Z
     use parcel_container
     use parcel_bc
+    use parcel_mpi, only : parcel_communicate
     use rk_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par
@@ -14,6 +15,7 @@ module ls_rk
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
     use field_diagnostics, only : calculate_field_diagnostics
+    use bndry_fluxes, only : apply_bndry_fluxes, bndry_fluxes_time_step
     use mpi_timer, only : start_timer, stop_timer, timings
     use mpi_utils, only : mpi_stop
     implicit none
@@ -98,6 +100,10 @@ module ls_rk
             ! update the time step
             dt = get_time_step(t)
 
+!            if (dabs(t - time%initial) < 1.0e-13) then
+                call bndry_fluxes_time_step(dt)
+!            endif
+
             call grid2par
 
             call calculate_parcel_diagnostics
@@ -106,14 +112,15 @@ module ls_rk
 
             call write_step(t)
 
+            call apply_bndry_fluxes(dt)
+
             do n = 1, n_stages-1
                 call ls_rk_substep(dt, n)
-                call par2grid
             enddo
             call ls_rk_substep(dt, n_stages)
 
             call start_timer(rk_timer)
-            call apply_parcel_bc
+            call apply_parcel_reflective_bc
             call stop_timer(rk_timer)
 
             ! we need to subtract 14 calls since we start and stop
@@ -188,7 +195,7 @@ module ls_rk
             call stop_timer(rk_timer)
 
             if (step == n_stages) then
-                call apply_swap_periodicity
+                call parcel_communicate
                return
             endif
 
@@ -202,7 +209,9 @@ module ls_rk
             enddo
             !$omp end parallel do
 
-            call apply_swap_periodicity
+            call parcel_communicate
+
+            call par2grid
 
             call stop_timer(rk_timer)
 

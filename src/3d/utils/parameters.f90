@@ -8,7 +8,7 @@ module parameters
     use netcdf_reader
     use netcdf_utils
     use netcdf_writer
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout, only : box, l_mpi_layout_initialised
     use mpi_utils, only : mpi_print, mpi_stop
     implicit none
@@ -75,8 +75,8 @@ module parameters
     ! minimum volume
     double precision, protected :: vmin
 
-    ! maximum volume
-    double precision, protected :: vmax
+    ! upper bound for major semi-axis (used for splitting)
+    double precision, protected :: amax
 
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
@@ -109,7 +109,7 @@ module parameters
                        dxi(2) * dx(3), dxi(3) * dx(2)/))
 
         if (msr > two) then
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 print *, '**********************************************************************'
                 print *, '*                                                                    *'
                 print *, '*   Warning: A mesh spacing ratio of more than 2 is not advisable!   *'
@@ -144,9 +144,10 @@ module parameters
         hli = one / hl
 
         vmin = vcell / parcel%min_vratio
-        vmax = vcell / parcel%max_vratio
 
-        max_num_parcels = int(box%ncell * parcel%min_vratio * parcel%size_factor)
+        amax = (f34 * fpi) ** f13 * minval(dx)
+
+        max_num_parcels = int(box%halo_ncell * parcel%min_vratio * parcel%size_factor)
 
     end subroutine update_parameters
 
@@ -160,7 +161,7 @@ module parameters
 
         if (boundary%l_ignore_bndry_zeta_flag) then
             l_bndry_zeta_zero(:) = .false.
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 print *, "WARNING: You allow the gridded vertical vorticity component"
                 print *, "         at the boundaries to develop non-zero values."
                 print *, "         Stop your simulation if this is not your intention."
@@ -178,8 +179,8 @@ module parameters
                                3,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_SUM,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             rms_interior = dsqrt(val(1) * nhcelli / (nz-1))
             rms_bndry = dsqrt(val(2:3) * nhcelli)
@@ -190,12 +191,12 @@ module parameters
         endif
 
 #if defined(ENABLE_VERBOSE) || !defined(NDEBUG)
-        if ((.not. l_bndry_zeta_zero(1)) .and. (comm%rank == comm%master)) then
+        if ((.not. l_bndry_zeta_zero(1)) .and. (world%rank == world%root)) then
             print *, "WARNING: This simulation will not ensure that the gridded vertical"
             print *, "         vorticity component is zero at the lower boundary."
         endif
 
-        if ((.not. l_bndry_zeta_zero(2)) .and. (comm%rank == comm%master)) then
+        if ((.not. l_bndry_zeta_zero(2)) .and. (world%rank == world%root)) then
             print *, "WARNING: This simulation will not ensure that the gridded vertical"
             print *, "         vorticity component is zero at the upper boundary."
         endif
@@ -210,7 +211,7 @@ module parameters
 
         if (boundary%l_ignore_bndry_zeta_flag) then
             l_bndry_zeta_zero(:) = .false.
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 print *, "WARNING: You allow the gridded vertical vorticity component"
                 print *, "         at the boundaries to develop non-zero values."
                 print *, "         Stop your simulation if this is not your intention."
@@ -224,7 +225,7 @@ module parameters
             call read_netcdf_attribute(grp_ncid, 'l_lower_boundry_zeta_zero', l_bndry_zeta_zero(1))
             call read_netcdf_attribute(grp_ncid, 'l_upper_boundry_zeta_zero', l_bndry_zeta_zero(2))
         else
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 print *, "WARNING: Could not find a '" // name // "' group in the provided"
                 print *, "         NetCDF file."
                 print *, "         Note this will result in the boundary zeta flags being"
@@ -258,22 +259,21 @@ module parameters
     end subroutine set_mesh_spacing
 
 
-#ifdef ENABLE_UNIT_TESTS
     subroutine set_max_num_parcels(num)
         integer, intent(in) :: num
         max_num_parcels = num
     end subroutine set_max_num_parcels
 
+#ifdef ENABLE_UNIT_TESTS
     subroutine set_vmin(val)
         double precision, intent(in) :: val
         vmin = val
     end subroutine set_vmin
 
-
-    subroutine set_vmax(val)
+    subroutine set_amax(val)
         double precision, intent(in) :: val
-        vmax = val
-    end subroutine set_vmax
+        amax = val
+    end subroutine set_amax
 #endif
 
 end module parameters

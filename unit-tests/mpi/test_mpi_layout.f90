@@ -5,7 +5,7 @@
 ! =============================================================================
 program test_mpi_layout
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use mpi_layout
     implicit none
 
@@ -16,15 +16,15 @@ program test_mpi_layout
     double precision              :: sendbuf, recvbuf
     logical                       :: passed = .false.
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-!     if (comm%size == 1) then
+!     if (world%size == 1) then
 !         print *, "MPI tests must be run with more than one process."
-!         call mpi_comm_finalise
+!         call mpi_env_finalise
 !         stop
 !     endif
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
@@ -35,15 +35,15 @@ program test_mpi_layout
     sendbuf = sum(data(box%lo(3):box%hi(3), box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
     recvbuf = 0.0d0
 
-    call MPI_Reduce(sendbuf, recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, comm%world, comm%err)
+    call MPI_Reduce(sendbuf, recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, world%comm, world%err)
 
-    passed = (passed .and. (comm%err == 0) .and. (dble((nz+1)*nx*ny) - recvbuf == 0.0d0))
+    passed = (passed .and. (world%err == 0) .and. (dble((nz+1)*nx*ny) - recvbuf == 0.0d0))
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == 0) then
+    if (world%rank == 0) then
         call print_result_logical('Test MPI layout', passed)
     endif
 

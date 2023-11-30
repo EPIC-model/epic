@@ -7,7 +7,7 @@
 ! =============================================================================
 program test_parcel_correction_3d
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use options, only : parcel
     use constants, only : pi, one, zero, f14, f23, f32, two, four, f12, f18
     use parcel_container, only : n_parcels, parcels, n_total_parcels, parcel_alloc
@@ -17,7 +17,7 @@ program test_parcel_correction_3d
                                 , grad_corr_timer           &
                                 , vort_corr_timer           &
                                 , init_parcel_correction
-    use parcel_interpl, only : vol2grid
+    use parcel_interpl, only : vol2grid, halo_swap_timer
     use parcel_ellipsoid, only : get_abc
     use parcel_init, only : init_regular_positions
     use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz, dx
@@ -36,13 +36,13 @@ program test_parcel_correction_3d
     double precision :: q, m, delta
     integer :: lo(3), hi(3)
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     call random_seed(size=sk)
     allocate(seed(1:sk))
-    seed(:) = comm%rank
+    seed(:) = world%rank
     call random_seed(put=seed)
 
     call parse_command_line
@@ -50,6 +50,7 @@ program test_parcel_correction_3d
     call register_timer('laplace correction', lapl_corr_timer)
     call register_timer('gradient correction', grad_corr_timer)
     call register_timer('vorticity correction', vort_corr_timer)
+    call register_timer('halo swap', halo_swap_timer)
 
     nx = 32
     ny = 32
@@ -71,7 +72,7 @@ program test_parcel_correction_3d
     call parcel_alloc(n_parcels + 1000)
 
     n_total_parcels = n_parcels
-    call mpi_blocking_reduce(n_total_parcels, MPI_SUM)
+    call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
 
     parcel%n_per_cell = 8
     call init_regular_positions
@@ -127,7 +128,7 @@ program test_parcel_correction_3d
 
     max_err = get_abs_max(volg)
 
-    if (l_verbose .and. (comm%rank == comm%master)) then
+    if (l_verbose .and. (world%rank == world%root)) then
         write(*,*) 'test parcel correction'
         write(*,*) 'iteration, average error, max absolute error'
         write(*,*) 0, init_error, max_err
@@ -144,7 +145,7 @@ program test_parcel_correction_3d
             volg(0:nz, lo(2):hi(2), lo(1):hi(1)) = abs(volg(0:nz, lo(2):hi(2), lo(1):hi(1)) / vcell - one)
             final_error = get_sum(volg) / (nx * ny * (nz+1))
             max_err = get_abs_max(volg)
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 write(*,*) i, final_error, max_err
             endif
         endif
@@ -158,11 +159,11 @@ program test_parcel_correction_3d
 
     passed = (passed .and. (final_error < init_error))
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test MPI laplace and gradient 3D', passed)
     endif
 

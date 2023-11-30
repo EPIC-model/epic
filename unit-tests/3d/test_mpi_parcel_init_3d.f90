@@ -5,13 +5,13 @@
 ! =============================================================================
 program test_mpi_parcel_init_3d
     use unit_test
-    use mpi_communicator
+    use mpi_environment
     use options, only : parcel
     use field_mpi
     use constants, only : pi, zero, one, two, four, five, f12, f13, f23, f32
     use parcel_container
     use parcel_init, only : init_timer, parcel_default, init_parcels_from_grids
-    use parcel_interpl, only : par2grid, par2grid_timer
+    use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
     use parcel_ellipsoid, only : get_abc
     use fields, only : tbuoyg, field_default
     use field_ops, only : get_rms, get_abs_max
@@ -35,11 +35,11 @@ program test_mpi_parcel_init_3d
                                    dyf = one / dble(nbgy), &
                                    dzf = one / dble(nbgz)
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
     call parse_command_line
 
-    passed = (comm%err == 0)
+    passed = (world%err == 0)
 
     nx = 128
     ny = 128
@@ -49,6 +49,7 @@ program test_mpi_parcel_init_3d
 
     call register_timer('parcel init', init_timer)
     call register_timer('par2grid', par2grid_timer)
+    call register_timer('halo swap', halo_swap_timer)
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
@@ -78,7 +79,7 @@ program test_mpi_parcel_init_3d
         enddo
     enddo
 
-    call field_halo_swap(tbuoyg)
+    call field_halo_swap_scalar(tbuoyg)
 
     !---------------------------
     ! Generate parcel attribute:
@@ -152,11 +153,11 @@ program test_mpi_parcel_init_3d
 
     deallocate(workg)
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
-    passed = (passed .and. (comm%err == 0))
+    passed = (passed .and. (world%err == 0))
 
-    if (comm%rank == comm%master) then
+    if (world%rank == world%root) then
         call print_result_logical('Test parcel initialisation 3D', passed)
     endif
 

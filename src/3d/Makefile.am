@@ -18,8 +18,8 @@ epic3d_SOURCES = 				\
 	fields/field_diagnostics_netcdf.f90	\
 	parcels/parcel_ellipsoid.f90		\
 	parcels/parcel_container.f90 		\
+	parcels/parcel_bc.f90                   \
 	parcels/parcel_mpi.f90			\
-	parcels/parcel_bc.f90			\
 	parcels/parcel_nearest.f90		\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\
@@ -31,6 +31,7 @@ epic3d_SOURCES = 				\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_netcdf.f90		\
 	parcels/parcel_diagnostics_netcdf.f90	\
+	boundary_layer/bndry_fluxes.f90		\
 	utils/utils.f90				\
 	stepper/rk_utils.f90			\
 	stepper/ls_rk.f90			\

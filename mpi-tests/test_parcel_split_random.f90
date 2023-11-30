@@ -1,8 +1,8 @@
 program test_parcel_split_random
-    use mpi_communicator
+    use mpi_environment
     use options, only : parcel
     use constants, only : zero, one, two
-    use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmax
+    use parameters, only : update_parameters, nx, ny, nz, lower, extent
     use parcel_container
     use parcel_init, only : parcel_default
     use parcel_mpi, only : parcel_communicate
@@ -23,15 +23,15 @@ program test_parcel_split_random
     !--------------------------------------------------------------------------
     ! Initialise MPI and setup all timers:
 
-    call mpi_comm_initialise
+    call mpi_env_initialise
 
-    if (comm%rank == comm%master) then
-        print '(a35, i6, a11)', "Running 'test_parcel_split_random' with ", comm%size, " MPI ranks."
+    if (world%rank == world%root) then
+        print '(a35, i6, a11)', "Running 'test_parcel_split_random' with ", world%size, " MPI ranks."
     endif
 
     call random_seed(size=sk)
     allocate(seed(1:sk))
-    seed(:) = comm%rank
+    seed(:) = world%rank
     call random_seed(put=seed)
 
 
@@ -53,6 +53,7 @@ program test_parcel_split_random
     call update_parameters
 
     parcel%n_per_cell = 8
+    parcel%lambda_max = 4.0d0
 
     !--------------------------------------------------------------------------
     ! Setup fields: All fields are zero
@@ -75,7 +76,7 @@ program test_parcel_split_random
     ! Do time loop:
     do i = 1, nt
 
-        if (comm%rank == comm%master) then
+        if (world%rank == world%root) then
             print '(a15, i4)', "Performing step", i
         endif
 
@@ -86,7 +87,7 @@ program test_parcel_split_random
             if (rn(3) > 0.5d0) then
                 call random_number(rn(3))
                 j = nint(n_parcels * rn(3)) + 1
-                parcels%volume(j) = 1.1d0 * vmax
+                parcels%B(1, j) = 5.0d0 * parcels%B(1, j)
                 parcels%buoyancy(j) = 1.0d0
             endif
 
@@ -95,14 +96,14 @@ program test_parcel_split_random
         n_splits = int(sum(parcels%buoyancy(1:n_parcels)))
         call perform_integer_reduction(n_splits)
 
-        if (comm%rank == comm%master) then
+        if (world%rank == world%root) then
             print *, "Split", n_splits, "of", n_total_parcels, "parcels."
         endif
 
         n_orig = n_parcels
 
         ! Split parcels
-        call parcel_split(parcels, 4.0d0)
+        call parcel_split
 
         ! Interpolate parcel data to grid
         call par2grid
@@ -142,7 +143,7 @@ program test_parcel_split_random
 
     call print_timer
 
-    call mpi_comm_finalise
+    call mpi_env_finalise
 
 
     contains
@@ -161,10 +162,10 @@ program test_parcel_split_random
 
             call perform_integer_reduction(n_total)
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 if (n_total /= n_total_parcels) then
                     print *, "check_total_number_of_parcels: Total number of parcels disagree!"
-                    call MPI_Abort(comm%world, -1, comm%err)
+                    call MPI_Abort(world%comm, -1, world%err)
                 endif
             endif
 
@@ -175,12 +176,12 @@ program test_parcel_split_random
         subroutine perform_integer_reduction(var)
             integer, intent(inout) :: var
 
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 call MPI_Reduce(MPI_IN_PLACE, var, 1, MPI_INTEGER, MPI_SUM, &
-                                comm%master, comm%world, comm%err)
+                                world%root, world%comm, world%err)
             else
                 call MPI_Reduce(var, var, 1, MPI_INTEGER, MPI_SUM, &
-                                comm%master, comm%world, comm%err)
+                                world%root, world%comm, world%err)
             endif
 
         end subroutine perform_integer_reduction

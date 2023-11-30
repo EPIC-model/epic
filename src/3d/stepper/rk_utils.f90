@@ -2,15 +2,18 @@ module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
-    use field_mpi, only : field_halo_fill
+    use field_mpi, only : field_halo_fill_scalar
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
     use scherzinger, only : scherzinger_eigenvalues
     use mpi_layout, only : box
-    use mpi_communicator
+    use mpi_environment
     use mpi_utils, only : mpi_exit_on_error
 #ifdef ENABLE_VERBOSE
     use options, only : output
+#endif
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+    use physics, only : bfsq
 #endif
 
     implicit none
@@ -148,7 +151,7 @@ module rk_utils
             !
 
             ! ensure that halo grid points are filled
-            call field_halo_fill(tbuoyg, l_alloc=.true.)
+            call field_halo_fill_scalar(tbuoyg, l_alloc=.true.)
 
             ! db/dx
             gradb = f12 * dxi(I_X) * (tbuoyg(0:nz, box%lo(2):box%hi(2), box%lo(1)+1:box%hi(1)+1) &
@@ -166,6 +169,10 @@ module rk_utils
             gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
                                     - tbuoyg(-1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            gradb = gradb + bfsq
+#endif
+
             bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
@@ -177,15 +184,15 @@ module rk_utils
                                2,                       &
                                MPI_DOUBLE_PRECISION,    &
                                MPI_MAX,                 &
-                               comm%world,              &
-                               comm%err)
+                               world%comm,              &
+                               world%err)
 
             gmax = local_max(1)
             bmax = local_max(2)
 
             dt = min(time%alpha / gmax, time%alpha / bmax)
 #ifdef ENABLE_VERBOSE
-            if (comm%rank == comm%master) then
+            if (world%rank == world%root) then
                 fname = trim(output%basename) // '_alpha_time_step.asc'
                 inquire(file=trim(fname), exist=exists)
                 ! 23 August
