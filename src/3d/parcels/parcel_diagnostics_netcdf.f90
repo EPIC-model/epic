@@ -22,7 +22,7 @@ module parcel_diagnostics_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: t_axis_id, t_dim_id, n_writes
+    integer            :: t_axis_id, t_dim_id, n_writes, nmerge_dim_id
     double precision   :: restart_time
     integer            :: parcel_stats_io_timer
 
@@ -43,9 +43,10 @@ module parcel_diagnostics_netcdf
                         , NC_NPAR_SPLIT = 15    &
                         , NC_NPAR_MERGE = 16    &
                         , NC_MIN_BUOY   = 17    &
-                        , NC_MAX_BUOY   = 18
+                        , NC_MAX_BUOY   = 18    &
+                        , NC_NWAY_MERGE = 19
 
-    type(netcdf_info) :: nc_dset(NC_MAX_BUOY)
+    type(netcdf_info) :: nc_dset(NC_NWAY_MERGE)
 
     public :: create_netcdf_parcel_stats_file,  &
               write_netcdf_parcel_stats,        &
@@ -113,9 +114,17 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
 
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='n_merge',                    &
+                                         dimsize=size(parcel_merge_stats),  &
+                                         dimid=nmerge_dim_id)
+
             ! define parcel diagnostics
             do n = 1, size(nc_dset)
                 if (nc_dset(n)%l_enabled) then
+                    if (n == NC_NWAY_MERGE) then
+                        continue
+                    endif
                     call define_netcdf_dataset(ncid=ncid,                       &
                                                name=nc_dset(n)%name,            &
                                                long_name=nc_dset(n)%long_name,  &
@@ -127,6 +136,16 @@ module parcel_diagnostics_netcdf
 
                 endif
             enddo
+
+            n = NC_NWAY_MERGE
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name=nc_dset(n)%name,                &
+                                       long_name=nc_dset(n)%long_name,      &
+                                       std_name=nc_dset(n)%std_name,        &
+                                       unit=nc_dset(n)%unit,                &
+                                       dtype=nc_dset(n)%dtype,              &
+                                       dimids=(/nmerge_dim_id, t_dim_id/),  &
+                                       varid=nc_dset(n)%varid)
 
             call close_definition(ncid)
 
@@ -197,6 +216,9 @@ module parcel_diagnostics_netcdf
             call write_diagnostic(NC_NPAR_MERGE, parcel_stats(IDX_NMERGES))
             call write_diagnostic(NC_MIN_BUOY, parcel_stats(IDX_MIN_BUOY))
             call write_diagnostic(NC_MAX_BUOY, parcel_stats(IDX_MAX_BUOY))
+
+            call write_netcdf_dataset(ncid, nc_dset(NC_NWAY_MERGE)%varid, parcel_merge_stats, &
+                                      start=(/1, n_writes/), cnt=(/size(parcel_merge_stats), 1/))
 
             ! increment counter
             n_writes = n_writes + 1

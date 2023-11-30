@@ -129,7 +129,6 @@ module parcel_diagnostics
 
             parcel_merge_stats = n_way_parcel_mergers
             call mpi_blocking_reduce(parcel_merge_stats, MPI_SUM, world)
-            n_way_parcel_mergers = 0
 
             n_total_parcels = nint(parcel_stats(IDX_NTOT_PAR))
             ntoti = one / dble(n_total_parcels)

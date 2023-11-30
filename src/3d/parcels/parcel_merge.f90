@@ -344,7 +344,7 @@ module parcel_merging
             ! Find unique 'iclo' indices and the total number of parcels
             ! merging with them:
             last = 0
-            do m = 1, n
+            do m = 1, n_merge
                 ic = iclo(m)
                 j = findloc(unique(1:last), value = ic, dim=1)
                 if (j == 0) then
