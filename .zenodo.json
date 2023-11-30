@@ -1,6 +1,5 @@
 {
-  "metadata": {
-    "description": "Elliptical Parcel-in-Cell model for fluid dynamics",
+    "description": "The Elliptical Parcel-In-Cell (EPIC) model for fluid dynamics",
     "access_right": "open",
     "upload_type": "software",
     "keywords": ["PIC",
@@ -34,5 +33,4 @@
             "id": "10.13039/100014013::EP/T025409/1"
         }
     ]
-  }
 }

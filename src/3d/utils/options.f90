@@ -62,6 +62,7 @@ module options
         double precision                  :: parcel_freq        = one
         logical                           :: overwrite          = .false.
         logical                           :: write_parcels      = .true.
+        character(len=32), dimension(128) :: parcel_list        = ''
         double precision                  :: parcel_stats_freq  = one
         logical                           :: write_parcel_stats = .true.
         double precision                  :: field_stats_freq   = one
