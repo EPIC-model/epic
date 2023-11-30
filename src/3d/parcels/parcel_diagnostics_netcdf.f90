@@ -31,7 +31,7 @@ module parcel_diagnostics_netcdf
                         , NC_TE         = 3     &
                         , NC_EN         = 4     &
                         , NC_NPAR       = 5     &
-                        , NC_SNPAR      = 6     &
+                        , NC_NSPAR      = 6     &
                         , NC_RMS_X_VOR  = 7     &
                         , NC_RMS_Y_VOR  = 8     &
                         , NC_RMS_Z_VOR  = 9     &
@@ -45,6 +45,7 @@ module parcel_diagnostics_netcdf
                         , NC_MIN_BUOY   = 17    &
                         , NC_MAX_BUOY   = 18
 
+    type(netcdf_info) :: nc_dset(NC_MAX_BUOY)
 
     public :: create_netcdf_parcel_stats_file,  &
               write_netcdf_parcel_stats,        &
@@ -60,13 +61,17 @@ module parcel_diagnostics_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
-            integer                   :: start(1), cnt(1)
+            integer                   :: start(1), cnt(1), n
 
             if (world%rank /= world%root) then
                 return
             endif
 
-            call set_netcdf_parcel_diagnostics_output
+            call set_netcdf_parcel_diagnostics_info
+
+            nc_dset(:)%l_enabled = .true.
+
+            nc_dset(NC_APE)%l_enabled = (ape_calculation == 'ape density')
 
             ncfname =  basename // '_parcel_stats.nc'
 
@@ -129,50 +134,19 @@ module parcel_diagnostics_netcdf
 
         end subroutine create_netcdf_parcel_stats_file
 
-        ! Pre-condition: Assumes an open file
+        ! Pre-condition: Assumes an open file and nc_dset being initialised.
         subroutine read_netcdf_parcel_stats_content
+            integer :: n
 
             call get_dim_id(ncid, 't', t_dim_id)
 
             call get_var_id(ncid, 't', t_axis_id)
 
-            if (ape_calculation == 'ape density') then
-                call get_var_id(ncid, 'ape', ape_id)
-            endif
-
-            call get_var_id(ncid, 'ke', ke_id)
-
-            call get_var_id(ncid, 'te', te_id)
-
-            call get_var_id(ncid, 'en', en_id)
-
-            call get_var_id(ncid, 'n_parcels', npar_id)
-
-            call get_var_id(ncid, 'n_small_parcel', nspar_id)
-
-            call get_var_id(ncid, 'avg_lam', avg_lam_id)
-
-            call get_var_id(ncid, 'std_lam', std_lam_id)
-
-            call get_var_id(ncid, 'avg_vol', avg_vol_id)
-
-            call get_var_id(ncid, 'std_vol', std_vol_id)
-
-            call get_var_id(ncid, 'sum_vol', sum_vol_id)
-
-            call get_var_id(ncid, 'x_rms_vorticity', rms_x_vor_id)
-
-            call get_var_id(ncid, 'y_rms_vorticity', rms_y_vor_id)
-
-            call get_var_id(ncid, 'z_rms_vorticity', rms_z_vor_id)
-
-            call get_var_id(ncid, 'n_parcel_splits', n_par_split_id)
-
-            call get_var_id(ncid, 'n_parcel_merges', n_par_merge_id)
-
-            call get_var_id(ncid, 'min_buoyancy', min_buo_id)
-
-            call get_var_id(ncid, 'max_buoyancy', max_buo_id)
+            do n = 1, size(nc_dset)
+                if (nc_dset(n)%l_enabled) then
+                    call get_var_id(ncid, nc_dset(n)%name, nc_dset(n)%varid)
+                endif
+            enddo
 
         end subroutine read_netcdf_parcel_stats_content
 
@@ -204,27 +178,25 @@ module parcel_diagnostics_netcdf
             !
             ! write diagnostics
             !
-            if (ape_calculation == 'ape density') then
-                call write_netcdf_scalar(ncid, ape_id, parcel_stats(IDX_APE), n_writes, l_serial=.true.)
-            endif
-            call write_netcdf_scalar(ncid, ke_id, parcel_stats(IDX_KE), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, te_id, parcel_stats(IDX_KE) + parcel_stats(IDX_APE), &
-                                     n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, npar_id, int(parcel_stats(IDX_NTOT_PAR)), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, nspar_id, int(parcel_stats(IDX_N_SMALL)), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, avg_lam_id, parcel_stats(IDX_AVG_LAM), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, std_lam_id, parcel_stats(IDX_STD_LAM), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, avg_vol_id, parcel_stats(IDX_AVG_VOL), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, std_vol_id, parcel_stats(IDX_STD_VOL), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, sum_vol_id, parcel_stats(IDX_SUM_VOL), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, rms_x_vor_id, parcel_stats(IDX_RMS_XI), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, rms_y_vor_id, parcel_stats(IDX_RMS_ETA), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, rms_z_vor_id, parcel_stats(IDX_RMS_ZETA), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, en_id, parcel_stats(IDX_ENSTROPHY), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, n_par_split_id, parcel_stats(IDX_NSPLITS), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, n_par_merge_id, parcel_stats(IDX_NMERGES), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, min_buo_id, parcel_stats(IDX_MIN_BUOY), n_writes, l_serial=.true.)
-            call write_netcdf_scalar(ncid, max_buo_id, parcel_stats(IDX_MAX_BUOY), n_writes, l_serial=.true.)
+
+            call write_diagnostic(NC_APE, parcel_stats(IDX_APE))
+            call write_diagnostic(NC_KE, parcel_stats(IDX_KE))
+            call write_diagnostic(NC_TE, parcel_stats(IDX_KE) + parcel_stats(IDX_APE))
+            call write_diagnostic(NC_EN, parcel_stats(IDX_ENSTROPHY))
+            call write_diagnostic(NC_NPAR, parcel_stats(IDX_NTOT_PAR))
+            call write_diagnostic(NC_NSPAR, parcel_stats(IDX_N_SMALL))
+            call write_diagnostic(NC_AVG_LAM, parcel_stats(IDX_AVG_LAM))
+            call write_diagnostic(NC_STD_LAM, parcel_stats(IDX_STD_LAM))
+            call write_diagnostic(NC_AVG_VOL, parcel_stats(IDX_AVG_VOL))
+            call write_diagnostic(NC_STD_VOL, parcel_stats(IDX_STD_VOL))
+            call write_diagnostic(NC_SUM_VOL, parcel_stats(IDX_SUM_VOL))
+            call write_diagnostic(NC_RMS_X_VOR, parcel_stats(IDX_RMS_XI))
+            call write_diagnostic(NC_RMS_Y_VOR, parcel_stats(IDX_RMS_ETA))
+            call write_diagnostic(NC_RMS_Z_VOR, parcel_stats(IDX_RMS_ZETA))
+            call write_diagnostic(NC_NPAR_SPLIT, parcel_stats(IDX_NSPLITS))
+            call write_diagnostic(NC_NPAR_MERGE, parcel_stats(IDX_NMERGES))
+            call write_diagnostic(NC_MIN_BUOY, parcel_stats(IDX_MIN_BUOY))
+            call write_diagnostic(NC_MAX_BUOY, parcel_stats(IDX_MAX_BUOY))
 
             ! increment counter
             n_writes = n_writes + 1
@@ -238,6 +210,24 @@ module parcel_diagnostics_netcdf
             call stop_timer(parcel_stats_io_timer)
 
         end subroutine write_netcdf_parcel_stats
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine write_diagnostic(id, val)
+            integer,          intent(in) :: id
+            double precision, intent(in) :: val
+
+            if (nc_dset(id)%l_enabled) then
+                if (nc_dset(id)%dtype == NF90_INT) then
+                    call write_netcdf_scalar(ncid, nc_dset(id)%varid, int(val), &
+                                             n_writes, l_serial=.true.)
+                else
+                    call write_netcdf_scalar(ncid, nc_dset(id)%varid, val, &
+                                             n_writes, l_serial=.true.)
+                endif
+            endif
+
+        end subroutine write_diagnostic
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -275,14 +265,14 @@ module parcel_diagnostics_netcdf
                 long_name='number of parcels',                              &
                 std_name='',                                                &
                 unit='1',                                                   &
-                dtype=NF90_DOUBLE)
+                dtype=NF90_INT)
 
-            nc_dset(NC_SNPAR) = netcdf_info(                                &
+            nc_dset(NC_NSPAR) = netcdf_info(                                &
                 name='n_small_parcel',                                      &
                 long_name='number of small parcels',                        &
                 std_name='',                                                &
                 unit='1',                                                   &
-                dtype=NF90_DOUBLE)
+                dtype=NF90_INT)
 
             nc_dset(NC_AVG_LAM) = netcdf_info(                              &
                 name='avg_lam',                                             &
@@ -345,14 +335,14 @@ module parcel_diagnostics_netcdf
                  long_name='number of parcel splits since last time',       &
                  std_name='',                                               &
                  unit='1',                                                  &
-                 dtype=NF90_DOUBLE)
+                 dtype=NF90_INT)
 
             nc_dset(NC_NPAR_MERGE) = netcdf_info(                           &
                 name='n_parcel_merges',                                     &
                  long_name='number of parcel merges since last time',       &
                  std_name='',                                               &
                  unit='1',                                                  &
-                 dtype=NF90_DOUBLE)
+                 dtype=NF90_INT)
 
             nc_dset(NC_MIN_BUOY) = netcdf_info(                             &
                 name='min_buoyancy',                                        &
