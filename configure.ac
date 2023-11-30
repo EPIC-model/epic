@@ -494,33 +494,34 @@ if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
     AX_CHECK_COMPILE_FLAG([-g], [FCFLAGS="$FCFLAGS -g"])
     AX_CHECK_COMPILE_FLAG([-O0], [FCFLAGS="$FCFLAGS -O0"])
-    if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
-        AX_CHECK_COMPILE_FLAG([-Wall], [FCFLAGS="$FCFLAGS -Wall"])
-        AX_CHECK_COMPILE_FLAG([-Wuninitialized], [FCFLAGS="$FCFLAGS -Wuninitialized"])
-        AX_CHECK_COMPILE_FLAG([-Wmaybe-uninitialized], [FCFLAGS="$FCFLAGS -Wmaybe-uninitialized"])
-        AX_CHECK_COMPILE_FLAG([-Werror], [FCFLAGS="$FCFLAGS -Werror"])
-        AX_CHECK_COMPILE_FLAG([-fcheck=all], [FCFLAGS="$FCFLAGS -fcheck=all"])
-        AX_CHECK_COMPILE_FLAG([-fbounds-check], [FCFLAGS="$FCFLAGS -fbounds-check"])
-        AX_CHECK_COMPILE_FLAG([-fbacktrace], [FCFLAGS="$FCFLAGS -fbacktrace"])
-        AX_CHECK_COMPILE_FLAG([-ffpe-trap=denormal,invalid,zero,overflow,underflow],
-                              [FCFLAGS="$FCFLAGS -ffpe-trap=denormal,invalid,zero,overflow,underflow"])
-    elif test "$ax_cv_fc_compiler_vendor" = "intel"; then
-        AX_CHECK_COMPILE_FLAG([-warn all], [FCFLAGS="$FCFLAGS -Wall"])
-        AX_CHECK_COMPILE_FLAG([-warn error], [FCFLAGS="$FCFLAGS -warn error"])
-        AX_CHECK_COMPILE_FLAG([-debug full], [FCFLAGS="$FCFLAGS -debug full"])
-    fi
+
+    # gfortran compiler flags
+    AX_CHECK_COMPILE_FLAG([-Wall], [FCFLAGS="$FCFLAGS -Wall"])
+    AX_CHECK_COMPILE_FLAG([-Wuninitialized], [FCFLAGS="$FCFLAGS -Wuninitialized"])
+    AX_CHECK_COMPILE_FLAG([-Wmaybe-uninitialized], [FCFLAGS="$FCFLAGS -Wmaybe-uninitialized"])
+    AX_CHECK_COMPILE_FLAG([-Werror], [FCFLAGS="$FCFLAGS -Werror"])
+    AX_CHECK_COMPILE_FLAG([-fcheck=all], [FCFLAGS="$FCFLAGS -fcheck=all"])
+    AX_CHECK_COMPILE_FLAG([-fbounds-check], [FCFLAGS="$FCFLAGS -fbounds-check"])
+    AX_CHECK_COMPILE_FLAG([-fbacktrace], [FCFLAGS="$FCFLAGS -fbacktrace"])
+    AX_CHECK_COMPILE_FLAG([-ffpe-trap=denormal,invalid,zero,overflow,underflow],
+                          [FCFLAGS="$FCFLAGS -ffpe-trap=denormal,invalid,zero,overflow,underflow"])
+
+    # intel compiler flags
+    AX_CHECK_COMPILE_FLAG([-warn all], [FCFLAGS="$FCFLAGS -Wall"])
+    AX_CHECK_COMPILE_FLAG([-warn error], [FCFLAGS="$FCFLAGS -warn error"])
+    AX_CHECK_COMPILE_FLAG([-debug full], [FCFLAGS="$FCFLAGS -debug full"])
 else
     AC_MSG_RESULT([no])
     AX_CHECK_COMPILE_FLAG([-O3], [FCFLAGS="$FCFLAGS -O3"])
     AX_CHECK_COMPILE_FLAG([-DNDEBUG], [FCFLAGS="$FCFLAGS -DNDEBUG"])
 
-    if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
-        AX_CHECK_COMPILE_FLAG([-funroll-all-loops], [FCFLAGS="$FCFLAGS -funroll-all-loops"])
-        AX_CHECK_COMPILE_FLAG([-flto], [FCFLAGS="$FCFLAGS -flto"])
-    elif test "$ax_cv_fc_compiler_vendor" = "intel"; then
-        AX_CHECK_COMPILE_FLAG([-funroll-loops], [FCFLAGS="$FCFLAGS -funroll-loops"])
-        AX_CHECK_COMPILE_FLAG([-ffat-lto-objects], [FCFLAGS="$FCFLAGS -ffat-lto-objects"])
-    fi
+    # gfortran compiler flags
+    AX_CHECK_COMPILE_FLAG([-funroll-all-loops], [FCFLAGS="$FCFLAGS -funroll-all-loops"])
+    AX_CHECK_COMPILE_FLAG([-flto], [FCFLAGS="$FCFLAGS -flto"])
+
+    # intel compiler flags
+    AX_CHECK_COMPILE_FLAG([-funroll-loops], [FCFLAGS="$FCFLAGS -funroll-loops"])
+    AX_CHECK_COMPILE_FLAG([-ffat-lto-objects], [FCFLAGS="$FCFLAGS -ffat-lto-objects"])
 fi
 
 
@@ -553,12 +554,11 @@ AM_CONDITIONAL([ENABLE_OPENMP], [test "$ENABLE_OPENMP" = "yes"])
 AC_MSG_CHECKING([whether we are enabling OpenMP])
 if test "x$ENABLE_OPENMP" = "xyes"; then
     AC_MSG_RESULT([yes])
-    if test "$ax_cv_fc_compiler_vendor" = "gnu"; then
-        FCFLAGS="$FCFLAGS -fopenmp -DENABLE_OPENMP"
-    elif test "$ax_cv_fc_compiler_vendor" = "intel"; then
-        FCFLAGS="$FCFLAGS -qopenmp -DENABLE_OPENMP"
-    fi
+    # gfortran compiler flags
+    AX_CHECK_COMPILE_FLAG([-fopenmp], [FCFLAGS="$FCFLAGS -fopenmp -DENABLE_OPENMP"])
 
+    # intel compiler flags
+    AX_CHECK_COMPILE_FLAG([-qopenmp], [FCFLAGS="$FCFLAGS -qopenmp -DENABLE_OPENMP"])
 else
     AC_MSG_RESULT([no])
 fi
