@@ -11,6 +11,9 @@ module field_diagnostics
     use mpi_collectives, only : mpi_blocking_reduce
     use physics, only : ape_calculation
     use ape_density, only : ape_den
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+    use physics, only : bfsq
+#endif
     implicit none
 
     integer :: field_stats_timer
@@ -62,9 +65,24 @@ module field_diagnostics
 
             field_stats(IDX_AVG_NSPAR) = sum(nsparg(lo(3):hi(3)-1, lo(2):hi(2), lo(1):hi(1))) * ncelli
 
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            ! add basic state
+            do iz = 0, nz
+                z(iz) = lower(3) + dble(iz) * dx(3)
+                tbuoyg(iz, :, :) = tbuoyg(iz, :, :) + bfsq * z(iz)
+            enddo
+#endif
+
             ! do not take halo cells into account
             field_stats(IDX_MIN_BUOY) = minval(tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
             field_stats(IDX_MAX_BUOY) = maxval(tbuoyg(lo(3):hi(3), lo(2):hi(2), lo(1):hi(1)))
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            ! remove basic state
+            do iz = 0, nz
+                tbuoyg(iz, :, :) = tbuoyg(iz, :, :) - bfsq * z(iz)
+            enddo
+#endif
 
             ! use half weights for boundary grid points
             field_stats(IDX_KEG) = f12 * sum( volg(1:nz-1, lo(2):hi(2), lo(1):hi(1))           &
