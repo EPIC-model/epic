@@ -29,9 +29,9 @@ module parcel_merging
     ! number of parcel merges (is reset in every write step)
     integer :: n_parcel_merges = 0
 
-    ! number of merging parcels (up to 10 supported, all others are put into index 10)
+    ! number of merging parcels (up to 7 supported, all others are put into index 7)
     ! note that array index 1 corresponds to 2-way merging
-    integer :: n_way_parcel_mergers(10) = 0
+    integer :: n_way_parcel_mergers(7) = 0
 
     private :: geometric_merge,     &
                do_group_merge,      &
