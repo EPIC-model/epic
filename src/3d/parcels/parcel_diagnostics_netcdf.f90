@@ -10,7 +10,7 @@ module parcel_diagnostics_netcdf
     use parcel_diagnostics
     use parameters, only : lower, extent, nx, ny, nz, write_zeta_boundary_flag
     use parcel_split_mod, only : n_parcel_splits
-    use parcel_merging, only : n_parcel_merges
+    use parcel_merging, only : n_parcel_merges, n_big_close, n_way_parcel_mergers
     use config, only : package_version, cf_version
     use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
@@ -41,10 +41,11 @@ module parcel_diagnostics_netcdf
                         , NC_STD_VOL    = 13    &
                         , NC_SUM_VOL    = 14    &
                         , NC_NPAR_SPLIT = 15    &
-                        , NC_NPAR_MERGE = 16    &
-                        , NC_MIN_BUOY   = 17    &
-                        , NC_MAX_BUOY   = 18    &
-                        , NC_NWAY_MERGE = 19
+                        , NC_NBIG_CLOSE = 16    &
+                        , NC_NPAR_MERGE = 17    &
+                        , NC_MIN_BUOY   = 18    &
+                        , NC_MAX_BUOY   = 19    &
+                        , NC_NWAY_MERGE = 20
 
     type(netcdf_info) :: nc_dset(NC_NWAY_MERGE)
 
@@ -179,6 +180,7 @@ module parcel_diagnostics_netcdf
             ! reset counters for parcel operations
             n_parcel_splits = 0
             n_parcel_merges = 0
+            n_big_close     = 0
             n_way_parcel_mergers = 0
 
             if (world%rank /= world%root) then
@@ -218,6 +220,7 @@ module parcel_diagnostics_netcdf
             call write_diagnostic(NC_RMS_Y_VOR, parcel_stats(IDX_RMS_ETA))
             call write_diagnostic(NC_RMS_Z_VOR, parcel_stats(IDX_RMS_ZETA))
             call write_diagnostic(NC_NPAR_SPLIT, parcel_stats(IDX_NSPLITS))
+            call write_diagnostic(NC_NBIG_CLOSE, parcel_stats(IDX_NBIG_ICLO))
             call write_diagnostic(NC_NPAR_MERGE, parcel_stats(IDX_NMERGES))
             call write_diagnostic(NC_MIN_BUOY, parcel_stats(IDX_MIN_BUOY))
             call write_diagnostic(NC_MAX_BUOY, parcel_stats(IDX_MAX_BUOY))
@@ -357,6 +360,13 @@ module parcel_diagnostics_netcdf
             nc_dset(NC_NPAR_SPLIT) = netcdf_info(                           &
                 name='n_parcel_splits',                                     &
                  long_name='number of parcel splits since last time',       &
+                 std_name='',                                               &
+                 unit='1',                                                  &
+                 dtype=NF90_INT)
+
+            nc_dset(NC_NBIG_CLOSE) = netcdf_info(                           &
+                name='n_big_neighbour',                                     &
+                 long_name='number of big parcel neighbours',               &
                  std_name='',                                               &
                  unit='1',                                                  &
                  dtype=NF90_INT)

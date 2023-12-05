@@ -4,6 +4,7 @@
 ! =============================================================================
 module parcel_merging
     use parcel_nearest
+    use parameters, only : vmin
     use constants, only : pi, zero, one, two, five, f13
     use parcel_container, only : parcels                    &
                                , n_parcels                  &
@@ -32,6 +33,9 @@ module parcel_merging
     ! number of merging parcels (up to 7 supported, all others are put into index 7)
     ! note that array index 1 corresponds to 2-way merging
     integer :: n_way_parcel_mergers(7) = 0
+
+    ! number of big iclo neighbours (number of small is n_merge - n_big_close)
+    integer :: n_big_close = 0
 
     private :: geometric_merge,     &
                do_group_merge,      &
@@ -346,6 +350,7 @@ module parcel_merging
             last = 0
             do m = 1, n_merge
                 ic = iclo(m)
+                n_big_close = n_big_close + merge(1, 0, parcels%volume(ic) > vmin)
                 j = findloc(unique(1:last), value = ic, dim=1)
                 if (j == 0) then
                     last = last + 1
