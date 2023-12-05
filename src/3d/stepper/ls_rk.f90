@@ -211,9 +211,9 @@ module ls_rk
 
             call parcel_communicate
 
-            call par2grid
-
             call stop_timer(rk_timer)
+
+            call par2grid
 
         end subroutine ls_rk_substep
 
