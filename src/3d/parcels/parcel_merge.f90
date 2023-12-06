@@ -271,7 +271,7 @@ module parcel_merging
                 Bm(3, n) = Bm(3, n) + mu * (five * delx * delz + parcels%B(3, is))
                 Bm(4, n) = Bm(4, n) + mu * (five * dely ** 2   + parcels%B(4, is))
                 Bm(5, n) = Bm(5, n) + mu * (five * dely * delz + parcels%B(5, is))
-                Bm(6, n) = Bm(6, n) + mu * (five * delz ** 2   + parcels%B(5, is))
+                Bm(6, n) = Bm(6, n) + mu * (five * delz ** 2   + parcels%B(6, is))
             enddo
 
         end subroutine do_group_merge
