@@ -37,9 +37,12 @@ module parcel_merging
     ! number of big iclo neighbours (number of small is n_merge - n_big_close)
     integer :: n_big_close = 0
 
+    integer, allocatable :: loca(:)
+
     private :: geometric_merge,     &
                do_group_merge,      &
-               collect_merge_stats
+               collect_merge_stats, &
+               loca
 
     contains
 
@@ -64,6 +67,10 @@ module parcel_merging
 
             n_parcel_merges = n_parcel_merges + n_merge
 
+            if (n_merge > 0) then
+                allocate(loca(n_parcels))
+            endif
+
             call collect_merge_stats(iclo, n_merge)
 
 
@@ -81,6 +88,10 @@ module parcel_merging
             if (allocated(isma)) then
                 deallocate(isma)
                 deallocate(iclo)
+            endif
+
+            if (allocated(loca)) then
+                deallocate(loca)
             endif
 
             ! After this operation the root MPI process knows the new
@@ -114,7 +125,6 @@ module parcel_merging
             integer,          intent(in)    :: iclo(:)
             integer,          intent(in)    :: n_merge
             integer                         :: m, ic, is, l, n
-            integer                         :: loca(n_parcels)
             double precision                :: x0(n_merge), y0(n_merge)
             double precision                :: posm(3, n_merge)
             double precision                :: delx, vmerge, dely, delz, B33, mu
@@ -300,7 +310,6 @@ module parcel_merging
             integer,         intent(in) :: iclo(:)
             integer,         intent(in) :: n_merge
             integer                     :: m, ic, l
-            integer                     :: loca(n_parcels)
             double precision            :: factor, detB
             double precision            :: B(6, n_merge), &
                                         V(n_merge)
@@ -341,8 +350,7 @@ module parcel_merging
 
             number = 0 ! note that "number" does not include the 'iclo' parcel in the count
 
-            ! note that we reuse a RK4 temporary array to avoid more memory
-            parcels%delta_pos(1, 1:n_parcels) = zero
+            loca = 0
 
             !------------------------------------------------------------------
             ! Find unique 'iclo' indices and the total number of parcels
@@ -350,15 +358,17 @@ module parcel_merging
             do m = 1, n_merge
                 ic = iclo(m)
                 n_big_close = n_big_close + merge(1, 0, parcels%volume(ic) > vmin)
-                parcels%delta_pos(1, ic) = parcels%delta_pos(1, ic) + one
+                loca(ic) = loca(ic) + one
             enddo
 
             !------------------------------------------------------------------
             ! Count the number of 2-, 3-, 4- etc way merging:
-            do m = 1, n_parcels
-                n_count = int(parcels%delta_pos(1, m))
+            do m = 1, n_merge
+                ic = iclo(m)
+                n_count = loca(ic)
                 ! all mergers involving more than size(n_way_parcel_mergers) parcels are added together
                 if (n_count > 0) then
+                    loca(ic) = -1
                     j = min(size(n_way_parcel_mergers), n_count)
                     n_way_parcel_mergers(j) = n_way_parcel_mergers(j) + 1
                 endif
