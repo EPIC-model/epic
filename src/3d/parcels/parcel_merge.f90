@@ -348,8 +348,6 @@ module parcel_merging
             integer                            :: n_merge
             integer                            :: ic, m, j, n_count
 
-            number = 0 ! note that "number" does not include the 'iclo' parcel in the count
-
             loca = 0
 
             !------------------------------------------------------------------
