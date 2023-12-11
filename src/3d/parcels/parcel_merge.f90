@@ -337,35 +337,31 @@ module parcel_merging
         subroutine collect_merge_stats(iclo, n_merge)
             integer, allocatable, dimension(:) :: iclo
             integer                            :: n_merge
-            integer                            :: unique(n_merge) ! unique 'iclo' indices
-            integer                            :: number(n_merge) ! number of merging parcels
-            integer                            :: ic, m, j, last
+            integer                            :: ic, m, j, n_count
 
-            unique = 0
             number = 0 ! note that "number" does not include the 'iclo' parcel in the count
+
+            ! note that we reuse a RK4 temporary array to avoid more memory
+            parcels%delta_pos(1, 1:n_parcels) = zero
 
             !------------------------------------------------------------------
             ! Find unique 'iclo' indices and the total number of parcels
             ! merging with them:
-            last = 0
             do m = 1, n_merge
                 ic = iclo(m)
                 n_big_close = n_big_close + merge(1, 0, parcels%volume(ic) > vmin)
-                j = findloc(unique(1:last), value = ic, dim=1)
-                if (j == 0) then
-                    last = last + 1
-                    j = last
-                endif
-                unique(j) = ic
-                number(j) = number(j) + 1
+                parcels%delta_pos(1, ic) = parcels%delta_pos(1, ic) + one
             enddo
 
             !------------------------------------------------------------------
             ! Count the number of 2-, 3-, 4- etc way merging:
-            do m = 1, last
+            do m = 1, n_parcels
+                n_count = int(parcels%delta_pos(1, m))
                 ! all mergers involving more than size(n_way_parcel_mergers) parcels are added together
-                j = min(size(n_way_parcel_mergers), number(m))
-                n_way_parcel_mergers(j) = n_way_parcel_mergers(j) + 1
+                if (n_count > 0) then
+                    j = min(size(n_way_parcel_mergers), n_count)
+                    n_way_parcel_mergers(j) = n_way_parcel_mergers(j) + 1
+                endif
             enddo
 
         end subroutine collect_merge_stats
