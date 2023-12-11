@@ -358,7 +358,7 @@ module parcel_merging
             do m = 1, n_merge
                 ic = iclo(m)
                 n_big_close = n_big_close + merge(1, 0, parcels%volume(ic) > vmin)
-                loca(ic) = loca(ic) + one
+                loca(ic) = loca(ic) + 1
             enddo
 
             !------------------------------------------------------------------
