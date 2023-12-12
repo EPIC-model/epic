@@ -69,9 +69,8 @@ module parcel_merging
 
             if (n_merge > 0) then
                 allocate(loca(n_parcels))
+                call collect_merge_stats(iclo, n_merge)
             endif
-
-            call collect_merge_stats(iclo, n_merge)
 
 
             if (n_merge > 0) then
