@@ -13,6 +13,11 @@ epic2d_SOURCES = 				\
 	fields/field_diagnostics.f90		\
 	fields/field_netcdf.f90			\
 	fields/field_diagnostics_netcdf.f90	\
+	parcels/surface_parcel_container.f90	\
+	parcels/surface_parcel_bc.f90		\
+	parcels/surface_parcel_interpl.f90	\
+	parcels/surface_parcel_init.f90		\
+	parcels/surface_parcel_split.f90	\
 	parcels/parcel_ellipse.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\

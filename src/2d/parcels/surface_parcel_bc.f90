@@ -4,7 +4,6 @@
 ! =============================================================================
 module surface_parcel_bc
     use parameters, only : extent, hli, center
-    use surface_parcel_container, only : n_surf_parcels
     use omp_lib
     implicit none
 
@@ -19,13 +18,14 @@ module surface_parcel_bc
 
         ! Apply all boundary conditions to all parcels
         ! @param[inout] position vector of parcels
-        subroutine apply_surface_parcel_bc(position)
+        subroutine apply_surface_parcel_bc(position, n_par)
             double precision, intent(inout) :: position(:)
+            integer,          intent(in)    :: n_par
             integer                         :: n
 
             !$omp parallel default(shared)
             !$omp do private(n)
-            do n = 1, n_surf_parcels
+            do n = 1, n_par
                 ! horizontal direction
                 call apply_surface_periodic_bc(position(n))
             enddo

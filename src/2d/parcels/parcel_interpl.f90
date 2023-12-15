@@ -13,6 +13,7 @@ module parcel_interpl
     use fields
     use physics, only : glat, lambda_c, q_0
     use omp_lib
+    use surface_parcel_interpl, only : len2grid, surf_par2grid, surf_grid2par
     implicit none
 
     ! number of indices and weights
@@ -71,14 +72,7 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
-            ! apply free slip boundary condition
-            volg(0,  :) = two * volg(0,  :)
-            volg(nz, :) = two * volg(nz, :)
-
-            ! free slip boundary condition is reflective with mirror
-            ! axis at the physical domain
-            volg(1,    :) = volg(1,    :) + volg(-1,   :)
-            volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
+            call len2grid
 
         end subroutine vol2grid
 
@@ -223,34 +217,8 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
-            ! apply free slip boundary condition
-            volg(0,  :) = two * volg(0,  :)
-            volg(nz, :) = two * volg(nz, :)
+            call surf_par2grid
 
-            ! free slip boundary condition is reflective with mirror
-            ! axis at the physical domain
-            volg(1,    :) = volg(1,    :) + volg(-1,   :)
-            volg(nz-1, :) = volg(nz-1, :) + volg(nz+1, :)
-
-            vortg(0,  :) = two * vortg(0,  :)
-            vortg(nz, :) = two * vortg(nz, :)
-            vortg(1,    :) = vortg(1,    :) + vortg(-1,   :)
-            vortg(nz-1, :) = vortg(nz-1, :) + vortg(nz+1, :)
-
-#ifndef ENABLE_DRY_MODE
-            dbuoyg(0,  :) = two * dbuoyg(0,  :)
-            dbuoyg(nz, :) = two * dbuoyg(nz, :)
-            dbuoyg(1,    :) = dbuoyg(1,    :) + dbuoyg(-1,   :)
-            dbuoyg(nz-1, :) = dbuoyg(nz-1, :) + dbuoyg(nz+1, :)
-            humg(0,  :) = two * humg(0,  :)
-            humg(nz, :) = two * humg(nz, :)
-            humg(1,    :) = humg(1,    :) + humg(-1,   :)
-            humg(nz-1, :) = humg(nz-1, :) + humg(nz+1, :)
-#endif
-            tbuoyg(0,  :) = two * tbuoyg(0,  :)
-            tbuoyg(nz, :) = two * tbuoyg(nz, :)
-            tbuoyg(1,    :) = tbuoyg(1,    :) + tbuoyg(-1,   :)
-            tbuoyg(nz-1, :) = tbuoyg(nz-1, :) + tbuoyg(nz+1, :)
             ! exclude halo cells to avoid division by zero
             vortg(0:nz, :) = vortg(0:nz, :) / volg(0:nz, :)
 
@@ -279,11 +247,11 @@ module parcel_interpl
             nsparg(0,    :) = nsparg(0,    :) + nsparg(-1, :)
             nsparg(nz-1, :) = nsparg(nz-1, :) + nsparg(nz, :)
 
-            ! sanity check
-            if (sum(nparg(0:nz-1, :)) /= n_parcels) then
-                print *, "par2grid: Wrong total number of parcels!"
-                stop
-            endif
+!             ! sanity check
+!             if (sum(nparg(0:nz-1, :)) /= n_parcels) then
+!                 print *, "par2grid: Wrong total number of parcels!"
+!                 stop
+!             endif
 
             call stop_timer(par2grid_timer)
 
@@ -291,16 +259,12 @@ module parcel_interpl
 
 
         ! Interpolate the gridded quantities to the parcels
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vor is the parcel vorticity
-        ! @param[inout] vgrad is the parcel strain
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
-        subroutine grid2par(vel, vor, vgrad, add)
-            double precision,     intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
-            logical, optional, intent(in)       :: add
-            double precision                    :: points(2, 2), weight
-            integer                             :: n, p, l
+        subroutine grid2par(add)
+            logical, optional, intent(in) :: add
+            double precision              :: points(2, 2), weight
+            integer                       :: n, p, l
 
             call start_timer(grid2par_timer)
 
@@ -310,8 +274,8 @@ module parcel_interpl
                     !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, n_parcels
-                        vel(:, n) = zero
-                        vor(n)    = zero
+                        parcels%delta_pos(:, n) = zero
+                        parcels%delta_vor(n)    = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -320,8 +284,8 @@ module parcel_interpl
                 !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_parcels
-                    vel(:, n) = zero
-                    vor(n)    = zero
+                    parcels%delta_pos(:, n) = zero
+                    parcels%delta_vor(n)    = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -331,7 +295,7 @@ module parcel_interpl
             !$omp do private(n, p, l, points, weight, is, js, weights)
             do n = 1, n_parcels
 
-                vgrad(:, n) = zero
+                parcels%strain(:, n) = zero
 
                 points = get_ellipse_points(parcels%position(:, n), &
                                             parcels%volume(n),      &
@@ -351,35 +315,25 @@ module parcel_interpl
                         weight = f12 * weights(l)
 
                         ! the weight is halved due to 2 points per ellipse
-                        vel(:, n) = vel(:, n) &
-                                  + weight * velog(js(l), is(l), :)
+                        parcels%delta_pos(:, n) = parcels%delta_pos(:, n) &
+                                                + weight * velog(js(l), is(l), :)
 
-                        vgrad(:, n) = vgrad(:, n) &
-                                    + weight * velgradg(js(l), is(l), :)
+                        parcels%strain(:, n) = parcels%strain(:, n) &
+                                             + weight * velgradg(js(l), is(l), :)
 
-                        vor(n) = vor(n) + weight * vtend(js(l), is(l))
+                        parcels%delta_vor(n) = parcels%delta_vor(n) + weight * vtend(js(l), is(l))
                     enddo
                 enddo
             enddo
             !$omp end do
             !$omp end parallel
 
+            call surf_grid2par(0,  n_bot_parcels, bot_parcels, add)
+            call surf_grid2par(nz, n_top_parcels, top_parcels, add)
+
             call stop_timer(grid2par_timer)
 
         end subroutine grid2par
-
-
-        ! Interpolate the gridded quantities to the parcels without resetting
-        ! their values to zero before doing grid2par.
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vor is the parcel vorticity
-        ! @param[inout] vgrad is the parcel strain
-        subroutine grid2par_add(vel, vor, vgrad)
-            double precision,       intent(inout) :: vel(:, :), vor(:), vgrad(:, :)
-
-            call grid2par(vel, vor, vgrad, add=.true.)
-
-        end subroutine grid2par_add
 
 
         ! Tri-linear interpolation

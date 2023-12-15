@@ -3,11 +3,12 @@
 ! interpolation for surface parcels.
 ! =============================================================================
 module surface_parcel_interpl
-    use constants, only : zero, one, two
+    use constants, only : zero, one, f12, f14
     use parameters, only : nx, nz, lmin
     use options, only : parcel
     use surface_parcel_container, only : top_parcels, n_top_parcels &
-                                       , bot_parcels, n_bot_parcels
+                                       , bot_parcels, n_bot_parcels &
+                                       , surface_parcel_container_type
     use surface_parcel_bc, only : apply_surface_periodic_bc
     use fields
     use physics, only : glat, lambda_c, q_0
@@ -23,24 +24,24 @@ module surface_parcel_interpl
     ! interpolation weights
     double precision :: weights(ngp)
 
-    private :: is, weights, _len2grid, _surf_par2grid
+    private :: is, weights, len2grid_, surf_par2grid_
 
     contains
 
         subroutine len2grid
 
-            call _len2grid(nz, n_top_parcels, top_parcels)
-            call _len2grid(0,  n_bot_parcels, bot_parcels)
+            call len2grid_(nz, n_top_parcels, top_parcels)
+            call len2grid_(0,  n_bot_parcels, bot_parcels)
 
         end subroutine len2grid
 
         ! Interpolate the parcel length to the grid
-        subroutine _len2grid(iz, n_par, spar)
-            integer,                        intent(in)    :: iz
-            integer,                        intent(in)    :: n_par
-            type(surface_parcel_container), intent(inout) :: spar
-            double precision                              :: points(2)
-            integer                                       :: n, p, l
+        subroutine len2grid_(iz, n_par, spar)
+            integer,                             intent(in)    :: iz
+            integer,                             intent(in)    :: n_par
+            type(surface_parcel_container_type), intent(inout) :: spar
+            double precision                                   :: points(2)
+            integer                                            :: n, p, l
 
             volg(iz, :) = zero
 
@@ -69,13 +70,13 @@ module surface_parcel_interpl
             !$omp end do
             !$omp end parallel
 
-        end subroutine _len2grid
+        end subroutine len2grid_
 
 
         subroutine surf_par2grid
 
-            call _surf_par2grid(nz, n_top_parcels, top_parcels)
-            call _surf_par2grid(0,  n_bot_parcels, bot_parcels)
+            call surf_par2grid_(nz, n_top_parcels, top_parcels)
+            call surf_par2grid_(0,  n_bot_parcels, bot_parcels)
 
         end subroutine surf_par2grid
 
@@ -84,15 +85,15 @@ module surface_parcel_interpl
         !   - buoyancy
         !   - length
         ! It also updates the scalar fields:
-        subroutine _surf_par2grid(iz, n_par, spar)
-            integer,                        intent(in)    :: iz
-            integer,                        intent(in)    :: n_par
-            type(surface_parcel_container), intent(inout) :: spar
-            double precision                              :: points(2)
-            integer                                       :: n, p, l, i
-            double precision                              :: weight, btot
+        subroutine surf_par2grid_(iz, n_par, spar)
+            integer,                             intent(in)    :: iz
+            integer,                             intent(in)    :: n_par
+            type(surface_parcel_container_type), intent(inout) :: spar
+            double precision                                   :: points(2)
+            integer                                            :: n, p, l
+            double precision                                   :: weight, btot
 #ifndef ENABLE_DRY_MODE
-            double precision                              :: q_c
+            double precision                                   :: q_c
 #endif
 
             vortg(iz, :) = zero
@@ -104,24 +105,24 @@ module surface_parcel_interpl
             tbuoyg(iz, :) = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, i, points, weight, btot, q_c, is, weights) &
+            !$omp do private(n, p, l, points, weight, btot, q_c, is, weights) &
             !$omp& reduction(+:vortg, dbuoyg, humg, tbuoyg, volg)
 #else
-            !$omp do private(n, p, l, i, points, weight, btot, is, weights) &
+            !$omp do private(n, p, l, points, weight, btot, is, weights) &
             !$omp& reduction(+:vortg, tbuoyg, volg)
 #endif
             do n = 1, n_par
 
 #ifndef ENABLE_DRY_MODE
                 ! liquid water content
-                q_c = parcels%humidity(n) &
-                    - q_0 * dexp(lambda_c * (lower(2) - parcels%position(2, n)))
+                q_c = spar%humidity(n) &
+                    - q_0 * dexp(- lambda_c * dble(iz) * dx(2))
                 q_c = max(zero, q_c)
 
                 ! total buoyancy (including effects of latent heating)
-                btot = parcels%buoyancy(n) + glat * q_c
+                btot = spar%buoyancy(n) + glat * q_c
 #else
-                btot = parcels%buoyancy(n)
+                btot = spar%buoyancy(n)
 #endif
 
                 points(1) = spar%position(n) + f14 * spar%length(n)
@@ -140,16 +141,16 @@ module surface_parcel_interpl
                     ! the weight is halved due to 2 points per line
                     do l = 1, ngp
 
-                        weight = f12 * weights(l) * parcels%length(n)
+                        weight = f12 * weights(l) * spar%length(n)
 
                         vortg(iz, is(l)) = vortg(iz, is(l)) &
-                                         + weight * parcels%vorticity(n)
+                                         + weight * spar%vorticity(n)
 
 #ifndef ENABLE_DRY_MODE
                         dbuoyg(iz, is(l)) = dbuoyg(iz, is(l)) &
-                                          + weight * parcels%buoyancy(n)
+                                          + weight * spar%buoyancy(n)
                         humg(iz, is(l)) = humg(iz, is(l)) &
-                                        + weight * parcels%humidity(n)
+                                        + weight * spar%humidity(n)
 #endif
                         tbuoyg(iz, is(l)) = tbuoyg(iz, is(l)) + weight * btot
                         volg(iz, is(l)) = volg(iz, is(l)) + weight
@@ -159,23 +160,19 @@ module surface_parcel_interpl
             !$omp end do
             !$omp end parallel
 
-        end subroutine _surf_par2grid
+        end subroutine surf_par2grid_
 
 
         ! Interpolate the gridded quantities to the parcels
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vor is the parcel vorticity
-        ! @param[inout] vgrad is the parcel strain
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
-        subroutine surf_grid2par(iz, n_par, spar, vel, vor, vgrad, add)
-            integer,                        intent(in)    :: iz
-            integer,                        intent(in)    :: n_par
-            type(surface_parcel_container), intent(inout) :: spar
-            double precision,               intent(inout) :: vel, vor, vgrad(:)
-            logical, optional,              intent(in)    :: add
-            double precision                              :: points(2), weight
-            integer                                       :: n, p, l
+        subroutine surf_grid2par(iz, n_par, spar, add)
+            integer,                             intent(in)    :: iz
+            integer,                             intent(in)    :: n_par
+            type(surface_parcel_container_type), intent(inout) :: spar
+            logical, optional,                   intent(in)    :: add
+            double precision                                   :: points(2), weight
+            integer                                            :: n, p, l
 
             ! clear old data efficiently
             if(present(add)) then
@@ -183,8 +180,8 @@ module surface_parcel_interpl
                     !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, n_par
-                        vel(n) = zero
-                        vor(n)    = zero
+                        spar%delta_pos(n) = zero
+                        spar%delta_vor(n)    = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -193,8 +190,8 @@ module surface_parcel_interpl
                 !$omp parallel default(shared)
                 !$omp do private(n)
                 do n = 1, n_par
-                    vel(n) = zero
-                    vor(n) = zero
+                    spar%delta_pos(n) = zero
+                    spar%delta_vor(n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -204,7 +201,7 @@ module surface_parcel_interpl
             !$omp do private(n, p, l, points, weight, is, weights)
             do n = 1, n_par
 
-                vgrad(n) = zero
+                spar%strain(n) = zero
 
                 points(1) = spar%position(n) + f14 * spar%length(n)
                 points(2) = spar%position(n) - f14 * spar%length(n)
@@ -223,13 +220,13 @@ module surface_parcel_interpl
                         weight = f12 * weights(l)
 
                         ! the weight is halved due to 2 points per line
-                        vel(n) = vel(n) &
-                               + weight * velog(iz, is(l), :)
+                        spar%delta_pos(n) = spar%delta_pos(n) &
+                                          + weight * velog(iz, is(l), 0)
 
-                        vgrad(n) = vgrad(n) &
-                                 + weight * velgradg(iz, is(l), :)
+                        spar%strain(n) = spar%strain(n) &
+                                       + weight * velgradg(iz, is(l), 0)
 
-                        vor(n) = vor(n) + weight * vtend(iz, is(l))
+                        spar%delta_vor(n) = spar%delta_vor(n) + weight * vtend(iz, is(l))
                     enddo
                 enddo
             enddo
@@ -237,22 +234,6 @@ module surface_parcel_interpl
             !$omp end parallel
 
         end subroutine surf_grid2par
-
-
-        ! Interpolate the gridded quantities to the parcels without resetting
-        ! their values to zero before doing grid2par.
-        ! @param[inout] vel is the parcel velocity
-        ! @param[inout] vor is the parcel vorticity
-        ! @param[inout] vgrad is the parcel strain
-        subroutine surf_grid2par_add(iz, n_par, spar, vel, vor, vgrad, add)
-            integer,                        intent(in)    :: iz
-            integer,                        intent(in)    :: n_par
-            type(surface_parcel_container), intent(inout) :: spar
-            double precision,               intent(inout) :: vel, vor, vgrad(:)
-
-            call surf_grid2par(iz, n_par, spar, vel, vor, vgrad, add=.true.)
-
-        end subroutine surf_grid2par_add
 
 
         ! Linear interpolation
@@ -268,7 +249,7 @@ module surface_parcel_interpl
             ! (i)
             ii(1) = floor((pos - lower(1)) * dxi(1))
 
-            x = lower(1) + dble(i) * dx(1)
+            x = lower(1) + dble(ii(1)) * dx(1)
 
             ww(1) = one - abs(pos - x) * dxi(1)
 

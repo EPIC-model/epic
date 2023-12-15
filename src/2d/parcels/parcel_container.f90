@@ -21,6 +21,16 @@ module parcel_container
             humidity,   &
 #endif
             buoyancy
+
+        ! LS-RK-4 arrays
+        double precision, allocatable, dimension(:, :) :: &
+            delta_pos, &
+            strain,    &   ! strain at parcel location
+            delta_b        ! B matrix integration
+
+        double precision, allocatable, dimension(:) :: &
+            delta_vor      ! vorticity integration
+
     end type parcel_container_type
 
     type(parcel_container_type) parcels
@@ -94,6 +104,12 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             allocate(parcels%humidity(num))
 #endif
+
+            allocate(parcels%delta_pos(2, num))
+            allocate(parcels%delta_vor(num))
+            allocate(parcels%strain(4, num))
+            allocate(parcels%delta_b(2, num))
+
         end subroutine parcel_alloc
 
         ! Deallocate parcel memory
@@ -106,6 +122,11 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             deallocate(parcels%humidity)
 #endif
+
+            deallocate(parcels%delta_pos)
+            deallocate(parcels%delta_vor)
+            deallocate(parcels%strain)
+            deallocate(parcels%delta_b)
         end subroutine parcel_dealloc
 
 end module parcel_container

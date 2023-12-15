@@ -16,11 +16,18 @@ module surface_parcel_container
             humidity,   &
 #endif
             buoyancy
+
+        ! LS-RK-4 arrays
+        double precision, allocatable, dimension(:) :: &
+            strain,    &   ! strain at parcel location
+            delta_pos, &
+            delta_vor      ! vorticity integration
+
     end type surface_parcel_container_type
 
     type(surface_parcel_container_type) top_parcels, bot_parcels
 
-    private :: _alloc, _dealloc
+    private :: alloc, dealloc
 
     contains
 
@@ -28,40 +35,22 @@ module surface_parcel_container
         ! @param[in] n index of parcel to be replaced
         ! @param[in] m index of parcel used to replace parcel at index n
         ! @pre n and m must be valid parcel indices
-        subroutine surface_parcel_replace(n, m)
-            integer, intent(in) :: n, m
+        subroutine surface_parcel_replace(n, m, sp)
+            integer,                             intent(in)    :: n, m
+            type(surface_parcel_container_type), intent(inout) :: sp
 
-            parcels%position(n) = parcels%position(m)
+            sp%position(n) = sp%position(m)
 
-            parcels%vorticity(n) = parcels%vorticity(m)
+            sp%vorticity(n) = sp%vorticity(m)
 
-            parcels%length(n)  = parcels%length(m)
-            parcels%buoyancy(n) = parcels%buoyancy(m)
+            sp%length(n)  = sp%length(m)
+            sp%buoyancy(n) = sp%buoyancy(m)
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(n) = parcels%humidity(m)
+            sp%humidity(n) = sp%humidity(m)
 #endif
         end subroutine surface_parcel_replace
 
-        ! Allocate parcel memory
-        ! @param[in] num number of parcels
-        subroutine surface_parcel_alloc(num)
-            integer, intent(in) :: num
-
-            call _alloc(num, top_parcels)
-            call _alloc(num, bot_parcels)
-
-        end subroutine surface_parcel_alloc
-
-
-        ! Deallocate parcel memory
-        subroutine surface_parcel_dealloc
-
-            call _dealloc(top_parcels)
-            call _dealloc(bot_parcels)
-
-        end subroutine surface_parcel_dealloc
-
-        subroutine _alloc(num, sp)
+        subroutine alloc(num, sp)
             integer,                             intent(in)    :: num
             type(surface_parcel_container_type), intent(inout) :: sp
 
@@ -72,9 +61,13 @@ module surface_parcel_container
 #ifndef ENABLE_DRY_MODE
             allocate(sp%humidity(num))
 #endif
-        end subroutine _alloc
 
-        subroutine _dealloc(sp)
+            allocate(sp%delta_pos(num))
+            allocate(sp%delta_vor(num))
+            allocate(sp%strain(num))
+        end subroutine alloc
+
+        subroutine dealloc(sp)
             type(surface_parcel_container_type), intent(inout) :: sp
 
             deallocate(sp%position)
@@ -84,6 +77,27 @@ module surface_parcel_container
 #ifndef ENABLE_DRY_MODE
             deallocate(sp%humidity)
 #endif
-        end subroutine _dealloc
+            deallocate(sp%delta_pos)
+            deallocate(sp%delta_vor)
+            deallocate(sp%strain)
+        end subroutine dealloc
+
+        ! Allocate parcel memory
+        ! @param[in] num number of parcels
+        subroutine surface_parcel_alloc(num)
+            integer, intent(in) :: num
+
+            call alloc(num, top_parcels)
+            call alloc(num, bot_parcels)
+
+        end subroutine surface_parcel_alloc
+
+        ! Deallocate parcel memory
+        subroutine surface_parcel_dealloc
+
+            call dealloc(top_parcels)
+            call dealloc(bot_parcels)
+
+        end subroutine surface_parcel_dealloc
 
 end module surface_parcel_container

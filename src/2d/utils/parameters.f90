@@ -19,6 +19,9 @@ module parameters
     ! inverse grid cell volume
     double precision, protected :: vcelli
 
+    ! grid cell length
+    double precision, protected :: lcell
+
     ! number of grid cells in each dimension
     integer :: nx, nz
 
@@ -66,8 +69,16 @@ module parameters
     ! maximum volume
     double precision, protected :: vmax
 
+    ! minimum length
+    double precision, protected :: lmin
+
+    ! maximum length
+    double precision, protected :: lmax
+
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
+
+    integer, protected :: max_num_surf_parcels
 
     contains
 
@@ -100,6 +111,8 @@ module parameters
         vcell = product(dx)
         vcelli = one / vcell
 
+        lcell = dx(1)
+
         ncell = nx * nz
         ncelli = one / dble(ncell)
 
@@ -115,7 +128,12 @@ module parameters
         vmin = vcell / parcel%min_vratio
         vmax = vcell / parcel%max_vratio
 
+        lmin = lcell / parcel%min_vratio
+        lmax = lcell / parcel%max_vratio
+
         max_num_parcels = int(nx * nz * parcel%min_vratio * parcel%size_factor)
+
+        max_num_surf_parcels = int(nx * parcel%min_vratio * parcel%size_factor)
 
     end subroutine update_parameters
 
