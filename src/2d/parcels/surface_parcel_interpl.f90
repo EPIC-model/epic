@@ -24,7 +24,7 @@ module surface_parcel_interpl
     ! interpolation weights
     double precision :: weights(ngp)
 
-    private :: is, weights, len2grid_, surf_par2grid_
+    private :: is, weights, len2grid_, surf_par2grid_, surf_grid2par_
 
     contains
 
@@ -163,10 +163,19 @@ module surface_parcel_interpl
         end subroutine surf_par2grid_
 
 
+        subroutine surf_grid2par(add)
+            logical, optional, intent(in)    :: add
+
+            call surf_grid2par_(0,  n_bot_parcels, bot_parcels, add)
+            call surf_grid2par_(nz, n_top_parcels, top_parcels, add)
+
+        end subroutine surf_grid2par
+
+
         ! Interpolate the gridded quantities to the parcels
         ! @param[in] add contributions, i.e. do not reset parcel quantities to zero before doing grid2par.
         !            (optional)
-        subroutine surf_grid2par(iz, n_par, spar, add)
+        subroutine surf_grid2par_(iz, n_par, spar, add)
             integer,                             intent(in)    :: iz
             integer,                             intent(in)    :: n_par
             type(surface_parcel_container_type), intent(inout) :: spar
@@ -233,7 +242,7 @@ module surface_parcel_interpl
             !$omp end do
             !$omp end parallel
 
-        end subroutine surf_grid2par
+        end subroutine surf_grid2par_
 
 
         ! Linear interpolation

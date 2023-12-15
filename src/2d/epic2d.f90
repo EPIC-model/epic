@@ -31,7 +31,6 @@ program epic2d
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_parcels
-    use parameters, only : max_num_parcels
     implicit none
 
     integer          :: epic_timer

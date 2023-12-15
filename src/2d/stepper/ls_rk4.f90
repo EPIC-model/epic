@@ -8,7 +8,7 @@ module ls_rk4
     use parcel_bc
     use rk4_utils, only: get_B, get_time_step
     use utils, only : write_step
-    use parcel_interpl, only : par2grid, grid2par, grid2par_add
+    use parcel_interpl, only : par2grid, grid2par
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
@@ -61,7 +61,7 @@ module ls_rk4
 
             call grid2par
 
-            call calculate_parcel_diagnostics(delta_pos)
+            call calculate_parcel_diagnostics(parcels%delta_pos)
 
             call calculate_field_diagnostics
 

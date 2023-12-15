@@ -328,8 +328,7 @@ module parcel_interpl
             !$omp end do
             !$omp end parallel
 
-            call surf_grid2par(0,  n_bot_parcels, bot_parcels, add)
-            call surf_grid2par(nz, n_top_parcels, top_parcels, add)
+            call surf_grid2par(add)
 
             call stop_timer(grid2par_timer)
 

@@ -6,8 +6,8 @@ module surface_parcel_split
     use constants, only : pi, three, f12, f14
     use parameters, only : lmax
     use surface_parcel_container, only : surface_parcel_container_type  &
-                                       , n_top_parcels                  &
-                                       , n_bot_parcels
+                                       , n_top_parcels, top_parcels     &
+                                       , n_bot_parcels, bot_parcels
     use omp_lib
     implicit none
 
@@ -48,11 +48,11 @@ module surface_parcel_split
                 ! this lines is split, i.e., add a new surface parcel
                 !
 
-                h = f14 * dsqrt(three * a2) !FIXME
+                h = f14 * l
                 parcels%length(n) = f12 * l
 
                 !$omp critical
-                n_thread_loc = n_surf_parcels + 1
+                n_thread_loc = n_par + 1
 
                 ! we only need to add one new parcel
                 n_par = n_par + 1

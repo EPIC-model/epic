@@ -87,7 +87,7 @@ module utils
 
             call grid2par
 
-            call calculate_parcel_diagnostics(velocity)
+            call calculate_parcel_diagnostics(parcels%delta_pos)
 
             call calculate_field_diagnostics
 
