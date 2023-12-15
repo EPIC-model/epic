@@ -1,4 +1,4 @@
-AC_INIT([epic], [0.13.1], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
+AC_INIT([epic], [0.14.0], [mf248@st-andrews.ac.uk], [], [https://github.com/matt-frey/epic])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_PROG_FC([gfortran])
 AC_LANG(Fortran)
@@ -8,8 +8,7 @@ LT_INIT
 # change file extension from *.f to *.f90
 # (important for library tests since it autogenerates a file conftest.f90)
 AC_FC_SRCEXT(f90)
-
-FCFLAGS="-std=f2018 -fdefault-real-8 -fdefault-double-8 -cpp -mcmodel=large -fall-intrinsics"
+AC_FC_PP_SRCEXT(f90)
 
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_HEADERS([src/config.h])
@@ -40,6 +39,31 @@ AC_CONFIG_FILES([
     python-scripts/tools/epic_config.py
     run-script/Makefile
 ])
+
+# 30 May 2023
+# https://www.gnu.org/software/autoconf-archive/ax_compiler_vendor.html
+# https://www.gnu.org/software/autoconf-archive/ax_check_compile_flag.html
+AX_COMPILER_VENDOR
+
+if test "$ax_cv_fc_compiler_vendor" = "unknown"; then
+    AC_MSG_ERROR([Could not deduce compiler vendor.])
+fi
+
+AX_CHECK_COMPILE_FLAG([-cpp], [FCFLAGS="$FCFLAGS -cpp"])
+AX_CHECK_COMPILE_FLAG([-mcmodel=large], [FCFLAGS="$FCFLAGS -mcmodel=large"])
+
+# gfortran compiler flags
+AX_CHECK_COMPILE_FLAG([-std=f2018], [FCFLAGS="$FCFLAGS -std=f2018"])
+AX_CHECK_COMPILE_FLAG([-fall-intrinsics], [FCFLAGS="$FCFLAGS -fall-intrinsics"])
+AX_CHECK_COMPILE_FLAG([-fdefault-real-8], [FCFLAGS="$FCFLAGS -fdefault-real-8"])
+AX_CHECK_COMPILE_FLAG([-fdefault-double-8], [FCFLAGS="$FCFLAGS -fdefault-double-8"])
+
+# intel compiler flags
+AX_CHECK_COMPILE_FLAG([-std18], [FCFLAGS="$FCFLAGS -std18"])
+AX_CHECK_COMPILE_FLAG([-fp-model=source], [FCFLAGS="$FCFLAGS -fp-model=source"])
+AX_CHECK_COMPILE_FLAG([-real-size 8], [FCFLAGS="$FCFLAGS -real-size 8"])
+AX_CHECK_COMPILE_FLAG([-double-size 64], [FCFLAGS="$FCFLAGS -double-size 64"])
+
 
 #######################################################################################
 ##
@@ -397,6 +421,35 @@ else
     AC_MSG_RESULT([no])
 fi
 
+ENABLE_P2G_1POINT='no'
+AC_ARG_ENABLE([p2g-1point],
+              [AS_HELP_STRING([--enable-p2g-1point], [enable one-point par2grid (default=no)])],
+              [ENABLE_P2G_1POINT=$enableval])
+
+AM_CONDITIONAL([ENABLE_P2G_1POINT], [test "$ENABLE_P2G_1POINT" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling with 1 point in par2grid])
+if test "x$ENABLE_P2G_1POINT" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_P2G_1POINT"
+else
+    AC_MSG_RESULT([no])
+fi
+
+ENABLE_G2P_1POINT='no'
+AC_ARG_ENABLE([g2p-1point],
+              [AS_HELP_STRING([--enable-g2p-1point], [enable one-point grid2par (default=no)])],
+              [ENABLE_G2P_1POINT=$enableval])
+
+AM_CONDITIONAL([ENABLE_G2P_1POINT], [test "$ENABLE_G2P_1POINT" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling with 1 point in grid2par])
+if test "x$ENABLE_G2P_1POINT" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_G2P_1POINT"
+else
+    AC_MSG_RESULT([no])
+fi
 
 ENABLE_DIAGNOSE='no'
 AC_ARG_ENABLE([diagnose],
@@ -439,11 +492,36 @@ AM_CONDITIONAL([ENABLE_DEBUG], [test "$ENABLE_DEBUG" = "yes"])
 AC_MSG_CHECKING([whether we are compiling in debug mode])
 if test "x$ENABLE_DEBUG" = "xyes"; then
     AC_MSG_RESULT([yes])
-    FCFLAGS="$FCFLAGS -Wall -Wuninitialized -Wmaybe-uninitialized -Werror -g -O0"
-    FCFLAGS="$FCFLAGS -fcheck=all -fbounds-check -fbacktrace -ffpe-trap=denormal,invalid,zero,overflow,underflow"
+    AX_CHECK_COMPILE_FLAG([-g], [FCFLAGS="$FCFLAGS -g"])
+    AX_CHECK_COMPILE_FLAG([-O0], [FCFLAGS="$FCFLAGS -O0"])
+
+    # gfortran compiler flags
+    AX_CHECK_COMPILE_FLAG([-Wall], [FCFLAGS="$FCFLAGS -Wall"])
+    AX_CHECK_COMPILE_FLAG([-Wuninitialized], [FCFLAGS="$FCFLAGS -Wuninitialized"])
+    AX_CHECK_COMPILE_FLAG([-Wmaybe-uninitialized], [FCFLAGS="$FCFLAGS -Wmaybe-uninitialized"])
+    AX_CHECK_COMPILE_FLAG([-Werror], [FCFLAGS="$FCFLAGS -Werror"])
+    AX_CHECK_COMPILE_FLAG([-fcheck=all], [FCFLAGS="$FCFLAGS -fcheck=all"])
+    AX_CHECK_COMPILE_FLAG([-fbounds-check], [FCFLAGS="$FCFLAGS -fbounds-check"])
+    AX_CHECK_COMPILE_FLAG([-fbacktrace], [FCFLAGS="$FCFLAGS -fbacktrace"])
+    AX_CHECK_COMPILE_FLAG([-ffpe-trap=denormal,invalid,zero,overflow,underflow],
+                          [FCFLAGS="$FCFLAGS -ffpe-trap=denormal,invalid,zero,overflow,underflow"])
+
+    # intel compiler flags
+    AX_CHECK_COMPILE_FLAG([-warn all], [FCFLAGS="$FCFLAGS -Wall"])
+    AX_CHECK_COMPILE_FLAG([-warn error], [FCFLAGS="$FCFLAGS -warn error"])
+    AX_CHECK_COMPILE_FLAG([-debug full], [FCFLAGS="$FCFLAGS -debug full"])
 else
     AC_MSG_RESULT([no])
-    FCFLAGS="$FCFLAGS -O3 -funroll-all-loops -flto -DNDEBUG"
+    AX_CHECK_COMPILE_FLAG([-O3], [FCFLAGS="$FCFLAGS -O3"])
+    AX_CHECK_COMPILE_FLAG([-DNDEBUG], [FCFLAGS="$FCFLAGS -DNDEBUG"])
+
+    # gfortran compiler flags
+    AX_CHECK_COMPILE_FLAG([-funroll-all-loops], [FCFLAGS="$FCFLAGS -funroll-all-loops"])
+    AX_CHECK_COMPILE_FLAG([-flto], [FCFLAGS="$FCFLAGS -flto"])
+
+    # intel compiler flags
+    AX_CHECK_COMPILE_FLAG([-funroll-loops], [FCFLAGS="$FCFLAGS -funroll-loops"])
+    AX_CHECK_COMPILE_FLAG([-ffat-lto-objects], [FCFLAGS="$FCFLAGS -ffat-lto-objects"])
 fi
 
 
@@ -476,7 +554,11 @@ AM_CONDITIONAL([ENABLE_OPENMP], [test "$ENABLE_OPENMP" = "yes"])
 AC_MSG_CHECKING([whether we are enabling OpenMP])
 if test "x$ENABLE_OPENMP" = "xyes"; then
     AC_MSG_RESULT([yes])
-    FCFLAGS="$FCFLAGS -fopenmp -DENABLE_OPENMP"
+    # gfortran compiler flags
+    AX_CHECK_COMPILE_FLAG([-fopenmp], [FCFLAGS="$FCFLAGS -fopenmp -DENABLE_OPENMP"])
+
+    # intel compiler flags
+    AX_CHECK_COMPILE_FLAG([-qopenmp], [FCFLAGS="$FCFLAGS -qopenmp -DENABLE_OPENMP"])
 else
     AC_MSG_RESULT([no])
 fi

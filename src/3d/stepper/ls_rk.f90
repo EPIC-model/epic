@@ -101,9 +101,9 @@ module ls_rk
             ! update the time step
             dt = get_time_step(t)
 
-            if (dabs(t - time%initial) < 1.0e-13) then
+!            if (dabs(t - time%initial) < 1.0e-13) then
                 call bndry_fluxes_time_step(dt)
-            endif
+!            endif
 
             call grid2par
 
@@ -215,9 +215,9 @@ module ls_rk
 
             call parcel_communicate
 
-            call par2grid
-
             call stop_timer(rk_timer)
+
+            call par2grid
 
         end subroutine ls_rk_substep
 

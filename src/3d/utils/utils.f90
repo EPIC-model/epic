@@ -21,8 +21,11 @@ module utils
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, read_zeta_boundary_flag &
-                         , set_zeta_boundary_flag
+                         , set_zeta_boundary_flag, ny
     use bndry_fluxes, only : read_bndry_fluxes
+    use netcdf_utils, only : NF90_NOWRITE       &
+                           , close_netcdf_file  &
+                           , open_netcdf_file
     use physics, only : read_physical_quantities        &
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
                       , calculate_basic_reference_state &
@@ -225,11 +228,7 @@ module utils
                 if (file_type == 'fields') then
                     call read_netcdf_fields(field_file, -1)
                     call init_parcels_from_grids
-#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
-                   ! If not in restart mode, we could not read in the squared buoyancy frequency.
-                   ! We must calculate it.
-                   call calculate_basic_reference_state(nx, ny, nz, extent(3), tbuoyg)
-#endif
+
                    ! we must check if zeta must be kept zero
                    ! on a vertical boundary
                    call set_zeta_boundary_flag(vortg(:, :, :, I_Z))
@@ -241,6 +240,11 @@ module utils
             endif
 
             call read_bndry_fluxes(trim(flux_file))
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            ! Calculate the squared buoyancy frequency if not provided.
+            call calculate_basic_reference_state(nx, ny, nz, extent(3), tbuoyg)
+#endif
 
         end subroutine setup_fields_and_parcels
 

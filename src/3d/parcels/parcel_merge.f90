@@ -4,6 +4,7 @@
 ! =============================================================================
 module parcel_merging
     use parcel_nearest
+    use parameters, only : vmin
     use constants, only : pi, zero, one, two, five, f13
     use parcel_container, only : parcels                    &
                                , n_parcels                  &
@@ -29,8 +30,19 @@ module parcel_merging
     ! number of parcel merges (is reset in every write step)
     integer :: n_parcel_merges = 0
 
-    private :: geometric_merge, &
-               do_group_merge
+    ! number of merging parcels (up to 7 supported, all others are put into index 7)
+    ! note that array index 1 corresponds to 2-way merging
+    integer :: n_way_parcel_mergers(7) = 0
+
+    ! number of big iclo neighbours (number of small is n_merge - n_big_close)
+    integer :: n_big_close = 0
+
+    integer, allocatable :: loca(:)
+
+    private :: geometric_merge,     &
+               do_group_merge,      &
+               collect_merge_stats, &
+               loca
 
     contains
 
@@ -51,9 +63,15 @@ module parcel_merging
             ! find parcels to merge
             call find_nearest(isma, iclo, inva, n_merge, n_invalid)
 
+            call start_timer(merge_timer)
+
             n_parcel_merges = n_parcel_merges + n_merge
 
-            call start_timer(merge_timer)
+            if (n_merge > 0) then
+                allocate(loca(n_parcels))
+                call collect_merge_stats(iclo, n_merge)
+            endif
+
 
             if (n_merge > 0) then
                 ! merge small parcels into other parcels
@@ -69,6 +87,10 @@ module parcel_merging
             if (allocated(isma)) then
                 deallocate(isma)
                 deallocate(iclo)
+            endif
+
+            if (allocated(loca)) then
+                deallocate(loca)
             endif
 
             ! After this operation the root MPI process knows the new
@@ -89,6 +111,7 @@ module parcel_merging
 
         end subroutine parcel_merge
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Actual merge.
         ! @param[in] isma are the indices of the small parcels
@@ -101,7 +124,6 @@ module parcel_merging
             integer,          intent(in)    :: iclo(:)
             integer,          intent(in)    :: n_merge
             integer                         :: m, ic, is, l, n
-            integer                         :: loca(n_parcels)
             double precision                :: x0(n_merge), y0(n_merge)
             double precision                :: posm(3, n_merge)
             double precision                :: delx, vmerge, dely, delz, B33, mu
@@ -275,6 +297,7 @@ module parcel_merging
 
         end subroutine do_group_merge
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Geometric merging -- called by subroutine merge_parcels.
         ! @param[inout] parcels is the parcel container
@@ -286,7 +309,6 @@ module parcel_merging
             integer,         intent(in) :: iclo(:)
             integer,         intent(in) :: n_merge
             integer                     :: m, ic, l
-            integer                     :: loca(n_parcels)
             double precision            :: factor, detB
             double precision            :: B(6, n_merge), &
                                         V(n_merge)
@@ -317,5 +339,38 @@ module parcel_merging
             enddo
 
         end subroutine geometric_merge
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine collect_merge_stats(iclo, n_merge)
+            integer, allocatable, dimension(:) :: iclo
+            integer                            :: n_merge
+            integer                            :: ic, m, j, n_count
+
+            loca = 0
+
+            !------------------------------------------------------------------
+            ! Find unique 'iclo' indices and the total number of parcels
+            ! merging with them:
+            do m = 1, n_merge
+                ic = iclo(m)
+                n_big_close = n_big_close + merge(1, 0, parcels%volume(ic) > vmin)
+                loca(ic) = loca(ic) + 1
+            enddo
+
+            !------------------------------------------------------------------
+            ! Count the number of 2-, 3-, 4- etc way merging:
+            do m = 1, n_merge
+                ic = iclo(m)
+                n_count = loca(ic)
+                ! all mergers involving more than size(n_way_parcel_mergers) parcels are added together
+                if (n_count > 0) then
+                    loca(ic) = -1
+                    j = min(size(n_way_parcel_mergers), n_count)
+                    n_way_parcel_mergers(j) = n_way_parcel_mergers(j) + 1
+                endif
+            enddo
+
+        end subroutine collect_merge_stats
 
 end module parcel_merging
