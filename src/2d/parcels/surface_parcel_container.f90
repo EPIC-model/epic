@@ -3,8 +3,6 @@
 ! allocate and deallocate it.
 ! =============================================================================
 module surface_parcel_container
-    use options, only : verbose
-    use parameters, only : extent, extenti, center, lower, upper
     implicit none
 
     integer :: n_top_parcels, n_bot_parcels
@@ -22,6 +20,7 @@ module surface_parcel_container
 
     type(surface_parcel_container_type) top_parcels, bot_parcels
 
+    private :: _alloc, _dealloc
 
     contains
 
