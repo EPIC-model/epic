@@ -7,11 +7,15 @@ module parcel_merge
     use constants, only : pi, zero, one, two, four
     use parcel_container, only : parcel_container_type  &
                                , n_parcels              &
-                               , parcel_replace
+                               , parcel_replace         &
+                               , parcels
     use parcel_ops, only : get_delx
     use parcel_ellipse, only : get_B22, get_ab
     use options, only : parcel, verbose
     use parcel_bc
+    use surface_parcel_container, only : n_top_parcels, n_bot_parcels   &
+                                       , top_parcels, bot_parcels
+    use surface_parcel_merge_mod, only : merge_lines
     use timer, only : start_timer, stop_timer
     implicit none
 
@@ -23,14 +27,23 @@ module parcel_merge
 
     contains
 
+        subroutine merge_parcels
+
+            call merge_ellipses
+
+            call merge_lines(n_bot_parcels, bot_parcels)
+            call merge_lines(n_top_parcels, top_parcels)
+
+        end subroutine merge_parcels
+
+
         ! Merge small parcels into neighbouring equal-sized parcels or bigger
         ! parcels which are close by.
         ! @param[inout] parcels is the parcel container
-        subroutine merge_ellipses(parcels)
-            type(parcel_container_type), intent(inout) :: parcels
-            integer, allocatable, dimension(:)         :: isma
-            integer, allocatable, dimension(:)         :: iclo
-            integer                                    :: n_merge ! number of merges
+        subroutine merge_ellipses
+            integer, allocatable, dimension(:) :: isma
+            integer, allocatable, dimension(:) :: iclo
+            integer                            :: n_merge ! number of merges
 
             ! find parcels to merge
             call find_nearest(isma, iclo, n_merge)
@@ -47,7 +60,7 @@ module parcel_merge
 
             if (n_merge > 0) then
                 ! merge small parcels into other parcels
-                call geometric_merge(parcels, isma, iclo, n_merge)
+                call geometric_merge(isma, iclo, n_merge)
 
                 ! overwrite invalid parcels
                 call pack_parcels(isma, n_merge)
@@ -72,8 +85,7 @@ module parcel_merge
         ! @param[out] B12m are the B12 matrix entries of the mergers
         ! @param[out] B22m are the B22 matrix entries of the mergers
         ! @param[out] vm are the volumes of the mergers
-        subroutine do_group_merge(parcels, isma, iclo, n_merge, B11m, B12m, B22m, vm)
-            type(parcel_container_type), intent(inout) :: parcels
+        subroutine do_group_merge(isma, iclo, n_merge, B11m, B12m, B22m, vm)
             integer,                     intent(in)    :: isma(0:)
             integer,                     intent(in)    :: iclo(:)
             integer,                     intent(in)    :: n_merge
@@ -234,20 +246,19 @@ module parcel_merge
         ! @param[in] isma are the indices of the small parcels
         ! @param[in] iclo are the indices of the close parcels
         ! @param[in] n_merge is the array size of isma and iclo
-        subroutine geometric_merge(parcels, isma, iclo, n_merge)
-            type(parcel_container_type), intent(inout) :: parcels
-            integer,                     intent(in)    :: isma(0:)
-            integer,                     intent(in)    :: iclo(:)
-            integer,                     intent(in)    :: n_merge
-            integer                                    :: m, ic, l
-            integer                                    :: loca(n_parcels)
-            double precision                           :: factor
-            double precision                           :: B11(n_merge), &
-                                                          B12(n_merge), &
-                                                          B22(n_merge), &
-                                                          V(n_merge)
+        subroutine geometric_merge(isma, iclo, n_merge)
+            integer, intent(in)    :: isma(0:)
+            integer, intent(in)    :: iclo(:)
+            integer, intent(in)    :: n_merge
+            integer                :: m, ic, l
+            integer                :: loca(n_parcels)
+            double precision       :: factor
+            double precision       :: B11(n_merge), &
+                                      B12(n_merge), &
+                                      B22(n_merge), &
+                                      V(n_merge)
 
-            call do_group_merge(parcels, isma, iclo, n_merge, B11, B12, B22, V)
+            call do_group_merge(isma, iclo, n_merge, B11, B12, B22, V)
 
             loca = zero
 

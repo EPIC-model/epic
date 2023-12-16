@@ -6,8 +6,8 @@ program epic2d
     use timer
     use parcel_container
     use parcel_bc
-    use parcel_split, only : split_ellipses, split_timer
-    use parcel_merge, only : merge_ellipses, merge_timer
+    use parcel_split, only : split_parcels, split_timer
+    use parcel_merge, only : merge_parcels, merge_timer
     use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
     use parcel_correction, only : init_parcel_correction, &
                                   apply_laplace,          &
@@ -115,9 +115,9 @@ program epic2d
 #endif
                 call ls_rk4_step(t)
 
-                call merge_ellipses(parcels)
+                call merge_parcels
 
-                call split_ellipses(parcels, parcel%lambda_max)
+                call split_parcels
 
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace

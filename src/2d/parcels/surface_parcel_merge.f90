@@ -6,8 +6,6 @@ module surface_parcel_merge_mod
     use surface_parcel_nearest
     use constants, only : pi, zero, one, two, four
     use surface_parcel_container, only : surface_parcel_container_type  &
-                                       , n_top_parcels, n_bot_parcels   &
-                                       , top_parcels, bot_parcels       &
                                        , surface_parcel_replace
     use parcel_ops, only : get_delx
     use options, only : parcel, verbose
@@ -19,13 +17,6 @@ module surface_parcel_merge_mod
                pack_parcels
 
     contains
-
-        subroutine surface_parcel_merge
-
-            call merge_lines(n_bot_parcels, bot_parcels)
-            call merge_lines(n_top_parcels, top_parcels)
-
-        end subroutine surface_parcel_merge
 
         ! Merge small parcels into neighbouring equal-sized parcels or bigger
         ! parcels which are close by.

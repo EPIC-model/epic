@@ -2,10 +2,11 @@
 !                           Module to split ellipses
 ! =============================================================================
 module parcel_split
-    use options, only : verbose
+    use options, only : verbose, parcel
     use constants, only : pi, three, f12, f14, f34
     use parameters, only : vmax
-    use parcel_container, only : parcel_container_type, n_parcels
+    use parcel_container, only : parcels, n_parcels
+    use surface_parcel_split, only : split_lines
     use parcel_bc, only : apply_reflective_bc
     use parcel_ellipse, only : get_eigenvalue      &
                              , get_eigenvector     &
@@ -13,19 +14,31 @@ module parcel_split
                              , get_aspect_ratio
     use timer, only : start_timer, stop_timer
     use omp_lib
+    use surface_parcel_container, only : n_top_parcels, top_parcels &
+                                       , n_bot_parcels, bot_parcels
     implicit none
 
     integer :: split_timer
 
     contains
 
+        subroutine split_parcels
+            call start_timer(split_timer)
+
+            call split_ellipses
+
+            call split_lines(n_top_parcels, top_parcels)
+            call split_lines(n_bot_parcels, bot_parcels)
+
+            call stop_timer(split_timer)
+
+        end subroutine split_parcels
+
         ! Split large parcels (volumes larger than vmax) or
         ! parcels with aspect ratios larger than the threshold.
         ! @param[inout] parcels
         ! @param[in] threshold is the largest allowed aspect ratio
-        subroutine split_ellipses(parcels, threshold)
-            type(parcel_container_type), intent(inout) :: parcels
-            double precision,            intent(in)    :: threshold
+        subroutine split_ellipses
             double precision                           :: B11
             double precision                           :: B12
             double precision                           :: B22
@@ -34,8 +47,6 @@ module parcel_split
             double precision                           :: h
             integer                                    :: last_index
             integer                                    :: n, n_thread_loc
-
-            call start_timer(split_timer)
 
             last_index = n_parcels
 
@@ -52,7 +63,7 @@ module parcel_split
                 ! a/b
                 lam = get_aspect_ratio(a2, V)
 
-                if (lam <= threshold .and. V <= vmax) then
+                if (lam <= parcel%lambda_max .and. V <= vmax) then
                     cycle
                 endif
 
@@ -104,8 +115,6 @@ module parcel_split
                       "no. parcels before and after split: ", last_index, "...", n_parcels
             endif
 #endif
-
-            call stop_timer(split_timer)
 
         end subroutine split_ellipses
 

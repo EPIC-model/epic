@@ -5,22 +5,11 @@ module surface_parcel_split
     use options, only : verbose
     use constants, only : pi, three, f12, f14
     use parameters, only : lmax
-    use surface_parcel_container, only : surface_parcel_container_type  &
-                                       , n_top_parcels, top_parcels     &
-                                       , n_bot_parcels, bot_parcels
+    use surface_parcel_container, only : surface_parcel_container_type
     use omp_lib
     implicit none
 
-    private :: split_lines
-
     contains
-
-        subroutine split_surface_parcels
-
-            call split_lines(n_top_parcels, top_parcels)
-            call split_lines(n_bot_parcels, bot_parcels)
-
-        end subroutine split_surface_parcels
 
         ! Split large parcels (volumes larger than lmax) or
         ! parcels with aspect ratios larger than the threshold.

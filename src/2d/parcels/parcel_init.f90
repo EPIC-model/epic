@@ -149,7 +149,7 @@ module parcel_init
 
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
-                call split_ellipses(parcels, parcel%lambda_max)
+                call split_ellipses
                 B22 = get_B22(parcels%B(1, 1), zero, parcels%volume(1))
                 a2 = get_eigenvalue(parcels%B(1, 1), zero, B22)
                 lam = a2 / get_ab(parcels%volume(1))
