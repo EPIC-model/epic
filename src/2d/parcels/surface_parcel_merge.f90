@@ -9,7 +9,7 @@ module surface_parcel_merge_mod
                                        , n_top_parcels, n_bot_parcels   &
                                        , top_parcels, bot_parcels       &
                                        , surface_parcel_replace
-    use parcel_container, only : get_delx
+    use parcel_ops, only : get_delx
     use options, only : parcel, verbose
     use surface_parcel_bc
     implicit none

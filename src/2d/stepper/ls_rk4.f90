@@ -5,6 +5,8 @@
 module ls_rk4
     use options, only : parcel
     use parcel_container
+    use surface_parcel_container, only : n_top_parcels, top_parcels &
+                                       , n_bot_parcels, bot_parcels
     use parcel_bc
     use rk4_utils, only: get_B, get_time_step
     use utils, only : write_step
@@ -74,7 +76,7 @@ module ls_rk4
             call ls_rk4_substep(dt, 5)
 
             call start_timer(rk4_timer)
-            call apply_parcel_bc(parcels%position, parcels%B)
+            call apply_parcel_bc
             call stop_timer(rk4_timer)
 
             ! we need to subtract 14 calls since we start and stop
@@ -144,6 +146,24 @@ module ls_rk4
             enddo
             !$omp end parallel do
 
+            !$omp parallel do default(shared) private(n)
+            do n = 1, n_bot_parcels
+                bot_parcels%position(n) = bot_parcels%position(n) &
+                                        + cb * dt * bot_parcels%delta_pos(n)
+                bot_parcels%vorticity(n) = bot_parcels%vorticity(n) &
+                                         + cb * dt * bot_parcels%delta_vor(n)
+            enddo
+            !$omp end parallel do
+
+            !$omp parallel do default(shared) private(n)
+            do n = 1, n_top_parcels
+                top_parcels%position(n) = top_parcels%position(n) &
+                                        + cb * dt * top_parcels%delta_pos(n)
+                top_parcels%vorticity(n) = top_parcels%vorticity(n) &
+                                         + cb * dt * top_parcels%delta_vor(n)
+            enddo
+            !$omp end parallel do
+
             call stop_timer(rk4_timer)
 
             if (step == 5) then
@@ -157,6 +177,20 @@ module ls_rk4
                 parcels%delta_pos(:, n) = ca * parcels%delta_pos(:, n)
                 parcels%delta_vor(n) = ca * parcels%delta_vor(n)
                 parcels%delta_b(:, n) = ca * parcels%delta_b(:, n)
+            enddo
+            !$omp end parallel do
+
+            !$omp parallel do default(shared) private(n)
+            do n = 1, n_bot_parcels
+                bot_parcels%delta_pos(n) = ca * bot_parcels%delta_pos(n)
+                bot_parcels%delta_vor(n) = ca * bot_parcels%delta_vor(n)
+            enddo
+            !$omp end parallel do
+
+            !$omp parallel do default(shared) private(n)
+            do n = 1, n_top_parcels
+                top_parcels%delta_pos(n) = ca * top_parcels%delta_pos(n)
+                top_parcels%delta_vor(n) = ca * top_parcels%delta_vor(n)
             enddo
             !$omp end parallel do
 

@@ -2,7 +2,7 @@
 !               Finds the parcels nearest every "small" parcel
 !==============================================================================
 module surface_parcel_nearest
-    use parcel_container, only : get_delx
+    use parcel_ops, only : get_delx
     use surface_parcel_container, only : surface_parcel_container_type
     use parameters, only : dx, dxi, lower, extent, nx, lmin, max_num_surf_parcels
     implicit none

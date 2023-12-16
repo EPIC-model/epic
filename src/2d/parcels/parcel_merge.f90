@@ -7,8 +7,8 @@ module parcel_merge
     use constants, only : pi, zero, one, two, four
     use parcel_container, only : parcel_container_type  &
                                , n_parcels              &
-                               , parcel_replace         &
-                               , get_delx
+                               , parcel_replace
+    use parcel_ops, only : get_delx
     use parcel_ellipse, only : get_B22, get_ab
     use options, only : parcel, verbose
     use parcel_bc

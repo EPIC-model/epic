@@ -3,7 +3,8 @@
 !==============================================================================
 module parcel_nearest
     use constants, only : pi, f12
-    use parcel_container, only : parcels, n_parcels, get_delx
+    use parcel_ops, only : get_delx
+    use parcel_container, only : parcels, n_parcels
     use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin, max_num_parcels
     use options, only : parcel
     use timer, only : start_timer, stop_timer
