@@ -3,7 +3,8 @@
 !==============================================================================
 module surface_parcel_nearest
     use parcel_ops, only : get_delx
-    use surface_parcel_container, only : surface_parcel_container_type
+    use surface_parcel_container, only : surface_parcel_container_type  &
+                                       , get_surface_parcel_length
     use parameters, only : dx, dxi, lower, extent, nx, lmin, max_num_surf_parcels
     implicit none
 
@@ -55,6 +56,7 @@ module surface_parcel_nearest
             integer, allocatable,                intent(out) :: isma(:)
             integer, allocatable,                intent(out) :: iclo(:)
             integer,                             intent(out) :: nmerge
+            double precision                                 :: length
 
             if (.not. allocated(nppc)) then
                 allocate(nppc(nx))
@@ -92,7 +94,9 @@ module surface_parcel_nearest
                 ! Store grid cell that this parcel is in:
                 loca(n) = ij
 
-                if (spar%length(n) < lmin) then
+                length = get_surface_parcel_length(n, spar)
+
+                if (length < lmin) then
                     nmerge = nmerge + 1
                 endif
             enddo
@@ -123,7 +127,9 @@ module surface_parcel_nearest
                 node(k) = n
                 kc2(ij) = k
 
-                if (spar%length(n) < lmin) then
+                length = get_surface_parcel_length(n, spar)
+
+                if (length < lmin) then
                     j = j + 1
                     isma(j) = n
                 endif
@@ -331,14 +337,15 @@ module surface_parcel_nearest
 
             ! 2. CHECK MERGING PARCELS
             do n = 1, n_par
-              if (spar%length(n) < lmin) then
-                if(.not. l_merged(n)) write(*,*) 'merge_error: parcel n not merged (should be), n=', n
-                if(.not. (l_small(n) .or. l_close(n))) write(*,*) 'merge_error: parcel n not small or close (should be), n=', n
-                if(l_small(n) .and. l_close(n)) write(*,*) 'merge_error: parcel n both small and close, n=', n
-              else
-                if(l_small(n)) write(*,*) 'merge_error: parcel n small (should not be), n=', n
-                if(l_merged(n) .and. (.not. l_close(n))) write(*,*) 'merge_error: parcel n merged (should not be), n=', n
-              end if
+                length = get_surface_parcel_length(n, spar)
+                if (length < lmin) then
+                    if(.not. l_merged(n)) write(*,*) 'merge_error: parcel n not merged (should be), n=', n
+                    if(.not. (l_small(n) .or. l_close(n))) write(*,*) 'merge_error: parcel n not small or close (should be), n=', n
+                    if(l_small(n) .and. l_close(n)) write(*,*) 'merge_error: parcel n both small and close, n=', n
+                else
+                    if(l_small(n)) write(*,*) 'merge_error: parcel n small (should not be), n=', n
+                    if(l_merged(n) .and. (.not. l_close(n))) write(*,*) 'merge_error: parcel n merged (should not be), n=', n
+                endif
             enddo
 #endif
 

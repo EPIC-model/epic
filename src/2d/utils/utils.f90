@@ -17,10 +17,11 @@ module utils
     use field_diagnostics, only : calculate_field_diagnostics
     use parcel_init, only : init_parcels
     use parcel_container, only : n_parcels, parcel_alloc
+    use surface_parcel_container, only : surface_parcel_alloc
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
-    use parameters, only : lower, extent, update_parameters, max_num_parcels
+    use parameters, only : lower, extent, update_parameters, max_num_parcels, max_num_surf_parcels
     use physics, only : read_physical_quantities, print_physical_quantities, l_peref
 #ifndef NDEBUG
     use parcel_interpl, only : vol2grid_symmetry_error
@@ -211,6 +212,7 @@ module utils
             character(len=16) :: file_type
 
             call parcel_alloc(max_num_parcels)
+            call surface_parcel_alloc(max_num_surf_parcels)
 
             if (l_restart) then
                 call setup_restart(trim(restart_file), time%initial, file_type)

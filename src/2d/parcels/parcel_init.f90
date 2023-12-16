@@ -14,6 +14,7 @@ module parcel_init
     use netcdf_reader
     use timer, only : start_timer, stop_timer
     use omp_lib
+    use surface_parcel_init, only : init_surface_parcels
     implicit none
 
     integer :: init_timer
@@ -47,6 +48,8 @@ module parcel_init
             integer                      :: n
 
             call start_timer(init_timer)
+
+            call init_surface_parcels(fname)
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell

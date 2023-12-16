@@ -19,8 +19,7 @@ module surface_parcel_init
 
 
     private :: init_from_grids,             &
-               init_surface_parcels_,       &
-               init_regular_positions_
+               init_surface_parcels_
 
     contains
 
@@ -41,6 +40,7 @@ module surface_parcel_init
             type(surface_parcel_container_type), intent(inout) :: spar
             character(*),                        intent(in)    :: fname
             integer                                            :: n
+            double precision                                   :: length
 
             ! we use "n_per_cell" parcels per grid cell
             n_par = parcel%n_per_cell * nx
@@ -51,17 +51,19 @@ module surface_parcel_init
                 stop
             endif
 
-            call init_regular_positions_(n_par, spar)
+            !------------------------------------------------------------------
+            ! set up parcel positions and 'right' array:
+            length = lcell / dble(parcel%n_per_cell)
 
-            ! initialize the length of each parcel
-            !$omp parallel default(shared)
-            !$omp do private(n)
-            do n = 1, n_par
-                spar%length(n) = lcell / dble(parcel%n_per_cell)
+            spar%position(1) = lower(1)
+            spar%right(1) = 2
+            do n = 2, n_par
+                spar%position(n) = spar%position(n-1) + length
+                spar%right(n) = mod(n, n_par) + 1
             enddo
-            !$omp end do
-            !$omp end parallel
 
+
+            !------------------------------------------------------------------
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_par
@@ -78,30 +80,6 @@ module surface_parcel_init
 
         end subroutine init_surface_parcels_
 
-
-        ! Position parcels regularly in the domain.
-        subroutine init_regular_positions_(n_par, spar)
-            integer,                             intent(in)    :: n_par
-            type(surface_parcel_container_type), intent(inout) :: spar
-            integer                                            :: ix, i, k
-            double precision                                   :: im, corner
-
-            im = one / dble(parcel%n_per_cell)
-
-            k = 1
-            do ix = 0, nx-1
-                corner = lower(1) + dble(ix) * dx(1)
-                do i = 1, parcel%n_per_cell
-                    spar%position(k) = corner + dx(1) * (dble(i) - f12) * im
-                    k = k + 1
-                enddo
-            enddo
-
-            if (.not. n_par == k - 1) then
-                print *, "Number of surface parcels disagree!"
-                stop
-            endif
-        end subroutine init_regular_positions_
 
         ! Initialise parcel attributes from gridded quantities.
         ! Attention: This subroutine currently only supports

@@ -6,7 +6,9 @@ module surface_parcel_merge_mod
     use surface_parcel_nearest
     use constants, only : pi, zero, one, two, four
     use surface_parcel_container, only : surface_parcel_container_type  &
-                                       , surface_parcel_replace
+                                       , surface_parcel_replace         &
+                                       , get_surface_parcel_length      &
+                                       , surface_parcel_sort
     use parcel_ops, only : get_delx
     use options, only : parcel, verbose
     use surface_parcel_bc
@@ -45,6 +47,8 @@ module surface_parcel_merge_mod
 
                 ! overwrite invalid parcels
                 call pack_parcels(n_par, spar, isma, n_merge)
+
+                call surface_parcel_sort(n_par, spar)
             endif
 
             if (allocated(isma)) then
@@ -70,7 +74,7 @@ module surface_parcel_merge_mod
             double precision,                    intent(out)   :: lm(n_merge)
             integer                                            :: m, ic, is, l, n
             integer                                            :: loca(n_par)
-            double precision                                   :: x0(n_merge)
+            double precision                                   :: x0(n_merge), length
             double precision                                   :: posm(n_merge), delx, lmerge
             double precision                                   :: buoym(n_merge), vortm(n_merge)
 #ifndef ENABLE_DRY_MODE
@@ -88,8 +92,10 @@ module surface_parcel_merge_mod
                     l = l + 1
                     loca(ic) = l
 
+                    length = get_surface_parcel_length(ic, spar)
+
                     ! lm will contain the total length of the merged parcel
-                    lm(l) = spar%length(ic)
+                    lm(l) = length
 
                     !x0 stores the x centre of the other parcel
                     x0(l) = spar%position(ic)
@@ -98,32 +104,34 @@ module surface_parcel_merge_mod
                     posm(l) = zero
 
                     ! buoyancy and humidity
-                    buoym(l) = spar%length(ic) * spar%buoyancy(ic)
+                    buoym(l) = length * spar%buoyancy(ic)
 #ifndef ENABLE_DRY_MODE
-                    hum(l) = spar%length(ic) * spar%humidity(ic)
+                    hum(l) = length * spar%humidity(ic)
 #endif
-                    vortm(l) = spar%length(ic) * spar%vorticity(ic)
+                    vortm(l) = length * spar%vorticity(ic)
 
                 endif
+
+                length = get_surface_parcel_length(is, spar)
 
                 ! Sum up all the small parcels merging with a common other one:
                 ! "is" refers to the small parcel index
                 is = isma(m) !Small parcel
                 n = loca(ic)  !Index of merged parcel
-                lm(n) = lm(n) + spar%length(is) !Accumulate length of merged parcel
+                lm(n) = lm(n) + length !Accumulate length of merged parcel
 
                 ! works across periodic edge
                 delx = get_delx(spar%position(is), x0(n))
 
                 ! Accumulate sum of v(is)*(x(is)-x(ic))
-                posm( n) = posm(n) + spar%length(is) * delx
+                posm( n) = posm(n) + length * delx
 
                 ! Accumulate buoyancy and humidity
-                buoym(n) = buoym(n) + spar%length(is) * spar%buoyancy(is)
+                buoym(n) = buoym(n) + length * spar%buoyancy(is)
 #ifndef ENABLE_DRY_MODE
-                hum(n) = hum(n) + spar%length(is) * spar%humidity(is)
+                hum(n) = hum(n) +length * spar%humidity(is)
 #endif
-                vortm(n) = vortm(n) + spar%length(is) * spar%vorticity(is)
+                vortm(n) = vortm(n) + length * spar%vorticity(is)
             enddo
 
             ! Obtain the merged parcel centres
@@ -163,7 +171,6 @@ module surface_parcel_merge_mod
 
                     delx = get_delx(spar%position(ic), posm(l))
 
-                    spar%length(ic)  = lm(l)
                     spar%position(ic) = posm(l)
 
                     spar%buoyancy(ic) = buoym(l)

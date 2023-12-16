@@ -5,7 +5,8 @@ module surface_parcel_split
     use options, only : verbose
     use constants, only : pi, three, f12, f14
     use parameters, only : lmax
-    use surface_parcel_container, only : surface_parcel_container_type
+    use surface_parcel_container, only : surface_parcel_container_type  &
+                                       , surface_parcel_sort
     use omp_lib
     implicit none
 
@@ -17,17 +18,18 @@ module surface_parcel_split
         subroutine split_lines(n_par, parcels)
             integer,                             intent(inout) :: n_par
             type(surface_parcel_container_type), intent(inout) :: parcels
-            double precision                           :: l, h
+            double precision                           :: l
             integer                                    :: last_index
-            integer                                    :: n, n_thread_loc
+            integer                                    :: n, m, j
 
             last_index = n_par
 
-            !$omp parallel default(shared)
-            !$omp do private(n, l, h, n_thread_loc)
             do n = 1, last_index
 
-                l = parcels%length(n)
+                j = parcels%right(n)
+
+                ! parcel length:
+                l = parcels%position(j) - parcels%position(n)
 
                 if (l <= lmax) then
                     cycle
@@ -37,27 +39,24 @@ module surface_parcel_split
                 ! this lines is split, i.e., add a new surface parcel
                 !
 
-                h = f14 * l
-                parcels%length(n) = f12 * l
-
-                !$omp critical
-                n_thread_loc = n_par + 1
+                m = n_par + 1
 
                 ! we only need to add one new parcel
                 n_par = n_par + 1
-                !$omp end critical
 
-                parcels%vorticity(n_thread_loc) = parcels%vorticity(n)
-                parcels%length(n_thread_loc) = parcels%length(n)
-                parcels%buoyancy(n_thread_loc) = parcels%buoyancy(n)
+                parcels%vorticity(m) = parcels%vorticity(n)
+                parcels%buoyancy(m) = parcels%buoyancy(n)
 #ifndef ENABLE_DRY_MODE
-                parcels%humidity(n_thread_loc) = parcels%humidity(n)
+                parcels%humidity(m) = parcels%humidity(n)
 #endif
-                parcels%position(n_thread_loc) = parcels%position(n) - h
-                parcels%position(n) = parcels%position(n) + h
+                parcels%position(n) = parcels%position(n)
+                parcels%position(m) = parcels%position(n) + f12 * l
+
+                parcels%right(n) = m
+                parcels%right(m) = j
             enddo
-            !$omp end do
-            !$omp end parallel
+
+            call surface_parcel_sort(n_par, parcels)
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then

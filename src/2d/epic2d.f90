@@ -83,13 +83,13 @@ program epic2d
             ! read domain dimensions
             call setup_domain_and_parameters
 
+            call field_default
+
             call setup_parcels
 
             call init_inversion
 
             call init_parcel_correction
-
-            call field_default
 
             call setup_output_files
 

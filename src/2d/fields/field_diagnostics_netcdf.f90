@@ -22,9 +22,6 @@ module field_diagnostics_netcdf
                            rms_v_id, abserr_v_id, max_npar_id, min_npar_id, &
                            avg_npar_id, avg_nspar_id, keg_id, apeg_id
     double precision    :: restart_time
-#ifndef NDEBUG
-    integer             :: max_sym_vol_err_id
-#endif
 
     integer :: field_stats_io_timer
 
@@ -159,18 +156,6 @@ module field_diagnostics_netcdf
                     varid=apeg_id)
             endif
 
-#ifndef NDEBUG
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='max_sym_vol_err',                                     &
-                long_name='maximum symmetry volume error',                  &
-                std_name='',                                                &
-                unit='1',                                                   &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=max_sym_vol_err_id)
-#endif
-
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_stats_file
@@ -199,10 +184,6 @@ module field_diagnostics_netcdf
             if (ape_calculation == 'ape density') then
                 call get_var_id(ncid, 'ape', apeg_id)
             endif
-
-#ifndef NDEBUG
-            call get_var_id(ncid, 'max_sym_vol_err', max_sym_vol_err_id)
-#endif
 
         end subroutine read_netcdf_field_stats_content
 
@@ -237,9 +218,6 @@ module field_diagnostics_netcdf
             if (ape_calculation == 'ape density') then
                 call write_netcdf_scalar(ncid, apeg_id, apeg, n_writes)
             endif
-#ifndef NDEBUG
-            call write_netcdf_scalar(ncid, max_sym_vol_err_id, max_vol_sym_err, n_writes)
-#endif
             ! increment counter
             n_writes = n_writes + 1
 

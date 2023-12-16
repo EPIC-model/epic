@@ -3,12 +3,13 @@
 ! interpolation for surface parcels.
 ! =============================================================================
 module surface_parcel_interpl
-    use constants, only : zero, one, f12, f14
+    use constants, only : zero, one, f12, f14, f34
     use parameters, only : nx, nz, lmin
     use options, only : parcel
-    use surface_parcel_container, only : top_parcels, n_top_parcels &
-                                       , bot_parcels, n_bot_parcels &
-                                       , surface_parcel_container_type
+    use surface_parcel_container, only : top_parcels, n_top_parcels     &
+                                       , bot_parcels, n_bot_parcels     &
+                                       , surface_parcel_container_type  &
+                                       , get_surface_parcel_length
     use surface_parcel_bc, only : apply_surface_periodic_bc
     use fields
     use physics, only : glat, lambda_c, q_0
@@ -24,9 +25,22 @@ module surface_parcel_interpl
     ! interpolation weights
     double precision :: weights(ngp)
 
-    private :: is, weights, len2grid_, surf_par2grid_, surf_grid2par_
+    private :: is, weights, len2grid_, surf_par2grid_, surf_grid2par_, get_line_points
 
     contains
+
+        function get_line_points(n, spar) result(points)
+            integer,                             intent(in) :: n
+            type(surface_parcel_container_type), intent(in) :: spar
+            double precision                                :: length
+            double precision                                :: points(2)
+
+            length = get_surface_parcel_length(n, spar)
+
+            points(1) = spar%position(n) + f14 * length
+            points(2) = spar%position(n) + f34 * length
+
+        end function get_line_points
 
         subroutine len2grid
 
@@ -40,7 +54,7 @@ module surface_parcel_interpl
             integer,                             intent(in)    :: iz
             integer,                             intent(in)    :: n_par
             type(surface_parcel_container_type), intent(inout) :: spar
-            double precision                                   :: points(2)
+            double precision                                   :: points(2), length
             integer                                            :: n, p, l
 
             volg(iz, :) = zero
@@ -49,8 +63,10 @@ module surface_parcel_interpl
             !$omp do private(n, p, l, points, pl, is, js, weights) &
             !$omp& reduction(+: volg)
             do n = 1, n_par
-                points(1) = spar%position(n) + f14 * spar%length(n)
-                points(2) = spar%position(n) - f14 * spar%length(n)
+
+                length = get_surface_parcel_length(n, spar)
+
+                points = get_line_points(n, spar)
 
                 ! we have 2 points per line
                 do p = 1, 2
@@ -63,7 +79,7 @@ module surface_parcel_interpl
 
                     do l = 1, ngp
                         volg(iz, is(l)) = volg(iz, is(l)) &
-                                        + f12 * weights(l) * spar%length(n)
+                                        + f12 * weights(l) * length
                     enddo
                 enddo
             enddo
@@ -83,7 +99,6 @@ module surface_parcel_interpl
         ! Interpolate parcel quantities to the grid, these consist of the parcel
         !   - vorticity
         !   - buoyancy
-        !   - length
         ! It also updates the scalar fields:
         subroutine surf_par2grid_(iz, n_par, spar)
             integer,                             intent(in)    :: iz
@@ -91,11 +106,10 @@ module surface_parcel_interpl
             type(surface_parcel_container_type), intent(inout) :: spar
             double precision                                   :: points(2)
             integer                                            :: n, p, l
-            double precision                                   :: weight, btot
+            double precision                                   :: weight, btot, length
 #ifndef ENABLE_DRY_MODE
             double precision                                   :: q_c
 #endif
-
             vortg(iz, :) = zero
             volg(iz, :) = zero
 #ifndef ENABLE_DRY_MODE
@@ -105,10 +119,10 @@ module surface_parcel_interpl
             tbuoyg(iz, :) = zero
             !$omp parallel default(shared)
 #ifndef ENABLE_DRY_MODE
-            !$omp do private(n, p, l, points, weight, btot, q_c, is, weights) &
+            !$omp do private(n, p, l, points, weight, btot, q_c, is, weights, length) &
             !$omp& reduction(+:vortg, dbuoyg, humg, tbuoyg, volg)
 #else
-            !$omp do private(n, p, l, points, weight, btot, is, weights) &
+            !$omp do private(n, p, l, points, weight, btot, is, weights, length) &
             !$omp& reduction(+:vortg, tbuoyg, volg)
 #endif
             do n = 1, n_par
@@ -125,8 +139,9 @@ module surface_parcel_interpl
                 btot = spar%buoyancy(n)
 #endif
 
-                points(1) = spar%position(n) + f14 * spar%length(n)
-                points(2) = spar%position(n) - f14 * spar%length(n)
+                length = get_surface_parcel_length(n, spar)
+
+                points = get_line_points(n, spar)
 
                 ! we have 2 points per line
                 do p = 1, 2
@@ -141,7 +156,7 @@ module surface_parcel_interpl
                     ! the weight is halved due to 2 points per line
                     do l = 1, ngp
 
-                        weight = f12 * weights(l) * spar%length(n)
+                        weight = f12 * weights(l) * length
 
                         vortg(iz, is(l)) = vortg(iz, is(l)) &
                                          + weight * spar%vorticity(n)
@@ -210,10 +225,7 @@ module surface_parcel_interpl
             !$omp do private(n, p, l, points, weight, is, weights)
             do n = 1, n_par
 
-                spar%strain(n) = zero
-
-                points(1) = spar%position(n) + f14 * spar%length(n)
-                points(2) = spar%position(n) - f14 * spar%length(n)
+                points = get_line_points(n, spar)
 
                 ! we have 2 points per line
                 do p = 1, 2
@@ -230,10 +242,7 @@ module surface_parcel_interpl
 
                         ! the weight is halved due to 2 points per line
                         spar%delta_pos(n) = spar%delta_pos(n) &
-                                          + weight * velog(iz, is(l), 0)
-
-                        spar%strain(n) = spar%strain(n) &
-                                       + weight * velgradg(iz, is(l), 0)
+                                          + weight * velog(iz, is(l), 1)
 
                         spar%delta_vor(n) = spar%delta_vor(n) + weight * vtend(iz, is(l))
                     enddo
