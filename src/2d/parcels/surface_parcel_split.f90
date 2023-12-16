@@ -2,7 +2,7 @@
 !                       Module to split surface parcels
 ! =============================================================================
 module surface_parcel_split
-    use options, only : verbose, parcel
+    use options, only : verbose
     use constants, only : pi, three, f12, f14
     use parameters, only : lmax
     use surface_parcel_container, only : surface_parcel_container_type  &
@@ -40,7 +40,7 @@ module surface_parcel_split
 
                 l = parcels%length(n)
 
-                if (l <= parcel%lambda_max .and. l <= lmax) then
+                if (l <= lmax) then
                     cycle
                 endif
 

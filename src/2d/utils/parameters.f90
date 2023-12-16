@@ -128,8 +128,8 @@ module parameters
         vmin = vcell / parcel%min_vratio
         vmax = vcell / parcel%max_vratio
 
-        lmin = lcell / parcel%min_vratio
-        lmax = lcell / parcel%max_vratio
+        lmin = lcell / parcel%min_lratio
+        lmax = lcell / parcel%max_lratio
 
         max_num_parcels = int(nx * nz * parcel%min_vratio * parcel%size_factor)
 
