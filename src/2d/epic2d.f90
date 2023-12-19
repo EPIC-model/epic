@@ -23,9 +23,6 @@ program epic2d
     use field_diagnostics_netcdf, only : field_stats_io_timer
     use tri_inversion, only : init_inversion, vor2vel_timer, vtend_timer
     use parcel_interpl, only : grid2par_timer, par2grid_timer
-#ifndef NDEBUG
-    use parcel_interpl, only : sym_vol2grid_timer
-#endif
     use parcel_init, only : init_timer
     use ls_rk4, only : ls_rk4_step, rk4_timer
     use utils, only : write_last_step, setup_output_files        &
@@ -71,9 +68,6 @@ program epic2d
             call register_timer('parcel push', rk4_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
-#ifndef NDEBUG
-            call register_timer('symmetric vol2grid', sym_vol2grid_timer)
-#endif
 
             call start_timer(epic_timer)
 
@@ -123,7 +117,6 @@ program epic2d
                     call apply_laplace
                     call apply_gradient(parcel%gradient_pref, parcel%max_compression)
                 enddo
-
             enddo
 
             ! write final step (we only write if we really advanced in time)

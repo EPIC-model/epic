@@ -4,6 +4,8 @@
 ! =============================================================================
 module surface_parcel_container
     use parameters, only : max_num_surf_parcels
+    use merge_sort
+    use parcel_ops
     implicit none
 
     integer :: n_top_parcels, n_bot_parcels
@@ -42,11 +44,49 @@ module surface_parcel_container
 
             j = spar%right(n)
 
-            length = spar%position(j) - spar%position(n)
+            length = get_delx(spar%position(j), spar%position(n))
 
         end function get_surface_parcel_length
 
         subroutine surface_parcel_sort(n_par, sp)
+            integer,                             intent(in)    :: n_par
+            type(surface_parcel_container_type), intent(inout) :: sp
+            integer                                            :: indx(n_par)
+            type(surface_parcel_container_type)                :: tmp
+            integer                                            :: n, i
+
+            call alloc(n_par, tmp)
+
+            tmp%position = sp%position(1:n_par)
+
+            ! sort position in ascending order
+            call msort(tmp%position, indx)
+
+            do n = 1, n_par
+                i = indx(n)
+
+                tmp%vorticity(n) = sp%vorticity(i)
+                tmp%buoyancy(n) = sp%buoyancy(i)
+#ifndef ENABLE_DRY_MODE
+                tmp%humidity(n) = sp%humidity(i)
+#endif
+
+                tmp%right(n) = mod(n, n_par) + 1
+
+            enddo
+
+            call move_alloc(from=tmp%position, to=sp%position)
+            call move_alloc(from=tmp%vorticity, to=sp%vorticity)
+            call move_alloc(from=tmp%buoyancy, to=sp%buoyancy)
+#ifndef ENABLE_DRY_MODE
+            call move_alloc(from=tmp%humidity, to=sp%humidity)
+#endif
+            call move_alloc(from=tmp%right, to=sp%right)
+
+        end subroutine surface_parcel_sort
+
+
+        subroutine surface_parcel_reorder(n_par, sp)
             integer,                             intent(in)    :: n_par
             type(surface_parcel_container_type), intent(inout) :: sp
             integer                                            :: n, j, m
@@ -77,7 +117,7 @@ module surface_parcel_container
 #endif
             call move_alloc(from=tmp%right, to=sp%right)
 
-        end subroutine
+        end subroutine surface_parcel_reorder
 
         ! Overwrite parcel n with parcel m
         ! @param[in] n index of parcel to be replaced

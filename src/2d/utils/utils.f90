@@ -23,9 +23,6 @@ module utils
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
     use parameters, only : lower, extent, update_parameters, max_num_parcels, max_num_surf_parcels
     use physics, only : read_physical_quantities, print_physical_quantities, l_peref
-#ifndef NDEBUG
-    use parcel_interpl, only : vol2grid_symmetry_error
-#endif
     use field_diagnostics_netcdf, only : write_netcdf_field_stats
 
     implicit none
@@ -102,9 +99,6 @@ module utils
             double precision,  intent(in) :: t
             logical, optional, intent(in) :: l_force
             double precision              :: neg = one
-#ifndef NDEBUG
-            logical                      :: do_vol2grid_sym_err = .true.
-#endif
 
             if (present(l_force)) then
                 if (l_force) then
@@ -115,10 +109,6 @@ module utils
             ! make sure we always write initial setup
             if (output%write_fields .and. &
                 (t + epsilon(zero) >= neg * dble(nfw) * output%field_freq)) then
-#ifndef NDEBUG
-                call vol2grid_symmetry_error
-                do_vol2grid_sym_err = .false.
-#endif
                 call write_netcdf_fields(t)
 
                 nfw = nfw + 1
@@ -143,11 +133,6 @@ module utils
             if (output%write_field_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nsfw) * output%field_stats_freq)) then
 
-#ifndef NDEBUG
-                if (do_vol2grid_sym_err) then
-                    call vol2grid_symmetry_error
-                endif
-#endif
                 call write_netcdf_field_stats(t)
 
                 nsfw = nsfw + 1

@@ -112,11 +112,13 @@ module surface_parcel_merge_mod
 
                 endif
 
-                length = get_surface_parcel_length(is, spar)
 
                 ! Sum up all the small parcels merging with a common other one:
                 ! "is" refers to the small parcel index
                 is = isma(m) !Small parcel
+
+                length = get_surface_parcel_length(is, spar)
+
                 n = loca(ic)  !Index of merged parcel
                 lm(n) = lm(n) + length !Accumulate length of merged parcel
 

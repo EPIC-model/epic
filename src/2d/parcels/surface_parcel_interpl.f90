@@ -60,13 +60,14 @@ module surface_parcel_interpl
             volg(iz, :) = zero
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, pl, is, js, weights) &
+            !$omp do private(n, p, l, points, is, weights, length) &
             !$omp& reduction(+: volg)
             do n = 1, n_par
 
                 length = get_surface_parcel_length(n, spar)
 
                 points = get_line_points(n, spar)
+
 
                 ! we have 2 points per line
                 do p = 1, 2

@@ -6,7 +6,7 @@ module surface_parcel_split
     use constants, only : pi, three, f12, f14
     use parameters, only : lmax
     use surface_parcel_container, only : surface_parcel_container_type  &
-                                       , surface_parcel_sort
+                                       , surface_parcel_reorder
     use omp_lib
     implicit none
 
@@ -56,7 +56,7 @@ module surface_parcel_split
                 parcels%right(m) = j
             enddo
 
-            call surface_parcel_sort(n_par, parcels)
+            call surface_parcel_reorder(n_par, parcels)
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
