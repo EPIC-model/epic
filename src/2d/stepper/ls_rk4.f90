@@ -71,6 +71,7 @@ module ls_rk4
 
             do n = 1, 4
                 call ls_rk4_substep(dt, n)
+                call apply_surface_parcel_bc
                 call par2grid
             enddo
             call ls_rk4_substep(dt, 5)

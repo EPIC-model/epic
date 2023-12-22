@@ -51,11 +51,11 @@ module surface_parcel_interpl
 
         ! Interpolate the parcel length to the grid
         subroutine len2grid_(iz, n_par, spar)
-            integer,                             intent(in)    :: iz
-            integer,                             intent(in)    :: n_par
-            type(surface_parcel_container_type), intent(inout) :: spar
-            double precision                                   :: points(2), length
-            integer                                            :: n, p, l
+            integer,                             intent(in) :: iz
+            integer,                             intent(in) :: n_par
+            type(surface_parcel_container_type), intent(in) :: spar
+            double precision                                :: points(2), length
+            integer                                         :: n, p, l
 
             volg(iz, :) = zero
 
@@ -206,7 +206,7 @@ module surface_parcel_interpl
                     !$omp do private(n)
                     do n = 1, n_par
                         spar%delta_pos(n) = zero
-                        spar%delta_vor(n)    = zero
+                        spar%delta_vor(n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -263,19 +263,16 @@ module surface_parcel_interpl
             double precision, intent(in)  :: pos
             integer,          intent(out) :: ii(2)
             double precision, intent(out) :: ww(2)
-            double precision              :: x
+            double precision              :: x, px
 
             ! (i)
-            ii(1) = floor((pos - lower(1)) * dxi(1))
-
-            x = lower(1) + dble(ii(1)) * dx(1)
-
-            ww(1) = one - abs(pos - x) * dxi(1)
-
-            ! (i+1)
+            x = (pos - lower(1)) * dxi(1)
+            ii(1) = floor(x)
             ii(2) = ii(1) + 1
-            x = lower(1) + dble(ii(2)) * dx(1)
-            ww(2) = one - abs(pos - x) * dxi(1)
+
+            px = x - dble(ii(1))
+            ww(1) = one - px
+            ww(2) = px
 
             ! account for x periodicity
             call periodic_index_shift(ii)
