@@ -89,24 +89,23 @@ module surface_parcel_container
         subroutine surface_parcel_reorder(n_par, sp)
             integer,                             intent(in)    :: n_par
             type(surface_parcel_container_type), intent(inout) :: sp
-            integer                                            :: n, j, m
+            integer                                            :: n, j
             type(surface_parcel_container_type)                :: tmp
 
             call alloc(max_num_surf_parcels, tmp)
 
-            m = 1
             do n = 1, n_par
                 j = sp%right(n)
 
-                tmp%position(m) = sp%position(j)
+                tmp%position(n) = sp%position(j)
 
-                tmp%vorticity(m) = sp%vorticity(j)
+                tmp%vorticity(n) = sp%vorticity(j)
 
-                tmp%buoyancy(m) = sp%buoyancy(j)
+                tmp%buoyancy(n) = sp%buoyancy(j)
 #ifndef ENABLE_DRY_MODE
-                tmp%humidity(m) = sp%humidity(j)
+                tmp%humidity(n) = sp%humidity(j)
 #endif
-                tmp%right(m) = sp%right(j)
+                tmp%right(n) = sp%right(j)
             enddo
 
             call move_alloc(from=tmp%position, to=sp%position)
