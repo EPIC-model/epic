@@ -27,9 +27,6 @@ module field_netcdf
 #ifdef ENABLE_DIAGNOSE
     integer             :: vol_id, npar_id
 #endif
-#ifndef NDEBUG
-    integer             :: sym_vol_id
-#endif
 
     private :: ncid, ncfname,                       &
                dimids,                              &
@@ -41,9 +38,6 @@ module field_netcdf
 #endif
 #ifdef ENABLE_DIAGNOSE
     private :: vol_id, npar_id
-#endif
-#ifndef NDEBUG
-    private :: sym_vol_id
 #endif
 
     contains
@@ -182,17 +176,6 @@ module field_netcdf
                                        varid=npar_id)
 #endif
 
-#ifndef NDEBUG
-            call define_netcdf_dataset(ncid=ncid,                           &
-                                       name='sym_vol',                      &
-                                       long_name='symmetry volume',         &
-                                       std_name='',                         &
-                                       unit='m^2',                          &
-                                       dtype=NF90_DOUBLE,                   &
-                                       dimids=dimids,                       &
-                                       varid=sym_vol_id)
-#endif
-
             call close_definition(ncid)
 
         end subroutine create_netcdf_field_file
@@ -225,7 +208,7 @@ module field_netcdf
             call get_var_id(ncid, 'total_buoyancy', tbuo_id)
 
             call get_var_id(ncid, 'dry_buoyancy', dbuo_id)
-            
+
             call get_var_id(ncid, 'humidity', hum_id)
 #endif
 
@@ -233,10 +216,6 @@ module field_netcdf
             call get_var_id(ncid, 'volume', vol_id)
 
             call get_var_id(ncid, 'npar', npar_id)
-#endif
-
-#ifndef NDEBUG
-            call get_var_id(ncid, 'sym_vol', sym_vol_id)
 #endif
 
         end subroutine read_netcdf_field_content
@@ -294,11 +273,6 @@ module field_netcdf
 
             call write_netcdf_dataset(ncid, npar_id, nparg(0:nz-1, :))
 #endif
-
-#ifndef NDEBUG
-            call write_netcdf_dataset(ncid, sym_vol_id, sym_volg(0:nz, 0:nx-1))
-#endif
-
 
             ! increment counter
             n_writes = n_writes + 1
