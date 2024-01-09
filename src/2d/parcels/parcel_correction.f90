@@ -18,7 +18,7 @@ module parcel_correction
     use omp_lib
 
     use constants
-    use parameters, only : vcelli, nx, nz, dx, dxi
+    use parameters, only : vcelli, nx, nz, dx, dxi, lcelli
 
     use parcel_container
 
@@ -149,7 +149,9 @@ module parcel_correction
         call vol2grid
 
         ! form divergence field * dt and store in phi temporarily:
-        phi = volg(0:nz, :) * vcelli - one
+        phi(1:nz-1, :) = volg(1:nz-1, :) * vcelli - one
+        phi(0,      :) = volg(0,  :) * lcelli - one
+        phi(nz,     :) = volg(nz, :) * lcelli - one
 
         !-----------------------------------------
         ! Forward x FFT:
@@ -220,7 +222,9 @@ module parcel_correction
         call vol2grid
 
         ! form divergence field * dt and store in phi temporarily:
-        phi = volg(0:nz, :) * vcelli - one
+        phi(1:nz-1, :) = volg(1:nz-1, :) * vcelli - one
+        phi(0,      :) = volg(0,  :) * lcelli - one
+        phi(nz,     :) = volg(nz, :) * lcelli - one
 
         !$omp parallel default(shared)
         !$omp do private(n, is, js, weights, x1_fpos, x2_fpos, shift_x1, shift_x2, lim_x1, lim_x2)

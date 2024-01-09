@@ -22,6 +22,9 @@ module parameters
     ! grid cell length
     double precision, protected :: lcell
 
+    ! inverse grid cell length
+    double precision, protected :: lcelli
+
     ! number of grid cells in each dimension
     integer :: nx, nz
 
@@ -112,6 +115,7 @@ module parameters
         vcelli = one / vcell
 
         lcell = dx(1)
+        lcelli = dxi(1)
 
         ncell = nx * nz
         ncelli = one / dble(ncell)
@@ -133,7 +137,7 @@ module parameters
 
         max_num_parcels = int(nx * nz * parcel%min_vratio * parcel%size_factor)
 
-        max_num_surf_parcels = int(nx * parcel%min_vratio * parcel%size_factor)
+        max_num_surf_parcels = int(nx * parcel%min_lratio * parcel%size_factor)
 
     end subroutine update_parameters
 
