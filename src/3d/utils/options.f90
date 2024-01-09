@@ -107,6 +107,17 @@ module options
 
     type(time_info_type) :: time
 
+    ! damping model
+    type damping_info_type
+        double precision :: vorticity_prefactor     = 1.0d0  ! constant in damping implementation for vorticity
+        double precision :: scalars_prefactor       = 1.0d0  ! constant in damping implementation for scalars
+        logical          :: l_vorticity = .false. ! use damping on vorticity
+        logical          :: l_scalars   = .false. ! use damping on scalars
+    end type damping_info_type
+
+    type(damping_info_type) :: damping
+
+
     contains
         ! parse configuration file
         ! (see https://cyber.dabamos.de/programming/modernfortran/namelists.html [8 March 2021])
@@ -116,7 +127,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, flux_file, rk_order, boundary, output, parcel, time
+            namelist /EPIC/ field_file, flux_file, rk_order, boundary, output, parcel, time, damping
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -189,6 +200,11 @@ module options
             call write_netcdf_attribute(ncid, "initial", time%initial)
             call write_netcdf_attribute(ncid, "precise_stop", time%precise_stop)
             call write_netcdf_attribute(ncid, "alpha", time%alpha)
+            
+            call write_netcdf_attribute(ncid, "damping_vorticity_prefactor", damping%vorticity_prefactor)
+            call write_netcdf_attribute(ncid, "damping_scalars_prefactor", damping%scalars_prefactor)
+            call write_netcdf_attribute(ncid, "damping_l_vorticity", damping%l_vorticity)
+            call write_netcdf_attribute(ncid, "damping_l_scalars", damping%l_scalars)
 
         end subroutine write_netcdf_options
 
