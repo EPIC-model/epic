@@ -10,6 +10,8 @@ module parcel_netcdf
     use iomanip, only : zfill
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
+    use surface_parcel_netcdf, only : create_netcdf_surface_parcel_file &
+                                    , write_netcdf_surface_parcels
     implicit none
 
     integer :: n_writes = 1
@@ -173,6 +175,8 @@ module parcel_netcdf
 
             call close_definition(ncid)
 
+            call create_netcdf_surface_parcel_file(basename, overwrite, l_restart)
+
         end subroutine create_netcdf_parcel_file
 
         ! Write parcels of the current time step into the parcel file.
@@ -219,6 +223,8 @@ module parcel_netcdf
             n_writes = n_writes + 1
 
             call close_netcdf_file(ncid)
+
+            call write_netcdf_surface_parcels(t)
 
             call stop_timer(parcel_io_timer)
 
