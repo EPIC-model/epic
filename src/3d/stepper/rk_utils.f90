@@ -228,8 +228,8 @@ module rk_utils
             !
             ! velocity strain
             !
-            do ix = box%lo(1), box%hi(1)
-                do iy = box%lo(2), box%hi(2)
+            do ix = box%hlo(1), box%hhi(1)
+                do iy = box%hlo(2), box%hhi(2)
                     do iz = 0, nz
                         ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
                         ! where
@@ -273,9 +273,13 @@ module rk_utils
                                                         strain(3, 1)*strain(3, 1)+&
                                                         strain(3, 2)*strain(3, 2)+&
                                                         strain(3, 3)*strain(3, 3))
-                    enddo
+                   enddo
+                   strain_mag(-1, iy, ix)=zero
+                   strain_mag(nz, iy, ix)=zero
                 enddo
             enddo
+
+        call field_halo_fill_scalar(strain_mag, l_alloc=.true.)
 
         end subroutine get_strain_magnitude_field
 

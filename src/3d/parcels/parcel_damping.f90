@@ -54,12 +54,21 @@ module parcel_damping
             integer                       :: n, p, l, ii, jj, kk
             double precision              :: points(3, n_points_p2g)
             double precision              :: pvol
+            double precision              :: vortend(3)
+            double precision              :: buoytend
+#ifndef ENABLE_DRY_MODE
+            double precision              :: humtend
+#endif
 
             call start_timer(damping_timer)
 
             !$omp parallel default(shared)
             !$omp do private(n, p, l, ii, jj, kk, points, pvol, weight) &
-            !$omp& private( is, js, ks, weights, time_fact) 
+#ifndef ENABLE_DRY_MODE
+            !$omp& private(is, js, ks, weights, vortend, buoytend, humtend, time_fact) 
+#else
+            !$omp& private(is, js, ks, weights, vortend, buoytend, time_fact) 
+#endif
             do n = 1, n_parcels
                 pvol = parcels%volume(n)
 #ifndef ENABLE_P2G_1POINT
@@ -67,6 +76,11 @@ module parcel_damping
                                               pvol, parcels%B(:, n), n, l_reuse)
 #else
                 points(:, 1) = parcels%position(:, n)
+#endif
+                vortend=zero
+                buoytend=zero
+#ifndef ENABLE_DRY_MODE
+                humtend=zero
 #endif
 
                 ! we have 4 points per ellipsoid
@@ -83,7 +97,7 @@ module parcel_damping
                         enddo
                       enddo
                       do l=1,3
-                         parcels%vorticity(l,n)=parcels%vorticity(l,n)*(1.0-sum(weight*time_fact))&
+                         vortend(l)=vortend(l)-parcels%vorticity(l,n)*sum(weight*time_fact)&
                          +sum(weight*time_fact*vortg(ks:ks+1, js:js+1, is:is+1, l))
                       enddo
                     endif
@@ -97,16 +111,25 @@ module parcel_damping
                         enddo
                       enddo
 #ifndef ENABLE_DRY_MODE
-                      parcels%humidity(n)=parcels%humidity(n)*(1.0-sum(weight*time_fact))&
-                      +sum(weight*time_fact*humg(ks:ks+1, js:js+1, is:is+1))
-                      parcels%buoyancy(n)=parcels%buoyancy(n)*(1.0-sum(weight*time_fact))&
-                      +sum(weight*time_fact*dbuoyg(ks:ks+1, js:js+1, is:is+1))
+                      humtend=humtend+sum(weight*time_fact*(humg(ks:ks+1, js:js+1, is:is+1)-parcels%humidity(n)))
+                      buoytend=buoytend+sum(weight*time_fact*(dbuoyg(ks:ks+1, js:js+1, is:is+1)-parcels%buoyancy(n)))
 #else
-                      parcels%buoyancy(n)=parcels%buoyancy(n)*(1.0-sum(weight*time_fact))&
-                      +sum(weight*time_fact*tbuoyg(ks:ks+1, js:js+1, is:is+1))
+                      buoytend=buoytend+sum(weight*time_fact*(tbuoyg(ks:ks+1, js:js+1, is:is+1)-parcels%buoyancy(n)))
 #endif
                     endif
                 enddo
+                ! Add all the tendencies only at the end
+                if(l_vorticity) then
+                    do l=1,3
+                       parcels%vorticity(l,n)=parcels%vorticity(l,n)+vortend(l)
+                    enddo
+                endif
+                if(l_scalars) then
+#ifndef ENABLE_DRY_MODE
+                    parcels%humidity(n)=parcels%humidity(n)+humtend
+#endif
+                    parcels%buoyancy(n)=parcels%buoyancy(n)+buoytend
+                endif
             enddo
             !$omp end do
             !$omp end parallel
