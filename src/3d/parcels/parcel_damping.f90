@@ -11,7 +11,7 @@ module parcel_damping
     use parcel_interpl
     use fields
     use omp_lib
-    use options, only damping
+    use options, only : damping
     implicit none
 
     private
@@ -34,9 +34,9 @@ module parcel_damping
             double precision, intent(in)  :: dt
 
             if(damping%l_vorticity .or. damping%l_scalars) then 
-                call par2grid
+                call par2grid(.false.)
                 call perturbation_damping(dt,damping%l_vorticity,damping%l_scalars,&
-                     damping%vorticity_prefactor,damping%scalars_prefactor)
+                     damping%vorticity_prefactor,damping%scalars_prefactor,.true.)
             end if
 
         end subroutine parcel_damp
@@ -44,10 +44,11 @@ module parcel_damping
         ! 
         ! @pre 
         subroutine perturbation_damping(dt,l_vorticity,l_scalars,&
-                                        vorticity_prefactor,scalars_prefactor)
+                                        vorticity_prefactor,scalars_prefactor,l_reuse)
             double precision, intent(in)  :: dt
             logical, intent(in)   :: l_vorticity
             logical, intent(in)   :: l_scalars
+            logical   :: l_reuse
             double precision, intent(in)   :: vorticity_prefactor
             double precision, intent(in)   :: scalars_prefactor
             integer                       :: n, p, l, ii, jj, kk
