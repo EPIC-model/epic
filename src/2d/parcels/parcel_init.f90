@@ -49,8 +49,6 @@ module parcel_init
 
             call start_timer(init_timer)
 
-            call init_surface_parcels(fname)
-
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
             n_parcels = parcel%n_per_cell * ncell
@@ -105,6 +103,8 @@ module parcel_init
             !$omp end parallel
 
             call init_from_grids(fname, tol)
+
+            call init_surface_parcels(fname)
 
             call stop_timer(init_timer)
 
