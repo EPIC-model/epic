@@ -3,10 +3,12 @@
 ! =============================================================================
 module surface_parcel_split
     use options, only : verbose
-    use constants, only : pi, three, f12, f14
+    use constants, only : f12
     use parameters, only : lmax
     use surface_parcel_container, only : surface_parcel_container_type  &
-                                       , surface_parcel_reorder
+                                       , surface_parcel_reorder         &
+                                       , get_surface_parcel_length      &
+                                       , surface_parcel_sort
     use omp_lib
     implicit none
 
@@ -20,29 +22,30 @@ module surface_parcel_split
             type(surface_parcel_container_type), intent(inout) :: sp
             double precision                           :: l
             integer                                    :: last_index
-            integer                                    :: n, m, j
+            integer                                    :: n, m
 
             last_index = n_par
 
             do n = 1, last_index
 
-                j = sp%right(n)
-
                 ! parcel length:
-                l = sp%position(j) - sp%position(n)
+                l = get_surface_parcel_length(n, sp)
+
+!                 print *, "lmax", lmax, l, (l > lmax), size(sp%vorticity)
+!                 stop
 
                 if (l <= lmax) then
                     cycle
                 endif
 
                 !
-                ! this lines is split, i.e., add a new surface parcel
+                ! this line is split, i.e., add a new surface parcel
                 !
 
                 m = n_par + 1
 
                 ! we only need to add one new parcel
-                n_par = n_par + 1
+                n_par = m
 
                 sp%vorticity(m) = sp%vorticity(n)
                 sp%buoyancy(m) = sp%buoyancy(n)
@@ -53,10 +56,11 @@ module surface_parcel_split
                 sp%position(m) = sp%position(n) + f12 * l
 
                 sp%right(n) = m
-                sp%right(m) = j
+                sp%right(m) = sp%right(n)
             enddo
 
-            call surface_parcel_reorder(n_par, sp)
+!             call surface_parcel_reorder(n_par, sp)
+            call surface_parcel_sort(n_par, sp)
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then

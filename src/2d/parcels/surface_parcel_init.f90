@@ -39,11 +39,13 @@ module surface_parcel_init
             integer,                             intent(inout) :: n_par
             type(surface_parcel_container_type), intent(inout) :: spar
             character(*),                        intent(in)    :: fname
-            integer                                            :: n
+            integer                                            :: n, n_per_dim
             double precision                                   :: length
 
+            n_per_dim = int(dsqrt(dble(parcel%n_per_cell)))
+
             ! we use "n_per_cell" parcels per grid cell
-            n_par = parcel%n_per_cell * nx
+            n_par = n_per_dim * nx
 
             if (n_par > max_num_surf_parcels) then
                 print *, "Number of parcels exceeds limit of", &
@@ -53,7 +55,7 @@ module surface_parcel_init
 
             !------------------------------------------------------------------
             ! set up parcel positions and 'right' array:
-            length = lcell / dble(parcel%n_per_cell)
+            length = lcell / dble(n_per_dim)
 
             spar%position(1) = lower(1)
             spar%right(1) = 2

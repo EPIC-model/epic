@@ -55,12 +55,12 @@ module surface_parcel_container
             type(surface_parcel_container_type)                :: tmp
             integer                                            :: n, i
 
-            call alloc(n_par, tmp)
+            call alloc(max_num_surf_parcels, tmp)
 
-            tmp%position = sp%position(1:n_par)
+            tmp%position = sp%position!(1:n_par)
 
             ! sort position in ascending order
-            call msort(tmp%position, indx)
+            call msort(tmp%position(1:n_par), indx)
 
             do n = 1, n_par
                 i = indx(n)
@@ -82,6 +82,8 @@ module surface_parcel_container
             call move_alloc(from=tmp%humidity, to=sp%humidity)
 #endif
             call move_alloc(from=tmp%right, to=sp%right)
+
+            print *, size(sp%position), max_num_surf_parcels
 
         end subroutine surface_parcel_sort
 

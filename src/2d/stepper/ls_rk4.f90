@@ -73,8 +73,10 @@ module ls_rk4
                 call ls_rk4_substep(dt, n)
                 call apply_surface_parcel_bc
                 call par2grid
+!                 call write_step(t+dble(n)*0.001d0)
             enddo
             call ls_rk4_substep(dt, 5)
+!             call write_step(t+0.005d0)
 
             call start_timer(rk4_timer)
             call apply_parcel_bc

@@ -28,6 +28,7 @@ program epic2d
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_parcels
+    use utils, only : write_step
     implicit none
 
     integer          :: epic_timer
@@ -109,14 +110,35 @@ program epic2d
 #endif
                 call ls_rk4_step(t)
 
+!                 call write_step(1.0d0)
+
+                print *, "after rk"
                 call merge_parcels
 
+                print *, "after merging"
+
+                call apply_surface_parcel_bc
+
+!                 call write_step(t + 0.006d0)
+
                 call split_parcels
+                print *, "after splitting"
+
+                call apply_surface_parcel_bc
+
+!                 call write_step(t + 0.007d0)
+
+
+!                 call write_step(3.0d0)
 
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace
                     call apply_gradient(parcel%gradient_pref, parcel%max_compression)
                 enddo
+
+!                 call write_step(4.0d0)
+
+!                 stop
             enddo
 
             ! write final step (we only write if we really advanced in time)

@@ -161,6 +161,8 @@ module surface_parcel_netcdf
 
             call close_definition(ncid)
 
+            call close_netcdf_file(ncid)
+
         end subroutine create_netcdf_parcel_file_
 
         subroutine write_netcdf_surface_parcels(t)
