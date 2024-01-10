@@ -274,11 +274,13 @@ module rk_utils
                                                         strain(3, 2)*strain(3, 2)+&
                                                         strain(3, 3)*strain(3, 3))
                    enddo
+                   ! Set to zero beyond boundaries to prevent damping from acting here (which leads to instability)
                    strain_mag(-1, iy, ix)=zero
                    strain_mag(nz, iy, ix)=zero
                 enddo
             enddo
 
+        ! We need this halo fill to obtain good conservation    
         call field_halo_fill_scalar(strain_mag, l_alloc=.true.)
 
         end subroutine get_strain_magnitude_field
