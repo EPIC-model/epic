@@ -54,6 +54,8 @@ module parcel_damping
             integer                       :: n, p, l, ii, jj, kk
             double precision              :: points(3, n_points_p2g)
             double precision              :: pvol
+            ! tendencies need to be summed up between associated 4 points
+            ! before modifying the parcel attribute
             double precision              :: vortend(3)
             double precision              :: buoytend
 #ifndef ENABLE_DRY_MODE
@@ -91,6 +93,7 @@ module parcel_damping
                       do ii=0,1
                         do jj=0,1
                           do kk=0,1
+                            ! Note this exponential factor can be different for vorticity/scalars
                             time_fact(kk,jj,ii)=1.0-exp(-vorticity_prefactor*&
                                                 strain_mag(ks+kk, js+jj, is+ii)*dt)
                           enddo
