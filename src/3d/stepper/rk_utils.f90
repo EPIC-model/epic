@@ -231,8 +231,7 @@ module rk_utils
             endif
         end function get_time_step
 
-        ! @param[in] t is the time
-        ! @returns the time step
+        ! @returns the strain magnitude for use in damping routine
         subroutine get_strain_magnitude_field
             double precision             :: strain(n_dim, n_dim)
             integer                      :: ix, iy, iz
