@@ -51,7 +51,7 @@ module parcel_damping
             logical   :: l_reuse
             double precision, intent(in)   :: vorticity_prefactor
             double precision, intent(in)   :: scalars_prefactor
-            integer                       :: n, p, l, ii, jj, kk
+            integer                       :: n, p, l 
             double precision              :: points(3, n_points_p2g)
             double precision              :: pvol
             ! tendencies need to be summed up between associated 4 points
@@ -65,7 +65,7 @@ module parcel_damping
             call start_timer(damping_timer)
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, ii, jj, kk, points, pvol, weight) &
+            !$omp do private(n, p, l, points, pvol, weight) &
 #ifndef ENABLE_DRY_MODE
             !$omp& private(is, js, ks, weights, vortend, buoytend, humtend, time_fact) 
 #else
