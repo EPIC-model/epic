@@ -90,41 +90,27 @@ module parcel_damping
                     call trilinear(points(:, p), is, js, ks, weights)
                     weight = point_weight_p2g * weights
                     if(l_vorticity) then
-                      do ii=0,1
-                        do jj=0,1
-                          do kk=0,1
-                            ! Note this exponential factor can be different for vorticity/scalars
-                            time_fact(kk,jj,ii)=1.0-exp(-vorticity_prefactor*&
-                                                strain_mag(ks+kk, js+jj, is+ii)*dt)
-                          enddo
+                        ! Note this exponential factor can be different for vorticity/scalars
+                        time_fact=1.0-exp(-vorticity_prefactor*strain_mag(ks:ks+1, js:js+1, is:is+1)*dt)
+                        do l=1,3
+                            vortend(l)=vortend(l)+sum(weight*time_fact*(vortg(ks:ks+1, js:js+1, is:is+1, l)&
+                                       -parcels%vorticity(l,n)))
                         enddo
-                      enddo
-                      do l=1,3
-                         vortend(l)=vortend(l)-parcels%vorticity(l,n)*sum(weight*time_fact)&
-                         +sum(weight*time_fact*vortg(ks:ks+1, js:js+1, is:is+1, l))
-                      enddo
                     endif
                     if(l_scalars) then
-                      do ii=0,1
-                        do jj=0,1
-                          do kk=0,1
-                            time_fact(kk,jj,ii)=1.0-exp(-scalars_prefactor*&
-                                                strain_mag(ks+kk, js+jj,is+ii)*dt)
-                          enddo
-                        enddo
-                      enddo
+                        time_fact=1.0-exp(-scalars_prefactor*strain_mag(ks:ks+1, js:js+1, is:is+1)*dt)
 #ifndef ENABLE_DRY_MODE
-                      humtend=humtend+sum(weight*time_fact*(humg(ks:ks+1, js:js+1, is:is+1)-parcels%humidity(n)))
-                      buoytend=buoytend+sum(weight*time_fact*(dbuoyg(ks:ks+1, js:js+1, is:is+1)-parcels%buoyancy(n)))
+                        humtend=humtend+sum(weight*time_fact*(humg(ks:ks+1, js:js+1, is:is+1)-parcels%humidity(n)))
+                        buoytend=buoytend+sum(weight*time_fact*(dbuoyg(ks:ks+1, js:js+1, is:is+1)-parcels%buoyancy(n)))
 #else
-                      buoytend=buoytend+sum(weight*time_fact*(tbuoyg(ks:ks+1, js:js+1, is:is+1)-parcels%buoyancy(n)))
+                        buoytend=buoytend+sum(weight*time_fact*(tbuoyg(ks:ks+1, js:js+1, is:is+1)-parcels%buoyancy(n)))
 #endif
                     endif
                 enddo
                 ! Add all the tendencies only at the end
                 if(l_vorticity) then
                     do l=1,3
-                       parcels%vorticity(l,n)=parcels%vorticity(l,n)+vortend(l)
+                        parcels%vorticity(l,n)=parcels%vorticity(l,n)+vortend(l)
                     enddo
                 endif
                 if(l_scalars) then
@@ -138,7 +124,6 @@ module parcel_damping
             !$omp end parallel
 
             call stop_timer(damping_timer)
-
 
         end subroutine perturbation_damping
 
