@@ -240,7 +240,7 @@ module rk_utils
                 do iy = box%hlo(2), box%hhi(2)
                     do iz = 0, nz
                         strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
-                        strain_mag(iz, iy, ix) = sqrt(2.0 * strain(1, 1) * strain(1, 1) +&
+                        strain_mag(iz, iy, ix) = sqrt(two * strain(1, 1) * strain(1, 1) +&
                                                         strain(1, 2) * strain(1, 2) +&
                                                         strain(1, 3) * strain(1, 3) +&
                                                         strain(2, 1) * strain(2, 1) +&
