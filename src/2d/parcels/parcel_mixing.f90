@@ -1,11 +1,12 @@
 module parcel_mixing
-    use constants, only : pi, f12
+    use constants, only : one, zero
     use parcel_ops, only : get_delx
     use parcel_container, only : parcels, n_parcels
     use surface_parcel_container, only : surface_parcel_container_type  &
                                        , n_bot_parcels, bot_parcels     &
-                                       , n_top_parcels, top_parcels
-    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin, max_num_parcels, lmin
+                                       , n_top_parcels, top_parcels     &
+                                       , get_surface_parcel_length
+    use parameters, only : dx, dxi, vcell, hli, lower, extent, lcell, nx, nz, vmin, max_num_parcels, lmin
     use options, only : parcel
     use timer, only : start_timer, stop_timer
 
@@ -16,16 +17,9 @@ module parcel_mixing
     private
 
     !Used for searching for possible parcel merger:
-    integer, allocatable :: top_nppc(:), bot_nppc(:)!, kc1(:),kc2(:)
-    integer, allocatable :: top_loca(:), bot_loca(:)
-    integer, allocatable :: top_pid(:), bot_pid(:)
-
-!     integer, allocatable :: node(:)
-
-    !Other variables:
-!     double precision:: delx,delz,dsq,dsqmin,x_small,z_small
-!     integer:: ic,is,i,k,m,j, n
-!     integer:: ix,ix0,iz0
+    integer, allocatable :: nppc(:), kc1(:), kc2(:)
+    integer, allocatable :: loca(:)
+    integer, allocatable :: node(:)
 
     public :: mix_parcels, mixing_timer
 
@@ -39,56 +33,42 @@ module parcel_mixing
 
             call find_interior_parcels
 
-            call surface_to_interior(0,    n_bot_parcels, bot_parcels, top_nppc, top_loca, top_pid)
-            call surface_to_interior(nz+1, n_top_parcels, top_parcels, bot_nppc, bot_loca, bot_pid)
+            call surface_to_interior(0,    n_bot_parcels, bot_parcels)
+            call surface_to_interior(nz+1, n_top_parcels, top_parcels)
 
         end subroutine mix_parcels
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine surface_to_interior(iz, n_spar, spar, nppc, loca, pid)
+        subroutine surface_to_interior(iz, n_spar, spar)
             integer,                             intent(in)    :: iz
             integer,                             intent(in)    :: n_spar
             type(surface_parcel_container_type), intent(inout) :: spar
-            integer,                             intent(in)    :: nppc(:)
-            integer,                             intent(in)    :: loca(:)
-            integer,                             intent(in)    :: pid(:)
-            integer                                            :: n_interior, n, ix, i, m, ix0, ic, k
-            double precision                                   :: length, xs, zs, delx, delz
+            integer                                            :: n, ix, i, m, ix0, ic, k, is
+            double precision                                   :: length, xs, zs, delx, delz, dsq, dsqmin
             integer, allocatable                               :: isma(:)
             integer, allocatable                               :: iclo(:)
+            integer                                            :: nmix
 
             call start_timer(mixing_timer)
 
-            m = 1
+            ! -----------------------------------------------------------------
+            ! Number of small surface parcels:
+            nmix = 0
             do n = 1, n_spar
                 length = get_surface_parcel_length(n, spar)
                 if (length < lmin) then
-
-                    ix = mod(int(dxi(1) * (spar%position(n) - lower(1))), nx)
-
-                    ! Cell index of parcel:
-                    i = 1 + ix !This runs from 1 to nx
-
-                    ! Accumulate number of parcels in this grid cell:
-                    nppc(i) = nppc(i) + 1
-
-                    ! Store grid cell that this parcel is in:
-                    loca(m) = i
-
-                    ! Store parcel index:
-                    pid(m) = n
-
-                    m = m + 1
+                    nmix = nmix + 1
                 endif
             enddo
 
-            ! number of small surface parcels
-            nmix = m - 1
-
+            if (nmix == 0) then
+                call stop_timer(mixing_timer)
+                return
+            endif
 
             ! -----------------------------------------------------------------
-            ! Find closest interior parcel to small surface parcel:
+            ! Setup search arrays:
 
             allocate(isma(nmix))
             allocate(iclo(nmix))
@@ -96,17 +76,29 @@ module parcel_mixing
             isma = 0
             iclo = 0
 
+            ! Fill isma array:
+            m = 0
+            do n = 1, n_spar
+                length = get_surface_parcel_length(n, spar)
+                if (length < lmin) then
+                    m = m + 1
+                    isma(m) = n
+                endif
+            enddo
+
+            ! -----------------------------------------------------------------
+            ! Find closest interior parcel to small surface parcel:
+
             do m = 1, nmix
 
-                ! grid cell this parcel is in:
-                ix0 = loca(m)
-
-                ! parcel index
-                is = pid(m)
+                is = isma(m)
 
                 ! position of surface parcel
                 xs = spar%position(is)
                 zs = lower(2) + dx(2) * dble(iz)
+
+                ! grid cell this parcel is in:
+                ix0 = mod(int(dxi(1) * (xs - lower(1))), nx)
 
                 dsqmin = product(extent)
                 ic = 0
@@ -148,50 +140,12 @@ module parcel_mixing
 
             call mixing(spar, isma, iclo, nmix)
 
-
             ! -----------------------------------------------------------------
             ! Final clean-up:
 
             deallocate(isma)
             deallocate(iclo)
 
-
-
-
-!
-!             if (nmerge == 0) then
-!                 call stop_timer(merge_nearest_timer)
-!                 return
-!             endif
-!
-!             ! allocate arrays
-!             allocate(isma(0:nmerge))
-!             allocate(iclo(nmerge))
-!
-!             isma = 0
-!             iclo = 0
-!
-!             ! Find arrays kc1(ij) & kc2(ij) which indicate the parcels in grid cell ij
-!             ! through n = node(k), for k = kc1(ij),kc2(ij):
-!             kc1(1) = 1
-!             do ij = 1, ncell-1
-!                 kc1(ij+1) = kc1(ij) + nppc(ij)
-!             enddo
-!
-!             kc2 = kc1 - 1
-!             j = 0
-!             do n = 1, n_parcels
-!                 ij = loca(n)
-!                 k = kc2(ij) + 1
-!                 node(k) = n
-!                 kc2(ij) = k
-!
-!                 if (parcels%volume(n) < vmin) then
-!                     j = j + 1
-!                     isma(j) = n
-!                 endif
-!             enddo
-!
             call stop_timer(mixing_timer)
 
         end subroutine surface_to_interior
@@ -199,31 +153,22 @@ module parcel_mixing
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine find_interior_parcels
-            integer :: k, i, n, ix, ib, it
+            integer :: iz, ij, n, ix, l, k
 
-            if (.not. allocated(top_nppc)) then
-                allocate(top_nppc(nx))
-                allocate(bot_nppc(nx))
-!                 allocate(kc1(nx))
-!                 allocate(kc2(nx))
-                allocate(top_loca(max_num_parcels / nz))
-                allocate(bot_loca(max_num_parcels / nz))
-
-                allocate(top_pid(max_num_parcels / nz))
-                allocate(bot_pid(max_num_parcels / nz))
-
-!                 allocate(node(max_num_parcels))
+            if (.not. allocated(nppc)) then
+                allocate(nppc(2 * nx))
+                allocate(kc1(2 * nx))
+                allocate(kc2(2 * nx))
+                allocate(loca(2 * max_num_parcels / nz))
+                allocate(node(2 * max_num_parcels / nz))
             endif
 
             !---------------------------------------------------------------------
             ! Initialise search:
-            top_nppc = 0 !top_nppc(i) will contain the number of parcels in grid cell i
-            bot_nppc = 0
-
-            ib = 1
-            it = 1
+            nppc = 0 !nppc(i) will contain the number of parcels in grid cell i
 
             ! Bin interior parcels in cells:
+            l = 1
             do n = 1, n_parcels
 
                 ! we only consider big parcels
@@ -231,42 +176,42 @@ module parcel_mixing
                     cycle
                 endif
 
-                k = nint(dxi(2) * (parcels%position(2, n) - lower(2)))
+                iz = min(int(dxi(2) * (parcels%position(2, n) - lower(2))), nz-1)
 
-                ix = mod(int(dxi(1) * (parcels%position(1, n) - lower(1))), nx)
-
-                ! Cell index of parcel:
-                i = 1 + ix !This runs from 1 to nx
-
-                if (k == nz) then
+                if ((iz == nz - 1) .or. (iz == 0)) then
                     !
-                    ! top surface
+                    ! top or bottom surface
                     !
+
+                    ix = mod(int(dxi(1) * (parcels%position(1, n) - lower(1))), nx)
+
+                    ! Cell index of parcel:
+                    ij = 1 + ix + nx * min(iz, 1)
+
 
                     ! Accumulate number of parcels in this grid cell:
-                    top_nppc(i) = top_nppc(i) + 1
+                    nppc(ij) = nppc(ij) + 1
 
                     ! Store grid cell that this parcel is in:
-                    top_loca(it) = i
+                    loca(l) = ij
 
-                    ! Store parcel index:
-                    top_pid(it) = n
-
-                    it = it + 1
-
-                else if (k == 0) then
-                    !
-                    ! bottom surface
-                    !
-                    bot_nppc(i) = bot_nppc(i) + 1
-
-                    bot_loca(ib) = i
-
-                    bot_pid(ib) = n
-
-                    ib = ib + 1
-
+                    l = l + 1
                 endif
+            enddo
+
+            ! Find arrays kc1(i) & kc2(i) which indicate the parcels in grid cell i
+            ! through n = node(k), for k = kc1(i),kc2(i):
+            kc1(1) = 1
+            do ij = 1, 2 * nx - 1
+                kc1(ij+1) = kc1(ij) + nppc(ij)
+            enddo
+
+            kc2 = kc1 - 1
+            do n = 1, l - 1
+                ij = loca(n)
+                k = kc2(ij) + 1
+                node(k) = n
+                kc2(ij) = k
             enddo
 
         end subroutine find_interior_parcels
@@ -279,9 +224,11 @@ module parcel_mixing
             integer,                             intent(in)    :: iclo(:)
             integer,                             intent(in)    :: nmix
             integer                                            :: l, m, n, ic, is
-            double precision                                   :: ai, vmix
+            double precision                                   :: ai, wmix, length
+            double precision                                   :: buoym(nmix), vortm(nmix), wm(nmix)
+            integer                                            :: lclo(n_parcels)
 
-            loca = zero
+            lclo = zero
 
             !------------------------------------------------------------------
             ! Figure out weights:
@@ -292,10 +239,10 @@ module parcel_mixing
                 ! Index of closest interior parcel
                 ic = iclo(m)
 
-                if (loca(ic) == 0) then
+                if (lclo(ic) == 0) then
                     ! Start a new mixing parcel, indexed l:
                     l = l + 1
-                    loca(ic) = l
+                    lclo(ic) = l
 
                     wm(l) = parcels%volume(ic) / vcell
 
@@ -307,7 +254,7 @@ module parcel_mixing
 
                 ! Sum up all the small surface parcel contributions:
                 is = isma(m)
-                n = loca(ic)
+                n = lclo(ic)
 
                 length = get_surface_parcel_length(is, spar)
 
@@ -334,22 +281,22 @@ module parcel_mixing
 
             !------------------------------------------------------------------
             ! Apply the blended values:
-            loca = zero
+            lclo = zero
             l = 0
 
             do m = 1, nmix
                 ic = iclo(m)
 
-                if (loca(ic) == 0) then
+                if (lclo(ic) == 0) then
                     l = l + 1
-                    loca(ic) = l
+                    lclo(ic) = l
 
                     parcels%buoyancy(ic) = buoym(l)
                     parcels%vorticity(ic) = vortm(l)
                 endif
 
                 is = isma(m)
-                n = loca(ic)
+                n = lclo(ic)
 
                 spar%buoyancy(is) = buoym(l)
                 spar%vorticity(is) = vortm(l)
