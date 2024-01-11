@@ -147,7 +147,7 @@ module rk_utils
             do ix = box%lo(1), box%hi(1)
                 do iy = box%lo(2), box%hi(2)
                     do iz = 0, nz
-                        strain=get_strain(velgradg(iz, iy, ix,:),vortg(iz, iy, ix, :))
+                        strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
                         ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
                         call scherzinger_eigenvalues(strain, D)
@@ -239,20 +239,20 @@ module rk_utils
             do ix = box%hlo(1), box%hhi(1)
                 do iy = box%hlo(2), box%hhi(2)
                     do iz = 0, nz
-                        strain=get_strain(velgradg(iz, iy, ix,:),vortg(iz, iy, ix, :))
-                        strain_mag(iz, iy, ix)=sqrt(2.0*strain(1, 1)*strain(1, 1)+&
-                                                        strain(1, 2)*strain(1, 2)+&
-                                                        strain(1, 3)*strain(1, 3)+&
-                                                        strain(2, 1)*strain(2, 1)+&
-                                                        strain(2, 2)*strain(2, 2)+&
-                                                        strain(2, 3)*strain(2, 3)+&
-                                                        strain(3, 1)*strain(3, 1)+&
-                                                        strain(3, 2)*strain(3, 2)+&
-                                                        strain(3, 3)*strain(3, 3))
+                        strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
+                        strain_mag(iz, iy, ix) = sqrt(2.0 * strain(1, 1) * strain(1, 1) +&
+                                                        strain(1, 2) * strain(1, 2) +&
+                                                        strain(1, 3) * strain(1, 3) +&
+                                                        strain(2, 1) * strain(2, 1) +&
+                                                        strain(2, 2) * strain(2, 2) +&
+                                                        strain(2, 3) * strain(2, 3) +&
+                                                        strain(3, 1) * strain(3, 1) +&
+                                                        strain(3, 2) * strain(3, 2) +&
+                                                        strain(3, 3) * strain(3, 3))
                    enddo
                    ! Set to zero beyond boundaries to prevent damping from acting here (which leads to instability)
-                   strain_mag(-1, iy, ix)=zero
-                   strain_mag(nz, iy, ix)=zero
+                   strain_mag(-1, iy, ix) = zero
+                   strain_mag(nz, iy, ix) = zero
                 enddo
             enddo
 

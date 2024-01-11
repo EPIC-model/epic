@@ -3,7 +3,7 @@
 ! gridded fields in a conservative manner.
 ! =============================================================================
 module parcel_damping
-    use constants, only :  f14
+    use constants, only :  f14, zero, one
     use mpi_timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin 
     use parcel_container, only : parcels, n_parcels
@@ -35,16 +35,16 @@ module parcel_damping
 
             if(damping%l_vorticity .or. damping%l_scalars) then 
                 call par2grid(.false.)
-                call perturbation_damping(dt,damping%l_vorticity,damping%l_scalars,&
-                     damping%vorticity_prefactor,damping%scalars_prefactor,.true.)
+                call perturbation_damping(dt, damping%l_vorticity, damping%l_scalars, &
+                     damping%vorticity_prefactor, damping%scalars_prefactor, .true.)
             end if
 
         end subroutine parcel_damp
 
         ! 
         ! @pre 
-        subroutine perturbation_damping(dt,l_vorticity,l_scalars,&
-                                        vorticity_prefactor,scalars_prefactor,l_reuse)
+        subroutine perturbation_damping(dt, l_vorticity, l_scalars, &
+                                        vorticity_prefactor, scalars_prefactor, l_reuse)
             double precision, intent(in)  :: dt
             logical, intent(in)   :: l_vorticity
             logical, intent(in)   :: l_scalars
@@ -79,45 +79,45 @@ module parcel_damping
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif
-                vortend=zero
-                buoytend=zero
+                vortend = zero
+                buoytend = zero
 #ifndef ENABLE_DRY_MODE
-                humtend=zero
+                humtend = zero
 #endif
 
                 ! we have 4 points per ellipsoid
                 do p = 1, n_points_p2g
                     call trilinear(points(:, p), is, js, ks, weights)
                     weight = point_weight_p2g * weights
-                    if(l_vorticity) then
+                    if (l_vorticity) then
                         ! Note this exponential factor can be different for vorticity/scalars
-                        time_fact=1.0-exp(-vorticity_prefactor*strain_mag(ks:ks+1, js:js+1, is:is+1)*dt)
-                        do l=1,3
-                            vortend(l)=vortend(l)+sum(weight*time_fact*(vortg(ks:ks+1, js:js+1, is:is+1, l)&
-                                       -parcels%vorticity(l,n)))
+                        time_fact = one - exp(-vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+                        do l = 1,3
+                            vortend(l) = vortend(l)+sum(weight * time_fact * (vortg(ks:ks+1, js:js+1, is:is+1, l) &
+                                       - parcels%vorticity(l,n)))
                         enddo
                     endif
-                    if(l_scalars) then
-                        time_fact=1.0-exp(-scalars_prefactor*strain_mag(ks:ks+1, js:js+1, is:is+1)*dt)
+                    if (l_scalars) then
+                        time_fact = one - exp(-scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
 #ifndef ENABLE_DRY_MODE
-                        humtend=humtend+sum(weight*time_fact*(humg(ks:ks+1, js:js+1, is:is+1)-parcels%humidity(n)))
-                        buoytend=buoytend+sum(weight*time_fact*(dbuoyg(ks:ks+1, js:js+1, is:is+1)-parcels%buoyancy(n)))
+                        humtend = humtend + sum(weight * time_fact * (humg(ks:ks+1, js:js+1, is:is+1) - parcels%humidity(n)))
+                        buoytend = buoytend + sum(weight * time_fact * (dbuoyg(ks:ks+1, js:js+1, is:is+1) - parcels%buoyancy(n)))
 #else
-                        buoytend=buoytend+sum(weight*time_fact*(tbuoyg(ks:ks+1, js:js+1, is:is+1)-parcels%buoyancy(n)))
+                        buoytend = buoytend + sum(weight * time_fact * (tbuoyg(ks:ks+1, js:js+1, is:is+1) - parcels%buoyancy(n)))
 #endif
                     endif
                 enddo
                 ! Add all the tendencies only at the end
-                if(l_vorticity) then
+                if (l_vorticity) then
                     do l=1,3
-                        parcels%vorticity(l,n)=parcels%vorticity(l,n)+vortend(l)
+                        parcels%vorticity(l,n) = parcels%vorticity(l,n) + vortend(l)
                     enddo
                 endif
-                if(l_scalars) then
+                if (l_scalars) then
 #ifndef ENABLE_DRY_MODE
-                    parcels%humidity(n)=parcels%humidity(n)+humtend
+                    parcels%humidity(n) = parcels%humidity(n) + humtend
 #endif
-                    parcels%buoyancy(n)=parcels%buoyancy(n)+buoytend
+                    parcels%buoyancy(n) = parcels%buoyancy(n) + buoytend
                 endif
             enddo
             !$omp end do
