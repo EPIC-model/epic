@@ -33,7 +33,7 @@ module parcel_damping
         subroutine parcel_damp(dt)
             double precision, intent(in)  :: dt
 
-            if(damping%l_vorticity .or. damping%l_scalars) then 
+            if (damping%l_vorticity .or. damping%l_scalars) then 
                 call par2grid(.false.)
                 call perturbation_damping(dt, damping%l_vorticity, damping%l_scalars, &
                      damping%vorticity_prefactor, damping%scalars_prefactor, .true.)
