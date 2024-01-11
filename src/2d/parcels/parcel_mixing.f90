@@ -158,8 +158,6 @@ module parcel_mixing
 
 
 
-
-!             call find_parcels
 !
 !             if (nmerge == 0) then
 !                 call stop_timer(merge_nearest_timer)
@@ -194,59 +192,6 @@ module parcel_mixing
 !                 endif
 !             enddo
 !
-!             !---------------------------------------------------------------------
-!             ! Now find the nearest grid point to each small parcel (to be merged)
-!             ! and search over the surrounding 8 grid cells for the closest parcel:
-!
-!             ! SB: do not use temporary (j) index here, so we will be able to parallelise.
-!             ! Rather, stop if no nearest parcel found  in surrounding grid boxes
-!             do m = 1, nmerge
-!                 is = isma(m)
-!                 x_small = parcels%position(1, is)
-!                 z_small = parcels%position(2, is)
-!                 ! Parcel "is" is small and should be merged; find closest other:
-!                 ix0 = mod(nint(dxi(1) * (x_small - lower(1))), nx) ! ranges from 0 to nx-1
-!                 iz0 = nint(dxi(2) * (z_small - lower(2)))          ! ranges from 0 to nz
-!
-!                 ! Grid point (ix0,iz0) is closest to parcel "is"
-!
-!                 dsqmin = product(extent)
-!                 ic = 0
-!
-!                 ! Loop over 8 cells surrounding (ix0,iz0):
-!                 do iz = max(0, iz0-1), min(nz-1, iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
-!                     do ix = ix0-1, ix0
-!                         ! Cell index (accounting for x periodicity):
-!                         ij = 1 + mod(nx + ix, nx) + nx * iz
-!                         ! Search small parcels for closest other:
-!                         do k = kc1(ij), kc2(ij)
-!                             n = node(k)
-!                             if (n .ne. is) then
-!                                 delz = parcels%position(2, n) - z_small
-!                                 if (delz*delz < dsqmin) then
-!                                     delx = get_delx(parcels%position(1, n), x_small) ! works across periodic edge
-!                                     ! Minimise dsqmin
-!                                     dsq = delz * delz + delx * delx
-!                                     if (dsq < dsqmin) then
-!                                         dsqmin = dsq
-!                                         ic = n
-!                                     endif
-!                                 endif
-!                             endif
-!                         enddo
-!                     enddo
-!                 enddo
-!
-!                 if (ic==0) then
-!                   print *, 'Merge error: no near neighbour found.'
-!                   stop
-!                 end if
-!
-!                 ! Store the index of the parcel to be potentially merged with:
-!                 isma(m) = is
-!                 iclo(m) = ic
-!             enddo
-
             call stop_timer(mixing_timer)
 
         end subroutine surface_to_interior
