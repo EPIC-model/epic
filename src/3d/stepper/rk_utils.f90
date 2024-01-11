@@ -76,6 +76,51 @@ module rk_utils
                         + dvdz      * B33          ! + dv/dz * B33
         end function get_dBdt
 
+        ! Calculate velocity strain
+        ! @param[in] velocity gradient tensor at grid point
+        ! @param[in] vorticity at grid point
+        ! @returns 3x3 strain matrix
+        function get_strain(velgradgp, vortgp) result(strain)
+            double precision, intent(in) :: velgradgp(5)
+            double precision, intent(in) :: vortgp(n_dim)
+            double precision             :: strain(3,3)
+       
+            ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
+            ! where
+            !     /u_x u_y u_z\
+            ! S = |v_x v_y v_z|
+            !     \w_x w_y w_z/
+            ! with u_* = du/d* (also derivatives of v and w).
+            ! The derivatives dv/dx, du/dz, dv/dz and dw/dz are calculated
+            ! with vorticity or the assumption of incompressibility
+            ! (du/dx + dv/dy + dw/dz = 0):
+            !    dv/dx = \zeta + du/dy
+            !    du/dz = \eta + dw/dx
+            !    dv/dz = dw/dy - \xi
+            !    dw/dz = - (du/dx + dv/dy)
+            !
+            !                         /  2 * u_x  u_y + v_x u_z + w_x\
+            ! 1/2 * (S + S^T) = 1/2 * |u_y + v_x   2 * v_y  v_z + w_y|
+            !                         \u_z + w_x  v_z + w_y   2 * w_z/
+            !
+            ! S11 = du/dx
+            ! S12 = 1/2 * (du/dy + dv/dx) = 1/2 * (2 * du/dy + \zeta) = du/dy + 1/2 * \zeta
+            ! S13 = 1/2 * (du/dz + dw/dx) = 1/2 * (\eta + 2 * dw/dx) = 1/2 * \eta + dw/dx
+            ! S22 = dv/dy
+            ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \xi) = dw/dy - 1/2 * \xi
+            ! S33 = dw/dz = - (du/dx + dv/dy)
+
+            strain(1, 1) = velgradgp(I_DUDX)                       ! S11
+            strain(1, 2) = velgradgp(I_DUDY) + f12 * vortgp(I_Z)    ! S12
+            strain(1, 3) = velgradgp(I_DWDX) + f12 * vortgp(I_Y)    ! S13
+            strain(2, 1) = strain(1, 2)
+            strain(2, 2) = velgradgp(I_DVDY)                                   ! S22
+            strain(2, 3) = velgradgp(I_DWDY) - f12 * vortgp(I_X)    ! S23
+            strain(3, 1) = strain(1, 3)
+            strain(3, 2) = strain(2, 3)
+            strain(3, 3) = -(velgradgp(I_DUDX) + velgradgp(I_DVDY)) ! S33
+        end function get_strain
+
         ! Estimate a suitable time step based on the velocity strain
         ! and buoyancy gradient.
         ! @param[in] t is the time
@@ -102,40 +147,7 @@ module rk_utils
             do ix = box%lo(1), box%hi(1)
                 do iy = box%lo(2), box%hi(2)
                     do iz = 0, nz
-                        ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
-                        ! where
-                        !     /u_x u_y u_z\
-                        ! S = |v_x v_y v_z|
-                        !     \w_x w_y w_z/
-                        ! with u_* = du/d* (also derivatives of v and w).
-                        ! The derivatives dv/dx, du/dz, dv/dz and dw/dz are calculated
-                        ! with vorticity or the assumption of incompressibility
-                        ! (du/dx + dv/dy + dw/dz = 0):
-                        !    dv/dx = \zeta + du/dy
-                        !    du/dz = \eta + dw/dx
-                        !    dv/dz = dw/dy - \xi
-                        !    dw/dz = - (du/dx + dv/dy)
-                        !
-                        !                         /  2 * u_x  u_y + v_x u_z + w_x\
-                        ! 1/2 * (S + S^T) = 1/2 * |u_y + v_x   2 * v_y  v_z + w_y|
-                        !                         \u_z + w_x  v_z + w_y   2 * w_z/
-                        !
-                        ! S11 = du/dx
-                        ! S12 = 1/2 * (du/dy + dv/dx) = 1/2 * (2 * du/dy + \zeta) = du/dy + 1/2 * \zeta
-                        ! S13 = 1/2 * (du/dz + dw/dx) = 1/2 * (\eta + 2 * dw/dx) = 1/2 * \eta + dw/dx
-                        ! S22 = dv/dy
-                        ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \xi) = dw/dy - 1/2 * \xi
-                        ! S33 = dw/dz = - (du/dx + dv/dy)
-                        strain(1, 1) = velgradg(iz, iy, ix, I_DUDX)                                   ! S11
-                        strain(1, 2) = velgradg(iz, iy, ix, I_DUDY) + f12 * vortg(iz, iy, ix, I_Z)    ! S12
-                        strain(1, 3) = velgradg(iz, iy, ix, I_DWDX) + f12 * vortg(iz, iy, ix, I_Y)    ! S13
-                        strain(2, 1) = strain(1, 2)
-                        strain(2, 2) = velgradg(iz, iy, ix, I_DVDY)                                   ! S22
-                        strain(2, 3) = velgradg(iz, iy, ix, I_DWDY) - f12 * vortg(iz, iy, ix, I_X)    ! S23
-                        strain(3, 1) = strain(1, 3)
-                        strain(3, 2) = strain(2, 3)
-                        strain(3, 3) = -(velgradg(iz, iy, ix, I_DUDX) + velgradg(iz, iy, ix, I_DVDY)) ! S33
-
+                        strain=get_strain(velgradg(iz, iy, ix,:),vortg(iz, iy, ix, :))
                         ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
                         call scherzinger_eigenvalues(strain, D)
@@ -225,45 +237,10 @@ module rk_utils
             double precision             :: strain(n_dim, n_dim)
             integer                      :: ix, iy, iz
 
-            !
-            ! velocity strain
-            !
             do ix = box%hlo(1), box%hhi(1)
                 do iy = box%hlo(2), box%hhi(2)
                     do iz = 0, nz
-                        ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
-                        ! where
-                        !     /u_x u_y u_z\
-                        ! S = |v_x v_y v_z|
-                        !     \w_x w_y w_z/
-                        ! with u_* = du/d* (also derivatives of v and w).
-                        ! The derivatives dv/dx, du/dz, dv/dz and dw/dz are calculated
-                        ! with vorticity or the assumption of incompressibility
-                        ! (du/dx + dv/dy + dw/dz = 0):
-                        !    dv/dx = \zeta + du/dy
-                        !    du/dz = \eta + dw/dx
-                        !    dv/dz = dw/dy - \xi
-                        !    dw/dz = - (du/dx + dv/dy)
-                        !
-                        !                         /  2 * u_x  u_y + v_x u_z + w_x\
-                        ! 1/2 * (S + S^T) = 1/2 * |u_y + v_x   2 * v_y  v_z + w_y|
-                        !                         \u_z + w_x  v_z + w_y   2 * w_z/
-                        !
-                        ! S11 = du/dx
-                        ! S12 = 1/2 * (du/dy + dv/dx) = 1/2 * (2 * du/dy + \zeta) = du/dy + 1/2 * \zeta
-                        ! S13 = 1/2 * (du/dz + dw/dx) = 1/2 * (\eta + 2 * dw/dx) = 1/2 * \eta + dw/dx
-                        ! S22 = dv/dy
-                        ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \xi) = dw/dy - 1/2 * \xi
-                        ! S33 = dw/dz = - (du/dx + dv/dy)
-                        strain(1, 1) = velgradg(iz, iy, ix, I_DUDX)                                   ! S11
-                        strain(1, 2) = velgradg(iz, iy, ix, I_DUDY) + f12 * vortg(iz, iy, ix, I_Z)    ! S12
-                        strain(1, 3) = velgradg(iz, iy, ix, I_DWDX) + f12 * vortg(iz, iy, ix, I_Y)    ! S13
-                        strain(2, 1) = strain(1, 2)
-                        strain(2, 2) = velgradg(iz, iy, ix, I_DVDY)                                   ! S22
-                        strain(2, 3) = velgradg(iz, iy, ix, I_DWDY) - f12 * vortg(iz, iy, ix, I_X)    ! S23
-                        strain(3, 1) = strain(1, 3)
-                        strain(3, 2) = strain(2, 3)
-                        strain(3, 3) = -(velgradg(iz, iy, ix, I_DUDX) + velgradg(iz, iy, ix, I_DVDY)) ! S33
+                        strain=get_strain(velgradg(iz, iy, ix,:),vortg(iz, iy, ix, :))
                         strain_mag(iz, iy, ix)=sqrt(2.0*strain(1, 1)*strain(1, 1)+&
                                                         strain(1, 2)*strain(1, 2)+&
                                                         strain(1, 3)*strain(1, 3)+&
