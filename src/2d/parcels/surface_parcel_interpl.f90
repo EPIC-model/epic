@@ -4,7 +4,7 @@
 ! =============================================================================
 module surface_parcel_interpl
     use constants, only : zero, one, f12, f14, f34
-    use parameters, only : nx, nz, lmin
+    use parameters, only : nx, nz, lmin, vcell, lcell
     use options, only : parcel
     use surface_parcel_container, only : top_parcels, n_top_parcels     &
                                        , bot_parcels, n_bot_parcels     &
@@ -142,6 +142,7 @@ module surface_parcel_interpl
 
                 length = get_surface_parcel_length(n, spar)
 
+
                 points = get_line_points(n, spar)
 
                 ! we have 2 points per line
@@ -158,6 +159,7 @@ module surface_parcel_interpl
                     do l = 1, ngp
 
                         weight = f12 * weights(l) * length
+
 
                         vortg(iz, is(l)) = vortg(iz, is(l)) &
                                          + weight * spar%vorticity(n)

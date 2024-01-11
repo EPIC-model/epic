@@ -67,6 +67,8 @@ module parcel_mixing
                 return
             endif
 
+            print *, "Mixing number:", nmix
+
             ! -----------------------------------------------------------------
             ! Setup search arrays:
 

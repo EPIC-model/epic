@@ -5,7 +5,7 @@
 module parcel_interpl
     use constants, only : zero, one, two
     use timer, only : start_timer, stop_timer
-    use parameters, only : nx, nz, vmin
+    use parameters, only : nx, nz, vmin, vcell
     use options, only : parcel
     use parcel_container, only : parcels, n_parcels
     use parcel_bc, only : apply_periodic_bc
@@ -294,28 +294,72 @@ module parcel_interpl
             double precision, intent(out) :: ww(4)
             double precision              :: xy(2)
 
-            ! (i, j)
-            call get_index(pos, ii(1), jj(1))
-            call get_position(ii(1), jj(1), xy)
-            ww(1) = product(one - abs(pos - xy) * dxi)
+!             ! (i, j)
+!             call get_index(pos, ii(1), jj(1))
+!             call get_position(ii(1), jj(1), xy)
+!             ww(1) = product(one - abs(pos - xy) * dxi)
+!
+!             ! (i+1, j)
+!             ii(2) = ii(1) + 1
+!             jj(2) = jj(1)
+!             call get_position(ii(2), jj(2), xy)
+!             ww(2) = product(one - abs(pos - xy) * dxi)
+!
+!             ! (i, j+1)
+!             ii(3) = ii(1)
+!             jj(3) = jj(1) + 1
+!             call get_position(ii(3), jj(3), xy)
+!             ww(3) = product(one - abs(pos - xy) * dxi)
+!
+!             ! (i+1, j+1)
+!             ii(4) = ii(2)
+!             jj(4) = jj(3)
+!             call get_position(ii(4), jj(4), xy)
+!             ww(4) = product(one - abs(pos - xy) * dxi)
 
-            ! (i+1, j)
+!             ! account for x periodicity
+!             call periodic_index_shift(ii)
+
+!         end subroutine bilinear
+
+!         ! Bi-linear interpolation
+!         ! @param[in] pos position of the parcel
+!         ! @param[out] ii horizontal grid points for interoplation
+!         ! @param[out] jj meridional grid points for interpolation
+!         ! @param[out] ww interpolation weights
+!         subroutine bilinear(pos, ii, jj, ww)
+!             double precision, intent(in)  :: pos(2)
+!             integer,          intent(out) :: ii, jj
+!             double precision, intent(out) :: ww(0:1, 0:1)
+!             double precision              :: xy(2)
+            double precision              :: px, py, pxc, pyc
+
+
+            ! (i, j)
+            xy = (pos - lower(1:2)) * dxi(1:2)
+            ii(1) = floor(xy(1))
+            jj(1) = floor(xy(2))
+
+            px = xy(1) - dble(ii(1))
+            pxc = one - px
+
+            py = xy(2) - dble(jj(1))
+            pyc = one - py
+
+            ! Note order of indices is j,i
+            ww(1) = pyc * pxc
+            ww(2) = pyc * px
+            ww(3) = py  * pxc
+            ww(4) = py  * px
+
             ii(2) = ii(1) + 1
             jj(2) = jj(1)
-            call get_position(ii(2), jj(2), xy)
-            ww(2) = product(one - abs(pos - xy) * dxi)
 
-            ! (i, j+1)
             ii(3) = ii(1)
             jj(3) = jj(1) + 1
-            call get_position(ii(3), jj(3), xy)
-            ww(3) = product(one - abs(pos - xy) * dxi)
 
-            ! (i+1, j+1)
-            ii(4) = ii(2)
-            jj(4) = jj(3)
-            call get_position(ii(4), jj(4), xy)
-            ww(4) = product(one - abs(pos - xy) * dxi)
+            ii(4) = ii(1) + 1
+            jj(4) = jj(1) + 1
 
             ! account for x periodicity
             call periodic_index_shift(ii)

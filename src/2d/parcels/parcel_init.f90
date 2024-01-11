@@ -8,6 +8,7 @@ module parcel_init
     use parcel_ellipse, only : get_ab, get_B22, get_eigenvalue
     use parcel_split, only : split_ellipses
     use parcel_interpl, only : bilinear, ngp
+    use fields, only : vortg, tbuoyg
     use parameters, only : dx, vcell, ncell,        &
                            extent, lower, nx, nz,   &
                            max_num_parcels
@@ -26,9 +27,9 @@ module parcel_init
 
 
     private :: init_refine,                 &
-               init_from_grids,             &
-               alloc_and_precompute,        &
-               dealloc
+!                init_from_grids,             &
+               alloc_and_precompute!,        &
+!                dealloc
 
     contains
 
@@ -93,7 +94,7 @@ module parcel_init
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, n_parcels
-                parcels%vorticity(n) = zero
+                parcels%vorticity(n) = zero * tol
                 parcels%buoyancy(n) = zero
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n) = zero
@@ -102,7 +103,9 @@ module parcel_init
             !$omp end do
             !$omp end parallel
 
-            call init_from_grids(fname, tol)
+!             call init_from_grids(fname, tol)
+
+            call init_parcels_from_grids(fname)
 
             call init_surface_parcels(fname)
 
@@ -211,23 +214,62 @@ module parcel_init
 
         end subroutine alloc_and_precompute
 
-        subroutine dealloc
-            deallocate(apar)
-            deallocate(weights)
-            deallocate(is)
-            deallocate(js)
-        end subroutine dealloc
+!         subroutine dealloc
+!             deallocate(apar)
+!             deallocate(weights)
+!             deallocate(is)
+!             deallocate(js)
+!         end subroutine dealloc
 
 
-        ! Initialise parcel attributes from gridded quantities.
-        ! Attention: This subroutine currently only supports
-        !            vorticity and buoyancy fields.
-        subroutine init_from_grids(ncfname, tol)
+!         ! Initialise parcel attributes from gridded quantities.
+!         ! Attention: This subroutine currently only supports
+!         !            vorticity and buoyancy fields.
+!         subroutine init_from_grids(ncfname, tol)
+!             character(*),     intent(in)  :: ncfname
+!             double precision, intent(in)  :: tol
+!             double precision              :: buffer(-1:nz+1, 0:nx-1)
+!             integer                       :: ncid
+!             integer                       :: n_steps, start(3), cnt(3)
+!
+!             call alloc_and_precompute
+!
+!             call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
+!
+!             call get_num_steps(ncid, n_steps)
+!
+!             cnt  =  (/ nx, nz+1, 1       /)
+!             start = (/ 1,  1,    n_steps /)
+!
+!
+!             if (has_dataset(ncid, 'vorticity')) then
+!                 buffer = zero
+!                 call read_netcdf_dataset(ncid, 'vorticity', buffer(0:nz, :), start=start, cnt=cnt)
+!                 call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity)
+!             endif
+!
+!
+!             if (has_dataset(ncid, 'buoyancy')) then
+!                 buffer = zero
+!                 call read_netcdf_dataset(ncid, 'buoyancy', buffer(0:nz, :), start=start, cnt=cnt)
+!                 call gen_parcel_scalar_attr(buffer, tol, parcels%buoyancy)
+!             endif
+!
+!             call close_netcdf_file(ncid)
+!
+!             call dealloc
+!
+!         end subroutine init_from_grids
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine init_parcels_from_grids(ncfname)
             character(*),     intent(in)  :: ncfname
-            double precision, intent(in)  :: tol
-            double precision              :: buffer(-1:nz+1, 0:nx-1)
+            integer                        :: n, l
             integer                       :: ncid
             integer                       :: n_steps, start(3), cnt(3)
+            integer :: ii(4), jj(4)
+            double precision :: ww(4)
 
             call alloc_and_precompute
 
@@ -238,25 +280,28 @@ module parcel_init
             cnt  =  (/ nx, nz+1, 1       /)
             start = (/ 1,  1,    n_steps /)
 
+            call read_netcdf_dataset(ncid, 'vorticity', vortg(0:nz, :), start=start, cnt=cnt)
+            call read_netcdf_dataset(ncid, 'buoyancy', tbuoyg(0:nz, :), start=start, cnt=cnt)
 
-            if (has_dataset(ncid, 'vorticity')) then
-                buffer = zero
-                call read_netcdf_dataset(ncid, 'vorticity', buffer(0:nz, :), start=start, cnt=cnt)
-                call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity)
-            endif
+            !$omp parallel default(shared)
+            !$omp do private(n, l, ii, jj, ww)
+            do n = 1, n_parcels
 
+                ! get interpolation weights and mesh indices
+                call bilinear(parcels%position(:, n), ii, jj, ww)
 
-            if (has_dataset(ncid, 'buoyancy')) then
-                buffer = zero
-                call read_netcdf_dataset(ncid, 'buoyancy', buffer(0:nz, :), start=start, cnt=cnt)
-                call gen_parcel_scalar_attr(buffer, tol, parcels%buoyancy)
-            endif
+                ! loop over grid points which are part of the interpolation
+                do l = 1, 4
+                    parcels%vorticity(n) = parcels%vorticity(n) + ww(l) * vortg(jj(l), ii(l))
+                parcels%buoyancy(n) = parcels%buoyancy(n) + ww(l) * tbuoyg(jj(l), ii(l))
+                enddo
+            enddo
+            !$omp end do
+            !$omp end parallel
 
-            call close_netcdf_file(ncid)
+            call stop_timer(init_timer)
 
-            call dealloc
-
-        end subroutine init_from_grids
+        end subroutine init_parcels_from_grids
 
         ! Generates the parcel attribute "par" from the field values provided
         ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)

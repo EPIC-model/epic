@@ -24,6 +24,7 @@ program epic2d
     use tri_inversion, only : init_inversion, vor2vel_timer, vtend_timer
     use parcel_interpl, only : grid2par_timer, par2grid_timer
     use parcel_init, only : init_timer
+    use parcel_mixing, only : mix_parcels, mixing_timer
     use ls_rk4, only : ls_rk4_step, rk4_timer
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
@@ -69,6 +70,7 @@ program epic2d
             call register_timer('parcel push', rk4_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
+            call register_timer('parcel mixing timer', mixing_timer)
 
             call start_timer(epic_timer)
 
@@ -111,6 +113,8 @@ program epic2d
                 call ls_rk4_step(t)
 
 !                 call write_step(1.0d0)
+
+                call mix_parcels
 
                 print *, "after rk"
                 call merge_parcels
