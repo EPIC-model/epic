@@ -13,7 +13,6 @@ module parcel_merging
                                , get_dely_across_periodic   &
                                , parcel_delete
     use parcel_ellipsoid, only : get_abc
-    ! use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
     use options, only : verbose
