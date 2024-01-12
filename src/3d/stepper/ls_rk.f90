@@ -8,7 +8,7 @@ module ls_rk
     use parcel_container
     use parcel_bc
     use parcel_mpi, only : parcel_communicate
-    use rk_utils, only: get_dBdt, get_time_step, get_strain_magnitude_field
+    use rk_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par
     use parcel_damping, only : parcel_damp
@@ -124,7 +124,6 @@ module ls_rk
             call apply_parcel_reflective_bc
             call stop_timer(rk_timer)
 
-            call get_strain_magnitude_field
             call parcel_damp(dt)
 
             ! we need to subtract 14 calls since we start and stop

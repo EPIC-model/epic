@@ -1,6 +1,9 @@
 ! =============================================================================
 ! This module contains the subroutines to do damping of parcel properties to
-! gridded fields in a conservative manner.
+! gridded fields in a conservative manner. It does this by nudging all the  
+! parcels associated with a grid point to the grid point value, with the strength
+! of damping proportional to the grid point contribution to the gridded value and
+! the strain rate at the grid point.
 ! =============================================================================
 module parcel_damping
     use constants, only :  f14, zero, one
@@ -12,7 +15,10 @@ module parcel_damping
     use fields
     use omp_lib
     use options, only : damping
+    use inversion_mod, only : vor2vel
+    use rk_utils, only : get_strain_magnitude_field
     implicit none
+
 
     private
 
@@ -34,7 +40,10 @@ module parcel_damping
             double precision, intent(in)  :: dt
 
             if (damping%l_vorticity .or. damping%l_scalars) then 
+                ! ensure gridded fields are up to date
                 call par2grid(.false.)
+                call vor2vel
+                call get_strain_magnitude_field
                 call perturbation_damping(dt, .true.)
             end if
 

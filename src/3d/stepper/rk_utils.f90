@@ -236,8 +236,8 @@ module rk_utils
             double precision             :: strain(n_dim, n_dim)
             integer                      :: ix, iy, iz
 
-            do ix = box%hlo(1), box%hhi(1)
-                do iy = box%hlo(2), box%hhi(2)
+            do ix = box%lo(1), box%hi(1)
+                do iy = box%lo(2), box%hi(2)
                     do iz = 0, nz
                         strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
                         strain_mag(iz, iy, ix) = sqrt(two * strain(1, 1) * strain(1, 1) +&
@@ -256,8 +256,8 @@ module rk_utils
                 enddo
             enddo
 
-        ! We need this halo fill to obtain good conservation    
-        call field_halo_fill_scalar(strain_mag, l_alloc=.true.)
+          ! We need this halo fill to obtain good conservation    
+          call field_halo_fill_scalar(strain_mag, l_alloc=.true.)
 
         end subroutine get_strain_magnitude_field
 
