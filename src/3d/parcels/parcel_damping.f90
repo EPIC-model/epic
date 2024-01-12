@@ -35,22 +35,16 @@ module parcel_damping
 
             if (damping%l_vorticity .or. damping%l_scalars) then 
                 call par2grid(.false.)
-                call perturbation_damping(dt, damping%l_vorticity, damping%l_scalars, &
-                     damping%vorticity_prefactor, damping%scalars_prefactor, .true.)
+                call perturbation_damping(dt, .true.)
             end if
 
         end subroutine parcel_damp
 
         ! 
         ! @pre 
-        subroutine perturbation_damping(dt, l_vorticity, l_scalars, &
-                                        vorticity_prefactor, scalars_prefactor, l_reuse)
+        subroutine perturbation_damping(dt, l_reuse)
             double precision, intent(in)  :: dt
-            logical, intent(in)   :: l_vorticity
-            logical, intent(in)   :: l_scalars
-            logical   :: l_reuse
-            double precision, intent(in)   :: vorticity_prefactor
-            double precision, intent(in)   :: scalars_prefactor
+            logical, intent(in)   :: l_reuse
             integer                       :: n, p, l 
             double precision              :: points(3, n_points_p2g)
             double precision              :: pvol
@@ -89,16 +83,16 @@ module parcel_damping
                 do p = 1, n_points_p2g
                     call trilinear(points(:, p), is, js, ks, weights)
                     weight = point_weight_p2g * weights
-                    if (l_vorticity) then
+                    if (damping%l_vorticity) then
                         ! Note this exponential factor can be different for vorticity/scalars
-                        time_fact = one - exp(-vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+                        time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
                         do l = 1,3
                             vortend(l) = vortend(l)+sum(weight * time_fact * (vortg(ks:ks+1, js:js+1, is:is+1, l) &
                                        - parcels%vorticity(l,n)))
                         enddo
                     endif
-                    if (l_scalars) then
-                        time_fact = one - exp(-scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+                    if (damping%l_scalars) then
+                        time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
 #ifndef ENABLE_DRY_MODE
                         humtend = humtend + sum(weight * time_fact * (humg(ks:ks+1, js:js+1, is:is+1) - parcels%humidity(n)))
                         buoytend = buoytend + sum(weight * time_fact * (dbuoyg(ks:ks+1, js:js+1, is:is+1) - parcels%buoyancy(n)))
@@ -108,12 +102,12 @@ module parcel_damping
                     endif
                 enddo
                 ! Add all the tendencies only at the end
-                if (l_vorticity) then
+                if (damping%l_vorticity) then
                     do l=1,3
                         parcels%vorticity(l,n) = parcels%vorticity(l,n) + vortend(l)
                     enddo
                 endif
-                if (l_scalars) then
+                if (damping%l_scalars) then
 #ifndef ENABLE_DRY_MODE
                     parcels%humidity(n) = parcels%humidity(n) + humtend
 #endif
