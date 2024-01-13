@@ -43,6 +43,23 @@ module parcel_damping
                 ! ensure gridded fields are up to date
                 call par2grid(.false.)
                 call vor2vel
+
+                ! Reflect beyond boundaries to ensure damping is conservative
+                ! This is because the points below the surface contribute to the level above
+                !$omp parallel workshare
+                vortg(-1,   :, :, :) = vortg(1, :, :, :)
+                vortg(nz+1, :, :, :) = vortg(nz-1, :, :, :)
+
+#ifndef ENABLE_DRY_MODE
+                humg(-1,   :, :) = humg(1, :, :)
+                humg(nz+1, :, :) = humg(nz-1, :, :)
+                dbuoyg(-1,   :, :) = dbuoyg(1, :, :)
+                dbuoyg(nz+1, :, :) = dbuoyg(nz-1, :, :)
+#endif
+                tbuoyg(-1,   :, :) = tbuoyg(1, :, :)
+                tbuoyg(nz+1, :, :) = tbuoyg(nz-1, :, :)
+                !$omp end parallel workshare
+
                 call get_strain_magnitude_field
                 call perturbation_damping(dt, .true.)
             end if

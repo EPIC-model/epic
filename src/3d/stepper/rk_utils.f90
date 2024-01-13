@@ -250,9 +250,10 @@ module rk_utils
                                                         strain(3, 2) * strain(3, 2) +&
                                                         strain(3, 3) * strain(3, 3))
                    enddo
-                   ! Set to zero beyond boundaries to prevent damping from acting here (which leads to instability)
-                   strain_mag(-1, iy, ix) = zero
-                   strain_mag(nz, iy, ix) = zero
+                   ! Reflect beyond boundaries to ensure damping is conservative
+                   ! This is because the points below the surface contribute to the level above
+                   strain_mag(-1, iy, ix) = strain_mag(1, iy, ix) 
+                   strain_mag(nz+1, iy, ix) = strain_mag(nz-1, iy, ix)
                 enddo
             enddo
 
