@@ -8,7 +8,7 @@ module surface_parcel_init
                                        , n_bot_parcels, bot_parcels &
                                        , surface_parcel_container_type
     use surface_parcel_interpl, only : linear, ngp
-    use parameters, only : dx, lcell,               &
+    use parameters, only : dx, lcell, vcell,        &
                            extent, lower, nx, nz,   &
                            max_num_surf_parcels
     use netcdf_reader
@@ -62,6 +62,7 @@ module surface_parcel_init
             do n = 2, n_par
                 spar%position(n) = spar%position(n-1) + length
                 spar%right(n) = mod(n, n_par) + 1
+                spar%area(n) = vcell
             enddo
 
 

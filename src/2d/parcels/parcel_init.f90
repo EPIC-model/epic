@@ -280,8 +280,16 @@ module parcel_init
             cnt  =  (/ nx, nz+1, 1       /)
             start = (/ 1,  1,    n_steps /)
 
-            call read_netcdf_dataset(ncid, 'vorticity', vortg(0:nz, :), start=start, cnt=cnt)
-            call read_netcdf_dataset(ncid, 'buoyancy', tbuoyg(0:nz, :), start=start, cnt=cnt)
+            vortg = zero
+            tbuoyg = zero
+
+            if (has_dataset(ncid, 'vorticity')) then
+                call read_netcdf_dataset(ncid, 'vorticity', vortg(0:nz, :), start=start, cnt=cnt)
+            endif
+
+            if (has_dataset(ncid, 'buoyancy')) then
+                call read_netcdf_dataset(ncid, 'buoyancy', tbuoyg(0:nz, :), start=start, cnt=cnt)
+            endif
 
             !$omp parallel default(shared)
             !$omp do private(n, l, ii, jj, ww)

@@ -47,8 +47,11 @@ module surface_parcel_split
                 ! we only need to add one new parcel
                 n_par = m
 
+                sp%area(n) = f12 * sp%area(n)
+
                 sp%vorticity(m) = sp%vorticity(n)
                 sp%buoyancy(m) = sp%buoyancy(n)
+                sp%area(m) = sp%area(n)
 #ifndef ENABLE_DRY_MODE
                 sp%humidity(m) = sp%humidity(n)
 #endif

@@ -17,7 +17,8 @@ module surface_parcel_container
 #ifndef ENABLE_DRY_MODE
             humidity,   &
 #endif
-            buoyancy
+            buoyancy,   &
+            area
 
         integer, allocatable, dimension(:) :: &
             right                    ! j = right(i) gives the index j of the parcel on the right side
@@ -67,6 +68,7 @@ module surface_parcel_container
 
                 tmp%vorticity(n) = sp%vorticity(i)
                 tmp%buoyancy(n) = sp%buoyancy(i)
+                tmp%area(n) = sp%area(i)
 #ifndef ENABLE_DRY_MODE
                 tmp%humidity(n) = sp%humidity(i)
 #endif
@@ -78,6 +80,7 @@ module surface_parcel_container
             call move_alloc(from=tmp%position, to=sp%position)
             call move_alloc(from=tmp%vorticity, to=sp%vorticity)
             call move_alloc(from=tmp%buoyancy, to=sp%buoyancy)
+            call move_alloc(from=tmp%area, to=sp%area)
 #ifndef ENABLE_DRY_MODE
             call move_alloc(from=tmp%humidity, to=sp%humidity)
 #endif
@@ -104,6 +107,7 @@ module surface_parcel_container
                 tmp%vorticity(n) = sp%vorticity(j)
 
                 tmp%buoyancy(n) = sp%buoyancy(j)
+                tmp%area(n) = sp%area(j)
 #ifndef ENABLE_DRY_MODE
                 tmp%humidity(n) = sp%humidity(j)
 #endif
@@ -113,6 +117,7 @@ module surface_parcel_container
             call move_alloc(from=tmp%position, to=sp%position)
             call move_alloc(from=tmp%vorticity, to=sp%vorticity)
             call move_alloc(from=tmp%buoyancy, to=sp%buoyancy)
+            call move_alloc(from=tmp%area, to=sp%area)
 #ifndef ENABLE_DRY_MODE
             call move_alloc(from=tmp%humidity, to=sp%humidity)
 #endif
@@ -133,6 +138,7 @@ module surface_parcel_container
             sp%vorticity(n) = sp%vorticity(m)
 
             sp%buoyancy(n) = sp%buoyancy(m)
+            sp%area(n) = sp%area(m)
 #ifndef ENABLE_DRY_MODE
             sp%humidity(n) = sp%humidity(m)
 #endif
@@ -146,6 +152,7 @@ module surface_parcel_container
             allocate(sp%position(num))
             allocate(sp%vorticity(num))
             allocate(sp%buoyancy(num))
+            allocate(sp%area(num))
 #ifndef ENABLE_DRY_MODE
             allocate(sp%humidity(num))
 #endif
@@ -163,6 +170,7 @@ module surface_parcel_container
             deallocate(sp%position)
             deallocate(sp%vorticity)
             deallocate(sp%buoyancy)
+            deallocate(sp%area)
 #ifndef ENABLE_DRY_MODE
             deallocate(sp%humidity)
 #endif
