@@ -89,6 +89,9 @@ module parcel_init
 
                 ! B22
                 parcels%B(4, n) = l23
+
+                ! B33
+                parcels%B(6, n) = l23
             enddo
             !$omp end do
             !$omp end parallel
