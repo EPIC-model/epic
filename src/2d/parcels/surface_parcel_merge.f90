@@ -100,7 +100,7 @@ module surface_parcel_merge_mod
                     ! lm will contain the total length of the merged parcel
                     lm(l) = length
 
-                    vm(l) = spar%area(ic)
+                    vm(l) = spar%volume(ic)
 
                     !x0 stores the x centre of the other parcel
                     x0(l) = spar%position(ic)
@@ -127,7 +127,7 @@ module surface_parcel_merge_mod
                 n = loca(ic)  !Index of merged parcel
                 lm(n) = lm(n) + length !Accumulate length of merged parcel
 
-                vm(n) = vm(n) + spar%area(is) !Accumulate area of merged parcel
+                vm(n) = vm(n) + spar%volume(is) !Accumulate area of merged parcel
 
                 ! works across periodic edge
                 delx = get_delx(spar%position(is), x0(n))
@@ -182,7 +182,7 @@ module surface_parcel_merge_mod
 
                     spar%position(ic) = posm(l)
 
-                    spar%area(ic) = vm(l)
+                    spar%volume(ic) = vm(l)
 
                     spar%buoyancy(ic) = buoym(l)
 #ifndef ENABLE_DRY_MODE

@@ -62,7 +62,7 @@ module surface_parcel_init
             do n = 2, n_par
                 spar%position(n) = spar%position(n-1) + length
                 spar%right(n) = mod(n, n_par) + 1
-                spar%area(n) = vcell
+                spar%volume(n) = vcell
             enddo
 
 

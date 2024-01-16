@@ -1,5 +1,5 @@
 module parcel_mixing
-    use constants, only : one, zero
+    use constants, only : one, zero, two
     use parcel_ops, only : get_delx
     use parcel_container, only : parcels, n_parcels
     use surface_parcel_container, only : surface_parcel_container_type  &
@@ -13,7 +13,7 @@ module parcel_mixing
 
     implicit none
 
-    integer:: mixing_timer
+    integer :: mixing_timer
 
     private
 
@@ -21,6 +21,7 @@ module parcel_mixing
     integer, allocatable :: nppc(:), kc1(:), kc2(:)
     integer, allocatable :: loca(:)
     integer, allocatable :: node(:)
+    logical, allocatable :: top_mixed(:), bot_mixed(:)
 
     public :: mix_parcels, mixing_timer
 
@@ -28,57 +29,72 @@ module parcel_mixing
 
         subroutine mix_parcels
 
+            call start_timer(mixing_timer)
+
             ! 1. find small parcels in cells 0 and nz
             ! 2. find closest parcels
             ! 3. mix properties
 
+            if (.not. allocated(top_mixed)) then
+                allocate(top_mixed(max_num_surf_parcels))
+                allocate(bot_mixed(max_num_surf_parcels))
+            endif
+
+            call interior2surface(0,  n_bot_parcels, bot_parcels, bot_mixed)
+            call interior2surface(nz, n_top_parcels, top_parcels, top_mixed)
+
+            if (allocated(nppc)) then
+                deallocate(nppc)
+                deallocate(kc1)
+                deallocate(kc2)
+                deallocate(loca)
+                deallocate(node)
+            endif
+
             call find_interior_parcels
 
-            call surface2interior(0,    n_bot_parcels, bot_parcels)
-            call surface2interior(nz+1, n_top_parcels, top_parcels)
+            call surface2interior(0,  n_bot_parcels, bot_parcels, bot_mixed)
+            call surface2interior(nz, n_top_parcels, top_parcels, top_mixed)
 
-            deallocate(nppc)
-            deallocate(kc1)
-            deallocate(kc2)
-            deallocate(loca)
-            deallocate(node)
+            if (allocated(nppc)) then
+                deallocate(nppc)
+                deallocate(kc1)
+                deallocate(kc2)
+                deallocate(loca)
+                deallocate(node)
+            endif
 
-            call interior2surface(0,    n_bot_parcels, bot_parcels)
-            call interior2surface(nz, n_top_parcels, top_parcels)
 
-            deallocate(nppc)
-            deallocate(kc1)
-            deallocate(kc2)
-            deallocate(loca)
-            deallocate(node)
+            call stop_timer(mixing_timer)
 
         end subroutine mix_parcels
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine surface2interior(iz, n_spar, spar)
+        subroutine surface2interior(iz, n_spar, spar, is_mixed)
             integer,                             intent(in)    :: iz
             integer,                             intent(in)    :: n_spar
             type(surface_parcel_container_type), intent(inout) :: spar
+            logical, allocatable,                intent(in)    :: is_mixed(:)
             integer                                            :: n, ix, ij, m, ix0, ic, k, is
             double precision                                   :: xs, zs, delx, delz, dsq, dsqmin
             integer, allocatable                               :: isma(:)
             integer, allocatable                               :: iclo(:)
             integer                                            :: nmix
 
-            call start_timer(mixing_timer)
-
             ! -----------------------------------------------------------------
             ! Number of small surface parcels:
             nmix = 0
             do n = 1, n_spar
-                if (spar%area(n) < vmin) then
+                if (is_mixed(n)) then
+                    cycle
+                endif
+                if (spar%volume(n) < vmin) then
                     nmix = nmix + 1
                 endif
             enddo
 
             if (nmix == 0) then
-                call stop_timer(mixing_timer)
                 return
             endif
 
@@ -96,7 +112,10 @@ module parcel_mixing
             ! Fill isma array:
             m = 0
             do n = 1, n_spar
-                if (spar%area(n) < vmin) then
+                if (is_mixed(n)) then
+                    cycle
+                endif
+                if (spar%volume(n) < vmin) then
                     m = m + 1
                     isma(m) = n
                 endif
@@ -114,9 +133,9 @@ module parcel_mixing
                 zs = lower(2) + dx(2) * dble(iz)
 
                 ! grid cell this parcel is in:
-                ix0 = mod(int(dxi(1) * (xs - lower(1))), nx)
+                ix0 = mod(nint(dxi(1) * (xs - lower(1))), nx)
 
-                dsqmin = product(extent)
+                dsqmin = two * dx(1) * dx(2)
                 ic = 0
 
                 ! loop over all interior parcels in this grid cell
@@ -162,8 +181,6 @@ module parcel_mixing
 
             deallocate(isma)
             deallocate(iclo)
-
-            call stop_timer(mixing_timer)
 
         end subroutine surface2interior
 
@@ -247,8 +264,10 @@ module parcel_mixing
             integer                                            :: l, m, n, ic, is
             double precision                                   :: buoym(nmix), vortm(nmix), vm(nmix), vmix
             integer                                            :: lclo(n_parcels)
+!             double precision                                   :: weight
 
             lclo = zero
+
 
             !------------------------------------------------------------------
             ! Figure out weights:
@@ -266,9 +285,13 @@ module parcel_mixing
 
                     vm(l) = parcels%volume(ic)
 
-                    buoym(l) = vm(l) * parcels%buoyancy(ic)
+                    ! The weight is calculated such that weight = 1 at iz = 0  (or iz = nz)
+                    ! and decays linearly to 0 at iz = 1 and iz = nz
+!                     weight =
 
-                    vortm(l) = vm(l) * parcels%vorticity(ic)
+                    buoym(l) = vm(l) * parcels%buoyancy(ic) * weight
+
+                    vortm(l) = vm(l) * parcels%vorticity(ic) * weight
 
                 endif
 
@@ -276,11 +299,11 @@ module parcel_mixing
                 is = isma(m)
                 n = lclo(ic)
 
-                vm(n) = vm(n) + spar%area(is)
+                vm(n) = vm(n) + spar%volume(is)
 
-                buoym(n) = buoym(n) + spar%area(is) * spar%buoyancy(is)
+                buoym(n) = buoym(n) + spar%volume(is) * spar%buoyancy(is)
 
-                vortm(n) = vortm(n) + spar%area(is) * spar%vorticity(is)
+                vortm(n) = vortm(n) + spar%volume(is) * spar%vorticity(is)
             enddo
 
             !------------------------------------------------------------------
@@ -322,17 +345,38 @@ module parcel_mixing
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine interior2surface(iz, n_spar, spar)
+        subroutine interior2surface(iz, n_spar, spar, is_mixed)
             integer,                             intent(in)    :: iz
             integer,                             intent(in)    :: n_spar
             type(surface_parcel_container_type), intent(inout) :: spar
+            logical, allocatable,                intent(inout) :: is_mixed(:)
             integer                                            :: n, ix, i, m, ix0, ic, k, is
             double precision                                   :: xs, zs, delx, delz, dsq, dsqmin
             integer, allocatable                               :: isma(:)
             integer, allocatable                               :: iclo(:)
             integer                                            :: nmix, ii, ij, l
 
-            call start_timer(mixing_timer)
+            is_mixed(1:n_spar) = .false.
+
+            ! -----------------------------------------------------------------
+            ! Number of small interior parcels:
+            nmix = 0
+            l = 0
+            do n = 1, n_parcels
+                if (parcels%volume(n) < vmin) then
+                    l = l + 1
+                    ii = nint(dxi(2) * (parcels%position(2, n) - lower(2)))
+                    if (ii == iz) then
+                        nmix = nmix + 1
+                    endif
+                endif
+            enddo
+
+            if (nmix == 0) then
+                return
+            endif
+
+            print *, "Mixing (int2surf) number:", nmix, iz, l
 
             if (.not. allocated(nppc)) then
                 allocate(nppc(nx))
@@ -345,22 +389,19 @@ module parcel_mixing
             !---------------------------------------------------------------------
             ! Initialise search:
             nppc = 0 !nppc(i) will contain the number of parcels in grid cell i
-            loca = 0
 
             ! Bin interior parcels in cells:
             do n = 1, n_spar
 
                 ! we only consider big parcels
-                if (spar%area(n) < vmin) then
-                    cycle
-                endif
+!                 if (spar%volume(n) < vmin) then
+!                     cycle
+!                 endif
 
                 ix = mod(int(dxi(1) * (spar%position(n) - lower(1))), nx)
 
                 ! Cell index of parcel:
-!                 ij = 1 + ix !+ nx !* min(iz, 1)
-                ij = 1 + mod(nx + ix, nx)
-
+                ij = 1 + ix
 
                 ! Accumulate number of parcels in this grid cell:
                 nppc(ij) = nppc(ij) + 1
@@ -378,35 +419,14 @@ module parcel_mixing
 
             kc2 = kc1 - 1
             do n = 1, n_spar
-                if (spar%area(n) < vmin) then
-                    cycle
-                endif
+!                 if (spar%volume(n) < vmin) then
+!                     cycle
+!                 endif
                 ij = loca(n)
                 k = kc2(ij) + 1
                 node(k) = n
                 kc2(ij) = k
             enddo
-
-            ! -----------------------------------------------------------------
-            ! Number of small interior parcels:
-            nmix = 0
-            l = 0
-            do n = 1, n_parcels
-                if (parcels%volume(n) < vmin) then
-                    l = l + 1
-                    ii = nint(dxi(2) * (parcels%position(2, n) - lower(2)))
-                    if (ii == iz) then
-                        nmix = nmix + 1
-                    endif
-                endif
-            enddo
-
-            if (nmix == 0) then
-                call stop_timer(mixing_timer)
-                return
-            endif
-
-            print *, "Mixing (int2surf) number:", nmix, iz, l
 
             ! -----------------------------------------------------------------
             ! Setup search arrays:
@@ -441,9 +461,9 @@ module parcel_mixing
                 zs = parcels%position(2, is)
 
                 ! grid cell this parcel is in:
-                ix0 = mod(int(dxi(1) * (xs - lower(1))), nx)
+                ix0 = mod(nint(dxi(1) * (xs - lower(1))), nx)
 
-                dsqmin = product(extent)
+                dsqmin = two * dx(1) * dx(2)
                 ic = 0
 
                 ! loop over all interior parcels in this grid cell
@@ -452,13 +472,17 @@ module parcel_mixing
                     ! Cell index (accounting for x periodicity):
                     i = 1 + mod(nx + ix, nx)
                     ! Search small parcels for closest other:
+                    print *, "kc:", kc1(i), kc2(i)
                     do k = kc1(i), kc2(i)
                         n = node(k)
+                        print *, "n", n
                         delz = lower(2) + dx(2) * dble(iz) - zs
+                        print *, delz, delz ** 2, dsqmin, (delz * delz < dsqmin)
                         if (delz * delz < dsqmin) then
                             delx = get_delx(spar%position(n), xs) ! works across periodic edge
                             ! Minimise dsqmin
                             dsq = delz * delz + delx * delx
+                            print *, "dsq:", delx, delx*delx, dsq, dsqmin, (dsq < dsqmin)
                             if (dsq < dsqmin) then
                                 dsqmin = dsq
                                 ic = n
@@ -472,6 +496,8 @@ module parcel_mixing
                     stop
                 endif
 
+                is_mixed(ic) = .true.
+
                 ! Store the index of the parcel to be mixed with:
                 isma(m) = is
                 iclo(m) = ic
@@ -481,7 +507,7 @@ module parcel_mixing
             ! -----------------------------------------------------------------
             ! Mix small interor parcel with closest surface parcel:
 
-            call mix_interior2surface(spar, isma, iclo, nmix)
+            call mix_interior2surface(spar, isma, iclo, nmix, n_spar)
 
             ! -----------------------------------------------------------------
             ! Final clean-up:
@@ -489,20 +515,19 @@ module parcel_mixing
             deallocate(isma)
             deallocate(iclo)
 
-            call stop_timer(mixing_timer)
-
         end subroutine interior2surface
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine mix_interior2surface(spar, isma, iclo, nmix)
+        subroutine mix_interior2surface(spar, isma, iclo, nmix, n_spar)
             type(surface_parcel_container_type), intent(inout) :: spar
             integer,                             intent(in)    :: isma(:)
             integer,                             intent(in)    :: iclo(:)
             integer,                             intent(in)    :: nmix
+            integer,                             intent(in)    :: n_spar
             integer                                            :: l, m, n, ic, is
             double precision                                   :: buoym(nmix), vortm(nmix), vm(nmix), vmix
-            integer                                            :: lclo(n_parcels)
+            integer                                            :: lclo(n_spar)
 
             lclo = zero
 
@@ -520,7 +545,7 @@ module parcel_mixing
                     l = l + 1
                     lclo(ic) = l
 
-                    vm(l) = spar%area(ic)
+                    vm(l) = spar%volume(ic)
 
                     buoym(l) = vm(l) * spar%buoyancy(ic)
 
