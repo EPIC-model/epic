@@ -63,7 +63,7 @@ module rk_utils
                         + S(I_DWDY) * Bin(I_B12) & ! + dw/dy * B12
                         - S(I_DVDY) * Bin(I_B13) & ! - dv/dy * B13
                         + S(I_DUDY) * Bin(I_B23) & ! + du/dy * B23
-                        + dudz      * B33         ! + du/dz * B33
+                        + dudz      * B33          ! + du/dz * B33
 
             ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
             Bout(I_B22) = two * (dvdx * Bin(I_B12) + S(I_DVDY) * Bin(I_B22) + dvdz * Bin(I_B23))
@@ -110,11 +110,11 @@ module rk_utils
             ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \xi) = dw/dy - 1/2 * \xi
             ! S33 = dw/dz = - (du/dx + dv/dy)
 
-            strain(1, 1) = velgradgp(I_DUDX)                       ! S11
+            strain(1, 1) = velgradgp(I_DUDX)                        ! S11
             strain(1, 2) = velgradgp(I_DUDY) + f12 * vortgp(I_Z)    ! S12
             strain(1, 3) = velgradgp(I_DWDX) + f12 * vortgp(I_Y)    ! S13
             strain(2, 1) = strain(1, 2)
-            strain(2, 2) = velgradgp(I_DVDY)                                   ! S22
+            strain(2, 2) = velgradgp(I_DVDY)                        ! S22
             strain(2, 3) = velgradgp(I_DWDY) - f12 * vortgp(I_X)    ! S23
             strain(3, 1) = strain(1, 3)
             strain(3, 2) = strain(2, 3)
@@ -178,7 +178,7 @@ module rk_utils
             db2 = db2 + gradb ** 2
 
             ! db/dz
-            gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
+            gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1,  box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
                                     - tbuoyg(-1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
@@ -241,14 +241,14 @@ module rk_utils
                     do iz = 0, nz
                         strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
                         strain_mag(iz, iy, ix) = sqrt(two * strain(1, 1) * strain(1, 1) +&
-                                                        strain(1, 2) * strain(1, 2) +&
-                                                        strain(1, 3) * strain(1, 3) +&
-                                                        strain(2, 1) * strain(2, 1) +&
-                                                        strain(2, 2) * strain(2, 2) +&
-                                                        strain(2, 3) * strain(2, 3) +&
-                                                        strain(3, 1) * strain(3, 1) +&
-                                                        strain(3, 2) * strain(3, 2) +&
-                                                        strain(3, 3) * strain(3, 3))
+                                                            strain(1, 2) * strain(1, 2) +&
+                                                            strain(1, 3) * strain(1, 3) +&
+                                                            strain(2, 1) * strain(2, 1) +&
+                                                            strain(2, 2) * strain(2, 2) +&
+                                                            strain(2, 3) * strain(2, 3) +&
+                                                            strain(3, 1) * strain(3, 1) +&
+                                                            strain(3, 2) * strain(3, 2) +&
+                                                            strain(3, 3) * strain(3, 3))
                    enddo
                    ! Reflect beyond boundaries to ensure damping is conservative
                    ! This is because the points below the surface contribute to the level above
