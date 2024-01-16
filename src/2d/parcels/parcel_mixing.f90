@@ -86,10 +86,7 @@ module parcel_mixing
             ! Number of small surface parcels:
             nmix = 0
             do n = 1, n_spar
-                if (is_mixed(n)) then
-                    cycle
-                endif
-                if (spar%volume(n) < vmin) then
+                if ((spar%volume(n) < vmin) .and. (.not. is_mixed(n))) then
                     nmix = nmix + 1
                 endif
             enddo
@@ -112,10 +109,7 @@ module parcel_mixing
             ! Fill isma array:
             m = 0
             do n = 1, n_spar
-                if (is_mixed(n)) then
-                    cycle
-                endif
-                if (spar%volume(n) < vmin) then
+                if ((spar%volume(n) < vmin) .and. (.not. is_mixed(n))) then
                     m = m + 1
                     isma(m) = n
                 endif
@@ -160,15 +154,24 @@ module parcel_mixing
                     enddo
                 enddo
 
-                if (ic == 0) then
-                    print *, 'Merge error: no near neighbour found.'
-                    stop
-                endif
+!                 if (ic == 0) then
+!                     print *, 'Merge error: no near neighbour found.'
+!                     stop
+!                 endif
 
                 ! Store the index of the parcel to be mixed with:
                 isma(m) = is
                 iclo(m) = ic
+
+                ! If ic == 0, then no near interior parcel is found. We must ignore this mix.
+                if (ic == 0) then
+                    isma(m) = 0
+                    nmix = nmix - 1
+                endif
             enddo
+
+            isma = pack(isma, isma /= 0)
+            iclo = pack(iclo, iclo /= 0)
 
 
             ! -----------------------------------------------------------------
@@ -264,7 +267,6 @@ module parcel_mixing
             integer                                            :: l, m, n, ic, is
             double precision                                   :: buoym(nmix), vortm(nmix), vm(nmix), vmix
             integer                                            :: lclo(n_parcels)
-!             double precision                                   :: weight
 
             lclo = zero
 
@@ -285,13 +287,10 @@ module parcel_mixing
 
                     vm(l) = parcels%volume(ic)
 
-                    ! The weight is calculated such that weight = 1 at iz = 0  (or iz = nz)
-                    ! and decays linearly to 0 at iz = 1 and iz = nz
-!                     weight =
 
-                    buoym(l) = vm(l) * parcels%buoyancy(ic) * weight
+                    buoym(l) = vm(l) * parcels%buoyancy(ic)
 
-                    vortm(l) = vm(l) * parcels%vorticity(ic) * weight
+                    vortm(l) = vm(l) * parcels%vorticity(ic)
 
                 endif
 
@@ -356,7 +355,7 @@ module parcel_mixing
             integer, allocatable                               :: iclo(:)
             integer                                            :: nmix, ii, ij, l
 
-            is_mixed(1:n_spar) = .false.
+            is_mixed = .false.
 
             ! -----------------------------------------------------------------
             ! Number of small interior parcels:
@@ -393,11 +392,6 @@ module parcel_mixing
             ! Bin interior parcels in cells:
             do n = 1, n_spar
 
-                ! we only consider big parcels
-!                 if (spar%volume(n) < vmin) then
-!                     cycle
-!                 endif
-
                 ix = mod(int(dxi(1) * (spar%position(n) - lower(1))), nx)
 
                 ! Cell index of parcel:
@@ -419,9 +413,6 @@ module parcel_mixing
 
             kc2 = kc1 - 1
             do n = 1, n_spar
-!                 if (spar%volume(n) < vmin) then
-!                     cycle
-!                 endif
                 ij = loca(n)
                 k = kc2(ij) + 1
                 node(k) = n
@@ -472,17 +463,13 @@ module parcel_mixing
                     ! Cell index (accounting for x periodicity):
                     i = 1 + mod(nx + ix, nx)
                     ! Search small parcels for closest other:
-                    print *, "kc:", kc1(i), kc2(i)
                     do k = kc1(i), kc2(i)
                         n = node(k)
-                        print *, "n", n
                         delz = lower(2) + dx(2) * dble(iz) - zs
-                        print *, delz, delz ** 2, dsqmin, (delz * delz < dsqmin)
                         if (delz * delz < dsqmin) then
                             delx = get_delx(spar%position(n), xs) ! works across periodic edge
                             ! Minimise dsqmin
                             dsq = delz * delz + delx * delx
-                            print *, "dsq:", delx, delx*delx, dsq, dsqmin, (dsq < dsqmin)
                             if (dsq < dsqmin) then
                                 dsqmin = dsq
                                 ic = n
