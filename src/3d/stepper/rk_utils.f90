@@ -240,15 +240,15 @@ module rk_utils
                 do iy = box%lo(2), box%hi(2)
                     do iz = 0, nz
                         strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
-                        strain_mag(iz, iy, ix) = sqrt(two * strain(1, 1) * strain(1, 1) +&
-                                                            strain(1, 2) * strain(1, 2) +&
-                                                            strain(1, 3) * strain(1, 3) +&
-                                                            strain(2, 1) * strain(2, 1) +&
-                                                            strain(2, 2) * strain(2, 2) +&
-                                                            strain(2, 3) * strain(2, 3) +&
-                                                            strain(3, 1) * strain(3, 1) +&
-                                                            strain(3, 2) * strain(3, 2) +&
-                                                            strain(3, 3) * strain(3, 3))
+                        strain_mag(iz, iy, ix) = sqrt(two * (strain(1, 1) * strain(1, 1) +&
+                                                             strain(1, 2) * strain(1, 2) +&
+                                                             strain(1, 3) * strain(1, 3) +&
+                                                             strain(2, 1) * strain(2, 1) +&
+                                                             strain(2, 2) * strain(2, 2) +&
+                                                             strain(2, 3) * strain(2, 3) +&
+                                                             strain(3, 1) * strain(3, 1) +&
+                                                             strain(3, 2) * strain(3, 2) +&
+                                                             strain(3, 3) * strain(3, 3) ))
                    enddo
                    ! Reflect beyond boundaries to ensure damping is conservative
                    ! This is because the points below the surface contribute to the level above
