@@ -43,7 +43,8 @@ module fields
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
-        volg           ! volume scalar field
+        volg, &        ! volume scalar field
+        strain_mag     ! strain magnitude
 
     integer, allocatable, dimension(:, :, :) :: &
         nparg,     &   ! number of parcels per grid box
@@ -77,6 +78,7 @@ module fields
             allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 5))
 
             allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef NDEBUG
             allocate(sym_volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
@@ -107,6 +109,7 @@ module fields
             velog    = zero
             velgradg = zero
             volg     = zero
+            strain_mag = zero
             vortg    = zero
             vtend    = zero
             tbuoyg   = zero
@@ -130,12 +133,13 @@ module fields
                 deallocate(velog)
                 deallocate(velgradg)
                 deallocate(volg)
+                deallocate(strain_mag)
                 deallocate(vortg)
                 deallocate(vtend)
                 deallocate(tbuoyg)
 #ifndef ENABLE_DRY_MODE
                 deallocate(dbuoyg)
-                deallocate(humg )
+                deallocate(humg)
 #endif
                 deallocate(nparg)
                 deallocate(nsparg)

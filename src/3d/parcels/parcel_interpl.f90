@@ -84,7 +84,9 @@ module parcel_interpl
             , grid2par_timer    &
             , halo_swap_timer   &
             , trilinear         &
-            , bilinear
+            , bilinear          &
+            , n_points_p2g      &
+            , point_weight_p2g
 
     contains
 

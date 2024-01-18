@@ -1,7 +1,7 @@
 module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
-    use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
+    use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY, strain_mag
     use field_mpi, only : field_halo_fill_scalar
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
@@ -63,7 +63,7 @@ module rk_utils
                         + S(I_DWDY) * Bin(I_B12) & ! + dw/dy * B12
                         - S(I_DVDY) * Bin(I_B13) & ! - dv/dy * B13
                         + S(I_DUDY) * Bin(I_B23) & ! + du/dy * B23
-                        + dudz      * B33         ! + du/dz * B33
+                        + dudz      * B33          ! + du/dz * B33
 
             ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
             Bout(I_B22) = two * (dvdx * Bin(I_B12) + S(I_DVDY) * Bin(I_B22) + dvdz * Bin(I_B23))
@@ -75,6 +75,51 @@ module rk_utils
                         - S(I_DUDX) * Bin(I_B23) & ! - du/dx * B23
                         + dvdz      * B33          ! + dv/dz * B33
         end function get_dBdt
+
+        ! Calculate velocity strain
+        ! @param[in] velocity gradient tensor at grid point
+        ! @param[in] vorticity at grid point
+        ! @returns 3x3 strain matrix
+        function get_strain(velgradgp, vortgp) result(strain)
+            double precision, intent(in) :: velgradgp(5)
+            double precision, intent(in) :: vortgp(n_dim)
+            double precision             :: strain(3,3)
+       
+            ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
+            ! where
+            !     /u_x u_y u_z\
+            ! S = |v_x v_y v_z|
+            !     \w_x w_y w_z/
+            ! with u_* = du/d* (also derivatives of v and w).
+            ! The derivatives dv/dx, du/dz, dv/dz and dw/dz are calculated
+            ! with vorticity or the assumption of incompressibility
+            ! (du/dx + dv/dy + dw/dz = 0):
+            !    dv/dx = \zeta + du/dy
+            !    du/dz = \eta + dw/dx
+            !    dv/dz = dw/dy - \xi
+            !    dw/dz = - (du/dx + dv/dy)
+            !
+            !                         /  2 * u_x  u_y + v_x u_z + w_x\
+            ! 1/2 * (S + S^T) = 1/2 * |u_y + v_x   2 * v_y  v_z + w_y|
+            !                         \u_z + w_x  v_z + w_y   2 * w_z/
+            !
+            ! S11 = du/dx
+            ! S12 = 1/2 * (du/dy + dv/dx) = 1/2 * (2 * du/dy + \zeta) = du/dy + 1/2 * \zeta
+            ! S13 = 1/2 * (du/dz + dw/dx) = 1/2 * (\eta + 2 * dw/dx) = 1/2 * \eta + dw/dx
+            ! S22 = dv/dy
+            ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \xi) = dw/dy - 1/2 * \xi
+            ! S33 = dw/dz = - (du/dx + dv/dy)
+
+            strain(1, 1) = velgradgp(I_DUDX)                        ! S11
+            strain(1, 2) = velgradgp(I_DUDY) + f12 * vortgp(I_Z)    ! S12
+            strain(1, 3) = velgradgp(I_DWDX) + f12 * vortgp(I_Y)    ! S13
+            strain(2, 1) = strain(1, 2)
+            strain(2, 2) = velgradgp(I_DVDY)                        ! S22
+            strain(2, 3) = velgradgp(I_DWDY) - f12 * vortgp(I_X)    ! S23
+            strain(3, 1) = strain(1, 3)
+            strain(3, 2) = strain(2, 3)
+            strain(3, 3) = -(velgradgp(I_DUDX) + velgradgp(I_DVDY)) ! S33
+        end function get_strain
 
         ! Estimate a suitable time step based on the velocity strain
         ! and buoyancy gradient.
@@ -102,40 +147,7 @@ module rk_utils
             do ix = box%lo(1), box%hi(1)
                 do iy = box%lo(2), box%hi(2)
                     do iz = 0, nz
-                        ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
-                        ! where
-                        !     /u_x u_y u_z\
-                        ! S = |v_x v_y v_z|
-                        !     \w_x w_y w_z/
-                        ! with u_* = du/d* (also derivatives of v and w).
-                        ! The derivatives dv/dx, du/dz, dv/dz and dw/dz are calculated
-                        ! with vorticity or the assumption of incompressibility
-                        ! (du/dx + dv/dy + dw/dz = 0):
-                        !    dv/dx = \zeta + du/dy
-                        !    du/dz = \eta + dw/dx
-                        !    dv/dz = dw/dy - \xi
-                        !    dw/dz = - (du/dx + dv/dy)
-                        !
-                        !                         /  2 * u_x  u_y + v_x u_z + w_x\
-                        ! 1/2 * (S + S^T) = 1/2 * |u_y + v_x   2 * v_y  v_z + w_y|
-                        !                         \u_z + w_x  v_z + w_y   2 * w_z/
-                        !
-                        ! S11 = du/dx
-                        ! S12 = 1/2 * (du/dy + dv/dx) = 1/2 * (2 * du/dy + \zeta) = du/dy + 1/2 * \zeta
-                        ! S13 = 1/2 * (du/dz + dw/dx) = 1/2 * (\eta + 2 * dw/dx) = 1/2 * \eta + dw/dx
-                        ! S22 = dv/dy
-                        ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \xi) = dw/dy - 1/2 * \xi
-                        ! S33 = dw/dz = - (du/dx + dv/dy)
-                        strain(1, 1) = velgradg(iz, iy, ix, I_DUDX)                                   ! S11
-                        strain(1, 2) = velgradg(iz, iy, ix, I_DUDY) + f12 * vortg(iz, iy, ix, I_Z)    ! S12
-                        strain(1, 3) = velgradg(iz, iy, ix, I_DWDX) + f12 * vortg(iz, iy, ix, I_Y)    ! S13
-                        strain(2, 1) = strain(1, 2)
-                        strain(2, 2) = velgradg(iz, iy, ix, I_DVDY)                                   ! S22
-                        strain(2, 3) = velgradg(iz, iy, ix, I_DWDY) - f12 * vortg(iz, iy, ix, I_X)    ! S23
-                        strain(3, 1) = strain(1, 3)
-                        strain(3, 2) = strain(2, 3)
-                        strain(3, 3) = -(velgradg(iz, iy, ix, I_DUDX) + velgradg(iz, iy, ix, I_DVDY)) ! S33
-
+                        strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
                         ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
                         call scherzinger_eigenvalues(strain, D)
@@ -166,7 +178,7 @@ module rk_utils
             db2 = db2 + gradb ** 2
 
             ! db/dz
-            gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
+            gradb = f12 * dxi(I_Z) * (tbuoyg(1:nz+1,  box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
                                     - tbuoyg(-1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
 
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
@@ -218,5 +230,36 @@ module rk_utils
                 call mpi_exit_on_error
             endif
         end function get_time_step
+
+        ! @returns the strain magnitude for use in damping routine
+        subroutine get_strain_magnitude_field
+            double precision             :: strain(n_dim, n_dim)
+            integer                      :: ix, iy, iz
+
+            do ix = box%lo(1), box%hi(1)
+                do iy = box%lo(2), box%hi(2)
+                    do iz = 0, nz
+                        strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
+                        strain_mag(iz, iy, ix) = sqrt(two * (strain(1, 1) * strain(1, 1) +&
+                                                             strain(1, 2) * strain(1, 2) +&
+                                                             strain(1, 3) * strain(1, 3) +&
+                                                             strain(2, 1) * strain(2, 1) +&
+                                                             strain(2, 2) * strain(2, 2) +&
+                                                             strain(2, 3) * strain(2, 3) +&
+                                                             strain(3, 1) * strain(3, 1) +&
+                                                             strain(3, 2) * strain(3, 2) +&
+                                                             strain(3, 3) * strain(3, 3) ))
+                   enddo
+                   ! Reflect beyond boundaries to ensure damping is conservative
+                   ! This is because the points below the surface contribute to the level above
+                   strain_mag(-1, iy, ix) = strain_mag(1, iy, ix) 
+                   strain_mag(nz+1, iy, ix) = strain_mag(nz-1, iy, ix)
+                enddo
+            enddo
+
+          ! We need this halo fill to obtain good conservation    
+          call field_halo_fill_scalar(strain_mag, l_alloc=.true.)
+
+        end subroutine get_strain_magnitude_field
 
 end module rk_utils

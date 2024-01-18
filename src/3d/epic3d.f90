@@ -22,6 +22,7 @@ program epic3d
     use parcel_diagnostics, only : parcel_stats_timer
     use parcel_netcdf, only : parcel_io_timer
     use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
+    use parcel_damping, only : damping_timer
     use fields
     use field_netcdf, only : field_io_timer
     use field_diagnostics, only : field_stats_timer
@@ -89,6 +90,7 @@ program epic3d
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
             call register_timer('boundary fluxes', bndry_flux_timer)
+            call register_timer('damping', damping_timer)
 
             call start_timer(epic_timer)
 
