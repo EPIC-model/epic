@@ -129,6 +129,7 @@ module parcel_split_mod
                 parcels%B(3, n) = B(3) - f34 * D(1) * V(1, 1) * V(3, 1)
                 parcels%B(4, n) = B(4) - f34 * D(1) * V(2, 1) ** 2
                 parcels%B(5, n) = B(5) - f34 * D(1) * V(2, 1) * V(3, 1)
+                parcels%B(6, n) = B(6) - f34 * D(1) * V(3, 1) ** 2
 
                 parcels%volume(n) = f12 * vol
 

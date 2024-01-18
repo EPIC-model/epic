@@ -312,7 +312,7 @@ module parcel_merging
 
                     factor = (get_abc(V(l)) ** 2 / detB) ** f13
 
-                    parcels%B(:, ic) = B(1:5, l) * factor
+                    parcels%B(:, ic) = B(:, l) * factor
                 endif
             enddo
 
