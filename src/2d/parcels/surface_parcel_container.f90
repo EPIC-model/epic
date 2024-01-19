@@ -37,6 +37,8 @@ module surface_parcel_container
 
     contains
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         function get_surface_parcel_length(n, spar) result(length)
             integer,                             intent(in) :: n
             type(surface_parcel_container_type), intent(in) :: spar
@@ -48,6 +50,8 @@ module surface_parcel_container
             length = get_delx(spar%position(j), spar%position(n))
 
         end function get_surface_parcel_length
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine surface_parcel_sort(n_par, sp)
             integer,                             intent(in)    :: n_par
@@ -86,44 +90,9 @@ module surface_parcel_container
 #endif
             call move_alloc(from=tmp%right, to=sp%right)
 
-            print *, size(sp%position), max_num_surf_parcels
-
         end subroutine surface_parcel_sort
 
-
-        subroutine surface_parcel_reorder(n_par, sp)
-            integer,                             intent(in)    :: n_par
-            type(surface_parcel_container_type), intent(inout) :: sp
-            integer                                            :: n, j
-            type(surface_parcel_container_type)                :: tmp
-
-            call alloc(max_num_surf_parcels, tmp)
-
-            do n = 1, n_par
-                j = sp%right(n)
-
-                tmp%position(n) = sp%position(j)
-
-                tmp%vorticity(n) = sp%vorticity(j)
-
-                tmp%buoyancy(n) = sp%buoyancy(j)
-                tmp%volume(n) = sp%volume(j)
-#ifndef ENABLE_DRY_MODE
-                tmp%humidity(n) = sp%humidity(j)
-#endif
-                tmp%right(n) = sp%right(j)
-            enddo
-
-            call move_alloc(from=tmp%position, to=sp%position)
-            call move_alloc(from=tmp%vorticity, to=sp%vorticity)
-            call move_alloc(from=tmp%buoyancy, to=sp%buoyancy)
-            call move_alloc(from=tmp%volume, to=sp%volume)
-#ifndef ENABLE_DRY_MODE
-            call move_alloc(from=tmp%humidity, to=sp%humidity)
-#endif
-            call move_alloc(from=tmp%right, to=sp%right)
-
-        end subroutine surface_parcel_reorder
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Overwrite parcel n with parcel m
         ! @param[in] n index of parcel to be replaced
@@ -145,6 +114,8 @@ module surface_parcel_container
             sp%right(n) = sp%right(m)
         end subroutine surface_parcel_replace
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine alloc(num, sp)
             integer,                             intent(in)    :: num
             type(surface_parcel_container_type), intent(inout) :: sp
@@ -161,8 +132,9 @@ module surface_parcel_container
             allocate(sp%delta_pos(num))
             allocate(sp%delta_vor(num))
 
-
         end subroutine alloc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine dealloc(sp)
             type(surface_parcel_container_type), intent(inout) :: sp
@@ -180,6 +152,8 @@ module surface_parcel_container
             deallocate(sp%delta_vor)
         end subroutine dealloc
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Allocate parcel memory
         ! @param[in] num number of parcels
         subroutine surface_parcel_alloc(num)
@@ -189,6 +163,8 @@ module surface_parcel_container
             call alloc(num, bot_parcels)
 
         end subroutine surface_parcel_alloc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Deallocate parcel memory
         subroutine surface_parcel_dealloc

@@ -29,7 +29,6 @@ program epic2d
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_parcels
-    use utils, only : write_step
     implicit none
 
     integer          :: epic_timer

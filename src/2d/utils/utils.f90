@@ -1,7 +1,6 @@
 module utils
     use constants, only : one
     use options, only : field_file          &
-                      , field_tol           &
                       , output              &
                       , l_restart           &
                       , restart_file        &
@@ -203,7 +202,7 @@ module utils
                 call setup_restart(trim(restart_file), time%initial, file_type)
 
                 if (file_type == 'fields') then
-                    call init_parcels(restart_file, field_tol)
+                    call init_parcels(restart_file)
                 else if (file_type == 'parcels') then
                     call read_netcdf_parcels(restart_file)
                 else
@@ -213,7 +212,7 @@ module utils
             else
                 time%initial = zero ! make sure user cannot start at arbitrary time
 
-                call init_parcels(field_file, field_tol)
+                call init_parcels(field_file)
             endif
         end subroutine setup_parcels
 

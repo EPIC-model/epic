@@ -33,8 +33,6 @@ module surface_parcel_merge_mod
             ! find parcels to merge
             call find_nearest(n_par, spar, isma, iclo, n_merge)
 
-            print *, "number of merges:", n_merge
-
 #ifdef ENABLE_VERBOSE
             if (verbose) then
                 print "(a36, i0, a3, i0)",                                   &

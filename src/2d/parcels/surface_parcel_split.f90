@@ -6,7 +6,6 @@ module surface_parcel_split
     use constants, only : f12
     use parameters, only : lmax
     use surface_parcel_container, only : surface_parcel_container_type  &
-                                       , surface_parcel_reorder         &
                                        , get_surface_parcel_length      &
                                        , surface_parcel_sort
     use omp_lib
@@ -62,7 +61,6 @@ module surface_parcel_split
                 sp%right(m) = sp%right(n)
             enddo
 
-!             call surface_parcel_reorder(n_par, sp)
             call surface_parcel_sort(n_par, sp)
 
 #ifdef ENABLE_VERBOSE
