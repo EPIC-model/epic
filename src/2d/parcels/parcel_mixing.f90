@@ -6,7 +6,8 @@ module parcel_mixing
                                        , n_bot_parcels, bot_parcels     &
                                        , n_top_parcels, top_parcels     &
                                        , get_surface_parcel_length
-    use parameters, only : dx, dxi, vcell, hli, lower, extent, lcell, nx, nz, vmin, max_num_parcels, lmin   &
+    use parameters, only : dx, dxi, vcell, hli, lower, extent, lcell    &
+                         , nx, nz, vmin, max_num_parcels, lmin          &
                          , max_num_surf_parcels
     use options, only : parcel
     use timer, only : start_timer, stop_timer
@@ -17,7 +18,7 @@ module parcel_mixing
 
     private
 
-    !Used for searching for possible parcel merger:
+    !Used for searching for possible parcel mixer:
     integer, allocatable :: nppc(:), kc1(:), kc2(:)
     integer, allocatable :: loca(:)
     integer, allocatable :: node(:)
@@ -95,8 +96,6 @@ module parcel_mixing
                 return
             endif
 
-            print *, "Mixing number (sur2int):", nmix
-
             ! -----------------------------------------------------------------
             ! Setup search arrays:
 
@@ -136,7 +135,6 @@ module parcel_mixing
                 ! and find closest parcel:
                 do ix = ix0-1, ix0
                     ! Cell index (accounting for x periodicity):
-!                     i = 1 + mod(nx + ix, nx)
                     ij = 1 + mod(nx + ix, nx) + nx * min(iz, 1)
                     ! Search small parcels for closest other:
                     do k = kc1(ij), kc2(ij)
@@ -153,11 +151,6 @@ module parcel_mixing
                         endif
                     enddo
                 enddo
-
-!                 if (ic == 0) then
-!                     print *, 'Merge error: no near neighbour found.'
-!                     stop
-!                 endif
 
                 ! Store the index of the parcel to be mixed with:
                 isma(m) = is
@@ -375,8 +368,6 @@ module parcel_mixing
                 return
             endif
 
-            print *, "Mixing (int2surf) number:", nmix, iz, l
-
             if (.not. allocated(nppc)) then
                 allocate(nppc(nx))
                 allocate(kc1(nx))
@@ -479,7 +470,7 @@ module parcel_mixing
                 enddo
 
                 if (ic == 0) then
-                    print *, 'Merge error: no near neighbour found.'
+                    print *, 'Mixing error: no near surface parcel found.'
                     stop
                 endif
 
