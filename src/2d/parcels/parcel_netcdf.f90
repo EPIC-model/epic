@@ -11,7 +11,8 @@ module parcel_netcdf
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
     use surface_parcel_netcdf, only : create_netcdf_surface_parcel_file &
-                                    , write_netcdf_surface_parcels
+                                    , write_netcdf_surface_parcels      &
+                                    , read_netcdf_surface_parcels
     implicit none
 
     integer :: n_writes = 1
@@ -319,6 +320,8 @@ module parcel_netcdf
             endif
 
             call close_netcdf_file(ncid)
+
+            call read_netcdf_surface_parcels(fname)
 
             call stop_timer(parcel_io_timer)
 

@@ -6,8 +6,9 @@ module surface_parcel_netcdf
     use surface_parcel_container, only : n_top_parcels, top_parcels     &
                                        , n_bot_parcels, bot_parcels     &
                                        , surface_parcel_container_type  &
-                                       , get_surface_parcel_length
-    use parameters, only : nx, nz, extent, lower, max_num_parcels
+                                       , get_surface_parcel_length      &
+                                       , surface_parcel_sort
+    use parameters, only : nx, nz, extent, lower, max_num_surf_parcels
     use config, only : package_version, cf_version
     use iomanip, only : zfill
     use options, only : write_netcdf_options
@@ -37,7 +38,7 @@ module surface_parcel_netcdf
     private :: hum_id
 #endif
 
-    private :: ncbasename, create_netcdf_parcel_file_, write_netcdf_parcels_
+    private :: ncbasename, create_netcdf_parcel_file_, write_netcdf_parcels_, read_netcdf_parcels_
 
     contains
 
@@ -232,98 +233,101 @@ module surface_parcel_netcdf
 
         end subroutine write_netcdf_parcels_
 
-!         subroutine read_netcdf_parcels(fname)
-!             character(*),     intent(in) :: fname
-!             logical                      :: l_valid = .false.
-!             integer                      :: cnt(2), start(2)
-!
-!             call start_timer(parcel_io_timer)
-!
-!             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
-!
-!             call get_num_parcels(ncid, n_parcels)
-!
-!             if (n_parcels > max_num_parcels) then
-!                 print *, "Number of parcels exceeds limit of", &
-!                           max_num_parcels, ". Exiting."
-!                 stop
-!             endif
-!
-!             ! time step to read [step(2) is the time]
-!             cnt   = (/ n_parcels, 1 /)
-!             start = (/ 1,         1 /)
-!
-!             ! Be aware that the starting index of buffer_1d and buffer_2d
-!             ! is 0; hence, the range is 0:n_parcels-1 in contrast to the
-!             ! parcel container where it is 1:n_parcels.
-!
-!             if (has_dataset(ncid, 'B11')) then
-!                 call read_netcdf_dataset(ncid, 'B11', parcels%B(1, 1:n_parcels), start, cnt)
-!             else
-!                 print *, "The parcel shape component B11 must be present! Exiting."
-!                 stop
-!             endif
-!
-!             if (has_dataset(ncid, 'B12')) then
-!                 call read_netcdf_dataset(ncid, 'B12', parcels%B(2, 1:n_parcels), start, cnt)
-!             else
-!                 print *, "The parcel shape component B12 must be present! Exiting."
-!                 stop
-!             endif
-!
-!             if (has_dataset(ncid, 'x_position')) then
-!                 call read_netcdf_dataset(ncid, 'x_position', &
-!                                          parcels%position(1, 1:n_parcels), start, cnt)
-!             else
-!                 print *, "The parcel x position must be present! Exiting."
-!                 stop
-!             endif
-!
-!             if (has_dataset(ncid, 'z_position')) then
-!                 call read_netcdf_dataset(ncid, 'z_position', &
-!                                          parcels%position(2, 1:n_parcels), start, cnt)
-!             else
-!                 print *, "The parcel z position must be present! Exiting."
-!                 stop
-!             endif
-!
-!             if (has_dataset(ncid, 'volume')) then
-!                 call read_netcdf_dataset(ncid, 'volume', &
-!                                          parcels%volume(1:n_parcels), start, cnt)
-!             else
-!                 print *, "The parcel volume must be present! Exiting."
-!                 stop
-!             endif
-!
-!             if (has_dataset(ncid, 'vorticity')) then
-!                 l_valid = .true.
-!                 call read_netcdf_dataset(ncid, 'vorticity', &
-!                                          parcels%vorticity(1:n_parcels), start, cnt)
-!             endif
-!
-!             if (has_dataset(ncid, 'buoyancy')) then
-!                 l_valid = .true.
-!                 call read_netcdf_dataset(ncid, 'buoyancy', &
-!                                          parcels%buoyancy(1:n_parcels), start, cnt)
-!             endif
-!
-! #ifndef ENABLE_DRY_MODE
-!             if (has_dataset(ncid, 'humidity')) then
-!                 l_valid = .true.
-!                 call read_netcdf_dataset(ncid, 'humidity', &
-!                                          parcels%humidity(1:n_parcels), start, cnt)
-!             endif
-! #endif
-!
-!             if (.not. l_valid) then
-!                 print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
-!                 stop
-!             endif
-!
-!             call close_netcdf_file(ncid)
-!
-!             call stop_timer(parcel_io_timer)
-!
-!         end subroutine read_netcdf_parcels
+
+        subroutine read_netcdf_surface_parcels(fname)
+            character(*),     intent(in) :: fname
+            character(512)               :: substring, top, bot
+            integer                      :: n
+
+            n = len(trim(fname))
+
+            ! Parcel files end with "_parcels.nc";
+            ! remove 'parcels.nc' (10 characters)
+            substring = fname(1:n-10)
+
+            bot = trim(substring) // '_bot_surface_parcels.nc'
+            top = trim(substring) // '_top_surface_parcels.nc'
+
+            call read_netcdf_parcels_(bot, n_bot_parcels, bot_parcels)
+            call read_netcdf_parcels_(top, n_top_parcels, top_parcels)
+
+        end subroutine read_netcdf_surface_parcels
+
+        subroutine read_netcdf_parcels_(fname, n_par, sp)
+            character(*),                        intent(in)    :: fname
+            integer,                             intent(inout) :: n_par
+            type(surface_parcel_container_type), intent(inout) :: sp
+            logical                                            :: l_valid = .false.
+            integer                                            :: cnt(2), start(2), n
+
+            call open_netcdf_file(fname, NF90_NOWRITE, ncid)
+
+            call get_num_parcels(ncid, n_par)
+
+            if (n_par > max_num_surf_parcels) then
+                print *, "Number of parcels exceeds limit of", &
+                          max_num_surf_parcels, ". Exiting."
+                stop
+            endif
+
+            ! time step to read [step(2) is the time]
+            cnt   = (/ n_par, 1 /)
+            start = (/ 1,         1 /)
+
+            ! Be aware that the starting index of buffer_1d and buffer_2d
+            ! is 0; hence, the range is 0:n_par-1 in contrast to the
+            ! parcel container where it is 1:n_par.
+
+            if (has_dataset(ncid, 'x_position')) then
+                call read_netcdf_dataset(ncid, 'x_position', &
+                                         sp%position(1:n_par), start, cnt)
+            else
+                print *, "The parcel x position must be present! Exiting."
+                stop
+            endif
+
+            if (has_dataset(ncid, 'volume')) then
+                call read_netcdf_dataset(ncid, 'volume', &
+                                         sp%volume(1:n_par), start, cnt)
+            else
+                print *, "The parcel volume must be present! Exiting."
+                stop
+            endif
+
+            if (has_dataset(ncid, 'vorticity')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'vorticity', &
+                                         sp%vorticity(1:n_par), start, cnt)
+            endif
+
+            if (has_dataset(ncid, 'buoyancy')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'buoyancy', &
+                                         sp%buoyancy(1:n_par), start, cnt)
+            endif
+
+#ifndef ENABLE_DRY_MODE
+            if (has_dataset(ncid, 'humidity')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'humidity', &
+                                         sp%humidity(1:n_par), start, cnt)
+            endif
+#endif
+
+            if (.not. l_valid) then
+                print *, "Either the parcel buoyancy or vorticity must be present! Exiting."
+                stop
+            endif
+
+            call close_netcdf_file(ncid)
+
+            call surface_parcel_sort(n_par, sp)
+
+            sp%right(1) = 2
+            do n = 2, n_par
+                sp%right(n) = mod(n, n_par) + 1
+            enddo
+
+        end subroutine read_netcdf_parcels_
 
 end module surface_parcel_netcdf
