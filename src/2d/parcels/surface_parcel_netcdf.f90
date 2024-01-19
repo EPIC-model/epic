@@ -21,7 +21,7 @@ module surface_parcel_netcdf
     integer            :: ncid
     integer            :: npar_dim_id, len_id, buo_id,  &
                           x_pos_id, z_pos_id, vor_id,   &
-                          b11_id, b12_id,               &
+                          b11_id, b12_id, vol_id,       &
                           t_axis_id, t_dim_id
     double precision   :: restart_time
 
@@ -30,7 +30,7 @@ module surface_parcel_netcdf
 #endif
 
     private :: ncid, ncfname, n_writes, npar_dim_id,        &
-               x_pos_id, vor_id, len_id, buo_id,            &
+               x_pos_id, vor_id, len_id, buo_id, vol_id,    &
                t_axis_id, t_dim_id,                         &
                restart_time
 #ifndef ENABLE_DRY_MODE
@@ -131,6 +131,15 @@ module surface_parcel_netcdf
                                        varid=len_id)
 
             call define_netcdf_dataset(ncid=ncid,                               &
+                                       name='volume',                           &
+                                       long_name='parcel volume',               &
+                                       std_name='',                             &
+                                       unit='m**2',                             &
+                                       dtype=NF90_DOUBLE,                       &
+                                       dimids=dimids,                           &
+                                       varid=vol_id)
+
+            call define_netcdf_dataset(ncid=ncid,                               &
                                        name='vorticity',                        &
                                        long_name='',                            &
                                        std_name='',                             &
@@ -209,6 +218,8 @@ module surface_parcel_netcdf
             call write_netcdf_dataset(ncid, x_pos_id, sp%position(1:n_par), start, cnt)
 
             call write_netcdf_dataset(ncid, len_id, length, start, cnt)
+
+            call write_netcdf_dataset(ncid, vol_id, sp%volume(1:n_par), start, cnt)
 
             call write_netcdf_dataset(ncid, vor_id, sp%vorticity(1:n_par), start, cnt)
 
