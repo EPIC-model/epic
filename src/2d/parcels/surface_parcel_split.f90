@@ -8,6 +8,7 @@ module surface_parcel_split
     use surface_parcel_container, only : surface_parcel_container_type  &
                                        , get_surface_parcel_length      &
                                        , surface_parcel_sort
+    use surface_parcel_bc, only : apply_surface_periodic_bc
     use omp_lib
     implicit none
 
@@ -53,6 +54,7 @@ module surface_parcel_split
 #endif
                 sp%position(n) = sp%position(n)
                 sp%position(m) = sp%position(n) + f12 * l
+                call apply_surface_periodic_bc(sp%position(m))
 
                 sp%right(n) = m
                 sp%right(m) = sp%right(n)

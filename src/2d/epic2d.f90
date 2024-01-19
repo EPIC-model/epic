@@ -115,11 +115,7 @@ program epic2d
 
                 call merge_parcels
 
-                call apply_surface_parcel_bc
-
                 call split_parcels
-
-                call apply_surface_parcel_bc
 
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace
