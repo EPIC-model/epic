@@ -30,9 +30,6 @@ module surface_parcel_split
                 ! parcel length:
                 l = get_surface_parcel_length(n, sp)
 
-!                 print *, "lmax", lmax, l, (l > lmax), size(sp%vorticity)
-!                 stop
-
                 if (l <= lmax) then
                     cycle
                 endif
