@@ -67,7 +67,7 @@ module surface_parcel_netcdf
             logical                  :: l_exist
             integer                  :: dimids(2)
 
-            ncfname =  basename // '_' // surf // '-surface_' // zfill(n_writes) // '_parcels.nc'
+            ncfname =  basename // '_' // zfill(n_writes) // '_' // surf // '_surface_parcels.nc'
 
             ncbasename = basename
 
