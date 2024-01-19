@@ -176,7 +176,7 @@ module ls_rk
 
             call start_timer(rk_timer)
 
-            !$omp parallel do default(shared) private(n)
+            !$omp parallel do default(shared) private(n,detB,factor)
             do n = 1, n_parcels
                 parcels%position(:, n) = parcels%position(:, n) &
                                        + cb * dt * parcels%delta_pos(:, n)
@@ -193,7 +193,7 @@ module ls_rk
 
                 factor = (get_abc(parcels%volume(n)) ** 2 / detB) ** f13
 
-                parcels%B(:, n) = parcels%B(1:6, n) * factor
+                parcels%B(:, n) = parcels%B(:, n) * factor
             enddo
             !$omp end parallel do
 
