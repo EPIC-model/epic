@@ -25,7 +25,7 @@ module surface_parcel_interpl
     ! interpolation weights
     double precision :: weights(ngp)
 
-    private :: is, weights, len2grid_, surf_par2grid_, surf_grid2par_, get_line_points
+    private :: is, weights, surf_par2grid_, surf_grid2par_, get_line_points
 
     contains
 
@@ -41,54 +41,6 @@ module surface_parcel_interpl
             points(2) = spar%position(n) + f34 * length
 
         end function get_line_points
-
-        subroutine len2grid
-
-            call len2grid_(nz, n_top_parcels, top_parcels)
-            call len2grid_(0,  n_bot_parcels, bot_parcels)
-
-        end subroutine len2grid
-
-        ! Interpolate the parcel length to the grid
-        subroutine len2grid_(iz, n_par, spar)
-            integer,                             intent(in) :: iz
-            integer,                             intent(in) :: n_par
-            type(surface_parcel_container_type), intent(in) :: spar
-            double precision                                :: points(2), length
-            integer                                         :: n, p, l
-
-            volg(iz, :) = zero
-
-            !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, is, weights, length) &
-            !$omp& reduction(+: volg)
-            do n = 1, n_par
-
-                length = get_surface_parcel_length(n, spar)
-
-                points = get_line_points(n, spar)
-
-
-                ! we have 2 points per line
-                do p = 1, 2
-
-                    ! ensure point is within the domain
-                    call apply_surface_periodic_bc(points(p))
-
-                    ! get interpolation weights and mesh indices
-                    call linear(points(p), is, weights)
-
-                    do l = 1, ngp
-                        volg(iz, is(l)) = volg(iz, is(l)) &
-                                        + f12 * weights(l) * length
-                    enddo
-                enddo
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-        end subroutine len2grid_
-
 
         subroutine surf_par2grid
 

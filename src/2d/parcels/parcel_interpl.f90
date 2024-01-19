@@ -13,7 +13,7 @@ module parcel_interpl
     use fields
     use physics, only : glat, lambda_c, q_0
     use omp_lib
-    use surface_parcel_interpl, only : len2grid, surf_par2grid, surf_grid2par
+    use surface_parcel_interpl, only : surf_par2grid, surf_grid2par
     implicit none
 
     ! number of indices and weights
@@ -34,6 +34,7 @@ module parcel_interpl
     contains
 
         ! Interpolate the parcel volume to the grid
+        ! Note that the boundary values (iz = 0 and iz = 0) are incorrect.
         subroutine vol2grid
             double precision  :: points(2, 2)
             integer           :: n, p, l
@@ -68,8 +69,6 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
-
-            call len2grid
 
         end subroutine vol2grid
 
