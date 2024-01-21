@@ -3,7 +3,7 @@
 !            (see https://doi.org/10.5194/gmd-10-3145-2017)
 ! =============================================================================
 module ls_rk
-    use constants, only : f13
+    use constants, only : f13, one
     use options, only : time
     use dimensions, only : I_Z
     use parcel_container
@@ -183,6 +183,7 @@ module ls_rk
 
                 parcels%vorticity(:, n) = parcels%vorticity(:, n) &
                                         + cb * dt * parcels%delta_vor(:, n)
+
                 parcels%B(:, n) = parcels%B(:, n) &
                                 + cb * dt * parcels%delta_b(:, n)
 
@@ -193,6 +194,7 @@ module ls_rk
 
                 factor = (get_abc(parcels%volume(n)) ** 2 / detB) ** f13
 
+                parcels%delta_b(:, n) = parcels%delta_b(:, n) + parcels%B(:, n) * (factor - one)/(cb * dt)
                 parcels%B(:, n) = parcels%B(:, n) * factor
             enddo
             !$omp end parallel do
