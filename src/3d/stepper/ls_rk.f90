@@ -203,7 +203,7 @@ module ls_rk
 
             if (step == n_stages) then
                 call parcel_communicate
-               return
+                return
             endif
 
             call start_timer(rk_timer)
