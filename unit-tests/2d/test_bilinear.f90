@@ -9,7 +9,7 @@ program test_bilinear
     use parcel_container
     use parcel_interpl, only : par2grid, par2grid_timer
     use parcel_ellipse, only : get_ab
-    use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid
+    use parameters, only : lower, update_parameters, vcell, dx, nx, nz, ngrid, extent
     use fields, only : volg, field_alloc
     use timer
     implicit none

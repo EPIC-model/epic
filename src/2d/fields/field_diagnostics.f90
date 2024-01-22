@@ -20,9 +20,6 @@ module field_diagnostics
                         avg_nspar,  &       ! average num small parcels per cell
                         keg,        &       ! domain-averaged kinetic energy calculated on the grid
                         apeg                ! domain-averaged available potential energy on the grid
-#ifndef NDEBUG
-    double precision :: max_vol_sym_err
-#endif
 
     contains
 
@@ -72,10 +69,6 @@ module field_diagnostics
 
                 apeg = apeg * vdomaini
             endif
-
-#ifndef NDEBUG
-            max_vol_sym_err = maxval(dabs(sym_volg(0:nz, :)))
-#endif
 
             call stop_timer(field_stats_timer)
         end subroutine calculate_field_diagnostics

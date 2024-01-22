@@ -37,7 +37,7 @@ program test_ellipse_multi_merge_4
     call parcel_setup
 
     ! first merge is only merge
-    call merge_ellipses(parcels)
+    call merge_ellipses
 
     ! check result
     error = dble(abs(n_parcels-1))

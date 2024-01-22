@@ -1,7 +1,6 @@
 module utils
     use constants, only : one
     use options, only : field_file          &
-                      , field_tol           &
                       , output              &
                       , l_restart           &
                       , restart_file        &
@@ -17,14 +16,12 @@ module utils
     use field_diagnostics, only : calculate_field_diagnostics
     use parcel_init, only : init_parcels
     use parcel_container, only : n_parcels, parcel_alloc
+    use surface_parcel_container, only : surface_parcel_alloc
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
-    use parameters, only : lower, extent, update_parameters, max_num_parcels
+    use parameters, only : lower, extent, update_parameters, max_num_parcels, max_num_surf_parcels
     use physics, only : read_physical_quantities, print_physical_quantities, l_peref
-#ifndef NDEBUG
-    use parcel_interpl, only : vol2grid_symmetry_error
-#endif
     use field_diagnostics_netcdf, only : write_netcdf_field_stats
 
     implicit none
@@ -76,9 +73,6 @@ module utils
         ! @param[in] t is the time
         subroutine write_last_step(t)
             double precision,  intent(in) :: t
-            double precision              :: velocity(2, n_parcels)
-            double precision              :: strain(4, n_parcels)
-            double precision              :: vorticity(n_parcels)
 
             call par2grid
 
@@ -88,9 +82,9 @@ module utils
 
             call vorticity_tendency(tbuoyg, vtend)
 
-            call grid2par(velocity, vorticity, strain)
+            call grid2par
 
-            call calculate_parcel_diagnostics(velocity)
+            call calculate_parcel_diagnostics(parcels%delta_pos)
 
             call calculate_field_diagnostics
 
@@ -104,9 +98,6 @@ module utils
             double precision,  intent(in) :: t
             logical, optional, intent(in) :: l_force
             double precision              :: neg = one
-#ifndef NDEBUG
-            logical                      :: do_vol2grid_sym_err = .true.
-#endif
 
             if (present(l_force)) then
                 if (l_force) then
@@ -117,10 +108,6 @@ module utils
             ! make sure we always write initial setup
             if (output%write_fields .and. &
                 (t + epsilon(zero) >= neg * dble(nfw) * output%field_freq)) then
-#ifndef NDEBUG
-                call vol2grid_symmetry_error
-                do_vol2grid_sym_err = .false.
-#endif
                 call write_netcdf_fields(t)
 
                 nfw = nfw + 1
@@ -145,11 +132,6 @@ module utils
             if (output%write_field_stats .and. &
                 (t + epsilon(zero) >= neg * dble(nsfw) * output%field_stats_freq)) then
 
-#ifndef NDEBUG
-                if (do_vol2grid_sym_err) then
-                    call vol2grid_symmetry_error
-                endif
-#endif
                 call write_netcdf_field_stats(t)
 
                 nsfw = nsfw + 1
@@ -214,12 +196,13 @@ module utils
             character(len=16) :: file_type
 
             call parcel_alloc(max_num_parcels)
+            call surface_parcel_alloc(max_num_surf_parcels)
 
             if (l_restart) then
                 call setup_restart(trim(restart_file), time%initial, file_type)
 
                 if (file_type == 'fields') then
-                    call init_parcels(restart_file, field_tol)
+                    call init_parcels(restart_file)
                 else if (file_type == 'parcels') then
                     call read_netcdf_parcels(restart_file)
                 else
@@ -229,7 +212,7 @@ module utils
             else
                 time%initial = zero ! make sure user cannot start at arbitrary time
 
-                call init_parcels(field_file, field_tol)
+                call init_parcels(field_file)
             endif
         end subroutine setup_parcels
 

@@ -39,7 +39,7 @@ program test_ellipse_multi_merge_3
 
     call parcel_setup
 
-    call merge_ellipses(parcels)
+    call merge_ellipses
 
     ! check result
     call eval_max_error

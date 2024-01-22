@@ -39,8 +39,7 @@ unittests_PROGRAMS = 				\
 	test_nearest_2				\
 	test_nearest_3				\
 	test_nearest_4				\
-	test_tri_inversion			\
-	test_parcel_init
+	test_tri_inversion
 
 test_ellipse_orientation_SOURCES = test_ellipse_orientation.f90
 test_ellipse_orientation_LDADD = libcombi.la
@@ -97,11 +96,3 @@ test_nearest_4_LDADD = libcombi.la
 
 test_tri_inversion_SOURCES = test_tri_inversion.f90
 test_tri_inversion_LDADD = libcombi.la
-test_parcel_init_SOURCES = test_parcel_init.f90
-test_parcel_init_LDADD = libcombi.la
-
-if ENABLE_DEBUG
-unittests_PROGRAMS += test_ellipse_merge_symmetry
-test_ellipse_merge_symmetry_SOURCES = test_ellipse_merge_symmetry.f90
-test_ellipse_merge_symmetry_LDADD = libcombi.la
-endif

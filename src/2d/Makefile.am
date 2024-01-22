@@ -13,6 +13,15 @@ epic2d_SOURCES = 				\
 	fields/field_diagnostics.f90		\
 	fields/field_netcdf.f90			\
 	fields/field_diagnostics_netcdf.f90	\
+	parcels/parcel_ops.f90			\
+	parcels/surface_parcel_container.f90	\
+	parcels/surface_parcel_bc.f90		\
+	parcels/surface_parcel_interpl.f90	\
+	parcels/surface_parcel_init.f90		\
+	parcels/surface_parcel_split.f90	\
+	parcels/surface_parcel_nearest.f90	\
+	parcels/surface_parcel_merge.f90	\
+	parcels/surface_parcel_netcdf.f90	\
 	parcels/parcel_ellipse.f90		\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_bc.f90			\
@@ -25,6 +34,7 @@ epic2d_SOURCES = 				\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_netcdf.f90		\
 	parcels/parcel_diagnostics_netcdf.f90	\
+	parcels/parcel_mixing.f90		\
 	tri_inversion.f90			\
 	utils/utils.f90				\
 	stepper/rk4_utils.f90			\

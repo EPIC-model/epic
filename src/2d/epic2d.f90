@@ -6,8 +6,8 @@ program epic2d
     use timer
     use parcel_container
     use parcel_bc
-    use parcel_split, only : split_ellipses, split_timer
-    use parcel_merge, only : merge_ellipses, merge_timer
+    use parcel_split, only : split_parcels, split_timer
+    use parcel_merge, only : merge_parcels, merge_timer
     use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
     use parcel_correction, only : init_parcel_correction, &
                                   apply_laplace,          &
@@ -23,15 +23,12 @@ program epic2d
     use field_diagnostics_netcdf, only : field_stats_io_timer
     use tri_inversion, only : init_inversion, vor2vel_timer, vtend_timer
     use parcel_interpl, only : grid2par_timer, par2grid_timer
-#ifndef NDEBUG
-    use parcel_interpl, only : sym_vol2grid_timer
-#endif
     use parcel_init, only : init_timer
-    use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
+    use parcel_mixing, only : mix_parcels, mixing_timer
+    use ls_rk4, only : ls_rk4_step, rk4_timer
     use utils, only : write_last_step, setup_output_files        &
                     , setup_restart, setup_domain_and_parameters &
                     , setup_parcels
-    use parameters, only : max_num_parcels
     implicit none
 
     integer          :: epic_timer
@@ -72,9 +69,7 @@ program epic2d
             call register_timer('parcel push', rk4_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
-#ifndef NDEBUG
-            call register_timer('symmetric vol2grid', sym_vol2grid_timer)
-#endif
+            call register_timer('parcel mixing timer', mixing_timer)
 
             call start_timer(epic_timer)
 
@@ -84,15 +79,13 @@ program epic2d
             ! read domain dimensions
             call setup_domain_and_parameters
 
-            call setup_parcels
+            call field_default
 
-            call ls_rk4_alloc(max_num_parcels)
+            call setup_parcels
 
             call init_inversion
 
             call init_parcel_correction
-
-            call field_default
 
             call setup_output_files
 
@@ -118,9 +111,11 @@ program epic2d
 #endif
                 call ls_rk4_step(t)
 
-                call merge_ellipses(parcels)
+                call mix_parcels
 
-                call split_ellipses(parcels, parcel%lambda_max)
+                call merge_parcels
+
+                call split_parcels
 
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace
@@ -139,7 +134,6 @@ program epic2d
         subroutine post_run
             use options, only : output
             call parcel_dealloc
-            call ls_rk4_dealloc
 
             call stop_timer(epic_timer)
 

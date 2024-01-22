@@ -1,14 +1,11 @@
 !==============================================================================
 !               Finds the parcels nearest every "small" parcel
 !==============================================================================
-module parcel_nearest
-    use constants, only : pi, f12
+module surface_parcel_nearest
     use parcel_ops, only : get_delx
-    use parcel_container, only : parcels, n_parcels
-    use parameters, only : dx, dxi, vcell, hli, lower, extent, ncell, nx, nz, vmin, max_num_parcels
-    use options, only : parcel
-    use timer, only : start_timer, stop_timer
-
+    use surface_parcel_container, only : surface_parcel_container_type  &
+                                       , get_surface_parcel_length
+    use parameters, only : dx, dxi, lower, extent, nx, lmin, max_num_surf_parcels
     implicit none
 
     integer:: merge_nearest_timer, merge_tree_resolve_timer
@@ -37,9 +34,9 @@ module parcel_nearest
     logical :: l_continue_iteration, l_do_merge
 
     !Other variables:
-    double precision:: delx,delz,dsq,dsqmin,x_small,z_small
-    integer:: ic,is,ij,k,m,j, n
-    integer:: ix,iz,ix0,iz0
+    double precision:: delx, dsq, dsqmin, x_small
+    integer:: ic, is, ij, k, m, j, n
+    integer:: ix, ix0
 
     public :: find_nearest, merge_nearest_timer, merge_tree_resolve_timer
 
@@ -53,26 +50,27 @@ module parcel_nearest
         !   - isma and iclo must be filled contiguously
         !   - parcel indices in isma cannot be in iclo, and vice-versa
         !   - the m-th entry in isma relates to the m-th entry in iclo
-        subroutine find_nearest(isma, iclo, nmerge)
-            integer, allocatable, intent(out) :: isma(:)
-            integer, allocatable, intent(out) :: iclo(:)
-            integer, intent(out) :: nmerge
-
-            call start_timer(merge_nearest_timer)
+        subroutine find_nearest(n_par, spar, isma, iclo, nmerge)
+            integer,                             intent(in)  :: n_par
+            type(surface_parcel_container_type), intent(in)  :: spar
+            integer, allocatable,                intent(out) :: isma(:)
+            integer, allocatable,                intent(out) :: iclo(:)
+            integer,                             intent(out) :: nmerge
+            double precision                                 :: length
 
             if (.not. allocated(nppc)) then
-                allocate(nppc(ncell))
-                allocate(kc1(ncell))
-                allocate(kc2(ncell))
-                allocate(loca(max_num_parcels))
-                allocate(node(max_num_parcels))
-                allocate(l_leaf(max_num_parcels))
-                allocate(l_available(max_num_parcels))
-                allocate(l_first_merged(max_num_parcels))
+                allocate(nppc(nx))
+                allocate(kc1(nx))
+                allocate(kc2(nx))
+                allocate(loca(max_num_surf_parcels))
+                allocate(node(max_num_surf_parcels))
+                allocate(l_leaf(max_num_surf_parcels))
+                allocate(l_available(max_num_surf_parcels))
+                allocate(l_first_merged(max_num_surf_parcels))
 #ifndef NDEBUG
-                allocate(l_merged(max_num_parcels))
-                allocate(l_small(max_num_parcels))
-                allocate(l_close(max_num_parcels))
+                allocate(l_merged(max_num_surf_parcels))
+                allocate(l_small(max_num_surf_parcels))
+                allocate(l_close(max_num_surf_parcels))
 #endif
             endif
 
@@ -84,12 +82,11 @@ module parcel_nearest
 
             ! Bin parcels in cells:
             ! Form list of small parcels:
-            do n = 1, n_parcels
-                ix = mod(int(dxi(1) * (parcels%position(1, n) - lower(1))), nx)
-                iz = min(int(dxi(2) * (parcels%position(2, n) - lower(2))), nz-1)
+            do n = 1, n_par
+                ix = mod(int(dxi(1) * (spar%position(n) - lower(1))), nx)
 
                 ! Cell index of parcel:
-                ij = 1 + ix + nx * iz !This runs from 1 to ncell
+                ij = 1 + ix !This runs from 1 to nx
 
                 ! Accumulate number of parcels in this grid cell:
                 nppc(ij) = nppc(ij) + 1
@@ -97,13 +94,14 @@ module parcel_nearest
                 ! Store grid cell that this parcel is in:
                 loca(n) = ij
 
-                if (parcels%volume(n) < vmin) then
+                length = get_surface_parcel_length(n, spar)
+
+                if (length < lmin) then
                     nmerge = nmerge + 1
                 endif
             enddo
 
             if (nmerge == 0) then
-                call stop_timer(merge_nearest_timer)
                 return
             endif
 
@@ -117,19 +115,21 @@ module parcel_nearest
             ! Find arrays kc1(ij) & kc2(ij) which indicate the parcels in grid cell ij
             ! through n = node(k), for k = kc1(ij),kc2(ij):
             kc1(1) = 1
-            do ij = 1, ncell-1
+            do ij = 1, nx-1
                 kc1(ij+1) = kc1(ij) + nppc(ij)
             enddo
 
             kc2 = kc1 - 1
             j = 0
-            do n = 1, n_parcels
+            do n = 1, n_par
                 ij = loca(n)
                 k = kc2(ij) + 1
                 node(k) = n
                 kc2(ij) = k
 
-                if (parcels%volume(n) < vmin) then
+                length = get_surface_parcel_length(n, spar)
+
+                if (length < lmin) then
                     j = j + 1
                     isma(j) = n
                 endif
@@ -148,42 +148,35 @@ module parcel_nearest
             ! Rather, stop if no nearest parcel found  in surrounding grid boxes
             do m = 1, nmerge
                 is = isma(m)
-                x_small = parcels%position(1, is)
-                z_small = parcels%position(2, is)
+                x_small = spar%position(is)
                 ! Parcel "is" is small and should be merged; find closest other:
                 ix0 = mod(nint(dxi(1) * (x_small - lower(1))), nx) ! ranges from 0 to nx-1
-                iz0 = nint(dxi(2) * (z_small - lower(2)))          ! ranges from 0 to nz
 
                 ! Grid point (ix0,iz0) is closest to parcel "is"
 
-                dsqmin = product(extent)
+                dsqmin = extent(1)
                 ic = 0
 
-                ! Loop over 8 cells surrounding (ix0,iz0):
-                do iz = max(0, iz0-1), min(nz-1, iz0) !=> iz=0 for iz0=0 & iz=nz-1 for iz0=nz
-                    do ix = ix0-1, ix0
-                        ! Cell index (accounting for x periodicity):
-                        ij = 1 + mod(nx + ix, nx) + nx * iz
-                        ! Search small parcels for closest other:
-                        do k = kc1(ij), kc2(ij)
-                            n = node(k)
-                            if (n .ne. is) then
-                                delz = parcels%position(2, n) - z_small
-                                if (delz*delz < dsqmin) then
-                                    delx = get_delx(parcels%position(1, n), x_small) ! works across periodic edge
-                                    ! Minimise dsqmin
-                                    dsq = delz * delz + delx * delx
-                                    if (dsq < dsqmin) then
-                                        dsqmin = dsq
-                                        ic = n
-                                    endif
-                                endif
+                ! Loop over 2 cells surrounding (ix0):
+                do ix = ix0-1, ix0
+                    ! Cell index (accounting for x periodicity):
+                    ij = 1 + mod(nx + ix, nx)
+                    ! Search small parcels for closest other:
+                    do k = kc1(ij), kc2(ij)
+                        n = node(k)
+                        if (n .ne. is) then
+                            delx = get_delx(spar%position(n), x_small) ! works across periodic edge
+                            ! Minimise dsqmin
+                            dsq = delx * delx
+                            if (dsq < dsqmin) then
+                                dsqmin = dsq
+                                ic = n
                             endif
-                        enddo
+                        endif
                     enddo
                 enddo
 
-                if (ic==0) then
+                if (ic == 0) then
                   print *, 'Merge error: no near neighbour found.'
                   stop
                 end if
@@ -199,9 +192,6 @@ module parcel_nearest
             write(*,*) 'start merging, nmerge='
             write(*,*) nmerge
 #endif
-
-            call stop_timer(merge_nearest_timer)
-            call start_timer(merge_tree_resolve_timer)
 
             ! First implementation of iterative algorithm
 
@@ -346,20 +336,19 @@ module parcel_nearest
             end do
 
             ! 2. CHECK MERGING PARCELS
-            do n = 1, n_parcels
-              if (parcels%volume(n) < vmin) then
-                if(.not. l_merged(n)) write(*,*) 'merge_error: parcel n not merged (should be), n=', n
-                if(.not. (l_small(n) .or. l_close(n))) write(*,*) 'merge_error: parcel n not small or close (should be), n=', n
-                if(l_small(n) .and. l_close(n)) write(*,*) 'merge_error: parcel n both small and close, n=', n
-              else
-                if(l_small(n)) write(*,*) 'merge_error: parcel n small (should not be), n=', n
-                if(l_merged(n) .and. (.not. l_close(n))) write(*,*) 'merge_error: parcel n merged (should not be), n=', n
-              end if
+            do n = 1, n_par
+                length = get_surface_parcel_length(n, spar)
+                if (length < lmin) then
+                    if(.not. l_merged(n)) write(*,*) 'merge_error: parcel n not merged (should be), n=', n
+                    if(.not. (l_small(n) .or. l_close(n))) write(*,*) 'merge_error: parcel n not small or close (should be), n=', n
+                    if(l_small(n) .and. l_close(n)) write(*,*) 'merge_error: parcel n both small and close, n=', n
+                else
+                    if(l_small(n)) write(*,*) 'merge_error: parcel n small (should not be), n=', n
+                    if(l_merged(n) .and. (.not. l_close(n))) write(*,*) 'merge_error: parcel n merged (should not be), n=', n
+                endif
             enddo
 #endif
 
-            call stop_timer(merge_tree_resolve_timer)
-
         end subroutine find_nearest
 
-end module parcel_nearest
+end module surface_parcel_nearest
