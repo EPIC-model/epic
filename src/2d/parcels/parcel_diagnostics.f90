@@ -6,6 +6,8 @@ module parcel_diagnostics
     use merge_sort
     use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
     use parcel_container, only : parcels, n_parcels
+    use surface_parcel_container, only : n_top_parcels, top_parcels &
+                                       , n_bot_parcels, bot_parcels
     use parcel_ellipse
     use omp_lib
     use physics, only : peref, ape_calculation
@@ -37,18 +39,6 @@ module parcel_diagnostics
 
     ! min and max vorticity
     double precision :: vormin, vormax
-
-#ifdef ENABLE_DIAGNOSE
-    ! buoyancy weighted first and second moments
-    double precision :: xb_bar, x2b_bar
-    double precision :: zb_bar, z2b_bar
-    double precision :: xzb_bar
-
-    ! vorticity weighted first and second moments
-    double precision :: xv_bar, x2v_bar
-    double precision :: zv_bar, z2v_bar
-    double precision :: xzv_bar
-#endif
 
     contains
 
@@ -103,6 +93,19 @@ module parcel_diagnostics
             bmax = maxval(parcels%buoyancy(1:n_parcels))
             vormin = minval(parcels%vorticity(1:n_parcels))
             vormax = maxval(parcels%vorticity(1:n_parcels))
+
+            bmin = min(bmin, minval(top_parcels%buoyancy(1:n_top_parcels)))
+            bmin = min(bmin, minval(bot_parcels%buoyancy(1:n_bot_parcels)))
+
+            bmax = max(bmax, maxval(top_parcels%buoyancy(1:n_top_parcels)))
+            bmax = max(bmax, maxval(bot_parcels%buoyancy(1:n_bot_parcels)))
+
+            vormin = min(vormin, minval(top_parcels%vorticity(1:n_top_parcels)))
+            vormin = min(vormin, minval(bot_parcels%vorticity(1:n_bot_parcels)))
+
+            vormax = max(vormax, maxval(top_parcels%vorticity(1:n_top_parcels)))
+            vormax = max(vormax, maxval(bot_parcels%vorticity(1:n_bot_parcels)))
+
 
             lsum = zero
             l2sum = zero
@@ -178,116 +181,8 @@ module parcel_diagnostics
             avg_vol = vsum / dble(n_parcels)
             std_vol = dsqrt(abs(v2sum / dble(n_parcels) - avg_vol ** 2))
 
-
-#ifdef ENABLE_DIAGNOSE
-            call straka_diagnostics
-#endif
-
             call stop_timer(parcel_stats_timer)
 
         end subroutine calculate_parcel_diagnostics
 
-
-#ifdef ENABLE_DIAGNOSE
-        ! Straka density current test case diagnostics
-        subroutine straka_diagnostics
-            integer          :: n
-            double precision :: xbv, x2bv, zbv, z2bv, xzbv
-            double precision :: xvv, x2vv, zvv, z2vv, xzvv
-            double precision :: bvsum, vvsum, bv, vv
-
-            ! reset
-            xb_bar = zero
-            zb_bar = zero
-            x2b_bar = zero
-            z2b_bar = zero
-            xzb_bar = zero
-
-            xv_bar = zero
-            zv_bar = zero
-            x2v_bar = zero
-            z2v_bar = zero
-            xzv_bar = zero
-
-
-            xbv = zero
-            x2bv = zero
-            zbv = zero
-            z2bv = zero
-            xzbv = zero
-            xvv = zero
-            x2vv = zero
-            zvv = zero
-            z2vv = zero
-            xzvv = zero
-
-            bvsum = zero
-            vvsum = zero
-            bv = zero
-            vv = zero
-
-            !$omp parallel default(shared)
-            !$omp do private(n, bv, vv) &
-            !$omp& reduction(+: vvsum, bvsum, xbv, zbv, x2bv, z2bv, xzbv, xvv, zvv, x2vv, z2vv, xzvv)
-            do n = 1, n_parcels
-                ! we only use the upper half in horizontal direction
-                if (parcels%position(1, n) >= 0) then
-                    bv = parcels%buoyancy(n) * parcels%volume(n)
-                    bvsum = bvsum + bv
-                    xbv = xbv + bv * parcels%position(1, n)
-                    zbv = zbv + bv * parcels%position(2, n)
-
-                    x2bv = x2bv + bv * parcels%position(1, n) ** 2
-                    z2bv = z2bv + bv * parcels%position(2, n) ** 2
-                    xzbv = xzbv + bv * parcels%position(1, n) * parcels%position(2, n)
-
-
-                    vv = parcels%vorticity(n) * parcels%volume(n)
-                    vvsum = vvsum + vv
-                    xvv = xvv + vv * parcels%position(1, n)
-                    zvv = zvv + vv * parcels%position(2, n)
-
-                    x2vv = x2vv + vv * parcels%position(1, n) ** 2
-                    z2vv = z2vv + vv * parcels%position(2, n) ** 2
-                    xzvv = xzvv + vv * parcels%position(1, n) * parcels%position(2, n)
-                endif
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            ! we do not need to divide by the number of of involved
-            ! parcels since whe divide by the sums "bvsum" or "vvsum"
-            ! what should also be averages (i.e. divided by the number of
-            ! involved parcels)
-
-            ! make sure we do not divide by zero
-            if (dabs(bvsum) < epsilon(zero)) then
-                bvsum = epsilon(zero)
-            else
-                bvsum = one / bvsum
-            endif
-
-            if (dabs(vvsum) < epsilon(zero)) then
-                vvsum = epsilon(zero)
-            else
-                vvsum = one / vvsum
-            endif
-
-            xb_bar = xbv * bvsum
-            zb_bar = zbv * bvsum
-
-            x2b_bar = x2bv * bvsum
-            z2b_bar = z2bv * bvsum
-
-            xzb_bar = xzbv * bvsum - xb_bar * zb_bar
-
-            xv_bar = xvv * vvsum
-            zv_bar = zvv * vvsum
-
-            x2v_bar = x2vv * vvsum
-            z2v_bar = z2vv * vvsum
-
-            xzv_bar = xzvv * vvsum - xv_bar * zv_bar
-        end subroutine straka_diagnostics
-#endif
 end module parcel_diagnostics
