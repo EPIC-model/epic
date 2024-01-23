@@ -13,15 +13,9 @@
 !==============================================================================
 module parcel_nearest
     use constants, only : zero
-    use parcel_container, only : parcels            &
-                               , n_parcels          &
-                               , get_delx           &
-                               , get_dely           &
-                               , n_par_attrib       &
-                               , n_total_parcels    &
-                               , parcel_serialize   &
-                               , parcel_deserialize &
-                               , parcel_delete
+    use parcels_mod, only : parcels
+    use parcel_ops, only : get_delx &
+                         , get_dely
     use fields, only : get_index
     use parameters, only : dx, dxi, vcell, hli, lower, extent       &
                          , ncell, nx, ny, nz, vmin, max_num_parcels
@@ -269,7 +263,7 @@ module parcel_nearest
 
             ! Bin parcels in cells:
             ! Form list of small parcels:
-            do n = 1, n_parcels
+            do n = 1, parcels%n_parcels
 
                 call parcel_to_local_cell_index(n)
 
@@ -342,7 +336,7 @@ module parcel_nearest
 
                 kc2 = kc1 - 1
                 j = 0
-                do n = 1, n_parcels + n_remote_small
+                do n = 1, parcels%n_parcels + n_remote_small
                     ijk = loca(n)
                     k = kc2(ijk) + 1
                     node(k) = n
@@ -407,7 +401,7 @@ module parcel_nearest
             ! Sanity check: Indices of close parcels must be smaller equal to the
             ! number of local parcels:
             if (.not. l_no_small) then
-                if (maxval(iclo(1:n_local_small)) > n_parcels) then
+                if (maxval(iclo(1:n_local_small)) > parcels%n_parcels) then
                     call mpi_exit_on_error(&
                         "in parcel_nearest::find_nearest: Close parcel index out of range.")
                 endif
@@ -605,7 +599,7 @@ module parcel_nearest
                 is = isma(m)
                 ic = iclo(m)
 
-                if ((is > n_parcels) .and. (ic > n_parcels)) then
+                if ((is > parcels%n_parcels) .and. (ic > parcels%n_parcels)) then
                     ! A remote small parcel points to another remote small parcel. The remotes do not necessarily
                     ! need to be the same. Also, it can be a dual-link. As the same distance is evaluated on
                     ! the other two MPI ranks, *this* MPI rank must set the distance between the parcels to the
@@ -613,7 +607,7 @@ module parcel_nearest
                     ! parcels belong to *this* MPI rank due to round-offs in the distance calculation. The
                     ! function "find_closest_parcel_globally" always sets "rclo" to the MPI source.
                     dclo(m) = huge(0.0d0) ! huge(x) returns the maximum value of this type
-                else if (ic > n_parcels) then
+                else if (ic > parcels%n_parcels) then
                     ! A local small parcel points to a remote small parcel.
                     ! The index *ic* is larger than the local number of parcels
                     ! we must update *iclo(m)* and *rclo(m)* with the index of the parcel stored
@@ -627,7 +621,7 @@ module parcel_nearest
             ! Sanity check: Indices of small parcels must be smaller equal to the
             ! number of local parcels:
             do m = 1, n_local_small
-                if (isma(m) > n_parcels) then
+                if (isma(m) > parcels%n_parcels) then
                     call mpi_exit_on_error(&
                         'in in parcel_nearest::find_closest_parcel_locally: Small parcel index out of range.')
                 endif
@@ -671,7 +665,7 @@ module parcel_nearest
 
                 do l = 1, n_neighbour_small(n)
                     i = 1 + (l-1) * n_entries
-                    k = j + n_parcels + l
+                    k = j + parcels%n_parcels + l
 
 
                     ! merge index on *this* rank
@@ -1376,17 +1370,17 @@ module parcel_nearest
                 small_recv_count(n) = recv_count
 #endif
 
-                i = n_parcels+1
-                j = n_parcels+1+size(rsma) + recv_count
+                i = parcels%n_parcels+1
+                j = parcels%n_parcels+1+size(rsma) + recv_count
                 allocate(rtmp(i:j))
                 allocate(pidtmp(i:j))
                 allocate(midtmp(i:j))
 
                 ! copy old over
                 if (size(rsma) > 0) then
-                    rtmp(n_parcels+1:n_parcels+size(rsma)) = rsma
-                    pidtmp(n_parcels+1:n_parcels+size(pidsma)) = pidsma
-                    midtmp(n_parcels+1:n_parcels+size(midsma)) = midsma
+                    rtmp(parcels%n_parcels+1:parcels%n_parcels+size(rsma)) = rsma
+                    pidtmp(parcels%n_parcels+1:parcels%n_parcels+size(pidsma)) = pidsma
+                    midtmp(parcels%n_parcels+1:parcels%n_parcels+size(midsma)) = midsma
                 endif
 
                 deallocate(pidsma)
@@ -1397,7 +1391,7 @@ module parcel_nearest
                     ! unpack parcel position and parcel index to recv buffer
                     do l = 1, recv_count
                         i = 1 + (l-1) * n_entries
-                        k = sum(n_neighbour_small) + n_parcels + l
+                        k = sum(n_neighbour_small) + parcels%n_parcels + l
                         parcels%position(:, k) = recv_buf(i:i+2)
                         parcels%volume(k) = zero    ! set to zero as each parcel is small
                         pidtmp(k) = nint(recv_buf(i+3))
@@ -1455,7 +1449,7 @@ module parcel_nearest
             type(MPI_Status)                           :: recv_status, send_statuses(8)
             integer                                    :: recv_count
             integer                                    :: recv_size, send_size
-            double precision                           :: buffer(n_par_attrib)
+            double precision                           :: buffer(parcels%n_par_attrib)
             integer                                    :: m, rc, ic, is, n, i, j, k, iv
             integer                                    :: n_entries
             integer                                    :: n_registered(8)
@@ -1476,7 +1470,7 @@ module parcel_nearest
 
             ! We must send all parcel attributes (n_par_attrib) plus
             ! the index of the close parcel ic (1)
-            n_entries = n_par_attrib + 1
+            n_entries = parcels%n_par_attrib + 1
             n_registered = n_parcel_sends * n_entries
             call allocate_mpi_buffers(n_registered)
 
@@ -1499,7 +1493,7 @@ module parcel_nearest
 
                     n_registered(n) = n_registered(n) + 1
 
-                    call parcel_serialize(is, buffer)
+                    call parcels%serialize(is, buffer)
                     j = n_entries * n_registered(n)
                     i = j - n_entries + 1
                     send_buf(i:j-1) = buffer
@@ -1580,19 +1574,19 @@ module parcel_nearest
                         ! We receive a small parcel;
                         ! append it to the container with index
                         ! "n_parcels+1"
-                        n_parcels = n_parcels + 1
+                        parcels%n_parcels = parcels%n_parcels + 1
                         j = n_entries * k
                         i = j - n_entries + 1
                         buffer = recv_buf(i:j-1)
-                        call parcel_deserialize(n_parcels, buffer)
+                        call parcels%deserialize(parcels%n_parcels, buffer)
 
                         ! Add the small parcel to isma and inva, and
                         ! its closest parcel to iclo
                         m = m + 1
                         iclo(m) = nint(recv_buf(j))
-                        isma(m) = n_parcels
+                        isma(m) = parcels%n_parcels
                         iv = iv + 1
-                        inva(iv) = n_parcels
+                        inva(iv) = parcels%n_parcels
                     enddo
                     ! The last value of *m* is our new number of
                     ! small parcels. However, this still includes
@@ -1615,9 +1609,9 @@ module parcel_nearest
             call deallocate_mpi_buffers
 
 #ifndef NDEBUG
-            n = n_parcels - n_invalid
+            n = parcels%n_parcels - n_invalid
             call mpi_blocking_reduce(n, MPI_SUM, world)
-            if ((world%rank == world%root) .and. (.not. n == n_total_parcels)) then
+            if ((world%rank == world%root) .and. (.not. n == parcels%n_total_parcels)) then
                 call mpi_exit_on_error(&
                     "in parcel_nearest::gather_remote_parcels: We lost parcels.")
             endif

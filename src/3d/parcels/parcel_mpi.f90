@@ -11,16 +11,7 @@ module parcel_mpi
     use fields, only : get_index
     use parcel_bc, only : apply_periodic_bc
     use parameters, only : vmin, vcell, nx, ny, nz, max_num_parcels
-    use parcel_container, only : n_par_attrib       &
-                               , parcel_pack        &
-                               , parcel_unpack      &
-                               , parcel_delete      &
-                               , n_parcels          &
-                               , parcel_resize      &
-#ifndef NDEBUG
-                               , n_total_parcels    &
-#endif
-                               , parcels
+    use parcels_mod, only : parcels
     implicit none
 
     private
@@ -116,7 +107,7 @@ module parcel_mpi
             ! figure out where parcels go
             call locate_parcels(pindex)
 
-            call allocate_parcel_buffers(n_par_attrib)
+            call allocate_parcel_buffers(parcels%n_par_attrib)
 
             call communicate_sizes_and_resize
 
@@ -176,11 +167,11 @@ module parcel_mpi
             call mpi_check_for_error(cart, &
                 "in MPI_Waitall of parcel_mpi::communicate_sizes_and_resize.")
 
-            total_size = sum(n_parcel_recvs) + n_parcels
+            total_size = sum(n_parcel_recvs) + parcels%n_parcels
 
             if (total_size >= max_num_parcels) then
                 total_size = nint(parcel%grow_factor * total_size)
-                call parcel_resize(total_size)
+                call parcels%resize(total_size)
             endif
 
         end subroutine communicate_sizes_and_resize
@@ -200,10 +191,10 @@ module parcel_mpi
             do n = 1, 8
                 call get_parcel_buffer_ptr(n, pid, send_buf)
 
-                send_size = n_parcel_sends(n) * n_par_attrib
+                send_size = n_parcel_sends(n) * parcels%n_par_attrib
 
                 if (n_parcel_sends(n) > 0) then
-                    call parcel_pack(pid, n_parcel_sends(n), send_buf)
+                    call parcels%pack(pid, n_parcel_sends(n), send_buf)
                 endif
 
                 call MPI_Isend(send_buf(1:send_size),   &
@@ -241,14 +232,14 @@ module parcel_mpi
                 call mpi_check_for_error(cart, &
                     "in MPI_Recv of parcel_mpi::communicate_parcels.")
 
-                if (mod(recv_size, n_par_attrib) /= 0) then
+                if (mod(recv_size, parcels%n_par_attrib) /= 0) then
                     call mpi_exit_on_error("parcel_mpi::communicate_parcels: Receiving wrong count.")
                 endif
 
-                recv_count = recv_size / n_par_attrib
+                recv_count = recv_size / parcels%n_par_attrib
 
                 if (recv_count > 0) then
-                    call parcel_unpack(recv_count, recv_buf)
+                    call parcels%unpack(recv_count, recv_buf)
                 endif
 
                 deallocate(recv_buf)
@@ -264,12 +255,12 @@ module parcel_mpi
 
             ! delete parcel that we sent
             n_total_sends = sum(n_parcel_sends)
-            call parcel_delete(invalid, n_total_sends)
+            call parcels%delete(invalid, n_total_sends)
 
 #ifndef NDEBUG
-            n = n_parcels
+            n = parcels%n_parcels
             call mpi_blocking_reduce(n, MPI_SUM, world)
-            if ((world%rank == world%root) .and. (.not. n == n_total_parcels)) then
+            if ((world%rank == world%root) .and. (.not. n == parcels%n_total_parcels)) then
                 call mpi_exit_on_error(&
                     "in parcel_mpi::communicate_parcels: We lost parcels.")
             endif
@@ -285,7 +276,7 @@ module parcel_mpi
             ! reset the number of sends
             n_parcel_sends(:) = 0
 
-            np = n_parcels
+            np = parcels%n_parcels
 
             if (present(pindex)) then
                 np = size(pindex)

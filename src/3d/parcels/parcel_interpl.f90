@@ -7,7 +7,7 @@ module parcel_interpl
     use mpi_timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
     use options, only : parcel
-    use parcel_container, only : parcels, n_parcels
+    use parcels_mod, only : parcels
     use parcel_bc, only : apply_periodic_bc
     use parcel_ellipsoid
     use fields
@@ -101,12 +101,10 @@ module parcel_interpl
             !$omp parallel default(shared)
             !$omp do private(n, p, points, pvol, is, js, ks, weights) &
             !$omp& reduction(+: volg)
-            do n = 1, n_parcels
+            do n = 1, parcels%n_parcels
                 pvol = parcels%volume(n)
 
-                points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n),  &
-                                              n, l_reuse)
+                points = parcels%get_points(n, l_reuse)
 
                 ! we have 4 points per ellipsoid
                 do p = 1, 4
@@ -176,7 +174,7 @@ module parcel_interpl
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
-            do n = 1, n_parcels
+            do n = 1, parcels%n_parcels
                 pvol = parcels%volume(n)
 
 #ifndef ENABLE_DRY_MODE
@@ -197,8 +195,7 @@ module parcel_interpl
 #endif
 
 #ifndef ENABLE_P2G_1POINT
-                points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, l_reuse)
+                points = parcels%get_points(n, l_reuse)
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif
@@ -249,7 +246,7 @@ module parcel_interpl
 
             ! sanity check -- note: this must be checked for calling the halo swap routine
             ! as otherwise we count parcels in the halo region twice.
-            if (sum(nparg(0:nz-1, :, :)) /= n_parcels) then
+            if (sum(nparg(0:nz-1, :, :)) /= parcels%n_parcels) then
                 call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
             endif
 
@@ -418,7 +415,7 @@ module parcel_interpl
                if (add .eqv. .false.) then
                     !$omp parallel default(shared)
                     !$omp do private(n)
-                    do n = 1, n_parcels
+                    do n = 1, parcels%n_parcels
                         parcels%delta_pos(:, n) = zero
                         parcels%delta_vor(:, n) = zero
                     enddo
@@ -428,7 +425,7 @@ module parcel_interpl
             else
                 !$omp parallel default(shared)
                 !$omp do private(n)
-                do n = 1, n_parcels
+                do n = 1, parcels%n_parcels
                     parcels%delta_pos(:, n) = zero
                     parcels%delta_vor(:, n) = zero
                 enddo
@@ -438,13 +435,12 @@ module parcel_interpl
 
             !$omp parallel default(shared)
             !$omp do private(n, l, p, points, is, js, ks, weights)
-            do n = 1, n_parcels
+            do n = 1, parcels%n_parcels
 
                 parcels%strain(:, n) = zero
 
 #ifndef ENABLE_G2P_1POINT
-                points = get_ellipsoid_points(parcels%position(:, n), &
-                                              parcels%volume(n), parcels%B(:, n), n)
+                points = parcels%get_points(n)
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif

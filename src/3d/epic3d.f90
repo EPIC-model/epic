@@ -4,7 +4,8 @@
 program epic3d
     use constants, only : zero
     use mpi_timer
-    use parcel_container
+    use parcels_mod, only : parcels
+    use parcel_container, only : resize_timer
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
     use parcel_merging, only : parcel_merge, merge_timer
@@ -147,7 +148,7 @@ program epic3d
 
         subroutine post_run
             use options, only : output
-            call parcel_dealloc
+            call parcels%dealloc
             call field_dealloc
             call nearest_win_deallocate
             call bndry_fluxes_deallocate

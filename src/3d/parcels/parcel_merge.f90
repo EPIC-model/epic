@@ -5,13 +5,9 @@
 module parcel_merging
     use parcel_nearest
     use constants, only : pi, zero, one, two, five, f13
-    use parcel_container, only : parcels                    &
-                               , n_parcels                  &
-                               , n_total_parcels            &
-                               , parcel_replace             &
-                               , get_delx_across_periodic   &
-                               , get_dely_across_periodic   &
-                               , parcel_delete
+    use parcels_mod, only : parcels
+    use parcel_ops, only : get_delx_across_periodic   &
+                         , get_dely_across_periodic
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
@@ -45,7 +41,7 @@ module parcel_merging
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             integer                            :: orig_num
 
-            orig_num = n_total_parcels
+            orig_num = parcels%n_total_parcels
 #endif
 
             ! find parcels to merge
@@ -62,7 +58,7 @@ module parcel_merging
 
             if (n_merge + n_invalid > 0) then
                 ! overwrite all small and invalid parcels -- all small parcels are now invalid too
-                call parcel_delete(inva, n_merge + n_invalid)
+                call parcels%delete(inva, n_merge + n_invalid)
                 deallocate(inva)
             endif
 
@@ -73,14 +69,14 @@ module parcel_merging
 
             ! After this operation the root MPI process knows the new
             ! number of parcels in the simulation
-            n_total_parcels = n_parcels
-            call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
+            parcels%n_total_parcels = parcels%n_parcels
+            call mpi_blocking_reduce(parcels%n_total_parcels, MPI_SUM, world)
 
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)",                               &
                       "no. parcels before and after merge: ", orig_num,  &
-                      "...", n_total_parcels
+                      "...", parcels%n_total_parcels
             endif
 #endif
             call parcel_communicate
@@ -101,7 +97,7 @@ module parcel_merging
             integer,          intent(in)    :: iclo(:)
             integer,          intent(in)    :: n_merge
             integer                         :: m, ic, is, l, n
-            integer                         :: loca(n_parcels)
+            integer                         :: loca(parcels%n_parcels)
             double precision                :: x0(n_merge), y0(n_merge)
             double precision                :: posm(3, n_merge)
             double precision                :: delx, vmerge, dely, delz, B33, mu
@@ -286,7 +282,7 @@ module parcel_merging
             integer,         intent(in) :: iclo(:)
             integer,         intent(in) :: n_merge
             integer                     :: m, ic, l
-            integer                     :: loca(n_parcels)
+            integer                     :: loca(parcels%n_parcels)
             double precision            :: factor, detB
             double precision            :: B(6, n_merge), &
                                         V(n_merge)

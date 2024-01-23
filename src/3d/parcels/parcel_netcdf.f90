@@ -3,10 +3,7 @@ module parcel_netcdf
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
-    use parcel_container, only : parcels            &
-                               , n_parcels          &
-                               , n_total_parcels    &
-                               , parcel_delete
+    use parcels_mod, only : parcels
     use parameters, only : nx, ny, nz, extent, lower, max_num_parcels, write_zeta_boundary_flag
     use config, only : package_version, cf_version
     use mpi_timer, only : start_timer, stop_timer
@@ -101,14 +98,14 @@ module parcel_netcdf
             call write_netcdf_options(ncid)
 
             ! all cores must know the correct number of total parcels
-            n_total_parcels = n_parcels
-            call MPI_Allreduce(MPI_IN_PLACE, n_total_parcels, 1, MPI_INTEGER, &
+            parcels%n_total_parcels = parcels%n_parcels
+            call MPI_Allreduce(MPI_IN_PLACE, parcels%n_total_parcels, 1, MPI_INTEGER, &
                                MPI_SUM, world%comm, world%err)
 
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &
                                          name='n_parcels',                  &
-                                         dimsize=n_total_parcels,           &
+                                         dimsize=parcels%n_total_parcels,   &
                                          dimid=npar_dim_id)
 
             call define_netcdf_dimension(ncid=ncid,                  &
@@ -292,7 +289,7 @@ module parcel_netcdf
             recvcounts = 1
             start_index = 0
             sendbuf = 0
-            sendbuf(world%rank+1:world%size) = n_parcels
+            sendbuf(world%rank+1:world%size) = parcels%n_parcels
             sendbuf(world%rank+1) = 0
 
             call MPI_Reduce_scatter(sendbuf(1:world%size),  &
@@ -310,31 +307,31 @@ module parcel_netcdf
             ! since the starting index in Fortran is 1 and not 0.
             start_index = start_index + 1
 
-            start = (/ start_index, 1 /)
-            cnt   = (/ n_parcels,   1 /)
+            start = (/ start_index,         1 /)
+            cnt   = (/ parcels%n_parcels,   1 /)
 
             call write_netcdf_dataset(ncid, start_id, (/start_index/), start=(/1+world%rank, 1/), cnt=(/1, 1/))
 
-            call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, z_pos_id, parcels%position(3, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:parcels%n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:parcels%n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, z_pos_id, parcels%position(3, 1:parcels%n_parcels), start, cnt)
 
-            call write_netcdf_dataset(ncid, b11_id, parcels%B(1, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, b12_id, parcels%B(2, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, b13_id, parcels%B(3, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, b22_id, parcels%B(4, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, b23_id, parcels%B(5, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b11_id, parcels%B(1, 1:parcels%n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b12_id, parcels%B(2, 1:parcels%n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b13_id, parcels%B(3, 1:parcels%n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b22_id, parcels%B(4, 1:parcels%n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b23_id, parcels%B(5, 1:parcels%n_parcels), start, cnt)
 
-            call write_netcdf_dataset(ncid, vol_id, parcels%volume(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, vol_id, parcels%volume(1:parcels%n_parcels), start, cnt)
 
-            call write_netcdf_dataset(ncid, x_vor_id, parcels%vorticity(1, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, y_vor_id, parcels%vorticity(2, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, z_vor_id, parcels%vorticity(3, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, x_vor_id, parcels%vorticity(1, 1:parcels%n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, y_vor_id, parcels%vorticity(2, 1:parcels%n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, z_vor_id, parcels%vorticity(3, 1:parcels%n_parcels), start, cnt)
 
-            call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:parcels%n_parcels), start, cnt)
 
 #ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:parcels%n_parcels), start, cnt)
 #endif
             ! increment counter
             n_writes = n_writes + 1
@@ -357,7 +354,7 @@ module parcel_netcdf
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
-            call get_num_parcels(ncid, n_total_parcels)
+            call get_num_parcels(ncid, parcels%n_total_parcels)
 
             if (has_dataset(ncid, 'start_index')) then
                 call get_dimension_size(ncid, 'world%size', num_indices)
@@ -376,12 +373,12 @@ module parcel_netcdf
                     ! the last MPI rank must only read the start index
                     call read_netcdf_dataset(ncid, 'start_index', start, (/num_indices/), (/1/))
                     start_index = start(1)
-                    end_index = n_total_parcels
+                    end_index = parcels%n_total_parcels
                 endif
 
-                n_parcels = end_index - start_index + 1
+                parcels%n_parcels = end_index - start_index + 1
 
-                if (n_parcels > max_num_parcels) then
+                if (parcels%n_parcels > max_num_parcels) then
                     print *, "Number of parcels exceeds limit of", max_num_parcels, &
                              ". You may increase parcel%size_factor. Exiting."
                     call mpi_exit_on_error
@@ -396,9 +393,9 @@ module parcel_netcdf
                 !
                 call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
                 start_index = 1
-                end_index = min(max_num_parcels, n_total_parcels)
+                end_index = min(max_num_parcels, parcels%n_total_parcels)
                 pfirst = 1
-                n_remaining = n_total_parcels
+                n_remaining = parcels%n_total_parcels
 
                 ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
                 ! not belonging to its domain
@@ -410,10 +407,10 @@ module parcel_netcdf
 
                     n_read = end_index - start_index + 1
                     n_remaining = n_remaining - n_read
-                    n_parcels = pfirst + n_read - 1
+                    parcels%n_parcels = pfirst + n_read - 1
 
                     m = 1
-                    do n = pfirst, n_parcels
+                    do n = pfirst, parcels%n_parcels
                         if (is_contained(parcels%position(:, n))) then
                             cycle
                         endif
@@ -427,15 +424,15 @@ module parcel_netcdf
                     m = m - 1
 
                     ! updates the variable n_parcels
-                    call parcel_delete(invalid(0:m), n_del=m)
+                    call parcels%delete(invalid(0:m), n_del=m)
 
                     ! adjust the chunk size to fit the remaining memory
                     ! in the parcel container
-                    avail_size = max(0, max_num_parcels - n_parcels)
+                    avail_size = max(0, max_num_parcels - parcels%n_parcels)
 
                     ! update start index to fill container
-                    pfirst = 1 + n_parcels
-                    plast = min(pfirst + avail_size, n_total_parcels, max_num_parcels)
+                    pfirst = 1 + parcels%n_parcels
+                    plast = min(pfirst + avail_size, parcels%n_total_parcels, max_num_parcels)
 
                     ! we must make sure that we have enough data in the
                     ! file as well as in the parcel container
@@ -452,7 +449,7 @@ module parcel_netcdf
             call close_netcdf_file(ncid)
 
             ! verify result
-            n_total = n_parcels
+            n_total = parcels%n_parcels
             call MPI_Allreduce(MPI_IN_PLACE,    &
                                n_total,         &
                                1,               &
@@ -464,7 +461,7 @@ module parcel_netcdf
             call mpi_check_for_error(world, &
                 "in MPI_Allreduce of parcel_netcdf::read_netcdf_parcels.")
 
-            if (n_total_parcels .ne. n_total) then
+            if (parcels%n_total_parcels .ne. n_total) then
                 call mpi_exit_on_error(&
                     "Local number of parcels does not sum up to total number!")
             endif

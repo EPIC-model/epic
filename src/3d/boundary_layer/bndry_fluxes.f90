@@ -6,7 +6,7 @@ module bndry_fluxes
     use constants, only : zero, two, f13
     use parameters, only : dx, lower, dxi, nx, ny
     use parcel_interpl, only : bilinear
-    use parcel_container, only : n_parcels, parcels
+    use parcels_mod, only : parcels
     use netcdf_reader
     use omp_lib
     use options, only : time
@@ -221,7 +221,7 @@ module bndry_fluxes
 
             !$omp parallel default(shared)
             !$omp do private(n, is, js, weights, xy, z, fac)
-            do n = 1, n_parcels
+            do n = 1, parcels%n_parcels
                 z = parcels%position(3, n)
                 if (z < zdepth) then
 

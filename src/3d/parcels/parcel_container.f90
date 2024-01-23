@@ -71,15 +71,15 @@ module parcel_container
 
         contains
 
-            procedure                         :: alloc => parcel_alloc
-            procedure                         :: dealloc => parcel_dealloc
-            procedure                         :: replace => parcel_replace
-            procedure                         :: resize => parcel_resize
-            procedure                         :: serialize => parcel_serialize
-            procedure                         :: deserialize => parcel_deserialize
-            procedure                         :: pack => parcel_pack
-            procedure                         :: unpack => parcel_unpack
-            procedure                         :: delete => parcel_delete
+            procedure :: alloc => parcel_alloc
+            procedure :: dealloc => parcel_dealloc
+            procedure :: replace => parcel_replace
+            procedure :: resize => parcel_resize
+            procedure :: serialize => parcel_serialize
+            procedure :: deserialize => parcel_deserialize
+            procedure :: pack => parcel_pack
+            procedure :: unpack => parcel_unpack
+            procedure :: delete => parcel_delete
 
     end type pc_type
 

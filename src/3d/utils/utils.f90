@@ -16,7 +16,6 @@ module utils
     use parcel_netcdf
     use parcel_diagnostics_netcdf
     use parcel_diagnostics
-    use parcel_container, only : n_parcels
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
@@ -237,7 +236,7 @@ module utils
             endif
 
             call read_bndry_fluxes(trim(flux_file))
-            
+
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
             ! Calculate the squared buoyancy frequency if not provided.
             call calculate_basic_reference_state(nx, ny, nz, extent(3), tbuoyg)
