@@ -1,6 +1,5 @@
 ! =============================================================================
-! This module stores the parcel data and provides subroutines to write, modify
-! allocate and deallocate it.
+! This module provides the base class for parcel containers.
 ! =============================================================================
 module parcel_container
     use options, only : verbose
