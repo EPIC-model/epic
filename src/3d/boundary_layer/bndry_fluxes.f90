@@ -221,7 +221,7 @@ module bndry_fluxes
 
             !$omp parallel default(shared)
             !$omp do private(n, is, js, weights, xy, z, fac)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
                 z = parcels%position(3, n)
                 if (z < zdepth) then
 

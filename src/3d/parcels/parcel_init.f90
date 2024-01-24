@@ -46,17 +46,17 @@ module parcel_init
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
-            parcels%n_parcels = parcel%n_per_cell * box%ncell
+            parcels%local_num = parcel%n_per_cell * box%ncell
 
-            if (parcels%n_parcels > max_num_parcels) then
+            if (parcels%local_num > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", &
                           max_num_parcels, ". Exiting."
                 call mpi_exit_on_error
             endif
 
-            parcels%n_total_parcels = parcels%n_parcels
+            parcels%total_num = parcels%local_num
             if (world%size > 1) then
-                call mpi_blocking_reduce(parcels%n_total_parcels, MPI_SUM, world)
+                call mpi_blocking_reduce(parcels%total_num, MPI_SUM, world)
             endif
 
             call init_regular_positions
@@ -64,7 +64,7 @@ module parcel_init
             ! initialize the volume of each parcel
             !$omp parallel default(shared)
             !$omp do private(n)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
                 parcels%volume(n) = vcell / dble(parcel%n_per_cell)
             enddo
             !$omp end do
@@ -77,7 +77,7 @@ module parcel_init
 
             !$omp parallel default(shared)
             !$omp do private(n, l23)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
                 ! set all to zero
                 parcels%B(:, n) = zero
 
@@ -96,7 +96,7 @@ module parcel_init
 
             !$omp parallel default(shared)
             !$omp do private(n)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
                 parcels%vorticity(:, n) = zero
                 parcels%buoyancy(n) = zero
 #ifndef ENABLE_DRY_MODE
@@ -148,7 +148,7 @@ module parcel_init
                 enddo
             enddo
 
-            if (.not. parcels%n_parcels == l - 1) then
+            if (.not. parcels%local_num == l - 1) then
                 call mpi_exit_on_error("Number of parcels disagree!")
             endif
         end subroutine init_regular_positions
@@ -179,7 +179,7 @@ module parcel_init
 
             !$omp parallel default(shared)
             !$omp do private(n, l, is, js, ks, weights)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
 
                 ! get interpolation weights and mesh indices
                 call trilinear(parcels%position(:, n), is, js, ks, weights)

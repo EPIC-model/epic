@@ -107,7 +107,7 @@ module parcel_mpi
             ! figure out where parcels go
             call locate_parcels(pindex)
 
-            call allocate_parcel_buffers(parcels%n_par_attrib)
+            call allocate_parcel_buffers(parcels%attr_num)
 
             call communicate_sizes_and_resize
 
@@ -167,7 +167,7 @@ module parcel_mpi
             call mpi_check_for_error(cart, &
                 "in MPI_Waitall of parcel_mpi::communicate_sizes_and_resize.")
 
-            total_size = sum(n_parcel_recvs) + parcels%n_parcels
+            total_size = sum(n_parcel_recvs) + parcels%local_num
 
             if (total_size >= max_num_parcels) then
                 total_size = nint(parcel%grow_factor * total_size)
@@ -191,7 +191,7 @@ module parcel_mpi
             do n = 1, 8
                 call get_parcel_buffer_ptr(n, pid, send_buf)
 
-                send_size = n_parcel_sends(n) * parcels%n_par_attrib
+                send_size = n_parcel_sends(n) * parcels%attr_num
 
                 if (n_parcel_sends(n) > 0) then
                     call parcels%pack(pid, n_parcel_sends(n), send_buf)
@@ -232,11 +232,11 @@ module parcel_mpi
                 call mpi_check_for_error(cart, &
                     "in MPI_Recv of parcel_mpi::communicate_parcels.")
 
-                if (mod(recv_size, parcels%n_par_attrib) /= 0) then
+                if (mod(recv_size, parcels%attr_num) /= 0) then
                     call mpi_exit_on_error("parcel_mpi::communicate_parcels: Receiving wrong count.")
                 endif
 
-                recv_count = recv_size / parcels%n_par_attrib
+                recv_count = recv_size / parcels%attr_num
 
                 if (recv_count > 0) then
                     call parcels%unpack(recv_count, recv_buf)
@@ -258,9 +258,9 @@ module parcel_mpi
             call parcels%delete(invalid, n_total_sends)
 
 #ifndef NDEBUG
-            n = parcels%n_parcels
+            n = parcels%local_num
             call mpi_blocking_reduce(n, MPI_SUM, world)
-            if ((world%rank == world%root) .and. (.not. n == parcels%n_total_parcels)) then
+            if ((world%rank == world%root) .and. (.not. n == parcels%total_num)) then
                 call mpi_exit_on_error(&
                     "in parcel_mpi::communicate_parcels: We lost parcels.")
             endif
@@ -276,7 +276,7 @@ module parcel_mpi
             ! reset the number of sends
             n_parcel_sends(:) = 0
 
-            np = parcels%n_parcels
+            np = parcels%local_num
 
             if (present(pindex)) then
                 np = size(pindex)

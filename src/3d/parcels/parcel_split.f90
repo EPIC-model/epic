@@ -41,12 +41,12 @@ module parcel_split_mod
             integer              :: last_index, n_indices
             integer              :: grown_size, shrunk_size, n_required
             integer              :: i, n, n_thread_loc
-            integer              :: pid(2 * parcels%n_parcels)
+            integer              :: pid(2 * parcels%local_num)
             integer, allocatable :: invalid(:), indices(:)
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             integer              :: orig_num
 
-            orig_num = parcels%n_total_parcels
+            orig_num = parcels%total_num
 #endif
             call start_timer(split_timer)
 
@@ -54,7 +54,7 @@ module parcel_split_mod
             ! Check which parcels split and store the indices in *pid*:
             !$omp parallel default(shared)
             !$omp do private(n, B, vol, lam, D)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
 
@@ -76,7 +76,7 @@ module parcel_split_mod
             !$omp end parallel
 
             ! contains all indices of parcels that split
-            indices = pack(pid(1:parcels%n_parcels), pid(1:parcels%n_parcels) /= 0)
+            indices = pack(pid(1:parcels%local_num), pid(1:parcels%local_num) /= 0)
 
             n_indices = size(indices)
 
@@ -84,7 +84,7 @@ module parcel_split_mod
             ! Adapt container size if needed:
 
             ! we get additional "n_indices" parcels
-            n_required = parcels%n_parcels + n_indices
+            n_required = parcels%local_num + n_indices
 
             shrunk_size = nint(parcel%shrink_factor * n_required)
 
@@ -102,7 +102,7 @@ module parcel_split_mod
             !------------------------------------------------------------------
             ! Loop over all parcels that really split:
 
-            last_index = parcels%n_parcels
+            last_index = parcels%local_num
 
             !$omp parallel default(shared)
             !$omp do private(i, n, B, vol, lam, D, V, n_thread_loc)
@@ -130,10 +130,10 @@ module parcel_split_mod
                 parcels%volume(n) = f12 * vol
 
                 !$omp critical
-                n_thread_loc = parcels%n_parcels + 1
+                n_thread_loc = parcels%local_num + 1
 
                 ! we only need to add one new parcel
-                parcels%n_parcels = parcels%n_parcels + 1
+                parcels%local_num = parcels%local_num + 1
                 !$omp end critical
 
                 parcels%B(:, n_thread_loc) = parcels%B(:, n)
@@ -163,17 +163,17 @@ module parcel_split_mod
             !$omp end do
             !$omp end parallel
 
-            n_parcel_splits = n_parcel_splits + parcels%n_parcels - last_index
+            n_parcel_splits = n_parcel_splits + parcels%local_num - last_index
 
             ! after this operation the root MPI process knows the new
             ! number of parcels in the simulation
-            parcels%n_total_parcels = parcels%n_parcels
-            call mpi_blocking_reduce(parcels%n_total_parcels, MPI_SUM, world)
+            parcels%total_num = parcels%local_num
+            call mpi_blocking_reduce(parcels%total_num, MPI_SUM, world)
 
             ! all entries in "pid" that are non-zero are indices of
             ! child parcels; remove all zero entries such that
             ! we can do a halo swap
-            invalid = pack(pid(1:parcels%n_parcels), pid(1:parcels%n_parcels) /= 0)
+            invalid = pack(pid(1:parcels%local_num), pid(1:parcels%local_num) /= 0)
 
             ! send the invalid parcels to the proper MPI process;
             ! delete them on *this* MPI process and
@@ -183,7 +183,7 @@ module parcel_split_mod
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)", &
-                      "no. parcels before and after split: ", orig_num, "...", parcels%n_total_parcels
+                      "no. parcels before and after split: ", orig_num, "...", parcels%total_num
             endif
 #endif
             call stop_timer(split_timer)

@@ -150,7 +150,7 @@ module ls_rk
                 call start_timer(rk_timer)
 
                 !$omp parallel do default(shared) private(n)
-                do n = 1, parcels%n_parcels
+                do n = 1, parcels%local_num
                     parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n),           &
                                                      parcels%strain(:, n),      &
                                                      parcels%vorticity(:, n),   &
@@ -169,7 +169,7 @@ module ls_rk
                 call start_timer(rk_timer)
 
                 !$omp parallel do default(shared) private(n)
-                do n = 1, parcels%n_parcels
+                do n = 1, parcels%local_num
                     parcels%delta_b(:, n) = parcels%delta_b(:, n)               &
                                           + get_dBdt(parcels%B(:, n),           &
                                                      parcels%strain(:, n),      &
@@ -184,7 +184,7 @@ module ls_rk
             call start_timer(rk_timer)
 
             !$omp parallel do default(shared) private(n)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
                 parcels%position(:, n) = parcels%position(:, n) &
                                        + cb * dt * parcels%delta_pos(:, n)
 
@@ -205,7 +205,7 @@ module ls_rk
             call start_timer(rk_timer)
 
             !$omp parallel do default(shared) private(n)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
                 parcels%delta_pos(:, n) = ca * parcels%delta_pos(:, n)
                 parcels%delta_vor(:, n) = ca * parcels%delta_vor(:, n)
                 parcels%delta_b(:, n) = ca * parcels%delta_b(:, n)

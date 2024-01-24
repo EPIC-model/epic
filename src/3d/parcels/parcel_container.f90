@@ -18,9 +18,9 @@ module parcel_container
 
             ! number of  parcel attributes
             ! (components are counted individually, e.g. position counts as 3 attributes)
-            integer :: n_par_attrib
-            integer :: n_parcels        ! local number of parcels
-            integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
+            integer :: attr_num     ! number of parcel attributes
+            integer :: local_num    ! local number of parcels
+            integer :: total_num    ! global number of parcels (over all MPI ranks)
 
             ! ---------------------------------------------------------------------
             !   Parcel attributes (common to all types):
@@ -127,8 +127,8 @@ module parcel_container
                 return
             endif
 
-            this%n_parcels = 0
-            this%n_total_parcels = 0
+            this%local_num = 0
+            this%total_num = 0
 
             deallocate(this%position)
             deallocate(this%vorticity)
@@ -188,28 +188,28 @@ module parcel_container
 
             call start_timer(resize_timer)
 
-            if (new_size < this%n_parcels) then
+            if (new_size < this%local_num) then
                 call mpi_exit_on_error(&
                     "in parcel_container::parcel_resize: losing parcels when resizing.")
             endif
 
             call set_max_num_parcels(new_size)
 
-            call resize_array(this%position, new_size, this%n_parcels)
+            call resize_array(this%position, new_size, this%local_num)
 
-            call resize_array(this%vorticity, new_size, this%n_parcels)
-            call resize_array(this%B, new_size, this%n_parcels)
-            call resize_array(this%volume, new_size, this%n_parcels)
-            call resize_array(this%buoyancy, new_size, this%n_parcels)
+            call resize_array(this%vorticity, new_size, this%local_num)
+            call resize_array(this%B, new_size, this%local_num)
+            call resize_array(this%volume, new_size, this%local_num)
+            call resize_array(this%buoyancy, new_size, this%local_num)
 #ifndef ENABLE_DRY_MODE
-            call resize_array(this%humidity, new_size, this%n_parcels)
+            call resize_array(this%humidity, new_size, this%local_num)
 #endif
 
             ! LS-RK variables
-            call resize_array(this%delta_pos, new_size, this%n_parcels)
-            call resize_array(this%delta_vor, new_size, this%n_parcels)
-            call resize_array(this%strain, new_size, this%n_parcels)
-            call resize_array(this%delta_b, new_size, this%n_parcels)
+            call resize_array(this%delta_pos, new_size, this%local_num)
+            call resize_array(this%delta_vor, new_size, this%local_num)
+            call resize_array(this%strain, new_size, this%local_num)
+            call resize_array(this%delta_b, new_size, this%local_num)
 
             call stop_timer(resize_timer)
 
@@ -221,7 +221,7 @@ module parcel_container
         subroutine parcel_serialize(this, n, buffer)
             class(pc_type)                :: this
             integer,          intent(in)  :: n
-            double precision, intent(out) :: buffer(this%n_par_attrib)
+            double precision, intent(out) :: buffer(this%attr_num)
 
             buffer(this%IDX_POS_BEG:this%IDX_POS_END)       = this%position(:, n)
             buffer(this%IDX_VOR_BEG:this%IDX_VOR_END)       = this%vorticity(:, n)
@@ -245,7 +245,7 @@ module parcel_container
         subroutine parcel_deserialize(this, n, buffer)
             class(pc_type)               :: this
             integer,          intent(in) :: n
-            double precision, intent(in) :: buffer(this%n_par_attrib)
+            double precision, intent(in) :: buffer(this%attr_num)
 
             this%position(:, n)  = buffer(this%IDX_POS_BEG:this%IDX_POS_END)
             this%vorticity(:, n) = buffer(this%IDX_VOR_BEG:this%IDX_VOR_END)
@@ -273,8 +273,8 @@ module parcel_container
             integer                       :: n, i, j
 
             do n = 1, num
-                i = 1 + (n-1) * this%n_par_attrib
-                j = n * this%n_par_attrib
+                i = 1 + (n-1) * this%attr_num
+                j = n * this%attr_num
                 call this%serialize(pid(n), buffer(i:j))
             enddo
         end subroutine parcel_pack
@@ -288,12 +288,12 @@ module parcel_container
             integer                      :: n, i, j
 
             do n = 1, num
-                i = 1 + (n-1) * this%n_par_attrib
-                j = n * this%n_par_attrib
-                call this%deserialize(this%n_parcels + n, buffer(i:j))
+                i = 1 + (n-1) * this%attr_num
+                j = n * this%attr_num
+                call this%deserialize(this%local_num + n, buffer(i:j))
             enddo
 
-            this%n_parcels = this%n_parcels + num
+            this%local_num = this%local_num + num
 
         end subroutine parcel_unpack
 
@@ -315,7 +315,7 @@ module parcel_container
             integer             :: k, l, m
 
             ! l points always to the last valid parcel
-            l = this%n_parcels
+            l = this%local_num
 
             ! k points always to last invalid parcel in pid
             k = n_del
@@ -351,7 +351,7 @@ module parcel_container
             enddo
 
             ! update number of valid parcels
-            this%n_parcels = this%n_parcels - n_del
+            this%local_num = this%local_num - n_del
 
         end subroutine parcel_delete
 

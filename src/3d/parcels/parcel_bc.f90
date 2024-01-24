@@ -47,7 +47,7 @@ module parcel_bc
 
             !$omp parallel default(shared)
             !$omp do private(n)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
                 ! vertical direction
                 call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
             enddo

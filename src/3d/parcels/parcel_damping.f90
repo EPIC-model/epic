@@ -1,6 +1,6 @@
 ! =============================================================================
 ! This module contains the subroutines to do damping of parcel properties to
-! gridded fields in a conservative manner. It does this by nudging all the  
+! gridded fields in a conservative manner. It does this by nudging all the
 ! parcels associated with a grid point to the grid point value, with the strength
 ! of damping proportional to the grid point contribution to the gridded value and
 ! the strain rate at the grid point.
@@ -8,8 +8,8 @@
 module parcel_damping
     use constants, only :  f14, zero, one
     use mpi_timer, only : start_timer, stop_timer
-    use parameters, only : nx, nz, vmin 
-    use parcel_container, only : parcels, n_parcels
+    use parameters, only : nx, nz, vmin
+    use parcels_mod, only : parcels
     use parcel_ellipsoid
     use parcel_interpl
     use fields
@@ -26,7 +26,7 @@ module parcel_damping
     ! (first dimension x, y, z; second dimension l-th index)
     integer :: is, js, ks
     integer :: damping_timer
- 
+
     ! interpolation weights
     double precision :: weights(0:1,0:1,0:1)
     double precision :: weight(0:1,0:1,0:1)
@@ -39,7 +39,7 @@ module parcel_damping
         subroutine parcel_damp(dt)
             double precision, intent(in)  :: dt
 
-            if (damping%l_vorticity .or. damping%l_scalars) then 
+            if (damping%l_vorticity .or. damping%l_scalars) then
                 ! ensure gridded fields are up to date
                 call par2grid(.false.)
                 call vor2vel
@@ -66,12 +66,12 @@ module parcel_damping
 
         end subroutine parcel_damp
 
-        ! 
-        ! @pre 
+        !
+        ! @pre
         subroutine perturbation_damping(dt, l_reuse)
             double precision, intent(in)  :: dt
             logical, intent(in)           :: l_reuse
-            integer                       :: n, p, l 
+            integer                       :: n, p, l
             double precision              :: points(3, n_points_p2g)
             double precision              :: pvol
             ! tendencies need to be summed up between associated 4 points
@@ -87,11 +87,11 @@ module parcel_damping
             !$omp parallel default(shared)
             !$omp do private(n, p, l, points, pvol, weight) &
 #ifndef ENABLE_DRY_MODE
-            !$omp& private(is, js, ks, weights, vortend, buoytend, humtend, time_fact) 
+            !$omp& private(is, js, ks, weights, vortend, buoytend, humtend, time_fact)
 #else
-            !$omp& private(is, js, ks, weights, vortend, buoytend, time_fact) 
+            !$omp& private(is, js, ks, weights, vortend, buoytend, time_fact)
 #endif
-            do n = 1, n_parcels
+            do n = 1, parcels%local_num
                 pvol = parcels%volume(n)
 #ifndef ENABLE_P2G_1POINT
                 points = get_ellipsoid_points(parcels%position(:, n), &

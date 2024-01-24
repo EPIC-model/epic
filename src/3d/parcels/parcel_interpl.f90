@@ -103,7 +103,7 @@ module parcel_interpl
             !$omp parallel default(shared)
             !$omp do private(n, p, points, pvol, is, js, ks, weights) &
             !$omp& reduction(+: volg)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
                 pvol = parcels%volume(n)
 
                 points = parcels%get_points(n, l_reuse)
@@ -176,7 +176,7 @@ module parcel_interpl
             !$omp& private( is, js, ks, weights) &
             !$omp& reduction(+:nparg, nsparg, vortg, tbuoyg, volg)
 #endif
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
                 pvol = parcels%volume(n)
 
 #ifndef ENABLE_DRY_MODE
@@ -248,7 +248,7 @@ module parcel_interpl
 
             ! sanity check -- note: this must be checked for calling the halo swap routine
             ! as otherwise we count parcels in the halo region twice.
-            if (sum(nparg(0:nz-1, :, :)) /= parcels%n_parcels) then
+            if (sum(nparg(0:nz-1, :, :)) /= parcels%local_num) then
                 call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
             endif
 
@@ -417,7 +417,7 @@ module parcel_interpl
                if (add .eqv. .false.) then
                     !$omp parallel default(shared)
                     !$omp do private(n)
-                    do n = 1, parcels%n_parcels
+                    do n = 1, parcels%local_num
                         parcels%delta_pos(:, n) = zero
                         parcels%delta_vor(:, n) = zero
                     enddo
@@ -427,7 +427,7 @@ module parcel_interpl
             else
                 !$omp parallel default(shared)
                 !$omp do private(n)
-                do n = 1, parcels%n_parcels
+                do n = 1, parcels%local_num
                     parcels%delta_pos(:, n) = zero
                     parcels%delta_vor(:, n) = zero
                 enddo
@@ -437,7 +437,7 @@ module parcel_interpl
 
             !$omp parallel default(shared)
             !$omp do private(n, l, p, points, is, js, ks, weights)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
 
                 parcels%strain(:, n) = zero
 

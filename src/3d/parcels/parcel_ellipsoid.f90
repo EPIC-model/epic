@@ -108,7 +108,7 @@ module parcel_ellipsoid
             this%IDX_ELL_VETA = i + 16
             this%IDX_ELL_VTAU = i + 19
 
-            this%n_par_attrib = this%IDX_ELL_VTAU + 2
+            this%attr_num = this%IDX_ELL_VTAU + 2
 
         end subroutine parcel_setup
 
@@ -151,8 +151,8 @@ module parcel_ellipsoid
             ! Call parent class subroutine
             call this%pc_type%resize(new_size)
 
-            call resize_array(this%Vetas, new_size, n_copy=this%n_parcels)
-            call resize_array(this%Vtaus, new_size, n_copy=this%n_parcels)
+            call resize_array(this%Vetas, new_size, n_copy=this%local_num)
+            call resize_array(this%Vtaus, new_size, n_copy=this%local_num)
 
         end subroutine parcel_resize
 
@@ -161,7 +161,7 @@ module parcel_ellipsoid
         subroutine parcel_serialize(this, n, buffer)
             class(ellipsoid_pc_type)      :: this
             integer,          intent(in)  :: n
-            double precision, intent(out) :: buffer(this%n_par_attrib)
+            double precision, intent(out) :: buffer(this%attr_num)
 
             ! Call parent class subroutine
             call this%pc_type%serialize(n, buffer)
@@ -176,7 +176,7 @@ module parcel_ellipsoid
         subroutine parcel_deserialize(this, n, buffer)
             class(ellipsoid_pc_type)     :: this
             integer,          intent(in) :: n
-            double precision, intent(in) :: buffer(this%n_par_attrib)
+            double precision, intent(in) :: buffer(this%attr_num)
 
             ! Call parent class subroutine
             call this%pc_type%deserialize(n, buffer)

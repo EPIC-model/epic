@@ -61,13 +61,13 @@ module parcel_diagnostics
             bmin = zero
             bmax = zero
 
-            parcel_stats(IDX_NTOT_PAR) = dble(parcels%n_parcels)
+            parcel_stats(IDX_NTOT_PAR) = dble(parcels%local_num)
 
             !$omp parallel default(shared)
             !$omp do private(n, vel, vol, b, z, evals, lam, vor) &
             !$omp& reduction(+: parcel_stats) &
             !$omp& reduction(max: bmax) reduction(min: bmin)
-            do n = 1, parcels%n_parcels
+            do n = 1, parcels%local_num
 
                 vel = parcels%delta_pos(:, n)
                 vor = parcels%vorticity(:, n)
@@ -132,8 +132,8 @@ module parcel_diagnostics
             parcel_merge_stats = n_way_parcel_mergers
             call mpi_blocking_reduce(parcel_merge_stats, MPI_SUM, world)
 
-            parcels%n_total_parcels = nint(parcel_stats(IDX_NTOT_PAR))
-            ntoti = one / dble(parcels%n_total_parcels)
+            parcels%total_num = nint(parcel_stats(IDX_NTOT_PAR))
+            ntoti = one / dble(parcels%total_num)
 
             ! divide by domain volume to get domain-averaged quantities
             parcel_stats(IDX_KE) = f12 * parcel_stats(IDX_KE) * vdomaini

@@ -53,7 +53,7 @@ module parcel_merging
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             integer                            :: orig_num
 
-            orig_num = parcels%n_total_parcels
+            orig_num = parcels%total_num
 #endif
 
             ! find parcels to merge
@@ -64,7 +64,7 @@ module parcel_merging
             n_parcel_merges = n_parcel_merges + n_merge
 
             if (n_merge > 0) then
-                allocate(loca(parcels%n_parcels))
+                allocate(loca(parcels%local_num))
                 call collect_merge_stats(iclo, n_merge)
             endif
 
@@ -91,14 +91,14 @@ module parcel_merging
 
             ! After this operation the root MPI process knows the new
             ! number of parcels in the simulation
-            parcels%n_total_parcels = parcels%n_parcels
-            call mpi_blocking_reduce(parcels%n_total_parcels, MPI_SUM, world)
+            parcels%total_num = parcels%local_num
+            call mpi_blocking_reduce(parcels%total_num, MPI_SUM, world)
 
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose .and. (world%rank == world%root)) then
                 print "(a36, i0, a3, i0)",                               &
                       "no. parcels before and after merge: ", orig_num,  &
-                      "...", parcels%n_total_parcels
+                      "...", parcels%total_num
             endif
 #endif
             call parcel_communicate
