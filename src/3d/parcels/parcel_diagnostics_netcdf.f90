@@ -184,6 +184,7 @@ module parcel_diagnostics_netcdf
             n_way_parcel_mergers = 0
 
             if (world%rank /= world%root) then
+                call stop_timer(parcel_stats_io_timer)
                 return
             endif
 
