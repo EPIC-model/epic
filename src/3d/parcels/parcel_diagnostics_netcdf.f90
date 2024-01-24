@@ -337,7 +337,12 @@ module parcel_diagnostics_netcdf
 
             call start_timer(parcel_stats_io_timer)
 
+            ! reset counters for parcel operations
+            n_parcel_splits = 0
+            n_parcel_merges = 0
+
             if (world%rank /= world%root) then
+                call stop_timer(parcel_stats_io_timer)
                 return
             endif
 
@@ -382,10 +387,6 @@ module parcel_diagnostics_netcdf
 
             ! increment counter
             n_writes = n_writes + 1
-
-            ! reset counters for parcel operations
-            n_parcel_splits = 0
-            n_parcel_merges = 0
 
             call close_netcdf_file(ncid, l_serial=.true.)
 
