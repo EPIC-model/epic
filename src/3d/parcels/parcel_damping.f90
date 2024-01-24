@@ -94,8 +94,7 @@ module parcel_damping
             do n = 1, parcels%local_num
                 pvol = parcels%volume(n)
 #ifndef ENABLE_P2G_1POINT
-                points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, l_reuse)
+                points = parcels%get_points(n, l_reuse)
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif
