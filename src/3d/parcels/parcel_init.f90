@@ -5,7 +5,6 @@ module parcel_init
     use options, only : parcel
     use constants, only : zero, two, one, f12, f13, f23, f14
     use parcels_mod, only : parcels
-    use parcel_ellipsoid, only : get_abc, get_eigenvalues
     use parcel_split_mod, only : parcel_split
     use parcel_interpl, only : trilinear
     use parameters, only : dx, vcell, ncell,            &
@@ -81,7 +80,7 @@ module parcel_init
                 ! set all to zero
                 parcels%B(:, n) = zero
 
-                l23 = (lam * get_abc(parcels%volume(n))) ** f23
+                l23 = (lam * parcels%get_abc(parcels%volume(n))) ** f23
 
                 ! B11
                 parcels%B(1, n) = l23
@@ -162,7 +161,7 @@ module parcel_init
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
                 call parcel_split
-                evals = get_eigenvalues(parcels%B(1, :), parcels%volume(1))
+                evals = parcels%get_eigenvalues(1)
                 lam = dsqrt(evals(1) / evals(3))
             end do
         end subroutine init_refine

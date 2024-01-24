@@ -9,7 +9,6 @@ module parcel_merging
     use parcels_mod, only : parcels
     use parcel_ops, only : get_delx_across_periodic   &
                          , get_dely_across_periodic
-    use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
     use options, only : verbose
@@ -240,7 +239,7 @@ module parcel_merging
 
                     vmerge = one / vm(l)
 
-                    B33 = get_B33(parcels%B(:, ic), parcels%volume(ic))
+                    B33 = parcels%get_B33(ic)
 
                     delx = get_delx_across_periodic(parcels%position(1, ic), posm(1, l))
                     dely = get_dely_across_periodic(parcels%position(2, ic), posm(2, l))
@@ -278,7 +277,7 @@ module parcel_merging
                 dely = get_dely_across_periodic(parcels%position(2, is), posm(2, n))
                 delz = parcels%position(3, is) - posm(3, n)
 
-                B33 = get_B33(parcels%B(:, is), parcels%volume(is))
+                B33 = parcels%get_B33(is)
 
                 ! volume fraction V_{is} / V
                 mu = vmerge * parcels%volume(is)
@@ -328,7 +327,7 @@ module parcel_merging
                          - B(2, l) * (B(2, l) * B(6, l) - B(3, l) * B(5, l)) &
                          + B(3, l) * (B(2, l) * B(5, l) - B(3, l) * B(4, l))
 
-                    factor = (get_abc(V(l)) ** 2 / detB) ** f13
+                    factor = (parcels%get_abc(V(l)) ** 2 / detB) ** f13
 
                     parcels%B(:, ic) = B(1:5, l) * factor
                 endif

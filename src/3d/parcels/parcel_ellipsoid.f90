@@ -33,17 +33,28 @@ module parcel_ellipsoid
 
     type, extends(pc_type) :: ellipsoid_pc_type
 
+        ! ---------------------------------------------------------------------
+        ! Additional parcel attributes:
         double precision, allocatable :: Vetas(:, :), Vtaus(:, :)
 
         integer :: IDX_ELL_VETA, IDX_ELL_VTAU
 
         contains
 
-            procedure :: setup => parcel_setup
-            procedure :: dealloc => parcel_dealloc
-            procedure :: replace => parcel_replace
-            procedure :: resize => parcel_resize
-            procedure :: get_points => parcel_get_points
+            procedure          :: setup => parcel_setup
+            procedure          :: dealloc => parcel_dealloc
+            procedure          :: replace => parcel_replace
+            procedure          :: resize => parcel_resize
+            procedure          :: get_points => parcel_get_points
+            procedure, private :: get_full_matrix => parcel_get_full_matrix
+            procedure          :: get_eigenvalues => parcel_get_eigenvalues
+            procedure, private :: get_determinant => parcel_get_determinant
+            procedure, private :: get_eigenvectors => parcel_get_eigenvectors
+            procedure          :: diagonalise => parcel_diagonalise
+            procedure          :: get_B33 => parcel_get_B33
+            procedure          :: get_abc => parcel_get_abc
+            procedure          :: get_aspect_ratio => parcel_get_aspect_ratio
+            procedure, private :: get_angles => parcel_get_angles
 
     end type ellipsoid_pc_type
 
@@ -60,17 +71,16 @@ module parcel_ellipsoid
              , f5pi4                &
              , f7pi4                &
              , costheta             &
-             , sintheta             &
-             , get_full_matrix
+             , sintheta
 
     contains
 
         ! Sets the buffer indices for sending parcels around
         ! (called in parcel_alloc)
         subroutine parcel_setup(this, num)
-            class(ellipsoid_pc_type) :: this
-            integer, intent(in)      :: num
-            integer                  :: i
+            class(ellipsoid_pc_type), intent(inout) :: this
+            integer,                  intent(in)    :: num
+            integer                                 :: i
 
             call this%pc_type%alloc(num=num,    &
                                     n_vec=3,    &
@@ -115,7 +125,7 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_dealloc(this)
-            class(ellipsoid_pc_type) :: this
+            class(ellipsoid_pc_type), intent(inout) :: this
 
             call this%pc_type%dealloc
 
@@ -131,8 +141,8 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_replace(this, n, m)
-            class(ellipsoid_pc_type) :: this
-            integer,      intent(in) :: n, m
+            class(ellipsoid_pc_type), intent(inout) :: this
+            integer,                  intent(in)    :: n, m
 
             ! Call parent class subroutine
             call this%pc_type%replace(n, m)
@@ -145,8 +155,8 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_resize(this, new_size)
-            class(ellipsoid_pc_type) :: this
-            integer,      intent(in) :: new_size
+            class(ellipsoid_pc_type), intent(inout) :: this
+            integer,                  intent(in)    :: new_size
 
             ! Call parent class subroutine
             call this%pc_type%resize(new_size)
@@ -159,9 +169,9 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_serialize(this, n, buffer)
-            class(ellipsoid_pc_type)      :: this
-            integer,          intent(in)  :: n
-            double precision, intent(out) :: buffer(this%attr_num)
+            class(ellipsoid_pc_type), intent(in)  :: this
+            integer,                  intent(in)  :: n
+            double precision,         intent(out) :: buffer(this%attr_num)
 
             ! Call parent class subroutine
             call this%pc_type%serialize(n, buffer)
@@ -174,9 +184,9 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_deserialize(this, n, buffer)
-            class(ellipsoid_pc_type)     :: this
-            integer,          intent(in) :: n
-            double precision, intent(in) :: buffer(this%attr_num)
+            class(ellipsoid_pc_type), intent(inout) :: this
+            integer,                  intent(in)    :: n
+            double precision,         intent(in)    :: buffer(this%attr_num)
 
             ! Call parent class subroutine
             call this%pc_type%deserialize(n, buffer)
@@ -193,12 +203,12 @@ module parcel_ellipsoid
         ! @param[in] l_reuse (optional) if support points should be reused and not calculated.
         ! @returns the parcel support points
         function parcel_get_points(this, n, l_reuse) result(points)
-            class(ellipsoid_pc_type)      :: this
-            integer,           intent(in) :: n
-            logical, optional, intent(in) :: l_reuse
-            double precision              :: Veta(n_dim), Vtau(n_dim), D(n_dim), V(n_dim, n_dim)
-            integer                       :: j
-            double precision              :: points(n_dim, 4)
+            class(ellipsoid_pc_type), intent(inout) :: this
+            integer,                  intent(in)    :: n
+            logical, optional,        intent(in)    :: l_reuse
+            double precision                        :: Veta(3), Vtau(3), D(3), V(3, 3)
+            integer                                 :: j
+            double precision                        :: points(3, 4)
 
 
             if (present(l_reuse)) then
@@ -206,7 +216,7 @@ module parcel_ellipsoid
                     Veta = this%Vetas(:, n)
                     Vtau = this%Vtaus(:, n)
                 else
-                    call diagonalise(this%B(:, n), this%volume(n), D, V)
+                    call this%diagonalise(n, D, V)
                     Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
                     Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
 
@@ -216,7 +226,7 @@ module parcel_ellipsoid
             else
                 ! (/a2, b2, c2/) with a >= b >= c
                 ! D = (/a2, b2, c2/)
-                call diagonalise(this%B(:, n), this%volume(n), D, V)
+                call this%diagonalise(n, D, V)
 
                 Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
                 Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
@@ -241,38 +251,36 @@ module parcel_ellipsoid
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the parcel shape matrix.
-        ! @param[in] B = (B11, B12, B13, B22, B23)
-        ! @param[in] volume of the parcel
+        ! @param[in] n parcel index
         ! @returns the upper trinagular matrix
-        function get_full_matrix(B, volume) result(U)
-            double precision, intent(in) :: B(5)
-            double precision, intent(in) :: volume
-            double precision             :: U(n_dim, n_dim)
+        function parcel_get_full_matrix(this, n) result(U)
+            class(ellipsoid_pc_type), intent(in) :: this
+            integer,                  intent(in) :: n
+            double precision                     :: U(3, 3)
 
-            U(1, 1) = B(I_B11)
-            U(1, 2) = B(I_B12)
-            U(1, 3) = B(I_B13)
+            U(1, 1) = this%B(I_B11, n)
+            U(1, 2) = this%B(I_B12, n)
+            U(1, 3) = this%B(I_B13, n)
             U(2, 1) = U(1, 2)
-            U(2, 2) = B(I_B22)
-            U(2, 3) = B(I_B23)
+            U(2, 2) = this%B(I_B22, n)
+            U(2, 3) = this%B(I_B23, n)
             U(3, 1) = U(1, 3)
             U(3, 2) = U(2, 3)
-            U(3, 3) = get_B33(B, volume)
-        end function get_full_matrix
+            U(3, 3) = this%get_B33(n)
+        end function parcel_get_full_matrix
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain all eigenvalues sorted in descending order
-        ! @param[in] B = (B11, B12, B13, B22, B23)
-        ! @param[in] volume of the parcel
+        ! @param[in] n parcel index
         ! @returns all eigenvalues (sorted in descending order)
-        function get_eigenvalues(B, volume) result(D)
-            double precision, intent(in) :: B(5)
-            double precision, intent(in) :: volume
-            double precision             :: U(n_dim, n_dim)
-            double precision             :: D(n_dim)
+        function parcel_get_eigenvalues(this, n) result(D)
+            class(ellipsoid_pc_type), intent(in) :: this
+            integer,                  intent(in) :: n
+            double precision                     :: U(3, 3)
+            double precision                     :: D(3)
 
-            U = get_full_matrix(B, volume)
+            U = this%get_full_matrix(n)
 
             call scherzinger_eigenvalues(U, D)
 
@@ -283,36 +291,38 @@ module parcel_ellipsoid
                     "in parcel_ellipsoid::get_eigenvalues: Invalid parcel shape.")
             endif
 #endif
-        end function get_eigenvalues
+        end function parcel_get_eigenvalues
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        function get_determinant(B, volume) result(detB)
-            double precision, intent(in) :: B(5)
-            double precision, intent(in) :: volume
-            double precision             :: detB, B33
+        ! Obtain the determinant of the shape matrix
+        ! @param[in] n parcel index
+        ! @returns the determinant det(B)
+        function parcel_get_determinant(this, n) result(detB)
+            class(ellipsoid_pc_type), intent(in) :: this
+            integer,                  intent(in) :: n
+            double precision                     :: detB, B33
 
-            B33 = get_B33(B, volume)
+            B33 = this%get_B33(n)
 
-            detB = B(I_B11) * (B(I_B22) * B33 - B(I_B23) ** 2)            &
-                 - B(I_B12) * (B(I_B12) * B33 - B(I_B13) * B(I_B23))      &
-                 + B(I_B13) * (B(I_B12) * B(I_B23) - B(I_B13) * B(I_B22))
-        end function get_determinant
+            detB = this%B(I_B11, n) * (this%B(I_B22, n) * B33              - this%B(I_B23, n) ** 2)               &
+                 - this%B(I_B12, n) * (this%B(I_B12, n) * B33              - this%B(I_B13, n) * this%B(I_B23, n)) &
+                 + this%B(I_B13, n) * (this%B(I_B12, n) * this%B(I_B23, n) - this%B(I_B13, n) * this%B(I_B22, n))
+        end function parcel_get_determinant
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the normalized eigenvectors.
         ! The eigenvector V(:, j) belongs to the j-th
         ! eigenvalue.
-        ! @param[in] B = (B11, B12, B13, B22, B23)
-        ! @param[in] volume of the parcel
+        ! @param[in] n parcel index
         ! @returns the eigenvectors
-        function get_eigenvectors(B, volume) result(V)
-            double precision, intent(in) :: B(5)
-            double precision, intent(in) :: volume
-            double precision             :: U(n_dim, n_dim), D(n_dim), V(n_dim, n_dim)
+        function parcel_get_eigenvectors(this, n) result(V)
+            class(ellipsoid_pc_type), intent(in) :: this
+            integer,                  intent(in) :: n
+            double precision                     :: U(3, 3), D(3), V(3, 3)
 
-            U = get_full_matrix(B, volume)
+            U = this%get_full_matrix(n)
 
             call scherzinger_diagonalise(U, D, V)
 
@@ -323,7 +333,7 @@ module parcel_ellipsoid
                     "in parcel_ellipsoid::get_eigenvectors: Invalid parcel shape.")
             endif
 #endif
-        end function get_eigenvectors
+        end function parcel_get_eigenvectors
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -332,17 +342,16 @@ module parcel_ellipsoid
         ! and V contains the eigenvectors in its columns.
         ! The eigenvector V(:, j) belongs to the j-th
         ! eigenvalue.
-        ! @param[in] B = (B11, B12, B13, B22, B23)
-        ! @param[in] volume of the parcel
+        ! @param[in] n parcel index
         ! @param[out] D eigenvalues (sorted in descending order)
         ! @param[out] V eigenvectors
-        subroutine diagonalise(B, volume, D, V)
-            double precision, intent(in)  :: B(5)
-            double precision, intent(in)  :: volume
-            double precision, intent(out) :: D(n_dim), V(n_dim, n_dim)
-            double precision              :: U(n_dim, n_dim)
+        subroutine parcel_diagonalise(this, n, D, V)
+            class(ellipsoid_pc_type), intent(in)  :: this
+            integer,                  intent(in)  :: n
+            double precision,         intent(out) :: D(3), V(3, 3)
+            double precision                      :: U(3, 3)
 
-            U = get_full_matrix(B, volume)
+            U = this%get_full_matrix(n)
 
             call scherzinger_diagonalise(U, D, V)
 
@@ -353,45 +362,46 @@ module parcel_ellipsoid
                     "in parcel_ellipsoid::diagonalise: Invalid parcel shape.")
             endif
 #endif
-        end subroutine diagonalise
+        end subroutine parcel_diagonalise
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the B33 matrix element
-        ! @param[in] B = (B11, B12, B13, B22, B23)
-        ! @param[in] volume of the parcel
+        ! @param[in] n parcel index
         ! @returns B33
-        function get_B33(B, volume) result(B33)
-            double precision, intent(in) :: B(5)
-            double precision, intent(in) :: volume
-            double precision             :: abc
-            double precision             :: B33
+        function parcel_get_B33(this, n) result(B33)
+            class(ellipsoid_pc_type), intent(in) :: this
+            integer,                  intent(in) :: n
+            double precision                     :: abc
+            double precision                     :: B33
 
-            abc = get_abc(volume)
+            abc = this%get_abc(this%volume(n))
 
-            if (dabs(B(I_B11) * B(I_B22) - B(I_B12) ** 2) <= epsilon(abc)) then
+            if (dabs(this%B(I_B11, n) * this%B(I_B22, n) - this%B(I_B12, n) ** 2) <= epsilon(abc)) then
                 call mpi_exit_on_error(&
                     "in parcel_ellipsoid::get_B33: Division by small number!")
             endif
 
-            B33 = (abc ** 2 - B(I_B13) * (B(I_B12) * B(I_B23) - B(I_B13) * B(I_B22)) &
-                            + B(I_B11) * B(I_B23) ** 2                               &
-                            - B(I_B12) * B(I_B13) * B(I_B23))                        &
-                / (B(I_B11) * B(I_B22) - B(I_B12) ** 2)
+            B33 = (abc ** 2 - this%B(I_B13, n) * (this%B(I_B12, n) * this%B(I_B23, n) -     &
+                                                  this%B(I_B13, n) * this%B(I_B22, n))      &
+                            + this%B(I_B11, n) * this%B(I_B23, n) ** 2                      &
+                            - this%B(I_B12, n) * this%B(I_B13, n) * this%B(I_B23, n))       &
+                / (this%B(I_B11, n) * this%B(I_B22, n) - this%B(I_B12, n) ** 2)
 
-        end function get_B33
+        end function parcel_get_B33
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Obtain the product of the semi-minor and semi-major axis.
-        ! @param[in] volume of the parcel
+        ! @param[in] volume
         ! @returns abc = 3 * volume / (4 * pi)
-        pure elemental function get_abc(volume) result(abc)
-            double precision, intent(in) :: volume
-            double precision             :: abc
+        pure elemental function parcel_get_abc(this, volume) result(abc)
+            class(ellipsoid_pc_type), intent(in) :: this
+            double precision,         intent(in) :: volume
+            double precision                     :: abc
 
             abc = f34 * volume * fpi
-        end function get_abc
+        end function parcel_get_abc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -399,22 +409,24 @@ module parcel_ellipsoid
         ! @param[in] D eigenvalues sorted in descending order
         ! @param[in] volume of the parcel(s)
         ! @returns a/c
-        pure function get_aspect_ratio(D) result(lam)
-            double precision, intent(in) :: D(n_dim)
-            double precision             :: lam
+        pure function parcel_get_aspect_ratio(this, D) result(lam)
+            class(ellipsoid_pc_type), intent(in) :: this
+            double precision,         intent(in) :: D(3)
+            double precision                     :: lam
 
             lam = dsqrt(D(I_X) / D(I_Z))
-        end function get_aspect_ratio
+        end function parcel_get_aspect_ratio
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        function get_angles(B, volume) result(angles)
-            double precision, intent(in) :: B(5)
-            double precision, intent(in) :: volume
-            double precision             :: evec(n_dim, n_dim)
-            double precision             :: angles(2) ! (/azimuth, polar/)
+        ! @param[in] n parcel index
+        function parcel_get_angles(this, n) result(angles)
+            class(ellipsoid_pc_type), intent(in) :: this
+            integer,                  intent(in) :: n
+            double precision                     :: evec(3, 3)
+            double precision                     :: angles(2) ! (/azimuth, polar/)
 
-            evec = get_eigenvectors(B, volume)
+            evec = this%get_eigenvectors(n)
 
             ! azimuthal angle
             angles(I_X) = datan2(evec(I_Y, I_X), evec(I_X, I_X))
@@ -422,6 +434,6 @@ module parcel_ellipsoid
             ! polar angle
             angles(I_Y) = dasin(evec(I_Z, I_Z))
 
-        end function get_angles
+        end function parcel_get_angles
 
 end module parcel_ellipsoid

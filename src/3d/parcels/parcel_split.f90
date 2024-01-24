@@ -11,7 +11,6 @@ module parcel_split_mod
     use parcels_mod, only : parcels
     use parcel_bc, only : apply_reflective_bc
     use parcel_mpi, only : parcel_communicate
-    use parcel_ellipsoid, only : diagonalise, get_aspect_ratio, get_eigenvalues
     use mpi_timer, only : start_timer, stop_timer, timings
     use omp_lib
     use mpi_environment, only : world, MPI_SUM
@@ -58,10 +57,10 @@ module parcel_split_mod
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
 
-                D = get_eigenvalues(B, vol)
+                D = parcels%get_eigenvalues(n)
 
                 ! evaluate maximum aspect ratio (a2 >= b2 >= c2)
-                lam = get_aspect_ratio(D)
+                lam = parcels%get_aspect_ratio(D)
 
                 pid(n) = 0
 
@@ -114,7 +113,7 @@ module parcel_split_mod
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
 
-                call diagonalise(B, vol, D, V)
+                call parcels%diagonalise(n, D, V)
 
                 pid(n) = 0
 

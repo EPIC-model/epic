@@ -5,7 +5,6 @@ module parcel_diagnostics
     use constants, only : zero, one, f12, thousand
     use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
     use parcels_mod, only : parcels
-    use parcel_ellipsoid
     use parcel_split_mod, only : n_parcel_splits
     use parcel_merging, only : n_parcel_merges, n_big_close, n_way_parcel_mergers
     use omp_lib
@@ -86,8 +85,8 @@ module parcel_diagnostics
                 parcel_stats(IDX_ENSTROPHY) = parcel_stats(IDX_ENSTROPHY) &
                                             + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
 
-                evals = get_eigenvalues(parcels%B(:, n), parcels%volume(n))
-                lam = get_aspect_ratio(evals)
+                evals = parcels%get_eigenvalues(n)
+                lam = parcels%get_aspect_ratio(evals)
 
                 parcel_stats(IDX_AVG_LAM) = parcel_stats(IDX_AVG_LAM) + lam
                 parcel_stats(IDX_STD_LAM) = parcel_stats(IDX_STD_LAM) + lam ** 2
@@ -105,7 +104,7 @@ module parcel_diagnostics
 
 #ifndef NDEBUG
                 !$omp critical
-                if (abs(get_determinant(parcels%B(:, n), vol) / get_abc(vol) ** 2 - one) > thres) then
+                if (abs(parcels%get_determinant(n) / parcels%get_abc(vol) ** 2 - one) > thres) then
                     call mpi_exit_on_error("Parcel determinant not preserved!")
                 endif
                 !$omp end critical

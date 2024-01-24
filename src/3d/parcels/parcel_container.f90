@@ -95,9 +95,9 @@ module parcel_container
         ! @param[in] n_shape number of B matrix elements
         ! @param[in] n_strain number of strain elements
         subroutine parcel_alloc(this, num, n_vec, n_shape, n_strain)
-            class(pc_type)      :: this
-            integer, intent(in) :: num
-            integer, intent(in) :: n_vec, n_shape, n_strain
+            class(pc_type), intent(inout) :: this
+            integer,        intent(in)    :: num
+            integer,        intent(in)    :: n_vec, n_shape, n_strain
 
             allocate(this%position(n_vec, num))
             allocate(this%vorticity(n_vec, num))
@@ -121,7 +121,7 @@ module parcel_container
         ! ATTENTION: Extended types must deallocate additional parcel attributes
         !            in their own routine.
         subroutine parcel_dealloc(this)
-            class(pc_type) :: this
+            class(pc_type), intent(inout) :: this
 
             if (.not. allocated(this%position)) then
                 return
@@ -156,8 +156,8 @@ module parcel_container
         ! @param[in] m index of parcel used to replace parcel at index n
         ! @pre n and m must be valid parcel indices
         subroutine parcel_replace(this, n, m)
-            class(pc_type)      :: this
-            integer, intent(in) :: n, m
+            class(pc_type), intent(inout) :: this
+            integer,        intent(in)    :: n, m
 
             this%position(:, n)  = this%position(:, m)
             this%vorticity(:, n) = this%vorticity(:, m)
@@ -183,8 +183,8 @@ module parcel_container
         !            in their own routine.
         ! @param[in] new_size is the new size of each attribute
         subroutine parcel_resize(this, new_size)
-            class(pc_type)      :: this
-            integer, intent(in) :: new_size
+            class(pc_type), intent(inout) :: this
+            integer,        intent(in)    :: new_size
 
             call start_timer(resize_timer)
 
@@ -219,7 +219,7 @@ module parcel_container
 
         ! Serialize all parcel attributes into a single buffer
         subroutine parcel_serialize(this, n, buffer)
-            class(pc_type)                :: this
+            class(pc_type),   intent(in)  :: this
             integer,          intent(in)  :: n
             double precision, intent(out) :: buffer(this%attr_num)
 
@@ -243,9 +243,9 @@ module parcel_container
 
         ! Deserialize all parcel attributes from a single buffer
         subroutine parcel_deserialize(this, n, buffer)
-            class(pc_type)               :: this
-            integer,          intent(in) :: n
-            double precision, intent(in) :: buffer(this%attr_num)
+            class(pc_type),   intent(inout) :: this
+            integer,          intent(in)    :: n
+            double precision, intent(in)    :: buffer(this%attr_num)
 
             this%position(:, n)  = buffer(this%IDX_POS_BEG:this%IDX_POS_END)
             this%vorticity(:, n) = buffer(this%IDX_VOR_BEG:this%IDX_VOR_END)
@@ -266,7 +266,7 @@ module parcel_container
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_pack(this, pid, num, buffer)
-            class(pc_type)                :: this
+            class(pc_type),   intent(in)  :: this
             integer,          intent(in)  :: pid(:)
             integer,          intent(in)  :: num
             double precision, intent(out) :: buffer(:)
@@ -282,10 +282,10 @@ module parcel_container
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine parcel_unpack(this, num, buffer)
-            class(pc_type)               :: this
-            integer,          intent(in) :: num
-            double precision, intent(in) :: buffer(:)
-            integer                      :: n, i, j
+            class(pc_type),   intent(inout) :: this
+            integer,          intent(in)    :: num
+            double precision, intent(in)    :: buffer(:)
+            integer                         :: n, i, j
 
             do n = 1, num
                 i = 1 + (n-1) * this%attr_num
@@ -309,10 +309,10 @@ module parcel_container
         !   The above preconditions must be fulfilled so that the
         !   parcel pack algorithm works correctly.
         subroutine parcel_delete(this, pid, n_del)
-            class(pc_type)      :: this
-            integer, intent(in) :: pid(0:)
-            integer, intent(in) :: n_del
-            integer             :: k, l, m
+            class(pc_type), intent(inout) :: this
+            integer,        intent(in)    :: pid(0:)
+            integer,        intent(in)    :: n_del
+            integer                       :: k, l, m
 
             ! l points always to the last valid parcel
             l = this%local_num

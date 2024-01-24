@@ -10,7 +10,6 @@ module parcel_damping
     use mpi_timer, only : start_timer, stop_timer
     use parameters, only : nx, nz, vmin
     use parcels_mod, only : parcels
-    use parcel_ellipsoid
     use parcel_interpl
     use fields
     use omp_lib

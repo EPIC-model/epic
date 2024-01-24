@@ -1,6 +1,6 @@
 module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
-    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
+    use parcel_ellipsoid, only : I_B11, I_B12, I_B13, I_B22, I_B23
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY, strain_mag
     use field_mpi, only : field_halo_fill_scalar
     use constants, only : zero, one, two, f12
@@ -9,6 +9,7 @@ module rk_utils
     use mpi_layout, only : box
     use mpi_environment
     use mpi_utils, only : mpi_exit_on_error
+    use parcels_mod, only : parcels
 #ifdef ENABLE_VERBOSE
     use options, only : output
 #endif
@@ -21,59 +22,57 @@ module rk_utils
     contains
 
         ! Advance the B matrix.
-        ! @param[in] Bin are the B matrix components of the parcel
-        ! @param[in] S is the local velocity strain
-        ! @param[in] vorticity of parcel
-        ! @param[in] volume is the parcel volume
+        ! @param[in] n parcel index
         ! @returns dB/dt in Bout
-        function get_dBdt(Bin, S, vorticity, volume) result(Bout)
-            double precision, intent(in) :: Bin(I_B23)
-            double precision, intent(in) :: S(5)
-            double precision, intent(in) :: vorticity(n_dim)
-            double precision, intent(in) :: volume
-            double precision             :: Bout(5), B33
-            double precision             :: dudz, dvdx, dvdz, dwdz
+        function get_dBdt(n) result(Bout)
+            integer,         intent(in) :: n
+            double precision            :: Bout(5), B33
+            double precision            :: dudz, dvdx, dvdz, dwdz
 
             ! du/dz = \eta + dw/dx
-            dudz = vorticity(I_Y) + S(I_DWDX)
+            dudz = parcels%vorticity(I_Y, n) + parcels%strain(I_DWDX, n)
 
             ! dv/dx \zeta + du/dy
-            dvdx = vorticity(I_Z) + S(I_DUDY)
+            dvdx = parcels%vorticity(I_Z, n) + parcels%strain(I_DUDY, n)
 
             ! dv/dz = dw/dy - \xi
-            dvdz = S(I_DWDY) - vorticity(I_X)
+            dvdz = parcels%strain(I_DWDY, n) - parcels%vorticity(I_X, n)
 
             ! dw/dz = - (du/dx + dv/dy)
-            dwdz = - (S(I_DUDX) + S(I_DVDY))
+            dwdz = - (parcels%strain(I_DUDX, n) + parcels%strain(I_DVDY, n))
 
-            B33 = get_B33(Bin, volume)
+            B33 = parcels%get_B33(n)
 
             ! dB11/dt = 2 * (du/dx * B11 + du/dy * B12 + du/dz * B13)
-            Bout(I_B11) = two * (S(I_DUDX) * Bin(I_B11) + S(I_DUDY) * Bin(I_B12) + dudz * Bin(I_B13))
+            Bout(I_B11) = two * (parcels%strain(I_DUDX, n) * parcels%B(I_B11, n)  + &
+                                 parcels%strain(I_DUDY, n) * parcels%B(I_B12, n)  + &
+                                 dudz                      * parcels%B(I_B13, n))
 
             ! dB12/dt =
-            Bout(I_B12) = dvdx      * Bin(I_B11) & !   dv/dx * B11
-                        - dwdz      * Bin(I_B12) & ! - dw/dz * B12
-                        + dvdz      * Bin(I_B13) & ! + dv/dz * B13
-                        + S(I_DUDY) * Bin(I_B22) & ! + du/dy * B22
-                        + dudz      * Bin(I_B23)   ! + du/dz * B23
+            Bout(I_B12) = dvdx                      * parcels%B(I_B11, n) & !   dv/dx * B11
+                        - dwdz                      * parcels%B(I_B12, n) & ! - dw/dz * B12
+                        + dvdz                      * parcels%B(I_B13, n) & ! + dv/dz * B13
+                        + parcels%strain(I_DUDY, n) * parcels%B(I_B22, n) & ! + du/dy * B22
+                        + dudz                      * parcels%B(I_B23, n)   ! + du/dz * B23
 
             ! dB13/dt =
-            Bout(I_B13) = S(I_DWDX) * Bin(I_B11) & !   dw/dx * B11
-                        + S(I_DWDY) * Bin(I_B12) & ! + dw/dy * B12
-                        - S(I_DVDY) * Bin(I_B13) & ! - dv/dy * B13
-                        + S(I_DUDY) * Bin(I_B23) & ! + du/dy * B23
-                        + dudz      * B33          ! + du/dz * B33
+            Bout(I_B13) = parcels%strain(I_DWDX, n) * parcels%B(I_B11, n) & !   dw/dx * B11
+                        + parcels%strain(I_DWDY, n) * parcels%B(I_B12, n) & ! + dw/dy * B12
+                        - parcels%strain(I_DVDY, n) * parcels%B(I_B13, n) & ! - dv/dy * B13
+                        + parcels%strain(I_DUDY, n) * parcels%B(I_B23, n) & ! + du/dy * B23
+                        + dudz                      * B33                   ! + du/dz * B33
 
             ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
-            Bout(I_B22) = two * (dvdx * Bin(I_B12) + S(I_DVDY) * Bin(I_B22) + dvdz * Bin(I_B23))
+            Bout(I_B22) = two * (dvdx                      * parcels%B(I_B12, n) + &
+                                 parcels%strain(I_DVDY, n) * parcels%B(I_B22, n) + &
+                                 dvdz                      * parcels%B(I_B23, n))
 
             ! dB23/dt =
-            Bout(I_B23) = S(I_DWDX) * Bin(I_B12) & !   dw/dx * B12
-                        + dvdx      * Bin(I_B13) & ! + dv/dx * B13
-                        + S(I_DWDY) * Bin(I_B22) & ! + dw/dy * B22
-                        - S(I_DUDX) * Bin(I_B23) & ! - du/dx * B23
-                        + dvdz      * B33          ! + dv/dz * B33
+            Bout(I_B23) = parcels%strain(I_DWDX, n) * parcels%B(I_B12, n) & !   dw/dx * B12
+                        + dvdx                      * parcels%B(I_B13, n) & ! + dv/dx * B13
+                        + parcels%strain(I_DWDY, n) * parcels%B(I_B22, n) & ! + dw/dy * B22
+                        - parcels%strain(I_DUDX, n) * parcels%B(I_B23, n) & ! - du/dx * B23
+                        + dvdz                      * B33                   ! + dv/dz * B33
         end function get_dBdt
 
         ! Calculate velocity strain
@@ -84,7 +83,7 @@ module rk_utils
             double precision, intent(in) :: velgradgp(5)
             double precision, intent(in) :: vortgp(n_dim)
             double precision             :: strain(3,3)
-       
+
             ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
             ! where
             !     /u_x u_y u_z\
@@ -252,12 +251,12 @@ module rk_utils
                    enddo
                    ! Reflect beyond boundaries to ensure damping is conservative
                    ! This is because the points below the surface contribute to the level above
-                   strain_mag(-1, iy, ix) = strain_mag(1, iy, ix) 
+                   strain_mag(-1, iy, ix) = strain_mag(1, iy, ix)
                    strain_mag(nz+1, iy, ix) = strain_mag(nz-1, iy, ix)
                 enddo
             enddo
 
-          ! We need this halo fill to obtain good conservation    
+          ! We need this halo fill to obtain good conservation
           call field_halo_fill_scalar(strain_mag, l_alloc=.true.)
 
         end subroutine get_strain_magnitude_field

@@ -1,5 +1,6 @@
 module utils
     use constants, only : zero, one
+    use dimensions, only : I_Z
     use options, only : field_file          &
                       , flux_file           &
                       , output              &

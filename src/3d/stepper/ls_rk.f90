@@ -151,10 +151,7 @@ module ls_rk
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, parcels%local_num
-                    parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n),           &
-                                                     parcels%strain(:, n),      &
-                                                     parcels%vorticity(:, n),   &
-                                                     parcels%volume(n))
+                    parcels%delta_b(:, n) = get_dBdt(n)
                 enddo
                 !$omp end parallel do
 
@@ -170,11 +167,8 @@ module ls_rk
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, parcels%local_num
-                    parcels%delta_b(:, n) = parcels%delta_b(:, n)               &
-                                          + get_dBdt(parcels%B(:, n),           &
-                                                     parcels%strain(:, n),      &
-                                                     parcels%vorticity(:, n),   &
-                                                     parcels%volume(n))
+                    parcels%delta_b(:, n) = parcels%delta_b(:, n) &
+                                          + get_dBdt(n)
                 enddo
                 !$omp end parallel do
 
