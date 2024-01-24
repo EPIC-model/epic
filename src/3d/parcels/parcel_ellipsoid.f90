@@ -1,5 +1,6 @@
 ! =============================================================================
-!     This module is the 3D version and contains all ellipsoid operations.
+!     Parcel ellipsoid container for 3D parcels.
+!
 !     Reference:
 !       Dritschel, D., Reinaud, J., & McKiver, W. (2004).
 !       The quasi-geostrophic ellipsoidal vortex model.
@@ -7,6 +8,7 @@
 !       doi:10.1017/S0022112004008377
 ! =============================================================================
 module parcel_ellipsoid
+    use parcel_container, only : pc_type
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use constants, only : fpi   &
                         , fpi4  &
@@ -29,7 +31,22 @@ module parcel_ellipsoid
     double precision, parameter :: costheta(4) = dcos((/fpi4, f3pi4, f5pi4, f7pi4/))
     double precision, parameter :: sintheta(4) = dsin((/fpi4, f3pi4, f5pi4, f7pi4/))
 
-    double precision, allocatable :: Vetas(:, :), Vtaus(:, :)
+    type, extends(pc_type) :: ellipsoid_pc_type
+
+        double precision, allocatable :: Vetas(:, :), Vtaus(:, :)
+
+        integer :: IDX_ELL_VETA, IDX_ELL_VTAU
+
+        contains
+
+            procedure :: setup => parcel_setup
+            procedure :: dealloc => parcel_dealloc
+            procedure :: replace => parcel_replace
+            procedure :: resize => parcel_resize
+            procedure :: get_points => parcel_get_points
+
+    end type ellipsoid_pc_type
+
 
     integer, parameter :: I_B11 = 1 & ! index for B11 matrix component
                         , I_B12 = 2 & ! index for B12 matrix component
@@ -37,7 +54,6 @@ module parcel_ellipsoid
                         , I_B22 = 4 & ! index for B22 matrix component
                         , I_B23 = 5   ! index for B23 matrix component
 
-    integer :: IDX_ELL_VETA, IDX_ELL_VTAU
 
     private :: rho                  &
              , f3pi4                &
@@ -45,86 +61,182 @@ module parcel_ellipsoid
              , f7pi4                &
              , costheta             &
              , sintheta             &
-             , get_full_matrix      &
-             , Vetas                &
-             , Vtaus                &
-             , IDX_ELL_VETA         &
-             , IDX_ELL_VTAU
+             , get_full_matrix
 
     contains
 
-        subroutine parcel_ellipsoid_resize(new_size, n_copy)
-            integer, intent(in) :: new_size, n_copy
+        ! Sets the buffer indices for sending parcels around
+        ! (called in parcel_alloc)
+        subroutine parcel_setup(this, num)
+            class(ellipsoid_pc_type) :: this
+            integer, intent(in)      :: num
+            integer                  :: i
 
-            call resize_array(Vetas, new_size, n_copy)
-            call resize_array(Vtaus, new_size, n_copy)
+            call this%pc_type%alloc(num=num,    &
+                                    n_vec=3,    &
+                                    n_shape=5,  &
+                                    n_strain=5)
 
-        end subroutine parcel_ellipsoid_resize
+            allocate(this%Vetas(3, num))
+            allocate(this%Vtaus(3, num))
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+            this%IDX_POS_BEG   = 1   ! x-position
+            this%IDX_POS_END   = 3   ! z-position
+            this%IDX_VOR_BEG   = 4   ! x-vorticity
+            this%IDX_VOR_END   = 6   ! z-vorticity
+            this%IDX_SHAPE_BEG = 7   ! B11 shape matrix element
+            this%IDX_SHAPE_END = 11  ! B23 shape matrix element
+            this%IDX_VOL       = 12  ! volume
+            this%IDX_BUO       = 13  ! buoyancy
 
-        function set_ellipsoid_buffer_indices(i) result(n_attr)
-            integer, intent(in) :: i
-            integer             :: n_attr
+            i = this%IDX_BUO + 1
+#ifndef ENABLE_DRY_MODE
+            this%IDX_HUM  = i
+            i = i + 1
+#endif
 
-            IDX_ELL_VETA = i
-            IDX_ELL_VTAU = i + 3
+            ! LS-RK variables
+            this%IDX_RK_POS_BEG    = i
+            this%IDX_RK_POS_END    = i + 2
+            this%IDX_RK_VOR_BEG    = i + 3
+            this%IDX_RK_VOR_END    = i + 5
+            this%IDX_RK_SHAPE_BEG  = i + 6
+            this%IDX_RK_SHAPE_END  = i + 10
+            this%IDX_RK_STRAIN_BEG = i + 11
+            this%IDX_RK_STRAIN_END = i + 15
 
-            n_attr = IDX_ELL_VTAU + 2
-        end function set_ellipsoid_buffer_indices
+            this%IDX_ELL_VETA = i + 16
+            this%IDX_ELL_VTAU = i + 19
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+            this%n_par_attrib = this%IDX_ELL_VTAU + 2
 
-        subroutine parcel_ellipsoid_serialize(n, buffer)
-            integer,          intent(in)    :: n
-            double precision, intent(inout) :: buffer(:)
-
-            buffer(IDX_ELL_VETA:IDX_ELL_VETA+2) = Vetas(:, n)
-            buffer(IDX_ELL_VTAU:IDX_ELL_VTAU+2) = Vtaus(:, n)
-
-        end subroutine parcel_ellipsoid_serialize
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine parcel_ellipsoid_deserialize(n, buffer)
-            integer,          intent(in) :: n
-            double precision, intent(in) :: buffer(:)
-
-            Vetas(:, n) = buffer(IDX_ELL_VETA:IDX_ELL_VETA+2)
-            Vtaus(:, n) = buffer(IDX_ELL_VTAU:IDX_ELL_VTAU+2)
-
-        end subroutine parcel_ellipsoid_deserialize
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine parcel_ellipsoid_replace(n, m)
-            integer,          intent(in) :: n, m
-
-            Vetas(:, n) = Vetas(:, m)
-            Vtaus(:, n) = Vtaus(:, m)
-
-        end subroutine parcel_ellipsoid_replace
+        end subroutine parcel_setup
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine parcel_ellipsoid_allocate(num)
-            integer, intent(in) :: num
+        subroutine parcel_dealloc(this)
+            class(ellipsoid_pc_type) :: this
 
-            allocate(Vetas(3, num))
-            allocate(Vtaus(3, num))
-        end subroutine parcel_ellipsoid_allocate
+            call this%pc_type%dealloc
 
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine parcel_ellipsoid_deallocate
-
-            if (.not. allocated(Vetas)) then
+            if (.not. allocated(this%Vetas)) then
                 return
             endif
 
-            deallocate(Vetas)
-            deallocate(Vtaus)
-        end subroutine parcel_ellipsoid_deallocate
+            deallocate(this%Vetas)
+            deallocate(this%Vtaus)
+
+        end subroutine parcel_dealloc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_replace(this, n, m)
+            class(ellipsoid_pc_type) :: this
+            integer,      intent(in) :: n, m
+
+            ! Call parent class subroutine
+            call this%pc_type%replace(n, m)
+
+            this%Vetas(:, n) = this%Vetas(:, m)
+            this%Vtaus(:, n) = this%Vtaus(:, m)
+
+        end subroutine parcel_replace
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_resize(this, new_size)
+            class(ellipsoid_pc_type) :: this
+            integer,      intent(in) :: new_size
+
+            ! Call parent class subroutine
+            call this%pc_type%resize(new_size)
+
+            call resize_array(this%Vetas, new_size, n_copy=this%n_parcels)
+            call resize_array(this%Vtaus, new_size, n_copy=this%n_parcels)
+
+        end subroutine parcel_resize
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_serialize(this, n, buffer)
+            class(ellipsoid_pc_type)      :: this
+            integer,          intent(in)  :: n
+            double precision, intent(out) :: buffer(this%n_par_attrib)
+
+            ! Call parent class subroutine
+            call this%pc_type%serialize(n, buffer)
+
+            buffer(this%IDX_ELL_VETA:this%IDX_ELL_VETA+2) = this%Vetas(:, n)
+            buffer(this%IDX_ELL_VTAU:this%IDX_ELL_VTAU+2) = this%Vtaus(:, n)
+
+        end subroutine parcel_serialize
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_deserialize(this, n, buffer)
+            class(ellipsoid_pc_type)     :: this
+            integer,          intent(in) :: n
+            double precision, intent(in) :: buffer(this%n_par_attrib)
+
+            ! Call parent class subroutine
+            call this%pc_type%deserialize(n, buffer)
+
+            this%Vetas(:, n) = buffer(this%IDX_ELL_VETA:this%IDX_ELL_VETA+2)
+            this%Vtaus(:, n) = buffer(this%IDX_ELL_VTAU:this%IDX_ELL_VTAU+2)
+
+        end subroutine parcel_deserialize
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Obtain the ellipsoid support points for par2grid and grid2par
+        ! @param[in] n parcel index
+        ! @param[in] l_reuse (optional) if support points should be reused and not calculated.
+        ! @returns the parcel support points
+        function parcel_get_points(this, n, l_reuse) result(points)
+            class(ellipsoid_pc_type)      :: this
+            integer,           intent(in) :: n
+            logical, optional, intent(in) :: l_reuse
+            double precision              :: Veta(n_dim), Vtau(n_dim), D(n_dim), V(n_dim, n_dim)
+            integer                       :: j
+            double precision              :: points(n_dim, 4)
+
+
+            if (present(l_reuse)) then
+                if (l_reuse) then
+                    Veta = this%Vetas(:, n)
+                    Vtau = this%Vtaus(:, n)
+                else
+                    call diagonalise(this%B(:, n), this%volume(n), D, V)
+                    Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
+                    Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
+
+                    this%Vetas(:, n) = Veta
+                    this%Vtaus(:, n) = Vtau
+                endif
+            else
+                ! (/a2, b2, c2/) with a >= b >= c
+                ! D = (/a2, b2, c2/)
+                call diagonalise(this%B(:, n), this%volume(n), D, V)
+
+                Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
+                Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
+
+                this%Vetas(:, n) = Veta
+                this%Vtaus(:, n) = Vtau
+            endif
+
+            do j = 1, 4
+                ! support point in the reference frame of the ellipsoid
+                ! theta = j * pi / 2 - pi / 4 (j = 1, 2, 3, 4)
+                ! x_j = eta * rho * cos(theta_j)
+                ! y_j = tau * rho * sin(theta_j)
+
+                ! suppport point in the global reference frame
+                points(:, j) = this%position(:, n) &
+                             + Veta * costheta(j)  &
+                             + Vtau * sintheta(j)
+            enddo
+        end function parcel_get_points
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -293,61 +405,6 @@ module parcel_ellipsoid
 
             lam = dsqrt(D(I_X) / D(I_Z))
         end function get_aspect_ratio
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Obtain the ellipse support points for par2grid and grid2par
-        ! @param[in] position vector of the parcel
-        ! @param[in] volume of the parcel
-        ! @param[in] B matrix elements of the parcel
-        ! @returns the parcel support points
-        function get_ellipsoid_points(position, volume, B, n, l_reuse) result(points)
-            double precision,  intent(in) :: position(n_dim)
-            double precision,  intent(in) :: volume
-            double precision,  intent(in) :: B(5)        ! B11, B12, B13, B22, B23
-            integer, optional, intent(in) :: n
-            logical, optional, intent(in) :: l_reuse
-            double precision              :: Veta(n_dim), Vtau(n_dim), D(n_dim), V(n_dim, n_dim)
-            integer                       :: j
-            double precision              :: points(n_dim, 4)
-
-
-            if (present(l_reuse)) then
-                if (l_reuse) then
-                    Veta = Vetas(:, n)
-                    Vtau = Vtaus(:, n)
-                else
-                    call diagonalise(B, volume, D, V)
-                    Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
-                    Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
-
-                    Vetas(:, n) = Veta
-                    Vtaus(:, n) = Vtau
-                endif
-            else
-                ! (/a2, b2, c2/) with a >= b >= c
-                ! D = (/a2, b2, c2/)
-                call diagonalise(B, volume, D, V)
-
-                Veta = dsqrt(dabs(D(I_X) - D(I_Z))) * rho * V(:, I_X)
-                Vtau = dsqrt(dabs(D(I_Y) - D(I_Z))) * rho * V(:, I_Y)
-
-                Vetas(:, n) = Veta
-                Vtaus(:, n) = Vtau
-            endif
-
-            do j = 1, 4
-                ! support point in the reference frame of the ellipsoid
-                ! theta = j * pi / 2 - pi / 4 (j = 1, 2, 3, 4)
-                ! x_j = eta * rho * cos(theta_j)
-                ! y_j = tau * rho * sin(theta_j)
-
-                ! suppport point in the global reference frame
-                points(:, j) = position           &
-                             + Veta * costheta(j) &
-                             + Vtau * sintheta(j)
-            enddo
-        end function get_ellipsoid_points
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

@@ -6,7 +6,7 @@
 module parcel_bc
     use constants, only : zero, two
     use parameters, only : lower, upper, extent, hli, center
-    use parcel_container, only : n_parcels, parcels
+    use parcels_mod, only : parcels
     use omp_lib
     implicit none
 
@@ -47,7 +47,7 @@ module parcel_bc
 
             !$omp parallel default(shared)
             !$omp do private(n)
-            do n = 1, n_parcels
+            do n = 1, parcels%n_parcels
                 ! vertical direction
                 call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
             enddo

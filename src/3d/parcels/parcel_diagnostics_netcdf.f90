@@ -6,7 +6,7 @@ module parcel_diagnostics_netcdf
     use netcdf_utils
     use netcdf_writer
     use netcdf_reader
-    use parcel_container, only : parcels, n_parcels
+    use parcels_mod, only : parcels
     use parcel_diagnostics
     use parameters, only : lower, extent, nx, ny, nz, write_zeta_boundary_flag
     use parcel_split_mod, only : n_parcel_splits
