@@ -1573,7 +1573,7 @@ module parcel_nearest
                     do k = 1, recv_count
                         ! We receive a small parcel;
                         ! append it to the container with index
-                        ! "n_parcels+1"
+                        ! "parcels%local_num+1"
                         parcels%local_num = parcels%local_num + 1
                         j = n_entries * k
                         i = j - n_entries + 1

@@ -353,7 +353,7 @@ module parcel_netcdf
                     ! remove last increment
                     m = m - 1
 
-                    ! updates the variable n_parcels
+                    ! updates the variable parcels%local_num
                     call parcels%delete(invalid(0:m), n_del=m)
 
                     ! adjust the chunk size to fit the remaining memory
