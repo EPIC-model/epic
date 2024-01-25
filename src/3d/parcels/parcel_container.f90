@@ -91,15 +91,16 @@ module parcel_container
         ! ATTENTION: Extended types must allocate additional parcel attributes
         !            in their own routine.
         ! @param[in] num number of parcels
-        ! @param[in] n_vec number of spatial dimensions of vector attributes
+        ! @param[in] n_pos number of spatial dimensions
+        ! @param[in] n_vec number of dimensions of vector attributes
         ! @param[in] n_shape number of B matrix elements
         ! @param[in] n_strain number of strain elements
-        subroutine parcel_alloc(this, num, n_vec, n_shape, n_strain)
+        subroutine parcel_alloc(this, num, n_pos, n_vec, n_shape, n_strain)
             class(pc_type), intent(inout) :: this
             integer,        intent(in)    :: num
-            integer,        intent(in)    :: n_vec, n_shape, n_strain
+            integer,        intent(in)    :: n_pos, n_vec, n_shape, n_strain
 
-            allocate(this%position(n_vec, num))
+            allocate(this%position(n_pos, num))
             allocate(this%vorticity(n_vec, num))
             allocate(this%B(n_shape, num))
             allocate(this%volume(num))
