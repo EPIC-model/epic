@@ -12,15 +12,15 @@ module parcel_bc
 
     contains
 
-        ! Apply periodic bc on n-th parcel (zonally and meridionally)
-        ! @param[inout] position vector of parcel
+        ! Apply periodic bc (zonally and meridionally) on a position (2D or 3D)
+        ! @param[inout] position (2D or 3D vector)
         pure subroutine apply_periodic_bc(position)
-            double precision, intent(inout) :: position(3)
+            double precision, intent(inout) :: position(:)
             position(1) = position(1) - extent(1) * dble(int((position(1) - center(1)) * hli(1)))
             position(2) = position(2) - extent(2) * dble(int((position(2) - center(2)) * hli(2)))
         end subroutine apply_periodic_bc
 
-        ! Apply mirroring bc on n-th parcel (vertically)
+        ! Apply mirroring bc on a parcel (vertically)
         ! @param[inout] position vector of parcel
         ! @param[inout] B matrix of parcel
         pure subroutine apply_reflective_bc(position, B)

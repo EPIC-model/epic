@@ -48,7 +48,7 @@ module parcel_ellipsoid
             procedure          :: get_points => parcel_ellipsoid_get_points
             procedure, private :: get_full_matrix => parcel_ellipsoid_get_full_matrix
             procedure          :: get_eigenvalues => parcel_ellipsoid_get_eigenvalues
-            procedure, private :: get_determinant => parcel_ellipsoid_get_determinant
+            procedure          :: get_determinant => parcel_ellipsoid_get_determinant
             procedure, private :: get_eigenvectors => parcel_ellipsoid_get_eigenvectors
             procedure          :: diagonalise => parcel_ellipsoid_diagonalise
             procedure          :: get_B33 => parcel_ellipsoid_get_B33

@@ -23,21 +23,35 @@ module parcel_ellipse
 
         contains
 
-            procedure :: setup => parcel_ellipse_setup
-            procedure :: dealloc => parcel_ellipse_dealloc
-            procedure :: replace => parcel_ellipse_replace
-            procedure :: resize => parcel_ellipse_resize
-            procedure :: serialize => parcel_ellipse_serialize
-            procedure :: deserialize => parcel_ellipse_deserialize
-            procedure :: get_points => parcel_ellipse_get_points
-            procedure :: get_eigenvalue => parcel_ellipse_get_eigenvalue
-            procedure :: get_eigenvector => parcel_ellipse_get_eigenvector
-            procedure :: get_angle => parcel_ellipse_get_angle
-            procedure :: get_ab => parcel_ellipse_get_ab
-            procedure :: get_area => parcel_ellipse_get_area
-            procedure :: get_aspect_ratio => parcel_ellipse_get_aspect_ratio
+            procedure          :: setup => parcel_ellipse_setup
+            procedure          :: dealloc => parcel_ellipse_dealloc
+            procedure          :: replace => parcel_ellipse_replace
+            procedure          :: resize => parcel_ellipse_resize
+            procedure          :: serialize => parcel_ellipse_serialize
+            procedure          :: deserialize => parcel_ellipse_deserialize
+            procedure          :: get_points => parcel_ellipse_get_points
+            procedure          :: get_eigenvalue => parcel_ellipse_get_eigenvalue
+            procedure          :: get_eigenvector => parcel_ellipse_get_eigenvector
+            procedure          :: get_angle => parcel_ellipse_get_angle
+            procedure          :: get_ab => parcel_ellipse_get_ab
+            procedure          :: get_area => parcel_ellipse_get_area
+            procedure          :: get_aspect_ratio => parcel_ellipse_get_aspect_ratio
+
+            !------------------------------------------------------------------
+            ! Procedures in submodules:
+            procedure, private :: init => parcel_ellipse_init
 
     end type ellipse_pc_type
+
+
+    !--------------------------------------------------------------------------
+    ! Define interface for submodule routines:
+    interface
+        ! Implemented in parcel_ellipse_init
+        module subroutine parcel_ellipse_init(this)
+            class(ellipse_pc_type), intent(inout) :: this
+        end subroutine parcel_ellipse_init
+    end  interface
 
     contains
 
@@ -82,6 +96,8 @@ module parcel_ellipse
             this%IDX_RK_STRAIN_END = i + 11
 
             this%attr_num = this%IDX_RK_STRAIN_END
+
+            call this%init
 
         end subroutine parcel_ellipse_setup
 

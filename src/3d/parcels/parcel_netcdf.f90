@@ -5,7 +5,7 @@ module parcel_netcdf
     use netcdf_writer
     use netcdf_reader
     use parcels_mod, only : parcels
-    use parameters, only : nx, ny, nz, extent, lower, max_num_parcels, write_zeta_boundary_flag
+    use parameters, only : nx, ny, nz, extent, lower, write_zeta_boundary_flag
     use config, only : package_version, cf_version
     use mpi_timer, only : start_timer, stop_timer
     use iomanip, only : zfill
@@ -308,8 +308,8 @@ module parcel_netcdf
 
                 parcels%local_num = end_index - start_index + 1
 
-                if (parcels%local_num > max_num_parcels) then
-                    print *, "Number of parcels exceeds limit of", max_num_parcels, &
+                if (parcels%local_num > parcels%max_num) then
+                    print *, "Number of parcels exceeds limit of", parcels%max_num, &
                              ". You may increase parcel%size_factor. Exiting."
                     call mpi_exit_on_error
                 endif
@@ -323,7 +323,7 @@ module parcel_netcdf
                 !
                 call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
                 start_index = 1
-                end_index = min(max_num_parcels, parcels%total_num)
+                end_index = min(parcels%max_num, parcels%total_num)
                 pfirst = 1
                 n_remaining = parcels%total_num
 
@@ -358,11 +358,11 @@ module parcel_netcdf
 
                     ! adjust the chunk size to fit the remaining memory
                     ! in the parcel container
-                    avail_size = max(0, max_num_parcels - parcels%local_num)
+                    avail_size = max(0, parcels%max_num - parcels%local_num)
 
                     ! update start index to fill container
                     pfirst = 1 + parcels%local_num
-                    plast = min(pfirst + avail_size, parcels%total_num, max_num_parcels)
+                    plast = min(pfirst + avail_size, parcels%total_num, parcels%max_num)
 
                     ! we must make sure that we have enough data in the
                     ! file as well as in the parcel container
@@ -411,8 +411,8 @@ module parcel_netcdf
             num = last - first + 1
             plast = pfirst + num - 1
 
-            if (plast > max_num_parcels) then
-                print *, "Number of parcels exceeds limit of", max_num_parcels, &
+            if (plast > parcels%max_num) then
+                print *, "Number of parcels exceeds limit of", parcels%max_num, &
                          ". You may increase parcel%size_factor. Exiting."
                 call mpi_exit_on_error
             endif

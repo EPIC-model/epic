@@ -92,6 +92,7 @@ module options
         double precision :: gradient_pref    = 1.8d0    ! prefactor for gradient descent
         double precision :: max_compression  = 0.5d0    ! parameter for gradient descent
                                                         ! (limits the shift in parcel position)
+        integer :: n_surf_per_cell = 9
     end type parcel_type
 
     type(parcel_type) :: parcel
@@ -200,7 +201,7 @@ module options
             call write_netcdf_attribute(ncid, "initial", time%initial)
             call write_netcdf_attribute(ncid, "precise_stop", time%precise_stop)
             call write_netcdf_attribute(ncid, "alpha", time%alpha)
-            
+
             call write_netcdf_attribute(ncid, "damping_vorticity_prefactor", damping%vorticity_prefactor)
             call write_netcdf_attribute(ncid, "damping_scalars_prefactor", damping%scalars_prefactor)
             call write_netcdf_attribute(ncid, "damping_l_vorticity", damping%l_vorticity)

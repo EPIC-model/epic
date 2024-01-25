@@ -10,7 +10,7 @@ module parcel_mpi
 #endif
     use fields, only : get_index
     use parcel_bc, only : apply_periodic_bc
-    use parameters, only : vmin, vcell, nx, ny, nz, max_num_parcels
+    use parameters, only : vmin, vcell, nx, ny, nz
     use parcels_mod, only : parcels
     implicit none
 
@@ -169,7 +169,7 @@ module parcel_mpi
 
             total_size = sum(n_parcel_recvs) + parcels%local_num
 
-            if (total_size >= max_num_parcels) then
+            if (total_size >= parcels%max_num) then
                 total_size = nint(parcel%grow_factor * total_size)
                 call parcels%resize(total_size)
             endif

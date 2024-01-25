@@ -19,6 +19,12 @@ module parameters
     ! inverse mesh spacing
     double precision, protected :: dxi(3)
 
+    ! grid cell area
+    double precision, protected :: acell
+
+    ! inverse grid cell area
+    double precision, protected :: acelli
+
     ! grid cell volume
     double precision, protected :: vcell
 
@@ -125,7 +131,10 @@ module parameters
         vdomain = product(extent)
         vdomaini = one / vdomain
 
-        vcell = product(dx)
+        acell = dx(1) * dx(2)
+        acelli = one / acell
+
+        vcell = acell * dx(3)
         vcelli = one / vcell
 
         nhcell = nx * ny

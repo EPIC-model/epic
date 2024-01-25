@@ -3,7 +3,7 @@
 ! =============================================================================
 module parcel_container
     use options, only : verbose
-    use parameters, only : extent, extenti, center, lower, upper, set_max_num_parcels
+    use parameters, only : extent, extenti, center, lower, upper
     use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error
@@ -21,6 +21,7 @@ module parcel_container
             integer :: attr_num     ! number of parcel attributes
             integer :: local_num    ! local number of parcels
             integer :: total_num    ! global number of parcels (over all MPI ranks)
+            integer :: max_num      ! capacity per attribute, i.e. maximum number of parcels
 
             ! ---------------------------------------------------------------------
             !   Parcel attributes (common to all types):
@@ -114,6 +115,8 @@ module parcel_container
             allocate(this%strain(n_strain, num))
             allocate(this%delta_b(n_shape, num))
 
+            this%max_num = num
+
         end subroutine parcel_alloc
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -130,6 +133,7 @@ module parcel_container
 
             this%local_num = 0
             this%total_num = 0
+            this%max_num   = 0
 
             deallocate(this%position)
             deallocate(this%vorticity)
@@ -194,7 +198,7 @@ module parcel_container
                     "in parcel_container::parcel_resize: losing parcels when resizing.")
             endif
 
-            call set_max_num_parcels(new_size)
+            this%max_num = new_size
 
             call resize_array(this%position, new_size, this%local_num)
 

@@ -7,7 +7,7 @@ module parcel_split_mod
     use options, only : verbose
 #endif
     use constants, only : pi, three, five, f12, f34
-    use parameters, only : amax, max_num_parcels
+    use parameters, only : amax
     use parcels_mod, only : parcels
     use parcel_bc, only : apply_reflective_bc
     use parcel_mpi, only : parcel_communicate
@@ -89,7 +89,7 @@ module parcel_split_mod
 
             call stop_timer(split_timer)
 
-            if (n_required > max_num_parcels) then
+            if (n_required > parcels%max_num) then
                 grown_size = nint(parcel%grow_factor * n_required)
                 call parcels%resize(grown_size)
             else if (n_required < nint(f34 * shrunk_size)) then
