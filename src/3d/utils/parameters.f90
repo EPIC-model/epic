@@ -78,6 +78,9 @@ module parameters
     ! domain upper boundary
     double precision, protected :: upper(3)
 
+    ! minimum area
+    double precision, protected :: amin
+
     ! minimum volume
     double precision, protected :: vmin
 
@@ -153,6 +156,8 @@ module parameters
         hli = one / hl
 
         vmin = vcell / parcel%min_vratio
+
+        amin = acell / parcel%min_aratio
 
         amax = (f34 * fpi) ** f13 * minval(dx)
 

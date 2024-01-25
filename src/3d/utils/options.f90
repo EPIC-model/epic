@@ -93,6 +93,7 @@ module options
         double precision :: max_compression  = 0.5d0    ! parameter for gradient descent
                                                         ! (limits the shift in parcel position)
         integer :: n_surf_per_cell = 9
+        double precision :: min_aratio       = 40.0d0   ! minimum ratio of grid cell area / parcel area
     end type parcel_type
 
     type(parcel_type) :: parcel

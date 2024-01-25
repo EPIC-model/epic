@@ -21,7 +21,9 @@ epic3d_SOURCES = 				\
 	parcels/parcel_ellipsoid.f90		\
 	parcels/parcel_ellipse.f90		\
 	parcels/parcel_ellipse_init.f90		\
+	parcels/parcel_ellipse_split.f90	\
 	parcels/parcels.f90			\
+	parcels/parcel_ellipse_interpl.f90	\
 	parcels/parcel_bc.f90                   \
 	parcels/parcel_mpi.f90			\
 	parcels/parcel_nearest.f90		\
@@ -49,5 +51,5 @@ epic3d_LDADD = 						\
 	$(top_builddir)/src/netcdf/libepic_netcdf.la
 
 clean-local:
-	rm -f *.mod
+	rm -f *.mod *.smod
 endif
