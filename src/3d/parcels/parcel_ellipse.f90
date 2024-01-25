@@ -40,6 +40,7 @@ module parcel_ellipse
             !------------------------------------------------------------------
             ! Procedures in submodules:
             procedure, private :: init => parcel_ellipse_init
+            procedure          :: split => parcel_ellipse_split
 
     end type ellipse_pc_type
 
@@ -51,6 +52,10 @@ module parcel_ellipse
         module subroutine parcel_ellipse_init(this)
             class(ellipse_pc_type), intent(inout) :: this
         end subroutine parcel_ellipse_init
+
+        module subroutine parcel_ellipse_split(this)
+            class(ellipse_pc_type), intent(inout) :: this
+        end subroutine parcel_ellipse_split
     end  interface
 
     contains

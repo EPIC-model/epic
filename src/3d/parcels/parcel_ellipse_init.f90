@@ -1,7 +1,6 @@
-submodule (parcel_ellipse) parcel_ellipse_init_sub
+submodule (parcel_ellipse) parcel_ellipse_init_smod
     use options, only : parcel
     use constants, only : one
-    use mpi_utils, only : mpi_exit_on_error
     use parameters, only : nx, ny, acell, dx, dxi, lower
     use mpi_environment, only : world
     use mpi_layout, only : box
@@ -25,7 +24,7 @@ submodule (parcel_ellipse) parcel_ellipse_init_sub
             endif
 
             !------------------------------------------------------------------
-            ! Initialise parcel positions:
+            ! Initialise parcel positions on a regular grid:
 
             ! number of parcels per dimension
             n_per_dim = int(dsqrt(dble(parcel%n_surf_per_cell)))
@@ -95,7 +94,7 @@ submodule (parcel_ellipse) parcel_ellipse_init_sub
             ! Ensure the initial parcels are not extremely elongated:
             ! --> refine by splitting
             do while (lam >= parcel%lambda_max)
-!                 call this%split
+                call this%split
                 ! all parcels have the same initials aspect ratio, we
                 ! need to check only one of them
                 a2 = this%get_eigenvalue(1)
@@ -120,4 +119,4 @@ submodule (parcel_ellipse) parcel_ellipse_init_sub
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-end submodule parcel_ellipse_init_sub
+end submodule parcel_ellipse_init_smod
