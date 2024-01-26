@@ -30,16 +30,16 @@ module mpi_reverse
     type(reorder_type) :: x_reo
     type(reorder_type) :: y_reo
 
-    public :: reverse_x             &
-            , reverse_y             &
-            , intialise_mpi_reverse &
+    public :: reverse_x              &
+            , reverse_y              &
+            , initialise_mpi_reverse &
             , finalise_mpi_reverse
 
     contains
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine intialise_mpi_reverse
+        subroutine initialise_mpi_reverse
             if (l_initialised) then
                 return
             endif
@@ -49,7 +49,7 @@ module mpi_reverse
 
             call initialise_reversing(y_reo, y_comm, 2)
 
-        end subroutine intialise_mpi_reverse
+        end subroutine initialise_mpi_reverse
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
