@@ -8,6 +8,7 @@ module parcel_ellipse_interpl
     use parameters, only : nx, ny, amin, ncelli
     use options, only : parcel
     use fields
+    use field_mpi, only : field_halo_swap_scalar
     use parcels_mod
     use interpl, only : bilinear
     use parcel_bc, only : apply_periodic_bc
@@ -49,17 +50,20 @@ module parcel_ellipse_interpl
 
     contains
 
-        subroutine area2grid
-            call m_area2grid(0,  bot_parcels)
-            call m_area2grid(nz, top_parcels)
+        subroutine area2grid(l_halo_swap)
+            logical, intent(in) :: l_halo_swap
+
+            call m_area2grid(0,  bot_parcels, l_halo_swap)
+            call m_area2grid(nz, top_parcels, l_halo_swap)
         end subroutine area2grid
 
         ! Interpolate the parcel area to the grid
         ! ATTENTION After this operation the halo grid points
         !           are not filled properly.
-        subroutine m_area2grid(iz, surf_parcels)
+        subroutine m_area2grid(iz, surf_parcels, l_halo_swap)
             integer,               intent(in) :: iz
             type(ellipse_pc_type), intent(in) :: surf_parcels
+            logical,               intent(in) :: l_halo_swap
             double precision                  :: points(2, 2)
             integer                           :: n, p, l, is, js
             double precision                  :: weights(0:1, 0:1)
@@ -87,6 +91,10 @@ module parcel_ellipse_interpl
             enddo
             !$omp end do
             !$omp end parallel
+
+            if (l_halo_swap) then
+                call field_halo_swap_scalar(volg(iz, :, :))
+            endif
 
         end subroutine m_area2grid
 
@@ -248,8 +256,8 @@ module parcel_ellipse_interpl
             integer                              :: n, p, l, is, js
 
             ! clear old data efficiently
-            if(present(add)) then
-               if(add .eqv. .false.) then
+            if (present(add)) then
+               if (add .eqv. .false.) then
                     !$omp parallel default(shared)
                     !$omp do private(n)
                     do n = 1, surf_parcels%local_num
