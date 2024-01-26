@@ -2,8 +2,12 @@ module sta3dfft
     use mpi_layout
     use mpi_reverse, only : reverse_x               &
                           , reverse_y               &
-                          , intialise_mpi_reverse   &
+                          , initialise_mpi_reverse  &
                           , finalise_mpi_reverse
+    use mpi_reverse2d, only : reverse2d_x               &
+                            , reverse2d_y               &
+                            , initialise_mpi_reverse2d  &
+                            , finalise_mpi_reverse2d
     use stafft, only : dct, dst
     use constants, only : zero, one
     use stafft
@@ -44,7 +48,11 @@ module sta3dfft
             , xfactors       &
             , xtrig          &
             , yfactors       &
-            , ytrig
+            , ytrig          &
+            , fft2d          &
+            , ifft2d         &
+            , diff2dx        &
+            , diff2dy
 
     contains
 
@@ -66,7 +74,8 @@ module sta3dfft
 
             call initialise_pencil_fft(nx, ny, nz)
 
-            call intialise_mpi_reverse
+            call initialise_mpi_reverse
+            call initialise_mpi_reverse2d
 
             nwx = nx / 2
             nwy = ny / 2
@@ -125,6 +134,7 @@ module sta3dfft
             call finalise_pencil_fft
 
             call finalise_mpi_reverse
+            call finalise_mpi_reverse2d
         end subroutine finalise_fft
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -132,7 +142,6 @@ module sta3dfft
         ! Computes a 2D FFT (in x & y) of a 3D array fp in physical space
         ! and returns the result as fs in spectral space (in x & y).
         ! Only FFTs over the x and y directions are performed.
-        ! *** fp is destroyed upon exit ***
         subroutine fftxyp2s(fp, fs)
             double precision, intent(in)  :: fp(box%hlo(3):box%hhi(3), & !Physical
                                                 box%hlo(2):box%hhi(2), &
@@ -198,7 +207,6 @@ module sta3dfft
         ! Computes an *inverse* 2D FFT (in x & y) of a 3D array fs in spectral
         ! space and returns the result as fp in physical space (in x & y).
         ! Only inverse FFTs over the x and y directions are performed.
-        ! *** fs is destroyed upon exit ***
         subroutine fftxys2p(fs, fp)
             double precision, intent(in)  :: fs(box%lo(3):box%hi(3),   & !Spectral
                                                 box%lo(2):box%hi(2),   &
@@ -375,5 +383,211 @@ module sta3dfft
             endif
 
         end subroutine diffy
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Computes a 2D FFT (in x & y) of a 2D array fp in physical space
+        ! and returns the result as fs in spectral space (in x & y).
+        ! Only FFTs over the x and y directions are performed.
+        subroutine fft2d(fp, fs)
+            double precision, intent(in)  :: fp(1,                     & !Physical
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+            double precision, intent(out) :: fs(1,                     & !Spectral
+                                                box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
+            integer                       :: i, j
+
+            ! 1. Transform from (z, y, x) to (y, x, z) pencil
+            ! 2. Do y transform
+            ! 3. Transform from (y, x, z) to (x, z, y) pencil
+            ! 4. Do x transform
+            ! 5. Transform from (x, z, y) to (y, x, z) pencil
+            ! 6. Transform from (y, x, z) to (z, y, x) pencil
+
+            call transpose_to_pencil(y_from_z_trans2d,        &
+                                     (/1, 2, 3/),             &
+                                     fft_y_comm,              &
+                                     FORWARD,                 &
+                                     fp(:,                    &
+                                        box%lo(2):box%hi(2),  &
+                                        box%lo(1):box%hi(1)), &
+                                     fft2d_in_y_buffer)
+
+            do i = 1, size(fft2d_in_y_buffer, 2)
+                do j = 1, size(fft2d_in_y_buffer, 3)
+                    call forfft(1, size(fft2d_in_y_buffer, 1), fft2d_in_y_buffer(:, i, j), ytrig, yfactors)
+                enddo
+            enddo
+
+            call transpose_to_pencil(x_from_y_trans2d,      &
+                                     (/2, 3, 1/),           &
+                                     fft_x_comm,            &
+                                     FORWARD,               &
+                                     fft2d_in_y_buffer,     &
+                                     fft2d_in_x_buffer)
+
+            do i = 1, size(fft2d_in_x_buffer, 2)
+                do j = 1, size(fft2d_in_x_buffer, 3)
+                    call forfft(1, size(fft2d_in_x_buffer, 1), fft2d_in_x_buffer(:, i, j), xtrig, xfactors)
+                enddo
+            enddo
+
+            call transpose_to_pencil(y_from_x_trans2d,      &
+                                     (/3, 1, 2/),           &
+                                     fft_x_comm,            &
+                                     BACKWARD,              &
+                                     fft2d_in_x_buffer,     &
+                                     fft2d_in_y_buffer)
+
+            call transpose_to_pencil(z_from_y_trans2d,      &
+                                     (/2, 3, 1/),           &
+                                     fft_y_comm,            &
+                                     BACKWARD,              &
+                                     fft2d_in_y_buffer,     &
+                                     fs)
+
+        end subroutine fft2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Computes an *inverse* 2D FFT (in x & y) of a 2D array fs in spectral
+        ! space and returns the result as fp in physical space (in x & y).
+        ! Only inverse FFTs over the x and y directions are performed.
+        ! *** fs is destroyed upon exit ***
+        subroutine ifft2d(fs, fp)
+            double precision, intent(in)  :: fs(1,                   & !Spectral
+                                                box%lo(2):box%hi(2), &
+                                                box%lo(1):box%hi(1))
+            double precision, intent(out) :: fp(1,                     & !Physical
+                                                box%hlo(2):box%hhi(2), &
+                                                box%hlo(1):box%hhi(1))
+            integer                       :: i, j
+
+            ! 1. Transform to (z, y, x) to (y, x, z) pencil
+            ! 2. Do y back-transform
+            ! 3. Transform from (y, x, z) to (x, z, y) pencil
+            ! 4. Do x back-transform
+            ! 5. Transform from (x, z, y) to (y, x, z) pencil
+            ! 6. Transform from (y, x, z) to (z, y, x) pencil
+
+            call transpose_to_pencil(y_from_z_trans2d,  &
+                                     (/1, 2, 3/),       &
+                                     fft_y_comm,        &
+                                     FORWARD,           &
+                                     fs,                &
+                                     fft2d_in_y_buffer)
+
+            call transpose_to_pencil(x_from_y_trans2d,  &
+                                     (/2, 3, 1/),       &
+                                     fft_x_comm,        &
+                                     FORWARD,           &
+                                     fft2d_in_y_buffer, &
+                                     fft2d_in_x_buffer)
+
+            do i = 1, size(fft2d_in_x_buffer, 2)
+                do j = 1, size(fft2d_in_x_buffer, 3)
+                    call revfft(1, size(fft2d_in_x_buffer, 1), fft2d_in_x_buffer(:, i, j), xtrig, xfactors)
+                enddo
+            enddo
+
+            call transpose_to_pencil(y_from_x_trans2d,  &
+                                     (/3, 1, 2/),       &
+                                     fft_x_comm,        &
+                                     BACKWARD,          &
+                                     fft2d_in_x_buffer, &
+                                     fft2d_in_y_buffer)
+
+            do i = 1, size(fft2d_in_y_buffer, 2)
+                do j = 1, size(fft2d_in_y_buffer, 3)
+                    call revfft(1, size(fft2d_in_y_buffer, 1), fft2d_in_y_buffer(:, i, j), ytrig, yfactors)
+                enddo
+            enddo
+
+            call transpose_to_pencil(z_from_y_trans2d,          &
+                                     (/2, 3, 1/),               &
+                                     fft_y_comm,                &
+                                     BACKWARD,                  &
+                                     fft2d_in_y_buffer,         &
+                                     fp(:,                      &
+                                        box%lo(2):box%hi(2),    &
+                                        box%lo(1):box%hi(1)))
+
+        end subroutine ifft2d
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Given fs in spectral space (at least in x & y), this returns dfs/dx
+        ! (partial derivative).  The result is returned in ds, again
+        ! spectral.  Uses exact form of the derivative in spectral space.
+        ! Note: gs must have halo in x due to the reordering algorithm.
+        subroutine diff2dx(fs, ds)
+            double precision, intent(in)  :: fs(box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
+            double precision, intent(out) :: ds(box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
+            double precision              :: gs(box%lo(2):box%hi(2),   &
+                                                box%hlo(1):box%hhi(1))
+            integer                       :: kx, dkx
+            double precision              :: si
+
+
+            call reverse2d_x(fs, gs)
+
+            !Carry out differentiation by wavenumber multiplication:
+            if (0 == box%lo(1)) then
+                ds(:, 0) = zero
+            endif
+
+            do kx = max(1, box%lo(1)), box%hi(1)
+                dkx = min(2 * kx, 2 * (nx - kx))
+                si = merge(1.0d0, -1.0d0, kx >= nwx + 1)
+                ds(:, kx)  = si * hrkx(dkx) * gs(:, kx-1)
+            enddo
+
+            if (mod(nx, 2) .eq. 0) then
+                if (nwx >= box%lo(1) .and. nwx <= box%hi(1)) then
+                    ds(:, nwx) = zero
+                endif
+            endif
+
+        end subroutine diff2dx
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Given fs in spectral space (at least in x & y), this returns dfs/dy
+        ! (partial derivative).  The result is returned in ds, again
+        ! spectral.  Uses exact form of the derivative in spectral space.
+        ! Note: gs must have halo in y due to the reordering algorithm.
+        subroutine diff2dy(fs, ds)
+            double precision, intent(in)  :: fs(box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
+            double precision, intent(out) :: ds(box%lo(2):box%hi(2),   &
+                                                box%lo(1):box%hi(1))
+            double precision              :: gs(box%hlo(2):box%hhi(2), &
+                                                box%lo(1):box%hi(1))
+            integer                       :: ky, dky
+            double precision              :: si
+
+            call reverse2d_y(fs, gs)
+
+            !Carry out differentiation by wavenumber multiplication:
+            if (0 == box%lo(2)) then
+                ds(0, :) = zero
+            endif
+
+            do ky = max(1, box%lo(2)), box%hi(2)
+                dky = min(2 * ky, 2 * (ny - ky))
+                si = merge(1.0d0, -1.0d0, ky >= nwy + 1)
+                ds(ky, :)  = si * hrky(dky) * gs(ky-1, :)
+            enddo
+
+            if (mod(ny, 2) .eq. 0) then
+                if (nwy >= box%lo(2) .and. nwy <= box%hi(2)) then
+                    ds(nwy, :) = zero
+                endif
+            endif
+
+        end subroutine diff2dy
 
 end module sta3dfft
