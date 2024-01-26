@@ -174,7 +174,7 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
-            call parcel_communicate
+            call parcel_communicate(parcels)
 
             call stop_timer(lapl_corr_timer)
 
@@ -252,7 +252,7 @@ module parcel_correction
             !$omp end do
             !$omp end parallel
 
-            call parcel_communicate
+            call parcel_communicate(parcels)
 
             call stop_timer(grad_corr_timer)
 

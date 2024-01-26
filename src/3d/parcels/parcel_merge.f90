@@ -100,7 +100,7 @@ module parcel_merging
                       "...", parcels%total_num
             endif
 #endif
-            call parcel_communicate
+            call parcel_communicate(parcels)
 
             call stop_timer(merge_timer)
 

@@ -11,7 +11,7 @@ module parcel_mpi
     use fields, only : get_index
     use parcel_bc, only : apply_periodic_bc
     use parameters, only : vmin, vcell, nx, ny, nz
-    use parcels_mod, only : parcels
+    use parcel_container, only : pc_type
     implicit none
 
     private
@@ -97,21 +97,23 @@ module parcel_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine parcel_communicate(pindex)
-            integer, optional, intent(in)           :: pindex(:)
+        ! @param[in] pcont is a parcel container
+        subroutine parcel_communicate(pcont, pindex)
+            class(pc_type),    intent(inout) :: pcont
+            integer, optional, intent(in)    :: pindex(:)
 
             ! We only must store the parcel indices (therefore 1) and
             ! also allocate the buffer for invalid parcels. (therefore .true.)
             call allocate_parcel_id_buffers(1, .true.)
 
             ! figure out where parcels go
-            call locate_parcels(pindex)
+            call locate_parcels(pcont, pindex)
 
-            call allocate_parcel_buffers(parcels%attr_num)
+            call allocate_parcel_buffers(pcont%attr_num)
 
-            call communicate_sizes_and_resize
+            call communicate_sizes_and_resize(pcont)
 
-            call communicate_parcels
+            call communicate_parcels(pcont)
 
             call deallocate_parcel_id_buffers
 
@@ -123,11 +125,12 @@ module parcel_mpi
 
         ! Check how many parcels we receive. Adapt the parcel parcel container
         ! if needed.
-        subroutine communicate_sizes_and_resize
-            integer           :: n
-            type(MPI_Request) :: requests(8)
-            type(MPI_Status)  :: recv_status, send_statuses(8)
-            integer           :: n_parcel_recvs(8), total_size
+        subroutine communicate_sizes_and_resize(pcont)
+            class(pc_type),    intent(inout) :: pcont
+            integer                          :: n
+            type(MPI_Request)                :: requests(8)
+            type(MPI_Status)                 :: recv_status, send_statuses(8)
+            integer                          :: n_parcel_recvs(8), total_size
 
             do n = 1, 8
                 call MPI_Isend(n_parcel_sends(n),       &
@@ -167,18 +170,19 @@ module parcel_mpi
             call mpi_check_for_error(cart, &
                 "in MPI_Waitall of parcel_mpi::communicate_sizes_and_resize.")
 
-            total_size = sum(n_parcel_recvs) + parcels%local_num
+            total_size = sum(n_parcel_recvs) + pcont%local_num
 
-            if (total_size >= parcels%max_num) then
+            if (total_size >= pcont%max_num) then
                 total_size = nint(parcel%grow_factor * total_size)
-                call parcels%resize(total_size)
+                call pcont%resize(total_size)
             endif
 
         end subroutine communicate_sizes_and_resize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine communicate_parcels
+        subroutine communicate_parcels(pcont)
+            class(pc_type),           intent(inout) :: pcont
             integer,          dimension(:), pointer :: pid
             double precision, dimension(:), pointer :: send_buf
             double precision, allocatable           :: recv_buf(:)
@@ -191,10 +195,10 @@ module parcel_mpi
             do n = 1, 8
                 call get_parcel_buffer_ptr(n, pid, send_buf)
 
-                send_size = n_parcel_sends(n) * parcels%attr_num
+                send_size = n_parcel_sends(n) * pcont%attr_num
 
                 if (n_parcel_sends(n) > 0) then
-                    call parcels%pack(pid, n_parcel_sends(n), send_buf)
+                    call pcont%pack(pid, n_parcel_sends(n), send_buf)
                 endif
 
                 call MPI_Isend(send_buf(1:send_size),   &
@@ -232,14 +236,14 @@ module parcel_mpi
                 call mpi_check_for_error(cart, &
                     "in MPI_Recv of parcel_mpi::communicate_parcels.")
 
-                if (mod(recv_size, parcels%attr_num) /= 0) then
+                if (mod(recv_size, pcont%attr_num) /= 0) then
                     call mpi_exit_on_error("parcel_mpi::communicate_parcels: Receiving wrong count.")
                 endif
 
-                recv_count = recv_size / parcels%attr_num
+                recv_count = recv_size / pcont%attr_num
 
                 if (recv_count > 0) then
-                    call parcels%unpack(recv_count, recv_buf)
+                    call pcont%unpack(recv_count, recv_buf)
                 endif
 
                 deallocate(recv_buf)
@@ -255,12 +259,12 @@ module parcel_mpi
 
             ! delete parcel that we sent
             n_total_sends = sum(n_parcel_sends)
-            call parcels%delete(invalid, n_total_sends)
+            call pcont%delete(invalid, n_total_sends)
 
 #ifndef NDEBUG
-            n = parcels%local_num
+            n = pcont%local_num
             call mpi_blocking_reduce(n, MPI_SUM, world)
-            if ((world%rank == world%root) .and. (.not. n == parcels%total_num)) then
+            if ((world%rank == world%root) .and. (.not. n == pcont%total_num)) then
                 call mpi_exit_on_error(&
                     "in parcel_mpi::communicate_parcels: We lost parcels.")
             endif
@@ -269,14 +273,15 @@ module parcel_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine locate_parcels(pindex)
-            integer, optional, intent(in) :: pindex(:)
-            integer                       :: i, j, k, n, nb, m, iv, np, l
+        subroutine locate_parcels(pcont, pindex)
+            class(pc_type),    intent(inout) :: pcont
+            integer, optional, intent(in)    :: pindex(:)
+            integer                          :: i, j, k, n, nb, m, iv, np, l
 
             ! reset the number of sends
             n_parcel_sends(:) = 0
 
-            np = parcels%local_num
+            np = pcont%local_num
 
             if (present(pindex)) then
                 np = size(pindex)
@@ -290,9 +295,9 @@ module parcel_mpi
                     l = pindex(n)
                 endif
 
-                call apply_periodic_bc(parcels%position(:, l))
+                call apply_periodic_bc(pcont%position(:, l))
 
-                call get_index(parcels%position(:, l), i, j, k)
+                call get_index(pcont%position(:, l), i, j, k)
 
                 i = min(max(0, i), nx-1)
                 j = min(max(0, j), ny-1)

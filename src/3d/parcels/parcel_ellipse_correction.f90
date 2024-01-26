@@ -19,6 +19,7 @@ module surface_parcel_correction
     use mpi_layout, only : box
     use constants
     use parameters, only : acelli, nx, ny, dx, dxi, nz
+    use parcel_mpi, only : parcel_communicate
 !     use timer, only : start_timer, stop_timer
     use fields, only : volg
 
@@ -76,8 +77,7 @@ module surface_parcel_correction
         !$omp end do
         !$omp end parallel
 
-        !FIXME
-!         call parcel_communicate
+        call parcel_communicate(surf_parcels)
 
     end subroutine m_apply_laplace
 
@@ -143,8 +143,7 @@ module surface_parcel_correction
         !$omp end do
         !$omp end parallel
 
-        !FIXME
-!         call parcel_communicate
+        call parcel_communicate(surf_parcels)
 
     end subroutine m_apply_gradient
 

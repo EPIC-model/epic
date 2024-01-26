@@ -192,7 +192,7 @@ module ls_rk
             call stop_timer(rk_timer)
 
             if (step == n_stages) then
-                call parcel_communicate
+                call parcel_communicate(parcels)
                return
             endif
 
@@ -206,7 +206,7 @@ module ls_rk
             enddo
             !$omp end parallel do
 
-            call parcel_communicate
+            call parcel_communicate(parcels)
 
             call stop_timer(rk_timer)
 

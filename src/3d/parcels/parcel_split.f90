@@ -177,7 +177,7 @@ module parcel_split_mod
             ! send the invalid parcels to the proper MPI process;
             ! delete them on *this* MPI process and
             ! apply periodic boundary condition
-            call parcel_communicate(invalid)
+            call parcel_communicate(parcels, invalid)
 
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
             if (verbose .and. (world%rank == world%root)) then
