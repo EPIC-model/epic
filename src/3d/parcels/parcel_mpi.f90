@@ -104,7 +104,7 @@ module parcel_mpi
 
             ! We only must store the parcel indices (therefore 1) and
             ! also allocate the buffer for invalid parcels. (therefore .true.)
-            call allocate_parcel_id_buffers(1, .true.)
+            call allocate_parcel_id_buffers(pcont, 1, .true.)
 
             ! figure out where parcels go
             call locate_parcels(pcont, pindex)
@@ -345,10 +345,11 @@ module parcel_mpi
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine allocate_parcel_id_buffers(n_ids, l_invalid)
-            integer, intent(in) :: n_ids
-            logical, intent(in) :: l_invalid
-            integer             :: nc, ub, n_max
+        subroutine allocate_parcel_id_buffers(pcont, n_ids, l_invalid)
+            class(pc_type), intent(in) :: pcont
+            integer,        intent(in) :: n_ids
+            logical,        intent(in) :: l_invalid
+            integer                    :: nc, ub, n_max
 
             n_parcel_sends = 0
 
@@ -356,21 +357,21 @@ module parcel_mpi
             ub = ceiling(vcell / vmin)
 
             ! number of cells sharing with north and south neighbour
-            nc = (box%hi(1) - box%lo(1) + 1) * (nz + 2)
+            nc = (box%hi(1) - box%lo(1) + 1) * (pcont%nz + 2)
             n_max = 2 * nc
 
             allocate(north_pid(nc * ub * n_ids))
             allocate(south_pid(nc * ub * n_ids))
 
             ! number of cells sharing with west and east neighbour
-            nc = (box%hi(2) - box%lo(2) + 1) * (nz + 2)
+            nc = (box%hi(2) - box%lo(2) + 1) * (pcont%nz + 2)
             n_max = n_max + 2 * nc
 
             allocate(west_pid(nc * ub * n_ids))
             allocate(east_pid(nc * ub * n_ids))
 
             ! number of cells sharing with corner neighbours
-            nc = nz + 2
+            nc = pcont%nz + 2
             n_max = n_max + 4 * nc
 
             allocate(northwest_pid(nc * ub * n_ids))

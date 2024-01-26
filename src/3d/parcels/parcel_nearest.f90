@@ -247,7 +247,7 @@ module parcel_nearest
             ! We must store the parcel index and the merge index *m*
             ! of each small parcel. We do not need to allocate the
             ! invalid buffer, therefore the second argument is .false.
-            call allocate_parcel_id_buffers(2, .false.)
+            call allocate_parcel_id_buffers(parcels, 2, .false.)
 
             !---------------------------------------------------------------------
             ! Initialise search:

@@ -104,6 +104,9 @@ module parcel_ellipse
 
             call this%init
 
+            ! these parcels only are in one vertical grid cell
+            this%nz = 1
+
         end subroutine parcel_ellipse_setup
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

@@ -22,6 +22,8 @@ module parcel_container
             integer :: local_num    ! local number of parcels
             integer :: total_num    ! global number of parcels (over all MPI ranks)
             integer :: max_num      ! capacity per attribute, i.e. maximum number of parcels
+            integer :: nz           ! number of grid cells this parcel container contributes to
+                                    ! (used for the MPI communication)
 
             ! ---------------------------------------------------------------------
             !   Parcel attributes (common to all types):

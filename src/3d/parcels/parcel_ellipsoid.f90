@@ -9,6 +9,7 @@
 ! =============================================================================
 module parcel_ellipsoid
     use parcel_container, only : pc_type
+    use parameters, only : nz
     use dimensions, only : I_X, I_Y, I_Z
     use constants, only : fpi   &
                         , fpi4  &
@@ -119,6 +120,9 @@ module parcel_ellipsoid
             this%IDX_ELL_VTAU = i + 19
 
             this%attr_num = this%IDX_ELL_VTAU + 2
+
+            ! these parcels are in all vertical grid cells
+            this%nz = nz
 
         end subroutine parcel_ellipsoid_setup
 
