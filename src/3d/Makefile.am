@@ -35,6 +35,7 @@ epic3d_SOURCES = 				\
 	parcels/parcel_init.f90			\
 	inversion/inversion_utils.f90		\
 	inversion/inversion.f90			\
+	parcels/parcel_ellipse_correction.f90	\
 	parcels/parcel_correction.f90		\
 	parcels/parcel_netcdf.f90		\
 	parcels/parcel_diagnostics_netcdf.f90	\

@@ -9,15 +9,17 @@
 !===================================================================
 
 module surface_parcel_correction
-    use sta2dfft, only : ptospc, spctop, xderiv, yderiv
-    use inversion_utils, only : lapinv, hrkx, hrky, xfactors, yfactors, xtrig, ytrig
-    use surface_parcel_interpl, only : bilinear, ngp, do_area2grid
+    use sta3dfft, only : fft2d, ifft2d, diff2dx, diff2dy
+    use inversion_utils, only : lapinv
+    use parcel_ellipse_interpl, only : area2grid
+    use interpl, only : bilinear
+    use parcels_mod
     use parcel_bc
     use omp_lib
+    use mpi_layout, only : box
     use constants
     use parameters, only : acelli, nx, ny, dx, dxi, nz
-    use surface_parcel_container
-    use timer, only : start_timer, stop_timer
+!     use timer, only : start_timer, stop_timer
     use fields, only : volg
 
     implicit none
@@ -51,7 +53,7 @@ module surface_parcel_correction
         type(ellipse_pc_type), intent(inout) :: surf_parcels
         double precision                     :: phi( box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
         double precision                     :: grad(box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), 2)
-        double precision                     :: weights(0:1, 0:1, 0:1)
+        double precision                     :: weights(0:1, 0:1)
         integer                              :: n, l, is, js
 
         ! form divergence field * dt and store in phi temporarily:
@@ -63,7 +65,7 @@ module surface_parcel_correction
         ! Increment parcel positions using (ud, vd) field:
         !$omp parallel default(shared)
         !$omp do private(n, l, is, js, weights)
-        do n = 1, n_par
+        do n = 1, surf_parcels%local_num
             call bilinear(surf_parcels%position(:, n), is, js, weights)
 
             do l = 1, 2
@@ -75,7 +77,7 @@ module surface_parcel_correction
         !$omp end parallel
 
         !FIXME
-        call parcel_communicate
+!         call parcel_communicate
 
     end subroutine m_apply_laplace
 
@@ -108,7 +110,7 @@ module surface_parcel_correction
         phi = volg(iz, :, :) * acelli - one
 
         !$omp parallel default(shared)
-        !$omp do private(n, is, js, weights, x1_fpos, x2_fpos, shift_x1, shift_x2, lim_x1, lim_x2)
+        !$omp do private(n, is, js, weights, xs, ys, xf, yf, xfc, yfc, lim_x, lim_y)
         do n = 1, surf_parcels%local_num
 
             call bilinear(surf_parcels%position(:, n), is, js, weights)
@@ -142,13 +144,12 @@ module surface_parcel_correction
         !$omp end parallel
 
         !FIXME
-        call parcel_communicate
+!         call parcel_communicate
 
     end subroutine m_apply_gradient
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    !FIXME
     ! Computes a divergent flow field (ud, vd) = grad(phi) where
     ! Lap(phi) = div (given).
     subroutine m_diverge(div, grad)
@@ -160,22 +161,22 @@ module surface_parcel_correction
 
         !------------------------------------------------------------------
         ! Convert phi to spectral space as ds:
-        call ptospc(nx, ny, div, ds, xfactors, yfactors, xtrig, ytrig)
+        call fft2d(div, ds)
 
         ! Invert Laplace's operator spectrally
         call lapinv(ds)
 
         ! Compute x derivative spectrally:
-        call xderiv(nx, ny, hrkx, ds, us)
+        call diff2dx(ds, us)
 
         ! Reverse FFT to define x velocity component ud:
-        call spctop(nx, ny, us, ud, xfactors, yfactors, xtrig, ytrig)
+        call ifft2d(us, grad(:, :, 1))
 
         ! Compute y derivative spectrally:
-        call yderiv(nx, ny, hrky, ds, vs)
+        call diff2dy(ds, vs)
 
         ! Reverse FFT to define y velocity component vd:
-        call spctop(nx, ny, vs, vd, xfactors, yfactors, xtrig, ytrig)
+        call ifft2d(us, grad(:, :, 2))
 
     end subroutine m_diverge
 
