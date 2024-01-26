@@ -14,6 +14,7 @@ module parcel_damping
     use fields
     use omp_lib
     use options, only : damping
+    use interpl, only : trilinear
     use inversion_mod, only : vor2vel
     use rk_utils, only : get_strain_magnitude_field
     implicit none

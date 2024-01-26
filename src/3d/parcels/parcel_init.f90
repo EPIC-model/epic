@@ -6,7 +6,7 @@ module parcel_init
     use constants, only : zero, two, one, f12, f13, f23, f14
     use parcels_mod, only : parcels
     use parcel_split_mod, only : parcel_split
-    use parcel_interpl, only : trilinear
+    use interpl, only : trilinear
     use parameters, only : dx, vcell, ncell,            &
                            extent, lower, nx, ny, nz,   &
                            max_num_parcels

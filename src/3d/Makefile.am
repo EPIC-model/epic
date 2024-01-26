@@ -10,6 +10,7 @@ epic3d_SOURCES = 				\
 	utils/dimensions.f90			\
 	utils/options.f90			\
 	utils/parameters.f90			\
+	utils/interpl.f90			\
 	fields/field_mpi.f90			\
 	fields/fields.f90			\
 	fields/field_ops.f90			\
@@ -23,13 +24,13 @@ epic3d_SOURCES = 				\
 	parcels/parcel_ellipse_init.f90		\
 	parcels/parcel_ellipse_split.f90	\
 	parcels/parcels.f90			\
-	parcels/parcel_ellipse_interpl.f90	\
 	parcels/parcel_bc.f90                   \
 	parcels/parcel_mpi.f90			\
 	parcels/parcel_nearest.f90		\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\
 	parcels/parcel_diagnostics.f90		\
+	parcels/parcel_ellipse_interpl.f90	\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_init.f90			\
 	inversion/inversion_utils.f90		\

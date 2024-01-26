@@ -5,7 +5,7 @@
 module bndry_fluxes
     use constants, only : zero, two, f13
     use parameters, only : dx, lower, dxi, nx, ny
-    use parcel_interpl, only : bilinear
+    use interpl, only : bilinear
     use parcels_mod, only : parcels
     use netcdf_reader
     use omp_lib
