@@ -36,6 +36,8 @@ module parcel_ellipse
             procedure          :: get_ab => parcel_ellipse_get_ab
             procedure          :: get_area => parcel_ellipse_get_area
             procedure          :: get_aspect_ratio => parcel_ellipse_get_aspect_ratio
+            procedure          :: get_local_cell_index => parcel_ellipse_get_local_cell_index
+            procedure          :: is_small => parcel_ellipse_is_small
 
             !------------------------------------------------------------------
             ! Procedures in submodules:
@@ -43,6 +45,23 @@ module parcel_ellipse
             procedure          :: split => parcel_ellipse_split
 
     end type ellipse_pc_type
+
+    !--------------------------------------------------------------------------
+    ! Define interface for submodule routines:
+    interface
+        ! Implemented in parcel_ellipse_init
+        module subroutine parcel_ellipse_get_local_cell_index(this, n, ix, iy, iz)
+            class(ellipse_pc_type), intent(in)  :: this
+            integer,                intent(in)  :: n
+            integer,                intent(out) :: ix, iy, iz
+        end subroutine parcel_ellipse_get_local_cell_index
+
+        module logical function parcel_ellipse_is_small(this, n)
+            class(ellipse_pc_type), intent(in)  :: this
+            integer,                intent(in)  :: n
+        end function parcel_ellipse_is_small
+
+    end  interface
 
 
     !--------------------------------------------------------------------------
@@ -66,11 +85,11 @@ module parcel_ellipse
             integer,                intent(in)    :: num
             integer                               :: i
 
-            call this%pc_type%alloc(num=num,    &
-                                    n_pos=2,    &
-                                    n_vec=3,    &
-                                    n_shape=3,  &   ! the flow is compressible
-                                    n_strain=4)
+            call this%alloc(num=num,    &
+                            n_pos=2,    &
+                            n_vec=3,    &
+                            n_shape=3,  &   ! the flow is compressible
+                            n_strain=4)
 
             allocate(this%area(num))
 
@@ -114,7 +133,7 @@ module parcel_ellipse
         subroutine parcel_ellipse_dealloc(this)
             class(ellipse_pc_type), intent(inout) :: this
 
-            call this%pc_type%dealloc
+            call this%dealloc
 
             if (.not. allocated(this%area)) then
                 return
@@ -131,7 +150,7 @@ module parcel_ellipse
             integer,                intent(in)    :: n, m
 
             ! Call parent class subroutine
-            call this%pc_type%replace(n, m)
+            call this%replace(n, m)
 
             this%area(n) = this%area(m)
 
@@ -144,7 +163,7 @@ module parcel_ellipse
             integer,                intent(in)    :: new_size
 
             ! Call parent class subroutine
-            call this%pc_type%resize(new_size)
+            call this%resize(new_size)
 
             call resize_array(this%area, new_size, n_copy=this%local_num)
 
@@ -158,7 +177,7 @@ module parcel_ellipse
             double precision,       intent(out) :: buffer(this%attr_num)
 
             ! Call parent class subroutine
-            call this%pc_type%serialize(n, buffer)
+            call this%serialize(n, buffer)
 
             buffer(this%IDX_AREA) = this%area(n)
 
@@ -172,7 +191,7 @@ module parcel_ellipse
             double precision,       intent(in)    :: buffer(this%attr_num)
 
             ! Call parent class subroutine
-            call this%pc_type%deserialize(n, buffer)
+            call this%deserialize(n, buffer)
 
             this%area(n) = buffer(this%IDX_AREA)
 

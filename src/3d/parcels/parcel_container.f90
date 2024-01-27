@@ -14,7 +14,7 @@ module parcel_container
     integer :: resize_timer
 
     ! Parcel container type
-    type :: pc_type
+    type, abstract :: pc_type
 
             ! number of  parcel attributes
             ! (components are counted individually, e.g. position counts as 3 attributes)
@@ -83,8 +83,25 @@ module parcel_container
             procedure :: pack => parcel_pack
             procedure :: unpack => parcel_unpack
             procedure :: delete => parcel_delete
+            procedure(local_cell_index), deferred :: get_local_cell_index
+            procedure(parcel_is_small), deferred :: is_small
 
     end type pc_type
+
+        interface
+            subroutine local_cell_index(this, n, ix, iy, iz)
+                import :: pc_type
+                class(pc_type), intent(in)  :: this
+                integer,        intent(in)  :: n
+                integer,        intent(out) :: ix, iy, iz
+            end subroutine local_cell_index
+
+            logical function parcel_is_small(this, n)
+                import :: pc_type
+                class(pc_type), intent(in) :: this
+                integer,        intent(in) :: n
+            end function parcel_is_small
+        end interface
 
     contains
 

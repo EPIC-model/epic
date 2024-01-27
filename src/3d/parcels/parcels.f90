@@ -1,4 +1,5 @@
 module parcels_mod
+    use parcel_container, only : pc_type
     use parcel_ellipsoid, only : ellipsoid_pc_type
     use parcel_ellipse, only : ellipse_pc_type
 

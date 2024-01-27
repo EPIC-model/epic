@@ -13,12 +13,12 @@
 !==============================================================================
 module parcel_nearest
     use constants, only : zero
-    use parcels_mod, only : parcels
+    use parcels_mod
     use parcel_ops, only : get_delx &
                          , get_dely
     use fields, only : get_index
     use parameters, only : dx, dxi, vcell, hli, lower, extent       &
-                         , ncell, nx, ny, nz, vmin, max_num_parcels
+                         , ncell, nx, ny, nz, max_num_parcels
     use options, only : parcel
     use mpi_timer, only : start_timer, stop_timer
     use mpi_environment
@@ -95,7 +95,9 @@ module parcel_nearest
 
     contains
 
-        subroutine nearest_allocate
+        subroutine nearest_allocate(max_num_parcels)
+            integer, intent(in) :: max_num_parcels
+
             if (.not. allocated(nppc)) then
                 allocate(nppc(box%halo_ncell))
                 allocate(kc1(box%halo_ncell))
@@ -227,27 +229,28 @@ module parcel_nearest
         !   - isma, inva and iclo must be filled contiguously
         !   - parcel indices in isma cannot be in iclo, and vice-versa
         !   - the m-th entry in isma relates to the m-th entry in iclo
-        subroutine find_nearest(isma, iclo, inva, n_local_small, n_invalid)
-            integer, allocatable, intent(out) :: isma(:)
-            integer, allocatable, intent(out) :: iclo(:)
-            integer, allocatable, intent(out) :: inva(:)
-            integer,              intent(out) :: n_local_small
-            integer,              intent(out) :: n_invalid
-            integer                           :: n_global_small
-            integer                           :: ijk, n, k, j
-            integer, allocatable              :: rclo(:)    ! MPI rank of closest parcel
-            double precision, allocatable     :: dclo(:)    ! distance to closest parcel
-            logical                           :: l_no_small ! if *this* rank has no local and no remote small
-                                                            ! parcels
+        subroutine find_nearest(pcont, isma, iclo, inva, n_local_small, n_invalid)
+            class(pc_type),       intent(inout) :: pcont
+            integer, allocatable, intent(out)   :: isma(:)
+            integer, allocatable, intent(out)   :: iclo(:)
+            integer, allocatable, intent(out)   :: inva(:)
+            integer,              intent(out)   :: n_local_small
+            integer,              intent(out)   :: n_invalid
+            integer                             :: n_global_small
+            integer                             :: ijk, n, k, j
+            integer, allocatable                :: rclo(:)    ! MPI rank of closest parcel
+            double precision, allocatable       :: dclo(:)    ! distance to closest parcel
+            logical                             :: l_no_small ! if *this* rank has no local and no remote small
+                                                              ! parcels
 
             call start_timer(merge_nearest_timer)
 
-            call nearest_allocate
+            call nearest_allocate(pcont%max_num)
 
             ! We must store the parcel index and the merge index *m*
             ! of each small parcel. We do not need to allocate the
             ! invalid buffer, therefore the second argument is .false.
-            call allocate_parcel_id_buffers(parcels, 2, .false.)
+            call allocate_parcel_id_buffers(pcont, 2, .false.)
 
             !---------------------------------------------------------------------
             ! Initialise search:
@@ -263,11 +266,11 @@ module parcel_nearest
 
             ! Bin parcels in cells:
             ! Form list of small parcels:
-            do n = 1, parcels%local_num
+            do n = 1, pcont%local_num
 
-                call parcel_to_local_cell_index(n)
+                call parcel_to_local_cell_index(pcont, n)
 
-                if (parcels%volume(n) < vmin) then
+                if (pcont%is_small(n)) then
                     n_local_small = n_local_small + 1
 
                     ! If a small parcel is in a boundary cell, a duplicate must
@@ -301,7 +304,7 @@ module parcel_nearest
             ! in boundary region to neighbours. We only need to send the position
             ! as this is the only attribute needed to figure out with whom a parcel
             ! might merge.
-            call send_small_parcel_bndry_info
+            call send_small_parcel_bndry_info(pcont)
 
             ! There are 4 cases:
             !   - n_local_small = 0 and n_remote_small = 0 --> This rank has no small parcels.
@@ -336,13 +339,13 @@ module parcel_nearest
 
                 kc2 = kc1 - 1
                 j = 0
-                do n = 1, parcels%local_num + n_remote_small
+                do n = 1, pcont%local_num + n_remote_small
                     ijk = loca(n)
                     k = kc2(ijk) + 1
                     node(k) = n
                     kc2(ijk) = k
 
-                    if (parcels%volume(n) < vmin) then
+                    if (pcont%is_small(n)) then
                         j = j + 1
                         isma(j) = n
                     endif
@@ -395,7 +398,7 @@ module parcel_nearest
             ! necessary remote parcels to *this* MPI rank.
             ! Note: It cannot happen that the closest parcel is a small parcel
             !       on another MPI rank that is sent elsewhere.
-            call gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma, inva)
+            call gather_remote_parcels(pcont, n_local_small, n_invalid, rclo, iclo, isma, inva)
 
             !------------------------------------------------------------------
             ! Sanity check: Indices of close parcels must be smaller equal to the
@@ -424,7 +427,7 @@ module parcel_nearest
         ! If a parcel communication happens across a periodic boundary, we must
         ! shift the parcel position such that it ends up in the sub-domain.
         subroutine apply_periodic_shift(pos, dir)
-            double precision, intent(inout) :: pos(3)
+            double precision, intent(inout) :: pos(:)
             integer,          intent(in)    :: dir
             logical                         :: l_x_edge, l_y_edge
             integer                         :: ix, iy
@@ -469,7 +472,7 @@ module parcel_nearest
         ! We must correct this by shifting the parcel position such that it ends
         ! up in the sub-domain.
         subroutine handle_periodic_edge_parcels(pos)
-            double precision, intent(inout) :: pos(3)
+            double precision, intent(inout) :: pos(:)
             integer                         :: ix, iy, iz
 
             ! global grid index in x and y
@@ -488,17 +491,16 @@ module parcel_nearest
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        !!@pre Assumes a parcel is in the local domain including halo cells
+        !@pre Assumes a parcel is in the local domain including halo cells
         !      (in x and y).
-        subroutine parcel_to_local_cell_index(n)
-            integer, intent(in)  :: n
-            integer              :: ix, iy, iz, ijk
+        subroutine parcel_to_local_cell_index(pcont, n)
+            class(pc_type), intent(inout) :: pcont
+            integer,        intent(in)    :: n
+            integer                       :: ix, iy, iz, ijk
 
-            call handle_periodic_edge_parcels(parcels%position(:, n))
+            call handle_periodic_edge_parcels(pcont%position(:, n))
 
-            ix =     int(dxi(1) * (parcels%position(1, n) - box%halo_lower(1)))
-            iy =     int(dxi(2) * (parcels%position(2, n) - box%halo_lower(2)))
-            iz = min(int(dxi(3) * (parcels%position(3, n) - box%lower(3))), nz-1)
+            call pcont%get_local_cell_index(n, ix, iy, iz)
 
             ! Cell index of parcel:
             !   This runs from 1 to halo_ncell where
@@ -508,7 +510,7 @@ module parcel_nearest
 #ifndef NEDBUG
             if (ijk < 1) then
                call mpi_exit_on_error(&
-                        'in in parcel_to_local_cell_index: Parcel not in local domain.')
+                        'in parcel_to_local_cell_index: Parcel not in local domain.')
             endif
 #endif
 
@@ -1279,7 +1281,8 @@ module parcel_nearest
 
         ! Send position of small parcels in boundary region, their local index
         ! in the parcel container and their merge index (*m*) to neighbours
-        subroutine send_small_parcel_bndry_info
+        subroutine send_small_parcel_bndry_info(pcont)
+            class(pc_type),           intent(inout) :: pcont
             integer,          dimension(:), pointer :: send_ptr
             double precision, dimension(:), pointer :: send_buf
             double precision, allocatable           :: recv_buf(:)
@@ -1402,11 +1405,11 @@ module parcel_nearest
                         ! We must also assign incoming small parcels to cells
                         ! Note: We must apply a shift for parcels communicated
                         !       across a periodic boundary.
-                        call apply_periodic_shift(parcels%position(:, k), &
+                        call apply_periodic_shift(pcont%position(:, k), &
                                                   RECV_NEIGHBOUR_TAG(n))
 
                         ! Now we can safely assign the local cell index:
-                        call parcel_to_local_cell_index(k)
+                        call parcel_to_local_cell_index(pcont, k)
                     enddo
                     n_neighbour_small(n) = n_neighbour_small(n) + recv_count
                 endif
@@ -1436,7 +1439,8 @@ module parcel_nearest
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine gather_remote_parcels(n_local_small, n_invalid, rclo, iclo, isma, inva)
+        subroutine gather_remote_parcels(pcont, n_local_small, n_invalid, rclo, iclo, isma, inva)
+            class(pc_type),              intent(inout) :: pcont
             integer,                     intent(inout) :: n_local_small
             integer,                     intent(inout) :: n_invalid
             integer,                     intent(inout) :: rclo(:)       ! MPI rank of closest parcel
@@ -1449,7 +1453,7 @@ module parcel_nearest
             type(MPI_Status)                           :: recv_status, send_statuses(8)
             integer                                    :: recv_count
             integer                                    :: recv_size, send_size
-            double precision                           :: buffer(parcels%attr_num)
+            double precision                           :: buffer(pcont%attr_num)
             integer                                    :: m, rc, ic, is, n, i, j, k, iv
             integer                                    :: n_entries
             integer                                    :: n_registered(8)
@@ -1470,7 +1474,7 @@ module parcel_nearest
 
             ! We must send all parcel attributes (attr_num) plus
             ! the index of the close parcel ic (1)
-            n_entries = parcels%attr_num + 1
+            n_entries = pcont%attr_num + 1
             n_registered = n_parcel_sends * n_entries
             call allocate_mpi_buffers(n_registered)
 
@@ -1493,7 +1497,7 @@ module parcel_nearest
 
                     n_registered(n) = n_registered(n) + 1
 
-                    call parcels%serialize(is, buffer)
+                    call pcont%serialize(is, buffer)
                     j = n_entries * n_registered(n)
                     i = j - n_entries + 1
                     send_buf(i:j-1) = buffer
@@ -1573,20 +1577,20 @@ module parcel_nearest
                     do k = 1, recv_count
                         ! We receive a small parcel;
                         ! append it to the container with index
-                        ! "parcels%local_num+1"
-                        parcels%local_num = parcels%local_num + 1
+                        ! "pcont%local_num+1"
+                        pcont%local_num = pcont%local_num + 1
                         j = n_entries * k
                         i = j - n_entries + 1
                         buffer = recv_buf(i:j-1)
-                        call parcels%deserialize(parcels%local_num, buffer)
+                        call pcont%deserialize(pcont%local_num, buffer)
 
                         ! Add the small parcel to isma and inva, and
                         ! its closest parcel to iclo
                         m = m + 1
                         iclo(m) = nint(recv_buf(j))
-                        isma(m) = parcels%local_num
+                        isma(m) = pcont%local_num
                         iv = iv + 1
-                        inva(iv) = parcels%local_num
+                        inva(iv) = pcont%local_num
                     enddo
                     ! The last value of *m* is our new number of
                     ! small parcels. However, this still includes
@@ -1609,9 +1613,9 @@ module parcel_nearest
             call deallocate_mpi_buffers
 
 #ifndef NDEBUG
-            n = parcels%local_num - n_invalid
+            n = pcont%local_num - n_invalid
             call mpi_blocking_reduce(n, MPI_SUM, world)
-            if ((world%rank == world%root) .and. (.not. n == parcels%total_num)) then
+            if ((world%rank == world%root) .and. (.not. n == pcont%total_num)) then
                 call mpi_exit_on_error(&
                     "in parcel_nearest::gather_remote_parcels: We lost parcels.")
             endif

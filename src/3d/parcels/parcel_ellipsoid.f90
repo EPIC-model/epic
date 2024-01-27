@@ -56,8 +56,27 @@ module parcel_ellipsoid
             procedure          :: get_abc => parcel_ellipsoid_get_abc
             procedure          :: get_aspect_ratio => parcel_ellipsoid_get_aspect_ratio
             procedure, private :: get_angles => parcel_ellipsoid_get_angles
+            procedure          :: get_local_cell_index => parcel_ellipsoid_get_local_cell_index
+            procedure          :: is_small => parcel_ellipsoid_is_small
 
     end type ellipsoid_pc_type
+
+    !--------------------------------------------------------------------------
+    ! Define interface for submodule routines:
+    interface
+        ! Implemented in parcel_ellipse_init
+        module subroutine parcel_ellipsoid_get_local_cell_index(this, n, ix, iy, iz)
+            class(ellipsoid_pc_type), intent(in)  :: this
+            integer,                  intent(in)  :: n
+            integer,                  intent(out) :: ix, iy, iz
+        end subroutine parcel_ellipsoid_get_local_cell_index
+
+        module logical function parcel_ellipsoid_is_small(this, n)
+            class(ellipsoid_pc_type), intent(in)  :: this
+            integer,                  intent(in)  :: n
+        end function parcel_ellipsoid_is_small
+
+    end  interface
 
 
     integer, parameter :: I_B11 = 1 & ! index for B11 matrix component
@@ -82,11 +101,11 @@ module parcel_ellipsoid
             integer,                  intent(in)    :: num
             integer                                 :: i
 
-            call this%pc_type%alloc(num=num,    &
-                                    n_pos=3,    &
-                                    n_vec=3,    &
-                                    n_shape=5,  &
-                                    n_strain=5)
+            call this%alloc(num=num,    &
+                            n_pos=3,    &
+                            n_vec=3,    &
+                            n_shape=5,  &
+                            n_strain=5)
 
             allocate(this%Vetas(3, num))
             allocate(this%Vtaus(3, num))
@@ -131,7 +150,7 @@ module parcel_ellipsoid
         subroutine parcel_ellipsoid_dealloc(this)
             class(ellipsoid_pc_type), intent(inout) :: this
 
-            call this%pc_type%dealloc
+            call this%dealloc
 
             if (.not. allocated(this%Vetas)) then
                 return
@@ -149,7 +168,7 @@ module parcel_ellipsoid
             integer,                  intent(in)    :: n, m
 
             ! Call parent class subroutine
-            call this%pc_type%replace(n, m)
+            call this%replace(n, m)
 
             this%Vetas(:, n) = this%Vetas(:, m)
             this%Vtaus(:, n) = this%Vtaus(:, m)
@@ -163,7 +182,7 @@ module parcel_ellipsoid
             integer,                  intent(in)    :: new_size
 
             ! Call parent class subroutine
-            call this%pc_type%resize(new_size)
+            call this%resize(new_size)
 
             call resize_array(this%Vetas, new_size, n_copy=this%local_num)
             call resize_array(this%Vtaus, new_size, n_copy=this%local_num)
@@ -178,7 +197,7 @@ module parcel_ellipsoid
             double precision,         intent(out) :: buffer(this%attr_num)
 
             ! Call parent class subroutine
-            call this%pc_type%serialize(n, buffer)
+            call this%serialize(n, buffer)
 
             buffer(this%IDX_ELL_VETA:this%IDX_ELL_VETA+2) = this%Vetas(:, n)
             buffer(this%IDX_ELL_VTAU:this%IDX_ELL_VTAU+2) = this%Vtaus(:, n)
@@ -193,7 +212,7 @@ module parcel_ellipsoid
             double precision,         intent(in)    :: buffer(this%attr_num)
 
             ! Call parent class subroutine
-            call this%pc_type%deserialize(n, buffer)
+            call this%deserialize(n, buffer)
 
             this%Vetas(:, n) = buffer(this%IDX_ELL_VETA:this%IDX_ELL_VETA+2)
             this%Vtaus(:, n) = buffer(this%IDX_ELL_VTAU:this%IDX_ELL_VTAU+2)

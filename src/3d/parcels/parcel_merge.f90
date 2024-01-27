@@ -56,7 +56,7 @@ module parcel_merging
 #endif
 
             ! find parcels to merge
-            call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+            call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
 
             call start_timer(merge_timer)
 
