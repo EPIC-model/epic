@@ -9,7 +9,7 @@
 ! =============================================================================
 module parcel_ellipsoid
     use parcel_container, only : pc_type
-    use parameters, only : nz
+    use parameters, only : nz, vmin
     use dimensions, only : I_X, I_Y, I_Z
     use constants, only : fpi   &
                         , fpi4  &
@@ -56,28 +56,13 @@ module parcel_ellipsoid
             procedure          :: get_abc => parcel_ellipsoid_get_abc
             procedure          :: get_aspect_ratio => parcel_ellipsoid_get_aspect_ratio
             procedure, private :: get_angles => parcel_ellipsoid_get_angles
-            procedure          :: get_local_cell_index => parcel_ellipsoid_get_local_cell_index
             procedure          :: is_small => parcel_ellipsoid_is_small
+            procedure          :: get_z_position => parcel_ellipsoid_get_z_position
+            procedure          :: get_position => parcel_ellipsoid_get_position
+            procedure          :: set_position => parcel_ellipsoid_set_position
+            procedure          :: set_volume => parcel_ellipsoid_set_volume
 
     end type ellipsoid_pc_type
-
-    !--------------------------------------------------------------------------
-    ! Define interface for submodule routines:
-    interface
-        ! Implemented in parcel_ellipse_init
-        module subroutine parcel_ellipsoid_get_local_cell_index(this, n, ix, iy, iz)
-            class(ellipsoid_pc_type), intent(in)  :: this
-            integer,                  intent(in)  :: n
-            integer,                  intent(out) :: ix, iy, iz
-        end subroutine parcel_ellipsoid_get_local_cell_index
-
-        module logical function parcel_ellipsoid_is_small(this, n)
-            class(ellipsoid_pc_type), intent(in)  :: this
-            integer,                  intent(in)  :: n
-        end function parcel_ellipsoid_is_small
-
-    end  interface
-
 
     integer, parameter :: I_B11 = 1 & ! index for B11 matrix component
                         , I_B12 = 2 & ! index for B12 matrix component
@@ -458,5 +443,60 @@ module parcel_ellipsoid
             angles(I_Y) = dasin(evec(I_Z, I_Z))
 
         end function parcel_ellipsoid_get_angles
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        pure function parcel_ellipsoid_is_small(this, n) result(l_small)
+            class(ellipsoid_pc_type), intent(in) :: this
+            integer,                  intent(in) :: n
+            logical                              :: l_small
+
+            l_small = (this%volume(n) < vmin)
+
+        end function parcel_ellipsoid_is_small
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        pure function parcel_ellipsoid_get_z_position(this, n) result(z_pos)
+            class(ellipsoid_pc_type), intent(in) :: this
+            integer,                  intent(in) :: n
+            double precision                     :: z_pos
+
+            z_pos = this%position(3, n)
+
+        end function parcel_ellipsoid_get_z_position
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        pure function parcel_ellipsoid_get_position(this, n) result(pos)
+            class(ellipsoid_pc_type), intent(in) :: this
+            integer,                  intent(in) :: n
+            double precision                     :: pos(3)
+
+            pos = this%position(:, n)
+
+        end function parcel_ellipsoid_get_position
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_ellipsoid_set_position(this, n, pos)
+            class(ellipsoid_pc_type), intent(inout) :: this
+            integer,                  intent(in)    :: n
+            double precision,         intent(in)    :: pos(3)
+
+            this%position(:, n) = pos
+
+        end subroutine parcel_ellipsoid_set_position
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_ellipsoid_set_volume(this, n, vol)
+            class(ellipsoid_pc_type), intent(inout) :: this
+            integer,                  intent(in)    :: n
+            double precision,         intent(in)    :: vol
+
+            this%volume(n) = vol
+
+        end subroutine parcel_ellipsoid_set_volume
 
 end module parcel_ellipsoid

@@ -83,24 +83,47 @@ module parcel_container
             procedure :: pack => parcel_pack
             procedure :: unpack => parcel_unpack
             procedure :: delete => parcel_delete
-            procedure(local_cell_index), deferred :: get_local_cell_index
             procedure(parcel_is_small), deferred :: is_small
+            procedure(parcel_get_z_position), deferred :: get_z_position
+            procedure(parcel_get_position), deferred :: get_position
+            procedure(parcel_set_position), deferred :: set_position
+            procedure(parcel_set_volume), deferred :: set_volume
 
     end type pc_type
 
         interface
-            subroutine local_cell_index(this, n, ix, iy, iz)
-                import :: pc_type
-                class(pc_type), intent(in)  :: this
-                integer,        intent(in)  :: n
-                integer,        intent(out) :: ix, iy, iz
-            end subroutine local_cell_index
-
-            logical function parcel_is_small(this, n)
+            logical pure function parcel_is_small(this, n)
                 import :: pc_type
                 class(pc_type), intent(in) :: this
                 integer,        intent(in) :: n
             end function parcel_is_small
+
+            double precision pure function parcel_get_z_position(this, n)
+                import :: pc_type
+                class(pc_type),   intent(in)  :: this
+                integer,          intent(in)  :: n
+            end function parcel_get_z_position
+
+            pure function parcel_get_position(this, n) result(pos)
+                import :: pc_type
+                class(pc_type), intent(in) :: this
+                integer,        intent(in) :: n
+                double precision           :: pos(3)
+            end function parcel_get_position
+
+            subroutine parcel_set_position(this, n, pos)
+                import :: pc_type
+                class(pc_type),   intent(inout) :: this
+                integer,          intent(in)    :: n
+                double precision, intent(in)    :: pos(3)
+            end subroutine parcel_set_position
+
+            subroutine parcel_set_volume(this, n, vol)
+                import :: pc_type
+                class(pc_type),   intent(inout) :: this
+                integer,          intent(in)    :: n
+                double precision, intent(in)    :: vol
+            end subroutine parcel_set_volume
         end interface
 
     contains

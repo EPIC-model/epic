@@ -11,10 +11,14 @@ module parcel_ellipse
                         , f12  &
                         , f14
     use mpi_utils, only : mpi_exit_on_error
+    use parameters, only : amin
     use armanip, only : resize_array
     implicit none
 
     type, extends(pc_type) :: ellipse_pc_type
+
+        double precision :: z_position = 0.0d0 !FIXME
+
         ! ---------------------------------------------------------------------
         ! Additional parcel attributes:
         double precision, allocatable, dimension(:) :: area
@@ -36,8 +40,11 @@ module parcel_ellipse
             procedure          :: get_ab => parcel_ellipse_get_ab
             procedure          :: get_area => parcel_ellipse_get_area
             procedure          :: get_aspect_ratio => parcel_ellipse_get_aspect_ratio
-            procedure          :: get_local_cell_index => parcel_ellipse_get_local_cell_index
             procedure          :: is_small => parcel_ellipse_is_small
+            procedure          :: get_z_position => parcel_ellipse_get_z_position
+            procedure          :: get_position => parcel_ellipse_get_position
+            procedure          :: set_position => parcel_ellipse_set_position
+            procedure          :: set_volume => parcel_ellipse_set_area
 
             !------------------------------------------------------------------
             ! Procedures in submodules:
@@ -45,24 +52,6 @@ module parcel_ellipse
             procedure          :: split => parcel_ellipse_split
 
     end type ellipse_pc_type
-
-    !--------------------------------------------------------------------------
-    ! Define interface for submodule routines:
-    interface
-        ! Implemented in parcel_ellipse_init
-        module subroutine parcel_ellipse_get_local_cell_index(this, n, ix, iy, iz)
-            class(ellipse_pc_type), intent(in)  :: this
-            integer,                intent(in)  :: n
-            integer,                intent(out) :: ix, iy, iz
-        end subroutine parcel_ellipse_get_local_cell_index
-
-        module logical function parcel_ellipse_is_small(this, n)
-            class(ellipse_pc_type), intent(in)  :: this
-            integer,                intent(in)  :: n
-        end function parcel_ellipse_is_small
-
-    end  interface
-
 
     !--------------------------------------------------------------------------
     ! Define interface for submodule routines:
@@ -329,5 +318,63 @@ module parcel_ellipse
             lam = (a2 / this%area(n)) * pi
 
         end function parcel_ellipse_get_aspect_ratio
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        pure function parcel_ellipse_is_small(this, n) result(l_small)
+            class(ellipse_pc_type), intent(in) :: this
+            integer,                intent(in) :: n
+            logical                            :: l_small
+
+            l_small = (this%area(n) < amin)
+
+        end function parcel_ellipse_is_small
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        pure function parcel_ellipse_get_z_position(this, n) result(z_pos)
+            class(ellipse_pc_type), intent(in) :: this
+            integer,                intent(in) :: n
+            double precision                   :: z_pos
+
+            z_pos = this%z_position
+
+        end function parcel_ellipse_get_z_position
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        pure function parcel_ellipse_get_position(this, n) result(pos)
+            class(ellipse_pc_type), intent(in) :: this
+            integer,                intent(in) :: n
+            double precision                   :: pos(3)
+
+            pos(1) = this%position(1, n)
+            pos(2) = this%position(2, n)
+            pos(3) = this%z_position
+
+        end function parcel_ellipse_get_position
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_ellipse_set_position(this, n, pos)
+            class(ellipse_pc_type), intent(inout) :: this
+            integer,                intent(in)    :: n
+            double precision,       intent(in)    :: pos(3)
+
+            this%position(1, n) = pos(1)
+            this%position(2, n) = pos(2)
+
+        end subroutine parcel_ellipse_set_position
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine parcel_ellipse_set_area(this, n, vol)
+            class(ellipse_pc_type), intent(inout) :: this
+            integer,                intent(in)    :: n
+            double precision,       intent(in)    :: vol
+
+            this%area(n) = vol
+
+        end subroutine parcel_ellipse_set_area
 
 end module parcel_ellipse
