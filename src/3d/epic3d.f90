@@ -4,11 +4,11 @@
 program epic3d
     use constants, only : zero
     use mpi_timer
-    use parcels_mod, only : parcels
+    use parcels_mod, only : parcels, parcel_merge
     use parcel_container, only : resize_timer
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
-    use parcel_merging, only : parcel_merge, merge_timer
+!     use parcel_merging, only : parcel_merge!, merge_timer
     use parcel_nearest, only : merge_nearest_timer      &
                              , merge_tree_resolve_timer &
                              , nearest_win_allocate     &
@@ -73,7 +73,7 @@ program epic3d
             call register_timer('par2grid', par2grid_timer)
             call register_timer('grid2par', grid2par_timer)
             call register_timer('parcel split', split_timer)
-            call register_timer('parcel merge', merge_timer)
+!             call register_timer('parcel merge', merge_timer)
             call register_timer('laplace correction', lapl_corr_timer)
             call register_timer('gradient correction', grad_corr_timer)
             call register_timer('net vorticity correction', vort_corr_timer)

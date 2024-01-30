@@ -8,7 +8,7 @@ module parcel_split_mod
 #endif
     use constants, only : pi, three, five, f12, f34
     use parameters, only : amax
-    use parcels_mod, only : parcels
+    use parcels_mod, only : parcels, top_parcels, bot_parcels
     use parcel_bc, only : apply_reflective_bc
     use parcel_mpi, only : parcel_communicate
     use mpi_timer, only : start_timer, stop_timer, timings
@@ -189,6 +189,9 @@ module parcel_split_mod
 
             ! subtract one call as we start and stop the timer twice here:
             timings(split_timer)%n_calls = timings(split_timer)%n_calls - 1
+
+            call bot_parcels%split
+            call top_parcels%split
 
         end subroutine parcel_split
 

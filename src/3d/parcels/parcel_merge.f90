@@ -43,7 +43,7 @@ module parcel_merging
 
         ! Merge small parcels into neighbouring equal-sized parcels or bigger
         ! parcels which are close by.
-        subroutine parcel_merge
+        subroutine parcel_ellipsoid_merge
             integer, allocatable, dimension(:) :: isma
             integer, allocatable, dimension(:) :: iclo
             integer, allocatable, dimension(:) :: inva
@@ -104,7 +104,7 @@ module parcel_merging
 
             call stop_timer(merge_timer)
 
-        end subroutine parcel_merge
+        end subroutine parcel_ellipsoid_merge
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

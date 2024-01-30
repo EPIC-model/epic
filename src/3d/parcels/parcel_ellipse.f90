@@ -46,6 +46,7 @@ module parcel_ellipse
             procedure          :: set_position => parcel_ellipse_set_position
             procedure          :: set_volume => parcel_ellipse_set_area
 
+
             !------------------------------------------------------------------
             ! Procedures in submodules:
             procedure, private :: init => parcel_ellipse_init
@@ -64,6 +65,7 @@ module parcel_ellipse
         module subroutine parcel_ellipse_split(this)
             class(ellipse_pc_type), intent(inout) :: this
         end subroutine parcel_ellipse_split
+
     end  interface
 
     contains
