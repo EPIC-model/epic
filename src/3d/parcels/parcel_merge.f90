@@ -6,7 +6,7 @@ module parcel_merging
     use parcel_nearest
     use parameters, only : vmin
     use constants, only : pi, zero, one, two, five, f13
-    use parcels_mod, only : parcels
+    use parcels_mod, only : parcels, bot_parcels, top_parcels
     use parcel_ops, only : get_delx_across_periodic   &
                          , get_dely_across_periodic
     use options, only : parcel
@@ -18,6 +18,7 @@ module parcel_merging
     use mpi_timer, only : start_timer, stop_timer
     use mpi_environment
     use mpi_collectives, only : mpi_blocking_reduce
+    use parcel_ellipse_merge, only : surface_parcel_merge
     implicit none
 
     integer :: merge_timer
@@ -43,7 +44,7 @@ module parcel_merging
 
         ! Merge small parcels into neighbouring equal-sized parcels or bigger
         ! parcels which are close by.
-        subroutine parcel_ellipsoid_merge
+        subroutine parcel_merge
             integer, allocatable, dimension(:) :: isma
             integer, allocatable, dimension(:) :: iclo
             integer, allocatable, dimension(:) :: inva
@@ -104,7 +105,10 @@ module parcel_merging
 
             call stop_timer(merge_timer)
 
-        end subroutine parcel_ellipsoid_merge
+            call surface_parcel_merge(bot_parcels)
+            call surface_parcel_merge(top_parcels)
+
+        end subroutine parcel_merge
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
