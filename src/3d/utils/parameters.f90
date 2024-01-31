@@ -90,6 +90,9 @@ module parameters
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
 
+    ! maximum number of allowed surface parcels
+    integer, protected :: max_num_surf_parcels
+
     ! specifies if zeta is kept zero on a boundary;
     ! this also makes sure that dzeta/dt = 0 on a boundary
     logical, protected :: l_bndry_zeta_zero(2)
@@ -162,6 +165,8 @@ module parameters
         amax = (f34 * fpi) ** f13 * minval(dx)
 
         max_num_parcels = int(box%halo_ncell * parcel%min_vratio * parcel%size_factor)
+
+        max_num_surf_parcels = int(box%halo_ncell * parcel%min_aratio * parcel%size_factor)
 
     end subroutine update_parameters
 

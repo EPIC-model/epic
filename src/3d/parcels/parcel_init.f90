@@ -4,12 +4,13 @@
 module parcel_init
     use options, only : parcel
     use constants, only : zero, two, one, f12, f13, f23, f14
-    use parcels_mod, only : parcels
+    use parcels_mod, only : parcels, top_parcels, bot_parcels
     use parcel_split_mod, only : parcel_split
-    use interpl, only : trilinear
+    use interpl, only : trilinear, bilinear
     use parameters, only : dx, vcell, ncell,            &
                            extent, lower, nx, ny, nz,   &
-                           max_num_parcels
+                           max_num_parcels,             &
+                           max_num_surf_parcels
     use mpi_timer, only : start_timer, stop_timer
     use omp_lib
     use mpi_environment
@@ -21,13 +22,6 @@ module parcel_init
     implicit none
 
     integer :: init_timer
-
-    integer :: is, js, ks
-
-    ! interpolation weights
-    double precision :: weights(0:1,0:1,0:1)
-
-    private :: weights, is, js, ks
 
     private :: init_refine, init_fill_halo
 
@@ -107,6 +101,9 @@ module parcel_init
 
             call stop_timer(init_timer)
 
+            call bot_parcels%setup(max_num_surf_parcels)
+            call top_parcels%setup(max_num_surf_parcels)
+
         end subroutine parcel_default
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -169,7 +166,9 @@ module parcel_init
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine init_parcels_from_grids
-            integer:: n, l
+            integer          :: n, l, is, js, ks
+            double precision :: weights(0:1, 0:1, 0:1)
+            double precision :: ws(0:1, 0:1)
 
             call start_timer(init_timer)
 
@@ -197,6 +196,55 @@ module parcel_init
             enddo
             !$omp end do
             !$omp end parallel
+
+
+            !------------------------------------------------------------------
+            ! Initialise surface parcels from the grid:
+            !$omp parallel default(shared)
+            !$omp do private(n, l, is, js, ws)
+            do n = 1, bot_parcels%local_num
+
+                ! get interpolation weights and mesh indices
+                call bilinear(bot_parcels%position(:, n), is, js, ws)
+
+                ! loop over grid points which are part of the interpolation
+                do l = 1, 3
+                    parcels%vorticity(l, n) = parcels%vorticity(l, n) &
+                                            + sum(ws * vortg(0, js:js+1, is:is+1, l))
+                enddo
+                parcels%buoyancy(n) = parcels%buoyancy(n) &
+                                    + sum(ws * tbuoyg(0, js:js+1, is:is+1))
+#ifndef ENABLE_DRY_MODE
+                parcels%humidity(n) = parcels%humidity(n) &
+                                    + sum(ws * humg(0, js:js+1, is:is+1))
+#endif
+            enddo
+            !$omp end do
+            !$omp end parallel
+
+
+            !$omp parallel default(shared)
+            !$omp do private(n, l, is, js, ws)
+            do n = 1, top_parcels%local_num
+
+                ! get interpolation weights and mesh indices
+                call bilinear(top_parcels%position(:, n), is, js, ws)
+
+                ! loop over grid points which are part of the interpolation
+                do l = 1, 3
+                    parcels%vorticity(l, n) = parcels%vorticity(l, n) &
+                                            + sum(ws * vortg(nz, js:js+1, is:is+1, l))
+                enddo
+                parcels%buoyancy(n) = parcels%buoyancy(n) &
+                                    + sum(ws * tbuoyg(nz, js:js+1, is:is+1))
+#ifndef ENABLE_DRY_MODE
+                parcels%humidity(n) = parcels%humidity(n) &
+                                    + sum(ws * humg(nz, js:js+1, is:is+1))
+#endif
+            enddo
+            !$omp end do
+            !$omp end parallel
+
 
             call stop_timer(init_timer)
 
