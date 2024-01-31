@@ -151,7 +151,9 @@ module parcel_correction
             call vol2grid(l_reuse)
 
             ! form divergence field
-            phi = volg * vcelli - one
+            phi(1:nz-1, :, :) = volg(1:nz-1, :, :) * vcelli - one
+            phi(0,      :, :) = zero
+            phi(nz,     :, :) = zero
 
             call diverge(phi, grad)
 
@@ -194,7 +196,9 @@ module parcel_correction
             call vol2grid(l_reuse)
 
             ! form divergence field * dt and store in phi temporarily:
-            phi = volg(0:nz, :, :) * vcelli - one
+            phi(1:nz-1, :, :) = volg(1:nz-1, :, :) * vcelli - one
+            phi(0,      :, :) = zero
+            phi(nz,     :, :) = zero
 
             !$omp parallel default(shared)
             !$omp do private(n, is, js, ks, weights, xf, yf, zf, xfc, yfc, zfc, xs, ys, zs, lim_x, lim_y, lim_z)

@@ -30,6 +30,7 @@ module parcel_interpl
     use omp_lib
     use mpi_utils, only : mpi_exit_on_error
     use interpl, only : trilinear
+    use parcel_ellipse_interpl, only : surf_par2grid, surf_grid2par
     implicit none
 
     private
@@ -122,16 +123,16 @@ module parcel_interpl
             call field_halo_swap_scalar(volg)
             call stop_timer(halo_swap_timer)
 
-            ! apply free slip boundary condition
-            !$omp parallel workshare
-            volg(0,  :, :) = two * volg(0,  :, :)
-            volg(nz, :, :) = two * volg(nz, :, :)
-
-            ! free slip boundary condition is reflective with mirror
-            ! axis at the physical domain
-            volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
-            volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
-            !$omp end parallel workshare
+!             ! apply free slip boundary condition
+!             !$omp parallel workshare
+!             volg(0,  :, :) = two * volg(0,  :, :)
+!             volg(nz, :, :) = two * volg(nz, :, :)
+!
+!             ! free slip boundary condition is reflective with mirror
+!             ! axis at the physical domain
+!             volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
+!             volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
+!             !$omp end parallel workshare
 
         end subroutine vol2grid
 
@@ -250,43 +251,11 @@ module parcel_interpl
                 call mpi_exit_on_error("par2grid: Wrong total number of parcels!")
             endif
 
+            call surf_par2grid
+
             call start_timer(halo_swap_timer)
             call par2grid_halo_swap
             call stop_timer(halo_swap_timer)
-
-            !$omp parallel workshare
-            ! apply free slip boundary condition
-            volg(0,  :, :) = two * volg(0,  :, :)
-            volg(nz, :, :) = two * volg(nz, :, :)
-
-            ! free slip boundary condition is reflective with mirror
-            ! axis at the physical domain
-            volg(1,    :, :) = volg(1,    :, :) + volg(-1,   :, :)
-            volg(nz-1, :, :) = volg(nz-1, :, :) + volg(nz+1, :, :)
-
-            vortg(0,  :, :, :) = two * vortg(0,  :, :, :)
-            vortg(nz, :, :, :) = two * vortg(nz, :, :, :)
-            vortg(1,    :, :, :) = vortg(1,    :, :, :) + vortg(-1,   :, :, :)
-            vortg(nz-1, :, :, :) = vortg(nz-1, :, :, :) + vortg(nz+1, :, :, :)
-
-            tbuoyg(0,  :, :) = two * tbuoyg(0,  :, :)
-            tbuoyg(nz, :, :) = two * tbuoyg(nz, :, :)
-            tbuoyg(1,    :, :) = tbuoyg(1,    :, :) + tbuoyg(-1,   :, :)
-            tbuoyg(nz-1, :, :) = tbuoyg(nz-1, :, :) + tbuoyg(nz+1, :, :)
-            !$omp end parallel workshare
-
-#ifndef ENABLE_DRY_MODE
-            !$omp parallel workshare
-            dbuoyg(0,  :, :) = two * dbuoyg(0,  :, :)
-            dbuoyg(nz, :, :) = two * dbuoyg(nz, :, :)
-            dbuoyg(1,    :, :) = dbuoyg(1,    :, :) + dbuoyg(-1,   :, :)
-            dbuoyg(nz-1, :, :) = dbuoyg(nz-1, :, :) + dbuoyg(nz+1, :, :)
-            humg(0,  :, :) = two * humg(0,  :, :)
-            humg(nz, :, :) = two * humg(nz, :, :)
-            humg(1,    :, :) = humg(1,    :, :) + humg(-1,   :, :)
-            humg(nz-1, :, :) = humg(nz-1, :, :) + humg(nz+1, :, :)
-            !$omp end parallel workshare
-#endif
 
             ! exclude halo cells to avoid division by zero
             do p = 1, 3
@@ -465,6 +434,8 @@ module parcel_interpl
             enddo
             !$omp end do
             !$omp end parallel
+
+            call surf_grid2par(add)
 
             call stop_timer(grid2par_timer)
 
