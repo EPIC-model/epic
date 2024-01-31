@@ -5,10 +5,10 @@
 module ls_rk
     use options, only : time
     use dimensions, only : I_Z
-    use parcels_mod, only : parcels
+    use parcels_mod, only : parcels, bot_parcels, top_parcels
     use parcel_bc
     use parcel_mpi, only : parcel_communicate
-    use rk_utils, only: get_dBdt, get_time_step
+    use rk_utils, only: get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par
     use parcel_damping, only : parcel_damp
@@ -151,7 +151,19 @@ module ls_rk
 
                 !$omp parallel do default(shared) private(n)
                 do n = 1, parcels%local_num
-                    parcels%delta_b(:, n) = get_dBdt(n)
+                    parcels%delta_b(:, n) = parcels%get_dBdt(n)
+                enddo
+                !$omp end parallel do
+
+                !$omp parallel do default(shared) private(n)
+                do n = 1, bot_parcels%local_num
+                    bot_parcels%delta_b(:, n) = bot_parcels%get_dBdt(n)
+                enddo
+                !$omp end parallel do
+
+                !$omp parallel do default(shared) private(n)
+                do n = 1, top_parcels%local_num
+                    top_parcels%delta_b(:, n) = top_parcels%get_dBdt(n)
                 enddo
                 !$omp end parallel do
 
@@ -168,7 +180,21 @@ module ls_rk
                 !$omp parallel do default(shared) private(n)
                 do n = 1, parcels%local_num
                     parcels%delta_b(:, n) = parcels%delta_b(:, n) &
-                                          + get_dBdt(n)
+                                          + parcels%get_dBdt(n)
+                enddo
+                !$omp end parallel do
+
+                !$omp parallel do default(shared) private(n)
+                do n = 1, bot_parcels%local_num
+                    bot_parcels%delta_b(:, n) = bot_parcels%delta_b(:, n) &
+                                              + bot_parcels%get_dBdt(n)
+                enddo
+                !$omp end parallel do
+
+                !$omp parallel do default(shared) private(n)
+                do n = 1, top_parcels%local_num
+                    top_parcels%delta_b(:, n) = top_parcels%delta_b(:, n) &
+                                              + top_parcels%get_dBdt(n)
                 enddo
                 !$omp end parallel do
 
@@ -189,10 +215,36 @@ module ls_rk
             enddo
             !$omp end parallel do
 
+            !$omp parallel do default(shared) private(n)
+            do n = 1, bot_parcels%local_num
+                bot_parcels%position(:, n) = bot_parcels%position(:, n) &
+                                           + cb * dt * bot_parcels%delta_pos(:, n)
+
+                bot_parcels%vorticity(:, n) = bot_parcels%vorticity(:, n) &
+                                            + cb * dt * bot_parcels%delta_vor(:, n)
+                bot_parcels%B(:, n) = bot_parcels%B(:, n) &
+                                    + cb * dt * bot_parcels%delta_b(:, n)
+            enddo
+            !$omp end parallel do
+
+            !$omp parallel do default(shared) private(n)
+            do n = 1, top_parcels%local_num
+                top_parcels%position(:, n) = top_parcels%position(:, n) &
+                                           + cb * dt * top_parcels%delta_pos(:, n)
+
+                top_parcels%vorticity(:, n) = top_parcels%vorticity(:, n) &
+                                            + cb * dt * top_parcels%delta_vor(:, n)
+                top_parcels%B(:, n) = top_parcels%B(:, n) &
+                                    + cb * dt * top_parcels%delta_b(:, n)
+            enddo
+            !$omp end parallel do
+
             call stop_timer(rk_timer)
 
             if (step == n_stages) then
                 call parcel_communicate(parcels)
+                call parcel_communicate(bot_parcels)
+                call parcel_communicate(top_parcels)
                return
             endif
 
@@ -206,7 +258,25 @@ module ls_rk
             enddo
             !$omp end parallel do
 
+            !$omp parallel do default(shared) private(n)
+            do n = 1, bot_parcels%local_num
+                bot_parcels%delta_pos(:, n) = ca * bot_parcels%delta_pos(:, n)
+                bot_parcels%delta_vor(:, n) = ca * bot_parcels%delta_vor(:, n)
+                bot_parcels%delta_b(:, n) = ca * bot_parcels%delta_b(:, n)
+            enddo
+            !$omp end parallel do
+
+            !$omp parallel do default(shared) private(n)
+            do n = 1, top_parcels%local_num
+                top_parcels%delta_pos(:, n) = ca * top_parcels%delta_pos(:, n)
+                top_parcels%delta_vor(:, n) = ca * top_parcels%delta_vor(:, n)
+                top_parcels%delta_b(:, n) = ca * top_parcels%delta_b(:, n)
+            enddo
+            !$omp end parallel do
+
             call parcel_communicate(parcels)
+            call parcel_communicate(bot_parcels)
+            call parcel_communicate(top_parcels)
 
             call stop_timer(rk_timer)
 

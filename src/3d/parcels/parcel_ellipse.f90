@@ -45,6 +45,7 @@ module parcel_ellipse
             procedure          :: get_position => parcel_ellipse_get_position
             procedure          :: set_position => parcel_ellipse_set_position
             procedure          :: set_volume => parcel_ellipse_set_area
+            procedure          :: get_dBdt => parcel_ellipse_get_dBdt
 
 
             !------------------------------------------------------------------
@@ -378,5 +379,30 @@ module parcel_ellipse
             this%area(n) = vol
 
         end subroutine parcel_ellipse_set_area
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Advance the B matrix.
+        ! @param[in] n parcel index
+        ! @returns the updated B matrix components (B11, B12 and B22) in Bout
+        function parcel_ellipse_get_dBdt(this, n) result(Bout)
+            class(ellipse_pc_type), intent(inout) :: this
+            integer,                  intent(in)  :: n
+            double precision                      :: Bout(3)
+
+            ! B11 = 2 * (dudx * B11 + dudy * B12)
+            Bout(1) = two * (this%strain(1, n) * this%B(1, n) + &
+                             this%strain(2, n) * this%B(2, n))
+
+            ! B12 = (du/dx + dv/dy) + B12 + dvdx * B11 + dudy * B22
+            Bout(2) = (this%strain(1, n) + this%strain(4, n)) * this%B(2, n) + &
+                       this%strain(3, n)                      * this%B(1, n) + &
+                       this%strain(2, n)                      * this%B(3, n)
+
+            ! B22 = 2 * (dvdx * B12 + dvdy * B22)
+            Bout(3) = two * (this%strain(3, n) * this%B(2, n) + &
+                             this%strain(4, n) * this%B(3, n))
+
+        end function parcel_ellipse_get_dBdt
 
 end module parcel_ellipse

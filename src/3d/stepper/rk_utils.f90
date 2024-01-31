@@ -21,60 +21,6 @@ module rk_utils
 
     contains
 
-        ! Advance the B matrix.
-        ! @param[in] n parcel index
-        ! @returns dB/dt in Bout
-        function get_dBdt(n) result(Bout)
-            integer,         intent(in) :: n
-            double precision            :: Bout(5), B33
-            double precision            :: dudz, dvdx, dvdz, dwdz
-
-            ! du/dz = \eta + dw/dx
-            dudz = parcels%vorticity(I_Y, n) + parcels%strain(I_DWDX, n)
-
-            ! dv/dx \zeta + du/dy
-            dvdx = parcels%vorticity(I_Z, n) + parcels%strain(I_DUDY, n)
-
-            ! dv/dz = dw/dy - \xi
-            dvdz = parcels%strain(I_DWDY, n) - parcels%vorticity(I_X, n)
-
-            ! dw/dz = - (du/dx + dv/dy)
-            dwdz = - (parcels%strain(I_DUDX, n) + parcels%strain(I_DVDY, n))
-
-            B33 = parcels%get_B33(n)
-
-            ! dB11/dt = 2 * (du/dx * B11 + du/dy * B12 + du/dz * B13)
-            Bout(I_B11) = two * (parcels%strain(I_DUDX, n) * parcels%B(I_B11, n)  + &
-                                 parcels%strain(I_DUDY, n) * parcels%B(I_B12, n)  + &
-                                 dudz                      * parcels%B(I_B13, n))
-
-            ! dB12/dt =
-            Bout(I_B12) = dvdx                      * parcels%B(I_B11, n) & !   dv/dx * B11
-                        - dwdz                      * parcels%B(I_B12, n) & ! - dw/dz * B12
-                        + dvdz                      * parcels%B(I_B13, n) & ! + dv/dz * B13
-                        + parcels%strain(I_DUDY, n) * parcels%B(I_B22, n) & ! + du/dy * B22
-                        + dudz                      * parcels%B(I_B23, n)   ! + du/dz * B23
-
-            ! dB13/dt =
-            Bout(I_B13) = parcels%strain(I_DWDX, n) * parcels%B(I_B11, n) & !   dw/dx * B11
-                        + parcels%strain(I_DWDY, n) * parcels%B(I_B12, n) & ! + dw/dy * B12
-                        - parcels%strain(I_DVDY, n) * parcels%B(I_B13, n) & ! - dv/dy * B13
-                        + parcels%strain(I_DUDY, n) * parcels%B(I_B23, n) & ! + du/dy * B23
-                        + dudz                      * B33                   ! + du/dz * B33
-
-            ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
-            Bout(I_B22) = two * (dvdx                      * parcels%B(I_B12, n) + &
-                                 parcels%strain(I_DVDY, n) * parcels%B(I_B22, n) + &
-                                 dvdz                      * parcels%B(I_B23, n))
-
-            ! dB23/dt =
-            Bout(I_B23) = parcels%strain(I_DWDX, n) * parcels%B(I_B12, n) & !   dw/dx * B12
-                        + dvdx                      * parcels%B(I_B13, n) & ! + dv/dx * B13
-                        + parcels%strain(I_DWDY, n) * parcels%B(I_B22, n) & ! + dw/dy * B22
-                        - parcels%strain(I_DUDX, n) * parcels%B(I_B23, n) & ! - du/dx * B23
-                        + dvdz                      * B33                   ! + dv/dz * B33
-        end function get_dBdt
-
         ! Calculate velocity strain
         ! @param[in] velocity gradient tensor at grid point
         ! @param[in] vorticity at grid point
