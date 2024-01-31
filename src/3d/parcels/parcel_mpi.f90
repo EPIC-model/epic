@@ -28,7 +28,6 @@ module parcel_mpi
     integer :: n_parcel_sends(8)
 
     public :: parcel_communicate,           &
-              n_parcel_sends,               &
               north_pid,                    &
               south_pid,                    &
               west_pid,                     &
