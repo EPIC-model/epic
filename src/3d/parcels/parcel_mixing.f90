@@ -5,7 +5,7 @@
 !   5. Send small parcel back to original MPI rank
 module parcel_mixing
     use constants, only : one, zero, two
-    use parcel_ops, only : get_delx
+    use parcel_ops, only : get_delx, get_dely
     use parcel_container, only : pc_type
     use parcels_mod, only : parcels, top_parcels, bot_parcels, ellipse_pc_type
     use parameters, only : dx, dxi, vcell, hli, lower, extent, acell    &
@@ -20,6 +20,7 @@ module parcel_mixing
                         , mpi_check_for_error       &
                         , mpi_check_for_message     &
                         , mpi_stop
+    use mpi_layout, only : box, cart
     use parcel_nearest, only : handle_periodic_edge_parcels
     implicit none
 
@@ -46,34 +47,25 @@ module parcel_mixing
     contains
 
         subroutine mix_parcels
+            integer :: nelem
 
             call start_timer(mixing_timer)
 
-            ! 1. find small parcels in cells 0 and nz
-            ! 2. find closest parcels
-            ! 3. mix properties
+            !------------------------------------------------------------------
+            ! Initialise:
 
             if (.not. allocated(top_mixed)) then
+                nelem = box%halo_size(1) * box%halo_size(2)
+                allocate(nppc(nelem))
+                allocate(kc1(nelem))
+                allocate(kc2(nelem))
+                allocate(loca(max_num_parcels))
+                allocate(node(max_num_parcels))
                 allocate(top_mixed(max_num_surf_parcels))
                 allocate(bot_mixed(max_num_surf_parcels))
                 allocate(int_mixed(max_num_parcels))
             endif
 
-
-            call interior2surface(0,  bot_parcels, bot_mixed)
-            call interior2surface(nz, top_parcels, top_mixed)
-
-            if (allocated(nppc)) then
-                deallocate(nppc)
-                deallocate(kc1)
-                deallocate(kc2)
-                deallocate(loca)
-                deallocate(node)
-            endif
-
-
-            !------------------------------------------------------------------
-            ! Mix small surface parcels with interior parcels:
 
             ! We need to tag each small surface parcel if it already
             ! mixed with an interior parcel in order to avoid double-mixing:
@@ -81,31 +73,21 @@ module parcel_mixing
             top_mixed = .false.
             int_mixed = .false.
 
-            call apply_mixing(bot_parcels, parcels, 0)
-
-            !---------------------------------------------------------------------
-            ! Determine globally closest parcel:
-            ! After this operation isma, iclo and rclo are properly set.
-            call find_closest_parcel_globally(pcont, n_local_small, iclo, rclo, dclo)
-
-            call actual_mixing(bot_parcels, parcels, isma, iclo, nmix)
+            !------------------------------------------------------------------
+            ! Mix small surface parcels with nearest interior parcels:
 
 
-
-            call find_locally(top_parcels, parcels, nz, top_mixed)
-            call actual_mixing(top_parcels, parcels, isma, iclo, nmix)
+            call apply_mixing(bot_parcels, bot_mixed, parcels, int_mixed, 0)
+            call apply_mixing(top_parcels, top_mixed, parcels, int_mixed, nz)
 
             ! -----------------------------------------------------------------
-            ! Mix small surface parcel with closest interior parcel:
+            ! Mix small interior parcels with nearest surface parcels:
 
+            call apply_mixing(parcels, int_mixed, bot_parcels, bot_mixed, 0)
+            call apply_mixing(parcels, int_mixed, top_parcels, top_mixed, nz)
 
-            ! -----------------------------------------------------------------
+            !------------------------------------------------------------------
             ! Final clean-up:
-
-            deallocate(isma)
-            deallocate(iclo)
-
-
 
             if (allocated(nppc)) then
                 deallocate(nppc)
@@ -113,8 +95,10 @@ module parcel_mixing
                 deallocate(kc2)
                 deallocate(loca)
                 deallocate(node)
+                deallocate(top_mixed)
+                deallocate(bot_mixed)
+                deallocate(int_mixed)
             endif
-
 
             call stop_timer(mixing_timer)
 
@@ -130,7 +114,7 @@ module parcel_mixing
             integer,        intent(in)    :: iz
             integer                       :: n, k
             integer                       :: n_local_mix, n_global_mix, n_mix
-            logical                       :: l_local_mix
+!             logical                       :: l_local_mix
 
             ! -----------------------------------------------------------------
             ! Number of small parcels:
@@ -166,7 +150,7 @@ module parcel_mixing
                 endif
             enddo
 
-            call find_locally(source, dest, l_dflag)
+            call find_locally(source, dest, l_dflag, n_mix)
 
             call find_globally
 
@@ -176,7 +160,7 @@ module parcel_mixing
             call actual_mixing(source, dest, n_mix)
 
             ! Receive small parcels that we sent earlier
-            call receive_small_parcels
+            call recv_small_parcels
 
         end subroutine apply_mixing
 
@@ -218,12 +202,13 @@ module parcel_mixing
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Find closest destination (dest) parcel to small source parcel:
-        subroutine find_locally(source, dest, l_dflag)
+        subroutine find_locally(source, dest, l_dflag, n_mix)
             class(pc_type),  intent(inout) :: source
             class(pc_type),  intent(inout) :: dest
             logical,         intent(inout) :: l_dflag(:)
-            integer                        :: n, ix, ij, m, ix0, ic, k, is
-            double precision               :: xs, ys, zs, delx, delz, dsq, dsqmin
+            integer,         intent(inout) :: n_mix
+            integer                        :: n, ix, iy, ij, m, ix0, iy0, ic, k, is
+            double precision               :: xs, ys, zs, delx, dely, delz, dsq, dsqmin
 
 
             do m = 1, n_mix
@@ -416,5 +401,17 @@ module parcel_mixing
             enddo
 
         end subroutine actual_mixing
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine send_small_parcels
+            print *, "TODO"
+        end subroutine send_small_parcels
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine recv_small_parcels
+            print *, "TODO"
+        end subroutine recv_small_parcels
 
 end module parcel_mixing
