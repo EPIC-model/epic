@@ -30,7 +30,6 @@ epic3d_SOURCES = 				\
 	parcels/parcel_ellipse_merge.f90	\
 	parcels/parcel_merge.f90		\
 	parcels/parcel_split.f90		\
-	parcels/parcel_mixing.f90		\
 	parcels/parcel_diagnostics.f90		\
 	parcels/parcel_ellipse_interpl.f90	\
 	parcels/parcel_interpl.f90 		\
