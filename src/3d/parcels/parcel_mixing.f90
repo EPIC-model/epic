@@ -13,14 +13,15 @@ module parcel_mixing
                          , max_num_surf_parcels
     use options, only : parcel
     use mpi_timer, only : start_timer, stop_timer
-    use parcel_mpi, only : allocate_parcel_id_buffers       &
+    use parcel_mpi, only : n_parcel_sends                   &
+                         , allocate_parcel_id_buffers       &
                          , deallocate_parcel_id_buffers
     use mpi_environment
     use mpi_utils, only : mpi_exit_on_error         &
                         , mpi_check_for_error       &
                         , mpi_check_for_message     &
                         , mpi_stop
-    use mpi_layout, only : box, cart
+    use mpi_layout, only : box, cart, get_neighbour_from_rank
     use parcel_nearest, only : handle_periodic_edge_parcels
     implicit none
 
@@ -40,6 +41,7 @@ module parcel_mixing
     integer, allocatable          :: iclo(:)
     integer, allocatable          :: rclo(:)    ! MPI rank of closest parcel
     double precision, allocatable :: dclo(:)    ! distance to closest parcel
+    integer                       :: n_mix
 
 
     public :: mix_parcels, mixing_timer
@@ -113,7 +115,7 @@ module parcel_mixing
             logical,        intent(inout) :: l_dflag(:)
             integer,        intent(in)    :: iz
             integer                       :: n, k
-            integer                       :: n_local_mix, n_global_mix, n_mix
+            integer                       :: n_local_mix, n_global_mix, n_orig_parcels
 !             logical                       :: l_local_mix
 
             ! -----------------------------------------------------------------
@@ -150,17 +152,25 @@ module parcel_mixing
                 endif
             enddo
 
-            call find_locally(source, dest, l_dflag, n_mix)
+            call exchange_bndry_info(source)
 
-            call find_globally
+            call find_locally(source, dest, l_dflag)
+
+            !---------------------------------------------------------------------
+            ! Determine globally closest parcel:
+            ! After this operation isma, iclo and rclo are properly set.
+            call find_closest_parcel_globally(source, n_local_small, iclo, rclo, dclo)
+
+
+            n_orig_parcels = source%local_num
 
             ! Send small parcels to MPI rank owning the close parcel
-            call send_small_parcels
+            call send_small_parcels(source, isma, iclo, rclo)
 
-            call actual_mixing(source, dest, n_mix)
+            call actual_mixing(source, dest)
 
             ! Receive small parcels that we sent earlier
-            call recv_small_parcels
+            call recv_small_parcels(source, n_orig_parcels)
 
         end subroutine apply_mixing
 
@@ -201,12 +211,45 @@ module parcel_mixing
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! If a small parcel is in a boundary cell, a duplicate must
+        ! be sent to the neighbour rank.
+        subroutine exchange_bndry_info(source)
+            class(pc_type), intent(inout) :: source
+            integer                       :: m, is
+
+            ! We must store the parcel index and the merge index *m*
+            ! of each small parcel. We do not need to allocate the
+            ! invalid buffer, therefore the second argument is .false.
+            call allocate_parcel_id_buffers(pcont, 2, .false.)
+
+            !------------------------------------------------------------------
+            ! Collect info and fill send buffers
+            do m = 1, n_mix
+                is = isma(m)
+                call locate_parcel_in_boundary_cell(source, m, is)
+            enddo
+
+            !---------------------------------------------------------------------
+            ! Communicate position of small parcels:
+            ! Send position attribute, parcel index and the *isma* index of small parcels
+            ! in boundary region to neighbours. We only need to send the position
+            ! as this is the only attribute needed to figure out with whom a parcel
+            ! might mix.
+            call send_small_parcel_bndry_info(source)
+
+            !------------------------------------------------------------------
+            ! Clean-up:
+            call deallocate_parcel_id_buffers
+
+        end subroutine exchange_bndry_info
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         ! Find closest destination (dest) parcel to small source parcel:
-        subroutine find_locally(source, dest, l_dflag, n_mix)
+        subroutine find_locally(source, dest, l_dflag)
             class(pc_type),  intent(inout) :: source
             class(pc_type),  intent(inout) :: dest
             logical,         intent(inout) :: l_dflag(:)
-            integer,         intent(inout) :: n_mix
             integer                        :: n, ix, iy, ij, m, ix0, iy0, ic, k, is
             double precision               :: xs, ys, zs, delx, dely, delz, dsq, dsqmin
 
@@ -266,67 +309,23 @@ module parcel_mixing
                     n_mix = n_mix - 1
                 else
                     l_dflag(ic) = .true.
+                    l_sflag(is) = .true.
                 endif
             enddo
 
-!             isma = pack(isma, isma /= -1)
-!             iclo = pack(iclo, iclo /= -1)
-!             rclo = pack(rclo, rclo /= -1)
-!             dclo = pack(dclo, dclo >= 0.0d0)
-!
-!             !---------------------------------------------------------------------
-!             ! Update isma, iclo and rclo with indices of remote parcels:
-!             do m = 1, n_mix
-!
-!                 m = m + 1
-!
-!                 is = isma(n)
-!                 ic = iclo(n)
-!
-!                 if ((is > source%local_num) .and. (ic > source%local_num)) then
-!                     ! A remote small parcel points to another remote small parcel. The remotes do not necessarily
-!                     ! need to be the same. Also, it can be a dual-link. As the same distance is evaluated on
-!                     ! the other two MPI ranks, *this* MPI rank must set the distance between the parcels to the
-!                     ! maximum value as otherwise the function "find_closest_parcel_globally" may think the
-!                     ! parcels belong to *this* MPI rank due to round-offs in the distance calculation. The
-!                     ! function "find_closest_parcel_globally" always sets "rclo" to the MPI source.
-!                     dclo(m) = huge(0.0d0) ! huge(x) returns the maximum value of this type
-!                 else if (ic > source%local_num) then
-!                     ! A local small parcel points to a remote small parcel.
-!                     ! The index *ic* is larger than the local number of parcels
-!                     ! we must update *iclo(m)* and *rclo(m)* with the index of the parcel stored
-!                     ! on the other MPI rank.
-!                     iclo(m) = pidsma(ic)
-!                     rclo(m) = rsma(ic)
-!                 endif
-!             enddo
-!
-!             !------------------------------------------------------------------
-!             ! Sanity check: Indices of small parcels must be smaller equal to the
-!             ! number of local parcels:
-!             do m = 1, n_local_mix
-!                 if (isma(m) > source%local_num) then
-!                     call mpi_exit_on_error(&
-!                         'in in parcel_mixing::find_locally: Small parcel index out of range.')
-!                 endif
-!             enddo
+            !---------------------------------------------------------------------
+            ! Update isma, iclo and rclo with indices of remote parcels:
+            call update_remote_indices(source, n_local_small, isma, iclo, rclo, dclo)
 
         end subroutine find_locally
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine find_globally
-            print *, "TODO"
-        end subroutine find_globally
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        subroutine actual_mixing(source, dest, nmix)
+        subroutine actual_mixing(source, dest)
             class(pc_type),  intent(inout) :: source
             class(pc_type),  intent(inout) :: dest
-            integer,         intent(in)    :: nmix
             integer                        :: l, m, n, ic, is
-            double precision               :: buoym(nmix), vortm(3, nmix), vm(nmix), vmix
+            double precision               :: buoym(n_mix), vortm(3, n_mix), vm(n_mix), vmix
             integer                        :: lclo(dest%local_num)
 
             lclo = zero
@@ -335,7 +334,7 @@ module parcel_mixing
             ! Figure out weights:
 
             l = 0
-            do m = 1, nmix
+            do m = 1, n_mix
 
                 ! Index of closest interior parcel
                 ic = iclo(m)
@@ -382,7 +381,7 @@ module parcel_mixing
             lclo = zero
             l = 0
 
-            do m = 1, nmix
+            do m = 1, n_mix
                 ic = iclo(m)
 
                 if (lclo(ic) == 0) then
@@ -404,14 +403,65 @@ module parcel_mixing
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine send_small_parcels
-            print *, "TODO"
+        ! Send small parcels with remote *iclo* parcel to *this* remote MPI rank.
+        subroutine send_small_parcels(source, isma, iclo, rclo)
+            class(pc_type), intent(inout) :: source
+            integer,        intent(in)    :: isma(0:)
+            integer,        intent(in)    :: iclo(:)
+            integer,        intent(in)    :: rclo(:)
+            integer                       :: m, n, rc
+
+            ! We only must store the parcel indices (therefore 1) and
+            ! also allocate the buffer for invalid parcels. (therefore .true.)
+            call allocate_parcel_id_buffers(source, 1, .true.)
+
+            n_parcel_sends = 0
+
+            !------------------------------------------------------------------
+            ! Identify number of sends:
+            do m = 1, n_mix
+                rc = rclo(m)
+                if (rc /= cart%rank) then
+                    n = get_neighbour_from_rank(rc)
+                    n_parcel_sends(n) = n_parcel_sends(n) + 1
+                endif
+            enddo
+
+            !------------------------------------------------------------------
+            ! Communicate parcels:
+            call allocate_parcel_buffers(source%attr_num)
+
+            call communicate_sizes_and_resize(source)
+
+            call communicate_parcels(source)
+
+            call deallocate_parcel_id_buffers
+
+            call deallocate_parcel_buffers
+
         end subroutine send_small_parcels
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine recv_small_parcels
-            print *, "TODO"
+        ! Receive small parcels with remote *iclo* parcel from *this* remote MPI rank.
+        subroutine recv_small_parcels(source, n_orig_parcels)
+            class(pc_type), intent(inout) :: source
+            integer,        intent(in)    :: n_orig_parcels
+            integer, allocatable          :: pindex(:)
+            integer                       :: n, num
+
+            num = n_orig_parcels - source%local_num
+
+            allocate(pindex(num))
+
+            do n = 1, num
+                pindex(n) = n_orig_parcels + n
+            enddo
+
+            call parcel_communicate(source, pindex)
+
+            deallocate(pindex)
+
         end subroutine recv_small_parcels
 
 end module parcel_mixing
