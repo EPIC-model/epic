@@ -87,11 +87,16 @@ module parcel_nearest
     integer :: small_recv_count(8)
 #endif
 
-    public :: find_nearest              &
-            , merge_nearest_timer       &
-            , merge_tree_resolve_timer  &
-            , nearest_win_allocate      &
-            , nearest_win_deallocate
+    public :: find_nearest                      &
+            , merge_nearest_timer               &
+            , merge_tree_resolve_timer          &
+            , nearest_win_allocate              &
+            , nearest_win_deallocate            &
+            , handle_periodic_edge_parcels      &
+            , update_remote_indices             &
+            , locate_parcel_in_boundary_cell    &
+            , send_small_parcel_bndry_info      &
+            , find_closest_parcel_globally
 
     contains
 
@@ -597,6 +602,22 @@ module parcel_nearest
                 endif
             enddo
 
+            call update_remote_indices(pcont, n_local_small, isma, iclo, rclo, dclo)
+
+
+        end subroutine find_closest_parcel_locally
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine update_remote_indices(pcont, n_local_small, isma, iclo, rclo, dclo)
+            class(pc_type),   intent(in)    :: pcont
+            integer,          intent(in)    :: n_local_small
+            integer,          intent(inout) :: isma(0:)
+            integer,          intent(inout) :: iclo(:)
+            integer,          intent(inout) :: rclo(:)
+            double precision, intent(inout) :: dclo(:)
+            integer                         :: m, is, ic
+
             !---------------------------------------------------------------------
             ! Update isma, iclo and rclo with indices of remote parcels:
             do m = 1, n_local_small + n_remote_small
@@ -627,10 +648,10 @@ module parcel_nearest
             do m = 1, n_local_small
                 if (isma(m) > pcont%local_num) then
                     call mpi_exit_on_error(&
-                        'in in parcel_nearest::find_closest_parcel_locally: Small parcel index out of range.')
+                        'in in parcel_nearest::update_remote_indices: Small parcel index out of range.')
                 endif
             enddo
-        end subroutine find_closest_parcel_locally
+        end subroutine update_remote_indices
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
