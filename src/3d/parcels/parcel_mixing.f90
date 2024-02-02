@@ -50,7 +50,6 @@ module parcel_mixing
     integer, allocatable          :: iclo(:)
     integer, allocatable          :: rclo(:)    ! MPI rank of closest parcel
     double precision, allocatable :: dclo(:)    ! distance to closest parcel
-    integer                       :: n_mix
 
 
     public :: mix_parcels, mixing_timer
@@ -123,7 +122,9 @@ module parcel_mixing
             logical,        intent(inout) :: l_dflag(:)
             integer,        intent(in)    :: iz
             integer                       :: n, k
-            integer                       :: n_local_mix, n_global_mix, n_orig_parcels
+            integer                       :: n_local_mix, n_remote_mix
+            integer                       :: n_global_mix, n_orig_parcels
+            integer                       :: n_mix
 !             logical                       :: l_local_mix
 
             ! -----------------------------------------------------------------
@@ -163,22 +164,22 @@ module parcel_mixing
                 endif
             enddo
 
-            call exchange_bndry_info(source)
+            ! Sets n_remote_mix
+            call exchange_bndry_info(source, n_local_mix, n_remote_mix)
 
-            call find_locally(source, dest, n_local_mix)
+            call find_locally(source, dest, n_local_mix, n_remote_mix)
 
             !---------------------------------------------------------------------
             ! Determine globally closest parcel:
             ! After this operation isma, iclo and rclo are properly set.
             call find_closest_parcel_globally(source, n_local_mix, iclo, rclo, dclo)
 
-
             n_orig_parcels = source%local_num
 
             ! Send small parcels to MPI rank owning the close parcel
-            call send_small_parcels(source, l_sflag, l_dflag)
+            call send_small_parcels(source, l_sflag, l_dflag, n_mix)
 
-            call actual_mixing(source, dest)
+            call actual_mixing(source, dest, n_mix)
 
             ! Receive small parcels that we sent earlier
             call recv_small_parcels(source, n_orig_parcels)
@@ -224,8 +225,10 @@ module parcel_mixing
 
         ! If a small parcel is in a boundary cell, a duplicate must
         ! be sent to the neighbour rank.
-        subroutine exchange_bndry_info(source)
+        subroutine exchange_bndry_info(source, n_local_mix, n_remote_mix)
             class(pc_type), intent(inout) :: source
+            integer,        intent(in)    :: n_local_mix
+            integer,        intent(inout) :: n_remote_mix
             integer                       :: m, is
 
             ! We must store the parcel index and the merge index *m*
@@ -235,7 +238,7 @@ module parcel_mixing
 
             !------------------------------------------------------------------
             ! Collect info and fill send buffers
-            do m = 1, n_mix
+            do m = 1, n_local_mix
                 is = isma(m)
                 call locate_parcel_in_boundary_cell(source, m, is)
             enddo
@@ -246,7 +249,7 @@ module parcel_mixing
             ! in boundary region to neighbours. We only need to send the position
             ! as this is the only attribute needed to figure out with whom a parcel
             ! might mix.
-            call send_small_parcel_bndry_info(source)
+            call send_small_parcel_bndry_info(source, n_remote_mix)
 
             !------------------------------------------------------------------
             ! Clean-up:
@@ -257,15 +260,16 @@ module parcel_mixing
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Find closest destination (dest) parcel to small source parcel:
-        subroutine find_locally(source, dest, n_local_mix)
+        subroutine find_locally(source, dest, n_local_mix, n_remote_mix)
             class(pc_type),  intent(inout) :: source
             class(pc_type),  intent(inout) :: dest
             integer,         intent(in)    :: n_local_mix
+            integer,         intent(in)    :: n_remote_mix
             integer                        :: n, ix, iy, ij, m, ix0, iy0, ic, k, is
             double precision               :: xs, ys, zs, delx, dely, delz, dsq, dsqmin
 
 
-            do m = 1, n_mix
+            do m = 1, n_local_mix + n_remote_mix
 
                 is = isma(m)
 
@@ -317,21 +321,22 @@ module parcel_mixing
                     isma(m) = -1
                     rclo(m) = -1
                     dclo(m) = huge(0.0d0)
-                    n_mix = n_mix - 1
+!                     n_mix = n_mix - 1
                 endif
             enddo
 
             !---------------------------------------------------------------------
             ! Update isma, iclo and rclo with indices of remote parcels:
-            call update_remote_indices(source, n_local_mix, isma, iclo, rclo, dclo)
+            call update_remote_indices(source, n_local_mix, n_remote_mix, isma, iclo, rclo, dclo)
 
         end subroutine find_locally
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine actual_mixing(source, dest)
+        subroutine actual_mixing(source, dest, n_mix)
             class(pc_type),  intent(inout) :: source
             class(pc_type),  intent(inout) :: dest
+            integer,         intent(in)    :: n_mix
             integer                        :: l, m, n, ic, is
             double precision               :: buoym(n_mix), vortm(3, n_mix), vm(n_mix), vmix
             integer                        :: lclo(dest%local_num)
@@ -412,10 +417,11 @@ module parcel_mixing
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Send small parcels with remote *iclo* parcel to *this* remote MPI rank.
-        subroutine send_small_parcels(source, l_sflag, l_dflag)
+        subroutine send_small_parcels(source, l_sflag, l_dflag, n_mix)
             class(pc_type), intent(inout) :: source
             logical,        intent(inout) :: l_sflag(:)
             logical,        intent(inout) :: l_dflag(:)
+            integer,        intent(in)    :: n_mix
             integer                       :: m, n, rc, is, ic
 
             ! We only must store the parcel indices (therefore 1) and
