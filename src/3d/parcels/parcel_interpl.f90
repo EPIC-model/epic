@@ -433,10 +433,26 @@ module parcel_interpl
                         parcels%delta_pos(l, n) = parcels%delta_pos(l, n) &
                                                 + f14 * sum(weights * velog(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
-                    do l = 1,5
-                        parcels%strain(l, n) = parcels%strain(l, n) &
-                                             + f14 * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
-                    enddo
+                    parcels%strain(I_DUDX, n) = parcels%strain(I_DUDX, n) &
+                                              + f14 * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, I_DUDX))
+                    parcels%strain(I_DUDY, n) = parcels%strain(I_DUDY, n) &
+                                              + f14 * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, I_DUDY))
+                    parcels%strain(I_DUDZ, n) = parcels%strain(I_DUDZ, n) &
+                                              + f14 * sum(weights * (vortg(ks:ks+1, js:js+1, is:is+1, I_Y) + &
+                                                         velgradg(ks:ks+1, js:js+1, is:is+1, I_DWDX)))
+                    parcels%strain(I_DVDX, n) = parcels%strain(I_DVDX, n) &
+                                              + f14 * sum(weights * (vortg(ks:ks+1, js:js+1, is:is+1, I_Z) + &
+                                                         velgradg(ks:ks+1, js:js+1, is:is+1, I_DUDY)))
+                    parcels%strain(I_DVDY, n) = parcels%strain(I_DVDY, n) &
+                                              + f14 * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, I_DVDY))
+                    parcels%strain(I_DVDZ, n) = parcels%strain(I_DVDZ, n) &
+                                              + f14 * sum(weights * ( -vortg(ks:ks+1, js:js+1, is:is+1,I_X) + &
+                                                         velgradg(ks:ks+1, js:js+1, is:is+1, I_DWDY)))
+                    parcels%strain(I_DWDX, n) = parcels%strain(I_DWDX, n) &
+                                              + f14 * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, I_DWDX))
+                    parcels%strain(I_DWDY, n) = parcels%strain(I_DWDY, n) &
+                                              + f14 * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, I_DWDY))
+                                                 
                     do l = 1,3
                         parcels%delta_vor(l, n) = parcels%delta_vor(l, n) &
                                                 + f14 * sum(weights * vtend(ks:ks+1, js:js+1, is:is+1, l))

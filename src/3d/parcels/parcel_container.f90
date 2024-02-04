@@ -56,7 +56,10 @@ module parcel_container
                           IDX_RK4_DB33,     & ! RK4 variable for B33
                           IDX_RK4_DUDX,     & ! RK4 variable du/dx
                           IDX_RK4_DUDY,     & ! RK4 variable du/dy
+                          IDX_RK4_DUDZ,     & ! RK4 variable du/dz
+                          IDX_RK4_DVDX,     & ! RK4 variable dv/dx
                           IDX_RK4_DVDY,     & ! RK4 variable dv/dy
+                          IDX_RK4_DVDZ,     & ! RK4 variable dv/dz
                           IDX_RK4_DWDX,     & ! RK4 variable dw/dx
                           IDX_RK4_DWDY        ! RK4 variable dw/dy
 
@@ -134,11 +137,14 @@ module parcel_container
             IDX_RK4_DB33 = i + 11
             IDX_RK4_DUDX = i + 12
             IDX_RK4_DUDY = i + 13
-            IDX_RK4_DVDY = i + 14
-            IDX_RK4_DWDX = i + 15
-            IDX_RK4_DWDY = i + 16
+            IDX_RK4_DUDZ = i + 14
+            IDX_RK4_DVDX = i + 15
+            IDX_RK4_DVDY = i + 16
+            IDX_RK4_DVDZ = i + 17
+            IDX_RK4_DWDX = i + 18
+            IDX_RK4_DWDY = i + 19
 
-            i = i + 17
+            i = i + 20
 
             n_par_attrib = set_ellipsoid_buffer_indices(i)
 
@@ -319,7 +325,7 @@ module parcel_container
             ! LS-RK4 variables
             allocate(parcels%delta_pos(3, num))
             allocate(parcels%delta_vor(3, num))
-            allocate(parcels%strain(5, num))
+            allocate(parcels%strain(8, num))
             allocate(parcels%delta_b(6, num))
 
         end subroutine parcel_alloc

@@ -52,7 +52,10 @@ module fields
     ! velocity strain indices
     integer, parameter :: I_DUDX = 1 & ! index for du/dx strain component
                         , I_DUDY = 2 & ! index for du/dy strain component
+                        , I_DUDZ = 6 & ! index for du/dz strain component
+                        , I_DVDX = 7 & ! index for dv/dy strain component
                         , I_DVDY = 3 & ! index for dv/dy strain component
+                        , I_DVDZ = 8 & ! index for dv/dy strain component
                         , I_DWDX = 4 & ! index for dw/dx strain component
                         , I_DWDY = 5   ! index for dw/dy strain component
 
