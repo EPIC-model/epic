@@ -17,17 +17,17 @@ module rk_utils
 #endif
 
     implicit none
+    double precision, parameter :: Imat(3,3)=reshape((/one,zero,zero,zero,one,zero,zero,zero,one/), (/3,3/))
 
     contains
 
         subroutine evolve_ellipsoid(B, S, dt_sub)
--           double precision, intent(inout) :: Bin(I_B33)
--           double precision, intent(in) :: S(8)
+            double precision, intent(inout) :: B(I_B33)
+            double precision, intent(in) :: S(8)
             double precision, intent(in) :: dt_sub
             double precision :: Bmat(3,3)
             double precision :: Smat(3,3)
             double precision :: Qmat(3,3)
-            double precision :: Imat(3,3)
 
             Bmat(1, 1) = B(I_B11) ! B11
             Bmat(1, 2) = B(I_B12) ! B12
@@ -48,11 +48,6 @@ module rk_utils
             Smat(3, 1) = S(I_DWDX) ! S31
             Smat(3, 2) = S(I_DWDY) ! S32
             Smat(3, 3) = -(S(I_DUDX) + S(I_DVDY)) ! S33
-
-            Imat = 0.0
-            Imat(1, 1) = 1.0
-            Imat(2, 2) = 1.0
-            Imat(3, 3) = 1.0
 
             Qmat = Imat + &
                    0.25 * dt_sub * Smat + &
