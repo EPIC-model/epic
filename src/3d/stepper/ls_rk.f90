@@ -166,7 +166,7 @@ module ls_rk
                 parcels%vorticity(:, n) = parcels%vorticity(:, n) &
                                         + cb * dt * parcels%delta_vor(:, n)
 
-                call evolve_ellipsoid(parcels%B(:, n), parcels%strain(:, n), cb * dt)
+                call evolve_ellipsoid(parcels%B(:, n), parcels%int_strain(:, n), cb * dt)
 
                 detB = parcels%B(1, n) * (parcels%B(4, n) * parcels%B(6, n) - parcels%B(5, n) ** 2) &
                      - parcels%B(2, n) * (parcels%B(2, n) * parcels%B(6, n) - parcels%B(3, n) * parcels%B(5, n)) &
@@ -191,7 +191,7 @@ module ls_rk
             do n = 1, n_parcels
                 parcels%delta_pos(:, n) = ca * parcels%delta_pos(:, n)
                 parcels%delta_vor(:, n) = ca * parcels%delta_vor(:, n)
-                parcels%strain(:, n) = ca * parcels%strain(:, n)
+                parcels%int_strain(:, n) = ca * parcels%int_strain(:, n)
             enddo
             !$omp end parallel do
 
