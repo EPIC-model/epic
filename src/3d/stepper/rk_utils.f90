@@ -50,10 +50,11 @@ module rk_utils
             Smat(3, 3) = -(S(I_DUDX) + S(I_DVDY)) ! S33
 
             Qmat = Imat + &
-                   0.25 * dt_sub * Smat + &
-                   0.03125 * dt_sub * dt_sub * matmul(Smat, Smat) + &
-                   (1.0 / 384.0) * dt_sub * dt_sub * dt_sub * matmul(Smat, matmul(Smat, Smat))
+                   0.125 * dt_sub * Smat + &
+                   0.0078125 * dt_sub * dt_sub * matmul(Smat, Smat) + &
+                   (one / 3072.0) * dt_sub * dt_sub * dt_sub * matmul(Smat, matmul(Smat, Smat))
 
+            Qmat = matmul(Qmat, Qmat)
             Qmat = matmul(Qmat, Qmat)
             Qmat = matmul(Qmat, Qmat)
             Bmat = matmul(Qmat, matmul(Bmat, transpose(Qmat)))
