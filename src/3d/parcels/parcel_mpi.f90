@@ -50,9 +50,7 @@ module parcel_mpi
               deallocate_parcel_buffers,    &
               allocate_parcel_id_buffers,   &
               deallocate_parcel_id_buffers, &
-              get_parcel_buffer_ptr,        &
-              communicate_parcels,          &
-              communicate_sizes_and_resize
+              get_parcel_buffer_ptr
 
     contains
 

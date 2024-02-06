@@ -13,20 +13,15 @@ module parcel_mixing
                          , max_num_surf_parcels
     use options, only : parcel
     use mpi_timer, only : start_timer, stop_timer
-    use parcel_mpi, only : n_parcel_sends                   &
-                         , allocate_parcel_id_buffers       &
+    use parcel_mpi, only : allocate_parcel_id_buffers       &
                          , deallocate_parcel_id_buffers     &
-                         , parcel_communicate               &
-                         , allocate_parcel_buffers          &
-                         , deallocate_parcel_buffers        &
-                         , communicate_parcels              &
-                         , communicate_sizes_and_resize
+                         , parcel_communicate
     use mpi_environment
     use mpi_utils, only : mpi_exit_on_error         &
                         , mpi_check_for_error       &
                         , mpi_check_for_message     &
                         , mpi_stop
-    use mpi_layout, only : box, cart, get_neighbour_from_rank
+    use mpi_layout, only : box, cart
     use parcel_nearest, only : handle_periodic_edge_parcels     &
                              , locate_parcel_in_boundary_cell   &
                              , send_small_parcel_bndry_info     &
@@ -172,6 +167,22 @@ module parcel_mixing
             l_local_mix = (n_local_mix + n_remote_mix > 0)
 
             if (l_local_mix) then
+
+                !--------------------------------------------------------------
+                ! Allocate working arrays:
+                allocate(isma(0:n_local_mix+n_remote_mix))
+                allocate(inva(0:n_local_mix+n_remote_mix))
+                allocate(iclo(n_local_mix+n_remote_mix))
+                allocate(rclo(n_local_mix+n_remote_mix))
+                allocate(dclo(n_local_mix+n_remote_mix))
+
+                isma = -1
+                iclo = -1
+                rclo = -1
+                dclo = product(extent)
+
+                !--------------------------------------------------------------
+                ! Determine locally closest parcel:
                 call find_locally(source, dest, n_local_mix, n_remote_mix)
             endif
 
@@ -232,6 +243,16 @@ module parcel_mixing
             !------------------------------------------------------------------
             ! Receive small parcels that we sent earlier
             call scatter_remote_parcels(source, n_orig_parcels, n_invalid)
+
+            !------------------------------------------------------------------
+            ! Deallocate working arrays:
+            if (l_local_mix) then
+                deallocate(isma)
+                deallocate(inva)
+                deallocate(iclo)
+                deallocate(rclo)
+                deallocate(dclo)
+            endif
 
         end subroutine apply_mixing
 
@@ -469,10 +490,10 @@ module parcel_mixing
         ! sent to another MPI rank and all source parcel indices of parcels that
         ! *this* MPI rank received. These are all parcels we must delete. But first
         ! we must send all parcels back to their original MPI rank.
-        subroutine scatter_remote_parcels(source, n_orig_parcels, n_delete)
+        subroutine scatter_remote_parcels(source, n_orig_parcels, n_invalid)
             class(pc_type), intent(inout) :: source
             integer,        intent(in)    :: n_orig_parcels
-            integer,        intent(in)    :: n_delete
+            integer,        intent(in)    :: n_invalid
             integer, allocatable          :: pindex(:)
             integer                       :: n, num
 
@@ -486,7 +507,6 @@ module parcel_mixing
                 pindex(n) = n_orig_parcels + n
             enddo
 
-
             call parcel_communicate(source, pindex)
 
             deallocate(pindex)
@@ -494,7 +514,7 @@ module parcel_mixing
             !------------------------------------------------------------------
             ! Delete small (remote) parcels and parcels *this* MPI rank
             ! sent to neighbours:
-            call source%delete(inva, n_delete)
+            call source%delete(inva, n_invalid)
 
         end subroutine scatter_remote_parcels
 
