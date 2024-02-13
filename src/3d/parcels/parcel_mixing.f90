@@ -126,7 +126,7 @@ module parcel_mixing
             integer                       :: n, k
             integer                       :: n_local_mix, n_remote_mix
             integer                       :: n_global_mix, n_orig_parcels
-            integer                       :: n_mix, n_invalid, ic, is, m
+            integer                       :: n_invalid, ic, is, m
             logical                       :: l_local_mix
 
             ! -----------------------------------------------------------------
@@ -197,18 +197,14 @@ module parcel_mixing
             ! After this operation isma, iclo and rclo are properly set.
             call find_closest_parcel_globally(source, n_local_mix, iclo, rclo, dclo)
 
-            !------------------------------------------------------------------
-            ! Remove all parcels that did not find a near neighbour:
-            isma(0) = 0 ! Ensure we do not delete the zero index (although not needed)
-            isma = pack(isma, isma /= -1)
-            iclo = pack(iclo, iclo /= -1)
-            rclo = pack(rclo, rclo /= -1)
-
-!             ! Count how many parcels *this* MPI rank sends to the remote:
-!             ! Because rclo is an allocatable array, the call to pack shrinks
-!             ! the array size; i.e. it is safe to count like this; this would not
-!             ! work with an array not marked as *allocatable*.
-!             n_remote = count(rclo /= cart%rank)
+            if (l_local_mix) then
+                !------------------------------------------------------------------
+                ! Remove all parcels that did not find a near neighbour:
+                isma(0) = 0 ! Ensure we do not delete the zero index (although not needed)
+                isma = pack(isma, isma /= -1)
+                iclo = pack(iclo, iclo /= -1)
+                rclo = pack(rclo, rclo /= -1)
+            endif
 
             !------------------------------------------------------------------
             ! Store original parcel number before we communicate:
@@ -223,27 +219,12 @@ module parcel_mixing
             ! MPI rank. We use *inva* to overwrite the parcels with their mixed values
             call gather_remote_parcels(source, n_local_mix, n_invalid, rclo, iclo, isma, inva)
 
-!             !------------------------------------------------------------------
-!             ! We cannot use *inva* as it is filled in "gather_remote_parcels"
-!             ! directly for parcel deletion as it adds all small parcels for deletion
-!             ! because this algorithm is used in the parcel merging where finally all small
-!             ! parcel must be deleted. Here, we must ensure we only delete the
-!             ! parcels that we sent. All parcels at the end of *inva* are received. After the
-!             ! mixing we must send all parcels with index > n_orig_parcels back to the original
-!             ! MPI rank. "n_invalid" contains the number of parcels *this* MPI rank sent.
-
-
             !------------------------------------------------------------------
-            ! Apply the mixing:
+            ! Apply the mixing and mark all parcels involved in the mixing
+            ! process to avoid double-mixing
             if (l_local_mix) then
-                n_mix = n_local_mix !+ n_remote_mix
-                call actual_mixing(source, dest, n_mix)
-            endif
+                call actual_mixing(source, dest, n_local_mix)
 
-            !------------------------------------------------------------------
-            ! Mark all parcels involved in the mixing process to
-            ! avoid double-mixing:
-            if (l_local_mix) then
                 ! local mixing: applies to isma and iclo
                 do m = 1, n_local_mix
                     is = isma(m)
