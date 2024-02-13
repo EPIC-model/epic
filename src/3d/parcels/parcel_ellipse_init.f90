@@ -15,7 +15,7 @@ submodule (parcel_ellipse) parcel_ellipse_init_smod
 
             !------------------------------------------------------------------
             ! Set the number of parcels
-            this%local_num = parcel%n_surf_per_cell * nx * ny
+            this%local_num = parcel%n_surf_per_cell * box%size(1) * box%size(2)
 
             if (this%local_num > this%max_num) then
                 print *, "Number of parcels exceeds limit of", &
