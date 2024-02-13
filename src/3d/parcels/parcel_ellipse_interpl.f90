@@ -65,7 +65,7 @@ module parcel_ellipse_interpl
             type(ellipse_pc_type), intent(in) :: surf_parcels
             logical,               intent(in) :: l_halo_swap
             double precision                  :: points(2, 2)
-            integer                           :: n, p, l, is, js
+            integer                           :: n, p, is, js
             double precision                  :: weights(0:1, 0:1)
 
             volg(iz, :, :) = zero
