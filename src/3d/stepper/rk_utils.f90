@@ -31,7 +31,7 @@ module rk_utils
             double precision, intent(in) :: S(8)
             double precision, intent(in) :: volume
             double precision             :: Bout(5), B33
-            double precision             :: dudz, dvdx, dvdz, dwdz
+            double precision             :: dwdz
 
             ! dw/dz = - (du/dx + dv/dy)
             dwdz = - (S(I_DUDX) + S(I_DVDY))
