@@ -71,9 +71,8 @@ module rk_utils
         ! @param[in] velocity gradient tensor at grid point
         ! @param[in] vorticity at grid point
         ! @returns 3x3 strain matrix
-        function get_strain(velgradgp, vortgp) result(strain)
+        function get_strain(velgradgp) result(strain)
             double precision, intent(in) :: velgradgp(8)
-            double precision, intent(in) :: vortgp(n_dim)
             double precision             :: strain(3,3)
        
             ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
@@ -82,12 +81,7 @@ module rk_utils
             ! S = |v_x v_y v_z|
             !     \w_x w_y w_z/
             ! with u_* = du/d* (also derivatives of v and w).
-            ! The derivatives dv/dx, du/dz, dv/dz and dw/dz are calculated
-            ! with vorticity or the assumption of incompressibility
-            ! (du/dx + dv/dy + dw/dz = 0):
-            !    dv/dx = \zeta + du/dy
-            !    du/dz = \eta + dw/dx
-            !    dv/dz = dw/dy - \xi
+            !    dw/dz is obtained from incompressibility
             !    dw/dz = - (du/dx + dv/dy)
             !
             !                         /  2 * u_x  u_y + v_x u_z + w_x\
@@ -95,21 +89,21 @@ module rk_utils
             !                         \u_z + w_x  v_z + w_y   2 * w_z/
             !
             ! S11 = du/dx
-            ! S12 = 1/2 * (du/dy + dv/dx) = 1/2 * (2 * du/dy + \zeta) = du/dy + 1/2 * \zeta
-            ! S13 = 1/2 * (du/dz + dw/dx) = 1/2 * (\eta + 2 * dw/dx) = 1/2 * \eta + dw/dx
+            ! S12 = 1/2 * (du/dy + dv/dx)
+            ! S13 = 1/2 * (du/dz + dw/dx)
             ! S22 = dv/dy
-            ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \xi) = dw/dy - 1/2 * \xi
+            ! S23 = 1/2 * (dv/dz + dw/dy)
             ! S33 = dw/dz = - (du/dx + dv/dy)
 
-            strain(1, 1) = velgradgp(I_DUDX)                        ! S11
-            strain(1, 2) = velgradgp(I_DUDY) + f12 * vortgp(I_Z)    ! S12
-            strain(1, 3) = velgradgp(I_DWDX) + f12 * vortgp(I_Y)    ! S13
+            strain(1, 1) = velgradgp(I_DUDX)                              ! S11
+            strain(1, 2) = f12 * (velgradgp(I_DUDY) + velgradgp(I_DVDX))  ! S12
+            strain(1, 3) = f12 * (velgradgp(I_DUDZ) + velgradgp(I_DWDX))  ! S13
             strain(2, 1) = strain(1, 2)
-            strain(2, 2) = velgradgp(I_DVDY)                        ! S22
-            strain(2, 3) = velgradgp(I_DWDY) - f12 * vortgp(I_X)    ! S23
+            strain(2, 2) = velgradgp(I_DVDY)                              ! S22
+            strain(2, 3) = f12 * (velgradgp(I_DVDZ) + velgradgp(I_DWDY))  ! S23
             strain(3, 1) = strain(1, 3)
             strain(3, 2) = strain(2, 3)
-            strain(3, 3) = -(velgradgp(I_DUDX) + velgradgp(I_DVDY)) ! S33
+            strain(3, 3) = -(velgradgp(I_DUDX) + velgradgp(I_DVDY))       ! S33
         end function get_strain
 
         ! Estimate a suitable time step based on the velocity strain
@@ -138,7 +132,7 @@ module rk_utils
             do ix = box%lo(1), box%hi(1)
                 do iy = box%lo(2), box%hi(2)
                     do iz = 0, nz
-                        strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
+                        strain = get_strain(velgradg(iz, iy, ix,:))
                         ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
                         call scherzinger_eigenvalues(strain, D)
@@ -230,7 +224,7 @@ module rk_utils
             do ix = box%lo(1), box%hi(1)
                 do iy = box%lo(2), box%hi(2)
                     do iz = 0, nz
-                        strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
+                        strain = get_strain(velgradg(iz, iy, ix,:))
                         strain_mag(iz, iy, ix) = sqrt(two * (strain(1, 1) * strain(1, 1) +&
                                                              strain(1, 2) * strain(1, 2) +&
                                                              strain(1, 3) * strain(1, 3) +&
