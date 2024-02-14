@@ -28,7 +28,7 @@ module parcel_mixing
                          , get_mpi_buffer           &
                          , allocate_mpi_buffers     &
                          , deallocate_mpi_buffers
-    use parcel_nearest, only : handle_periodic_edge_parcels     &
+    use parcel_nearest, only : near                             &
                              , locate_parcel_in_boundary_cell   &
                              , send_small_parcel_bndry_info     &
                              , update_remote_indices            &
@@ -38,11 +38,6 @@ module parcel_mixing
     integer :: mixing_timer
 
     private
-
-    !Used for searching for possible parcel merger:
-    integer, allocatable :: nppc(:), kc1(:), kc2(:)
-    integer, allocatable :: loca(:)
-    integer, allocatable :: node(:)
 
     !Used for searching for possible parcel mixer:
     logical, allocatable :: top_mixed(:), bot_mixed(:), int_mixed(:)
@@ -59,7 +54,6 @@ module parcel_mixing
     contains
 
         subroutine mix_parcels
-            integer :: nelem
 
             call start_timer(mixing_timer)
 
@@ -67,12 +61,7 @@ module parcel_mixing
             ! Initialise:
 
             if (.not. allocated(top_mixed)) then
-                nelem = box%halo_size(1) * box%halo_size(2)
-                allocate(nppc(nelem))
-                allocate(kc1(nelem))
-                allocate(kc2(nelem))
-                allocate(loca(max_num_parcels))
-                allocate(node(max_num_parcels))
+!                 nelem = box%halo_size(1) * box%halo_size(2)
                 allocate(top_mixed(max_num_surf_parcels))
                 allocate(bot_mixed(max_num_surf_parcels))
                 allocate(int_mixed(max_num_parcels))
@@ -94,18 +83,13 @@ module parcel_mixing
             ! -----------------------------------------------------------------
             ! Mix small interior parcels with nearest surface parcels:
 
-            call apply_mixing(parcels, int_mixed, bot_parcels, bot_mixed, 0)
-            call apply_mixing(parcels, int_mixed, top_parcels, top_mixed, nz)
+!             call apply_mixing(parcels, int_mixed, bot_parcels, bot_mixed, 0)
+!             call apply_mixing(parcels, int_mixed, top_parcels, top_mixed, nz)
 
             !------------------------------------------------------------------
             ! Final clean-up:
 
-            if (allocated(nppc)) then
-                deallocate(nppc)
-                deallocate(kc1)
-                deallocate(kc2)
-                deallocate(loca)
-                deallocate(node)
+            if (allocated(top_mixed)) then
                 deallocate(top_mixed)
                 deallocate(bot_mixed)
                 deallocate(int_mixed)
@@ -126,8 +110,18 @@ module parcel_mixing
             integer                       :: n, k
             integer                       :: n_local_mix, n_remote_mix
             integer                       :: n_global_mix, n_orig_parcels
-            integer                       :: n_invalid, ic, is, m
+            integer                       :: n_invalid, ic, is, m, j
             logical                       :: l_local_mix
+
+            call near%alloc(max_num_parcels)
+
+            near%nppc = 0
+
+            ! We must store the parcel index and the merge index *m*
+            ! of each small parcel. We do not need to allocate the
+            ! invalid buffer, therefore the second argument is .false.
+            call allocate_parcel_id_buffers(source, 2, .false.)
+
 
             ! -----------------------------------------------------------------
             ! Number of small parcels:
@@ -137,6 +131,11 @@ module parcel_mixing
                     k = nint(dxi(3) * (source%get_z_position(n) - box%lower(3)))
                     if (k == iz) then
                         n_local_mix = n_local_mix + 1
+
+                        ! If a small parcel is in a boundary cell, a duplicate must
+                        ! be sent to the neighbour rank. This call checks if the parcel
+                        ! must be sent and fills the send buffers.
+                        call locate_parcel_in_boundary_cell(source, n_local_mix, n)
                     endif
                 endif
             enddo
@@ -152,9 +151,16 @@ module parcel_mixing
             call mpi_check_for_error(world, &
                     "in MPI_Allreduce of parcel_mixing::apply_mixing.")
 
+
+            print *, "global mix:", n_global_mix
+            print *, "local mix: ", n_local_mix
+
             if (n_global_mix == 0) then
+                call near%dealloc
+                call deallocate_parcel_id_buffers
                 return
             endif
+
 
             !------------------------------------------------------------------
             ! Assign destination (dest) parcels to grid cells:
@@ -162,12 +168,26 @@ module parcel_mixing
             do n = 1, dest%local_num
                 k = nint(dxi(3) * (dest%get_z_position(n) - box%lower(3)))
                 if ((k == iz) .and. (.not. l_dflag(n))) then
-                    call local_cell_index(dest, n)
+                    call near%parcel_to_local_cell_index(dest, n)
                 endif
             enddo
 
-            ! Sets n_remote_mix
-            call exchange_bndry_info(source, n_local_mix, n_remote_mix)
+            call near%set_lbound
+
+            do n = 1, dest%local_num
+                k = nint(dxi(3) * (dest%get_z_position(n) - box%lower(3)))
+                if ((k == iz) .and. (.not. l_dflag(n))) then
+                    call near%set_ubound(n)
+                endif
+            enddo
+
+            !---------------------------------------------------------------------
+            ! Communicate position of small parcels:
+            ! Send position attribute, parcel index and the *isma* index of small parcels
+            ! in boundary region to neighbours. We only need to send the position
+            ! as this is the only attribute needed to figure out with whom a parcel
+            ! might mix.
+            call send_small_parcel_bndry_info(source, n_remote_mix)
 
             l_local_mix = (n_local_mix + n_remote_mix > 0)
 
@@ -187,6 +207,18 @@ module parcel_mixing
                 inva = -1
                 dclo = product(extent)
 
+                print *, "sizes:", source%local_num, n_remote_mix, n_local_mix
+                j = 0
+                do n = 1, source%local_num + n_remote_mix
+                    if (source%is_small(n) .and. (.not. l_sflag(n))) then
+                        k = nint(dxi(3) * (source%get_z_position(n) - box%lower(3)))
+                        if (k == iz) then
+                            j = j + 1
+                            isma(j) = n
+                        endif
+                    endif
+                enddo
+
                 !--------------------------------------------------------------
                 ! Determine locally closest parcel:
                 call find_locally(source, dest, n_local_mix, n_remote_mix)
@@ -201,14 +233,43 @@ module parcel_mixing
                 !------------------------------------------------------------------
                 ! Remove all parcels that did not find a near neighbour:
                 isma(0) = 0 ! Ensure we do not delete the zero index (although not needed)
-                isma = pack(isma, isma /= -1)
-                iclo = pack(iclo, iclo /= -1)
-                rclo = pack(rclo, rclo /= -1)
+                n_local_mix = count(isma(1:) /= -1)
+                isma(1:n_local_mix) = pack(isma(1:), isma(1:) /= -1)
+                iclo(1:n_local_mix) = pack(iclo, iclo /= -1)
+                rclo(1:n_local_mix) = pack(rclo, rclo /= -1)
+            endif
+
+            call deallocate_parcel_id_buffers
+
+            if (n_local_mix == 0) then
+                call near%dealloc
+                deallocate(isma)
+                deallocate(inva)
+                deallocate(iclo)
+                deallocate(rclo)
+                deallocate(dclo)
+                print *, "No parcel found a near neighbour."
+                return
             endif
 
             !------------------------------------------------------------------
             ! Store original parcel number before we communicate:
             n_orig_parcels = source%local_num
+
+
+            !---------------------------------------------------------------------
+            ! Mark all entries of isma, iclo and rclo above n_local_small
+            ! as invalid.
+            do n = n_local_mix+1, size(iclo)
+                isma(n) = -1
+                iclo(n) = -1
+                rclo(n) = -1
+            enddo
+
+            print *, "n_local_mix", n_local_mix
+            print *, "isma:", isma(1:)
+            print *, "iclo:", iclo
+            print *, "rclo:", rclo
 
             !---------------------------------------------------------------------
             ! We perform the actual merging locally. We must therefore send all
@@ -217,18 +278,20 @@ module parcel_mixing
             !       on another MPI rank that is sent elsewhere.
             ! The array *inva* contains all indices of small parcels that we sent to another
             ! MPI rank. We use *inva* to overwrite the parcels with their mixed values
-            call gather_remote_parcels(source, n_local_mix, n_invalid, rclo, iclo, isma, inva)
+            call gather_remote_parcels(source, n_local_mix, n_invalid)
 
             !------------------------------------------------------------------
             ! Apply the mixing and mark all parcels involved in the mixing
             ! process to avoid double-mixing
-            if (l_local_mix) then
+            if (n_local_mix > 0) then
                 call actual_mixing(source, dest, n_local_mix)
 
                 ! local mixing: applies to isma and iclo
                 do m = 1, n_local_mix
                     is = isma(m)
                     ic = iclo(m)
+
+                    print *, m, n_local_mix, is
 
                     ! Mark source parcel as 'mixed':
                     if (l_sflag(is)) then
@@ -245,6 +308,8 @@ module parcel_mixing
                     l_dflag(ic) = .true.
                 enddo
             endif
+
+            print *, "n_invalid:", n_invalid
 
             !------------------------------------------------------------------
             ! Receive small parcels that we sent earlier:
@@ -277,78 +342,9 @@ module parcel_mixing
                 deallocate(dclo)
             endif
 
+            call near%dealloc
+
         end subroutine apply_mixing
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! Assign a parcel to (ix, iy). The vertical direction is not needed.
-        !@pre Assumes a parcel is in the local domain including halo cells
-        !      (in x and y).
-        subroutine local_cell_index(pcont, n)
-            class(pc_type), intent(inout) :: pcont
-            integer,        intent(in)    :: n
-            integer                       :: ix, iy, ij
-
-            call handle_periodic_edge_parcels(pcont%position(:, n))
-
-            ix = int(dxi(1) * (pcont%position(1, n) - box%halo_lower(1)))
-            iy = int(dxi(2) * (pcont%position(2, n) - box%halo_lower(2)))
-
-            ! Cell index of parcel:
-            !   This runs from 1 to halo_ncell where
-            !   halo_ncell includes halo cells
-            ij = 1 + ix + box%halo_size(1) * iy
-
-#ifndef NEDBUG
-            if (ij < 1) then
-               call mpi_exit_on_error(&
-                        'in local_cell_index: Parcel not in local domain.')
-            endif
-#endif
-
-            ! Accumulate number of parcels in this grid cell:
-            nppc(ij) = nppc(ij) + 1
-
-            ! Store grid cell that this parcel is in:
-            loca(n) = ij
-
-        end subroutine local_cell_index
-
-        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-        ! If a small parcel is in a boundary cell, a duplicate must
-        ! be sent to the neighbour rank.
-        subroutine exchange_bndry_info(source, n_local_mix, n_remote_mix)
-            class(pc_type), intent(inout) :: source
-            integer,        intent(in)    :: n_local_mix
-            integer,        intent(inout) :: n_remote_mix
-            integer                       :: m, is
-
-            ! We must store the parcel index and the merge index *m*
-            ! of each small parcel. We do not need to allocate the
-            ! invalid buffer, therefore the second argument is .false.
-            call allocate_parcel_id_buffers(source, 2, .false.)
-
-            !------------------------------------------------------------------
-            ! Collect info and fill send buffers
-            do m = 1, n_local_mix
-                is = isma(m)
-                call locate_parcel_in_boundary_cell(source, m, is)
-            enddo
-
-            !---------------------------------------------------------------------
-            ! Communicate position of small parcels:
-            ! Send position attribute, parcel index and the *isma* index of small parcels
-            ! in boundary region to neighbours. We only need to send the position
-            ! as this is the only attribute needed to figure out with whom a parcel
-            ! might mix.
-            call send_small_parcel_bndry_info(source, n_remote_mix)
-
-            !------------------------------------------------------------------
-            ! Clean-up:
-            call deallocate_parcel_id_buffers
-
-        end subroutine exchange_bndry_info
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -358,7 +354,7 @@ module parcel_mixing
             class(pc_type),  intent(inout) :: dest
             integer,         intent(in)    :: n_local_mix
             integer,         intent(in)    :: n_remote_mix
-            integer                        :: n, ix, iy, ij, m, ix0, iy0, ic, k, is
+            integer                        :: n, ix, iy, iz, ijk, m, ix0, iy0, ic, k, is
             double precision               :: xs, ys, zs, delx, dely, delz, dsq, dsqmin
 
 
@@ -374,6 +370,8 @@ module parcel_mixing
                 ! grid cell this parcel is in:
                 ix0 = nint(dxi(1) * (xs - box%halo_lower(1))) ! ranges from 0 to box%halo_size(1)
                 iy0 = nint(dxi(2) * (ys - box%halo_lower(2))) ! ranges from 0 to box%halo_size(2)
+!                 iz  = nint(dxi(3) * (zs - box%lower(3)))      ! ranges from 0 to nz
+                iz  = min(int(dxi(3) * (zs - box%lower(3))), nz-1)      ! ranges from 0 to nz-1
 
                 dsqmin = two * vcell
                 ic = 0
@@ -383,11 +381,13 @@ module parcel_mixing
                 do iy = max(0, iy0-1), min(box%size(2)+1, iy0)
                     do ix = max(0, ix0-1), min(box%size(1)+1, ix0)
                         ! Cell index:
-                        ij = 1 + ix + box%halo_size(1) * iy
+                        ijk = 1 + ix                                        &
+                                + box%halo_size(1) * iy                     &
+                                + box%halo_size(1) * box%halo_size(2) * iz
 
                         ! Search small parcels for closest other:
-                        do k = kc1(ij), kc2(ij)
-                            n = node(k)
+                        do k = near%kc1(ijk), near%kc2(ijk)
+                            n = near%node(k)
                             delz = dest%get_z_position(n) - zs
                             if (delz * delz < dsqmin) then
                                 delx = get_delx(dest%position(1, n), xs)
@@ -409,9 +409,12 @@ module parcel_mixing
                 rclo(m)     = cart%rank
                 dclo(m)     = dsqmin
 
-                ! If ic == -1, then no near parcel is found. We must ignore this mix.
+                print *, "m, is, ic", m, is, ic
+
+                ! If ic == 0, then no near parcel is found. We must ignore this mix.
                 if (ic == 0) then
                     isma(m) = -1
+                    iclo(m) = -1
                     rclo(m) = -1
                     dclo(m) = huge(0.0d0)
                 endif
@@ -508,14 +511,10 @@ module parcel_mixing
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine gather_remote_parcels(pcont, n_local_small, n_invalid, rclo, iclo, isma, inva)
+        subroutine gather_remote_parcels(pcont, n_local_small, n_invalid)
             class(pc_type),              intent(inout) :: pcont
             integer,                     intent(inout) :: n_local_small
             integer,                     intent(inout) :: n_invalid
-            integer,                     intent(inout) :: rclo(:)       ! MPI rank of closest parcel
-            integer,                     intent(inout) :: iclo(:)
-            integer,                     intent(inout) :: isma(0:)
-            integer,                     intent(inout) :: inva(0:)
             double precision, dimension(:), pointer    :: send_buf
             double precision, allocatable              :: recv_buf(:)
             type(MPI_Request)                          :: requests(8)
@@ -533,6 +532,7 @@ module parcel_mixing
 
             do m = 1, n_local_small
                 rc = rclo(m)
+                print *, "ranks", rc, cart%rank
                 if (cart%rank /= rc) then
                     n = get_neighbour_from_rank(rc)
                     n_parcel_sends(n) = n_parcel_sends(n) + 1
@@ -540,6 +540,8 @@ module parcel_mixing
             enddo
 
             n_invalid = sum(n_parcel_sends)
+
+            print *, "n_invalid", n_invalid
 
             ! We must send all parcel attributes (attr_num) plus
             ! the index of the close parcel ic (1)
@@ -591,10 +593,11 @@ module parcel_mixing
             if (n_local_small > 0) then
                 ! We must now remove all invalid entries in isma and
                 ! iclo and also update the value of n_local_small:
-                n_local_small = count(isma(1:) /= -1)
-                isma(1:n_local_small) = pack(isma(1:), isma(1:) /= -1)
-                iclo(1:n_local_small) = pack(iclo, iclo /= -1)
-                rclo(1:n_local_small) = pack(rclo, rclo /= -1)
+                iv = n_local_small
+                n_local_small = count(isma(1:iv) /= -1)
+                isma(1:n_local_small) = pack(isma(1:iv), isma(1:iv) /= -1)
+                iclo(1:n_local_small) = pack(iclo(1:iv), iclo(1:iv) /= -1)
+                rclo(1:n_local_small) = pack(rclo(1:iv), rclo(1:iv) /= -1)
             endif
 
             !------------------------------------------------------------------
