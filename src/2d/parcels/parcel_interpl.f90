@@ -312,6 +312,7 @@ module parcel_interpl
                     do n = 1, n_parcels
                         vel(:, n) = zero
                         vor(n)    = zero
+                        vgrad(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -322,6 +323,7 @@ module parcel_interpl
                 do n = 1, n_parcels
                     vel(:, n) = zero
                     vor(n)    = zero
+                    vgrad(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -330,8 +332,6 @@ module parcel_interpl
             !$omp parallel default(shared)
             !$omp do private(n, p, l, points, weight, is, js, weights)
             do n = 1, n_parcels
-
-                vgrad(:, n) = zero
 
                 points = get_ellipse_points(parcels%position(:, n), &
                                             parcels%volume(n),      &

@@ -8,27 +8,42 @@ module rk4_utils
 #endif
 
     implicit none
+    double precision, parameter :: Imat(2,2)=reshape((/one,zero,zero,one/), (/2,2/))
 
     contains
 
-        ! Advance the B matrix.
-        ! @param[in] Bin are the B matrix components of the parcel
-        ! @param[in] S is the local velocity strain
-        ! @param[in] volume is the parcel volume
-        ! @returns the updated B matrix components (B11 and B12) in Bout
-        function get_B(Bin, S, volume) result(Bout)
-            double precision, intent(in) :: Bin(2)
+        subroutine evolve_ellipsoid(B, S, volume, dt_sub)
+            double precision, intent(inout) :: B(2)
             double precision, intent(in) :: S(4)
             double precision, intent(in) :: volume
-            double precision             :: Bout(2)
+            double precision, intent(in) :: dt_sub
+            double precision :: Bmat(2,2)
+            double precision :: Smat(2,2)
+            double precision :: Qmat(2,2)
 
-            ! B11 = 2 * (dudx * B11 + dudy * B12)
-            Bout(1) = two * (S(1) * Bin(1) + S(2) * Bin(2))
+            Bmat(1, 1) = B(1) ! B11
+            Bmat(1, 2) = B(2) ! B12
+            Bmat(2, 1) = B(1) ! B21
+            Bmat(2, 2) = get_B22(B(1), B(2), volume)
 
-            ! B12 = dvdx * B11 + dudy * B22
-            Bout(2) = S(3) * Bin(1) + S(2) * get_B22(Bin(1), Bin(2), volume)
+            Smat(1, 1) = S(1) ! S11
+            Smat(1, 2) = S(2) ! S12
+            Smat(2, 1) = S(3) ! S21
+            Smat(2, 2) = S(4) ! S33
 
-        end function get_B
+            Qmat = Imat + &
+                   0.25 * dt_sub * Smat + &
+                   0.03125 * dt_sub * dt_sub * matmul(Smat, Smat) + &
+                   (1.0 / 384.0) * dt_sub * dt_sub * dt_sub * matmul(Smat, matmul(Smat, Smat))
+
+            Qmat = matmul(Qmat, Qmat)
+            Qmat = matmul(Qmat, Qmat)
+            Bmat = matmul(Qmat, matmul(Bmat, transpose(Qmat)))
+
+            B(1) = Bmat(1, 1)
+            B(2) = Bmat(1, 2)
+
+        end subroutine evolve_ellipsoid
 
         ! Estimate a suitable time step based on the velocity strain
         ! and buoyancy gradient.
