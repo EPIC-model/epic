@@ -423,6 +423,7 @@ module parcel_interpl
                     do n = 1, n_parcels
                         parcels%delta_pos(:, n) = zero
                         parcels%delta_vor(:, n) = zero
+                        parcels%int_strain(:, n) = zero
                     enddo
                     !$omp end do
                     !$omp end parallel
@@ -433,6 +434,7 @@ module parcel_interpl
                 do n = 1, n_parcels
                     parcels%delta_pos(:, n) = zero
                     parcels%delta_vor(:, n) = zero
+                    parcels%int_strain(:, n) = zero
                 enddo
                 !$omp end do
                 !$omp end parallel
@@ -441,8 +443,6 @@ module parcel_interpl
             !$omp parallel default(shared)
             !$omp do private(n, l, p, points, is, js, ks, weights)
             do n = 1, n_parcels
-
-                parcels%strain(:, n) = zero
 
 #ifndef ENABLE_G2P_1POINT
                 points = get_ellipsoid_points(parcels%position(:, n), &
@@ -460,7 +460,7 @@ module parcel_interpl
                                                 + point_weight_g2p * sum(weights * velog(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                     do l = 1,8
-                        parcels%strain(l, n) = parcels%strain(l, n) &
+                        parcels%int_strain(l, n) = parcels%int_strain(l, n) &
                                              + point_weight_g2p * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                     do l = 1,3

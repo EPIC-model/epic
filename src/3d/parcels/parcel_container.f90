@@ -86,8 +86,8 @@ module parcel_container
         double precision, allocatable, dimension(:, :) :: &
             delta_pos,  &   ! velocity
             delta_vor,  &   ! vorticity tendency
-            strain,     &
-            delta_b         ! B-matrix tendency
+            int_strain
+
     end type parcel_container_type
 
     type(parcel_container_type) parcels
@@ -129,22 +129,16 @@ module parcel_container
             IDX_RK4_X_DVOR = i + 3
             IDX_RK4_Y_DVOR = i + 4
             IDX_RK4_Z_DVOR = i + 5
-            IDX_RK4_DB11 = i + 6
-            IDX_RK4_DB12 = i + 7
-            IDX_RK4_DB13 = i + 8
-            IDX_RK4_DB22 = i + 9
-            IDX_RK4_DB23 = i + 10
-            IDX_RK4_DB33 = i + 11
-            IDX_RK4_DUDX = i + 12
-            IDX_RK4_DUDY = i + 13
-            IDX_RK4_DUDZ = i + 14
-            IDX_RK4_DVDX = i + 15
-            IDX_RK4_DVDY = i + 16
-            IDX_RK4_DVDZ = i + 17
-            IDX_RK4_DWDX = i + 18
-            IDX_RK4_DWDY = i + 19
+            IDX_RK4_DUDX = i + 6
+            IDX_RK4_DUDY = i + 7
+            IDX_RK4_DUDZ = i + 8
+            IDX_RK4_DVDX = i + 9
+            IDX_RK4_DVDY = i + 10
+            IDX_RK4_DVDZ = i + 11
+            IDX_RK4_DWDX = i + 12
+            IDX_RK4_DWDY = i + 13
 
-            i = i + 20
+            i = i + 14
 
             n_par_attrib = set_ellipsoid_buffer_indices(i)
 
@@ -247,22 +241,21 @@ module parcel_container
             endif
 #endif
 
-            parcels%position(:, n)  = parcels%position(:, m)
-            parcels%vorticity(:, n) = parcels%vorticity(:, m)
-            parcels%volume(n)       = parcels%volume(m)
-            parcels%buoyancy(n)     = parcels%buoyancy(m)
+            parcels%position(:, n)   = parcels%position(:, m)
+            parcels%vorticity(:, n)  = parcels%vorticity(:, m)
+            parcels%volume(n)        = parcels%volume(m)
+            parcels%buoyancy(n)      = parcels%buoyancy(m)
 #ifndef ENABLE_DRY_MODE
-            parcels%humidity(n)     = parcels%humidity(m)
+            parcels%humidity(n)      = parcels%humidity(m)
 #endif
-            parcels%B(:, n)         = parcels%B(:, m)
+            parcels%B(:, n)          = parcels%B(:, m)
 
             call parcel_ellipsoid_replace(n, m)
 
             ! LS-RK4 variables:
-            parcels%delta_pos(:, n) = parcels%delta_pos(:, m)
-            parcels%delta_vor(:, n) = parcels%delta_vor(:, m)
-            parcels%delta_b(:, n)   = parcels%delta_b(:, m)
-            parcels%strain(:, n)    = parcels%strain(:, m)
+            parcels%delta_pos(:, n)  = parcels%delta_pos(:, m)
+            parcels%delta_vor(:, n)  = parcels%delta_vor(:, m)
+            parcels%int_strain(:, n) = parcels%int_strain(:, m)
 
         end subroutine parcel_replace
 
@@ -296,8 +289,7 @@ module parcel_container
             ! LS-RK4 variables
             call resize_array(parcels%delta_pos, new_size, n_parcels)
             call resize_array(parcels%delta_vor, new_size, n_parcels)
-            call resize_array(parcels%strain, new_size, n_parcels)
-            call resize_array(parcels%delta_b, new_size, n_parcels)
+            call resize_array(parcels%int_strain, new_size, n_parcels)
 
             call stop_timer(resize_timer)
 
@@ -325,8 +317,7 @@ module parcel_container
             ! LS-RK4 variables
             allocate(parcels%delta_pos(3, num))
             allocate(parcels%delta_vor(3, num))
-            allocate(parcels%strain(8, num))
-            allocate(parcels%delta_b(6, num))
+            allocate(parcels%int_strain(8, num))
 
         end subroutine parcel_alloc
 
@@ -355,8 +346,7 @@ module parcel_container
             ! LS-RK4 variables
             deallocate(parcels%delta_pos)
             deallocate(parcels%delta_vor)
-            deallocate(parcels%strain)
-            deallocate(parcels%delta_b)
+            deallocate(parcels%int_strain)
 
         end subroutine parcel_dealloc
 
@@ -378,8 +368,7 @@ module parcel_container
             ! LS-RK4 variables:
             buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS) = parcels%delta_pos(:, n)
             buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR) = parcels%delta_vor(:, n)
-            buffer(IDX_RK4_DB11:IDX_RK4_DB33)     = parcels%delta_b(:, n)
-            buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)     = parcels%strain(:, n)
+            buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)     = parcels%int_strain(:, n)
 
             call parcel_ellipsoid_serialize(n, buffer)
         end subroutine parcel_serialize
@@ -402,8 +391,7 @@ module parcel_container
             ! LS-RK4 variables:
             parcels%delta_pos(:, n) = buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS)
             parcels%delta_vor(:, n) = buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR)
-            parcels%delta_b(:, n)   = buffer(IDX_RK4_DB11:IDX_RK4_DB33)
-            parcels%strain(:, n)    = buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)
+            parcels%int_strain(:, n)    = buffer(IDX_RK4_DUDX:IDX_RK4_DWDY)
 
             call parcel_ellipsoid_deserialize(n, buffer)
         end subroutine parcel_deserialize

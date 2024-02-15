@@ -10,7 +10,7 @@ module ls_rk
     use parcel_bc
     use parcel_mpi, only : parcel_communicate
     use parcel_ellipsoid, only : get_abc
-    use rk_utils, only: get_dBdt, get_time_step
+    use rk_utils, only: get_time_step, evolve_ellipsoid
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par
     use parcel_damping, only : parcel_damp
@@ -122,6 +122,7 @@ module ls_rk
             enddo
             call ls_rk_substep(dt, n_stages)
 
+            ! normalize B matrix
             call start_timer(rk_timer)
             call apply_parcel_reflective_bc
             call stop_timer(rk_timer)
@@ -152,13 +153,6 @@ module ls_rk
             if (step == 1) then
                 call start_timer(rk_timer)
 
-                !$omp parallel do default(shared) private(n)
-                do n = 1, n_parcels
-                    parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n),           &
-                                                     parcels%strain(:, n))
-                enddo
-                !$omp end parallel do
-
                 call stop_timer(rk_timer)
             else
                 call vor2vel
@@ -169,22 +163,12 @@ module ls_rk
 
                 call start_timer(rk_timer)
 
-                !$omp parallel do default(shared) private(n)
-                do n = 1, n_parcels
-                    parcels%delta_b(:, n) = parcels%delta_b(:, n)               &
-                                          + get_dBdt(parcels%B(:, n),           &
-                                                     parcels%strain(:, n))
-
-                enddo
-                !$omp end parallel do
-
-
                 call stop_timer(rk_timer)
             endif
 
             call start_timer(rk_timer)
 
-            !$omp parallel do default(shared) private(n,detB,factor)
+            !$omp parallel do default(shared) private(n, detB, factor)
             do n = 1, n_parcels
                 parcels%position(:, n) = parcels%position(:, n) &
                                        + cb * dt * parcels%delta_pos(:, n)
@@ -192,17 +176,14 @@ module ls_rk
                 parcels%vorticity(:, n) = parcels%vorticity(:, n) &
                                         + cb * dt * parcels%delta_vor(:, n)
 
-                parcels%B(:, n) = parcels%B(:, n) &
-                                + cb * dt * parcels%delta_b(:, n)
+                call evolve_ellipsoid(parcels%B(:, n), parcels%int_strain(:, n), cb * dt)
 
-                ! normalize B matrix
                 detB = parcels%B(1, n) * (parcels%B(4, n) * parcels%B(6, n) - parcels%B(5, n) ** 2) &
                      - parcels%B(2, n) * (parcels%B(2, n) * parcels%B(6, n) - parcels%B(3, n) * parcels%B(5, n)) &
                      + parcels%B(3, n) * (parcels%B(2, n) * parcels%B(5, n) - parcels%B(3, n) * parcels%B(4, n))
 
                 factor = (get_abc(parcels%volume(n)) ** 2 / detB) ** f13
 
-                parcels%delta_b(:, n) = parcels%delta_b(:, n) + parcels%B(:, n) * (factor - one)/(cb * dt)
                 parcels%B(:, n) = parcels%B(:, n) * factor
             enddo
             !$omp end parallel do
@@ -220,7 +201,7 @@ module ls_rk
             do n = 1, n_parcels
                 parcels%delta_pos(:, n) = ca * parcels%delta_pos(:, n)
                 parcels%delta_vor(:, n) = ca * parcels%delta_vor(:, n)
-                parcels%delta_b(:, n) = ca * parcels%delta_b(:, n)
+                parcels%int_strain(:, n) = ca * parcels%int_strain(:, n)
             enddo
             !$omp end parallel do
 
