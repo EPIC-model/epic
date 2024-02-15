@@ -86,7 +86,7 @@ module parcel_diagnostics
                 parcel_stats(IDX_ENSTROPHY) = parcel_stats(IDX_ENSTROPHY) &
                                             + (vor(1) ** 2 + vor(2) ** 2 + vor(3) ** 2) * vol
 
-                evals = get_eigenvalues(parcels%B(:, n), parcels%volume(n))
+                evals = get_eigenvalues(parcels%B(:, n))
                 lam = get_aspect_ratio(evals)
 
                 parcel_stats(IDX_AVG_LAM) = parcel_stats(IDX_AVG_LAM) + lam
@@ -105,7 +105,7 @@ module parcel_diagnostics
 
 #ifndef NDEBUG
                 !$omp critical
-                if (abs(get_determinant(parcels%B(:, n), vol) / get_abc(vol) ** 2 - one) > thres) then
+                if (abs(get_determinant(parcels%B(:, n)) / get_abc(vol) ** 2 - one) > thres) then
                     call mpi_exit_on_error("Parcel determinant not preserved!")
                 endif
                 !$omp end critical

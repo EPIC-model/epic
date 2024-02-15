@@ -12,7 +12,7 @@ program test_mpi_parcel_init_3d
     use parcel_container
     use parcel_init, only : init_timer, parcel_default, init_parcels_from_grids
     use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
-    use parcel_ellipsoid, only : get_abc
+    use parcel_ellipsoid, only : get_abc, get_b33
     use fields, only : tbuoyg, field_default
     use field_ops, only : get_rms, get_abs_max
     use parameters, only : update_parameters, dx, nx, ny, nz, lower, vcell
@@ -108,6 +108,7 @@ program test_mpi_parcel_init_3d
                             parcels%B(:, l) = zero
                             parcels%B(1, l) = get_abc(v0) ** f23
                             parcels%B(4, l) = parcels%B(1, l)
+                            parcels%B(6, l) = get_b33(parcels%B(1:5, l), parcels%volume(l))
                             l = l + 1
                         enddo
                     enddo

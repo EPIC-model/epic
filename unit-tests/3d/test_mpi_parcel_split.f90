@@ -141,7 +141,7 @@ program test_mpi_parcel_split
         subroutine fill_shape(m, angle)
             integer,          intent(in) :: m
             double precision, intent(in) :: angle
-            double precision             :: B11, B12, B13, B22, B23, st, ct, sp, cp
+            double precision             :: B11, B12, B13, B22, B23, B33, st, ct, sp, cp
 
             st = dsin(angle)
             ct = dcos(angle)
@@ -153,12 +153,14 @@ program test_mpi_parcel_split
             B13 = (a2 - c2) * ct * sp * cp
             B22 = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
             B23 = (a2 - c2) * st * sp * cp
+            B33 = a2 * cp ** 2 + c2 * sp ** 2
 
             parcels%B(1, m) = B11
             parcels%B(2, m) = B12
             parcels%B(3, m) = B13
             parcels%B(4, m) = B22
             parcels%B(5, m) = B23
+            parcels%B(6, m) = B33
         end subroutine fill_shape
 
 end program test_mpi_parcel_split

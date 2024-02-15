@@ -18,7 +18,7 @@ program test_parcel_correction_3d
                                 , vort_corr_timer           &
                                 , init_parcel_correction
     use parcel_interpl, only : vol2grid, halo_swap_timer
-    use parcel_ellipsoid, only : get_abc
+    use parcel_ellipsoid, only : get_abc, get_b33
     use parcel_init, only : init_regular_positions
     use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz, dx
     use fields, only : volg, field_default
@@ -119,6 +119,11 @@ program test_parcel_correction_3d
 
     ! b22
     parcels%B(4, :) = parcels%B(1, :)
+
+    ! b33
+    do n = 1, n_parcels
+      parcels%B(6, n) = get_b33(parcels%B(1:5, n), parcels%volume(n))
+    enddo
 
     call vol2grid
 
