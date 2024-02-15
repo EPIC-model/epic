@@ -54,9 +54,9 @@ module fields
     integer, parameter :: I_DUDX = 1 & ! index for du/dx strain component
                         , I_DUDY = 2 & ! index for du/dy strain component
                         , I_DUDZ = 3 & ! index for du/dz strain component
-                        , I_DVDX = 4 & ! index for dv/dy strain component
+                        , I_DVDX = 4 & ! index for dv/dx strain component
                         , I_DVDY = 5 & ! index for dv/dy strain component
-                        , I_DVDZ = 6 & ! index for dv/dy strain component
+                        , I_DVDZ = 6 & ! index for dv/dz strain component
                         , I_DWDX = 7 & ! index for dw/dx strain component
                         , I_DWDY = 8   ! index for dw/dy strain component
 
