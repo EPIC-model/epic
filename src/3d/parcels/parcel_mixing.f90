@@ -48,6 +48,7 @@ module parcel_mixing
     integer, allocatable          :: rclo(:)    ! MPI rank of closest parcel
     double precision, allocatable :: dclo(:)    ! distance to closest parcel
 
+    integer :: n_parcel_recvs(8)
 
     public :: mix_parcels, mixing_timer
 
@@ -61,7 +62,6 @@ module parcel_mixing
             ! Initialise:
 
             if (.not. allocated(top_mixed)) then
-!                 nelem = box%halo_size(1) * box%halo_size(2)
                 allocate(top_mixed(max_num_surf_parcels))
                 allocate(bot_mixed(max_num_surf_parcels))
                 allocate(int_mixed(max_num_parcels))
@@ -83,8 +83,8 @@ module parcel_mixing
             ! -----------------------------------------------------------------
             ! Mix small interior parcels with nearest surface parcels:
 
-!             call apply_mixing(parcels, int_mixed, bot_parcels, bot_mixed, 0)
-!             call apply_mixing(parcels, int_mixed, top_parcels, top_mixed, nz)
+            call apply_mixing(parcels, int_mixed, bot_parcels, bot_mixed, 0)
+            call apply_mixing(parcels, int_mixed, top_parcels, top_mixed, nz)
 
             !------------------------------------------------------------------
             ! Final clean-up:
@@ -152,8 +152,8 @@ module parcel_mixing
                     "in MPI_Allreduce of parcel_mixing::apply_mixing.")
 
 
-            print *, "global mix:", n_global_mix
-            print *, "local mix: ", n_local_mix
+!             print *, "global mix:", n_global_mix
+!             print *, "local mix: ", n_local_mix
 
             if (n_global_mix == 0) then
                 call near%dealloc
@@ -189,6 +189,27 @@ module parcel_mixing
             ! might mix.
             call send_small_parcel_bndry_info(source, n_remote_mix)
 
+
+!                     ! To print out the result enable the following lines:
+!     do k = 0, world%size-1
+!         if (k == world%rank) then
+!             do n = 1, source%local_num + n_remote_mix
+!                 j = 0
+!                 if (n > source%local_num) then
+!                     j = 1
+!                 endif
+! !                 is = isma(n)
+! !                 ic = iclo(n)
+!                 print *, j, source%position(1, n), source%position(2, n), int(source%buoyancy(n))
+! !                                     source%position(1, ic), source%position(2, ic), int(source%buoyancy(ic))
+!             enddo
+!         endif
+!         call MPI_Barrier(world%comm, world%err)
+!     enddo
+!     call mpi_stop
+
+
+
             l_local_mix = (n_local_mix + n_remote_mix > 0)
 
             if (l_local_mix) then
@@ -196,7 +217,7 @@ module parcel_mixing
                 !--------------------------------------------------------------
                 ! Allocate working arrays:
                 allocate(isma(0:n_local_mix+n_remote_mix))
-                allocate(inva(0:n_local_mix+n_remote_mix))
+!                 allocate(inva(0:n_local_mix+n_remote_mix))
                 allocate(iclo(n_local_mix+n_remote_mix))
                 allocate(rclo(n_local_mix+n_remote_mix))
                 allocate(dclo(n_local_mix+n_remote_mix))
@@ -204,10 +225,10 @@ module parcel_mixing
                 isma = -1
                 iclo = -1
                 rclo = -1
-                inva = -1
+!                 inva = -1
                 dclo = product(extent)
 
-                print *, "sizes:", source%local_num, n_remote_mix, n_local_mix
+!                 print *, "sizes:", source%local_num, n_remote_mix, n_local_mix
                 j = 0
                 do n = 1, source%local_num + n_remote_mix
                     if (source%is_small(n) .and. (.not. l_sflag(n))) then
@@ -244,18 +265,13 @@ module parcel_mixing
             if (n_local_mix == 0) then
                 call near%dealloc
                 deallocate(isma)
-                deallocate(inva)
+!                 deallocate(inva)
                 deallocate(iclo)
                 deallocate(rclo)
                 deallocate(dclo)
                 print *, "No parcel found a near neighbour."
                 return
             endif
-
-            !------------------------------------------------------------------
-            ! Store original parcel number before we communicate:
-            n_orig_parcels = source%local_num
-
 
             !---------------------------------------------------------------------
             ! Mark all entries of isma, iclo and rclo above n_local_small
@@ -266,10 +282,13 @@ module parcel_mixing
                 rclo(n) = -1
             enddo
 
-            print *, "n_local_mix", n_local_mix
-            print *, "isma:", isma(1:)
-            print *, "iclo:", iclo
-            print *, "rclo:", rclo
+
+            !------------------------------------------------------------------
+            ! Store original parcel number before we communicate:
+            n_orig_parcels = source%local_num
+
+            ! The number of small parcels that we receive is at most "n_remote_mix":
+            allocate(inva(n_remote_mix))
 
             !---------------------------------------------------------------------
             ! We perform the actual merging locally. We must therefore send all
@@ -291,8 +310,6 @@ module parcel_mixing
                     is = isma(m)
                     ic = iclo(m)
 
-                    print *, m, n_local_mix, is
-
                     ! Mark source parcel as 'mixed':
                     if (l_sflag(is)) then
                         call mpi_exit_on_error(&
@@ -309,34 +326,35 @@ module parcel_mixing
                 enddo
             endif
 
-            print *, "n_invalid:", n_invalid
 
             !------------------------------------------------------------------
-            ! Receive small parcels that we sent earlier:
-            call scatter_remote_parcels(source, n_orig_parcels)
+            ! Receive small parcels that we sent earlier and mark as mixed:
+            call scatter_remote_parcels(source, l_sflag, n_orig_parcels)
 
-            !------------------------------------------------------------------
-            ! The received parcels are all appended to the end of the container.
-            ! We must now overwrite their initial values with the new mixed values.
-            ! For this purpose we can use the *inva* array as it stores all invalid
-            ! parcel indices.
-            do m = 1, n_invalid
-                is = inva(m)
-                if (l_sflag(is)) then
-                    call mpi_exit_on_error(&
-                        'in apply_mixing: Small parcel was already mixed previously.')
-                endif
-                l_sflag(is) = .true.
-            enddo
+            deallocate(inva)
 
-            ! Back fill the array with received parcels
-            call source%delete(inva, n_invalid)
+!             !------------------------------------------------------------------
+!             ! The received parcels are all appended to the end of the container.
+!             ! We must now overwrite their initial values with the new mixed values.
+!             ! For this purpose we can use the *inva* array as it stores all invalid
+!             ! parcel indices.
+!             do m = 1, n_invalid
+!                 is = inva(m)
+!                 if (l_sflag(is)) then
+!                     call mpi_exit_on_error(&
+!                         'in apply_mixing: Small parcel was already mixed previously.')
+!                 endif
+!                 l_sflag(is) = .true.
+!             enddo
+
+!             ! Back fill the array with received parcels
+!             call source%delete(inva, n_invalid)
 
             !------------------------------------------------------------------
             ! Deallocate working arrays:
             if (l_local_mix) then
                 deallocate(isma)
-                deallocate(inva)
+!                 deallocate(inva)
                 deallocate(iclo)
                 deallocate(rclo)
                 deallocate(dclo)
@@ -354,7 +372,7 @@ module parcel_mixing
             class(pc_type),  intent(inout) :: dest
             integer,         intent(in)    :: n_local_mix
             integer,         intent(in)    :: n_remote_mix
-            integer                        :: n, ix, iy, iz, ijk, m, ix0, iy0, ic, k, is
+            integer                        :: n, ix, iy, ijk, m, ix0, iy0, iz0, ic, k, is
             double precision               :: xs, ys, zs, delx, dely, delz, dsq, dsqmin
 
 
@@ -367,11 +385,12 @@ module parcel_mixing
                 ys = source%position(2, is)
                 zs = source%get_z_position(is)
 
-                ! grid cell this parcel is in:
+                ! nearest grid point:
                 ix0 = nint(dxi(1) * (xs - box%halo_lower(1))) ! ranges from 0 to box%halo_size(1)
                 iy0 = nint(dxi(2) * (ys - box%halo_lower(2))) ! ranges from 0 to box%halo_size(2)
-!                 iz  = nint(dxi(3) * (zs - box%lower(3)))      ! ranges from 0 to nz
-                iz  = min(int(dxi(3) * (zs - box%lower(3))), nz-1)      ! ranges from 0 to nz-1
+
+                ! grid cells to search:
+                iz0 = min(int(dxi(3) * (zs - box%lower(3))), nz-1)      ! ranges from 0 to nz-1
 
                 dsqmin = two * vcell
                 ic = 0
@@ -383,7 +402,7 @@ module parcel_mixing
                         ! Cell index:
                         ijk = 1 + ix                                        &
                                 + box%halo_size(1) * iy                     &
-                                + box%halo_size(1) * box%halo_size(2) * iz
+                                + box%halo_size(1) * box%halo_size(2) * iz0
 
                         ! Search small parcels for closest other:
                         do k = near%kc1(ijk), near%kc2(ijk)
@@ -409,7 +428,7 @@ module parcel_mixing
                 rclo(m)     = cart%rank
                 dclo(m)     = dsqmin
 
-                print *, "m, is, ic", m, is, ic
+!                 print *, "m, is, ic", m, is, ic
 
                 ! If ic == 0, then no near parcel is found. We must ignore this mix.
                 if (ic == 0) then
@@ -421,8 +440,28 @@ module parcel_mixing
             enddo
 
             !---------------------------------------------------------------------
-            ! Update isma, iclo and rclo with indices of remote parcels:
-            call update_remote_indices(source, n_local_mix, n_remote_mix, isma, iclo, rclo, dclo)
+            ! Make some checks:
+            do m = 1, n_local_mix + n_remote_mix
+                ic = iclo(m)
+
+                if (ic > dest%local_num) then
+                     ! A local small parcel points (is) to a remote close parcel (ic).
+                     ! This cannot happen!
+                     call mpi_exit_on_error(&
+                        'in parcel_mixing::find_locally: Small parcel cannot point to remote close parcel!')
+                endif
+            enddo
+
+            !------------------------------------------------------------------
+            ! Sanity check: Indices of small parcels must be smaller equal to the
+            ! number of local parcels:
+            do m = 1, n_local_mix
+                if (isma(m) > source%local_num) then
+                    call mpi_exit_on_error(&
+                        'in parcel_mixing::find_locally: Small parcel index out of range.')
+                endif
+            enddo
+
 
         end subroutine find_locally
 
@@ -521,7 +560,7 @@ module parcel_mixing
             type(MPI_Status)                           :: recv_status, send_statuses(8)
             integer                                    :: recv_count
             integer                                    :: recv_size, send_size
-            double precision                           :: buffer(pcont%attr_num)
+            double precision                           :: buffer(pcont%mix_attr_num)
             integer                                    :: m, rc, ic, is, n, i, j, k, iv
             integer                                    :: n_entries
             integer                                    :: n_registered(8)
@@ -532,7 +571,6 @@ module parcel_mixing
 
             do m = 1, n_local_small
                 rc = rclo(m)
-                print *, "ranks", rc, cart%rank
                 if (cart%rank /= rc) then
                     n = get_neighbour_from_rank(rc)
                     n_parcel_sends(n) = n_parcel_sends(n) + 1
@@ -541,11 +579,9 @@ module parcel_mixing
 
             n_invalid = sum(n_parcel_sends)
 
-            print *, "n_invalid", n_invalid
-
-            ! We must send all parcel attributes (attr_num) plus
-            ! the index of the close parcel ic (1)
-            n_entries = pcont%attr_num + 1
+            ! We must send all parcel attributes used for mixing (mix_attr_num), the local
+            ! parcel index (is) plus the index of the close parcel ic (1)
+            n_entries = pcont%mix_attr_num + 2
             n_registered = n_parcel_sends * n_entries
             call allocate_mpi_buffers(n_registered)
 
@@ -568,20 +604,19 @@ module parcel_mixing
 
                     n_registered(n) = n_registered(n) + 1
 
-                    call pcont%serialize(is, buffer)
+                    call pcont%mixing_serialize(is, buffer)
                     j = n_entries * n_registered(n)
                     i = j - n_entries + 1
-                    send_buf(i:j-1) = buffer
-                    send_buf(j) = dble(ic)
+                    send_buf(i:j-2) = buffer
+                    send_buf(j-1) = dble(ic)
+                    send_buf(j)   = dble(is)
 
                     ! Mark this as invalid
                     isma(m) = -1
                     iclo(m) = -1
                     rclo(m) = -1
 
-                    ! Copy index of this parcel, we will receive this parcel back
                     iv = iv + 1
-                    inva(iv) = is
                 endif
             enddo
 
@@ -620,6 +655,7 @@ module parcel_mixing
                     "in MPI_Isend of parcel_mixing::gather_remote_parcels.")
             enddo
 
+            iv = 0
             do n = 1, 8
                 ! check for incoming messages
                 call mpi_check_for_message(neighbours(n)%rank,      &
@@ -648,6 +684,8 @@ module parcel_mixing
 
                 recv_count = recv_size / n_entries
 
+                n_parcel_recvs(n) = recv_count
+
                 if (recv_count > 0) then
                     ! Set the current value of the *m* index to
                     ! its current maximum value (excluding small
@@ -660,14 +698,16 @@ module parcel_mixing
                         pcont%local_num = pcont%local_num + 1
                         j = n_entries * k
                         i = j - n_entries + 1
-                        buffer = recv_buf(i:j-1)
-                        call pcont%deserialize(pcont%local_num, buffer)
+                        buffer = recv_buf(i:j-2)
+                        call pcont%mixing_deserialize(pcont%local_num, buffer)
 
-                        ! Add the small parcel to isma and
-                        ! its closest parcel to iclo
+                        ! Add the small parcel to isma, its index to inva
+                        ! and its closest parcel index to iclo
                         m = m + 1
-                        iclo(m) = nint(recv_buf(j))
+                        iclo(m) = nint(recv_buf(j-1))
                         isma(m) = pcont%local_num
+                        iv = iv + 1
+                        inva(iv) = nint(recv_buf(j))
                     enddo
                     ! The last value of *m* is our new number of
                     ! small parcels. However, this still includes
@@ -703,33 +743,170 @@ module parcel_mixing
 
         ! Receive small parcels with remote *iclo* parcel from *this* remote MPI rank.
         ! The small parcels *this* MPI rank received earlier are all at the end of the
-        ! container.
-        subroutine scatter_remote_parcels(source, n_orig_parcels)
-            class(pc_type), intent(inout) :: source
-            integer,        intent(in)    :: n_orig_parcels
-            integer, allocatable          :: pindex(:)
-            integer                       :: n, num
+        ! container. The parcel indices are stored in *inva*.
+        subroutine scatter_remote_parcels(pcont, l_flag, n_orig_parcels)
+            class(pc_type),              intent(inout) :: pcont
+            logical,                     intent(inout) :: l_flag(:)
+            integer,                     intent(in)    :: n_orig_parcels
+            double precision, dimension(:), pointer    :: send_buf
+            double precision, allocatable              :: recv_buf(:)
+            type(MPI_Request)                          :: requests(8)
+            type(MPI_Status)                           :: recv_status, send_statuses(8)
+            integer                                    :: recv_count
+            integer                                    :: recv_size, send_size
+            double precision                           :: buffer(pcont%mix_attr_num)
+            integer                                    :: m, n, i, j, k, iv
+            integer                                    :: n_entries
+            integer                                    :: n_registered(8)
 
-            num = source%local_num - n_orig_parcels
+            ! We must send all parcel attributes used for mixing (mix_attr_num) plus its
+            ! original local parcel index, stored in *inva*.
+            ! "n_parcel_recvs" is the number of parcels we received earlier, we must send
+            ! these now back to their original MPI rank.
+            n_entries = pcont%mix_attr_num + 1
+            n_registered = n_parcel_recvs * n_entries
+            call allocate_mpi_buffers(n_registered)
 
-            if (num < 0) then
-                call mpi_exit_on_error(&
-                    "in parcel_mixing::scatter_remote_parcels: We have fewer parcels as before.")
-            endif
+            !------------------------------------------------------------------
+            ! Communicate parcels:
 
-            allocate(pindex(num))
+            ! start index of remote parcels
+            k = 0
+            do n = 1, 8
+                call get_mpi_buffer(n, send_buf)
 
-            ! All parcels that *this* MPI rank must send are stored at indices
-            ! > n_orig_parcels:
-            do n = 1, num
-                pindex(n) = n_orig_parcels + n
+                ! Fill send buffer:
+                do iv = 1, n_parcel_recvs(n)
+                    m = k + iv + n_orig_parcels
+                    call pcont%mixing_serialize(m, buffer)
+                    j = n_entries * iv
+                    i = j - n_entries + 1
+                    send_buf(i:j-1) = buffer
+                    send_buf(j)     = dble(inva(k+iv))
+                enddo
+                k = k + n_parcel_recvs(n)
+
+                send_size = n_parcel_recvs(n) * n_entries
+
+                call MPI_Isend(send_buf(1:send_size),   &
+                               send_size,               &
+                               MPI_DOUBLE_PRECISION,    &
+                               neighbours(n)%rank,      &
+                               SEND_NEIGHBOUR_TAG(n),   &
+                               cart%comm,               &
+                               requests(n),             &
+                               cart%err)
+
+                call mpi_check_for_error(cart, &
+                    "in MPI_Isend of parcel_mixing::scatter_remote_parcels.")
             enddo
 
-            ! This call also deletes the parcels *this* MPI rank sends.
-            call parcel_communicate(source, pindex)
+            ! We need to reduce the parcel number count again:
+            pcont%local_num = pcont%local_num - sum(n_parcel_recvs)
 
-            deallocate(pindex)
+            do n = 1, 8
+                ! check for incoming messages
+                call mpi_check_for_message(neighbours(n)%rank,      &
+                                           RECV_NEIGHBOUR_TAG(n),   &
+                                           recv_size,               &
+                                           cart)
+
+                allocate(recv_buf(recv_size))
+
+                call MPI_Recv(recv_buf(1:recv_size),    &
+                              recv_size,                &
+                              MPI_DOUBLE_PRECISION,     &
+                              neighbours(n)%rank,       &
+                              RECV_NEIGHBOUR_TAG(n),    &
+                              cart%comm,                &
+                              recv_status,              &
+                              cart%err)
+
+                call mpi_check_for_error(cart, &
+                    "in MPI_Recv of parcel_mixing::scatter_remote_parcels.")
+
+                if (mod(recv_size, n_entries) /= 0) then
+                    call mpi_exit_on_error(&
+                        "parcel_mixing::scatter_remote_parcels: Receiving wrong count.")
+                endif
+
+                recv_count = recv_size / n_entries
+
+                if (recv_count > 0) then
+                    do k = 1, recv_count
+                        ! We receive a small mixed parcel;
+                        ! replace its original values at index "iv"
+                        ! with the new mixed values
+                        j = n_entries * k
+                        i = j - n_entries + 1
+                        buffer = recv_buf(i:j-1)
+                        iv = nint(recv_buf(j))
+                        call pcont%mixing_deserialize(iv, buffer)
+
+                        if (l_flag(iv)) then
+                            call mpi_exit_on_error(&
+                            'in parcel_mixing::scatter_remote_parcels: Small parcel was already mixed previously.')
+                        endif
+                        l_flag(iv) = .true.
+                        print *, "receive parcel", iv
+                    enddo
+                endif
+
+                deallocate(recv_buf)
+            enddo
+
+            call MPI_Waitall(8,                 &
+                            requests,           &
+                            send_statuses,      &
+                            cart%err)
+
+            call mpi_check_for_error(cart, &
+                "in MPI_Waitall of parcel_mixing::scatter_remote_parcels.")
+
+            call deallocate_mpi_buffers
+
+#ifndef NDEBUG
+            n = pcont%local_num
+            call mpi_blocking_reduce(n, MPI_SUM, world)
+            if ((world%rank == world%root) .and. (.not. n == pcont%total_num)) then
+                call mpi_exit_on_error(&
+                    "in parcel_mixing::scatter_remote_parcels: We lost parcels.")
+            endif
+#endif
 
         end subroutine scatter_remote_parcels
+
+!         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+!
+!         ! Receive small parcels with remote *iclo* parcel from *this* remote MPI rank.
+!         ! The small parcels *this* MPI rank received earlier are all at the end of the
+!         ! container. The parcel indices are stored in *inva*.
+!         subroutine scatter_remote_parcels(source, n_orig_parcels)
+!             class(pc_type), intent(inout) :: source
+!             integer,        intent(in)    :: n_orig_parcels
+!             integer, allocatable          :: pindex(:)
+!             integer                       :: n, num
+!
+!             num = source%local_num - n_orig_parcels
+!
+!             if (num < 0) then
+!                 call mpi_exit_on_error(&
+!                     "in parcel_mixing::scatter_remote_parcels: We have fewer parcels as before.")
+!             endif
+!
+!             allocate(pindex(num))
+!
+!             ! All parcels that *this* MPI rank must send are stored at indices
+!             ! > n_orig_parcels:
+!             do n = 1, num
+!                 pindex(n) = n_orig_parcels + n
+!             enddo
+!
+!             ! This call also deletes the parcels *this* MPI rank sends.
+!             call parcel_communicate(source, pindex)
+!
+!             deallocate(pindex)
+!
+!         end subroutine scatter_remote_parcels
 
 end module parcel_mixing

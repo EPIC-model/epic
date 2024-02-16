@@ -19,6 +19,7 @@ module parcel_container
             ! number of  parcel attributes
             ! (components are counted individually, e.g. position counts as 3 attributes)
             integer :: attr_num     ! number of parcel attributes
+            integer :: mix_attr_num ! number of parcel attributes used in mixing
             integer :: local_num    ! local number of parcels
             integer :: total_num    ! global number of parcels (over all MPI ranks)
             integer :: max_num      ! capacity per attribute, i.e. maximum number of parcels
@@ -80,6 +81,8 @@ module parcel_container
             procedure :: resize => parcel_resize
             procedure :: serialize => parcel_serialize
             procedure :: deserialize => parcel_deserialize
+            procedure :: mixing_serialize => parcel_mixing_serialize
+            procedure :: mixing_deserialize => parcel_mixing_deserialize
             procedure :: pack => parcel_pack
             procedure :: unpack => parcel_unpack
             procedure :: delete => parcel_delete
@@ -158,6 +161,13 @@ module parcel_container
             allocate(this%delta_b(n_shape, num))
 
             this%max_num = num
+
+            ! vorticity, buoyancy, volume
+            this%mix_attr_num = n_vec + 2
+#ifndef ENABLE_DRY_MODE
+            ! and humidity
+            this%mix_attr_num = this%mix_attr_num + 1
+#endif
 
         end subroutine parcel_alloc
 
@@ -309,6 +319,38 @@ module parcel_container
             this%strain(:, n)    = buffer(this%IDX_RK_STRAIN_BEG:this%IDX_RK_STRAIN_END)
 
         end subroutine parcel_deserialize
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Serialize all parcel attributes to mix into a single buffer
+        subroutine parcel_mixing_serialize(this, n, buffer)
+            class(pc_type),   intent(in)  :: this
+            integer,          intent(in)  :: n
+            double precision, intent(out) :: buffer(this%mix_attr_num)
+
+            buffer(1:3) = this%vorticity(:, n)
+            buffer(4)   = this%volume(n)
+            buffer(5)   = this%buoyancy(n)
+#ifndef ENABLE_DRY_MODE
+            buffer(6)   = this%humidity(n)
+#endif
+        end subroutine parcel_mixing_serialize
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Deserialize all parcel attributes to mix from a single buffer
+        subroutine parcel_mixing_deserialize(this, n, buffer)
+            class(pc_type),   intent(inout) :: this
+            integer,          intent(in)    :: n
+            double precision, intent(in)    :: buffer(this%mix_attr_num)
+
+            this%vorticity(:, n) = buffer(1:3)
+            this%volume(n)       = buffer(4)
+            this%buoyancy(n)     = buffer(5)
+#ifndef ENABLE_DRY_MODE
+            this%humidity(n)     = buffer(6)
+#endif
+        end subroutine parcel_mixing_deserialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
