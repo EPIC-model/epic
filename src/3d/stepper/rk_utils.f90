@@ -3,7 +3,7 @@ module rk_utils
     use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23, I_B33
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY, strain_mag
     use field_mpi, only : field_halo_fill_scalar
-    use constants, only : zero, one, two, f12
+    use constants, only : zero, one, two, f12, f23
     use parameters, only : nx, ny, nz, dxi, vcell
     use scherzinger, only : scherzinger_eigenvalues
     use mpi_layout, only : box
@@ -17,7 +17,16 @@ module rk_utils
 #endif
 
     implicit none
-    double precision, parameter :: Imat(3,3)=reshape((/one,zero,zero,zero,one,zero,zero,zero,one/), (/3,3/))
+    double precision, parameter :: Imat(3,3) = reshape((/one,zero,zero,zero,one,zero,zero,zero,one/), (/3,3/))
+    double precision, parameter :: f177 = sqrt(177.0)
+    double precision, parameter :: xx1 = (one / 88.0) * (one + f177) * f23
+    double precision, parameter :: xx2 = (one / 352.0) * (one + f177) * f23
+    double precision, parameter :: xx4 = (-271.0 + 29.0 * f177) / (315.0 * f23)
+    double precision, parameter :: xx5 = (11.0 * (-1.0 + f177)) / (1260.0 * f23)
+    double precision, parameter :: xx6 = (11.0 * (-9.0 + f177)) / (5040.0 * f23)
+    double precision, parameter :: xx7 = (89.0 - f177) / (5040.0 * f23 * f23)
+    double precision, parameter :: yy2 = (one / 630.0) * (857.0 - 58.0 * f177)
+
 
     contains
 
@@ -27,6 +36,10 @@ module rk_utils
             double precision, intent(in) :: dt_sub
             double precision :: Bmat(3,3)
             double precision :: Smat(3,3)
+            double precision :: Rmat(3,3)
+            double precision :: Rmat2(3,3)
+            double precision :: Rmat4(3,3)
+            double precision :: Rmat8(3,3)
             double precision :: Qmat(3,3)
 
             Bmat(1, 1) = B(I_B11) ! B11
@@ -49,11 +62,18 @@ module rk_utils
             Smat(3, 2) = S(I_DWDY) ! S32
             Smat(3, 3) = -(S(I_DUDX) + S(I_DVDY)) ! S33
 
-            Qmat = Imat + &
-                   0.25 * dt_sub * Smat + &
-                   0.03125 * dt_sub * dt_sub * matmul(Smat, Smat) + &
-                   (1.0 / 384.0) * dt_sub * dt_sub * dt_sub * matmul(Smat, matmul(Smat, Smat))
+            ! Bader, P., Blanes, S., & Casas, F. (2019). 
+            ! Computing the matrix exponential with an optimized Taylor polynomial approximation. 
+            ! Mathematics, 7(12), 1174.
+            ! Using 8th order Taylor with 2 ward steps
+            ! Possibly this is overkill and ward steps can be removed
+            ! This does not save much computation though
 
+            Rmat = 0.25 * dt_sub * Smat
+            Rmat2 = matmul(Rmat, Rmat)
+            Rmat4 = matmul(Rmat2, xx1 * Rmat + xx2 * Rmat2)
+            Rmat8 = matmul(f23 * Rmat2 + Rmat4, xx4 * Imat + xx5 * Rmat + xx6 * Rmat2 + xx7 * Rmat4)
+            Qmat = Imat + Rmat + yy2 * Rmat2 + Rmat8
             Qmat = matmul(Qmat, Qmat)
             Qmat = matmul(Qmat, Qmat)
             Bmat = matmul(Qmat, matmul(Bmat, transpose(Qmat)))

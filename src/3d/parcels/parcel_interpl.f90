@@ -461,7 +461,7 @@ module parcel_interpl
                     enddo
                     do l = 1,8
                         parcels%int_strain(l, n) = parcels%int_strain(l, n) &
-                                             + point_weight_g2p * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
+                                                 + point_weight_g2p * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
                     do l = 1,3
                         parcels%delta_vor(l, n) = parcels%delta_vor(l, n) &
