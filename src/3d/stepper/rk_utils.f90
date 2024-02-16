@@ -3,7 +3,7 @@ module rk_utils
     use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23, I_B33
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY, strain_mag
     use field_mpi, only : field_halo_fill_scalar
-    use constants, only : zero, one, two, f12, f23
+    use constants, only : zero, one, two, f12, f23, xx1, xx2, xx4, xx5, xx6, xx7, yy2
     use parameters, only : nx, ny, nz, dxi, vcell
     use scherzinger, only : scherzinger_eigenvalues
     use mpi_layout, only : box
@@ -18,15 +18,6 @@ module rk_utils
 
     implicit none
     double precision, parameter :: Imat(3,3) = reshape((/one,zero,zero,zero,one,zero,zero,zero,one/), (/3,3/))
-    double precision, parameter :: f177 = sqrt(177.0)
-    double precision, parameter :: xx1 = (one / 88.0) * (one + f177) * f23
-    double precision, parameter :: xx2 = (one / 352.0) * (one + f177) * f23
-    double precision, parameter :: xx4 = (-271.0 + 29.0 * f177) / (315.0 * f23)
-    double precision, parameter :: xx5 = (11.0 * (-1.0 + f177)) / (1260.0 * f23)
-    double precision, parameter :: xx6 = (11.0 * (-9.0 + f177)) / (5040.0 * f23)
-    double precision, parameter :: xx7 = (89.0 - f177) / (5040.0 * f23 * f23)
-    double precision, parameter :: yy2 = (one / 630.0) * (857.0 - 58.0 * f177)
-
 
     contains
 
