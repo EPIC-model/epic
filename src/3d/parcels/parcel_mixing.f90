@@ -244,7 +244,6 @@ module parcel_mixing
                 deallocate(iclo)
                 deallocate(rclo)
                 deallocate(dclo)
-                print *, "No parcel found a near neighbour."
                 return
             endif
 
@@ -570,8 +569,6 @@ module parcel_mixing
 
                     iv = iv + 1
 
-
-                    print *, world%rank, "send parcel", is, "to", neighbours(n)%rank
                 endif
             enddo
 
@@ -803,7 +800,6 @@ module parcel_mixing
                             'in parcel_mixing::scatter_remote_parcels: Small parcel was already mixed previously.')
                         endif
                         l_flag(iv) = .true.
-                        print *, world%rank, "receive parcel", iv, "from", neighbours(n)%rank
                     enddo
                 endif
 
