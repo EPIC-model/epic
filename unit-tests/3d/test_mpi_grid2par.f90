@@ -5,22 +5,22 @@
 ! =============================================================================
 program test_mpi_grid2par
     use unit_test
+    use options, only : parcel
     use mpi_environment
     use mpi_collectives
     use mpi_layout
     use constants, only : pi, zero, one, two, three, four, five, f12, f23
-    use parcel_container
+    use parcels_mod, only : parcels, bot_parcels, top_parcels
+    use parcel_init, only : parcel_default, init_timer
     use parcel_interpl, only : grid2par, grid2par_timer
-    use parcel_ellipsoid, only : get_abc
-    use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz
+    use parameters, only : lower, update_parameters, nx, ny, nz, extent
     use fields, only : velog, vortg, velgradg, field_alloc
     use mpi_timer
     implicit none
 
-    double precision              :: error
-    integer                       :: ix, iy, iz, i, j, k, l, n_per_dim
-    double precision              :: im, corner(3)
-    logical                       :: passed = .true.
+    double precision :: error
+    logical          :: passed = .true.
+    integer          :: l
 
     call mpi_env_initialise
 
@@ -33,48 +33,19 @@ program test_mpi_grid2par
     extent =  (/two, two, two/)
 
     call register_timer('grid2par', grid2par_timer)
+    call register_timer('parcel init', init_timer)
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
+
+    parcel%min_vratio = 27.0d0
+    parcel%n_per_cell = 27
+    parcel%n_surf_per_cell = 9
 
     call update_parameters
 
     call field_alloc
 
-    n_per_dim = 3
-
-    n_parcels = n_per_dim ** 3 * nz * (box%hi(1) - box%lo(1) + 1) * (box%hi(2) - box%lo(2) + 1)
-    call parcel_alloc(n_parcels)
-
-    im = one / dble(n_per_dim)
-
-    l = 1
-    do iz = 0, nz-1
-        do iy = box%lo(2), box%hi(2)
-            do ix = box%lo(1), box%hi(1)
-                corner = lower + dble((/ix, iy, iz/)) * dx
-                do k = 1, n_per_dim
-                    do j = 1, n_per_dim
-                        do i = 1, n_per_dim
-                            parcels%position(1, l) = corner(1) + dx(1) * (dble(i) - f12) * im
-                            parcels%position(2, l) = corner(2) + dx(2) * (dble(j) - f12) * im
-                            parcels%position(3, l) = corner(3) + dx(3) * (dble(k) - f12) * im
-                            l = l + 1
-                        enddo
-                    enddo
-                enddo
-            enddo
-        enddo
-    enddo
-
-    parcels%volume = vcell / dble(n_per_dim ** 3)
-
-    parcels%B(:, 1:n_parcels) = zero
-
-    ! b11
-    parcels%B(1, 1:n_parcels) = get_abc(parcels%volume(1:n_parcels)) ** f23
-
-    ! b22
-    parcels%B(4, 1:n_parcels) = parcels%B(1, 1:n_parcels)
+    call parcel_default
 
     velog(:, :, :, 1) = one
     velog(:, :, :, 2) = two
@@ -93,17 +64,39 @@ program test_mpi_grid2par
 
     error = zero
 
+    ! interior parcels:
     do l = 1, 3
-        error = max(error, maxval(dabs(parcels%delta_pos(l, 1:n_parcels) - dble(l))))
+        error = max(error, maxval(dabs(parcels%delta_pos(l, 1:parcels%local_num) - dble(l))))
     enddo
 
     do l = 1, 5
-        error = max(error, maxval(dabs(parcels%strain(l, 1:n_parcels) - dble(l))))
+        error = max(error, maxval(dabs(parcels%strain(l, 1:parcels%local_num) - dble(l))))
     enddo
+
+
+    ! surface parcels:
+    do l = 1, 2
+        error = max(error, maxval(dabs(bot_parcels%delta_pos(l, 1:bot_parcels%local_num) - dble(l))))
+        error = max(error, maxval(dabs(top_parcels%delta_pos(l, 1:top_parcels%local_num) - dble(l))))
+    enddo
+
+    ! du/dx = 1 and du/dy = 2
+    do l = 1, 2
+        error = max(error, maxval(dabs(bot_parcels%strain(l, 1:bot_parcels%local_num) - dble(l))))
+        error = max(error, maxval(dabs(top_parcels%strain(l, 1:top_parcels%local_num) - dble(l))))
+    enddo
+
+    ! dv/dx = \zeta + du/dy = 3 + 2 = 5
+    error = max(error, maxval(dabs(bot_parcels%strain(3, 1:bot_parcels%local_num) - 5.0d0)))
+    error = max(error, maxval(dabs(top_parcels%strain(3, 1:top_parcels%local_num) - 5.0d0)))
+
+    ! dv/dy = 3
+    error = max(error, maxval(dabs(bot_parcels%strain(4, 1:bot_parcels%local_num) - 3.0d0)))
+    error = max(error, maxval(dabs(top_parcels%strain(4, 1:top_parcels%local_num) - 3.0d0)))
 
     call mpi_blocking_reduce(error, MPI_MAX, world)
 
-    passed = (passed .and. (error < dble(1.0e-14)))
+    passed = (passed .and. (error < dble(1.0e-15)))
 
     call mpi_env_finalise
 

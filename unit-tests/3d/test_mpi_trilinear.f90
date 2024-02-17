@@ -5,21 +5,20 @@
 ! =============================================================================
 program test_mpi_trilinear
     use unit_test
+    use options, only : parcel
     use mpi_environment
     use constants, only : pi, zero, one, f12, f23, f32
-    use parcel_container
+    use parcel_init, only : parcel_default, init_timer
     use mpi_layout
+    use parcels_mod, only : parcels, top_parcels, bot_parcels
     use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
-    use parcel_ellipsoid, only : get_abc
-    use parameters, only : lower, update_parameters, vcell, dx, nx, ny, nz, ngrid
-    use fields, only : volg, field_alloc
+    use parameters, only : lower, update_parameters, nx, ny, nz, ngrid, extent
+    use fields, only : vortg, field_alloc
     use field_ops, only : get_sum
     use mpi_timer
     implicit none
 
     double precision :: error
-    integer          :: ix, iy, iz, i, j, k, l, n_per_dim
-    double precision :: im, corner(3)
     logical          :: passed = .true.
 
     call mpi_env_initialise
@@ -34,55 +33,29 @@ program test_mpi_trilinear
 
     call register_timer('par2grid', par2grid_timer)
     call register_timer('halo swap', halo_swap_timer)
+    call register_timer('parcel init', init_timer)
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
+
+    parcel%min_vratio = 27.0d0
+    parcel%n_per_cell = 27
+    parcel%n_surf_per_cell = 9
 
     call update_parameters
 
     call field_alloc
 
-    n_per_dim = 3
+    call parcel_default
 
-    n_parcels = n_per_dim ** 3 * nz * (box%hi(1) - box%lo(1) + 1) * (box%hi(2) - box%lo(2) + 1)
-    call parcel_alloc(n_parcels)
-
-
-    im = one / dble(n_per_dim)
-
-    l = 1
-    do iz = 0, nz-1
-        do iy = box%lo(2), box%hi(2)
-            do ix = box%lo(1), box%hi(1)
-                corner = lower + dble((/ix, iy, iz/)) * dx
-                do k = 1, n_per_dim
-                    do j = 1, n_per_dim
-                        do i = 1, n_per_dim
-                            parcels%position(1, l) = corner(1) + dx(1) * (dble(i) - f12) * im
-                            parcels%position(2, l) = corner(2) + dx(2) * (dble(j) - f12) * im
-                            parcels%position(3, l) = corner(3) + dx(3) * (dble(k) - f12) * im
-                            l = l + 1
-                        enddo
-                    enddo
-                enddo
-            enddo
-        enddo
-    enddo
-
-    parcels%volume = vcell / dble(n_per_dim ** 3)
-
-    parcels%B(:, 1:n_parcels) = zero
-
-    ! b11
-    parcels%B(1, 1:n_parcels) = get_abc(parcels%volume(1:n_parcels)) ** f23
-
-    ! b22
-    parcels%B(4, 1:n_parcels) = parcels%B(1, 1:n_parcels)
+    parcels%vorticity(1, 1:parcels%local_num) = 1.5d0
+    bot_parcels%vorticity(1, 1:bot_parcels%local_num) = 1.5d0
+    top_parcels%vorticity(1, 1:top_parcels%local_num) = 1.5d0
 
     call par2grid
 
-    error = abs(get_sum(volg) - dble(ngrid) * vcell)
+    error = abs(get_sum(vortg(:, :, :, 1)) - 1.5d0 * dble(ngrid))
 
-    passed = (passed .and. (error < dble(3.0e-14)))
+    passed = (passed .and. (error < dble(1.0e-15)))
 
     call mpi_env_finalise
 

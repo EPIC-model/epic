@@ -9,13 +9,13 @@ program test_mpi_parcel_init_3d
     use options, only : parcel
     use field_mpi
     use constants, only : pi, zero, one, two, four, five, f12, f13, f23, f32
-    use parcel_container
+    use parcels_mod, only : parcels
     use parcel_init, only : init_timer, parcel_default, init_parcels_from_grids
     use parcel_interpl, only : par2grid, par2grid_timer, halo_swap_timer
     use parcel_ellipsoid, only : get_abc
     use fields, only : tbuoyg, field_default
     use field_ops, only : get_rms, get_abs_max
-    use parameters, only : update_parameters, dx, nx, ny, nz, lower, vcell
+    use parameters, only : update_parameters, dx, nx, ny, nz, lower, vcell, extent
     use mpi_layout, only : box, mpi_layout_init
     use mpi_timer
     implicit none
@@ -149,7 +149,7 @@ program test_mpi_parcel_init_3d
 
     passed = (passed .and. (error < tol))
 
-    call parcel_dealloc
+    call parcels%dealloc
 
     deallocate(workg)
 

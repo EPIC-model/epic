@@ -298,7 +298,7 @@ module parcel_ellipse_interpl
 
                     ! loop over grid points which are part of the interpolation
                     do l = 1, 2
-                        surf_parcels%delta_pos(:, n) = surf_parcels%delta_pos(:, n)                 &
+                        surf_parcels%delta_pos(l, n) = surf_parcels%delta_pos(l, n)                 &
                                                      + point_weight_g2p                             &
                                                      * sum(weights * velog(iz, js:js+1, is:is+1, l))
                     enddo
