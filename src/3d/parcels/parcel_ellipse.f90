@@ -27,8 +27,8 @@ module parcel_ellipse
 
         contains
 
-            procedure          :: setup => parcel_ellipse_setup
-            procedure          :: dealloc => parcel_ellipse_dealloc
+            procedure          :: allocate => parcel_ellipse_allocate
+            procedure          :: deallocate => parcel_ellipse_deallocate
             procedure          :: replace => parcel_ellipse_replace
             procedure          :: resize => parcel_ellipse_resize
             procedure          :: serialize => parcel_ellipse_serialize
@@ -72,16 +72,16 @@ module parcel_ellipse
     contains
 
         ! Sets the buffer indices for sending parcels around
-        subroutine parcel_ellipse_setup(this, num)
+        subroutine parcel_ellipse_allocate(this, num)
             class(ellipse_pc_type), intent(inout) :: this
             integer,                intent(in)    :: num
             integer                               :: i
 
-            call this%alloc(num=num,    &
-                            n_pos=2,    &
-                            n_vec=3,    &
-                            n_shape=3,  &   ! the flow is compressible
-                            n_strain=4)
+            call this%parcel_base_allocate(num=num,    &
+                                           n_pos=2,    &
+                                           n_vec=3,    &
+                                           n_shape=3,  &   ! the flow is compressible
+                                           n_strain=4)
 
             allocate(this%area(num))
 
@@ -118,14 +118,14 @@ module parcel_ellipse
             ! these parcels only are in one vertical grid cell
             this%nz = 1
 
-        end subroutine parcel_ellipse_setup
+        end subroutine parcel_ellipse_allocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine parcel_ellipse_dealloc(this)
+        subroutine parcel_ellipse_deallocate(this)
             class(ellipse_pc_type), intent(inout) :: this
 
-            call this%dealloc
+            call this%parcel_base_deallocate
 
             if (.not. allocated(this%area)) then
                 return
@@ -133,7 +133,7 @@ module parcel_ellipse
 
             deallocate(this%area)
 
-        end subroutine parcel_ellipse_dealloc
+        end subroutine parcel_ellipse_deallocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -142,7 +142,7 @@ module parcel_ellipse
             integer,                intent(in)    :: n, m
 
             ! Call parent class subroutine
-            call this%replace(n, m)
+            call this%parcel_base_replace(n, m)
 
             this%area(n) = this%area(m)
 
@@ -155,7 +155,7 @@ module parcel_ellipse
             integer,                intent(in)    :: new_size
 
             ! Call parent class subroutine
-            call this%resize(new_size)
+            call this%parcel_base_resize(new_size)
 
             call resize_array(this%area, new_size, n_copy=this%local_num)
 
@@ -169,7 +169,7 @@ module parcel_ellipse
             double precision,       intent(out) :: buffer(this%attr_num)
 
             ! Call parent class subroutine
-            call this%serialize(n, buffer)
+            call this%parcel_base_serialize(n, buffer)
 
             buffer(this%IDX_AREA) = this%area(n)
 
@@ -183,7 +183,7 @@ module parcel_ellipse
             double precision,       intent(in)    :: buffer(this%attr_num)
 
             ! Call parent class subroutine
-            call this%deserialize(n, buffer)
+            call this%parcel_base_deserialize(n, buffer)
 
             this%area(n) = buffer(this%IDX_AREA)
 

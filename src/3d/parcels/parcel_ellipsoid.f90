@@ -43,10 +43,12 @@ module parcel_ellipsoid
 
         contains
 
-            procedure          :: setup => parcel_ellipsoid_setup
-            procedure          :: dealloc => parcel_ellipsoid_dealloc
+            procedure          :: allocate => parcel_ellipsoid_allocate
+            procedure          :: deallocate => parcel_ellipsoid_deallocate
             procedure          :: replace => parcel_ellipsoid_replace
             procedure          :: resize => parcel_ellipsoid_resize
+            procedure          :: serialize => parcel_ellipsoid_serialize
+            procedure          :: deserialize => parcel_ellipsoid_deserialize
             procedure          :: get_points => parcel_ellipsoid_get_points
             procedure, private :: get_full_matrix => parcel_ellipsoid_get_full_matrix
             procedure          :: get_eigenvalues => parcel_ellipsoid_get_eigenvalues
@@ -83,16 +85,16 @@ module parcel_ellipsoid
     contains
 
         ! Sets the buffer indices for sending parcels around
-        subroutine parcel_ellipsoid_setup(this, num)
+        subroutine parcel_ellipsoid_allocate(this, num)
             class(ellipsoid_pc_type), intent(inout) :: this
             integer,                  intent(in)    :: num
             integer                                 :: i
 
-            call this%alloc(num=num,    &
-                            n_pos=3,    &
-                            n_vec=3,    &
-                            n_shape=5,  &
-                            n_strain=5)
+            call this%parcel_base_allocate(num=num,    &
+                                           n_pos=3,    &
+                                           n_vec=3,    &
+                                           n_shape=5,  &
+                                           n_strain=5)
 
             allocate(this%Vetas(3, num))
             allocate(this%Vtaus(3, num))
@@ -130,14 +132,14 @@ module parcel_ellipsoid
             ! these parcels are in all vertical grid cells
             this%nz = nz
 
-        end subroutine parcel_ellipsoid_setup
+        end subroutine parcel_ellipsoid_allocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine parcel_ellipsoid_dealloc(this)
+        subroutine parcel_ellipsoid_deallocate(this)
             class(ellipsoid_pc_type), intent(inout) :: this
 
-            call this%dealloc
+            call this%parcel_base_deallocate
 
             if (.not. allocated(this%Vetas)) then
                 return
@@ -146,7 +148,7 @@ module parcel_ellipsoid
             deallocate(this%Vetas)
             deallocate(this%Vtaus)
 
-        end subroutine parcel_ellipsoid_dealloc
+        end subroutine parcel_ellipsoid_deallocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -155,7 +157,7 @@ module parcel_ellipsoid
             integer,                  intent(in)    :: n, m
 
             ! Call parent class subroutine
-            call this%replace(n, m)
+            call this%parcel_base_replace(n, m)
 
             this%Vetas(:, n) = this%Vetas(:, m)
             this%Vtaus(:, n) = this%Vtaus(:, m)
@@ -169,7 +171,7 @@ module parcel_ellipsoid
             integer,                  intent(in)    :: new_size
 
             ! Call parent class subroutine
-            call this%resize(new_size)
+            call this%parcel_base_resize(new_size)
 
             call resize_array(this%Vetas, new_size, n_copy=this%local_num)
             call resize_array(this%Vtaus, new_size, n_copy=this%local_num)
@@ -184,7 +186,7 @@ module parcel_ellipsoid
             double precision,         intent(out) :: buffer(this%attr_num)
 
             ! Call parent class subroutine
-            call this%serialize(n, buffer)
+            call this%parcel_base_serialize(n, buffer)
 
             buffer(this%IDX_ELL_VETA:this%IDX_ELL_VETA+2) = this%Vetas(:, n)
             buffer(this%IDX_ELL_VTAU:this%IDX_ELL_VTAU+2) = this%Vtaus(:, n)
@@ -199,7 +201,7 @@ module parcel_ellipsoid
             double precision,         intent(in)    :: buffer(this%attr_num)
 
             ! Call parent class subroutine
-            call this%deserialize(n, buffer)
+            call this%parcel_base_deserialize(n, buffer)
 
             this%Vetas(:, n) = buffer(this%IDX_ELL_VETA:this%IDX_ELL_VETA+2)
             this%Vtaus(:, n) = buffer(this%IDX_ELL_VTAU:this%IDX_ELL_VTAU+2)

@@ -74,27 +74,72 @@ module parcel_container
                        IDX_RK_STRAIN_END      ! RK variable strain vector end
 
         contains
-
-            procedure :: alloc => parcel_alloc
-            procedure :: dealloc => parcel_dealloc
-            procedure :: replace => parcel_replace
-            procedure :: resize => parcel_resize
-            procedure :: serialize => parcel_serialize
-            procedure :: deserialize => parcel_deserialize
-            procedure :: mixing_serialize => parcel_mixing_serialize
-            procedure :: mixing_deserialize => parcel_mixing_deserialize
-            procedure :: pack => parcel_pack
-            procedure :: unpack => parcel_unpack
-            procedure :: delete => parcel_delete
-            procedure(parcel_is_small), deferred :: is_small
+            ! Base procedures (usually called in derived class procedures):
+            procedure :: parcel_base_allocate
+            procedure :: parcel_base_deallocate
+            procedure :: parcel_base_replace
+            procedure :: parcel_base_resize
+            procedure :: parcel_base_serialize
+            procedure :: parcel_base_deserialize
+            ! Basic procedures common to all derived classes:
+            procedure :: mixing_serialize     => parcel_mixing_serialize
+            procedure :: mixing_deserialize   => parcel_mixing_deserialize
+            procedure :: pack                 => parcel_pack
+            procedure :: unpack               => parcel_unpack
+            procedure :: delete               => parcel_delete
+            ! Pure virtual procedures:
+            procedure(parcel_allocate),       deferred :: allocate
+            procedure(parcel_deallocate),     deferred :: deallocate
+            procedure(parcel_serialize),      deferred :: serialize
+            procedure(parcel_deserialize),    deferred :: deserialize
+            procedure(parcel_replace),        deferred :: replace
+            procedure(parcel_resize),         deferred :: resize
+            procedure(parcel_is_small),       deferred :: is_small
             procedure(parcel_get_z_position), deferred :: get_z_position
-            procedure(parcel_get_position), deferred :: get_position
-            procedure(parcel_set_position), deferred :: set_position
-            procedure(parcel_set_volume), deferred :: set_volume
+            procedure(parcel_get_position),   deferred :: get_position
+            procedure(parcel_set_position),   deferred :: set_position
+            procedure(parcel_set_volume),     deferred :: set_volume
 
     end type pc_type
 
         interface
+            subroutine parcel_allocate(this, num)
+                import :: pc_type
+                class(pc_type), intent(inout) :: this
+                integer,        intent(in)    :: num
+            end subroutine parcel_allocate
+
+            subroutine parcel_deallocate(this)
+                import :: pc_type
+                class(pc_type), intent(inout) :: this
+            end subroutine parcel_deallocate
+
+            subroutine parcel_replace(this, n, m)
+                import :: pc_type
+                class(pc_type), intent(inout) :: this
+                integer,        intent(in)    :: n, m
+            end subroutine
+
+            subroutine parcel_resize(this, new_size)
+                import :: pc_type
+                class(pc_type), intent(inout) :: this
+                integer,        intent(in)    :: new_size
+            end subroutine parcel_resize
+
+            subroutine parcel_serialize(this, n, buffer)
+                import :: pc_type
+                class(pc_type),   intent(in)  :: this
+                integer,          intent(in)  :: n
+                double precision, intent(out) :: buffer(this%attr_num)
+            end subroutine parcel_serialize
+
+            subroutine parcel_deserialize(this, n, buffer)
+                import :: pc_type
+                class(pc_type),   intent(inout) :: this
+                integer,          intent(in)    :: n
+                double precision, intent(in)    :: buffer(this%attr_num)
+            end subroutine parcel_deserialize
+
             logical pure function parcel_is_small(this, n)
                 import :: pc_type
                 class(pc_type), intent(in) :: this
@@ -141,7 +186,7 @@ module parcel_container
         ! @param[in] n_vec number of dimensions of vector attributes
         ! @param[in] n_shape number of B matrix elements
         ! @param[in] n_strain number of strain elements
-        subroutine parcel_alloc(this, num, n_pos, n_vec, n_shape, n_strain)
+        subroutine parcel_base_allocate(this, num, n_pos, n_vec, n_shape, n_strain)
             class(pc_type), intent(inout) :: this
             integer,        intent(in)    :: num
             integer,        intent(in)    :: n_pos, n_vec, n_shape, n_strain
@@ -155,7 +200,7 @@ module parcel_container
             allocate(this%humidity(num))
 #endif
             ! LS-RK variables
-            allocate(this%delta_pos(n_vec, num))
+            allocate(this%delta_pos(n_pos, num))
             allocate(this%delta_vor(n_vec, num))
             allocate(this%strain(n_strain, num))
             allocate(this%delta_b(n_shape, num))
@@ -169,14 +214,14 @@ module parcel_container
             this%mix_attr_num = this%mix_attr_num + 1
 #endif
 
-        end subroutine parcel_alloc
+        end subroutine parcel_base_allocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Deallocate parcel memory
         ! ATTENTION: Extended types must deallocate additional parcel attributes
         !            in their own routine.
-        subroutine parcel_dealloc(this)
+        subroutine parcel_base_deallocate(this)
             class(pc_type), intent(inout) :: this
 
             if (.not. allocated(this%position)) then
@@ -201,7 +246,7 @@ module parcel_container
             deallocate(this%strain)
             deallocate(this%delta_b)
 
-        end subroutine parcel_dealloc
+        end subroutine parcel_base_deallocate
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -212,7 +257,7 @@ module parcel_container
         ! @param[in] n index of parcel to be replaced
         ! @param[in] m index of parcel used to replace parcel at index n
         ! @pre n and m must be valid parcel indices
-        subroutine parcel_replace(this, n, m)
+        subroutine parcel_base_replace(this, n, m)
             class(pc_type), intent(inout) :: this
             integer,        intent(in)    :: n, m
 
@@ -231,7 +276,7 @@ module parcel_container
             this%delta_b(:, n)   = this%delta_b(:, m)
             this%strain(:, n)    = this%strain(:, m)
 
-        end subroutine parcel_replace
+        end subroutine parcel_base_replace
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -239,7 +284,7 @@ module parcel_container
         ! ATTENTION: Extended types must resize additional parcel attributes
         !            in their own routine.
         ! @param[in] new_size is the new size of each attribute
-        subroutine parcel_resize(this, new_size)
+        subroutine parcel_base_resize(this, new_size)
             class(pc_type), intent(inout) :: this
             integer,        intent(in)    :: new_size
 
@@ -247,7 +292,7 @@ module parcel_container
 
             if (new_size < this%local_num) then
                 call mpi_exit_on_error(&
-                    "in parcel_container::parcel_resize: losing parcels when resizing.")
+                    "in parcel_container::parcel_base_resize: losing parcels when resizing.")
             endif
 
             this%max_num = new_size
@@ -270,12 +315,12 @@ module parcel_container
 
             call stop_timer(resize_timer)
 
-        end subroutine parcel_resize
+        end subroutine parcel_base_resize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Serialize all parcel attributes into a single buffer
-        subroutine parcel_serialize(this, n, buffer)
+        subroutine parcel_base_serialize(this, n, buffer)
             class(pc_type),   intent(in)  :: this
             integer,          intent(in)  :: n
             double precision, intent(out) :: buffer(this%attr_num)
@@ -294,12 +339,12 @@ module parcel_container
             buffer(this%IDX_RK_SHAPE_BEG:this%IDX_RK_SHAPE_END)   = this%delta_b(:, n)
             buffer(this%IDX_RK_STRAIN_BEG:this%IDX_RK_STRAIN_END) = this%strain(:, n)
 
-        end subroutine parcel_serialize
+        end subroutine parcel_base_serialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Deserialize all parcel attributes from a single buffer
-        subroutine parcel_deserialize(this, n, buffer)
+        subroutine parcel_base_deserialize(this, n, buffer)
             class(pc_type),   intent(inout) :: this
             integer,          intent(in)    :: n
             double precision, intent(in)    :: buffer(this%attr_num)
@@ -318,7 +363,7 @@ module parcel_container
             this%delta_b(:, n)   = buffer(this%IDX_RK_SHAPE_BEG:this%IDX_RK_SHAPE_END)
             this%strain(:, n)    = buffer(this%IDX_RK_STRAIN_BEG:this%IDX_RK_STRAIN_END)
 
-        end subroutine parcel_deserialize
+        end subroutine parcel_base_deserialize
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

@@ -35,7 +35,7 @@ module parcel_init
 
             call start_timer(init_timer)
 
-            call parcels%setup(max_num_parcels)
+            call parcels%allocate(max_num_parcels)
 
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
@@ -101,8 +101,8 @@ module parcel_init
 
             call stop_timer(init_timer)
 
-            call bot_parcels%setup(max_num_surf_parcels)
-            call top_parcels%setup(max_num_surf_parcels)
+            call bot_parcels%allocate(max_num_surf_parcels)
+            call top_parcels%allocate(max_num_surf_parcels)
 
         end subroutine parcel_default
 
