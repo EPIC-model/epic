@@ -35,7 +35,6 @@ unittestsdir = $(prefix)/unit-tests
 # 	test_mpi_laplace_correction_3d
 # 	test_mpi_gradient_correction_3d
 # 	test_mpi_parcel_correction_3d
-# 	test_mpi_parcel_diagnostics
 # 	test_mpi_parcel_write
 # 	test_mpi_parcel_delete
 # 	test_mpi_parcel_pack
@@ -60,6 +59,7 @@ unittests_PROGRAMS = 					\
 	test_mpi_field_interior_accumulate		\
 	test_mpi_field_interior_accumulate_vector	\
 	test_mpi_field_diagnostics			\
+	test_mpi_parcel_diagnostics			\
 	test_mpi_fft					\
 	test_mpi_dst					\
 	test_mpi_reverse_x				\
@@ -176,9 +176,9 @@ test_mpi_field_interior_accumulate_vector_LDADD = libcombi.la
 test_mpi_field_diagnostics_SOURCES = test_mpi_field_diagnostics.f90
 test_mpi_field_diagnostics_LDADD = libcombi.la
 
-# test_mpi_parcel_diagnostics_SOURCES = test_mpi_parcel_diagnostics.f90
-# test_mpi_parcel_diagnostics_LDADD = libcombi.la
-#
+test_mpi_parcel_diagnostics_SOURCES = test_mpi_parcel_diagnostics.f90
+test_mpi_parcel_diagnostics_LDADD = libcombi.la
+
 # test_mpi_parcel_write_SOURCES = test_mpi_parcel_write.f90
 # test_mpi_parcel_write_LDADD = libcombi.la
 #
