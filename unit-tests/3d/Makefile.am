@@ -32,6 +32,18 @@ unittestsdir = $(prefix)/unit-tests
 # 	test_ellipsoid_reflection
 # 	test_free_slip_3d
 # 	test_mpi_parcel_init_3d
+# 	test_mpi_laplace_correction_3d
+# 	test_mpi_gradient_correction_3d
+# 	test_mpi_parcel_correction_3d
+# 	test_mpi_parcel_diagnostics
+# 	test_mpi_parcel_write
+# 	test_mpi_parcel_delete
+# 	test_mpi_parcel_pack
+# 	test_mpi_parcel_unpack
+# 	test_mpi_parcel_read
+# 	test_mpi_parcel_read_rejection
+# 	test_mpi_parcel_communicate
+# 	test_mpi_parcel_split
 unittests_PROGRAMS = 					\
  	test_jacobi_1					\
  	test_jacobi_2					\
@@ -43,42 +55,30 @@ unittests_PROGRAMS = 					\
 	test_scherzinger_4				\
 	test_mpi_trilinear				\
 	test_mpi_grid2par				\
+	test_mpi_field_halo_fill			\
+	test_mpi_field_halo_fill_vector			\
+	test_mpi_field_interior_accumulate		\
+	test_mpi_field_interior_accumulate_vector	\
+	test_mpi_field_diagnostics			\
+	test_mpi_fft					\
+	test_mpi_dst					\
+	test_mpi_reverse_x				\
+	test_mpi_reverse_y				\
+	test_mpi_diffx					\
+	test_mpi_diffy					\
+	test_mpi_diffz0					\
+	test_mpi_diffz1					\
+	test_mpi_diffz2					\
+	test_mpi_diffz3					\
+	test_mpi_diffz4					\
+	test_mpi_diffz5					\
+	test_mpi_fft0					\
+	test_mpi_fft1					\
+	test_mpi_vor2vel				\
+	test_mpi_vel2vgrad				\
+	test_mpi_vtend					\
 	test_mpi_mixing					\
 	test_mpi_nearest_ellipse_1
-# 	test_mpi_laplace_correction_3d
-# 	test_mpi_gradient_correction_3d
-# 	test_mpi_parcel_correction_3d
-# 	test_mpi_field_halo_fill
-# 	test_mpi_field_halo_fill_vector
-# 	test_mpi_field_interior_accumulate
-# 	test_mpi_field_interior_accumulate_vector
-# 	test_mpi_field_diagnostics
-# 	test_mpi_parcel_diagnostics
-# 	test_mpi_parcel_write
-# 	test_mpi_parcel_delete
-# 	test_mpi_parcel_pack
-# 	test_mpi_parcel_unpack
-# 	test_mpi_parcel_read
-# 	test_mpi_parcel_read_rejection
-# 	test_mpi_parcel_communicate
-# 	test_mpi_parcel_split
-# 	test_mpi_fft
-# 	test_mpi_dst
-# 	test_mpi_reverse_x
-# 	test_mpi_reverse_y
-# 	test_mpi_diffx
-# 	test_mpi_diffy
-# 	test_mpi_diffz0
-# 	test_mpi_diffz1
-# 	test_mpi_diffz2
-# 	test_mpi_diffz3
-#  	test_mpi_diffz4
-#  	test_mpi_diffz5
-#  	test_mpi_fft0
-#  	test_mpi_fft1
-#  	test_mpi_vor2vel
-#  	test_mpi_vel2vgrad
-# 	test_mpi_vtend
 # 	test_mpi_nearest_1
 # 	test_mpi_nearest_2
 # 	test_mpi_nearest_3
@@ -160,22 +160,22 @@ test_mpi_grid2par_LDADD = libcombi.la
 #
 # # test_free_slip_3d_SOURCES = test_free_slip_3d.f90
 # # test_free_slip_3d_LDADD = libcombi.la
-#
-# test_mpi_field_halo_fill_SOURCES = test_mpi_field_halo_fill.f90
-# test_mpi_field_halo_fill_LDADD = libcombi.la
-#
-# test_mpi_field_halo_fill_vector_SOURCES = test_mpi_field_halo_fill_vector.f90
-# test_mpi_field_halo_fill_vector_LDADD = libcombi.la
-#
-# test_mpi_field_interior_accumulate_SOURCES = test_mpi_field_interior_accumulate.f90
-# test_mpi_field_interior_accumulate_LDADD = libcombi.la
-#
-# test_mpi_field_interior_accumulate_vector_SOURCES = test_mpi_field_interior_accumulate_vector.f90
-# test_mpi_field_interior_accumulate_vector_LDADD = libcombi.la
-#
-# test_mpi_field_diagnostics_SOURCES = test_mpi_field_diagnostics.f90
-# test_mpi_field_diagnostics_LDADD = libcombi.la
-#
+
+test_mpi_field_halo_fill_SOURCES = test_mpi_field_halo_fill.f90
+test_mpi_field_halo_fill_LDADD = libcombi.la
+
+test_mpi_field_halo_fill_vector_SOURCES = test_mpi_field_halo_fill_vector.f90
+test_mpi_field_halo_fill_vector_LDADD = libcombi.la
+
+test_mpi_field_interior_accumulate_SOURCES = test_mpi_field_interior_accumulate.f90
+test_mpi_field_interior_accumulate_LDADD = libcombi.la
+
+test_mpi_field_interior_accumulate_vector_SOURCES = test_mpi_field_interior_accumulate_vector.f90
+test_mpi_field_interior_accumulate_vector_LDADD = libcombi.la
+
+test_mpi_field_diagnostics_SOURCES = test_mpi_field_diagnostics.f90
+test_mpi_field_diagnostics_LDADD = libcombi.la
+
 # test_mpi_parcel_diagnostics_SOURCES = test_mpi_parcel_diagnostics.f90
 # test_mpi_parcel_diagnostics_LDADD = libcombi.la
 #
@@ -202,57 +202,57 @@ test_mpi_grid2par_LDADD = libcombi.la
 #
 # test_mpi_parcel_split_SOURCES = test_mpi_parcel_split.f90
 # test_mpi_parcel_split_LDADD = libcombi.la
-#
-# test_mpi_fft_SOURCES = test_mpi_fft.f90
-# test_mpi_fft_LDADD = libcombi.la
-#
-# test_mpi_dst_SOURCES = test_mpi_dst.f90
-# test_mpi_dst_LDADD = libcombi.la
-#
-# test_mpi_reverse_x_SOURCES = test_mpi_reverse_x.f90
-# test_mpi_reverse_x_LDADD = libcombi.la
-#
-# test_mpi_reverse_y_SOURCES = test_mpi_reverse_y.f90
-# test_mpi_reverse_y_LDADD = libcombi.la
-#
-# test_mpi_diffx_SOURCES = test_mpi_diffx.f90
-# test_mpi_diffx_LDADD = libcombi.la
-#
-# test_mpi_diffy_SOURCES = test_mpi_diffy.f90
-# test_mpi_diffy_LDADD = libcombi.la
-#
-# test_mpi_diffz0_SOURCES = test_mpi_diffz0.f90
-# test_mpi_diffz0_LDADD = libcombi.la
-#
-# test_mpi_diffz1_SOURCES = test_mpi_diffz1.f90
-# test_mpi_diffz1_LDADD = libcombi.la
-#
-# test_mpi_diffz2_SOURCES = test_mpi_diffz2.f90
-# test_mpi_diffz2_LDADD = libcombi.la
-#
-# test_mpi_diffz3_SOURCES = test_mpi_diffz3.f90
-# test_mpi_diffz3_LDADD = libcombi.la
-#
-# test_mpi_diffz4_SOURCES = test_mpi_diffz4.f90
-# test_mpi_diffz4_LDADD = libcombi.la
-#
-# test_mpi_diffz5_SOURCES = test_mpi_diffz5.f90
-# test_mpi_diffz5_LDADD = libcombi.la
-#
-# test_mpi_fft0_SOURCES = test_mpi_fft0.f90
-# test_mpi_fft0_LDADD = libcombi.la
-#
-# test_mpi_fft1_SOURCES = test_mpi_fft1.f90
-# test_mpi_fft1_LDADD = libcombi.la
-#
-# test_mpi_vor2vel_SOURCES = test_mpi_vor2vel.f90
-# test_mpi_vor2vel_LDADD = libcombi.la
-#
-# test_mpi_vel2vgrad_SOURCES = test_mpi_vel2vgrad.f90
-# test_mpi_vel2vgrad_LDADD = libcombi.la
-#
-# test_mpi_vtend_SOURCES = test_mpi_vtend.f90
-# test_mpi_vtend_LDADD = libcombi.la
+
+test_mpi_fft_SOURCES = test_mpi_fft.f90
+test_mpi_fft_LDADD = libcombi.la
+
+test_mpi_dst_SOURCES = test_mpi_dst.f90
+test_mpi_dst_LDADD = libcombi.la
+
+test_mpi_reverse_x_SOURCES = test_mpi_reverse_x.f90
+test_mpi_reverse_x_LDADD = libcombi.la
+
+test_mpi_reverse_y_SOURCES = test_mpi_reverse_y.f90
+test_mpi_reverse_y_LDADD = libcombi.la
+
+test_mpi_diffx_SOURCES = test_mpi_diffx.f90
+test_mpi_diffx_LDADD = libcombi.la
+
+test_mpi_diffy_SOURCES = test_mpi_diffy.f90
+test_mpi_diffy_LDADD = libcombi.la
+
+test_mpi_diffz0_SOURCES = test_mpi_diffz0.f90
+test_mpi_diffz0_LDADD = libcombi.la
+
+test_mpi_diffz1_SOURCES = test_mpi_diffz1.f90
+test_mpi_diffz1_LDADD = libcombi.la
+
+test_mpi_diffz2_SOURCES = test_mpi_diffz2.f90
+test_mpi_diffz2_LDADD = libcombi.la
+
+test_mpi_diffz3_SOURCES = test_mpi_diffz3.f90
+test_mpi_diffz3_LDADD = libcombi.la
+
+test_mpi_diffz4_SOURCES = test_mpi_diffz4.f90
+test_mpi_diffz4_LDADD = libcombi.la
+
+test_mpi_diffz5_SOURCES = test_mpi_diffz5.f90
+test_mpi_diffz5_LDADD = libcombi.la
+
+test_mpi_fft0_SOURCES = test_mpi_fft0.f90
+test_mpi_fft0_LDADD = libcombi.la
+
+test_mpi_fft1_SOURCES = test_mpi_fft1.f90
+test_mpi_fft1_LDADD = libcombi.la
+
+test_mpi_vor2vel_SOURCES = test_mpi_vor2vel.f90
+test_mpi_vor2vel_LDADD = libcombi.la
+
+test_mpi_vel2vgrad_SOURCES = test_mpi_vel2vgrad.f90
+test_mpi_vel2vgrad_LDADD = libcombi.la
+
+test_mpi_vtend_SOURCES = test_mpi_vtend.f90
+test_mpi_vtend_LDADD = libcombi.la
 #
 # test_mpi_nearest_1_SOURCES = test_mpi_nearest_1.f90
 # test_mpi_nearest_1_LDADD = libcombi.la
