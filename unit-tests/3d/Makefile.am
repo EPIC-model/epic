@@ -77,10 +77,10 @@ unittests_PROGRAMS = 					\
 	test_mpi_vor2vel				\
 	test_mpi_vel2vgrad				\
 	test_mpi_vtend					\
+	test_mpi_nearest_1				\
+	test_mpi_nearest_2				\
 	test_mpi_mixing					\
 	test_mpi_nearest_ellipse_1
-# 	test_mpi_nearest_1
-# 	test_mpi_nearest_2
 # 	test_mpi_nearest_3
 # 	test_mpi_nearest_4
 # 	test_mpi_nearest_5
@@ -253,13 +253,13 @@ test_mpi_vel2vgrad_LDADD = libcombi.la
 
 test_mpi_vtend_SOURCES = test_mpi_vtend.f90
 test_mpi_vtend_LDADD = libcombi.la
-#
-# test_mpi_nearest_1_SOURCES = test_mpi_nearest_1.f90
-# test_mpi_nearest_1_LDADD = libcombi.la
-#
-# test_mpi_nearest_2_SOURCES = test_mpi_nearest_2.f90
-# test_mpi_nearest_2_LDADD = libcombi.la
-#
+
+test_mpi_nearest_1_SOURCES = test_mpi_nearest_1.f90
+test_mpi_nearest_1_LDADD = libcombi.la
+
+test_mpi_nearest_2_SOURCES = test_mpi_nearest_2.f90
+test_mpi_nearest_2_LDADD = libcombi.la
+
 # test_mpi_nearest_3_SOURCES = test_mpi_nearest_3.f90
 # test_mpi_nearest_3_LDADD = libcombi.la
 #

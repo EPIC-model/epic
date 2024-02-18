@@ -6,19 +6,21 @@
 program test_mpi_nearest_2
     use unit_test
     use constants, only : pi, zero, one, two, five, ten
-    use parcel_container
+    use parcels_mod, only : parcels
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, dx, vmin, max_num_parcels
     use parcel_nearest
     use mpi_environment
     use mpi_layout
     use mpi_timer
+    use mpi_utils, only : mpi_stop
     implicit none
 
     logical                            :: passed = .true.
     integer, allocatable, dimension(:) :: isma, inva
     integer, allocatable, dimension(:) :: iclo
     integer                            :: n_merge, n, check_array(2), n_invalid
+!     integer                            :: r, ic, is
 
     call mpi_env_initialise
 
@@ -43,25 +45,40 @@ program test_mpi_nearest_2
 
     call nearest_win_allocate
 
-    call parcel_alloc(max_num_parcels)
+    call parcels%allocate(max_num_parcels)
 
     call parcel_setup
 
-    n_parcels = n - 1
-    n_total_parcels = 0
+    parcels%local_num = n - 1
+    parcels%total_num = 0
 
-    call MPI_Allreduce(n_parcels,       &
-                       n_total_parcels, &
-                       1,               &
-                       MPI_INTEGER,     &
-                       MPI_SUM,         &
-                       world%comm,      &
+    call MPI_Allreduce(parcels%local_num,   &
+                       parcels%total_num,   &
+                       1,                   &
+                       MPI_INTEGER,         &
+                       MPI_SUM,             &
+                       world%comm,          &
                        world%err)
 
 
-    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+    call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
 
-    check_array(1) = n_parcels - n_invalid
+!     ! To print out the result enable the following lines:
+!     do r = 0, world%size-1
+!         if (r == world%rank) then
+!             do n = 1, n_merge
+!                 is = isma(n)
+!                 ic = iclo(n)
+!                 print *, world%rank,                                                                  &
+!                          parcels%position(1, is), parcels%position(2, is), int(parcels%buoyancy(is)), &
+!                          parcels%position(1, ic), parcels%position(2, ic), int(parcels%buoyancy(ic))
+!             enddo
+!         endif
+!         call MPI_Barrier(world%comm, world%err)
+!     enddo
+!     call mpi_stop
+
+    check_array(1) = parcels%local_num - n_invalid
     check_array(2) = n_merge
 
     if (world%rank == world%root) then
@@ -77,7 +94,7 @@ program test_mpi_nearest_2
     endif
 
     if (world%rank == world%root) then
-        passed = (passed .and. (check_array(1) == n_total_parcels) .and. (check_array(2) == 200))
+        passed = (passed .and. (check_array(1) == parcels%total_num) .and. (check_array(2) == 200))
 
         call print_result_logical('Test MPI nearest algorithm: (2) a = b', passed)
     endif
@@ -134,6 +151,7 @@ program test_mpi_nearest_2
 
         subroutine parcel_setup
             integer :: i, j, k
+!             integer :: r
 
             n = 1
             do k = box%lo(3)+1, box%lo(3)+1
@@ -143,6 +161,18 @@ program test_mpi_nearest_2
                     enddo
                 enddo
             enddo
+
+!             ! To print out the parcel setups enable the following lines:
+!             do r = 0, world%size-1
+!                 if (r == world%rank) then
+!                     do i = 1, n - 1
+!                         print *, parcels%position(1, i), parcels%position(2, i), i + 100 * world%rank, world%rank
+!                     enddo
+!                 endif
+!                 call MPI_Barrier(world%comm, world%err)
+!             enddo
+!             call MPI_Barrier(world%comm, world%err)
+!             call mpi_stop
         end subroutine parcel_setup
 
 end program test_mpi_nearest_2

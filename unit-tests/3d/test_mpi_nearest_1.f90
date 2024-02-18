@@ -13,12 +13,14 @@ program test_mpi_nearest_1
     use mpi_environment
     use mpi_layout
     use mpi_timer
+!     use mpi_utils, only : mpi_stop
     implicit none
 
     logical                            :: passed = .true.
     integer, allocatable, dimension(:) :: isma, inva
     integer, allocatable, dimension(:) :: iclo
     integer                            :: n_merge, n, check_array(2), n_invalid
+!     integer                            :: r, ic, is
 
     call mpi_env_initialise
 
@@ -59,7 +61,22 @@ program test_mpi_nearest_1
                        world%err)
 
 
-    call find_nearest(isma, iclo, inva, n_merge, n_invalid)
+    call find_nearest(parcels, isma, iclo, inva, n_merge, n_invalid)
+
+!     ! To print out the result enable the following lines:
+!     do r = 0, world%size-1
+!         if (r == world%rank) then
+!             do n = 1, n_merge
+!                 is = isma(n)
+!                 ic = iclo(n)
+!                 print *, world%rank,                                                                  &
+!                          parcels%position(1, is), parcels%position(2, is), int(parcels%buoyancy(is)), &
+!                          parcels%position(1, ic), parcels%position(2, ic), int(parcels%buoyancy(ic))
+!             enddo
+!         endif
+!         call MPI_Barrier(world%comm, world%err)
+!     enddo
+!     call mpi_stop
 
     check_array(1) = parcels%local_num - n_invalid
     check_array(2) = n_merge
@@ -134,6 +151,7 @@ program test_mpi_nearest_1
 
         subroutine parcel_setup
             integer :: i, j, k
+!             integer :: r
 
             n = 1
             do k = box%lo(3)+1, box%lo(3)+1
@@ -143,6 +161,19 @@ program test_mpi_nearest_1
                     enddo
                 enddo
             enddo
+
+!             ! To print out the parcel setups enable the following lines:
+!             do r = 0, world%size-1
+!                 if (r == world%rank) then
+!                     do i = 1, n - 1
+!                         print *, parcels%position(1, i), parcels%position(2, i), i + 100 * world%rank, world%rank
+!                     enddo
+!                 endif
+!                 call MPI_Barrier(world%comm, world%err)
+!             enddo
+!             call MPI_Barrier(world%comm, world%err)
+!             call mpi_stop
+
         end subroutine parcel_setup
 
 end program test_mpi_nearest_1
