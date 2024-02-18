@@ -11,7 +11,8 @@ program test_mpi_parcel_split
     use unit_test
     use mpi_environment
     use mpi_layout
-    use parcel_container
+    use parcels_mod, only : parcels
+    use parcel_container, only : resize_timer
     use parcel_mpi
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, vcell, set_amax
     use mpi_collectives
@@ -45,10 +46,10 @@ program test_mpi_parcel_split
     call update_parameters
 
 
-    n_parcels = 2 * (box%hi(2) - box%lo(2) + 1) + 2 * (box%hi(1) - box%lo(1) + 1)
-    n_total = 2 * n_parcels
+    parcels%local_num = 2 * (box%hi(2) - box%lo(2) + 1) + 2 * (box%hi(1) - box%lo(1) + 1)
+    n_total = 2 * parcels%local_num
 
-    call parcel_alloc(n_total)
+    call parcels%allocate(n_total)
 
     parcel%lambda_max = four
 
@@ -105,21 +106,21 @@ program test_mpi_parcel_split
         n = n + 1
     enddo
 
-    n_orig_total = n_parcels
-    n_orig_local = n_parcels
+    n_orig_total = parcels%local_num
+    n_orig_local = parcels%local_num
 
     call mpi_blocking_reduce(n_orig_total, MPI_SUM, world)
 
-    parcels%volume(1:n_parcels) = f12 * vcell
-    parcels%vorticity(:, 1:n_parcels) = world%rank + 1
-    parcels%buoyancy(1:n_parcels) = world%rank + 1
+    parcels%volume(1:parcels%local_num) = f12 * vcell
+    parcels%vorticity(:, 1:parcels%local_num) = world%rank + 1
+    parcels%buoyancy(1:parcels%local_num) = world%rank + 1
 
     call parcel_split
 
-    passed = (passed .and. (2 * n_orig_local == n_parcels))
+    passed = (passed .and. (2 * n_orig_local == parcels%local_num))
 
     if (world%rank == world%root) then
-        passed = (passed .and. (2 * n_orig_total == n_total_parcels))
+        passed = (passed .and. (2 * n_orig_total == parcels%total_num))
     endif
 
     if (world%rank == world%root) then

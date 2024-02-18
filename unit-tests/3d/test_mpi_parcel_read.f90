@@ -6,11 +6,12 @@
 program test_mpi_parcel_read
     use unit_test
     use constants, only : zero
-    use parcel_container
+    use parcels_mod, only : parcels
     use parameters, only : set_max_num_parcels
     use parcel_netcdf
     use mpi_environment
     use mpi_timer
+    use netcdf_utils, only : ncerr, delete_netcdf_file
     implicit none
 
     logical              :: passed = .true.
@@ -29,19 +30,19 @@ program test_mpi_parcel_read
     ! write parcels first
     !
 
-    n_parcels = 10 + (world%rank + 1)
-    n_parcels_before = n_parcels
-    n_total_parcels = 11 * world%size + (world%size * (world%size - 1)) / 2
+    parcels%local_num = 10 + (world%rank + 1)
+    n_parcels_before = parcels%local_num
+    parcels%total_num = 11 * world%size + (world%size * (world%size - 1)) / 2
 
-    call parcel_alloc(n_total_parcels)
+    call parcels%allocate(parcels%total_num)
 
-    ! fill with 1 to n_total_parcels
+    ! fill with 1 to parcels%total_num
     start_index = 0
     do n = 0, world%rank-1
         start_index = start_index + 10 + (n + 1)
     enddo
 
-    do n = 1, n_parcels
+    do n = 1, parcels%local_num
         parcels%position(:, n) = start_index + n
         parcels%B(:, n) = start_index + n
         parcels%volume(n) = start_index + n
@@ -76,10 +77,10 @@ program test_mpi_parcel_read
 
     call read_netcdf_parcels('nctest_0000000001_parcels.nc')
 
-    passed = (passed .and. (n_parcels == n_parcels_before))
+    passed = (passed .and. (parcels%local_num == n_parcels_before))
 
     if (passed) then
-        do n = 1, n_parcels
+        do n = 1, parcels%local_num
             res = dble(start_index + n)
             passed = (passed .and. (abs(parcels%position(1, n) - res) == zero))
             passed = (passed .and. (abs(parcels%position(2, n) - res) == zero))
@@ -100,7 +101,7 @@ program test_mpi_parcel_read
         enddo
     endif
 
-    call parcel_dealloc
+    call parcels%deallocate
 
     call delete_netcdf_file(ncfname='nctest_0000000001_parcels.nc')
 

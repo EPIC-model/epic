@@ -35,14 +35,6 @@ unittestsdir = $(prefix)/unit-tests
 # 	test_mpi_laplace_correction_3d
 # 	test_mpi_gradient_correction_3d
 # 	test_mpi_parcel_correction_3d
-# 	test_mpi_parcel_write
-# 	test_mpi_parcel_delete
-# 	test_mpi_parcel_pack
-# 	test_mpi_parcel_unpack
-# 	test_mpi_parcel_read
-# 	test_mpi_parcel_read_rejection
-# 	test_mpi_parcel_communicate
-# 	test_mpi_parcel_split
 unittests_PROGRAMS = 					\
  	test_jacobi_1					\
  	test_jacobi_2					\
@@ -60,6 +52,14 @@ unittests_PROGRAMS = 					\
 	test_mpi_field_interior_accumulate_vector	\
 	test_mpi_field_diagnostics			\
 	test_mpi_parcel_diagnostics			\
+	test_mpi_parcel_write				\
+	test_mpi_parcel_delete				\
+	test_mpi_parcel_pack				\
+	test_mpi_parcel_unpack				\
+	test_mpi_parcel_read				\
+	test_mpi_parcel_read_rejection			\
+	test_mpi_parcel_communicate			\
+	test_mpi_parcel_split				\
 	test_mpi_fft					\
 	test_mpi_dst					\
 	test_mpi_reverse_x				\
@@ -179,29 +179,29 @@ test_mpi_field_diagnostics_LDADD = libcombi.la
 test_mpi_parcel_diagnostics_SOURCES = test_mpi_parcel_diagnostics.f90
 test_mpi_parcel_diagnostics_LDADD = libcombi.la
 
-# test_mpi_parcel_write_SOURCES = test_mpi_parcel_write.f90
-# test_mpi_parcel_write_LDADD = libcombi.la
-#
-# test_mpi_parcel_delete_SOURCES = test_mpi_parcel_delete.f90
-# test_mpi_parcel_delete_LDADD = libcombi.la
-#
-# test_mpi_parcel_pack_SOURCES = test_mpi_parcel_pack.f90
-# test_mpi_parcel_pack_LDADD = libcombi.la
-#
-# test_mpi_parcel_unpack_SOURCES = test_mpi_parcel_unpack.f90
-# test_mpi_parcel_unpack_LDADD = libcombi.la
-#
-# test_mpi_parcel_read_SOURCES = test_mpi_parcel_read.f90
-# test_mpi_parcel_read_LDADD = libcombi.la
-#
-# test_mpi_parcel_read_rejection_SOURCES = test_mpi_parcel_read_rejection.f90
-# test_mpi_parcel_read_rejection_LDADD = libcombi.la
-#
-# test_mpi_parcel_communicate_SOURCES = test_mpi_parcel_communicate.f90
-# test_mpi_parcel_communicate_LDADD = libcombi.la
-#
-# test_mpi_parcel_split_SOURCES = test_mpi_parcel_split.f90
-# test_mpi_parcel_split_LDADD = libcombi.la
+test_mpi_parcel_write_SOURCES = test_mpi_parcel_write.f90
+test_mpi_parcel_write_LDADD = libcombi.la
+
+test_mpi_parcel_delete_SOURCES = test_mpi_parcel_delete.f90
+test_mpi_parcel_delete_LDADD = libcombi.la
+
+test_mpi_parcel_pack_SOURCES = test_mpi_parcel_pack.f90
+test_mpi_parcel_pack_LDADD = libcombi.la
+
+test_mpi_parcel_unpack_SOURCES = test_mpi_parcel_unpack.f90
+test_mpi_parcel_unpack_LDADD = libcombi.la
+
+test_mpi_parcel_read_SOURCES = test_mpi_parcel_read.f90
+test_mpi_parcel_read_LDADD = libcombi.la
+
+test_mpi_parcel_read_rejection_SOURCES = test_mpi_parcel_read_rejection.f90
+test_mpi_parcel_read_rejection_LDADD = libcombi.la
+
+test_mpi_parcel_communicate_SOURCES = test_mpi_parcel_communicate.f90
+test_mpi_parcel_communicate_LDADD = libcombi.la
+
+test_mpi_parcel_split_SOURCES = test_mpi_parcel_split.f90
+test_mpi_parcel_split_LDADD = libcombi.la
 
 test_mpi_fft_SOURCES = test_mpi_fft.f90
 test_mpi_fft_LDADD = libcombi.la

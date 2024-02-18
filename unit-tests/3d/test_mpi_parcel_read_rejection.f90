@@ -7,21 +7,25 @@
 ! =============================================================================
 program test_mpi_parcel_read_rejection
     use unit_test
-    use options, only : parcel
-    use constants, only : zero, f12
-    use parcel_container
+    use options, only : parcel, write_netcdf_options
+    use constants, only : zero, f12, one
+    use parcels_mod, only : parcels
     use parcel_netcdf
+    use parcel_init, only : parcel_default, init_timer
     use mpi_environment
     use mpi_layout
-    use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, max_num_parcels
+    use parameters, only : lower, update_parameters, extent, nx, ny, nz
+    use netcdf_utils, only : ncerr, NF90_WRITE, NF90_DOUBLE
+    use netcdf_writer
+    use config, only : cf_version, package_version
+    use iomanip, only : zfill
+    use physics, only : write_physical_quantities
     use mpi_timer
     implicit none
 
     logical            :: passed = .true.
-    integer, parameter :: n_per_dim = 2
     double precision   :: res
-    integer            :: i, j, k, l, ix, iy, iz, n_parcels_before
-    double precision   :: im, corner(3)
+    integer            :: n_parcels_before
     double precision   :: x_sum, y_sum, z_sum
 
     integer            :: ncid
@@ -55,52 +59,34 @@ program test_mpi_parcel_read_rejection
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
+    parcel%n_per_cell = 8
+    parcel%n_surf_per_cell = 4
+
     call update_parameters
 
     call register_timer('parcel I/O', parcel_io_timer)
+    call register_timer('parcel init', init_timer)
 
     !
     ! write parcels first
     !
 
-    n_parcels = n_per_dim ** 3 * nz * (box%hi(2)-box%lo(2)+1) * (box%hi(1)-box%lo(1)+1)
-    n_parcels_before = n_parcels
-    n_total_parcels = n_per_dim ** 3 * nz * ny * nx
-    call parcel_alloc(max_num_parcels)
+    call parcel_default
 
-    im = one / dble(n_per_dim)
-
-    l = 1
-    do iz = 0, nz-1
-        do iy = box%lo(2), box%hi(2)
-            do ix = box%lo(1), box%hi(1)
-                corner = lower + dble((/ix, iy, iz/)) * dx
-                do k = 1, n_per_dim
-                    do j = 1, n_per_dim
-                        do i = 1, n_per_dim
-                            parcels%position(1, l) = corner(1) + dx(1) * (dble(i) - f12) * im
-                            parcels%position(2, l) = corner(2) + dx(2) * (dble(j) - f12) * im
-                            parcels%position(3, l) = corner(3) + dx(3) * (dble(k) - f12) * im
-                            l = l + 1
-                        enddo
-                    enddo
-                enddo
-            enddo
-        enddo
-    enddo
+    n_parcels_before = parcels%local_num
 
     ! we cannot check individual positions since the order of the parcels can be arbitrary
-    x_sum = sum(parcels%position(1, 1:n_parcels))
-    y_sum = sum(parcels%position(2, 1:n_parcels))
-    z_sum = sum(parcels%position(3, 1:n_parcels))
+    x_sum = sum(parcels%position(1, 1:parcels%local_num))
+    y_sum = sum(parcels%position(2, 1:parcels%local_num))
+    z_sum = sum(parcels%position(3, 1:parcels%local_num))
 
-    parcels%B(:, 1:n_parcels) = world%rank + 1
-    parcels%volume(1:n_parcels) = world%rank + 1
-    parcels%vorticity(:, 1:n_parcels) = world%rank + 1
-    parcels%buoyancy(1:n_parcels) = world%rank + 1
+    parcels%B(:, 1:parcels%local_num) = world%rank + 1
+    parcels%volume(1:parcels%local_num) = world%rank + 1
+    parcels%vorticity(:, 1:parcels%local_num) = world%rank + 1
+    parcels%buoyancy(1:parcels%local_num) = world%rank + 1
 
 #ifndef ENABLE_DRY_MODE
-    parcels%humidity(1:n_parcels) = world%rank + 1
+    parcels%humidity(1:parcels%local_num) = world%rank + 1
 #endif
 
     call create_file('nctest')
@@ -126,30 +112,30 @@ program test_mpi_parcel_read_rejection
 
     call read_netcdf_parcels('nctest_0000000001_parcels.nc')
 
-    passed = (passed .and. (n_parcels == n_parcels_before))
+    passed = (passed .and. (parcels%local_num == n_parcels_before))
 
     if (passed) then
         res = dble(world%rank + 1)
 
-        passed = (passed .and. (abs(sum(parcels%position(1, 1:n_parcels)) - x_sum) == zero))
-        passed = (passed .and. (abs(sum(parcels%position(2, 1:n_parcels)) - y_sum) == zero))
-        passed = (passed .and. (abs(sum(parcels%position(3, 1:n_parcels)) - z_sum) == zero))
-        passed = (passed .and. (maxval(abs(parcels%B(1, 1:n_parcels) - res)) == zero))
-        passed = (passed .and. (maxval(abs(parcels%B(2, 1:n_parcels) - res)) == zero))
-        passed = (passed .and. (maxval(abs(parcels%B(3, 1:n_parcels) - res)) == zero))
-        passed = (passed .and. (maxval(abs(parcels%B(4, 1:n_parcels) - res)) == zero))
-        passed = (passed .and. (maxval(abs(parcels%B(5, 1:n_parcels) - res)) == zero))
-        passed = (passed .and. (maxval(abs(parcels%volume(1:n_parcels) - res)) == zero))
-        passed = (passed .and. (maxval(abs(parcels%vorticity(1, 1:n_parcels) - res)) == zero))
-        passed = (passed .and. (maxval(abs(parcels%vorticity(2, 1:n_parcels) - res)) == zero))
-        passed = (passed .and. (maxval(abs(parcels%vorticity(3, 1:n_parcels) - res)) == zero))
-        passed = (passed .and. (maxval(abs(parcels%buoyancy(1:n_parcels) - res)) == zero))
+        passed = (passed .and. (abs(sum(parcels%position(1, 1:parcels%local_num)) - x_sum) == zero))
+        passed = (passed .and. (abs(sum(parcels%position(2, 1:parcels%local_num)) - y_sum) == zero))
+        passed = (passed .and. (abs(sum(parcels%position(3, 1:parcels%local_num)) - z_sum) == zero))
+        passed = (passed .and. (maxval(abs(parcels%B(1, 1:parcels%local_num) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%B(2, 1:parcels%local_num) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%B(3, 1:parcels%local_num) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%B(4, 1:parcels%local_num) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%B(5, 1:parcels%local_num) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%volume(1:parcels%local_num) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%vorticity(1, 1:parcels%local_num) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%vorticity(2, 1:parcels%local_num) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%vorticity(3, 1:parcels%local_num) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%buoyancy(1:parcels%local_num) - res)) == zero))
 #ifndef ENABLE_DRY_MODE
-        passed = (passed .and. (maxval(abs(parcels%humidity(1:n_parcels) - res)) == zero))
+        passed = (passed .and. (maxval(abs(parcels%humidity(1:parcels%local_num) - res)) == zero))
 #endif
     endif
 
-    call parcel_dealloc
+    call parcels%deallocate
 
     call delete_netcdf_file(ncfname='nctest_0000000001_parcels.nc')
 
@@ -191,13 +177,23 @@ program test_mpi_parcel_read_rejection
 
             call write_netcdf_options(ncid)
 
+            ! all cores must know the correct number of total parcels
+            parcels%total_num = parcels%local_num
+            call MPI_Allreduce(MPI_IN_PLACE,        &
+                               parcels%total_num,   &
+                               1,                   &
+                               MPI_INTEGER,         &
+                               MPI_SUM,             &
+                               world%comm,          &
+                               world%err)
+
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                         &
                                          name='n_parcels',                  &
-                                         dimsize=n_total_parcels,           &
+                                         dimsize=parcels%total_num,         &
                                          dimid=npar_dim_id)
 
-            call define_netcdf_dimension(ncid=ncid,                 &
+            call define_netcdf_dimension(ncid=ncid,                   &
                                          name='world%size',           &
                                          dimsize=world%size,          &
                                          dimid=mpi_dim_id)
@@ -356,7 +352,7 @@ program test_mpi_parcel_read_rejection
             recvcounts = 1
             start_index = 0
             sendbuf = 0
-            sendbuf(world%rank+1:world%size) = n_parcels
+            sendbuf(world%rank+1:world%size) = parcels%local_num
             sendbuf(world%rank+1) = 0
 
             call MPI_Reduce_scatter(sendbuf, start_index, recvcounts, MPI_INT, MPI_SUM, world%comm, world%err)
@@ -365,29 +361,29 @@ program test_mpi_parcel_read_rejection
             ! since the starting index in Fortran is 1 and not 0.
             start_index = start_index + 1
 
-            start = (/ start_index, 1 /)
-            cnt   = (/ n_parcels,   1 /)
+            start = (/ start_index,       1 /)
+            cnt   = (/ parcels%local_num, 1 /)
 
-            call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, z_pos_id, parcels%position(3, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, x_pos_id, parcels%position(1, 1:parcels%local_num), start, cnt)
+            call write_netcdf_dataset(ncid, y_pos_id, parcels%position(2, 1:parcels%local_num), start, cnt)
+            call write_netcdf_dataset(ncid, z_pos_id, parcels%position(3, 1:parcels%local_num), start, cnt)
 
-            call write_netcdf_dataset(ncid, b11_id, parcels%B(1, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, b12_id, parcels%B(2, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, b13_id, parcels%B(3, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, b22_id, parcels%B(4, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, b23_id, parcels%B(5, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, b11_id, parcels%B(1, 1:parcels%local_num), start, cnt)
+            call write_netcdf_dataset(ncid, b12_id, parcels%B(2, 1:parcels%local_num), start, cnt)
+            call write_netcdf_dataset(ncid, b13_id, parcels%B(3, 1:parcels%local_num), start, cnt)
+            call write_netcdf_dataset(ncid, b22_id, parcels%B(4, 1:parcels%local_num), start, cnt)
+            call write_netcdf_dataset(ncid, b23_id, parcels%B(5, 1:parcels%local_num), start, cnt)
 
-            call write_netcdf_dataset(ncid, vol_id, parcels%volume(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, vol_id, parcels%volume(1:parcels%local_num), start, cnt)
 
-            call write_netcdf_dataset(ncid, x_vor_id, parcels%vorticity(1, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, y_vor_id, parcels%vorticity(2, 1:n_parcels), start, cnt)
-            call write_netcdf_dataset(ncid, z_vor_id, parcels%vorticity(3, 1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, x_vor_id, parcels%vorticity(1, 1:parcels%local_num), start, cnt)
+            call write_netcdf_dataset(ncid, y_vor_id, parcels%vorticity(2, 1:parcels%local_num), start, cnt)
+            call write_netcdf_dataset(ncid, z_vor_id, parcels%vorticity(3, 1:parcels%local_num), start, cnt)
 
-            call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, buo_id, parcels%buoyancy(1:parcels%local_num), start, cnt)
 
 #ifndef ENABLE_DRY_MODE
-            call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:n_parcels), start, cnt)
+            call write_netcdf_dataset(ncid, hum_id, parcels%humidity(1:parcels%local_num), start, cnt)
 #endif
             call close_netcdf_file(ncid)
 

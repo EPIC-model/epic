@@ -6,10 +6,11 @@
 program test_mpi_parcel_write
     use unit_test
     use constants, only : zero
-    use parcel_container
+    use parcels_mod, only : parcels
     use parcel_netcdf
     use mpi_environment
     use mpi_timer
+    use netcdf_utils, only : ncerr, delete_netcdf_file
     implicit none
 
     logical :: passed = .true.
@@ -20,19 +21,19 @@ program test_mpi_parcel_write
 
     call register_timer('parcel I/O', parcel_io_timer)
 
-    n_parcels = 10 + (world%rank + 1)
-    n_total_parcels = 11 * world%size + (world%size * (world%size - 1)) / 2
+    parcels%local_num = 10 + (world%rank + 1)
+    parcels%total_num = 11 * world%size + (world%size * (world%size - 1)) / 2
 
-    call parcel_alloc(n_parcels)
+    call parcels%allocate(parcels%local_num)
 
-    parcels%position(:, 1:n_parcels) = world%rank
-    parcels%B(:, 1:n_parcels) = world%rank
-    parcels%volume(1:n_parcels) = world%rank
-    parcels%vorticity(:, 1:n_parcels) = world%rank
-    parcels%buoyancy(1:n_parcels) = world%rank
+    parcels%position(:, 1:parcels%local_num ) = world%rank
+    parcels%B(:, 1:parcels%local_num ) = world%rank
+    parcels%volume(1:parcels%local_num ) = world%rank
+    parcels%vorticity(:, 1:parcels%local_num ) = world%rank
+    parcels%buoyancy(1:parcels%local_num ) = world%rank
 
 #ifndef ENABLE_DRY_MODE
-    parcels%humidity(1:n_parcels) = world%rank
+    parcels%humidity(1:parcels%local_num ) = world%rank
 #endif
 
     call create_netcdf_parcel_file('nctest', .true., .false.)
@@ -43,7 +44,7 @@ program test_mpi_parcel_write
 
     passed = (passed .and. (ncerr == 0))
 
-    call parcel_dealloc
+    call parcels%deallocate
 
     call delete_netcdf_file(ncfname='nctest_0000000001_parcels.nc')
 
