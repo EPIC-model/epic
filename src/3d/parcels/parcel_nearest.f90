@@ -365,7 +365,7 @@ module parcel_nearest
             call find_closest_parcel_globally(n_local_small, iclo, rclo, dclo)
 
             if (.not. l_no_small) then
-                do n = 1, n_local_small + n_remote_small
+                do n = 1, n_local_small 
                     if (iclo(n) == 0) then
                         write(*,*) iclo(n), dclo(n)
                         call mpi_exit_on_error('Merge error: no near enough neighbour found.')
@@ -690,7 +690,7 @@ module parcel_nearest
 #ifndef NDEBUG
                 if (small_recv_order(n) /= tag) then
                     call mpi_exit_on_error(&
-                        "parcel_nearest::find_closest_parcel_globally: Wrong messge order.")
+                        "parcel_nearest::find_closest_parcel_globally: Wrong message order.")
                 endif
 
                 if (small_recv_count(n) /= n_neighbour_small(n)) then
