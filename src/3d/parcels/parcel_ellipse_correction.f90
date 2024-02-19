@@ -39,6 +39,38 @@ module surface_parcel_correction
 
     contains
 
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    ! Ensure that the total parcel area sum(A_i) equals the domain area
+    ! (Lx * Ly = extent(1)*extent(2))
+    subroutine area_correction(iz, surf_parcels)
+        integer,               intent(in)    :: iz
+        type(ellipse_pc_type), intent(inout) :: surf_parcels
+        double precision                     :: total_area(2)
+
+        total_area(1) = bot_parcels%area(1:bot_parcels%local_num)
+        total_area(2) = top_parcels%area(1:top_parcels%local_num)
+
+        call MPI_Allreduce(MPI_IN_PLACE,            &
+                           total_area(1:2),         &
+                           2,                       &
+                           MPI_DOUBLE_PRECISION,    &
+                           MPI_SUM,                 &
+                           world%comm,              &
+                           world%err)
+
+        call mpi_check_for_error(world, &
+            "in MPI_Allreduce of parcel_correction::area_correction.")
+
+        ! Correction factor: f = Lx Ly / sum Ai.
+        total_area = extent(1) * extent(2) / total_area
+
+        bot_parcels%area(1:bot_parcels%local_num) = bot_parcels(1:bot_parcels%local_num) * total_area
+        top_parcels%area(1:top_parcels%local_num) = top_parcels(1:top_parcels%local_num) * total_area
+
+    end subroutine area_correction
+
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine apply_surf_laplace
 
@@ -51,7 +83,6 @@ module surface_parcel_correction
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine m_apply_laplace(iz, surf_parcels)
-        use mpi_utils, only : mpi_stop
         integer,               intent(in)    :: iz
         type(ellipse_pc_type), intent(inout) :: surf_parcels
         double precision                     :: phi( box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
