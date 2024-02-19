@@ -223,12 +223,12 @@ module parcel_interpl
                     dbuoyg(ks:ks+1, js:js+1, is:is+1) = dbuoyg(ks:ks+1, js:js+1, is:is+1) &
                                                       + weight * parcels%buoyancy(n)
                     humg(ks:ks+1, js:js+1, is:is+1) = humg(ks:ks+1, js:js+1, is:is+1) &
-                                              + weight * parcels%humidity(n)
+                                                    + weight * parcels%humidity(n)
 #endif
                     tbuoyg(ks:ks+1, js:js+1, is:is+1) = tbuoyg(ks:ks+1, js:js+1, is:is+1) &
-                                                + weight * btot
+                                                      + weight * btot
                     volg(ks:ks+1, js:js+1, is:is+1) = volg(ks:ks+1, js:js+1, is:is+1) &
-                                              + weight
+                                                    + weight
                 enddo
             enddo
             !$omp end do

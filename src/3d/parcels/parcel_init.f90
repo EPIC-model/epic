@@ -209,14 +209,14 @@ module parcel_init
 
                 ! loop over grid points which are part of the interpolation
                 do l = 1, 3
-                    parcels%vorticity(l, n) = parcels%vorticity(l, n) &
-                                            + sum(ws * vortg(0, js:js+1, is:is+1, l))
+                    bot_parcels%vorticity(l, n) = bot_parcels%vorticity(l, n) &
+                                                + sum(ws * vortg(0, js:js+1, is:is+1, l))
                 enddo
-                parcels%buoyancy(n) = parcels%buoyancy(n) &
-                                    + sum(ws * tbuoyg(0, js:js+1, is:is+1))
+                bot_parcels%buoyancy(n) = bot_parcels%buoyancy(n) &
+                                         + sum(ws * tbuoyg(0, js:js+1, is:is+1))
 #ifndef ENABLE_DRY_MODE
-                parcels%humidity(n) = parcels%humidity(n) &
-                                    + sum(ws * humg(0, js:js+1, is:is+1))
+                bot_parcels%humidity(n) = bot_parcels%humidity(n) &
+                                        + sum(ws * humg(0, js:js+1, is:is+1))
 #endif
             enddo
             !$omp end do
@@ -232,14 +232,14 @@ module parcel_init
 
                 ! loop over grid points which are part of the interpolation
                 do l = 1, 3
-                    parcels%vorticity(l, n) = parcels%vorticity(l, n) &
-                                            + sum(ws * vortg(nz, js:js+1, is:is+1, l))
+                    top_parcels%vorticity(l, n) = top_parcels%vorticity(l, n) &
+                                                + sum(ws * vortg(nz, js:js+1, is:is+1, l))
                 enddo
-                parcels%buoyancy(n) = parcels%buoyancy(n) &
-                                    + sum(ws * tbuoyg(nz, js:js+1, is:is+1))
+                top_parcels%buoyancy(n) = top_parcels%buoyancy(n) &
+                                        + sum(ws * tbuoyg(nz, js:js+1, is:is+1))
 #ifndef ENABLE_DRY_MODE
-                parcels%humidity(n) = parcels%humidity(n) &
-                                    + sum(ws * humg(nz, js:js+1, is:is+1))
+                top_parcels%humidity(n) = top_parcels%humidity(n) &
+                                        + sum(ws * humg(nz, js:js+1, is:is+1))
 #endif
             enddo
             !$omp end do
