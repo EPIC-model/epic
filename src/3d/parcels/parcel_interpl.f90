@@ -459,7 +459,7 @@ module parcel_interpl
                         parcels%delta_pos(l, n) = parcels%delta_pos(l, n) &
                                                 + point_weight_g2p * sum(weights * velog(ks:ks+1, js:js+1, is:is+1, l))
                     enddo
-                    do l = 1,5
+                    do l = 1,8
                         parcels%strain(l, n) = parcels%strain(l, n) &
                                              + point_weight_g2p * sum(weights * velgradg(ks:ks+1, js:js+1, is:is+1, l))
                     enddo

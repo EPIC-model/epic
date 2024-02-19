@@ -153,7 +153,6 @@ module ls_rk
                 do n = 1, n_parcels
                     parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n),           &
                                                      parcels%strain(:, n),      &
-                                                     parcels%vorticity(:, n),   &
                                                      parcels%volume(n))
                 enddo
                 !$omp end parallel do
@@ -173,7 +172,6 @@ module ls_rk
                     parcels%delta_b(:, n) = parcels%delta_b(:, n)               &
                                           + get_dBdt(parcels%B(:, n),           &
                                                      parcels%strain(:, n),      &
-                                                     parcels%vorticity(:, n),   &
                                                      parcels%volume(n))
                 enddo
                 !$omp end parallel do
