@@ -20,6 +20,7 @@ module surface_parcel_correction
     use constants
     use parameters, only : acelli, nx, ny, dx, dxi, nz
     use parcel_mpi, only : parcel_communicate
+    use field_mpi, only : field_halo_fill_vector
 !     use timer, only : start_timer, stop_timer
     use fields, only : volg
 
@@ -50,6 +51,7 @@ module surface_parcel_correction
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     subroutine m_apply_laplace(iz, surf_parcels)
+        use mpi_utils, only : mpi_stop
         integer,               intent(in)    :: iz
         type(ellipse_pc_type), intent(inout) :: surf_parcels
         double precision                     :: phi( box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1))
@@ -70,7 +72,7 @@ module surface_parcel_correction
             call bilinear(surf_parcels%position(:, n), is, js, weights)
 
             do l = 1, 2
-                surf_parcels%position(1, n) = surf_parcels%position(1, n)               &
+                surf_parcels%position(l, n) = surf_parcels%position(l, n)               &
                                             + sum(weights * grad(js:js+1, is:is+1, l))
             enddo
         enddo
@@ -175,7 +177,10 @@ module surface_parcel_correction
         call diff2dy(ds, vs)
 
         ! Reverse FFT to define y velocity component vd:
-        call ifft2d(us, grad(:, :, 2))
+        call ifft2d(vs, grad(:, :, 2))
+
+        ! Fill halo grid points:
+        call field_halo_fill_vector(grad, l_alloc=.true.)
 
     end subroutine m_diverge
 
