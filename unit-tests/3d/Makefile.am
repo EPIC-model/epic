@@ -31,9 +31,6 @@ unittestsdir = $(prefix)/unit-tests
 # 	test_ellipsoid_split
 # 	test_ellipsoid_reflection
 # 	test_free_slip_3d
-# 	test_mpi_laplace_correction_3d
-# 	test_mpi_gradient_correction_3d
-# 	test_mpi_parcel_correction_3d
 unittests_PROGRAMS = 					\
  	test_jacobi_1					\
  	test_jacobi_2					\
@@ -45,6 +42,9 @@ unittests_PROGRAMS = 					\
 	test_scherzinger_4				\
 	test_mpi_parcel_init_3d				\
 	test_mpi_trilinear				\
+	test_mpi_laplace_correction_3d			\
+	test_mpi_gradient_correction_3d			\
+	test_mpi_parcel_correction_3d			\
 	test_mpi_grid2par				\
 	test_mpi_field_halo_fill			\
 	test_mpi_field_halo_fill_vector			\
@@ -98,7 +98,8 @@ unittests_PROGRAMS = 					\
 	test_mpi_nearest_19				\
 	test_mpi_nearest_20				\
 	test_mpi_mixing					\
-	test_mpi_nearest_ellipse_1
+	test_mpi_nearest_ellipse_1			\
+	test_mpi_nearest_ellipse_2
 # 	test_mpi_lapinv1
 
 dataroot_DATA =		\
@@ -140,15 +141,15 @@ test_mpi_parcel_init_3d_LDADD = libcombi.la
 test_mpi_trilinear_SOURCES = test_mpi_trilinear.f90
 test_mpi_trilinear_LDADD = libcombi.la
 
-# test_mpi_laplace_correction_3d_SOURCES = test_mpi_laplace_correction_3d.f90
-# test_mpi_laplace_correction_3d_LDADD = libcombi.la
-#
-# test_mpi_gradient_correction_3d_SOURCES = test_mpi_gradient_correction_3d.f90
-# test_mpi_gradient_correction_3d_LDADD = libcombi.la
-#
-# test_mpi_parcel_correction_3d_SOURCES = test_mpi_parcel_correction_3d.f90
-# test_mpi_parcel_correction_3d_LDADD = libcombi.la
-#
+test_mpi_laplace_correction_3d_SOURCES = test_mpi_laplace_correction_3d.f90
+test_mpi_laplace_correction_3d_LDADD = libcombi.la
+
+test_mpi_gradient_correction_3d_SOURCES = test_mpi_gradient_correction_3d.f90
+test_mpi_gradient_correction_3d_LDADD = libcombi.la
+
+test_mpi_parcel_correction_3d_SOURCES = test_mpi_parcel_correction_3d.f90
+test_mpi_parcel_correction_3d_LDADD = libcombi.la
+
 # # test_ellipsoid_reflection_SOURCES = test_ellipsoid_reflection.f90
 # # test_ellipsoid_reflection_LDADD = libcombi.la
 
@@ -319,6 +320,9 @@ test_mpi_mixing_LDADD = libcombi.la
 
 test_mpi_nearest_ellipse_1_SOURCES = test_mpi_nearest_ellipse_1.f90
 test_mpi_nearest_ellipse_1_LDADD = libcombi.la
+
+test_mpi_nearest_ellipse_2_SOURCES = test_mpi_nearest_ellipse_2.f90
+test_mpi_nearest_ellipse_2_LDADD = libcombi.la
 
 # test_mpi_lapinv1_SOURCES = test_mpi_lapinv1.f90
 # test_mpi_lapinv1_LDADD = libcombi.la

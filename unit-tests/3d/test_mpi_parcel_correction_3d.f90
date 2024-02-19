@@ -5,12 +5,14 @@
 !         the parcels with a small deviation from the optimal position.
 !         It then performs 20 relaxation steps.
 ! =============================================================================
-program test_parcel_correction_3d
+program test_mpi_parcel_correction_3d
     use unit_test
     use mpi_environment
     use options, only : parcel
     use constants, only : pi, one, zero, f14, f23, f32, two, four, f12, f18
-    use parcel_container, only : n_parcels, parcels, n_total_parcels, parcel_alloc
+    use parcels_mod, only : parcels, top_parcels, bot_parcels
+    use parcel_init, only : parcel_default, init_timer
+    use parcel_container, only : resize_timer
     use parcel_correction, only : apply_laplace             &
                                 , apply_gradient            &
                                 , lapl_corr_timer           &
@@ -18,9 +20,9 @@ program test_parcel_correction_3d
                                 , vort_corr_timer           &
                                 , init_parcel_correction
     use parcel_interpl, only : vol2grid, halo_swap_timer
-    use parcel_ellipsoid, only : get_abc
+    use parcel_ellipse_interpl, only : area2grid
     use parcel_init, only : init_regular_positions
-    use parameters, only : lower, extent, update_parameters, vcell, nx, ny, nz, dx
+    use parameters, only : lower, extent, update_parameters, vcell, acell, nx, ny, nz, dx
     use fields, only : volg, field_default
     use field_ops
     use parcel_bc
@@ -33,8 +35,8 @@ program test_parcel_correction_3d
     double precision :: final_error, init_error, max_err, val, tmp
     integer :: i, n, sk
     integer, allocatable :: seed(:)
-    double precision :: q, m, delta
     integer :: lo(3), hi(3)
+    double precision :: q, m, delta
 
     call mpi_env_initialise
 
@@ -51,6 +53,8 @@ program test_parcel_correction_3d
     call register_timer('gradient correction', grad_corr_timer)
     call register_timer('vorticity correction', vort_corr_timer)
     call register_timer('halo swap', halo_swap_timer)
+    call register_timer('resize timer', resize_timer)
+    call register_timer('init timer', init_timer)
 
     nx = 32
     ny = 32
@@ -61,21 +65,26 @@ program test_parcel_correction_3d
 
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
+    parcel%n_per_cell = 8
+    parcel%n_surf_per_cell = 4
+
     call update_parameters
 
     call field_default
 
+    call parcel_default
+
+    parcels%total_num = parcels%local_num
+    call mpi_blocking_reduce(parcels%total_num, MPI_SUM, world)
+
+    bot_parcels%total_num = bot_parcels%local_num
+    call mpi_blocking_reduce(bot_parcels%total_num, MPI_SUM, world)
+
+    top_parcels%total_num = top_parcels%local_num
+    call mpi_blocking_reduce(top_parcels%total_num, MPI_SUM, world)
+
     lo = box%lo
     hi = box%hi
-
-    n_parcels = 8*nz*(hi(1) - lo(1) + 1) * (hi(2) - lo(2) + 1)
-    call parcel_alloc(n_parcels + 1000)
-
-    n_total_parcels = n_parcels
-    call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
-
-    parcel%n_per_cell = 8
-    call init_regular_positions
 
     ! 0 --> -delta
     ! 1 -->  delta
@@ -88,7 +97,7 @@ program test_parcel_correction_3d
     m = two * delta
 
     ! add some deviation
-    do n = 1, n_parcels
+    do n = 1, parcels%local_num
         call random_number(val)
 
         tmp = m * val + q
@@ -106,23 +115,42 @@ program test_parcel_correction_3d
         call apply_reflective_bc(parcels%position(:, n), parcels%B(:, n))
     enddo
 
-    call parcel_communicate
+    do n = 1, bot_parcels%local_num
+        call random_number(val)
+
+        tmp = m * val + q
+        bot_parcels%position(1, n) = bot_parcels%position(1, n) + tmp
+
+        call random_number(val)
+        tmp = m * val + q
+        bot_parcels%position(2, n) = bot_parcels%position(2, n) + tmp
+
+        call apply_periodic_bc(bot_parcels%position(:, n))
+    enddo
+
+        do n = 1, top_parcels%local_num
+        call random_number(val)
+
+        tmp = m * val + q
+        top_parcels%position(1, n) = top_parcels%position(1, n) + tmp
+
+        call random_number(val)
+        tmp = m * val + q
+        top_parcels%position(2, n) = top_parcels%position(2, n) + tmp
+
+        call apply_periodic_bc(top_parcels%position(:, n))
+    enddo
+
+    call parcel_communicate(parcels)
 
     volg = zero
 
-    parcels%volume = f18 * vcell
-
-    parcels%B(:, :) = zero
-
-    ! b11
-    parcels%B(1, :) = get_abc(parcels%volume) ** f23
-
-    ! b22
-    parcels%B(4, :) = parcels%B(1, :)
-
     call vol2grid
+    call area2grid(l_halo_swap=.true.)
 
-    volg(0:nz, lo(2):hi(2), lo(1):hi(1)) = abs(volg(0:nz, lo(2):hi(2), lo(1):hi(1)) / vcell - one)
+    volg(1:nz-1, lo(2):hi(2), lo(1):hi(1)) = abs(volg(1:nz-1, lo(2):hi(2), lo(1):hi(1)) / vcell - one)
+    volg(0,      lo(2):hi(2), lo(1):hi(1)) = abs(volg(0,      lo(2):hi(2), lo(1):hi(1)) / acell - one)
+    volg(nz,     lo(2):hi(2), lo(1):hi(1)) = abs(volg(nz,     lo(2):hi(2), lo(1):hi(1)) / acell - one)
 
     init_error = get_sum(volg) / (nx * ny * (nz+1))
 
@@ -139,10 +167,14 @@ program test_parcel_correction_3d
     do i = 1, 20
         call apply_laplace
         call vol2grid
+        call area2grid(l_halo_swap=.true.)
         call apply_gradient(1.80d0,0.5d0)
         if (l_verbose) then
             call vol2grid
-            volg(0:nz, lo(2):hi(2), lo(1):hi(1)) = abs(volg(0:nz, lo(2):hi(2), lo(1):hi(1)) / vcell - one)
+            call area2grid(l_halo_swap=.true.)
+            volg(1:nz-1, lo(2):hi(2), lo(1):hi(1)) = abs(volg(1:nz-1, lo(2):hi(2), lo(1):hi(1)) / vcell - one)
+            volg(0,      lo(2):hi(2), lo(1):hi(1)) = abs(volg(0,      lo(2):hi(2), lo(1):hi(1)) / acell - one)
+            volg(nz,     lo(2):hi(2), lo(1):hi(1)) = abs(volg(nz,     lo(2):hi(2), lo(1):hi(1)) / acell - one)
             final_error = get_sum(volg) / (nx * ny * (nz+1))
             max_err = get_abs_max(volg)
             if (world%rank == world%root) then
@@ -164,8 +196,8 @@ program test_parcel_correction_3d
     passed = (passed .and. (world%err == 0))
 
     if (world%rank == world%root) then
-        call print_result_logical('Test MPI laplace and gradient 3D', passed)
+        call print_result_logical('Test MPI laplace and gradient correction 3D', passed)
     endif
 
-end program test_parcel_correction_3d
+end program test_mpi_parcel_correction_3d
 
