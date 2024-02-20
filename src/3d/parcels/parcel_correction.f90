@@ -79,6 +79,8 @@ module parcel_correction
 
             vor_bar = vor_bar / vsum
 
+            call init_surf_parcel_correction
+
             call stop_timer(vort_corr_timer)
 
         end subroutine init_parcel_correction
@@ -134,6 +136,8 @@ module parcel_correction
             enddo
             !$omp end do
             !$omp end parallel
+
+            call apply_surface_vortcor
 
             call stop_timer(vort_corr_timer)
         end subroutine apply_vortcor
