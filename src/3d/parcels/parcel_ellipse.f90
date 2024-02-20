@@ -50,8 +50,8 @@ module parcel_ellipse
 
             !------------------------------------------------------------------
             ! Procedures in submodules:
-            procedure, private :: init => parcel_ellipse_init
-            procedure          :: split => parcel_ellipse_split
+            procedure :: init => parcel_ellipse_init
+            procedure :: split => parcel_ellipse_split
 
     end type ellipse_pc_type
 
@@ -112,8 +112,6 @@ module parcel_ellipse
             this%IDX_RK_STRAIN_END = i + 11
 
             this%attr_num = this%IDX_RK_STRAIN_END
-
-            call this%init
 
             ! these parcels only are in one vertical grid cell
             this%nz = 1

@@ -9,8 +9,7 @@ module parcel_init
     use interpl, only : trilinear, bilinear
     use parameters, only : dx, vcell, ncell,            &
                            extent, lower, nx, ny, nz,   &
-                           max_num_parcels,             &
-                           max_num_surf_parcels
+                           max_num_parcels
     use mpi_timer, only : start_timer, stop_timer
     use omp_lib
     use mpi_environment
@@ -101,8 +100,8 @@ module parcel_init
 
             call stop_timer(init_timer)
 
-            call bot_parcels%allocate(max_num_surf_parcels)
-            call top_parcels%allocate(max_num_surf_parcels)
+            call bot_parcels%init
+            call top_parcels%init
 
         end subroutine parcel_default
 

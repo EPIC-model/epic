@@ -1,9 +1,10 @@
 submodule (parcel_ellipse) parcel_ellipse_init_smod
     use options, only : parcel
     use constants, only : one
-    use parameters, only : nx, ny, acell, dx, dxi, lower
-    use mpi_environment, only : world
+    use parameters, only : nx, ny, acell, dx, dxi, lower, vcell, max_num_surf_parcels
+    use mpi_environment, only : world, MPI_SUM
     use mpi_layout, only : box
+    use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
     contains
@@ -12,6 +13,8 @@ submodule (parcel_ellipse) parcel_ellipse_init_smod
             class(ellipse_pc_type), intent(inout) :: this
             integer                               :: ix, i, iy, j, k, n_per_dim, n
             double precision                      :: im, corner(2), a2, lam, ratio
+
+            call this%allocate(max_num_surf_parcels)
 
             !------------------------------------------------------------------
             ! Set the number of parcels
@@ -25,6 +28,11 @@ submodule (parcel_ellipse) parcel_ellipse_init_smod
 
             !------------------------------------------------------------------
             ! Initialise parcel positions on a regular grid:
+
+            this%total_num = this%local_num
+            if (world%size > 1) then
+                call mpi_blocking_reduce(this%total_num, MPI_SUM, world)
+            endif
 
             ! number of parcels per dimension
             n_per_dim = int(dsqrt(dble(parcel%n_surf_per_cell)))
@@ -111,6 +119,7 @@ submodule (parcel_ellipse) parcel_ellipse_init_smod
 #ifndef ENABLE_DRY_MODE
                 this%humidity(n)     = zero
 #endif
+                this%volume(n) = vcell / dble(parcel%n_surf_per_cell)
             enddo
             !$omp end do
             !$omp end parallel
