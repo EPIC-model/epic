@@ -9,7 +9,7 @@ module parcel_ellipse_interpl
     use options, only : parcel
     use fields
     use field_mpi, only : field_halo_swap_scalar
-    use parcels_mod
+    use parcels_mod, only : ellipse_pc_type, bot_parcels, top_parcels
     use interpl, only : bilinear
     use physics, only : glat, lambda_c, q_0
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
@@ -280,7 +280,7 @@ module parcel_ellipse_interpl
 #ifndef ENABLE_G2P_1POINT
                 points = surf_parcels%get_points(n)
 #else
-                points(:, 1) = parcels%position(:, n)
+                points(:, 1) = surf_parcels%position(:, n)
 #endif
 
                 ! we have 2 points per ellipse
