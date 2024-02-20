@@ -11,7 +11,6 @@ module parcel_ellipse_interpl
     use field_mpi, only : field_halo_swap_scalar
     use parcels_mod
     use interpl, only : bilinear
-    use parcel_bc, only : apply_periodic_bc
     use physics, only : glat, lambda_c, q_0
 #ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
     use physics, only : bfsq
@@ -78,9 +77,6 @@ module parcel_ellipse_interpl
 
                 ! we have 2 points per ellipse
                 do p = 1, 2
-
-                    ! ensure point is within the domain
-                    call apply_periodic_bc(points(:, p))
 
                     ! get interpolation weights and mesh indices
                     call bilinear(points(:, p), is, js, weights)
@@ -192,9 +188,6 @@ module parcel_ellipse_interpl
 
                 ! we have 2 points per ellipse
                 do p = 1, n_points_p2g
-
-                    ! ensure point is within the domain
-                    call apply_periodic_bc(points(:, p))
 
                     ! get interpolation weights and mesh indices
                     call bilinear(points(:, p), is, js, weights)

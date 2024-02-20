@@ -8,7 +8,6 @@ module parcel_interpl
     use parameters, only : nx, nz, vmin, l_bndry_zeta_zero
     use options, only : parcel
     use parcels_mod, only : parcels
-    use parcel_bc, only : apply_periodic_bc
     use fields
     use field_mpi, only : field_mpi_alloc                   &
                         , field_mpi_dealloc                 &
