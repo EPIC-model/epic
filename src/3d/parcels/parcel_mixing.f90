@@ -247,10 +247,13 @@ module parcel_mixing
 
             if (n_local_small == 0) then
                 call near%dealloc
-                deallocate(isma)
-                deallocate(iclo)
-                deallocate(rclo)
-                deallocate(dclo)
+
+                if (allocated(isma)) then
+                    deallocate(isma)
+                    deallocate(iclo)
+                    deallocate(rclo)
+                    deallocate(dclo)
+                endif
                 return
             endif
 
