@@ -105,12 +105,12 @@ module parcel_ellipse_merge
             integer                              :: m, ic, is, l, n
             double precision                     :: factor
             double precision                     :: x0(n_merge), y0(n_merge)
-            double precision                     :: posm(2, n_merge), delx, vmerge, dely, mu
+            double precision                     :: posm(2, n_merge), delx, amerge, dely, mu
             double precision                     :: buoym(n_merge), vortm(3, n_merge)
 #ifndef ENABLE_DRY_MODE
             double precision                     :: hum(n_merge)
 #endif
-            double precision                     :: Bm(3, n_merge), vm(n_merge)
+            double precision                     :: Bm(3, n_merge), am(n_merge), vm(n_merge)
 
             loca = zero
 
@@ -128,8 +128,11 @@ module parcel_ellipse_merge
                     l = l + 1
                     loca(ic) = l
 
-                    ! vm will contain the total volume of the merged parcel
+                    ! am will contain the total area of the merged parcel
+                    am(l) = spar%area(ic)
+
                     vm(l) = spar%volume(ic)
+
 
                     !x0 stores the x centre of the other parcel
                     x0(l) = spar%position(1, ic)
@@ -141,11 +144,11 @@ module parcel_ellipse_merge
                     posm(:, l) = zero
 
                     ! buoyancy and humidity
-                    buoym(l) = spar%volume(ic) * spar%buoyancy(ic)
+                    buoym(l) = spar%area(ic) * spar%buoyancy(ic)
 #ifndef ENABLE_DRY_MODE
-                    hum(l) = spar%volume(ic) * spar%humidity(ic)
+                    hum(l) = spar%area(ic) * spar%humidity(ic)
 #endif
-                    vortm(:, l) = spar%volume(ic) * spar%vorticity(:, ic)
+                    vortm(:, l) = spar%area(ic) * spar%vorticity(:, ic)
 
                     Bm(:, l) = zero
                 endif
@@ -154,32 +157,34 @@ module parcel_ellipse_merge
                 ! "is" refers to the small parcel index
                 is = isma(m) !Small parcel
                 n = loca(ic)  !Index of merged parcel
-                vm(n) = vm(n) + spar%volume(is) !Accumulate volume of merged parcel
+                am(n) = am(n) + spar%area(is) !Accumulate area of merged parcel
+
+                vm(n) = vm(n) + spar%volume(is)
 
                 ! works across periodic edge
                 delx = get_delx_across_periodic(spar%position(1, is), x0(n))
                 dely = get_dely_across_periodic(spar%position(2, is), y0(n))
 
                 ! Accumulate sum of v(is)*(x(is)-x(ic)) and v(is)*(y(is)-y(ic))
-                posm(1, n) = posm(1, n) + spar%volume(is) * delx
-                posm(2, n) = posm(2, n) + spar%volume(is) * dely
+                posm(1, n) = posm(1, n) + spar%area(is) * delx
+                posm(2, n) = posm(2, n) + spar%area(is) * dely
 
                 ! Accumulate buoyancy and humidity
-                buoym(n) = buoym(n) + spar%volume(is) * spar%buoyancy(is)
+                buoym(n) = buoym(n) + spar%area(is) * spar%buoyancy(is)
 #ifndef ENABLE_DRY_MODE
-                hum(n) = hum(n) + spar%volume(is) * spar%humidity(is)
+                hum(n) = hum(n) + spar%area(is) * spar%humidity(is)
 #endif
-                vortm(:, n) = vortm(:, n) + spar%volume(is) * spar%vorticity(:, is)
+                vortm(:, n) = vortm(:, n) + spar%area(is) * spar%vorticity(:, is)
             enddo
 
             ! Obtain the merged parcel centres
             ! (l = total number of merged parcels)
             do m = 1, l
-                ! temporary scalar containing 1 / vm(m)
-                vmerge = one / vm(m)
+                ! temporary scalar containing 1 / am(m)
+                amerge = one / am(m)
 
                 ! need to sanitise input and output, but first to determine input
-                posm(:, m) = - vmerge * posm(:, m)
+                posm(:, m) = - amerge * posm(:, m)
 
                 call apply_periodic_bc(posm(:, m))
 
@@ -191,11 +196,11 @@ module parcel_ellipse_merge
                 call apply_periodic_bc(posm(:, m))
 
                 ! buoyancy and humidity
-                buoym(m) = vmerge * buoym(m)
+                buoym(m) = amerge * buoym(m)
 #ifndef ENABLE_DRY_MODE
-                hum(m) = vmerge * hum(m)
+                hum(m) = amerge * hum(m)
 #endif
-                vortm(:, m) = vmerge * vortm(:, m)
+                vortm(:, m) = amerge * vortm(:, m)
             enddo
 
             loca = zero
@@ -208,17 +213,18 @@ module parcel_ellipse_merge
                     l = l + 1
                     loca(ic) = l
 
-                    vmerge = one / vm(l)
+                    amerge = one / am(l)
 
                     delx = get_delx_across_periodic(spar%position(1, ic), posm(1, l))
                     dely = get_dely_across_periodic(spar%position(2, ic), posm(2, l))
 
-                    mu = spar%volume(ic) * vmerge
+                    mu = spar%area(ic) * amerge
                     Bm(1, l) = mu * (four * delx ** 2 + spar%B(1, ic))
                     Bm(2, l) = mu * (four * delx * dely + spar%B(2, ic))
                     Bm(3, l) = mu * (four * dely ** 2 + spar%B(3, ic))
 
-                    spar%volume(ic)  = vm(l)
+                    spar%area(ic)  = am(l)
+                    spar%volume(ic) = vm(l)
                     spar%position(1, ic) = posm(1, l)
                     spar%position(2, ic) = posm(2, l)
 
@@ -233,13 +239,13 @@ module parcel_ellipse_merge
                 is = isma(m)
                 n = loca(ic)
 
-                vmerge = one / vm(n)
+                amerge = one / am(n)
 
                 delx = get_delx_across_periodic(spar%position(1, is), posm(1, n))
                 dely = get_dely_across_periodic(spar%position(2, is), posm(2, n))
 
-                ! volume fraction A_{is} / A
-                mu = vmerge * spar%volume(is)
+                ! area fraction A_{is} / A
+                mu = amerge * spar%area(is)
 
                 Bm(1, n) = Bm(1, n) + mu * (four * delx ** 2   + spar%B(1, is))
                 Bm(2, n) = Bm(2, n) + mu * (four * delx * dely + spar%B(2, is))
@@ -259,7 +265,7 @@ module parcel_ellipse_merge
 
                     ! normalize such that determinant of the merger is (ab)**2
                     ! ab / sqrt(det(B))
-                    factor = spar%get_ab(vm(l)) / dsqrt(Bm(1, l) * Bm(3, l) - Bm(2, l) ** 2)
+                    factor = spar%get_ab(am(l)) / dsqrt(Bm(1, l) * Bm(3, l) - Bm(2, l) ** 2)
 
                     spar%B(1, ic) = Bm(1, l) * factor
                     spar%B(2, ic) = Bm(2, l) * factor
