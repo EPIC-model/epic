@@ -7,6 +7,7 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
     use parameters, only : amax
     use mpi_environment
     use mpi_collectives
+    use parcel_mpi, only : parcel_communicate
 !     use timer, only : start_timer, stop_timer
     use omp_lib
     implicit none
@@ -43,11 +44,11 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
                 ! a/b
                 lam = this%get_aspect_ratio(n, a2)
 
+                pid(n) = 0
+
                 if (lam <= parcel%lambda_max .and. this%area(n) <= amax) then
                     cycle
                 endif
-
-                pid(n) = 0
 
                 !
                 ! this ellipse is split, i.e., add a new parcel
@@ -62,6 +63,8 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
                 h = f14 * dsqrt(three * a2)
                 this%area(n) = f12 * this%area(n)
 
+                this%volume(n) = f12 * this%volume(n)
+
                 !$omp critical
                 n_thread_loc = this%local_num + 1
 
@@ -73,6 +76,7 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
                 this%B(:, n_thread_loc) = this%B(:, n)
 
                 this%area(n_thread_loc) = this%area(n)
+                this%volume(n_thread_loc) = f12 * this%volume(n)
                 this%position(:, n_thread_loc) = this%position(:, n) - h * evec
                 this%position(:, n) = this%position(:, n) + h * evec
 
@@ -80,6 +84,7 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
                 ! halo swap routine
                 pid(n) = n
                 pid(n_thread_loc) = n_thread_loc
+
             enddo
             !$omp end do
             !$omp end parallel
@@ -97,7 +102,7 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
             ! send the invalid parcels to the proper MPI process;
             ! delete them on *this* MPI process and
             ! apply periodic boundary condition
-!             call parcel_communicate(invalid)  !FIXME
+            call parcel_communicate(this, invalid)
 
 !             call stop_timer(surf_split_timer)
 
