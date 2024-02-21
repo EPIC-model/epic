@@ -545,7 +545,7 @@ module parcel_ellipsoid
                         + this%strain(I_DWDY, n) * this%B(I_B12, n) & ! + dw/dy * B12
                         - this%strain(I_DVDY, n) * this%B(I_B13, n) & ! - dv/dy * B13
                         + this%strain(I_DUDY, n) * this%B(I_B23, n) & ! + du/dy * B23
-                        + dudz                   * B33                   ! + du/dz * B33
+                        + dudz                   * B33                ! + du/dz * B33
 
             ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
             Bout(I_B22) = two * (dvdx                   * this%B(I_B12, n) + &
