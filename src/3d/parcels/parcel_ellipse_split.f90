@@ -57,7 +57,7 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
                 evec = this%get_eigenvector(n, a2)
 
                 this%B(1, n) = this%B(1, n) - f34 * a2 * evec(1) ** 2
-                this%B(2, n) = this%B(2, n) - f34 * a2 * (evec(1) * evec(2))
+                this%B(2, n) = this%B(2, n) - f34 * a2 * evec(1) * evec(2)
                 this%B(3, n) = this%B(3, n) - f34 * a2 * evec(2) ** 2
 
                 h = f14 * dsqrt(three * a2)
@@ -75,8 +75,14 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
 
                 this%B(:, n_thread_loc) = this%B(:, n)
 
+                this%vorticity(:, n_thread_loc) = this%vorticity(:, n)
                 this%area(n_thread_loc) = this%area(n)
                 this%volume(n_thread_loc) = f12 * this%volume(n)
+                this%buoyancy(n_thread_loc) = this%buoyancy(n)
+#ifndef ENABLE_DRY_MODE
+                this%humidity(n_thread_loc) = this%humidity(n)
+#endif
+
                 this%position(:, n_thread_loc) = this%position(:, n) - h * evec
                 this%position(:, n) = this%position(:, n) + h * evec
 
