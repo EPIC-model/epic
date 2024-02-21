@@ -23,16 +23,16 @@ module fields
         vortg,     &   ! vorticity vector field (\xi, \eta, \zeta)
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
-                       ! ordering: du/dx, du/dy,
-                       !                  dv/dy,
+                       ! ordering: du/dx, du/dy, du/dz
+                       !           dv/dx, dv/dy, dv/dz
                        !           dw/dx, dw/dy
-                       ! the derivatives dv/dx, du/dz, dv/dz and dw/dz
-                       ! are calculated on the fly with vorticity
-                       ! or the assumption of incompressibility (du/dx + dv/dy + dw/dz = 0):
-                       !    dv/dx = \zeta + du/dy
-                       !    du/dz = \eta + dw/dx
-                       !    dv/dz = dw/dy - \xi
+                       ! the derivative dw/dz
+                       ! is calculated with
+                       ! the assumption of incompressibility (du/dx + dv/dy + dw/dz = 0):
                        !    dw/dz = - (du/dx + dv/dy)
+!                        !    dv/dx = \zeta + du/dy
+!                        !    du/dz = \eta + dw/dx
+!                        !    dv/dz = dw/dy - \xi
 
     double precision, allocatable, dimension(:, :, :) :: &
 #ifndef ENABLE_DRY_MODE
@@ -50,12 +50,16 @@ module fields
         nparg,     &   ! number of parcels per grid box
         nsparg         ! number of small parcels per grid box
 
-    ! velocity strain indices
+    ! velocity strain indices (note that dw/dz is found from dw/dz = - (du/dx + dv/dy))
     integer, parameter :: I_DUDX = 1 & ! index for du/dx strain component
                         , I_DUDY = 2 & ! index for du/dy strain component
-                        , I_DVDY = 3 & ! index for dv/dy strain component
-                        , I_DWDX = 4 & ! index for dw/dx strain component
-                        , I_DWDY = 5   ! index for dw/dy strain component
+                        , I_DUDZ = 3 & ! index for du/dz strain component
+                        , I_DVDX = 4 & ! index for dv/dx strain component
+                        , I_DVDY = 5 & ! index for dv/dy strain component
+                        , I_DVDZ = 6 & ! index for dv/dz strain component
+                        , I_DWDX = 7 & ! index for dw/dx strain component
+                        , I_DWDY = 8   ! index for dw/dy strain component
+
 
     contains
 
@@ -75,7 +79,7 @@ module fields
             hhi = box%hhi
 
             allocate(velog(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
-            allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 5))
+            allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 8))
 
             allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))

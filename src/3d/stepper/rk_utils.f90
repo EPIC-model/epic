@@ -1,7 +1,10 @@
 module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parcel_ellipsoid, only : I_B11, I_B12, I_B13, I_B22, I_B23
-    use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY, strain_mag
+    use fields, only : velgradg, tbuoyg, vortg      &
+                     , I_DUDX, I_DUDY, I_DUDZ       &
+                     , I_DVDX, I_DVDY, I_DVDZ       &
+                     , I_DWDX, I_DWDY, strain_mag
     use field_mpi, only : field_halo_fill_scalar
     use constants, only : zero, one, two, f12
     use parameters, only : nx, ny, nz, dxi, vcell
@@ -25,10 +28,9 @@ module rk_utils
         ! @param[in] velocity gradient tensor at grid point
         ! @param[in] vorticity at grid point
         ! @returns 3x3 strain matrix
-        function get_strain(velgradgp, vortgp) result(strain)
-            double precision, intent(in) :: velgradgp(5)
-            double precision, intent(in) :: vortgp(n_dim)
-            double precision             :: strain(3,3)
+        function get_strain(velgradgp) result(strain)
+            double precision, intent(in) :: velgradgp(8)
+            double precision             :: strain(3, 3)
 
             ! get local symmetrised strain matrix, i.e. 1/ 2 * (S + S^T)
             ! where
@@ -49,21 +51,21 @@ module rk_utils
             !                         \u_z + w_x  v_z + w_y   2 * w_z/
             !
             ! S11 = du/dx
-            ! S12 = 1/2 * (du/dy + dv/dx) = 1/2 * (2 * du/dy + \zeta) = du/dy + 1/2 * \zeta
-            ! S13 = 1/2 * (du/dz + dw/dx) = 1/2 * (\eta + 2 * dw/dx) = 1/2 * \eta + dw/dx
+            ! S12 = 1/2 * (du/dy + dv/dx)
+            ! S13 = 1/2 * (du/dz + dw/dx)
             ! S22 = dv/dy
-            ! S23 = 1/2 * (dv/dz + dw/dy) = 1/2 * (2 * dw/dy - \xi) = dw/dy - 1/2 * \xi
+            ! S23 = 1/2 * (dv/dz + dw/dy)
             ! S33 = dw/dz = - (du/dx + dv/dy)
 
-            strain(1, 1) = velgradgp(I_DUDX)                        ! S11
-            strain(1, 2) = velgradgp(I_DUDY) + f12 * vortgp(I_Z)    ! S12
-            strain(1, 3) = velgradgp(I_DWDX) + f12 * vortgp(I_Y)    ! S13
+            strain(1, 1) = velgradgp(I_DUDX)                              ! S11
+            strain(1, 2) = f12 * (velgradgp(I_DUDY) + velgradgp(I_DVDX))  ! S12
+            strain(1, 3) = f12 * (velgradgp(I_DUDZ) + velgradgp(I_DWDX))  ! S13
             strain(2, 1) = strain(1, 2)
-            strain(2, 2) = velgradgp(I_DVDY)                        ! S22
-            strain(2, 3) = velgradgp(I_DWDY) - f12 * vortgp(I_X)    ! S23
+            strain(2, 2) = velgradgp(I_DVDY)                              ! S22
+            strain(2, 3) = f12 * (velgradgp(I_DVDZ) + velgradgp(I_DWDY))  ! S23
             strain(3, 1) = strain(1, 3)
             strain(3, 2) = strain(2, 3)
-            strain(3, 3) = -(velgradgp(I_DUDX) + velgradgp(I_DVDY)) ! S33
+            strain(3, 3) = -(velgradgp(I_DUDX) + velgradgp(I_DVDY))       ! S33
         end function get_strain
 
         ! Estimate a suitable time step based on the velocity strain
@@ -77,7 +79,7 @@ module rk_utils
             double precision             :: gmax, bmax, strain(n_dim, n_dim), D(n_dim), local_max(2)
             double precision             :: gradb(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision             :: db2(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-            integer                      :: ix, iy, iz
+            integer                      :: ix, iy, iz, mix, miy, miz
 #if ENABLE_VERBOSE
             logical                      :: exists = .false.
             character(512)               :: fname
@@ -92,16 +94,24 @@ module rk_utils
             do ix = box%lo(1), box%hi(1)
                 do iy = box%lo(2), box%hi(2)
                     do iz = 0, nz
-                        strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
+                        strain = get_strain(velgradg(iz, iy, ix,:))
                         ! calculate its eigenvalues. The Jacobi solver
                         ! requires the upper triangular matrix only.
                         call scherzinger_eigenvalues(strain, D)
+
+                        if (gmax < maxval(abs(D))) then
+                            mix = ix
+                            miy = iy
+                            miz = iz
+                        endif
 
                         ! we must take the largest eigenvalue in magnitude (absolute value)
                         gmax = max(gmax, maxval(abs(D)))
                     enddo
                 enddo
             enddo
+
+            print *, "max strain at", mix, miy, miz
 
             !
             ! buoyancy gradient (central difference)
@@ -184,7 +194,7 @@ module rk_utils
             do ix = box%lo(1), box%hi(1)
                 do iy = box%lo(2), box%hi(2)
                     do iz = 0, nz
-                        strain = get_strain(velgradg(iz, iy, ix,:), vortg(iz, iy, ix, :))
+                        strain = get_strain(velgradg(iz, iy, ix,:))
                         strain_mag(iz, iy, ix) = sqrt(two * (strain(1, 1) * strain(1, 1) +&
                                                              strain(1, 2) * strain(1, 2) +&
                                                              strain(1, 3) * strain(1, 3) +&

@@ -306,16 +306,15 @@ module parcel_ellipse_interpl
                                               + point_weight_g2p                                &
                                               * sum(weights * velgradg(iz, js:js+1, is:is+1, 2))
 
-                    ! dv/dx = \zeta + du/dy
-                    dvdx = vortg(iz, js:js+1, is:is+1, 3) + velgradg(iz, js:js+1, is:is+1, 2)
-
+                    ! dv/dx
                     surf_parcels%strain(3, n) = surf_parcels%strain(3, n)                       &
-                                              + point_weight_g2p * sum(weights * dvdx)
+                                              + point_weight_g2p                                &
+                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, 4))
 
                     ! dv/dy
                     surf_parcels%strain(4, n) = surf_parcels%strain(4, n)                       &
                                               + point_weight_g2p                                &
-                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, 3))
+                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, 5))
 
                     do l = 1, 3
                         surf_parcels%delta_vor(:, n) = surf_parcels%delta_vor(:, n)                 &

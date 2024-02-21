@@ -23,7 +23,7 @@ module parcel_ellipsoid
                           , scherzinger_eigenvalues
     use mpi_utils, only : mpi_exit_on_error
     use armanip, only : resize_array
-    use fields, only : I_DUDX, I_DUDY, I_DVDY, I_DWDX, I_DWDY
+    use fields, only : I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY
     implicit none
 
     double precision, parameter :: rho = dsqrt(two / five)
@@ -94,7 +94,7 @@ module parcel_ellipsoid
                                            n_pos=3,    &
                                            n_vec=3,    &
                                            n_shape=5,  &
-                                           n_strain=5)
+                                           n_strain=8)
 
             allocate(this%Vetas(3, num))
             allocate(this%Vtaus(3, num))
@@ -122,10 +122,10 @@ module parcel_ellipsoid
             this%IDX_RK_SHAPE_BEG  = i + 6
             this%IDX_RK_SHAPE_END  = i + 10
             this%IDX_RK_STRAIN_BEG = i + 11
-            this%IDX_RK_STRAIN_END = i + 15
+            this%IDX_RK_STRAIN_END = i + 18
 
-            this%IDX_ELL_VETA = i + 16
-            this%IDX_ELL_VTAU = i + 19
+            this%IDX_ELL_VETA = i + 19
+            this%IDX_ELL_VTAU = i + 22
 
             this%attr_num = this%IDX_ELL_VTAU + 2
 
@@ -512,16 +512,7 @@ module parcel_ellipsoid
             class(ellipsoid_pc_type), intent(inout) :: this
             integer,                  intent(in)    :: n
             double precision                        :: Bout(5), B33
-            double precision                        :: dudz, dvdx, dvdz, dwdz
-
-            ! du/dz = \eta + dw/dx
-            dudz = this%vorticity(I_Y, n) + this%strain(I_DWDX, n)
-
-            ! dv/dx \zeta + du/dy
-            dvdx = this%vorticity(I_Z, n) + this%strain(I_DUDY, n)
-
-            ! dv/dz = dw/dy - \xi
-            dvdz = this%strain(I_DWDY, n) - this%vorticity(I_X, n)
+            double precision                        :: dwdz
 
             ! dw/dz = - (du/dx + dv/dy)
             dwdz = - (this%strain(I_DUDX, n) + this%strain(I_DVDY, n))
@@ -531,33 +522,33 @@ module parcel_ellipsoid
             ! dB11/dt = 2 * (du/dx * B11 + du/dy * B12 + du/dz * B13)
             Bout(I_B11) = two * (this%strain(I_DUDX, n) * this%B(I_B11, n)  + &
                                  this%strain(I_DUDY, n) * this%B(I_B12, n)  + &
-                                 dudz                   * this%B(I_B13, n))
+                                 this%strain(I_DUDZ, n) * this%B(I_B13, n))
 
             ! dB12/dt =
-            Bout(I_B12) = dvdx                      * this%B(I_B11, n) & !   dv/dx * B11
-                        - dwdz                      * this%B(I_B12, n) & ! - dw/dz * B12
-                        + dvdz                      * this%B(I_B13, n) & ! + dv/dz * B13
-                        + this%strain(I_DUDY, n)    * this%B(I_B22, n) & ! + du/dy * B22
-                        + dudz                      * this%B(I_B23, n)   ! + du/dz * B23
+            Bout(I_B12) = this%strain(I_DVDX, n) * this%B(I_B11, n) & !   dv/dx * B11
+                        - dwdz                   * this%B(I_B12, n) & ! - dw/dz * B12
+                        + this%strain(I_DVDZ, n) * this%B(I_B13, n) & ! + dv/dz * B13
+                        + this%strain(I_DUDY, n) * this%B(I_B22, n) & ! + du/dy * B22
+                        + this%strain(I_DUDZ, n) * this%B(I_B23, n)   ! + du/dz * B23
 
             ! dB13/dt =
             Bout(I_B13) = this%strain(I_DWDX, n) * this%B(I_B11, n) & !   dw/dx * B11
                         + this%strain(I_DWDY, n) * this%B(I_B12, n) & ! + dw/dy * B12
                         - this%strain(I_DVDY, n) * this%B(I_B13, n) & ! - dv/dy * B13
                         + this%strain(I_DUDY, n) * this%B(I_B23, n) & ! + du/dy * B23
-                        + dudz                   * B33                ! + du/dz * B33
+                        + this%strain(I_DUDZ, n) * B33                ! + du/dz * B33
 
             ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
-            Bout(I_B22) = two * (dvdx                   * this%B(I_B12, n) + &
+            Bout(I_B22) = two * (this%strain(I_DVDX, n) * this%B(I_B12, n) + &
                                  this%strain(I_DVDY, n) * this%B(I_B22, n) + &
-                                 dvdz                   * this%B(I_B23, n))
+                                 this%strain(I_DVDZ, n) * this%B(I_B23, n))
 
             ! dB23/dt =
             Bout(I_B23) = this%strain(I_DWDX, n) * this%B(I_B12, n) & !   dw/dx * B12
-                        + dvdx                   * this%B(I_B13, n) & ! + dv/dx * B13
+                        + this%strain(I_DVDX, n) * this%B(I_B13, n) & ! + dv/dx * B13
                         + this%strain(I_DWDY, n) * this%B(I_B22, n) & ! + dw/dy * B22
                         - this%strain(I_DUDX, n) * this%B(I_B23, n) & ! - du/dx * B23
-                        + dvdz                   * B33                ! + dv/dz * B33
+                        + this%strain(I_DVDZ, n) * B33                ! + dv/dz * B33
         end function parcel_ellipsoid_get_dBdt
 
 end module parcel_ellipsoid

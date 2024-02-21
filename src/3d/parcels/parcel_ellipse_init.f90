@@ -70,7 +70,8 @@ submodule (parcel_ellipse) parcel_ellipse_init_smod
             !$omp parallel default(shared)
             !$omp do private(n)
             do n = 1, this%local_num
-                this%area(n) = acell / dble(parcel%n_surf_per_cell)
+                this%area(n) =   acell / dble(parcel%n_surf_per_cell)
+                this%volume(n) = vcell / dble(parcel%n_per_cell)
             enddo
             !$omp end do
             !$omp end parallel
@@ -119,7 +120,6 @@ submodule (parcel_ellipse) parcel_ellipse_init_smod
 #ifndef ENABLE_DRY_MODE
                 this%humidity(n)     = zero
 #endif
-                this%volume(n) = vcell / dble(parcel%n_surf_per_cell)
             enddo
             !$omp end do
             !$omp end parallel
