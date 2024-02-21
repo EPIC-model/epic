@@ -103,6 +103,9 @@ module parcel_init
             call bot_parcels%init
             call top_parcels%init
 
+            bot_parcels%z_position = box%lower(3)
+            top_parcels%z_position = box%lower(3) + box%extent(3)
+
         end subroutine parcel_default
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

@@ -321,10 +321,11 @@ module parcel_mixing
                     l_sflag(is) = .true.
 
                     ! Mark destination (dest) parcel as 'mixed':
-                    if (l_dflag(ic)) then
-                        call mpi_exit_on_error(&
-                            'in apply_mixing: Close parcel was already mixed previously.')
-                    endif
+                    ! There could be multiple isma pointing to the same iclo.
+!                     if (l_dflag(ic)) then
+!                         call mpi_exit_on_error(&
+!                             'in apply_mixing: Close parcel was already mixed previously.')
+!                     endif
                     l_dflag(ic) = .true.
                 enddo
             endif
