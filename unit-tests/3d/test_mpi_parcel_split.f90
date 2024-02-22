@@ -7,7 +7,7 @@
 !   domain of *this* process.
 ! =============================================================================
 program test_mpi_parcel_split
-    use constants, only : zero, one, f18, f14, f12, f34, fpi, pi, four
+    use constants, only : zero, one, four, f14, f12, f23, f34, fpi, pi
     use unit_test
     use mpi_environment
     use mpi_layout
@@ -57,12 +57,13 @@ program test_mpi_parcel_split
     ! volume per parcel is f12 * vcell
     ! f12 * vcell = four / three * abc * pi --> abc = f34 * f12 * vcell * fpi
     abc = f34 * f12 * vcell * fpi
-    a2 = f34 * abc
-    b2 = f18 * abc
+    a2 = 16.0d0 * abc**f23
+    b2 = f14 * abc**f23
     c2 = b2
 
-    abc = dsqrt(a2)
-    call set_amax(abc)
+    ! Set amax larger than a2
+    ! Force split by aspect ratio set above, rather than amax
+    call set_amax(1.1d0*sqrt(a2))
 
     ! place parcels in the last interior cells in the west
     i = box%lo(1)
