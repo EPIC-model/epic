@@ -70,7 +70,7 @@ module parcel_damping
         ! @pre 
         subroutine perturbation_damping(dt, l_reuse)
             double precision, intent(in)  :: dt
-            logical, intent(in)           :: l_reuse
+            logical                       :: l_reuse
             integer                       :: n, p, l 
             double precision              :: points(3, n_points_p2g)
             double precision              :: pvol
@@ -83,6 +83,12 @@ module parcel_damping
 #endif
 
             call start_timer(damping_timer)
+
+            ! This is only here to allow debug compilation
+            ! with a warning for unused variables
+#if defined (ENABLE_P2G_1POINT) && !defined (NDEBUG)
+            l_reuse=.false.
+#endif
 
             !$omp parallel default(shared)
             !$omp do private(n, p, l, points, pvol, weight) &

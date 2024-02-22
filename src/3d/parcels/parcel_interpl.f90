@@ -148,6 +148,7 @@ module parcel_interpl
         !   - nparg, that is the number of parcels per grid cell
         !   - nsparg, that is the number of small parcels per grid cell
         ! @pre The parcel must be assigned to the correct MPI process.
+
         subroutine par2grid(l_reuse)
             logical, optional :: l_reuse
             double precision  :: points(3, n_points_p2g)
@@ -159,6 +160,14 @@ module parcel_interpl
 
             call start_timer(par2grid_timer)
 
+            ! This is only here to allow debug compilation
+            ! with a warning for unused variables
+#if defined (ENABLE_P2G_1POINT) && !defined (NDEBUG)
+            if(present(l_reuse)) then
+                l_reuse=.false.
+            endif
+#endif
+ 
             vortg = zero
             volg = zero
             nparg = zero

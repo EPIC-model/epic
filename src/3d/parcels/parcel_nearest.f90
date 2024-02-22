@@ -364,6 +364,10 @@ module parcel_nearest
             ! After this operation isma, iclo and rclo are properly set.
             call find_closest_parcel_globally(n_local_small, iclo, rclo, dclo)
 
+            !---------------------------------------------------------------------
+            ! We only need to check up to n_local_small because after the call to
+            ! find_closest_parcel_globally all small parcels know their closest 
+            ! neighbour on the original MPI rank.
             if (.not. l_no_small) then
                 do n = 1, n_local_small 
                     if (iclo(n) == 0) then

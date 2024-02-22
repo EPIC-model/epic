@@ -168,7 +168,7 @@ module ls_rk
 
             call start_timer(rk_timer)
 
-            !$omp parallel do default(shared) private(n, detB, factor)
+            !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
                 parcels%position(:, n) = parcels%position(:, n) &
                                        + cb * dt * parcels%delta_pos(:, n)
@@ -178,24 +178,29 @@ module ls_rk
 
                 call evolve_ellipsoid(parcels%B(:, n), parcels%int_strain(:, n), cb * dt)
 
-                detB = parcels%B(1, n) * (parcels%B(4, n) * parcels%B(6, n) - parcels%B(5, n) ** 2) &
-                     - parcels%B(2, n) * (parcels%B(2, n) * parcels%B(6, n) - parcels%B(3, n) * parcels%B(5, n)) &
-                     + parcels%B(3, n) * (parcels%B(2, n) * parcels%B(5, n) - parcels%B(3, n) * parcels%B(4, n))
-
-                factor = (get_abc(parcels%volume(n)) ** 2 / detB) ** f13
-
-                parcels%B(:, n) = parcels%B(:, n) * factor
             enddo
             !$omp end parallel do
 
-            call stop_timer(rk_timer)
-
             if (step == n_stages) then
+                !$omp parallel do default(shared) private(n,detB,factor)
+                do n = 1, n_parcels
+                    ! normalize B matrix in final substep
+                    detB = parcels%B(1, n) * (parcels%B(4, n) * parcels%B(6, n) - parcels%B(5, n) ** 2) &
+                         - parcels%B(2, n) * (parcels%B(2, n) * parcels%B(6, n) - parcels%B(3, n) * parcels%B(5, n)) &
+                         + parcels%B(3, n) * (parcels%B(2, n) * parcels%B(5, n) - parcels%B(3, n) * parcels%B(4, n))
+
+                    factor = (get_abc(parcels%volume(n)) ** 2 / detB) ** f13
+
+                    parcels%B(:, n) = parcels%B(:, n) * factor
+                enddo
+                !$omp end parallel do
+
                 call parcel_communicate
+
+                call stop_timer(rk_timer)
+
                 return
             endif
-
-            call start_timer(rk_timer)
 
             !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
