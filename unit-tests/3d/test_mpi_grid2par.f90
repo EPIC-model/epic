@@ -103,7 +103,7 @@ program test_mpi_grid2par
     enddo
 
     do l = 1, 5
-        error = max(error, maxval(dabs(parcels%strain(l, 1:n_parcels) - dble(l))))
+        error = max(error, maxval(dabs(parcels%int_strain(l, 1:n_parcels) - dble(l))))
     enddo
 
     call mpi_blocking_reduce(error, MPI_MAX, world)
