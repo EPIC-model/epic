@@ -85,8 +85,9 @@ module parcel_damping
             call start_timer(damping_timer)
 
             ! This is only here to allow debug compilation
-#ifdef ENABLE_P2G_1POINT
-            l_reuse=l_reuse
+            ! with a warning for unused variables
+#if defined (ENABLE_P2G_1POINT) && !defined (NDEBUG)
+            l_reuse=.false.
 #endif
 
             !$omp parallel default(shared)

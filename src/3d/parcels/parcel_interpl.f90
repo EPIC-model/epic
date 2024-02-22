@@ -161,9 +161,10 @@ module parcel_interpl
             call start_timer(par2grid_timer)
 
             ! This is only here to allow debug compilation
-#ifdef ENABLE_P2G_1POINT
+            ! with a warning for unused variables
+#if defined (ENABLE_P2G_1POINT) && !defined (NDEBUG)
             if(present(l_reuse)) then
-                l_reuse=l_reuse
+                l_reuse=.false.
             endif
 #endif
  
