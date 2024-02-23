@@ -184,8 +184,6 @@ module parcel_ellipse_interpl
 !                     nsparg(j, i) = nsparg(j, i) + 1
 !                 endif
 
-                btot = surf_parcels%buoyancy(n)
-
                 ! we have 2 points per ellipse
                 do p = 1, n_points_p2g
 
@@ -317,9 +315,9 @@ module parcel_ellipse_interpl
                                               * sum(weights * velgradg(iz, js:js+1, is:is+1, 5))
 
                     do l = 1, 3
-                        surf_parcels%delta_vor(:, n) = surf_parcels%delta_vor(:, n)                 &
+                        surf_parcels%delta_vor(l, n) = surf_parcels%delta_vor(l, n)                 &
                                                      + point_weight_g2p                             &
-                                                     + sum(weights * vtend(iz, js:js+1, is:is+1, l))
+                                                     * sum(weights * vtend(iz, js:js+1, is:is+1, l))
                     enddo
                 enddo
             enddo
