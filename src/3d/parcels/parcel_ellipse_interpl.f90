@@ -243,7 +243,7 @@ module parcel_ellipse_interpl
             integer,               intent(in)    :: iz
             type(ellipse_pc_type), intent(inout) :: surf_parcels
             logical, optional, intent(in)        :: add
-            double precision                     :: points(2, 2), weights(0:1, 0:1), dvdx(0:1, 0:1)
+            double precision                     :: points(2, 2), weights(0:1, 0:1)
             integer                              :: n, p, l, is, js
 
             ! clear old data efficiently
@@ -270,7 +270,7 @@ module parcel_ellipse_interpl
             endif
 
             !$omp parallel default(shared)
-            !$omp do private(n, p, l, points, is, js, weights, dvdx)
+            !$omp do private(n, p, l, points, is, js, weights)
             do n = 1, surf_parcels%local_num
 
                 surf_parcels%strain(:, n) = zero
@@ -295,24 +295,24 @@ module parcel_ellipse_interpl
                     enddo
 
                     ! du/dx
-                    surf_parcels%strain(1, n) = surf_parcels%strain(1, n)                       &
-                                              + point_weight_g2p                                &
-                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, 1))
+                    surf_parcels%strain(1, n) = surf_parcels%strain(1, n)                               &
+                                              + point_weight_g2p                                        &
+                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, I_DUDX))
 
                     ! du/dy
-                    surf_parcels%strain(2, n) = surf_parcels%strain(2, n)                       &
-                                              + point_weight_g2p                                &
-                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, 2))
+                    surf_parcels%strain(2, n) = surf_parcels%strain(2, n)                               &
+                                              + point_weight_g2p                                        &
+                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, I_DUDY))
 
                     ! dv/dx
-                    surf_parcels%strain(3, n) = surf_parcels%strain(3, n)                       &
-                                              + point_weight_g2p                                &
-                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, 4))
+                    surf_parcels%strain(3, n) = surf_parcels%strain(3, n)                               &
+                                              + point_weight_g2p                                        &
+                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, I_DVDX))
 
                     ! dv/dy
-                    surf_parcels%strain(4, n) = surf_parcels%strain(4, n)                       &
-                                              + point_weight_g2p                                &
-                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, 5))
+                    surf_parcels%strain(4, n) = surf_parcels%strain(4, n)                               &
+                                              + point_weight_g2p                                        &
+                                              * sum(weights * velgradg(iz, js:js+1, is:is+1, I_DVDY))
 
                     do l = 1, 3
                         surf_parcels%delta_vor(l, n) = surf_parcels%delta_vor(l, n)                 &
