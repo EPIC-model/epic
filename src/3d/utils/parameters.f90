@@ -85,7 +85,7 @@ module parameters
     double precision, protected :: vmin
 
     ! upper bound for major semi-axis (used for splitting)
-    double precision, protected :: amax
+    double precision, protected :: amax, asmax
 
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
@@ -163,6 +163,8 @@ module parameters
         amin = acell / parcel%min_aratio
 
         amax = (f34 * fpi) ** f13 * minval(dx)
+
+        asmax = dsqrt(fpi) * minval(dx)
 
         max_num_parcels = int(box%halo_ncell * parcel%min_vratio * parcel%size_factor)
 
