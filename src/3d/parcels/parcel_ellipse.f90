@@ -392,7 +392,7 @@ module parcel_ellipse
             Bout(1) = two * (this%strain(1, n) * this%B(1, n) + &
                              this%strain(2, n) * this%B(2, n))
 
-            ! B12 = (du/dx + dv/dy) + B12 + dvdx * B11 + dudy * B22
+            ! B12 = (du/dx + dv/dy) * B12 + dvdx * B11 + dudy * B22
             Bout(2) = (this%strain(1, n) + this%strain(4, n)) * this%B(2, n) + &
                        this%strain(3, n)                      * this%B(1, n) + &
                        this%strain(2, n)                      * this%B(3, n)
