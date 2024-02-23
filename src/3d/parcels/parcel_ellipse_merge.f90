@@ -265,7 +265,7 @@ module parcel_ellipse_merge
 
                     ! normalize such that determinant of the merger is (ab)**2
                     ! ab / sqrt(det(B))
-                    factor = spar%get_ab(am(l)) / dsqrt(Bm(1, l) * Bm(3, l) - Bm(2, l) ** 2)
+                    factor = spar%get_ab(am(l)) / dsqrt(dabs(Bm(1, l) * Bm(3, l) - Bm(2, l) ** 2))
 
                     spar%B(:, ic) = Bm(:, l) * factor
                 endif

@@ -4,7 +4,7 @@
 submodule (parcel_ellipse) parcel_ellipse_split_smod
     use options, only : verbose, parcel
     use constants, only : three, f34
-    use parameters, only : amax
+    use parameters, only : asmax
     use mpi_environment
     use mpi_collectives
     use parcel_mpi, only : parcel_communicate
@@ -16,7 +16,7 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
 
     contains
 
-        ! Split large parcels (areas larger than amax) or
+        ! Split large parcels (areas larger than asmax) or
         ! parcels with aspect ratios larger than the threshold.
         ! @param[inout] parcels
         ! @param[in] threshold is the largest allowed aspect ratio
@@ -46,7 +46,7 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
 
                 pid(n) = 0
 
-                if (lam <= parcel%lambda_max .and. this%area(n) <= amax) then
+                if (lam <= parcel%lambda_max .and. this%area(n) <= asmax) then
                     cycle
                 endif
 
@@ -77,7 +77,7 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
 
                 this%vorticity(:, n_thread_loc) = this%vorticity(:, n)
                 this%area(n_thread_loc) = this%area(n)
-                this%volume(n_thread_loc) = f12 * this%volume(n)
+                this%volume(n_thread_loc) = this%volume(n)
                 this%buoyancy(n_thread_loc) = this%buoyancy(n)
 #ifndef ENABLE_DRY_MODE
                 this%humidity(n_thread_loc) = this%humidity(n)
