@@ -219,9 +219,9 @@ module parcel_ellipse_merge
                     dely = get_dely_across_periodic(spar%position(2, ic), posm(2, l))
 
                     mu = spar%area(ic) * amerge
-                    Bm(1, l) = mu * (four * delx ** 2 + spar%B(1, ic))
+                    Bm(1, l) = mu * (four * delx ** 2   + spar%B(1, ic))
                     Bm(2, l) = mu * (four * delx * dely + spar%B(2, ic))
-                    Bm(3, l) = mu * (four * dely ** 2 + spar%B(3, ic))
+                    Bm(3, l) = mu * (four * dely ** 2   + spar%B(3, ic))
 
                     spar%area(ic)  = am(l)
                     spar%volume(ic) = vm(l)
@@ -267,10 +267,7 @@ module parcel_ellipse_merge
                     ! ab / sqrt(det(B))
                     factor = spar%get_ab(am(l)) / dsqrt(Bm(1, l) * Bm(3, l) - Bm(2, l) ** 2)
 
-                    spar%B(1, ic) = Bm(1, l) * factor
-                    spar%B(2, ic) = Bm(2, l) * factor
-                    spar%B(3, ic) = Bm(3, l) * factor
-
+                    spar%B(:, ic) = Bm(:, l) * factor
                 endif
             enddo
 
