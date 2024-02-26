@@ -7,7 +7,7 @@ module parcel_diagnostics
     use parcel_container, only : parcels, n_parcels, n_total_parcels
     use parcel_ellipsoid
     use parcel_split_mod, only : n_parcel_splits
-    use parcel_merging, only : n_parcel_merges
+    use parcel_merging, only : n_parcel_merges, n_big_close, n_way_parcel_mergers
     use omp_lib
     use physics, only : ape_calculation
     use ape_density, only : ape_den
@@ -37,11 +37,13 @@ module parcel_diagnostics
                           IDX_NTOT_PAR  = 12, & ! total number of parcels
                           IDX_ENSTROPHY = 13, & ! enstrophy
                           IDX_NSPLITS   = 14, & ! number of parcel splits since last write
-                          IDX_NMERGES   = 15, & ! number of parcel merges since last write
-                          IDX_MIN_BUOY  = 16, & ! minimum parcel buoyancy
-                          IDX_MAX_BUOY  = 17    ! maximum parcel buoyancy
+                          IDX_NBIG_ICLO = 15, & ! number of big iclo neighbours (merging)
+                          IDX_NMERGES   = 16, & ! number of parcel merges since last write
+                          IDX_MIN_BUOY  = 17, & ! minimum parcel buoyancy
+                          IDX_MAX_BUOY  = 18    ! maximum parcel buoyancy
 
     double precision :: parcel_stats(IDX_MAX_BUOY)
+    integer          :: parcel_merge_stats(size(n_way_parcel_mergers))
 
     contains
 
@@ -119,12 +121,16 @@ module parcel_diagnostics
             parcel_stats(IDX_MIN_BUOY) = bmin
             parcel_stats(IDX_MAX_BUOY) = bmax
 
-            parcel_stats(IDX_NSPLITS) = n_parcel_splits
-            parcel_stats(IDX_NMERGES) = n_parcel_merges
+            parcel_stats(IDX_NSPLITS)   = n_parcel_splits
+            parcel_stats(IDX_NBIG_ICLO) = n_big_close
+            parcel_stats(IDX_NMERGES)   = n_parcel_merges
 
             call mpi_blocking_reduce(parcel_stats(IDX_APE:IDX_NMERGES), MPI_SUM, world)
             call mpi_blocking_reduce(parcel_stats(IDX_MIN_BUOY), MPI_MIN, world)
             call mpi_blocking_reduce(parcel_stats(IDX_MAX_BUOY), MPI_MAX, world)
+
+            parcel_merge_stats = n_way_parcel_mergers
+            call mpi_blocking_reduce(parcel_merge_stats, MPI_SUM, world)
 
             n_total_parcels = nint(parcel_stats(IDX_NTOT_PAR))
             ntoti = one / dble(n_total_parcels)

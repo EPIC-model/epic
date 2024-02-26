@@ -32,7 +32,9 @@ program test_mpi_vel2vgrad
     use unit_test
     use constants, only : zero, one, two, four, pi, twopi
     use parameters, only : lower, update_parameters, dx, nx, ny, nz, extent
-    use fields, only : vortg, velog, velgradg, field_default
+    use fields, only : vortg, velog, velgradg, field_default, I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY
+    use dimensions, only : I_X, I_Y, I_Z
+    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
     use inversion_utils, only : init_inversion, finalise_inversion
     use inversion_mod, only : vel2vgrad
     use sta3dfft, only : fftxyp2s
@@ -70,7 +72,7 @@ program test_mpi_vel2vgrad
 
     call field_default
 
-    allocate(strain(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), 5))
+    allocate(strain(-1:nz+1, box%hlo(2):box%hhi(2), box%hlo(1):box%hhi(1), 8))
     allocate(svelog(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), 3))
 
     call init_inversion
@@ -83,21 +85,25 @@ program test_mpi_vel2vgrad
                 z = lower(3) + iz * dx(3)
 
                 ! velocity
-                velog(iz, iy, ix, 1) = AA * dcos(a * x) * dsin(b * y) * dsin(c * z)
-                velog(iz, iy, ix, 2) = BB * dsin(a * x) * dcos(b * y) * dsin(c * z)
-                velog(iz, iy, ix, 3) = CC * dsin(a * x) * dsin(b * y) * dcos(c * z)
+                velog(iz, iy, ix, I_X) = AA * dcos(a * x) * dsin(b * y) * dsin(c * z)
+                velog(iz, iy, ix, I_Y) = BB * dsin(a * x) * dcos(b * y) * dsin(c * z)
+                velog(iz, iy, ix, I_Z) = CC * dsin(a * x) * dsin(b * y) * dcos(c * z)
 
                 ! vorticity
-                vortg(iz, iy, ix, 1) = (b * CC - c * BB) * dsin(a * x) * dcos(b * y) * dcos(c * z)
-                vortg(iz, iy, ix, 2) = (c * AA - a * CC) * dcos(a * x) * dsin(b * y) * dcos(c * z)
-                vortg(iz, iy, ix, 3) = (a * BB - b * AA) * dcos(a * x) * dcos(b * y) * dsin(c * z)
+                vortg(iz, iy, ix, I_X) = (b * CC - c * BB) * dsin(a * x) * dcos(b * y) * dcos(c * z)
+                vortg(iz, iy, ix, I_Y) = (c * AA - a * CC) * dcos(a * x) * dsin(b * y) * dcos(c * z)
+                vortg(iz, iy, ix, I_Z) = (a * BB - b * AA) * dcos(a * x) * dcos(b * y) * dsin(c * z)
 
                 ! velocity gradient tensor (reference solution)
-                strain(iz, iy, ix, 1) = - a * AA * dsin(a * x) * dsin(b * y) * dsin(c * z) ! du/dx
-                strain(iz, iy, ix, 2) =   b * AA * dcos(a * x) * dcos(b * y) * dsin(c * z) ! du/dy
-                strain(iz, iy, ix, 3) = - b * BB * dsin(a * x) * dsin(b * y) * dsin(c * z) ! dv/dy
-                strain(iz, iy, ix, 4) =   a * CC * dcos(a * x) * dsin(b * y) * dcos(c * z) ! dw/dx
-                strain(iz, iy, ix, 5) =   b * CC * dsin(a * x) * dcos(b * y) * dcos(c * z) ! dw/dy
+                strain(iz, iy, ix, I_DUDX) = - a * AA * dsin(a * x) * dsin(b * y) * dsin(c * z) ! du/dx
+                strain(iz, iy, ix, I_DUDY) =   b * AA * dcos(a * x) * dcos(b * y) * dsin(c * z) ! du/dy
+                strain(iz, iy, ix, I_DVDY) = - b * BB * dsin(a * x) * dsin(b * y) * dsin(c * z) ! dv/dy
+                strain(iz, iy, ix, I_DWDX) =   a * CC * dcos(a * x) * dsin(b * y) * dcos(c * z) ! dw/dx
+                strain(iz, iy, ix, I_DWDY) =   b * CC * dsin(a * x) * dcos(b * y) * dcos(c * z) ! dw/dy
+                strain(iz, iy, ix, I_DUDZ) = strain(iz, iy, ix, I_DWDX) + vortg(iz, iy, ix, I_Y)
+                strain(iz, iy, ix, I_DVDX) = strain(iz, iy, ix, I_DUDY) + vortg(iz, iy, ix, I_Z)
+                strain(iz, iy, ix, I_DVDZ) = strain(iz, iy, ix, I_DWDY) - vortg(iz, iy, ix, I_X)
+
             enddo
         enddo
     enddo

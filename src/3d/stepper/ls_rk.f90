@@ -11,6 +11,7 @@ module ls_rk
     use rk_utils, only: get_dBdt, get_time_step
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par
+    use parcel_damping, only : parcel_damp
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
@@ -123,6 +124,8 @@ module ls_rk
             call apply_parcel_reflective_bc
             call stop_timer(rk_timer)
 
+            call parcel_damp(dt)
+
             ! we need to subtract 14 calls since we start and stop
             ! the timer multiple times which increments n_calls
             timings(rk_timer)%n_calls =  timings(rk_timer)%n_calls - (3 * n_stages - 1)
@@ -150,7 +153,6 @@ module ls_rk
                 do n = 1, n_parcels
                     parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n),           &
                                                      parcels%strain(:, n),      &
-                                                     parcels%vorticity(:, n),   &
                                                      parcels%volume(n))
                 enddo
                 !$omp end parallel do
@@ -170,7 +172,6 @@ module ls_rk
                     parcels%delta_b(:, n) = parcels%delta_b(:, n)               &
                                           + get_dBdt(parcels%B(:, n),           &
                                                      parcels%strain(:, n),      &
-                                                     parcels%vorticity(:, n),   &
                                                      parcels%volume(n))
                 enddo
                 !$omp end parallel do
@@ -211,9 +212,9 @@ module ls_rk
 
             call parcel_communicate
 
-            call par2grid
-
             call stop_timer(rk_timer)
+
+            call par2grid
 
         end subroutine ls_rk_substep
 
