@@ -1,3 +1,19 @@
+## EPIC version 0.14.1
+* [Added/changed ifort style flags](https://github.com/EPIC-model/epic/pull/494)
+* [Fix .zenodo.json](https://github.com/EPIC-model/epic/pull/542)
+* [Generalise configure.ac](https://github.com/EPIC-model/epic/pull/492)
+* [Selective parcel attribute writes](https://github.com/EPIC-model/epic/pull/543)
+* [Need to calculate buoyancy extrema for total buoyancy](https://github.com/EPIC-model/epic/pull/546)
+* [Update writing statistics to improved interface](https://github.com/EPIC-model/epic/pull/545)
+* [Fix rk_timer](https://github.com/EPIC-model/epic/pull/547)
+* [Collect merger statistics](https://github.com/EPIC-model/epic/pull/544)
+* [Update conda environment](https://github.com/EPIC-model/epic/pull/550)
+* [Damping implementation](https://github.com/EPIC-model/epic/pull/549)
+* [Add missing stop_timer; fix resetting parcel split and merge diagnostics](https://github.com/EPIC-model/epic/pull/552)
+* [Fix loop for nearest parcel check](https://github.com/EPIC-model/epic/pull/555)
+* [Gridded strain](https://github.com/EPIC-model/epic/pull/553)
+* [Ensure link exists before calling netcdf routine](https://github.com/EPIC-model/epic/pull/558)
+
 ## EPIC version 0.14.0
 * [Fix the write frequency](https://github.com/EPIC-model/epic/pull/527)
 * [Add boundary surface fluxes](https://github.com/EPIC-model/epic/pull/451)
