@@ -26,7 +26,7 @@ module parcel_nearest
     use parameters, only : dx, dxi, vcell, hli, lower, extent       &
                          , ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
-    use mpi_timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer, timings
     use mpi_environment
     use mpi_layout
     use mpi_collectives, only : mpi_blocking_reduce
@@ -366,10 +366,10 @@ module parcel_nearest
 
             !---------------------------------------------------------------------
             ! We only need to check up to n_local_small because after the call to
-            ! find_closest_parcel_globally all small parcels know their closest 
+            ! find_closest_parcel_globally all small parcels know their closest
             ! neighbour on the original MPI rank.
             if (.not. l_no_small) then
-                do n = 1, n_local_small 
+                do n = 1, n_local_small
                     if (iclo(n) == 0) then
                         write(*,*) iclo(n), dclo(n)
                         call mpi_exit_on_error('Merge error: no near enough neighbour found.')
@@ -382,6 +382,9 @@ module parcel_nearest
             !---------------------------------------------------------------------
             ! Figure out the mergers:
             call resolve_tree(isma, iclo, rclo, n_local_small)
+
+            timings(merge_nearest_timer)%n_calls = timings(merge_nearest_timer)%n_calls - 1
+            call start_timer(merge_nearest_timer)
 
             if (.not. l_no_small) then
                 !---------------------------------------------------------------------
@@ -426,6 +429,8 @@ module parcel_nearest
             endif
 
             call nearest_deallocate
+
+            call stop_timer(merge_nearest_timer)
 
         end subroutine find_nearest
 
