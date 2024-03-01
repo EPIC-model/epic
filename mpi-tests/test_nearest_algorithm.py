@@ -41,6 +41,34 @@ try:
     )
 
     parser.add_argument(
+        "--min_vratio",
+        type=float,
+        default=40.0,
+        help="min volume ratio",
+    )
+
+    parser.add_argument(
+        "--nx",
+        type=int,
+        default=32,
+        help="number of grid cells in x",
+    )
+
+    parser.add_argument(
+        "--ny",
+        type=int,
+        default=32,
+        help="number of grid cells in y",
+    )
+
+    parser.add_argument(
+        "--nz",
+        type=int,
+        default=32,
+        help="number of grid cells in z",
+    )
+
+    parser.add_argument(
         "--verbose",
         action='store_true',
         help="Print intermediate output."
@@ -64,14 +92,16 @@ try:
     if not args.cmd == 'mpirun' and not args.cmd == 'srun':
         raise IOError("Use either 'mpirun' or 'srun'.")
 
-    # nx = ny = nz = 32
-    n_parcels = args.n_parcel_per_cell * 32 ** 3
+    nx = args.nx
+    ny = args.ny
+    nz = args.nz
+    n_parcels = args.n_parcel_per_cell * nx * ny * nz
 
     # domain [0, 1]^3
 
     #vmin = vcell / parcel%min_vratio
-    vcell = 1.0 / (32 * 32 * 32)
-    min_vratio = 40.0
+    vcell = 1.0 / (nx * ny * nz)
+    min_vratio = args.min_vratio
     vmin = vcell / min_vratio
 
     tol = 1.0e-14
