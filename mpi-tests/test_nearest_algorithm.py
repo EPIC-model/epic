@@ -109,6 +109,12 @@ try:
     exec_parallel = os.path.join(exec_path, 'test_merging_parcels')
     exec_serial = os.path.join(exec_path, 'test_merging_parcels_serial')
 
+    flags = ' --nx ' + str(nx) \
+          + ' --ny ' + str(ny) \
+          + ' --nz ' + str(nz) \
+          + ' --min_vratio ' + str(min_vratio) \
+          + ' --niter 1 --write-final'
+
     ncp = nc_parcels()
     ncrs = nc_reader()
     ncrp = nc_reader()
@@ -171,7 +177,7 @@ try:
                 # Write the initial NetCDF file:
                 ncp.open('initial_parcels.nc')
 
-                ncp.add_box([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [10, 10, 10])
+                ncp.add_box([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [nx, ny, nz])
 
                 ncp.add_dataset('x_position', x_position, unit='m')
                 ncp.add_dataset('y_position', y_position, unit='m')
@@ -204,7 +210,7 @@ try:
                         cmd = 'srun --nodes=1 --ntasks=' + str(n_rank)
                         cmd = cmd + ' --ntasks-per-node=' + str(n_rank)
                         cmd = cmd + ' --cpus-per-task=1 --exact '
-                    subprocess.run(args=cmd + exec_parallel,
+                    subprocess.run(args=cmd + exec_parallel + flags,
                                    shell=True,
                                    check=True,
                                    timeout=120,
@@ -218,7 +224,7 @@ try:
                     cmd = 'mpirun -np 1 '
                     if args.cmd == 'srun':
                         cmd = 'srun --nodes=1 --ntasks=1 --ntasks-per-node=1 --exact '
-                    subprocess.run(args=cmd + exec_serial,
+                    subprocess.run(args=cmd + exec_serial + flags,
                                    shell=True,
                                    check=True,
                                    timeout=120,
