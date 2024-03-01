@@ -137,7 +137,7 @@ program benchmark_parcel_merging
                            world%err)
 
         if (world%rank == world%root) then
-            print *, "Number of parcels:", n_total_parcels
+            print *, "Number of parcels before merging:", n_total_parcels
         endif
 
         call stop_timer(allreduce_timer)
@@ -153,6 +153,11 @@ program benchmark_parcel_merging
                            MPI_SUM,         &
                            world%comm,      &
                            world%err)
+
+        if (world%rank == world%root) then
+            print *, "Number of parcels after merging:", n_total_parcels
+        endif
+
         call stop_timer(allreduce_timer)
     enddo
 
