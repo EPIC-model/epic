@@ -61,12 +61,12 @@ program benchmark_parcel_merging
     ! make sure each cell has at least some parcels:
     parcel%n_per_cell = 8
     call parcel_default
+    n_orig = n_parcels
     parcels%volume(1:n_orig) = 1.2d0 * vmin
-    abc = get_abc(parcels%volume(n))
+    abc = get_abc(parcels%volume(1))
     parcels%B(1, 1:n_orig) = abc ** f23
     parcels%B(4, 1:n_orig) = abc ** f23
 
-    n_orig = n_parcels
     ! account for parcels aready added
     n_per_cell = n_per_cell - 8
 
