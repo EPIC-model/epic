@@ -107,7 +107,7 @@ module parcel_interpl
                 pvol = parcels%volume(n)
 
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n),  &
+                                              parcels%B(:, n),  &
                                               n, l_reuse)
 
                 ! we have 4 points per ellipsoid
@@ -200,7 +200,7 @@ module parcel_interpl
 
 #ifndef ENABLE_P2G_1POINT
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              pvol, parcels%B(:, n), n, l_reuse)
+                                              parcels%B(:, n), n, l_reuse)
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif
@@ -446,7 +446,7 @@ module parcel_interpl
 
 #ifndef ENABLE_G2P_1POINT
                 points = get_ellipsoid_points(parcels%position(:, n), &
-                                              parcels%volume(n), parcels%B(:, n), n)
+                                              parcels%B(:, n), n)
 #else
                 points(:, 1) = parcels%position(:, n)
 #endif

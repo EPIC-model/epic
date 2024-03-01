@@ -1,6 +1,6 @@
 module rk_utils
     use dimensions, only : n_dim, I_X, I_Y, I_Z
-    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23
+    use parcel_ellipsoid, only : get_B33, I_B11, I_B12, I_B13, I_B22, I_B23, I_B33
     use fields, only : velgradg, tbuoyg, vortg, I_DUDX, I_DUDY, I_DUDZ, I_DVDX, I_DVDY, I_DVDZ, I_DWDX, I_DWDY, strain_mag
     use field_mpi, only : field_halo_fill_scalar
     use constants, only : zero, one, two, f12
@@ -26,17 +26,14 @@ module rk_utils
         ! @param[in] vorticity of parcel
         ! @param[in] volume is the parcel volume
         ! @returns dB/dt in Bout
-        function get_dBdt(Bin, S, volume) result(Bout)
-            double precision, intent(in) :: Bin(I_B23)
+        function get_dBdt(Bin, S) result(Bout)
+            double precision, intent(in) :: Bin(I_B33)
             double precision, intent(in) :: S(8)
-            double precision, intent(in) :: volume
-            double precision             :: Bout(5), B33
+            double precision             :: Bout(I_B33)
             double precision             :: dwdz
 
             ! dw/dz = - (du/dx + dv/dy)
             dwdz = - (S(I_DUDX) + S(I_DVDY))
-
-            B33 = get_B33(Bin, volume)
 
             ! dB11/dt = 2 * (du/dx * B11 + du/dy * B12 + du/dz * B13)
             Bout(I_B11) = two * (S(I_DUDX) * Bin(I_B11) + S(I_DUDY) * Bin(I_B12) + S(I_DUDZ) * Bin(I_B13))
@@ -53,7 +50,7 @@ module rk_utils
                         + S(I_DWDY) * Bin(I_B12) & ! + dw/dy * B12
                         - S(I_DVDY) * Bin(I_B13) & ! - dv/dy * B13
                         + S(I_DUDY) * Bin(I_B23) & ! + du/dy * B23
-                        + S(I_DUDZ) * B33          ! + du/dz * B33
+                        + S(I_DUDZ) * Bin(I_B33)   ! + du/dz * B33
 
             ! dB22/dt = 2 * (dv/dx * B12 + dv/dy * B22 + dv/dz * B23)
             Bout(I_B22) = two * (S(I_DVDX) * Bin(I_B12) + S(I_DVDY) * Bin(I_B22) + S(I_DVDZ) * Bin(I_B23))
@@ -63,7 +60,12 @@ module rk_utils
                         + S(I_DVDX) * Bin(I_B13) & ! + dv/dx * B13
                         + S(I_DWDY) * Bin(I_B22) & ! + dw/dy * B22
                         - S(I_DUDX) * Bin(I_B23) & ! - du/dx * B23
-                        + S(I_DVDZ) * B33          ! + dv/dz * B33
+                        + S(I_DVDZ) * Bin(I_B33)   ! + dv/dz * B33
+
+
+            ! dB33/dt = 2 * (dw/dx * B13 + dw/dy * B23 + dw/dz * B33)
+            Bout(I_B33) = two * (S(I_DWDX) * Bin(I_B13) + S(I_DWDY) * Bin(I_B23) + dwdz * Bin(I_B33))
+
         end function get_dBdt
 
         ! Calculate velocity strain

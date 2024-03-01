@@ -38,7 +38,7 @@ module parcel_split_mod
         ! Split elongated parcels (semi-major axis larger than amax) or
         ! parcels with aspect ratios larger than parcel%lambda_max.
         subroutine parcel_split
-            double precision     :: B(5)
+            double precision     :: B(6)
             double precision     :: vol, lam
             double precision     :: D(3), V(3, 3)
             integer              :: last_index, n_indices
@@ -56,12 +56,12 @@ module parcel_split_mod
             !------------------------------------------------------------------
             ! Check which parcels split and store the indices in *pid*:
             !$omp parallel default(shared)
-            !$omp do private(n, B, vol, lam, D)
+            !$omp do private(n, B, lam, D)
             do n = 1, n_parcels
                 B = parcels%B(:, n)
-                vol = parcels%volume(n)
+                ! vol = parcels%volume(n)
 
-                D = get_eigenvalues(B, vol)
+                D = get_eigenvalues(B)
 
                 ! evaluate maximum aspect ratio (a2 >= b2 >= c2)
                 lam = get_aspect_ratio(D)
@@ -117,7 +117,7 @@ module parcel_split_mod
                 B = parcels%B(:, n)
                 vol = parcels%volume(n)
 
-                call diagonalise(B, vol, D, V)
+                call diagonalise(B, D, V)
 
                 pid(n) = 0
 
@@ -129,6 +129,7 @@ module parcel_split_mod
                 parcels%B(3, n) = B(3) - f34 * D(1) * V(1, 1) * V(3, 1)
                 parcels%B(4, n) = B(4) - f34 * D(1) * V(2, 1) ** 2
                 parcels%B(5, n) = B(5) - f34 * D(1) * V(2, 1) * V(3, 1)
+                parcels%B(6, n) = B(6) - f34 * D(1) * V(3, 1) ** 2
 
                 parcels%volume(n) = f12 * vol
 
