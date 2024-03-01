@@ -33,7 +33,8 @@ mpitests_PROGRAMS =			\
 	test_parcel_merge_random	\
 	test_parcel_split_merge		\
 	test_merging_parcels		\
-	test_merging_parcels_serial
+	test_merging_parcels_serial	\
+	benchmark_parcel_merging
 
 test_parcel_moving_equidistant_SOURCES = test_utils.f90 test_parcel_moving_equidistant.f90
 test_parcel_moving_equidistant_LDADD = libcombi.la
@@ -58,6 +59,9 @@ test_merging_parcels_serial_SOURCES = test_utils.f90			\
 				      parcel_merge_serial.f90		\
 				      test_merging_parcels_serial.f90
 test_merging_parcels_serial_LDADD = libcombi.la
+
+benchmark_parcel_merging_SOURCES = test_utils.f90 benchmark_parcel_merging.f90
+benchmark_parcel_merging_LDADD = libcombi.la
 
 nobase_mpitests_DATA = test_nearest_algorithm.py
 
