@@ -182,7 +182,7 @@ program benchmark_parcel_merging
         end subroutine parse_command_line
 
         subroutine setup_parcels
-            double precision :: rn(3), lam, lam2, abc, a2, b2, c2, theta, phi
+            double precision :: rn(12), lam, lam2, abc, a2, b2, c2, theta, phi
             double precision :: st, ct, sp, cp, corner(3)
             integer          :: ix, iy, iz, m, l
 
@@ -196,9 +196,49 @@ program benchmark_parcel_merging
                         do m = 1, parcel%n_per_cell
                             ! rn between 0 and 1
                             call random_number(rn)
+
                             parcels%position(1, l) = corner(1) + dx(1) * rn(1)
                             parcels%position(2, l) = corner(2) + dx(2) * rn(2)
                             parcels%position(3, l) = corner(3) + dx(3) * rn(3)
+
+                            ! vorticity between -10 and 10: y = 20 * x - 10
+                            parcels%vorticity(1, n) = 20.0d0 * rn(4) - 10.d0
+                            parcels%vorticity(2, n) = 20.0d0 * rn(5) - 10.d0
+                            parcels%vorticity(3, n) = 20.0d0 * rn(6) - 10.d0
+
+                            ! buoyancy between -1 and 1: y = 2 * x - 1
+                            parcels%buoyancy(n) = 2.0d0 * rn(7) - 1.d0
+
+                            ! volume between 0.5 * vmin and 1.5 * vmin
+                            parcels%volume(n) = vmin * rn(8) + f12 * vmin
+
+                            ! lam = a / c in [1, 4]
+                            lam = 3.d0 * rn(9) + 1.0d0
+
+                            ! lam2 = a / b
+                            lam2 = 3.d0 * rn(10) + 1.0d0
+
+                            abc = 0.75d0 * parcels%volume(n) / pi
+
+                            a2 = (abc * lam * lam2)  ** f23
+                            b2 = a2 / lam2 ** 2
+                            c2 = a2 / lam ** 2
+
+                            ! theta and phi in [0, 2pi[
+                            theta = twopi * rn(11)
+                            phi = twopi * rn(12)
+
+                            st = dsin(theta)
+                            ct = dcos(theta)
+                            sp = dsin(phi)
+                            cp = dcos(phi)
+
+                            parcels%B(1, n) = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
+                            parcels%B(2, n) = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
+                            parcels%B(3, n) = (a2 - c2) * ct * sp * cp
+                            parcels%B(4, n) = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
+                            parcels%B(5, n) = (a2 - c2) * st * sp * cp
+
                             l = l + 1
                         enddo
                     enddo
@@ -209,52 +249,6 @@ program benchmark_parcel_merging
                 call mpi_exit_on_error("Number of parcels disagree!")
             endif
 
-            do n = 1, n_parcels
-                ! rn bewteen 0 and 1
-                call random_number(rn)
-
-                ! vorticity between -10 and 10: y = 20 * x - 10
-                parcels%vorticity(1, n) = 20.0d0 * rn(1) - 10.d0
-                parcels%vorticity(2, n) = 20.0d0 * rn(2) - 10.d0
-                parcels%vorticity(3, n) = 20.0d0 * rn(3) - 10.d0
-
-                call random_number(rn)
-
-                ! buoyancy between -1 and 1: y = 2 * x - 1
-                parcels%buoyancy(n) = 2.0d0 * rn(1) - 1.d0
-
-                ! volume between 0.5 * vmin and 1.5 * vmin
-                parcels%volume(n) = vmin * rn(2) + f12 * vmin
-
-                ! lam = a / c in [1, 4]
-                lam = 3.d0 * rn(3) + 1.0d0
-
-                call random_number(rn)
-
-                ! lam2 = a / b
-                lam2 = 3.d0 * rn(1) + 1.0d0
-
-                abc = 0.75d0 * parcels%volume(n) / pi
-
-                a2 = (abc * lam * lam2)  ** f23
-                b2 = a2 / lam2 ** 2
-                c2 = a2 / lam ** 2
-
-                ! theta and phi in [0, 2pi[
-                theta = twopi * rn(2)
-                phi = twopi * rn(3)
-
-                st = dsin(theta)
-                ct = dcos(theta)
-                sp = dsin(phi)
-                cp = dcos(phi)
-
-                parcels%B(1, n) = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
-                parcels%B(2, n) = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
-                parcels%B(3, n) = (a2 - c2) * ct * sp * cp
-                parcels%B(4, n) = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
-                parcels%B(5, n) = (a2 - c2) * st * sp * cp
-            enddo
         end subroutine setup_parcels
 
 end program benchmark_parcel_merging
