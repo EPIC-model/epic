@@ -14,7 +14,6 @@ program benchmark_parcel_merging
                          , parcel_io_timer          &
                          , merge_nearest_timer      &
                          , merge_tree_resolve_timer &
-                         , init_timer               &
                          , register_timer           &
                          , print_timer              &
                          , start_timer              &
@@ -28,7 +27,6 @@ program benchmark_parcel_merging
 
     call register_timer('epic', epic_timer)
     call register_timer('parcel merge', merge_timer)
-    call register_timer('parcel init', init_timer)
     call register_timer('merge nearest', merge_nearest_timer)
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
     call register_timer('MPI allreduce', allreduce_timer)
