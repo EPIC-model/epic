@@ -202,15 +202,15 @@ program benchmark_parcel_merging
                             parcels%position(3, l) = corner(3) + dx(3) * rn(3)
 
                             ! vorticity between -10 and 10: y = 20 * x - 10
-                            parcels%vorticity(1, n) = 20.0d0 * rn(4) - 10.d0
-                            parcels%vorticity(2, n) = 20.0d0 * rn(5) - 10.d0
-                            parcels%vorticity(3, n) = 20.0d0 * rn(6) - 10.d0
+                            parcels%vorticity(1, l) = 20.0d0 * rn(4) - 10.d0
+                            parcels%vorticity(2, l) = 20.0d0 * rn(5) - 10.d0
+                            parcels%vorticity(3, l) = 20.0d0 * rn(6) - 10.d0
 
                             ! buoyancy between -1 and 1: y = 2 * x - 1
-                            parcels%buoyancy(n) = 2.0d0 * rn(7) - 1.d0
+                            parcels%buoyancy(l) = 2.0d0 * rn(7) - 1.d0
 
                             ! volume between 0.5 * vmin and 1.5 * vmin
-                            parcels%volume(n) = vmin * rn(8) + f12 * vmin
+                            parcels%volume(l) = vmin * rn(8) + f12 * vmin
 
                             ! lam = a / c in [1, 4]
                             lam = 3.d0 * rn(9) + 1.0d0
@@ -218,7 +218,7 @@ program benchmark_parcel_merging
                             ! lam2 = a / b
                             lam2 = 3.d0 * rn(10) + 1.0d0
 
-                            abc = 0.75d0 * parcels%volume(n) / pi
+                            abc = 0.75d0 * parcels%volume(l) / pi
 
                             a2 = (abc * lam * lam2)  ** f23
                             b2 = a2 / lam2 ** 2
@@ -233,11 +233,11 @@ program benchmark_parcel_merging
                             sp = dsin(phi)
                             cp = dcos(phi)
 
-                            parcels%B(1, n) = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
-                            parcels%B(2, n) = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
-                            parcels%B(3, n) = (a2 - c2) * ct * sp * cp
-                            parcels%B(4, n) = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
-                            parcels%B(5, n) = (a2 - c2) * st * sp * cp
+                            parcels%B(1, l) = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
+                            parcels%B(2, l) = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
+                            parcels%B(3, l) = (a2 - c2) * ct * sp * cp
+                            parcels%B(4, l) = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
+                            parcels%B(5, l) = (a2 - c2) * st * sp * cp
 
                             l = l + 1
                         enddo
