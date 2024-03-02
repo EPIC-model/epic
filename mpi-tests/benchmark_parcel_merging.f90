@@ -2,7 +2,7 @@ program benchmark_parcel_merging
     use constants, only : pi, zero, one, f12, f23, twopi
     use parcel_container
     use options, only : parcel
-    use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels, vmin
+    use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels, vmin, dx
     use parcel_init, only : parcel_default
     use parcel_merging
     use parcel_mpi, only : parcel_communicate
@@ -22,10 +22,7 @@ program benchmark_parcel_merging
     implicit none
 
     integer              :: n, k, niter, allreduce_timer, generate_timer, sk
-    integer              :: n_orig, n_per_cell
     integer, allocatable :: seed(:)
-    double precision     :: rn(12), lam, lam2, abc, a2, b2, c2, theta, phi
-    double precision     :: st, ct, sp, cp
 
     call mpi_env_initialise
 
@@ -56,75 +53,17 @@ program benchmark_parcel_merging
 
     call nearest_win_allocate
 
+    call parcel_alloc(max_num_parcels)
+
     call start_timer(epic_timer)
 
-    ! make sure each cell has at least some parcels:
-    parcel%n_per_cell = 8
-    call parcel_default
-    n_orig = n_parcels
-    parcels%volume(1:n_orig) = 1.2d0 * vmin
-    abc = get_abc(parcels%volume(1))
-    parcels%B(1, 1:n_orig) = abc ** f23
-    parcels%B(4, 1:n_orig) = abc ** f23
-
-    ! account for parcels aready added
-    n_per_cell = n_per_cell - 8
-
     do k = 1, niter
-
-        n_parcels = n_orig + n_per_cell * box%ncell
 
         ! -------------------------------------------------------------
         ! Set up the parcel configuration:
         call start_timer(generate_timer)
 
-        do n = n_orig+1, n_parcels
-            ! rn bewteen 0 and 1
-            call random_number(rn)
-
-            ! x = (upper-lower) * r + lower = extent * r + lower
-            parcels%position(1, n) = box%extent(1) * rn(1) +  box%lower(1)
-            parcels%position(2, n) = box%extent(2) * rn(2) +  box%lower(2)
-            parcels%position(3, n) = box%extent(3) * rn(3) +  box%lower(3)
-
-            ! vorticity between -10 and 10: y = 20 * x - 10
-            parcels%vorticity(1, n) = 20.0d0 * rn(4) - 10.d0
-            parcels%vorticity(2, n) = 20.0d0 * rn(5) - 10.d0
-            parcels%vorticity(3, n) = 20.0d0 * rn(6) - 10.d0
-
-            ! buoyancy between -1 and 1: y = 2 * x - 1
-            parcels%buoyancy(n) = 2.0d0 * rn(7) - 1.d0
-
-            ! volume between 0.5 * vmin and 1.5 * vmin
-            parcels%volume(n) = vmin * rn(8) + f12 * vmin
-
-            ! lam = a / c in [1, 4]
-            lam = 3.d0 * rn(9) + 1.0d0
-
-            ! lam2 = a / b
-            lam2 = 3.d0 * rn(10) + 1.0d0
-
-            abc = 0.75d0 * parcels%volume(n) / pi
-
-            a2 = (abc * lam * lam2)  ** f23
-            b2 = a2 / lam2 ** 2
-            c2 = a2 / lam ** 2
-
-            ! theta and phi in [0, 2pi[
-            theta = twopi * rn(11)
-            phi = twopi * rn(12)
-
-            st = dsin(theta)
-            ct = dcos(theta)
-            sp = dsin(phi)
-            cp = dcos(phi)
-
-            parcels%B(1, n) = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
-            parcels%B(2, n) = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
-            parcels%B(3, n) = (a2 - c2) * ct * sp * cp
-            parcels%B(4, n) = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
-            parcels%B(5, n) = (a2 - c2) * st * sp * cp
-        enddo
+        call setup_parcels
 
         call parcel_communicate
 
@@ -170,6 +109,8 @@ program benchmark_parcel_merging
 
     call nearest_win_deallocate
 
+    call parcel_dealloc
+
     call print_timer
 
     call mpi_env_finalise
@@ -184,7 +125,7 @@ program benchmark_parcel_merging
             ny = 32
             nz = 32
             niter = 1
-            n_per_cell = 40
+            parcel%n_per_cell = 40
             parcel%min_vratio = 40.0d0
 
 
@@ -214,7 +155,7 @@ program benchmark_parcel_merging
                 else if (arg == '--n_per_cell') then
                     i = i + 1
                     call get_command_argument(i, arg)
-                    read(arg,'(i6)') n_per_cell
+                    read(arg,'(i6)') parcel%n_per_cell
                 else if (arg == '--min_vratio') then
                     i = i + 1
                     call get_command_argument(i, arg)
@@ -234,10 +175,86 @@ program benchmark_parcel_merging
                 print *, "ny", ny
                 print *, "nz", nz
                 print *, "niter", niter
-                print *, "n_per_cell", n_per_cell
+                print *, "n_per_cell", parcel%n_per_cell
                 print *, "min_vratio", parcel%min_vratio
             endif
 
         end subroutine parse_command_line
+
+        subroutine setup_parcels
+            double precision :: rn(3), lam, lam2, abc, a2, b2, c2, theta, phi
+            double precision :: st, ct, sp, cp, corner(3)
+            integer          :: ix, iy, iz, m, l
+
+            n_parcels = parcel%n_per_cell * box%ncell
+
+            l = 1
+            do iz = 0, nz-1
+                do iy = box%lo(2), box%hi(2)
+                    do ix = box%lo(1), box%hi(1)
+                        corner = lower + dble((/ix, iy, iz/)) * dx
+                        do m = 1, parcel%n_per_cell
+                            ! rn between 0 and 1
+                            call random_number(rn)
+                            parcels%position(1, l) = corner(1) + dx(1) * rn(1)
+                            parcels%position(2, l) = corner(2) + dx(2) * rn(2)
+                            parcels%position(3, l) = corner(3) + dx(3) * rn(3)
+                            l = l + 1
+                        enddo
+                    enddo
+                enddo
+            enddo
+
+            if (.not. n_parcels == l - 1) then
+                call mpi_exit_on_error("Number of parcels disagree!")
+            endif
+
+            do n = 1, n_parcels
+                ! rn bewteen 0 and 1
+                call random_number(rn)
+
+                ! vorticity between -10 and 10: y = 20 * x - 10
+                parcels%vorticity(1, n) = 20.0d0 * rn(1) - 10.d0
+                parcels%vorticity(2, n) = 20.0d0 * rn(2) - 10.d0
+                parcels%vorticity(3, n) = 20.0d0 * rn(3) - 10.d0
+
+                call random_number(rn)
+
+                ! buoyancy between -1 and 1: y = 2 * x - 1
+                parcels%buoyancy(n) = 2.0d0 * rn(1) - 1.d0
+
+                ! volume between 0.5 * vmin and 1.5 * vmin
+                parcels%volume(n) = vmin * rn(2) + f12 * vmin
+
+                ! lam = a / c in [1, 4]
+                lam = 3.d0 * rn(3) + 1.0d0
+
+                call random_number(rn)
+
+                ! lam2 = a / b
+                lam2 = 3.d0 * rn(1) + 1.0d0
+
+                abc = 0.75d0 * parcels%volume(n) / pi
+
+                a2 = (abc * lam * lam2)  ** f23
+                b2 = a2 / lam2 ** 2
+                c2 = a2 / lam ** 2
+
+                ! theta and phi in [0, 2pi[
+                theta = twopi * rn(2)
+                phi = twopi * rn(3)
+
+                st = dsin(theta)
+                ct = dcos(theta)
+                sp = dsin(phi)
+                cp = dcos(phi)
+
+                parcels%B(1, n) = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
+                parcels%B(2, n) = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
+                parcels%B(3, n) = (a2 - c2) * ct * sp * cp
+                parcels%B(4, n) = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
+                parcels%B(5, n) = (a2 - c2) * st * sp * cp
+            enddo
+        end subroutine setup_parcels
 
 end program benchmark_parcel_merging
