@@ -150,7 +150,7 @@ program epic3d
 
         subroutine post_run
             use options, only : output
-            call parcels%dealloc
+            call parcels%deallocate
             call field_dealloc
             call nearest_win_deallocate
             call bndry_fluxes_deallocate
