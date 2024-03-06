@@ -6,6 +6,7 @@ program benchmark_parcel_merging
     use parcel_init, only : parcel_default
     use parcel_merging
     use parcel_mpi, only : parcel_communicate
+    use parcel_nearest, only : nearest_allreduce_timer, nearest_barrier_timer
     use mpi_environment
     use mpi_layout
     use mpi_utils, only : mpi_stop
@@ -22,6 +23,7 @@ program benchmark_parcel_merging
 
     integer              :: n, k, niter, allreduce_timer, generate_timer, sk
     integer, allocatable :: seed(:)
+    double precision     :: lx, ly
 
     call mpi_env_initialise
 
@@ -31,14 +33,15 @@ program benchmark_parcel_merging
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
     call register_timer('MPI allreduce', allreduce_timer)
     call register_timer('generate data', generate_timer)
+    call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
+    call register_timer('nearest MPI barrier', nearest_barrier_timer)
 
     call parse_command_line
 
     lower  = (/zero, zero, zero/)
-    extent = (/one, one, one/)
+    extent = (/lx, ly, 1.0d0/)
 
     parcel%lambda_max = 4.0d0
-    parcel%size_factor = 4
 
     call random_seed(size=sk)
     allocate(seed(1:sk))
@@ -122,9 +125,12 @@ program benchmark_parcel_merging
             nx = 32
             ny = 32
             nz = 32
+            lx = 128.0d0
+            ly = 128.0d0
             niter = 1
             parcel%n_per_cell = 40
             parcel%min_vratio = 40.0d0
+            parcel%size_factor = 4
 
 
             i = 0
@@ -158,6 +164,18 @@ program benchmark_parcel_merging
                     i = i + 1
                     call get_command_argument(i, arg)
                     read(arg,'(f16.0)') parcel%min_vratio
+                else if (arg == '--size_factor') then
+                    i = i + 1
+                    call get_command_argument(i, arg)
+                    read(arg,'(i6)') parcel%size_factor
+                else if (arg == '--lx') then
+                    i = i + 1
+                    call get_command_argument(i, arg)
+                    read(arg,'(f16.0)') lx
+                else if (arg == '--ly') then
+                    i = i + 1
+                    call get_command_argument(i, arg)
+                    read(arg,'(f16.0)') ly
                 else if (arg == '--help') then
                     if (world%rank == world%root) then
                         print *, "./a.out --nx [int] --ny [int] --nz [int] ", &
@@ -172,9 +190,12 @@ program benchmark_parcel_merging
                 print *, "nx", nx
                 print *, "ny", ny
                 print *, "nz", nz
+                print *, "lx", lx
+                print *, "ly", ly
                 print *, "niter", niter
                 print *, "n_per_cell", parcel%n_per_cell
                 print *, "min_vratio", parcel%min_vratio
+                print *, "size_factor", parcel%size_factor
             endif
 
         end subroutine parse_command_line
