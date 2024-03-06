@@ -61,6 +61,7 @@ module parcel_nearest
     implicit none
 
     integer:: merge_nearest_timer, merge_tree_resolve_timer
+    integer:: nearest_allreduce_timer, nearest_barrier_timer
 
     private
 
@@ -97,7 +98,9 @@ module parcel_nearest
             , merge_nearest_timer       &
             , merge_tree_resolve_timer  &
             , nearest_win_allocate      &
-            , nearest_win_deallocate
+            , nearest_win_deallocate    &
+            , nearest_allreduce_timer   &
+            , nearest_barrier_timer
 
     contains
 
@@ -115,6 +118,7 @@ module parcel_nearest
             integer (KIND=MPI_ADDRESS_KIND) :: win_size
             logical                         :: l_bytes
             integer                         :: disp_unit
+            integer (KIND=MPI_ADDRESS_KIND) :: long_type
             type(c_ptr)                     :: buf_ptr
 
             if (l_nearest_win_allocated) then
@@ -136,7 +140,12 @@ module parcel_nearest
                 "in MPI_Sizeof of parcel_nearest::nearest_win_allocate.")
 
             ! size of RMA window in bytes
-            win_size = disp_unit * max_num_parcels
+            long_type = disp_unit
+            win_size = long_type * max_num_parcels
+
+            if (win_size < 0) then
+               call mpi_stop("Error: Integer overflow. Unable to allocate MPI RMA windows.")
+            endif
 
             ! allocate window win_leaf and memory for l_leaf
             call MPI_Win_allocate(win_size,         &
@@ -848,7 +857,9 @@ module parcel_nearest
                 enddo
 
                 call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, cart%err)
+                call start_timer(nearest_barrier_timer)
                 call MPI_Barrier(cart%comm, cart%err)
+                call stop_timer(nearest_barrier_timer)
 
                 ! determine leaf parcels
                 do m = 1, n_local_small
@@ -882,7 +893,9 @@ module parcel_nearest
                 enddo
 
                 call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, cart%err)
+                call start_timer(nearest_barrier_timer)
                 call MPI_Barrier(cart%comm, cart%err)
+                call stop_timer(nearest_barrier_timer)
 
                 ! filter out parcels that are "unavailable" for merging
                 do m = 1, n_local_small
@@ -918,7 +931,10 @@ module parcel_nearest
                 enddo
 
                 call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, cart%err)
+                call start_timer(nearest_barrier_timer)
                 call MPI_Barrier(cart%comm, cart%err)
+                call stop_timer(nearest_barrier_timer)
+
 
                 ! identify mergers in this iteration
                 do m = 1, n_local_small
@@ -992,6 +1008,7 @@ module parcel_nearest
                     endif
                 enddo
 
+                call start_timer(nearest_allreduce_timer)
                 ! Performance improvement: We actually only need to synchronize with neighbours
                 call MPI_Allreduce(MPI_IN_PLACE,            &
                                    l_continue_iteration,    &
@@ -1000,12 +1017,14 @@ module parcel_nearest
                                    MPI_LOR,                 &
                                    cart%comm,               &
                                    cart%err)
-
+                call stop_timer(nearest_allreduce_timer)
                 call mpi_check_for_error(cart, &
                     "in MPI_Allreduce of parcel_nearest::resolve_tree.")
             enddo
 
+            call start_timer(nearest_barrier_timer)
             call MPI_Barrier(cart%comm, cart%err)
+            call stop_timer(nearest_barrier_timer)
 
             ! Second stage, related to dual links
             do m = 1, n_local_small
@@ -1043,7 +1062,9 @@ module parcel_nearest
             enddo
 
             call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, cart%err)
+            call start_timer(nearest_barrier_timer)
             call MPI_Barrier(cart%comm, cart%err)
+            call stop_timer(nearest_barrier_timer)
 
             ! Second stage
             do m = 1, n_local_small
@@ -1145,7 +1166,9 @@ module parcel_nearest
                 endif
             enddo
 
+            call start_timer(nearest_barrier_timer)
             call MPI_Barrier(cart%comm, cart%err)
+            call stop_timer(nearest_barrier_timer)
 
             !------------------------------------------------------
             do m = 1, n_local_small
@@ -1189,7 +1212,9 @@ module parcel_nearest
             enddo
 
             call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, cart%err)
+            call start_timer(nearest_barrier_timer)
             call MPI_Barrier(cart%comm, cart%err)
+            call stop_timer(nearest_barrier_timer)
 
             j = 0
             do m = 1, n_local_small
