@@ -1,6 +1,7 @@
 program test_parcel_spli_merge
     use mpi_environment
     use options, only : parcel
+    use datatypes, only : int64
     use constants, only : zero, one, two
     use parameters, only : update_parameters, nx, ny, nz, lower, extent, vmin, dx
     use parcel_container
@@ -17,7 +18,8 @@ program test_parcel_spli_merge
     implicit none
 
     integer, parameter   :: nt = 100
-    integer              :: i, n, sk, n_orig, n_merges
+    integer              :: i, n, sk, n_merges
+    integer(kind=int64)  :: n_orig
     integer, allocatable :: seed(:)
     double precision     :: rn(3)
 

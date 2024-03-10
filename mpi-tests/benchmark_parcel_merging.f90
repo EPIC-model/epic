@@ -12,7 +12,6 @@ program benchmark_parcel_merging
     use mpi_utils, only : mpi_stop
     use test_utils, only : epic_timer               &
                          , merge_timer              &
-                         , parcel_io_timer          &
                          , merge_nearest_timer      &
                          , merge_tree_resolve_timer &
                          , register_timer           &
@@ -21,7 +20,7 @@ program benchmark_parcel_merging
                          , stop_timer
     implicit none
 
-    integer              :: n, k, niter, allreduce_timer, generate_timer, sk
+    integer              :: k, niter, allreduce_timer, generate_timer, sk
     integer, allocatable :: seed(:)
     double precision     :: lx, ly
 

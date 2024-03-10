@@ -160,7 +160,7 @@ module parameters
             call mpi_stop
         endif
 
-        max_num_parcels = max_size
+        max_num_parcels = int(max_size)
 
     end subroutine update_parameters
 

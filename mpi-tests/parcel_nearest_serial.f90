@@ -117,7 +117,7 @@ module parcel_nearest_serial
             ! Find arrays kc1(ijk) & kc2(ijk) which indicate the parcels in grid cell ijk
             ! through n = node(k), for k = kc1(ijk), kc2(ijk):
             kc1(1) = 1
-            do ijk = 1, ncell-1
+            do ijk = 1, int(ncell)-1
                 kc1(ijk+1) = kc1(ijk) + nppc(ijk)
             enddo
 

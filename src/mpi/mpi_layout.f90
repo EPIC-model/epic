@@ -130,7 +130,7 @@ module mpi_layout
                 call mpi_exit_on_error(&
                     "Number of local cells larger than an integer can represent. Overflow!")
             endif
-            box%ncell = max_size
+            box%ncell = int(max_size)
             box%halo_ncell = box%halo_size(1) * box%halo_size(2) * (box%halo_size(3) - 1)
 
             box%global_size = (/nx, ny, nz/)

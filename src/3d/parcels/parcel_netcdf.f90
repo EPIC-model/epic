@@ -109,7 +109,7 @@ module parcel_netcdf
             call MPI_Allreduce(MPI_IN_PLACE, n_total_parcels, 1, MPI_INTEGER_64BIT, &
                                MPI_SUM, world%comm, world%err)
 
-            if ((world%rank == world%root) .and. (n_total_parcels > huge(0))) then
+            if ((world%rank == world%root) .and. (n_total_parcels > huge(n_total))) then
                 print *, "WARNING: Unable to write parcels to the NetCDF file"
                 print *, "         as the number of total parcel exceeds integer limit."
                 l_unable = .true.
@@ -117,7 +117,7 @@ module parcel_netcdf
             endif
             l_unable = .false.
 
-            n_total = n_total_parcels
+            n_total = int(n_total_parcels)
 
             call create_netcdf_file(ncfname, overwrite, ncid)
 

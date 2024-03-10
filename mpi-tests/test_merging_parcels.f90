@@ -3,6 +3,7 @@ program test_merging_parcels
     use parcel_container
     use options, only : parcel
     use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels
+    use parcel_nearest, only : nearest_allreduce_timer, nearest_barrier_timer
     use parcel_merging
     use parcel_netcdf
     use mpi_environment
@@ -27,6 +28,8 @@ program test_merging_parcels
     call register_timer('epic', epic_timer)
     call register_timer('parcel merge', merge_timer)
     call register_timer('parcel I/O', parcel_io_timer)
+    call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
+    call register_timer('nearest MPI barrier', nearest_barrier_timer)
     call register_timer('merge nearest', merge_nearest_timer)
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
     call register_timer('MPI allreduce', allreduce_timer)
@@ -90,6 +93,8 @@ program test_merging_parcels
     call nearest_win_deallocate
 
     call print_timer
+
+    call parcel_dealloc
 
     call mpi_env_finalise
 
