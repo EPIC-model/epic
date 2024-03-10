@@ -17,6 +17,7 @@ module parcel_merging
     use options, only : parcel
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
     use options, only : verbose
+    use datatypes, only : int64
 #endif
     use parcel_bc, only : apply_periodic_bc
     use parcel_mpi, only : parcel_communicate
@@ -55,7 +56,7 @@ module parcel_merging
             integer                            :: n_merge ! number of merges
             integer                            :: n_invalid
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
-            integer                            :: orig_num
+            integer(kind=int64)                :: orig_num
 
             orig_num = n_total_parcels
 #endif

@@ -47,7 +47,7 @@ module parcel_split_mod
             integer              :: pid(2 * n_parcels)
             integer, allocatable :: invalid(:), indices(:)
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
-            integer              :: orig_num
+            integer(kind=int64)  :: orig_num
 
             orig_num = n_total_parcels
 #endif

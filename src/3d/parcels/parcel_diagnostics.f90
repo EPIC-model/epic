@@ -2,6 +2,7 @@
 !                               Parcel diagnostics
 ! =============================================================================
 module parcel_diagnostics
+    use datatypes, only : int64
     use constants, only : zero, one, f12, thousand
     use parameters, only : extent, lower, vcell, vmin, nx, nz, vdomaini
     use parcel_container, only : parcels, n_parcels, n_total_parcels
@@ -132,7 +133,7 @@ module parcel_diagnostics
             parcel_merge_stats = n_way_parcel_mergers
             call mpi_blocking_reduce(parcel_merge_stats, MPI_SUM, world)
 
-            n_total_parcels = nint(parcel_stats(IDX_NTOT_PAR))
+            n_total_parcels = nint(parcel_stats(IDX_NTOT_PAR), kind=int64)
             ntoti = one / dble(n_total_parcels)
 
             ! divide by domain volume to get domain-averaged quantities

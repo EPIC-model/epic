@@ -58,6 +58,9 @@ module parcel_nearest
                          , allocate_parcel_id_buffers   &
                          , deallocate_parcel_id_buffers &
                          , get_parcel_buffer_ptr
+#ifndef NDEBUG
+    use datatypes, only : int64
+#endif
     implicit none
 
     integer:: merge_nearest_timer, merge_tree_resolve_timer
@@ -1493,6 +1496,9 @@ module parcel_nearest
             integer                                    :: m, rc, ic, is, n, i, j, k, iv
             integer                                    :: n_entries
             integer                                    :: n_registered(8)
+#ifndef NDEBUG
+            integer(kind=int64)                        :: n_total
+endif
 
             !------------------------------------------------------------------
             ! Figure out how many parcels we send and allocate buffers:
@@ -1649,9 +1655,9 @@ module parcel_nearest
             call deallocate_mpi_buffers
 
 #ifndef NDEBUG
-            n = n_parcels - n_invalid
-            call mpi_blocking_reduce(n, MPI_SUM, world)
-            if ((world%rank == world%root) .and. (.not. n == n_total_parcels)) then
+            n_total = n_parcels - n_invalid
+            call mpi_blocking_reduce(n_total, MPI_SUM, world)
+            if ((world%rank == world%root) .and. (.not. n_total == n_total_parcels)) then
                 call mpi_exit_on_error(&
                     "in parcel_nearest::gather_remote_parcels: We lost parcels.")
             endif

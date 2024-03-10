@@ -1,6 +1,7 @@
 module mpi_environment
     use mpi_f08
     use mpi_tags
+    use mpi_datatypes, only : mpi_create_types
     implicit none
 
     type :: communicator
@@ -28,6 +29,9 @@ module mpi_environment
 #endif
             call MPI_Comm_size(world%comm, world%size, world%err)
             call MPI_Comm_rank(world%comm, world%rank, world%err)
+
+            call mpi_create_types
+
         end subroutine mpi_env_initialise
 
         subroutine mpi_env_finalise
