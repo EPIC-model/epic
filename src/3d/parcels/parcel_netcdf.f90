@@ -52,6 +52,7 @@ module parcel_netcdf
                         , NC_B23   = 14
 
     logical :: l_first_write = .true.
+    logical :: l_unable = .false.
 
 #ifndef ENABLE_DRY_MODE
     integer, parameter :: NC_HUM   = 15
@@ -103,6 +104,21 @@ module parcel_netcdf
                 return
             endif
 
+            ! all cores must know the correct number of total parcels
+            n_total_parcels = n_parcels
+            call MPI_Allreduce(MPI_IN_PLACE, n_total_parcels, 1, MPI_INTEGER_64BIT, &
+                               MPI_SUM, world%comm, world%err)
+
+            if ((world%rank == world%root) .and. (n_total_parcels > huge(0))) then
+                print *, "WARNING: Unable to write parcels to the NetCDF file"
+                print *, "         as the number of total parcel exceeds integer limit."
+                l_unable = .true.
+                return
+            endif
+            l_unable = .false.
+
+            n_total = n_total_parcels
+
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
@@ -116,17 +132,6 @@ module parcel_netcdf
             call write_physical_quantities(ncid)
 
             call write_netcdf_options(ncid)
-
-            ! all cores must know the correct number of total parcels
-            n_total_parcels = n_parcels
-            call MPI_Allreduce(MPI_IN_PLACE, n_total_parcels, 1, MPI_INTEGER_64BIT, &
-                               MPI_SUM, world%comm, world%err)
-
-            if (n_total_parcels > huge(0)) then
-                call mpi_stop("Unable to write these many parcels!")
-            endif
-
-            n_total = n_total_parcels
 
             ! define dimensions
             call define_netcdf_dimension(ncid=ncid,                 &
@@ -191,6 +196,11 @@ module parcel_netcdf
             endif
 
             call create_netcdf_parcel_file(trim(ncbasename), .true., .false.)
+
+            if (l_unable) then
+                call stop_timer(parcel_io_timer)
+                return
+            endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
