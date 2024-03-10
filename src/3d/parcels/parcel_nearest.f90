@@ -1498,7 +1498,7 @@ module parcel_nearest
             integer                                    :: n_registered(8)
 #ifndef NDEBUG
             integer(kind=int64)                        :: n_total
-endif
+#endif
 
             !------------------------------------------------------------------
             ! Figure out how many parcels we send and allocate buffers:
