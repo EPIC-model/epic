@@ -9,7 +9,8 @@ program benchmark_parcel_merging
     use parcel_nearest, only : nearest_allreduce_timer, nearest_barrier_timer
     use mpi_environment
     use mpi_layout
-    use mpi_datatypes, only : MPI_INTEGER_64BIT, MPI_SUM_64BIT
+    use mpi_datatypes, only : MPI_INTEGER_64BIT
+    use mpi_ops, only : MPI_SUM_64BIT
     use mpi_utils, only : mpi_stop
     use test_utils, only : epic_timer               &
                          , merge_timer              &

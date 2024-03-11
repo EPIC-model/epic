@@ -15,7 +15,8 @@ module parcel_netcdf
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
     use mpi_environment
-    use mpi_datatypes, only : MPI_INTEGER_64BIT, MPI_SUM_64BIT
+    use mpi_datatypes, only : MPI_INTEGER_64BIT
+    use mpi_ops, only : MPI_SUM_64BIT
     use datatypes, only : int64
     use mpi_utils, only : mpi_exit_on_error, mpi_print, mpi_check_for_error
     use fields, only : is_contained

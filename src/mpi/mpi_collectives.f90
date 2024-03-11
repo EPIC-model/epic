@@ -1,6 +1,7 @@
 module mpi_collectives
     use datatypes, only : int64
-    use mpi_datatypes, only : MPI_INTEGER_64BIT, MPI_SUM_64BIT
+    use mpi_datatypes, only : MPI_INTEGER_64BIT
+    use mpi_ops, only : MPI_SUM_64BIT
     use mpi_environment
     use mpi_utils, only : mpi_stop
     implicit none
