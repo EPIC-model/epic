@@ -1,7 +1,8 @@
 module mpi_collectives
     use datatypes, only : int64
-    use mpi_datatypes, only : MPI_INTEGER_64BIT
+    use mpi_datatypes, only : MPI_INTEGER_64BIT, MPI_SUM_64BIT
     use mpi_environment
+    use mpi_utils, only : mpi_stop
     implicit none
 
     interface mpi_blocking_reduce
@@ -45,12 +46,16 @@ module mpi_collectives
             type(MPI_Op),        intent(in)    :: op
             type(communicator),  intent(inout) :: comm
 
+            if (op /= MPI_SUM) then
+                call mpi_stop("Only MPI_SUM supported for 64-bit integers!")
+            endif
+
             if (comm%rank == comm%root) then
                 call MPI_Reduce(MPI_IN_PLACE, sendbuf, size(sendbuf), MPI_INTEGER_64BIT, &
-                                op, comm%root, comm%comm, comm%err)
+                                MPI_SUM_64BIT, comm%root, comm%comm, comm%err)
             else
                 call MPI_Reduce(sendbuf, sendbuf, size(sendbuf), MPI_INTEGER_64BIT, &
-                                op, comm%root, comm%comm, comm%err)
+                                MPI_SUM_64BIT, comm%root, comm%comm, comm%err)
             endif
         end subroutine mpi_integer64bit_reduce
 

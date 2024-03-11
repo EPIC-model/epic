@@ -15,7 +15,7 @@ module parcel_netcdf
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
     use mpi_environment
-    use mpi_datatypes, only : MPI_INTEGER_64BIT
+    use mpi_datatypes, only : MPI_INTEGER_64BIT, MPI_SUM_64BIT
     use datatypes, only : int64
     use mpi_utils, only : mpi_exit_on_error, mpi_print, mpi_check_for_error
     use fields, only : is_contained
@@ -107,7 +107,7 @@ module parcel_netcdf
             ! all cores must know the correct number of total parcels
             n_total_parcels = n_parcels
             call MPI_Allreduce(MPI_IN_PLACE, n_total_parcels, 1, MPI_INTEGER_64BIT, &
-                               MPI_SUM, world%comm, world%err)
+                               MPI_SUM_64BIT, world%comm, world%err)
 
             if ((world%rank == world%root) .and. (n_total_parcels > huge(n_total))) then
                 print *, "WARNING: Unable to write parcels to the NetCDF file"
