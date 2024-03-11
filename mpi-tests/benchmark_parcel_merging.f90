@@ -9,6 +9,7 @@ program benchmark_parcel_merging
     use parcel_nearest, only : nearest_allreduce_timer, nearest_barrier_timer
     use mpi_environment
     use mpi_layout
+    use mpi_datatypes, only : MPI_INTEGER_64BIT, MPI_SUM_64BIT
     use mpi_utils, only : mpi_stop
     use test_utils, only : epic_timer               &
                          , merge_timer              &
@@ -72,12 +73,12 @@ program benchmark_parcel_merging
         n_total_parcels = 0
 
         call start_timer(allreduce_timer)
-        call MPI_Allreduce(n_parcels,       &
-                           n_total_parcels, &
-                           1,               &
-                           MPI_INTEGER,     &
-                           MPI_SUM,         &
-                           world%comm,      &
+        call MPI_Allreduce(n_parcels,         &
+                           n_total_parcels,   &
+                           1,                 &
+                           MPI_INTEGER_64BIT, &
+                           MPI_SUM_64BIT,     &
+                           world%comm,        &
                            world%err)
 
         if (world%rank == world%root) then
@@ -90,12 +91,12 @@ program benchmark_parcel_merging
 
         n_total_parcels = 0
         call start_timer(allreduce_timer)
-        call MPI_Allreduce(n_parcels,       &
-                           n_total_parcels, &
-                           1,               &
-                           MPI_INTEGER,     &
-                           MPI_SUM,         &
-                           world%comm,      &
+        call MPI_Allreduce(n_parcels,         &
+                           n_total_parcels,   &
+                           1,                 &
+                           MPI_INTEGER_64BIT, &
+                           MPI_SUM_64BIT,     &
+                           world%comm,        &
                            world%err)
 
         if (world%rank == world%root) then
