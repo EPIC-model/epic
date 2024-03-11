@@ -8,6 +8,7 @@ AM_FCFLAGS =				\
 	-I $(top_builddir)/src/netcdf
 
 AM_LDFLAGS =						\
+	$(top_builddir)/src/3d/stepper/rk_utils.o	\
 	$(top_builddir)/src/3d/parcels/*.o 		\
 	$(top_builddir)/src/3d/utils/*.o		\
 	$(top_builddir)/src/3d/fields/*.o		\

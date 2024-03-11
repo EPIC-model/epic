@@ -16,7 +16,7 @@ program test_mpi_parcel_read
 
     logical              :: passed = .true.
     double precision     :: res
-    integer              :: n, start_index, n_parcels_before 
+    integer              :: n, start_index, n_parcels_before
 
     call set_max_num_parcels(100000000)
 
@@ -34,7 +34,7 @@ program test_mpi_parcel_read
     n_parcels_before = n_parcels
     n_total_parcels = 11 * world%size + (world%size * (world%size - 1)) / 2
 
-    call parcel_alloc(n_total_parcels)
+    call parcel_alloc(int(n_total_parcels))
 
     ! fill with 1 to n_total_parcels
     start_index = 0
