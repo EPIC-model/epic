@@ -294,6 +294,7 @@ module parcel_netcdf
             integer                      :: n, m, n_total, pfirst, plast
             integer                      :: start(2)
             integer                      :: avail_size, n_remaining, n_read
+            logical                      :: l_same_world_size
 
             call start_timer(parcel_io_timer)
 
@@ -305,12 +306,12 @@ module parcel_netcdf
 
             n_total_parcels = n_total
 
-            if (has_dataset(ncid, 'start_index')) then
-                call get_dimension_size(ncid, 'world%size', num_indices)
+            ! The number of MPI ranks disagree! We cannot use the 'start_index'
+            ! to read in parcels
+            call get_dimension_size(ncid, 'world%size', num_indices)
+            l_same_world_size = (num_indices == world%size)
 
-                if (num_indices .ne. world%size) then
-                    call mpi_exit_on_error("The number of MPI ranks disagree!")
-                endif
+            if (l_same_world_size .and. has_dataset(ncid, 'start_index')) then
 
                 if (world%rank < world%size - 1) then
                     ! we must add +1 since the start index is 1

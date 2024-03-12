@@ -18,9 +18,8 @@ program test_parcel_spli_merge
     implicit none
 
     integer, parameter   :: nt = 100
-    integer              :: i, n, sk, n_merges
+    integer              :: i, n, n_merges
     integer(kind=int64)  :: n_orig
-    integer, allocatable :: seed(:)
     double precision     :: rn(3)
 
     !--------------------------------------------------------------------------
@@ -32,11 +31,7 @@ program test_parcel_spli_merge
         print '(a35, i6, a11)', "Running 'test_parcel_spli_merge' with ", world%size, " MPI ranks."
     endif
 
-    call random_seed(size=sk)
-    allocate(seed(1:sk))
-    seed(:) = world%rank
-    call random_seed(put=seed)
-
+    call init_rng
 
     call register_all_timers
 

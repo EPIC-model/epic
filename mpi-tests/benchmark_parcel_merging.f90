@@ -1,8 +1,7 @@
 program benchmark_parcel_merging
-    use constants, only : pi, zero, one, f12, f23, twopi
     use parcel_container
     use options, only : parcel
-    use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels, vmin, dx
+    use parameters, only : update_parameters, lower, extent, nx, ny, nz, max_num_parcels
     use parcel_init, only : parcel_default
     use parcel_merging
     use parcel_mpi, only : parcel_communicate
@@ -19,11 +18,12 @@ program benchmark_parcel_merging
                          , register_timer           &
                          , print_timer              &
                          , start_timer              &
-                         , stop_timer
+                         , stop_timer               &
+                         , setup_parcels            &
+                         , init_rng
     implicit none
 
-    integer              :: k, niter, allreduce_timer, generate_timer, sk
-    integer, allocatable :: seed(:)
+    integer              :: k, niter, allreduce_timer, generate_timer
     double precision     :: lx, ly
 
     call mpi_env_initialise
@@ -44,11 +44,6 @@ program benchmark_parcel_merging
 
     parcel%lambda_max = 4.0d0
 
-    call random_seed(size=sk)
-    allocate(seed(1:sk))
-    seed(:) = world%rank
-    call random_seed(put=seed)
-
     call mpi_layout_init(lower, extent, nx, ny, nz)
 
     call update_parameters
@@ -56,6 +51,8 @@ program benchmark_parcel_merging
     call nearest_win_allocate
 
     call parcel_alloc(max_num_parcels)
+
+    call init_rng
 
     call start_timer(epic_timer)
 
@@ -131,7 +128,7 @@ program benchmark_parcel_merging
             niter = 1
             parcel%n_per_cell = 40
             parcel%min_vratio = 40.0d0
-            parcel%size_factor = 4
+            parcel%size_factor = 1.25d0
 
 
             i = 0
@@ -200,75 +197,5 @@ program benchmark_parcel_merging
             endif
 
         end subroutine parse_command_line
-
-        subroutine setup_parcels
-            double precision :: rn(12), lam, lam2, abc, a2, b2, c2, theta, phi
-            double precision :: st, ct, sp, cp, corner(3)
-            integer          :: ix, iy, iz, m, l
-
-            n_parcels = parcel%n_per_cell * box%ncell
-
-            l = 1
-            do iz = 0, nz-1
-                do iy = box%lo(2), box%hi(2)
-                    do ix = box%lo(1), box%hi(1)
-                        corner = lower + dble((/ix, iy, iz/)) * dx
-                        do m = 1, parcel%n_per_cell
-                            ! rn between 0 and 1
-                            call random_number(rn)
-
-                            parcels%position(1, l) = corner(1) + dx(1) * rn(1)
-                            parcels%position(2, l) = corner(2) + dx(2) * rn(2)
-                            parcels%position(3, l) = corner(3) + dx(3) * rn(3)
-
-                            ! vorticity between -10 and 10: y = 20 * x - 10
-                            parcels%vorticity(1, l) = 20.0d0 * rn(4) - 10.d0
-                            parcels%vorticity(2, l) = 20.0d0 * rn(5) - 10.d0
-                            parcels%vorticity(3, l) = 20.0d0 * rn(6) - 10.d0
-
-                            ! buoyancy between -1 and 1: y = 2 * x - 1
-                            parcels%buoyancy(l) = 2.0d0 * rn(7) - 1.d0
-
-                            ! volume between 0.5 * vmin and 1.5 * vmin
-                            parcels%volume(l) = vmin * rn(8) + f12 * vmin
-
-                            ! lam = a / c in [1, 4]
-                            lam = 3.d0 * rn(9) + 1.0d0
-
-                            ! lam2 = a / b
-                            lam2 = 3.d0 * rn(10) + 1.0d0
-
-                            abc = 0.75d0 * parcels%volume(l) / pi
-
-                            a2 = (abc * lam * lam2)  ** f23
-                            b2 = a2 / lam2 ** 2
-                            c2 = a2 / lam ** 2
-
-                            ! theta and phi in [0, 2pi[
-                            theta = twopi * rn(11)
-                            phi = twopi * rn(12)
-
-                            st = dsin(theta)
-                            ct = dcos(theta)
-                            sp = dsin(phi)
-                            cp = dcos(phi)
-
-                            parcels%B(1, l) = a2 * ct ** 2 * sp ** 2 + b2 * st ** 2 + c2 * ct ** 2 * cp ** 2
-                            parcels%B(2, l) = a2 * st * ct * sp ** 2 - b2 * st * ct + c2 * st * ct * cp ** 2
-                            parcels%B(3, l) = (a2 - c2) * ct * sp * cp
-                            parcels%B(4, l) = a2 * st ** 2 * sp ** 2 + b2 * ct ** 2 + c2 * st ** 2 * cp ** 2
-                            parcels%B(5, l) = (a2 - c2) * st * sp * cp
-
-                            l = l + 1
-                        enddo
-                    enddo
-                enddo
-            enddo
-
-            if (.not. n_parcels == l - 1) then
-                call mpi_exit_on_error("Number of parcels disagree!")
-            endif
-
-        end subroutine setup_parcels
 
 end program benchmark_parcel_merging
