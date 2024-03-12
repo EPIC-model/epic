@@ -59,6 +59,6 @@ verify_parcel_merging_SOURCES = test_utils.f90 			\
 				verify_parcel_merging.f90
 verify_parcel_merging_LDADD = libcombi.la
 
-nobase_mpitests_DATA = test_nearest_algorithm.py
+nobase_mpitests_DATA = verify_nearest_algorithm.py
 
 endif
