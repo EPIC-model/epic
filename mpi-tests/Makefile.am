@@ -32,8 +32,6 @@ mpitests_PROGRAMS =			\
 	test_parcel_split_random	\
 	test_parcel_merge_random	\
 	test_parcel_split_merge		\
-	test_merging_parcels		\
-	test_merging_parcels_serial	\
 	benchmark_parcel_merging	\
 	verify_parcel_merging
 
@@ -51,15 +49,6 @@ test_parcel_merge_random_LDADD = libcombi.la
 
 test_parcel_split_merge_SOURCES = test_utils.f90 test_parcel_split_merge.f90
 test_parcel_split_merge_LDADD = libcombi.la
-
-test_merging_parcels_SOURCES = test_utils.f90 test_merging_parcels.f90
-test_merging_parcels_LDADD = libcombi.la
-
-test_merging_parcels_serial_SOURCES = test_utils.f90			\
-				      parcel_nearest_serial.f90		\
-				      parcel_merge_serial.f90		\
-				      test_merging_parcels_serial.f90
-test_merging_parcels_serial_LDADD = libcombi.la
 
 benchmark_parcel_merging_SOURCES = test_utils.f90 benchmark_parcel_merging.f90
 benchmark_parcel_merging_LDADD = libcombi.la
