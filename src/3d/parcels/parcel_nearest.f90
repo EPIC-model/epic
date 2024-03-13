@@ -29,7 +29,8 @@ module parcel_nearest
     use mpi_timer, only : start_timer, stop_timer, timings
     use mpi_environment
     use mpi_layout
-    use mpi_collectives, only : mpi_blocking_reduce
+    use mpi_collectives, only : mpi_blocking_reduce     &
+                              , mpi_neighbor_allreduce
     use mpi_utils, only : mpi_exit_on_error         &
                         , mpi_check_for_error       &
                         , mpi_check_for_message     &
@@ -804,6 +805,7 @@ module parcel_nearest
             logical                        :: l_helper
             integer(KIND=MPI_ADDRESS_KIND) :: offset
             logical                        :: l_continue_iteration, l_do_merge(n_local_small)
+            logical                        :: l_neighbor_iteration
             logical                        :: l_isolated_dual_link(n_local_small)
             type(MPI_Request)              :: requests(n_local_small)
 
@@ -811,11 +813,13 @@ module parcel_nearest
 
             ! First, iterative, stage
             l_continue_iteration = .true.
+            l_neighbor_iteration = .true.
 
             requests = MPI_REQUEST_NULL
 
-            do while (l_continue_iteration)
+            do while (l_neighbor_iteration)
                 l_continue_iteration = .false.
+                l_neighbor_iteration = .false.
                 ! reset relevant properties for candidate mergers
 
                 do m = 1, n_local_small
@@ -1013,16 +1017,10 @@ module parcel_nearest
 
                 call start_timer(nearest_allreduce_timer)
                 ! Performance improvement: We actually only need to synchronize with neighbours
-                call MPI_Allreduce(MPI_IN_PLACE,            &
-                                   l_continue_iteration,    &
-                                   1,                       &
-                                   MPI_LOGICAL,             &
-                                   MPI_LOR,                 &
-                                   cart%comm,               &
-                                   cart%err)
+                call mpi_neighbor_allreduce(l_continue_iteration,    &
+                                            l_neighbor_iteration,    &
+                                            MPI_LOR)
                 call stop_timer(nearest_allreduce_timer)
-                call mpi_check_for_error(cart, &
-                    "in MPI_Allreduce of parcel_nearest::resolve_tree.")
             enddo
 
             call start_timer(nearest_barrier_timer)
