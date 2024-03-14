@@ -182,4 +182,20 @@ module mpi_collectives
 
         end subroutine mpi_neighbor_allreduce_integer
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine mpi_neighbor_barrier
+            logical sendbuf, recvbuf
+            sendbuf = .true.
+            recvbuf = .false.
+            call mpi_neighbor_allreduce_logical(sendbuf, recvbuf, MPI_LAND)
+
+            if (.not. recvbuf) then
+                call mpi_check_for_error(cart, &
+                    "in mpi_neighbor_barrier: Barrier did not work.")
+            endif
+
+        end subroutine mpi_neighbor_barrier
+
+
 end module mpi_collectives
