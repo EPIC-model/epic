@@ -90,6 +90,8 @@ module parcel_nearest
     type(MPI_Win) :: win_merged, win_avail, win_leaf
     logical       :: l_nearest_win_allocated
 
+    type(communicator) :: subcomm
+
 #ifndef NDEBUG
     ! Small remote parcels must be sent back to the original
     ! MPI ranks in the same order as they were received. These
@@ -253,12 +255,13 @@ module parcel_nearest
             integer, allocatable, intent(out) :: inva(:)
             integer,              intent(out) :: n_local_small
             integer,              intent(out) :: n_invalid
-            integer                           :: n_global_small
+            integer                           :: n_global_small, color
             integer                           :: ijk, n, k, j
             integer, allocatable              :: rclo(:)    ! MPI rank of closest parcel
             double precision, allocatable     :: dclo(:)    ! distance to closest parcel
             logical                           :: l_no_small ! if *this* rank has no local and no remote small
                                                             ! parcels
+            logical                           :: l_split    ! use for splitting the communicator
 
             call start_timer(merge_nearest_timer)
 
@@ -297,6 +300,8 @@ module parcel_nearest
                 endif
             enddo
 
+
+            !------------------------------------------------------------------
             call MPI_Allreduce(n_local_small,   &
                                n_global_small,  &
                                1,               &
@@ -308,7 +313,35 @@ module parcel_nearest
             call mpi_check_for_error(world, &
                     "in MPI_Allreduce of parcel_nearest::find_nearest.")
 
-            if (n_global_small == 0) then
+            if (n_global_small > 0) then
+
+                !------------------------------------------------------------------
+                ! Create subcommunicator:
+
+                ! Ensure the communicator is freed first.
+                if (subcomm%comm /= MPI_COMM_NULL) then
+                    call MPI_Comm_free(subcomm%comm, subcomm%err)
+                    call mpi_check_for_error(subcomm, &
+                            "in MPI_Comm_free of parcel_nearest::find_nearest.")
+                endif
+
+                ! Each MPI process must know if it is part of the subcommunicator or not.
+                ! This call ensures that all neighbours of *this* MPI rank (which has small
+                ! parcels) are part of the communicator.
+                l_no_small = (n_local_small > 0)
+                call mpi_neighbor_allreduce(l_no_small, l_split, MPI_LOR)
+
+                color = MPI_UNDEFINED
+                if (l_split) then
+                    color = 0  ! any non-negative number is fine
+                endif
+
+                call MPI_Comm_split(comm=cart%comm,         &
+                                    color=color,            &
+                                    key=cart%rank,          &  ! key controls the ordering of the processes
+                                    newcomm=subcomm%comm,   &
+                                    ierror=cart%err)
+            else
                 call nearest_deallocate
                 call deallocate_parcel_id_buffers
                 call stop_timer(merge_nearest_timer)
@@ -860,7 +893,7 @@ module parcel_nearest
 
                 ! This barrier is necessary!
                 call start_timer(nearest_barrier_timer)
-                call MPI_Barrier(cart%comm, cart%err)
+                call MPI_Barrier(subcomm%comm, subcomm%err)
                 call stop_timer(nearest_barrier_timer)
 
                 ! determine leaf parcels
@@ -896,7 +929,7 @@ module parcel_nearest
                 ! We must synchronise all MPI processes here to ensure all MPI processes
                 ! have done theirRMA operations as we modify the windows again.
                 call start_timer(nearest_barrier_timer)
-                call MPI_Barrier(cart%comm, cart%err)
+                call MPI_Barrier(subcomm%comm, subcomm%err)
                 call stop_timer(nearest_barrier_timer)
 
                 ! filter out parcels that are "unavailable" for merging
@@ -935,7 +968,7 @@ module parcel_nearest
                 ! array which may be modified in the loop above. In order to make sure all
                 ! MPI ranks have finished above loop, we need this barrier.
                 call start_timer(nearest_barrier_timer)
-                call MPI_Barrier(cart%comm, cart%err)
+                call MPI_Barrier(subcomm%comm, subcomm%err)
                 call stop_timer(nearest_barrier_timer)
 
 
@@ -1015,10 +1048,10 @@ module parcel_nearest
                                    1,                       &
                                    MPI_LOGICAL,             &
                                    MPI_LOR,                 &
-                                   cart%comm,               &
-                                   cart%err)
+                                   subcomm%comm,            &
+                                   subcomm%err)
                 call stop_timer(nearest_allreduce_timer)
-                call mpi_check_for_error(cart, &
+                call mpi_check_for_error(subcomm, &
                     "in MPI_Allreduce of parcel_nearest::resolve_tree.")
             enddo
 
@@ -1061,7 +1094,7 @@ module parcel_nearest
 
             ! This barrier is necessary as we modifiy l_available above and need it below.
             call start_timer(nearest_barrier_timer)
-            call MPI_Barrier(cart%comm, cart%err)
+            call MPI_Barrier(subcomm%comm, subcomm%err)
             call stop_timer(nearest_barrier_timer)
 
             ! Second stage
@@ -1161,7 +1194,7 @@ module parcel_nearest
 
             ! This barrier is necessary.
             call start_timer(nearest_barrier_timer)
-            call MPI_Barrier(cart%comm, cart%err)
+            call MPI_Barrier(subcomm%comm, subcomm%err)
             call stop_timer(nearest_barrier_timer)
 
             !------------------------------------------------------
@@ -1640,11 +1673,13 @@ module parcel_nearest
             call deallocate_mpi_buffers
 
 #ifndef NDEBUG
-            n_total = n_parcels - n_invalid
-            call mpi_blocking_reduce(n_total, MPI_SUM, world)
-            if ((world%rank == world%root) .and. (.not. n_total == n_total_parcels)) then
-                call mpi_exit_on_error(&
-                    "in parcel_nearest::gather_remote_parcels: We lost parcels.")
+            if (subcomm%comm == world%comm) then
+                n_total = n_parcels - n_invalid
+                call mpi_blocking_reduce(n_total, MPI_SUM, world)
+                if ((world%rank == world%root) .and. (.not. n_total == n_total_parcels)) then
+                    call mpi_exit_on_error(&
+                        "in parcel_nearest::gather_remote_parcels: We lost parcels.")
+                endif
             endif
 #endif
         end subroutine gather_remote_parcels

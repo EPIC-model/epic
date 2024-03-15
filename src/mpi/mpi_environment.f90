@@ -7,7 +7,7 @@ module mpi_environment
     implicit none
 
     type :: communicator
-        type(MPI_Comm) :: comm = MPI_COMM_WORLD
+        type(MPI_Comm) :: comm = MPI_COMM_NULL
         integer        :: err = 0
         integer        :: rank = 0
         integer        :: size = 1
@@ -29,6 +29,8 @@ module mpi_environment
 #else
             call MPI_Init(world%err)
 #endif
+            world%comm = MPI_COMM_WORLD
+
             call MPI_Comm_size(world%comm, world%size, world%err)
             call MPI_Comm_rank(world%comm, world%rank, world%err)
 
