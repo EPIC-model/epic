@@ -86,4 +86,44 @@ module mpi_utils
 #endif
         end subroutine mpi_check_for_error
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine mpi_check_rma_window_model(win)
+            type(MPI_Win), intent(in)      :: win
+            integer(kind=MPI_ADDRESS_KIND) :: memory_model
+            logical                        :: flag
+            character(*)                   :: rma_win_model
+
+            ! pre-set
+            flag = .false.
+            memory_model = MPI_WIN_SEPARATE
+
+            ! check type of window: MPI_WIN_SEPARATE or MPI_WIN_UNIFIED
+            call MPI_Win_get_attr(win,              &
+                                  MPI_WIN_MODEL,    &
+                                  memory_model,     &
+                                  flag,             &
+                                  world%err);
+
+            if (.not. flag) then
+                call mpi_exit_on_error(world, &
+                    "in mpi_check_rma_window_model: No attribute is associated with the key.")
+            endif
+
+            if (memory_model == MPI_WIN_SEPARATE) then
+                rma_win_model = 'MPI_WIN_SEPARATE (public copy /= private copy)'
+            else if (memory_model == MPI_WIN_UNIFIED) then
+                rma_win_model = 'MPI_WIN_UNIFIED (public copy == private copy)'
+            else
+                call mpi_exit_on_error(world, &
+                    "in mpi_check_rma_window_model: Neither MPI_WIN_UNIFIED nor MPI_WIN_SEPARATE.")
+            endif
+
+#ifdef ENABLE_VERBOSE
+            if (world%rank == world%root) then
+                print *, "MPI RMA window model:", rma_win_model
+            endif
+#endif
+        end subroutine mpi_check_rma_window_model
+
 end module mpi_utils
