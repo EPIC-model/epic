@@ -88,11 +88,24 @@ module mpi_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! Check the memory model for the MPI RMA communication and stop if
+        ! not MPI_WIN_UNIFIED. There exist two memory models:
+        !  - MPI_WIN_SEPARATE --> public copy /= private copy
+        !  - MPI_WIN_UNIFIED  --> public copy == private copy
+        !
+        ! EPIC only supports MPI_WIN_UNIFIED at the moment.
+        ! In case of MPI_WIN_SEPARATE, the public and private copy must be
+        ! synchronised with MPI_Win_sync. Every time the private copy changes,
+        ! it must be made visible with MPI_WIN_SYNC. A call to MPI_Barrier may/must be
+        ! done afterwards. The call to MPI_Win_sync must be within an epoch, e.g.
+        !       call MPI_lock_all(win, ...)
+        !       call MPI_Win_sync(win, ...)
+        !       call MPI_Barrier(...)
+        !       call MPI_unlock_all(win, ...)
         subroutine mpi_check_rma_window_model(win)
             type(MPI_Win), intent(in)      :: win
             integer(kind=MPI_ADDRESS_KIND) :: memory_model
             logical                        :: flag
-            character(len=64)              :: rma_win_model
 
             ! pre-set
             flag = .false.
@@ -110,20 +123,9 @@ module mpi_utils
                     "in mpi_check_rma_window_model: No attribute is associated with the key.")
             endif
 
-            if (memory_model == MPI_WIN_SEPARATE) then
-                rma_win_model = 'MPI_WIN_SEPARATE (public copy /= private copy)'
-            else if (memory_model == MPI_WIN_UNIFIED) then
-                rma_win_model = 'MPI_WIN_UNIFIED (public copy == private copy)'
-            else
-                call mpi_exit_on_error(&
-                    "in mpi_check_rma_window_model: Neither MPI_WIN_UNIFIED nor MPI_WIN_SEPARATE.")
+            if (memory_model /= MPI_WIN_UNIFIED) then
+                call mpi_stop("No unified window memory model.")
             endif
-
-#ifndef NDEBUG
-            if (world%rank == world%root) then
-                print *, "MPI RMA window model: ", rma_win_model
-            endif
-#endif
         end subroutine mpi_check_rma_window_model
 
 end module mpi_utils
