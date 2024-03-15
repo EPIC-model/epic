@@ -77,7 +77,7 @@ module mpi_collectives
             logical,            intent(inout) :: recvbuf
             type(MPI_Op),       intent(in)    :: op
             type(MPI_Request)                 :: requests(16)
-            logical                           :: buf(9) ! we must include this rank as well.
+            logical                           :: buf(8)
             integer                           :: n
 
             do n = 1, 8
@@ -116,8 +116,8 @@ module mpi_collectives
                 "in MPI_Waitall of mpi_neighbor_allreduce_logical.")
 
             ! Combine locally:
-            buf(9) = sendbuf
-            do n = 1, 9
+            recvbuf = sendbuf
+            do n = 1, 8
                 call MPI_Reduce_local(buf(n), recvbuf, 1, MPI_LOGICAL, op, cart%err)
 
                 call mpi_check_for_error(cart, &
@@ -133,7 +133,7 @@ module mpi_collectives
             integer,            intent(inout) :: recvbuf
             type(MPI_Op),       intent(in)    :: op
             type(MPI_Request)                 :: requests(16)
-            integer                           :: buf(9) ! we must include this rank as well.
+            integer                           :: buf(8)
             integer                           :: n
 
             do n = 1, 8
@@ -172,8 +172,8 @@ module mpi_collectives
                 "in MPI_Waitall of mpi_neighbor_allreduce_integer.")
 
             ! Combine locally:
-            buf(9) = sendbuf
-            do n = 1, 9
+            recvbuf = sendbuf
+            do n = 1, 8
                 call MPI_Reduce_local(buf(n), recvbuf, 1, MPI_INTEGER, op, cart%err)
 
                 call mpi_check_for_error(cart, &
