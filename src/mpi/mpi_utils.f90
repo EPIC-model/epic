@@ -119,9 +119,9 @@ module mpi_utils
                     "in mpi_check_rma_window_model: Neither MPI_WIN_UNIFIED nor MPI_WIN_SEPARATE.")
             endif
 
-#ifdef ENABLE_VERBOSE
+#ifndef NDEBUG
             if (world%rank == world%root) then
-                print *, "MPI RMA window model:", rma_win_model
+                print *, "MPI RMA window model: ", rma_win_model
             endif
 #endif
         end subroutine mpi_check_rma_window_model
