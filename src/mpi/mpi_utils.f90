@@ -121,7 +121,7 @@ module mpi_utils
 
 #ifdef ENABLE_VERBOSE
             if (world%rank == world%root) then
-                print *, "MPI RMA window model:", rma_win_model
+                print *, "MPI RMA window model: ", rma_win_model
             endif
 #endif
         end subroutine mpi_check_rma_window_model
