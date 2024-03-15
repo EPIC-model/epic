@@ -858,6 +858,7 @@ module parcel_nearest
                     endif
                 enddo
 
+                ! This barrier is necessary!
                 call start_timer(nearest_barrier_timer)
                 call MPI_Barrier(cart%comm, cart%err)
                 call stop_timer(nearest_barrier_timer)
@@ -892,6 +893,8 @@ module parcel_nearest
                     endif
                 enddo
 
+                ! We must synchronise all MPI processes here to ensure all MPI processes
+                ! have done theirRMA operations as we modify the windows again.
                 call start_timer(nearest_barrier_timer)
                 call MPI_Barrier(cart%comm, cart%err)
                 call stop_timer(nearest_barrier_timer)
@@ -928,6 +931,9 @@ module parcel_nearest
                     endif
                 enddo
 
+                ! This MPI_Barrier is necessary as MPI processes access their l_available
+                ! array which may be modified in the loop above. In order to make sure all
+                ! MPI ranks have finished above loop, we need this barrier.
                 call start_timer(nearest_barrier_timer)
                 call MPI_Barrier(cart%comm, cart%err)
                 call stop_timer(nearest_barrier_timer)
@@ -1016,9 +1022,8 @@ module parcel_nearest
                     "in MPI_Allreduce of parcel_nearest::resolve_tree.")
             enddo
 
-            call start_timer(nearest_barrier_timer)
-            call MPI_Barrier(cart%comm, cart%err)
-            call stop_timer(nearest_barrier_timer)
+            ! No barrier necessary because of the blocking MPI_Allreduce that acts like
+            ! a barrier!
 
             ! Second stage, related to dual links
             do m = 1, n_local_small
@@ -1054,6 +1059,7 @@ module parcel_nearest
                 endif
             enddo
 
+            ! This barrier is necessary as we modifiy l_available above and need it below.
             call start_timer(nearest_barrier_timer)
             call MPI_Barrier(cart%comm, cart%err)
             call stop_timer(nearest_barrier_timer)
@@ -1152,6 +1158,8 @@ module parcel_nearest
                 endif
             enddo
 
+
+            ! This barrier is necessary.
             call start_timer(nearest_barrier_timer)
             call MPI_Barrier(cart%comm, cart%err)
             call stop_timer(nearest_barrier_timer)
@@ -1195,10 +1203,6 @@ module parcel_nearest
                 endif
                 !------------------------------------------------------
             enddo
-
-            call start_timer(nearest_barrier_timer)
-            call MPI_Barrier(cart%comm, cart%err)
-            call stop_timer(nearest_barrier_timer)
 
             j = 0
             do m = 1, n_local_small
