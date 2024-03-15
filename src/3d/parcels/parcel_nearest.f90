@@ -30,10 +30,11 @@ module parcel_nearest
     use mpi_environment
     use mpi_layout
     use mpi_collectives, only : mpi_blocking_reduce
-    use mpi_utils, only : mpi_exit_on_error         &
-                        , mpi_check_for_error       &
-                        , mpi_check_for_message     &
-                        , mpi_stop
+    use mpi_utils, only : mpi_exit_on_error          &
+                        , mpi_check_for_error        &
+                        , mpi_check_for_message      &
+                        , mpi_stop                   &
+                        , mpi_check_rma_window_model
     use iso_c_binding, only : c_ptr, c_f_pointer
     use parcel_mpi, only : n_parcel_sends               &
                          , north_pid                    &
@@ -192,6 +193,10 @@ module parcel_nearest
                 "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
 
             call c_f_pointer(buf_ptr, l_merged, [max_num_parcels])
+
+            call mpi_check_rma_window_model(win_avail)
+            call mpi_check_rma_window_model(win_merged)
+            call mpi_check_rma_window_model(win_leaf)
 
         end subroutine nearest_win_allocate
 

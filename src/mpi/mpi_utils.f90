@@ -92,7 +92,7 @@ module mpi_utils
             type(MPI_Win), intent(in)      :: win
             integer(kind=MPI_ADDRESS_KIND) :: memory_model
             logical                        :: flag
-            character(*)                   :: rma_win_model
+            character(len=64)              :: rma_win_model
 
             ! pre-set
             flag = .false.
@@ -106,7 +106,7 @@ module mpi_utils
                                   world%err);
 
             if (.not. flag) then
-                call mpi_exit_on_error(world, &
+                call mpi_exit_on_error(&
                     "in mpi_check_rma_window_model: No attribute is associated with the key.")
             endif
 
@@ -115,7 +115,7 @@ module mpi_utils
             else if (memory_model == MPI_WIN_UNIFIED) then
                 rma_win_model = 'MPI_WIN_UNIFIED (public copy == private copy)'
             else
-                call mpi_exit_on_error(world, &
+                call mpi_exit_on_error(&
                     "in mpi_check_rma_window_model: Neither MPI_WIN_UNIFIED nor MPI_WIN_SEPARATE.")
             endif
 
