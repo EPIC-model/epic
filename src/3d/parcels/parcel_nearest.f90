@@ -135,9 +135,6 @@ module parcel_nearest
 
             l_nearest_win_allocated = .true.
 
-            allocate(l_available(max_num_parcels))
-            allocate(l_merged(max_num_parcels))
-
             call MPI_Sizeof(l_bytes, disp_unit, cart%err)
 
             call mpi_check_for_error(cart, &
