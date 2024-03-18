@@ -29,7 +29,8 @@ module parcel_nearest
     use mpi_timer, only : start_timer, stop_timer, timings
     use mpi_environment
     use mpi_layout
-    use mpi_collectives, only : mpi_blocking_reduce
+    use mpi_collectives, only : mpi_blocking_reduce    &
+                              , mpi_neighbor_allreduce
     use mpi_utils, only : mpi_exit_on_error          &
                         , mpi_check_for_error        &
                         , mpi_check_for_message      &
