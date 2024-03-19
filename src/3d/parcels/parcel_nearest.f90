@@ -343,9 +343,11 @@ module parcel_nearest
                                     newcomm=subcomm%comm,   &
                                     ierror=cart%err)
 
-                ! The following two calls are not necessary, but we do for good practice.
-                call MPI_Comm_size(subcomm%comm, subcomm%size, subcomm%err)
-                call MPI_Comm_rank(subcomm%comm, subcomm%rank, subcomm%err)
+                if (subcomm%comm /= MPI_COMM_NULL) then
+                    ! The following two calls are not necessary, but we do for good practice.
+                    call MPI_Comm_size(subcomm%comm, subcomm%size, subcomm%err)
+                    call MPI_Comm_rank(subcomm%comm, subcomm%rank, subcomm%err)
+                endif
 
             else
                 call nearest_deallocate
