@@ -262,7 +262,7 @@ module parcel_nearest
             double precision, allocatable     :: dclo(:)    ! distance to closest parcel
             logical                           :: l_no_small ! if *this* rank has no local and no remote small
                                                             ! parcels
-            logical                           :: l_split    ! use for splitting the communicator
+            logical                           :: l_split, l_include ! use for splitting the communicator
 
             call start_timer(merge_nearest_timer)
 
@@ -314,42 +314,7 @@ module parcel_nearest
             call mpi_check_for_error(world, &
                     "in MPI_Allreduce of parcel_nearest::find_nearest.")
 
-            if (n_global_small > 0) then
-
-                !------------------------------------------------------------------
-                ! Create subcommunicator:
-
-                ! Ensure the communicator is freed first.
-                if (subcomm%comm /= MPI_COMM_NULL) then
-                    call MPI_Comm_free(subcomm%comm, subcomm%err)
-                    call mpi_check_for_error(subcomm, &
-                            "in MPI_Comm_free of parcel_nearest::find_nearest.")
-                endif
-
-                ! Each MPI process must know if it is part of the subcommunicator or not.
-                ! This call ensures that all neighbours of *this* MPI rank (which has small
-                ! parcels) are part of the communicator.
-                l_no_small = (n_local_small > 0)
-                call mpi_neighbor_allreduce(l_no_small, l_split, MPI_LOR)
-
-                color = MPI_UNDEFINED
-                if (l_split) then
-                    color = 0  ! any non-negative number is fine
-                endif
-
-                call MPI_Comm_split(comm=cart%comm,         &
-                                    color=color,            &
-                                    key=cart%rank,          &  ! key controls the ordering of the processes
-                                    newcomm=subcomm%comm,   &
-                                    ierror=cart%err)
-
-                if (subcomm%comm /= MPI_COMM_NULL) then
-                    ! The following two calls are not necessary, but we do for good practice.
-                    call MPI_Comm_size(subcomm%comm, subcomm%size, subcomm%err)
-                    call MPI_Comm_rank(subcomm%comm, subcomm%rank, subcomm%err)
-                endif
-
-            else
+            if (n_global_small == 0)
                 call nearest_deallocate
                 call deallocate_parcel_id_buffers
                 call stop_timer(merge_nearest_timer)
@@ -374,6 +339,41 @@ module parcel_nearest
             ! in any merging, it must nonetheless call the tree resolving and parcel gathering
             ! routine as there is global synchronisation taking place.
             l_no_small = (n_local_small + n_remote_small == 0)
+
+            !------------------------------------------------------------------
+            ! Create subcommunicator:
+            ! Only MPI ranks that have small parcels or received remote small parcels
+            ! must be part of the communicator.
+
+            ! Ensure the communicator is freed first.
+            if (subcomm%comm /= MPI_COMM_NULL) then
+                call MPI_Comm_free(subcomm%comm, subcomm%err)
+                call mpi_check_for_error(subcomm, &
+                        "in MPI_Comm_free of parcel_nearest::find_nearest.")
+            endif
+
+            ! Each MPI process must know if it is part of the subcommunicator or not.
+            ! This call ensures that all neighbours of *this* MPI rank (which has small
+            ! parcels) are part of the communicator.
+            l_include = (.not. l_no_small)
+            call mpi_neighbor_allreduce(l_include, l_split, MPI_LOR)
+
+            color = MPI_UNDEFINED
+            if (l_split) then
+                color = 0  ! any non-negative number is fine
+            endif
+
+            call MPI_Comm_split(comm=cart%comm,         &
+                                color=color,            &
+                                key=cart%rank,          &  ! key controls the ordering of the processes
+                                newcomm=subcomm%comm,   &
+                                ierror=cart%err)
+
+            if (subcomm%comm /= MPI_COMM_NULL) then
+                ! The following two calls are not necessary, but we do for good practice.
+                call MPI_Comm_size(subcomm%comm, subcomm%size, subcomm%err)
+                call MPI_Comm_rank(subcomm%comm, subcomm%rank, subcomm%err)
+            endif
 
             if (.not. l_no_small) then
                 ! allocate arrays
