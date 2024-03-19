@@ -390,6 +390,7 @@ module parcel_nearest
                     write(1236, *) world%size, subcomm%size
                     close(1236)
                 endif
+#endif
             endif
 
             if (.not. l_no_small) then
