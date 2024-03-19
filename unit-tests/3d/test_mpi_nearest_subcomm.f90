@@ -2,8 +2,7 @@
 !                       Test nearest algorithm
 !
 !               This unit test checks (a, b) - c - d = e and
-!               (a, b) - C - (d, e) across MPI boundaries for a
-!               subcommunicator.
+!               across MPI boundaries for a subcommunicator.
 !
 ! To plot the initial condition use:
 ! import numpy as np
@@ -99,9 +98,9 @@ program test_mpi_nearest_subcomm
     call parcel_alloc(max_num_parcels)
 
     !
-    ! Test 1: (a, b) - c - d = e
+    ! Test 1: One patch in the centre (a, b) - c - d = e
     !
-    call parcel_setup
+    call parcel_setup(2)
 
     call find_nearest(isma, iclo, inva, n_merge, n_invalid)
 
@@ -131,8 +130,9 @@ program test_mpi_nearest_subcomm
 
     contains
 
+        ! One patch (4x4 grid cells) of small parcels in the centre:
         ! (a, b) - c - d = e
-        subroutine cell_placement(l, i, j, k)
+        subroutine cell_placement_1(l, i, j, k)
             integer, intent(inout) :: l
             integer, intent(in)    :: i, j, k
             integer                :: ix, iy, iz
@@ -192,32 +192,110 @@ program test_mpi_nearest_subcomm
             parcels%buoyancy(l) = l + world%rank * 100
             l = l + 1
 
-        end subroutine cell_placement
+        end subroutine cell_placement_1
 
-        subroutine parcel_setup
-            integer :: i, j, k
-            integer :: r
+        ! Multiple patches (4x4 grid cells) of small parcels:
+        ! (a, b) - c - d = e
+        subroutine cell_placement_2(l, i, j, k)
+            integer, intent(inout) :: l
+            integer, intent(in)    :: i, j, k
+            integer                :: ix, iy, iz
+            double precision       :: x, y, z, fac
+
+            ix = i
+            iy = j
+            iz = k
+
+            x = lower(1) + (0.5d0 + dble(ix)) * dx(1)
+            y = lower(2) + (0.5d0 + dble(iy)) * dx(2)
+            z = lower(3) + (0.5d0 + dble(iz)) * dx(3)
+
+            fac = 1.2d0
+
+            if ((i >= 0) .and. (i < 4) .and. (j >= 0) .and. (j < 4)) then
+                fac = 0.9d0
+            else if ((i >= 9) .and. (i < 14) .and. (j >= 3) .and. (j < 7)) then
+                fac = 0.9d0
+            else if ((i > 2) .and. (i < 6) .and. (j > 10) .and. (j < 14)) then
+                fac = 0.9d0
+            else
+                return
+            endif
+
+            ! small parcel a
+            parcels%position(1, l) = x + dx(1) * 0.4d0
+            parcels%position(2, l) = y - dx(2) * 0.35d0
+            parcels%position(3, l) = z
+            parcels%volume(l) = fac * vmin
+            parcels%buoyancy(l) = l + world%rank * 100
+            l = l + 1
+
+            ! small parcel b
+            parcels%position(1, l) = x + dx(1) * 0.44d0
+            parcels%position(2, l) = y + dx(2) * 0.4d0
+            parcels%position(3, l) = z
+            parcels%volume(l) = fac * vmin
+            parcels%buoyancy(l) = l + world%rank * 100
+            l = l + 1
+
+            ! small parcel c
+            parcels%position(1, l) = x - dx(1) * 0.45d0
+            parcels%position(2, l) = y - dx(2) * 0.44d0
+            parcels%position(3, l) = z
+            parcels%volume(l) = fac * vmin
+            parcels%buoyancy(l) = l + world%rank * 100
+            l = l + 1
+
+            ! small parcel d
+            parcels%position(1, l) = x - dx(1) * 0.35d0
+            parcels%position(2, l) = y + dx(2) * 0.44d0
+            parcels%position(3, l) = z
+            parcels%volume(l) = fac * vmin
+            parcels%buoyancy(l) = l + world%rank * 100
+            l = l + 1
+
+            ! small parcel e
+            parcels%position(1, l) = x - dx(1) * 0.27d0
+            parcels%position(2, l) = y + dx(2) * 0.38d0
+            parcels%position(3, l) = z
+            parcels%volume(l) = fac * vmin
+            parcels%buoyancy(l) = l + world%rank * 100
+            l = l + 1
+
+        end subroutine cell_placement_2
+
+        subroutine parcel_setup(num)
+            integer, intent(in) :: num
+            integer             :: i, j, k
+!             integer             :: r
 
             n = 1
             do k = box%lo(3)+1, box%lo(3)+1
                 do j = box%lo(2), box%hi(2)
                     do i = box%lo(1), box%hi(1)
-                        call cell_placement(n, i, j, k)
+                        select case (num)
+                            case (1)
+                                call cell_placement_1(n, i, j, k)
+                            case (2)
+                                call cell_placement_2(n, i, j, k)
+                            case default
+                                call mpi_exit_on_error("No valid parcel setup.")
+                        end select
                     enddo
                 enddo
             enddo
 
 !             ! To print out the parcel setups enable the following lines:
-            do r = 0, world%size-1
-                if (r == world%rank) then
-                    do i = 1, n - 1
-                        print *, parcels%position(1, i), parcels%position(2, i), i + 100 * world%rank, world%rank
-                    enddo
-                endif
-                call MPI_Barrier(world%comm, world%err)
-            enddo
-            call MPI_Barrier(world%comm, world%err)
-            call mpi_stop
+!             do r = 0, world%size-1
+!                 if (r == world%rank) then
+!                     do i = 1, n - 1
+!                         print *, parcels%position(1, i), parcels%position(2, i), i + 100 * world%rank, world%rank
+!                     enddo
+!                 endif
+!                 call MPI_Barrier(world%comm, world%err)
+!             enddo
+!             call MPI_Barrier(world%comm, world%err)
+!             call mpi_stop
 
             n_parcels = n - 1
             n_total_parcels = 0
