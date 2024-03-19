@@ -265,7 +265,8 @@ module parcel_nearest
             logical                           :: l_no_small ! if *this* rank has no local and no remote small
                                                             ! parcels
 #ifdef ENABLE_VERBOSE
-            logical :: l_exist
+            logical                           :: l_exist
+            character(512)                    :: fname
 #endif
 
             call start_timer(merge_nearest_timer)
@@ -360,7 +361,7 @@ module parcel_nearest
             ! All MPI ranks that have small parcels or received small parcels from neighbouring
             ! MPI ranks must be part of the communicator.
             color = MPI_UNDEFINED
-            if (not. l_no_small) then
+            if (.not. l_no_small) then
                 color = 0  ! any non-negative number is fine
             endif
 
