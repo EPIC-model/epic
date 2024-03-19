@@ -83,6 +83,8 @@ program test_mpi_nearest_subcomm
 
     call register_timer('merge nearest', merge_nearest_timer)
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
+    call register_timer('nearest MPI barrier', nearest_barrier_timer)
+    call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
 
     parcel%lambda_max = five
     ! vmin = vcell / parcel%min_vratio
@@ -134,7 +136,7 @@ program test_mpi_nearest_subcomm
             integer, intent(inout) :: l
             integer, intent(in)    :: i, j, k
             integer                :: ix, iy, iz
-            double precision       :: x, y, z
+            double precision       :: x, y, z, fac
 
             ix = i
             iy = j
@@ -144,56 +146,51 @@ program test_mpi_nearest_subcomm
             y = lower(2) + (0.5d0 + dble(iy)) * dx(2)
             z = lower(3) + (0.5d0 + dble(iz)) * dx(3)
 
-            ! put a big parcel in each cell centre
-            parcels%position(1, l) = x
-            parcels%position(2, l) = y
-            parcels%position(3, l) = z
-            parcels%volume(l) = 1.2d0 * vmin
-            l = l + 1
-
+            fac = 1.2d0
 
             if ((i > 5) .and. (i < 10) .and. (j > 5) .and. (j < 10)) then
-
-                ! small parcel a
-                parcels%position(1, l) = x + dx(1) * 0.4d0
-                parcels%position(2, l) = y - dx(2) * 0.35d0
-                parcels%position(3, l) = z
-                parcels%volume(l) = 0.9d0 * vmin
-                parcels%buoyancy(l) = l + world%rank * 100
-                l = l + 1
-
-                ! small parcel b
-                parcels%position(1, l) = x + dx(1) * 0.44d0
-                parcels%position(2, l) = y + dx(2) * 0.4d0
-                parcels%position(3, l) = z
-                parcels%volume(l) = 0.9d0 * vmin
-                parcels%buoyancy(l) = l + world%rank * 100
-                l = l + 1
-
-                ! small parcel c
-                parcels%position(1, l) = x - dx(1) * 0.45d0
-                parcels%position(2, l) = y - dx(2) * 0.44d0
-                parcels%position(3, l) = z
-                parcels%volume(l) = 0.9d0 * vmin
-                parcels%buoyancy(l) = l + world%rank * 100
-                l = l + 1
-
-                ! small parcel d
-                parcels%position(1, l) = x - dx(1) * 0.35d0
-                parcels%position(2, l) = y + dx(2) * 0.44d0
-                parcels%position(3, l) = z
-                parcels%volume(l) = 0.9d0 * vmin
-                parcels%buoyancy(l) = l + world%rank * 100
-                l = l + 1
-
-                ! small parcel e
-                parcels%position(1, l) = x - dx(1) * 0.27d0
-                parcels%position(2, l) = y + dx(2) * 0.38d0
-                parcels%position(3, l) = z
-                parcels%volume(l) = 0.9d0 * vmin
-                parcels%buoyancy(l) = l + world%rank * 100
-                l = l + 1
+                fac = 0.9d0
             endif
+
+            ! small parcel a
+            parcels%position(1, l) = x + dx(1) * 0.4d0
+            parcels%position(2, l) = y - dx(2) * 0.35d0
+            parcels%position(3, l) = z
+            parcels%volume(l) = fac * vmin
+            parcels%buoyancy(l) = l + world%rank * 100
+            l = l + 1
+
+            ! small parcel b
+            parcels%position(1, l) = x + dx(1) * 0.44d0
+            parcels%position(2, l) = y + dx(2) * 0.4d0
+            parcels%position(3, l) = z
+            parcels%volume(l) = fac * vmin
+            parcels%buoyancy(l) = l + world%rank * 100
+            l = l + 1
+
+            ! small parcel c
+            parcels%position(1, l) = x - dx(1) * 0.45d0
+            parcels%position(2, l) = y - dx(2) * 0.44d0
+            parcels%position(3, l) = z
+            parcels%volume(l) = fac * vmin
+            parcels%buoyancy(l) = l + world%rank * 100
+            l = l + 1
+
+            ! small parcel d
+            parcels%position(1, l) = x - dx(1) * 0.35d0
+            parcels%position(2, l) = y + dx(2) * 0.44d0
+            parcels%position(3, l) = z
+            parcels%volume(l) = fac * vmin
+            parcels%buoyancy(l) = l + world%rank * 100
+            l = l + 1
+
+            ! small parcel e
+            parcels%position(1, l) = x - dx(1) * 0.27d0
+            parcels%position(2, l) = y + dx(2) * 0.38d0
+            parcels%position(3, l) = z
+            parcels%volume(l) = fac * vmin
+            parcels%buoyancy(l) = l + world%rank * 100
+            l = l + 1
 
         end subroutine cell_placement
 
