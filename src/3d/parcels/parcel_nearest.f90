@@ -342,6 +342,11 @@ module parcel_nearest
                                     key=cart%rank,          &  ! key controls the ordering of the processes
                                     newcomm=subcomm%comm,   &
                                     ierror=cart%err)
+
+                ! The following two calls are not necessary, but we do for good practice.
+                call MPI_Comm_size(subcomm%comm, subcomm%size, subcomm%err)
+                call MPI_Comm_rank(subcomm%comm, subcomm%rank, subcomm%err)
+
             else
                 call nearest_deallocate
                 call deallocate_parcel_id_buffers
@@ -429,9 +434,11 @@ module parcel_nearest
 
             !---------------------------------------------------------------------
             ! Figure out the mergers:
-            call resolve_tree(isma, iclo, rclo, n_local_small)
+            if (subcomm%comm /= MPI_COMM_NULL) then
+                call resolve_tree(isma, iclo, rclo, n_local_small)
+                timings(merge_nearest_timer)%n_calls = timings(merge_nearest_timer)%n_calls - 1
+            endif
 
-            timings(merge_nearest_timer)%n_calls = timings(merge_nearest_timer)%n_calls - 1
             call start_timer(merge_nearest_timer)
 
             if (.not. l_no_small) then
