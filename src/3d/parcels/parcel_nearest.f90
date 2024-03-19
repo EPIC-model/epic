@@ -12,6 +12,9 @@
 !   appropriate MPI rank.
 !==============================================================================
 module parcel_nearest
+#ifdef ENABLE_VERBOSE
+    use options, only : verbose, output
+#endif
     use constants, only : zero
     use parcel_container, only : parcels            &
                                , n_parcels          &
@@ -29,8 +32,7 @@ module parcel_nearest
     use mpi_timer, only : start_timer, stop_timer, timings
     use mpi_environment
     use mpi_layout
-    use mpi_collectives, only : mpi_blocking_reduce    &
-                              , mpi_neighbor_allreduce
+    use mpi_collectives, only : mpi_blocking_reduce
     use mpi_utils, only : mpi_exit_on_error          &
                         , mpi_check_for_error        &
                         , mpi_check_for_message      &
@@ -262,7 +264,9 @@ module parcel_nearest
             double precision, allocatable     :: dclo(:)    ! distance to closest parcel
             logical                           :: l_no_small ! if *this* rank has no local and no remote small
                                                             ! parcels
-            logical                           :: l_split, l_include ! use for splitting the communicator
+#ifdef ENABLE_VERBOSE
+            logical :: l_exist
+#endif
 
             call start_timer(merge_nearest_timer)
 
@@ -314,7 +318,7 @@ module parcel_nearest
             call mpi_check_for_error(world, &
                     "in MPI_Allreduce of parcel_nearest::find_nearest.")
 
-            if (n_global_small == 0)
+            if (n_global_small == 0) then
                 call nearest_deallocate
                 call deallocate_parcel_id_buffers
                 call stop_timer(merge_nearest_timer)
@@ -353,13 +357,10 @@ module parcel_nearest
             endif
 
             ! Each MPI process must know if it is part of the subcommunicator or not.
-            ! This call ensures that all neighbours of *this* MPI rank (which has small
-            ! parcels) are part of the communicator.
-            l_include = (.not. l_no_small)
-            call mpi_neighbor_allreduce(l_include, l_split, MPI_LOR)
-
+            ! All MPI ranks that have small parcels or received small parcels from neighbouring
+            ! MPI ranks must be part of the communicator.
             color = MPI_UNDEFINED
-            if (l_split) then
+            if (not. l_no_small) then
                 color = 0  ! any non-negative number is fine
             endif
 
@@ -373,6 +374,21 @@ module parcel_nearest
                 ! The following two calls are not necessary, but we do for good practice.
                 call MPI_Comm_size(subcomm%comm, subcomm%size, subcomm%err)
                 call MPI_Comm_rank(subcomm%comm, subcomm%rank, subcomm%err)
+                subcomm%root = 0
+
+#ifdef ENABLE_VERBOSE
+                if (verbose .and. (subcomm%rank == subcomm%root)) then
+                    fname = trim(output%basename) // '_nearest_subcomm.asc'
+                    inquire(file=trim(fname), exist=l_exist)
+                    if (l_exist) then
+                        open(unit=1236, file=trim(fname), status='old', position='append')
+                    else
+                        open(unit=1236, file=trim(fname), status='replace')
+                        write(1236, *) '  # world%size           subcomm%size'
+                    endif
+                    write(1236, *) world%size, subcomm%size
+                    close(1236)
+                endif
             endif
 
             if (.not. l_no_small) then
