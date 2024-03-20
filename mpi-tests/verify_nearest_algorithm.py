@@ -173,6 +173,7 @@ try:
                 ncrs.open('serial_final_0000000001_parcels.nc')
                 ncrp.open('parallel_final_0000000001_parcels.nc')
 
+                ncfile = ncrp.handle()
                 if ncfile.dimensions['world%size'].size != n_rank:
                     print('Warning: Failed to run with requested number of MPI cores', flush=True)
 
