@@ -173,6 +173,9 @@ try:
                 ncrs.open('serial_final_0000000001_parcels.nc')
                 ncrp.open('parallel_final_0000000001_parcels.nc')
 
+                if ncfile.dimensions['world%size'].size != n_rank:
+                    print('Warning: Failed to run with requested number of MPI cores', flush=True)
+
                 ind1 = np.lexsort((ncrs.get_dataset(step=0, name='x_position'),
                                 ncrs.get_dataset(step=0, name='y_position'),
                                 ncrs.get_dataset(step=0, name='z_position')))
