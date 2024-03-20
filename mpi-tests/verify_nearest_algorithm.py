@@ -113,6 +113,8 @@ try:
     # used when running with --verbose
     modulo = 100
 
+    ntasks_per_node = 128
+
     for n in range(args.n_samples):
         try:
             cmd = 'mpirun -np 1 '
@@ -130,13 +132,16 @@ try:
         # Note: Because the 1 MPI run writes the initial parcel setup; the actual
         # solve has number 2 instead of 1.
         if os.path.exists('serial_final_0000000002_parcels.nc'):
-            ncrs.open('serial_final_0000000002_parcels.nc')
+            os.system('mv serial_final_0000000002_parcels.nc serial_final_0000000001_parcels.nc')
+            ncrs.open('serial_final_0000000001_parcels.nc')
             n_merges = n_merges + n_parcels - ncrs.get_num_parcels(step=0)
             ncrs.close()
             print ("Sample", n, "generated.", flush=True)
 
         for n_rank in args.n_ranks:
             #print("Run sample with", n_rank, "MPI ranks", flush=True)
+
+            nodes = int(np.ceil(n_rank / ntasks_per_node))
 
             # -------------------------------------------------------------
             # Run the serial and parallel versions of the nearest + merging algorithm:
@@ -146,8 +151,7 @@ try:
             try:
                 cmd = 'mpirun -np ' + str(n_rank) + ' '
                 if args.cmd == 'srun':
-                    cmd = 'srun --nodes=1 --ntasks=' + str(n_rank)
-                    cmd = cmd + ' --ntasks-per-node=' + str(n_rank)
+                    cmd = 'srun --nodes=' + str(nodes) + ' --ntasks=' + str(n_rank)
                     cmd = cmd + ' --cpus-per-task=1 --exact '
                 subprocess.run(args=cmd + exe + flags,
                                shell=True,
@@ -159,14 +163,14 @@ try:
                 print('Error in running the parallel version.', flush=True)
                 failed = True
 
-            if not os.path.exists('serial_final_0000000002_parcels.nc') and \
+            if not os.path.exists('serial_final_0000000001_parcels.nc') and \
                 not os.path.exists('parallel_final_0000000001_parcels.nc'):
                 failed = True
 
             if not failed:
                 # ---------------------------------------------------------
                 # Compare the results:
-                ncrs.open('serial_final_0000000002_parcels.nc')
+                ncrs.open('serial_final_0000000001_parcels.nc')
                 ncrp.open('parallel_final_0000000001_parcels.nc')
 
                 ind1 = np.lexsort((ncrs.get_dataset(step=0, name='x_position'),
@@ -199,8 +203,8 @@ try:
                 if os.path.exists('initial_0000000001_parcels.nc'):
                     os.rename('initial_0000000001_parcels.nc',
                               'initial_' + n_str + '_parcels.nc')
-                if os.path.exists('serial_final_0000000002_parcels.nc'):
-                    os.system('cp serial_final_0000000002_parcels.nc serial_fail_' + n_str + '_parcels.nc')
+                if os.path.exists('serial_final_0000000001_parcels.nc'):
+                    os.system('cp serial_final_0000000001_parcels.nc serial_fail_' + n_str + '_parcels.nc')
                 if os.path.exists('parallel_final_0000000001_parcels.nc'):
                     os.rename('parallel_final_0000000001_parcels.nc',
                               'parallel_fail_' + n_str + '_parcels.nc')
@@ -213,14 +217,13 @@ try:
             print("#samples, #fails, #merges: ", n, n_fails, n_merges, flush=True)
 
         os.remove('initial_0000000001_parcels.nc')
-        if os.path.exists('serial_final_0000000002_parcels.nc'):
-            os.remove('serial_final_0000000002_parcels.nc')
+        if os.path.exists('serial_final_0000000001_parcels.nc'):
+            os.remove('serial_final_0000000001_parcels.nc')
 
     # -------------------------------------------------------------------------
     # Print summary:
     print("--------------------------------------------------------------------", flush=True)
-    print("Total number of samples:      ", args.n_samples * len(args.seeds) * len(args.n_ranks), flush=True)
-    print("Seeds:                        ", args.seeds, flush=True)
+    print("Total number of samples:      ", args.n_samples, flush=True)
     print("MPI ranks:                    ", args.n_ranks, flush=True)
     print("Number of parcels per sample: ", n_parcels, flush=True)
     print("Number of parcels per cell:   ", args.n_parcel_per_cell, flush=True)
