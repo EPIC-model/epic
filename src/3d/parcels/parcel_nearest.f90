@@ -385,9 +385,9 @@ module parcel_nearest
                         open(unit=1236, file=trim(fname), status='old', position='append')
                     else
                         open(unit=1236, file=trim(fname), status='replace')
-                        write(1236, *) '  # world%size           subcomm%size'
+                        write(1236, *) '  # subcomm%size    percentage (%)'
                     endif
-                    write(1236, *) world%size, subcomm%size
+                    write(1236, *) subcomm%size, subcomm%size / dble(world%size) * 100.d0
                     close(1236)
                 endif
 #endif
