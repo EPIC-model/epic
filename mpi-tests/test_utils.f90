@@ -110,9 +110,11 @@ module test_utils
                             b2 = a2 / lam2 ** 2
                             c2 = a2 / lam ** 2
 
-                            ! theta and phi in [0, 2pi[
+                            ! theta in [0, 2pi[
                             theta = twopi * rn(11)
-                            phi = twopi * rn(12)
+
+                            ! phi in [0, pi[
+                            phi = pi * rn(12)
 
                             st = dsin(theta)
                             ct = dcos(theta)
