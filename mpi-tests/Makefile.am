@@ -61,4 +61,6 @@ verify_parcel_merging_LDADD = libcombi.la
 
 nobase_mpitests_DATA = verify_nearest_algorithm.py
 
+clean-local:
+	rm -f *.mod
 endif
