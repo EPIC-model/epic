@@ -12,6 +12,9 @@
 !   appropriate MPI rank.
 !==============================================================================
 module parcel_nearest
+#ifdef ENABLE_VERBOSE
+    use options, only : verbose, output
+#endif
     use constants, only : zero
     use parcel_container, only : parcels            &
                                , n_parcels          &
@@ -26,14 +29,15 @@ module parcel_nearest
     use parameters, only : dx, dxi, vcell, hli, lower, extent       &
                          , ncell, nx, ny, nz, vmin, max_num_parcels
     use options, only : parcel
-    use mpi_timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer, timings
     use mpi_environment
     use mpi_layout
     use mpi_collectives, only : mpi_blocking_reduce
-    use mpi_utils, only : mpi_exit_on_error         &
-                        , mpi_check_for_error       &
-                        , mpi_check_for_message     &
-                        , mpi_stop
+    use mpi_utils, only : mpi_exit_on_error          &
+                        , mpi_check_for_error        &
+                        , mpi_check_for_message      &
+                        , mpi_stop                   &
+                        , mpi_check_rma_window_model
     use iso_c_binding, only : c_ptr, c_f_pointer
     use parcel_mpi, only : n_parcel_sends               &
                          , north_pid                    &
@@ -58,9 +62,13 @@ module parcel_nearest
                          , allocate_parcel_id_buffers   &
                          , deallocate_parcel_id_buffers &
                          , get_parcel_buffer_ptr
+#ifndef NDEBUG
+    use datatypes, only : int64
+#endif
     implicit none
 
     integer:: merge_nearest_timer, merge_tree_resolve_timer
+    integer:: nearest_allreduce_timer, nearest_barrier_timer
 
     private
 
@@ -85,6 +93,8 @@ module parcel_nearest
     type(MPI_Win) :: win_merged, win_avail, win_leaf
     logical       :: l_nearest_win_allocated
 
+    type(communicator) :: subcomm
+
 #ifndef NDEBUG
     ! Small remote parcels must be sent back to the original
     ! MPI ranks in the same order as they were received. These
@@ -97,7 +107,9 @@ module parcel_nearest
             , merge_nearest_timer       &
             , merge_tree_resolve_timer  &
             , nearest_win_allocate      &
-            , nearest_win_deallocate
+            , nearest_win_deallocate    &
+            , nearest_allreduce_timer   &
+            , nearest_barrier_timer
 
     contains
 
@@ -115,6 +127,7 @@ module parcel_nearest
             integer (KIND=MPI_ADDRESS_KIND) :: win_size
             logical                         :: l_bytes
             integer                         :: disp_unit
+            integer (KIND=MPI_ADDRESS_KIND) :: long_type
             type(c_ptr)                     :: buf_ptr
 
             if (l_nearest_win_allocated) then
@@ -127,16 +140,18 @@ module parcel_nearest
 
             l_nearest_win_allocated = .true.
 
-            allocate(l_available(max_num_parcels))
-            allocate(l_merged(max_num_parcels))
-
             call MPI_Sizeof(l_bytes, disp_unit, cart%err)
 
             call mpi_check_for_error(cart, &
                 "in MPI_Sizeof of parcel_nearest::nearest_win_allocate.")
 
             ! size of RMA window in bytes
-            win_size = disp_unit * max_num_parcels
+            long_type = disp_unit
+            win_size = long_type * max_num_parcels
+
+            if (win_size < 0) then
+               call mpi_stop("Error: Integer overflow. Unable to allocate MPI RMA windows.")
+            endif
 
             ! allocate window win_leaf and memory for l_leaf
             call MPI_Win_allocate(win_size,         &
@@ -180,6 +195,10 @@ module parcel_nearest
                 "in MPI_Win_allocate of parcel_nearest::nearest_win_allocate.")
 
             call c_f_pointer(buf_ptr, l_merged, [max_num_parcels])
+
+            call mpi_check_rma_window_model(win_avail)
+            call mpi_check_rma_window_model(win_merged)
+            call mpi_check_rma_window_model(win_leaf)
 
         end subroutine nearest_win_allocate
 
@@ -239,12 +258,16 @@ module parcel_nearest
             integer, allocatable, intent(out) :: inva(:)
             integer,              intent(out) :: n_local_small
             integer,              intent(out) :: n_invalid
-            integer                           :: n_global_small
+            integer                           :: n_global_small, color
             integer                           :: ijk, n, k, j
             integer, allocatable              :: rclo(:)    ! MPI rank of closest parcel
             double precision, allocatable     :: dclo(:)    ! distance to closest parcel
             logical                           :: l_no_small ! if *this* rank has no local and no remote small
                                                             ! parcels
+#ifdef ENABLE_VERBOSE
+            logical                           :: l_exist
+            character(512)                    :: fname
+#endif
 
             call start_timer(merge_nearest_timer)
 
@@ -283,6 +306,8 @@ module parcel_nearest
                 endif
             enddo
 
+
+            !------------------------------------------------------------------
             call MPI_Allreduce(n_local_small,   &
                                n_global_small,  &
                                1,               &
@@ -319,6 +344,54 @@ module parcel_nearest
             ! in any merging, it must nonetheless call the tree resolving and parcel gathering
             ! routine as there is global synchronisation taking place.
             l_no_small = (n_local_small + n_remote_small == 0)
+
+            !------------------------------------------------------------------
+            ! Create subcommunicator:
+            ! Only MPI ranks that have small parcels or received remote small parcels
+            ! must be part of the communicator.
+
+            ! Ensure the communicator is freed first.
+            if (subcomm%comm /= MPI_COMM_NULL) then
+                call MPI_Comm_free(subcomm%comm, subcomm%err)
+                call mpi_check_for_error(subcomm, &
+                        "in MPI_Comm_free of parcel_nearest::find_nearest.")
+            endif
+
+            ! Each MPI process must know if it is part of the subcommunicator or not.
+            ! All MPI ranks that have small parcels or received small parcels from neighbouring
+            ! MPI ranks must be part of the communicator.
+            color = MPI_UNDEFINED
+            if (.not. l_no_small) then
+                color = 0  ! any non-negative number is fine
+            endif
+
+            call MPI_Comm_split(comm=cart%comm,         &
+                                color=color,            &
+                                key=cart%rank,          &  ! key controls the ordering of the processes
+                                newcomm=subcomm%comm,   &
+                                ierror=cart%err)
+
+            if (subcomm%comm /= MPI_COMM_NULL) then
+                ! The following two calls are not necessary, but we do for good practice.
+                call MPI_Comm_size(subcomm%comm, subcomm%size, subcomm%err)
+                call MPI_Comm_rank(subcomm%comm, subcomm%rank, subcomm%err)
+                subcomm%root = 0
+
+#ifdef ENABLE_VERBOSE
+                if (verbose .and. (subcomm%rank == subcomm%root)) then
+                    fname = trim(output%basename) // '_nearest_subcomm.asc'
+                    inquire(file=trim(fname), exist=l_exist)
+                    if (l_exist) then
+                        open(unit=1236, file=trim(fname), status='old', position='append')
+                    else
+                        open(unit=1236, file=trim(fname), status='replace')
+                        write(1236, *) '  # subcomm%size    percentage (%)'
+                    endif
+                    write(1236, *) subcomm%size, subcomm%size / dble(world%size) * 100.d0
+                    close(1236)
+                endif
+#endif
+            endif
 
             if (.not. l_no_small) then
                 ! allocate arrays
@@ -366,10 +439,10 @@ module parcel_nearest
 
             !---------------------------------------------------------------------
             ! We only need to check up to n_local_small because after the call to
-            ! find_closest_parcel_globally all small parcels know their closest 
+            ! find_closest_parcel_globally all small parcels know their closest
             ! neighbour on the original MPI rank.
             if (.not. l_no_small) then
-                do n = 1, n_local_small 
+                do n = 1, n_local_small
                     if (iclo(n) == 0) then
                         write(*,*) iclo(n), dclo(n)
                         call mpi_exit_on_error('Merge error: no near enough neighbour found.')
@@ -381,7 +454,13 @@ module parcel_nearest
 
             !---------------------------------------------------------------------
             ! Figure out the mergers:
-            call resolve_tree(isma, iclo, rclo, n_local_small)
+            if (subcomm%comm /= MPI_COMM_NULL) then
+                call resolve_tree(isma, iclo, rclo, n_local_small)
+            endif
+
+            timings(merge_nearest_timer)%n_calls = timings(merge_nearest_timer)%n_calls - 1
+
+            call start_timer(merge_nearest_timer)
 
             if (.not. l_no_small) then
                 !---------------------------------------------------------------------
@@ -426,6 +505,8 @@ module parcel_nearest
             endif
 
             call nearest_deallocate
+
+            call stop_timer(merge_nearest_timer)
 
         end subroutine find_nearest
 
@@ -788,14 +869,11 @@ module parcel_nearest
             integer(KIND=MPI_ADDRESS_KIND) :: offset
             logical                        :: l_continue_iteration, l_do_merge(n_local_small)
             logical                        :: l_isolated_dual_link(n_local_small)
-            type(MPI_Request)              :: requests(n_local_small)
 
             call start_timer(merge_tree_resolve_timer)
 
             ! First, iterative, stage
             l_continue_iteration = .true.
-
-            requests = MPI_REQUEST_NULL
 
             do while (l_continue_iteration)
                 l_continue_iteration = .false.
@@ -824,7 +902,7 @@ module parcel_nearest
                             !     INTEGER, OPTIONAL, INTENT(OUT) :: ierror
                             l_helper = .true.
                             offset = ic - 1 ! starts at 0
-                            call MPI_Rput(l_helper,         &
+                            call MPI_Put(l_helper,          &
                                           1,                &
                                           MPI_LOGICAL,      &
                                           rc,               &
@@ -832,18 +910,20 @@ module parcel_nearest
                                           1,                &
                                           MPI_LOGICAL,      &
                                           win_avail,        &
-                                          requests(m),      &
                                           cart%err)
                             call mpi_check_for_error(cart, &
                                 "in MPI_Put of parcel_nearest::resolve_tree.")
 
+                            ! After MPI_Win_unlock, the RMA operation is completed at the origin and target.
                             call MPI_Win_unlock(rc, win_avail, cart%err)
                         endif
                     endif
                 enddo
 
-                call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, cart%err)
-                call MPI_Barrier(cart%comm, cart%err)
+                ! This barrier is necessary!
+                call start_timer(nearest_barrier_timer)
+                call MPI_Barrier(subcomm%comm, subcomm%err)
+                call stop_timer(nearest_barrier_timer)
 
                 ! determine leaf parcels
                 do m = 1, n_local_small
@@ -859,16 +939,15 @@ module parcel_nearest
                             call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_leaf, cart%err)
                             l_helper = .false.
                             offset = ic - 1
-                            call MPI_Rput(l_helper,         &
-                                          1,                &
-                                          MPI_LOGICAL,      &
-                                          rc,               &
-                                          offset,           &
-                                          1,                &
-                                          MPI_LOGICAL,      &
-                                          win_leaf,         &
-                                          requests(m),      &
-                                          cart%err)
+                            call MPI_Put(l_helper,         &
+                                         1,                &
+                                         MPI_LOGICAL,      &
+                                         rc,               &
+                                         offset,           &
+                                         1,                &
+                                         MPI_LOGICAL,      &
+                                         win_leaf,         &
+                                         cart%err)
                             call mpi_check_for_error(cart, &
                                 "in MPI_Put of parcel_nearest::resolve_tree.")
                             call MPI_Win_unlock(rc, win_leaf, cart%err)
@@ -876,8 +955,11 @@ module parcel_nearest
                     endif
                 enddo
 
-                call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, cart%err)
-                call MPI_Barrier(cart%comm, cart%err)
+                ! We must synchronise all MPI processes here to ensure all MPI processes
+                ! have done theirRMA operations as we modify the windows again.
+                call start_timer(nearest_barrier_timer)
+                call MPI_Barrier(subcomm%comm, subcomm%err)
+                call stop_timer(nearest_barrier_timer)
 
                 ! filter out parcels that are "unavailable" for merging
                 do m = 1, n_local_small
@@ -894,16 +976,15 @@ module parcel_nearest
                                 call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
                                 l_helper = .false.
                                 offset = ic - 1
-                                call MPI_Rput(l_helper,         &
-                                              1,                &
-                                              MPI_LOGICAL,      &
-                                              rc,               &
-                                              offset,           &
-                                              1,                &
-                                              MPI_LOGICAL,      &
-                                              win_avail,        &
-                                              requests(m),      &
-                                              cart%err)
+                                call MPI_Put(l_helper,         &
+                                             1,                &
+                                             MPI_LOGICAL,      &
+                                             rc,               &
+                                             offset,           &
+                                             1,                &
+                                             MPI_LOGICAL,      &
+                                             win_avail,        &
+                                             cart%err)
                                 call mpi_check_for_error(cart, &
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
                                 call MPI_Win_unlock(rc, win_avail, cart%err)
@@ -912,8 +993,13 @@ module parcel_nearest
                     endif
                 enddo
 
-                call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, cart%err)
-                call MPI_Barrier(cart%comm, cart%err)
+                ! This MPI_Barrier is necessary as MPI processes access their l_available
+                ! array which may be modified in the loop above. In order to make sure all
+                ! MPI ranks have finished above loop, we need this barrier.
+                call start_timer(nearest_barrier_timer)
+                call MPI_Barrier(subcomm%comm, subcomm%err)
+                call stop_timer(nearest_barrier_timer)
+
 
                 ! identify mergers in this iteration
                 do m = 1, n_local_small
@@ -928,6 +1014,10 @@ module parcel_nearest
                             l_helper = l_available(ic)
                         else
                             call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
+                            ! Note: The OpenMPI specification says that processes must be on the same node
+                            !       in order MPI_Get to work. However, I tested a simple MPI_Get on Archer2
+                            !       between nodes with 1 rank per node. It works! It may therefore only be
+                            !       a limitation of OpenMPI.
                             !     MPI_Get(origin_addr, origin_count, origin_datatype, target_rank,
                             !         target_disp, target_count, target_datatype, win, ierror)
                             !     TYPE(*), DIMENSION(..), ASYNCHRONOUS :: origin_addr
@@ -937,23 +1027,20 @@ module parcel_nearest
                             !     TYPE(MPI_Win), INTENT(IN) :: win
                             !     INTEGER, OPTIONAL, INTENT(OUT) :: ierror
                             offset = ic - 1
-                            call MPI_Rget(l_helper,         &
-                                          1,                &
-                                          MPI_LOGICAL,      &
-                                          rc,               &
-                                          offset,           &
-                                          1,                &
-                                          MPI_LOGICAL,      &
-                                          win_avail,        &
-                                          requests(m),      &
+                            call MPI_Get(l_helper,         &
+                                         1,                &
+                                         MPI_LOGICAL,      &
+                                         rc,               &
+                                         offset,           &
+                                         1,                &
+                                         MPI_LOGICAL,      &
+                                         win_avail,        &
                                           cart%err)
                             call mpi_check_for_error(cart, &
                                     "in MPI_Get of parcel_nearest::resolve_tree.")
 
                             call MPI_Win_unlock(rc, win_avail, cart%err)
                         endif
-
-                        call MPI_Wait(requests(m), MPI_STATUS_IGNORE, cart%err)
 
                         if (l_leaf(is) .and. l_helper) then
                             l_continue_iteration = .true. ! merger means continue iteration
@@ -966,41 +1053,39 @@ module parcel_nearest
 
                                 l_helper = .true.
                                 offset = ic - 1
-                                call MPI_Rput(l_helper,         &
-                                              1,                &
-                                              MPI_LOGICAL,      &
-                                              rc,               &
-                                              offset,           &
-                                              1,                &
-                                              MPI_LOGICAL,      &
-                                              win_merged,       &
-                                              requests(m),      &
-                                              cart%err)
+                                call MPI_Put(l_helper,         &
+                                             1,                &
+                                             MPI_LOGICAL,      &
+                                             rc,               &
+                                             offset,           &
+                                             1,                &
+                                             MPI_LOGICAL,      &
+                                             win_merged,       &
+                                             cart%err)
                                 call mpi_check_for_error(cart, &
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
                                 call MPI_Win_unlock(rc, win_merged, cart%err)
                             endif
                         endif
-
-                        call MPI_Wait(requests(m), MPI_STATUS_IGNORE, cart%err)
-
                     endif
                 enddo
 
+                call start_timer(nearest_allreduce_timer)
                 ! Performance improvement: We actually only need to synchronize with neighbours
                 call MPI_Allreduce(MPI_IN_PLACE,            &
                                    l_continue_iteration,    &
                                    1,                       &
                                    MPI_LOGICAL,             &
                                    MPI_LOR,                 &
-                                   cart%comm,               &
-                                   cart%err)
-
-                call mpi_check_for_error(cart, &
+                                   subcomm%comm,            &
+                                   subcomm%err)
+                call stop_timer(nearest_allreduce_timer)
+                call mpi_check_for_error(subcomm, &
                     "in MPI_Allreduce of parcel_nearest::resolve_tree.")
             enddo
 
-            call MPI_Barrier(cart%comm, cart%err)
+            ! No barrier necessary because of the blocking MPI_Allreduce that acts like
+            ! a barrier!
 
             ! Second stage, related to dual links
             do m = 1, n_local_small
@@ -1017,16 +1102,15 @@ module parcel_nearest
                             call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
                             l_helper = .true.
                             offset = ic - 1
-                            call MPI_Rput(l_helper,         &
-                                          1,                &
-                                          MPI_LOGICAL,      &
-                                          rc,               &
-                                          offset,           &
-                                          1,                &
-                                          MPI_LOGICAL,      &
-                                          win_avail,        &
-                                          requests(m),      &
-                                          cart%err)
+                            call MPI_Put(l_helper,         &
+                                         1,                &
+                                         MPI_LOGICAL,      &
+                                         rc,               &
+                                         offset,           &
+                                         1,                &
+                                         MPI_LOGICAL,      &
+                                         win_avail,        &
+                                         cart%err)
 
                             call mpi_check_for_error(cart, &
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
@@ -1037,8 +1121,10 @@ module parcel_nearest
                 endif
             enddo
 
-            call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, cart%err)
-            call MPI_Barrier(cart%comm, cart%err)
+            ! This barrier is necessary as we modifiy l_available above and need it below.
+            call start_timer(nearest_barrier_timer)
+            call MPI_Barrier(subcomm%comm, subcomm%err)
+            call stop_timer(nearest_barrier_timer)
 
             ! Second stage
             do m = 1, n_local_small
@@ -1061,16 +1147,15 @@ module parcel_nearest
                     else
                         call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_leaf, cart%err)
                         offset = ic - 1
-                        call MPI_Rget(l_helper,         &
-                                      1,                &
-                                      MPI_LOGICAL,      &
-                                      rc,               &
-                                      offset,           &
-                                      1,                &
-                                      MPI_LOGICAL,      &
-                                      win_leaf,         &
-                                      requests(m),      &
-                                      cart%err)
+                        call MPI_Get(l_helper,         &
+                                     1,                &
+                                     MPI_LOGICAL,      &
+                                     rc,               &
+                                     offset,           &
+                                     1,                &
+                                     MPI_LOGICAL,      &
+                                     win_leaf,         &
+                                     cart%err)
                         call mpi_check_for_error(cart, &
                             "in MPI_Get of parcel_nearest::resolve_tree.")
 
@@ -1080,8 +1165,6 @@ module parcel_nearest
                         call mpi_exit_on_error(&
                             'in parcel_nearest::resolve_tree: First stage error')
                     endif
-
-                    call MPI_Wait(requests(m), MPI_STATUS_IGNORE, cart%err)
 
                     ! end of sanity check
                     !----------------------------------------------------------
@@ -1099,16 +1182,15 @@ module parcel_nearest
                             call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
 
                             offset = ic - 1
-                            call MPI_Rget(l_helper,         &
-                                          1,                &
-                                          MPI_LOGICAL,      &
-                                          rc,               &
-                                          offset,           &
-                                          1,                &
-                                          MPI_LOGICAL,      &
-                                          win_avail,        &
-                                          requests(m),      &
-                                          cart%err)
+                            call MPI_Get(l_helper,         &
+                                         1,                &
+                                         MPI_LOGICAL,      &
+                                         rc,               &
+                                         offset,           &
+                                         1,                &
+                                         MPI_LOGICAL,      &
+                                         win_avail,        &
+                                         cart%err)
 
                             call mpi_check_for_error(cart, &
                                 "in MPI_Get of parcel_nearest::resolve_tree.")
@@ -1135,12 +1217,14 @@ module parcel_nearest
                             endif
                         endif
                     endif
-
-                    call MPI_Wait(requests(m), MPI_STATUS_IGNORE, cart%err)
                 endif
             enddo
 
-            call MPI_Barrier(cart%comm, cart%err)
+
+            ! This barrier is necessary.
+            call start_timer(nearest_barrier_timer)
+            call MPI_Barrier(subcomm%comm, subcomm%err)
+            call stop_timer(nearest_barrier_timer)
 
             !------------------------------------------------------
             do m = 1, n_local_small
@@ -1156,16 +1240,15 @@ module parcel_nearest
                     else
                         call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
                         offset = ic - 1
-                        call MPI_Rget(l_helper,         &
-                                      1,                &
-                                      MPI_LOGICAL,      &
-                                      rc,               &
-                                      offset,           &
-                                      1,                &
-                                      MPI_LOGICAL,      &
-                                      win_avail,        &
-                                      requests(m),      &
-                                      cart%err)
+                        call MPI_Get(l_helper,         &
+                                     1,                &
+                                     MPI_LOGICAL,      &
+                                     rc,               &
+                                     offset,           &
+                                     1,                &
+                                     MPI_LOGICAL,      &
+                                     win_avail,        &
+                                     cart%err)
 
                         call mpi_check_for_error(cart, &
                             "in MPI_Get of parcel_nearest::resolve_tree.")
@@ -1182,9 +1265,6 @@ module parcel_nearest
                 endif
                 !------------------------------------------------------
             enddo
-
-            call MPI_Waitall(n_local_small, requests, MPI_STATUSES_IGNORE, cart%err)
-            call MPI_Barrier(cart%comm, cart%err)
 
             j = 0
             do m = 1, n_local_small
@@ -1463,6 +1543,9 @@ module parcel_nearest
             integer                                    :: m, rc, ic, is, n, i, j, k, iv
             integer                                    :: n_entries
             integer                                    :: n_registered(8)
+#ifndef NDEBUG
+            integer(kind=int64)                        :: n_total
+#endif
 
             !------------------------------------------------------------------
             ! Figure out how many parcels we send and allocate buffers:
@@ -1619,11 +1702,13 @@ module parcel_nearest
             call deallocate_mpi_buffers
 
 #ifndef NDEBUG
-            n = n_parcels - n_invalid
-            call mpi_blocking_reduce(n, MPI_SUM, world)
-            if ((world%rank == world%root) .and. (.not. n == n_total_parcels)) then
-                call mpi_exit_on_error(&
-                    "in parcel_nearest::gather_remote_parcels: We lost parcels.")
+            if (subcomm%comm == world%comm) then
+                n_total = n_parcels - n_invalid
+                call mpi_blocking_reduce(n_total, MPI_SUM, world)
+                if ((world%rank == world%root) .and. (.not. n_total == n_total_parcels)) then
+                    call mpi_exit_on_error(&
+                        "in parcel_nearest::gather_remote_parcels: We lost parcels.")
+                endif
             endif
 #endif
         end subroutine gather_remote_parcels

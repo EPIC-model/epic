@@ -1,9 +1,12 @@
 lib_LTLIBRARIES = libepic_fft.la
 
+AM_FCFLAGS = -I $(top_builddir)/src/utils
+
 if ENABLE_3D
 lib_LTLIBRARIES += libepic_mpi_fft.la
-AM_FCFLAGS = -I $(top_builddir)/src/mpi
+AM_FCFLAGS += -I $(top_builddir)/src/mpi
 endif
+
 
 libepic_fft_la_SOURCES = 	\
 	../utils/constants.f90	\

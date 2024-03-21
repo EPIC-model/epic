@@ -3,6 +3,7 @@
 ! allocate and deallocate it.
 ! =============================================================================
 module parcel_container
+    use datatypes, only : int64
     use options, only : verbose
     use parameters, only : extent, extenti, center, lower, upper, set_max_num_parcels
     use parcel_ellipsoid, only : parcel_ellipsoid_allocate    &
@@ -19,8 +20,8 @@ module parcel_container
     use mpi_timer, only : start_timer, stop_timer
     implicit none
 
-    integer :: n_parcels        ! local number of parcels
-    integer :: n_total_parcels  ! global number of parcels (over all MPI ranks)
+    integer             :: n_parcels        ! local number of parcels
+    integer(kind=int64) :: n_total_parcels  ! global number of parcels (over all MPI ranks)
 
     integer :: resize_timer
 

@@ -13,7 +13,7 @@ module parcel_merge_serial
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel, verbose
     use parcel_bc
-!     use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
 
     implicit none
 
@@ -42,7 +42,7 @@ module parcel_merge_serial
 
             n_parcel_merges = n_parcel_merges + n_merge
 
-!             call start_timer(merge_timer)
+            call start_timer(merge_timer)
 
 #ifdef ENABLE_VERBOSE
             if (verbose) then
@@ -65,7 +65,7 @@ module parcel_merge_serial
                 deallocate(iclo)
             endif
 
-!             call stop_timer(merge_timer)
+            call stop_timer(merge_timer)
 
         end subroutine merge_parcels
 

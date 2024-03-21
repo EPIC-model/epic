@@ -13,10 +13,14 @@ unittestsdir = $(prefix)/unit-tests
 
 unittests_PROGRAMS = 				\
 	test_mpi_init				\
-	test_mpi_layout
+	test_mpi_layout				\
+	test_mpi_datatype
 
 test_mpi_init_SOURCES = test_mpi_init.f90
 test_mpi_init_LDADD = libcombi.la
 
 test_mpi_layout_SOURCES = test_mpi_layout.f90
 test_mpi_layout_LDADD = libcombi.la
+
+test_mpi_datatype_SOURCES = test_mpi_datatype.f90
+test_mpi_datatype_LDADD = libcombi.la

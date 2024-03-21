@@ -3,6 +3,7 @@
 ! =============================================================================
 module parcel_split_mod
     use options, only : parcel
+    use datatypes, only : int64
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
     use options, only : verbose
 #endif
@@ -28,7 +29,7 @@ module parcel_split_mod
     integer :: split_timer
 
     ! number of parcel splits (is reset in every write step)
-    integer :: n_parcel_splits = 0
+    integer(kind=int64) :: n_parcel_splits = 0
 
 
     contains
@@ -47,7 +48,7 @@ module parcel_split_mod
             integer              :: pid(2 * n_parcels)
             integer, allocatable :: invalid(:), indices(:)
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
-            integer              :: orig_num
+            integer(kind=int64)  :: orig_num
 
             orig_num = n_total_parcels
 #endif

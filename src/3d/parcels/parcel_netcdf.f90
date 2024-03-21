@@ -15,6 +15,9 @@ module parcel_netcdf
     use options, only : write_netcdf_options
     use physics, only : write_physical_quantities
     use mpi_environment
+    use mpi_datatypes, only : MPI_INTEGER_64BIT
+    use mpi_ops, only : MPI_SUM_64BIT
+    use datatypes, only : int64
     use mpi_utils, only : mpi_exit_on_error, mpi_print, mpi_check_for_error
     use fields, only : is_contained
     implicit none
@@ -50,6 +53,7 @@ module parcel_netcdf
                         , NC_B23   = 14
 
     logical :: l_first_write = .true.
+    logical :: l_unable = .false.
 
 #ifndef ENABLE_DRY_MODE
     integer, parameter :: NC_HUM   = 15
@@ -75,7 +79,7 @@ module parcel_netcdf
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
             integer                   :: dimids(2)
-            integer                   :: n
+            integer                   :: n, n_total
 
             call set_netcdf_parcel_output
 
@@ -101,6 +105,21 @@ module parcel_netcdf
                 return
             endif
 
+            ! all cores must know the correct number of total parcels
+            n_total_parcels = n_parcels
+            call MPI_Allreduce(MPI_IN_PLACE, n_total_parcels, 1, MPI_INTEGER_64BIT, &
+                               MPI_SUM_64BIT, world%comm, world%err)
+
+            if ((world%rank == world%root) .and. (n_total_parcels > huge(n_total))) then
+                print *, "WARNING: Unable to write parcels to the NetCDF file"
+                print *, "         as the number of total parcel exceeds integer limit."
+                l_unable = .true.
+                return
+            endif
+            l_unable = .false.
+
+            n_total = int(n_total_parcels)
+
             call create_netcdf_file(ncfname, overwrite, ncid)
 
             ! define global attributes
@@ -115,15 +134,10 @@ module parcel_netcdf
 
             call write_netcdf_options(ncid)
 
-            ! all cores must know the correct number of total parcels
-            n_total_parcels = n_parcels
-            call MPI_Allreduce(MPI_IN_PLACE, n_total_parcels, 1, MPI_INTEGER, &
-                               MPI_SUM, world%comm, world%err)
-
             ! define dimensions
-            call define_netcdf_dimension(ncid=ncid,                         &
-                                         name='n_parcels',                  &
-                                         dimsize=n_total_parcels,           &
+            call define_netcdf_dimension(ncid=ncid,                 &
+                                         name='n_parcels',          &
+                                         dimsize=n_total,           &
                                          dimid=npar_dim_id)
 
             call define_netcdf_dimension(ncid=ncid,                  &
@@ -183,6 +197,11 @@ module parcel_netcdf
             endif
 
             call create_netcdf_parcel_file(trim(ncbasename), .true., .false.)
+
+            if (l_unable) then
+                call stop_timer(parcel_io_timer)
+                return
+            endif
 
             call open_netcdf_file(ncfname, NF90_WRITE, ncid)
 
@@ -275,6 +294,7 @@ module parcel_netcdf
             integer                      :: n, m, n_total, pfirst, plast
             integer                      :: start(2)
             integer                      :: avail_size, n_remaining, n_read
+            logical                      :: l_same_world_size
 
             call start_timer(parcel_io_timer)
 
@@ -282,14 +302,16 @@ module parcel_netcdf
 
             call open_netcdf_file(fname, NF90_NOWRITE, ncid)
 
-            call get_num_parcels(ncid, n_total_parcels)
+            call get_num_parcels(ncid, n_total)
 
-            if (has_dataset(ncid, 'start_index')) then
-                call get_dimension_size(ncid, 'world%size', num_indices)
+            n_total_parcels = n_total
 
-                if (num_indices .ne. world%size) then
-                    call mpi_exit_on_error("The number of MPI ranks disagree!")
-                endif
+            ! The number of MPI ranks disagree! We cannot use the 'start_index'
+            ! to read in parcels
+            call get_dimension_size(ncid, 'world%size', num_indices)
+            l_same_world_size = (num_indices == world%size)
+
+            if (l_same_world_size .and. has_dataset(ncid, 'start_index')) then
 
                 if (world%rank < world%size - 1) then
                     ! we must add +1 since the start index is 1
@@ -301,7 +323,7 @@ module parcel_netcdf
                     ! the last MPI rank must only read the start index
                     call read_netcdf_dataset(ncid, 'start_index', start, (/num_indices/), (/1/))
                     start_index = start(1)
-                    end_index = n_total_parcels
+                    end_index = n_total
                 endif
 
                 n_parcels = end_index - start_index + 1
@@ -321,9 +343,9 @@ module parcel_netcdf
                 !
                 call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
                 start_index = 1
-                end_index = min(max_num_parcels, n_total_parcels)
+                end_index = min(max_num_parcels, n_total)
                 pfirst = 1
-                n_remaining = n_total_parcels
+                n_remaining = n_total
 
                 ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
                 ! not belonging to its domain
@@ -360,7 +382,7 @@ module parcel_netcdf
 
                     ! update start index to fill container
                     pfirst = 1 + n_parcels
-                    plast = min(pfirst + avail_size, n_total_parcels, max_num_parcels)
+                    plast = min(pfirst + avail_size, n_total, max_num_parcels)
 
                     ! we must make sure that we have enough data in the
                     ! file as well as in the parcel container

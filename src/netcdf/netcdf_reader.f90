@@ -75,11 +75,11 @@ module netcdf_reader
             call check_netcdf_error("Reading " // name // " failed.")
         end subroutine get_dimension_size
 
-        subroutine get_num_parcels(ncid, n_parcels)
+        subroutine get_num_parcels(ncid, n_par)
             integer, intent(in)  :: ncid
-            integer, intent(out) :: n_parcels
+            integer, intent(out) :: n_par
 
-            call get_dimension_size(ncid, 'n_parcels', n_parcels)
+            call get_dimension_size(ncid, 'n_parcels', n_par)
         end subroutine get_num_parcels
 
         subroutine get_num_steps(ncid, n_steps)
