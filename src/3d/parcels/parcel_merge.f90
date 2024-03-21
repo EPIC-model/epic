@@ -15,9 +15,9 @@ module parcel_merging
                                , parcel_delete
     use parcel_ellipsoid, only : get_B33, get_abc
     use options, only : parcel
+    use datatypes, only : int64
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
     use options, only : verbose
-    use datatypes, only : int64
 #endif
     use parcel_bc, only : apply_periodic_bc
     use parcel_mpi, only : parcel_communicate
@@ -29,11 +29,11 @@ module parcel_merging
     integer :: merge_timer
 
     ! number of parcel merges (is reset in every write step)
-    integer :: n_parcel_merges = 0
+    integer(kind=int64) :: n_parcel_merges = 0
 
     ! number of merging parcels (up to 7 supported, all others are put into index 7)
     ! note that array index 1 corresponds to 2-way merging
-    integer :: n_way_parcel_mergers(7) = 0
+    integer(kind=int64) :: n_way_parcel_mergers(7) = 0
 
     ! number of big iclo neighbours (number of small is n_merge - n_big_close)
     integer :: n_big_close = 0

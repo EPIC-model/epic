@@ -3,9 +3,9 @@
 ! =============================================================================
 module parcel_split_mod
     use options, only : parcel
+    use datatypes, only : int64
 #if defined (ENABLE_VERBOSE) && !defined (NDEBUG)
     use options, only : verbose
-    use datatypes, only : int64
 #endif
     use constants, only : pi, three, five, f12, f34
     use parameters, only : amax, max_num_parcels
@@ -29,7 +29,7 @@ module parcel_split_mod
     integer :: split_timer
 
     ! number of parcel splits (is reset in every write step)
-    integer :: n_parcel_splits = 0
+    integer(kind=int64) :: n_parcel_splits = 0
 
 
     contains

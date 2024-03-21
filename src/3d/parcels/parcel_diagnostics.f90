@@ -43,8 +43,8 @@ module parcel_diagnostics
                           IDX_MIN_BUOY  = 17, & ! minimum parcel buoyancy
                           IDX_MAX_BUOY  = 18    ! maximum parcel buoyancy
 
-    double precision :: parcel_stats(IDX_MAX_BUOY)
-    integer          :: parcel_merge_stats(size(n_way_parcel_mergers))
+    double precision     :: parcel_stats(IDX_MAX_BUOY)
+    integer(kind=int64)  :: parcel_merge_stats(size(n_way_parcel_mergers))
 
     contains
 
