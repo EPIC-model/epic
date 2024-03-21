@@ -29,7 +29,6 @@ module test_utils
     integer, allocatable :: seed(:)
     integer :: sk
 
-
     contains
 
         subroutine register_all_timers
@@ -59,10 +58,11 @@ module test_utils
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine init_rng
-            call random_seed(size=sk)
+
+            call random_seed(size = sk)
             allocate(seed(1:sk))
-            seed(:) = world%rank
-            call random_seed(put=seed)
+            call random_seed(get=seed)
+
         end subroutine init_rng
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
