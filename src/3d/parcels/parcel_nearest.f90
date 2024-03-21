@@ -456,8 +456,9 @@ module parcel_nearest
             ! Figure out the mergers:
             if (subcomm%comm /= MPI_COMM_NULL) then
                 call resolve_tree(isma, iclo, rclo, n_local_small)
-                timings(merge_nearest_timer)%n_calls = timings(merge_nearest_timer)%n_calls - 1
             endif
+
+            timings(merge_nearest_timer)%n_calls = timings(merge_nearest_timer)%n_calls - 1
 
             call start_timer(merge_nearest_timer)
 
