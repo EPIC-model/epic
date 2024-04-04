@@ -1,6 +1,6 @@
 module test_utils
     use constants, only : pi, zero, one, f12, f23, twopi
-    use parameters, only : lower, vmin, dx, nz
+    use parameters, only : lower, vmin, dx, nz, center
     use mpi_timer
     use parcel_container, only : resize_timer, n_parcels, parcels
     use parcel_split_mod, only : split_timer
@@ -67,12 +67,26 @@ module test_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine setup_parcels
-            double precision :: rn(12), lam, lam2, abc, a2, b2, c2, theta, phi
-            double precision :: st, ct, sp, cp, corner(3)
-            integer          :: ix, iy, iz, m, l
+        subroutine setup_parcels(xlen, ylen, zlen)
+            double precision, intent(in) :: xlen, ylen, zlen
+            double precision             :: rn(12), lam, lam2, abc, a2, b2, c2, theta, phi
+            double precision             :: st, ct, sp, cp, corner(3), xhw, yhw, zhw, x, y, z
+            double precision             :: xlo, xhi, ylo, yhi, zlo, zhi
+            integer                      :: ix, iy, iz, m, l
 
             n_parcels = parcel%n_per_cell * box%ncell
+
+            xhw = f12 * xlen
+            xlo = center(1) - xhw
+            xhi = xlo + xhw
+
+            yhw = f12 * ylen
+            ylo = center(2) - yhw
+            yhi = ylo + yhw
+
+            zhw = f12 * zlen
+            zlo = center(3) - zhw
+            zhi = zlo + zhw
 
             l = 1
             do iz = 0, nz-1
@@ -83,9 +97,13 @@ module test_utils
                             ! rn between 0 and 1
                             call random_number(rn)
 
-                            parcels%position(1, l) = corner(1) + dx(1) * rn(1)
-                            parcels%position(2, l) = corner(2) + dx(2) * rn(2)
-                            parcels%position(3, l) = corner(3) + dx(3) * rn(3)
+                            x = corner(1) + dx(1) * rn(1)
+                            y = corner(2) + dx(2) * rn(2)
+                            z = corner(3) + dx(3) * rn(3)
+
+                            parcels%position(1, l) = x
+                            parcels%position(2, l) = y
+                            parcels%position(3, l) = z
 
                             ! vorticity between -10 and 10: y = 20 * x - 10
                             parcels%vorticity(1, l) = 20.0d0 * rn(4) - 10.d0
@@ -95,8 +113,17 @@ module test_utils
                             ! buoyancy between -1 and 1: y = 2 * x - 1
                             parcels%buoyancy(l) = 2.0d0 * rn(7) - 1.d0
 
-                            ! volume between 0.5 * vmin and 1.5 * vmin
-                            parcels%volume(l) = vmin * rn(8) + f12 * vmin
+                            if ((x >= xlo) .and. (x <= xhi)  .and. &
+                                (y >= ylo) .and. (y <= yhi)  .and. &
+                                (z >= zlo) .and. (z <= zhi)) then
+
+                                ! volume between 0.5 * vmin and 1.5 * vmin
+                                parcels%volume(l) = vmin * rn(8) + f12 * vmin
+                            else
+                                ! volume between vmin and 2 * vmin
+                                parcels%volume(l) = vmin * rn(8) + vmin
+                            endif
+
 
                             ! lam = a / c in [1, 4]
                             lam = 3.d0 * rn(9) + 1.0d0

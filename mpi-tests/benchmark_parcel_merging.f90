@@ -24,7 +24,7 @@ program benchmark_parcel_merging
     implicit none
 
     integer              :: k, niter, allreduce_timer, generate_timer
-    double precision     :: lx, ly
+    double precision     :: lx, ly, lz, xlen, ylen, zlen
 
     call mpi_env_initialise
 
@@ -40,7 +40,7 @@ program benchmark_parcel_merging
     call parse_command_line
 
     lower  = (/zero, zero, zero/)
-    extent = (/lx, ly, 1.0d0/)
+    extent = (/lx, ly, lz/)
 
     parcel%lambda_max = 4.0d0
 
@@ -62,7 +62,7 @@ program benchmark_parcel_merging
         ! Set up the parcel configuration:
         call start_timer(generate_timer)
 
-        call setup_parcels
+        call setup_parcels(xlen, ylen, zlen)
 
         call parcel_communicate
 
@@ -125,6 +125,10 @@ program benchmark_parcel_merging
             nz = 32
             lx = 128.0d0
             ly = 128.0d0
+            lz = 128.0d0
+            xlen = lx
+            ylen = ly
+            zlen = lz
             niter = 1
             parcel%n_per_cell = 40
             parcel%min_vratio = 40.0d0
@@ -174,10 +178,29 @@ program benchmark_parcel_merging
                     i = i + 1
                     call get_command_argument(i, arg)
                     read(arg,'(f16.0)') ly
+                else if (arg == '--lz') then
+                    i = i + 1
+                    call get_command_argument(i, arg)
+                    read(arg,'(f16.0)') lz
+                else if (arg == '--xlen') then
+                    i = i + 1
+                    call get_command_argument(i, arg)
+                    read(arg,'(f16.0)') xlen
+                else if (arg == '--ylen') then
+                    i = i + 1
+                    call get_command_argument(i, arg)
+                    read(arg,'(f16.0)') ylen
+                else if (arg == '--zlen') then
+                    i = i + 1
+                    call get_command_argument(i, arg)
+                    read(arg,'(f16.0)') zlen
                 else if (arg == '--help') then
                     if (world%rank == world%root) then
-                        print *, "./a.out --nx [int] --ny [int] --nz [int] ", &
-                                 "--niter [int] --n_per_cell [int] --min_vratio [float]"
+                        print *, "./a.out --nx [int] --ny [int] --nz [int] ",       &
+                                 "--lx [float] --ly [float] --lz [float] ",         &
+                                 "--xlen [float] --ylen [float] --zlen [float] ",   &
+                                 "--niter [int] --n_per_cell [int] ",               &
+                                 "--min_vratio [float] --size_factor [float]"
                     endif
                     call mpi_stop
                 endif
@@ -190,6 +213,10 @@ program benchmark_parcel_merging
                 print *, "nz", nz
                 print *, "lx", lx
                 print *, "ly", ly
+                print *, "lz", lz
+                print *, "xlen", xlen
+                print *, "ylen", ylen
+                print *, "zlen", zlen
                 print *, "niter", niter
                 print *, "n_per_cell", parcel%n_per_cell
                 print *, "min_vratio", parcel%min_vratio
