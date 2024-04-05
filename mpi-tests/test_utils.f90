@@ -1,5 +1,5 @@
 module test_utils
-    use constants, only : pi, zero, one, f12, f23, twopi
+    use constants, only : zero, f12, f23, one, two, pi, twopi
     use parameters, only : lower, vmin, dx, nz, center
     use mpi_timer
     use parcel_container, only : resize_timer, n_parcels, parcels
@@ -67,9 +67,49 @@ module test_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+        ! Box-Muller transform
+        ! (5 April 2024, https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform)
+        subroutine random_normal(u1, u2)
+            double precision, intent(inout) :: u1, u2
+            double precision                :: z
+
+            z = sqrt(-two * log(u1))
+            u1 = z * cos(twopi * u2)
+            u2 = z * sin(twopi * u2)
+
+        end subroutine random_normal
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        ! pick point uniformly on a sphere:
+        ! 5 April 2024, https://stats.stackexchange.com/a/7984
+        subroutine random_angles(theta, phi)
+            double precision, intent(out) :: theta, phi
+            double precision              :: u(4)
+
+            ! get 4 uniform numbers in [0, 1[:
+            call random_number(u)
+
+            ! transform to standard normal:
+            call random_normal(u(1), u(2))
+            call random_normal(u(3), u(4))
+
+            ! normalise (note: we do not need u(4) later on):
+            u(4) = u(1) ** 2 + u(2) ** 2 + u(3) ** 2
+            u(1:3) = u(1:3) / u(4)
+
+            ! azimuthal angle, [0, 2pi[
+            theta = datan2(u(2), u(1))
+
+            ! polar angle, [0, pi[
+            phi = dasin(u(3))
+
+        end subroutine random_angles
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
         subroutine setup_parcels(xlen, ylen, zlen)
             double precision, intent(in) :: xlen, ylen, zlen
-            double precision             :: rn(12), lam, lam2, abc, a2, b2, c2, theta, phi
+            double precision             :: rn(10), lam, lam2, abc, a2, b2, c2, theta, phi
             double precision             :: st, ct, sp, cp, corner(3), xhw, yhw, zhw, x, y, z
             double precision             :: xlo, xhi, ylo, yhi, zlo, zhi
             integer                      :: ix, iy, iz, m, l
@@ -78,15 +118,15 @@ module test_utils
 
             xhw = f12 * xlen
             xlo = center(1) - xhw
-            xhi = xlo + xhw
+            xhi = xlo + xlen
 
             yhw = f12 * ylen
             ylo = center(2) - yhw
-            yhi = ylo + yhw
+            yhi = ylo + ylen
 
             zhw = f12 * zlen
             zlo = center(3) - zhw
-            zhi = zlo + zhw
+            zhi = zlo + zlen
 
             l = 1
             do iz = 0, nz-1
@@ -137,11 +177,8 @@ module test_utils
                             b2 = a2 / lam2 ** 2
                             c2 = a2 / lam ** 2
 
-                            ! theta in [0, 2pi[
-                            theta = twopi * rn(11)
-
-                            ! phi in [0, pi[
-                            phi = pi * rn(12)
+                            ! get random angles:
+                            call random_angles(theta, phi)
 
                             st = dsin(theta)
                             ct = dcos(theta)
