@@ -256,10 +256,10 @@ module parcel_init
             !$omp end parallel
 
             top_parcels%circ(1:top_parcels%local_num) = top_parcels%circ(1:top_parcels%local_num) &
-                                                      /  top_parcels%area(1:top_parcels%local_num)
+                                                      *  top_parcels%area(1:top_parcels%local_num)
 
             bot_parcels%circ(1:bot_parcels%local_num) = bot_parcels%circ(1:bot_parcels%local_num) &
-                                                      / bot_parcels%area(1:bot_parcels%local_num)
+                                                      * bot_parcels%area(1:bot_parcels%local_num)
 
             call stop_timer(init_timer)
 

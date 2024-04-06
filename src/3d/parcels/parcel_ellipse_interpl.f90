@@ -194,10 +194,14 @@ module parcel_ellipse_interpl
                     ! the weight is halved due to 2 points per ellipse
                     weights = point_weight_p2g * weights * surf_parcels%area(n)
 
-                    do l = 1, 3
+                    do l = 1, 2
                         vortg(iz, js:js+1, is:is+1, l) = vortg(iz, js:js+1, is:is+1, l) &
                                                        + weights * surf_parcels%vorticity(l, n)
                     enddo
+
+                    vortg(iz, js:js+1, is:is+1, 3) = vortg(iz, js:js+1, is:is+1, 3) &
+                                                   + weights * surf_parcels%circ(n) / surf_parcels%area(n)
+
 #ifndef ENABLE_DRY_MODE
                     dbuoyg(iz, js:js+1, is:is+1) = dbuoyg(iz, js:js+1, is:is+1) &
                                                  + weights * surf_parcels%buoyancy(n)
@@ -314,7 +318,7 @@ module parcel_ellipse_interpl
                                               + point_weight_g2p                                        &
                                               * sum(weights * velgradg(iz, js:js+1, is:is+1, I_DVDY))
 
-                    do l = 1, 3
+                    do l = 1, 2
                         surf_parcels%delta_vor(l, n) = surf_parcels%delta_vor(l, n)                 &
                                                      + point_weight_g2p                             &
                                                      * sum(weights * vtend(iz, js:js+1, is:is+1, l))
