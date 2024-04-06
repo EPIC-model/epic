@@ -109,11 +109,11 @@ module parcel_ellipse
             this%IDX_RK_POS_BEG    = i
             this%IDX_RK_POS_END    = i + 1
             this%IDX_RK_VOR_BEG    = i + 2
-            this%IDX_RK_VOR_END    = i + 4
-            this%IDX_RK_SHAPE_BEG  = i + 5
-            this%IDX_RK_SHAPE_END  = i + 7
-            this%IDX_RK_STRAIN_BEG = i + 8
-            this%IDX_RK_STRAIN_END = i + 11
+            this%IDX_RK_VOR_END    = i + 3
+            this%IDX_RK_SHAPE_BEG  = i + 4
+            this%IDX_RK_SHAPE_END  = i + 6
+            this%IDX_RK_STRAIN_BEG = i + 7
+            this%IDX_RK_STRAIN_END = i + 10
 
             this%attr_num = this%IDX_RK_STRAIN_END
 
