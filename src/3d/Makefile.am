@@ -21,11 +21,11 @@ epic3d_SOURCES = 				\
 	parcels/parcel_container.f90 		\
 	parcels/parcel_ellipsoid.f90		\
 	parcels/parcel_ellipse.f90		\
-	parcels/parcel_ellipse_init.f90		\
-	parcels/parcel_ellipse_split.f90	\
 	parcels/parcels.f90			\
 	parcels/parcel_bc.f90                   \
 	parcels/parcel_mpi.f90			\
+	parcels/parcel_ellipse_init.f90		\
+	parcels/parcel_ellipse_split.f90	\
 	parcels/parcel_nearest.f90		\
 	parcels/parcel_mixing.f90		\
 	parcels/parcel_ellipse_merge.f90	\

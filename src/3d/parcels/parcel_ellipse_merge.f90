@@ -110,7 +110,7 @@ module parcel_ellipse_merge
 #ifndef ENABLE_DRY_MODE
             double precision                     :: hum(n_merge)
 #endif
-            double precision                     :: Bm(3, n_merge), am(n_merge), vm(n_merge) cm(n_merge)
+            double precision                     :: Bm(3, n_merge), am(n_merge), vm(n_merge), cm(n_merge)
 
             loca = zero
 

@@ -233,10 +233,6 @@ module rk_utils
             double precision             :: gmax, bmax, local_max(2)
             double precision             :: gradb(box%lo(2):box%hi(2), box%lo(1):box%hi(1))
             double precision             :: db2(  box%lo(2):box%hi(2), box%lo(1):box%hi(1))
-#if ENABLE_VERBOSE
-            logical                      :: exists = .false.
-            character(512)               :: fname
-#endif
 
             ! velocity strain
             gmax = f12 * dsqrt(maxval((velgradg(iz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), I_DUDX) -       &

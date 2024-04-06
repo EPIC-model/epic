@@ -33,13 +33,13 @@ module surface_parcel_correction
 !     integer :: surf_lapl_corr_timer, &
 !                surf_grad_corr_timer
 
-    ! initial area-weighted vorticity mean
-    double precision :: top_vor_bar(3)      &
-                      , bot_vor_bar(3)
+!     ! initial area-weighted vorticity mean
+!     double precision :: top_vor_bar(3)      &
+!                       , bot_vor_bar(3)
 
     public :: apply_surf_laplace,           &
               apply_surf_gradient,          &
-              area_correction,             ! &
+              area_correction!,             ! &
 !               init_surf_parcel_correction,  &
 !               apply_surface_vortcor
 !               surf_lapl_corr_timer,    &
@@ -111,57 +111,57 @@ module surface_parcel_correction
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! This subroutine makes sure that the net vorticity
-        ! (area-integrated vorticity) remains constant.
-        subroutine m_apply_surface_vortcor(pcont, vor_bar)
-            type(ellipse_pc_type), intent(inout) :: pcont
-            double precision,      intent(in)    :: vor_bar(3)
-            integer                              :: n
-            double precision                     :: dvor(3), asum
-            double precision                     :: buf(4)
-
-            asum = zero
-            dvor = zero
-
-            !$omp parallel default(shared)
-            !$omp do private(n) reduction(+: dvor, asum)
-            do n = 1, pcont%local_num
-                asum = asum + pcont%area(n)
-                dvor = dvor + pcont%vorticity(:, n) * pcont%area(n)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            buf(1) = asum
-            buf(2:4) = dvor
-            call MPI_Allreduce(MPI_IN_PLACE,            &
-                               buf(1:4),                &
-                               4,                       &
-                               MPI_DOUBLE_PRECISION,    &
-                               MPI_SUM,                 &
-                               world%comm,              &
-                               world%err)
-
-            call mpi_check_for_error(world, &
-                "in MPI_Allreduce of parcel_correction::m_apply_surface_vortcor.")
-            asum = buf(1)
-            dvor = buf(2:4)
-
-            ! vorticity correction:
-            ! vor_mean = dvor / asum
-            ! if vor_mean < vor_bar --> correction < 0 --> we must add to parcel vorticity
-            ! if vor_mean > vor_bar --> correction > 0 --> we must subtract from parcel vorticity
-            dvor = dvor / asum - vor_bar
-
-            !$omp parallel default(shared)
-            !$omp do private(n)
-            do n = 1, pcont%local_num
-                pcont%vorticity(:, n) = pcont%vorticity(:, n) - dvor
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-        end subroutine m_apply_surface_vortcor
+!         ! This subroutine makes sure that the net vorticity
+!         ! (area-integrated vorticity) remains constant.
+!         subroutine m_apply_surface_vortcor(pcont, vor_bar)
+!             type(ellipse_pc_type), intent(inout) :: pcont
+!             double precision,      intent(in)    :: vor_bar(3)
+!             integer                              :: n
+!             double precision                     :: dvor(3), asum
+!             double precision                     :: buf(4)
+!
+!             asum = zero
+!             dvor = zero
+!
+!             !$omp parallel default(shared)
+!             !$omp do private(n) reduction(+: dvor, asum)
+!             do n = 1, pcont%local_num
+!                 asum = asum + pcont%area(n)
+!                 dvor = dvor + pcont%vorticity(:, n) * pcont%area(n)
+!             enddo
+!             !$omp end do
+!             !$omp end parallel
+!
+!             buf(1) = asum
+!             buf(2:4) = dvor
+!             call MPI_Allreduce(MPI_IN_PLACE,            &
+!                                buf(1:4),                &
+!                                4,                       &
+!                                MPI_DOUBLE_PRECISION,    &
+!                                MPI_SUM,                 &
+!                                world%comm,              &
+!                                world%err)
+!
+!             call mpi_check_for_error(world, &
+!                 "in MPI_Allreduce of parcel_correction::m_apply_surface_vortcor.")
+!             asum = buf(1)
+!             dvor = buf(2:4)
+!
+!             ! vorticity correction:
+!             ! vor_mean = dvor / asum
+!             ! if vor_mean < vor_bar --> correction < 0 --> we must add to parcel vorticity
+!             ! if vor_mean > vor_bar --> correction > 0 --> we must subtract from parcel vorticity
+!             dvor = dvor / asum - vor_bar
+!
+!             !$omp parallel default(shared)
+!             !$omp do private(n)
+!             do n = 1, pcont%local_num
+!                 pcont%vorticity(:, n) = pcont%vorticity(:, n) - dvor
+!             enddo
+!             !$omp end do
+!             !$omp end parallel
+!
+!         end subroutine m_apply_surface_vortcor
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
