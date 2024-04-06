@@ -210,10 +210,14 @@ module parcel_init
                 call bilinear(bot_parcels%position(:, n), is, js, ws)
 
                 ! loop over grid points which are part of the interpolation
-                do l = 1, 3
+                do l = 1, 2
                     bot_parcels%vorticity(l, n) = bot_parcels%vorticity(l, n) &
                                                 + sum(ws * vortg(0, js:js+1, is:is+1, l))
                 enddo
+
+                bot_parcels%circ(n) = bot_parcels%circ(n) &
+                                    + sum(ws * vortg(0, js:js+1, is:is+1, 3))
+
                 bot_parcels%buoyancy(n) = bot_parcels%buoyancy(n) &
                                          + sum(ws * tbuoyg(0, js:js+1, is:is+1))
 #ifndef ENABLE_DRY_MODE
@@ -233,10 +237,14 @@ module parcel_init
                 call bilinear(top_parcels%position(:, n), is, js, ws)
 
                 ! loop over grid points which are part of the interpolation
-                do l = 1, 3
+                do l = 1, 2
                     top_parcels%vorticity(l, n) = top_parcels%vorticity(l, n) &
                                                 + sum(ws * vortg(nz, js:js+1, is:is+1, l))
                 enddo
+
+                top_parcels%circ(n) = top_parcels%circ(n) &
+                                    + sum(ws * vortg(nz, js:js+1, is:is+1, 3))
+
                 top_parcels%buoyancy(n) = top_parcels%buoyancy(n) &
                                         + sum(ws * tbuoyg(nz, js:js+1, is:is+1))
 #ifndef ENABLE_DRY_MODE
@@ -247,6 +255,11 @@ module parcel_init
             !$omp end do
             !$omp end parallel
 
+            top_parcels%circ(1:top_parcels%local_num) = top_parcels%circ(1:top_parcels%local_num) &
+                                                      /  top_parcels%area(1:top_parcels%local_num)
+
+            bot_parcels%circ(1:bot_parcels%local_num) = bot_parcels%circ(1:bot_parcels%local_num) &
+                                                      / bot_parcels%area(1:bot_parcels%local_num)
 
             call stop_timer(init_timer)
 

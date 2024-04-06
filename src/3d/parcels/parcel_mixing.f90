@@ -468,7 +468,7 @@ module parcel_mixing
             class(pc_type),  intent(inout) :: dest
             integer,         intent(in)    :: n_mix
             integer                        :: l, m, n, ic, is
-            double precision               :: buoym(n_mix), vortm(3, n_mix), vm(n_mix), vmix
+            double precision               :: buoym(n_mix), vortm(2, n_mix), vm(n_mix), vmix
             integer                        :: lclo(dest%local_num)
 
             lclo = zero
@@ -492,7 +492,7 @@ module parcel_mixing
 
                     buoym(l) = vm(l) * dest%buoyancy(ic)
 
-                    vortm(:, l) = vm(l) * dest%vorticity(:, ic)
+                    vortm(:, l) = vm(l) * dest%vorticity(1:2, ic)
 
                 endif
 
@@ -504,7 +504,7 @@ module parcel_mixing
 
                 buoym(n) = buoym(n) + src%volume(is) * src%buoyancy(is)
 
-                vortm(:, n) = vortm(:, n) + src%volume(is) * src%vorticity(:, is)
+                vortm(:, n) = vortm(:, n) + src%volume(is) * src%vorticity(1:2, is)
             enddo
 
             !------------------------------------------------------------------
@@ -532,14 +532,14 @@ module parcel_mixing
                     lclo(ic) = l
 
                     dest%buoyancy(ic) = buoym(l)
-                    dest%vorticity(:, ic) = vortm(:, l)
+                    dest%vorticity(1:2, ic) = vortm(:, l)
                 endif
 
                 is = isma(m)
                 n = lclo(ic)
 
                 src%buoyancy(is) = buoym(l)
-                src%vorticity(:, is) = vortm(:, l)
+                src%vorticity(1:2, is) = vortm(:, l)
             enddo
 
         end subroutine actual_mixing

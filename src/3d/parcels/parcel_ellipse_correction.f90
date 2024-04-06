@@ -39,75 +39,75 @@ module surface_parcel_correction
 
     public :: apply_surf_laplace,           &
               apply_surf_gradient,          &
-              area_correction,              &
-              init_surf_parcel_correction,  &
-              apply_surface_vortcor
+              area_correction,             ! &
+!               init_surf_parcel_correction,  &
+!               apply_surface_vortcor
 !               surf_lapl_corr_timer,    &
 !               surf_grad_corr_timer
 
 
     contains
 
-        ! Initialise parcel correction module
-        subroutine init_surf_parcel_correction
-            integer          :: n
-            double precision :: bot_sum, top_sum
-            double precision :: buf(8)
-
-            bot_sum = zero
-            top_sum = zero
-            bot_vor_bar = zero
-            top_vor_bar = zero
-
-            !$omp parallel default(shared)
-            !$omp do private(n) reduction(+: bot_vor_bar, bot_sum)
-            do n = 1, bot_parcels%local_num
-                bot_sum = bot_sum + bot_parcels%area(n)
-                bot_vor_bar = bot_vor_bar + bot_parcels%vorticity(:, n) * bot_parcels%area(n)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            !$omp parallel default(shared)
-            !$omp do private(n) reduction(+: top_vor_bar, top_sum)
-            do n = 1, top_parcels%local_num
-                top_sum = top_sum + top_parcels%area(n)
-                top_vor_bar = top_vor_bar + top_parcels%vorticity(:, n) * top_parcels%area(n)
-            enddo
-            !$omp end do
-            !$omp end parallel
-
-            buf(1) = bot_sum
-            buf(2) = top_sum
-            buf(3:5) = bot_vor_bar
-            buf(6:8) = top_vor_bar
-            call MPI_Allreduce(MPI_IN_PLACE,            &
-                               buf(1:8),                &
-                               8,                       &
-                               MPI_DOUBLE_PRECISION,    &
-                               MPI_SUM,                 &
-                               world%comm,              &
-                               world%err)
-
-            call mpi_check_for_error(world, &
-                "in MPI_Allreduce of parcel_correction::init_surf_parcel_correction.")
-
-            bot_sum = buf(1)
-            top_sum = buf(2)
-            bot_vor_bar = buf(3:5)
-            top_vor_bar = buf(6:8)
-
-            bot_vor_bar = bot_vor_bar / bot_sum
-            top_vor_bar = top_vor_bar / top_sum
-
-        end subroutine init_surf_parcel_correction
+!         ! Initialise parcel correction module
+!         subroutine init_surf_parcel_correction
+!             integer          :: n
+!             double precision :: bot_sum, top_sum
+!             double precision :: buf(8)
+!
+!             bot_sum = zero
+!             top_sum = zero
+!             bot_vor_bar = zero
+!             top_vor_bar = zero
+!
+!             !$omp parallel default(shared)
+!             !$omp do private(n) reduction(+: bot_vor_bar, bot_sum)
+!             do n = 1, bot_parcels%local_num
+!                 bot_sum = bot_sum + bot_parcels%area(n)
+!                 bot_vor_bar = bot_vor_bar + bot_parcels%vorticity(:, n) * bot_parcels%area(n)
+!             enddo
+!             !$omp end do
+!             !$omp end parallel
+!
+!             !$omp parallel default(shared)
+!             !$omp do private(n) reduction(+: top_vor_bar, top_sum)
+!             do n = 1, top_parcels%local_num
+!                 top_sum = top_sum + top_parcels%area(n)
+!                 top_vor_bar = top_vor_bar + top_parcels%vorticity(:, n) * top_parcels%area(n)
+!             enddo
+!             !$omp end do
+!             !$omp end parallel
+!
+!             buf(1) = bot_sum
+!             buf(2) = top_sum
+!             buf(3:5) = bot_vor_bar
+!             buf(6:8) = top_vor_bar
+!             call MPI_Allreduce(MPI_IN_PLACE,            &
+!                                buf(1:8),                &
+!                                8,                       &
+!                                MPI_DOUBLE_PRECISION,    &
+!                                MPI_SUM,                 &
+!                                world%comm,              &
+!                                world%err)
+!
+!             call mpi_check_for_error(world, &
+!                 "in MPI_Allreduce of parcel_correction::init_surf_parcel_correction.")
+!
+!             bot_sum = buf(1)
+!             top_sum = buf(2)
+!             bot_vor_bar = buf(3:5)
+!             top_vor_bar = buf(6:8)
+!
+!             bot_vor_bar = bot_vor_bar / bot_sum
+!             top_vor_bar = top_vor_bar / top_sum
+!
+!         end subroutine init_surf_parcel_correction
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine apply_surface_vortcor
-            call m_apply_surface_vortcor(bot_parcels, bot_vor_bar)
-            call m_apply_surface_vortcor(top_parcels, top_vor_bar)
-        end subroutine apply_surface_vortcor
+!         subroutine apply_surface_vortcor
+!             call m_apply_surface_vortcor(bot_parcels, bot_vor_bar)
+!             call m_apply_surface_vortcor(top_parcels, top_vor_bar)
+!         end subroutine apply_surface_vortcor
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

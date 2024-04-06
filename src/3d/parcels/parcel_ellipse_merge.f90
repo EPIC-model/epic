@@ -106,7 +106,7 @@ module parcel_ellipse_merge
             double precision                     :: factor
             double precision                     :: x0(n_merge), y0(n_merge)
             double precision                     :: posm(2, n_merge), delx, amerge, dely, mu
-            double precision                     :: buoym(n_merge), vortm(3, n_merge)
+            double precision                     :: buoym(n_merge), vortm(2, n_merge)
 #ifndef ENABLE_DRY_MODE
             double precision                     :: hum(n_merge)
 #endif

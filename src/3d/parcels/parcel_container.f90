@@ -192,7 +192,7 @@ module parcel_container
             integer,        intent(in)    :: n_pos, n_vec, n_shape, n_strain
 
             allocate(this%position(n_pos, num))
-            allocate(this%vorticity(n_vec, num))
+            allocate(this%vorticity(n_pos, num))
             allocate(this%B(n_shape, num))
             allocate(this%volume(num))
             allocate(this%buoyancy(num))
@@ -201,14 +201,14 @@ module parcel_container
 #endif
             ! LS-RK variables
             allocate(this%delta_pos(n_pos, num))
-            allocate(this%delta_vor(n_vec, num))
+            allocate(this%delta_vor(n_pos, num))
             allocate(this%strain(n_strain, num))
             allocate(this%delta_b(n_shape, num))
 
             this%max_num = num
 
             ! vorticity, buoyancy, volume
-            this%mix_attr_num = n_vec + 2
+            this%mix_attr_num = n_pos + 2
 #ifndef ENABLE_DRY_MODE
             ! and humidity
             this%mix_attr_num = this%mix_attr_num + 1
