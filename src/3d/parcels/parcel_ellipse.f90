@@ -91,13 +91,13 @@ module parcel_ellipse
             this%IDX_POS_BEG   = 1   ! x-position
             this%IDX_POS_END   = 2   ! y-position
             this%IDX_VOR_BEG   = 3   ! x-vorticity
-            this%IDX_VOR_END   = 5   ! z-vorticity
-            this%IDX_SHAPE_BEG = 6   ! B11 shape matrix element
-            this%IDX_SHAPE_END = 8   ! B22 shape matrix element
-            this%IDX_AREA      = 9   ! area
-            this%IDX_CIRC      = 10
-            this%IDX_VOL       = 11  ! volume (needed for mixing with interior parcels)
-            this%IDX_BUO       = 12  ! buoyancy
+            this%IDX_VOR_END   = 4   ! z-vorticity
+            this%IDX_SHAPE_BEG = 5   ! B11 shape matrix element
+            this%IDX_SHAPE_END = 7   ! B22 shape matrix element
+            this%IDX_AREA      = 8   ! area
+            this%IDX_CIRC      = 9
+            this%IDX_VOL       = 10  ! volume (needed for mixing with interior parcels)
+            this%IDX_BUO       = 11  ! buoyancy
 
             i = this%IDX_BUO + 1
 #ifndef ENABLE_DRY_MODE
