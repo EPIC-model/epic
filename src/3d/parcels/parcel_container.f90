@@ -373,11 +373,11 @@ module parcel_container
             integer,          intent(in)  :: n
             double precision, intent(out) :: buffer(this%mix_attr_num)
 
-            buffer(1:3) = this%vorticity(:, n)
-            buffer(4)   = this%volume(n)
-            buffer(5)   = this%buoyancy(n)
+            buffer(1:2) = this%vorticity(1:2, n)
+            buffer(3)   = this%volume(n)
+            buffer(4)   = this%buoyancy(n)
 #ifndef ENABLE_DRY_MODE
-            buffer(6)   = this%humidity(n)
+            buffer(5)   = this%humidity(n)
 #endif
         end subroutine parcel_mixing_serialize
 
@@ -389,11 +389,11 @@ module parcel_container
             integer,          intent(in)    :: n
             double precision, intent(in)    :: buffer(this%mix_attr_num)
 
-            this%vorticity(:, n) = buffer(1:3)
-            this%volume(n)       = buffer(4)
-            this%buoyancy(n)     = buffer(5)
+            this%vorticity(1:2, n) = buffer(1:2)
+            this%volume(n)       = buffer(3)
+            this%buoyancy(n)     = buffer(4)
 #ifndef ENABLE_DRY_MODE
-            this%humidity(n)     = buffer(6)
+            this%humidity(n)     = buffer(5)
 #endif
         end subroutine parcel_mixing_deserialize
 
