@@ -62,6 +62,7 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
 
                 h = f14 * dsqrt(three * a2)
                 this%area(n) = f12 * this%area(n)
+                this%circ(n) = f12 * this%circ(n)
 
                 this%volume(n) = f12 * this%volume(n)
 
@@ -77,6 +78,7 @@ submodule (parcel_ellipse) parcel_ellipse_split_smod
 
                 this%vorticity(:, n_thread_loc) = this%vorticity(:, n)
                 this%area(n_thread_loc) = this%area(n)
+                this%circ(n_thread_loc) = this%circ(n)
                 this%volume(n_thread_loc) = this%volume(n)
                 this%buoyancy(n_thread_loc) = this%buoyancy(n)
 #ifndef ENABLE_DRY_MODE

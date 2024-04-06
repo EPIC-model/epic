@@ -110,7 +110,7 @@ module parcel_ellipse_merge
 #ifndef ENABLE_DRY_MODE
             double precision                     :: hum(n_merge)
 #endif
-            double precision                     :: Bm(3, n_merge), am(n_merge), vm(n_merge)
+            double precision                     :: Bm(3, n_merge), am(n_merge), vm(n_merge) cm(n_merge)
 
             loca = zero
 
@@ -130,6 +130,9 @@ module parcel_ellipse_merge
 
                     ! am will contain the total area of the merged parcel
                     am(l) = spar%area(ic)
+
+                    ! cm will contain the total circulation of the merged parcel
+                    cm(l) = spar%circ(ic)
 
                     vm(l) = spar%volume(ic)
 
@@ -158,6 +161,7 @@ module parcel_ellipse_merge
                 is = isma(m) !Small parcel
                 n = loca(ic)  !Index of merged parcel
                 am(n) = am(n) + spar%area(is) !Accumulate area of merged parcel
+                cm(n) = cm(n) + spar%circ(is)
 
                 vm(n) = vm(n) + spar%volume(is)
 
@@ -223,7 +227,8 @@ module parcel_ellipse_merge
                     Bm(2, l) = mu * (four * delx * dely + spar%B(2, ic))
                     Bm(3, l) = mu * (four * dely ** 2   + spar%B(3, ic))
 
-                    spar%area(ic)  = am(l)
+                    spar%area(ic) = am(l)
+                    spar%circ(ic) = cm(l)
                     spar%volume(ic) = vm(l)
                     spar%position(1, ic) = posm(1, l)
                     spar%position(2, ic) = posm(2, l)

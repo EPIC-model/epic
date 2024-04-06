@@ -22,8 +22,10 @@ module parcel_ellipse
         ! ---------------------------------------------------------------------
         ! Additional parcel attributes:
         double precision, allocatable, dimension(:) :: area
+        double precision, allocatable, dimension(:) :: circ  ! circulation
 
         integer :: IDX_AREA
+        integer :: IDX_CIRC
 
         contains
 
@@ -84,6 +86,7 @@ module parcel_ellipse
                                            n_strain=4)
 
             allocate(this%area(num))
+            allocate(this%circ(num))
 
             this%IDX_POS_BEG   = 1   ! x-position
             this%IDX_POS_END   = 2   ! y-position
@@ -92,8 +95,9 @@ module parcel_ellipse
             this%IDX_SHAPE_BEG = 6   ! B11 shape matrix element
             this%IDX_SHAPE_END = 8   ! B22 shape matrix element
             this%IDX_AREA      = 9   ! area
-            this%IDX_VOL       = 10  ! volume (needed for mixing with interior parcels)
-            this%IDX_BUO       = 11  ! buoyancy
+            this%IDX_CIRC      = 10
+            this%IDX_VOL       = 11  ! volume (needed for mixing with interior parcels)
+            this%IDX_BUO       = 12  ! buoyancy
 
             i = this%IDX_BUO + 1
 #ifndef ENABLE_DRY_MODE
@@ -130,6 +134,7 @@ module parcel_ellipse
             endif
 
             deallocate(this%area)
+            deallocate(this%circ)
 
         end subroutine parcel_ellipse_deallocate
 
@@ -143,6 +148,7 @@ module parcel_ellipse
             call this%parcel_base_replace(n, m)
 
             this%area(n) = this%area(m)
+            this%circ(n) = this%circ(m)
 
         end subroutine parcel_ellipse_replace
 
@@ -156,6 +162,7 @@ module parcel_ellipse
             call this%parcel_base_resize(new_size)
 
             call resize_array(this%area, new_size, n_copy=this%local_num)
+            call resize_array(this%circ, new_size, n_copy=this%local_num)
 
         end subroutine parcel_ellipse_resize
 
@@ -170,6 +177,7 @@ module parcel_ellipse
             call this%parcel_base_serialize(n, buffer)
 
             buffer(this%IDX_AREA) = this%area(n)
+            buffer(this%IDX_CIRC) = this%circ(n)
 
         end subroutine parcel_ellipse_serialize
 
@@ -184,6 +192,7 @@ module parcel_ellipse
             call this%parcel_base_deserialize(n, buffer)
 
             this%area(n) = buffer(this%IDX_AREA)
+            this%circ(n) = buffer(this%IDX_CIRC)
 
         end subroutine parcel_ellipse_deserialize
 
