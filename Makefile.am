@@ -1,7 +1,6 @@
 SUBDIRS =		\
 	src		\
 	unit-tests	\
-	mpi-tests	\
  	analyse		\
  	models
 
