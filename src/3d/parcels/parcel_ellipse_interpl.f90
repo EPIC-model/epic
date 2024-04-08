@@ -190,6 +190,9 @@ module parcel_ellipse_interpl
                     ! get interpolation weights and mesh indices
                     call bilinear(points(:, p), is, js, weights)
 
+                    vortg(iz, js:js+1, is:is+1, 3) = vortg(iz, js:js+1, is:is+1, 3) &
+                                                   + point_weight_p2g * weights * surf_parcels%circ(n)
+
                     ! loop over grid points which are part of the interpolation
                     ! the weight is halved due to 2 points per ellipse
                     weights = point_weight_p2g * weights * surf_parcels%area(n)
@@ -198,9 +201,6 @@ module parcel_ellipse_interpl
                         vortg(iz, js:js+1, is:is+1, l) = vortg(iz, js:js+1, is:is+1, l) &
                                                        + weights * surf_parcels%vorticity(l, n)
                     enddo
-
-                    vortg(iz, js:js+1, is:is+1, 3) = vortg(iz, js:js+1, is:is+1, 3) &
-                                                   + weights * surf_parcels%circ(n) / surf_parcels%area(n)
 
 #ifndef ENABLE_DRY_MODE
                     dbuoyg(iz, js:js+1, is:is+1) = dbuoyg(iz, js:js+1, is:is+1) &
