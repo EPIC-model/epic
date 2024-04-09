@@ -4,6 +4,7 @@
 ! =============================================================================
 module mpi_timer
     use mpi_environment
+    use mpi_collectives
     implicit none
 
     type timer_type
@@ -300,6 +301,10 @@ module mpi_timer
             timings(1:n_timers)%mean_time = get_statistics(MPI_SUM)
 
             timings(1:n_timers)%mean_time = timings(1:n_timers)%mean_time / dble(world%size)
+
+            ! we need to take the maximum number because of the subcommunicator in the
+            ! parcel nearest algorithm
+            call mpi_blocking_reduce(timings(1:n_timers)%n_calls, MPI_MAX, world)
 
         end subroutine collect_statistics
 
