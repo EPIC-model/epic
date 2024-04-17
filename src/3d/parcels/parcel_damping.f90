@@ -123,18 +123,16 @@ module parcel_damping
                 ! we have 4 points per ellipsoid
                 do p = 1, n_points_p2g
                     call trilinear(points(:, p), is, js, ks, weights)
+                    surface_index=-1
                     if (damping%l_surface_vorticity .or. damping%l_surface_scalars) then
                         ! Index to keep track of grid cells right above/below boundary
                         ! This is because the damping only happens at the boundary level
                         ! Consistent with reflection used in parcel_damp
-                        surface_index=-1
-                        if (ks < box%lo(3))  then
-                            surface_index=1 ! below lower boundary
-                        elseif ((ks < box%lo(3)+1) .or. (ks+1 > box%hi(3))) then
+                        if ((ks == box%lo(3)-1) .or. (ks == box%hi(3)-1)) then
+                            surface_index=1 ! below lower or below upper boundary
+                        elseif ((ks == box%lo(3)) .or. (ks == box%hi(3))) then
                             surface_index=0 ! above lower or above upper boundary
-                        elseif (ks+1 > box%hi(3)-1) then
-                            surface_index=1 ! below upper boundary
-                        endif
+                        end if
                     end if
                     weight = point_weight_p2g * weights
                     if (damping%l_vorticity) then
@@ -144,7 +142,7 @@ module parcel_damping
                             vortend(l) = vortend(l)+sum(weight * time_fact * (vortg(ks:ks+1, js:js+1, is:is+1, l) &
                                        - parcels%vorticity(l,n)))
                         enddo
-                    else if (damping%l_surface_vorticity .and. surface_index>-1 ) then
+                    else if (surface_index>-1 ) then
                         ! Note this exponential factor can be different for vorticity/scalars
                         time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
                         do l = 1,3
@@ -160,7 +158,7 @@ module parcel_damping
 #else
                         tbuoytend = tbuoytend + sum(weight * time_fact * (tbuoyg(ks:ks+1, js:js+1, is:is+1) - parcels%buoyancy(n)))
 #endif
-                    else if (damping%l_surface_scalars .and. surface_index>-1 ) then
+                    else if (surface_index>-1 ) then
                             ! Note this exponential factor can be different for vorticity/scalars
                             time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
 #ifndef ENABLE_DRY_MODE
