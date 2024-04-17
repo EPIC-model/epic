@@ -111,6 +111,15 @@ module parcel_damping
             !$omp& private(is, js, ks, weights, vortend, tbuoytend, time_fact)
 #endif
             do n = 1, n_parcels
+                ! check if only surface damping applies and we are far from surfaces
+                ! put in a significant buffer here as parcels can get stretched in intregration
+                if(.not.(damping%l_vorticity .or. damping%l_scalars)) then
+                    call trilinear(parcels%position(:, n), is, js, ks, weights)
+                    if(ks>box%lo(3)+3 .and. ks<box%hi(3)-4) then
+                        cycle 
+                    end if
+                endif
+
                 pvol = parcels%volume(n)
 #ifndef ENABLE_P2G_1POINT
                 points = get_ellipsoid_points(parcels%position(:, n), &
