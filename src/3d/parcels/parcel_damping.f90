@@ -15,6 +15,7 @@ module parcel_damping
     use fields
     use omp_lib
     use mpi_layout, only : box
+    use mpi_utils, only : mpi_exit_on_error
     use options, only : damping
     use inversion_mod, only : vor2vel
     use rk_utils, only : get_strain_magnitude_field
@@ -40,6 +41,11 @@ module parcel_damping
         subroutine parcel_damp(dt)
             double precision, intent(in)  :: dt
 
+            if (damping%l_vorticity .and. damping%l_surface_vorticity) then
+                call mpi_exit_on_error("damping%l_vorticity and  damping%l_surface_vorticity both activated, only one allowed")
+            elseif (damping%l_scalars .and. damping%l_surface_scalars) then
+                call mpi_exit_on_error("damping%l_scalars and  damping%l_surface_scalars both activated, only one allowed")
+            endif
             if (damping%l_vorticity .or. damping%l_scalars .or. &
                 damping%l_surface_vorticity .or. damping%l_surface_scalars) then
                 ! ensure gridded fields are up to date
@@ -123,18 +129,8 @@ module parcel_damping
                 ! we have 4 points per ellipsoid
                 do p = 1, n_points_p2g
                     call trilinear(points(:, p), is, js, ks, weights)
-                    surface_index=-1
-                    if (damping%l_surface_vorticity .or. damping%l_surface_scalars) then
-                        ! Index to keep track of grid cells right above/below boundary
-                        ! This is because the damping only happens at the boundary level
-                        ! Consistent with reflection used in parcel_damp
-                        if ((ks == box%lo(3)-1) .or. (ks == box%hi(3)-1)) then
-                            surface_index=1 ! below lower or below upper boundary
-                        elseif ((ks == box%lo(3)) .or. (ks == box%hi(3))) then
-                            surface_index=0 ! above lower or above upper boundary
-                        end if
-                    end if
                     weight = point_weight_p2g * weights
+
                     if (damping%l_vorticity) then
                         ! Note this exponential factor can be different for vorticity/scalars
                         time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
@@ -142,14 +138,8 @@ module parcel_damping
                             vortend(l) = vortend(l)+sum(weight * time_fact * (vortg(ks:ks+1, js:js+1, is:is+1, l) &
                                        - parcels%vorticity(l,n)))
                         enddo
-                    else if (surface_index>-1 ) then
-                        ! Note this exponential factor can be different for vorticity/scalars
-                        time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
-                        do l = 1,3
-                            vortend(l) = vortend(l)+sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
-                                         (vortg(ks+surface_index, js:js+1, is:is+1, l)  - parcels%vorticity(l,n)))
-                        enddo
                     endif
+
                     if (damping%l_scalars) then
                         time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
 #ifndef ENABLE_DRY_MODE
@@ -158,16 +148,42 @@ module parcel_damping
 #else
                         tbuoytend = tbuoytend + sum(weight * time_fact * (tbuoyg(ks:ks+1, js:js+1, is:is+1) - parcels%buoyancy(n)))
 #endif
-                    else if (surface_index>-1 ) then
-                            ! Note this exponential factor can be different for vorticity/scalars
-                            time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+                    endif
+                    
+                    if (damping%l_surface_vorticity .or. damping%l_surface_scalars) then
+                        ! Index to keep track of grid cells right above/below boundary
+                        ! This is because the damping only happens at the boundary level
+                        ! Consistent with reflection used in parcel_damp
+                        if ((ks == box%lo(3)-1) .or. (ks == box%hi(3)-1)) then
+                            surface_index=1 ! below lower or below upper boundary
+                        elseif ((ks == box%lo(3)) .or. (ks == box%hi(3))) then
+                            surface_index=0 ! above lower or above upper boundary
+                        else
+                            cycle ! continue loop if not near a surface
+                        endif
+                    else
+                        cycle ! continue loop if no surface damping
+                    endif    
+
+                    if (damping%l_surface_vorticity) then
+                        ! Note this exponential factor can be different for vorticity/scalars
+                        time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
+                        do l = 1,3
+                            vortend(l) = vortend(l)+sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
+                                         (vortg(ks+surface_index, js:js+1, is:is+1, l)  - parcels%vorticity(l,n)))
+                        enddo
+                    endif
+
+                    if (damping%l_surface_scalars) then
+                        ! Note this exponential factor can be different for vorticity/scalars
+                        time_fact = one - exp(-damping%scalars_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
 #ifndef ENABLE_DRY_MODE
-                            humtend = humtend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
+                        humtend = humtend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
                                                   (humg(ks+surface_index, js:js+1, is:is+1) - parcels%humidity(n)))
-                            dbuoytend = dbuoytend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
+                        dbuoytend = dbuoytend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
                                                   (dbuoyg(ks+surface_index, js:js+1, is:is+1) - parcels%buoyancy(n)))
 #else
-                            tbuoytend = tbuoytend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
+                        tbuoytend = tbuoytend + sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
                                                         (tbuoyg(ks+surface_index, js:js+1, is:is+1) - parcels%buoyancy(n)))
 #endif
                     endif
