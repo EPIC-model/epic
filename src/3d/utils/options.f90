@@ -112,7 +112,9 @@ module options
         double precision :: vorticity_prefactor     = 1.0d0  ! constant in damping implementation for vorticity
         double precision :: scalars_prefactor       = 1.0d0  ! constant in damping implementation for scalars
         logical          :: l_vorticity = .false. ! use damping on vorticity
+        logical          :: l_surface_vorticity = .false. ! use damping on surface vorticity only
         logical          :: l_scalars   = .false. ! use damping on scalars
+        logical          :: l_surface_scalars = .false. ! use damping on surface scalars only
     end type damping_info_type
 
     type(damping_info_type) :: damping
@@ -204,7 +206,9 @@ module options
             call write_netcdf_attribute(ncid, "damping_vorticity_prefactor", damping%vorticity_prefactor)
             call write_netcdf_attribute(ncid, "damping_scalars_prefactor", damping%scalars_prefactor)
             call write_netcdf_attribute(ncid, "damping_l_vorticity", damping%l_vorticity)
+            call write_netcdf_attribute(ncid, "damping_l_surface_vorticity", damping%l_surface_vorticity)
             call write_netcdf_attribute(ncid, "damping_l_scalars", damping%l_scalars)
+            call write_netcdf_attribute(ncid, "damping_l_surface_scalars", damping%l_surface_scalars)
 
         end subroutine write_netcdf_options
 
