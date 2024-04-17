@@ -13,6 +13,7 @@ module parcel_damping
     use parcel_ellipsoid
     use parcel_interpl
     use fields
+    use parameters, only : lower, upper
     use omp_lib
     use mpi_layout, only : box
     use mpi_utils, only : mpi_exit_on_error
@@ -112,11 +113,12 @@ module parcel_damping
 #endif
             do n = 1, n_parcels
                 ! check if only surface damping applies and we are far from surfaces
-                ! put in a significant buffer here as parcels can get stretched in intregration
+                ! put in a buffer here as parcels can get stretched in integration
                 if(.not.(damping%l_vorticity .or. damping%l_scalars)) then
-                    call trilinear(parcels%position(:, n), is, js, ks, weights)
-                    if(ks>box%lo(3)+3 .and. ks<box%hi(3)-4) then
+                    if(parcels%position(3, n) > lower(3) + 2 * dx(3)) then
+                    if(parcels%position(3, n) < upper(3) - 2 * dx(3)) then
                         cycle 
+                    end if
                     end if
                 endif
 
@@ -143,7 +145,7 @@ module parcel_damping
                     if (damping%l_vorticity) then
                         ! Note this exponential factor can be different for vorticity/scalars
                         time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
-                        do l = 1,3
+                        do l = 1, 3
                             vortend(l) = vortend(l)+sum(weight * time_fact * (vortg(ks:ks+1, js:js+1, is:is+1, l) &
                                        - parcels%vorticity(l,n)))
                         enddo
@@ -164,9 +166,9 @@ module parcel_damping
                         ! This is because the damping only happens at the boundary level
                         ! Consistent with reflection used in parcel_damp
                         if ((ks == box%lo(3)-1) .or. (ks == box%hi(3)-1)) then
-                            surface_index=1 ! below lower or below upper boundary
+                            surface_index = 1 ! below lower or below upper boundary
                         elseif ((ks == box%lo(3)) .or. (ks == box%hi(3))) then
-                            surface_index=0 ! above lower or above upper boundary
+                            surface_index = 0 ! above lower or above upper boundary
                         else
                             cycle ! continue loop if not near a surface
                         endif
@@ -177,7 +179,7 @@ module parcel_damping
                     if (damping%l_surface_vorticity) then
                         ! Note this exponential factor can be different for vorticity/scalars
                         time_fact = one - exp(-damping%vorticity_prefactor * strain_mag(ks:ks+1, js:js+1, is:is+1) * dt)
-                        do l = 1,3
+                        do l = 1, 3
                             vortend(l) = vortend(l)+sum(weight(surface_index, :, :) * time_fact(surface_index, :, :) * &
                                          (vortg(ks+surface_index, js:js+1, is:is+1, l)  - parcels%vorticity(l,n)))
                         enddo
@@ -199,7 +201,7 @@ module parcel_damping
                 enddo
                 ! Add all the tendencies only at the end
                 if (damping%l_vorticity .or. damping%l_surface_vorticity) then
-                    do l=1,3
+                    do l=1, 3
                         parcels%vorticity(l,n) = parcels%vorticity(l,n) + vortend(l)
                     enddo
                 endif
