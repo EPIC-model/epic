@@ -394,7 +394,6 @@ module parcel_netcdf
                             end_index = n_total
                         endif
 
-                        pfirst = 1
                         n_total = end_index - start_index + 1
                         call rejection_method(start_index, n_total, pfirst)
 
