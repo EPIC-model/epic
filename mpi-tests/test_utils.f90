@@ -107,14 +107,16 @@ module test_utils
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine setup_parcels(xlen, ylen, zlen)
+        subroutine setup_parcels(xlen, ylen, zlen, l_shuffle, l_variable_nppc)
             double precision, intent(in) :: xlen, ylen, zlen
+            logical,          intent(in) :: l_shuffle, l_variable_nppc
             double precision             :: rn(10), lam, lam2, abc, a2, b2, c2, theta, phi
             double precision             :: st, ct, sp, cp, corner(3), xhw, yhw, zhw, x, y, z
             double precision             :: xlo, xhi, ylo, yhi, zlo, zhi
-            integer                      :: ix, iy, iz, m, l, npp
+            integer                      :: ix, iy, iz, m, l, npp, n_per_cell
 
- !           n_parcels = parcel%n_per_cell * box%ncell
+            npp = parcel%n_per_cell
+            n_per_cell = max(10, parcel%n_per_cell - 10)
 
             xhw = f12 * xlen
             xlo = center(1) - xhw
@@ -132,8 +134,10 @@ module test_utils
             do iz = 0, nz-1
                 do iy = box%lo(2), box%hi(2)
                    do ix = box%lo(1), box%hi(1)
-                        call random_number(lam)
-                        npp = int(lam * parcel%n_per_cell) + 1
+                        if (l_variable_nppc) then
+                            call random_number(lam)
+                            npp = int(lam * n_per_cell) + 10    ! ensure at least 10 parcels per cell
+                        endif
                         corner = lower + dble((/ix, iy, iz/)) * dx
                         do m = 1, npp
                             ! rn between 0 and 1
@@ -199,47 +203,44 @@ module test_utils
                 enddo
              enddo
              n_parcels = l - 1
-!            if (.not. n_parcels == l - 1) then
-!                call mpi_exit_on_error("Number of parcels disagree!")
-!            endif
 
-            call shuffleall
+            if (l_shuffle) then
+                call shuffleall
+            endif
 
-          end subroutine setup_parcels
+        end subroutine setup_parcels
 
-
-          ! performs a Fisher-Yates shuffle (aka Knuth shuffle)
-          subroutine shuffleall
+        ! performs a Fisher-Yates shuffle (aka Knuth shuffle)
+        subroutine shuffleall
             integer          :: shuffle_index, rand_target
             double precision :: tmp_var
             double precision :: tmp_vec(3), tmp_B(5)
             double precision :: random_out
-            
+
             do shuffle_index = n_parcels, 2, -1
                call random_number(random_out)
                rand_target = int(random_out * shuffle_index) + 1
-               
+
                tmp_vec = parcels%position(:, rand_target)
                parcels%position(:, rand_target) = parcels%position(:, shuffle_index)
                parcels%position(:, shuffle_index) = tmp_vec
-               
+
                tmp_vec = parcels%vorticity(:, rand_target)
                parcels%vorticity(:, rand_target) = parcels%vorticity(:, shuffle_index)
                parcels%vorticity(:, shuffle_index) = tmp_vec
-               
-               
+
                tmp_var = parcels%buoyancy(rand_target)
                parcels%buoyancy(rand_target) = parcels%buoyancy(shuffle_index)
                parcels%buoyancy(shuffle_index) = tmp_var
-               
-               
+
                tmp_var = parcels%volume(rand_target)
                parcels%volume(rand_target) = parcels%volume(shuffle_index)
                parcels%volume(shuffle_index) = tmp_var
-               
+
                tmp_B = parcels%B(:, rand_target)
                parcels%B(:, rand_target) = parcels%B(:, shuffle_index)
                parcels%B(:, shuffle_index) = tmp_B
             end do
-          end subroutine shuffleall
+        end subroutine shuffleall
+
 end module test_utils

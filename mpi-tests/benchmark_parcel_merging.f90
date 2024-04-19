@@ -25,6 +25,9 @@ program benchmark_parcel_merging
 
     integer              :: k, niter, allreduce_timer, generate_timer
     double precision     :: lx, ly, lz, xlen, ylen, zlen
+    logical              :: l_shuffle, l_variable_nppc
+    character(len=1)     :: snum
+    integer(kind=int64)  :: buf(9) ! size(n_way_parcel_mergers) = 7; +1 (n_parcel_merges); +1 (n_big_close)
 
     call mpi_env_initialise
 
@@ -62,7 +65,7 @@ program benchmark_parcel_merging
         ! Set up the parcel configuration:
         call start_timer(generate_timer)
 
-        call setup_parcels(xlen, ylen, zlen)
+        call setup_parcels(xlen, ylen, zlen, l_shuffle, l_variable_nppc)
 
         call parcel_communicate
 
@@ -110,6 +113,26 @@ program benchmark_parcel_merging
 
     call parcel_dealloc
 
+    buf(1) = n_parcel_merges
+    buf(2) = n_big_close
+    buf(3:9) = n_way_parcel_mergers
+
+    call mpi_blocking_reduce(buf, MPI_SUM, world)
+
+    n_parcel_merges = buf(1)
+    n_big_close = buf(2)
+    n_way_parcel_mergers = buf(3:9)
+
+    if (world%rank == world%root) then
+        print *, "Number of MPI ranks:        ", world%size
+        print *, "Total number of merges:     ", n_parcel_merges
+        print *, "Number of close big parcels:", n_big_close
+        do k = 1, 7
+            write(snum, fmt='(I1)')  k+1
+            print *, "Number of " // snum // "-way mergers:    ", n_way_parcel_mergers(k)
+        enddo
+    endif
+
     call print_timer
 
     call mpi_env_finalise
@@ -133,6 +156,8 @@ program benchmark_parcel_merging
             parcel%n_per_cell = 40
             parcel%min_vratio = 40.0d0
             parcel%size_factor = 1.25d0
+            l_shuffle = .false.
+            l_variable_nppc = .false.
 
 
             i = 0
@@ -194,13 +219,19 @@ program benchmark_parcel_merging
                     i = i + 1
                     call get_command_argument(i, arg)
                     read(arg,'(f16.0)') zlen
+                else if (arg == '--shuffle') then
+                    l_shuffle = .true.
+                else if (arg == '--variable-nppc') then
+                    l_variable_nppc = .true.
                 else if (arg == '--help') then
                     if (world%rank == world%root) then
-                        print *, "./a.out --nx [int] --ny [int] --nz [int] ",       &
+                        print *, "./benchmark_parcel_merginga.out ",                &
+                                 "--nx [int] --ny [int] --nz [int] ",               &
                                  "--lx [float] --ly [float] --lz [float] ",         &
                                  "--xlen [float] --ylen [float] --zlen [float] ",   &
                                  "--niter [int] --n_per_cell [int] ",               &
-                                 "--min_vratio [float] --size_factor [float]"
+                                 "--min_vratio [float] --size_factor [float] ",     &
+                                 "--shuffle (optional) --variable-nppc (optional)"
                     endif
                     call mpi_stop
                 endif
@@ -221,6 +252,8 @@ program benchmark_parcel_merging
                 print *, "n_per_cell", parcel%n_per_cell
                 print *, "min_vratio", parcel%min_vratio
                 print *, "size_factor", parcel%size_factor
+                print *, "shuffle parcels", l_shuffle
+                print *, "variable number of parcels/cell:", l_variable_nppc
             endif
 
         end subroutine parse_command_line
