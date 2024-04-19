@@ -391,6 +391,7 @@ module parcel_netcdf
                             ! for the last index we can only read the start index
                             call read_netcdf_dataset(ncid, 'start_index', start, (/num_indices/), (/1/))
                             start_index = start(1)
+                            call get_num_parcels(ncid, n_total)
                             end_index = n_total
                         endif
 
