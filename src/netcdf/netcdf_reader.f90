@@ -15,6 +15,7 @@ module netcdf_reader
         module procedure :: read_netcdf_dataset_2d
         module procedure :: read_netcdf_dataset_3d
         module procedure :: read_netcdf_dataset_1d_integer
+        module procedure :: read_netcdf_dataset_1d_integer_scalar
     end interface read_netcdf_dataset
 
     interface read_netcdf_attribute
@@ -172,6 +173,22 @@ module netcdf_reader
             ncerr = nf90_get_var(ncid=ncid, varid=varid, values=buffer, &
                                  start=start, count=cnt)
         end subroutine read_netcdf_dataset_1d_integer
+
+        subroutine read_netcdf_dataset_1d_integer_scalar(ncid, name, val, start)
+            integer,           intent(in)  :: ncid
+            character(*),      intent(in)  :: name
+            integer,           intent(out) :: val
+            integer, optional, intent(in)  :: start
+            integer                        :: varid, buffer(1)
+
+            ncerr = nf90_inq_varid(ncid, name, varid)
+            call check_netcdf_error("Reading dataset id failed.")
+
+            ncerr = nf90_get_var(ncid=ncid, varid=varid, values=buffer, &
+                                 start=(/start/), count=(/1/))
+
+            val = buffer(1)
+        end subroutine read_netcdf_dataset_1d_integer_scalar
 
         subroutine read_netcdf_dataset_1d(ncid, name, buffer, start, cnt)
             integer,           intent(in)  :: ncid
