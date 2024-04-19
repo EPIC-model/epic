@@ -345,8 +345,7 @@ module parcel_netcdf
                     end_index = start(2) - 1
                 else
                     ! the last MPI rank must only read the start index
-                    call read_netcdf_dataset(ncid, 'start_index', start, (/num_indices/), (/1/))
-                    start_index = start(1)
+                    call read_netcdf_dataset(ncid, 'start_index', start_index, num_indices)
                     end_index = n_total
                 endif
 
@@ -384,14 +383,13 @@ module parcel_netcdf
 
                         ! get start and end index:
                         if (n < num_indices) then
-                            call read_netcdf_dataset(ncid, 'start_index', start, (/world%rank + 1/), (/2/))
+                            call read_netcdf_dataset(ncid, 'start_index', start, (/n/), (/2/))
                             start_index = start(1)
                             ! we must subtract 1, otherwise rank reads the first parcel of the next domain
                             end_index = start(2) - 1
                         else
                             ! for the last index we can only read the start index
-                            call read_netcdf_dataset(ncid, 'start_index', start, (/num_indices/), (/1/))
-                            start_index = start(1)
+                            call read_netcdf_dataset(ncid, 'start_index', start_index, num_indices)
                             call get_num_parcels(ncid, n_total)
                             end_index = n_total
                         endif

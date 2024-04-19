@@ -120,13 +120,13 @@ program benchmark_parcel_merging
     call mpi_blocking_reduce(buf, MPI_SUM, world)
 
     n_parcel_merges = buf(1)
-    n_big_close = buf(2)
+!     n_big_close = buf(2)
     n_way_parcel_mergers = buf(3:9)
 
     if (world%rank == world%root) then
         print *, "Number of MPI ranks:        ", world%size
         print *, "Total number of merges:     ", n_parcel_merges
-        print *, "Number of close big parcels:", n_big_close
+        print *, "Number of close big parcels:", buf(2) !n_big_close
         do k = 1, 7
             write(snum, fmt='(I1)')  k+1
             print *, "Number of " // snum // "-way mergers:    ", n_way_parcel_mergers(k)
