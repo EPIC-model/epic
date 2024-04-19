@@ -381,7 +381,7 @@ module parcel_netcdf
                     ! check if box overlap (19 April 2024, https://stackoverflow.com/a/3269471):
                     if ((xlo <= yhi) .and. (ylo <= xhi)) then
 
-                        ! get start and end end index:
+                        ! get start and end index:
                         if (n < num_indices) then
                             call read_netcdf_dataset(ncid, 'start_index', start, (/world%rank + 1/), (/2/))
                             start_index = start(1)
