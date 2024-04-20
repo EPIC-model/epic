@@ -368,6 +368,7 @@ module parcel_netcdf
                 !
                 call mpi_print("WARNING: MPI ranks disagree. Reading parcels with optimised rejection method!")
 
+                n_parcels = 0
                 pfirst = 1
 
                 do n = 1, num_indices
@@ -471,14 +472,16 @@ module parcel_netcdf
             integer, intent(in)  :: start_index
             integer, intent(in)  :: end_index
             integer, intent(in)  :: pfirst
-            integer              :: m, k
+            integer              :: m, k, n_read
             integer, allocatable :: invalid(:)
 
             call read_chunk(start_index, end_index, pfirst)
+            n_read = end_index - start_index + 1
+            n_parcels = n_parcels + n_read
 
             ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
             ! not belonging to its domain
-            allocate(invalid(0:end_index-start_index+1))
+            allocate(invalid(0:n_read))
 
             m = 1
             do k = pfirst, n_parcels
