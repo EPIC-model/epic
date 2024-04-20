@@ -316,7 +316,8 @@ module parcel_netcdf
         subroutine read_netcdf_parcels(fname)
             character(*),     intent(in) :: fname
             integer                      :: start_index, num_indices, end_index
-            integer                      :: n, n_total, pfirst
+            integer                      :: n, n_total, pfirst, plast
+            integer                      :: avail_size, n_remaining, n_read
             integer                      :: start(2), xlo, xhi, ylo, yhi
             logical                      :: l_same_world_size
 
@@ -394,9 +395,10 @@ module parcel_netcdf
                             end_index = n_total
                         endif
 
-                        n_total = end_index - start_index + 1
-                        call rejection_method(start_index, n_total, pfirst)
+                        call rejection_method(start_index, end_index, pfirst)
 
+                        ! set pfirst to the end of the parcel container
+                        pfirst = n_parcels + 1
                     endif
                 enddo
             else
@@ -407,10 +409,34 @@ module parcel_netcdf
                 !
                 call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
                 start_index = 1
+                end_index = min(max_num_parcels, n_total)
                 pfirst = 1
+                n_remaining = n_total
 
-                call rejection_method(start_index, n_total, pfirst)
+                do while (start_index <= end_index)
 
+                    n_read = end_index - start_index + 1
+                    n_remaining = n_remaining - n_read
+                    n_parcels = pfirst + n_read - 1
+
+                    call rejection_method(start_index, end_index, pfirst)
+
+                    ! adjust the chunk size to fit the remaining memory
+                    ! in the parcel container
+                    avail_size = max(0, max_num_parcels - n_parcels)
+
+                    ! update start index to fill container
+                    pfirst = 1 + n_parcels
+                    plast = min(pfirst + avail_size, n_total, max_num_parcels)
+
+                    ! we must make sure that we have enough data in the
+                    ! file as well as in the parcel container
+                    n_read = min(plast - pfirst, n_remaining)
+
+                    ! update start and end index for reading chunk
+                    start_index = 1 + end_index
+                    end_index = end_index + n_read
+                enddo
             endif
 
             call close_netcdf_file(ncid)
@@ -439,64 +465,38 @@ module parcel_netcdf
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        subroutine rejection_method(start_index, n_total, pfirst)
-            integer, intent(inout) :: start_index
-            integer, intent(in)    :: n_total
-            integer, intent(inout) :: pfirst
-            integer                :: avail_size, n_remaining, n_read
-            integer                :: end_index, m, n, plast
-            integer, allocatable   :: invalid(:)
+        subroutine rejection_method(start_index, end_index, pfirst)
+            integer, intent(in)  :: start_index
+            integer, intent(in)  :: end_index
+            integer, intent(in)  :: pfirst
+            integer              :: m, k
+            integer, allocatable :: invalid(:)
 
-            end_index = min(max_num_parcels, n_total)
-            n_remaining = n_total
+            call read_chunk(start_index, end_index, pfirst)
 
             ! if all MPI ranks read all parcels, each MPI rank must delete the parcels
             ! not belonging to its domain
-            allocate(invalid(0:end_index))
+            allocate(invalid(0:end_index-start_index+1))
 
-            do while (start_index <= end_index)
+            m = 1
+            do k = pfirst, n_parcels
+                if (is_contained(parcels%position(:, k))) then
+                    cycle
+                endif
 
-                call read_chunk(start_index, end_index, pfirst)
+                invalid(m) = k
 
-                n_read = end_index - start_index + 1
-                n_remaining = n_remaining - n_read
-                n_parcels = pfirst + n_read - 1
-
-                m = 1
-                do n = pfirst, n_parcels
-                    if (is_contained(parcels%position(:, n))) then
-                        cycle
-                    endif
-
-                    invalid(m) = n
-
-                    m = m + 1
-                enddo
-
-                ! remove last increment
-                m = m - 1
-
-                ! updates the variable n_parcels
-                call parcel_delete(invalid(0:m), n_del=m)
-
-                ! adjust the chunk size to fit the remaining memory
-                ! in the parcel container
-                avail_size = max(0, max_num_parcels - n_parcels)
-
-                ! update start index to fill container
-                pfirst = 1 + n_parcels
-                plast = min(pfirst + avail_size, n_total, max_num_parcels)
-
-                ! we must make sure that we have enough data in the
-                ! file as well as in the parcel container
-                n_read = min(plast - pfirst, n_remaining)
-
-                ! update start and end index for reading chunk
-                start_index = 1 + end_index
-                end_index = end_index + n_read
+                m = m + 1
             enddo
 
+            ! remove last increment
+            m = m - 1
+
+            ! updates the variable n_parcels
+            call parcel_delete(invalid(0:m), n_del=m)
+
             deallocate(invalid)
+
         end subroutine rejection_method
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
