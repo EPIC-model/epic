@@ -407,7 +407,9 @@ module parcel_netcdf
                 ! (reject all parcels that are not part of
                 !  the sub-domain owned by *this* MPI rank)
                 !
-                call mpi_print("WARNING: The start index is not provided. All MPI ranks read all parcels!")
+                call mpi_print("WARNING: Unable to retrieve information for fast parcel reading.")
+                call mpi_print("         All MPI ranks read all parcels!")
+
                 start_index = 1
                 end_index = min(max_num_parcels, n_total)
                 pfirst = 1
