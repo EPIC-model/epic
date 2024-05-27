@@ -95,6 +95,10 @@ module parcel_nearest
 
     type(communicator) :: subcomm
 
+#ifdef ENABLE_VERBOSE
+    double precision :: simtime
+#endif
+
 #ifndef NDEBUG
     ! Small remote parcels must be sent back to the original
     ! MPI ranks in the same order as they were received. These
@@ -109,6 +113,9 @@ module parcel_nearest
             , nearest_win_allocate      &
             , nearest_win_deallocate    &
             , nearest_allreduce_timer   &
+#ifdef ENABLE_VERBOSE
+            , simtime                   &
+#endif
             , nearest_barrier_timer
 
     contains
@@ -385,9 +392,9 @@ module parcel_nearest
                         open(unit=1236, file=trim(fname), status='old', position='append')
                     else
                         open(unit=1236, file=trim(fname), status='replace')
-                        write(1236, *) '  # subcomm%size    percentage (%)'
+                        write(1236, *) '  # time            subcomm%size    percentage (%)'
                     endif
-                    write(1236, *) subcomm%size, subcomm%size / dble(world%size) * 100.d0
+                    write(1236, *) simtime, subcomm%size, subcomm%size / dble(world%size) * 100.d0
                     close(1236)
                 endif
 #endif

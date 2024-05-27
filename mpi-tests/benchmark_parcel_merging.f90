@@ -194,7 +194,7 @@ program benchmark_parcel_merging
                 else if (arg == '--size_factor') then
                     i = i + 1
                     call get_command_argument(i, arg)
-                    read(arg,'(i6)') parcel%size_factor
+                    read(arg,'(f16.0)') parcel%size_factor
                 else if (arg == '--lx') then
                     i = i + 1
                     call get_command_argument(i, arg)

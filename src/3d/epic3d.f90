@@ -13,6 +13,9 @@ program epic3d
                              , nearest_allreduce_timer  &
                              , nearest_barrier_timer    &
                              , nearest_win_allocate     &
+#ifdef ENABLE_VERBOSE
+                             , simtime                  &
+#endif
                              , nearest_win_deallocate
     use parcel_correction, only : apply_laplace,          &
                                   apply_gradient,         &
@@ -132,6 +135,9 @@ program epic3d
 
                 call ls_rk_step(t)
 
+#ifdef ENABLE_VERBOSE
+                simtime = t
+#endif
                 call parcel_merge
 
                 call parcel_split
