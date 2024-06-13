@@ -75,8 +75,8 @@ module taylor_green_2d
 
             call get_flow_pos(pos, xx, zz)
 
-            vel(1) = tg_flow%amp(1) * dcos(xx) * dsin(zz)
-            vel(2) = tg_flow%amp(2) * dsin(xx) * dcos(zz)
+            vel(1) = tg_flow%amp(1) * cos(xx) * sin(zz)
+            vel(2) = tg_flow%amp(2) * sin(xx) * cos(zz)
         end function get_flow_velocity
 
         ! grad ordering : dudx, dudy, dvdx, dvdy
@@ -88,16 +88,16 @@ module taylor_green_2d
             call get_flow_pos(pos, xx, zz)
 
             ! du/dx = - a * A * sin(xx) * sin(zz)
-            grad(1) = - tg_flow%freq(1) * tg_flow%amp(1) * dsin(xx) * dsin(zz)
+            grad(1) = - tg_flow%freq(1) * tg_flow%amp(1) * sin(xx) * sin(zz)
 
             ! du/dy = b * A * cos(xx) * cos(zz)
-            grad(2) = tg_flow%freq(2) * tg_flow%amp(1) * dcos(xx) * dcos(zz)
+            grad(2) = tg_flow%freq(2) * tg_flow%amp(1) * cos(xx) * cos(zz)
 
             ! dv/dx = a * B * cos(xx) * np.cos(zz)
-            grad(3) = tg_flow%freq(1) * tg_flow%amp(2) * dcos(xx) * dcos(zz)
+            grad(3) = tg_flow%freq(1) * tg_flow%amp(2) * cos(xx) * cos(zz)
 
             ! dv/dy = - b * B * sin(xx) * sin(zz)
-            grad(4) = - tg_flow%freq(2) * tg_flow%amp(2) * dsin(xx) * dsin(zz)
+            grad(4) = - tg_flow%freq(2) * tg_flow%amp(2) * sin(xx) * sin(zz)
 
         end function get_flow_gradient
 
@@ -110,7 +110,7 @@ module taylor_green_2d
 
             omega = (tg_flow%amp(2) * tg_flow%freq(1)     &
                    - tg_flow%amp(1) * tg_flow%freq(2))    &
-                   * dcos(xx) * dcos(zz)
+                   * cos(xx) * cos(zz)
         end function get_flow_vorticity
 
         subroutine get_flow_pos(pos, xx, zz)

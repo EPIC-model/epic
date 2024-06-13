@@ -6,7 +6,6 @@ program test_merging_parcels
     use parcel_merge_serial
     use parcel_netcdf
     use mpi_environment
-    use mpi_layout
     use mpi_utils, only : mpi_exit_on_error
     use mpi_layout, only : mpi_layout_init
     use test_utils

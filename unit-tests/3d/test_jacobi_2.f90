@@ -27,9 +27,9 @@ program test_jacobi_2
         call jacobi_diagonalise(B, D, V)
 
         ! check eigenvalues
-        error = max(error, dabs(EV(1) - D(1)) &
-                         + dabs(EV(2) - D(2)) &
-                         + dabs(EV(3) - D(3)))
+        error = max(error, abs(EV(1) - D(1)) &
+                         + abs(EV(2) - D(2)) &
+                         + abs(EV(3) - D(3)))
 
 
         ! check eigenvectors
@@ -38,7 +38,7 @@ program test_jacobi_2
                 ! opposite sign
                 Q(:, k) = - Q(:, k)
             endif
-            error = max(error, sum(dabs(Q(:, k) - V(:, k))))
+            error = max(error, sum(abs(Q(:, k) - V(:, k))))
         enddo
     enddo
 

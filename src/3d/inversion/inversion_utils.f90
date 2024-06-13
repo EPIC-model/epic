@@ -136,10 +136,10 @@ module inversion_utils
 
             do kx = box%lo(1), box%hi(1)
                 do ky = box%lo(2), box%hi(2)
-                  filt(0,  ky, kx) = dexp(skx(kx) + sky(ky))
+                  filt(0,  ky, kx) = exp(skx(kx) + sky(ky))
                   filt(nz, ky, kx) = filt(0, ky, kx)
                   do kz = 1, nz-1
-                     filt(kz, ky, kx) = filt(0, ky, kx) * dexp(skz(kz))
+                     filt(kz, ky, kx) = filt(0, ky, kx) * exp(skz(kz))
                   enddo
                enddo
             enddo
@@ -309,13 +309,13 @@ module inversion_utils
             double precision             :: ef, em(0:nz), ep(0:nz), Lm(0:nz), Lp(0:nz)
             double precision             :: fac, div, kl
 
-            kl = dsqrt(k2l2(ky, kx))
+            kl = sqrt(k2l2(ky, kx))
             fac = kl * extent(3)
-            ef = dexp(- fac)
+            ef = exp(- fac)
 #ifndef NDEBUG
             ! To avoid "Floating-point exception - erroneous arithmetic operation"
             ! when ef is really small.
-            ef = max(ef, dsqrt(tiny(ef)))
+            ef = max(ef, sqrt(tiny(ef)))
 #endif
             div = one / (one - ef**2)
             k2ifac = f12 * k2l2i(ky, kx)
@@ -323,14 +323,14 @@ module inversion_utils
             Lm = kl * zm
             Lp = kl * zp
 
-            ep = dexp(- Lp)
-            em = dexp(- Lm)
+            ep = exp(- Lp)
+            em = exp(- Lm)
 
 #ifndef NDEBUG
             ! To avoid "Floating-point exception - erroneous arithmetic operation"
             ! when ep and em are really small.
-            ep = max(ep, dsqrt(tiny(ep)))
-            em = max(em, dsqrt(tiny(em)))
+            ep = max(ep, sqrt(tiny(ep)))
+            em = max(em, sqrt(tiny(em)))
 #endif
 
             phim(:, ky, kx) = div * (ep - ef * em)

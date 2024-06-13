@@ -43,17 +43,17 @@ program test_tri_inversion
     !px = one
     px = zero  !uncomment to have no mean component of the vorticity
     mz = m * lower(2)
-    a = dsqrt(m**2 + k**2)
+    a = sqrt(m**2 + k**2)
     do ix = 0,nx-1
         xx = k * (dx(1) * dble(ix) - hl(1))     !xx = k*x
         do iz = 0,nz
             zz = lower(2) + dx(2) * dble(iz)
             az = a * zz                  !az = a * z
             mz = m * zz                  !mz = m * z
-            ue(iz,ix) = dexp(az) * (m * dsin(mz) - a * dcos(mz)) * dsin(xx) &
-                      + px * dexp(mz) * m * (dsin(mz) - dcos(mz))
-            we(iz,ix) = k * dexp(az) * dcos(mz) * dcos(xx)
-            vortg(iz,ix, 1) = -two * m * (a * dexp(az) * dsin(xx) + px * m * dexp(mz)) * dsin(mz)
+            ue(iz,ix) = exp(az) * (m * sin(mz) - a * cos(mz)) * sin(xx) &
+                      + px * exp(mz) * m * (sin(mz) - cos(mz))
+            we(iz,ix) = k * exp(az) * cos(mz) * cos(xx)
+            vortg(iz,ix, 1) = -two * m * (a * exp(az) * sin(xx) + px * m * exp(mz)) * sin(mz)
         enddo
     enddo
 
@@ -69,9 +69,9 @@ program test_tri_inversion
 
     ! rms error
     ue = (velog(0:nz, :, 1) - ue) ** 2
-    xx = dsqrt((f12 * sum(ue(0, :) + ue(nz,:)) + sum(ue(1:nz-1, :))) / dble(ncell))
+    xx = sqrt((f12 * sum(ue(0, :) + ue(nz,:)) + sum(ue(1:nz-1, :))) / dble(ncell))
     we = (velog(0:nz, :, 2) - we) ** 2
-    zz = dsqrt(sum(we(1:nz-1, :)) / dble(ncell))
+    zz = sqrt(sum(we(1:nz-1, :)) / dble(ncell))
 
     ! referene obtaind from David's program (tri_inversion.f90)
     max_err = max(max_err, abs(xx - 0.0009190338250263d0))

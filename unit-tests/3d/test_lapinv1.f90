@@ -47,7 +47,7 @@ program test_lapinv1
             do iz = 0, nz
                 z = lower(3) + iz * dx(3)
 
-                fp(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dcos(m * z)
+                fp(iz, iy, ix) = cos(k * x) * sin(l * y) * cos(m * z)
 
                 ref_sol(iz, iy, ix) = prefactor * fp(iz, iy, ix)
             enddo
@@ -62,7 +62,7 @@ program test_lapinv1
 
     call fftxys2p(fs, fp)
 
-    error = maxval(dabs(fp - ref_sol))
+    error = maxval(abs(fp - ref_sol))
 
     call print_result_dp('Test inversion (lapinv1)', error, atol=2.0e-7)
 

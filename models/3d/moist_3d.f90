@@ -75,7 +75,7 @@ module moist_3d
                 stop
             endif
 
-            h_pl = q_0 * dexp(- moist%z_c / height_c)
+            h_pl = q_0 * exp(- moist%z_c / height_c)
 
             write(*,"('Humidity inside the plume is ',f6.3)") h_pl
 
@@ -88,14 +88,14 @@ module moist_3d
 
             write(*,"('Background humidity is ',f6.3)") h_bg
 
-            z_b = height_c * dlog(q_0 * moist%H / h_bg)
+            z_b = height_c * log(q_0 * moist%H / h_bg)
 
             write(*,"('Base of mixed layer is ',f12.3)") z_b
 
             dbdz = (gravity * L_v / (c_p * theta_0)) &
-                 * (h_pl - q_0 * dexp(-moist%z_m / height_c)) / (moist%z_m - moist%z_d)
+                 * (h_pl - q_0 * exp(-moist%z_m / height_c)) / (moist%z_m - moist%z_d)
 
-            write(*,"('The buoyancy frequency in the stratified zone is ',f12.3)") dsqrt(dbdz)
+            write(*,"('The buoyancy frequency in the stratified zone is ',f12.3)") sqrt(dbdz)
 
             !Also obtain the plume liquid-water buoyancy (using also z_b):
             b_pl = dbdz * (moist%z_d - z_b)
@@ -170,7 +170,7 @@ module moist_3d
                             else
                                 ! Stratified layer
                                 buoyg(k, j, i)= dbdz * (pos(3) - z_b)
-                                humg(k, j, i) = q_0 * moist%H * dexp(- pos(3) / height_c)
+                                humg(k, j, i) = q_0 * moist%H * exp(- pos(3) / height_c)
                             endif
                         endif
                     enddo

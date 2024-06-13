@@ -169,7 +169,7 @@ module rk_utils
             gradb = gradb + bfsq
 #endif
 
-            bmax = dsqrt(dsqrt(maxval(db2 + gradb ** 2)))
+            bmax = sqrt(sqrt(maxval(db2 + gradb ** 2)))
             bmax = max(epsilon(bmax), bmax)
 
             local_max(1) = gmax

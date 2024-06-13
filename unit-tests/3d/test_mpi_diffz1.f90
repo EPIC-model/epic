@@ -63,8 +63,8 @@ program test_mpi_diffz1
             y = lower(2) + iy * dx(2)
             do iz = 0, nz
                 z = lower(3) + iz * dx(3)
-                fp(iz, iy, ix) = dcos(k * x) * dsin(l * y) * dcos(m * z)
-                ref_sol(iz, iy, ix) = -m * dcos(k * x) * dsin(l * y) * dsin(m * z)
+                fp(iz, iy, ix) = cos(k * x) * sin(l * y) * cos(m * z)
+                ref_sol(iz, iy, ix) = -m * cos(k * x) * sin(l * y) * sin(m * z)
             enddo
         enddo
     enddo
@@ -75,7 +75,7 @@ program test_mpi_diffz1
     call diffz(fs, ds)
     call field_combine_physical(ds, dp)
 
-    error = maxval(dabs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
+    error = maxval(abs(dp(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) &
                  - ref_sol(:, box%lo(2):box%hi(2), box%lo(1):box%hi(1))))
 
     if (world%rank == world%root) then

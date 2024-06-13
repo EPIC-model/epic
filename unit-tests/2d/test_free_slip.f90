@@ -56,10 +56,10 @@ program test_free_slip
     parcels%volume = f14 * vcell
 
     ! b11
-    parcels%B(1, :) = lam * dcos(angle) ** 2 + one / lam * dsin(angle) ** 2
+    parcels%B(1, :) = lam * cos(angle) ** 2 + one / lam * sin(angle) ** 2
 
     ! b12
-    parcels%B(2, :) = f12 * (lam - one / lam) * dsin(two * angle)
+    parcels%B(2, :) = f12 * (lam - one / lam) * sin(two * angle)
 
 
     call vol2grid

@@ -21,7 +21,7 @@ module parcel_split_mod
     use mpi_collectives, only : mpi_blocking_reduce
     implicit none
 
-    double precision, parameter :: dh = f12 * dsqrt(three / five)
+    double precision, parameter :: dh = f12 * sqrt(three / five)
 
     private :: dh
 
@@ -147,7 +147,7 @@ module parcel_split_mod
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n_thread_loc) = parcels%humidity(n)
 #endif
-                V(:, 1) = V(:, 1) * dh * dsqrt(D(1))
+                V(:, 1) = V(:, 1) * dh * sqrt(D(1))
                 parcels%position(:, n_thread_loc) = parcels%position(:, n) - V(:, 1)
                 parcels%position(:, n) = parcels%position(:, n) + V(:, 1)
 

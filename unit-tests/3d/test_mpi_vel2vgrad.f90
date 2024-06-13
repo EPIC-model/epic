@@ -85,21 +85,21 @@ program test_mpi_vel2vgrad
                 z = lower(3) + iz * dx(3)
 
                 ! velocity
-                velog(iz, iy, ix, I_X) = AA * dcos(a * x) * dsin(b * y) * dsin(c * z)
-                velog(iz, iy, ix, I_Y) = BB * dsin(a * x) * dcos(b * y) * dsin(c * z)
-                velog(iz, iy, ix, I_Z) = CC * dsin(a * x) * dsin(b * y) * dcos(c * z)
+                velog(iz, iy, ix, I_X) = AA * cos(a * x) * sin(b * y) * sin(c * z)
+                velog(iz, iy, ix, I_Y) = BB * sin(a * x) * cos(b * y) * sin(c * z)
+                velog(iz, iy, ix, I_Z) = CC * sin(a * x) * sin(b * y) * cos(c * z)
 
                 ! vorticity
-                vortg(iz, iy, ix, I_X) = (b * CC - c * BB) * dsin(a * x) * dcos(b * y) * dcos(c * z)
-                vortg(iz, iy, ix, I_Y) = (c * AA - a * CC) * dcos(a * x) * dsin(b * y) * dcos(c * z)
-                vortg(iz, iy, ix, I_Z) = (a * BB - b * AA) * dcos(a * x) * dcos(b * y) * dsin(c * z)
+                vortg(iz, iy, ix, I_X) = (b * CC - c * BB) * sin(a * x) * cos(b * y) * cos(c * z)
+                vortg(iz, iy, ix, I_Y) = (c * AA - a * CC) * cos(a * x) * sin(b * y) * cos(c * z)
+                vortg(iz, iy, ix, I_Z) = (a * BB - b * AA) * cos(a * x) * cos(b * y) * sin(c * z)
 
                 ! velocity gradient tensor (reference solution)
-                strain(iz, iy, ix, I_DUDX) = - a * AA * dsin(a * x) * dsin(b * y) * dsin(c * z) ! du/dx
-                strain(iz, iy, ix, I_DUDY) =   b * AA * dcos(a * x) * dcos(b * y) * dsin(c * z) ! du/dy
-                strain(iz, iy, ix, I_DVDY) = - b * BB * dsin(a * x) * dsin(b * y) * dsin(c * z) ! dv/dy
-                strain(iz, iy, ix, I_DWDX) =   a * CC * dcos(a * x) * dsin(b * y) * dcos(c * z) ! dw/dx
-                strain(iz, iy, ix, I_DWDY) =   b * CC * dsin(a * x) * dcos(b * y) * dcos(c * z) ! dw/dy
+                strain(iz, iy, ix, I_DUDX) = - a * AA * sin(a * x) * sin(b * y) * sin(c * z) ! du/dx
+                strain(iz, iy, ix, I_DUDY) =   b * AA * cos(a * x) * cos(b * y) * sin(c * z) ! du/dy
+                strain(iz, iy, ix, I_DVDY) = - b * BB * sin(a * x) * sin(b * y) * sin(c * z) ! dv/dy
+                strain(iz, iy, ix, I_DWDX) =   a * CC * cos(a * x) * sin(b * y) * cos(c * z) ! dw/dx
+                strain(iz, iy, ix, I_DWDY) =   b * CC * sin(a * x) * cos(b * y) * cos(c * z) ! dw/dy
                 strain(iz, iy, ix, I_DUDZ) = strain(iz, iy, ix, I_DWDX) + vortg(iz, iy, ix, I_Y)
                 strain(iz, iy, ix, I_DVDX) = strain(iz, iy, ix, I_DUDY) + vortg(iz, iy, ix, I_Z)
                 strain(iz, iy, ix, I_DVDZ) = strain(iz, iy, ix, I_DWDY) - vortg(iz, iy, ix, I_X)
@@ -116,7 +116,7 @@ program test_mpi_vel2vgrad
 
     call finalise_inversion
 
-    error = maxval(dabs(velgradg(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :)   &
+    error = maxval(abs(velgradg(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :)   &
                         - strain(0:nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1), :)))
 
     if (world%rank == world%root) then

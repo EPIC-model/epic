@@ -114,7 +114,7 @@ module parcel_init
             double precision :: im, corner(2)
 
             ! number of parcels per dimension
-            n_per_dim = int(dsqrt(dble(parcel%n_per_cell)))
+            n_per_dim = int(sqrt(dble(parcel%n_per_cell)))
             if (n_per_dim ** 2 .ne. parcel%n_per_cell) then
                 print *, "Number of parcels per cell (", &
                          parcel%n_per_cell, ") not a square."
@@ -278,7 +278,7 @@ module parcel_init
 
             resi(0:nz,:) = (field(0:nz,:) - avg_field) ** 2
 
-            rms = dsqrt((f12 * sum(resi(0, :) + resi(nz, :)) &
+            rms = sqrt((f12 * sum(resi(0, :) + resi(nz, :)) &
                              + sum(resi(1:nz-1,:))) / dble(ncell))
 
 
@@ -337,7 +337,7 @@ module parcel_init
                 !$omp end parallel do
 
                 !Compute maximum error:
-                rerr = maxval(dabs(resi))
+                rerr = maxval(abs(resi))
 
 #ifdef ENABLE_VERBOSE
                 if (verbose) then

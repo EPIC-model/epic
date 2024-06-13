@@ -57,7 +57,7 @@ program test_parcel_init
         do iz = 0, nz
             zg = dx(2) * dble(iz)
             argz = facz * zg
-            tbuoyg(iz,ix) = dexp(argz) * dsin(argx+one) / (one + f12 * dcos(argx))
+            tbuoyg(iz,ix) = exp(argz) * sin(argx+one) / (one + f12 * cos(argx))
         enddo
     enddo
 
@@ -101,13 +101,13 @@ program test_parcel_init
     ! Compute max and rms errors:
 
     ! Rms value of original field
-    rms = dsqrt((f12 * sum(workg(0,:) ** 2 + workg(nz,:) ** 2) + &
+    rms = sqrt((f12 * sum(workg(0,:) ** 2 + workg(nz,:) ** 2) + &
                        sum(workg(1:nz-1,:) ** 2)) / dble(ncell))
 
     workg = tbuoyg - workg
 
     ! Rms error in reconstruction
-    rmserr = dsqrt((f12 * sum(workg(0,:) ** 2 + workg(nz,:) ** 2) + &
+    rmserr = sqrt((f12 * sum(workg(0,:) ** 2 + workg(nz,:) ** 2) + &
                           sum(workg(1:nz-1,:) ** 2)) / dble(ncell))
 
     error = max(error, rmserr)
@@ -116,7 +116,7 @@ program test_parcel_init
     error = max(error, rmserr / rms)
 
     ! Maximum error
-    error = max(error, maxval(dabs(workg(0:nz,:))))
+    error = max(error, maxval(abs(workg(0:nz,:))))
 
     call print_result_dp('Test parcel initialisation', error, atol=two * tol)
 

@@ -34,7 +34,7 @@ module ls_rk4
                 -2404267990393.0_dp/2016746695238.0_dp,  &
                 -3550918686646.0_dp/2091501179385.0_dp,  &
                 -1275806237668.0_dp/842570457699.0_dp,   &
-                0.0/) !dummy value, not actually used
+                0.0_dp/) !dummy value, not actually used
 
     double precision, parameter, dimension(5) :: &
         cbs =  (/1432997174477.0_dp/9575080441755.0_dp,  &

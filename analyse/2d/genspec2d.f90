@@ -75,10 +75,10 @@ program genspec
     rkzmax = scz * dble(nz)
     delk = sqrt(scx ** 2 + scz **2)
     delki = one / delk
-    kmax = nint(dsqrt(rkxmax ** 2 + rkzmax ** 2) * delki)
+    kmax = nint(sqrt(rkxmax ** 2 + rkzmax ** 2) * delki)
     do kz = 1, nz
         do kx = 0, nx - 1
-            kmag(kx, kz) = nint(dsqrt(rkx(kx) ** 2 + rkz(kz) ** 2) * delki)
+            kmag(kx, kz) = nint(sqrt(rkx(kx) ** 2 + rkz(kz) ** 2) * delki)
         enddo
     enddo
     do kx = 0, nx - 1
