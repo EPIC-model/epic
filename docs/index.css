@@ -12,8 +12,9 @@ h1{
 }
 
 
-/* Navigation bar */
 
+
+/* Navigation bar generated with the help of https://www.w3schools.com/css/css_navbar.asp (visited 28 June 2024) */
 .topnav {
     background: linear-gradient(to left, black, navy, royalblue, navy, black);
     background-repeat: no repeat;
