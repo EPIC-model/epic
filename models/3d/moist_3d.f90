@@ -29,6 +29,8 @@ module moist_3d
         double precision :: r_plume             ! Radius of the plume, R (must be < z_b/2)
         double precision :: e_values(3)         ! To create asymmetry, we vary the buoyancy in the plume
                                                 ! according to  b = b_pl*[1 + (e1*x*y+e2*x*z+e3*yz)/R^2].
+        double precision :: r_smooth_frac       ! Fraction of radius where smooth transition starts
+                                              
     end type plume_type
 
     type(plume_type) :: moist
@@ -46,7 +48,7 @@ module moist_3d
             double precision, intent(in)    :: dx(3)
             integer                         :: i, j, k
             double precision                :: rpos1, rpos2, rpos3, r2, pos(3), centre(3), extent(3)
-            double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq
+            double precision                :: b_pl, dbdz, z_b, h_bg, h_pl, radsq, r_edge
 
             call define_netcdf_dataset(ncid=ncid,                           &
                                        name='buoyancy',                     &
@@ -146,12 +148,21 @@ module moist_3d
                         rpos3 = (pos(3) - moist%r_plume)
                         r2 = rpos1 ** 2 + rpos2 ** 2 + rpos3 ** 2
 
-                        if (r2 <= radsq) then
+                        if (r2 <= radsq*moist%r_smooth_frac*moist%r_smooth_frac) then
                             buoyg(k, j, i) = b_pl * (one + moist%e_values(1) * rpos1 * rpos2  &
                                                          + moist%e_values(2) * rpos1 * rpos3  &
                                                          + moist%e_values(3) * rpos2 * rpos3)
                             humg(k, j, i) = h_pl
-                        else
+                        elseif (r2 <= radsq) then
+                            ! relative position on smoothed edge of the bubble
+                            r_edge=(sqrt(r2)-moist%r_plume*moist%r_smooth_frac)/(moist%r_plume*(1.0-moist%r_smooth_frac))
+                            ! use fifth order smoothstep function on edge
+                            buoyg(k, j, i) = b_pl * (one + moist%e_values(1) * rpos1 * rpos2  &
+                                                         + moist%e_values(2) * rpos1 * rpos3  &
+                                                         + moist%e_values(3) * rpos2 * rpos3) &
+                                                  * (one-(six*r_edge**5-fifteen*r_edge**4+ten*r_edge**3))
+                            humg(k, j, i) = h_pl*(one+(moist%mu-one)*(six*r_edge**5-fifteen*r_edge**4+ten*r_edge**3))
+                         else
                             if (pos(3) < z_b) then
                                 ! Mixed layer:
                                 buoyg(k, j, i) = zero

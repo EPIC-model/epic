@@ -3,12 +3,15 @@
 ! =============================================================================
 program epic3d
     use constants, only : zero
-    use timer
+    use mpi_timer
     use parcel_container
     use parcel_bc
     use parcel_split_mod, only : parcel_split, split_timer
-    use parcel_merge, only : merge_parcels, merge_timer
-    use parcel_nearest, only : merge_nearest_timer, merge_tree_resolve_timer
+    use parcel_merging, only : parcel_merge, merge_timer
+    use parcel_nearest, only : merge_nearest_timer      &
+                             , merge_tree_resolve_timer &
+                             , nearest_win_allocate     &
+                             , nearest_win_deallocate
     use parcel_correction, only : apply_laplace,          &
                                   apply_gradient,         &
                                   apply_vortcor,          &
@@ -16,26 +19,34 @@ program epic3d
                                   grad_corr_timer,        &
                                   vort_corr_timer,        &
                                   init_parcel_correction
-    use parcel_diagnostics, only : init_parcel_diagnostics, &
-                                   parcel_stats_timer
-    use parcel_netcdf, only : parcel_io_timer, read_netcdf_parcels
+    use parcel_diagnostics, only : parcel_stats_timer
+    use parcel_netcdf, only : parcel_io_timer
     use parcel_diagnostics_netcdf, only : parcel_stats_io_timer
+    use parcel_damping, only : damping_timer
     use fields
     use field_netcdf, only : field_io_timer
     use field_diagnostics, only : field_stats_timer
     use field_diagnostics_netcdf, only : field_stats_io_timer
     use inversion_mod, only : vor2vel_timer, vtend_timer
-    use inversion_utils, only : init_inversion
-    use parcel_interpl, only : grid2par_timer, par2grid_timer
-    use parcel_init, only : init_parcels, init_timer
-    use ls_rk4, only : ls_rk4_alloc, ls_rk4_dealloc, ls_rk4_step, rk4_timer
-    use utils, only : write_last_step, setup_output_files,       &
-                      setup_restart, setup_domain_and_parameters
-    use parameters, only : max_num_parcels
-    use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
+    use inversion_utils, only : init_inversion, finalise_inversion
+    use parcel_interpl, only : grid2par_timer, &
+                               par2grid_timer, &
+                               halo_swap_timer
+    use parcel_init, only : init_timer
+    use ls_rk, only : ls_rk_step, rk_timer, ls_rk_setup
+    use utils, only : write_last_step, setup_output_files        &
+                    , setup_restart, setup_domain_and_parameters &
+                    , setup_fields_and_parcels
+    use mpi_environment, only : mpi_env_initialise, mpi_env_finalise
+    use bndry_fluxes, only : bndry_fluxes_deallocate    &
+                           , bndry_flux_timer
+    use mpi_utils, only : mpi_print, mpi_stop
+    use options, only : rk_order
     implicit none
 
-    integer          :: epic_timer
+    integer :: epic_timer
+
+    call mpi_env_initialise
 
     ! Read command line (verbose, filename, etc.)
     call parse_command_line
@@ -49,19 +60,15 @@ program epic3d
     ! Deallocate memory
     call post_run
 
+    call mpi_env_finalise
+
     contains
 
         subroutine pre_run
-            use options, only : field_file          &
-                              , field_tol           &
-                              , output              &
-                              , read_config_file    &
-                              , l_restart           &
-                              , restart_file        &
-                              , time
-            character(len=16) :: file_type
+            use options, only : read_config_file
 
             call register_timer('epic', epic_timer)
+            call register_timer('parcel container resize', resize_timer)
             call register_timer('par2grid', par2grid_timer)
             call register_timer('grid2par', grid2par_timer)
             call register_timer('parcel split', split_timer)
@@ -78,95 +85,52 @@ program epic3d
             call register_timer('field diagnostics I/O', field_stats_io_timer)
             call register_timer('vor2vel', vor2vel_timer)
             call register_timer('vorticity tendency', vtend_timer)
-            call register_timer('parcel push', rk4_timer)
+            call register_timer('parcel push', rk_timer)
             call register_timer('merge nearest', merge_nearest_timer)
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
+            call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
+            call register_timer('boundary fluxes', bndry_flux_timer)
+            call register_timer('damping', damping_timer)
 
             call start_timer(epic_timer)
-
-            ! set axis and dimension names for the NetCDF output
-            call set_netcdf_dimensions((/'x', 'y', 'z', 't'/))
-            call set_netcdf_axes((/'X', 'Y', 'Z', 'T'/))
 
             ! parse the config file
             call read_config_file
 
             ! read domain dimensions
-            if (l_restart) then
-                call setup_domain_and_parameters(trim(restart_file))
-            else
-                call setup_domain_and_parameters(trim(field_file))
-            endif
+            call setup_domain_and_parameters
 
-            call parcel_alloc(max_num_parcels)
+            call setup_fields_and_parcels
 
-            if (l_restart) then
-                call setup_restart(trim(restart_file), time%initial, file_type)
-
-                if (file_type == 'fields') then
-                    call init_parcels(restart_file, field_tol)
-                else if (file_type == 'parcels') then
-                    call read_netcdf_parcels(restart_file)
-                else
-                    print *, 'Restart file must be of type "fields" or "parcels".'
-                    stop
-                endif
-            else
-                time%initial = zero ! make sure user cannot start at arbirtrary time
-
-                call init_parcels(field_file, field_tol)
-            endif
-
-            call ls_rk4_alloc(max_num_parcels)
+            call ls_rk_setup(rk_order)
 
             call init_inversion
 
-            if (output%write_parcel_stats) then
-                call init_parcel_diagnostics
-            endif
-
             call init_parcel_correction
 
-            call field_default
-
             call setup_output_files
+
+            call nearest_win_allocate
 
         end subroutine
 
 
         subroutine run
             use options, only : time, parcel
-#ifdef ENABLE_VERBOSE
-            use options, only : verbose
-#endif
             double precision :: t = zero    ! current time
             integer          :: cor_iter    ! iterator for parcel correction
-            integer :: n_orig
 
             t = time%initial
 
             do while (t < time%limit)
 
-#ifdef ENABLE_VERBOSE
-                if (verbose) then
-                    print "(a15, f0.4)", "time:          ", t
-                endif
-#endif
                 call apply_vortcor
 
-                call ls_rk4_step(t)
+                call ls_rk_step(t)
 
-                !call apply_vortcor
+                call parcel_merge
 
-                n_orig = n_parcels
-
-                call merge_parcels(parcels)
-
-                if (n_orig > n_parcels) then
-                   print *, "Merged parcels at time", t
-                endif
-
-                call parcel_split(parcels, parcel%lambda_max)
+                call parcel_split
 
                 do cor_iter = 1, parcel%correction_iters
                     call apply_laplace((cor_iter > 1))
@@ -186,7 +150,10 @@ program epic3d
         subroutine post_run
             use options, only : output
             call parcel_dealloc
-            call ls_rk4_dealloc
+            call field_dealloc
+            call nearest_win_deallocate
+            call bndry_fluxes_deallocate
+            call finalise_inversion
             call stop_timer(epic_timer)
 
             call write_time_to_csv(output%basename)
@@ -200,8 +167,9 @@ program epic3d
 #ifdef ENABLE_VERBOSE
         use options, only : verbose
 #endif
-        integer                          :: i
-        character(len=512)               :: arg
+        integer            :: i
+        character(len=512) :: arg
+        logical            :: l_exist
 
         filename = ''
         restart_file = ''
@@ -217,8 +185,7 @@ program epic3d
                 call get_command_argument(i, arg)
                 filename = trim(arg)
             else if (arg == '--help') then
-                print *, 'Run code with "./epic3d --config [config file]"'
-                stop
+                call mpi_stop('Run code with "./epic3d --config [config file]"')
             else if (arg == '--restart') then
                 l_restart = .true.
                 i = i + 1
@@ -233,23 +200,31 @@ program epic3d
         end do
 
         if (filename == '') then
-            print *, 'No configuration file provided. Run code with "./epic3d --config [config file]"'
-            stop
+            call mpi_stop(&
+                'No configuration file provided. Run code with "./epic3d --config [config file]"')
         endif
 
         if (l_restart .and. (restart_file == '')) then
-            print *, 'No restart file provided. Run code with "./epic3d --config [config file]' // &
-                     ' --restart [restart file]"'
-            stop
+            call mpi_stop(&
+                'No restart file provided. Run code with "./epic3d --config [config file]' // &
+                     ' --restart [restart file]"')
+        endif
+
+        inquire(file=filename, exist=l_exist)
+
+        if (.not. l_exist) then
+            call mpi_stop(&
+                "Configuration file " // trim(filename) // " does not exist.")
         endif
 
 #ifdef ENABLE_VERBOSE
         ! This is the main application of EPIC
         if (verbose) then
             if (l_restart) then
-                print *, 'Restarting EPIC3D with "', trim(filename), '" and "', trim(restart_file), "'"
+                call mpi_print(&
+                    'Restarting EPIC3D with "' // trim(filename) // '" and "' // trim(restart_file) // "'")
             else
-                print *, 'Running EPIC3D with "', trim(filename), '"'
+                call mpi_print('Running EPIC3D with "' // trim(filename) // '"')
             endif
         endif
 #endif

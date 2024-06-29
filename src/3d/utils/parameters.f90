@@ -8,6 +8,9 @@ module parameters
     use netcdf_reader
     use netcdf_utils
     use netcdf_writer
+    use mpi_environment
+    use mpi_layout, only : box, l_mpi_layout_initialised
+    use mpi_utils, only : mpi_print, mpi_stop
     implicit none
 
     ! mesh spacing
@@ -16,7 +19,7 @@ module parameters
     ! inverse mesh spacing
     double precision, protected :: dxi(3)
 
-    ! grid cell volume, really area in 2D:
+    ! grid cell volume
     double precision, protected :: vcell
 
     ! inverse grid cell volume
@@ -49,6 +52,12 @@ module parameters
     ! inverse domain size
     double precision, protected :: extenti(3)
 
+    ! domain volume
+    double precision, protected :: vdomain
+
+    ! inverse domain volume
+    double precision, protected :: vdomaini
+
     ! domain centre
     double precision, protected :: center(3)
 
@@ -66,8 +75,8 @@ module parameters
     ! minimum volume
     double precision, protected :: vmin
 
-    ! maximum volume
-    double precision, protected :: vmax
+    ! upper bound for major semi-axis (used for splitting)
+    double precision, protected :: amax
 
     ! maximum number of allowed parcels
     integer, protected :: max_num_parcels
@@ -83,6 +92,11 @@ module parameters
     subroutine update_parameters
         double precision :: msr
 
+        if (.not. l_mpi_layout_initialised) then
+            call mpi_print("MPI layout is not initialsed!")
+            call mpi_stop
+        endif
+
         upper = lower + extent
 
         extenti = one / extent
@@ -95,16 +109,21 @@ module parameters
                        dxi(2) * dx(3), dxi(3) * dx(2)/))
 
         if (msr > two) then
-            print *, '**********************************************************************'
-            print *, '*                                                                    *'
-            print *, '*   Warning: A mesh spacing ratio of more than 2 is not advisable!   *'
-            print *, '*                                                                    *'
-            print *, '**********************************************************************'
+            if (world%rank == world%root) then
+                print *, '**********************************************************************'
+                print *, '*                                                                    *'
+                print *, '*   Warning: A mesh spacing ratio of more than 2 is not advisable!   *'
+                print *, '*                                                                    *'
+                print *, '**********************************************************************'
+            endif
 
             if (.not. allow_larger_anisotropy) then
-                stop
+                call mpi_stop
             endif
         endif
+
+        vdomain = product(extent)
+        vdomaini = one / vdomain
 
         vcell = product(dx)
         vcelli = one / vcell
@@ -125,26 +144,46 @@ module parameters
         hli = one / hl
 
         vmin = vcell / parcel%min_vratio
-        vmax = vcell / parcel%max_vratio
 
-        max_num_parcels = int(nx * ny * nz * parcel%min_vratio * parcel%size_factor)
+        amax = (f34 * fpi) ** f13 * minval(dx)
+
+        max_num_parcels = int(box%halo_ncell * parcel%min_vratio * parcel%size_factor)
 
     end subroutine update_parameters
 
 
     subroutine set_zeta_boundary_flag(zeta)
-        double precision, intent(in) :: zeta(-1:nz+1, 0:ny-1, 0:nx-1)
+        double precision, intent(in) :: zeta(-1:nz+1,                &
+                                             box%hlo(2):box%hhi(2),  &
+                                             box%hlo(1):box%hhi(1))
         double precision             :: rms_bndry(2), rms_interior, thres
+        double precision             :: val(3)
 
         if (boundary%l_ignore_bndry_zeta_flag) then
             l_bndry_zeta_zero(:) = .false.
-            print *, "WARNING: You allow the gridded vertical vorticity component"
-            print *, "         at the boundaries to develop non-zero values."
-            print *, "         Stop your simulation if this is not your intention."
+            if (world%rank == world%root) then
+                print *, "WARNING: You allow the gridded vertical vorticity component"
+                print *, "         at the boundaries to develop non-zero values."
+                print *, "         Stop your simulation if this is not your intention."
+            endif
         else
-            rms_interior = dsqrt(sum(zeta(1:nz-1, :, :) ** 2) * nhcelli / (nz-1))
-            rms_bndry(1) = dsqrt(sum(zeta(0,      :, :) ** 2) * nhcelli)
-            rms_bndry(2) = dsqrt(sum(zeta(nz,     :, :) ** 2) * nhcelli)
+            ! rms interior
+            val(1) = sum(zeta(1:nz-1, box%lo(2):box%hi(2), box%lo(1):box%hi(1)) ** 2)
+
+            ! rms boundary
+            val(2) = sum(zeta(0,      box%lo(2):box%hi(2), box%lo(1):box%hi(1)) ** 2)
+            val(3) = sum(zeta(nz,     box%lo(2):box%hi(2), box%lo(1):box%hi(1)) ** 2)
+
+            call MPI_Allreduce(MPI_IN_PLACE,            &
+                               val(1:3),                &
+                               3,                       &
+                               MPI_DOUBLE_PRECISION,    &
+                               MPI_SUM,                 &
+                               world%comm,              &
+                               world%err)
+
+            rms_interior = dsqrt(val(1) * nhcelli / (nz-1))
+            rms_bndry = dsqrt(val(2:3) * nhcelli)
 
             thres = boundary%zeta_tol * rms_interior + epsilon(rms_interior)
 
@@ -152,12 +191,12 @@ module parameters
         endif
 
 #if defined(ENABLE_VERBOSE) || !defined(NDEBUG)
-        if (.not. l_bndry_zeta_zero(1)) then
+        if ((.not. l_bndry_zeta_zero(1)) .and. (world%rank == world%root)) then
             print *, "WARNING: This simulation will not ensure that the gridded vertical"
             print *, "         vorticity component is zero at the lower boundary."
         endif
 
-        if (.not. l_bndry_zeta_zero(2)) then
+        if ((.not. l_bndry_zeta_zero(2)) .and. (world%rank == world%root)) then
             print *, "WARNING: This simulation will not ensure that the gridded vertical"
             print *, "         vorticity component is zero at the upper boundary."
         endif
@@ -172,9 +211,11 @@ module parameters
 
         if (boundary%l_ignore_bndry_zeta_flag) then
             l_bndry_zeta_zero(:) = .false.
-            print *, "WARNING: You allow the gridded vertical vorticity component"
-            print *, "         at the boundaries to develop non-zero values."
-            print *, "         Stop your simulation if this is not your intention."
+            if (world%rank == world%root) then
+                print *, "WARNING: You allow the gridded vertical vorticity component"
+                print *, "         at the boundaries to develop non-zero values."
+                print *, "         Stop your simulation if this is not your intention."
+            endif
             return
         endif
 
@@ -184,8 +225,13 @@ module parameters
             call read_netcdf_attribute(grp_ncid, 'l_lower_boundry_zeta_zero', l_bndry_zeta_zero(1))
             call read_netcdf_attribute(grp_ncid, 'l_upper_boundry_zeta_zero', l_bndry_zeta_zero(2))
         else
-            print *, "WARNING: Could not find a '" // name // "' group in the provided"
-            print *, "         NetCDF file."
+            if (world%rank == world%root) then
+                print *, "WARNING: Could not find a '" // name // "' group in the provided"
+                print *, "         NetCDF file."
+                print *, "         Note this will result in the boundary zeta flags being"
+                print *, "         set to false starting with parcels (which could well be"
+                print *, "         undesirable)."
+            endif
         endif
 
     end subroutine read_zeta_boundary_flag
@@ -213,17 +259,21 @@ module parameters
     end subroutine set_mesh_spacing
 
 
+    subroutine set_max_num_parcels(num)
+        integer, intent(in) :: num
+        max_num_parcels = num
+    end subroutine set_max_num_parcels
+
 #ifdef ENABLE_UNIT_TESTS
     subroutine set_vmin(val)
         double precision, intent(in) :: val
         vmin = val
     end subroutine set_vmin
 
-
-    subroutine set_vmax(val)
+    subroutine set_amax(val)
         double precision, intent(in) :: val
-        vmax = val
-    end subroutine set_vmax
+        amax = val
+    end subroutine set_amax
 #endif
 
 end module parameters

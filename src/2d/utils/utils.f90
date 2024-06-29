@@ -1,19 +1,27 @@
 module utils
     use constants, only : one
-    use options, only : output, l_restart, verbose
+    use options, only : field_file          &
+                      , field_tol           &
+                      , output              &
+                      , l_restart           &
+                      , restart_file        &
+                      , time                &
+                      , verbose
+    use netcdf_utils, only : set_netcdf_dimensions, set_netcdf_axes
     use field_netcdf
     use parcel_netcdf
     use parcel_diagnostics_netcdf, only : create_netcdf_parcel_stats_file, &
                                           write_netcdf_parcel_stats
-    use parcel_diagnostics, only : calculate_parcel_diagnostics
+    use parcel_diagnostics, only : calculate_parcel_diagnostics, calculate_peref
     use field_diagnostics_netcdf
     use field_diagnostics, only : calculate_field_diagnostics
-    use parcel_container, only : n_parcels
+    use parcel_init, only : init_parcels
+    use parcel_container, only : n_parcels, parcel_alloc
     use tri_inversion, only : vor2vel, vorticity_tendency
     use parcel_interpl, only : par2grid, grid2par
     use netcdf_reader, only : get_file_type, get_num_steps, get_time, get_netcdf_box
-    use parameters, only : lower, extent, update_parameters
-    use physics, only : read_physical_quantities, print_physical_quantities
+    use parameters, only : lower, extent, update_parameters, max_num_parcels
+    use physics, only : read_physical_quantities, print_physical_quantities, l_peref
 #ifndef NDEBUG
     use parcel_interpl, only : vol2grid_symmetry_error
 #endif
@@ -32,6 +40,10 @@ module utils
 
         ! Create NetCDF files and set the step number
         subroutine setup_output_files
+
+            if (.not. l_peref) then
+                call calculate_peref
+            endif
 
             if (output%write_parcel_stats) then
                 call create_netcdf_parcel_stats_file(trim(output%basename), &
@@ -163,12 +175,22 @@ module utils
             nsfw = int(t / output%field_stats_freq) + 1
         end subroutine setup_restart
 
-        subroutine setup_domain_and_parameters(fname)
-            character(*), intent(in) :: fname
-            integer                  :: ncid
-            integer                  :: ncells(2)
+        subroutine setup_domain_and_parameters
+            character(512) :: fname = ''
+            integer        :: ncid
+            integer        :: ncells(2)
 
-            call open_netcdf_file(fname, NF90_NOWRITE, ncid)
+            ! set axis and dimension names for the NetCDF output
+            call set_netcdf_dimensions((/'x', 'z', 't'/))
+            call set_netcdf_axes((/'X', 'Z', 'T'/))
+
+            if (l_restart) then
+                fname = restart_file
+            else
+                fname = field_file
+            endif
+
+            call open_netcdf_file(trim(fname), NF90_NOWRITE, ncid)
 
             call get_netcdf_box(ncid, lower, extent, ncells)
             call read_physical_quantities(ncid)
@@ -187,5 +209,28 @@ module utils
             endif
 #endif
         end subroutine setup_domain_and_parameters
+
+        subroutine setup_parcels
+            character(len=16) :: file_type
+
+            call parcel_alloc(max_num_parcels)
+
+            if (l_restart) then
+                call setup_restart(trim(restart_file), time%initial, file_type)
+
+                if (file_type == 'fields') then
+                    call init_parcels(restart_file, field_tol)
+                else if (file_type == 'parcels') then
+                    call read_netcdf_parcels(restart_file)
+                else
+                    print *, 'Restart file must be of type "fields" or "parcels".'
+                    stop
+                endif
+            else
+                time%initial = zero ! make sure user cannot start at arbitrary time
+
+                call init_parcels(field_file, field_tol)
+            endif
+        end subroutine setup_parcels
 
 end module utils

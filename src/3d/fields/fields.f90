@@ -6,6 +6,9 @@ module fields
     use dimensions, only : n_dim, I_X, I_Y, I_Z
     use parameters, only : dx, dxi, extent, lower, nx, ny, nz
     use constants, only : zero
+    use mpi_environment
+    use mpi_layout, only : box, l_mpi_layout_initialised
+    use mpi_utils, only : mpi_exit_on_error
     implicit none
 
     ! x: zonal
@@ -34,55 +37,73 @@ module fields
     double precision, allocatable, dimension(:, :, :) :: &
 #ifndef ENABLE_DRY_MODE
         dbuoyg,    &   ! dry buoyancy (or liquid-water buoyancy)
+        humg,      &   ! humidity
 #endif
         tbuoyg,    &   ! buoyancy
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
-        volg           ! volume scalar field
+        volg, &        ! volume scalar field
+        strain_mag     ! strain magnitude
 
     integer, allocatable, dimension(:, :, :) :: &
         nparg,     &   ! number of parcels per grid box
         nsparg         ! number of small parcels per grid box
 
-    ! velocity strain indices
+    ! velocity strain indices (note that dw/dz is found from continuity)
     integer, parameter :: I_DUDX = 1 & ! index for du/dx strain component
                         , I_DUDY = 2 & ! index for du/dy strain component
-                        , I_DVDY = 3 & ! index for dv/dy strain component
-                        , I_DWDX = 4 & ! index for dw/dx strain component
-                        , I_DWDY = 5   ! index for dw/dy strain component
+                        , I_DUDZ = 3 & ! index for du/dz strain component
+                        , I_DVDX = 4 & ! index for dv/dx strain component
+                        , I_DVDY = 5 & ! index for dv/dy strain component
+                        , I_DVDZ = 6 & ! index for dv/dz strain component
+                        , I_DWDX = 7 & ! index for dw/dx strain component
+                        , I_DWDY = 8   ! index for dw/dy strain component
 
     contains
 
         ! Allocate all fields
         subroutine field_alloc
+            integer :: hlo(3), hhi(3)
+
+            if (.not. l_mpi_layout_initialised) then
+                call mpi_exit_on_error
+            endif
+
             if (allocated(velog)) then
                 return
             endif
 
-            allocate(velog(-1:nz+1, 0:ny-1, 0:nx-1, n_dim))
-            allocate(velgradg(-1:nz+1, 0:ny-1, 0:nx-1, 5))
+            hlo = box%hlo
+            hhi = box%hhi
 
-            allocate(volg(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(velog(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
+            allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 8))
+
+            allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef NDEBUG
-            allocate(sym_volg(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(sym_volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
-            allocate(vortg(-1:nz+1, 0:ny-1, 0:nx-1, n_dim))
+            allocate(vortg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
-            allocate(vtend(-1:nz+1, 0:ny-1, 0:nx-1, n_dim))
+            allocate(vtend(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
-            allocate(tbuoyg(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(tbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
 #ifndef ENABLE_DRY_MODE
-            allocate(dbuoyg(-1:nz+1, 0:ny-1, 0:nx-1))
+            allocate(dbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(humg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
-            allocate(nparg(-1:nz, 0:ny-1, 0:nx-1))
-            allocate(nsparg(-1:nz, 0:ny-1, 0:nx-1))
+            allocate(nparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
+            allocate(nsparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 
         end subroutine field_alloc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Reset fields to zero
         subroutine field_default
@@ -91,21 +112,56 @@ module fields
             velog    = zero
             velgradg = zero
             volg     = zero
+            strain_mag = zero
             vortg    = zero
             vtend    = zero
             tbuoyg   = zero
 #ifndef ENABLE_DRY_MODE
             dbuoyg   = zero
+            humg     = zero
 #endif
             nparg    = zero
             nsparg   = zero
-        end subroutine
+
+#ifndef NDEBUG
+            sym_volg = zero
+#endif
+        end subroutine field_default
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        ! Deallocate fields
+        subroutine field_dealloc
+            if (allocated(velog)) then
+                deallocate(velog)
+                deallocate(velgradg)
+                deallocate(volg)
+                deallocate(strain_mag)
+                deallocate(vortg)
+                deallocate(vtend)
+                deallocate(tbuoyg)
+#ifndef ENABLE_DRY_MODE
+                deallocate(dbuoyg)
+                deallocate(humg)
+#endif
+                deallocate(nparg)
+                deallocate(nsparg)
+
+#ifndef NDEBUG
+                deallocate(sym_volg)
+#endif
+            endif
+
+        end subroutine field_dealloc
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Get the lower index of the cell the parcel is in.
-        ! This subroutine does not take x periodicity into account.
+        ! This subroutine does not take x nor y periodicity into account.
         ! @param[in] pos position of the parcel
         ! @param[out] i lower, zonal cell index
-        ! @param[out] j lower, vertical cell index
+        ! @param[out] j lower, meridional cell index
+        ! @param[out] k lower, vertical cell index
         pure subroutine get_index(pos, i, j, k)
             double precision, intent(in)  :: pos(n_dim)
             integer,          intent(out) :: i, j, k
@@ -115,24 +171,22 @@ module fields
             k = floor((pos(I_Z) - lower(I_Z)) * dxi(I_Z))
         end subroutine get_index
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Do periodic shift of the index
-        ! @param[inout] ii zonal grid point indices
-        ! @param[inout] jj meridional grid point indices
-        elemental pure subroutine periodic_index_shift(ii, jj)
-            integer, intent(inout) :: ii, jj
+        pure function is_contained(pos) result(l_contained)
+            double precision, intent(in) :: pos(3)
+            integer                      :: i, j, k
+            logical                      :: l_contained
 
-            ! account for x / y periodicity:
-            ! -1          --> nx-1 / ny-1
-            !  0          --> 0
-            ! nx+1 / ny+1 --> 1
-            ! nx / ny     --> 0
-            ! nx-1 / ny-1 --> nx-1 / ny-1
-            ii = mod(ii + nx, nx)
-            jj = mod(jj + ny, ny)
+            call get_index(pos, i, j, k)
 
-        end subroutine periodic_index_shift
+            l_contained = ((i >= box%lo(1))  .and. &
+                           (i <= box%hi(1))  .and. &
+                           (j >= box%lo(2))  .and. &
+                           (j <= box%hi(2)))
+        end function
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Get the coordinate of a grid point (i, j, k).
         ! @param[in] i zonal cell index

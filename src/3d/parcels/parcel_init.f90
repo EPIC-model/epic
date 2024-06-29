@@ -2,60 +2,61 @@
 !               This module initializes parcel default values.
 ! =============================================================================
 module parcel_init
-    use options, only : parcel, output, verbose, field_tol
-    use constants, only : zero, two, one, f12, f13, f23
-    use parcel_container, only : parcels, n_parcels
+    use options, only : parcel
+    use constants, only : zero, two, one, f12, f13, f23, f14
+    use parcel_container, only : parcels, n_parcels, n_total_parcels, parcel_alloc
     use parcel_ellipsoid, only : get_abc, get_eigenvalues
     use parcel_split_mod, only : parcel_split
-    use parcel_interpl, only : trilinear, ngp
+    use parcel_interpl, only : trilinear
     use parameters, only : dx, vcell, ncell,            &
                            extent, lower, nx, ny, nz,   &
                            max_num_parcels
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use omp_lib
+    use mpi_environment
+    use mpi_layout, only : box
+    use mpi_utils, only : mpi_print, mpi_exit_on_error
+    use mpi_collectives, only : mpi_blocking_reduce
+    use fields
+    use field_mpi
     implicit none
 
     integer :: init_timer
 
-    double precision, allocatable :: weights(:, :), apar(:)
-    integer, allocatable :: is(:, :), js(:, :), ks(:, :)
+    integer :: is, js, ks
 
-    private :: weights, apar, is, js, ks
+    ! interpolation weights
+    double precision :: weights(0:1,0:1,0:1)
 
+    private :: weights, is, js, ks
 
-    private :: init_refine,                 &
-               init_from_grids,             &
-               alloc_and_precompute,        &
-               dealloc
+    private :: init_refine, init_fill_halo
 
     contains
 
-        ! This subroutine is only used in the unit test
-        ! "test_parcel_init"
-        subroutine unit_test_parcel_init_alloc
-            call alloc_and_precompute
-        end subroutine unit_test_parcel_init_alloc
-
-
-        ! Set default values for parcel attributes
-        ! Attention: This subroutine assumes that the parcel
-        !            container is already allocated!
-        subroutine init_parcels(fname, tol)
-            character(*),     intent(in) :: fname
-            double precision, intent(in) :: tol
+        ! Allocate parcel container and sets values for parcel attributes
+        ! to their default values.
+        subroutine parcel_default
             double precision             :: lam, l23
             integer                      :: n
 
             call start_timer(init_timer)
 
+            call parcel_alloc(max_num_parcels)
+
             ! set the number of parcels (see parcels.f90)
             ! we use "n_per_cell" parcels per grid cell
-            n_parcels = parcel%n_per_cell * ncell
+            n_parcels = parcel%n_per_cell * box%ncell
 
             if (n_parcels > max_num_parcels) then
                 print *, "Number of parcels exceeds limit of", &
                           max_num_parcels, ". Exiting."
-                stop
+                call mpi_exit_on_error
+            endif
+
+            n_total_parcels = n_parcels
+            if (world%size > 1) then
+                call mpi_blocking_reduce(n_total_parcels, MPI_SUM, world)
             endif
 
             call init_regular_positions
@@ -105,12 +106,11 @@ module parcel_init
             !$omp end do
             !$omp end parallel
 
-            call init_from_grids(fname, tol)
-
             call stop_timer(init_timer)
 
-        end subroutine init_parcels
+        end subroutine parcel_default
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         ! Position parcels regularly in the domain.
         subroutine init_regular_positions
@@ -120,17 +120,19 @@ module parcel_init
             ! number of parcels per dimension
             n_per_dim = int(dble(parcel%n_per_cell) ** f13)
             if (n_per_dim ** 3 .ne. parcel%n_per_cell) then
-                print *, "Number of parcels per cell (", &
-                         parcel%n_per_cell, ") not a cubic."
-                stop
+                if (world%rank == world%root) then
+                    print *, "Number of parcels per cell (", &
+                             parcel%n_per_cell, ") not a cubic."
+                endif
+                call mpi_exit_on_error
             endif
 
             im = one / dble(n_per_dim)
 
             l = 1
             do iz = 0, nz-1
-                do iy = 0, ny-1
-                    do ix = 0, nx-1
+                do iy = box%lo(2), box%hi(2)
+                    do ix = box%lo(1), box%hi(1)
                         corner = lower + dble((/ix, iy, iz/)) * dx
                         do k = 1, n_per_dim
                             do j = 1, n_per_dim
@@ -147,10 +149,11 @@ module parcel_init
             enddo
 
             if (.not. n_parcels == l - 1) then
-                print *, "Number of parcels disagree!"
-                stop
+                call mpi_exit_on_error("Number of parcels disagree!")
             endif
         end subroutine init_regular_positions
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         subroutine init_refine(lam)
             double precision, intent(inout) :: lam
@@ -158,236 +161,77 @@ module parcel_init
 
             ! do refining by splitting
             do while (lam >= parcel%lambda_max)
-                call parcel_split(parcels, parcel%lambda_max)
+                call parcel_split
                 evals = get_eigenvalues(parcels%B(1, :), parcels%volume(1))
                 lam = dsqrt(evals(1) / evals(3))
             end do
         end subroutine init_refine
 
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-        ! Precompute weights, indices of trilinear
-        ! interpolation and "apar"
-        subroutine alloc_and_precompute
-            double precision, allocatable :: resi(:, :, :)
-            double precision              :: rsum
-            integer                       :: l, n
+        subroutine init_parcels_from_grids
+            integer:: n, l
 
-            allocate(resi(0:nz, 0:ny-1, 0:nx-1))
-            allocate(apar(n_parcels))
-            allocate(weights(ngp, n_parcels))
-            allocate(is(ngp, n_parcels))
-            allocate(js(ngp, n_parcels))
-            allocate(ks(ngp, n_parcels))
+            call start_timer(init_timer)
 
-            ! Compute mean parcel density:
-            resi = zero
+            ! make sure halo grid points are filled
+            call init_fill_halo
 
-            !$omp parallel do default(shared) private(l, n) reduction(+:resi)
-            do n = 1, n_parcels
-                ! get interpolation weights and mesh indices
-                call trilinear(parcels%position(:, n), is(:, n), js(:, n), ks(:, n), weights(:, n))
-
-                do l = 1, ngp
-                    ! catch if in halo
-                    if ((ks(l, n) < 0) .or. (ks(l, n) > nz)) then
-                        print *, "Error: Tries to access undefined halo grid point."
-                        stop
-                    endif
-                    resi(ks(l, n), js(l, n), is(l, n)) = resi(ks(l, n), js(l, n), is(l, n)) + weights(l, n)
-                enddo
-            enddo
-            !$omp end parallel do
-
-            !Double edge values at iz = 0 and nz:
-            resi(0,  :, :) = two * resi(0,  :, :)
-            resi(nz, :, :) = two * resi(nz, :, :)
-
-            ! Determine local inverse density of parcels (apar)
-            !$omp parallel do default(shared) private(l, n, rsum)
-            do n = 1, n_parcels
-                rsum = zero
-                do l = 1, ngp
-                    rsum = rsum + resi(ks(l, n), js(l, n), is(l, n)) * weights(l, n)
-                enddo
-                apar(n) = one / rsum
-            enddo
-            !$omp end parallel do
-
-            deallocate(resi)
-
-        end subroutine alloc_and_precompute
-
-        subroutine dealloc
-            deallocate(apar)
-            deallocate(weights)
-            deallocate(is)
-            deallocate(js)
-            deallocate(ks)
-        end subroutine dealloc
-
-        ! Initialise parcel attributes from gridded quantities.
-        ! Attention: This subroutine currently only supports
-        !            vorticity and buoyancy fields.
-        subroutine init_from_grids(ncfname, tol)
-            use netcdf_reader
-            character(*),     intent(in)  :: ncfname
-            double precision, intent(in)  :: tol
-            double precision              :: buffer(-1:nz+1, 0:ny-1, 0:nx-1)
-            integer                       :: ncid
-            integer                       :: n_steps, start(4), cnt(4)
-
-            call alloc_and_precompute
-
-            call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
-
-            call get_num_steps(ncid, n_steps)
-
-            cnt  =  (/ nx, ny, nz+1, 1       /)
-            start = (/ 1,  1,  1,    n_steps /)
-
-            if (has_dataset(ncid, 'x_vorticity')) then
-                buffer = zero
-                call read_netcdf_dataset(ncid, 'x_vorticity', buffer(0:nz, :, :), &
-                                         start=start, cnt=cnt)
-                call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(1, :))
-            endif
-
-            if (has_dataset(ncid, 'y_vorticity')) then
-                buffer = zero
-                call read_netcdf_dataset(ncid, 'y_vorticity', buffer(0:nz, :, :), &
-                                         start=start, cnt=cnt)
-                call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(2, :))
-            endif
-
-            if (has_dataset(ncid, 'z_vorticity')) then
-                buffer = zero
-                call read_netcdf_dataset(ncid, 'z_vorticity', buffer(0:nz, :, :), &
-                                         start=start, cnt=cnt)
-                call gen_parcel_scalar_attr(buffer, tol, parcels%vorticity(3, :))
-            endif
-
-            if (has_dataset(ncid, 'buoyancy')) then
-                buffer = zero
-                call read_netcdf_dataset(ncid, 'buoyancy', buffer(0:nz, :, :), &
-                                         start=start, cnt=cnt)
-                call gen_parcel_scalar_attr(buffer, tol, parcels%buoyancy)
-            endif
-
-#ifndef ENABLE_DRY_MODE
-            if (has_dataset(ncid, 'humidity')) then
-                buffer = zero
-                call read_netcdf_dataset(ncid, 'humidity', buffer(0:nz, :, :), &
-                                         start=start, cnt=cnt)
-                call gen_parcel_scalar_attr(buffer, tol, parcels%humidity)
-            endif
-#endif
-            call close_netcdf_file(ncid)
-
-            call dealloc
-
-        end subroutine init_from_grids
-
-        ! Generates the parcel attribute "par" from the field values provided
-        ! in "field" (see Fontane & Dritschel, J. Comput. Phys. 2009, section 2.2)
-        subroutine gen_parcel_scalar_attr(field, tol, par)
-            double precision, intent(in)  :: field(-1:nz+1, 0:ny-1, 0:nx-1)
-            double precision, intent(in)  :: tol
-            double precision, intent(out) :: par(:)
-            double precision :: resi(0:nz, 0:ny-1, 0:nx-1)
-            double precision :: rms, rtol, rerr, rsum, fsum, avg_field
-            integer          :: l, n
-
-#ifdef ENABLE_VERBOSE
-                if (verbose) then
-                    print *, 'Generate parcel attribute'
-                endif
-#endif
-
-            ! Compute mean field value:
-            ! (divide by ncell since lower and upper edge weights are halved)
-            avg_field = (f12 * sum(field(0, :, :) + field(nz, :, :)) &
-                             + sum(field(1:nz-1, :, :))) / dble(ncell)
-
-            resi(0:nz, :, :) = (field(0:nz, :, :) - avg_field) ** 2
-
-            rms = dsqrt((f12 * sum(resi(0, :, :) + resi(nz, :, :)) &
-                             + sum(resi(1:nz-1, :, :))) / dble(ncell))
-
-
-            if (rms == zero) then
-                !$omp parallel default(shared)
-                !$omp do private(n)
-                do n = 1, n_parcels
-                    ! assign mean value
-                    par(n) = avg_field
-                enddo
-                !$omp end do
-                !$omp end parallel
-                return
-            endif
-
-            ! Maximum error permitted below in gridded residue:
-            rtol = rms * tol
-
-            ! Initialise (volume-weighted) parcel attribute with a guess
-            !$omp parallel do default(shared) private(l, n, fsum)
-            do n = 1, n_parcels
-                fsum = zero
-                do l = 1, ngp
-                    fsum = fsum + field(ks(l, n), js(l, n), is(l, n)) * weights(l, n)
-                enddo
-                par(n) = apar(n) * fsum
-            enddo
-            !$omp end parallel do
-
-            ! Iteratively compute a residual and update (volume-weighted) attribute:
-            rerr = one
-
-            do while (rerr .gt. rtol)
-                !Compute residual:
-                resi = zero
-                do n = 1, n_parcels
-                    do l = 1, ngp
-                        resi(ks(l, n), js(l, n), is(l, n)) = resi(ks(l, n), js(l, n), is(l, n)) &
-                                                           + weights(l, n) * par(n)
-                    enddo
-                enddo
-
-                resi(0, :, :)    = two * resi(0, :, :)
-                resi(nz, :, :)   = two * resi(nz, :, :)
-                resi(0:nz, :, :) = field(0:nz, :, :) - resi(0:nz, :, :)
-
-                !Update (volume-weighted) attribute:
-                !$omp parallel do default(shared) private(n, rsum, l)
-                do n = 1, n_parcels
-                    rsum = zero
-                    do l = 1, ngp
-                        rsum = rsum + resi(ks(l, n), js(l, n), is(l, n)) * weights(l, n)
-                    enddo
-                    par(n) = par(n) + apar(n) * rsum
-                enddo
-                !$omp end parallel do
-
-                !Compute maximum error:
-                rerr = maxval(dabs(resi))
-
-#ifdef ENABLE_VERBOSE
-                if (verbose) then
-                    print *, ' Max abs error = ', rerr
-                endif
-#endif
-            enddo
-
-            !Finally divide by parcel volume to define attribute:
-            ! (multiply with vcell since algorithm is designed for volume fractions)
             !$omp parallel default(shared)
-            !$omp do private(n)
+            !$omp do private(n, l, is, js, ks, weights)
             do n = 1, n_parcels
-                par(n) = vcell * par(n) / parcels%volume(n)
+
+                ! get interpolation weights and mesh indices
+                call trilinear(parcels%position(:, n), is, js, ks, weights)
+
+                ! loop over grid points which are part of the interpolation
+                do l = 1, 3
+                    parcels%vorticity(l, n) = parcels%vorticity(l, n) &
+                                            + sum(weights * vortg(ks:ks+1, js:js+1, is:is+1, l))
+                enddo
+                parcels%buoyancy(n) = parcels%buoyancy(n) &
+                                    + sum(weights * tbuoyg(ks:ks+1, js:js+1, is:is+1))
+#ifndef ENABLE_DRY_MODE
+                parcels%humidity(n) = parcels%humidity(n) &
+                                    + sum(weights * humg(ks:ks+1, js:js+1, is:is+1))
+#endif
             enddo
             !$omp end do
             !$omp end parallel
 
-        end subroutine gen_parcel_scalar_attr
+            call stop_timer(init_timer)
+
+        end subroutine init_parcels_from_grids
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine init_fill_halo
+#ifndef ENABLE_DRY_MODE
+            integer, parameter :: n_fields = 5
+#else
+            integer, parameter :: n_fields = 4
+#endif
+            call field_mpi_alloc(n_fields, ndim=3)
+
+            call field_interior_to_buffer(vortg(:, :, :, I_X), 1)
+            call field_interior_to_buffer(vortg(:, :, :, I_Y), 2)
+            call field_interior_to_buffer(vortg(:, :, :, I_Z), 3)
+            call field_interior_to_buffer(tbuoyg, 4)
+#ifndef ENABLE_DRY_MODE
+            call field_interior_to_buffer(humg, 5)
+#endif
+
+            call interior_to_halo_communication
+
+            call field_buffer_to_halo(vortg(:, :, :, I_X), 1, .false.)
+            call field_buffer_to_halo(vortg(:, :, :, I_Y), 2, .false.)
+            call field_buffer_to_halo(vortg(:, :, :, I_Z), 3, .false.)
+            call field_buffer_to_halo(tbuoyg, 4, .false.)
+#ifndef ENABLE_DRY_MODE
+            call field_buffer_to_halo(humg, 5, .false.)
+#endif
+            call field_mpi_dealloc
+
+        end subroutine init_fill_halo
 
 end module parcel_init

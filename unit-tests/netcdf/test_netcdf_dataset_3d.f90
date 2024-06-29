@@ -56,6 +56,10 @@ program test_netcdf_dataset_3d
 
     passed = (passed .and. (ncerr == 0))
 
+    call close_netcdf_file(ncid)
+
+    passed = (passed .and. (ncerr == 0))
+
     call open_netcdf_file(ncfname='nctest.nc',    &
                           access_flag=NF90_WRITE, &
                           ncid=ncid)

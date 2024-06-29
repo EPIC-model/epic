@@ -1,10 +1,6 @@
 import matplotlib as mpl
 
 # 5 Feb 2022
-# https://stackoverflow.com/questions/60870584/importing-siunitx-into-python
-#mpl.use("pgf")
-
-# 5 Feb 2022
 # https://matplotlib.org/stable/gallery/userdemo/pgf_preamble_sgskip.html
 # https://tex.stackexchange.com/questions/391074/how-to-use-the-siunitx-package-within-python-matplotlib
 # https://stackoverflow.com/questions/11354149/python-unable-to-render-tex-in-matplotlib
@@ -19,16 +15,8 @@ mpl.rcParams.update({
         r"\usepackage{amsmath}",
         r"\usepackage[utf8]{inputenc}",
         r"\usepackage[T1]{fontenc}",
-        r"\usepackage{siunitx}",
+        r"\usepackage{bm}"
         ])
-    #"pgf.rcfonts": False,
-    #"pgf.texsystem": "pdflatex",
-    #"pgf.preamble": "\n".join([
-        #r"\usepackage{amsmath}",
-        #r"\usepackage[utf8]{inputenc}",
-        #r"\usepackage[T1]{fontenc}",
-        #r"\usepackage{siunitx}", # load additional packages
-    #])
 })
 
 

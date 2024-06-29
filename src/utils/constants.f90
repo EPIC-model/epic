@@ -16,6 +16,7 @@ module constants
     double precision, parameter :: eight    = 8.0d0
     double precision, parameter :: nine     = 9.0d0
     double precision, parameter :: ten      = 10.0d0
+    double precision, parameter :: fifteen  = 15.0d0
     double precision, parameter :: hundred  = ten ** 2
     double precision, parameter :: thousand = ten ** 3
 
@@ -24,6 +25,7 @@ module constants
     double precision, parameter :: fpi    = one / pi
     double precision, parameter :: fpi2   = pi / two
     double precision, parameter :: fpi4   = pi / four
+    double precision, parameter :: fpi6   = pi / six
 
     double precision, parameter :: f32   = three / two
     double precision, parameter :: f34   = three / four

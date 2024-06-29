@@ -5,7 +5,7 @@ SUBDIRS = 	\
  	netcdf
 
 if ENABLE_3D
-SUBDIRS += 3d
+SUBDIRS += 3d mpi
 endif
 
 unittestsdir = $(prefix)/unit-tests

@@ -20,12 +20,18 @@ class nc_parcels:
 
         write_nc_info(ncfile=self._ncfile, file_type='parcels')
 
+        self.time = 0.0
         self._nparcels = 0
 
         self._physical_quantities = {}
 
+        self._parameters = {}
+
     def add_physical_quantity(self, key, value):
         self._physical_quantities[key] = value
+
+    def add_parameter(self, key, value):
+        self._parameters[key] = value
 
     def add_dataset(self, name, values, dtype='f8', **kwargs):
         """
@@ -54,7 +60,7 @@ class nc_parcels:
             time = self._ncfile.createVariable(varname='t',
                                                datatype=dtype,
                                                dimensions=('t'))
-            time[0] = 0.0
+            time[0] = self.time
 
         var = self._ncfile.createVariable(varname=name,
                                           datatype=dtype,
@@ -78,8 +84,11 @@ class nc_parcels:
             write_nc_parameters(self._ncfile, 'physical_quantities',
                                 self._physical_quantities)
 
-        self._ncfile.close()
+        if not self._parameters == {}:
+            write_nc_parameters(self._ncfile, 'parameters',
+                                self._parameters)
 
+        self._ncfile.close()
 
     def add_box(self, origin, extent, ncells):
         """

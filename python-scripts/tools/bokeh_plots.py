@@ -9,7 +9,6 @@ from tools.units import *
 import numpy as np
 from scipy import interpolate
 
-
 def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
     no_xaxis = kwargs.pop("no_xaxis", False)
     no_yaxis = kwargs.pop("no_yaxis", False)
@@ -45,8 +44,8 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
             plot_width = np.nanmin([1920, int(1080 * (right - left) / (top - bottom))])
             plot_height = np.nanmin([1080, int(1920 * (top - bottom) / (right - left))])
 
-    x_axis_label = get_label("$$x$$", units["position"], is_bokeh=True)
-    y_axis_label = get_label("$$y$$", units["position"], is_bokeh=True)
+    x_axis_label = get_label("x", units["position"], is_bokeh=True)
+    y_axis_label = get_label("y", units["position"], is_bokeh=True)
 
     if no_xlabel:
         x_axis_label = " "
@@ -56,8 +55,8 @@ def _get_bokeh_basic_graph(origin, extent, title=None, **kwargs):
 
     graph = bpl.figure(
         output_backend="webgl",
-        plot_width=plot_width,
-        plot_height=plot_height,
+        width=plot_width,
+        height=plot_height,
         aspect_ratio=(right - left) / (top - bottom),
         x_range=(left, right),
         y_range=(bottom, top),
@@ -287,11 +286,6 @@ def _bokeh_plot_parcels(ncreader, step, coloring, vmin, vmax, **kwargs):
     if coloring == "aspect-ratio":
         label = "aspect ratio"
         data = ncreader.get_aspect_ratio(step=step)
-    elif coloring == "vol-distr":
-        label = "volume distribution"
-        data = ncreader.get_dataset(step=step, name="volume")
-        data[data <= vmin] = 0.0
-        data[data > vmin] = 1.0
     else:
         label = coloring
         data = ncreader.get_dataset(step=step, name=coloring)
@@ -313,7 +307,6 @@ def _bokeh_plot_parcels(ncreader, step, coloring, vmin, vmax, **kwargs):
 
     x, y, width, height, angle = ncreader.get_ellipses_for_bokeh(step)
 
-
     if norm:
         vmin = -1.0
         vmax = 1.0
@@ -334,35 +327,16 @@ def _bokeh_plot_parcels(ncreader, step, coloring, vmin, vmax, **kwargs):
 
     mapper = None
     color_bar = None
-    if coloring == "vol-distr":
-        mapper = linear_cmap(
-            field_name="fill_color", palette=["blue", "red"], low=0, high=1
-        )
-        # 5 August 2021
-        # https://stackoverflow.com/questions/63344015/how-do-i-get-a-bokeh-colorbar-to-show-the-min-and-max-value
-        ticker = FixedTicker(ticks=[0, 0.5, 1])
-        color_bar = ColorBar(
-            color_mapper=mapper["transform"],
-            label_standoff=12,
-            ticker=ticker,
-            title_text_font_size=font_size,
-            major_label_text_font=text_font,
-            major_label_text_font_size=font_size,
-        )
-        # 5 August 2021
-        # https://stackoverflow.com/questions/37173230/how-do-i-use-custom-labels-for-ticks-in-bokeh
-        color_bar.major_label_overrides = {0: "0", 0.5: "Vmin", 1: "Vmax"}
-    else:
-        mapper = linear_cmap(
-            field_name="fill_color", palette=palette, low=vmin, high=vmax
-        )
-        color_bar = ColorBar(
-            color_mapper=mapper["transform"],
-            label_standoff=12,
-            title_text_font_size=font_size,
-            major_label_text_font=text_font,
-            major_label_text_font_size=font_size,
-        )
+    mapper = linear_cmap(
+        field_name="fill_color", palette=palette, low=vmin, high=vmax
+    )
+    color_bar = ColorBar(
+        color_mapper=mapper["transform"],
+        label_standoff=12,
+        title_text_font_size=font_size,
+        major_label_text_font=text_font,
+        major_label_text_font_size=font_size,
+    )
 
     graph.ellipse(
         x="x",
@@ -408,16 +382,11 @@ def bokeh_plot(fname, step, show=False, fmt="png", coloring="vorticity", **kwarg
 
     saveas = coloring + "_step_" + str(step).zfill(len(str(nsteps)))
 
+
     if ncreader.is_parcel_file:
         if coloring == "aspect-ratio":
             vmin = 1.0
             vmax = ncreader.get_global_attribute("lambda_max")
-        elif coloring == "vol-distr":
-            extent = ncreader.get_box_extent()
-            ncells = ncreader.get_box_ncells()
-            vcell = np.prod(extent / ncells)
-            vmin = vcell / ncreader.get_global_attribute("min_vratio")
-            vmax = vcell / ncreader.get_global_attribute("max_vratio")
         else:
             vmin, vmax = ncreader.get_dataset_min_max(coloring)
 

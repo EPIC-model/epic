@@ -42,6 +42,12 @@ program test_netcdf_read_attributes
         varid=t_axis_id)
     call close_definition(ncid)
 
+    passed = (passed .and. (ncerr == 0))
+
+    call close_netcdf_file(ncid)
+
+    passed = (passed .and. (ncerr == 0))
+
     call open_netcdf_file(ncfname='nctest.nc',    &
                           access_flag=NF90_WRITE, &
                           ncid=ncid)
@@ -84,6 +90,12 @@ program test_netcdf_read_attributes
 
     call close_definition(ncid)
 
+    passed = (passed .and. (ncerr == 0))
+
+    call close_netcdf_file(ncid)
+
+    passed = (passed .and. (ncerr == 0))
+
     call open_netcdf_file(ncfname='nctest.nc',    &
                           access_flag=NF90_NOWRITE, &
                           ncid=ncid)
@@ -105,6 +117,12 @@ program test_netcdf_read_attributes
     call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
 
     call close_definition(ncid)
+
+    passed = (passed .and. (ncerr == 0))
+
+    call close_netcdf_file(ncid)
+
+    passed = (passed .and. (ncerr == 0))
 
     call open_netcdf_file(ncfname='nctest.nc',    &
                           access_flag=NF90_WRITE, &
@@ -145,6 +163,12 @@ program test_netcdf_read_attributes
                                 (/nx, ny, nz/))
 
     call close_definition(ncid)
+
+    passed = (passed .and. (ncerr == 0))
+
+    call close_netcdf_file(ncid)
+
+    passed = (passed .and. (ncerr == 0))
 
     call open_netcdf_file(ncfname='nctest.nc',    &
                           access_flag=NF90_NOWRITE, &

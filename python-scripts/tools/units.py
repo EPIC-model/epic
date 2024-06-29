@@ -15,6 +15,6 @@ def get_label(label, unit, is_bokeh=False):
         return label
     else:
         if is_bokeh:
-            return label + r" $$(" + unit + ")$$"
+            return label + r" (" + unit + ")"
         else:
             return label + r" (\si{" + unit + "})"

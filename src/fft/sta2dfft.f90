@@ -19,7 +19,7 @@ module sta2dfft
     !          lx and ly are the domain lengths - these are needed for the correct
     !          scaling when computing derivatives. The arrays xfactors, yfactors,
     !          xtrig and ytrig are needed to perform the various FFTs by the stafft
-    !          module (see there for further details. kx and ky are arrays to hold
+    !          module (see there for further details). kx and ky are arrays to hold
     !          the wavenumbers associated with each mode in the domain, and are
     !          used in computing derivatives.
     !

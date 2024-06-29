@@ -9,7 +9,7 @@ program test_ellipse_split
     use constants, only : pi, zero, one, three, four, five, ten, f12, f14
     use parcel_container
     use parcel_split, only : split_ellipses, split_timer
-    use parameters, only : update_parameters, nx, nz, extent, lower, vmax
+    use parameters, only : update_parameters, nx, nz, extent, lower, set_vmax
     use timer
     implicit none
 
@@ -24,7 +24,7 @@ program test_ellipse_split
     lower = (/-five, -five/)
     call update_parameters
 
-    vmax = one
+    call set_vmax(one)
 
     call register_timer('parcel split', split_timer)
 

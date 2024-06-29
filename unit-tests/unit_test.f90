@@ -3,8 +3,12 @@ module unit_test
 
     ! abolute tolerance
     double precision, parameter :: atol_m = dble(1.0e-15)
+    logical                     :: verbose = .false.
+
+    logical :: l_verbose = .false.
 
     private :: atol_m
+
 
     contains
 
@@ -51,7 +55,6 @@ module unit_test
             integer           :: i
             character(len=32) :: arg
             character(len=32) :: testname
-            logical           :: verbose = .false.
 
             testname = ''
             i = 0
@@ -62,12 +65,12 @@ module unit_test
                 elseif (len_trim(arg) == 0) then
                     exit
                 elseif (arg == '--verbose') then
-                    verbose = .true.
+                    l_verbose = .true.
                 endif
                 i = i+1
             end do
 
-            if (verbose) then
+            if (l_verbose) then
                 print *, 'Running ', trim(testname),' verbosely'
             endif
         end subroutine parse_command_line

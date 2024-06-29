@@ -10,11 +10,11 @@ module parcel_diagnostics_netcdf
     use parcel_diagnostics
     use parameters, only : lower, extent, nx, ny, nz, write_zeta_boundary_flag
     use parcel_split_mod, only : n_parcel_splits
-    use parcel_merge, only : n_parcel_merges
+    use parcel_merging, only : n_parcel_merges, n_big_close, n_way_parcel_mergers
     use config, only : package_version, cf_version
-    use timer, only : start_timer, stop_timer
+    use mpi_timer, only : start_timer, stop_timer
     use options, only : write_netcdf_options
-    use physics, only : write_physical_quantities
+    use physics, only : write_physical_quantities, ape_calculation
     implicit none
 
 
@@ -22,21 +22,36 @@ module parcel_diagnostics_netcdf
 
     character(len=512) :: ncfname
     integer            :: ncid
-    integer            :: t_axis_id, t_dim_id, n_writes,            &
-                          pe_id, ke_id, te_id, npar_id, nspar_id,   &
-                          rms_x_vor_id, rms_y_vor_id, rms_z_vor_id, &
-                          avg_lam_id, std_lam_id,                   &
-                          avg_vol_id, std_vol_id, sum_vol_id,       &
-                          psi_id, n_par_split_id, n_par_merge_id
-
+    integer            :: t_axis_id, t_dim_id, n_writes, nmerge_dim_id
     double precision   :: restart_time
+    integer            :: parcel_stats_io_timer
 
-    integer :: parcel_stats_io_timer
+    integer, parameter :: NC_APE        = 1     &
+                        , NC_KE         = 2     &
+                        , NC_TE         = 3     &
+                        , NC_EN         = 4     &
+                        , NC_NPAR       = 5     &
+                        , NC_NSPAR      = 6     &
+                        , NC_RMS_X_VOR  = 7     &
+                        , NC_RMS_Y_VOR  = 8     &
+                        , NC_RMS_Z_VOR  = 9     &
+                        , NC_AVG_LAM    = 10    &
+                        , NC_STD_LAM    = 11    &
+                        , NC_AVG_VOL    = 12    &
+                        , NC_STD_VOL    = 13    &
+                        , NC_SUM_VOL    = 14    &
+                        , NC_NPAR_SPLIT = 15    &
+                        , NC_NBIG_CLOSE = 16    &
+                        , NC_NPAR_MERGE = 17    &
+                        , NC_MIN_BUOY   = 18    &
+                        , NC_MAX_BUOY   = 19    &
+                        , NC_NWAY_MERGE = 20
+
+    type(netcdf_info) :: nc_dset(NC_NWAY_MERGE)
 
     public :: create_netcdf_parcel_stats_file,  &
               write_netcdf_parcel_stats,        &
               parcel_stats_io_timer
-
 
     contains
 
@@ -48,6 +63,17 @@ module parcel_diagnostics_netcdf
             logical,      intent(in)  :: overwrite
             logical,      intent(in)  :: l_restart
             logical                   :: l_exist
+            integer                   :: start(1), cnt(1), n
+
+            if (world%rank /= world%root) then
+                return
+            endif
+
+            call set_netcdf_parcel_diagnostics_info
+
+            nc_dset(:)%l_enabled = .true.
+
+            nc_dset(NC_APE)%l_enabled = (ape_calculation == 'ape density')
 
             ncfname =  basename // '_parcel_stats.nc'
 
@@ -57,16 +83,23 @@ module parcel_diagnostics_netcdf
             call exist_netcdf_file(ncfname, l_exist)
 
             if (l_restart .and. l_exist) then
-                call open_netcdf_file(ncfname, NF90_NOWRITE, ncid)
+                call open_netcdf_file(ncfname, NF90_NOWRITE, ncid, l_serial=.true.)
                 call get_num_steps(ncid, n_writes)
-                call get_time(ncid, restart_time)
-                call read_netcdf_parcel_stats_content
-                call close_netcdf_file(ncid)
-                n_writes = n_writes + 1
-                return
+                if (n_writes > 0) then
+                    call get_time(ncid, restart_time)
+                    call read_netcdf_parcel_stats_content
+                    start = 1
+                    cnt = 1
+                    call close_netcdf_file(ncid, l_serial=.true.)
+                    n_writes = n_writes + 1
+                    return
+                else
+                    call close_netcdf_file(ncid, l_serial=.true.)
+                    call delete_netcdf_file(ncfname)
+                endif
             endif
 
-            call create_netcdf_file(ncfname, overwrite, ncid)
+            call create_netcdf_file(ncfname, overwrite, ncid, l_serial=.true.)
 
             ! define global attributes
             call write_netcdf_info(ncid=ncid,                    &
@@ -82,208 +115,58 @@ module parcel_diagnostics_netcdf
 
             call define_netcdf_temporal_dimension(ncid, t_dim_id, t_axis_id)
 
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='pe',                                                  &
-                long_name='potential energy',                               &
-                std_name='',                                                &
-                unit='m^5/s^2',                                             &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=pe_id)
+            call define_netcdf_dimension(ncid=ncid,                         &
+                                         name='n_merge',                    &
+                                         dimsize=size(parcel_merge_stats),  &
+                                         dimid=nmerge_dim_id)
 
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='ke',                                                  &
-                long_name='kinetic energy',                                 &
-                std_name='',                                                &
-                unit='m^5/s^2',                                             &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=ke_id)
+            ! define parcel diagnostics
+            do n = 1, size(nc_dset)
+                if (nc_dset(n)%l_enabled) then
+                    if (n == NC_NWAY_MERGE) then
+                        cycle
+                    endif
+                    call define_netcdf_dataset(ncid=ncid,                       &
+                                               name=nc_dset(n)%name,            &
+                                               long_name=nc_dset(n)%long_name,  &
+                                               std_name=nc_dset(n)%std_name,    &
+                                               unit=nc_dset(n)%unit,            &
+                                               dtype=nc_dset(n)%dtype,          &
+                                               dimids=(/t_dim_id/),             &
+                                               varid=nc_dset(n)%varid)
 
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='te',                                                  &
-                long_name='total energy',                                   &
-                std_name='',                                                &
-                unit='m^5/s^2',                                             &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=te_id)
+                endif
+            enddo
 
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='psi',                                                 &
-                long_name='enstrophy',                                      &
-                std_name='',                                                &
-                unit='m^3/s^2',                                             &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=psi_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='n_parcels',                                           &
-                long_name='number of parcels',                              &
-                std_name='',                                                &
-                unit='1',                                                   &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=npar_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='n_small_parcel',                                      &
-                long_name='number of small parcels',                        &
-                std_name='',                                                &
-                unit='1',                                                   &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=nspar_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='avg_lam',                                             &
-                long_name='average aspect ratio',                           &
-                std_name='',                                                &
-                unit='1',                                                   &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=avg_lam_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='std_lam',                                             &
-                long_name='standard deviation aspect ratio',                &
-                std_name='',                                                &
-                unit='1',                                                   &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=std_lam_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='avg_vol',                                             &
-                long_name='average volume',                                 &
-                std_name='',                                                &
-                unit='m^3',                                                 &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=avg_vol_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='std_vol',                                             &
-                long_name='standard deviation volume',                      &
-                std_name='',                                                &
-                unit='m^3',                                                 &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=std_vol_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='sum_vol',                                             &
-                long_name='total volume',                                   &
-                std_name='',                                                &
-                unit='m^3',                                                 &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=sum_vol_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='x_rms_vorticity',                                     &
-                long_name='root mean square of x vorticity component',      &
-                std_name='',                                                &
-                unit='1/s',                                                 &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=rms_x_vor_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='y_rms_vorticity',                                     &
-                long_name='root mean square of y vorticity component',      &
-                std_name='',                                                &
-                unit='1/s',                                                 &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=rms_y_vor_id)
-
-            call define_netcdf_dataset(                                     &
-                ncid=ncid,                                                  &
-                name='z_rms_vorticity',                                     &
-                long_name='root mean square of z vorticity component',      &
-                std_name='',                                                &
-                unit='1/s',                                                 &
-                dtype=NF90_DOUBLE,                                          &
-                dimids=(/t_dim_id/),                                        &
-                varid=rms_z_vor_id)
-
-            call define_netcdf_dataset(                                      &
-                 ncid=ncid,                                                  &
-                 name='n_parcel_splits',                                     &
-                 long_name='number of parcel splits since last time',        &
-                 std_name='',                                                &
-                 unit='1',                                                   &
-                 dtype=NF90_DOUBLE,                                          &
-                 dimids=(/t_dim_id/),                                        &
-                 varid=n_par_split_id)
-
-            call define_netcdf_dataset(                                      &
-                 ncid=ncid,                                                  &
-                 name='n_parcel_merges',                                     &
-                 long_name='number of parcel merges since last time',        &
-                 std_name='',                                                &
-                 unit='1',                                                   &
-                 dtype=NF90_DOUBLE,                                          &
-                 dimids=(/t_dim_id/),                                        &
-                 varid=n_par_merge_id)
+            n = NC_NWAY_MERGE
+            call define_netcdf_dataset(ncid=ncid,                           &
+                                       name=nc_dset(n)%name,                &
+                                       long_name=nc_dset(n)%long_name,      &
+                                       std_name=nc_dset(n)%std_name,        &
+                                       unit=nc_dset(n)%unit,                &
+                                       dtype=nc_dset(n)%dtype,              &
+                                       dimids=(/nmerge_dim_id, t_dim_id/),  &
+                                       varid=nc_dset(n)%varid)
 
             call close_definition(ncid)
 
+            call close_netcdf_file(ncid, l_serial=.true.)
+
         end subroutine create_netcdf_parcel_stats_file
 
-        ! Pre-condition: Assumes an open file
+        ! Pre-condition: Assumes an open file and nc_dset being initialised.
         subroutine read_netcdf_parcel_stats_content
+            integer :: n
 
             call get_dim_id(ncid, 't', t_dim_id)
 
             call get_var_id(ncid, 't', t_axis_id)
 
-            call get_var_id(ncid, 'pe', pe_id)
-
-            call get_var_id(ncid, 'ke', ke_id)
-
-            call get_var_id(ncid, 'te', te_id)
-
-            call get_var_id(ncid, 'psi', psi_id)
-
-            call get_var_id(ncid, 'n_parcels', npar_id)
-
-            call get_var_id(ncid, 'n_small_parcel', nspar_id)
-
-            call get_var_id(ncid, 'avg_lam', avg_lam_id)
-
-            call get_var_id(ncid, 'std_lam', std_lam_id)
-
-            call get_var_id(ncid, 'avg_vol', avg_vol_id)
-
-            call get_var_id(ncid, 'std_vol', std_vol_id)
-
-            call get_var_id(ncid, 'sum_vol', sum_vol_id)
-
-            call get_var_id(ncid, 'x_rms_vorticity', rms_x_vor_id)
-
-            call get_var_id(ncid, 'y_rms_vorticity', rms_y_vor_id)
-
-            call get_var_id(ncid, 'z_rms_vorticity', rms_z_vor_id)
-
-            call get_var_id(ncid, 'n_parcel_splits', n_par_split_id)
-
-            call get_var_id(ncid, 'n_parcel_merges', n_par_merge_id)
+            do n = 1, size(nc_dset)
+                if (nc_dset(n)%l_enabled) then
+                    call get_var_id(ncid, nc_dset(n)%name, nc_dset(n)%varid)
+                endif
+            enddo
 
         end subroutine read_netcdf_parcel_stats_content
 
@@ -294,50 +177,229 @@ module parcel_diagnostics_netcdf
 
             call start_timer(parcel_stats_io_timer)
 
+            ! reset counters for parcel operations
+            n_parcel_splits = 0
+            n_parcel_merges = 0
+            n_big_close     = 0
+            n_way_parcel_mergers = 0
+
+            if (world%rank /= world%root) then
+                call stop_timer(parcel_stats_io_timer)
+                return
+            endif
+
             if (t <= restart_time) then
                 call stop_timer(parcel_stats_io_timer)
                 return
             endif
 
-            call open_netcdf_file(ncfname, NF90_WRITE, ncid)
+            call open_netcdf_file(ncfname, NF90_WRITE, ncid, l_serial=.true.)
 
             if (n_writes == 1) then
                 call write_zeta_boundary_flag(ncid)
             endif
 
             ! write time
-            call write_netcdf_scalar(ncid, t_axis_id, t, n_writes)
+            call write_netcdf_scalar(ncid, t_axis_id, t, n_writes, l_serial=.true.)
 
             !
             ! write diagnostics
             !
-            call write_netcdf_scalar(ncid, pe_id, pe, n_writes)
-            call write_netcdf_scalar(ncid, ke_id, ke, n_writes)
-            call write_netcdf_scalar(ncid, te_id, ke + pe, n_writes)
-            call write_netcdf_scalar(ncid, psi_id, psi, n_writes)
-            call write_netcdf_scalar(ncid, npar_id, n_parcels, n_writes)
-            call write_netcdf_scalar(ncid, nspar_id, n_small, n_writes)
-            call write_netcdf_scalar(ncid, avg_lam_id, avg_lam, n_writes)
-            call write_netcdf_scalar(ncid, std_lam_id, std_lam, n_writes)
-            call write_netcdf_scalar(ncid, avg_vol_id, avg_vol, n_writes)
-            call write_netcdf_scalar(ncid, std_vol_id, std_vol, n_writes)
-            call write_netcdf_scalar(ncid, sum_vol_id, sum_vol, n_writes)
-            call write_netcdf_scalar(ncid, rms_x_vor_id, rms_zeta(1), n_writes)
-            call write_netcdf_scalar(ncid, rms_y_vor_id, rms_zeta(2), n_writes)
-            call write_netcdf_scalar(ncid, rms_z_vor_id, rms_zeta(3), n_writes)
-            call write_netcdf_scalar(ncid, n_par_split_id, n_parcel_splits, n_writes)
-            call write_netcdf_scalar(ncid, n_par_merge_id, n_parcel_merges, n_writes)
+
+            call write_diagnostic(NC_APE, parcel_stats(IDX_APE))
+            call write_diagnostic(NC_KE, parcel_stats(IDX_KE))
+            call write_diagnostic(NC_TE, parcel_stats(IDX_KE) + parcel_stats(IDX_APE))
+            call write_diagnostic(NC_EN, parcel_stats(IDX_ENSTROPHY))
+            call write_diagnostic(NC_NPAR, parcel_stats(IDX_NTOT_PAR))
+            call write_diagnostic(NC_NSPAR, parcel_stats(IDX_N_SMALL))
+            call write_diagnostic(NC_AVG_LAM, parcel_stats(IDX_AVG_LAM))
+            call write_diagnostic(NC_STD_LAM, parcel_stats(IDX_STD_LAM))
+            call write_diagnostic(NC_AVG_VOL, parcel_stats(IDX_AVG_VOL))
+            call write_diagnostic(NC_STD_VOL, parcel_stats(IDX_STD_VOL))
+            call write_diagnostic(NC_SUM_VOL, parcel_stats(IDX_SUM_VOL))
+            call write_diagnostic(NC_RMS_X_VOR, parcel_stats(IDX_RMS_XI))
+            call write_diagnostic(NC_RMS_Y_VOR, parcel_stats(IDX_RMS_ETA))
+            call write_diagnostic(NC_RMS_Z_VOR, parcel_stats(IDX_RMS_ZETA))
+            call write_diagnostic(NC_NPAR_SPLIT, parcel_stats(IDX_NSPLITS))
+            call write_diagnostic(NC_NBIG_CLOSE, parcel_stats(IDX_NBIG_ICLO))
+            call write_diagnostic(NC_NPAR_MERGE, parcel_stats(IDX_NMERGES))
+            call write_diagnostic(NC_MIN_BUOY, parcel_stats(IDX_MIN_BUOY))
+            call write_diagnostic(NC_MAX_BUOY, parcel_stats(IDX_MAX_BUOY))
+
+            call write_netcdf_dataset(ncid, nc_dset(NC_NWAY_MERGE)%varid, parcel_merge_stats,     &
+                                      start=(/1, n_writes/), cnt=(/size(parcel_merge_stats), 1/), &
+                                      l_serial=.true.)
 
             ! increment counter
             n_writes = n_writes + 1
 
-            ! reset counters for parcel operations
-            n_parcel_splits = 0
-            n_parcel_merges = 0
-
-            call close_netcdf_file(ncid)
+            call close_netcdf_file(ncid, l_serial=.true.)
 
             call stop_timer(parcel_stats_io_timer)
 
         end subroutine write_netcdf_parcel_stats
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine write_diagnostic(id, val)
+            integer,          intent(in) :: id
+            double precision, intent(in) :: val
+
+            if (nc_dset(id)%l_enabled) then
+                if (nc_dset(id)%dtype == NF90_INT) then
+                    call write_netcdf_scalar(ncid, nc_dset(id)%varid, int(val), &
+                                             n_writes, l_serial=.true.)
+                else
+                    call write_netcdf_scalar(ncid, nc_dset(id)%varid, val, &
+                                             n_writes, l_serial=.true.)
+                endif
+            endif
+
+        end subroutine write_diagnostic
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine set_netcdf_parcel_diagnostics_info
+            nc_dset(NC_APE) = netcdf_info(                                  &
+                name='ape',                                                 &
+                long_name='domain-averaged available potential energy',     &
+                std_name='',                                                &
+                unit='m^2/s^2',                                             &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_KE) = netcdf_info(                                   &
+                name='ke',                                                  &
+                long_name='domain-averaged kinetic energy',                 &
+                std_name='',                                                &
+                unit='m^2/s^2',                                             &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_TE) = netcdf_info(                                   &
+                name='te',                                                  &
+                long_name='domain-averaged total energy',                   &
+                std_name='',                                                &
+                unit='m^2/s^2',                                             &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_EN) = netcdf_info(                                   &
+                name='en',                                                  &
+                long_name='domain-averaged enstrophy',                      &
+                std_name='',                                                &
+                unit='1/s^2',                                               &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_NPAR) = netcdf_info(                                 &
+                name='n_parcels',                                           &
+                long_name='number of parcels',                              &
+                std_name='',                                                &
+                unit='1',                                                   &
+                dtype=NF90_INT)
+
+            nc_dset(NC_NSPAR) = netcdf_info(                                &
+                name='n_small_parcel',                                      &
+                long_name='number of small parcels',                        &
+                std_name='',                                                &
+                unit='1',                                                   &
+                dtype=NF90_INT)
+
+            nc_dset(NC_AVG_LAM) = netcdf_info(                              &
+                name='avg_lam',                                             &
+                long_name='average aspect ratio',                           &
+                std_name='',                                                &
+                unit='1',                                                   &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_STD_LAM) = netcdf_info(                              &
+                name='std_lam',                                             &
+                long_name='standard deviation aspect ratio',                &
+                std_name='',                                                &
+                unit='1',                                                   &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_AVG_VOL) = netcdf_info(                              &
+                name='avg_vol',                                             &
+                long_name='average volume',                                 &
+                std_name='',                                                &
+                unit='m^3',                                                 &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_STD_VOL) = netcdf_info(                              &
+                name='std_vol',                                             &
+                long_name='standard deviation volume',                      &
+                std_name='',                                                &
+                unit='m^3',                                                 &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_SUM_VOL) = netcdf_info(                              &
+                name='sum_vol',                                             &
+                long_name='total volume',                                   &
+                std_name='',                                                &
+                unit='m^3',                                                 &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_RMS_X_VOR) = netcdf_info(                            &
+                name='x_rms_vorticity',                                     &
+                long_name='root mean square of x vorticity component',      &
+                std_name='',                                                &
+                unit='1/s',                                                 &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_RMS_Y_VOR) = netcdf_info(                            &
+                name='y_rms_vorticity',                                     &
+                long_name='root mean square of y vorticity component',      &
+                std_name='',                                                &
+                unit='1/s',                                                 &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_RMS_Z_VOR) = netcdf_info(                            &
+                name='z_rms_vorticity',                                     &
+                long_name='root mean square of z vorticity component',      &
+                std_name='',                                                &
+                unit='1/s',                                                 &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_NPAR_SPLIT) = netcdf_info(                           &
+                name='n_parcel_splits',                                     &
+                 long_name='number of parcel splits since last time',       &
+                 std_name='',                                               &
+                 unit='1',                                                  &
+                 dtype=NF90_INT)
+
+            nc_dset(NC_NBIG_CLOSE) = netcdf_info(                           &
+                name='n_big_neighbour',                                     &
+                 long_name='number of big parcel neighbours',               &
+                 std_name='',                                               &
+                 unit='1',                                                  &
+                 dtype=NF90_INT)
+
+            nc_dset(NC_NPAR_MERGE) = netcdf_info(                           &
+                name='n_parcel_merges',                                     &
+                 long_name='number of parcel merges since last time',       &
+                 std_name='',                                               &
+                 unit='1',                                                  &
+                 dtype=NF90_INT)
+
+            nc_dset(NC_MIN_BUOY) = netcdf_info(                             &
+                name='min_buoyancy',                                        &
+                long_name='minimum parcel buoyancy',                        &
+                std_name='',                                                &
+                unit='m/s^2',                                               &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_MAX_BUOY) = netcdf_info(                             &
+                name='max_buoyancy',                                        &
+                long_name='maximum parcel buoyancy',                        &
+                std_name='',                                                &
+                unit='m/s^2',                                               &
+                dtype=NF90_DOUBLE)
+
+            nc_dset(NC_NWAY_MERGE) = netcdf_info(                           &
+                name='n_way_merging',                                       &
+                long_name='n-way merging',                                  &
+                std_name='',                                                &
+                unit='1',                                                   &
+                dtype=NF90_INT)
+
+        end subroutine set_netcdf_parcel_diagnostics_info
+
 end module parcel_diagnostics_netcdf
