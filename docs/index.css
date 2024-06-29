@@ -1,0 +1,56 @@
+body{
+    margin: 0px;
+}
+
+h1{
+/*     background: linear-gradient(to right, darkblue, royalblue, lightblue, white); */
+/*     background-repeat: no repeat; */
+/*     background-attachment: fixed; */
+/*     color: white; */
+    padding: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* Navigation bar */
+
+.topnav {
+    background: linear-gradient(to left, black, navy, royalblue, navy, black);
+    background-repeat: no repeat;
+    background-attachment: fixed;
+    overflow: hidden;
+    position: sticky;
+    top: 0;
+}
+
+.topnav a {
+  float: left;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+  font-family: Arial, Helvetica, sans-serif;
+  position: sticky;
+}
+
+.topnav a:hover {
+  background-color: lightblue;
+  color: black;
+}
+
+.topnav a.active {
+  background-color: lightseagreen;
+  color: black;
+}
+
+.regular-text {
+    font-size: 20px;
+    padding: 20px;
+}
+
+li{
+    padding-top: 0px;
+    padding-bottom: 10px;
+    font-size: 20px;
+}
