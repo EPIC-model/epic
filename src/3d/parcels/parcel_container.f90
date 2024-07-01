@@ -405,6 +405,10 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             buffer(IDX_HUM)             = parcels%humidity(n)
 #endif
+#ifdef ENABLE_LABELS
+            buffer(IDX_LABEL)           = parcels%label(n)
+            buffer(IDX_DILUTION)        = parcels%dilution(n)
+#endif
             ! LS-RK4 variables:
             buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS) = parcels%delta_pos(:, n)
             buffer(IDX_RK4_X_DVOR:IDX_RK4_Z_DVOR) = parcels%delta_vor(:, n)
@@ -428,6 +432,10 @@ module parcel_container
             parcels%buoyancy(n)     = buffer(IDX_BUO)
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n)     = buffer(IDX_HUM)
+#endif
+#ifndef ENABLE_DRY_MODE
+            parcels%label(n)        = buffer(IDX_LABEL)
+            parcels%dilution(n)     = buffer(IDX_DILUTION)
 #endif
             ! LS-RK4 variables:
             parcels%delta_pos(:, n) = buffer(IDX_RK4_X_DPOS:IDX_RK4_Z_DPOS)
