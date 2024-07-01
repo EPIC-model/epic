@@ -421,6 +421,21 @@ else
     AC_MSG_RESULT([no])
 fi
 
+ENABLE_LABELS='no'
+AC_ARG_ENABLE([labels],
+              [AS_HELP_STRING([--enable-labels], [enable labels (default=no)])],
+              [ENABLE_LABELS=$enableval])
+
+AM_CONDITIONAL([ENABLE_LABELS], [test "$ENABLE_LABELS" = "yes"])
+
+AC_MSG_CHECKING([whether we are compiling with labels])
+if test "x$ENABLE_LABELS" = "xyes"; then
+    AC_MSG_RESULT([yes])
+    FCFLAGS="$FCFLAGS -DENABLE_LABELS"
+else
+    AC_MSG_RESULT([no])
+fi
+
 ENABLE_P2G_1POINT='no'
 AC_ARG_ENABLE([p2g-1point],
               [AS_HELP_STRING([--enable-p2g-1point], [enable one-point par2grid (default=no)])],

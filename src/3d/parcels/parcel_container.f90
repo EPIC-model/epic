@@ -41,6 +41,10 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
                           IDX_HUM,          & ! humidity
 #endif
+#ifdef ENABLE_LABELS
+                          IDX_LABEL,        & ! label
+                          IDX_DILUTION,     & ! dilution
+#endif
                           IDX_RK4_X_DPOS,   & ! RK4 variable delta x-position
                           IDX_RK4_Y_DPOS,   & ! RK4 variable delta y-position
                           IDX_RK4_Z_DPOS,   & ! RK4 variable delta z-position
@@ -78,6 +82,9 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             humidity,   &
 #endif
+#ifdef ENABLE_LABELS
+            dilution,   &
+#endif
             buoyancy
 
         ! LS-RK4 variables
@@ -86,6 +93,12 @@ module parcel_container
             delta_vor,  &   ! vorticity tendency
             strain,     &
             delta_b         ! B-matrix tendency
+
+#ifdef ENABLE_LABELS
+        integer(kind=8), allocatable, dimension(:) :: &
+            label
+#endif
+
     end type parcel_container_type
 
     type(parcel_container_type) parcels
@@ -117,6 +130,11 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             IDX_HUM  = i
             i = i + 1
+#endif
+#ifdef ENABLE_LABELS
+            IDX_LABEL  = i
+            IDX_DILUTION  = i +1
+            i = i + 2
 #endif
 
             ! LS-RK4 variables
@@ -250,6 +268,10 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             parcels%humidity(n)     = parcels%humidity(m)
 #endif
+#ifdef ENABLE_LABELS
+            parcels%label(n)        = parcels%label(m)
+            parcels%dilution(n)     = parcels%dilution(m)
+#endif
             parcels%B(:, n)         = parcels%B(:, m)
 
             call parcel_ellipsoid_replace(n, m)
@@ -287,6 +309,10 @@ module parcel_container
 #ifndef ENABLE_DRY_MODE
             call resize_array(parcels%humidity, new_size, n_parcels)
 #endif
+#ifdef ENABLE_LABELS
+            call resize_array(parcels%label, new_size, n_parcels)
+            call resize_array(parcels%dilution, new_size, n_parcels)
+#endif
             call parcel_ellipsoid_resize(new_size, n_parcels)
 
             ! LS-RK4 variables
@@ -315,6 +341,10 @@ module parcel_container
             allocate(parcels%buoyancy(num))
 #ifndef ENABLE_DRY_MODE
             allocate(parcels%humidity(num))
+#endif
+#ifdef ENABLE_LABELS
+            allocate(parcels%label(num))
+            allocate(parcels%dilution(num))
 #endif
             call parcel_ellipsoid_allocate(num)
 
@@ -345,6 +375,10 @@ module parcel_container
             deallocate(parcels%buoyancy)
 #ifndef ENABLE_DRY_MODE
             deallocate(parcels%humidity)
+#endif
+#ifdef ENABLE_LABELS
+            deallocate(parcels%label)
+            deallocate(parcels%dilution)
 #endif
             call parcel_ellipsoid_deallocate
 

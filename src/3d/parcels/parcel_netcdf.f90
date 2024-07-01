@@ -52,12 +52,14 @@ module parcel_netcdf
     logical :: l_first_write = .true.
 
 #ifndef ENABLE_DRY_MODE
-    integer, parameter :: NC_HUM   = 15
-
-    type(netcdf_info) :: nc_dset(NC_HUM)
-#else
-    type(netcdf_info) :: nc_dset(NC_B23)
+    integer, parameter  :: NC_HUM = 15 
 #endif
+#ifdef ENABLE_LABELS
+    integer, parameter :: NC_LABEL = 16 & 
+                       ,  NC_DILUTION = 17 
+#endif
+
+    type(netcdf_info) :: nc_dset(17)
 
     public :: create_netcdf_parcel_file &
             , write_netcdf_parcels      &
@@ -243,6 +245,10 @@ module parcel_netcdf
 #ifndef ENABLE_DRY_MODE
             call write_parcel_attribute(NC_HUM, parcels%humidity, start, cnt)
 #endif
+#ifdef ENABLE_LABELS
+            call write_parcel_attribute_int(NC_LABEL, parcels%label, start, cnt)
+            call write_parcel_attribute(NC_DILUTION, parcels%dilution, start, cnt)
+#endif
             ! increment counter
             n_writes = n_writes + 1
 
@@ -265,6 +271,18 @@ module parcel_netcdf
                                           start, cnt)
             endif
         end subroutine write_parcel_attribute
+
+        subroutine write_parcel_attribute_int(id, pdata, start, cnt)
+            integer,          intent(in) :: id
+            integer(kind=8),  intent(in) :: pdata(:)
+            integer,          intent(in) :: cnt(2), start(2)
+
+            if (nc_dset(id)%l_enabled) then
+                call write_netcdf_dataset(ncid, nc_dset(id)%varid,  &
+                                          pdata(1:n_parcels),       &
+                                          start, cnt)
+            endif
+        end subroutine write_parcel_attribute_int
 
         !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -515,6 +533,19 @@ module parcel_netcdf
                                          parcels%humidity(pfirst:plast), start, cnt)
             endif
 #endif
+#ifdef ENABLE_LABELS
+            if (has_dataset(ncid, 'label')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'label', &
+                                         parcels%label(pfirst:plast), start, cnt)
+            endif
+            if (has_dataset(ncid, 'dilution')) then
+                l_valid = .true.
+                call read_netcdf_dataset(ncid, 'dilution', &
+                                         parcels%dilution(pfirst:plast), start, cnt)
+            endif
+#endif
+
 
             if (.not. l_valid) then
                 call mpi_exit_on_error(&
@@ -543,6 +574,10 @@ module parcel_netcdf
                 nc_dset(NC_BUOY)%l_enabled  = .true.
 #ifndef ENABLE_DRY_MODE
                 nc_dset(NC_HUM)%l_enabled   = .true.
+#endif
+#ifdef ENABLE_LABELS
+                nc_dset(NC_LABEL)%l_enabled   = .true.
+                nc_dset(NC_DILUTION)%l_enabled   = .true.
 #endif
                 nc_dset(NC_VOL)%l_enabled   = .true.
                 nc_dset(NC_START)%l_enabled = .true.
@@ -582,6 +617,10 @@ module parcel_netcdf
                 nc_dset(NC_BUOY)%l_enabled  = .true.
 #ifndef ENABLE_DRY_MODE
                 nc_dset(NC_HUM)%l_enabled   = .true.
+#endif
+#ifdef ENABLE_LABELS
+                nc_dset(NC_LABEL)%l_enabled   = .true.
+                nc_dset(NC_DILUTION)%l_enabled   = .true.
 #endif
                 nc_dset(NC_VOL)%l_enabled   = .true.
                 nc_dset(NC_B11)%l_enabled   = .true.
@@ -726,6 +765,19 @@ module parcel_netcdf
 #ifndef ENABLE_DRY_MODE
             nc_dset(NC_HUM) = netcdf_info(name='humidity',                         &
                                           long_name='parcel humidity',             &
+                                          std_name='',                             &
+                                          unit='1',                                &
+                                          dtype=NF90_DOUBLE)
+#endif
+#ifdef ENABLE_LABELS
+            nc_dset(NC_LABEL) = netcdf_info(name='label',                          &
+                                          long_name='parcel label',                &
+                                          std_name='',                             &
+                                          unit='1',                                &
+                                          dtype=NF90_INT64)
+
+            nc_dset(NC_DILUTION) = netcdf_info(name='dilution',                    &
+                                          long_name='parcel dilution',             &
                                           std_name='',                             &
                                           unit='1',                                &
                                           dtype=NF90_DOUBLE)
