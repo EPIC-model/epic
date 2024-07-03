@@ -434,7 +434,7 @@ module parcel_container
             parcels%humidity(n)     = buffer(IDX_HUM)
 #endif
 #ifndef ENABLE_DRY_MODE
-            parcels%label(n)        = buffer(IDX_LABEL)
+            parcels%label(n)        = nint(buffer(IDX_LABEL))
             parcels%dilution(n)     = buffer(IDX_DILUTION)
 #endif
             ! LS-RK4 variables:
