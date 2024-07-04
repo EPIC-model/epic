@@ -144,7 +144,7 @@ module parcel_init
                                     parcels%label(l)=1 + (ix * n_per_dim + (i - 1)) + &
                                                      (nx * n_per_dim) * ((iy * n_per_dim + (j - 1)) + &
                                                      (ny * n_per_dim) * (iz * n_per_dim + (k - 1)))
-                                    parcels%dilution(l)=1.0
+                                    parcels%dilution(l)=0.0
 #endif
                                     l = l + 1
                                 enddo

@@ -199,10 +199,10 @@ module parcel_merging
                 ! This could be optimised moving it to later in code
                 call random_number(rn) 
                 if(rn*(vm(n)+parcels%volume(is))<vm(n)) then
-                   dilm(n)=dilm(n)*vm(n)/(vm(n)+parcels%volume(is))
+                   dilm(n)=dilm(n)+log(vm(n)/(vm(n)+parcels%volume(is)))
                 else
                    labelm(n)=parcels%label(is)
-                   dilm(n)=parcels%dilution(is)*parcels%volume(is)/(vm(n)+parcels%volume(is))
+                   dilm(n)=parcels%dilution(is)+log(parcels%volume(is)/(vm(n)+parcels%volume(is)))
                 endif
 #endif
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
