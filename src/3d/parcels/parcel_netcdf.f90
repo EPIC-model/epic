@@ -777,7 +777,7 @@ module parcel_netcdf
                                           dtype=NF90_INT64)
 
             nc_dset(NC_DILUTION) = netcdf_info(name='dilution',                    &
-                                          long_name='parcel dilution',             &
+                                          long_name='parcel log dilution',         &
                                           std_name='',                             &
                                           unit='1',                                &
                                           dtype=NF90_DOUBLE)
