@@ -147,6 +147,10 @@ module parcel_split_mod
 #ifndef ENABLE_DRY_MODE
                 parcels%humidity(n_thread_loc) = parcels%humidity(n)
 #endif
+#ifdef ENABLE_LABELS
+                parcels%label(n_thread_loc) = parcels%label(n)
+                parcels%dilution(n_thread_loc) = parcels%dilution(n)
+#endif
                 V(:, 1) = V(:, 1) * dh * dsqrt(D(1))
                 parcels%position(:, n_thread_loc) = parcels%position(:, n) - V(:, 1)
                 parcels%position(:, n) = parcels%position(:, n) + V(:, 1)

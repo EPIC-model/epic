@@ -131,6 +131,11 @@ module parcel_merging
 #ifndef ENABLE_DRY_MODE
             double precision                :: hum(n_merge)
 #endif
+#ifdef ENABLE_LABELS
+            double precision                :: labelm(n_merge)
+            double precision                :: dilm(n_merge)
+            double precision                :: rn
+#endif
             double precision, intent(out)   :: Bm(6, n_merge) ! B11, B12, B13, B22, B23, B33
             double precision, intent(out)   :: vm(n_merge)
 
@@ -176,12 +181,30 @@ module parcel_merging
                     vortm(:, l) = parcels%volume(ic) * parcels%vorticity(:, ic)
 
                     Bm(:, l) = zero
+
+#ifdef ENABLE_LABELS
+                    labelm(l) = parcels%label(ic)
+
+                    dilm(l) = parcels%dilution(ic)
+#endif
                 endif
 
                 ! Sum up all the small parcels merging with a common other one:
                 ! "is" refers to the small parcel index
                 is = isma(m) !Small parcel
                 n = loca(ic)  !Index of merged parcel
+
+#ifdef ENABLE_LABELS
+                ! Dilute the parcel when volume is added for now
+                ! This could be optimised moving it to later in code
+                call random_number(rn) 
+                if(rn*(vm(n)+parcels%volume(is))<vm(n)) then
+                   dilm(n)=dilm(n)+log(vm(n)/(vm(n)+parcels%volume(is)))
+                else
+                   labelm(n)=parcels%label(is)
+                   dilm(n)=parcels%dilution(is)+log(parcels%volume(is)/(vm(n)+parcels%volume(is)))
+                endif
+#endif
                 vm(n) = vm(n) + parcels%volume(is) !Accumulate volume of merged parcel
 
                 ! works across periodic edge
@@ -268,6 +291,10 @@ module parcel_merging
                     parcels%buoyancy(ic) = buoym(l)
 #ifndef ENABLE_DRY_MODE
                     parcels%humidity(ic) = hum(l)
+#endif
+#ifdef ENABLE_LABELS
+                    parcels%label(ic) = labelm(l)
+                    parcels%dilution(ic) = dilm(l)
 #endif
                     parcels%vorticity(:, ic) = vortm(:, l)
 
