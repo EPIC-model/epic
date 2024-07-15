@@ -117,7 +117,8 @@ module parcel_nearest
 #ifdef ENABLE_VERBOSE
             , simtime                   &
 #endif
-            , nearest_barrier_timer
+            , nearest_barrier_timer     &
+            , nearest_rma_timer
 
     contains
 
