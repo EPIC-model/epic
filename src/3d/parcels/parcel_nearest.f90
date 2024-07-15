@@ -411,7 +411,7 @@ module parcel_nearest
                 isma = -1
                 iclo = -1
                 rclo = -1
-                dclo = product(extent)
+                dclo = sum(extent)
 
                 ! Find arrays kc1(ijk) & kc2(ijk) which indicate the parcels in grid cell ijk
                 ! through n = node(k), for k = kc1(ijk), kc2(ijk):
@@ -647,7 +647,7 @@ module parcel_nearest
 
                 ! Grid point (ix0, iy0, iz0) is closest to parcel "is"
 
-                dsqmin = product(extent)
+                dsqmin = sum(extent)
                 ic = 0
 
                 ! Loop over 8 cells surrounding (ix0, iy0, iz0):
