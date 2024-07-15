@@ -12,6 +12,7 @@ program epic3d
                              , merge_tree_resolve_timer &
                              , nearest_allreduce_timer  &
                              , nearest_barrier_timer    &
+                             , nearest_rma_timer        &
                              , nearest_win_allocate     &
 #ifdef ENABLE_VERBOSE
                              , simtime                  &
@@ -95,6 +96,7 @@ program epic3d
             call register_timer('merge tree resolve', merge_tree_resolve_timer)
             call register_timer('MPI allreduce timer (in tree resolve)', nearest_allreduce_timer)
             call register_timer('MPI barrier timer (in tree resolve)', nearest_barrier_timer)
+            call register_timer('MPI RMA timer (in tree resolve)', nearest_rma_timer)
             call register_timer('p2g/v2g halo (non-excl.)', halo_swap_timer)
             call register_timer('boundary fluxes', bndry_flux_timer)
             call register_timer('damping', damping_timer)

@@ -5,7 +5,9 @@ program benchmark_parcel_merging
     use parcel_init, only : parcel_default
     use parcel_merging
     use parcel_mpi, only : parcel_communicate
-    use parcel_nearest, only : nearest_allreduce_timer, nearest_barrier_timer
+    use parcel_nearest, only : nearest_allreduce_timer  &
+                             , nearest_barrier_timer    &
+                             , nearest_rma_timer
     use mpi_environment
     use mpi_layout
     use mpi_datatypes, only : MPI_INTEGER_64BIT
@@ -39,6 +41,7 @@ program benchmark_parcel_merging
     call register_timer('generate data', generate_timer)
     call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
     call register_timer('nearest MPI barrier', nearest_barrier_timer)
+    call register_timer('nearest MPI RMA', nearest_rma_timer)
 
     call parse_command_line
 

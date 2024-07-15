@@ -69,6 +69,7 @@ module parcel_nearest
 
     integer:: merge_nearest_timer, merge_tree_resolve_timer
     integer:: nearest_allreduce_timer, nearest_barrier_timer
+    integer:: nearest_rma_timer
 
     private
 
@@ -898,6 +899,7 @@ module parcel_nearest
                         if (rc == cart%rank) then
                             l_available(ic) = .true.
                         else
+                            call start_timer(nearest_rma_timer)
                             call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
                             !     MPI_Put(origin_addr, origin_count, origin_datatype, target_rank,
                             !         target_disp, target_count, target_datatype, win, ierror)
@@ -923,6 +925,7 @@ module parcel_nearest
 
                             ! After MPI_Win_unlock, the RMA operation is completed at the origin and target.
                             call MPI_Win_unlock(rc, win_avail, cart%err)
+                            call stop_timer(nearest_rma_timer)
                         endif
                     endif
                 enddo
@@ -943,6 +946,7 @@ module parcel_nearest
                         if (rc == cart%rank) then
                             l_leaf(ic) = .false.
                         else
+                            call start_timer(nearest_rma_timer)
                             call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_leaf, cart%err)
                             l_helper = .false.
                             offset = ic - 1
@@ -958,6 +962,7 @@ module parcel_nearest
                             call mpi_check_for_error(cart, &
                                 "in MPI_Put of parcel_nearest::resolve_tree.")
                             call MPI_Win_unlock(rc, win_leaf, cart%err)
+                            call stop_timer(nearest_rma_timer)
                         endif
                     endif
                 enddo
@@ -980,6 +985,7 @@ module parcel_nearest
                             if (rc == cart%rank) then
                                 l_available(ic) = .false.
                             else
+                                call start_timer(nearest_rma_timer)
                                 call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
                                 l_helper = .false.
                                 offset = ic - 1
@@ -995,6 +1001,7 @@ module parcel_nearest
                                 call mpi_check_for_error(cart, &
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
                                 call MPI_Win_unlock(rc, win_avail, cart%err)
+                                call stop_timer(nearest_rma_timer)
                             endif
                         endif
                     endif
@@ -1020,6 +1027,7 @@ module parcel_nearest
                         if (rc == cart%rank) then
                             l_helper = l_available(ic)
                         else
+                            call start_timer(nearest_rma_timer)
                             call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
                             ! Note: The OpenMPI specification says that processes must be on the same node
                             !       in order MPI_Get to work. However, I tested a simple MPI_Get on Archer2
@@ -1047,6 +1055,7 @@ module parcel_nearest
                                     "in MPI_Get of parcel_nearest::resolve_tree.")
 
                             call MPI_Win_unlock(rc, win_avail, cart%err)
+                            call stop_timer(nearest_rma_timer)
                         endif
 
                         if (l_leaf(is) .and. l_helper) then
@@ -1056,6 +1065,7 @@ module parcel_nearest
                             if (rc == cart%rank) then
                                 l_merged(ic) = .true.
                             else
+                                call start_timer(nearest_rma_timer)
                                 call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_merged, cart%err)
 
                                 l_helper = .true.
@@ -1072,6 +1082,7 @@ module parcel_nearest
                                 call mpi_check_for_error(cart, &
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
                                 call MPI_Win_unlock(rc, win_merged, cart%err)
+                                call stop_timer(nearest_rma_timer)
                             endif
                         endif
                     endif
@@ -1106,6 +1117,7 @@ module parcel_nearest
                         if (rc == cart%rank) then
                             l_available(ic) = .true.
                         else
+                            call start_timer(nearest_rma_timer)
                             call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
                             l_helper = .true.
                             offset = ic - 1
@@ -1123,6 +1135,7 @@ module parcel_nearest
                                     "in MPI_Put of parcel_nearest::resolve_tree.")
 
                             call MPI_Win_unlock(rc, win_avail, cart%err)
+                            call stop_timer(nearest_rma_timer)
                         endif
                     endif
                 endif
@@ -1152,6 +1165,7 @@ module parcel_nearest
                     if (rc == cart%rank) then
                         l_helper = l_leaf(ic)
                     else
+                        call start_timer(nearest_rma_timer)
                         call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_leaf, cart%err)
                         offset = ic - 1
                         call MPI_Get(l_helper,         &
@@ -1167,6 +1181,7 @@ module parcel_nearest
                             "in MPI_Get of parcel_nearest::resolve_tree.")
 
                         call MPI_Win_unlock(rc, win_leaf, cart%err)
+                        call stop_timer(nearest_rma_timer)
                     endif
                     if (l_helper) then
                         call mpi_exit_on_error(&
@@ -1186,6 +1201,7 @@ module parcel_nearest
                         if (rc == cart%rank) then
                             l_helper = l_available(ic)
                         else
+                            call start_timer(nearest_rma_timer)
                             call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
 
                             offset = ic - 1
@@ -1203,6 +1219,7 @@ module parcel_nearest
                                 "in MPI_Get of parcel_nearest::resolve_tree.")
 
                             call MPI_Win_unlock(rc, win_avail, cart%err)
+                            call stop_timer(nearest_rma_timer)
                         endif
 
                         if (l_helper) then
@@ -1245,6 +1262,7 @@ module parcel_nearest
                     if (rc == cart%rank) then
                         l_helper = l_available(ic)
                     else
+                        call start_timer(nearest_rma_timer)
                         call MPI_Win_lock(MPI_LOCK_SHARED, rc, 0, win_avail, cart%err)
                         offset = ic - 1
                         call MPI_Get(l_helper,         &
@@ -1261,6 +1279,7 @@ module parcel_nearest
                             "in MPI_Get of parcel_nearest::resolve_tree.")
 
                         call MPI_Win_unlock(rc, win_avail, cart%err)
+                        call stop_timer(nearest_rma_timer)
                     endif
 
                     if (l_helper) then

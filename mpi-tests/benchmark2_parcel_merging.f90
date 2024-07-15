@@ -19,7 +19,9 @@ program benchmark2_parcel_merging
                          , setup_parcels            &
                          , init_rng
     use parcel_merging
-    use parcel_nearest, only : nearest_allreduce_timer, nearest_barrier_timer
+    use parcel_nearest, only : nearest_allreduce_timer  &
+                             , nearest_barrier_timer    &
+                             , nearest_rma_timer
     use test_utils, only : merge_nearest_timer      &
                          , merge_tree_resolve_timer
     use parcel_netcdf
@@ -44,11 +46,12 @@ program benchmark2_parcel_merging
     call register_timer('merge tree resolve', merge_tree_resolve_timer)
     call register_timer('nearest MPI allreduce', nearest_allreduce_timer)
     call register_timer('nearest MPI barrier', nearest_barrier_timer)
+    call register_timer('nearest MPI RMA', nearest_rma_timer)
 
     parcel%lambda_max = 4.0d0
     parcel%min_vratio = 20.0d0
     parcel%size_factor = 1.0d0
-    
+
     call parse_command_line
 
     fname = trim(basename) // '_' // zfill(offset) // '_parcels.nc'
