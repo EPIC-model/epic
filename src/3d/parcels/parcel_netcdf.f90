@@ -176,6 +176,9 @@ module parcel_netcdf
             integer                      :: cnt(2), start(2)
             integer                      :: recvcounts(world%size)
             integer                      :: sendbuf(world%size), start_index
+#ifdef ENABLE_LABELS
+            integer                      :: n
+#endif
 
             call start_timer(parcel_io_timer)
 
@@ -248,6 +251,12 @@ module parcel_netcdf
 #ifdef ENABLE_LABELS
             call write_parcel_attribute_int(NC_LABEL, parcels%label, start, cnt)
             call write_parcel_attribute(NC_DILUTION, parcels%dilution, start, cnt)
+            ! reset the labels to Fortran index which corresponds to current label
+            ! reset the dilution to get this from time step to time step
+            do n = 1, n_parcels
+               parcels%label(n) = start_index + n - 1
+               parcels%dilution(n) = 0
+            end do
 #endif
             ! increment counter
             n_writes = n_writes + 1
