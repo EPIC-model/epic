@@ -12,8 +12,10 @@ module mpi_ops
     implicit none
 
     type(MPI_Op) :: MPI_SUM_64BIT = MPI_OP_NULL
+    type(MPI_Op) :: MPI_MAX_64BIT = MPI_OP_NULL
 
-    private :: mpi_op_sum_integer_64bit
+    private :: mpi_op_sum_integer_64bit &
+             , mpi_op_max_integer_64bit
 
     contains
 
@@ -26,7 +28,17 @@ module mpi_ops
                                ierror=err)
 
             if (err /= MPI_SUCCESS) then
-                print *, "Error in mpi_ops::mpi_ops_create: Unable to create user-defined MPI operator."
+                print *, "Error in mpi_ops::mpi_ops_create: Unable to create user-defined MPI_SUM operator."
+                call MPI_Abort(MPI_COMM_WORLD, -1, err)
+            endif
+
+            call MPI_Op_create(user_fn=mpi_op_max_integer_64bit,    &
+                               commute=.true.,                      &
+                               op=MPI_MAX_64BIT,                    &
+                               ierror=err)
+
+            if (err /= MPI_SUCCESS) then
+                print *, "Error in mpi_ops::mpi_ops_create: Unable to create user-defined MPI_MAX operator."
                 call MPI_Abort(MPI_COMM_WORLD, -1, err)
             endif
 
@@ -40,7 +52,14 @@ module mpi_ops
             call MPI_Op_free(MPI_SUM_64BIT, err)
 
             if (err /= MPI_SUCCESS) then
-                print *, "Error in mpi_ops::mpi_ops_free: Unable to free user-defined MPI operator."
+                print *, "Error in mpi_ops::mpi_ops_free: Unable to free user-defined MPI_SUM operator."
+                call MPI_Abort(MPI_COMM_WORLD, -1, err)
+            endif
+
+            call MPI_Op_free(MPI_MAX_64BIT, err)
+
+            if (err /= MPI_SUCCESS) then
+                print *, "Error in mpi_ops::mpi_ops_free: Unable to free user-defined MPI_MAX operator."
                 call MPI_Abort(MPI_COMM_WORLD, -1, err)
             endif
 
@@ -65,5 +84,23 @@ module mpi_ops
                 call c_f_pointer(inoutvec, inoutvec64bit, (/ length /) )
                 inoutvec64bit = invec64bit + inoutvec64bit
         end subroutine mpi_op_sum_integer_64bit
+
+        !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+        subroutine mpi_op_max_integer_64bit(invec, inoutvec, length, dtype)
+            use, intrinsic :: iso_c_binding, only : c_ptr, c_f_pointer
+            type(c_ptr), value           :: invec, inoutvec
+            integer                      :: length
+            type(MPI_Datatype)           :: dtype
+            integer(kind=int64), pointer :: invec64bit(:), inoutvec64bit(:)
+#ifndef NDEBUG
+            if (dtype /= MPI_INTEGER_64BIT) then
+                call MPI_Abort(MPI_COMM_WORLD, -1, length)
+            endif
+#endif
+                call c_f_pointer(invec, invec64bit, (/ length /) )
+                call c_f_pointer(inoutvec, inoutvec64bit, (/ length /) )
+                inoutvec64bit = max(invec64bit, inoutvec64bit)
+        end subroutine mpi_op_max_integer_64bit
 
 end module mpi_ops
