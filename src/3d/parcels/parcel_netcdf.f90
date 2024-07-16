@@ -176,7 +176,9 @@ module parcel_netcdf
             integer                      :: cnt(2), start(2)
             integer                      :: recvcounts(world%size)
             integer                      :: sendbuf(world%size), start_index
+#ifdef ENABLE_LABELS
             integer                      :: n
+#endif
 
             call start_timer(parcel_io_timer)
 
