@@ -7,12 +7,17 @@
 ! =============================================================================
 program test_mpi_parcel_read_rejection
     use unit_test
-    use options, only : parcel
-    use constants, only : zero, f12
+    use options, only : parcel, write_netcdf_options
+    use constants, only : one, zero, f12
     use parcel_container
     use parcel_netcdf
     use mpi_environment
     use mpi_layout
+    use netcdf_utils
+    use netcdf_writer
+    use physics, only : write_physical_quantities
+    use config, only : package_version, cf_version
+    use iomanip, only : zfill
     use parameters, only : lower, update_parameters, extent, nx, ny, nz, dx, max_num_parcels
     use mpi_timer
     implicit none

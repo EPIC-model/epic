@@ -23,7 +23,6 @@ epic3d_SOURCES = 				\
 	parcels/parcel_diagnostics.f90		\
 	parcels/parcel_interpl.f90 		\
 	parcels/parcel_init.f90			\
-	parcels/parcel_damping.f90		\
 	fields/field_diagnostics.f90		\
 	fields/field_netcdf.f90			\
 	fields/field_diagnostics_netcdf.f90	\
@@ -36,6 +35,7 @@ epic3d_SOURCES = 				\
 	boundary_layer/bndry_fluxes.f90		\
 	utils/utils.f90				\
 	stepper/rk_utils.f90			\
+	parcels/parcel_damping.f90	        \
 	stepper/ls_rk.f90			\
 	epic3d.f90
 

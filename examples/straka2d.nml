@@ -3,7 +3,7 @@
  model       = 'Straka'
  ncfname     = 'straka2d.nc'
 
- box%ncells  = 128, 16
+ box%ncells  = 2048, 256
  box%extent  = 51200, 6400
  box%origin  = -25600.0, 0.0
 

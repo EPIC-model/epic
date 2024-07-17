@@ -305,6 +305,13 @@ module inversion_mod
             velgradg(nz+1, :, :, I_DWDY) = -velgradg(nz-1, :, :, I_DWDY)
             !$omp end parallel workshare
 
+            !$omp parallel workshare
+            ! fill the other components
+            velgradg(:, :, :, I_DUDZ) = velgradg(:, :, :, I_DWDX) + vortg(:, :, :,  I_Y) 
+            velgradg(:, :, :, I_DVDX) = velgradg(:, :, :, I_DUDY) + vortg(:, :, :,  I_Z) 
+            velgradg(:, :, :, I_DVDZ) = velgradg(:, :, :, I_DWDY) - vortg(:, :, :,  I_X)
+            !$omp end parallel workshare
+
             call field_halo_fill_vector(velgradg, l_alloc=.true.)
 
         end subroutine vel2vgrad

@@ -61,6 +61,12 @@ program test_ellipse_multi_merge_symmetry
             a1b1 = 1.44d0
             a2b2 = 0.25d0
 
+#ifndef ENABLE_DRY_MODE
+            parcels%humidity = 1.0d0
+#endif
+            parcels%vorticity = 1.0d0
+            parcels%buoyancy = 1.0d0
+
             n_parcels = 6
             parcels%position(1, 1) = -f12
             parcels%position(2, 1) = 0.2d0

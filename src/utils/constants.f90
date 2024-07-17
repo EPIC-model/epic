@@ -45,4 +45,13 @@ module constants
     double precision, parameter :: rad2deg = 180.0d0 * fpi
     double precision, parameter :: deg2rad = one / rad2deg
 
+    double precision, parameter :: sq177 = sqrt(177.0)
+    double precision, parameter :: xx1 = (one / 88.0) * (one + sq177) * f23
+    double precision, parameter :: xx2 = (one / 352.0) * (one + sq177) * f23
+    double precision, parameter :: xx4 = (-271.0 + 29.0 * sq177) / (315.0 * f23)
+    double precision, parameter :: xx5 = (11.0 * (-1.0 + sq177)) / (1260.0 * f23)
+    double precision, parameter :: xx6 = (11.0 * (-9.0 + sq177)) / (5040.0 * f23)
+    double precision, parameter :: xx7 = (89.0 - sq177) / (5040.0 * f23 * f23)
+    double precision, parameter :: yy2 = (one / 630.0) * (857.0 - 58.0 * sq177)
+
 end module

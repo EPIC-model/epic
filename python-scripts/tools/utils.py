@@ -63,7 +63,9 @@ def make_imshow(ax, plane, loc, fdata, ncr,
     if cmap_norm == 'centered':
         norm = mpl_colors.CenteredNorm(vcenter=0.0)
     elif cmap_norm == 'symlog':
-        norm = mpl_colors.SymLogNorm(linthresh=1, base=10)
+        norm = mpl_colors.SymLogNorm(linthresh=1, base=10, vmin=vmin, vmax=vmax)
+        vmin=None
+        vmax=None
     elif cmap_norm == 'log':
         norm = mpl_colors.LogNorm(vmin=vmin, vmax=vmax)
         vmin=None

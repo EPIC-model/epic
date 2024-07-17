@@ -3,16 +3,18 @@
 !            (see https://doi.org/10.5194/gmd-10-3145-2017)
 ! =============================================================================
 module ls_rk
+    use constants, only : f13, one
     use options, only : time
     use dimensions, only : I_Z
     use parcel_container
     use parcel_bc
     use parcel_mpi, only : parcel_communicate
-    use rk_utils, only: get_dBdt, get_time_step, get_strain_magnitude_field
+    use parcel_ls_forcings, only : apply_ls_forcings
+    use parcel_ellipsoid, only : get_abc
+    use rk_utils, only: get_time_step, evolve_ellipsoid
     use utils, only : write_step
     use parcel_interpl, only : par2grid, grid2par, saturation_adjustment
     use parcel_damping, only : parcel_damp
-    use parcel_ls_forcings, only : apply_ls_forcings
     use fields, only : velgradg, velog, vortg, vtend, tbuoyg
     use inversion_mod, only : vor2vel, vorticity_tendency
     use parcel_diagnostics, only : calculate_parcel_diagnostics
@@ -102,9 +104,9 @@ module ls_rk
             ! update the time step
             dt = get_time_step(t)
 
-            if (dabs(t - time%initial) < 1.0e-13) then
+!            if (dabs(t - time%initial) < 1.0e-13) then
                 call bndry_fluxes_time_step(dt)
-            endif
+!            endif
 
             call grid2par
 
@@ -121,11 +123,11 @@ module ls_rk
             enddo
             call ls_rk_substep(dt, n_stages)
 
+            ! normalize B matrix
             call start_timer(rk_timer)
             call apply_parcel_reflective_bc
             call stop_timer(rk_timer)
 
-            call get_strain_magnitude_field
             call parcel_damp(dt)
             call apply_ls_forcings(dt)
 
@@ -144,6 +146,7 @@ module ls_rk
             double precision, intent(in) :: dt
             integer,          intent(in) :: step
             double precision             :: ca, cb
+            double precision             :: factor, detB
             integer                      :: n
 
             ca = captr(step)
@@ -151,15 +154,6 @@ module ls_rk
 
             if (step == 1) then
                 call start_timer(rk_timer)
-
-                !$omp parallel do default(shared) private(n)
-                do n = 1, n_parcels
-                    parcels%delta_b(:, n) = get_dBdt(parcels%B(:, n),           &
-                                                     parcels%strain(:, n),      &
-                                                     parcels%vorticity(:, n),   &
-                                                     parcels%volume(n))
-                enddo
-                !$omp end parallel do
 
                 call stop_timer(rk_timer)
             else
@@ -170,16 +164,6 @@ module ls_rk
                 call grid2par(add=.true.)
 
                 call start_timer(rk_timer)
-
-                !$omp parallel do default(shared) private(n)
-                do n = 1, n_parcels
-                    parcels%delta_b(:, n) = parcels%delta_b(:, n)               &
-                                          + get_dBdt(parcels%B(:, n),           &
-                                                     parcels%strain(:, n),      &
-                                                     parcels%vorticity(:, n),   &
-                                                     parcels%volume(n))
-                enddo
-                !$omp end parallel do
 
                 call stop_timer(rk_timer)
             endif
@@ -193,35 +177,49 @@ module ls_rk
 
                 parcels%vorticity(:, n) = parcels%vorticity(:, n) &
                                         + cb * dt * parcels%delta_vor(:, n)
-                parcels%B(:, n) = parcels%B(:, n) &
-                                + cb * dt * parcels%delta_b(:, n)
+
+                call evolve_ellipsoid(parcels%B(:, n), parcels%int_strain(:, n), cb * dt)
+
             enddo
             !$omp end parallel do
 
             ! call saturation adjustment after each integration
             call saturation_adjustment
 
-            call stop_timer(rk_timer)
             if (step == n_stages) then
-                call parcel_communicate
-               return
-            endif
+                !$omp parallel do default(shared) private(n,detB,factor)
+                do n = 1, n_parcels
+                    ! normalize B matrix in final substep
+                    detB = parcels%B(1, n) * (parcels%B(4, n) * parcels%B(6, n) - parcels%B(5, n) ** 2) &
+                         - parcels%B(2, n) * (parcels%B(2, n) * parcels%B(6, n) - parcels%B(3, n) * parcels%B(5, n)) &
+                         + parcels%B(3, n) * (parcels%B(2, n) * parcels%B(5, n) - parcels%B(3, n) * parcels%B(4, n))
 
-            call start_timer(rk_timer)
+                    factor = (get_abc(parcels%volume(n)) ** 2 / detB) ** f13
+
+                    parcels%B(:, n) = parcels%B(:, n) * factor
+                enddo
+                !$omp end parallel do
+
+                call parcel_communicate
+
+                call stop_timer(rk_timer)
+
+                return
+            endif
 
             !$omp parallel do default(shared) private(n)
             do n = 1, n_parcels
                 parcels%delta_pos(:, n) = ca * parcels%delta_pos(:, n)
                 parcels%delta_vor(:, n) = ca * parcels%delta_vor(:, n)
-                parcels%delta_b(:, n) = ca * parcels%delta_b(:, n)
+                parcels%int_strain(:, n) = ca * parcels%int_strain(:, n)
             enddo
             !$omp end parallel do
 
             call parcel_communicate
 
-            call par2grid
-
             call stop_timer(rk_timer)
+
+            call par2grid
 
         end subroutine ls_rk_substep
 

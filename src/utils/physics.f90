@@ -41,6 +41,7 @@ module physics
     use iso_fortran_env, only : IOSTAT_END
     use ape_density, only : l_ape_density
     use mpi_utils, only : mpi_print, mpi_stop
+    use mpi_layout, only : box
     implicit none
 
     ![m/s**2] standard gravity (i.e. at 45° latitude and mean sea level):
@@ -101,6 +102,14 @@ module physics
     ! 'none', 'sorting' or 'ape density'
     character(len=11) :: ape_calculation = "sorting"
 
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+    ! squared buoyancy frequency, N^2
+    double precision, protected :: bfsq = zero
+
+    ! Was N^2 provided?
+    logical                     :: l_bfsq = .false.
+#endif
+
     interface print_physical_quantity
         module procedure :: print_physical_quantity_double
         module procedure :: print_physical_quantity_integer
@@ -112,6 +121,9 @@ module physics
                print_physical_quantity_double,      &
                print_physical_quantity_integer,     &
                print_physical_quantity_logical,     &
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+               l_bfsq,                              &
+#endif
                print_physical_quantity_character
 
     contains
@@ -194,6 +206,13 @@ module physics
                 call read_netcdf_attribute_default(grp_ncid, 'scale_height', height_c)
                 call read_netcdf_attribute_default(grp_ncid, 'ape_calculation', ape_calculation)
 
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+                l_bfsq = has_attribute(grp_ncid, 'squared_buoyancy_frequency')
+                if (l_bfsq) then
+                    call read_netcdf_attribute_default(grp_ncid, 'squared_buoyancy_frequency', bfsq)
+                endif
+#endif
+
                 l_peref = .false.
                 select case (trim(ape_calculation))
                     case ('sorting')
@@ -253,6 +272,12 @@ module physics
             endif
             call write_netcdf_attribute(grp_ncid, 'ape_calculation', ape_calculation)
 
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            if (l_bfsq) then
+                call write_netcdf_attribute(grp_ncid, 'squared_buoyancy_frequency', bfsq)
+            endif
+#endif
+
         end subroutine write_physical_quantities
 
         subroutine print_physical_quantities
@@ -277,6 +302,12 @@ module physics
                 call print_physical_quantity('reference potential energy', peref, 'm^2/s^2')
             endif
             call print_physical_quantity('APE calculation', ape_calculation)
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+            if (l_bfsq) then
+                call print_physical_quantity('squared_buoyancy_frequency', bfsq, '1/s^2')
+            endif
+#endif
             write(*, *) ''
         end subroutine print_physical_quantities
 
@@ -330,5 +361,40 @@ module physics
             endif
             write (*, "(a, a14)") fix_length_name, val
         end subroutine print_physical_quantity_character
+
+#ifdef ENABLE_BUOYANCY_PERTURBATION_MODE
+        subroutine calculate_basic_reference_state(nx, ny, nz, zext, buoy)
+            integer,          intent(in) :: nx, ny, nz
+            double precision, intent(in) :: zext
+            double precision, intent(in) :: buoy(-1:nz+1,                &
+                                                 box%hlo(2):box%hhi(2),  &
+                                                 box%hlo(1):box%hhi(1))
+
+            ! We only calculate N^2 if it did not get provided as an input.
+            if (l_bfsq) then
+                if (world%rank == world%root) then
+                    print *, "Provided squared buoyancy frequency:", bfsq
+                endif
+                return
+            endif
+
+            bfsq = sum(buoy(nz, box%lo(2):box%hi(2), box%lo(1):box%hi(1))  &
+                     - buoy(0,  box%lo(2):box%hi(2), box%lo(1):box%hi(1)))
+
+            call MPI_Allreduce(MPI_IN_PLACE,            &
+                               bfsq,                    &
+                               1,                       &
+                               MPI_DOUBLE_PRECISION,    &
+                               MPI_SUM,                 &
+                               world%comm,              &
+                               world%err)
+
+            bfsq = bfsq / (dble(nx * ny) * zext)
+
+            if (world%rank == world%root) then
+                print *, "Calculated squared buoyancy frequency:", bfsq
+            endif
+        end subroutine calculate_basic_reference_state
+#endif
 
 end module physics

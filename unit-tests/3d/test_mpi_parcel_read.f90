@@ -9,13 +9,14 @@ program test_mpi_parcel_read
     use parcel_container
     use parameters, only : set_max_num_parcels
     use parcel_netcdf
+    use netcdf_utils
     use mpi_environment
     use mpi_timer
     implicit none
 
     logical              :: passed = .true.
     double precision     :: res
-    integer              :: n, start_index, n_parcels_before
+    integer              :: n, start_index, n_parcels_before 
 
     call set_max_num_parcels(100000000)
 

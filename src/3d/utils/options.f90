@@ -56,16 +56,18 @@ module options
     ! output options
     !
     type info
-        double precision    :: field_freq         = one
-        logical             :: write_fields       = .true.
-        double precision    :: parcel_freq        = one
-        logical             :: overwrite          = .false.
-        logical             :: write_parcels      = .true.
-        double precision    :: parcel_stats_freq  = one
-        logical             :: write_parcel_stats = .true.
-        double precision    :: field_stats_freq   = one
-        logical             :: write_field_stats  = .true.
-        character(len=512)  :: basename           = ''
+        double precision                  :: field_freq         = one
+        logical                           :: write_fields       = .true.
+        character(len=32), dimension(128) :: field_list         = ''
+        double precision                  :: parcel_freq        = one
+        logical                           :: overwrite          = .false.
+        logical                           :: write_parcels      = .true.
+        character(len=32), dimension(128) :: parcel_list        = ''
+        double precision                  :: parcel_stats_freq  = one
+        logical                           :: write_parcel_stats = .true.
+        double precision                  :: field_stats_freq   = one
+        logical                           :: write_field_stats  = .true.
+        character(len=512)                :: basename           = ''
     end type info
 
     type(info) :: output
@@ -85,7 +87,7 @@ module options
         double precision :: shrink_factor    = 0.8d0    ! factor to reduce the parcel container size
         integer          :: n_per_cell       = 8        ! number of parcels per cell (need to be a cube)
         double precision :: lambda_max       = four     ! max. ellipse aspect ratio a/b
-        double precision :: min_vratio       = 40.0d0   ! minimum ratio of grid cell volume / parcel volume
+        double precision :: min_vratio       = 20.0d0   ! minimum ratio of grid cell volume / parcel volume
         integer          :: correction_iters = 2        ! parcel correction iterations
         double precision :: gradient_pref    = 1.8d0    ! prefactor for gradient descent
         double precision :: max_compression  = 0.5d0    ! parameter for gradient descent
@@ -105,6 +107,19 @@ module options
 
     type(time_info_type) :: time
 
+    ! damping model
+    type damping_info_type
+        double precision :: vorticity_prefactor     = 1.0d0  ! constant in damping implementation for vorticity
+        double precision :: scalars_prefactor       = 1.0d0  ! constant in damping implementation for scalars
+        logical          :: l_vorticity = .false. ! use damping on vorticity
+        logical          :: l_surface_vorticity = .false. ! use damping on surface vorticity only
+        logical          :: l_scalars   = .false. ! use damping on scalars
+        logical          :: l_surface_scalars = .false. ! use damping on surface scalars only
+    end type damping_info_type
+
+    type(damping_info_type) :: damping
+
+
     contains
         ! parse configuration file
         ! (see https://cyber.dabamos.de/programming/modernfortran/namelists.html [8 March 2021])
@@ -114,7 +129,7 @@ module options
             logical :: exists = .false.
 
             ! namelist definitions
-            namelist /EPIC/ field_file, flux_file, rk_order, boundary, output, parcel, time
+            namelist /EPIC/ field_file, flux_file, rk_order, boundary, output, parcel, time, damping
 
             ! check whether file exists
             inquire(file=filename, exist=exists)
@@ -187,6 +202,13 @@ module options
             call write_netcdf_attribute(ncid, "initial", time%initial)
             call write_netcdf_attribute(ncid, "precise_stop", time%precise_stop)
             call write_netcdf_attribute(ncid, "alpha", time%alpha)
+            
+            call write_netcdf_attribute(ncid, "damping_vorticity_prefactor", damping%vorticity_prefactor)
+            call write_netcdf_attribute(ncid, "damping_scalars_prefactor", damping%scalars_prefactor)
+            call write_netcdf_attribute(ncid, "damping_l_vorticity", damping%l_vorticity)
+            call write_netcdf_attribute(ncid, "damping_l_surface_vorticity", damping%l_surface_vorticity)
+            call write_netcdf_attribute(ncid, "damping_l_scalars", damping%l_scalars)
+            call write_netcdf_attribute(ncid, "damping_l_surface_scalars", damping%l_surface_scalars)
 
         end subroutine write_netcdf_options
 

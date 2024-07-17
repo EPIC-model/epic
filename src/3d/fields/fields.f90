@@ -21,7 +21,6 @@ module fields
     double precision, allocatable, dimension(:, :, :, :) :: &
         velog,     &   ! velocity vector field (u, v, w)
         vortg,     &   ! vorticity vector field (\xi, \eta, \zeta)
-        vortpg,    &   ! vorticity pertubation tendency
         vtend,     &   ! vorticity tendency
         velgradg       ! velocity gradient tensor
                        ! ordering: du/dx, du/dy,
@@ -37,30 +36,30 @@ module fields
 
     double precision, allocatable, dimension(:, :, :) :: &
 #ifndef ENABLE_DRY_MODE
-        qvg,        &   ! humidity
+        qvg,        &   ! water vapour
         qlg,        &   ! liquid water
-        qvpg,       &   ! humidity perturbation tendency
-        qlpg,       &   ! liquid water perturbation tendency
 #endif
         thetag,     &   ! dry buoyancy (or liquid-water buoyancy)
-        thetapg,    &   ! theta perturbation tendency
         tbuoyg,    &   ! buoyancy
 #ifndef NDEBUG
         sym_volg,  &   ! symmetry volume (debug mode only)
 #endif
-        strain_mag, &  ! strain magnitude
-        volg           ! volume scalar field
+        volg, &        ! volume scalar field
+        strain_mag     ! strain magnitude
 
     integer, allocatable, dimension(:, :, :) :: &
         nparg,     &   ! number of parcels per grid box
         nsparg         ! number of small parcels per grid box
 
-    ! velocity strain indices
+    ! velocity strain indices (note that dw/dz is found from continuity)
     integer, parameter :: I_DUDX = 1 & ! index for du/dx strain component
                         , I_DUDY = 2 & ! index for du/dy strain component
-                        , I_DVDY = 3 & ! index for dv/dy strain component
-                        , I_DWDX = 4 & ! index for dw/dx strain component
-                        , I_DWDY = 5   ! index for dw/dy strain component
+                        , I_DUDZ = 3 & ! index for du/dz strain component
+                        , I_DVDX = 4 & ! index for dv/dx strain component
+                        , I_DVDY = 5 & ! index for dv/dy strain component
+                        , I_DVDZ = 6 & ! index for dv/dz strain component
+                        , I_DWDX = 7 & ! index for dw/dx strain component
+                        , I_DWDY = 8   ! index for dw/dy strain component
 
     contains
 
@@ -80,28 +79,23 @@ module fields
             hhi = box%hhi
 
             allocate(velog(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
-            allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 5))
+            allocate(velgradg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), 8))
 
             allocate(strain_mag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
-
 #ifndef NDEBUG
             allocate(sym_volg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
             allocate(vortg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
-            allocate(vortpg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
             allocate(vtend(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1), n_dim))
 
             allocate(tbuoyg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(thetag(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
-            allocate(thetapg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #ifndef ENABLE_DRY_MODE
             allocate(qvg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
             allocate(qlg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
-            allocate(qvpg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
-            allocate(qlpg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
 #endif
 
             allocate(nparg(hlo(3):hhi(3), hlo(2):hhi(2), hlo(1):hhi(1)))
@@ -120,16 +114,12 @@ module fields
             volg     = zero
             strain_mag = zero
             vortg    = zero
-            vortpg   = zero
             vtend    = zero
             tbuoyg   = zero
-            thetapg  = zero
             thetag   = zero
 #ifndef ENABLE_DRY_MODE
             qvg     = zero
             qlg     = zero
-            qvpg     = zero
-            qlpg     = zero
 #endif
             nparg    = zero
             nsparg   = zero
@@ -147,18 +137,14 @@ module fields
                 deallocate(velog)
                 deallocate(velgradg)
                 deallocate(strain_mag)
-                deallocate(volg)
-                deallocate(vortpg)
                 deallocate(vortg)
+                deallocate(volg)
                 deallocate(vtend)
                 deallocate(tbuoyg)
-                deallocate(thetapg)
                 deallocate(thetag)
 #ifndef ENABLE_DRY_MODE
                 deallocate(qvg)
                 deallocate(qlg)
-                deallocate(qvpg)
-                deallocate(qlpg)
 #endif
                 deallocate(nparg)
                 deallocate(nsparg)

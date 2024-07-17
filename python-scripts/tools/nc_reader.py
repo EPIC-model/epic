@@ -476,7 +476,7 @@ class nc_reader(nc_base_reader):
             xo[1] = B[1, 2] / B[2, 2] * z
             xo[2] = z
 
-            if B[2, 2] < z0 ** 2:
+            if B[2, 2] < z ** 2:
                 continue
 
             # Transform centre back to original coordinate system:

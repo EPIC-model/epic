@@ -127,8 +127,8 @@ module parcel_ls_forcings
             !    write(*,*) yvortbar
             !end if
 
-            ! nudge velocity profiles with 120 seconds time scale 
-            nudgefac=(1.0-exp(-dt/120.0))
+            ! nudge velocity profiles with 600 seconds time scale 
+            nudgefac=(1.0-exp(-dt/600.0))
 
             !$omp parallel default(shared)
             !$omp do private(n, is, js, ks, weights, zf, zfc)

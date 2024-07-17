@@ -20,6 +20,7 @@ class nc_parcels:
 
         write_nc_info(ncfile=self._ncfile, file_type='parcels')
 
+        self.time = 0.0
         self._nparcels = 0
 
         self._physical_quantities = {}
@@ -59,7 +60,7 @@ class nc_parcels:
             time = self._ncfile.createVariable(varname='t',
                                                datatype=dtype,
                                                dimensions=('t'))
-            time[0] = 0.0
+            time[0] = self.time
 
         var = self._ncfile.createVariable(varname=name,
                                           datatype=dtype,
