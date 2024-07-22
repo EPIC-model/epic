@@ -226,7 +226,7 @@ module parcel_diagnostics_netcdf
             call write_diagnostic(NC_MIN_BUOY, parcel_stats(IDX_MIN_BUOY))
             call write_diagnostic(NC_MAX_BUOY, parcel_stats(IDX_MAX_BUOY))
 
-            call write_netcdf_dataset(ncid, nc_dset(NC_NWAY_MERGE)%varid, parcel_merge_stats,     &
+            call write_netcdf_dataset(ncid, nc_dset(NC_NWAY_MERGE)%varid, dble(parcel_merge_stats), &
                                       start=(/1, n_writes/), cnt=(/size(parcel_merge_stats), 1/), &
                                       l_serial=.true.)
 
@@ -288,12 +288,13 @@ module parcel_diagnostics_netcdf
                 unit='1/s^2',                                               &
                 dtype=NF90_DOUBLE)
 
+            ! write as a 64-bit double as netCDF only supports 32-bit integers
             nc_dset(NC_NPAR) = netcdf_info(                                 &
                 name='n_parcels',                                           &
                 long_name='number of parcels',                              &
                 std_name='',                                                &
                 unit='1',                                                   &
-                dtype=NF90_INT)
+                dtype=NF90_DOUBLE)
 
             nc_dset(NC_NSPAR) = netcdf_info(                                &
                 name='n_small_parcel',                                      &
@@ -358,26 +359,29 @@ module parcel_diagnostics_netcdf
                 unit='1/s',                                                 &
                 dtype=NF90_DOUBLE)
 
+            ! write as a 64-bit double as netCDF only supports 32-bit integers
             nc_dset(NC_NPAR_SPLIT) = netcdf_info(                           &
                 name='n_parcel_splits',                                     &
                  long_name='number of parcel splits since last time',       &
                  std_name='',                                               &
                  unit='1',                                                  &
-                 dtype=NF90_INT)
+                 dtype=NF90_DOUBLE)
 
+            ! write as a 64-bit double as netCDF only supports 32-bit integers
             nc_dset(NC_NBIG_CLOSE) = netcdf_info(                           &
                 name='n_big_neighbour',                                     &
                  long_name='number of big parcel neighbours',               &
                  std_name='',                                               &
                  unit='1',                                                  &
-                 dtype=NF90_INT)
+                 dtype=NF90_DOUBLE)
 
+            ! write as a 64-bit double as netCDF only supports 32-bit integers
             nc_dset(NC_NPAR_MERGE) = netcdf_info(                           &
                 name='n_parcel_merges',                                     &
                  long_name='number of parcel merges since last time',       &
                  std_name='',                                               &
                  unit='1',                                                  &
-                 dtype=NF90_INT)
+                 dtype=NF90_DOUBLE)
 
             nc_dset(NC_MIN_BUOY) = netcdf_info(                             &
                 name='min_buoyancy',                                        &
@@ -393,12 +397,13 @@ module parcel_diagnostics_netcdf
                 unit='m/s^2',                                               &
                 dtype=NF90_DOUBLE)
 
+            ! write as a 64-bit double as netCDF only supports 32-bit integers
             nc_dset(NC_NWAY_MERGE) = netcdf_info(                           &
                 name='n_way_merging',                                       &
                 long_name='n-way merging',                                  &
                 std_name='',                                                &
                 unit='1',                                                   &
-                dtype=NF90_INT)
+                dtype=NF90_DOUBLE)
 
         end subroutine set_netcdf_parcel_diagnostics_info
 

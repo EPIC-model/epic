@@ -15,6 +15,7 @@ module netcdf_reader
         module procedure :: read_netcdf_dataset_2d
         module procedure :: read_netcdf_dataset_3d
         module procedure :: read_netcdf_dataset_1d_integer
+        module procedure :: read_netcdf_dataset_1d_integer_scalar
         module procedure :: read_netcdf_dataset_1d_int8
     end interface read_netcdf_dataset
 
@@ -76,11 +77,11 @@ module netcdf_reader
             call check_netcdf_error("Reading " // name // " failed.")
         end subroutine get_dimension_size
 
-        subroutine get_num_parcels(ncid, n_parcels)
+        subroutine get_num_parcels(ncid, n_par)
             integer, intent(in)  :: ncid
-            integer, intent(out) :: n_parcels
+            integer, intent(out) :: n_par
 
-            call get_dimension_size(ncid, 'n_parcels', n_parcels)
+            call get_dimension_size(ncid, 'n_parcels', n_par)
         end subroutine get_num_parcels
 
         subroutine get_num_steps(ncid, n_steps)
@@ -174,6 +175,22 @@ module netcdf_reader
                                  start=start, count=cnt)
         end subroutine read_netcdf_dataset_1d_integer
 
+        subroutine read_netcdf_dataset_1d_integer_scalar(ncid, name, val, start)
+            integer,           intent(in)  :: ncid
+            character(*),      intent(in)  :: name
+            integer,           intent(out) :: val
+            integer, optional, intent(in)  :: start
+            integer                        :: varid, buffer(1)
+
+            ncerr = nf90_inq_varid(ncid, name, varid)
+            call check_netcdf_error("Reading dataset id failed.")
+
+            ncerr = nf90_get_var(ncid=ncid, varid=varid, values=buffer, &
+                                 start=(/start/), count=(/1/))
+
+            val = buffer(1)
+        end subroutine read_netcdf_dataset_1d_integer_scalar
+
         subroutine read_netcdf_dataset_1d_int8(ncid, name, buffer, start, cnt)
             integer,           intent(in)  :: ncid
             character(*),      intent(in)  :: name
@@ -181,7 +198,7 @@ module netcdf_reader
             integer, optional, intent(in)  :: start(:)
             integer, optional, intent(in)  :: cnt(:)
             integer                        :: varid
-
+            
             ncerr = nf90_inq_varid(ncid, name, varid)
             call check_netcdf_error("Reading dataset id failed.")
 

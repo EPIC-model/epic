@@ -3,19 +3,21 @@
 !                     https://github.com/EPCCed/pmpic
 ! =============================================================================
 module mpi_timer
+    use datatypes, only : int64
     use mpi_environment
+    use mpi_collectives
     implicit none
 
     type timer_type
-        character(len=32) :: name
-        integer           :: handle
-        double precision  :: wall_time
-        logical           :: running
-        integer           :: n_calls
-        double precision  :: start_time, end_time
-        double precision  :: mean_time
-        double precision  :: min_time
-        double precision  :: max_time
+        character(len=32)   :: name
+        integer             :: handle
+        double precision    :: wall_time
+        logical             :: running
+        integer(kind=int64) :: n_calls
+        double precision    :: start_time, end_time
+        double precision    :: mean_time
+        double precision    :: min_time
+        double precision    :: max_time
     end type timer_type
 
     type(timer_type), allocatable :: timings(:)
@@ -113,10 +115,10 @@ module mpi_timer
 
             frac = 100.0d0 / timings(1)%mean_time
 
-            write (*, '("|--------------------------------------------&
-                       &----------------------------------------------|")')
+            write (*, '("|-----------------------------------------------&
+                       &--------------------------------------------------|")')
             write (*, '("|            Function            &
-                        &| #Calls  &
+                        &|     #Calls     &
                         &|  % of  &
                         &|  Min time  &
                         &| Mean time  &
@@ -124,26 +126,26 @@ module mpi_timer
 
             if (call_unit == 'one') then
                 write (*, '("|              name              &
-                            &|         &
+                            &|                &
                             &|  time  &
                             &| in '//time_unit//' &
                             &| in '//time_unit//' &
                             &| in '//time_unit//' |")')
             else
                 write (*, '("|              name              &
-                            &| in '//call_unit//' &
+                            &|     in '//call_unit//'    &
                             &|  time  &
                             &| in '//time_unit//' &
                             &| in '//time_unit//' &
                             &| in '//time_unit//' |")')
             endif
 
-            write (*, '("|--------------------------------------------&
-                       &----------------------------------------------|")')
+            write (*, '("|------------------------------------------------&
+                       &-------------------------------------------------|")')
 
             do n = 1, n_timers
                 write(*,"('|',a,&
-                         &'|', i9,&
+                         &'|', i16,&
                          &'| ', f6.2,'%',&
                          &'|', f12.3,&
                          &'|', f12.3,&
@@ -155,8 +157,8 @@ module mpi_timer
                 timings(n)%mean_time,           &
                 timings(n)%max_time
             enddo
-            write (*, '("|--------------------------------------------&
-                       &----------------------------------------------|")')
+            write (*, '("|------------------------------------------------&
+                       &-------------------------------------------------|")')
         end subroutine print_timer
 
         subroutine write_time_to_csv(fname)
@@ -206,7 +208,7 @@ module mpi_timer
             endif
 
             do n = 1, n_timers
-                write(s1, '(i8)') timings(n)%n_calls
+                write(s1, '(i16)') timings(n)%n_calls
                 write(s2, '(f6.2)') frac * timings(n)%mean_time
                 write(s3, '(f9.3)') timings(n)%min_time
                 write(s4, '(f9.3)') timings(n)%mean_time
@@ -224,8 +226,8 @@ module mpi_timer
         end subroutine write_time_to_csv
 
         subroutine select_units
-            double precision :: max_wall_time
-            integer          :: max_n_calls
+            double precision    :: max_wall_time
+            integer(kind=int64) :: max_n_calls
 
             ! go from seconds to minutes (24 hours = 86400 seconds)
             max_wall_time = maxval(timings(1:n_timers)%wall_time)
@@ -249,9 +251,9 @@ module mpi_timer
             endif
 
             max_n_calls = maxval(timings(1:n_timers)%n_calls)
-            if ((max_n_calls > 1e6) .and. (call_unit == 'one')) then
-                call_unit = 'kilo'
-                timings(1:n_timers)%n_calls = timings(1:n_timers)%n_calls / 1000
+            if ((max_n_calls > 1e15) .and. (call_unit == 'one')) then
+                call_unit = 'Mega'
+                timings(1:n_timers)%n_calls = timings(1:n_timers)%n_calls / 1000000
             endif
 
         end subroutine select_units
@@ -300,6 +302,10 @@ module mpi_timer
             timings(1:n_timers)%mean_time = get_statistics(MPI_SUM)
 
             timings(1:n_timers)%mean_time = timings(1:n_timers)%mean_time / dble(world%size)
+
+            ! we need to take the maximum number because of the subcommunicator in the
+            ! parcel nearest algorithm
+            call mpi_blocking_reduce(timings(1:n_timers)%n_calls, MPI_MAX, world)
 
         end subroutine collect_statistics
 
