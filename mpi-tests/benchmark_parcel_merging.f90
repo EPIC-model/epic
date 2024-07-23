@@ -70,8 +70,6 @@ program benchmark_parcel_merging
 
         call setup_parcels(xlen, ylen, zlen, l_shuffle, l_variable_nppc)
 
-        call parcel_communicate
-
         call stop_timer(generate_timer)
 
         n_total_parcels = 0
@@ -84,6 +82,10 @@ program benchmark_parcel_merging
                            MPI_SUM_64BIT,     &
                            world%comm,        &
                            world%err)
+
+        call parcel_communicate
+
+        call stop_timer(allreduce_timer)
 
         if (world%rank == world%root) then
             print *, "Number of parcels before merging:", n_total_parcels
