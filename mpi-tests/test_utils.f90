@@ -101,6 +101,7 @@ module test_utils
             theta = datan2(u(2), u(1))
 
             ! polar angle, [0, pi[
+            u(3) = max(-1.0d0, min(u(3), 1.0d0))
             phi = dacos(u(3))
 
         end subroutine random_angles
